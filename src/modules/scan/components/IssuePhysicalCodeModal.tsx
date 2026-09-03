@@ -26,6 +26,7 @@ import type {
 } from "../types";
 import type { ReactNode } from "react";
 import { ActionButton } from "@/shared/components/actions";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
 interface IssuePhysicalCodeModalProps {
   open: boolean;
@@ -33,16 +34,18 @@ interface IssuePhysicalCodeModalProps {
   onIssued?: (result: IssueItemPhysicalCodeResult) => void;
 }
 
-const CARRIER_OPTIONS: Array<{
+function carrierOptions(t: TranslateFn): Array<{
   value: IssuePhysicalCodeCarrierType;
   label: string;
-}> = [
-  { value: "QR", label: "QR" },
-  { value: "BARCODE", label: "Mã vạch" },
-];
+}> {
+  return [
+    { value: "QR", label: "QR" },
+    { value: "BARCODE", label: t("scan.carrierBarcode") },
+  ];
+}
 
-function carrierLabel(value: IssuePhysicalCodeCarrierType) {
-  return value === "BARCODE" ? "Mã vạch" : "QR";
+function carrierLabel(t: TranslateFn, value: IssuePhysicalCodeCarrierType) {
+  return value === "BARCODE" ? t("scan.carrierBarcode") : "QR";
 }
 
 /**
@@ -81,6 +84,7 @@ export function IssuePhysicalCodeModal({
   onClose,
   onIssued,
 }: IssuePhysicalCodeModalProps) {
+  const t = useT();
   const [skuId, setSkuId] = useState<string | null>(null);
   const [carrierType, setCarrierType] =
     useState<IssuePhysicalCodeCarrierType>("QR");
@@ -119,7 +123,7 @@ export function IssuePhysicalCodeModal({
         serial_number: values.serial_number,
       }),
     onSuccess: (result) => {
-      toast.success(`Đã tạo mã ${result.code_value} cho sản phẩm mới.`);
+      toast.success(t("scan.issue.created", { code: result.code_value }));
       queryClient.invalidateQueries({ queryKey: ["scan"] });
       onIssued?.(result);
       resetForm();
@@ -138,7 +142,7 @@ export function IssuePhysicalCodeModal({
         toast.error(
           hasFieldErrors
             ? message
-            : getApiErrorMessage(error, "Không thể tạo mã vật lý mới."),
+            : getApiErrorMessage(error, t("scan.issue.createFailed")),
         );
       }
     },
@@ -162,13 +166,13 @@ export function IssuePhysicalCodeModal({
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     if (!skuId) {
-      errors.skuId = "Vui lòng chọn SKU";
+      errors.skuId = t("scan.issue.skuRequired");
     }
     if (codeValue.length > 200) {
-      errors.codeValue = "Giá trị mã tối đa 200 ký tự";
+      errors.codeValue = t("scan.issue.codeMax");
     }
     if (serialNumber.length > 100) {
-      errors.serialNumber = "Số sê-ri tối đa 100 ký tự";
+      errors.serialNumber = t("scan.issue.serialMax");
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -192,11 +196,11 @@ export function IssuePhysicalCodeModal({
       onClose={guardBackdropClose(handleClose)}
       maxWidth="sm"
       fullWidth
-      title="Tạo mã vật lý mới"
+      title={t("scan.issue.title")}
       actions={
         result ? (
           <ActionButton kind="close" onClick={handleClose}>
-            Đóng
+            {t("common.close")}
           </ActionButton>
         ) : (
           <>
@@ -205,24 +209,24 @@ export function IssuePhysicalCodeModal({
               onClick={handleClose}
               disabled={issueMutation.isPending}
             >
-              Hủy
+              {t("scan.issue.cancel")}
             </ActionButton>
             <ActionButton
               kind="create"
               onClick={handleSubmit}
               disabled={issueMutation.isPending}
             >
-              {issueMutation.isPending ? "Đang tạo..." : "Tạo mã"}
+              {issueMutation.isPending
+                ? t("scan.issue.creating")
+                : t("scan.issue.submit")}
             </ActionButton>
           </>
         )
       }
     >
       <Box sx={{ mb: 2 }}>
-        <UiAlert tone="info" title="Tạo mã không làm thay đổi tồn kho">
-          Hệ thống tạo một sản phẩm cụ thể kèm mã vật lý mới. Thao tác này chỉ
-          tạo thông tin nhận diện, chưa làm tăng hoặc giảm tồn kho. Chỉ áp dụng
-          cho SKU sản phẩm có quản lý số sê-ri.
+        <UiAlert tone="info" title={t("scan.issue.alertTitle")}>
+          {t("scan.issue.alertBody")}
         </UiAlert>
       </Box>
 
@@ -233,32 +237,35 @@ export function IssuePhysicalCodeModal({
             phẩm chính là "Giá trị mã" + "Số sê-ri" ngay bên dưới. Giữ giá trị
             để tra soát nhưng gọi đúng tên và hiển thị rút gọn. */}
           <DetailField
-            label="Định danh nội bộ"
+            label={t("scan.issue.fieldInternalId")}
             value={<CopyableId value={result.item_id} />}
           />
           <DetailField
-            label="Giá trị mã"
+            label={t("scan.issue.fieldCodeValue")}
             value={<UiStatusBadge tone="info" label={result.code_value} />}
           />
           <DetailField
-            label="Hình thức mã"
-            value={carrierLabel(result.carrier_type)}
+            label={t("scan.issue.fieldCarrier")}
+            value={carrierLabel(t, result.carrier_type)}
           />
-          <DetailField label="Số sê-ri" value={result.serial_number} />
           <DetailField
-            label="Trạng thái sản phẩm"
+            label={t("scan.issue.fieldSerial")}
+            value={result.serial_number}
+          />
+          <DetailField
+            label={t("scan.issue.fieldItemStatus")}
             value={businessLabel(
               ITEM_STATUS_LABELS,
               result.item_status,
-              "Trạng thái khác",
+              t("scan.statusOther"),
             )}
           />
           <DetailField
-            label="Trạng thái mã"
+            label={t("scan.issue.fieldCodeStatus")}
             value={businessLabel(
               MASTER_STATUS_LABELS,
               result.status,
-              "Trạng thái khác",
+              t("scan.statusOther"),
             )}
           />
         </Grid>
@@ -269,7 +276,7 @@ export function IssuePhysicalCodeModal({
               select
               required
               fullWidth
-              label="SKU sản phẩm có quản lý số sê-ri"
+              label={t("scan.issue.skuLabel")}
               value={skuId ?? ""}
               onChange={(event) => {
                 setSkuId(event.target.value || null);
@@ -281,13 +288,13 @@ export function IssuePhysicalCodeModal({
               helperText={fieldErrors.skuId}
             >
               <MenuItem value="" disabled>
-                Chọn SKU...
+                {t("scan.issue.skuPlaceholder")}
               </MenuItem>
               {skuOptions.length === 0 ? (
                 <MenuItem value="__empty__" disabled>
                   {skuQuery.isLoading
-                    ? "Đang tải..."
-                    : "Không có SKU sản phẩm đang sử dụng và có quản lý số sê-ri"}
+                    ? t("scan.issue.loading")
+                    : t("scan.issue.skuEmpty")}
                 </MenuItem>
               ) : null}
               {skuOptions.map((option) => (
@@ -302,7 +309,7 @@ export function IssuePhysicalCodeModal({
               select
               required
               fullWidth
-              label="Hình thức mã"
+              label={t("scan.issue.fieldCarrier")}
               value={carrierType}
               onChange={(event) => {
                 setCarrierType(
@@ -320,7 +327,7 @@ export function IssuePhysicalCodeModal({
               error={Boolean(fieldErrors.carrierType)}
               helperText={fieldErrors.carrierType}
             >
-              {CARRIER_OPTIONS.map((option) => (
+              {carrierOptions(t).map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
                 </MenuItem>
@@ -330,8 +337,8 @@ export function IssuePhysicalCodeModal({
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiTextField
               fullWidth
-              label="Giá trị mã (bỏ trống để hệ thống tự sinh)"
-              placeholder="Ví dụ: SP-0001-20260822-AB12"
+              label={t("scan.issue.codeValueLabel")}
+              placeholder={t("scan.issue.codeValuePlaceholder")}
               value={codeValue}
               onChange={(event) => {
                 setCodeValue(event.target.value);
@@ -350,8 +357,8 @@ export function IssuePhysicalCodeModal({
           <Grid size={12}>
             <UiTextField
               fullWidth
-              label="Số sê-ri (bỏ trống để hệ thống tự sinh)"
-              placeholder="Ví dụ: SN-SP-0001-8F3C1A2B"
+              label={t("scan.issue.serialLabel")}
+              placeholder={t("scan.issue.serialPlaceholder")}
               value={serialNumber}
               onChange={(event) => {
                 setSerialNumber(event.target.value);

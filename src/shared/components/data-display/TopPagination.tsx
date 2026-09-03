@@ -1,5 +1,6 @@
 import { UiText } from "@/shared/ui";
 import { UiPagination } from "@/shared/ui/components/UiPagination";
+import { useT } from "@/shared/i18n/useT";
 
 export interface TopPaginationProps {
   /** Tổng số bản ghi */
@@ -33,12 +34,13 @@ export function TopPagination({
   total,
   current,
   pageSize,
-  unitName = "bản ghi",
+  unitName,
   pageSizeOptions = [10, 20, 50],
   onChange,
   placement = "top",
   showSizeChanger = true,
 }: TopPaginationProps) {
+  const t = useT();
   // Đổi cỡ trang: kẹp lại trang hiện tại theo số trang mới (cùng ngữ nghĩa
   // onShowSizeChange của antd cũ — caller nhận (page đã kẹp, pageSize mới)).
   const handlePageSizeChange = (nextSize: number) => {
@@ -58,7 +60,10 @@ export function TopPagination({
       }}
     >
       <UiText variant="secondary">
-        Tổng {total} {unitName}
+        {t("shared.table.totalWithUnit", {
+          total,
+          unit: unitName ?? t("shared.table.unitRecords"),
+        })}
       </UiText>
       <UiPagination
         page={current}

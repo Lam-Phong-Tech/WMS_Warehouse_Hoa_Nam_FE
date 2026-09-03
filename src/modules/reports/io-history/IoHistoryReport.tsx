@@ -45,14 +45,20 @@ import {
   hasAnyWmsPermission,
   WMS_ACTION_PERMISSIONS,
 } from "@/shared/constants/wms-permissions";
-import { shortId } from "@/shared/utils/shortId";
 import {
   fmt,
   presetRange,
   type PeriodPreset,
 } from "@/modules/reports/operations/report-format";
 import { useReportExport } from "@/modules/reports/operations/report-export";
+import { reportStatusLabel } from "@/modules/reports/operations/report-labels";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
+import {
+  optionsFromRows,
+  useSectionFilter,
+  type SectionFilterConfig,
+} from "@/modules/reports/operations/report-section-filter";
 import { IoIcon } from "./io-history-icons";
 import {
   IO_HISTORY_EXPORT_CODE,
@@ -66,61 +72,50 @@ import {
   type IoHistoryRow,
   type IoTypeFilter,
 } from "./io-history-api";
+import { useT } from "@/shared/i18n/useT";
 import "./io-history-report.css";
 
-/** Nhãn loại chứng từ — chép nguyên `labels` của mockup. */
-const TYPE_LABELS: Readonly<Record<IoDocType, string>> = {
-  INBOUND: "Nhập kho",
-  OUTBOUND: "Xuất kho",
-  REVERSAL: "Hoàn tác",
-};
-
-/** Nhãn kỳ báo cáo — chép nguyên `pl` của mockup. */
-const PRESET_LABELS: Readonly<Record<PeriodPreset, string>> = {
-  "this-week": "Tuần này",
-  "this-month": "Tháng này",
-  "this-quarter": "Quý này",
-  "this-year": "Năm nay",
-  custom: "Tùy chọn",
-};
-
-/** Năm nút kỳ báo cáo, đúng thứ tự và nhãn ngắn của mockup. */
-const PERIOD_BUTTONS: ReadonlyArray<{ value: PeriodPreset; label: string }> = [
-  { value: "this-week", label: "Tuần" },
-  { value: "this-month", label: "Tháng" },
-  { value: "this-quarter", label: "Quý" },
-  { value: "this-year", label: "Năm" },
-  { value: "custom", label: "Tùy chọn" },
+/** Thứ tự năm nút kỳ báo cáo của mockup; nhãn đọc qua t() trong component. */
+const PERIOD_VALUES: ReadonlyArray<PeriodPreset> = [
+  "this-week",
+  "this-month",
+  "this-quarter",
+  "this-year",
+  "custom",
 ];
 
-const ALL_TYPES_LABEL = "Tất cả loại đã ghi nhận";
-
-/** Bốn lựa chọn của menu "Loại chứng từ". */
-const TYPE_OPTIONS: ReadonlyArray<{ value: IoTypeFilter; label: string }> = [
-  { value: "", label: ALL_TYPES_LABEL },
-  { value: "INBOUND", label: TYPE_LABELS.INBOUND },
-  { value: "OUTBOUND", label: TYPE_LABELS.OUTBOUND },
-  { value: "REVERSAL", label: TYPE_LABELS.REVERSAL },
+/** Thứ tự bốn lựa chọn menu "Loại chứng từ"; nhãn đọc qua t(). */
+const TYPE_FILTER_VALUES: ReadonlyArray<IoTypeFilter> = [
+  "",
+  "INBOUND",
+  "OUTBOUND",
+  "REVERSAL",
 ];
 
 /** Hàng thứ trong tuần của lịch — mockup bắt đầu từ Thứ Hai. */
-const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"] as const;
+/** Khoá nhãn bảy thứ, bắt đầu từ Thứ Hai như lịch của mockup. */
+const WEEKDAY_KEYS = [
+  "weekMon",
+  "weekTue",
+  "weekWed",
+  "weekThu",
+  "weekFri",
+  "weekSat",
+  "weekSun",
+] as const;
 
 /** Ba chuỗi của biểu đồ, đúng thứ tự và màu của mockup. */
 const CHART_SERIES: ReadonlyArray<{
   type: IoDocType;
-  label: string;
   className: string;
 }> = [
-  { type: "INBOUND", label: TYPE_LABELS.INBOUND, className: "series-inbound" },
+  { type: "INBOUND", className: "series-inbound" },
   {
     type: "OUTBOUND",
-    label: TYPE_LABELS.OUTBOUND,
     className: "series-outbound",
   },
   {
     type: "REVERSAL",
-    label: TYPE_LABELS.REVERSAL,
     className: "series-reversal",
   },
 ];
@@ -154,6 +149,18 @@ function absOrEmpty(value: number | null): string {
   return value === null ? EMPTY_TEXT : fmt(Math.abs(value));
 }
 
+/**
+ * Sắc viên của ô "SL đã ghi nhận": tăng = xanh, giảm = đỏ, không đổi = trung tính.
+ *
+ * NGOÀI MOCKUP (yêu cầu người dùng): mockup in số trần, ở đây tô nền như cột
+ * "Trạng thái" để phân biệt chiều ngay khi lướt.
+ */
+function qtyToneOf(value: number): string {
+  if (value > 0) return "is-pos";
+  if (value < 0) return "is-neg";
+  return "is-zero";
+}
+
 /** "01/09/2026" — đúng hàm `day` của mockup. */
 function fmtDay(value: string): string {
   const parsed = dayjs(value);
@@ -184,17 +191,16 @@ function toneOf(type: IoDocType): string {
 }
 
 /**
- * Nhãn cột "Movement".
+ * Nhãn cột "Biến động kho".
  *
  * Một chứng từ nhiều dòng SKU sinh nhiều movement; chọn bừa một cái làm đại
- * diện là bịa, nên chỉ hiện id khi đúng một movement.
+ * diện là bịa, nên chỉ hiện MÃ (`movement_no`) khi đúng một movement. Thiếu mã
+ * thì "Chưa có" — không rơi xuống UUID.
  */
 function movementLabelOf(row: IoHistoryRow): string {
   if (row.movementCount === 0) return EMPTY_TEXT;
   if (row.movementCount === 1) {
-    return shortId(row.movementId) === ""
-      ? EMPTY_TEXT
-      : shortId(row.movementId);
+    return row.movementNo === "" ? EMPTY_TEXT : row.movementNo;
   }
   return `${fmt(row.movementCount)} movement`;
 }
@@ -209,6 +215,44 @@ function ofType(rows: IoHistoryRow[], type: IoDocType): IoHistoryRow[] {
 }
 
 export default function IoHistoryReport() {
+  const t = useT();
+  const typeLabels = useMemo<Readonly<Record<IoDocType, string>>>(
+    () => ({
+      INBOUND: t("reports.ioHistory.typeInbound"),
+      OUTBOUND: t("reports.ioHistory.typeOutbound"),
+      REVERSAL: t("reports.ioHistory.typeReversal"),
+    }),
+    [t],
+  );
+  const presetLabels = useMemo<Readonly<Record<PeriodPreset, string>>>(
+    () => ({
+      "this-week": t("reports.ioHistory.presetThisWeek"),
+      "this-month": t("reports.ioHistory.presetThisMonth"),
+      "this-quarter": t("reports.ioHistory.presetThisQuarter"),
+      "this-year": t("reports.ioHistory.presetThisYear"),
+      custom: t("reports.ioHistory.presetCustom"),
+    }),
+    [t],
+  );
+  const periodButtonLabels = useMemo<Readonly<Record<PeriodPreset, string>>>(
+    () => ({
+      "this-week": t("reports.ioHistory.periodWeek"),
+      "this-month": t("reports.ioHistory.periodMonth"),
+      "this-quarter": t("reports.ioHistory.periodQuarter"),
+      "this-year": t("reports.ioHistory.periodYear"),
+      custom: t("reports.ioHistory.periodCustom"),
+    }),
+    [t],
+  );
+  const allTypesLabel = t("reports.ioHistory.allTypes");
+  const typeOptions = useMemo(
+    () =>
+      TYPE_FILTER_VALUES.map((value) => ({
+        value,
+        label: value === "" ? allTypesLabel : typeLabels[value],
+      })),
+    [allTypesLabel, typeLabels],
+  );
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const canExport = hasAnyWmsPermission(
@@ -328,9 +372,64 @@ export default function IoHistoryReport() {
     return map;
   }, [rows]);
 
+  /**
+   * Bộ lọc RIÊNG của khối "Lịch sử chứng từ đã ghi nhận".
+   *
+   * Bộ lọc đầu trang dựng lại cả KPI, biểu đồ và snapshot; ở đây người đọc chỉ
+   * cần khoanh đúng danh sách chứng từ đang soi trong CÙNG lát cắt đã chốt —
+   * nên phép lọc này dừng lại trong khối và KHÔNG đụng số liệu phía trên.
+   *
+   * Áp cho CẢ "Dạng ngang" lẫn "Dạng hộp": hai chế độ là hai cách vẽ của cùng
+   * một tập chứng từ, lọc lệch nhau sẽ thành hai sự thật.
+   */
+  const documentFilterConfig = useMemo<SectionFilterConfig<IoHistoryRow>>(
+    () => ({
+      searchPlaceholder: t("reports.ioHistory.searchPlaceholder"),
+      searchText: (row) => [
+        row.documentNo,
+        row.party,
+        row.actor,
+        row.department,
+        row.movementNo,
+        row.originalDocumentNo,
+        row.skuLines.join(" "),
+      ],
+      selects: [
+        {
+          key: "type",
+          placeholder: t("reports.ioHistory.anyDocType"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.type,
+              (value) => typeLabels[value as IoDocType] ?? value,
+            ),
+          match: (row, value) => row.type === value,
+          minWidth: 185,
+        },
+        {
+          key: "department",
+          placeholder: t("reports.ioHistory.anyDepartment"),
+          options: (list) => optionsFromRows(list, (row) => row.department),
+          match: (row, value) => row.department === value,
+          minWidth: 175,
+        },
+        {
+          key: "actor",
+          placeholder: t("reports.ioHistory.anyActor"),
+          options: (list) => optionsFromRows(list, (row) => row.actor),
+          match: (row, value) => row.actor === value,
+          minWidth: 195,
+        },
+      ],
+    }),
+    [t, typeLabels],
+  );
+  const documentFilter = useSectionFilter(rows, documentFilterConfig);
+
   const slices = useMemo(
     () =>
-      rows
+      documentFilter.rows
         .filter((row) => row.type !== "REVERSAL")
         .map((row) => {
           const linked = reversalsOf.get(row.documentNo) ?? [];
@@ -344,7 +443,7 @@ export default function IoHistoryReport() {
             net: row.qty === null ? null : row.qty + sumQty(linked),
           };
         }),
-    [rows, reversalsOf],
+    [documentFilter.rows, reversalsOf],
   );
 
   // ── Hộp thoại chi tiết (hàm `dialog()` của mockup) ─────────────────────
@@ -379,13 +478,12 @@ export default function IoHistoryReport() {
   // ── Điều khiển bộ lọc (hàm `controls()` + các handler của mockup) ──────
   const snapshotId = ioSnapshotId(range.from, range.to, type);
   const typeLabel =
-    TYPE_OPTIONS.find((option) => option.value === type)?.label ??
-    ALL_TYPES_LABEL;
+    typeOptions.find((option) => option.value === type)?.label ?? allTypesLabel;
   const filterSummary = [
     `${fmtDay(range.from)} → ${fmtDay(range.to)}`,
-    type === "" ? "Tất cả loại chứng từ" : TYPE_LABELS[type],
-    ...(query.trim() === "" ? [] : [`Tìm: ${query.trim()}`]),
-    "POSTED only",
+    type === "" ? t("reports.ioHistory.allDocTypes") : typeLabels[type],
+    ...(query.trim() === "" ? [] : [t("reports.ioHistory.filterSearchPrefix")]),
+    t("reports.ioHistory.postedOnly"),
   ].join(" · ");
 
   const applyPreset = (next: PeriodPreset) => {
@@ -532,7 +630,10 @@ export default function IoHistoryReport() {
       };
     }
     if (loading) {
-      return { tone: "page-alert is-info", body: <>Đang tải số liệu…</> };
+      return {
+        tone: "page-alert is-info",
+        body: <>{t("reports.ioHistory.loadingData")}</>,
+      };
     }
     return null;
   })();
@@ -550,65 +651,82 @@ export default function IoHistoryReport() {
     {
       tone: "inbound",
       icon: "file",
-      label: "Phiếu nhập",
+      label: t("reports.ioHistory.kpiInbound"),
       value: fmt(inboundRows.length),
-      note: `${fmt(sumQty(inboundRows))} đơn vị tăng`,
+      note: t("reports.ioHistory.kpiInboundNote", {
+        qty: fmt(sumQty(inboundRows)),
+      }),
     },
     {
       tone: "outbound",
       icon: "swap",
-      label: "Xuất kho",
+      label: t("reports.ioHistory.kpiOutbound"),
       value: fmt(outboundRows.length),
-      note: `${fmt(Math.abs(sumQty(outboundRows)))} đơn vị giảm`,
+      note: t("reports.ioHistory.kpiOutboundNote", {
+        qty: fmt(Math.abs(sumQty(outboundRows))),
+      }),
     },
     {
       tone: "reversal",
       icon: "undo",
-      label: "Hoàn tác",
+      label: t("reports.ioHistory.kpiReversal"),
       value: fmt(reversalRows.length),
-      note: `${fmt(Math.abs(sumQty(reversalRows)))} đơn vị đã xác định dấu`,
+      note: t("reports.ioHistory.kpiReversalNote", {
+        qty: fmt(Math.abs(sumQty(reversalRows))),
+      }),
     },
     {
       tone: "net",
       icon: "check",
-      label: "Ảnh hưởng ròng",
+      label: t("reports.ioHistory.kpiNet"),
       value: signed(netEffect),
-      note: "Chỉ cộng movement/qty có dấu xác định",
+      note: t("reports.ioHistory.kpiNetNote"),
     },
   ] as const;
 
   return (
     <div className="hn-rpt-io" data-mvp-screen="RPT-08">
       <div className="content page-wrap">
-        <div className="breadcrumb" aria-label="Đường dẫn">
-          <span>Trang chủ</span>
+        <div
+          className="breadcrumb"
+          aria-label={t("reports.ioHistory.breadcrumbAria")}
+        >
+          <span>{t("reports.ioHistory.breadcrumbHome")}</span>
           <span aria-hidden="true">/</span>
-          <span>Báo cáo</span>
+          <span>{t("reports.ioHistory.breadcrumbReports")}</span>
           <span aria-hidden="true">/</span>
-          <strong>Lịch sử nhập – xuất kho</strong>
+          <strong>{t("reports.ioHistory.title")}</strong>
         </div>
 
         <section className="reporthead page-header">
           <div className="headtop">
             <div>
               <div className="eyebrow">
-                BÁO CÁO VẬN HÀNH · {IO_HISTORY_REPORT_CODE}
+                {t("reports.ioHistory.eyebrow", {
+                  code: IO_HISTORY_REPORT_CODE,
+                })}
               </div>
-              <h1>Lịch sử nhập – xuất kho</h1>
-              <p>
-                Theo dõi biến động theo <b>posted_at</b>; chỉ hiển thị chứng từ
-                đã ghi nhận theo timezone <b>{IO_HISTORY_TIMEZONE}</b>.
-              </p>
+              <h1>{t("reports.ioHistory.title")}</h1>
             </div>
             <div className="chips scope-block">
               <span className="chip chip-info">{IO_HISTORY_REPORT_CODE}</span>
-              <span className="chip chip-success">POSTED only</span>
+              <span className="chip chip-success">
+                {t("reports.ioHistory.postedOnly")}
+              </span>
             </div>
           </div>
           <div className="meta">
-            <b>{fmt(rows.length)} chứng từ đã ghi nhận</b>
-            <span>Data as-of: {fmtStamp(snapshot.dataAsOf)}</span>
-            <span className="truncate">Snapshot: {snapshotId}</span>
+            <b>
+              {t("reports.ioHistory.metaCount", { count: fmt(rows.length) })}
+            </b>
+            <span>
+              {t("reports.ioHistory.metaAsOf", {
+                time: fmtStamp(snapshot.dataAsOf),
+              })}
+            </span>
+            <span className="truncate">
+              {t("reports.ioHistory.metaSlice", { id: snapshotId })}
+            </span>
           </div>
         </section>
 
@@ -616,7 +734,7 @@ export default function IoHistoryReport() {
         {filterVisible ? (
           <section
             className="card filters filter-card"
-            aria-label="Bộ lọc báo cáo"
+            aria-label={t("reports.ioHistory.filterAria")}
           >
             <div className="cardhead">
               <div className="cardhead-l">
@@ -624,42 +742,50 @@ export default function IoHistoryReport() {
                   <IoIcon name="search" />
                 </i>
                 <div>
-                  <div className="title">Bộ lọc báo cáo</div>
+                  <div className="title">
+                    {t("reports.ioHistory.filterTitle")}
+                  </div>
                   <div className="note">
-                    {PRESET_LABELS[preset]} · Sắp xếp mặc định: mới nhất trước
+                    {t("reports.ioHistory.filterNote", {
+                      preset: presetLabels[preset],
+                    })}
                   </div>
                 </div>
               </div>
-              <span className="chip chip-success">POSTED only</span>
+              <span className="chip chip-success">
+                {t("reports.ioHistory.postedOnly")}
+              </span>
             </div>
 
             <div className="filtergrid">
               <div className="field">
-                <label htmlFor="rptio-period">Kỳ báo cáo</label>
+                <label htmlFor="rptio-period">
+                  {t("reports.ioHistory.fieldPeriod")}
+                </label>
                 <div
                   className="periods"
                   id="rptio-period"
                   role="group"
-                  aria-label="Kỳ báo cáo"
+                  aria-label={t("reports.ioHistory.fieldPeriod")}
                 >
-                  {PERIOD_BUTTONS.map((item) => (
+                  {PERIOD_VALUES.map((value) => (
                     <button
-                      key={item.value}
-                      className={
-                        preset === item.value ? "period active" : "period"
-                      }
+                      key={value}
+                      className={preset === value ? "period active" : "period"}
                       type="button"
-                      aria-pressed={preset === item.value}
-                      onClick={() => applyPreset(item.value)}
+                      aria-pressed={preset === value}
+                      onClick={() => applyPreset(value)}
                     >
-                      {item.label}
+                      {periodButtonLabels[value]}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="field">
-                <label htmlFor="rptio-from">Từ ngày / Đến ngày</label>
+                <label htmlFor="rptio-from">
+                  {t("reports.ioHistory.fieldDateRange")}
+                </label>
                 <div className="rangewrap">
                   <div className="range">
                     <button
@@ -678,7 +804,7 @@ export default function IoHistoryReport() {
                     <button
                       className="control"
                       type="button"
-                      aria-label="Đến ngày"
+                      aria-label={t("reports.ioHistory.toDate")}
                       aria-expanded={dateOpen}
                       onClick={() => {
                         setChoosing("to");
@@ -693,14 +819,18 @@ export default function IoHistoryReport() {
                     <div
                       className="picker"
                       role="dialog"
-                      aria-label="Chọn khoảng ngày"
+                      aria-label={t("reports.ioHistory.pickerAria")}
                     >
                       <div className="pickhead">
-                        <span>{pickerMonth.format("[Tháng] MM / YYYY")}</span>
+                        <span>
+                          {pickerMonth.format(
+                            t("reports.ioHistory.pickerMonthFormat"),
+                          )}
+                        </span>
                         <span className="picknav">
                           <button
                             type="button"
-                            aria-label="Tháng trước"
+                            aria-label={t("reports.ioHistory.prevMonth")}
                             onClick={() =>
                               setPickerMonth((month) =>
                                 month.subtract(1, "month"),
@@ -711,7 +841,7 @@ export default function IoHistoryReport() {
                           </button>
                           <button
                             type="button"
-                            aria-label="Tháng sau"
+                            aria-label={t("reports.ioHistory.nextMonth")}
                             disabled={!canGoNextMonth}
                             onClick={() =>
                               setPickerMonth((month) => month.add(1, "month"))
@@ -722,11 +852,18 @@ export default function IoHistoryReport() {
                         </span>
                       </div>
                       <div className="pickstate">
-                        Đang chọn {choosing === "from" ? "Từ ngày" : "Đến ngày"}
+                        {t("reports.ioHistory.choosingLabel", {
+                          field:
+                            choosing === "from"
+                              ? t("reports.ioHistory.fromDate")
+                              : t("reports.ioHistory.toDate"),
+                        })}
                       </div>
                       <div className="cal">
-                        {WEEKDAYS.map((label) => (
-                          <span key={label}>{label}</span>
+                        {WEEKDAY_KEYS.map((weekdayKey) => (
+                          <span key={weekdayKey}>
+                            {t(`reports.ioHistory.${weekdayKey}`)}
+                          </span>
                         ))}
                         {Array.from({ length: leadingBlanks }, (_, index) => (
                           <span
@@ -767,14 +904,14 @@ export default function IoHistoryReport() {
                           type="button"
                           onClick={cancelDate}
                         >
-                          Hủy
+                          {t("reports.ioHistory.cancel")}
                         </button>
                         <button
                           className="btn primary"
                           type="button"
                           onClick={applyDate}
                         >
-                          Áp dụng
+                          {t("reports.ioHistory.apply")}
                         </button>
                       </div>
                     </div>
@@ -783,7 +920,9 @@ export default function IoHistoryReport() {
               </div>
 
               <div className="field">
-                <label htmlFor="rptio-type">Loại chứng từ</label>
+                <label htmlFor="rptio-type">
+                  {t("reports.ioHistory.fieldDocType")}
+                </label>
                 <div className="selectwrap">
                   <button
                     id="rptio-type"
@@ -807,9 +946,9 @@ export default function IoHistoryReport() {
                       className="menu"
                       id="rptio-type-menu"
                       role="listbox"
-                      aria-label="Loại chứng từ"
+                      aria-label={t("reports.ioHistory.fieldDocType")}
                     >
-                      {TYPE_OPTIONS.map((option) => (
+                      {typeOptions.map((option) => (
                         <button
                           key={option.value === "" ? "all" : option.value}
                           className={
@@ -832,13 +971,15 @@ export default function IoHistoryReport() {
               </div>
 
               <div className="field search">
-                <label htmlFor="rptio-query">Tìm nhanh</label>
+                <label htmlFor="rptio-query">
+                  {t("reports.ioHistory.fieldQuickSearch")}
+                </label>
                 <div className="control">
                   <IoIcon name="search" />
                   <input
                     id="rptio-query"
-                    aria-label="Tìm lịch sử nhập xuất"
-                    placeholder="Mã phiếu / yêu cầu / người nhận"
+                    aria-label={t("reports.ioHistory.quickSearchAria")}
+                    placeholder={t("reports.ioHistory.quickSearchPlaceholder")}
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                   />
@@ -862,35 +1003,33 @@ export default function IoHistoryReport() {
                 >
                   <IoIcon name="refresh" />
                 </span>
-                {refreshing ? "Đang đặt lại…" : "Đặt lại"}
+                {refreshing
+                  ? t("reports.ioHistory.resetting")
+                  : t("reports.ioHistory.reset")}
               </button>
               <button
                 className="btn excel"
                 type="button"
                 disabled={!canExport || exporter.exporting !== null}
                 title={
-                  canExport
-                    ? undefined
-                    : "Cần quyền xuất báo cáo (REPORT_EXPORT)"
+                  canExport ? undefined : t("reports.ioHistory.exportDenied")
                 }
                 onClick={() => runExport("xlsx")}
               >
                 <IoIcon name="download" />
-                Xuất XLSX
+                {t("reports.ioHistory.exportXlsx")}
               </button>
               <button
                 className="btn pdf"
                 type="button"
                 disabled={!canExport || exporter.exporting !== null}
                 title={
-                  canExport
-                    ? undefined
-                    : "Cần quyền xuất báo cáo (REPORT_EXPORT)"
+                  canExport ? undefined : t("reports.ioHistory.exportDenied")
                 }
                 onClick={() => runExport("pdf")}
               >
                 <IoIcon name="download" />
-                Xuất PDF
+                {t("reports.ioHistory.exportPdf")}
               </button>
             </div>
           </section>
@@ -909,14 +1048,20 @@ export default function IoHistoryReport() {
         >
           <div className="section-heading">
             <div>
-              <span className="eyebrow">TÌNH HÌNH HIỆN TẠI</span>
-              <h2 id="rptio-summary">Tổng quan lịch sử nhập – xuất</h2>
+              <span className="eyebrow">
+                {t("reports.ioHistory.summaryEyebrow")}
+              </span>
+              <h2 id="rptio-summary">{t("reports.ioHistory.summaryTitle")}</h2>
             </div>
             <span className="section-meta">
-              Chỉ tính chứng từ POSTED · Đơn vị: chứng từ
+              {t("reports.ioHistory.summaryMeta")}
             </span>
           </div>
-          <div className="kpis" role="region" aria-label="Tổng quan vận hành">
+          <div
+            className="kpis"
+            role="region"
+            aria-label={t("reports.ioHistory.kpisAria")}
+          >
             {kpiCards.map((card) => (
               <article
                 key={card.label}
@@ -943,11 +1088,17 @@ export default function IoHistoryReport() {
         >
           <div className="section-heading">
             <div>
-              <span className="eyebrow">PHÂN TÍCH VẬN HÀNH</span>
-              <h2 id="rptio-movement">Biến động nhập – xuất theo ngày</h2>
+              <span className="eyebrow">
+                {t("reports.ioHistory.movementEyebrow")}
+              </span>
+              <h2 id="rptio-movement">
+                {t("reports.ioHistory.movementTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              Theo posted_at · {IO_HISTORY_TIMEZONE}
+              {t("reports.ioHistory.movementMeta", {
+                timezone: IO_HISTORY_TIMEZONE,
+              })}
             </span>
           </div>
           <section className="card chart">
@@ -957,21 +1108,22 @@ export default function IoHistoryReport() {
                   <IoIcon name="trend" />
                 </i>
                 <div>
-                  <div className="title">Khối lượng ghi nhận theo ngày</div>
-                  <div className="note">
-                    Xu hướng số lượng theo posted_at; chỉ tính chứng từ POSTED
-                    có số lượng xác định.
+                  <div className="title">
+                    {t("reports.ioHistory.chartTitle")}
                   </div>
+                  <div className="note">{t("reports.ioHistory.chartNote")}</div>
                 </div>
               </div>
-              <span className="chip chip-info">Nguồn: sổ movement</span>
+              <span className="chip chip-info">
+                {t("reports.ioHistory.chartSource")}
+              </span>
             </div>
             <div className="chartbody" ref={chartRef}>
               <div className="legend">
                 {CHART_SERIES.map((series) => (
                   <span key={series.type} className={series.className}>
                     <i aria-hidden="true" />
-                    {series.label}
+                    {typeLabels[series.type]}
                   </span>
                 ))}
               </div>
@@ -979,7 +1131,7 @@ export default function IoHistoryReport() {
                 className="chartsvg"
                 viewBox={`0 0 ${chart.width} ${CHART_VIEW_HEIGHT}`}
                 role="img"
-                aria-label="Biểu đồ đường khối lượng nhập xuất"
+                aria-label={t("reports.ioHistory.chartAria")}
               >
                 {[0, 0.5, 1].map((ratio) => {
                   const y = CHART_BOTTOM - (CHART_BOTTOM - CHART_TOP) * ratio;
@@ -1005,7 +1157,7 @@ export default function IoHistoryReport() {
                     y={CHART_EMPTY_Y}
                     textAnchor="middle"
                   >
-                    Không có dữ liệu POSTED theo bộ lọc
+                    {t("reports.ioHistory.chartEmpty")}
                   </text>
                 ) : (
                   <>
@@ -1071,7 +1223,7 @@ export default function IoHistoryReport() {
         {filterVisible ? null : (
           <div className="card collapsed">
             <div className="summary">
-              <b>Bộ lọc đang áp dụng</b>
+              <b>{t("reports.ioHistory.collapsedTitle")}</b>
               <span>{filterSummary}</span>
             </div>
             <button
@@ -1080,23 +1232,27 @@ export default function IoHistoryReport() {
               onClick={() => setFilterVisible(true)}
             >
               <IoIcon name="search" />
-              Hiện bộ lọc
+              {t("reports.ioHistory.showFilters")}
             </button>
           </div>
         )}
 
         <div className="section-heading">
           <div>
-            <span className="eyebrow">CHI TIẾT NGHIỆP VỤ</span>
-            <h2>Lịch sử chứng từ đã ghi nhận</h2>
+            <span className="eyebrow">
+              {t("reports.ioHistory.detailEyebrow")}
+            </span>
+            <h2>{t("reports.ioHistory.detailTitle")}</h2>
           </div>
-          <span className="section-meta">Cùng snapshot với KPI và biểu đồ</span>
+          <span className="section-meta">
+            {t("reports.ioHistory.detailMeta")}
+          </span>
         </div>
 
         <div
           className="tabs"
           role="tablist"
-          aria-label="Chế độ đối soát"
+          aria-label={t("reports.ioHistory.tabsAria")}
           onKeyDown={onTabKeyDown}
         >
           <button
@@ -1110,7 +1266,7 @@ export default function IoHistoryReport() {
             onClick={() => switchView("table")}
           >
             <IoIcon name="list" />
-            Bảng
+            {t("reports.ioHistory.viewTable")}
           </button>
           <button
             ref={sliceTabRef}
@@ -1123,9 +1279,17 @@ export default function IoHistoryReport() {
             onClick={() => switchView("slice")}
           >
             <IoIcon name="grid-2x2-plus" />
-            Lát cắt
+            {t("reports.ioHistory.viewSlice")}
           </button>
         </div>
+
+        <SectionFilterBar
+          state={documentFilter}
+          label={t("reports.ioHistory.detailTitle")}
+          unit={t("reports.ioHistory.tableUnit")}
+          showCount={false}
+          data-testid="rptio-document-section-filter"
+        />
 
         {/* ── Bảng ──────────────────────────────────────────────────────── */}
         {view === "table" ? (
@@ -1142,42 +1306,48 @@ export default function IoHistoryReport() {
                   <IoIcon name="list" />
                 </i>
                 <div>
-                  <div className="title">Lịch sử chứng từ đã ghi nhận</div>
+                  <div className="title">
+                    {t("reports.ioHistory.detailTitle")}
+                  </div>
                   <div className="note">
-                    Snapshot {snapshotId} · Data as-of{" "}
-                    {fmtStamp(snapshot.dataAsOf)}
+                    {t("reports.ioHistory.tableNote", {
+                      id: snapshotId,
+                      time: fmtStamp(snapshot.dataAsOf),
+                    })}
                   </div>
                 </div>
               </div>
               <span className="chip chip-info">
-                {fmt(rows.length)} chứng từ
+                {t("reports.ioHistory.docCount", {
+                  count: fmt(documentFilter.rows.length),
+                })}
               </span>
             </div>
             <div className="scroll">
               <table>
                 <thead>
                   <tr>
-                    <th>Chứng từ / nguồn</th>
-                    <th>Loại</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày tạo</th>
-                    <th>Ngày ghi nhận kho</th>
-                    <th className="qty">Qty posted</th>
-                    <th>Người thực hiện / phòng ban</th>
-                    <th>Nguồn hàng / nơi nhận</th>
-                    <th>Movement</th>
-                    <th>Thao tác</th>
+                    <th>{t("reports.ioHistory.colDocument")}</th>
+                    <th>{t("reports.ioHistory.colType")}</th>
+                    <th>{t("reports.ioHistory.colStatus")}</th>
+                    <th>{t("reports.ioHistory.colCreatedAt")}</th>
+                    <th>{t("reports.ioHistory.colPostedAt")}</th>
+                    <th className="qty">{t("reports.ioHistory.colQty")}</th>
+                    <th>{t("reports.ioHistory.colActor")}</th>
+                    <th>{t("reports.ioHistory.colParty")}</th>
+                    <th>{t("reports.ioHistory.colMovement")}</th>
+                    <th>{t("reports.ioHistory.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.length === 0 ? (
+                  {documentFilter.rows.length === 0 ? (
                     <tr>
                       <td className="empty-row" colSpan={10}>
-                        Không có chứng từ POSTED theo bộ lọc.
+                        {t("reports.ioHistory.tableEmpty")}
                       </td>
                     </tr>
                   ) : (
-                    rows.map((row) => (
+                    documentFilter.rows.map((row) => (
                       <tr key={row.id} data-drill-key={row.id}>
                         <td>
                           <div className="cell">
@@ -1189,17 +1359,29 @@ export default function IoHistoryReport() {
                         </td>
                         <td>
                           <span className={`type ${toneOf(row.type)}`}>
-                            {TYPE_LABELS[row.type]}
+                            {typeLabels[row.type]}
                           </span>
                         </td>
                         <td>
                           <span className="chip ok">
-                            {row.status === "" ? IO_HISTORY_STATUS : row.status}
+                            {reportStatusLabel(
+                              row.status === ""
+                                ? IO_HISTORY_STATUS
+                                : row.status,
+                            )}
                           </span>
                         </td>
                         <td>{fmtStamp(row.createdAt)}</td>
                         <td>{fmtStamp(row.postedAt)}</td>
-                        <td className="qty">{signedOrEmpty(row.qty)}</td>
+                        <td className="qty">
+                          {row.qty === null ? (
+                            EMPTY_TEXT
+                          ) : (
+                            <span className={`qty-chip ${qtyToneOf(row.qty)}`}>
+                              {signed(row.qty)}
+                            </span>
+                          )}
+                        </td>
                         <td>
                           <div className="cell">
                             {row.actor === "" ? EMPTY_TEXT : row.actor}
@@ -1220,7 +1402,9 @@ export default function IoHistoryReport() {
                           <div className="sub">
                             {row.originalDocumentNo === ""
                               ? ""
-                              : `Gốc: ${row.originalDocumentNo}`}
+                              : t("reports.ioHistory.originalPrefix", {
+                                  code: row.originalDocumentNo,
+                                })}
                           </div>
                         </td>
                         <td>
@@ -1229,7 +1413,7 @@ export default function IoHistoryReport() {
                             type="button"
                             onClick={() => setDrillId(row.id)}
                           >
-                            Xem
+                            {t("reports.ioHistory.view")}
                           </button>
                         </td>
                       </tr>
@@ -1240,9 +1424,11 @@ export default function IoHistoryReport() {
             </div>
             <div className="tfoot">
               <span>
-                Không phân trang · {fmt(rows.length)} dòng trong snapshot
+                {t("reports.ioHistory.tfootNoPaging", {
+                  count: fmt(rows.length),
+                })}
               </span>
-              <span>Cùng tập dòng với KPI và biểu đồ</span>
+              <span>{t("reports.ioHistory.tfootSameRows")}</span>
             </div>
           </section>
         ) : (
@@ -1260,21 +1446,22 @@ export default function IoHistoryReport() {
                   <IoIcon name="grid-2x2-plus" />
                 </i>
                 <div>
-                  <div className="title">Lát cắt đối soát</div>
-                  <div className="note">
-                    Gom theo chứng từ gốc và các hoàn tác có cùng movement liên
-                    kết.
+                  <div className="title">
+                    {t("reports.ioHistory.sliceTitle")}
                   </div>
+                  <div className="note">{t("reports.ioHistory.sliceNote")}</div>
                 </div>
               </div>
               <span className="chip chip-info">
-                {fmt(rows.length)} dòng nguồn
+                {t("reports.ioHistory.sourceRowCount", {
+                  count: fmt(rows.length),
+                })}
               </span>
             </div>
             <div className="slices">
               {slices.length === 0 ? (
                 <div className="empty-row">
-                  Không có lát cắt POSTED theo bộ lọc.
+                  {t("reports.ioHistory.sliceEmpty")}
                 </div>
               ) : (
                 slices.map((slice) => (
@@ -1297,31 +1484,35 @@ export default function IoHistoryReport() {
                         </div>
                       </div>
                       <span className={`type ${toneOf(slice.row.type)}`}>
-                        {TYPE_LABELS[slice.row.type]}
+                        {typeLabels[slice.row.type]}
                       </span>
                     </div>
                     <div className="slicemetrics">
                       <div>
-                        <small>Tổng</small>
+                        <small>{t("reports.ioHistory.sliceTotal")}</small>
                         <b>{absOrEmpty(slice.row.qty)}</b>
                       </div>
                       <div>
-                        <small>Hoàn tác</small>
+                        <small>{t("reports.ioHistory.sliceReversal")}</small>
                         <b>{fmt(slice.reversalQty)}</b>
                       </div>
                       <div>
-                        <small>Thuần</small>
+                        <small>{t("reports.ioHistory.sliceNet")}</small>
                         <b>{signedOrEmpty(slice.net)}</b>
                       </div>
                     </div>
                     <div className="slicefoot">
-                      <span>{1 + slice.linked.length} mốc nghiệp vụ</span>
+                      <span>
+                        {t("reports.ioHistory.sliceMilestones", {
+                          count: 1 + slice.linked.length,
+                        })}
+                      </span>
                       <button
                         className="btn secondary"
                         type="button"
                         onClick={() => setDrillId(slice.row.id)}
                       >
-                        Đối soát
+                        {t("reports.ioHistory.reconcile")}
                       </button>
                     </div>
                   </article>
@@ -1354,14 +1545,12 @@ export default function IoHistoryReport() {
                     ? EMPTY_TEXT
                     : drill.row.documentNo}
                 </h2>
-                <div className="note">
-                  Chi tiết chứng từ đã ghi nhận · chỉ đọc
-                </div>
+                <div className="note">{t("reports.ioHistory.drawerNote")}</div>
               </div>
               <button
                 className="btn secondary"
                 type="button"
-                aria-label="Đóng chi tiết"
+                aria-label={t("reports.ioHistory.drawerClose")}
                 onClick={() => setDrillId(null)}
               >
                 ×
@@ -1370,27 +1559,29 @@ export default function IoHistoryReport() {
             <div className="modalbody">
               <section className="detail-summary">
                 <div>
-                  <small>Chứng từ đã chọn</small>
+                  <small>{t("reports.ioHistory.selectedDoc")}</small>
                   <strong>
                     {drill.row.documentNo === ""
                       ? EMPTY_TEXT
                       : drill.row.documentNo}
                   </strong>
                   <span className={`chip ${toneOf(drill.row.type)}`}>
-                    {TYPE_LABELS[drill.row.type]} ·{" "}
-                    {drill.row.status === ""
-                      ? IO_HISTORY_STATUS
-                      : drill.row.status}
+                    {typeLabels[drill.row.type]} ·{" "}
+                    {reportStatusLabel(
+                      drill.row.status === ""
+                        ? IO_HISTORY_STATUS
+                        : drill.row.status,
+                    )}
                   </span>
                 </div>
                 <div className="detail-qty">{signedOrEmpty(drill.row.qty)}</div>
               </section>
 
               <section className="detail-section">
-                <h3>Thông tin chứng từ</h3>
+                <h3>{t("reports.ioHistory.sectionDocInfo")}</h3>
                 <div className="detail-grid">
                   <div className="detail-fact">
-                    <small>Chứng từ nguồn</small>
+                    <small>{t("reports.ioHistory.fieldSourceDoc")}</small>
                     <b>
                       {drill.source.documentNo === ""
                         ? EMPTY_TEXT
@@ -1398,7 +1589,7 @@ export default function IoHistoryReport() {
                     </b>
                   </div>
                   <div className="detail-fact">
-                    <small>Người thực hiện / phòng ban</small>
+                    <small>{t("reports.ioHistory.fieldActorDept")}</small>
                     <b>
                       {[drill.row.actor, drill.row.department]
                         .filter((part) => part !== "")
@@ -1406,13 +1597,13 @@ export default function IoHistoryReport() {
                     </b>
                   </div>
                   <div className="detail-fact">
-                    <small>Nguồn hàng / nơi nhận</small>
+                    <small>{t("reports.ioHistory.fieldParty")}</small>
                     <b>
                       {drill.row.party === "" ? EMPTY_TEXT : drill.row.party}
                     </b>
                   </div>
                   <div className="detail-fact">
-                    <small>Dòng SKU</small>
+                    <small>{t("reports.ioHistory.fieldSkuLines")}</small>
                     <b>
                       {drill.row.skuLines.length === 0
                         ? EMPTY_TEXT
@@ -1423,60 +1614,59 @@ export default function IoHistoryReport() {
               </section>
 
               <section className="detail-section">
-                <h3>Thời điểm và luồng kho</h3>
+                <h3>{t("reports.ioHistory.sectionTiming")}</h3>
                 <div className="detail-grid">
                   <div className="detail-fact">
-                    <small>Ngày tạo chứng từ</small>
+                    <small>{t("reports.ioHistory.fieldCreatedAt")}</small>
                     <b>{fmtStamp(drill.row.createdAt)}</b>
                   </div>
                   <div className="detail-fact">
-                    <small>Thời điểm ghi nhận kho</small>
+                    <small>{t("reports.ioHistory.fieldPostedAt")}</small>
                     <b>{fmtStamp(drill.row.postedAt)}</b>
                   </div>
                   <div className="detail-fact">
-                    <small>Movement</small>
+                    <small>{t("reports.ioHistory.fieldMovement")}</small>
                     <b>{movementLabelOf(drill.row)}</b>
                   </div>
                   <div className="detail-fact">
-                    <small>Liên kết gốc / reversal</small>
+                    <small>{t("reports.ioHistory.fieldLinked")}</small>
                     <b>
                       {drill.row.originalDocumentNo === ""
-                        ? "Không có"
+                        ? t("reports.ioHistory.none")
                         : drill.row.originalDocumentNo}
                     </b>
                   </div>
                   <div className="detail-fact">
-                    <small>Lịch sử nghiệp vụ</small>
+                    <small>{t("reports.ioHistory.fieldHistory")}</small>
                     <b>
-                      {1 + drill.linked.length} mốc ·{" "}
-                      {TYPE_LABELS[drill.row.type]}
+                      {t("reports.ioHistory.historyValue", {
+                        count: 1 + drill.linked.length,
+                        type: typeLabels[drill.row.type],
+                      })}
                     </b>
                   </div>
                 </div>
               </section>
 
               <section className="detail-section">
-                <h3>Đối soát số lượng</h3>
+                <h3>{t("reports.ioHistory.sectionQtyRecon")}</h3>
                 <div className="detail-recon">
                   <div>
-                    <small>Tổng ghi nhận</small>
+                    <small>{t("reports.ioHistory.totalPosted")}</small>
                     <b>{absOrEmpty(drill.source.qty)}</b>
                   </div>
                   <div>
-                    <small>Hoàn tác</small>
+                    <small>{t("reports.ioHistory.sliceReversal")}</small>
                     <b>{fmt(drill.reversalQty)}</b>
                   </div>
                   <div>
-                    <small>Ảnh hưởng ròng</small>
+                    <small>{t("reports.ioHistory.kpiNet")}</small>
                     <b>{signedOrEmpty(drill.net)}</b>
                   </div>
                 </div>
               </section>
 
-              <p className="detail-hint">
-                Đối soát lấy đúng khóa chứng từ đã bấm. Chỉ movement và dòng SKU
-                máy chủ trả về mới được hiển thị; không suy diễn dữ liệu thiếu.
-              </p>
+              <p className="detail-hint">{t("reports.ioHistory.drawerHint")}</p>
             </div>
           </section>
         </div>

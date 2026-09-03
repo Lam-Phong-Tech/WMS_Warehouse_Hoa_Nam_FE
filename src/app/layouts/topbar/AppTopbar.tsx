@@ -21,7 +21,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useLogout } from "@/modules/auth/hooks/use-logout";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { useNavLabel } from "@/shared/i18n/nav-labels";
-import { useT } from "@/shared/i18n/useT";
+import { tStatic, useT } from "@/shared/i18n/useT";
 import {
   useThemeStore,
   type ThemePreference,
@@ -35,14 +35,17 @@ import {
 import type { NotificationItem } from "@/modules/notifications/types/notification.types";
 import "./app-topbar.css";
 
-type MenuId = "search" | "language" | "theme" | "shortcut" | "notification" | "account";
+type MenuId =
+  | "search"
+  | "language"
+  | "theme"
+  | "shortcut"
+  | "notification"
+  | "account";
 
 /** Bỏ dấu để gõ "ton kho" vẫn ra "Tồn kho" — đúng cách demo chuẩn hoá. */
 function normalize(text: string): string {
-  return text
-    .toLocaleLowerCase("vi")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+  return text.toLocaleLowerCase("vi").normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 /** Chữ cái đầu cho avatar, tối đa 2 ký tự — demo hiển thị "SA". */
@@ -161,7 +164,11 @@ export function AppTopbar({
     : [];
 
   const displayName =
-    profile?.name ?? user?.name ?? user?.code ?? user?.email ?? "Người dùng";
+    profile?.name ??
+    user?.name ??
+    user?.code ??
+    user?.email ??
+    t("shared.user.fallbackName");
   const initials = initialsOf(displayName);
   const roleLabel = isSuperAdmin
     ? t("topbar.accountRoleSuperAdmin")
@@ -250,11 +257,9 @@ export function AppTopbar({
   const chooseLanguage = (next: "vi" | "en") => {
     setLanguage(next);
     closeMenus();
-    announce(
-      next === "vi"
-        ? "Đã chuyển sang Tiếng Việt"
-        : "Interface language changed to English",
-    );
+    // tStatic (không phải `t` của closure): đọc NGÔN NGỮ VỪA CHỌN từ store —
+    // vi → "Đã chuyển sang Tiếng Việt", en → bản EN của khoá này.
+    announce(tStatic("topbar.languageChanged"));
   };
 
   const chooseTheme = (next: ThemePreference) => {
@@ -273,22 +278,28 @@ export function AppTopbar({
   const handleLogout = () => {
     closeMenus();
     logout.mutate(undefined, {
-      onSuccess: () => toast.success("Đăng xuất thành công"),
+      onSuccess: () => toast.success(t("shared.user.logoutSuccess")),
     });
   };
 
   const renderNotificationBody = () => {
     if (notifications.isLoading)
       return (
-        <div className="notification-empty">{t("topbar.notificationLoading")}</div>
+        <div className="notification-empty">
+          {t("topbar.notificationLoading")}
+        </div>
       );
     if (notifications.isError)
       return (
-        <div className="notification-empty">{t("topbar.notificationError")}</div>
+        <div className="notification-empty">
+          {t("topbar.notificationError")}
+        </div>
       );
     if (notificationItems.length === 0)
       return (
-        <div className="notification-empty">{t("topbar.notificationEmpty")}</div>
+        <div className="notification-empty">
+          {t("topbar.notificationEmpty")}
+        </div>
       );
     return notificationItems.map((item) => (
       <button
@@ -435,7 +446,11 @@ export function AppTopbar({
             <span className="control-code">{language.toUpperCase()}</span>
           </button>
           {openMenu === "language" ? (
-            <div id="language-menu" className="header-menu compact-menu" role="menu">
+            <div
+              id="language-menu"
+              className="header-menu compact-menu"
+              role="menu"
+            >
               <div className="header-menu-heading">
                 <strong>{t("topbar.languageTitle")}</strong>
                 <span>{t("topbar.languageHint")}</span>
@@ -452,7 +467,11 @@ export function AppTopbar({
                   <span className="language-symbol">{code.toUpperCase()}</span>
                   <span>
                     <strong>
-                      {t(code === "vi" ? "topbar.languageVi" : "topbar.languageEn")}
+                      {t(
+                        code === "vi"
+                          ? "topbar.languageVi"
+                          : "topbar.languageEn",
+                      )}
                     </strong>
                     <small>
                       {t(
@@ -484,7 +503,11 @@ export function AppTopbar({
             </span>
           </button>
           {openMenu === "theme" ? (
-            <div id="theme-menu" className="header-menu compact-menu" role="menu">
+            <div
+              id="theme-menu"
+              className="header-menu compact-menu"
+              role="menu"
+            >
               <div className="header-menu-heading">
                 <strong>{t("topbar.themeTitle")}</strong>
                 <span>{t("topbar.themeHint")}</span>
@@ -530,7 +553,11 @@ export function AppTopbar({
             </span>
           </button>
           {openMenu === "shortcut" ? (
-            <div id="shortcut-menu" className="header-menu shortcut-menu" role="menu">
+            <div
+              id="shortcut-menu"
+              className="header-menu shortcut-menu"
+              role="menu"
+            >
               <div className="header-menu-heading">
                 <strong>{t("topbar.shortcutTitle")}</strong>
                 <span>{t("topbar.shortcutHint")}</span>
@@ -622,7 +649,11 @@ export function AppTopbar({
             <span className="presence-dot" aria-hidden="true" />
           </button>
           {openMenu === "account" ? (
-            <div id="account-menu" className="header-menu account-menu" role="menu">
+            <div
+              id="account-menu"
+              className="header-menu account-menu"
+              role="menu"
+            >
               <div className="account-summary">
                 <span className="avatar avatar-large">{initials}</span>
                 <div>

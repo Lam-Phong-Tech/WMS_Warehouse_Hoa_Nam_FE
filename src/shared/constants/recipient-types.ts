@@ -1,4 +1,5 @@
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { tStatic } from "@/shared/i18n/useT";
 
 /**
  * REQ-001: phân loại "Nơi nhận" (bảng agencies, cột recipient_type).
@@ -16,11 +17,21 @@ export const RECIPIENT_TYPES = [
 
 export type RecipientType = (typeof RECIPIENT_TYPES)[number];
 
+// Getter để nhãn đọc theo ngôn ngữ HIỆN TẠI mỗi lần truy cập (API
+// Record<RecipientType, string> giữ nguyên cho các màn master/báo cáo đang dùng).
 export const RECIPIENT_TYPE_LABELS: Record<RecipientType, string> = {
-  DISTRIBUTOR: "Nhà phân phối",
-  AGENCY: "Đại lý",
-  PROJECT_CUSTOMER: "Khách công trình",
-  RETAIL_CUSTOMER: "Khách lẻ",
+  get DISTRIBUTOR() {
+    return tStatic("shared.recipient.distributor");
+  },
+  get AGENCY() {
+    return tStatic("shared.recipient.agency");
+  },
+  get PROJECT_CUSTOMER() {
+    return tStatic("shared.recipient.projectCustomer");
+  },
+  get RETAIL_CUSTOMER() {
+    return tStatic("shared.recipient.retailCustomer");
+  },
 };
 
 /** Nhãn tiếng Việt cho recipient_type; giá trị lạ (dữ liệu cũ) trả nguyên mã. */

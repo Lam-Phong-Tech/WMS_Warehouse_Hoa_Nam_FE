@@ -103,7 +103,17 @@
   font-weight: 400;
 }
 
-.hn-rpt01 *,
+/*
+ * CHỈ pseudo-element. KHÔNG được thêm lại `.hn-rpt01 *` vào đây: quy tắc đó có
+ * độ đặc hiệu 0-1-0, bằng đúng class emotion của MUI và được nạp SAU (CSS của
+ * trang đi theo chunk lazy), nên nó đè `box-sizing: content-box` mà
+ * `.MuiInputBase-input` cố ý đặt cho <input> (MUI tính chiều cao ô nhập bằng
+ * `height: 1.4375em` + padding theo content-box). Bị ép border-box thì 1.4375em
+ * phải chứa luôn padding → ô "Tìm SKU" trong SectionFilterBar tụt còn ~24px,
+ * thấp hơn UiSelect đứng cạnh. Phần tử thường đã có border-box từ
+ * `* { box-sizing }` ở src/index.css (đặc hiệu 0-0-0, đúng tầng để MUI vẫn
+ * thắng được ở các ngoại lệ của nó).
+ */
 .hn-rpt01 *::before,
 .hn-rpt01 *::after {
   box-sizing: border-box;
@@ -697,7 +707,7 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 .hn-rpt01 .analysis-grid > :nth-child(1) {
   grid-column: span 8;
@@ -1960,10 +1970,39 @@
  * chính mockup dựng; nếu để nó áp vào đây thì thanh lọc màn này cao hơn hẳn
  * các màn khác, tức là lại lệch đúng thứ vừa đồng bộ. Độ đặc hiệu 0-3-0 nên
  * thắng cả ba quy tắc kia bất kể thứ tự khai báo.
+ *
+ * KHOÁ CHIỀU CAO Ở LỚP VỎ, KHÔNG PHẢI Ở Ô NHẬP: hạ `min-height` của
+ * `.MuiInputBase-input` xuống 0 gỡ luôn chiều cao 38px mà theme đặt cho ô nhập,
+ * nên ô "Tìm SKU" tụt còn 33px trong khi "Loại hàng" vẫn 40px — thanh lọc
+ * `align-items:end` đẩy ba nhãn lên ba đường khác nhau. Mockup để CẢ BA ô đúng
+ * 38px và ba nhãn thẳng hàng; vì vậy khoá vỏ ở `--wms-control-height` rồi cho
+ * ruột giãn đầy vỏ.
  */
 .hn-rpt01 .report-filter-card .hn-vuexy-date-field,
+.hn-rpt01 .report-filter-card .MuiInputBase-root {
+  height: var(--wms-control-height);
+  min-height: var(--wms-control-height);
+}
 .hn-rpt01 .report-filter-card .MuiInputBase-input {
+  height: 100%;
   min-height: 0;
+  padding-block: 0;
+}
+/* Ruột của UiSelect là một div, phải tự căn giữa chữ khi vỏ bị khoá chiều cao. */
+.hn-rpt01 .report-filter-card .MuiSelect-select {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Dưới 980px, ba ô vẫn phải BẰNG NHAU — lấy chiều cao chạm của bảng token. */
+@media (max-width: 979px) {
+  .hn-rpt01 .report-filter-card .hn-vuexy-date-field,
+  .hn-rpt01 .report-filter-card .MuiInputBase-root {
+    height: var(--wms-control-height-touch);
+    min-height: var(--wms-control-height-touch);
+  }
 }
 
 /*

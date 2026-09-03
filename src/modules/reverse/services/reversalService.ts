@@ -63,7 +63,8 @@ function ifMatch(version: number): Record<string, string> {
 function normalizeReversalDocument(row: RawRecord): ReversalDocument {
   return {
     id: text(row.id),
-    reversal_code: text(row.reversal_code ?? row.reversal_no ?? row.id),
+    // KHÔNG rơi xuống row.id: thiếu mã thì để "-", không in UUID.
+    reversal_code: text(row.reversal_code ?? row.reversal_no, "-"),
     status: (text(row.status) as ReversalDocument["status"]) || "DRAFT",
     physical_return_status: optionalText(
       row.physical_return_status,
@@ -72,9 +73,8 @@ function normalizeReversalDocument(row: RawRecord): ReversalDocument {
       row.condition_status,
     ) as ReversalDocument["condition_status"],
     reference_document_type: text(row.reference_document_type),
-    reference_document_code: text(
-      row.reference_document_code ?? row.reference_document_id,
-    ),
+    // KHÔNG rơi xuống reference_document_id (UUID) — thiếu mã thì để rỗng.
+    reference_document_code: text(row.reference_document_code),
     reference_document_id: text(row.reference_document_id),
     correction_chain_id: optionalText(row.correction_chain_id),
     warehouse_id: text(row.warehouse_id),
@@ -85,8 +85,9 @@ function normalizeReversalDocument(row: RawRecord): ReversalDocument {
     reason: text(row.reason ?? row.reason_text, "-"),
     reversed_at: optionalText(row.reversed_at ?? row.posted_at),
     created_at: text(row.created_at),
-    created_by: text(row.created_by_name ?? row.created_by, "-"),
-    posted_by: optionalText(row.posted_by),
+    // created_by / posted_by trong payload là UUID; chỉ nhận TÊN BE đã join.
+    created_by: text(row.created_by_name, "-"),
+    posted_by: optionalText(row.posted_by_name),
     cancelled_at: optionalText(row.cancelled_at),
     cancel_reason: optionalText(row.cancel_reason),
     version: num(row.version),
@@ -173,7 +174,7 @@ function normalizeReversibleMovement(row: RawRecord): ReversibleMovement {
     warehouse_id: text(row.warehouse_id),
     warehouse_name: text(row.warehouse_name, "-"),
     posted_at: text(row.posted_at),
-    posted_by: optionalText(row.posted_by),
+    posted_by: optionalText(row.posted_by_name),
     version: optionalText(row.version),
     dependency_guard: guard,
     can_reverse: Boolean(

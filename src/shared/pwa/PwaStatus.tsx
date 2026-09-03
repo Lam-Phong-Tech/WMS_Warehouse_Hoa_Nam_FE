@@ -3,9 +3,11 @@ import {
   activateWaitingServiceWorker,
   PWA_UPDATE_READY_EVENT,
 } from "./register-pwa";
+import { useT } from "@/shared/i18n/useT";
 import "./pwa-status.css";
 
 export function PwaStatus() {
+  const t = useT();
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [updateReady, setUpdateReady] = useState(false);
 
@@ -30,24 +32,17 @@ export function PwaStatus() {
   if (!isOnline) {
     return (
       <div className="wms-pwa-status wms-pwa-status--offline" role="status">
-        <strong>Đang ngoại tuyến.</strong>
-        <span>
-          Chỉ giao diện tĩnh có thể dùng từ bộ nhớ tạm. Dữ liệu nghiệp vụ không
-          được lưu tạm và mọi thao tác ghi đã bị khóa; hãy kết nối mạng rồi thử
-          lại.
-        </span>
+        <strong>{t("shared.pwa.offlineTitle")}</strong>
+        <span>{t("shared.pwa.offlineBody")}</span>
       </div>
     );
   }
 
   return (
     <div className="wms-pwa-status wms-pwa-status--update" role="status">
-      <span>
-        Có phiên bản ứng dụng mới, cần tải lại để tránh dùng phiên bản giao diện
-        cũ.
-      </span>
+      <span>{t("shared.pwa.updateReady")}</span>
       <button type="button" onClick={activateWaitingServiceWorker}>
-        Cập nhật ngay
+        {t("shared.pwa.updateNow")}
       </button>
     </div>
   );

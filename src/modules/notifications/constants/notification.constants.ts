@@ -1,4 +1,5 @@
 import type { NotificationItem } from "@/modules/notifications/types/notification.types";
+import type { MessageKey } from "@/shared/i18n/messages";
 
 /**
  * Map màu Tag theo severity — dùng chung giữa NotificationBell (dropdown header)
@@ -16,66 +17,67 @@ export const NOTIFICATION_SEVERITY_COLOR: Record<
 };
 
 /**
- * Nhãn tiếng Việt cho `event_key` — dùng ở modal chi tiết (mục "Loại thông
- * báo") để phân biệt loại sự kiện, tách khỏi `title` (vốn là câu văn cụ thể
- * đã gắn số phiếu). Khớp đúng eventKey của từng Listener ở
- * Modules/Notification/app/Listeners/*.php.
+ * Khoá i18n cho `event_key` — dùng ở modal chi tiết (mục "Loại thông báo") để
+ * phân biệt loại sự kiện, tách khỏi `title` (vốn là câu văn cụ thể đã gắn số
+ * phiếu). Khớp đúng eventKey của từng Listener ở
+ * Modules/Notification/app/Listeners/*.php. Call site tra khoá rồi tự gọi
+ * `t()`; thiếu khoá thì hiện thẳng event_key kỹ thuật.
  */
-export const NOTIFICATION_EVENT_LABELS: Record<string, string> = {
-  "inbound.created": "Tạo phiếu nhập",
-  "inbound.scan_started": "Bắt đầu quét nhập kho",
-  "inbound.completed": "Hoàn tất nhập kho",
-  "inbound.cancelled": "Huỷ phiếu nhập",
-  "outbound.created": "Tạo phiếu xuất",
-  "outbound.scan_started": "Bắt đầu quét xuất kho",
-  "outbound.posted": "Post Issue xuất kho",
-  "outbound.cancelled": "Huỷ phiếu xuất",
-  "reversal.created": "Tạo phiếu điều chỉnh",
-  "reversal.posted": "Post điều chỉnh tồn kho",
-  "reversal.cancelled": "Huỷ phiếu điều chỉnh",
-  "stock.shortage_detected": "Tồn kho không đủ",
-  "warranty.case_created": "Tiếp nhận case bảo hành",
-  "warranty.status_changed": "Đổi trạng thái case bảo hành",
-  "user.account_changed": "Thay đổi tài khoản người dùng",
-  "role.permissions_changed": "Thay đổi phân quyền vai trò",
-  "security.alert_raised": "Cảnh báo bảo mật đăng nhập",
+export const NOTIFICATION_EVENT_LABELS: Record<string, MessageKey> = {
+  "inbound.created": "notifications.event.inboundCreated",
+  "inbound.scan_started": "notifications.event.inboundScanStarted",
+  "inbound.completed": "notifications.event.inboundCompleted",
+  "inbound.cancelled": "notifications.event.inboundCancelled",
+  "outbound.created": "notifications.event.outboundCreated",
+  "outbound.scan_started": "notifications.event.outboundScanStarted",
+  "outbound.posted": "notifications.event.outboundPosted",
+  "outbound.cancelled": "notifications.event.outboundCancelled",
+  "reversal.created": "notifications.event.reversalCreated",
+  "reversal.posted": "notifications.event.reversalPosted",
+  "reversal.cancelled": "notifications.event.reversalCancelled",
+  "stock.shortage_detected": "notifications.event.stockShortageDetected",
+  "warranty.case_created": "notifications.event.warrantyCaseCreated",
+  "warranty.status_changed": "notifications.event.warrantyStatusChanged",
+  "user.account_changed": "notifications.event.userAccountChanged",
+  "role.permissions_changed": "notifications.event.rolePermissionsChanged",
+  "security.alert_raised": "notifications.event.securityAlertRaised",
 };
 
-/** Nhãn tiếng Việt cho `source_module` — hiển thị trong modal chi tiết thông báo. */
-export const NOTIFICATION_SOURCE_MODULE_LABELS: Record<string, string> = {
-  warehouse: "Kho vận",
-  auth: "Tài khoản & phân quyền",
-  notification: "Hệ thống",
+/** Khoá i18n cho `source_module` — hiển thị trong modal chi tiết thông báo. */
+export const NOTIFICATION_SOURCE_MODULE_LABELS: Record<string, MessageKey> = {
+  warehouse: "notifications.source.warehouse",
+  auth: "notifications.source.auth",
+  notification: "notifications.source.notification",
 };
 
-/** Nhãn tiếng Việt cho `subject_type` — loại đối tượng nghiệp vụ liên quan tới thông báo. */
-export const NOTIFICATION_SUBJECT_TYPE_LABELS: Record<string, string> = {
-  stock_document: "Phiếu nhập/xuất kho",
-  reversal_document: "Phiếu điều chỉnh (reversal)",
-  role: "Vai trò",
-  user: "Tài khoản người dùng",
-  warranty_case: "Case bảo hành",
+/** Khoá i18n cho `subject_type` — loại đối tượng nghiệp vụ liên quan tới thông báo. */
+export const NOTIFICATION_SUBJECT_TYPE_LABELS: Record<string, MessageKey> = {
+  stock_document: "notifications.subject.stockDocument",
+  reversal_document: "notifications.subject.reversalDocument",
+  role: "notifications.subject.role",
+  user: "notifications.subject.user",
+  warranty_case: "notifications.subject.warrantyCase",
 };
 
 /**
- * Nhãn tiếng Việt cho từng key trong `payload` — payload là JSON tự do theo
- * từng event_key (xem Modules/Notification/app/Listeners/*.php ở BE), map ở
- * đây để modal chi tiết hiển thị được thay vì in thẳng key kỹ thuật.
+ * Khoá i18n cho từng key trong `payload` — payload là JSON tự do theo từng
+ * event_key (xem Modules/Notification/app/Listeners/*.php ở BE), map ở đây để
+ * modal chi tiết hiển thị được thay vì in thẳng key kỹ thuật.
  */
-export const NOTIFICATION_PAYLOAD_FIELD_LABELS: Record<string, string> = {
-  document_id: "Mã phiếu",
-  doc_no: "Số phiếu",
-  warehouse_id: "Mã kho",
-  type: "Loại chứng từ",
-  reversal_id: "Mã phiếu điều chỉnh",
-  role_id: "Mã vai trò",
-  role_code: "Mã code vai trò",
-  reason_code: "Mã lý do",
-  user_id: "Mã tài khoản",
-  case_id: "Mã case bảo hành",
-  case_code: "Số case bảo hành",
-  product_code: "Mã sản phẩm",
-  action: "Hành động",
-  from_status: "Trạng thái trước",
-  to_status: "Trạng thái sau",
+export const NOTIFICATION_PAYLOAD_FIELD_LABELS: Record<string, MessageKey> = {
+  document_id: "notifications.payload.documentId",
+  doc_no: "notifications.payload.docNo",
+  warehouse_id: "notifications.payload.warehouseId",
+  type: "notifications.payload.type",
+  reversal_id: "notifications.payload.reversalId",
+  role_id: "notifications.payload.roleId",
+  role_code: "notifications.payload.roleCode",
+  reason_code: "notifications.payload.reasonCode",
+  user_id: "notifications.payload.userId",
+  case_id: "notifications.payload.caseId",
+  case_code: "notifications.payload.caseCode",
+  product_code: "notifications.payload.productCode",
+  action: "notifications.payload.action",
+  from_status: "notifications.payload.fromStatus",
+  to_status: "notifications.payload.toStatus",
 };

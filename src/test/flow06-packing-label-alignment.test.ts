@@ -107,8 +107,15 @@ describe("Flow 06 Packing Label alignment", () => {
       "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
     );
     // §6: lifecycle DRAFT/PENDING_PRINT → PREVIEWED → READY_TO_PRINT → PRINTED.
-    expect(modal).toContain('READY_TO_PRINT: "Sẵn sàng in"');
-    expect(modal).toContain('PRINT_FAILED: "In thất bại"');
+    // Hai vế theo quy ước đầu file: component trỏ KHOÁ, catalog giữ CÂU.
+    expect(modal).toContain(
+      'READY_TO_PRINT: "outbound.detail.labelStatusReadyToPrint"',
+    );
+    expect(modal).toContain(
+      'PRINT_FAILED: "outbound.detail.labelStatusPrintFailed"',
+    );
+    expect(readMessages()).toContain('labelStatusReadyToPrint: "Sẵn sàng in"');
+    expect(readMessages()).toContain('labelStatusPrintFailed: "In thất bại"');
     // Không gửi lệnh in khi nhãn chưa Ready: prepareLabel chạy Preview → Ready
     // trước, print/reprint chỉ nhận label ở READY_TO_PRINT/PRINT_FAILED/PRINTED.
     expect(modal).toContain("previewPackingLabel({");
@@ -138,6 +145,9 @@ describe("Flow 06 Packing Label alignment", () => {
     expect(readMessages()).toContain(
       "gán SKU/số lượng hoặc sửa người nhận rồi xác nhận lại",
     );
-    expect(intake).toContain("Ghi đè người nhận khi xác nhận");
+    // Người nhận sửa được ngay tại bước xác nhận toa: cột người nhận trong
+    // bảng preview và ô nhập tương ứng ở form dòng.
+    expect(intake).toContain("outbound.intake.colRecipient");
+    expect(intake).toContain("outbound.intake.fieldRecipient");
   });
 });

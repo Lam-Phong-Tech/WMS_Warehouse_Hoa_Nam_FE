@@ -14,6 +14,7 @@ import {
   getScopeName,
   getScopeTypeLabel,
 } from "@/modules/auth/utils/context";
+import { useT } from "@/shared/i18n/useT";
 /**
  * Style cục bộ theo token Vuexy — thay `layoutStyles` (bảng style wireframe cũ
  * đã xoá ở Part 4; ContextSwitcher là consumer cuối cùng).
@@ -46,6 +47,7 @@ const styles = {
 
 /** Chuyển warehouse scope bằng đúng contract POST /api/v1/auth/switch-context. */
 export function ContextSwitcher() {
+  const t = useT();
   const contexts = useAuthStore((s) => s.contexts);
   const current = useAuthStore((s) => s.currentContext);
   const setCurrentContext = useAuthStore((s) => s.setCurrentContext);
@@ -74,7 +76,7 @@ export function ContextSwitcher() {
         }}
         style={styles.tag}
       >
-        {getScopeName(current)}
+        {getScopeName(current, t)}
       </Box>
     </Box>
   );
@@ -134,12 +136,10 @@ export function ContextSwitcher() {
                         return !candidate.scope_ref && !candidate.context_id;
                       });
                       setCurrentContext(confirmed ?? ctx);
-                      toast.success("Đã chuyển phạm vi kho thành công.");
+                      toast.success(t("auth.context.switchSuccess"));
                     },
                     onError: () => {
-                      toast.error(
-                        "Không thể chuyển phạm vi kho, vui lòng thử lại.",
-                      );
+                      toast.error(t("auth.context.switchError"));
                     },
                   },
                 );
@@ -163,7 +163,7 @@ export function ContextSwitcher() {
                     sx={{ color: "text.secondary" }}
                     style={styles.itemMeta}
                   >
-                    {getScopeTypeLabel(ctx)}: {getScopeName(ctx)}
+                    {getScopeTypeLabel(ctx, t)}: {getScopeName(ctx, t)}
                   </Box>
                 </div>
               </Box>

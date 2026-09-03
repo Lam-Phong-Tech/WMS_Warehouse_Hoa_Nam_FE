@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, Modal } from "antd";
 import { ActionButton } from "@/shared/components/actions";
 import { getCameraErrorMessage } from "@/shared/utils/camera-error";
+import { tStatic, useT } from "@/shared/i18n/useT";
 import { SEMANTIC_LIGHT } from "@/shared/ui/tokens";
 import { ANTD_ALERT_ICONS, ANTD_CLOSE_ICON } from "@/shared/ui/icons";
 
@@ -40,6 +41,7 @@ export function CameraScanModal({
   onDetected,
   onClose,
 }: CameraScanModalProps) {
+  const t = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -71,21 +73,15 @@ export function CameraScanModal({
     const start = async () => {
       const Detector = getBarcodeDetector();
       if (!Detector) {
-        setCameraError(
-          "Trình duyệt chưa hỗ trợ BarcodeDetector. Hãy đóng camera và nhập Barcode/QR thủ công.",
-        );
+        setCameraError(tStatic("shared.scanner.noDetector"));
         return;
       }
       if (!window.isSecureContext) {
-        setCameraError(
-          "Camera Web WMS yêu cầu HTTPS/secure context. Hãy đóng camera và nhập mã thủ công.",
-        );
+        setCameraError(tStatic("shared.scanner.insecureContext"));
         return;
       }
       if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError(
-          "Thiết bị/trình duyệt không cung cấp camera API. Hãy dùng nhập mã thủ công.",
-        );
+        setCameraError(tStatic("shared.scanner.noCameraApi"));
         return;
       }
 
@@ -164,7 +160,7 @@ export function CameraScanModal({
       onCancel={onClose}
       footer={
         <ActionButton kind="close" onClick={onClose}>
-          Đóng / nhập tay
+          {t("shared.scanner.closeManual")}
         </ActionButton>
       }
       // Nút đóng mặc định của antd Modal là CloseOutlined (@ant-design/icons).
@@ -199,8 +195,12 @@ export function CameraScanModal({
             type="info"
             showIcon
             icon={ANTD_ALERT_ICONS.info}
-            title={cameraReady ? "Camera sẵn sàng" : "Đang khởi tạo camera..."}
-            description="Đưa Barcode/QR vào khung hình. Camera chỉ đọc mã; dữ liệu vẫn phải qua validation nghiệp vụ như nhập tay. Camera không đọc RFID."
+            title={
+              cameraReady
+                ? t("shared.scanner.cameraReady")
+                : t("shared.scanner.cameraStarting")
+            }
+            description={t("shared.scanner.cameraGuide")}
           />
         </>
       )}

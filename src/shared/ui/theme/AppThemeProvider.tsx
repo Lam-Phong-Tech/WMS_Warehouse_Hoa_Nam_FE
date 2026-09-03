@@ -14,20 +14,11 @@
 import { App as AntdApp, ConfigProvider } from "antd";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import viVN from "antd/locale/vi_VN";
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { ANTD_THEMES } from "./antd-adapter";
 import { MUI_THEMES } from "./mui-adapter";
 import { useThemeStore } from "./theme.store";
-
-const locale = {
-  ...viVN,
-  Table: {
-    ...viVN.Table,
-    triggerAsc: "Nhấp để sắp xếp A-Z",
-    triggerDesc: "Nhấp để sắp xếp Z-A",
-    cancelSort: "Nhấp để bỏ sắp xếp",
-  },
-};
+import { useT } from "@/shared/i18n/useT";
 
 export interface AppThemeProviderProps {
   children: ReactNode;
@@ -37,6 +28,21 @@ export function AppThemeProvider({ children }: AppThemeProviderProps) {
   // `mode` đã giải quyết xong "theo hệ thống" ở store; ở đây chỉ việc chọn bộ
   // theme dựng sẵn — không dựng theme mới mỗi lần render.
   const mode = useThemeStore((state) => state.mode);
+  const t = useT();
+  // Câu tooltip sắp xếp của antd Table đi qua i18n; phần còn lại của locale
+  // giữ nguyên gói vi_VN (hành vi cũ).
+  const locale = useMemo(
+    () => ({
+      ...viVN,
+      Table: {
+        ...viVN.Table,
+        triggerAsc: t("shared.table.triggerAsc"),
+        triggerDesc: t("shared.table.triggerDesc"),
+        cancelSort: t("shared.table.cancelSort"),
+      },
+    }),
+    [t],
+  );
   return (
     <MuiThemeProvider theme={MUI_THEMES[mode]}>
       <ConfigProvider theme={ANTD_THEMES[mode]} locale={locale}>

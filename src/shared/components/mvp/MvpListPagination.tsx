@@ -1,6 +1,7 @@
 import { MenuItem, Select } from "@mui/material";
 import { UiPagination } from "@/shared/ui/components/UiPagination";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
+import { useT } from "@/shared/i18n/useT";
 
 interface PageSizeSelectorProps {
   value: number;
@@ -23,6 +24,7 @@ export function MvpPageSizeSelector({
   value,
   onChange,
 }: PageSizeSelectorProps) {
+  const t = useT();
   // Giá trị hiện tại (vd: per_page=15 do BE trả về) có thể không nằm trong
   // các mốc chuẩn — vẫn phải liệt kê để Select hiển thị đúng lựa chọn hiện tại
   // (Select của MUI cảnh báo và hiện rỗng nếu value không khớp MenuItem nào).
@@ -43,12 +45,12 @@ export function MvpPageSizeSelector({
       <Select
         value={value}
         sx={{ width: 130 }}
-        inputProps={{ "aria-label": "Số dòng mỗi trang" }}
+        inputProps={{ "aria-label": t("shared.table.rowsPerPageAria") }}
         onChange={(event) => onChange(Number(event.target.value))}
       >
         {options.map((size) => (
           <MenuItem key={size} value={size}>
-            {size} / trang
+            {t("shared.table.perPage", { size })}
           </MenuItem>
         ))}
       </Select>
@@ -68,14 +70,13 @@ export function MvpPaginationFooter({
   itemLabel,
   onChange,
 }: PaginationFooterProps) {
+  const t = useT();
   const maxPage = Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
   const safeCurrent = Math.min(Math.max(1, current), maxPage);
 
   return (
     <div className="mvp-pagination-footer">
-      <span>
-        Tổng {total} {itemLabel}
-      </span>
+      <span>{t("shared.table.totalWithUnit", { total, unit: itemLabel })}</span>
       <UiPagination
         page={safeCurrent}
         pageSize={pageSize}

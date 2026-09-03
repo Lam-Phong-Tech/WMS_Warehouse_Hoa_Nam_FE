@@ -1,3 +1,5 @@
+import { tStatic } from "@/shared/i18n/useT";
+
 /**
  * Enterprise-grade validation constants for Vietnamese business application
  * Following regexr.com/3e48o best practices
@@ -92,13 +94,18 @@ export function validateEmail(email: string): ValidationResult {
 
   // Check length
   if (trimmedEmail.length === 0) {
-    return { isValid: false, errorMessage: "Email không được để trống" };
+    return {
+      isValid: false,
+      errorMessage: tStatic("shared.validation.emailRequired"),
+    };
   }
 
   if (trimmedEmail.length > EMAIL_MAX_LENGTH) {
     return {
       isValid: false,
-      errorMessage: `Email không được vượt quá ${EMAIL_MAX_LENGTH} ký tự`,
+      errorMessage: tStatic("shared.validation.emailTooLong", {
+        max: EMAIL_MAX_LENGTH,
+      }),
     };
   }
 
@@ -107,7 +114,9 @@ export function validateEmail(email: string): ValidationResult {
   if (atIndex > EMAIL_LOCAL_PART_MAX_LENGTH) {
     return {
       isValid: false,
-      errorMessage: `Phần trước @ không được vượt quá ${EMAIL_LOCAL_PART_MAX_LENGTH} ký tự`,
+      errorMessage: tStatic("shared.validation.emailLocalTooLong", {
+        max: EMAIL_LOCAL_PART_MAX_LENGTH,
+      }),
     };
   }
 
@@ -115,7 +124,7 @@ export function validateEmail(email: string): ValidationResult {
   if (trimmedEmail.includes("..")) {
     return {
       isValid: false,
-      errorMessage: "Email không được chứa dấu chấm liên tiếp",
+      errorMessage: tStatic("shared.validation.emailConsecutiveDots"),
     };
   }
 
@@ -124,7 +133,7 @@ export function validateEmail(email: string): ValidationResult {
   if (localPart.startsWith(".") || localPart.endsWith(".")) {
     return {
       isValid: false,
-      errorMessage: "Email không được bắt đầu hoặc kết thúc bằng dấu chấm",
+      errorMessage: tStatic("shared.validation.emailEdgeDots"),
     };
   }
 
@@ -132,7 +141,7 @@ export function validateEmail(email: string): ValidationResult {
   if (!EMAIL_REGEX.test(trimmedEmail)) {
     return {
       isValid: false,
-      errorMessage: "Email không hợp lệ, chỉ chấp nhận địa chỉ @gmail.com",
+      errorMessage: tStatic("shared.validation.emailGmailOnly"),
     };
   }
 
@@ -151,14 +160,16 @@ export function validatePhone(phone: string): ValidationResult {
   if (cleanedPhone.length === 0) {
     return {
       isValid: false,
-      errorMessage: "Số điện thoại không được để trống",
+      errorMessage: tStatic("shared.validation.phoneRequired"),
     };
   }
 
   if (cleanedPhone.length > PHONE_MAX_LENGTH) {
     return {
       isValid: false,
-      errorMessage: `Số điện thoại không được vượt quá ${PHONE_MAX_LENGTH} ký tự`,
+      errorMessage: tStatic("shared.validation.phoneTooLong", {
+        max: PHONE_MAX_LENGTH,
+      }),
     };
   }
 
@@ -166,8 +177,7 @@ export function validatePhone(phone: string): ValidationResult {
   if (!PHONE_REGEX.test(cleanedPhone)) {
     return {
       isValid: false,
-      errorMessage:
-        "Số điện thoại không hợp lệ (định dạng: 0xxxxxxxxx, đầu số 03/05/07/08/09)",
+      errorMessage: tStatic("shared.validation.phoneInvalid"),
     };
   }
 

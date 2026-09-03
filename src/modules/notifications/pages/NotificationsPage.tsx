@@ -15,8 +15,10 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { NotificationDetailModal } from "@/modules/notifications/components/NotificationDetailModal";
 import type { NotificationItem } from "@/modules/notifications/types/notification.types";
 import { ActionButton } from "@/shared/components/actions";
+import { useT } from "@/shared/i18n/useT";
 
 export default function NotificationsPage() {
+  const t = useT();
   const [page, setPage] = useState(1);
   const perPage = 15;
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -36,15 +38,15 @@ export default function NotificationsPage() {
   return (
     <div>
       <PageHeader
-        title="Thông báo"
-        subtitle="Toàn bộ thông báo hệ thống liên quan tới bạn — nhập/xuất kho, bảo hành, tài khoản, bảo mật."
+        title={t("notifications.title")}
+        subtitle={t("notifications.page.subtitle")}
         extra={
           <ActionButton
             kind="confirm"
             disabled={unreadCount === 0 || markAllRead.isPending}
             onClick={() => markAllRead.mutate()}
           >
-            Đánh dấu tất cả đã đọc
+            {t("notifications.page.markAll")}
           </ActionButton>
         }
       />
@@ -53,15 +55,15 @@ export default function NotificationsPage() {
         {isError ? (
           <ApiErrorAlert
             error={error}
-            title="Không tải được thông báo"
+            title={t("notifications.loadError")}
             onRetry={() => void refetch()}
           />
         ) : isLoading && items.length === 0 ? (
-          <LoadingState tip="Đang tải thông báo..." minHeight={320} />
+          <LoadingState tip={t("notifications.page.loading")} minHeight={320} />
         ) : !isLoading && items.length === 0 ? (
           <EmptyState
-            title="Chưa có thông báo"
-            description="Bạn chưa nhận được thông báo nào."
+            title={t("notifications.empty")}
+            description={t("notifications.page.emptyDescription")}
           />
         ) : (
           <>
@@ -105,7 +107,7 @@ export default function NotificationsPage() {
                     </Box>
                     <Box sx={{ fontSize: 12, color: S.textMedium }}>
                       {formatDateTime(item.created_at)}
-                      {item.read_at ? " · Đã đọc" : ""}
+                      {item.read_at ? t("notifications.page.readSuffix") : ""}
                     </Box>
                   </Box>
                 </Box>

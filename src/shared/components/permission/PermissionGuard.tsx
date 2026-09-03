@@ -5,6 +5,7 @@ import type {
   PermissionMode,
   PermissionAction,
 } from "@/shared/types/permission";
+import { useT } from "@/shared/i18n/useT";
 export interface PermissionGuardProps {
   children: ReactNode;
   /** Module name, ví dụ: 'org_units', 'departments'. Bắt buộc nếu dùng `action`, optional nếu dùng `permissionCode` trực tiếp. */
@@ -82,8 +83,11 @@ export function PermissionGuard({
   mode = "hide",
   fallback = null,
   className,
-  disabledTooltip = "Bạn không có quyền thực hiện thao tác này",
+  disabledTooltip,
 }: PermissionGuardProps) {
+  const t = useT();
+  const resolvedDisabledTooltip =
+    disabledTooltip ?? t("shared.states.noPermissionAction");
   const { isHidden, isDisabled } = usePermission({
     module,
     action,
@@ -102,7 +106,7 @@ export function PermissionGuard({
       <span
         className={className}
         style={{ opacity: 0.5, cursor: "not-allowed" }}
-        title={disabledTooltip}
+        title={resolvedDisabledTooltip}
       >
         {cloneAndDisable(children)}
       </span>

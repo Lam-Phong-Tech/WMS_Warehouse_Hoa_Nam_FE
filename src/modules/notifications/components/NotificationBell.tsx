@@ -27,6 +27,7 @@ import { NotificationDetailModal } from "@/modules/notifications/components/Noti
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import type { NotificationItem } from "@/modules/notifications/types/notification.types";
 import { ActionButton } from "@/shared/components/actions";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * Bảng chuông thông báo — thay chỗ nút disabled cũ trong AppHeader.
@@ -35,6 +36,7 @@ import { ActionButton } from "@/shared/components/actions";
  * và từng dòng có hành động click riêng (đánh dấu đã đọc + mở chi tiết).
  */
 export function NotificationBell() {
+  const t = useT();
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isDropdownOpen = useNotificationStore((s) => s.isDropdownOpen);
@@ -69,7 +71,9 @@ export function NotificationBell() {
       <Badge badgeContent={unreadCount} color="error" overlap="circular">
         <UiIconButton
           aria-label={
-            unreadCount > 0 ? `Thông báo, ${unreadCount} chưa đọc` : "Thông báo"
+            unreadCount > 0
+              ? t("notifications.bell.ariaUnread", { count: unreadCount })
+              : t("notifications.title")
           }
           onClick={(e) => {
             setAnchorEl(e.currentTarget);
@@ -104,21 +108,21 @@ export function NotificationBell() {
             }}
           >
             <Box component="strong" sx={{ color: S.textHigh }}>
-              Thông báo
+              {t("notifications.title")}
             </Box>
             <ActionButton
               kind="confirm"
               disabled={unreadCount === 0 || markAllRead.isPending}
               onClick={() => markAllRead.mutate()}
             >
-              Đánh dấu đã đọc hết
+              {t("notifications.bell.markAll")}
             </ActionButton>
           </Box>
 
           {isError ? (
             <ApiErrorAlert
               error={error}
-              title="Không tải được thông báo"
+              title={t("notifications.loadError")}
               onRetry={() => void refetch()}
               style={{ margin: 12 }}
             />
@@ -127,7 +131,7 @@ export function NotificationBell() {
               <UiSpinner size={18} />
             </Box>
           ) : items.length === 0 ? (
-            <UiStateSurface kind="empty" title="Chưa có thông báo" />
+            <UiStateSurface kind="empty" title={t("notifications.empty")} />
           ) : (
             <Box component="ul" sx={{ listStyle: "none", m: 0, p: 0 }}>
               {items.map((item) => (
@@ -194,7 +198,7 @@ export function NotificationBell() {
                 navigate(ROUTES.NOTIFICATIONS);
               }}
             >
-              Xem tất cả
+              {t("notifications.bell.viewAll")}
             </ActionButton>
           </Box>
         </Box>

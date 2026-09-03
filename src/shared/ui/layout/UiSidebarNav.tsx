@@ -18,6 +18,7 @@ import {
   TYPOGRAPHY,
 } from "@/shared/ui/tokens";
 import { UiIcon } from "@/shared/ui/components";
+import { useT } from "@/shared/i18n/useT";
 
 export interface UiSidebarNavItem {
   key: string;
@@ -133,10 +134,11 @@ export function UiSidebarNav({
   collapsed = false,
   footer,
 }: UiSidebarNavProps) {
+  const t = useT();
   return (
     <Box
       component="nav"
-      aria-label="Điều hướng chính"
+      aria-label={t("nav.primary")}
       sx={{
         display: "flex",
         flexDirection: "column",

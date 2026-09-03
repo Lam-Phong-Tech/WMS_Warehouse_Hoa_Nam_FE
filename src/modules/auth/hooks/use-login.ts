@@ -5,6 +5,7 @@ import { authService } from "@/modules/auth/services/auth.service";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import type { LoginRequest } from "@/modules/auth/types/auth.types";
+import { tStatic } from "@/shared/i18n/useT";
 
 interface LoginLocationState {
   from?: { pathname?: string; search?: string; hash?: string };
@@ -19,7 +20,7 @@ export function useLogin() {
     mutationFn: (credentials: LoginRequest) => authService.login(credentials),
 
     onSuccess: (data) => {
-      toast.success("Đăng nhập thành công");
+      toast.success(tStatic("auth.login.success"));
 
       // BE m1 trả JWT dùng được ngay sau login. Warehouse context chỉ được đổi
       // khi người dùng chủ động gọi /auth/switch-context từ ContextSwitcher.

@@ -26,6 +26,7 @@ import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import { getApiErrorMessage } from "@/shared/api/api-error";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * Thời lượng tối thiểu của trạng thái "đang làm mới".
@@ -67,6 +68,7 @@ export function useReportRefresh({
   beforeRefetch,
   successMessage,
 }: ReportRefreshOptions): ReportRefreshState {
+  const t = useT();
   const [refreshing, setRefreshing] = useState(false);
   /** Chặn bấm dồn: đang chạy mà bấm nữa thì bỏ qua, không xếp hàng thêm lượt. */
   const runningRef = useRef(false);
@@ -82,21 +84,25 @@ export function useReportRefresh({
         await Promise.all([Promise.resolve(refetch()), wait(MIN_BUSY_MS)]);
         const error = readError?.();
         if (error !== null && error !== undefined) {
-          toast.error(getApiErrorMessage(error, "Làm mới số liệu thất bại."));
+          toast.error(
+            getApiErrorMessage(error, t("reports.common.refreshFailed")),
+          );
           return;
         }
         toast.success(
           successMessage ??
-            `Đã cập nhật số liệu lúc ${dayjs().format("HH:mm")}`,
+            t("reports.common.refreshOk", { time: dayjs().format("HH:mm") }),
         );
       } catch (error) {
-        toast.error(getApiErrorMessage(error, "Làm mới số liệu thất bại."));
+        toast.error(
+          getApiErrorMessage(error, t("reports.common.refreshFailed")),
+        );
       } finally {
         runningRef.current = false;
         setRefreshing(false);
       }
     })();
-  }, [refetch, readError, beforeRefetch, successMessage]);
+  }, [refetch, readError, beforeRefetch, successMessage, t]);
 
   return { refreshing, refresh };
 }

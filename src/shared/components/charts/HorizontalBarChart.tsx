@@ -5,6 +5,7 @@ import {
   chartPointEvents,
   CHART_COLORS,
 } from "./chart-theme";
+import { useT } from "@/shared/i18n/useT";
 
 export type HorizontalBarItem = {
   label: string;
@@ -34,6 +35,7 @@ export function HorizontalBarChart({
   valueFormatter,
   onSelect,
 }: HorizontalBarChartProps) {
+  const t = useT();
   const sorted = [...items].sort((a, b) => b.value - a.value).slice(0, limit);
   const resolvedHeight = height ?? Math.max(220, sorted.length * 34 + 40);
 
@@ -87,7 +89,12 @@ export function HorizontalBarChart({
   return (
     <Chart
       options={options}
-      series={[{ name: "Giá trị", data: sorted.map((item) => item.value) }]}
+      series={[
+        {
+          name: t("shared.charts.value"),
+          data: sorted.map((item) => item.value),
+        },
+      ]}
       type="bar"
       height={resolvedHeight}
     />

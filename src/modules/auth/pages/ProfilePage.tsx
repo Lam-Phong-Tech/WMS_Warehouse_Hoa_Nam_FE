@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box,
@@ -21,23 +22,23 @@ import {
 } from "@/modules/audit-logs/services/audit-logs.service";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
-const PERMISSION_HISTORY_ACTION_LABELS: Record<string, string> = {
-  CREATE: "Tạo tài khoản",
-  UPDATE: "Cập nhật thông tin",
-  ASSIGN_ROLES: "Gán vai trò",
-  GRANT_USER_PERMISSION: "Cấp quyền riêng",
-  REVOKE_USER_PERMISSION: "Thu hồi quyền riêng",
-};
-
-function permissionHistoryActionLabel(action: string): string {
-  return PERMISSION_HISTORY_ACTION_LABELS[action] ?? action;
+function permissionHistoryActionLabel(t: TranslateFn, action: string): string {
+  const labels: Record<string, string> = {
+    CREATE: t("auth.profile.actionCreate"),
+    UPDATE: t("auth.profile.actionUpdate"),
+    ASSIGN_ROLES: t("auth.profile.actionAssignRoles"),
+    GRANT_USER_PERMISSION: t("auth.profile.actionGrantPermission"),
+    REVOKE_USER_PERMISSION: t("auth.profile.actionRevokePermission"),
+  };
+  return labels[action] ?? action;
 }
 
-function statusLabel(status?: string) {
-  if (status === "ACTIVE") return "Đang hoạt động";
-  if (status === "INACTIVE") return "Tạm ngưng";
-  if (status === "LOCKED") return "Đã khóa";
+function statusLabel(t: TranslateFn, status?: string) {
+  if (status === "ACTIVE") return t("auth.profile.statusActive");
+  if (status === "INACTIVE") return t("auth.profile.statusInactive");
+  if (status === "LOCKED") return t("auth.profile.statusLocked");
   return status || EMPTY_TEXT;
 }
 
@@ -54,32 +55,37 @@ function empty(value?: string | number | null) {
     : value;
 }
 
-const HISTORY_COLUMNS: ResponsiveTableColumn<MyPermissionHistoryEntry>[] = [
-  {
-    key: "created_at",
-    header: "Thời gian",
-    width: 170,
-    render: (row) => formatDateTime(row.created_at),
-  },
-  {
-    key: "action",
-    header: "Hành động",
-    width: 180,
-    render: (row) => (
-      <UiStatusBadge
-        tone="neutral"
-        label={permissionHistoryActionLabel(row.action)}
-      />
-    ),
-  },
-  {
-    key: "reason",
-    header: "Lý do",
-    render: (row) => row.reason || EMPTY_TEXT,
-  },
-];
+function buildHistoryColumns(
+  t: TranslateFn,
+): ResponsiveTableColumn<MyPermissionHistoryEntry>[] {
+  return [
+    {
+      key: "created_at",
+      header: t("auth.profile.colTime"),
+      width: 170,
+      render: (row) => formatDateTime(row.created_at),
+    },
+    {
+      key: "action",
+      header: t("auth.profile.colAction"),
+      width: 180,
+      render: (row) => (
+        <UiStatusBadge
+          tone="neutral"
+          label={permissionHistoryActionLabel(t, row.action)}
+        />
+      ),
+    },
+    {
+      key: "reason",
+      header: t("auth.profile.colReason"),
+      render: (row) => row.reason || EMPTY_TEXT,
+    },
+  ];
+}
 
 export function ProfilePage() {
+  const t = useT();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
   const isSuperAdmin = useAuthStore((s) => s.isSuperAdmin);
@@ -96,7 +102,7 @@ export function ProfilePage() {
     user?.name ??
     user?.code ??
     user?.email ??
-    "Người dùng";
+    t("auth.profile.defaultUserName");
   const email = profile?.email ?? user?.email;
   const username = profile?.username ?? user?.username;
   const code = profile?.code ?? user?.code;
@@ -109,6 +115,8 @@ export function ProfilePage() {
     queryFn: () => auditLogService.getMyPermissionHistory({ per_page: 20 }),
   });
   const historyRows = historyQuery.data?.data ?? [];
+
+  const historyColumns = useMemo(() => buildHistoryColumns(t), [t]);
 
   return (
     // Tiêu đề màn do header chung của shell dựng (AppPageHeader).
@@ -133,22 +141,22 @@ export function ProfilePage() {
         <UiDescriptions
           columns={2}
           items={[
-            { label: "Họ và tên", value: displayName },
-            { label: "Tên đăng nhập", value: empty(username) },
-            { label: "Mã nhân viên", value: empty(code) },
-            { label: "Số điện thoại", value: empty(phone) },
-            { label: "Email", value: empty(email) },
+            { label: t("auth.profile.fullName"), value: displayName },
+            { label: t("auth.profile.username"), value: empty(username) },
+            { label: t("auth.profile.employeeCode"), value: empty(code) },
+            { label: t("auth.profile.phone"), value: empty(phone) },
+            { label: t("auth.fields.email"), value: empty(email) },
             {
-              label: "Trạng thái",
+              label: t("auth.profile.status"),
               value: (
                 <UiStatusBadge
                   tone={statusTone(status)}
-                  label={statusLabel(status)}
+                  label={statusLabel(t, status)}
                 />
               ),
             },
             {
-              label: "Vai trò",
+              label: t("auth.profile.roles"),
               value: isSuperAdmin ? (
                 <UiStatusBadge tone="warning" label="Super Admin" />
               ) : roles.length > 0 ? (
@@ -172,7 +180,7 @@ export function ProfilePage() {
               ),
             },
             {
-              label: "Phạm vi kho",
+              label: t("auth.profile.warehouseScope"),
               value:
                 warehouseScopes.length > 0 ? (
                   <Stack
@@ -191,21 +199,24 @@ export function ProfilePage() {
                 ),
             },
             {
-              label: "Ngữ cảnh hiện tại",
+              label: t("auth.profile.currentContext"),
               value: empty(currentContext?.role_name),
             },
-            { label: "Quyền được cấp", value: permissionCodes.length },
+            {
+              label: t("auth.profile.grantedPermissions"),
+              value: permissionCodes.length,
+            },
           ]}
         />
       </UiCard>
 
-      <UiCard title="Lịch sử thay đổi quyền/vai trò trên tài khoản của tôi">
+      <UiCard title={t("auth.profile.historyTitle")}>
         <ResponsiveDataTable<MyPermissionHistoryEntry>
-          columns={HISTORY_COLUMNS}
+          columns={historyColumns}
           rows={historyRows}
           rowKey={(row) => row.id}
           loading={historyQuery.isLoading}
-          emptyText="Chưa có thay đổi nào được ghi nhận."
+          emptyText={t("auth.profile.historyEmpty")}
         />
       </UiCard>
     </UiPageContainer>

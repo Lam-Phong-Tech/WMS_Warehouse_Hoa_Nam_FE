@@ -4,6 +4,7 @@
  * xuất, mốc thời gian) test được độc lập với JSX.
  */
 import dayjs from "dayjs";
+import { bilingual } from "@/shared/constants/business-labels";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import type { Raw } from "@/modules/reports/operations/report-format";
 
@@ -19,14 +20,29 @@ export const WARRANTY_STATUS_ORDER = [
 
 export type WarrantyStatus = (typeof WARRANTY_STATUS_ORDER)[number];
 
-export const WARRANTY_STATUS_LABEL: Record<WarrantyStatus, string> = {
-  RECEIVED: "Tiếp nhận",
-  CHECKING: "Đang kiểm tra",
-  REPAIRING: "Đang sửa chữa",
-  COMPLETED: "Hoàn tất",
-  RETURNED: "Đã trả",
-  CANCELLED: "Đã hủy",
-};
+/**
+ * Nhãn theo GIÁ TRỊ ENUM của BE nên bọc `bilingual` (đọc ngôn ngữ tại lúc truy
+ * cập thuộc tính) thay vì khoá i18n: mọi call site đang index thẳng vào map.
+ */
+export const WARRANTY_STATUS_LABEL: Readonly<Record<WarrantyStatus, string>> =
+  bilingual(
+    {
+      RECEIVED: "Tiếp nhận",
+      CHECKING: "Đang kiểm tra",
+      REPAIRING: "Đang sửa chữa",
+      COMPLETED: "Hoàn tất",
+      RETURNED: "Đã trả",
+      CANCELLED: "Đã hủy",
+    },
+    {
+      RECEIVED: "Intake",
+      CHECKING: "Under inspection",
+      REPAIRING: "Under repair",
+      COMPLETED: "Completed",
+      RETURNED: "Returned",
+      CANCELLED: "Cancelled",
+    },
+  );
 
 /** Năm mức rủi ro hạn xử lý của baseline 8.7. */
 export const DUE_RISK_ORDER = [
@@ -39,13 +55,22 @@ export const DUE_RISK_ORDER = [
 
 export type DueRisk = (typeof DUE_RISK_ORDER)[number];
 
-export const DUE_RISK_LABEL: Record<DueRisk, string> = {
-  ON_TRACK: "Đúng hạn",
-  DUE_SOON: "Sắp đến hạn",
-  OVERDUE: "Quá hạn",
-  NO_ESTIMATE: "Chưa có dự kiến",
-  NOT_APPLICABLE: "Không áp dụng",
-};
+export const DUE_RISK_LABEL: Readonly<Record<DueRisk, string>> = bilingual(
+  {
+    ON_TRACK: "Đúng hạn",
+    DUE_SOON: "Sắp đến hạn",
+    OVERDUE: "Quá hạn",
+    NO_ESTIMATE: "Chưa có dự kiến",
+    NOT_APPLICABLE: "Không áp dụng",
+  },
+  {
+    ON_TRACK: "On track",
+    DUE_SOON: "Due soon",
+    OVERDUE: "Overdue",
+    NO_ESTIMATE: "No estimate yet",
+    NOT_APPLICABLE: "Not applicable",
+  },
+);
 
 export type BadgeTone = "info" | "success" | "warn" | "error";
 
@@ -108,11 +133,43 @@ export function parseComponentsIssued(value: string): {
   return { entries, count: entries.length };
 }
 
-/** Mốc thời gian của bộ lọc — quyết định cột ngày dùng để thu hẹp lát cắt. */
+const DATE_DIMENSION_LABELS = bilingual(
+  {
+    RECEIVED: "Ngày tiếp nhận",
+    COMPLETED: "Ngày hoàn tất",
+    RETURNED: "Ngày trả khách",
+  },
+  {
+    RECEIVED: "Intake date",
+    COMPLETED: "Completion date",
+    RETURNED: "Return date",
+  },
+);
+
+/**
+ * Mốc thời gian của bộ lọc — quyết định cột ngày dùng để thu hẹp lát cắt.
+ *
+ * `label` là GETTER: gán thẳng chuỗi ở đây sẽ đóng băng ngôn ngữ lúc import.
+ */
 export const DATE_DIMENSIONS = [
-  { value: "RECEIVED", label: "Ngày tiếp nhận" },
-  { value: "COMPLETED", label: "Ngày hoàn tất" },
-  { value: "RETURNED", label: "Ngày trả khách" },
+  {
+    value: "RECEIVED",
+    get label() {
+      return DATE_DIMENSION_LABELS.RECEIVED;
+    },
+  },
+  {
+    value: "COMPLETED",
+    get label() {
+      return DATE_DIMENSION_LABELS.COMPLETED;
+    },
+  },
+  {
+    value: "RETURNED",
+    get label() {
+      return DATE_DIMENSION_LABELS.RETURNED;
+    },
+  },
 ] as const;
 
 export type DateDimension = (typeof DATE_DIMENSIONS)[number]["value"];

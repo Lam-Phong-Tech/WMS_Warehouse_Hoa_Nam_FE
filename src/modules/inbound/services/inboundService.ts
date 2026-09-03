@@ -141,10 +141,8 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     posted,
     remaining: Math.max(expected - scanned, 0),
     status,
-    createdBy: text(
-      row.created_by_name ?? row.created_by ?? row.creator_name,
-      "-",
-    ),
+    // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
+    createdBy: text(row.created_by_name ?? row.creator_name, "-"),
     updatedAt: text(row.updated_at) || undefined,
     version: num(row.version ?? row.lock_version ?? 1),
     sourceReference: text(row.source_reference ?? row.source_name) || undefined,

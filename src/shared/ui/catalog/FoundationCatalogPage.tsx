@@ -55,9 +55,7 @@ import {
 } from "@/shared/ui";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { EMPTY_TEXT } from "@/shared/constants/display";
-
-const LONG_VI =
-  "Phiếu xuất kho số XK-2026-000123 của Đại lý Trần Nguyễn Bách Hóa Tổng Hợp Miền Đông Nam Bộ — kiểm tra xuống dòng, không tràn ngang.";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
 const TOKEN_SWATCHES: Array<{ name: string; value: string }> = [
   { name: "primary", value: S.primary },
@@ -78,43 +76,45 @@ interface CatalogRow {
   status: "DRAFT" | "POSTED" | "ERROR";
 }
 
-const TABLE_ROWS: CatalogRow[] = [
-  {
-    id: "r1",
-    code: "XK-2026-000123",
-    agency: "Đại lý Trần Nguyễn Bách Hóa Tổng Hợp Miền Đông Nam Bộ",
-    qty: 1280,
-    status: "POSTED",
-  },
-  {
-    id: "r2",
-    code: "XK-2026-000124",
-    agency: "Đại lý Minh Phát",
-    qty: 64,
-    status: "DRAFT",
-  },
-  {
-    id: "r3",
-    code: "NK-2026-00088",
-    agency: "Kho tổng Hoa Nam",
-    qty: 4096,
-    status: "POSTED",
-  },
-  {
-    id: "r4",
-    code: "XK-2026-000125",
-    agency: "Đại lý Hồng Hà",
-    qty: 12,
-    status: "ERROR",
-  },
-  {
-    id: "r5",
-    code: "NK-2026-00089",
-    agency: "Đại lý Sài Gòn Chợ Lớn",
-    qty: 730,
-    status: "DRAFT",
-  },
-];
+function catalogRows(t: TranslateFn): CatalogRow[] {
+  return [
+    {
+      id: "r1",
+      code: "XK-2026-000123",
+      agency: t("catalog.data.agencyLong"),
+      qty: 1280,
+      status: "POSTED",
+    },
+    {
+      id: "r2",
+      code: "XK-2026-000124",
+      agency: t("catalog.data.agencyMinhPhat"),
+      qty: 64,
+      status: "DRAFT",
+    },
+    {
+      id: "r3",
+      code: "NK-2026-00088",
+      agency: t("catalog.data.warehouseCentral"),
+      qty: 4096,
+      status: "POSTED",
+    },
+    {
+      id: "r4",
+      code: "XK-2026-000125",
+      agency: t("catalog.data.agencyHongHa"),
+      qty: 12,
+      status: "ERROR",
+    },
+    {
+      id: "r5",
+      code: "NK-2026-00089",
+      agency: t("catalog.data.agencySaiGon"),
+      qty: 730,
+      status: "DRAFT",
+    },
+  ];
+}
 
 const STATUS_TONE = {
   DRAFT: "neutral",
@@ -138,6 +138,7 @@ interface CatalogFormValues {
 
 /** Form showcase — có field lỗi cưỡng bức để soi state validation (fixture). */
 function FormsSection() {
+  const t = useT();
   const { control, setError } = useForm<CatalogFormValues>({
     defaultValues: {
       code: "",
@@ -146,7 +147,7 @@ function FormsSection() {
       qty: null,
       agency: "",
       brand: "",
-      note: LONG_VI,
+      note: t("catalog.longText"),
       accept: false,
       active: true,
       mode: "barcode",
@@ -156,26 +157,30 @@ function FormsSection() {
 
   useEffect(() => {
     setError("qty", {
-      message: "Số lượng phải lớn hơn 0 (request_id: 9f2c-fixture).",
+      message: t("catalog.forms.errQty"),
     });
-    setError("agency", { message: "Bắt buộc chọn nơi nhận." });
-  }, [setError]);
+    setError("agency", { message: t("catalog.forms.errAgency") });
+  }, [setError, t]);
 
   const options = useMemo(
     () => [
-      { value: "hn", label: "Kho tổng Hoa Nam" },
-      { value: "mp", label: "Đại lý Minh Phát" },
+      { value: "hn", label: t("catalog.data.warehouseCentral") },
+      { value: "mp", label: t("catalog.data.agencyMinhPhat") },
       {
         value: "dn",
-        label: "Đại lý Trần Nguyễn Bách Hóa Tổng Hợp Miền Đông Nam Bộ",
+        label: t("catalog.data.agencyLong"),
       },
-      { value: "off", label: "Đại lý ngừng hợp tác", disabled: true },
+      {
+        value: "off",
+        label: t("catalog.forms.agencyInactive"),
+        disabled: true,
+      },
     ],
-    [],
+    [t],
   );
 
   return (
-    <UiCard title="Forms — lớp field canonical (RHF + token)">
+    <UiCard title={t("catalog.forms.sectionTitle")}>
       <Box
         sx={{
           display: "grid",
@@ -187,92 +192,92 @@ function FormsSection() {
         <UiFormText
           control={control}
           name="code"
-          label="Mã phiếu"
+          label={t("catalog.forms.code")}
           required
-          placeholder="VD: XK-2026-000123"
-          helperText="Nhập đúng định dạng phiếu."
+          placeholder={t("catalog.forms.codePlaceholder")}
+          helperText={t("catalog.forms.codeHelper")}
           startIcon="barcode-read"
           data-testid="form-text"
         />
         <UiFormText
           control={control}
           name="password"
-          label="Mật khẩu"
+          label={t("catalog.forms.password")}
           type="password"
-          placeholder="Nhập mật khẩu"
+          placeholder={t("catalog.forms.passwordPlaceholder")}
         />
         <UiFormText
           control={control}
           name="search"
-          label="Tìm kiếm"
+          label={t("catalog.forms.search")}
           type="search"
-          placeholder="Tìm theo mã / tên đại lý"
+          placeholder={t("catalog.forms.searchPlaceholder")}
         />
         <UiFormNumber
           control={control}
           name="qty"
-          label="Số lượng"
-          suffix="cái"
+          label={t("catalog.common.qty")}
+          suffix={t("catalog.forms.qtySuffix")}
           min={0}
           data-testid="form-number"
         />
         <UiFormSelect
           control={control}
           name="agency"
-          label="Nơi nhận"
+          label={t("catalog.common.recipient")}
           required
           options={options}
-          placeholder="Chọn nơi nhận"
+          placeholder={t("catalog.forms.recipientPlaceholder")}
           data-testid="form-select"
         />
         <UiFormAutocomplete
           control={control}
           name="brand"
-          label="Nhãn hàng (autocomplete)"
+          label={t("catalog.forms.brand")}
           options={[
-            { value: "b1", label: "Bảo Việt Electric" },
-            { value: "b2", label: "Hoà Phát Home" },
-            { value: "b3", label: "Điện cơ Thống Nhất" },
+            { value: "b1", label: t("catalog.data.brandBaoViet") },
+            { value: "b2", label: t("catalog.data.brandHoaPhat") },
+            { value: "b3", label: t("catalog.data.brandThongNhat") },
           ]}
         />
         <UiFormDate
           control={control}
           name="date"
-          label="Ngày chứng từ"
-          placeholder="Chọn ngày"
+          label={t("catalog.forms.docDate")}
+          placeholder={t("catalog.forms.docDatePlaceholder")}
         />
         <UiFormText
           control={control}
           name="note"
-          label="Ghi chú dài"
+          label={t("catalog.forms.longNote")}
           multiline
           rows={3}
         />
         <UiFormCheckbox
           control={control}
           name="accept"
-          label="Tôi xác nhận đã kiểm đủ hàng trước khi hoàn tất."
+          label={t("catalog.forms.accept")}
         />
         <UiFormSwitch
           control={control}
           name="active"
-          label="Kích hoạt SKU sau khi lưu"
+          label={t("catalog.forms.activeSku")}
         />
         <UiFormRadioGroup
           control={control}
           name="mode"
-          label="Chế độ quét"
+          label={t("catalog.forms.scanMode")}
           row
           options={[
             { value: "barcode", label: "Barcode/QR" },
-            { value: "rfid", label: "RFID (tuỳ chọn)" },
-            { value: "manual", label: "Nhập tay" },
+            { value: "rfid", label: t("catalog.forms.scanModeRfid") },
+            { value: "manual", label: t("catalog.forms.scanModeManual") },
           ]}
         />
         <UiTextField
-          label="Bị khóa (read-only adapter)"
+          label={t("catalog.forms.locked")}
           disabled
-          defaultValue="Không sửa được"
+          defaultValue={t("catalog.forms.lockedValue")}
         />
       </Box>
     </UiCard>
@@ -286,11 +291,10 @@ function LayoutSection({
   collapsed: boolean;
   onToggle: () => void;
 }) {
+  const t = useT();
+
   return (
-    <UiCard
-      title="Layout — UiAppShell / UiSidebarNav / UiTopbar (Vuexy sáng 260px)"
-      disablePadding
-    >
+    <UiCard title={t("catalog.layout.sectionTitle")} disablePadding>
       <Box
         sx={{
           height: 420,
@@ -317,27 +321,39 @@ function LayoutSection({
               }
               groups={[
                 {
-                  label: "Vận hành",
+                  label: t("catalog.layout.groupOperations"),
                   items: [
                     {
                       key: "dashboard",
-                      label: "Bảng điều khiển",
+                      label: t("catalog.layout.navDashboard"),
                       icon: "dashboard",
                       active: true,
                     },
-                    { key: "inbound", label: "Nhập kho", icon: "inbox-in" },
-                    { key: "outbound", label: "Xuất kho", icon: "inbox-out" },
+                    {
+                      key: "inbound",
+                      label: t("catalog.layout.navInbound"),
+                      icon: "inbox-in",
+                    },
+                    {
+                      key: "outbound",
+                      label: t("catalog.layout.navOutbound"),
+                      icon: "inbox-out",
+                    },
                   ],
                 },
                 {
-                  label: "Quản trị",
+                  label: t("catalog.layout.groupAdmin"),
                   items: [
                     {
                       key: "master",
-                      label: "Danh mục SKU và đại lý phân phối toàn quốc",
+                      label: t("catalog.layout.navMasterData"),
                       icon: "boxes",
                     },
-                    { key: "iam", label: "Người dùng", icon: "user" },
+                    {
+                      key: "iam",
+                      label: t("catalog.layout.navUsers"),
+                      icon: "user",
+                    },
                   ],
                 },
               ]}
@@ -345,42 +361,46 @@ function LayoutSection({
           }
           topbar={
             <UiTopbar
-              left={<UiText variant="cardTitle">Bảng điều khiển</UiText>}
+              left={
+                <UiText variant="cardTitle">
+                  {t("catalog.layout.navDashboard")}
+                </UiText>
+              }
               right={
                 <Stack direction="row" sx={{ alignItems: "center", gap: 1.5 }}>
                   <UiIconButton
-                    aria-label="Thu gọn sidebar"
+                    aria-label={t("catalog.layout.collapseSidebar")}
                     onClick={onToggle}
                     data-testid="collapse-toggle"
                   >
                     <UiIcon name="menu-burger" />
                   </UiIconButton>
-                  <UiAvatar name="Trần Tùng Lâm" />
+                  <UiAvatar name={t("catalog.data.userLam")} />
                 </Stack>
               }
             />
           }
-          footer={<UiFooter>Hoa Nam Tools — nội bộ</UiFooter>}
+          footer={<UiFooter>{t("catalog.layout.footer")}</UiFooter>}
         >
           <UiPageContainer
             breadcrumb={
               <UiBreadcrumb
                 items={[
-                  { label: "Trang chủ" },
-                  { label: "Vận hành" },
-                  { label: "Bảng điều khiển" },
+                  { label: t("catalog.layout.breadcrumbHome") },
+                  { label: t("catalog.layout.groupOperations") },
+                  { label: t("catalog.layout.navDashboard") },
                 ]}
               />
             }
-            title="Bảng điều khiển"
-            subtitle="Số liệu cố định — fixture catalog"
+            title={t("catalog.layout.navDashboard")}
+            subtitle={t("catalog.layout.pageSubtitle")}
             actions={
               <UiButton startIcon={<UiIcon name="plus" color="currentColor" />}>
-                Tạo phiếu
+                {t("catalog.common.createDoc")}
               </UiButton>
             }
           >
-            <UiText variant="body">{LONG_VI}</UiText>
+            <UiText variant="body">{t("catalog.longText")}</UiText>
           </UiPageContainer>
         </UiAppShell>
       </Box>
@@ -389,6 +409,7 @@ function LayoutSection({
 }
 
 export default function FoundationCatalogPage() {
+  const t = useT();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -397,7 +418,10 @@ export default function FoundationCatalogPage() {
   const [pageSize, setPageSize] = useState(20);
   const [collapsed, setCollapsed] = useState(false);
   const { confirm, confirmDialog } = useUiConfirm();
-  const [lastConfirm, setLastConfirm] = useState<string>("(chưa hỏi)");
+  const [lastConfirm, setLastConfirm] = useState<string>(
+    t("catalog.overlays.notAsked"),
+  );
+  const rows = useMemo(() => catalogRows(t), [t]);
 
   return (
     <Box
@@ -406,7 +430,7 @@ export default function FoundationCatalogPage() {
     >
       <UiText variant="pageTitle">Foundation catalog (Vuexy baseline)</UiText>
 
-      <UiCard title="Tokens — màu chuẩn (DEC-UI-BASELINE-01)">
+      <UiCard title={t("catalog.tokens.sectionTitle")}>
         <Stack direction="row" sx={{ flexWrap: "wrap", gap: 2 }}>
           {TOKEN_SWATCHES.map((swatch) => (
             <Stack sx={{ alignItems: "center", gap: 0.5 }} key={swatch.name}>
@@ -428,11 +452,19 @@ export default function FoundationCatalogPage() {
 
       <UiCard title="Typography">
         <Stack sx={{ gap: 1 }}>
-          <UiText variant="pageTitle">Tiêu đề trang 24/500</UiText>
-          <UiText variant="cardTitle">Tiêu đề card 18/600</UiText>
-          <UiText variant="body">Nội dung body 15px — {LONG_VI}</UiText>
-          <UiText variant="secondary">Chữ phụ 13px — nhãn, mô tả cột.</UiText>
-          <UiText variant="caption">Caption 12px — ghi chú mờ.</UiText>
+          <UiText variant="pageTitle">
+            {t("catalog.typography.pageTitle")}
+          </UiText>
+          <UiText variant="cardTitle">
+            {t("catalog.typography.cardTitle")}
+          </UiText>
+          <UiText variant="body">
+            {t("catalog.typography.body", { text: t("catalog.longText") })}
+          </UiText>
+          <UiText variant="secondary">
+            {t("catalog.typography.secondary")}
+          </UiText>
+          <UiText variant="caption">{t("catalog.typography.caption")}</UiText>
         </Stack>
       </UiCard>
 
@@ -442,41 +474,45 @@ export default function FoundationCatalogPage() {
             direction="row"
             sx={{ flexWrap: "wrap", gap: 1.5, alignItems: "center" }}
           >
-            <UiButton data-testid="btn-filled">Nút chính</UiButton>
-            <UiButton appearance="tonal">Nút tonal</UiButton>
-            <UiButton appearance="outlined">Nút viền</UiButton>
-            <UiButton appearance="text">Nút chữ</UiButton>
-            <UiButton color="error">Nguy hiểm</UiButton>
+            <UiButton data-testid="btn-filled">
+              {t("catalog.buttons.filled")}
+            </UiButton>
+            <UiButton appearance="tonal">{t("catalog.buttons.tonal")}</UiButton>
+            <UiButton appearance="outlined">
+              {t("catalog.buttons.outlined")}
+            </UiButton>
+            <UiButton appearance="text">{t("catalog.buttons.text")}</UiButton>
+            <UiButton color="error">{t("catalog.buttons.danger")}</UiButton>
             {/* WWHN-268: nút bị chặn phát hook data-ui-state="disabled". */}
             <UiButton disabled data-ui-state="disabled">
-              Vô hiệu
+              {t("catalog.buttons.disabled")}
             </UiButton>
-            <UiButton loading>Đang lưu…</UiButton>
-            <UiIconButton aria-label="Làm mới" data-testid="icon-btn">
+            <UiButton loading>{t("catalog.buttons.saving")}</UiButton>
+            <UiIconButton
+              aria-label={t("catalog.buttons.refresh")}
+              data-testid="icon-btn"
+            >
               <UiIcon name="refresh" />
             </UiIconButton>
           </Stack>
-          <UiText variant="secondary">
-            Hover nhấc 1px, active lún 0.97 — motion contract; focus-visible
-            dùng token focus ring khi điều hướng bàn phím (Tab).
-          </UiText>
+          <UiText variant="secondary">{t("catalog.buttons.motionNote")}</UiText>
         </Stack>
       </UiCard>
 
       <FormsSection />
 
-      <UiCard title="Status badge">
+      <UiCard title={t("catalog.badges.sectionTitle")}>
         <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
           <UiStatusBadge
             tone="primary"
-            label="ĐANG XỬ LÝ"
+            label={t("catalog.badges.processing")}
             data-testid="badge-primary"
           />
-          <UiStatusBadge tone="success" label="ĐÃ DUYỆT" />
-          <UiStatusBadge tone="warning" label="CHỜ DUYỆT" />
-          <UiStatusBadge tone="error" label="TỪ CHỐI" />
-          <UiStatusBadge tone="info" label="ĐANG QUÉT" />
-          <UiStatusBadge tone="neutral" label="NHÁP" />
+          <UiStatusBadge tone="success" label={t("catalog.badges.approved")} />
+          <UiStatusBadge tone="warning" label={t("catalog.badges.waiting")} />
+          <UiStatusBadge tone="error" label={t("catalog.badges.rejected")} />
+          <UiStatusBadge tone="info" label={t("catalog.badges.scanning")} />
+          <UiStatusBadge tone="neutral" label={t("catalog.badges.draft")} />
         </Stack>
       </UiCard>
 
@@ -493,27 +529,27 @@ export default function FoundationCatalogPage() {
           }}
         >
           <UiKpiCard
-            label="Tồn khả dụng"
+            label={t("catalog.kpi.available")}
             value="1.284.560"
             icon="box"
             tone="primary"
-            hint="Cập nhật 5 phút trước"
+            hint={t("catalog.kpi.availableHint")}
           />
           <UiKpiCard
-            label="Phiếu chờ duyệt"
+            label={t("catalog.kpi.pendingDocs")}
             value="27"
             icon="time-quarter-past"
             tone="warning"
           />
           <UiKpiCard
-            label="Đã xuất hôm nay"
+            label={t("catalog.kpi.issuedToday")}
             value="312"
             icon="inbox-out"
             tone="success"
             data-testid="kpi-success"
           />
           <UiKpiCard
-            label="Lỗi cần xử lý"
+            label={t("catalog.kpi.errors")}
             value="3"
             icon="cross-circle"
             tone="error"
@@ -524,14 +560,18 @@ export default function FoundationCatalogPage() {
       <UiCard title="Tabs / Pagination">
         <Stack sx={{ gap: 2 }}>
           <UiTabs
-            aria-label="Bộ lọc trạng thái"
+            aria-label={t("catalog.tabs.filterAria")}
             value={tab}
             onChange={setTab}
             items={[
-              { key: "all", label: "Tất cả" },
-              { key: "draft", label: "Nháp" },
-              { key: "posted", label: "Đã ghi sổ" },
-              { key: "locked", label: "Đã khóa (vô hiệu)", disabled: true },
+              { key: "all", label: t("catalog.tabs.all") },
+              { key: "draft", label: t("catalog.tabs.draft") },
+              { key: "posted", label: t("catalog.common.posted") },
+              {
+                key: "locked",
+                label: t("catalog.tabs.locked"),
+                disabled: true,
+              },
             ]}
           />
           <UiPagination
@@ -544,34 +584,31 @@ export default function FoundationCatalogPage() {
         </Stack>
       </UiCard>
 
-      <UiCard
-        title="Bảng dữ liệu (ResponsiveDataTable — canonical, dense + empty)"
-        disablePadding
-      >
+      <UiCard title={t("catalog.table.sectionTitle")} disablePadding>
         <Box sx={{ display: "grid", gap: 3, p: 3 }}>
           <ResponsiveDataTable<CatalogRow>
             columns={[
               {
                 key: "code",
-                header: "Mã chứng từ",
+                header: t("catalog.table.colCode"),
                 render: (r) => r.code,
                 sortAccessor: (r) => r.code,
               },
               {
                 key: "agency",
-                header: "Đại lý / nơi nhận",
+                header: t("catalog.table.colAgency"),
                 render: (r) => r.agency,
               },
               {
                 key: "qty",
-                header: "Số lượng",
+                header: t("catalog.common.qty"),
                 align: "right",
                 render: (r) => r.qty.toLocaleString("vi-VN"),
                 sortAccessor: (r) => r.qty,
               },
               {
                 key: "status",
-                header: "Trạng thái",
+                header: t("catalog.common.status"),
                 render: (r) => (
                   <UiStatusBadge
                     tone={STATUS_TONE[r.status]}
@@ -580,16 +617,20 @@ export default function FoundationCatalogPage() {
                 ),
               },
             ]}
-            rows={TABLE_ROWS}
+            rows={rows}
             rowKey={(r) => r.id}
           />
           <ResponsiveDataTable<CatalogRow>
             columns={[
-              { key: "code", header: "Mã chứng từ", render: (r) => r.code },
+              {
+                key: "code",
+                header: t("catalog.table.colCode"),
+                render: (r) => r.code,
+              },
             ]}
             rows={[]}
             rowKey={(r) => r.id}
-            emptyText="Không có phiếu nào trong bộ lọc hiện tại."
+            emptyText={t("catalog.table.emptyText")}
           />
         </Box>
       </UiCard>
@@ -598,77 +639,100 @@ export default function FoundationCatalogPage() {
         <Stack sx={{ gap: 3 }}>
           <UiDescriptions
             items={[
-              { label: "Mã điều chỉnh", value: "REV-20260818-0001" },
               {
-                label: "Trạng thái",
-                value: <UiStatusBadge tone="success" label="ĐÃ DUYỆT" />,
+                label: t("catalog.descriptions.adjustCode"),
+                value: "REV-20260818-0001",
               },
-              { label: "Người lập", value: "Trần Tùng Lâm" },
-              { label: "Nơi nhận", value: LONG_VI, span: 3 },
-              { label: "Ghi chú", value: EMPTY_TEXT },
+              {
+                label: t("catalog.common.status"),
+                value: (
+                  <UiStatusBadge
+                    tone="success"
+                    label={t("catalog.badges.approved")}
+                  />
+                ),
+              },
+              {
+                label: t("catalog.descriptions.createdBy"),
+                value: t("catalog.data.userLam"),
+              },
+              {
+                label: t("catalog.common.recipient"),
+                value: t("catalog.longText"),
+                span: 3,
+              },
+              { label: t("catalog.descriptions.note"), value: EMPTY_TEXT },
             ]}
           />
           <UiTimeline
             items={[
-              { title: "Tạo phiếu", time: "08:00 18/08/2026", tone: "primary" },
               {
-                title: "Quét đủ 128/128 thùng",
-                description: "Người quét: NV kho 02",
+                title: t("catalog.common.createDoc"),
+                time: "08:00 18/08/2026",
+                tone: "primary",
+              },
+              {
+                title: t("catalog.timeline.scanned"),
+                description: t("catalog.timeline.scannedBy"),
                 time: "08:41",
                 tone: "info",
               },
-              { title: "In Packing Label", time: "08:45", tone: "success" },
               {
-                title: "Chờ hoàn tất xuất",
-                description: "Cần xác nhận đã dán nhãn.",
+                title: t("catalog.timeline.printed"),
+                time: "08:45",
+                tone: "success",
+              },
+              {
+                title: t("catalog.timeline.pendingIssue"),
+                description: t("catalog.timeline.pendingIssueDesc"),
                 time: EMPTY_TEXT,
                 tone: "warning",
               },
             ]}
           />
           <Stack direction="row" sx={{ gap: 1.5, alignItems: "center" }}>
-            <UiAvatar name="Trần Tùng Lâm" size="lg" />
-            <UiAvatar name="Nguyễn Văn An" />
-            <UiAvatar name="Kho" size="sm" />
+            <UiAvatar name={t("catalog.data.userLam")} size="lg" />
+            <UiAvatar name={t("catalog.data.userAn")} />
+            <UiAvatar name={t("catalog.data.warehouseShort")} size="sm" />
           </Stack>
           <Stack sx={{ gap: 1.5 }}>
             <UiAlert
               tone="success"
-              title="Đã ghi sổ"
+              title={t("catalog.common.posted")}
               data-testid="alert-success"
             >
-              Phiếu XK-2026-000123 đã trừ tồn thành công.
+              {t("catalog.alerts.successBody")}
             </UiAlert>
-            <UiAlert tone="info">Dữ liệu tồn kho làm mới mỗi 60 giây.</UiAlert>
-            <UiAlert tone="warning" title="Sắp hết hạn phiên">
-              {LONG_VI}
+            <UiAlert tone="info">{t("catalog.alerts.infoBody")}</UiAlert>
+            <UiAlert tone="warning" title={t("catalog.alerts.warningTitle")}>
+              {t("catalog.longText")}
             </UiAlert>
             <UiAlert
               tone="error"
-              title="Không thể hoàn tất"
+              title={t("catalog.alerts.errorTitle")}
               onClose={() => undefined}
               action={
                 <UiButton appearance="text" color="error">
-                  Thử lại
+                  {t("common.retry")}
                 </UiButton>
               }
             >
-              Máy chủ trả lỗi 500 (request_id: a1b2c3-fixture).
+              {t("catalog.common.serverError")}
             </UiAlert>
           </Stack>
         </Stack>
       </UiCard>
 
-      <UiCard title="Overlay — Dialog / Drawer / Confirm">
+      <UiCard title={t("catalog.overlays.sectionTitle")}>
         <Stack direction="row" sx={{ gap: 1.5, flexWrap: "wrap" }}>
           <UiButton
             data-testid="open-dialog"
             onClick={() => setDialogOpen(true)}
           >
-            Mở dialog
+            {t("catalog.overlays.openDialog")}
           </UiButton>
           <UiButton appearance="outlined" onClick={() => setDrawerOpen(true)}>
-            Mở drawer
+            {t("catalog.overlays.openDrawer")}
           </UiButton>
           <UiButton
             color="error"
@@ -676,31 +740,39 @@ export default function FoundationCatalogPage() {
             data-testid="open-confirm"
             onClick={() => setConfirmOpen(true)}
           >
-            Confirm nguy hiểm
+            {t("catalog.overlays.openConfirm")}
           </UiButton>
           <UiButton
             appearance="outlined"
             onClick={() => {
               void confirm({
-                title: "Đổi trạng thái SKU?",
-                content: "Promise-API useUiConfirm — thay Modal.confirm.",
-                confirmText: "Đồng ý",
+                title: t("catalog.overlays.confirmTitle"),
+                content: t("catalog.overlays.confirmContent"),
+                confirmText: t("catalog.overlays.agree"),
               }).then((ok) => {
-                setLastConfirm(ok ? "Đồng ý" : "Hủy");
+                setLastConfirm(
+                  ok
+                    ? t("catalog.overlays.agree")
+                    : t("catalog.overlays.cancel"),
+                );
                 // WWHN-268: xác nhận thành công sinh toast success thật —
                 // demo giữ nguyên hành vi chuẩn của flow confirm nghiệp vụ.
-                if (ok) toast.success("Đã xác nhận thao tác (fixture).");
+                if (ok) toast.success(t("catalog.overlays.confirmedToast"));
               });
             }}
           >
             useUiConfirm()
           </UiButton>
           <UiText variant="secondary">
-            Kết quả confirm gần nhất:{" "}
+            {t("catalog.overlays.lastConfirmLabel")}{" "}
             {/* WWHN-268: kết quả xác nhận thành công phát hook "success". */}
             <Box
               component="span"
-              data-ui-state={lastConfirm === "Đồng ý" ? "success" : undefined}
+              data-ui-state={
+                lastConfirm === t("catalog.overlays.agree")
+                  ? "success"
+                  : undefined
+              }
             >
               {lastConfirm}
             </Box>
@@ -709,36 +781,40 @@ export default function FoundationCatalogPage() {
         <UiDialog
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
-          title="Xác nhận hoàn tất xuất kho"
+          title={t("catalog.overlays.dialogTitle")}
           actions={
             <>
               <UiButton appearance="text" onClick={() => setDialogOpen(false)}>
-                Hủy
+                {t("catalog.overlays.cancel")}
               </UiButton>
-              <UiButton onClick={() => setDialogOpen(false)}>Xác nhận</UiButton>
+              <UiButton onClick={() => setDialogOpen(false)}>
+                {t("catalog.overlays.confirm")}
+              </UiButton>
             </>
           }
         >
           <UiText variant="body">
-            Hành động này sẽ trừ tồn kho (fixture — không gọi API). {LONG_VI}
+            {t("catalog.overlays.dialogBody", {
+              text: t("catalog.longText"),
+            })}
           </UiText>
         </UiDialog>
         <UiDrawer
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
-          title="Chi tiết phiếu (drawer)"
+          title={t("catalog.overlays.drawerTitle")}
         >
-          <UiText variant="body">{LONG_VI}</UiText>
+          <UiText variant="body">{t("catalog.longText")}</UiText>
         </UiDrawer>
         <UiConfirmDialog
           open={confirmOpen}
           tone="danger"
-          title="Xóa phiếu nháp?"
-          confirmText="Xóa"
+          title={t("catalog.overlays.deleteDraftTitle")}
+          confirmText={t("catalog.overlays.delete")}
           onConfirm={() => setConfirmOpen(false)}
           onClose={() => setConfirmOpen(false)}
         >
-          Hành động không thể hoàn tác (fixture).
+          {t("catalog.overlays.deleteDraftBody")}
         </UiConfirmDialog>
         {confirmDialog}
       </UiCard>
@@ -759,29 +835,33 @@ export default function FoundationCatalogPage() {
           <UiStateSurface kind="loading" />
           <UiStateSurface
             kind="empty"
-            description="Chưa có phiếu nào trong bộ lọc hiện tại."
-            action={<UiButton appearance="outlined">Tạo phiếu mới</UiButton>}
+            description={t("catalog.states.emptyDesc")}
+            action={
+              <UiButton appearance="outlined">
+                {t("catalog.states.emptyAction")}
+              </UiButton>
+            }
           />
           <UiStateSurface
             kind="error"
-            description="Máy chủ trả lỗi 500 (request_id: a1b2c3-fixture)."
-            action={<UiButton>Thử lại</UiButton>}
+            description={t("catalog.common.serverError")}
+            action={<UiButton>{t("common.retry")}</UiButton>}
           />
           <UiStateSurface
             kind="no-permission"
-            description="Cần quyền inventory.view."
+            description={t("catalog.states.noPermission")}
           />
         </Box>
       </UiCard>
 
-      <UiCard title="FormField shell (control tùy ý)">
+      <UiCard title={t("catalog.formField.sectionTitle")}>
         <Box sx={{ maxWidth: 420 }}>
           <UiFormField
             label="FormField shell"
             required
-            helperText="Dùng khi control không phải TextField."
+            helperText={t("catalog.formField.helper")}
           >
-            <UiTextField placeholder="Control bên trong shell" />
+            <UiTextField placeholder={t("catalog.formField.placeholder")} />
           </UiFormField>
         </Box>
       </UiCard>

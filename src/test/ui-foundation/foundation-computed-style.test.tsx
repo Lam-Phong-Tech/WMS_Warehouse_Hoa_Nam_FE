@@ -9,7 +9,11 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { muiTheme } from "@/shared/ui/theme/mui-adapter";
-import { COMPONENT_TOKENS as C, PALETTE, cssVarNameOf } from "@/shared/ui/tokens";
+import {
+  COMPONENT_TOKENS as C,
+  PALETTE,
+  cssVarNameOf,
+} from "@/shared/ui/tokens";
 import {
   UiButton,
   UiStatusBadge,

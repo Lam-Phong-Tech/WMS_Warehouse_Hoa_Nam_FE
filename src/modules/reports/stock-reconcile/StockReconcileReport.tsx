@@ -43,6 +43,12 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { fmt } from "@/modules/reports/operations/report-format";
 import { MOVEMENT_LABELS } from "@/modules/reports/operations/report-labels";
+import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
+import {
+  optionsFromRows,
+  useSectionFilter,
+  type SectionFilterConfig,
+} from "@/modules/reports/operations/report-section-filter";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
 import { EvidenceModal, ModalCloseButton } from "./stock-reconcile-overlays";
 import {
@@ -56,32 +62,22 @@ import {
   type StockReconcileRow,
   type StockStatusCode,
 } from "./stock-reconcile-api";
+import { useT } from "@/shared/i18n/useT";
+import {
+  CHECK_LABELS,
+  KIND_OPTIONS,
+  LABELS,
+  NORM_STATE_LABELS,
+  type NormState,
+} from "./stock-reconcile-labels";
 import "./stock-reconcile-report.css";
 
 /**
  * Nhãn hiển thị — chép nguyên `labels` của demo.
  *
- * CỐ Ý không đọc `INVENTORY_STOCK_STATUS_LABELS`: demo gọi DEFECTIVE là "Lỗi"
- * và QUARANTINE là "Cách ly", ngắn hơn nhãn dùng chung ("Hàng lỗi" / "Chờ kiểm
- * tra") vì chúng nằm trong thanh cơ cấu tồn có bề ngang hẹp. Yêu cầu là giống
- * demo 100%.
+ * Nhãn theo mã nghiệp vụ (`LABELS`, `CHECK_LABELS`, `NORM_STATE_LABELS`) nằm ở
+ * `./stock-reconcile-labels.ts` — bảng song ngữ đọc theo ngôn ngữ lúc truy cập.
  */
-const LABELS: Readonly<Record<string, string>> = {
-  AVAILABLE: "Khả dụng",
-  NON_SELLABLE: "Không thể bán/xuất",
-  DEFECTIVE: "Lỗi",
-  QUARANTINE: "Cách ly",
-  PRODUCT: "Sản phẩm",
-  COMPONENT: "Linh kiện",
-};
-
-/** Nhãn 4 phép kiểm §7.5 — hai mã đầu lấy từ demo, hai mã sau từ hợp đồng BE. */
-const CHECK_LABELS: Readonly<Record<string, string>> = {
-  ledger_to_balance: "Sổ cái ↔ số dư",
-  serial_subledger: "Sổ serial",
-  quantity_subledger: "Số lượng trong thùng",
-  container_integrity: "Toàn vẹn thùng chứa",
-};
 
 /** Màu từng trạng thái tồn trong thanh cơ cấu — đúng bảng màu Vuexy của demo. */
 const STATUS_COLORS: Readonly<Record<StockStatusCode, string>> = {
@@ -90,12 +86,6 @@ const STATUS_COLORS: Readonly<Record<StockStatusCode, string>> = {
   DEFECTIVE: "var(--wms-error)",
   QUARANTINE: "var(--wms-info)",
 };
-
-const KIND_OPTIONS = [
-  { value: "all", label: "Tất cả loại hàng" },
-  { value: "PRODUCT", label: "Sản phẩm" },
-  { value: "COMPONENT", label: "Linh kiện" },
-];
 
 /** Chu vi vòng tròn r=66 mà demo dùng để cắt cung (2πr ≈ 415). */
 const DONUT_CIRCUMFERENCE = 415;
@@ -132,11 +122,26 @@ function checkLabel(checks: string[]): string {
 
 /** Badge "Trạng thái đối soát" — demo chỉ có 2 nhánh, thêm nhánh NOT_APPLICABLE. */
 function ReconcileChip({ status }: { status: string }) {
-  if (status === "MATCH") return <span className="match-chip">Khớp</span>;
-  if (status === "NOT_APPLICABLE") {
-    return <span className="chip chip-neutral">Không áp dụng</span>;
+  const t = useT();
+  if (status === "MATCH") {
+    return (
+      <span className="match-chip">
+        {t("reports.stockReconcileReport.matched")}
+      </span>
+    );
   }
-  return <span className="chip chip-error">Lệch</span>;
+  if (status === "NOT_APPLICABLE") {
+    return (
+      <span className="chip chip-neutral">
+        {t("reports.stockReconcileReport.notApplicable")}
+      </span>
+    );
+  }
+  return (
+    <span className="chip chip-error">
+      {t("reports.stockReconcileReport.mismatch")}
+    </span>
+  );
 }
 
 function stockStatusChipClass(status: string): string {
@@ -156,7 +161,10 @@ function DeltaCell({ value }: { value: number }) {
   );
 }
 
-type NormState = "LOW" | "OVER" | "NORMAL" | "UNSET";
+/**
+ * Câu chữ trạng thái định mức — NGUỒN DUY NHẤT cho cả dropdown lọc lẫn chip
+ * trong bảng (trước đây hai nơi tự viết lại chuỗi nên dễ nói hai kiểu).
+ */
 
 type NormRow = {
   code: string;
@@ -184,18 +192,24 @@ function normStateOf(
   return { state: "NORMAL", gap: min !== null ? available - min : null };
 }
 
+/** Tông màu của từng trạng thái; câu chữ luôn lấy từ `NORM_STATE_LABELS`. */
+const NORM_STATE_CHIP_CLASS: Readonly<Record<NormState, string>> = {
+  LOW: "chip chip-error",
+  OVER: "chip chip-warning",
+  UNSET: "chip chip-neutral",
+  NORMAL: "match-chip",
+};
+
 function NormStatusChip({ state }: { state: NormState }) {
-  if (state === "LOW") return <span className="chip chip-error">Dưới Min</span>;
-  if (state === "OVER") {
-    return <span className="chip chip-warning">Vượt Max</span>;
-  }
-  if (state === "UNSET") {
-    return <span className="chip chip-neutral">Chưa đặt định mức</span>;
-  }
-  return <span className="match-chip">Trong định mức</span>;
+  return (
+    <span className={NORM_STATE_CHIP_CLASS[state]}>
+      {NORM_STATE_LABELS[state]}
+    </span>
+  );
 }
 
 export default function StockReconcileReport() {
+  const t = useT();
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
 
   // ── Bộ lọc (state của demo: kind / query / view + mốc đối soát) ─────────
@@ -299,9 +313,12 @@ export default function StockReconcileReport() {
     [rowsInScope],
   );
   const structureAria = structure
-    .map(
-      (item) =>
-        `${LABELS[item.status]} ${fmt(item.value)} cái, ${percentText(item.value, summary.balance)}%`,
+    .map((item) =>
+      t("reports.stockReconcileReport.structureAriaItem", {
+        label: LABELS[item.status],
+        value: fmt(item.value),
+        percent: percentText(item.value, summary.balance),
+      }),
     )
     .join("; ");
 
@@ -352,6 +369,139 @@ export default function StockReconcileReport() {
     [aggregates, thresholds],
   );
   const belowMinCount = normRows.filter((row) => row.state === "LOW").length;
+
+  /**
+   * Ba bộ lọc RIÊNG cho ba khối danh sách dài của màn này.
+   *
+   * Bộ lọc đầu trang đổi cả KPI, donut cơ cấu tồn và cả ba khối cùng lúc; khi
+   * người đọc chỉ muốn "tìm SKU này trong đúng bảng đang soi" thì đó là công
+   * cụ quá thô. Ba bộ lọc dưới đây chỉ thu hẹp TẦM NHÌN của chính khối chứa
+   * nó, không gọi lại API và không đụng tới số liệu tổng.
+   */
+  const varianceFilterConfig = useMemo<SectionFilterConfig<SkuAggregate>>(
+    () => ({
+      searchPlaceholder: t("reports.stockReconcileReport.skuSearchPlaceholder"),
+      searchText: (row) => [row.code, row.name],
+      selects: [
+        {
+          key: "kind",
+          placeholder: t("reports.stockReconcileReport.anyKind"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.kind,
+              (value) => LABELS[value] ?? value,
+            ),
+          match: (row, value) => row.kind === value,
+        },
+        {
+          key: "check",
+          placeholder: t("reports.stockReconcileReport.anyCheck"),
+          options: (list) => {
+            const codes = new Set<string>();
+            for (const row of list) {
+              for (const code of row.checks) codes.add(code);
+            }
+            return [...codes]
+              .sort((a, b) => a.localeCompare(b, "vi"))
+              .map((code) => ({
+                value: code,
+                label: CHECK_LABELS[code] ?? code,
+              }));
+          },
+          match: (row, value) => row.checks.includes(value),
+          minWidth: 210,
+        },
+      ],
+    }),
+    [t],
+  );
+  const varianceFilter = useSectionFilter(varianceRows, varianceFilterConfig);
+
+  const normFilterConfig = useMemo<SectionFilterConfig<NormRow>>(
+    () => ({
+      searchPlaceholder: t("reports.stockReconcileReport.skuSearchPlaceholder"),
+      searchText: (row) => [row.code, row.name],
+      selects: [
+        {
+          key: "kind",
+          placeholder: t("reports.stockReconcileReport.anyKind"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.kind,
+              (value) => LABELS[value] ?? value,
+            ),
+          match: (row, value) => row.kind === value,
+        },
+        {
+          key: "state",
+          placeholder: t("reports.stockReconcileReport.anyNormState"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.state,
+              (value) => NORM_STATE_LABELS[value as NormState] ?? value,
+            ),
+          match: (row, value) => row.state === value,
+          minWidth: 210,
+        },
+      ],
+    }),
+    [t],
+  );
+  const normFilter = useSectionFilter(normRows, normFilterConfig);
+
+  const detailFilterConfig = useMemo<SectionFilterConfig<StockReconcileRow>>(
+    () => ({
+      searchPlaceholder: t(
+        "reports.stockReconcileReport.skuWarehouseSearchPlaceholder",
+      ),
+      searchText: (row) => [row.sku_code, row.sku_name, row.warehouse_code],
+      selects: [
+        {
+          key: "warehouse",
+          placeholder: t("reports.stockReconcileReport.anyWarehouse"),
+          options: (list) => optionsFromRows(list, (row) => row.warehouse_code),
+          match: (row, value) => row.warehouse_code === value,
+          minWidth: 150,
+        },
+        {
+          key: "status",
+          placeholder: t("reports.stockReconcileReport.anyStockStatus"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.stock_status,
+              (value) => LABELS[value] ?? value,
+            ),
+          match: (row, value) => row.stock_status === value,
+          minWidth: 190,
+        },
+        {
+          key: "reconcile",
+          placeholder: t("reports.stockReconcileReport.anyReconcileResult"),
+          options: [
+            {
+              value: "MISMATCH",
+              label: t("reports.stockReconcileReport.mismatch"),
+            },
+            {
+              value: "MATCH",
+              label: t("reports.stockReconcileReport.matched"),
+            },
+          ],
+          match: (row, value) =>
+            value === "MISMATCH"
+              ? row.reconciliation_status === "MISMATCH"
+              : row.reconciliation_status !== "MISMATCH",
+          minWidth: 200,
+        },
+      ],
+    }),
+    [],
+  );
+  const detailFilter = useSectionFilter(rowsInScope, detailFilterConfig);
 
   // ── 5. Chi tiết + hộp thoại bằng chứng ──────────────────────────────────
   const drillRow = drill?.row ?? null;
@@ -421,17 +571,19 @@ export default function StockReconcileReport() {
       };
     }
     if (loading) {
-      return { tone: "page-alert is-info", body: <>Đang tải số liệu…</> };
+      return {
+        tone: "page-alert is-info",
+        body: <>{t("reports.stockReconcileReport.loadingData")}</>,
+      };
     }
     if (snapshot.as_of_snapshot) {
       return {
         tone: "page-alert is-info",
         body: (
           <>
-            Đang xem ảnh chụp theo sổ tại{" "}
-            <strong>{asOf.format("DD-MM-YYYY")}</strong>. Số dư quá khứ không
-            đối soát được với sổ hiện tại nên trạng thái đối soát hiển thị
-            &quot;Không áp dụng&quot;.
+            {t("reports.stockReconcileReport.asOfNoticeA")}{" "}
+            <strong>{asOf.format("DD-MM-YYYY")}</strong>
+            {t("reports.stockReconcileReport.asOfNoticeB")}
           </>
         ),
       };
@@ -460,22 +612,26 @@ export default function StockReconcileReport() {
   return (
     <div className="hn-rpt02" data-mvp-screen="RPT-02">
       <div className="page-wrap">
-        <div className="breadcrumb" aria-label="Đường dẫn">
-          <span>Trang chủ</span>
+        <div
+          className="breadcrumb"
+          aria-label={t("reports.stockReconcileReport.breadcrumbAria")}
+        >
+          <span>{t("reports.stockReconcileReport.breadcrumbHome")}</span>
           <span aria-hidden="true">/</span>
-          <span>Báo cáo</span>
+          <span>{t("reports.stockReconcileReport.breadcrumbReports")}</span>
           <span aria-hidden="true">/</span>
-          <strong>Tồn kho &amp; đối soát</strong>
+          <strong>{t("reports.stockReconcileReport.breadcrumbCurrent")}</strong>
         </div>
 
         <section className="page-header" aria-labelledby="rpt02-page-title">
           <div>
-            <span className="eyebrow">BÁO CÁO VẬN HÀNH · RPT-02</span>
-            <h1 id="rpt02-page-title">Báo cáo Tồn kho &amp; đối soát</h1>
-            <p>
-              Theo dõi số dư theo kho, trạng thái tồn và các điểm lệch cần xử lý
-              trước khi ảnh hưởng vận hành.
-            </p>
+            <span className="eyebrow">
+              {t("reports.stockReconcileReport.eyebrow")}
+            </span>
+            <h1 id="rpt02-page-title">
+              {t("reports.stockReconcileReport.title")}
+            </h1>
+            <p>{t("reports.stockReconcileReport.subtitle")}</p>
           </div>
           <div className="scope-block">
             <span className="chip chip-primary">
@@ -484,22 +640,30 @@ export default function StockReconcileReport() {
                 : snapshot.warehouse_code}
             </span>
             <span className="chip chip-neutral">
-              {isSuperAdmin ? "Super Admin" : "Người dùng vận hành"}
+              {isSuperAdmin
+                ? "Super Admin"
+                : t("reports.stockReconcileReport.roleOperator")}
             </span>
             {mismatchedCount > 0 ? (
-              <span className="chip chip-warning">Cần xử lý</span>
+              <span className="chip chip-warning">
+                {t("reports.stockReconcileReport.needsAction")}
+              </span>
             ) : (
-              <span className="chip chip-success">Đã khớp</span>
+              <span className="chip chip-success">
+                {t("reports.stockReconcileReport.allMatched")}
+              </span>
             )}
           </div>
         </section>
 
         <section
           className="filter-card report-filter-card"
-          aria-label="Bộ lọc báo cáo"
+          aria-label={t("reports.stockReconcileReport.filterAria")}
         >
           <div className="filter-group">
-            <span className="filter-label">Mốc đối soát</span>
+            <span className="filter-label">
+              {t("reports.stockReconcileReport.fieldAsOf")}
+            </span>
             {/*
              * `maxDate` là hôm nay: mốc đối soát phải là ngày ĐÃ ghi sổ, chốt ở
              * tương lai thì không có số dư nào để đối chiếu.
@@ -507,7 +671,7 @@ export default function StockReconcileReport() {
             <UiVuexyDateField
               id="rpt02-as-of-date"
               field="as-of"
-              aria-label="Mốc đối soát"
+              aria-label={t("reports.stockReconcileReport.fieldAsOf")}
               value={asOf}
               maxDate={dayjs().startOf("day")}
               onChange={(value) => {
@@ -518,23 +682,27 @@ export default function StockReconcileReport() {
           </div>
 
           <div className="filter-group">
-            <span className="filter-label">Tìm SKU theo mã hoặc tên</span>
+            <span className="filter-label">
+              {t("reports.stockReconcileReport.fieldSkuSearch")}
+            </span>
             <SearchInput
               width="100%"
               value={query}
-              aria-label="Tìm SKU theo mã hoặc tên"
-              placeholder="Mã SKU / tên SKU"
+              aria-label={t("reports.stockReconcileReport.fieldSkuSearch")}
+              placeholder={t("reports.stockReconcileReport.skuSearchInput")}
               onChange={setQuery}
             />
           </div>
 
           <div className="filter-group">
-            <span className="filter-label">Loại hàng</span>
+            <span className="filter-label">
+              {t("reports.stockReconcileReport.fieldKind")}
+            </span>
             <UiSelect
               fullWidth
-              aria-label="Loại hàng"
+              aria-label={t("reports.stockReconcileReport.fieldKind")}
               value={kind}
-              options={KIND_OPTIONS}
+              options={KIND_OPTIONS.map((option) => ({ ...option }))}
               onChange={setKind}
             />
           </div>
@@ -560,24 +728,31 @@ export default function StockReconcileReport() {
               >
                 <VuexyDemoIcon name="refresh-cw" />
               </span>
-              {refreshing ? "Đang làm mới…" : "Làm mới"}
+              {refreshing
+                ? t("reports.stockReconcileReport.refreshing")
+                : t("reports.stockReconcileReport.refresh")}
             </button>
             <div className="refresh-meta">
               <span>
-                Dữ liệu lúc{" "}
-                {snapshotMoment ? snapshotMoment.format("HH:mm") : EMPTY_TEXT}
+                {t("reports.stockReconcileReport.dataAt", {
+                  time: snapshotMoment
+                    ? snapshotMoment.format("HH:mm")
+                    : EMPTY_TEXT,
+                })}
               </span>
               <small>
-                Đã ghi sổ đến{" "}
-                {watermark && watermark.isValid()
-                  ? watermark.format("DD-MM-YYYY")
-                  : EMPTY_TEXT}
+                {t("reports.stockReconcileReport.postedUntil", {
+                  date:
+                    watermark && watermark.isValid()
+                      ? watermark.format("DD-MM-YYYY")
+                      : EMPTY_TEXT,
+                })}
               </small>
             </div>
           </div>
 
           <div className="report-snapshot">
-            Snapshot:{" "}
+            {t("reports.stockReconcileReport.sliceLabel")}{" "}
             <strong>
               {snapshot.snapshot_id === "" ? EMPTY_TEXT : snapshot.snapshot_id}
             </strong>{" "}
@@ -599,14 +774,18 @@ export default function StockReconcileReport() {
         <section aria-labelledby="rpt02-overview-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">TÌNH HÌNH HIỆN TẠI</span>
-              <h2 id="rpt02-overview-title">Tổng quan tồn và đối soát</h2>
+              <span className="eyebrow">
+                {t("reports.stockReconcileReport.overviewEyebrow")}
+              </span>
+              <h2 id="rpt02-overview-title">
+                {t("reports.stockReconcileReport.overviewTitle")}
+              </h2>
             </div>
             <span className="section-meta">
               {snapshot.warehouse_code === ""
                 ? ALL_WAREHOUSES_LABEL
                 : snapshot.warehouse_code}{" "}
-              · Đơn vị: cái
+              · {t("reports.stockReconcileReport.unitPcs")}
             </span>
           </div>
           <div className="kpi-grid report-kpi-grid">
@@ -615,14 +794,18 @@ export default function StockReconcileReport() {
               data-tone="opening"
             >
               <div className="kpi-top">
-                <span className="kpi-label">Tổng tồn hiện tại</span>
+                <span className="kpi-label">
+                  {t("reports.stockReconcileReport.kpiTotal")}
+                </span>
                 <span className="kpi-icon" aria-hidden="true">
                   <VuexyDemoIcon name="warehouse" />
                 </span>
               </div>
               <div className="kpi-value">{fmt(summary.balance)}</div>
               <div className="kpi-bottom">
-                <span className="kpi-foot">Inventory Balance tại mốc chốt</span>
+                <span className="kpi-foot">
+                  {t("reports.stockReconcileReport.kpiTotalFoot")}
+                </span>
               </div>
             </article>
             <article
@@ -630,14 +813,18 @@ export default function StockReconcileReport() {
               data-tone="inbound"
             >
               <div className="kpi-top">
-                <span className="kpi-label">Tồn khả dụng</span>
+                <span className="kpi-label">
+                  {t("reports.stockReconcileReport.kpiAvailable")}
+                </span>
                 <span className="kpi-icon" aria-hidden="true">
                   <VuexyDemoIcon name="package-plus" />
                 </span>
               </div>
               <div className="kpi-value">{fmt(summary.available)}</div>
               <div className="kpi-bottom">
-                <span className="kpi-foot">Available Qty từ Balance</span>
+                <span className="kpi-foot">
+                  {t("reports.stockReconcileReport.kpiAvailableFoot")}
+                </span>
               </div>
             </article>
             <article
@@ -645,7 +832,9 @@ export default function StockReconcileReport() {
               data-tone="component"
             >
               <div className="kpi-top">
-                <span className="kpi-label">Không thể bán/xuất</span>
+                <span className="kpi-label">
+                  {t("reports.stockReconcileReport.kpiNonSellable")}
+                </span>
                 <span className="kpi-icon" aria-hidden="true">
                   <VuexyDemoIcon name="briefcase-medical" />
                 </span>
@@ -653,7 +842,7 @@ export default function StockReconcileReport() {
               <div className="kpi-value">{fmt(summary.nonSellable)}</div>
               <div className="kpi-bottom">
                 <span className="kpi-foot">
-                  Theo stock_status server trả về
+                  {t("reports.stockReconcileReport.kpiNonSellableFoot")}
                 </span>
               </div>
             </article>
@@ -662,14 +851,18 @@ export default function StockReconcileReport() {
               data-tone="product"
             >
               <div className="kpi-top">
-                <span className="kpi-label">Lỗi / cách ly</span>
+                <span className="kpi-label">
+                  {t("reports.stockReconcileReport.kpiRisk")}
+                </span>
                 <span className="kpi-icon" aria-hidden="true">
                   <VuexyDemoIcon name="triangle-alert" />
                 </span>
               </div>
               <div className="kpi-value">{fmt(summary.risk)}</div>
               <div className="kpi-bottom">
-                <span className="kpi-foot">DEFECTIVE và QUARANTINE</span>
+                <span className="kpi-foot">
+                  {t("reports.stockReconcileReport.kpiRiskFoot")}
+                </span>
               </div>
             </article>
           </div>
@@ -679,11 +872,15 @@ export default function StockReconcileReport() {
         <section aria-labelledby="rpt02-status-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">KIỂM SOÁT TỒN</span>
-              <h2 id="rpt02-status-title">Cơ cấu và mức độ khớp</h2>
+              <span className="eyebrow">
+                {t("reports.stockReconcileReport.statusEyebrow")}
+              </span>
+              <h2 id="rpt02-status-title">
+                {t("reports.stockReconcileReport.statusTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              Nguồn: Inventory Balance &amp; Inventory Movement
+              {t("reports.stockReconcileReport.statusMeta")}
             </span>
           </div>
           <div className="analysis-grid">
@@ -697,16 +894,20 @@ export default function StockReconcileReport() {
                     <VuexyDemoIcon name="warehouse" />
                   </span>
                   <div>
-                    <h3>Cơ cấu tồn kho hiện tại</h3>
+                    <h3>{t("reports.stockReconcileReport.structureTitle")}</h3>
                     <span className="card-subtitle">
-                      Tỉ trọng tồn theo trạng thái từ máy chủ
+                      {t("reports.stockReconcileReport.structureSubtitle")}
                     </span>
                   </div>
                 </div>
                 <div className="chart-head-meta">
-                  <span className="chart-unit">Đơn vị: cái</span>
+                  <span className="chart-unit">
+                    {t("reports.stockReconcileReport.unitPcs")}
+                  </span>
                   <span className="chart-current">
-                    <small>Tổng tồn</small>
+                    <small>
+                      {t("reports.stockReconcileReport.totalStock")}
+                    </small>
                     <strong>{fmt(summary.balance)}</strong>
                   </span>
                 </div>
@@ -716,7 +917,12 @@ export default function StockReconcileReport() {
                   <div
                     className="structure-chart"
                     role="img"
-                    aria-label={`Cơ cấu tồn kho: ${structureAria}`}
+                    aria-label={t(
+                      "reports.stockReconcileReport.structureAria",
+                      {
+                        detail: structureAria,
+                      },
+                    )}
                   >
                     {structure.map((item) => (
                       <div
@@ -735,7 +941,8 @@ export default function StockReconcileReport() {
                             {LABELS[item.status]}
                           </span>
                           <strong>
-                            {fmt(item.value)} cái{" "}
+                            {fmt(item.value)}{" "}
+                            {t("reports.stockReconcileReport.pcsSuffix")}{" "}
                             <small>
                               {percentText(item.value, summary.balance)}%
                             </small>
@@ -750,12 +957,12 @@ export default function StockReconcileReport() {
                 </div>
               </div>
               <details className="chart-table">
-                <summary>Xem bảng dữ liệu thay thế</summary>
+                <summary>{t("reports.stockReconcileReport.altTable")}</summary>
                 <table>
                   <thead>
                     <tr>
-                      <th>Trạng thái</th>
-                      <th>Số lượng</th>
+                      <th>{t("reports.stockReconcileReport.colStatus")}</th>
+                      <th>{t("reports.stockReconcileReport.colQuantity")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -783,20 +990,26 @@ export default function StockReconcileReport() {
                     <VuexyDemoIcon name="triangle-alert" />
                   </span>
                   <div>
-                    <h3>Tỷ lệ đối soát</h3>
+                    <h3>
+                      {t("reports.stockReconcileReport.reconcileRateTitle")}
+                    </h3>
                     <span className="card-subtitle">
-                      SKU khớp và lệch sau khi gộp trạng thái tồn
+                      {t("reports.stockReconcileReport.reconcileRateSubtitle")}
                     </span>
                   </div>
                 </div>
                 <div className="chart-head-meta">
                   {mismatchedCount > 0 ? (
-                    <span className="chip chip-warning">Cần xử lý</span>
+                    <span className="chip chip-warning">
+                      {t("reports.stockReconcileReport.needsAction")}
+                    </span>
                   ) : (
-                    <span className="chip chip-success">Đã khớp</span>
+                    <span className="chip chip-success">
+                      {t("reports.stockReconcileReport.allMatched")}
+                    </span>
                   )}
                   <span className="chart-current">
-                    <small>Tổng SKU</small>
+                    <small>{t("reports.stockReconcileReport.totalSku")}</small>
                     <strong>{fmt(aggregates.length)}</strong>
                   </span>
                 </div>
@@ -821,7 +1034,9 @@ export default function StockReconcileReport() {
                       }
                       aria-hidden="true"
                     />
-                    MATCH {fmt(matchedCount)}
+                    {t("reports.stockReconcileReport.legendMatched", {
+                      count: fmt(matchedCount),
+                    })}
                   </button>
                   <button
                     className="legend-button"
@@ -841,7 +1056,9 @@ export default function StockReconcileReport() {
                       }
                       aria-hidden="true"
                     />
-                    MISMATCH {fmt(mismatchedCount)}
+                    {t("reports.stockReconcileReport.legendMismatch", {
+                      count: fmt(mismatchedCount),
+                    })}
                   </button>
                 </div>
                 <div className="chart-plot">
@@ -849,7 +1066,10 @@ export default function StockReconcileReport() {
                     className="chart-svg"
                     viewBox="0 0 360 228"
                     role="img"
-                    aria-label={`Biểu đồ tỷ lệ đối soát: ${fmt(shownMatched)} SKU khớp, ${fmt(shownMismatched)} SKU lệch`}
+                    aria-label={t("reports.stockReconcileReport.donutAria", {
+                      matched: fmt(shownMatched),
+                      mismatched: fmt(shownMismatched),
+                    })}
                   >
                     <circle
                       className="chart-donut-track"
@@ -896,27 +1116,27 @@ export default function StockReconcileReport() {
                       textAnchor="middle"
                       className="chart-axis-label"
                     >
-                      SKU đã kiểm tra
+                      {t("reports.stockReconcileReport.skuChecked")}
                     </text>
                   </svg>
                 </div>
               </div>
               <details className="chart-table">
-                <summary>Xem bảng dữ liệu thay thế</summary>
+                <summary>{t("reports.stockReconcileReport.altTable")}</summary>
                 <table>
                   <thead>
                     <tr>
-                      <th>Trạng thái</th>
-                      <th>Số SKU</th>
+                      <th>{t("reports.stockReconcileReport.colStatus")}</th>
+                      <th>{t("reports.stockReconcileReport.colSkuCount")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>MATCH</td>
+                      <td>{t("reports.stockReconcileReport.matched")}</td>
                       <td>{fmt(matchedCount)}</td>
                     </tr>
                     <tr>
-                      <td>MISMATCH</td>
+                      <td>{t("reports.stockReconcileReport.mismatch")}</td>
                       <td>{fmt(mismatchedCount)}</td>
                     </tr>
                   </tbody>
@@ -930,50 +1150,72 @@ export default function StockReconcileReport() {
         <section aria-labelledby="rpt02-variance-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">ĐIỂM LỆCH ƯU TIÊN</span>
-              <h2 id="rpt02-variance-title">Top SKU chênh lệch đối soát</h2>
+              <span className="eyebrow">
+                {t("reports.stockReconcileReport.varianceEyebrow")}
+              </span>
+              <h2 id="rpt02-variance-title">
+                {t("reports.stockReconcileReport.varianceTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              Chênh lệch = Inventory Balance − Movement Calculated
+              {t("reports.stockReconcileReport.varianceMeta")}
             </span>
           </div>
           <article className="card report-table-card">
             <header className="card-head">
               <div>
-                <h3>SKU cần làm rõ</h3>
+                <h3>{t("reports.stockReconcileReport.varianceCardTitle")}</h3>
                 <span className="card-subtitle">
-                  Chỉ hiển thị SKU có trạng thái MISMATCH trong snapshot.
+                  {t("reports.stockReconcileReport.varianceCardSubtitle")}
                 </span>
               </div>
               {varianceRows.length > 0 ? (
                 <span className="chip chip-error">
-                  {fmt(varianceRows.length)} SKU lệch
+                  {t("reports.stockReconcileReport.mismatchCount", {
+                    count: fmt(varianceRows.length),
+                  })}
                 </span>
               ) : (
-                <span className="chip chip-success">Không có SKU lệch</span>
+                <span className="chip chip-success">
+                  {t("reports.stockReconcileReport.noMismatch")}
+                </span>
               )}
             </header>
+            <SectionFilterBar
+              state={varianceFilter}
+              label={t("reports.stockReconcileReport.varianceCardTitle")}
+              unit="SKU"
+              data-testid="rpt02-variance-section-filter"
+            />
             <div className="table-wrap">
               <table className="report-table">
                 <thead>
                   <tr>
-                    <th>SKU / Tên hàng</th>
-                    <th>Balance</th>
-                    <th>Movement</th>
-                    <th>Chênh lệch</th>
-                    <th>Lệch ở</th>
-                    <th>Incident</th>
+                    <th>{t("reports.stockReconcileReport.colSkuName")}</th>
+                    <th className="num">
+                      {t("reports.stockReconcileReport.colBalance")}
+                    </th>
+                    <th className="num">
+                      {t("reports.stockReconcileReport.colLedgerMovement")}
+                    </th>
+                    <th className="num">
+                      {t("reports.stockReconcileReport.colVariance")}
+                    </th>
+                    <th>{t("reports.stockReconcileReport.colMismatchAt")}</th>
+                    <th>{t("reports.stockReconcileReport.colIncident")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {varianceRows.length === 0 ? (
+                  {varianceFilter.rows.length === 0 ? (
                     <tr>
                       <td colSpan={6}>
-                        Không có SKU lệch đối soát theo bộ lọc hiện tại.
+                        {varianceFilter.active
+                          ? t("reports.stockReconcileReport.emptyFiltered")
+                          : t("reports.stockReconcileReport.varianceEmpty")}
                       </td>
                     </tr>
                   ) : (
-                    varianceRows.map((item) => {
+                    varianceFilter.rows.map((item) => {
                       const source = snapshot.rows.find(
                         (row) =>
                           row.sku_code === item.code &&
@@ -1014,51 +1256,75 @@ export default function StockReconcileReport() {
         <section aria-labelledby="rpt02-norm-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">CẢNH BÁO ĐỊNH MỨC</span>
-              <h2 id="rpt02-norm-title">Kiểm soát lượng khả dụng</h2>
+              <span className="eyebrow">
+                {t("reports.stockReconcileReport.normEyebrow")}
+              </span>
+              <h2 id="rpt02-norm-title">
+                {t("reports.stockReconcileReport.normTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              So Available Qty với Min / Max theo SKU
+              {t("reports.stockReconcileReport.normMeta")}
             </span>
           </div>
           <article className="card report-table-card">
             <header className="card-head">
               <div>
-                <h3>Danh sách định mức theo SKU</h3>
+                <h3>{t("reports.stockReconcileReport.normCardTitle")}</h3>
                 <span className="card-subtitle">
-                  Định mức lấy từ danh mục SKU; chỉ Available Qty được so sánh.
+                  {t("reports.stockReconcileReport.normCardSubtitle")}
                 </span>
               </div>
               {belowMinCount > 0 ? (
                 <span className="chip chip-warning">
-                  {fmt(belowMinCount)} dưới Min
+                  {t("reports.stockReconcileReport.belowMinCount", {
+                    count: fmt(belowMinCount),
+                  })}
                 </span>
               ) : (
-                <span className="chip chip-success">Không có SKU dưới Min</span>
+                <span className="chip chip-success">
+                  {t("reports.stockReconcileReport.noBelowMin")}
+                </span>
               )}
             </header>
+            <SectionFilterBar
+              state={normFilter}
+              label={t("reports.stockReconcileReport.normCardTitle")}
+              unit="SKU"
+              data-testid="rpt02-norm-section-filter"
+            />
             <div className="table-wrap">
               <table className="report-table">
                 <thead>
                   <tr>
-                    <th>SKU / Tên hàng</th>
-                    <th>Loại</th>
-                    <th className="num">Available Qty</th>
-                    <th className="num">Min Qty</th>
-                    <th className="num">Max Qty</th>
-                    <th className="num">Chênh lệch</th>
-                    <th>Trạng thái</th>
+                    <th>{t("reports.stockReconcileReport.colSkuName")}</th>
+                    <th>{t("reports.stockReconcileReport.colKind")}</th>
+                    <th className="num">
+                      {t("reports.stockReconcileReport.colAvailableQty")}
+                    </th>
+                    <th className="num">
+                      {t("reports.stockReconcileReport.colMin")}
+                    </th>
+                    <th className="num">
+                      {t("reports.stockReconcileReport.colMax")}
+                    </th>
+                    <th className="num">
+                      {t("reports.stockReconcileReport.colVariance")}
+                    </th>
+                    <th>{t("reports.stockReconcileReport.colStatus")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {normRows.length === 0 ? (
+                  {normFilter.rows.length === 0 ? (
                     <tr>
                       <td colSpan={7}>
-                        Không có SKU nào theo bộ lọc hiện tại.
+                        {normFilter.active
+                          ? t("reports.stockReconcileReport.emptyFiltered")
+                          : t("reports.stockReconcileReport.normEmpty")}
                       </td>
                     </tr>
                   ) : (
-                    normRows.map((row) => (
+                    normFilter.rows.map((row) => (
                       <tr key={row.code}>
                         <td>
                           <span className="sku">{row.code}</span>
@@ -1097,26 +1363,31 @@ export default function StockReconcileReport() {
         <section aria-labelledby="rpt02-detail-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">DỮ LIỆU CHI TIẾT</span>
-              <h2 id="rpt02-detail-title">Chi tiết tồn kho &amp; đối soát</h2>
+              <span className="eyebrow">
+                {t("reports.stockReconcileReport.detailEyebrow")}
+              </span>
+              <h2 id="rpt02-detail-title">
+                {t("reports.stockReconcileReport.detailTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              {fmt(rowsInScope.length)} dòng SKU × trạng thái tồn
+              {t("reports.stockReconcileReport.detailMeta", {
+                count: fmt(rowsInScope.length),
+              })}
             </span>
           </div>
           <article className="card report-table-card">
             <header className="card-head">
               <div>
-                <h3>Dòng tồn kho theo trạng thái</h3>
+                <h3>{t("reports.stockReconcileReport.detailCardTitle")}</h3>
                 <span className="card-subtitle">
-                  Một dòng là một bucket kho × SKU × trạng thái tồn; dùng Button
-                  chuẩn để mở bằng chứng đối soát.
+                  {t("reports.stockReconcileReport.detailCardSubtitle")}
                 </span>
               </div>
               <div
                 className="report-view-tabs"
                 role="tablist"
-                aria-label="Chế độ xem dữ liệu"
+                aria-label={t("reports.stockReconcileReport.viewAria")}
               >
                 <button
                   ref={tableTabRef}
@@ -1131,7 +1402,7 @@ export default function StockReconcileReport() {
                   onKeyDown={onTabKeyDown}
                 >
                   <VuexyDemoIcon name="chart-column-big" />
-                  Bảng
+                  {t("reports.stockReconcileReport.viewTable")}
                 </button>
                 <button
                   ref={snapshotTabRef}
@@ -1146,10 +1417,16 @@ export default function StockReconcileReport() {
                   onKeyDown={onTabKeyDown}
                 >
                   <VuexyDemoIcon name="grid-2x2-plus" />
-                  Lát cắt
+                  {t("reports.stockReconcileReport.viewSnapshot")}
                 </button>
               </div>
             </header>
+
+            <SectionFilterBar
+              state={detailFilter}
+              label={t("reports.stockReconcileReport.detailCardTitle")}
+              data-testid="rpt02-detail-section-filter"
+            />
 
             <div
               id="rpt02-panel-table"
@@ -1162,25 +1439,41 @@ export default function StockReconcileReport() {
                   <thead>
                     <tr>
                       <th>STT</th>
-                      <th>SKU / loại hàng</th>
-                      <th>Trạng thái tồn</th>
-                      <th className="num">Balance Qty</th>
-                      <th className="num">Ledger Qty</th>
-                      <th className="num">Chênh lệch</th>
-                      <th className="num">Available Qty</th>
-                      <th>Trạng thái đối soát</th>
-                      <th>Thao tác</th>
+                      <th>{t("reports.stockReconcileReport.colSkuKind")}</th>
+                      <th>
+                        {t("reports.stockReconcileReport.colStockStatus")}
+                      </th>
+                      <th className="num">
+                        {t("reports.stockReconcileReport.colBalanceQty")}
+                      </th>
+                      <th className="num">
+                        {t("reports.stockReconcileReport.colLedgerQty")}
+                      </th>
+                      <th className="num">
+                        {t("reports.stockReconcileReport.colVariance")}
+                      </th>
+                      <th className="num">
+                        {t("reports.stockReconcileReport.colAvailableQty")}
+                      </th>
+                      <th>
+                        {t("reports.stockReconcileReport.colReconcileStatus")}
+                      </th>
+                      <th>{t("reports.stockReconcileReport.colActions")}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {rowsInScope.length === 0 ? (
+                    {detailFilter.rows.length === 0 ? (
                       <tr>
                         <td colSpan={9}>
-                          Không có dòng tồn kho nào theo bộ lọc.
+                          {detailFilter.active
+                            ? t(
+                                "reports.stockReconcileReport.detailEmptyFiltered",
+                              )
+                            : t("reports.stockReconcileReport.detailEmpty")}
                         </td>
                       </tr>
                     ) : (
-                      rowsInScope.map((row, index) => (
+                      detailFilter.rows.map((row, index) => (
                         <tr key={row.drillKey}>
                           <td>{index + 1}</td>
                           <td>
@@ -1211,7 +1504,12 @@ export default function StockReconcileReport() {
                             <button
                               className="button action-button"
                               type="button"
-                              aria-label={`Xem chi tiết đối soát ${row.sku_code}`}
+                              aria-label={t(
+                                "reports.stockReconcileReport.viewEvidenceAria",
+                                {
+                                  sku: row.sku_code,
+                                },
+                              )}
                               onClick={(event) =>
                                 openDrill(row, event.currentTarget)
                               }
@@ -1235,7 +1533,7 @@ export default function StockReconcileReport() {
               hidden={view !== "snapshot"}
             >
               <div className="report-snapshot-grid">
-                {rowsInScope.map((row) => (
+                {detailFilter.rows.map((row) => (
                   <article className="report-slice" key={row.drillKey}>
                     <div className="report-slice-head">
                       <div>
@@ -1254,26 +1552,33 @@ export default function StockReconcileReport() {
                     </div>
                     <dl className="report-slice-values">
                       <div>
-                        <dt>Balance</dt>
+                        <dt>{t("reports.stockReconcileReport.colBalance")}</dt>
                         <dd>{fmt(row.balance_qty)}</dd>
                       </div>
                       <div>
-                        <dt>Ledger</dt>
+                        <dt>{t("reports.stockReconcileReport.cardLedger")}</dt>
                         <dd>{fmt(row.ledger_qty)}</dd>
                       </div>
                       <div>
-                        <dt>Chênh</dt>
+                        <dt>{t("reports.stockReconcileReport.cardDelta")}</dt>
                         <dd>{signed(row.delta_qty)}</dd>
                       </div>
                       <div>
-                        <dt>Available</dt>
+                        <dt>
+                          {t("reports.stockReconcileReport.cardAvailable")}
+                        </dt>
                         <dd>{fmt(row.available_qty)}</dd>
                       </div>
                     </dl>
                     <button
                       className="button action-button"
                       type="button"
-                      aria-label={`Xem chi tiết đối soát ${row.sku_code}`}
+                      aria-label={t(
+                        "reports.stockReconcileReport.viewEvidenceAria",
+                        {
+                          sku: row.sku_code,
+                        },
+                      )}
                       onClick={(event) => openDrill(row, event.currentTarget)}
                     >
                       <VuexyDemoIcon name="eye" />
@@ -1291,7 +1596,9 @@ export default function StockReconcileReport() {
         <EvidenceModal titleId="rpt02-detail-modal-title" onClose={closeDrill}>
           <div className="modal-head">
             <div>
-              <div className="eyebrow modal-eyebrow">Bằng chứng đối soát</div>
+              <div className="eyebrow modal-eyebrow">
+                {t("reports.stockReconcileReport.modalEyebrow")}
+              </div>
               <h2 id="rpt02-detail-modal-title">
                 {drillRow.sku_code} ·{" "}
                 {drillRow.sku_name === "" ? EMPTY_TEXT : drillRow.sku_name}
@@ -1302,38 +1609,49 @@ export default function StockReconcileReport() {
           </div>
           <div className="modal-grid">
             <div>
-              <div className="meta-label">Balance Qty</div>
+              <div className="meta-label">
+                {t("reports.stockReconcileReport.colBalanceQty")}
+              </div>
               <div className="meta-value">{fmt(drillRow.balance_qty)}</div>
             </div>
             <div>
-              <div className="meta-label">Ledger Qty</div>
+              <div className="meta-label">
+                {t("reports.stockReconcileReport.colLedgerQty")}
+              </div>
               <div className="meta-value">{fmt(drillRow.ledger_qty)}</div>
             </div>
             <div>
-              <div className="meta-label">Available Qty</div>
+              <div className="meta-label">
+                {t("reports.stockReconcileReport.colAvailableQty")}
+              </div>
               <div className="meta-value">{fmt(drillRow.available_qty)}</div>
             </div>
           </div>
           <div className="formula">
-            Balance Qty {fmt(drillRow.balance_qty)} − Ledger Qty{" "}
-            {fmt(drillRow.ledger_qty)} = Chênh lệch {signed(drillRow.delta_qty)}
+            {t("reports.stockReconcileReport.formulaLine", {
+              balance: fmt(drillRow.balance_qty),
+              ledger: fmt(drillRow.ledger_qty),
+              delta: signed(drillRow.delta_qty),
+            })}
             <br />
             <small>
-              Kiểm tra lệch: {checkLabel(drillRow.mismatch_checks)} · Incident:{" "}
-              {drillRow.incident_id ?? EMPTY_TEXT}
+              {t("reports.stockReconcileReport.checkLine", {
+                checks: checkLabel(drillRow.mismatch_checks),
+                incident: drillRow.incident_id ?? EMPTY_TEXT,
+              })}
             </small>
           </div>
-          <h3>Movement liên quan</h3>
+          <h3>{t("reports.stockReconcileReport.movementsTitle")}</h3>
           <div className="modal-events">
             {movementsLoading ? (
               <div>
-                <span>Đang tải movement…</span>
+                <span>
+                  {t("reports.stockReconcileReport.movementsLoading")}
+                </span>
               </div>
             ) : movementEvents.length === 0 ? (
               <div>
-                <span>
-                  Không có movement trong mẫu trace 90 ngày của SKU này.
-                </span>
+                <span>{t("reports.stockReconcileReport.movementsEmpty")}</span>
               </div>
             ) : (
               movementEvents.map((event) => (

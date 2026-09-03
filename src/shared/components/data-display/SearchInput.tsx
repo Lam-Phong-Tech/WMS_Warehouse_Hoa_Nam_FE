@@ -2,6 +2,7 @@ import { InputAdornment, TextField } from "@mui/material";
 import type { TextFieldProps } from "@mui/material";
 import { SearchOutlined } from "@/shared/components/icons";
 import { ActionIconButton } from "@/shared/components/actions";
+import { useT } from "@/shared/i18n/useT";
 
 export interface SearchInputProps extends Omit<
   TextFieldProps,
@@ -22,12 +23,15 @@ export interface SearchInputProps extends Omit<
 export function SearchInput({
   value = "",
   onChange,
-  placeholder = "Tìm kiếm...",
+  placeholder,
   width = 260,
   sx,
   slotProps,
   ...rest
 }: SearchInputProps) {
+  const t = useT();
+  const resolvedPlaceholder =
+    placeholder ?? t("shared.table.searchPlaceholder");
   // `aria-label` được gắn cho THẺ INPUT bên dưới (slotProps.htmlInput). Phải
   // tách nó khỏi `rest`, nếu không nó rơi xuống cả div bọc của TextField và ô
   // tìm kiếm có HAI phần tử mang cùng tên trợ năng — trình đọc màn hình đọc
@@ -35,13 +39,13 @@ export function SearchInput({
   const { "aria-label": ariaLabelProp, ...rootProps } = rest as typeof rest & {
     "aria-label"?: string;
   };
-  const ariaLabel = ariaLabelProp ?? placeholder;
+  const ariaLabel = ariaLabelProp ?? resolvedPlaceholder;
 
   return (
     <TextField
       value={value}
       onChange={(event) => onChange?.(event.target.value)}
-      placeholder={placeholder}
+      placeholder={resolvedPlaceholder}
       autoComplete="off"
       // width cố định qua maxWidth (không phải width tuyệt đối) để control vẫn
       // co được dưới 576px theo baseline responsive chung.
@@ -74,7 +78,7 @@ export function SearchInput({
             <InputAdornment position="end">
               <ActionIconButton
                 kind="clear"
-                label="Xoá tìm kiếm"
+                label={t("shared.table.clearSearch")}
                 edge="end"
                 onClick={() => onChange?.("")}
               />

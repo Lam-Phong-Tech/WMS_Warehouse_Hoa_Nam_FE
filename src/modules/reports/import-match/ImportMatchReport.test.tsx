@@ -185,7 +185,7 @@ describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
     // 120 tổng dòng, 108 hợp lệ, 12 lỗi trong đó 1 dòng mang mã trùng lặp
     // ⇒ 11 lỗi + 1 trùng.
     const kpi = await screen.findByRole("region", {
-      name: "Sức khỏe dữ liệu import",
+      name: "Chất lượng dữ liệu đã nhập",
     });
     expect(within(kpi).getByText("120")).toBeInTheDocument();
     expect(within(kpi).getByText("108")).toBeInTheDocument();
@@ -214,7 +214,7 @@ describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
     expect(
       await screen.findByRole("combobox", { name: "Lọc theo kết quả xử lý" }),
     ).toHaveTextContent("Lỗi");
-    expect(screen.getByRole("tab", { name: "Bảng" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Dạng ngang" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -257,7 +257,7 @@ describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
 
     const dialog = await screen.findByRole("dialog");
     expect(
-      within(dialog).getByText(/Chi tiết batch · master-sku-2026-09.xlsx/),
+      within(dialog).getByText(/Chi tiết lô dữ liệu · master-sku-2026-09.xlsx/),
     ).toBeInTheDocument();
     expect(
       within(dialog).getByText("Thiếu mã model bắt buộc."),
@@ -272,7 +272,7 @@ describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
     renderReport();
 
     await screen.findByRole("table");
-    await user.click(screen.getByRole("tab", { name: "Lát cắt" }));
+    await user.click(screen.getByRole("tab", { name: "Dạng hộp" }));
 
     expect(
       await screen.findByRole("button", { name: "Hiện bộ lọc" }),

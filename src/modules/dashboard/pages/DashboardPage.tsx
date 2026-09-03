@@ -97,7 +97,15 @@ export default function DashboardPage() {
   const canViewReport =
     !isProfileLoaded || isSuperAdmin || permissionCodes.includes("report.view");
 
-  const [period, setPeriod] = useState<OverviewPeriod>("today");
+  /**
+   * Kỳ mặc định là "7 ngày gần nhất", KHÔNG phải "Hôm nay": kho có những ngày
+   * không phát sinh phiếu xuất nào, khi đó "Top 5 SKU xuất" và các KPI xuất kho
+   * rỗng ngay lần mở đầu tiên — người xem tưởng hỏng dữ liệu chứ không phải
+   * "hôm nay chưa xuất hàng". Cửa sổ 7 ngày luôn bắt được nhịp vận hành thật của
+   * kho, lại khớp đúng cửa sổ cố định của biểu đồ luồng (chartRangeOf). Ai cần
+   * đúng số của hôm nay vẫn chọn được ở bộ lọc kỳ.
+   */
+  const [period, setPeriod] = useState<OverviewPeriod>("last7");
   const [type, setType] = useState<SkuTypeFilter>("ALL");
   const [custom, setCustom] = useState<DateRange>(() => ({
     from: dayjs().subtract(7, "day").format(ISO),

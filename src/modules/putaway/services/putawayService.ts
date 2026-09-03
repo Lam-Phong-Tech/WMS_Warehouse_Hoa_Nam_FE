@@ -3,6 +3,7 @@ import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import { WmsContractError } from "@/shared/api/wms-contract";
+import { tStatic } from "@/shared/i18n/useT";
 
 export interface PutawayTask {
   id: string;
@@ -104,7 +105,7 @@ export function resolvePutawayTrayByScanCode(
   if (!code) {
     throw new WmsContractError(
       "WMS_FE_PUTAWAY_TRAY_SCAN_REQUIRED",
-      "Vui lòng scan hoặc nhập mã Barcode/QR của TRAY.",
+      tStatic("putaway.service.trayScanRequired"),
     );
   }
 
@@ -116,13 +117,13 @@ export function resolvePutawayTrayByScanCode(
   if (matches.length === 0) {
     throw new WmsContractError(
       "WMS_FE_PUTAWAY_TRAY_NOT_FOUND",
-      `Không tìm thấy TRAY khả dụng cho mã ${code}.`,
+      tStatic("putaway.service.trayNotFound", { code }),
     );
   }
   if (matches.length !== 1) {
     throw new WmsContractError(
       "WMS_FE_PUTAWAY_TRAY_AMBIGUOUS",
-      `Mã ${code} khớp nhiều TRAY; từ chối thao tác để tránh xếp sai vị trí.`,
+      tStatic("putaway.service.trayAmbiguous", { code }),
     );
   }
 

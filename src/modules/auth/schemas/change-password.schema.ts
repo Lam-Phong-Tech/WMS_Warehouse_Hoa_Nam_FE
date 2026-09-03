@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { tStatic, type TranslateFn } from "@/shared/i18n/useT";
 
 // Rule khớp đúng API thật (POST /auth/change-password, xem
 // docs/employee-account-provisioning-flow.md mục 5): tối thiểu 8 ký tự, có ít
@@ -6,29 +7,42 @@ import { z } from "zod";
 export const STRONG_PASSWORD_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
 
-export const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Vui lòng nhập mật khẩu hiện tại"),
-    newPassword: z
-      .string()
-      .min(8, "Mật khẩu mới tối thiểu 8 ký tự")
-      .refine(
-        (v) => v === v.trim(),
-        "Mật khẩu không được có khoảng trắng đầu/cuối",
-      )
-      .refine(
-        (v) => STRONG_PASSWORD_REGEX.test(v),
-        "Mật khẩu phải có ít nhất 1 chữ hoa, 1 chữ thường và 1 ký tự đặc biệt",
-      ),
-    newPasswordConfirmation: z.string().min(1, "Vui lòng xác nhận mật khẩu"),
-  })
-  .refine((v) => v.newPassword === v.newPasswordConfirmation, {
-    message: "Mật khẩu xác nhận không khớp",
-    path: ["newPasswordConfirmation"],
-  })
-  .refine((v) => v.newPassword !== v.currentPassword, {
-    message: "Mật khẩu mới không được trùng mật khẩu hiện tại",
-    path: ["newPassword"],
-  });
+/**
+ * Factory nhận `t` để lỗi validate đổi theo ngôn ngữ — component dựng schema
+ * bằng `useMemo(() => buildChangePasswordSchema(t), [t])`.
+ */
+export function buildChangePasswordSchema(t: TranslateFn) {
+  return z
+    .object({
+      currentPassword: z
+        .string()
+        .min(1, t("auth.validation.currentPasswordRequired")),
+      newPassword: z
+        .string()
+        .min(8, t("auth.validation.newPasswordMin"))
+        .refine(
+          (v) => v === v.trim(),
+          t("auth.validation.passwordNoEdgeSpaces"),
+        )
+        .refine(
+          (v) => STRONG_PASSWORD_REGEX.test(v),
+          t("auth.validation.passwordStrength"),
+        ),
+      newPasswordConfirmation: z
+        .string()
+        .min(1, t("auth.validation.confirmPasswordRequired")),
+    })
+    .refine((v) => v.newPassword === v.newPasswordConfirmation, {
+      message: t("auth.validation.confirmPasswordMismatch"),
+      path: ["newPasswordConfirmation"],
+    })
+    .refine((v) => v.newPassword !== v.currentPassword, {
+      message: t("auth.validation.newPasswordSameAsCurrent"),
+      path: ["newPassword"],
+    });
+}
+
+/** Bản tĩnh cho test/nơi ngoài React — message đóng băng theo ngôn ngữ lúc import. */
+export const changePasswordSchema = buildChangePasswordSchema(tStatic);
 
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;

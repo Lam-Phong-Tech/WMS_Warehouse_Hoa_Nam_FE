@@ -1,5 +1,6 @@
 import { ErrorState } from "@/shared/components/ui-states/ErrorState";
 import { UiText } from "@/shared/ui";
+import { useT } from "@/shared/i18n/useT";
 import type { PublicApiError } from "@/shared/api/public-http";
 
 /**
@@ -19,14 +20,15 @@ export function PvErrorState({
   error: unknown;
   onRetry?: () => void;
 }) {
+  const t = useT();
   const publicError = error as PublicApiError | undefined;
 
   if (publicError?.isOffline) {
     return (
       <ErrorState
         testId="pv-error-offline"
-        title="Mất kết nối"
-        description="Thiết bị đang không có mạng. Kiểm tra kết nối rồi thử lại."
+        title={t("pv.error.offlineTitle")}
+        description={t("pv.error.offlineDesc")}
         onRetry={onRetry}
       />
     );
@@ -37,11 +39,11 @@ export function PvErrorState({
     return (
       <ErrorState
         testId="pv-error-rate-limited"
-        title="Bạn đang xem quá nhanh"
+        title={t("pv.error.rateLimitTitle")}
         description={
           waitSeconds
-            ? `Hệ thống tạm giới hạn truy cập. Vui lòng chờ ${waitSeconds} giây rồi tải lại.`
-            : "Hệ thống tạm giới hạn truy cập. Vui lòng chờ một lát rồi tải lại."
+            ? t("pv.error.rateLimitWait", { seconds: waitSeconds })
+            : t("pv.error.rateLimitGeneric")
         }
       />
     );
@@ -50,15 +52,15 @@ export function PvErrorState({
   return (
     <ErrorState
       testId="pv-error-generic"
-      title="Không tải được dữ liệu"
+      title={t("pv.error.genericTitle")}
       description={
         <>
-          {publicError?.message ?? "Đã xảy ra lỗi khi tải danh mục sản phẩm."}
+          {publicError?.message ?? t("pv.error.genericDesc")}
           {publicError?.requestId ? (
             <>
               <br />
               <UiText variant="caption">
-                Mã yêu cầu: {publicError.requestId}
+                {t("pv.error.requestId", { id: publicError.requestId })}
               </UiText>
             </>
           ) : null}

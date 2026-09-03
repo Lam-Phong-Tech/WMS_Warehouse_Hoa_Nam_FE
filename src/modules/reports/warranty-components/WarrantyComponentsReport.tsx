@@ -81,6 +81,12 @@ import {
 } from "@/modules/reports/operations/report-tokens";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
+import {
+  optionsFromRows,
+  useSectionFilter,
+  type SectionFilterConfig,
+} from "@/modules/reports/operations/report-section-filter";
 import { ExportButtons } from "@/modules/reports/operations/report-filters";
 import {
   EXPORT_ROW_LIMIT,
@@ -93,6 +99,7 @@ import {
   dateOfDimension,
   DATE_DIMENSIONS,
   DUE_RISK_LABEL,
+  type DueRisk,
   DUE_RISK_ORDER,
   dueRiskOf,
   matches,
@@ -978,6 +985,64 @@ export default function WarrantyComponentsReport() {
     [facetRows, statusFilter],
   );
 
+  /**
+   * Bộ lọc RIÊNG của khối hồ sơ. Đặt SAU viewRows để KPI, biểu đồ lỗi và bảng
+   * linh kiện phía trên vẫn nói về nguyên lát cắt: người đọc thu hẹp bảng để
+   * tìm một hồ sơ, không phải để đổi số liệu của cả kỳ.
+   *
+   * Áp cho CẢ Dạng ngang lẫn Dạng hộp — hai chế độ chỉ là hai cách vẽ của
+   * cùng một tập hồ sơ.
+   */
+  const caseFilterConfig = useMemo<SectionFilterConfig<WarrantyCaseRow>>(
+    () => ({
+      searchPlaceholder: t("reports.warrantyReport.searchPlaceholder"),
+      searchText: (row) => [
+        row.caseNo,
+        row.model,
+        row.skuName,
+        row.owner,
+        row.department,
+        row.defectNames.join(" "),
+      ],
+      selects: [
+        {
+          key: "status",
+          placeholder: t("reports.warrantyReport.anyStatus"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.status,
+              (value) =>
+                list.find((row) => row.status === value)?.statusLabel ?? value,
+            ),
+          match: (row, value) => row.status === value,
+          minWidth: 195,
+        },
+        {
+          key: "due",
+          placeholder: t("reports.warrantyReport.anyRisk"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.due,
+              (value) => DUE_RISK_LABEL[value as DueRisk] ?? value,
+            ),
+          match: (row, value) => row.due === value,
+          minWidth: 195,
+        },
+        {
+          key: "department",
+          placeholder: t("reports.warrantyReport.anyDepartment"),
+          options: (list) => optionsFromRows(list, (row) => row.department),
+          match: (row, value) => row.department === value,
+          minWidth: 175,
+        },
+      ],
+    }),
+    [],
+  );
+  const caseFilter = useSectionFilter(viewRows, caseFilterConfig);
+
   // ── Số liệu KPI ───────────────────────────────────────────────────────
   const openCount = viewRows.filter((row) =>
     ["RECEIVED", "CHECKING", "REPAIRING"].includes(row.status),
@@ -1168,7 +1233,7 @@ export default function WarrantyComponentsReport() {
               letterSpacing: "0.08em",
             }}
           >
-            BÁO CÁO VẬN HÀNH · RPT-06
+            {t("reports.warrantyReport.eyebrow")}
           </Box>
           <Box
             component="h1"
@@ -1182,11 +1247,10 @@ export default function WarrantyComponentsReport() {
               letterSpacing: "-0.02em",
             }}
           >
-            Báo cáo Bảo hành &amp; linh kiện
+            {t("reports.warrantyReport.title")}
           </Box>
           <Box sx={{ mt: 0.75, color: S.textMedium, fontSize: 13 }}>
-            Theo dõi hồ sơ, rủi ro hạn xử lý, lỗi hiệu lực và linh kiện đã ghi
-            nhận.
+            {t("reports.warrantyReport.subtitle")}
           </Box>
         </Box>
         <Stack
@@ -1195,17 +1259,19 @@ export default function WarrantyComponentsReport() {
           sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
         >
           <ScopeChip
-            label={`${fmt(cases.length)} hồ sơ trong kỳ`}
+            label={t("reports.warrantyReport.casesInPeriod", {
+              count: fmt(cases.length),
+            })}
             tone="primary"
           />
           {roleLabel ? <ScopeChip label={roleLabel} tone="neutral" /> : null}
           <ScopeChip
             label={
               warranty.isFetching
-                ? "Đang đồng bộ"
+                ? t("reports.warrantyReport.syncing")
                 : warranty.data
-                  ? "Đã chốt dữ liệu"
-                  : "Chờ dữ liệu"
+                  ? t("reports.warrantyReport.dataLocked")
+                  : t("reports.warrantyReport.waitingData")
             }
             tone="success"
           />
@@ -1216,7 +1282,7 @@ export default function WarrantyComponentsReport() {
             disabled={period.invalid || warranty.isFetching}
             onClick={refresh}
           >
-            Làm mới
+            {t("reports.warrantyReport.refresh")}
           </UiButton>
         </Stack>
       </Box>
@@ -1224,7 +1290,7 @@ export default function WarrantyComponentsReport() {
       {/* ── Ngữ cảnh lát cắt ──────────────────────────────────────────── */}
       <Box
         component="section"
-        aria-label="Ngữ cảnh lát cắt báo cáo"
+        aria-label={t("reports.warrantyReport.scopeAria")}
         sx={{
           ...CARD_SX,
           position: "relative",
@@ -1265,7 +1331,7 @@ export default function WarrantyComponentsReport() {
               opacity: 0.78,
             }}
           >
-            LÁT CẮT ĐANG XEM
+            {t("reports.warrantyReport.scopeEyebrow")}
           </Box>
           <Box
             component="h2"
@@ -1280,8 +1346,7 @@ export default function WarrantyComponentsReport() {
             {snapshotLabel}
           </Box>
           <Box sx={{ m: 0, fontSize: 13, opacity: 0.84 }}>
-            Mỗi hồ sơ được tính một lần; lỗi hiệu lực và linh kiện đã xuất được
-            tổng hợp theo đúng lát cắt đang xem.
+            {t("reports.warrantyReport.scopeNote")}
           </Box>
         </Box>
         <Box
@@ -1306,10 +1371,15 @@ export default function WarrantyComponentsReport() {
               bgcolor: S.primaryDark,
             }}
           >
-            {warranty.isFetching ? "Đang tạo lát cắt" : "Lát cắt đã chốt"}
+            {warranty.isFetching
+              ? t("reports.warrantyReport.snapshotBuilding")
+              : t("reports.warrantyReport.snapshotLocked")}
           </Box>
           <Box component="span">
-            Chốt lúc {asOf} · {TIMEZONE_LABEL}
+            {t("reports.warrantyReport.asOf", {
+              time: asOf,
+              timezone: TIMEZONE_LABEL,
+            })}
           </Box>
         </Box>
       </Box>
@@ -1429,10 +1499,10 @@ export default function WarrantyComponentsReport() {
                 id="report-07-filter-title"
                 sx={{ color: S.textHigh, fontSize: 14, fontWeight: 700 }}
               >
-                Bộ lọc báo cáo
+                {t("reports.warrantyReport.filterTitle")}
               </Box>
               <Box sx={{ mt: "2px", color: S.textMedium, fontSize: 12 }}>
-                Chọn nhiều trạng thái = OR; giữa các điều kiện lọc = AND.
+                {t("reports.warrantyReport.filterHint")}
               </Box>
             </Box>
           </Stack>
@@ -1448,7 +1518,9 @@ export default function WarrantyComponentsReport() {
           >
             {activeFilterCount > 0 ? (
               <ReportBadge
-                label={`${activeFilterCount} đang chọn`}
+                label={t("reports.warrantyReport.filterActive", {
+                  count: activeFilterCount,
+                })}
                 tone="info"
               />
             ) : null}
@@ -1460,14 +1532,16 @@ export default function WarrantyComponentsReport() {
               onClick={() => setFiltersHidden((current) => !current)}
               sx={{ display: { xs: "inline-flex", md: "none" } }}
             >
-              {filtersHidden ? "Hiện bộ lọc" : "Ẩn bộ lọc"}
+              {filtersHidden
+                ? t("reports.warrantyReport.showFilters")
+                : t("reports.warrantyReport.hideFilters")}
             </UiButton>
             <UiButton
               appearance="text"
               startIcon={<ReloadOutlined />}
               onClick={resetFilters}
             >
-              Đặt lại
+              {t("reports.warrantyReport.reset")}
             </UiButton>
           </Stack>
         </Box>
@@ -1488,9 +1562,12 @@ export default function WarrantyComponentsReport() {
             rowGap: 2,
           }}
         >
-          <FilterField label="Mốc thời gian" span={{ md: 3, xl: 2 }}>
+          <FilterField
+            label={t("reports.warrantyReport.fieldDateDimension")}
+            span={{ md: 3, xl: 2 }}
+          >
             <UiSelect
-              aria-label="Mốc thời gian"
+              aria-label={t("reports.warrantyReport.fieldDateDimension")}
               fullWidth
               value={dateDimension}
               onChange={(value) => setDateDimension(value as DateDimension)}
@@ -1501,13 +1578,18 @@ export default function WarrantyComponentsReport() {
             />
           </FilterField>
 
-          <FilterField label="Trạng thái hồ sơ" span={{ md: 3, xl: 2 }}>
+          <FilterField
+            label={t("reports.warrantyReport.fieldStatus")}
+            span={{ md: 3, xl: 2 }}
+          >
             <MultiSelectControl
-              ariaLabel="Trạng thái hồ sơ"
+              ariaLabel={t("reports.warrantyReport.fieldStatus")}
               summary={
                 statusFilter.length === 0
-                  ? "Tất cả trạng thái"
-                  : `Đã chọn ${statusFilter.length} trạng thái`
+                  ? t("reports.warrantyReport.allStatuses")
+                  : t("reports.warrantyReport.statusSelected", {
+                      count: statusFilter.length,
+                    })
               }
               options={WARRANTY_STATUS_ORDER.map((status) => ({
                 value: status,
@@ -1518,12 +1600,18 @@ export default function WarrantyComponentsReport() {
             />
           </FilterField>
 
-          <FilterField label="Khoảng ngày" span={{ md: 6, xl: 4 }}>
+          <FilterField
+            label={t("reports.warrantyReport.fieldDateRange")}
+            span={{ md: 6, xl: 4 }}
+          >
             <UiVuexyDateRangePicker
-              aria-label="Khoảng ngày"
+              aria-label={t("reports.warrantyReport.fieldDateRange")}
               value={period.range}
               format="DD/MM/YYYY"
-              placeholder={["Từ ngày", "Đến ngày"]}
+              placeholder={[
+                t("reports.warrantyReport.fromDate"),
+                t("reports.warrantyReport.toDate"),
+              ]}
               allowClear={false}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"
@@ -1534,13 +1622,18 @@ export default function WarrantyComponentsReport() {
             />
           </FilterField>
 
-          <FilterField label="Rủi ro hạn" span={{ md: 3, xl: 2 }}>
+          <FilterField
+            label={t("reports.warrantyReport.fieldRisk")}
+            span={{ md: 3, xl: 2 }}
+          >
             <MultiSelectControl
-              ariaLabel="Rủi ro hạn"
+              ariaLabel={t("reports.warrantyReport.fieldRisk")}
               summary={
                 riskFilter.length === 0
-                  ? "Tất cả rủi ro"
-                  : `Đã chọn ${riskFilter.length} mức rủi ro`
+                  ? t("reports.warrantyReport.allRisks")
+                  : t("reports.warrantyReport.riskSelected", {
+                      count: riskFilter.length,
+                    })
               }
               options={DUE_RISK_ORDER.map((risk) => ({
                 value: risk,
@@ -1557,10 +1650,13 @@ export default function WarrantyComponentsReport() {
             />
           </FilterField>
 
-          <FilterField label="Đã xuất linh kiện" span={{ md: 3, xl: 2 }}>
+          <FilterField
+            label={t("reports.warrantyReport.fieldComponentIssued")}
+            span={{ md: 3, xl: 2 }}
+          >
             <Box
               role="group"
-              aria-label="Lọc linh kiện đã xuất"
+              aria-label={t("reports.warrantyReport.componentFilterAria")}
               sx={{
                 display: "grid",
                 gridTemplateColumns: {
@@ -1573,8 +1669,8 @@ export default function WarrantyComponentsReport() {
               <ComponentChoice
                 active={componentIssue === true}
                 icon={<CheckCircleOutlined />}
-                title="Có linh kiện"
-                hint="Đã ghi nhận"
+                title={t("reports.warrantyReport.hasComponent")}
+                hint={t("reports.warrantyReport.hasComponentHint")}
                 onClick={() =>
                   setComponentIssue((current) =>
                     current === true ? undefined : true,
@@ -1584,8 +1680,8 @@ export default function WarrantyComponentsReport() {
               <ComponentChoice
                 active={componentIssue === false}
                 icon={<InboxOutlined />}
-                title="Chưa có"
-                hint="Chưa phát sinh"
+                title={t("reports.warrantyReport.noComponent")}
+                hint={t("reports.warrantyReport.noComponentHint")}
                 onClick={() =>
                   setComponentIssue((current) =>
                     current === false ? undefined : false,
@@ -1596,60 +1692,60 @@ export default function WarrantyComponentsReport() {
           </FilterField>
 
           <FilterField
-            label="Mã lỗi"
+            label={t("reports.warrantyReport.fieldDefect")}
             htmlFor="report-07-defect"
             span={{ md: 3, xl: 3 }}
           >
             <SearchInput
               id="report-07-defect"
               width="100%"
-              placeholder="Mã hoặc tên bệnh/lỗi"
-              aria-label="Bệnh / lỗi"
+              placeholder={t("reports.warrantyReport.defectPlaceholder")}
+              aria-label={t("reports.warrantyReport.defectAria")}
               value={defectTerm}
               onChange={setDefectTerm}
             />
           </FilterField>
 
           <FilterField
-            label="SKU / mẫu sản phẩm"
+            label={t("reports.warrantyReport.fieldSku")}
             htmlFor="report-07-sku"
             span={{ md: 3, xl: 3 }}
           >
             <SearchInput
               id="report-07-sku"
               width="100%"
-              placeholder="Mã SKU hoặc tên mẫu"
-              aria-label="SKU / mẫu sản phẩm"
+              placeholder={t("reports.warrantyReport.skuPlaceholder")}
+              aria-label={t("reports.warrantyReport.fieldSku")}
               value={skuTerm}
               onChange={setSkuTerm}
             />
           </FilterField>
 
           <FilterField
-            label="Người phụ trách"
+            label={t("reports.warrantyReport.fieldOwner")}
             htmlFor="report-07-owner"
             span={{ md: 3, xl: 3 }}
           >
             <SearchInput
               id="report-07-owner"
               width="100%"
-              placeholder="Tên người phụ trách"
-              aria-label="Người phụ trách"
+              placeholder={t("reports.warrantyReport.ownerPlaceholder")}
+              aria-label={t("reports.warrantyReport.fieldOwner")}
               value={ownerTerm}
               onChange={setOwnerTerm}
             />
           </FilterField>
 
           <FilterField
-            label="Phòng ban"
+            label={t("reports.warrantyReport.fieldDepartment")}
             htmlFor="report-07-department"
             span={{ md: 3, xl: 3 }}
           >
             <SearchInput
               id="report-07-department"
               width="100%"
-              placeholder="Tên phòng ban"
-              aria-label="Phòng ban"
+              placeholder={t("reports.warrantyReport.departmentPlaceholder")}
+              aria-label={t("reports.warrantyReport.fieldDepartment")}
               value={departmentTerm}
               onChange={setDepartmentTerm}
             />
@@ -1660,10 +1756,13 @@ export default function WarrantyComponentsReport() {
       {/* ── Tổng quan vận hành ────────────────────────────────────────── */}
       <Box component="section" aria-labelledby="report-07-overview">
         <SectionHeading
-          eyebrow="TÌNH HÌNH HIỆN TẠI"
-          title="Tổng quan vận hành"
+          eyebrow={t("reports.warrantyReport.overviewEyebrow")}
+          title={t("reports.warrantyReport.overviewTitle")}
           id="report-07-overview"
-          meta={`${TIMEZONE_LABEL} · ${fmt(viewRows.length)} hồ sơ`}
+          meta={t("reports.warrantyReport.overviewMeta", {
+            timezone: TIMEZONE_LABEL,
+            count: fmt(viewRows.length),
+          })}
         />
         <Box
           sx={{
@@ -1678,42 +1777,42 @@ export default function WarrantyComponentsReport() {
           }}
         >
           <MetricCard
-            label="Tổng hồ sơ"
+            label={t("reports.warrantyReport.statTotal")}
             value={fmt(viewRows.length)}
-            hint="Trong phạm vi đang xem"
+            hint={t("reports.warrantyReport.statTotalHint")}
             icon={<ProfileOutlined />}
             tone="primary"
           />
           <MetricCard
-            label="Đang mở"
+            label={t("reports.warrantyReport.statOpen")}
             value={fmt(openCount)}
-            hint="Cần theo dõi"
+            hint={t("reports.warrantyReport.statOpenHint")}
             icon={<HistoryOutlined />}
             tone="info"
           />
           <MetricCard
-            label="Đã hoàn tất"
+            label={t("reports.warrantyReport.statDone")}
             value={fmt(completedCount)}
-            hint="Kết thúc sửa chữa"
+            hint={t("reports.warrantyReport.statDoneHint")}
             icon={<CheckCircleOutlined />}
             tone="success"
           />
           <MetricCard
-            label="Quá hạn"
+            label={t("reports.warrantyReport.statOverdue")}
             value={fmt(overdueCount)}
-            hint="Cần ưu tiên xử lý"
+            hint={t("reports.warrantyReport.statOverdueHint")}
             icon={<WarningOutlined />}
             tone="error"
           />
           <MetricCard
-            label="Sắp đến hạn"
+            label={t("reports.warrantyReport.statDueSoon")}
             value={fmt(dueSoonCount)}
-            hint="Cần chủ động theo dõi"
+            hint={t("reports.warrantyReport.statDueSoonHint")}
             icon={<SyncOutlined />}
             tone="warning"
           />
           <MetricCard
-            label="TG hoàn tất TB"
+            label={t("reports.warrantyReport.statAvgDays")}
             value={
               averageDays === null
                 ? EMPTY_TEXT
@@ -1722,7 +1821,7 @@ export default function WarrantyComponentsReport() {
                     maximumFractionDigits: 1,
                   }).format(averageDays)
             }
-            hint="Đơn vị: ngày"
+            hint={t("reports.warrantyReport.statAvgDaysHint")}
             icon={<HistoryOutlined />}
             tone="primary"
           />
@@ -1732,10 +1831,10 @@ export default function WarrantyComponentsReport() {
       {/* ── Phân tích snapshot ────────────────────────────────────────── */}
       <Box component="section" aria-labelledby="report-07-analysis">
         <SectionHeading
-          eyebrow="PHÂN TÍCH SNAPSHOT"
-          title="Phân tích bảo hành &amp; linh kiện"
+          eyebrow={t("reports.warrantyReport.analysisEyebrow")}
+          title={t("reports.warrantyReport.analysisTitle")}
           id="report-07-analysis"
-          meta="Cùng một lát cắt dữ liệu đã chốt"
+          meta={t("reports.warrantyReport.analysisMeta")}
         />
         <Box
           sx={{
@@ -1748,8 +1847,8 @@ export default function WarrantyComponentsReport() {
           }}
         >
           <ChartCard
-            title="Phân bổ trạng thái"
-            description="Chọn trạng thái để thu hẹp danh sách hồ sơ."
+            title={t("reports.warrantyReport.chartStatusTitle")}
+            description={t("reports.warrantyReport.chartStatusDesc")}
             marker={<BarChartOutlined />}
           >
             {loading ? (
@@ -1771,7 +1870,9 @@ export default function WarrantyComponentsReport() {
               >
                 <Box
                   role="img"
-                  aria-label={`Biểu đồ trạng thái ${fmt(statusTotal)} hồ sơ`}
+                  aria-label={t("reports.warrantyReport.chartStatusAria", {
+                    count: fmt(statusTotal),
+                  })}
                   sx={{
                     position: "relative",
                     width: 142,
@@ -1780,7 +1881,9 @@ export default function WarrantyComponentsReport() {
                     borderRadius: "50%",
                     background: donutGradient,
                     "&::after": {
-                      content: `"${fmt(statusTotal)}\\A HỒ SƠ"`,
+                      content: `"${fmt(statusTotal)}\\A ${t(
+                        "reports.warrantyReport.donutCaption",
+                      )}"`,
                       position: "absolute",
                       inset: "33px",
                       display: "grid",
@@ -1846,27 +1949,27 @@ export default function WarrantyComponentsReport() {
           </ChartCard>
 
           <ChartCard
-            title="Lỗi đang hiệu lực"
-            description="Nhóm lỗi còn mở theo đúng snapshot báo cáo."
+            title={t("reports.warrantyReport.chartDefectTitle")}
+            description={t("reports.warrantyReport.chartDefectDesc")}
             marker={<WarningOutlined />}
           >
             <BarList
               items={defectItems}
               tone="warning"
-              emptyText="Không có bệnh/lỗi nào trong lát cắt đang xem."
+              emptyText={t("reports.warrantyReport.chartDefectEmpty")}
               onSelect={(label) => setDefectTerm(label)}
             />
           </ChartCard>
 
           <ChartCard
-            title="Linh kiện đã xuất"
-            description="Top linh kiện từ chứng từ POSTED trong lát cắt."
+            title={t("reports.warrantyReport.chartComponentTitle")}
+            description={t("reports.warrantyReport.chartComponentDesc")}
             marker={<InboxOutlined />}
           >
             <BarList
               items={componentItems}
               tone="info"
-              emptyText="Chưa có linh kiện nào được xuất trong lát cắt đang xem."
+              emptyText={t("reports.warrantyReport.chartComponentEmpty")}
             />
           </ChartCard>
         </Box>
@@ -1875,8 +1978,8 @@ export default function WarrantyComponentsReport() {
       {/* ── Đối soát hồ sơ ────────────────────────────────────────────── */}
       <Box component="section" aria-labelledby="report-07-detail">
         <SectionHeading
-          eyebrow="DỮ LIỆU CHI TIẾT"
-          title="Đối soát hồ sơ"
+          eyebrow={t("reports.warrantyReport.detailEyebrow")}
+          title={t("reports.warrantyReport.detailTitle")}
           id="report-07-detail"
           meta={
             <Stack
@@ -1928,15 +2031,17 @@ export default function WarrantyComponentsReport() {
                 component="h3"
                 sx={{ m: 0, color: S.textHigh, fontSize: 16, fontWeight: 700 }}
               >
-                Hồ sơ bảo hành trong kỳ
+                {t("reports.warrantyReport.tableTitle")}
               </Box>
               <Box sx={{ mt: 0.5, color: S.textMedium, fontSize: 12 }}>
-                Bảng đối soát dùng đúng lát cắt {snapshotLabel}.
+                {t("reports.warrantyReport.tableHint", {
+                  label: snapshotLabel,
+                })}
               </Box>
             </Box>
             <Box
               role="tablist"
-              aria-label="Chế độ xem dữ liệu"
+              aria-label={t("reports.warrantyReport.viewModeAria")}
               sx={{ display: "flex", gap: 1 }}
             >
               <Box
@@ -1951,7 +2056,7 @@ export default function WarrantyComponentsReport() {
                 sx={VIEW_TAB_SX(viewMode === "table")}
               >
                 <UnorderedListOutlined aria-hidden="true" />
-                Bảng
+                {t("reports.warrantyReport.viewTable")}
               </Box>
               <Box
                 component="button"
@@ -1965,9 +2070,19 @@ export default function WarrantyComponentsReport() {
                 sx={VIEW_TAB_SX(viewMode === "snapshot")}
               >
                 <AppstoreOutlined aria-hidden="true" />
-                Lát cắt
+                {t("reports.warrantyReport.viewSnapshot")}
               </Box>
             </Box>
+          </Box>
+
+          <Box sx={{ px: 2, pt: 2 }}>
+            <SectionFilterBar
+              state={caseFilter}
+              label={t("reports.warrantyReport.tableTitle")}
+              unit={t("reports.warrantyReport.tableUnit")}
+              showCount={false}
+              data-testid="report-07-case-section-filter"
+            />
           </Box>
 
           {/* Bảng */}
@@ -1989,11 +2104,12 @@ export default function WarrantyComponentsReport() {
               }}
             >
               <Box sx={{ color: S.textMedium, fontSize: 12 }}>
-                Chọn một dòng để xem lỗi, linh kiện đã xuất, phân công và thông
-                tin khách hàng theo quyền.
+                {t("reports.warrantyReport.rowHint")}
               </Box>
               <ReportBadge
-                label={`${fmt(viewRows.length)} hồ sơ`}
+                label={t("reports.warrantyReport.caseCount", {
+                  count: fmt(caseFilter.rows.length),
+                })}
                 tone="info"
               />
             </Stack>
@@ -2027,15 +2143,15 @@ export default function WarrantyComponentsReport() {
                 <Box component="thead">
                   <Box component="tr">
                     {[
-                      "Mã hồ sơ",
-                      "Ngày tiếp nhận",
-                      "Trạng thái",
-                      "Lỗi đang hiệu lực",
-                      "Rủi ro hạn",
-                      "Phụ trách / phòng ban",
-                      "Linh kiện đã xuất",
-                      "Khách hàng (đã che)",
-                      "Thao tác",
+                      t("reports.warrantyReport.colCaseNo"),
+                      t("reports.warrantyReport.colReceivedAt"),
+                      t("reports.warrantyReport.colStatus"),
+                      t("reports.warrantyReport.colDefect"),
+                      t("reports.warrantyReport.colRisk"),
+                      t("reports.warrantyReport.colOwnerDept"),
+                      t("reports.warrantyReport.colComponents"),
+                      t("reports.warrantyReport.colCustomer"),
+                      t("reports.warrantyReport.colActions"),
                     ].map((header) => (
                       <Box component="th" key={header} sx={TH_SX}>
                         {header}
@@ -2070,7 +2186,7 @@ export default function WarrantyComponentsReport() {
                       </Box>
                     </Box>
                   ) : (
-                    viewRows.map((row) => {
+                    caseFilter.rows.map((row) => {
                       const defectText =
                         row.defectNames.filter(Boolean).join(", ") ||
                         EMPTY_TEXT;
@@ -2135,7 +2251,7 @@ export default function WarrantyComponentsReport() {
                               sx={{ whiteSpace: "nowrap" }}
                               onClick={() => setOpenCase(row)}
                             >
-                              Đối soát
+                              {t("reports.warrantyReport.reconcile")}
                             </ActionButton>
                           </Box>
                         </Box>
@@ -2155,7 +2271,7 @@ export default function WarrantyComponentsReport() {
             hidden={viewMode !== "snapshot"}
             sx={{ p: 2 }}
           >
-            {viewRows.length === 0 ? (
+            {caseFilter.rows.length === 0 ? (
               <Box sx={{ py: 5, textAlign: "center", color: S.textMedium }}>
                 {t("reports.warranty.caseTableEmpty")}
               </Box>
@@ -2171,7 +2287,7 @@ export default function WarrantyComponentsReport() {
                   gap: 1.5,
                 }}
               >
-                {viewRows.map((row) => (
+                {caseFilter.rows.map((row) => (
                   <Box
                     component="article"
                     key={row.caseNo || row.caseId}
@@ -2228,7 +2344,7 @@ export default function WarrantyComponentsReport() {
                             fontSize: 10.5,
                           }}
                         >
-                          Rủi ro hạn
+                          {t("reports.warrantyReport.colRisk")}
                         </Box>
                         <Box sx={{ mt: "3px" }}>
                           <ReportBadge
@@ -2245,7 +2361,7 @@ export default function WarrantyComponentsReport() {
                             fontSize: 10.5,
                           }}
                         >
-                          Lỗi hiệu lực
+                          {t("reports.warrantyReport.cardDefect")}
                         </Box>
                         <Box
                           component="strong"
@@ -2262,7 +2378,7 @@ export default function WarrantyComponentsReport() {
                             fontSize: 10.5,
                           }}
                         >
-                          Linh kiện đã xuất
+                          {t("reports.warrantyReport.colComponents")}
                         </Box>
                         <Box
                           component="strong"
@@ -2279,7 +2395,7 @@ export default function WarrantyComponentsReport() {
                             fontSize: 10.5,
                           }}
                         >
-                          Phụ trách
+                          {t("reports.warrantyReport.cardOwner")}
                         </Box>
                         <Box
                           component="strong"
@@ -2302,7 +2418,7 @@ export default function WarrantyComponentsReport() {
                         kind="detail"
                         onClick={() => setOpenCase(row)}
                       >
-                        Đối soát
+                        {t("reports.warrantyReport.reconcile")}
                       </ActionButton>
                     </Box>
                   </Box>
@@ -2326,10 +2442,9 @@ export default function WarrantyComponentsReport() {
             <FileTextOutlined aria-hidden="true" style={{ flex: "0 0 16px" }} />
             <Box component="span">
               <Box component="strong" sx={{ color: S.textHigh }}>
-                Nguồn số liệu đã khóa:
+                {t("reports.warrantyReport.sourceLocked")}
               </Box>{" "}
-              Mỗi hồ sơ chỉ được tính một lần; lỗi đang hiệu lực và linh kiện đã
-              xuất chỉ lấy từ trạng thái được máy chủ xác nhận.
+              {t("reports.warrantyReport.sourceLockedNote")}
             </Box>
           </Box>
         </Box>
@@ -2339,7 +2454,10 @@ export default function WarrantyComponentsReport() {
       {openCase ? (
         <DrillDownDialog
           title={orEmpty(openCase.caseNo)}
-          subtitle={`${orEmpty(openCase.skuName)} · Lát cắt ${snapshotLabel}`}
+          subtitle={t("reports.warrantyReport.dialogSubtitle", {
+            sku: orEmpty(openCase.skuName),
+            label: snapshotLabel,
+          })}
           onClose={() => setOpenCase(null)}
         >
           <Box
@@ -2351,7 +2469,7 @@ export default function WarrantyComponentsReport() {
               letterSpacing: "0.08em",
             }}
           >
-            CHI TIẾT ĐỐI SOÁT
+            {t("reports.warrantyReport.dialogEyebrow")}
           </Box>
           <Box
             sx={{
@@ -2364,10 +2482,13 @@ export default function WarrantyComponentsReport() {
             }}
           >
             {[
-              ["Trạng thái", openCase.statusLabel],
-              ["Rủi ro hạn", DUE_RISK_LABEL[openCase.due]],
+              [t("reports.warrantyReport.colStatus"), openCase.statusLabel],
               [
-                "Phụ trách",
+                t("reports.warrantyReport.colRisk"),
+                DUE_RISK_LABEL[openCase.due],
+              ],
+              [
+                t("reports.warrantyReport.cardOwner"),
                 `${orEmpty(openCase.owner)} · ${orEmpty(openCase.department)}`,
               ],
             ].map(([label, value]) => (
@@ -2382,7 +2503,7 @@ export default function WarrantyComponentsReport() {
                 và kiểm thử đọc đúng giá trị đã che, không dính vào nhãn. */}
             <Box>
               <Box sx={{ color: S.textMedium, fontSize: 11.5 }}>
-                Khách hàng (đã che)
+                {t("reports.warrantyReport.colCustomer")}
               </Box>
               <Box component="strong" sx={{ display: "block", mt: "4px" }}>
                 {orEmpty(openCase.customerName)}
@@ -2396,37 +2517,37 @@ export default function WarrantyComponentsReport() {
             </Box>
           </Box>
 
-          <DetailSection title="Lỗi kỹ thuật đang hiệu lực">
+          <DetailSection title={t("reports.warrantyReport.sectionDefects")}>
             {openCase.defectNames.filter(Boolean).length === 0
-              ? "Chưa có lỗi hiệu lực"
+              ? t("reports.warrantyReport.noDefects")
               : openCase.defectNames
                   .filter(Boolean)
                   .map((value) => <EventLine key={value}>{value}</EventLine>)}
           </DetailSection>
 
-          <DetailSection title="Linh kiện đã xuất (POSTED)">
+          <DetailSection title={t("reports.warrantyReport.sectionComponents")}>
             {detailComponents.length === 0
-              ? "Chưa có linh kiện POSTED"
+              ? t("reports.warrantyReport.noComponents")
               : detailComponents.map((value) => (
                   <EventLine key={value}>{value}</EventLine>
                 ))}
           </DetailSection>
 
-          <DetailSection title="Lịch sử phân công">
+          <DetailSection title={t("reports.warrantyReport.sectionHistory")}>
             {!canReadWarrantyCase ? (
               <UiAlert tone="info">
-                Tài khoản của bạn không có quyền xem lịch sử hồ sơ bảo hành.
+                {t("reports.warrantyReport.historyForbidden")}
               </UiAlert>
             ) : caseEvents.isLoading ? (
               <UiSpinner size={18} label={null} />
             ) : caseEvents.error ? (
               <ApiErrorAlert
                 error={caseEvents.error}
-                title="Không tải được lịch sử phân công"
+                title={t("reports.warrantyReport.historyLoadFailed")}
                 onRetry={() => void caseEvents.refetch()}
               />
             ) : (caseEvents.data ?? []).length === 0 ? (
-              "Chưa có lịch sử phân công"
+              t("reports.warrantyReport.noHistory")
             ) : (
               (caseEvents.data ?? []).map((event) => (
                 <EventLine key={event.id}>

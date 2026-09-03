@@ -17,6 +17,7 @@ import {
   UiAvatar,
 } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
+import { useT } from "@/shared/i18n/useT";
 
 interface Props {
   /** Ẩn tên cạnh avatar trên màn nhỏ. */
@@ -25,6 +26,7 @@ interface Props {
 
 /** Avatar + dropdown hồ sơ người dùng (tên · chức vụ/phòng ban/đơn vị) + đăng xuất. */
 export function UserMenu({ compact = false }: Props) {
+  const t = useT();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
@@ -33,7 +35,11 @@ export function UserMenu({ compact = false }: Props) {
   const open = Boolean(anchorEl);
 
   const displayName =
-    profile?.name ?? user?.name ?? user?.code ?? user?.email ?? "Người dùng";
+    profile?.name ??
+    user?.name ??
+    user?.code ??
+    user?.email ??
+    t("shared.user.fallbackName");
 
   const positionInfo = [
     profile?.position?.name,
@@ -50,7 +56,7 @@ export function UserMenu({ compact = false }: Props) {
   const handleLogout = () => {
     handleClose();
     logout.mutate(undefined, {
-      onSuccess: () => toast.success("Đăng xuất thành công"),
+      onSuccess: () => toast.success(t("shared.user.logoutSuccess")),
     });
   };
 
@@ -62,7 +68,7 @@ export function UserMenu({ compact = false }: Props) {
         aria-haspopup="menu"
         aria-controls={open ? "user-menu" : undefined}
         aria-expanded={open || undefined}
-        aria-label={`Menu tài khoản của ${displayName}`}
+        aria-label={t("shared.user.accountMenuAria", { name: displayName })}
         onClick={(e) => setAnchorEl(e.currentTarget)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -153,7 +159,7 @@ export function UserMenu({ compact = false }: Props) {
           <ListItemIcon>
             <ProfileOutlined />
           </ListItemIcon>
-          <ListItemText>Thông tin tài khoản</ListItemText>
+          <ListItemText>{t("topbar.accountProfile")}</ListItemText>
         </MenuItem>
         <Divider sx={{ my: 0.5 }} />
         <MenuItem
@@ -164,7 +170,7 @@ export function UserMenu({ compact = false }: Props) {
           <ListItemIcon sx={{ color: "inherit" }}>
             <LogoutOutlined />
           </ListItemIcon>
-          <ListItemText>Đăng xuất</ListItemText>
+          <ListItemText>{t("topbar.accountLogout")}</ListItemText>
         </MenuItem>
       </Menu>
     </>

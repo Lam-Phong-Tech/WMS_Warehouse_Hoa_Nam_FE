@@ -369,13 +369,13 @@ const PAGES: Array<{
     path: ROUTES.REPORTS_IMPORT_QUALITY,
     testId: "rpt-tab-import-quality",
     // Bản port 1:1 mockup 8.5: nhật ký batch của ngữ cảnh Import/Migration.
-    heading: /Nhật ký Import\/Migration/,
+    heading: /Nhật ký nhập & chuyển đổi dữ liệu/,
   },
   {
     Page: PackingLabelReportPage,
     path: ROUTES.REPORTS_PACKING_LABEL,
     testId: "rpt-tab-packing-label",
-    heading: /Lịch sử Print \/ Reprint/,
+    heading: /Lịch sử in \/ in lại/,
   },
   {
     Page: WarrantyReportPage,

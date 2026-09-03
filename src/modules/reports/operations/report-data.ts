@@ -181,6 +181,12 @@ export function useUserDirectory() {
     const byName = new Map(
       entries.filter((entry) => entry.name !== "").map((e) => [e.name, e]),
     );
+    /** Tra tên theo user_id — cho những endpoint chỉ trả UUID actor. */
+    const byId = new Map(
+      entries
+        .filter((entry) => entry.user_id !== "")
+        .map((e) => [e.user_id, e]),
+    );
     const departments = new Map<string, string>();
     for (const entry of entries) {
       if (entry.department_id && entry.department_name) {
@@ -205,6 +211,11 @@ export function useUserDirectory() {
         byName.get(text(name, ""))?.department_id ?? null,
       departmentNameOfActor: (name: unknown) =>
         byName.get(text(name, ""))?.department_name ?? "",
+      /**
+       * UUID actor → tên hiển thị; không tra được thì trả "" (nơi hiển thị in
+       * "Chưa có"). TUYỆT ĐỐI không trả lại UUID để rơi ra màn hình.
+       */
+      nameOfUserId: (id: unknown) => byId.get(text(id, ""))?.name ?? "",
     };
   }, [query.data, query.isLoading]);
 }

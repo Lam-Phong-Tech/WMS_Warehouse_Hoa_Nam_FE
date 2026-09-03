@@ -88,7 +88,9 @@ const REVERSALS = [
     created_at: `${TODAY} 11:01:00`,
     total_qty: 2,
     warehouse_name: "Kho Hà Nội",
-    posted_by: "Lê Chi",
+    // BE trả posted_by là UUID (chỉ join created_by_name) — màn phải tra ra tên.
+    posted_by: "u-2",
+    created_by: "u-2",
   },
   {
     // Phiếu hoàn tác KHÔNG truy được loại chứng từ gốc và chưa có movement ⇒
@@ -102,7 +104,8 @@ const REVERSALS = [
     created_at: `${TODAY} 12:30:00`,
     total_qty: 9,
     warehouse_name: "Kho Hà Nội",
-    posted_by: "Lê Chi",
+    posted_by: "u-2",
+    created_by: "u-2",
   },
 ];
 
@@ -110,6 +113,7 @@ const LEDGER = {
   rows: [
     {
       id: "11111111-1111-4111-8111-111111111111",
+      movement_no: "MV-20260903-0001",
       occurred_at: `${TODAY} 09:02:00`,
       movement_type: "RECEIPT",
       product_code: "HN-MK-001-V1",
@@ -118,6 +122,7 @@ const LEDGER = {
     },
     {
       id: "22222222-2222-4222-8222-222222222222",
+      movement_no: "MV-20260903-0002",
       occurred_at: `${TODAY} 10:20:00`,
       movement_type: "ISSUE",
       product_code: "HN-MK-001-V1",
@@ -126,6 +131,7 @@ const LEDGER = {
     },
     {
       id: "33333333-3333-4333-8333-333333333333",
+      movement_no: "MV-20260903-0003",
       occurred_at: `${TODAY} 11:15:00`,
       movement_type: "REVERSAL",
       product_code: "HN-MK-001-V1",
@@ -212,6 +218,22 @@ describe("RPT-IO-01 · Lịch sử nhập – xuất kho", () => {
     expect(within(rows[3]).getByText("Kho nhập")).toBeInTheDocument();
   });
 
+  it("không in UUID thô: actor hoàn tác ra tên, movement ra mã MV-…", async () => {
+    renderReport();
+    await screen.findByText("IN-2026-00031");
+    const rows = await bodyRows();
+
+    // Phiếu hoàn tác chỉ có posted_by = UUID ⇒ tra danh bạ ra "Lê Chi" + phòng ban.
+    expect(within(rows[1]).getByText("Lê Chi")).toBeInTheDocument();
+    expect(within(rows[1]).getByText("Kho xuất")).toBeInTheDocument();
+    // Cột Movement là MÃ nghiệp vụ, không phải id rút gọn.
+    expect(within(rows[3]).getAllByText("MV-20260903-0001")).toHaveLength(2);
+    // Không một ô nào trên trang chứa chuỗi dạng UUID.
+    expect(document.body.textContent).not.toMatch(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/iu,
+    );
+  });
+
   it("lấy dấu Qty posted từ sổ movement; không có dấu thì để trống", async () => {
     renderReport();
     await screen.findByText("IN-2026-00031");
@@ -275,7 +297,7 @@ describe("RPT-IO-01 · Lịch sử nhập – xuất kho", () => {
     renderReport();
     await screen.findByText("IN-2026-00031");
 
-    await user.click(screen.getByRole("tab", { name: /Lát cắt/ }));
+    await user.click(screen.getByRole("tab", { name: /Dạng hộp/ }));
 
     // Chỉ hai phiếu nguồn (nhập + xuất); phiếu hoàn tác không tự thành lát cắt.
     const slices = await screen.findAllByRole("button", { name: "Đối soát" });

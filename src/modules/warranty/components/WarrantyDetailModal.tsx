@@ -56,6 +56,7 @@ import {
   WARRANTY_TERMINAL_STATUSES,
   formatWarrantyDateTime,
 } from "@/modules/warranty/constants";
+import { WARRANTY_IDENTIFICATION_STATUS_LABELS } from "@/shared/constants/business-labels";
 import {
   useComponentIssues,
   useDeleteWarrantyAttachment,
@@ -1084,7 +1085,10 @@ export function WarrantyDetailModal({
                 />
               ) : null}
               {detail?.identification_type === "TEMP_ONLY" ? (
-                <UiStatusBadge tone="warning" label="TEMP_ONLY" />
+                <UiStatusBadge
+                  tone="warning"
+                  label={WARRANTY_IDENTIFICATION_STATUS_LABELS.TEMP_ONLY}
+                />
               ) : null}
             </Stack>
             {/* Dòng tóm tắt: máy · khách · ngày nhận luôn thấy ở mọi tab, đỡ phải

@@ -2,12 +2,32 @@ import type { WarrantyCaseStatus } from "./types";
 import type { ComponentIssueStatus } from "./services/componentIssueService";
 import type { UiStatusTone } from "@/shared/ui";
 import type { MessageKey } from "@/shared/i18n/messages";
+import { tStatic } from "@/shared/i18n/useT";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDateTime } from "@/shared/utils/format-date";
+
+/**
+ * Map nhãn đọc-tại-lúc-truy-cập: giữ nguyên shape `Record<code, string>` cho
+ * mọi call site hiện có (`LABELS[status]`), nhưng mỗi lần đọc property sẽ tra
+ * `tStatic` theo ngôn ngữ đang chọn thay vì đóng băng chuỗi lúc import module.
+ */
+function lazyLabelMap<K extends string>(
+  keys: Record<K, MessageKey>,
+): Record<K, string> {
+  const map = {} as Record<K, string>;
+  for (const code of Object.keys(keys) as K[]) {
+    Object.defineProperty(map, code, {
+      enumerable: true,
+      get: () => tStatic(keys[code]),
+    });
+  }
+  return map;
+}
 export {
   ITEM_STATUS_LABELS,
   WARRANTY_EVENT_TYPE_LABELS,
   WARRANTY_IDENTIFICATION_STATUS_LABELS,
+  WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS,
   WARRANTY_TRACE_STATUS_LABELS,
 } from "@/shared/constants/business-labels";
 
@@ -63,20 +83,20 @@ export const WARRANTY_NOTE_REQUIRED_LABELS: Partial<
   RETURNED: "warranty.noteRequired.returned",
 };
 
-export const WARRANTY_STATUS_LABELS: Record<string, string> = {
-  RECEIVED: "Đã tiếp nhận",
-  OPEN: "Đang mở",
-  CHECKING: "Đang kiểm tra",
-  PROCESSING: "Đang xử lý",
-  WAITING_PARTS: "Chờ linh kiện",
-  REPAIRING: "Đang sửa chữa",
-  COMPLETED: "Đã hoàn tất xử lý",
-  READY: "Sẵn sàng trả",
-  RETURNED: "Đã trả khách",
-  RETURNED_TO_CUSTOMER: "Đã trả khách",
-  CLOSED: "Đã đóng",
-  CANCELLED: "Đã hủy",
-};
+export const WARRANTY_STATUS_LABELS: Record<string, string> = lazyLabelMap({
+  RECEIVED: "warranty.status.received",
+  OPEN: "warranty.status.open",
+  CHECKING: "warranty.status.checking",
+  PROCESSING: "warranty.status.processing",
+  WAITING_PARTS: "warranty.status.waitingParts",
+  REPAIRING: "warranty.status.repairing",
+  COMPLETED: "warranty.status.completed",
+  READY: "warranty.status.ready",
+  RETURNED: "warranty.status.returned",
+  RETURNED_TO_CUSTOMER: "warranty.status.returned",
+  CLOSED: "warranty.status.closed",
+  CANCELLED: "warranty.status.cancelled",
+});
 
 export const WARRANTY_STATUS_COLORS: Record<string, string> = {
   RECEIVED: "default",
@@ -93,23 +113,37 @@ export const WARRANTY_STATUS_COLORS: Record<string, string> = {
   CANCELLED: "error",
 };
 
+/** Entry badge với nhãn đọc-tại-lúc-truy-cập (cùng lý do lazyLabelMap). */
+function badgeEntry(
+  tone: UiStatusTone,
+  key: MessageKey,
+): { tone: UiStatusTone; label: string } {
+  return {
+    tone,
+    get label() {
+      return tStatic(key);
+    },
+  };
+}
+
 /** Dùng chung giữa ComponentIssueModal (COMP-01) và trang danh sách WAR-04. */
 export const COMPONENT_ISSUE_STATUS_BADGE: Record<
   ComponentIssueStatus,
   { tone: UiStatusTone; label: string }
 > = {
-  DRAFT: { tone: "neutral", label: "Nháp" },
-  SCANNING: { tone: "info", label: "Đang quét" },
-  POSTED: { tone: "success", label: "Đã ghi nhận" },
-  CANCELLED: { tone: "error", label: "Đã hủy" },
+  DRAFT: badgeEntry("neutral", "warranty.componentIssueStatus.draft"),
+  SCANNING: badgeEntry("info", "warranty.componentIssueStatus.scanning"),
+  POSTED: badgeEntry("success", "warranty.componentIssueStatus.posted"),
+  CANCELLED: badgeEntry("error", "warranty.status.cancelled"),
 };
 
-export const WARRANTY_ATTACHMENT_TYPE_LABELS: Record<string, string> = {
-  INTAKE: "Ảnh/tệp tiếp nhận",
-  DIAGNOSTIC: "Ảnh/tệp chẩn đoán",
-  RETURN: "Ảnh/tệp trả máy",
-  OTHER: "Khác",
-};
+export const WARRANTY_ATTACHMENT_TYPE_LABELS: Record<string, string> =
+  lazyLabelMap({
+    INTAKE: "warranty.attachmentType.intake",
+    DIAGNOSTIC: "warranty.attachmentType.diagnostic",
+    RETURN: "warranty.attachmentType.return",
+    OTHER: "warranty.attachmentType.other",
+  });
 
 export function formatWarrantyDateTime(value?: string): string {
   if (!value) return EMPTY_TEXT;

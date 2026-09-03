@@ -344,7 +344,8 @@ function normalizeBatch(row: RawRecord): ScanBatch {
     unknown_count: num(row.unknown_count ?? 0),
     invalid_count: num(row.invalid_count ?? 0),
     created_at: text(row.created_at),
-    created_by: text(row.created_by_name ?? row.created_by, "-"),
+    // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
+    created_by: text(row.created_by_name, "-"),
   };
 }
 

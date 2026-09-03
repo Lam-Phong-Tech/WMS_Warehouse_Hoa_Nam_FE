@@ -11,8 +11,29 @@ import {
   RADIUS,
   SEMANTIC_LIGHT as S,
 } from "@/shared/ui/tokens";
+import { useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 
-const WEEKDAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"] as const;
+const WEEKDAY_KEYS: readonly MessageKey[] = [
+  "shared.datePicker.weekdaySun",
+  "shared.datePicker.weekdayMon",
+  "shared.datePicker.weekdayTue",
+  "shared.datePicker.weekdayWed",
+  "shared.datePicker.weekdayThu",
+  "shared.datePicker.weekdayFri",
+  "shared.datePicker.weekdaySat",
+];
+
+export interface DateRangePreset {
+  /** Khoá ổn định để biết preset nào đang được áp dụng. */
+  key: string;
+  label: string;
+  /**
+   * Tính khoảng ngày TẠI THỜI ĐIỂM BẤM, không tính sẵn lúc render: "Tháng này"
+   * phải đúng theo hôm nay, kể cả khi tab mở qua nửa đêm.
+   */
+  range: () => [Dayjs, Dayjs];
+}
 
 export interface UiVuexyDateRangePickerProps {
   value: [Dayjs | null, Dayjs | null] | null;
@@ -24,6 +45,15 @@ export interface UiVuexyDateRangePickerProps {
   className?: string;
   popupClassName?: string;
   "aria-label"?: string;
+  /**
+   * Kỳ nhanh ("Tuần này", "Tháng này"…) hiện ngay trong panel lịch.
+   *
+   * Có `presets` thì màn KHÔNG cần thêm ô chọn kỳ riêng bên ngoài nữa. Hai
+   * control cùng set một khoảng ngày là nguồn gốc của việc người dùng không
+   * hiểu cái nào thắng cái nào: chọn preset thì ô ngày bị ghi đè, sửa ô ngày
+   * thì ô preset lặng lẽ nhảy về "Tùy chọn".
+   */
+  presets?: ReadonlyArray<DateRangePreset>;
 }
 
 function isSameDay(left: Dayjs | null, right: Dayjs) {
@@ -43,14 +73,21 @@ function buildCalendarDays(month: Dayjs) {
 export function UiVuexyDateRangePicker({
   value,
   onChange,
-  placeholder = ["Từ ngày", "Đến ngày"],
+  placeholder,
   format = "DD/MM/YYYY",
   allowClear = true,
   disabled = false,
   className,
   popupClassName,
-  "aria-label": ariaLabel = "Chọn khoảng ngày",
+  "aria-label": ariaLabelProp,
+  presets,
 }: UiVuexyDateRangePickerProps) {
+  const t = useT();
+  const resolvedPlaceholder = placeholder ?? [
+    t("shared.datePicker.fromDate"),
+    t("shared.datePicker.toDate"),
+  ];
+  const ariaLabel = ariaLabelProp ?? t("shared.datePicker.selectRange");
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [activeField, setActiveField] = useState<"start" | "end">("start");
   const [panelMonth, setPanelMonth] = useState(() =>
@@ -118,6 +155,39 @@ export function UiVuexyDateRangePicker({
   const rangeStartValue = draftStart?.startOf("day").valueOf() ?? null;
   const rangeEndValue = draftEnd?.startOf("day").valueOf() ?? null;
 
+  const hasPresets = (presets?.length ?? 0) > 0;
+
+  /**
+   * Preset là lối tắt một chạm: áp dụng và đóng luôn. Bắt người dùng bấm thêm
+   * "Áp dụng" thì nó chẳng còn là lối tắt nữa.
+   */
+  const applyPreset = (preset: DateRangePreset) => {
+    const [start, end] = preset.range();
+    const from = start.startOf("day");
+    const to = end.startOf("day");
+    setDraftStart(from);
+    setDraftEnd(to);
+    setPanelMonth(from.startOf("month"));
+    setActiveField("start");
+    onChange([from, to]);
+    closePicker();
+  };
+
+  /** Preset nào khớp đúng khoảng đang chọn — không khớp cái nào là khoảng tự đặt. */
+  const activePresetKey = useMemo(() => {
+    const from = value?.[0]?.startOf("day").valueOf();
+    const to = value?.[1]?.startOf("day").valueOf();
+    if (!presets || from == null || to == null) return null;
+    const match = presets.find((preset) => {
+      const [start, end] = preset.range();
+      return (
+        start.startOf("day").valueOf() === from &&
+        end.startOf("day").valueOf() === to
+      );
+    });
+    return match?.key ?? null;
+  }, [presets, value]);
+
   return (
     <>
       <Box
@@ -138,21 +208,21 @@ export function UiVuexyDateRangePicker({
           disabled={disabled}
           className="hn-vuexy-date-field"
           data-date-field="from"
-          aria-label="Từ ngày"
+          aria-label={t("shared.datePicker.fromDate")}
           aria-haspopup="dialog"
           aria-expanded={open && activeField === "start"}
           onClick={(event) => openPicker("start", event)}
           sx={dateFieldButtonSx(open && activeField === "start", disabled)}
         >
           <Box component="span" sx={dateFieldPrefixSx}>
-            Từ
+            {t("shared.datePicker.from")}
           </Box>
           <Box
             component="span"
             data-date-value="from"
             sx={dateFieldValueSx(Boolean(value?.[0]))}
           >
-            {value?.[0]?.format(format) ?? placeholder[0]}
+            {value?.[0]?.format(format) ?? resolvedPlaceholder[0]}
           </Box>
           <CalendarIcon style={{ color: S.textMedium }} />
         </Box>
@@ -162,21 +232,21 @@ export function UiVuexyDateRangePicker({
           disabled={disabled}
           className="hn-vuexy-date-field"
           data-date-field="to"
-          aria-label="Đến ngày"
+          aria-label={t("shared.datePicker.toDate")}
           aria-haspopup="dialog"
           aria-expanded={open && activeField === "end"}
           onClick={(event) => openPicker("end", event)}
           sx={dateFieldButtonSx(open && activeField === "end", disabled)}
         >
           <Box component="span" sx={dateFieldPrefixSx}>
-            Đến
+            {t("shared.datePicker.to")}
           </Box>
           <Box
             component="span"
             data-date-value="to"
             sx={dateFieldValueSx(Boolean(value?.[1]))}
           >
-            {value?.[1]?.format(format) ?? placeholder[1]}
+            {value?.[1]?.format(format) ?? resolvedPlaceholder[1]}
           </Box>
           <CalendarIcon style={{ color: S.textMedium }} />
         </Box>
@@ -195,7 +265,7 @@ export function UiVuexyDateRangePicker({
             role: "dialog",
             "aria-label": ariaLabel,
             sx: {
-              width: 350,
+              width: hasPresets ? 500 : 350,
               maxWidth: "calc(100vw - 24px)",
               mt: 0.75,
               overflow: "hidden",
@@ -207,193 +277,229 @@ export function UiVuexyDateRangePicker({
           },
         }}
       >
-        <Box sx={{ p: 1.5 }}>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: 1,
-              mb: 1.25,
-            }}
-          >
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "minmax(0, 1fr)",
+              sm: hasPresets ? "148px minmax(0, 1fr)" : "minmax(0, 1fr)",
+            },
+          }}
+        >
+          {hasPresets ? (
             <Box
-              component="button"
-              type="button"
-              onClick={() => {
-                setActiveField("start");
-                setPanelMonth((draftStart ?? dayjs()).startOf("month"));
-              }}
-              sx={pickerFieldTabSx(activeField === "start")}
+              role="group"
+              aria-label={t("shared.datePicker.presets")}
+              sx={presetColumnSx}
             >
-              <Box component="span">Từ ngày</Box>
-              <Box component="strong">
-                {draftStart?.format(format) ?? "Chưa chọn"}
-              </Box>
+              {presets?.map((preset) => (
+                <Box
+                  key={preset.key}
+                  component="button"
+                  type="button"
+                  aria-pressed={activePresetKey === preset.key}
+                  onClick={() => applyPreset(preset)}
+                  sx={presetButtonSx(activePresetKey === preset.key)}
+                >
+                  {preset.label}
+                </Box>
+              ))}
             </Box>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => {
-                setActiveField("end");
-                setPanelMonth(
-                  (draftEnd ?? draftStart ?? dayjs()).startOf("month"),
-                );
-              }}
-              sx={pickerFieldTabSx(activeField === "end")}
-            >
-              <Box component="span">Đến ngày</Box>
-              <Box component="strong">
-                {draftEnd?.format(format) ?? "Chưa chọn"}
-              </Box>
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              minHeight: 40,
-              display: "grid",
-              gridTemplateColumns: "36px 1fr 36px",
-              alignItems: "center",
-              mb: 0.75,
-            }}
-          >
-            <Box
-              component="button"
-              type="button"
-              aria-label="Tháng trước"
-              onClick={() =>
-                setPanelMonth((month) => month.subtract(1, "month"))
-              }
-              sx={calendarNavButtonSx}
-            >
-              <PrevIcon />
-            </Box>
+          ) : null}
+          <Box sx={{ p: 1.5, minWidth: 0 }}>
             <Box
               sx={{
-                color: S.textHigh,
-                fontSize: 15,
-                fontWeight: 600,
-                textAlign: "center",
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 1,
+                mb: 1.25,
               }}
             >
-              Tháng {panelMonth.format("M YYYY")}
-            </Box>
-            <Box
-              component="button"
-              type="button"
-              aria-label="Tháng sau"
-              onClick={() => setPanelMonth((month) => month.add(1, "month"))}
-              sx={calendarNavButtonSx}
-            >
-              <NextIcon />
-            </Box>
-          </Box>
-
-          <Box
-            aria-hidden="true"
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-              mb: 0.25,
-            }}
-          >
-            {WEEKDAYS.map((weekday) => (
               <Box
-                key={weekday}
+                component="button"
+                type="button"
+                onClick={() => {
+                  setActiveField("start");
+                  setPanelMonth((draftStart ?? dayjs()).startOf("month"));
+                }}
+                sx={pickerFieldTabSx(activeField === "start")}
+              >
+                <Box component="span">{t("shared.datePicker.fromDate")}</Box>
+                <Box component="strong">
+                  {draftStart?.format(format) ??
+                    t("shared.datePicker.notSelected")}
+                </Box>
+              </Box>
+              <Box
+                component="button"
+                type="button"
+                onClick={() => {
+                  setActiveField("end");
+                  setPanelMonth(
+                    (draftEnd ?? draftStart ?? dayjs()).startOf("month"),
+                  );
+                }}
+                sx={pickerFieldTabSx(activeField === "end")}
+              >
+                <Box component="span">{t("shared.datePicker.toDate")}</Box>
+                <Box component="strong">
+                  {draftEnd?.format(format) ??
+                    t("shared.datePicker.notSelected")}
+                </Box>
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                minHeight: 40,
+                display: "grid",
+                gridTemplateColumns: "36px 1fr 36px",
+                alignItems: "center",
+                mb: 0.75,
+              }}
+            >
+              <Box
+                component="button"
+                type="button"
+                aria-label={t("shared.datePicker.prevMonth")}
+                onClick={() =>
+                  setPanelMonth((month) => month.subtract(1, "month"))
+                }
+                sx={calendarNavButtonSx}
+              >
+                <PrevIcon />
+              </Box>
+              <Box
                 sx={{
-                  height: 30,
-                  display: "grid",
-                  placeItems: "center",
-                  color: S.textMedium,
-                  fontSize: 12,
-                  fontWeight: 500,
+                  color: S.textHigh,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  textAlign: "center",
                 }}
               >
-                {weekday}
+                {t("shared.datePicker.monthLabel", {
+                  month: panelMonth.format("M YYYY"),
+                })}
               </Box>
-            ))}
-          </Box>
+              <Box
+                component="button"
+                type="button"
+                aria-label={t("shared.datePicker.nextMonth")}
+                onClick={() => setPanelMonth((month) => month.add(1, "month"))}
+                sx={calendarNavButtonSx}
+              >
+                <NextIcon />
+              </Box>
+            </Box>
 
-          <Box
-            role="grid"
-            aria-label={`Tháng ${panelMonth.format("M YYYY")}`}
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-            }}
-          >
-            {days.map((day) => {
-              const dayValue = day.startOf("day").valueOf();
-              const selectedStart = isSameDay(draftStart, day);
-              const selectedEnd = isSameDay(draftEnd, day);
-              const selected = selectedStart || selectedEnd;
-              const inRange =
-                rangeStartValue != null &&
-                rangeEndValue != null &&
-                dayValue >= rangeStartValue &&
-                dayValue <= rangeEndValue;
-              const outsideMonth = day.month() !== panelMonth.month();
-              const disabledDay =
-                activeField === "end" &&
-                rangeStartValue != null &&
-                dayValue < rangeStartValue;
-
-              return (
+            <Box
+              aria-hidden="true"
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                mb: 0.25,
+              }}
+            >
+              {WEEKDAY_KEYS.map((weekdayKey) => (
                 <Box
-                  key={day.format("YYYY-MM-DD")}
-                  role="gridcell"
+                  key={weekdayKey}
                   sx={{
-                    py: 0.25,
-                    bgcolor: inRange ? S.primarySoft : "transparent",
-                    borderRadius: selectedStart
-                      ? `${RADIUS.pill}px 0 0 ${RADIUS.pill}px`
-                      : selectedEnd
-                        ? `0 ${RADIUS.pill}px ${RADIUS.pill}px 0`
-                        : 0,
+                    height: 30,
+                    display: "grid",
+                    placeItems: "center",
+                    color: S.textMedium,
+                    fontSize: 12,
+                    fontWeight: 500,
                   }}
                 >
+                  {t(weekdayKey)}
+                </Box>
+              ))}
+            </Box>
+
+            <Box
+              role="grid"
+              aria-label={t("shared.datePicker.monthLabel", {
+                month: panelMonth.format("M YYYY"),
+              })}
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+              }}
+            >
+              {days.map((day) => {
+                const dayValue = day.startOf("day").valueOf();
+                const selectedStart = isSameDay(draftStart, day);
+                const selectedEnd = isSameDay(draftEnd, day);
+                const selected = selectedStart || selectedEnd;
+                const inRange =
+                  rangeStartValue != null &&
+                  rangeEndValue != null &&
+                  dayValue >= rangeStartValue &&
+                  dayValue <= rangeEndValue;
+                const outsideMonth = day.month() !== panelMonth.month();
+                const disabledDay =
+                  activeField === "end" &&
+                  rangeStartValue != null &&
+                  dayValue < rangeStartValue;
+
+                return (
                   <Box
-                    component="button"
-                    type="button"
-                    aria-label={day.format("DD/MM/YYYY")}
-                    aria-selected={selected}
-                    aria-disabled={disabledDay}
-                    disabled={disabledDay}
-                    onClick={() => selectDay(day)}
+                    key={day.format("YYYY-MM-DD")}
+                    role="gridcell"
                     sx={{
-                      width: 34,
-                      height: 34,
-                      mx: "auto",
-                      display: "grid",
-                      placeItems: "center",
-                      border: 0,
-                      borderRadius: RADIUS.pill,
-                      bgcolor: selected ? S.primary : "transparent",
-                      color: selected
-                        ? S.onPrimary
-                        : outsideMonth
-                          ? S.textDisabled
-                          : S.textHigh,
-                      font: "inherit",
-                      fontSize: 13,
-                      cursor: disabledDay ? "not-allowed" : "pointer",
-                      opacity: disabledDay ? 0.34 : 1,
-                      transition: `background ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
-                      "&:hover": {
-                        bgcolor: selected ? S.primaryDark : S.primarySoft,
-                        color: selected ? S.onPrimary : S.primaryDark,
-                      },
-                      "&:focus-visible": {
-                        outline: `2px solid ${S.primary}`,
-                        outlineOffset: 1,
-                      },
+                      py: 0.25,
+                      bgcolor: inRange ? S.primarySoft : "transparent",
+                      borderRadius: selectedStart
+                        ? `${RADIUS.pill}px 0 0 ${RADIUS.pill}px`
+                        : selectedEnd
+                          ? `0 ${RADIUS.pill}px ${RADIUS.pill}px 0`
+                          : 0,
                     }}
                   >
-                    {day.date()}
+                    <Box
+                      component="button"
+                      type="button"
+                      aria-label={day.format("DD/MM/YYYY")}
+                      aria-selected={selected}
+                      aria-disabled={disabledDay}
+                      disabled={disabledDay}
+                      onClick={() => selectDay(day)}
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        mx: "auto",
+                        display: "grid",
+                        placeItems: "center",
+                        border: 0,
+                        borderRadius: RADIUS.pill,
+                        bgcolor: selected ? S.primary : "transparent",
+                        color: selected
+                          ? S.onPrimary
+                          : outsideMonth
+                            ? S.textDisabled
+                            : S.textHigh,
+                        font: "inherit",
+                        fontSize: 13,
+                        cursor: disabledDay ? "not-allowed" : "pointer",
+                        opacity: disabledDay ? 0.34 : 1,
+                        transition: `background ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
+                        "&:hover": {
+                          bgcolor: selected ? S.primaryDark : S.primarySoft,
+                          color: selected ? S.onPrimary : S.primaryDark,
+                        },
+                        "&:focus-visible": {
+                          outline: `2px solid ${S.primary}`,
+                          outlineOffset: 1,
+                        },
+                      }}
+                    >
+                      {day.date()}
+                    </Box>
                   </Box>
-                </Box>
-              );
-            })}
+                );
+              })}
+            </Box>
           </Box>
         </Box>
 
@@ -410,7 +516,12 @@ export function UiVuexyDateRangePicker({
           }}
         >
           <Box sx={{ minWidth: 0, color: S.textMedium, fontSize: 12 }}>
-            Đang chọn {activeField === "start" ? "từ ngày" : "đến ngày"}
+            {t("shared.datePicker.selecting", {
+              field:
+                activeField === "start"
+                  ? t("shared.datePicker.fromDateLower")
+                  : t("shared.datePicker.toDateLower"),
+            })}
           </Box>
           <Box sx={{ display: "flex", flexShrink: 0, gap: 0.75 }}>
             {allowClear ? (
@@ -420,7 +531,7 @@ export function UiVuexyDateRangePicker({
                 onClick={clearRange}
                 sx={footerButtonSx}
               >
-                Xóa
+                {t("shared.actions.clear")}
               </Box>
             ) : null}
             <Box
@@ -429,7 +540,7 @@ export function UiVuexyDateRangePicker({
               onClick={closePicker}
               sx={footerButtonSx}
             >
-              Hủy
+              {t("shared.actions.cancel")}
             </Box>
             <Box
               component="button"
@@ -438,7 +549,7 @@ export function UiVuexyDateRangePicker({
               onClick={applyRange}
               sx={primaryFooterButtonSx}
             >
-              Áp dụng
+              {t("shared.actions.apply")}
             </Box>
           </Box>
         </Box>
@@ -446,6 +557,41 @@ export function UiVuexyDateRangePicker({
     </>
   );
 }
+
+/**
+ * Cột kỳ nhanh: dọc bên trái ở màn rộng, xuống thành hàng chip cuộn ngang ở
+ * màn hẹp — panel chỉ rộng `100vw - 24px` nên cột dọc sẽ bóp nát phần lịch.
+ */
+const presetColumnSx = {
+  display: "flex",
+  flexDirection: { xs: "row", sm: "column" },
+  alignContent: "flex-start",
+  gap: 0.5,
+  p: 1.5,
+  overflowX: { xs: "auto", sm: "visible" },
+  borderBottom: { xs: `1px solid ${S.border}`, sm: "none" },
+  borderRight: { xs: "none", sm: `1px solid ${S.border}` },
+  bgcolor: S.bgSubtle,
+} as const;
+
+const presetButtonSx = (active: boolean) => ({
+  flex: "none",
+  minHeight: 34,
+  px: 1.25,
+  border: `1px solid ${active ? S.primary : "transparent"}`,
+  borderRadius: `${RADIUS.control}px`,
+  bgcolor: active ? S.primarySoft : "transparent",
+  color: active ? S.primaryDark : S.textHigh,
+  font: "inherit",
+  fontSize: 13,
+  fontWeight: active ? 600 : 500,
+  textAlign: "left",
+  whiteSpace: "nowrap",
+  cursor: "pointer",
+  transition: `background ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
+  "&:hover": { bgcolor: S.primarySoft, color: S.primaryDark },
+  "&:focus-visible": { outline: `2px solid ${S.primary}`, outlineOffset: 1 },
+});
 
 const dateFieldButtonSx = (active: boolean, disabled: boolean) => ({
   width: "100%",

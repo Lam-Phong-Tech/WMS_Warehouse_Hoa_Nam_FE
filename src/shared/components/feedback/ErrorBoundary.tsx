@@ -2,6 +2,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { UiStateSurface } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
+import { tStatic } from "@/shared/i18n/useT";
 
 export interface ErrorBoundaryProps {
   children: ReactNode;
@@ -38,11 +39,13 @@ export class ErrorBoundary extends Component<
       return (
         <UiStateSurface
           kind="error"
-          title="Đã xảy ra lỗi"
-          description="Có lỗi không mong muốn. Vui lòng thử tải lại trang."
+          // Class component không dùng được hook useT — tStatic đọc ngôn ngữ
+          // hiện tại tại thời điểm render màn lỗi.
+          title={tStatic("shared.states.errorTitle")}
+          description={tStatic("shared.states.unexpectedError")}
           action={
             <ActionButton kind="refresh" onClick={this.handleReload}>
-              Tải lại trang
+              {tStatic("shared.actions.reloadPage")}
             </ActionButton>
           }
         />

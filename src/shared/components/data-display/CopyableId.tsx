@@ -12,6 +12,7 @@ import { Box, Stack, type BoxProps } from "@/shared/ui";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { shortId } from "@/shared/utils/shortId";
 import { ActionIconButton } from "../actions/ActionIconButton";
+import { useT } from "@/shared/i18n/useT";
 
 export interface CopyableIdProps {
   /** Giá trị đầy đủ — được copy nguyên vẹn, chỉ phần rút gọn được hiển thị. */
@@ -22,6 +23,7 @@ export interface CopyableIdProps {
 }
 
 export function CopyableId({ value, visibleChars = 6, sx }: CopyableIdProps) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   if (!value) return null;
 
@@ -56,7 +58,7 @@ export function CopyableId({ value, visibleChars = 6, sx }: CopyableIdProps) {
       </Box>
       <ActionIconButton
         kind="copy"
-        label={copied ? "Đã sao chép" : "Sao chép mã đầy đủ"}
+        label={copied ? t("shared.copy.copied") : t("shared.copy.copyFullId")}
         onClick={handleCopy}
       />
     </Stack>

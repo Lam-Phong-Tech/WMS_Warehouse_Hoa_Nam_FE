@@ -16,6 +16,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiVuexyDateField,
+  type UiStatusTone,
   RADIUS,
   SEMANTIC_LIGHT as S,
 } from "@/shared/ui";
@@ -40,7 +41,8 @@ import {
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { getApiErrorMessage } from "@/shared/api/api-error";
-import { shortId } from "@/shared/utils/shortId";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { tStatic, useT } from "@/shared/i18n/useT";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { useSkuCatalog } from "@/modules/reports/operations/report-data";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
@@ -49,6 +51,12 @@ import {
   RPT_SCROLL_MAX_HEIGHT,
 } from "@/modules/reports/operations/report-tokens";
 import { runReportExport } from "@/modules/reports/operations/report-export";
+import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
+import {
+  optionsFromRows,
+  useSectionFilter,
+  type SectionFilterConfig,
+} from "@/modules/reports/operations/report-section-filter";
 import {
   MOVEMENT_TRACE_REPORT_CODE,
   MOVEMENT_TRACE_TIMEZONE,
@@ -85,18 +93,31 @@ import {
  * này". Mọi con số trên màn đọc từ `/reports/movement-trace` thật.
  */
 
-/** Ngày giờ theo cách viết của mockup: "08:15 25 thg 8, 2026". */
+/**
+ * Ngày giờ theo cách viết của mockup: "08:15 25 thg 8, 2026" (EN: "08:15 Aug
+ * 25, 2026"). Tháng phải đọc theo ngôn ngữ ĐANG chọn: bản VI đánh số, bản EN
+ * dùng tên viết tắt của dayjs. Hai khuôn dùng CÙNG bộ placeholder — bản dịch
+ * chỉ đổi thứ tự — vì hàng rào i18n đòi bộ placeholder EN khớp bản VI.
+ */
 function formatTraceDateTime(value: string): string {
   const parsed = dayjs(value);
   if (!value || !parsed.isValid()) return EMPTY_TEXT;
-  return `${parsed.format("HH:mm")} ${parsed.date()} thg ${parsed.month() + 1}, ${parsed.year()}`;
+  const english = useLanguageStore.getState().language === "en";
+  return tStatic("reports.movementTrace.dateTime", {
+    time: parsed.format("HH:mm"),
+    day: parsed.date(),
+    month: english ? parsed.format("MMM") : parsed.month() + 1,
+    year: parsed.year(),
+  });
 }
 
 /** Mốc chốt số liệu: "Chốt 10:00 02-09". */
 function formatCutOff(value: string): string {
   const parsed = dayjs(value);
   if (!value || !parsed.isValid()) return "";
-  return `Chốt ${parsed.format("HH:mm DD-MM")}`;
+  return tStatic("reports.movementTrace.cutOff", {
+    time: parsed.format("HH:mm DD-MM"),
+  });
 }
 
 const SECTION_EYEBROW_SX = {
@@ -253,6 +274,20 @@ function StatCard({
   );
 }
 
+/**
+ * Ô "SL thay đổi" dạng viên.
+ *
+ * NGOÀI MOCKUP (yêu cầu người dùng 2026-09-03): trước đây in số trần. Dùng
+ * ĐÚNG `UiStatusBadge` mà cột "Loại biến động" ngay cạnh đang dùng, nên hai
+ * cột cùng hình dạng và cùng bảng màu: tăng = xanh, giảm = đỏ, không đổi =
+ * trung tính (0 không phải tăng cũng không phải giảm).
+ */
+function QtyDeltaBadge({ value }: { value: number }) {
+  const tone: UiStatusTone =
+    value > 0 ? "success" : value < 0 ? "error" : "neutral";
+  return <UiStatusBadge tone={tone} label={String(value)} />;
+}
+
 function EvidenceField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Box
@@ -307,6 +342,7 @@ const EMPTY_FILTERS: AppliedFilters = {
 };
 
 export default function MovementTraceReport() {
+  const t = useT();
   const permissionState = usePermissionState();
   const canExport = hasPermission(
     WMS_PERMISSION_CATALOG.REPORT_EXPORT,
@@ -354,7 +390,8 @@ export default function MovementTraceReport() {
   const documentCodeOf = useCallback(
     (row: MovementTraceRow): string => {
       if (row.sourceId === "") return "";
-      return documentCodes.byId.get(row.sourceId) ?? shortId(row.sourceId);
+      // Không tra được mã thì "Chưa có" — không in UUID (kể cả rút gọn).
+      return documentCodes.byId.get(row.sourceId) ?? EMPTY_TEXT;
     },
     [documentCodes.byId],
   );
@@ -415,7 +452,86 @@ export default function MovementTraceReport() {
   const traceByLabel =
     TRACE_BY_OPTIONS.find((option) => option.value === applied.traceBy)
       ?.label ?? "";
-  const movementCountText = `${formatQuantity(rows.length)} biến động`;
+  // Hai khối dưới đây cùng đọc `rows` nhưng có bộ lọc RIÊNG: người đọc thu hẹp
+  // dòng thời gian để lần một chuỗi, hoặc thu hẹp sổ để soi một actor — thu hẹp
+  // khối này không được kéo theo khối kia.
+  const timelineFilterConfig = useMemo<SectionFilterConfig<MovementTraceRow>>(
+    () => ({
+      searchPlaceholder: t("reports.movementTrace.timelineSearchPlaceholder"),
+      searchText: (row) => [
+        row.productCode,
+        documentCodeOf(row),
+        row.actor,
+        MOVEMENT_KIND_TIMELINE_LABELS[movementKindOf(row)],
+      ],
+      selects: [
+        {
+          key: "kind",
+          placeholder: t("reports.movementTrace.anyMovementType"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => movementKindOf(row),
+              (value) =>
+                MOVEMENT_KIND_TIMELINE_LABELS[
+                  value as keyof typeof MOVEMENT_KIND_TIMELINE_LABELS
+                ] ?? value,
+            ),
+          match: (row, value) => movementKindOf(row) === value,
+          minWidth: 200,
+        },
+      ],
+    }),
+    [documentCodeOf, t],
+  );
+  const timelineFilter = useSectionFilter(rows, timelineFilterConfig);
+
+  const ledgerFilterConfig = useMemo<SectionFilterConfig<MovementTraceRow>>(
+    () => ({
+      searchPlaceholder: t("reports.movementTrace.ledgerSearchPlaceholder"),
+      searchText: (row) => [
+        row.productCode,
+        documentCodeOf(row),
+        row.sourceType,
+        row.actor,
+        row.correctionChainId,
+        row.movementNo,
+        MOVEMENT_KIND_LABELS[movementKindOf(row)],
+      ],
+      selects: [
+        {
+          key: "kind",
+          placeholder: t("reports.movementTrace.anyMovementType"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => movementKindOf(row),
+              (value) =>
+                MOVEMENT_KIND_LABELS[
+                  value as keyof typeof MOVEMENT_KIND_LABELS
+                ] ?? value,
+            ),
+          match: (row, value) => movementKindOf(row) === value,
+          minWidth: 200,
+        },
+        {
+          key: "actor",
+          placeholder: t("reports.movementTrace.anyActor"),
+          options: (list) => optionsFromRows(list, (row) => row.actor),
+          match: (row, value) => row.actor === value,
+        },
+      ],
+    }),
+    [documentCodeOf, t],
+  );
+  const ledgerFilter = useSectionFilter(rows, ledgerFilterConfig);
+
+  const movementCountText = t("reports.movementTrace.movementCount", {
+    count: formatQuantity(rows.length),
+  });
+  const timelineCountText = t("reports.movementTrace.movementCount", {
+    count: formatQuantity(timelineFilter.rows.length),
+  });
 
   const canReset =
     draft.fromDate !== null ||
@@ -471,10 +587,14 @@ export default function MovementTraceReport() {
         },
       });
       toast.success(
-        `Đã xuất XLSX ${formatQuantity(rowCount ?? rows.length)} dòng.`,
+        t("reports.movementTrace.exportSuccess", {
+          count: formatQuantity(rowCount ?? rows.length),
+        }),
       );
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Xuất báo cáo thất bại."));
+      toast.error(
+        getApiErrorMessage(error, t("reports.movementTrace.exportFailed")),
+      );
     } finally {
       setExporting(false);
     }
@@ -500,7 +620,7 @@ export default function MovementTraceReport() {
       >
         <Box sx={{ minWidth: 0 }}>
           <Box sx={{ mb: "3.2px", ...SECTION_EYEBROW_SX }}>
-            BÁO CÁO VẬN HÀNH · RPT-MOV-01
+            {t("reports.movementTrace.eyebrow")}
           </Box>
           <Box
             component="h1"
@@ -513,12 +633,11 @@ export default function MovementTraceReport() {
               color: S.textHigh,
             }}
           >
-            Truy vết hàng hóa
+            {t("reports.movementTrace.title")}
           </Box>
           <Box sx={{ mt: "3.6px" }}>
             <Box sx={{ fontSize: 15, lineHeight: 1.467, color: S.textMedium }}>
-              Điều tra ledger append-only, chứng từ nguồn và chuỗi reversal theo
-              SKU hoặc mã vật lý.
+              {t("reports.movementTrace.subtitle")}
             </Box>
           </Box>
         </Box>
@@ -527,14 +646,20 @@ export default function MovementTraceReport() {
           spacing={0.75}
           sx={{ alignItems: "center", flexWrap: "wrap", rowGap: "6px" }}
         >
-          <UiStatusBadge tone="primary" label="Kho tổng Hoa Nam" />
-          <UiStatusBadge tone="neutral" label="Điều tra báo cáo kho" />
+          <UiStatusBadge
+            tone="primary"
+            label={t("reports.movementTrace.badgeWarehouse")}
+          />
+          <UiStatusBadge
+            tone="neutral"
+            label={t("reports.movementTrace.badgeScope")}
+          />
         </Stack>
       </Box>
 
       <Box
         component="form"
-        aria-label="Bộ lọc báo cáo Biến động tồn kho Trace"
+        aria-label={t("reports.movementTrace.filterAria")}
         onSubmit={submitSearch}
         sx={{
           bgcolor: S.bgSurface,
@@ -556,8 +681,12 @@ export default function MovementTraceReport() {
           }}
         >
           <Box>
-            <Box sx={SECTION_EYEBROW_SX}>KỲ DỮ LIỆU &amp; TRA CỨU</Box>
-            <Box sx={SECTION_TITLE_SX}>Bộ lọc báo cáo</Box>
+            <Box sx={SECTION_EYEBROW_SX}>
+              {t("reports.movementTrace.filterEyebrow")}
+            </Box>
+            <Box sx={SECTION_TITLE_SX}>
+              {t("reports.movementTrace.filterTitle")}
+            </Box>
           </Box>
           <Stack direction="row" spacing={0.75}>
             <UiButton
@@ -569,7 +698,7 @@ export default function MovementTraceReport() {
               onClick={refresh}
               disabled={report.isFetching}
             >
-              Làm mới
+              {t("reports.movementTrace.refresh")}
             </UiButton>
             <UiButton
               type="button"
@@ -579,13 +708,11 @@ export default function MovementTraceReport() {
               loading={exporting}
               disabled={!canExport}
               title={
-                canExport
-                  ? undefined
-                  : "Bạn không có quyền xuất báo cáo (report.export)."
+                canExport ? undefined : t("reports.movementTrace.exportDenied")
               }
               onClick={() => void exportXlsx()}
             >
-              Xuất XLSX
+              {t("reports.movementTrace.exportXlsx")}
             </UiButton>
           </Stack>
         </Box>
@@ -604,10 +731,10 @@ export default function MovementTraceReport() {
           }}
         >
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
-            <Box sx={FIELD_LABEL_SX}>Tra theo</Box>
+            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.traceBy")}</Box>
             <UiSelect
               fullWidth
-              aria-label="Tra theo"
+              aria-label={t("reports.movementTrace.traceBy")}
               value={draft.traceBy}
               onChange={(value) =>
                 setDraft((prev) => ({ ...prev, traceBy: value as TraceBy }))
@@ -619,7 +746,7 @@ export default function MovementTraceReport() {
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 4 })}>
             <Box sx={FIELD_LABEL_SX}>
               {draft.traceBy === "physical"
-                ? "Physical Code / QR / Barcode"
+                ? t("reports.movementTrace.physicalCode")
                 : "SKU"}
             </Box>
             <SearchInput
@@ -628,12 +755,12 @@ export default function MovementTraceReport() {
               value={draft.code}
               placeholder={
                 draft.traceBy === "physical"
-                  ? "Quét hoặc dán mã vật lý"
-                  : "Nhập mã SKU"
+                  ? t("reports.movementTrace.physicalPlaceholder")
+                  : t("reports.movementTrace.skuPlaceholder")
               }
               aria-label={
                 draft.traceBy === "physical"
-                  ? "Physical Code / QR / Barcode"
+                  ? t("reports.movementTrace.physicalCode")
                   : "SKU"
               }
               onChange={(value) =>
@@ -643,11 +770,11 @@ export default function MovementTraceReport() {
           </Box>
 
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
-            <Box sx={FIELD_LABEL_SX}>Từ ngày</Box>
+            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.fromDate")}</Box>
             <UiVuexyDateField
               id="movement-trace-from-date"
               field="from"
-              aria-label="Từ ngày"
+              aria-label={t("reports.movementTrace.fromDate")}
               value={draft.fromDate}
               maxDate={draft.toDate}
               onChange={(value) =>
@@ -657,11 +784,11 @@ export default function MovementTraceReport() {
           </Box>
 
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
-            <Box sx={FIELD_LABEL_SX}>Đến ngày</Box>
+            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.toDate")}</Box>
             <UiVuexyDateField
               id="movement-trace-to-date"
               field="to"
-              aria-label="Đến ngày"
+              aria-label={t("reports.movementTrace.toDate")}
               value={draft.toDate}
               minDate={draft.fromDate}
               onChange={(value) =>
@@ -677,7 +804,7 @@ export default function MovementTraceReport() {
               startIcon={<SearchOutlined />}
               disabled={report.isFetching}
             >
-              Tra cứu
+              {t("reports.movementTrace.search")}
             </UiButton>
           </Box>
         </Box>
@@ -698,11 +825,13 @@ export default function MovementTraceReport() {
           }}
         >
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
-            <Box sx={FIELD_LABEL_SX}>Loại biến động</Box>
+            <Box sx={FIELD_LABEL_SX}>
+              {t("reports.movementTrace.movementType")}
+            </Box>
             <UiSelect
               fullWidth
-              aria-label="Loại biến động"
-              placeholder="Tất cả loại biến động"
+              aria-label={t("reports.movementTrace.movementType")}
+              placeholder={t("reports.movementTrace.movementTypeAll")}
               value={draft.movementType}
               onChange={(value) =>
                 setDraft((prev) => ({ ...prev, movementType: value }))
@@ -714,12 +843,12 @@ export default function MovementTraceReport() {
           </Box>
 
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
-            <Box sx={FIELD_LABEL_SX}>Nguồn / chứng từ</Box>
+            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.source")}</Box>
             <SearchInput
               width="100%"
               value={draft.source}
-              placeholder="Nhập mã chứng từ"
-              aria-label="Nguồn / chứng từ"
+              placeholder={t("reports.movementTrace.sourcePlaceholder")}
+              aria-label={t("reports.movementTrace.source")}
               onChange={(value) =>
                 setDraft((prev) => ({ ...prev, source: value }))
               }
@@ -727,12 +856,12 @@ export default function MovementTraceReport() {
           </Box>
 
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
-            <Box sx={FIELD_LABEL_SX}>Actor</Box>
+            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.actor")}</Box>
             <SearchInput
               width="100%"
               value={draft.actor}
-              placeholder="Nhập actor"
-              aria-label="Actor"
+              placeholder={t("reports.movementTrace.actorPlaceholder")}
+              aria-label={t("reports.movementTrace.actor")}
               onChange={(value) =>
                 setDraft((prev) => ({ ...prev, actor: value }))
               }
@@ -740,10 +869,10 @@ export default function MovementTraceReport() {
           </Box>
 
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
-            <Box sx={FIELD_LABEL_SX}>Quan hệ</Box>
+            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.relation")}</Box>
             <UiSelect
               fullWidth
-              aria-label="Quan hệ"
+              aria-label={t("reports.movementTrace.relation")}
               value={draft.relation}
               onChange={(value) =>
                 setDraft((prev) => ({
@@ -763,7 +892,7 @@ export default function MovementTraceReport() {
               disabled={!canReset}
               onClick={resetSecondaryFilters}
             >
-              Đặt lại
+              {t("reports.movementTrace.reset")}
             </UiButton>
           </Box>
         </Box>
@@ -779,7 +908,9 @@ export default function MovementTraceReport() {
           }}
         >
           <Box component="span" sx={CAPTION_SX}>
-            {`Không lưu lịch sử tìm kiếm trên trình duyệt · Múi giờ: ${MOVEMENT_TRACE_TIMEZONE} (GMT+7)`}
+            {t("reports.movementTrace.privacyNote", {
+              timezone: MOVEMENT_TRACE_TIMEZONE,
+            })}
           </Box>
           <Box component="span" sx={CAPTION_SX}>
             {[
@@ -795,14 +926,14 @@ export default function MovementTraceReport() {
       {report.isError ? (
         <ApiErrorAlert
           error={report.error}
-          title="Không tải được sổ biến động"
+          title={t("reports.movementTrace.loadFailed")}
           onRetry={refresh}
         />
       ) : null}
 
       <SectionHeading
-        eyebrow="TÌNH HÌNH HIỆN TẠI"
-        title="Tổng quan chuỗi biến động"
+        eyebrow={t("reports.movementTrace.summaryEyebrow")}
+        title={t("reports.movementTrace.summaryTitle")}
         right={[movementCountText, cutOff].filter(Boolean).join(" · ")}
       />
 
@@ -820,36 +951,36 @@ export default function MovementTraceReport() {
         <StatCard
           tone="primary"
           icon={<BarChartOutlined />}
-          label="Tổng biến động"
+          label={t("reports.movementTrace.statTotal")}
           value={formatQuantity(summary?.totalMovements ?? 0)}
-          hint="Theo lát cắt API hiện tại"
+          hint={t("reports.movementTrace.statTotalHint")}
         />
         <StatCard
           tone="success"
           icon={<InboxInOutlined />}
-          label="Nhập đã Post"
+          label={t("reports.movementTrace.statReceipt")}
           value={formatQuantity(countByType.RECEIPT ?? 0)}
-          hint="Biến động tồn kho RECEIPT_POSTED"
+          hint={t("reports.movementTrace.statReceiptHint")}
         />
         <StatCard
           tone="info"
           icon={<InboxOutOutlined />}
-          label="Xuất đã Post"
+          label={t("reports.movementTrace.statIssue")}
           value={formatQuantity(countByType.ISSUE ?? 0)}
-          hint="Biến động tồn kho ISSUE_POSTED"
+          hint={t("reports.movementTrace.statIssueHint")}
         />
         <StatCard
           tone="warning"
           icon={<RollbackOutlined />}
-          label="Hoàn tác"
+          label={t("reports.movementTrace.statReversal")}
           value={formatQuantity(summary?.reversalCount ?? 0)}
-          hint="Biến động tồn kho reversal đã ghi nhận"
+          hint={t("reports.movementTrace.statReversalHint")}
         />
       </Box>
 
       <SectionHeading
-        eyebrow="PHÂN TÍCH VẬN HÀNH"
-        title="Dòng thời gian Biến động tồn kho Trace"
+        eyebrow={t("reports.movementTrace.analysisEyebrow")}
+        title={t("reports.movementTrace.analysisTitle")}
       />
 
       <Box sx={CARD_SX}>
@@ -874,7 +1005,7 @@ export default function MovementTraceReport() {
               color: S.textHigh,
             }}
           >
-            Dòng thời gian biến động
+            {t("reports.movementTrace.timelineTitle")}
           </Box>
           <Box
             sx={{
@@ -884,7 +1015,7 @@ export default function MovementTraceReport() {
               gap: 1,
             }}
           >
-            <UiStatusBadge tone="info" label={movementCountText} />
+            <UiStatusBadge tone="info" label={timelineCountText} />
             <Box component="span" sx={CAPTION_SX}>
               posted_at ↑ · movement_id
             </Box>
@@ -896,18 +1027,29 @@ export default function MovementTraceReport() {
          * kéo trang thành dải rất dài. Cuộn trong khung: `max-height` nên lát
          * cắt ngắn không bị độn thêm khoảng trắng.
          */}
+        <Box sx={{ px: 3, pt: 2 }}>
+          <SectionFilterBar
+            state={timelineFilter}
+            label={t("reports.movementTrace.timelineTitle")}
+            unit={t("reports.movementTrace.timelineUnit")}
+            showCount={false}
+            data-testid="movement-trace-timeline-filter"
+          />
+        </Box>
         <Box
           sx={{
-            p: 3,
+            px: 3,
+            pt: 0,
+            pb: 3,
             maxHeight: RPT_SCROLL_MAX_HEIGHT,
             overflowY: "auto",
             overscrollBehavior: "contain",
             scrollBehavior: "smooth",
           }}
         >
-          {rows.length === 0 ? (
+          {timelineFilter.rows.length === 0 ? (
             <Box sx={{ fontSize: 13, color: S.textMedium }}>
-              Chưa có biến động nào trong lát cắt đang tra cứu.
+              {t("reports.movementTrace.timelineEmpty")}
             </Box>
           ) : (
             <Box
@@ -915,16 +1057,18 @@ export default function MovementTraceReport() {
               role="list"
               sx={{ listStyle: "none", m: 0, p: 0 }}
             >
-              {rows.map((row, index) => {
+              {timelineFilter.rows.map((row, index) => {
                 const kind = movementKindOf(row);
-                const isLast = index === rows.length - 1;
+                const isLast = index === timelineFilter.rows.length - 1;
                 const documentCode = documentCodeOf(row);
                 const details = [
                   row.productCode || EMPTY_TEXT,
                   `Δ ${row.qtyDelta}`,
                   documentCode,
                   row.originalMovementId !== ""
-                    ? `hoàn tác ${shortId(row.originalMovementId)}`
+                    ? t("reports.movementTrace.reversalOf", {
+                        code: row.originalMovementNo || EMPTY_TEXT,
+                      })
                     : "",
                 ].filter(Boolean);
 
@@ -985,7 +1129,7 @@ export default function MovementTraceReport() {
                             label={MOVEMENT_KIND_TIMELINE_LABELS[kind]}
                           />
                           <Box component="span" sx={CAPTION_SX}>
-                            {shortId(row.id)}
+                            {row.movementNo || EMPTY_TEXT}
                           </Box>
                         </Box>
                       </Box>
@@ -1005,8 +1149,8 @@ export default function MovementTraceReport() {
       </Box>
 
       <SectionHeading
-        eyebrow="DỮ LIỆU CHI TIẾT"
-        title="Sổ biến động append-only"
+        eyebrow={t("reports.movementTrace.detailEyebrow")}
+        title={""}
       />
 
       <Box sx={CARD_SX}>
@@ -1031,18 +1175,25 @@ export default function MovementTraceReport() {
               color: S.textHigh,
             }}
           >
-            Sổ tồn kho biến động
+            {t("reports.movementTrace.ledgerTitle")}
           </Box>
           <Box component="span" sx={CAPTION_SX}>
-            Bấm dòng để xem bằng chứng · chỉ đọc
+            {t("reports.movementTrace.ledgerHint")}
           </Box>
+        </Box>
+        <Box sx={{ px: 3, pb: 2 }}>
+          <SectionFilterBar
+            state={ledgerFilter}
+            label={t("reports.movementTrace.ledgerTitle")}
+            data-testid="movement-trace-ledger-filter"
+          />
         </Box>
         <Box sx={{ p: 0 }}>
           <ResponsiveDataTable<MovementTraceRow>
             columns={[
               {
                 key: "occurred_at",
-                header: "Thời điểm (GMT+7)",
+                header: t("reports.movementTrace.colOccurredAt"),
                 width: 150,
                 sortType: "value",
                 sortAccessor: (row) => row.occurredAt,
@@ -1050,7 +1201,7 @@ export default function MovementTraceReport() {
               },
               {
                 key: "movement_type",
-                header: "Loại biến động",
+                header: t("reports.movementTrace.movementType"),
                 width: 150,
                 render: (row) => {
                   const kind = movementKindOf(row);
@@ -1070,14 +1221,14 @@ export default function MovementTraceReport() {
               },
               {
                 key: "qty_delta",
-                header: "Qty delta",
+                header: t("reports.movementTrace.colQtyDelta"),
                 width: 90,
                 align: "right",
-                render: (row) => row.qtyDelta,
+                render: (row) => <QtyDeltaBadge value={row.qtyDelta} />,
               },
               {
                 key: "source",
-                header: "Chứng từ / dòng",
+                header: t("reports.movementTrace.colSource"),
                 width: 160,
                 render: (row) => (
                   <>
@@ -1091,13 +1242,13 @@ export default function MovementTraceReport() {
               },
               {
                 key: "actor",
-                header: "Actor",
+                header: t("reports.movementTrace.actor"),
                 width: 130,
                 render: (row) => row.actor || EMPTY_TEXT,
               },
               {
                 key: "chain",
-                header: "Điều chỉnh tồn kho chain",
+                header: t("reports.movementTrace.colChain"),
                 width: 150,
                 render: (row) =>
                   row.correctionChainId !== "" ? (
@@ -1108,16 +1259,16 @@ export default function MovementTraceReport() {
               },
               {
                 key: "status",
-                header: "Trạng thái",
+                header: t("reports.movementTrace.colStatus"),
                 width: 110,
                 render: () => LEDGER_ROW_STATUS_LABEL,
               },
             ]}
-            rows={rows}
+            rows={ledgerFilter.rows}
             rowKey={(row) => row.id}
             loading={report.isLoading}
             onRowClick={(row) => setSelected(row)}
-            emptyText="Chưa có biến động nào trong lát cắt đang tra cứu."
+            emptyText={t("reports.movementTrace.timelineEmpty")}
             // Sổ ledger không cắt trang (xem ghi chú đầu movement-trace-api.ts)
             // nên bảng dài tự cuộn trong khung, tiêu đề cột được ghim lại.
             maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
@@ -1133,7 +1284,11 @@ export default function MovementTraceReport() {
         <Box
           role="dialog"
           aria-label={
-            selected ? `Bằng chứng movement ${shortId(selected.id)}` : undefined
+            selected
+              ? t("reports.movementTrace.drawerAria", {
+                  code: selected.movementNo || EMPTY_TEXT,
+                })
+              : undefined
           }
           sx={{ width: 470, maxWidth: "100vw" }}
         >
@@ -1152,7 +1307,7 @@ export default function MovementTraceReport() {
               >
                 <Box sx={{ minWidth: 0 }}>
                   <Box component="span" sx={SECTION_EYEBROW_SX}>
-                    CHI TIẾT ĐỐI SOÁT
+                    {t("reports.movementTrace.drawerEyebrow")}
                   </Box>
                   <Box
                     component="h2"
@@ -1163,7 +1318,8 @@ export default function MovementTraceReport() {
                       color: S.textHigh,
                     }}
                   >
-                    Bằng chứng movement · {shortId(selected.id)}
+                    {t("reports.movementTrace.drawerTitle")} ·{" "}
+                    {selected.movementNo || EMPTY_TEXT}
                   </Box>
                   <Box sx={{ m: 0, color: S.textMedium, fontSize: 13 }}>
                     {`${MOVEMENT_KIND_LABELS[selectedKind]} · ${formatTraceDateTime(selected.occurredAt)}`}
@@ -1172,7 +1328,7 @@ export default function MovementTraceReport() {
                 <Box
                   component="button"
                   type="button"
-                  aria-label="Đóng bằng chứng"
+                  aria-label={t("reports.movementTrace.drawerClose")}
                   onClick={() => setSelected(null)}
                   sx={{
                     width: 32,
@@ -1208,9 +1364,12 @@ export default function MovementTraceReport() {
                     label="SKU"
                     value={selected.productCode || EMPTY_TEXT}
                   />
-                  <EvidenceField label="Qty delta" value={selected.qtyDelta} />
                   <EvidenceField
-                    label="Chứng từ nguồn"
+                    label={t("reports.movementTrace.colQtyDelta")}
+                    value={<QtyDeltaBadge value={selected.qtyDelta} />}
+                  />
+                  <EvidenceField
+                    label={t("reports.movementTrace.fieldSourceDoc")}
                     value={
                       [documentCodeOf(selected), selected.sourceType]
                         .filter(Boolean)
@@ -1218,11 +1377,11 @@ export default function MovementTraceReport() {
                     }
                   />
                   <EvidenceField
-                    label="Actor"
+                    label={t("reports.movementTrace.actor")}
                     value={selected.actor || EMPTY_TEXT}
                   />
                   <EvidenceField
-                    label="Reversal chain"
+                    label={t("reports.movementTrace.fieldReversalChain")}
                     value={
                       selected.correctionChainId !== "" ? (
                         <CopyableId value={selected.correctionChainId} />
@@ -1232,7 +1391,7 @@ export default function MovementTraceReport() {
                     }
                   />
                   <EvidenceField
-                    label="Request ID"
+                    label={t("reports.movementTrace.fieldRequestId")}
                     value={
                       report.data?.requestId ? (
                         <CopyableId value={report.data.requestId} />
@@ -1252,8 +1411,7 @@ export default function MovementTraceReport() {
                     fontSize: 13,
                   }}
                 >
-                  Chi tiết chứng từ là read-only; sổ biến động là append-only
-                  nên màn này không sửa/xóa bất kỳ dòng nào.
+                  {t("reports.movementTrace.readonlyNote")}
                 </Box>
               </Box>
             </>

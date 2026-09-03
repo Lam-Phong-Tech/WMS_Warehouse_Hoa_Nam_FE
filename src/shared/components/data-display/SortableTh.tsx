@@ -2,6 +2,7 @@ import { Tooltip } from "@mui/material";
 import { renderSortIcon } from "./renderSortIcon";
 import type { ClientSortState } from "./useClientSort";
 import type { SortWordingType } from "./useClientSort";
+import { useT } from "@/shared/i18n/useT";
 
 export interface SortableThProps {
   /** Nhãn cột hiển thị, cũng dùng để dựng câu tooltip. */
@@ -14,6 +15,8 @@ export interface SortableThProps {
   sortType?: SortWordingType;
   className?: string;
   style?: React.CSSProperties;
+  /** Căn lề cột — bảng khai rule theo thuộc tính này (xem ResponsiveDataTable). */
+  "data-align"?: "left" | "center" | "right";
 }
 
 /**
@@ -30,19 +33,23 @@ export function SortableTh({
   sortType = "text",
   className,
   style,
+  "data-align": dataAlign,
 }: SortableThProps) {
+  const t = useT();
   const isActive = sortState.key === sortKey;
   const direction = isActive ? sortState.direction : undefined;
   const [asc, desc] =
-    sortType === "value" ? ["tăng dần", "giảm dần"] : ["A → Z", "Z → A"];
+    sortType === "value"
+      ? [t("shared.table.sortAsc"), t("shared.table.sortDesc")]
+      : [t("shared.table.sortAZ"), t("shared.table.sortZA")];
 
   const tooltipTitle =
     typeof label === "string"
       ? direction === "asc"
-        ? `Nhấp để sắp xếp theo ${label} ${desc}`
+        ? t("shared.table.sortByTooltip", { label, direction: desc })
         : direction === "desc"
-          ? `Nhấp để bỏ sắp xếp ${label}`
-          : `Nhấp để sắp xếp theo ${label} ${asc}`
+          ? t("shared.table.clearSortTooltip", { label })
+          : t("shared.table.sortByTooltip", { label, direction: asc })
       : "";
 
   const icon = renderSortIcon({
@@ -69,7 +76,7 @@ export function SortableTh({
   );
 
   return (
-    <th className={className} style={style}>
+    <th className={className} style={style} data-align={dataAlign}>
       {tooltipTitle ? (
         <Tooltip
           title={tooltipTitle}

@@ -6,6 +6,7 @@ import { getMutationErrorMessage } from "@/shared/api/api-error";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import type { ChangePasswordRequest } from "@/modules/auth/types/auth.types";
+import { tStatic } from "@/shared/i18n/useT";
 
 /**
  * POST /auth/change-password revokes every refresh token on BE m1. Keeping the
@@ -22,7 +23,7 @@ export function useChangePassword() {
     mutationFn: (data: ChangePasswordRequest) =>
       authService.changePassword(data),
     onSuccess: () => {
-      toast.success("Đổi mật khẩu thành công, vui lòng đăng nhập lại");
+      toast.success(tStatic("auth.changePassword.success"));
       queryClient.clear();
       logoutLocal();
       useAuthStore.persist.clearStorage();

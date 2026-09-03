@@ -253,7 +253,8 @@ describe("RPT-06 · Báo cáo Bảo hành & linh kiện", () => {
     expect(within(table).getByText("BH-2026-0001")).toBeInTheDocument();
     expect(within(table).queryByText("BH-2026-0002")).not.toBeInTheDocument();
     expect(screen.getByText("1 đang chọn")).toBeInTheDocument();
-    expect(screen.getByText("1 hồ sơ")).toBeInTheDocument();
+    // Số hồ sơ hiện ở cả badge của bảng lẫn thanh tóm tắt phân trang.
+    expect(screen.getAllByText("1 hồ sơ").length).toBeGreaterThan(0);
 
     // Chú giải donut vẫn giữ đủ sáu trạng thái để còn bỏ chọn được.
     expect(screen.getByText(/Đang kiểm tra: 1/)).toBeInTheDocument();
@@ -286,15 +287,15 @@ describe("RPT-06 · Báo cáo Bảo hành & linh kiện", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("chuyển tab Lát cắt đổi vùng đối soát sang thẻ, không còn bảng", async () => {
+  it("chuyển tab Dạng hộp đổi vùng đối soát sang thẻ, không còn bảng", async () => {
     const user = userEvent.setup();
     renderReport();
     await waitForData();
 
-    await user.click(screen.getByRole("tab", { name: /Lát cắt/ }));
+    await user.click(screen.getByRole("tab", { name: /Dạng hộp/ }));
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
 
-    const panel = screen.getByRole("tabpanel", { name: /Lát cắt/ });
+    const panel = screen.getByRole("tabpanel", { name: /Dạng hộp/ });
     expect(within(panel).getByText("BH-2026-0001")).toBeInTheDocument();
     expect(within(panel).getAllByText("Linh kiện đã xuất")).toHaveLength(3);
   });

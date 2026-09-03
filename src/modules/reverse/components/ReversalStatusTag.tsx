@@ -5,6 +5,7 @@ import {
   REVERSAL_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * SRS §6: raw enum vẫn giữ nguyên để khớp contract BE; component này chỉ chịu
@@ -28,9 +29,14 @@ export function ReversalStatusTag({
   physicalReturnStatus?: ReversalPhysicalReturnStatus;
   compact?: boolean;
 }) {
+  const t = useT();
   const value = (status ?? "") as ReversalStatus;
   const tone = STATUS_TONE[value] ?? "neutral";
-  const label = businessLabel(REVERSAL_STATUS_LABELS, status, "Chưa xác định");
+  const label = businessLabel(
+    REVERSAL_STATUS_LABELS,
+    status,
+    t("reverse.common.unknown"),
+  );
   const showReturnBadge = value === "DRAFT" && Boolean(physicalReturnStatus);
 
   return (
@@ -46,7 +52,7 @@ export function ReversalStatusTag({
           label={businessLabel(
             PHYSICAL_RETURN_STATUS_LABELS,
             physicalReturnStatus,
-            "Chưa xác định tình trạng hàng về kho",
+            t("reverse.statusTag.returnUnknown"),
           )}
         />
       ) : null}

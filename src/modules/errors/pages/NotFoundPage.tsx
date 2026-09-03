@@ -6,8 +6,10 @@
 import { useNavigate } from "react-router-dom";
 import { Box, UiButton, UiStateSurface } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
+import { useT } from "@/shared/i18n/useT";
 
 export function NotFoundPage() {
+  const t = useT();
   const navigate = useNavigate();
   return (
     <Box
@@ -22,11 +24,11 @@ export function NotFoundPage() {
     >
       <UiStateSurface
         kind="empty"
-        title="Không tìm thấy trang (404)"
-        description="Đường dẫn không tồn tại hoặc đã bị di chuyển. Kiểm tra lại đường dẫn hoặc quay về trang chính."
+        title={t("errors.notFound.title")}
+        description={t("errors.notFound.description")}
         action={
           <UiButton onClick={() => navigate(ROUTES.DASHBOARD)}>
-            Về trang chính
+            {t("errors.notFound.goHome")}
           </UiButton>
         }
       />

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Box, UiStatusBadge } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import { useT } from "@/shared/i18n/useT";
 import { pvProductDetailPath } from "@/modules/pv/lib/pv-paths";
 import type { PvProduct } from "@/modules/pv/types/pv.types";
 
@@ -12,6 +13,7 @@ import type { PvProduct } from "@/modules/pv/types/pv.types";
  * — nếu FE tự sinh nhãn thì hai tầng sẽ trôi khỏi nhau theo thời gian.
  */
 export function PvProductCard({ product }: { product: PvProduct }) {
+  const t = useT();
   const outOfStock = product.stock_status === "OUT_OF_STOCK";
   const primaryImage =
     product.images.find((image) => image.is_primary) ?? product.images[0];
@@ -54,7 +56,7 @@ export function PvProductCard({ product }: { product: PvProduct }) {
           />
         ) : (
           <Box component="span" sx={{ color: S.textDisabled, fontSize: 12 }}>
-            Chưa có ảnh
+            {t("pv.card.noImage")}
           </Box>
         )}
       </Box>
@@ -64,12 +66,12 @@ export function PvProductCard({ product }: { product: PvProduct }) {
           {product.display_name}
         </Box>
         <Box sx={{ fontSize: 12, color: S.textMedium }}>
-          Mã: {product.sku_code}
+          {t("pv.card.code", { code: product.sku_code })}
           {product.brand_name ? ` · ${product.brand_name}` : ""}
         </Box>
         {product.power_source_name ? (
           <Box sx={{ fontSize: 12, color: S.textMedium }}>
-            Nguồn điện: {product.power_source_name}
+            {t("pv.card.powerSource", { name: product.power_source_name })}
           </Box>
         ) : null}
 
@@ -90,7 +92,7 @@ export function PvProductCard({ product }: { product: PvProduct }) {
             data-stock-status={product.stock_status}
           />
           <Box component="span" sx={{ fontSize: 12, color: S.textMedium }}>
-            Tồn khả dụng: <strong>{product.available_qty}</strong>
+            {t("pv.card.availableQty")} <strong>{product.available_qty}</strong>
             {product.unit ? ` ${product.unit}` : ""}
           </Box>
         </Box>

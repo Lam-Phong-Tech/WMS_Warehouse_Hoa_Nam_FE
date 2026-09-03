@@ -7,21 +7,23 @@ import { EmptyState } from "@/shared/components/data-display/EmptyState";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { SEMANTIC_LIGHT as S, UiIcon } from "@/shared/ui";
 import { ApiErrorAlert } from "./ApiErrorAlert";
+import { tStatic, useT } from "@/shared/i18n/useT";
 
 export function InlineApiError({
   error,
-  title = "Không thể tải dữ liệu",
+  title,
   onRetry,
 }: {
   error: unknown;
   title?: string;
   onRetry?: () => void;
 }) {
+  const t = useT();
   if (!error) return null;
   return (
     <ApiErrorAlert
       error={error}
-      title={title}
+      title={title ?? t("shared.states.cannotLoadData")}
       onRetry={onRetry}
       style={{ marginBottom: 16 }}
     />
@@ -36,8 +38,10 @@ export function InlineApiError({
  */
 export function tableEmptyText(
   error: unknown,
-  description = "Không có dữ liệu",
-  errorDescription = "Không tải được dữ liệu. Kiểm tra kết nối mạng rồi thử tải lại; nếu vẫn lỗi, liên hệ quản trị viên.",
+  // Hàm thuần (không phải component) nên không gọi được hook — tStatic đọc
+  // ngôn ngữ hiện tại tại thời điểm render lại của bảng.
+  description = tStatic("shared.states.noData"),
+  errorDescription = tStatic("shared.states.tableLoadError"),
 ) {
   if (error) {
     return (
@@ -71,12 +75,14 @@ export function tableEmptyText(
  */
 export function TableLoadingBanner({
   loading,
-  label = "Đang tải dữ liệu…",
+  label,
 }: {
   loading?: boolean;
   label?: string;
 }) {
+  const t = useT();
   if (!loading) return null;
+  const resolvedLabel = label ?? t("shared.states.loadingData");
   return (
     <div
       {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-table")}
@@ -92,7 +98,7 @@ export function TableLoadingBanner({
       }}
     >
       <UiSpinner size={14} />
-      {label}
+      {resolvedLabel}
     </div>
   );
 }

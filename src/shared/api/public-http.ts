@@ -1,6 +1,7 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { runtimeConfig } from "@/shared/config/env";
 import type { ApiMeta, ApiResponse } from "@/shared/types/api-response";
+import { tStatic } from "@/shared/i18n/useT";
 
 /**
  * WWHN-252 — client HTTP cho nhóm endpoint App PV ẩn danh.
@@ -48,8 +49,8 @@ function toPublicApiError(error: unknown): PublicApiError {
   const publicError: PublicApiError = new Error(
     body?.message ||
       (status === undefined
-        ? "Không kết nối được máy chủ. Kiểm tra đường truyền rồi thử lại."
-        : "Không tải được dữ liệu App PV."),
+        ? tStatic("shared.api.serverUnreachable")
+        : tStatic("shared.api.publicLoadFailed")),
   );
   publicError.status = status;
   publicError.code = body?.error?.code ?? body?.error_code;

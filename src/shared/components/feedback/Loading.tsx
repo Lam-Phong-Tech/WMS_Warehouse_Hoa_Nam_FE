@@ -5,12 +5,14 @@ import { UiSpinner } from "@/shared/ui";
 import { SEMANTIC_LIGHT, Z_INDEX } from "@/shared/ui/tokens";
 
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * Overlay loading toàn màn hình (bootstrap phiên, chuyển route bảo vệ).
  * WWHN-268: phát `data-ui-state="loading"` cho ma trận bằng chứng QA2.
  */
 export function Loading() {
+  const t = useT();
   return (
     <div
       {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-fullscreen")}
@@ -31,7 +33,7 @@ export function Loading() {
     >
       <UiSpinner size={40} />
       <div style={{ marginTop: 10, color: SEMANTIC_LIGHT.textMedium }}>
-        Đang tải...
+        {t("shared.states.loadingDots")}
       </div>
     </div>
   );

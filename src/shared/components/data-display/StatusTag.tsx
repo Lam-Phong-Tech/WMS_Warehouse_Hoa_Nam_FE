@@ -1,6 +1,7 @@
 import type { ChipProps } from "@mui/material";
 import { UiStatusBadge, type UiStatusTone } from "@/shared/ui";
 import { UNKNOWN_BUSINESS_LABEL } from "@/shared/constants/business-labels";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * @deprecated compatibility adapter — dùng UiStatusBadge cho code mới.
@@ -48,10 +49,10 @@ const DEFAULT_BOOL_COLOR: Record<string, string> = {
   false: "default",
 };
 
-const DEFAULT_BOOL_LABEL: Record<string, string> = {
-  true: "Hoạt động",
-  false: "Ngừng hoạt động",
-};
+const DEFAULT_BOOL_LABEL_KEYS = {
+  true: "shared.status.active",
+  false: "shared.status.inactive",
+} as const;
 
 /**
  * Tag trạng thái dùng chung. Với string enum, caller nên truyền labelMap theo domain.
@@ -69,6 +70,7 @@ export function StatusTag({
   sx,
   ...chipProps
 }: StatusTagProps) {
+  const t = useT();
   const key = String(status);
 
   const color =
@@ -77,10 +79,12 @@ export function StatusTag({
     DEFAULT_BOOL_COLOR[key] ??
     "default";
 
+  const defaultBoolLabelKey =
+    DEFAULT_BOOL_LABEL_KEYS[key as keyof typeof DEFAULT_BOOL_LABEL_KEYS];
   const mappedLabel =
     labelMap?.[status as string | number] ??
     labelMap?.[key] ??
-    DEFAULT_BOOL_LABEL[key];
+    (defaultBoolLabelKey ? t(defaultBoolLabelKey) : undefined);
 
   // Number enum không có map vẫn giữ số để không phá các badge số hiện hữu.
   // String enum không có map phải fail-closed về tiếng Việt.

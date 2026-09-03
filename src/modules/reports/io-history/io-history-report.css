@@ -88,6 +88,10 @@
   );
   --hnio-detail-fact-line: rgba(47, 43, 61, 0.08);
   --hnio-recon-ok-bg: rgba(40, 199, 111, 0.07);
+  --hnio-neg-fg: var(--wms-error-text);
+  --hnio-neg-soft: var(--red-soft);
+  --hnio-zero-fg: var(--muted);
+  --hnio-zero-soft: var(--hnio-segment-bg);
   --hnio-hint-bg: rgba(0, 186, 209, 0.07);
 
   color: var(--ink);
@@ -96,7 +100,17 @@
   font-weight: 400;
 }
 
-.hn-rpt-io *,
+/*
+ * CHỈ pseudo-element. KHÔNG được thêm lại `.hn-rpt-io *` vào đây: quy tắc đó có
+ * độ đặc hiệu 0-1-0, bằng đúng class emotion của MUI và được nạp SAU (CSS của
+ * trang đi theo chunk lazy), nên nó đè `box-sizing: content-box` mà
+ * `.MuiInputBase-input` cố ý đặt cho <input> (MUI tính chiều cao ô nhập bằng
+ * `height: 1.4375em` + padding theo content-box). Bị ép border-box thì 1.4375em
+ * phải chứa luôn padding → ô "Tìm SKU" trong SectionFilterBar tụt còn ~24px,
+ * thấp hơn UiSelect đứng cạnh. Phần tử thường đã có border-box từ
+ * `* { box-sizing }` ở src/index.css (đặc hiệu 0-0-0, đúng tầng để MUI vẫn
+ * thắng được ở các ngoại lệ của nó).
+ */
 .hn-rpt-io *::before,
 .hn-rpt-io *::after {
   box-sizing: border-box;
@@ -1101,6 +1115,41 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
+}
+
+/* ── Ô "Qty posted" dạng viên ──────────────────────────────────────────── */
+/*
+ * NGOÀI MOCKUP (yêu cầu người dùng 2026-09-03): mockup in số lượng thành chữ
+ * đậm trần. Ở đây bọc thành viên có nền như cột "Trạng thái" để đọc lướt phân
+ * biệt ngay chiều tăng/giảm; số đo lấy đúng của `.type` (viên trong bảng) nên
+ * hai cột cạnh nhau cao bằng nhau.
+ */
+.hn-rpt-io .qty-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hn-rpt-io .qty-chip.is-pos {
+  color: var(--hnio-ok-fg);
+  background: var(--hnio-ok-soft);
+}
+
+.hn-rpt-io .qty-chip.is-neg {
+  color: var(--hnio-neg-fg);
+  background: var(--hnio-neg-soft);
+}
+
+/* Ròng bằng 0 không phải tăng cũng không phải giảm — để trung tính. */
+.hn-rpt-io .qty-chip.is-zero {
+  color: var(--hnio-zero-fg);
+  background: var(--hnio-zero-soft);
 }
 
 .hn-rpt-io .empty-row {

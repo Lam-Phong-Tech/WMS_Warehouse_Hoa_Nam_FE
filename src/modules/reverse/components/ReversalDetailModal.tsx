@@ -43,6 +43,7 @@ import type { ReactNode } from "react";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
 function qty(value?: number) {
   return formatQuantity(Number(value ?? 0));
@@ -54,13 +55,15 @@ function idempotencyKey(action: string, id: string) {
 
 const LINES_PAGE_SIZE = 10;
 
-const RETURN_CONDITION_OPTIONS: Array<{
+const returnConditionOptions = (
+  t: TranslateFn,
+): Array<{
   value: ReversalReturnCondition;
   label: string;
-}> = [
-  { value: "SELLABLE", label: "Có thể bán/xuất lại" },
-  { value: "DEFECTIVE", label: "Hàng lỗi" },
-  { value: "NON_SELLABLE", label: "Không thể bán/xuất" },
+}> => [
+  { value: "SELLABLE", label: t("reverse.returnCondition.sellable") },
+  { value: "DEFECTIVE", label: t("reverse.returnCondition.defective") },
+  { value: "NON_SELLABLE", label: t("reverse.returnCondition.nonSellable") },
 ];
 
 /** Cặp nhãn/giá trị trong Dialog chi tiết (thay antd Descriptions.Item). */
@@ -87,6 +90,7 @@ interface Props {
 }
 
 export function ReversalDetailModal({ documentId, onClose }: Props) {
+  const t = useT();
   const dialog = useDialogExit(onClose);
   const can = useHasPermission();
   const canPost = can("inventory.reversal.post");
@@ -139,7 +143,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
       void docQuery.refetch();
       void linesQuery.refetch();
       toast.error(
-        `${normalized.message}. Hệ thống đã tải lại phiếu mới nhất; hãy kiểm tra trạng thái rồi thử lại.`,
+        t("reverse.detail.staleReload", { message: normalized.message }),
       );
       return;
     }
@@ -158,11 +162,9 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         version: doc.version,
         return_condition: returnCondition,
       });
-      toast.success(
-        "Đã xác nhận hàng vật lý quay lại kho; tồn kho chưa thay đổi ở bước này.",
-      );
+      toast.success(t("reverse.detail.confirmSuccess"));
     } catch (error) {
-      handleFailure(error, "Không thể xác nhận hàng đã về kho");
+      handleFailure(error, t("reverse.detail.confirmError"));
     }
   }
 
@@ -177,10 +179,10 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         version: doc.version,
         idempotency_key: idempotencyKey("post", doc.id),
       });
-      toast.success("Đã hoàn tất điều chỉnh tồn kho.");
+      toast.success(t("reverse.detail.postSuccess"));
       setPostConfirmOpen(false);
     } catch (error) {
-      handleFailure(error, "Không thể hoàn tất điều chỉnh tồn kho");
+      handleFailure(error, t("reverse.detail.postError"));
     } finally {
       setPostBusy(false);
     }
@@ -196,23 +198,23 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         version: doc.version,
         reason: cancelReason.trim(),
       });
-      toast.success("Đã hủy phiếu điều chỉnh; tồn kho không thay đổi.");
+      toast.success(t("reverse.detail.cancelSuccess"));
       setCancelReason("");
     } catch (error) {
-      handleFailure(error, "Không thể hủy phiếu điều chỉnh");
+      handleFailure(error, t("reverse.detail.cancelError"));
     }
   }
 
   const copyCode = () => {
     if (!doc) return;
     void navigator.clipboard?.writeText(doc.reversal_code);
-    toast.success("Đã sao chép mã điều chỉnh.");
+    toast.success(t("reverse.detail.codeCopied"));
   };
 
   const lineColumns: ResponsiveTableColumn<ReversalLine>[] = [
     {
       key: "line_no",
-      header: "STT",
+      header: t("reverse.detail.colStt"),
       width: 50,
       align: "center",
       render: (row) => row.line_no,
@@ -220,67 +222,67 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
     { key: "sku", header: "SKU", width: 140, render: (row) => row.sku },
     {
       key: "sku_name",
-      header: "Tên",
+      header: t("reverse.columns.name"),
       width: 170,
       render: (row) => row.sku_name,
     },
     {
       key: "original_movement",
-      header: "Giao dịch gốc",
+      header: t("reverse.detail.colOriginalMovement"),
       width: 160,
       // KHÔNG fallback sang original_movement_id (UUID) — thiếu mã thì "—".
       render: (row) => row.original_movement_code || EMPTY_TEXT,
     },
     {
       key: "serial",
-      header: "Sản phẩm / Số sê-ri",
+      header: t("reverse.detail.colSerial"),
       width: 170,
       render: (row) => row.serial_number || row.item_code || EMPTY_TEXT,
     },
     {
       key: "original_qty",
-      header: "Số lượng gốc",
+      header: t("reverse.columns.originalQty"),
       width: 110,
       align: "right",
       render: (row) => qty(row.original_qty),
     },
     {
       key: "reversal_qty",
-      header: "Số lượng điều chỉnh",
+      header: t("reverse.columns.reversalQty"),
       width: 130,
       align: "right",
       render: (row) => qty(row.reversal_qty),
     },
     {
       key: "reversed_qty",
-      header: "Đã điều chỉnh",
+      header: t("reverse.columns.reversedQty"),
       width: 110,
       align: "right",
       render: (row) => qty(row.reversed_qty),
     },
     {
       key: "remaining_qty",
-      header: "Còn có thể điều chỉnh",
+      header: t("reverse.columns.reversibleQty"),
       width: 150,
       align: "right",
       render: (row) => qty(row.remaining_qty),
     },
     {
       key: "return_condition",
-      header: "Tình trạng trả về",
+      header: t("reverse.detail.colReturnCondition"),
       width: 160,
       render: (row) =>
         row.return_condition
           ? businessLabel(
               RETURN_CONDITION_LABELS,
               row.return_condition,
-              "Tình trạng khác",
+              t("reverse.detail.conditionOther"),
             )
           : EMPTY_TEXT,
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("reverse.detail.colStatus"),
       width: 150,
       render: (row) => <ReversalStatusTag status={row.status} compact />,
     },
@@ -306,10 +308,12 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         fullWidth
         title={
           <Box sx={{ position: "relative", pr: 6 }}>
-            {`Chi tiết phiếu điều chỉnh — ${doc?.reversal_code ?? shortId(documentId)}`}
+            {t("reverse.detail.title", {
+              code: doc?.reversal_code ?? shortId(documentId),
+            })}
             <ActionIconButton
               kind="close"
-              label="Đóng"
+              label={t("common.close")}
               onClick={dialog.close}
               sx={{ position: "absolute", right: -8, top: -4 }}
             />
@@ -320,7 +324,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
           {docQuery.isError ? (
             <ApiErrorAlert
               error={docQuery.error}
-              title="Không thể tải chi tiết phiếu điều chỉnh"
+              title={t("reverse.detail.loadError")}
               onRetry={() => docQuery.refetch()}
             />
           ) : null}
@@ -328,7 +332,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
           {actionError ? (
             <ApiErrorAlert
               error={actionError}
-              title="Thao tác không thành công"
+              title={t("reverse.detail.actionFailed")}
               onRetry={() => {
                 setActionError(null);
                 setStaleRecovered(false);
@@ -340,13 +344,8 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
 
           {staleRecovered ? (
             <Box role="status" data-testid="reversal-stale-version-notice">
-              <UiAlert
-                tone="warning"
-                title="Phiếu đã được cập nhật ở phiên khác"
-              >
-                Hệ thống đã tự tải lại dữ liệu mới nhất. Hãy kiểm tra trạng thái
-                hiện tại trước khi tiếp tục thao tác. Không có thay đổi tồn kho
-                nào được ghi từ lần thao tác bị từ chối.
+              <UiAlert tone="warning" title={t("reverse.detail.staleTitle")}>
+                {t("reverse.detail.staleBody")}
               </UiAlert>
             </Box>
           ) : null}
@@ -360,7 +359,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                 py: 3,
               }}
             >
-              Đang tải chi tiết...
+              {t("reverse.detail.loading")}
             </Box>
           ) : null}
 
@@ -376,7 +375,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               >
                 <Grid container spacing={2}>
                   <DetailField
-                    label="Mã điều chỉnh"
+                    label={t("reverse.detail.fieldCode")}
                     value={
                       <Stack
                         direction="row"
@@ -386,14 +385,14 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                         <span>{doc.reversal_code}</span>
                         <ActionIconButton
                           kind="copy"
-                          label="Sao chép mã điều chỉnh"
+                          label={t("reverse.detail.copyCode")}
                           onClick={copyCode}
                         />
                       </Stack>
                     }
                   />
                   <DetailField
-                    label="Trạng thái"
+                    label={t("reverse.detail.colStatus")}
                     value={
                       <ReversalStatusTag
                         status={doc.status}
@@ -402,7 +401,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     }
                   />
                   <DetailField
-                    label="Chứng từ gốc"
+                    label={t("reverse.detail.fieldSourceDoc")}
                     value={
                       <Stack
                         direction="row"
@@ -423,7 +422,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                           {businessLabel(
                             SOURCE_DOCUMENT_TYPE_LABELS,
                             doc.reference_document_type,
-                            "Chứng từ khác",
+                            t("reverse.common.docTypeOther"),
                           )}
                         </Box>
                       </Stack>
@@ -433,7 +432,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     nghiệp vụ. Gọi đúng tên và rút gọn + cho sao chép thay vì in
                     nguyên UUID dưới nhãn "Mã ..." khiến người dùng tưởng là mã. */}
                   <DetailField
-                    label="Chuỗi điều chỉnh (định danh nội bộ)"
+                    label={t("reverse.detail.fieldChain")}
                     value={
                       doc.correction_chain_id ? (
                         <CopyableId value={doc.correction_chain_id} />
@@ -442,9 +441,12 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       )
                     }
                   />
-                  <DetailField label="Kho" value={doc.warehouse_name} />
                   <DetailField
-                    label="Lý do"
+                    label={t("reverse.detail.fieldWarehouse")}
+                    value={doc.warehouse_name}
+                  />
+                  <DetailField
+                    label={t("reverse.detail.fieldReason")}
                     value={
                       <>
                         {doc.reason_code ? (
@@ -467,20 +469,26 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     }
                   />
                   <DetailField
-                    label="Tổng dòng / số lượng"
-                    value={`${doc.total_lines} dòng · ${qty(doc.total_qty)}`}
+                    label={t("reverse.detail.fieldTotals")}
+                    value={t("reverse.detail.totalsValue", {
+                      lines: doc.total_lines,
+                      qty: qty(doc.total_qty),
+                    })}
                   />
                   <DetailField
-                    label="Ngày tạo"
+                    label={t("reverse.detail.fieldCreatedAt")}
                     value={formatDateTime(doc.created_at)}
                   />
-                  <DetailField label="Người tạo" value={doc.created_by} />
                   <DetailField
-                    label="Thời điểm hoàn tất / người thực hiện"
+                    label={t("reverse.detail.fieldCreatedBy")}
+                    value={doc.created_by}
+                  />
+                  <DetailField
+                    label={t("reverse.detail.fieldPostedAt")}
                     value={`${doc.reversed_at ? formatDateTime(doc.reversed_at) : EMPTY_TEXT} · ${doc.posted_by ?? EMPTY_TEXT}`}
                   />
                   <DetailField
-                    label="Thông tin hủy"
+                    label={t("reverse.detail.fieldCancelInfo")}
                     value={
                       doc.cancelled_at
                         ? `${formatDateTime(doc.cancelled_at)} · ${doc.cancel_reason ?? EMPTY_TEXT}`
@@ -506,10 +514,8 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               </Box>
 
               {doc.status === "POSTED" ? (
-                <UiAlert tone="success" title="Phiếu điều chỉnh đã hoàn tất">
-                  Giao dịch gốc vẫn được giữ nguyên và giao dịch đối ứng đã được
-                  ghi. Nếu cần sửa tiếp, hãy tạo phiếu điều chỉnh mới tham chiếu
-                  giao dịch gần nhất trong cùng chuỗi.
+                <UiAlert tone="success" title={t("reverse.detail.postedTitle")}>
+                  {t("reverse.detail.postedBody")}
                 </UiAlert>
               ) : null}
 
@@ -526,7 +532,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                   <Box
                     sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}
                   >
-                    Các bước xử lý phiếu điều chỉnh
+                    {t("reverse.detail.stepsTitle")}
                   </Box>
 
                   {pendingReturn ? (
@@ -541,10 +547,10 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       }}
                     >
                       <UiSelect
-                        label="Tình trạng hàng trả về"
+                        label={t("reverse.create.returnConditionLabel")}
                         minWidth={320}
                         value={returnCondition}
-                        options={RETURN_CONDITION_OPTIONS}
+                        options={returnConditionOptions(t)}
                         onChange={(value) =>
                           setReturnCondition(value as ReversalReturnCondition)
                         }
@@ -554,14 +560,16 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                         disabled={busy}
                         onClick={() => void handleConfirm()}
                       >
-                        Xác nhận hàng vật lý đã về
+                        {t("reverse.detail.confirmPhysical")}
                       </ActionButton>
                     </Stack>
                   ) : (
                     <Box sx={{ mb: 1.5 }}>
-                      <UiAlert tone="info" title="Đã đủ điều kiện hoàn tất">
-                        Hàng vật lý đã được xác nhận quay lại kho. Bấm Hoàn tất
-                        điều chỉnh để ghi thay đổi tồn kho.
+                      <UiAlert
+                        tone="info"
+                        title={t("reverse.detail.readyTitle")}
+                      >
+                        {t("reverse.detail.readyBody")}
                       </UiAlert>
                     </Box>
                   )}
@@ -578,7 +586,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     <Tooltip
                       title={
                         !pendingReturn && !evidenceProvided
-                          ? "Phải đính kèm ít nhất 1 chứng từ trước khi hoàn tất điều chỉnh."
+                          ? t("reverse.detail.evidenceTooltip")
                           : ""
                       }
                     >
@@ -588,15 +596,15 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                           disabled={busy || pendingReturn || !evidenceProvided}
                           onClick={() => setPostConfirmOpen(true)}
                         >
-                          Hoàn tất điều chỉnh
+                          {t("reverse.detail.postAction")}
                         </ActionButton>
                       </span>
                     </Tooltip>
                     <UiTextField
-                      label="Lý do hủy (tối thiểu 5 ký tự)"
+                      label={t("reverse.detail.cancelReasonLabel")}
                       size="small"
                       value={cancelReason}
-                      placeholder="Nhập lý do hủy phiếu..."
+                      placeholder={t("reverse.detail.cancelReasonPlaceholder")}
                       onChange={(event) => setCancelReason(event.target.value)}
                       sx={{ minWidth: 320 }}
                     />
@@ -605,7 +613,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       disabled={busy || cancelReason.trim().length < 5}
                       onClick={() => void handleCancel()}
                     >
-                      Hủy phiếu
+                      {t("reverse.detail.cancelAction")}
                     </ActionButton>
                   </Stack>
                 </Box>
@@ -616,21 +624,21 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
           {linesQuery.isError ? (
             <ApiErrorAlert
               error={linesQuery.error}
-              title="Không thể tải các dòng điều chỉnh"
+              title={t("reverse.detail.linesError")}
               onRetry={() => linesQuery.refetch()}
             />
           ) : null}
 
           <Box>
             <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-              Dòng điều chỉnh ({lines.length})
+              {t("reverse.detail.linesTitle", { count: lines.length })}
             </Box>
             <ResponsiveDataTable<ReversalLine>
               columns={lineColumns}
               rows={pagedLines}
               rowKey={(row) => row.id}
               loading={linesQuery.isLoading}
-              emptyText="Chưa có dòng điều chỉnh"
+              emptyText={t("reverse.detail.linesEmpty")}
             />
             {showLinesPagination ? (
               <Box sx={{ mt: 1 }}>
@@ -658,7 +666,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         aria-labelledby="reversal-post-confirm-title"
         title={
           <Box component="span" id="reversal-post-confirm-title">
-            Hoàn tất phiếu điều chỉnh tồn kho?
+            {t("reverse.detail.postConfirmTitle")}
           </Box>
         }
         actions={
@@ -668,22 +676,22 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               onClick={() => setPostConfirmOpen(false)}
               disabled={postBusy}
             >
-              Kiểm tra lại
+              {t("reverse.common.recheck")}
             </ActionButton>
             <ActionButton
               kind="complete"
               onClick={() => void handlePost()}
               disabled={postBusy}
             >
-              {postBusy ? "Đang xử lý..." : "Hoàn tất điều chỉnh"}
+              {postBusy
+                ? t("reverse.detail.processing")
+                : t("reverse.detail.postAction")}
             </ActionButton>
           </>
         }
       >
         <Box sx={{ typography: "body2" }}>
-          Đây là bước làm phát sinh giao dịch đối ứng và thay đổi tồn kho. Giao
-          dịch gốc vẫn được giữ nguyên. Nếu cần điều chỉnh tiếp, phải tạo phiếu
-          điều chỉnh mới.
+          {t("reverse.detail.postConfirmBody")}
         </Box>
       </UiDialog>
     </>

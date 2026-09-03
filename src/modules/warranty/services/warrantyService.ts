@@ -215,7 +215,8 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
       ) || undefined,
     case_age_days: numberOrUndefined(row.case_age_days ?? row.age_days),
     created_at: text(row.created_at),
-    created_by: text(row.created_by_name ?? row.created_by, "-"),
+    // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
+    created_by: text(row.created_by_name, "-"),
     notes: caseDescription,
     version: numberOrUndefined(row.version) ?? 1,
   };
@@ -230,9 +231,9 @@ function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
     from_status: row.from_status ? canonicalStatus(row.from_status) : undefined,
     to_status: canonicalStatus(row.to_status ?? row.status),
     description: text(row.description ?? row.note ?? row.message, "-"),
-    // KHÔNG rơi xuống row.created_by: đó là UUID actor thô, không phải tên —
-    // thiếu performed_by_name (join users) thì hiện "-", không hiện UUID.
-    performed_by: text(row.performed_by_name ?? row.performed_by, "-"),
+    // KHÔNG rơi xuống row.performed_by / row.created_by: đó là UUID actor thô,
+    // không phải tên — thiếu performed_by_name (join users) thì "-".
+    performed_by: text(row.performed_by_name, "-"),
     performed_at: text(row.performed_at ?? row.event_at ?? row.created_at),
   };
 }
@@ -255,7 +256,8 @@ function normalizeAttachment(row: RawRecord): WarrantyAttachment {
     status:
       (text(row.status, "ACTIVE") as WarrantyAttachment["status"]) || "ACTIVE",
     uploaded_at: text(row.uploaded_at ?? row.created_at) || undefined,
-    uploaded_by: text(row.uploaded_by ?? row.created_by) || undefined,
+    // uploaded_by / created_by là UUID: chỉ nhận tên BE đã join, không thì bỏ.
+    uploaded_by: text(row.uploaded_by_name) || undefined,
   };
 }
 

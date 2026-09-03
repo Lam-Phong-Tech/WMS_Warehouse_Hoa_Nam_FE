@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   listOf,
   n,
@@ -15,6 +16,7 @@ import {
   usePrinterOptions,
   useUserDirectory,
 } from "@/modules/reports/operations/report-data";
+import { tStatic } from "@/shared/i18n/useT";
 
 /**
  * NGUỒN DỮ LIỆU CỦA RPT-05 — Nhãn đóng gói · Print / Reprint.
@@ -317,10 +319,14 @@ export function usePackingLabelReport({
           ? (actorNames.get(event.actorId) ?? "")
           : "";
         const auditMissing: string[] = [];
-        if (event.attemptedAt === "") auditMissing.push("Thời điểm");
-        if (event.printerId === "") auditMissing.push("Máy in");
-        if (event.actorId === "") auditMissing.push("Người thao tác");
-        if (event.result === "PENDING_PRINT") auditMissing.push("Kết quả in");
+        if (event.attemptedAt === "")
+          auditMissing.push(tStatic("reports.packingLabel.colMoment"));
+        if (event.printerId === "")
+          auditMissing.push(tStatic("reports.packingLabel.colPrinter"));
+        if (event.actorId === "")
+          auditMissing.push(tStatic("reports.packingLabel.colActor"));
+        if (event.result === "PENDING_PRINT")
+          auditMissing.push(tStatic("reports.packingLabel.outcomeAria"));
 
         return {
           eventId: event.eventId,
@@ -351,7 +357,8 @@ export function usePackingLabelReport({
     const seen = new Map<string, string>();
     for (const event of events) {
       if (event.actorId === "") continue;
-      seen.set(event.actorId, event.actorName || event.actorId);
+      // Không có tên thì nhãn là "Chưa có" — không đưa UUID lên hộp chọn.
+      seen.set(event.actorId, event.actorName || EMPTY_TEXT);
     }
     return [...seen.entries()]
       .map(([value, label]) => ({ value, label }))
@@ -446,7 +453,11 @@ export function usePackingLabelSnapshot(
     const itemIds = listOf(payload.item_ids);
     const content =
       label?.skuSummary ||
-      (itemIds.length > 0 ? `${itemIds.length} hiện vật` : "");
+      (itemIds.length > 0
+        ? tStatic("reports.packingLabel.itemCountShort", {
+            count: itemIds.length,
+          })
+        : "");
 
     return {
       labelId,

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { authService } from "@/modules/auth/services/auth.service";
 import { ROUTES } from "@/shared/constants/routes";
 import type { ResetPasswordRequest } from "@/modules/auth/types/auth.types";
+import { tStatic } from "@/shared/i18n/useT";
 
 export function useResetPassword() {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export function useResetPassword() {
   return useMutation({
     mutationFn: (data: ResetPasswordRequest) => authService.resetPassword(data),
     onSuccess: () => {
-      toast.success("Đặt lại mật khẩu thành công, vui lòng đăng nhập lại");
+      toast.success(tStatic("auth.forgotPassword.resetSuccess"));
       navigate(ROUTES.LOGIN, { replace: true });
     },
   });

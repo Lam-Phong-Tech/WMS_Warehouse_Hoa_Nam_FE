@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Box } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import { useT } from "@/shared/i18n/useT";
 import { ROUTES } from "@/shared/constants/routes";
 
 export interface PvPublicLayoutProps {
@@ -28,6 +29,7 @@ export function PvPublicLayout({
   actions,
   children,
 }: PvPublicLayoutProps) {
+  const t = useT();
   return (
     <Box
       data-testid="pv-public-layout"
@@ -94,13 +96,13 @@ export function PvPublicLayout({
                   lineHeight: 1.2,
                 }}
               >
-                Hoa Nam · Danh mục sản phẩm
+                {t("pv.layout.brandTitle")}
               </Box>
               <Box
                 component="span"
                 sx={{ display: "block", fontSize: 12, color: S.textMedium }}
               >
-                Trang công khai · chỉ xem
+                {t("pv.layout.brandSubtitle")}
               </Box>
             </Box>
           </Box>
@@ -152,7 +154,7 @@ export function PvPublicLayout({
           textAlign: "center",
         }}
       >
-        Số lượng hiển thị là tồn khả dụng của kho tổng, chỉ mang tính tham khảo.
+        {t("pv.layout.footer")}
       </Box>
     </Box>
   );

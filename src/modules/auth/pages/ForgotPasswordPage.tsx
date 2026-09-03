@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
@@ -6,9 +6,9 @@ import { useForgotPassword } from "@/modules/auth/hooks/use-forgot-password";
 import { useVerifyOtp } from "@/modules/auth/hooks/use-verify-otp";
 import { useResetPassword } from "@/modules/auth/hooks/use-reset-password";
 import {
-  forgotPasswordEmailSchema,
-  otpSchema,
-  resetPasswordFormSchema,
+  buildForgotPasswordEmailSchema,
+  buildOtpSchema,
+  buildResetPasswordFormSchema,
   type ForgotPasswordEmailFormValues,
   type OtpFormValues,
   type ResetPasswordFormValues,
@@ -20,6 +20,7 @@ import {
   AuthBackLink,
 } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
+import { useT } from "@/shared/i18n/useT";
 
 /** Đồng bộ với config/password_reset.php (otp_ttl_minutes=5) phía BE — chỉ là
  * đếm ngược hiển thị, BE mới là nguồn sự thật về hạn thật của OTP. */
@@ -42,6 +43,7 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function ForgotPasswordPage() {
+  const t = useT();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [resetToken, setResetToken] = useState("");
@@ -65,6 +67,16 @@ export function ForgotPasswordPage() {
   const forgotPassword = useForgotPassword();
   const verifyOtp = useVerifyOtp();
   const resetPassword = useResetPassword();
+
+  const forgotPasswordEmailSchema = useMemo(
+    () => buildForgotPasswordEmailSchema(t),
+    [t],
+  );
+  const otpSchema = useMemo(() => buildOtpSchema(t), [t]);
+  const resetPasswordFormSchema = useMemo(
+    () => buildResetPasswordFormSchema(t),
+    [t],
+  );
 
   const emailForm = useForm<ForgotPasswordEmailFormValues>({
     resolver: zodResolver(forgotPasswordEmailSchema),
@@ -136,15 +148,15 @@ export function ForgotPasswordPage() {
     <AuthShell
       titleId="forgot-password-title"
       illustration="forgot"
-      title="Quên mật khẩu"
+      title={t("auth.forgotPassword.title")}
       subtitle={
         <>
-          {step === "email" && "Nhập email đã đăng ký để nhận mã xác thực."}
-          {step === "otp" && `Nhập mã OTP 6 số vừa gửi tới ${email}.`}
-          {step === "password" && "Đặt mật khẩu mới cho tài khoản."}
+          {step === "email" && t("auth.forgotPassword.subtitleEmail")}
+          {step === "otp" && t("auth.forgotPassword.subtitleOtp", { email })}
+          {step === "password" && t("auth.forgotPassword.subtitlePassword")}
         </>
       }
-      loadingText={isBusy ? "Đang xử lý..." : null}
+      loadingText={isBusy ? t("auth.forgotPassword.processing") : null}
     >
       {step === "email" && (
         <form onSubmit={onSubmitEmail} noValidate>
@@ -152,7 +164,7 @@ export function ForgotPasswordPage() {
             <AuthField
               control={emailForm.control}
               name="email"
-              label="Email"
+              label={t("auth.fields.email")}
               placeholder="your@gmail.com"
               autoFocus
               disabled={forgotPassword.isPending}
@@ -164,10 +176,10 @@ export function ForgotPasswordPage() {
               type="submit"
               fullWidth
             >
-              Gửi mã OTP
+              {t("auth.forgotPassword.sendOtp")}
             </UiButton>
 
-            <AuthBackLink>Quay lại đăng nhập</AuthBackLink>
+            <AuthBackLink>{t("auth.forgotPassword.backToLogin")}</AuthBackLink>
           </Box>
         </form>
       )}
@@ -179,7 +191,7 @@ export function ForgotPasswordPage() {
               <UiAlert tone="error">
                 {getApiErrorMessage(
                   verifyOtp.error,
-                  "Mã OTP không đúng hoặc đã hết hạn.",
+                  t("auth.forgotPassword.otpInvalid"),
                 )}
               </UiAlert>
             )}
@@ -187,8 +199,8 @@ export function ForgotPasswordPage() {
             <AuthField
               control={otpForm.control}
               name="otp"
-              label="Mã OTP"
-              placeholder="Nhập 6 chữ số"
+              label={t("auth.forgotPassword.otpLabel")}
+              placeholder={t("auth.forgotPassword.otpPlaceholder")}
               numericOnly
               maxLength={6}
               autoFocus
@@ -196,11 +208,11 @@ export function ForgotPasswordPage() {
             />
 
             <AuthNote sx={{ marginTop: 0 }}>
-              {isExpired ? (
-                "Mã OTP đã hết hạn."
-              ) : (
-                <>Mã có hiệu lực trong {formatCountdown(secondsLeft)}</>
-              )}
+              {isExpired
+                ? t("auth.forgotPassword.otpExpired")
+                : t("auth.forgotPassword.otpValidFor", {
+                    time: formatCountdown(secondsLeft),
+                  })}
             </AuthNote>
 
             {isExpired ? (
@@ -209,7 +221,7 @@ export function ForgotPasswordPage() {
                 onClick={onResendOtp}
                 fullWidth
               >
-                Gửi lại mã OTP
+                {t("auth.forgotPassword.resendOtp")}
               </UiButton>
             ) : (
               <UiButton
@@ -218,11 +230,11 @@ export function ForgotPasswordPage() {
                 type="submit"
                 fullWidth
               >
-                Xác nhận
+                {t("auth.forgotPassword.verify")}
               </UiButton>
             )}
 
-            <AuthBackLink>Quay lại đăng nhập</AuthBackLink>
+            <AuthBackLink>{t("auth.forgotPassword.backToLogin")}</AuthBackLink>
           </Box>
         </form>
       )}
@@ -234,7 +246,7 @@ export function ForgotPasswordPage() {
               <UiAlert tone="error">
                 {getApiErrorMessage(
                   resetPassword.error,
-                  "Đặt lại mật khẩu thất bại.",
+                  t("auth.forgotPassword.resetFailed"),
                 )}
               </UiAlert>
             )}
@@ -242,8 +254,8 @@ export function ForgotPasswordPage() {
             <AuthField
               control={passwordForm.control}
               name="newPassword"
-              label="Mật khẩu mới"
-              placeholder="Tối thiểu 8 ký tự"
+              label={t("auth.fields.newPassword")}
+              placeholder={t("auth.fields.newPasswordPlaceholder")}
               type="password"
               autoFocus
               disabled={resetPassword.isPending}
@@ -252,8 +264,8 @@ export function ForgotPasswordPage() {
             <AuthField
               control={passwordForm.control}
               name="newPasswordConfirmation"
-              label="Xác nhận mật khẩu mới"
-              placeholder="Nhập lại mật khẩu mới"
+              label={t("auth.fields.confirmNewPassword")}
+              placeholder={t("auth.fields.confirmNewPasswordPlaceholder")}
               type="password"
               disabled={resetPassword.isPending}
             />
@@ -264,7 +276,7 @@ export function ForgotPasswordPage() {
               type="submit"
               fullWidth
             >
-              Đặt lại mật khẩu
+              {t("auth.forgotPassword.submitReset")}
             </UiButton>
           </Box>
         </form>

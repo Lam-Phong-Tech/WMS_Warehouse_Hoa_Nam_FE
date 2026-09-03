@@ -145,3 +145,49 @@ describe("ResponsiveDataTable · chọn nhiều dòng", () => {
     expect(onRowClick).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Khi `maxBodyHeight` ghim `thead` lại, ô tiêu đề phải ĐỤC. Trước đây nền của
+ * nó là `action.hover` — một màu rgba ~4% — nên các dòng cuộn qua bên dưới ánh
+ * xuyên lên chữ tiêu đề (bug "Sổ tồn kho biến động" ở màn Truy vết hàng hóa).
+ */
+describe("ResponsiveDataTable · thead ghim khi cuộn", () => {
+  function StickyHarness() {
+    const rowSelection = useRowSelection(ROWS, (row) => row.id);
+    return (
+      <ResponsiveDataTable<Row>
+        columns={[
+          { key: "code", header: "Phiếu", render: (row) => row.code },
+          {
+            key: "sortable",
+            header: "Thời điểm (GMT+7)",
+            sortAccessor: (row) => row.id,
+            render: (row) => row.id,
+          },
+        ]}
+        rows={ROWS}
+        rowKey={(row) => row.id}
+        rowSelection={rowSelection}
+        selectionLabel={(row) => `Chọn phiếu ${row.code}`}
+        renderRowActions={() => <button type="button">Xem</button>}
+        maxBodyHeight={240}
+      />
+    );
+  }
+
+  it("mọi ô tiêu đề đều có nền đục, không phải màu rgba nhìn xuyên được", () => {
+    render(<StickyHarness />);
+
+    const headers = screen.getAllByRole("columnheader");
+    // Cột chọn dòng + 2 cột dữ liệu (1 sort được, 1 không) + cột Thao tác.
+    expect(headers).toHaveLength(4);
+
+    for (const header of headers) {
+      const background = getComputedStyle(header).backgroundColor;
+      expect(background).not.toBe("");
+      expect(background).not.toBe("transparent");
+      // rgba(...) có alpha < 1 chính là nguyên nhân ánh xuyên.
+      expect(background).not.toMatch(/rgba\([^)]*,\s*0(\.\d+)?\)\s*$/u);
+    }
+  });
+});

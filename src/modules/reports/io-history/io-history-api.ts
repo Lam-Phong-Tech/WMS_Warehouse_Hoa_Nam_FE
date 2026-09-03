@@ -29,9 +29,12 @@
  *    đúng như hai dòng chú thích của mockup: "đơn vị đã xác định dấu" và "Chỉ
  *    cộng movement/qty có dấu xác định".
  *  · Mockup gán mỗi chứng từ đúng MỘT movement (`MOV-IO-0001`). Thực tế một
- *    phiếu nhiều dòng SKU sinh nhiều movement, nên cột "Movement" hiện
- *    `shortId` khi chỉ có một, và "N movement" khi nhiều hơn — không chọn bừa
- *    một movement làm đại diện.
+ *    phiếu nhiều dòng SKU sinh nhiều movement, nên cột "Movement" hiện MÃ
+ *    `movement_no` (MV-…) khi chỉ có một, và "N movement" khi nhiều hơn —
+ *    không chọn bừa một movement làm đại diện, và KHÔNG BAO GIỜ in UUID.
+ *  · Người thực hiện: `/reversal-documents` trả `posted_by` là UUID; phải đổi
+ *    sang tên qua `posted_by_name` (BE) hoặc danh bạ người dùng. Không tra
+ *    được thì ô hiện "Chưa có" — cấm in UUID actor ra màn hình.
  *  · Mockup nối phiếu hoàn tác với chứng từ gốc qua `original` (id movement
  *    gốc). Bản này nối qua `reference_document_code` — cùng quan hệ nghiệp vụ,
  *    nhưng là MÃ chứng từ người đọc được thay vì UUID thô.
@@ -91,8 +94,8 @@ export type IoHistoryRow = {
   party: string;
   /** Số movement authoritative mà chứng từ này sinh ra. */
   movementCount: number;
-  /** Id movement khi chứng từ chỉ sinh đúng một movement. */
-  movementId: string;
+  /** Mã movement (`movement_no`, MV-…) khi chứng từ chỉ sinh đúng một movement. */
+  movementNo: string;
   /** Mã chứng từ gốc của một phiếu hoàn tác; rỗng với phiếu nhập/xuất. */
   originalDocumentNo: string;
   /** "MÃ · TÊN" của từng dòng SKU trong chứng từ. */
@@ -194,7 +197,7 @@ function useInventoryLedger({
 }
 
 /** Movement của MỘT chứng từ, gom theo `source_id`. */
-type MovementGroup = { count: number; firstId: string; netQty: number };
+type MovementGroup = { count: number; firstNo: string; netQty: number };
 
 /**
  * Lát cắt RPT-IO-01 của một kỳ báo cáo.
@@ -242,7 +245,7 @@ export function useIoHistorySnapshot({
       if (current === undefined) {
         map.set(sourceId, {
           count: 1,
-          firstId: text(row.id, ""),
+          firstNo: text(row.movement_no, ""),
           netQty: n(row.qty_delta),
         });
         continue;
@@ -289,7 +292,7 @@ export function useIoHistorySnapshot({
         department: users.departmentNameOfActor(actor),
         party: text(row.counterpart, ""),
         movementCount: movements?.count ?? 0,
-        movementId: movements?.count === 1 ? movements.firstId : "",
+        movementNo: movements?.count === 1 ? movements.firstNo : "",
         originalDocumentNo: "",
         skuLines: lines
           .map((line) =>
@@ -314,7 +317,11 @@ export function useIoHistorySnapshot({
       const movements = movementsByDocument.get(id);
       const originalType = text(row.reference_document_type, "");
       const totalQty = n(row.total_qty);
-      const actor = text(row.posted_by ?? row.created_by, "");
+      // `posted_by`/`created_by` là UUID: ưu tiên tên BE đã join, rồi tra danh
+      // bạ; vẫn không ra tên thì để rỗng — không in UUID.
+      const actor =
+        text(row.posted_by_name ?? row.created_by_name, "") ||
+        users.nameOfUserId(row.posted_by ?? row.created_by);
       result.push({
         id,
         documentNo: text(row.reversal_code ?? row.reversal_no, ""),
@@ -336,7 +343,7 @@ export function useIoHistorySnapshot({
         department: users.departmentNameOfActor(actor),
         party: text(row.warehouse_name, ""),
         movementCount: movements?.count ?? 0,
-        movementId: movements?.count === 1 ? movements.firstId : "",
+        movementNo: movements?.count === 1 ? movements.firstNo : "",
         originalDocumentNo: text(row.reference_document_code, ""),
         skuLines: [],
       });

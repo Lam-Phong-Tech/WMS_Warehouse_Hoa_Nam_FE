@@ -128,7 +128,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     expect(await screen.findByText("LK-PIN-20V")).toBeInTheDocument();
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
 
-    const scanInput = screen.getByLabelText("Scan code");
+    const scanInput = screen.getByLabelText("Quét mã");
     fireEvent.change(scanInput, { target: { value: "ser-lk-99" } });
     fireEvent.keyDown(scanInput, { key: "Enter" });
 

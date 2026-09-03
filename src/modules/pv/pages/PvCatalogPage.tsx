@@ -2,6 +2,7 @@ import { useMemo, type KeyboardEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Box, UiSelect, UiTextField } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import { useT } from "@/shared/i18n/useT";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import { PvFreshnessIndicator } from "@/modules/pv/components/PvFreshness";
 import { PvProductCard } from "@/modules/pv/components/PvProductCard";
@@ -31,6 +32,7 @@ const PER_PAGE = 12;
  * QA2 dùng để chụp lại đúng một trạng thái lọc.
  */
 export default function PvCatalogPage() {
+  const t = useT();
   const [searchParams, setSearchParams] = useSearchParams();
   const industryId = searchParams.get("industry_id") ?? "";
   const categoryId = searchParams.get("category_id") ?? "";
@@ -119,18 +121,13 @@ export default function PvCatalogPage() {
 
   return (
     <PvPublicLayout
-      title="Sản phẩm Hoa Nam"
-      subtitle={
-        <>
-          Danh mục sản phẩm đang được công bố. Số lượng là tồn khả dụng của kho
-          tổng.
-        </>
-      }
+      title={t("pv.catalog.title")}
+      subtitle={t("pv.catalog.subtitle")}
       actions={<PvFreshnessIndicator meta={meta} />}
     >
       <Box
         component="section"
-        aria-label="Bộ lọc sản phẩm"
+        aria-label={t("pv.catalog.filterAria")}
         sx={{
           backgroundColor: S.bgSurface,
           border: `1px solid ${S.border}`,
@@ -154,7 +151,7 @@ export default function PvCatalogPage() {
           key={keywordParam}
           type="search"
           defaultValue={keywordParam}
-          placeholder="Tìm theo tên hoặc mã sản phẩm"
+          placeholder={t("pv.catalog.searchPlaceholder")}
           fullWidth
           onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
             if (event.key !== "Enter") return;
@@ -163,15 +160,15 @@ export default function PvCatalogPage() {
           }}
           slotProps={{
             htmlInput: {
-              "aria-label": "Tìm sản phẩm",
+              "aria-label": t("pv.catalog.searchAria"),
               "data-testid": "pv-search-input",
             },
           }}
         />
         <UiSelect
           value={industryId}
-          placeholder="Lọc theo ngành nghề"
-          aria-label="Lọc theo ngành nghề"
+          placeholder={t("pv.catalog.industryFilter")}
+          aria-label={t("pv.catalog.industryFilter")}
           data-testid="pv-industry-filter"
           fullWidth
           options={(industries.data?.data ?? []).map((industry) => ({
@@ -182,8 +179,8 @@ export default function PvCatalogPage() {
         />
         <UiSelect
           value={categoryId}
-          placeholder="Lọc theo danh mục / nhóm hàng"
-          aria-label="Lọc theo danh mục sản phẩm"
+          placeholder={t("pv.catalog.categoryFilterPlaceholder")}
+          aria-label={t("pv.catalog.categoryFilterAria")}
           data-testid="pv-category-filter"
           fullWidth
           options={categoryOptions}
@@ -191,8 +188,8 @@ export default function PvCatalogPage() {
         />
         <UiSelect
           value={tagId}
-          placeholder="Lọc theo phân loại"
-          aria-label="Lọc theo phân loại sản phẩm"
+          placeholder={t("pv.catalog.tagFilterPlaceholder")}
+          aria-label={t("pv.catalog.tagFilterAria")}
           data-testid="pv-tag-filter"
           fullWidth
           options={tagOptions}
@@ -214,14 +211,14 @@ export default function PvCatalogPage() {
               patchParams({ in_stock: checked ? "1" : null })
             }
           />
-          Chỉ hiện sản phẩm còn hàng
+          {t("pv.catalog.inStockOnly")}
         </Box>
       </Box>
 
       {industryId && (recommendations.data?.data.length ?? 0) > 0 ? (
         <Box
           component="section"
-          aria-label="Gợi ý theo ngành nghề"
+          aria-label={t("pv.catalog.recommendationsAria")}
           data-testid="pv-recommendations"
           sx={{ marginBottom: "20px" }}
         >
@@ -234,7 +231,7 @@ export default function PvCatalogPage() {
               margin: "0 0 8px",
             }}
           >
-            Gợi ý cho ngành nghề đã chọn
+            {t("pv.catalog.recommendationsTitle")}
           </Box>
           <Box
             sx={{
@@ -252,10 +249,7 @@ export default function PvCatalogPage() {
       ) : null}
 
       {products.isPending ? (
-        <LoadingState
-          tip="Đang tải danh mục sản phẩm…"
-          testId="pv-list-loading"
-        />
+        <LoadingState tip={t("pv.catalog.loading")} testId="pv-list-loading" />
       ) : products.isError ? (
         <PvErrorState
           error={products.error}
@@ -265,12 +259,14 @@ export default function PvCatalogPage() {
         <EmptyState
           testId="pv-list-empty"
           title={
-            hasFilter ? "Không có sản phẩm phù hợp" : "Chưa có sản phẩm công bố"
+            hasFilter
+              ? t("pv.catalog.emptyFilteredTitle")
+              : t("pv.catalog.emptyTitle")
           }
           description={
             hasFilter
-              ? "Thử bỏ bớt bộ lọc hoặc tìm bằng từ khoá khác."
-              : "Danh mục sẽ hiển thị ngay khi có sản phẩm được công bố."
+              ? t("pv.catalog.emptyFilteredDesc")
+              : t("pv.catalog.emptyDesc")
           }
         >
           {hasFilter ? (
@@ -287,7 +283,7 @@ export default function PvCatalogPage() {
                 })
               }
             >
-              Xoá bộ lọc
+              {t("pv.catalog.clearFilters")}
             </ActionButton>
           ) : null}
         </EmptyState>
@@ -309,7 +305,7 @@ export default function PvCatalogPage() {
 
           <Box
             component="nav"
-            aria-label="Phân trang"
+            aria-label={t("pv.catalog.paginationAria")}
             sx={{
               marginTop: "16px",
               display: "flex",
@@ -325,10 +321,10 @@ export default function PvCatalogPage() {
               data-testid="pv-prev-page"
               onClick={() => patchParams({ page: String(page - 1) })}
             >
-              ← Trang trước
+              {t("pv.catalog.prevPage")}
             </ActionButton>
             <Box component="span" sx={{ fontSize: 13, color: S.textMedium }}>
-              Trang {page}/{lastPage} · {total} sản phẩm
+              {t("pv.catalog.pageInfo", { page, lastPage, total })}
             </Box>
             <ActionButton
               kind="next"
@@ -336,7 +332,7 @@ export default function PvCatalogPage() {
               data-testid="pv-next-page"
               onClick={() => patchParams({ page: String(page + 1) })}
             >
-              Trang sau →
+              {t("pv.catalog.nextPage")}
             </ActionButton>
           </Box>
         </>

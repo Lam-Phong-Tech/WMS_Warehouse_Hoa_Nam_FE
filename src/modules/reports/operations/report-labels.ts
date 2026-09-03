@@ -2,22 +2,48 @@ import type { MessageKey } from "@/shared/i18n/messages";
 import type { TranslateFn } from "@/shared/i18n/useT";
 import {
   INVENTORY_STOCK_STATUS_LABELS,
-  MOVEMENT_TYPE_LABELS,
-  RECONCILE_STATUS_LABELS,
-  WARRANTY_IDENTIFICATION_STATUS_LABELS,
+  bilingual,
   businessLabel,
 } from "@/shared/constants/business-labels";
 import type { UiStatusTone } from "@/shared/ui";
 
-export const MOVEMENT_LABELS: Readonly<Record<string, string>> = {
-  OPENING: "Tồn đầu kỳ",
-  ...MOVEMENT_TYPE_LABELS,
-};
+// KHÔNG spread map từ business-labels vào đây: các map đó là Proxy song ngữ,
+// spread sẽ sao chép giá trị theo ngôn ngữ lúc import và đóng băng ở đó (xem
+// chú thích trong business-labels.ts). Vì vậy các mục trùng được chép tay ở cả
+// hai thứ tiếng và bọc `bilingual` như nguồn gốc.
+export const MOVEMENT_LABELS: Readonly<Record<string, string>> = bilingual(
+  {
+    OPENING: "Tồn đầu kỳ",
+    RECEIPT: "Nhập kho",
+    ISSUE: "Xuất kho",
+    COMPONENT_ISSUE: "Xuất linh kiện",
+    REVERSAL: "Điều chỉnh tồn kho",
+  },
+  {
+    OPENING: "Opening balance",
+    RECEIPT: "Receipt",
+    ISSUE: "Issue",
+    COMPONENT_ISSUE: "Component issue",
+    REVERSAL: "Stock adjustment",
+  },
+);
 
-export const RECONCILE_LABELS: Readonly<Record<string, string>> = {
-  ...RECONCILE_STATUS_LABELS,
-  NOT_APPLICABLE: "Không áp dụng",
-};
+export const RECONCILE_LABELS: Readonly<Record<string, string>> = bilingual(
+  {
+    MATCH: "Khớp",
+    PASS: "Khớp",
+    MISMATCH: "Có chênh lệch",
+    FAIL: "Có chênh lệch",
+    NOT_APPLICABLE: "Không áp dụng",
+  },
+  {
+    MATCH: "Matched",
+    PASS: "Matched",
+    MISMATCH: "Discrepancy found",
+    FAIL: "Discrepancy found",
+    NOT_APPLICABLE: "Not applicable",
+  },
+);
 
 /**
  * SRS §7.5: đối soát tồn kho gồm BỐN check độc lập, badge "Trạng thái đối soát"
@@ -37,33 +63,64 @@ export function reconcileCheckLabel(code: string, t: TranslateFn): string {
   return key ? t(key) : code;
 }
 
-export const REPORT_STATUS_LABELS: Readonly<Record<string, string>> = {
-  DRAFT: "Nháp",
-  SCANNING: "Đang quét",
-  POSTED: "Đã ghi nhận",
-  CANCELLED: "Đã hủy",
-  UPLOADED: "Đã tải lên",
-  VALIDATED: "Đã kiểm tra",
-  CONSUMED: "Đã sử dụng",
-  REJECTED: "Đã từ chối",
-  PENDING_PRINT: "Chờ in",
-  PRINTED: "Đã in",
-  PRINT_FAILED: "In thất bại",
-  RECEIVED: "Đã tiếp nhận",
-  CHECKING: "Đang kiểm tra",
-  REPAIRING: "Đang sửa chữa",
-  COMPLETED: "Đã hoàn tất",
-  RETURNED: "Đã trả khách",
-  VALID: "Hợp lệ",
-  INVALID: "Không hợp lệ",
-  ERROR: "Lỗi",
-  PENDING: "Chờ xử lý",
-  COMMITTED: "Đã ghi nhận",
-  DRY_RUN: "Chạy thử",
-  COMMIT: "Ghi thật",
-  IDENTIFIED: WARRANTY_IDENTIFICATION_STATUS_LABELS.IDENTIFIED,
-  TEMP_ONLY: WARRANTY_IDENTIFICATION_STATUS_LABELS.TEMP_ONLY,
-};
+export const REPORT_STATUS_LABELS: Readonly<Record<string, string>> = bilingual(
+  {
+    DRAFT: "Nháp",
+    SCANNING: "Đang quét",
+    POSTED: "Đã ghi nhận",
+    CANCELLED: "Đã hủy",
+    UPLOADED: "Đã tải lên",
+    VALIDATED: "Đã kiểm tra",
+    CONSUMED: "Đã sử dụng",
+    REJECTED: "Đã từ chối",
+    PENDING_PRINT: "Chờ in",
+    PRINTED: "Đã in",
+    PRINT_FAILED: "In thất bại",
+    RECEIVED: "Đã tiếp nhận",
+    CHECKING: "Đang kiểm tra",
+    REPAIRING: "Đang sửa chữa",
+    COMPLETED: "Đã hoàn tất",
+    RETURNED: "Đã trả khách",
+    VALID: "Hợp lệ",
+    INVALID: "Không hợp lệ",
+    ERROR: "Lỗi",
+    PENDING: "Chờ xử lý",
+    COMMITTED: "Đã ghi nhận",
+    DRY_RUN: "Chạy thử",
+    COMMIT: "Ghi thật",
+    // Trùng giá trị với WARRANTY_IDENTIFICATION_STATUS_LABELS — chép tay thay
+    // vì tham chiếu để không đọc xuyên Proxy lúc import (xem chú thích đầu file).
+    IDENTIFIED: "Đã xác định sản phẩm",
+    TEMP_ONLY: "Tiếp nhận tạm, chưa xác định sản phẩm",
+  },
+  {
+    DRAFT: "Draft",
+    SCANNING: "Scanning",
+    POSTED: "Posted",
+    CANCELLED: "Cancelled",
+    UPLOADED: "Uploaded",
+    VALIDATED: "Validated",
+    CONSUMED: "Consumed",
+    REJECTED: "Rejected",
+    PENDING_PRINT: "Awaiting print",
+    PRINTED: "Printed",
+    PRINT_FAILED: "Print failed",
+    RECEIVED: "Received",
+    CHECKING: "Under inspection",
+    REPAIRING: "Under repair",
+    COMPLETED: "Completed",
+    RETURNED: "Returned to customer",
+    VALID: "Valid",
+    INVALID: "Invalid",
+    ERROR: "Error",
+    PENDING: "Pending",
+    COMMITTED: "Committed",
+    DRY_RUN: "Dry run",
+    COMMIT: "Commit",
+    IDENTIFIED: "Product identified",
+    TEMP_ONLY: "Temporary intake, product not identified",
+  },
+);
 
 export function reportStatusLabel(value: unknown): string {
   return businessLabel(

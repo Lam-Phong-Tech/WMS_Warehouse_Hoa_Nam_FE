@@ -1,4 +1,5 @@
 import { http } from "@/shared/api/http";
+import { tStatic } from "@/shared/i18n/useT";
 import { PV_API_ENDPOINTS } from "@/modules/pv/services/pv-endpoints";
 import type {
   PvAdminProfile,
@@ -38,9 +39,7 @@ function assertVersion(version: number | undefined, action: string): number {
     !Number.isInteger(version) ||
     version < 0
   ) {
-    throw new Error(
-      `Thiếu version hiện tại để ${action}. Hãy tải lại danh sách rồi thử lại.`,
-    );
+    throw new Error(tStatic("pv.admin.errMissingVersion", { action }));
   }
   return version;
 }
@@ -86,7 +85,7 @@ export function updatePvIndustry(
       status: payload.status,
       sort_order: payload.sort_order,
     },
-    ifMatch(assertVersion(version, "cập nhật master App PV")),
+    ifMatch(assertVersion(version, tStatic("pv.admin.actionUpdateMaster"))),
   );
 }
 
@@ -117,7 +116,7 @@ export function updatePvTag(
       sort_order: payload.sort_order,
       tag_type: payload.tag_type ?? null,
     },
-    ifMatch(assertVersion(version, "cập nhật master App PV")),
+    ifMatch(assertVersion(version, tStatic("pv.admin.actionUpdateMaster"))),
   );
 }
 
@@ -136,7 +135,7 @@ export function updatePvRule(
   return http.patch<PvAdminRule>(
     PV_API_ENDPOINTS.ADMIN_RESOURCE("recommendation-rules", id),
     payload,
-    ifMatch(assertVersion(version, "cập nhật master App PV")),
+    ifMatch(assertVersion(version, tStatic("pv.admin.actionUpdateMaster"))),
   );
 }
 
@@ -165,7 +164,7 @@ export function updatePvProfile(
       industry_ids: payload.industry_ids,
       tag_ids: payload.tag_ids,
     },
-    ifMatch(assertVersion(version, "cập nhật master App PV")),
+    ifMatch(assertVersion(version, tStatic("pv.admin.actionUpdateMaster"))),
   );
 }
 
@@ -190,6 +189,6 @@ export function setPvProductPublished(
   return http.patch<PvPublishResult>(
     PV_API_ENDPOINTS.PRODUCT_PUBLISH(skuId),
     { published },
-    ifMatch(assertVersion(profileVersion, "publish App PV")),
+    ifMatch(assertVersion(profileVersion, tStatic("pv.admin.actionPublish"))),
   );
 }

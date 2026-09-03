@@ -1,3 +1,5 @@
+import { tStatic } from "@/shared/i18n/useT";
+
 /** Meta phân trang (kèm trong response danh sách). */
 export interface ApiMeta {
   request_id?: string;
@@ -109,7 +111,7 @@ export class ApiEnvelopeError extends Error {
   readonly data: ApiErrorResponse;
 
   constructor(data: ApiErrorResponse) {
-    super(data.message ?? "Yêu cầu không thành công");
+    super(data.message ?? tStatic("shared.api.requestFailed"));
     this.name = "ApiEnvelopeError";
     this.data = data;
   }

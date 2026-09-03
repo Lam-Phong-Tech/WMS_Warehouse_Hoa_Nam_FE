@@ -6,6 +6,7 @@ import { SPACING } from "@/shared/ui/tokens";
 import { UiStateSurface } from "@/shared/ui";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { ActionButton } from "@/shared/components/actions";
+import { useT } from "@/shared/i18n/useT";
 
 export interface ErrorStateProps {
   /** Tiêu đề lỗi. */
@@ -27,19 +28,26 @@ export interface ErrorStateProps {
  * `role="alert"` do UiStateSurface kind="error" tự phát — không lặp ở wrapper.
  */
 export function ErrorState({
-  title = "Không tải được dữ liệu",
-  description = "Hệ thống đang gặp sự cố hoặc mất kết nối mạng. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
+  title,
+  description,
   onRetry,
-  retryLabel = "Thử lại",
+  retryLabel,
   children,
   testId,
 }: ErrorStateProps) {
+  const t = useT();
+  const resolvedTitle =
+    title === undefined ? t("shared.states.loadFailedTitle") : title;
+  const resolvedDescription =
+    description === undefined ? t("shared.states.loadFailedDesc") : description;
+  const resolvedRetryLabel =
+    retryLabel === undefined ? t("common.retry") : retryLabel;
   const action =
     onRetry || children ? (
       <>
         {onRetry && (
           <ActionButton kind="refresh" onClick={onRetry}>
-            {retryLabel}
+            {resolvedRetryLabel}
           </ActionButton>
         )}
         {children && <div style={{ marginTop: SPACING.md }}>{children}</div>}
@@ -50,8 +58,8 @@ export function ErrorState({
     <div {...uiStateProps(UI_STATE.ERROR, testId)}>
       <UiStateSurface
         kind="error"
-        title={title}
-        description={description}
+        title={resolvedTitle}
+        description={resolvedDescription}
         action={action}
       />
     </div>

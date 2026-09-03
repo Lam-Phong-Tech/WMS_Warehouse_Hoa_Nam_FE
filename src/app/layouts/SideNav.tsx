@@ -346,7 +346,10 @@ export function SideNav({
             : null),
         }}
       >
-        <NavRowTooltip enabled={collapsed} title={navLabel(group.icon, group.name)}>
+        <NavRowTooltip
+          enabled={collapsed}
+          title={navLabel(group.icon, group.name)}
+        >
           <Box
             component="button"
             type="button"
@@ -457,7 +460,7 @@ export function SideNav({
         }}
       >
         <Tooltip
-          title={collapsed ? "Mở rộng thanh điều hướng" : ""}
+          title={collapsed ? t("nav.expand") : ""}
           placement="right"
           enterDelay={TOOLTIP_ENTER_DELAY}
           enterNextDelay={TOOLTIP_ENTER_NEXT_DELAY}
@@ -514,7 +517,7 @@ export function SideNav({
 
         {!collapsed && onToggle ? (
           <Tooltip
-            title="Thu gọn thanh điều hướng"
+            title={t("nav.collapse")}
             placement="right"
             enterDelay={TOOLTIP_ENTER_DELAY}
             enterNextDelay={TOOLTIP_ENTER_NEXT_DELAY}

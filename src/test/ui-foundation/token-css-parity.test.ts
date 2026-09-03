@@ -114,7 +114,8 @@ describe("css-vars-dark.css ↔ PALETTE.dark parity", () => {
       ...navVars(NAV_COLOR_DARK),
     };
     for (const [name, value] of Object.entries(expectedDark)) {
-      if (!(name in vars)) mismatches.push(`${name}: THIẾU trong css-vars-dark.css`);
+      if (!(name in vars))
+        mismatches.push(`${name}: THIẾU trong css-vars-dark.css`);
       else if (vars[name] !== norm(value))
         mismatches.push(`${name}: css="${vars[name]}" ≠ ts="${norm(value)}"`);
     }

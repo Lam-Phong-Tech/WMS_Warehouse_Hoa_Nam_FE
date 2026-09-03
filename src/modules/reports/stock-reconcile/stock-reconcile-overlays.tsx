@@ -12,6 +12,7 @@
  * `SearchInput` dùng chung; giữ lại ở đây chỉ tổ thành mã chết.
  */
 import { useEffect, useRef, type ReactNode } from "react";
+import { useT } from "@/shared/i18n/useT";
 
 /** Danh sách phần tử focus được — cùng bộ chọn với hộp thoại của RPT-01. */
 const FOCUSABLE =
@@ -79,11 +80,12 @@ export function EvidenceModal({
 
 /** Nút đóng của modal — đặt trong `.modal-head` đúng vị trí mockup. */
 export function ModalCloseButton({ onClose }: { onClose: () => void }) {
+  const t = useT();
   return (
     <button
       className="modal-close"
       type="button"
-      aria-label="Đóng chi tiết"
+      aria-label={t("reports.common.closeDetail")}
       onClick={onClose}
     >
       ×

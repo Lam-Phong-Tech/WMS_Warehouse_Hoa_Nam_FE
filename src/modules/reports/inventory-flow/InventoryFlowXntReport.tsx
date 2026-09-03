@@ -47,6 +47,12 @@ import {
   reportStatusLabel,
 } from "@/modules/reports/operations/report-labels";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
+import {
+  optionsFromRows,
+  useSectionFilter,
+  type SectionFilterConfig,
+} from "@/modules/reports/operations/report-section-filter";
 import { InventoryFlowChart } from "./inventory-flow-chart";
 import { DrillDownModal, ModalCloseButton } from "./inventory-flow-overlays";
 import {
@@ -60,19 +66,11 @@ import {
   type FlowDocument,
   type XntRow,
 } from "./inventory-flow-api";
+import { useT } from "@/shared/i18n/useT";
 import "./inventory-flow-report.css";
 
-/** Nhãn loại hàng — chép nguyên cột "Loại" của mockup. */
-const KIND_LABELS: Readonly<Record<string, string>> = {
-  PRODUCT: "Sản phẩm",
-  COMPONENT: "Linh kiện",
-};
-
-const KIND_OPTIONS = [
-  { value: "all", label: "Tất cả loại hàng" },
-  { value: "PRODUCT", label: "Sản phẩm" },
-  { value: "COMPONENT", label: "Linh kiện" },
-];
+/** Thứ tự lựa chọn "Loại hàng"; nhãn đọc qua t() trong component. */
+const KIND_VALUES = ["all", "PRODUCT", "COMPONENT"] as const;
 
 /**
  * Bốn màu nét vẽ của biểu đồ luồng — giá trị THẬT khai trong
@@ -209,29 +207,53 @@ function EquationItem({
 
 /** Ba biến thể thẻ chứng từ của mockup, khoá theo loại chứng từ. */
 const DOCUMENT_STYLE: Readonly<
-  Record<
-    FlowDocument["doc_type"],
-    { className: string; icon: VuexyIconName; title: string }
-  >
+  Record<FlowDocument["doc_type"], { className: string; icon: VuexyIconName }>
 > = {
   INBOUND: {
     className: "insight-card-warranty",
     icon: "package-plus",
-    title: "Phiếu nhập",
   },
   OUTBOUND: {
     className: "insight-card-ranking",
     icon: "package-minus",
-    title: "Phiếu xuất",
   },
   REVERSAL: {
     className: "insight-card-quality",
     icon: "refresh-cw",
-    title: "Phiếu hoàn tác",
   },
 };
 
 export default function InventoryFlowXntReport() {
+  const t = useT();
+  const kindLabels = useMemo<Readonly<Record<string, string>>>(
+    () => ({
+      PRODUCT: t("reports.inventoryFlowReport.kindProduct"),
+      COMPONENT: t("reports.inventoryFlowReport.kindComponent"),
+    }),
+    [t],
+  );
+  const kindOptions = useMemo(
+    () =>
+      KIND_VALUES.map((value) => ({
+        value,
+        label:
+          value === "all"
+            ? t("reports.inventoryFlowReport.kindAll")
+            : kindLabels[value],
+      })),
+    [kindLabels, t],
+  );
+  /** Tiêu đề ba loại chứng từ — đi kèm DOCUMENT_STYLE nhưng đọc theo ngôn ngữ. */
+  const documentTitles = useMemo<
+    Readonly<Record<FlowDocument["doc_type"], string>>
+  >(
+    () => ({
+      INBOUND: t("reports.inventoryFlowReport.docInbound"),
+      OUTBOUND: t("reports.inventoryFlowReport.docOutbound"),
+      REVERSAL: t("reports.inventoryFlowReport.docReversal"),
+    }),
+    [t],
+  );
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
 
   /**
@@ -391,6 +413,101 @@ export default function InventoryFlowXntReport() {
     );
   }, [filtered, snapshot.documents, codesInScope]);
 
+  /**
+   * Bộ lọc RIÊNG của khối "Đối chiếu từng SKU". Bộ lọc đầu trang đổi luôn KPI,
+   * biểu đồ và cả mục chứng từ; ở đây người đọc chỉ muốn thu hẹp đúng bảng/lát
+   * cắt đang soi, nên phép lọc này dừng lại trong khối.
+   *
+   * Áp cho CẢ hai chế độ xem "Dạng ngang" và "Dạng hộp" — hai chế độ chỉ là hai
+   * cách vẽ của cùng một tập dòng, lọc lệch nhau sẽ thành hai sự thật.
+   */
+  const skuSectionFilterConfig = useMemo<SectionFilterConfig<XntRow>>(
+    () => ({
+      searchPlaceholder: t("reports.inventoryFlowReport.skuSearchPlaceholder"),
+      searchText: (row) => [row.sku_code, row.sku_name, row.warehouse_code],
+      selects: [
+        {
+          key: "kind",
+          placeholder: t("reports.inventoryFlowReport.anyKind"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.sku_type,
+              (value) => kindLabels[value] ?? value,
+            ),
+          match: (row, value) => row.sku_type === value,
+        },
+        {
+          key: "matched",
+          placeholder: t("reports.inventoryFlowReport.anyMatchStatus"),
+          options: [
+            {
+              value: "matched",
+              label: t("reports.inventoryFlowReport.matched"),
+            },
+            {
+              value: "mismatch",
+              label: t("reports.inventoryFlowReport.mismatch"),
+            },
+          ],
+          match: (row, value) =>
+            value === "matched" ? row.matched : !row.matched,
+          minWidth: 200,
+        },
+      ],
+    }),
+    [kindLabels, t],
+  );
+  const skuSectionFilter = useSectionFilter(
+    rowsInScope,
+    skuSectionFilterConfig,
+  );
+
+  /** Bộ lọc RIÊNG của khối "Lịch sử chứng từ" (lưới thẻ chứng từ). */
+  const documentSectionFilterConfig = useMemo<
+    SectionFilterConfig<FlowDocument>
+  >(
+    () => ({
+      searchPlaceholder: t("reports.inventoryFlowReport.docSearchPlaceholder"),
+      searchText: (row) => [
+        row.document_no,
+        row.counterpart,
+        row.warehouse_code,
+      ],
+      selects: [
+        {
+          key: "docType",
+          placeholder: t("reports.inventoryFlowReport.anyDocType"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.doc_type,
+              (value) =>
+                documentTitles[value as FlowDocument["doc_type"]] ?? value,
+            ),
+          match: (row, value) => row.doc_type === value,
+          minWidth: 190,
+        },
+        {
+          key: "status",
+          placeholder: t("reports.inventoryFlowReport.anyStatus"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.status,
+              (value) => reportStatusLabel(value),
+            ),
+          match: (row, value) => row.status === value,
+        },
+      ],
+    }),
+    [],
+  );
+  const documentSectionFilter = useSectionFilter(
+    documentsInScope,
+    documentSectionFilterConfig,
+  );
+
   // ── Hộp thoại đối soát ─────────────────────────────────────────────────
   const drillRow = drill?.row ?? null;
   const drillMovements = useMemo(
@@ -477,16 +594,19 @@ export default function InventoryFlowXntReport() {
       };
     }
     if (loading) {
-      return { tone: "page-alert is-info", body: <>Đang tải số liệu…</> };
+      return {
+        tone: "page-alert is-info",
+        body: <>{t("reports.inventoryFlowReport.loadingData")}</>,
+      };
     }
     if (!periodMatched) {
       return {
         tone: "page-alert",
         body: (
           <>
-            Tồn cuối kỳ máy chủ trả về lệch <strong>{fmt(periodDelta)}</strong>{" "}
-            so với phương trình cân đối của kỳ. Số liệu vẫn hiển thị nguyên như
-            máy chủ trả về; cần đối soát lại sổ trước khi dùng.
+            {t("reports.inventoryFlowReport.deltaWarningA")}{" "}
+            <strong>{fmt(periodDelta)}</strong>{" "}
+            {t("reports.inventoryFlowReport.deltaWarningB")}
           </>
         ),
       };
@@ -497,10 +617,26 @@ export default function InventoryFlowXntReport() {
   /** Bốn chuỗi của biểu đồ luồng, đã lọc theo chú giải đang bật. */
   const flowChartSeries = (
     [
-      { key: "inbound", label: "Nhập", color: FLOW_COLORS.inbound },
-      { key: "product", label: "Xuất SP", color: FLOW_COLORS.product },
-      { key: "component", label: "Xuất LK", color: FLOW_COLORS.component },
-      { key: "reversal", label: "Hoàn tác", color: FLOW_COLORS.reversal },
+      {
+        key: "inbound",
+        label: t("reports.inventoryFlowReport.seriesInbound"),
+        color: FLOW_COLORS.inbound,
+      },
+      {
+        key: "product",
+        label: t("reports.inventoryFlowReport.seriesProduct"),
+        color: FLOW_COLORS.product,
+      },
+      {
+        key: "component",
+        label: t("reports.inventoryFlowReport.seriesComponent"),
+        color: FLOW_COLORS.component,
+      },
+      {
+        key: "reversal",
+        label: t("reports.inventoryFlowReport.seriesReversal"),
+        color: FLOW_COLORS.reversal,
+      },
     ] as Array<{ key: SeriesKey; label: string; color: string }>
   )
     .filter((item) => flowSeries[item.key])
@@ -513,53 +649,68 @@ export default function InventoryFlowXntReport() {
 
   const hasDays = daily.length > 0;
 
-  const periodMeta = `Kỳ ${formatDate(range.from.toISOString())} – ${formatDate(
-    range.to.toISOString(),
-  )} · Đơn vị: cái`;
+  const periodMeta = t("reports.inventoryFlowReport.periodMeta", {
+    from: formatDate(range.from.toISOString()),
+    to: formatDate(range.to.toISOString()),
+  });
 
   return (
     <div className="hn-rpt01" data-mvp-screen="RPT-01">
       <div className="page-wrap">
-        <div className="breadcrumb" aria-label="Đường dẫn">
-          <span>Trang chủ</span>
+        <div
+          className="breadcrumb"
+          aria-label={t("reports.inventoryFlowReport.breadcrumbAria")}
+        >
+          <span>{t("reports.inventoryFlowReport.breadcrumbHome")}</span>
           <span aria-hidden="true">/</span>
-          <span>Báo cáo</span>
+          <span>{t("reports.inventoryFlowReport.breadcrumbReports")}</span>
           <span aria-hidden="true">/</span>
-          <strong>Nhập – Xuất – Tồn</strong>
+          <strong>{t("reports.inventoryFlowReport.breadcrumbCurrent")}</strong>
         </div>
 
         <section className="page-header" aria-labelledby="rpt01-page-title">
           <div>
             <span className="eyebrow">
-              BÁO CÁO VẬN HÀNH · {INVENTORY_FLOW_REPORT_CODE}
+              {t("reports.inventoryFlowReport.eyebrow", {
+                code: INVENTORY_FLOW_REPORT_CODE,
+              })}
             </span>
-            <h1 id="rpt01-page-title">Báo cáo Nhập – Xuất – Tồn</h1>
-            <p>
-              Cân đối tồn đầu, phát sinh đã ghi sổ và tồn cuối theo kỳ. Dữ liệu
-              chưa ghi sổ không được tính vào tồn kho.
-            </p>
+            <h1 id="rpt01-page-title">
+              {t("reports.inventoryFlowReport.title")}
+            </h1>
+            <p>{t("reports.inventoryFlowReport.subtitle")}</p>
           </div>
           <div className="scope-block">
             <span className="chip chip-primary">{warehouseLabel}</span>
             <span className="chip chip-neutral">
-              {isSuperAdmin ? "Super Admin" : "Người dùng vận hành"}
+              {isSuperAdmin
+                ? "Super Admin"
+                : t("reports.inventoryFlowReport.roleOperator")}
             </span>
             {error !== null && error !== undefined ? (
-              <span className="chip chip-error">Lỗi tải dữ liệu</span>
+              <span className="chip chip-error">
+                {t("reports.inventoryFlowReport.chipLoadError")}
+              </span>
             ) : fetching ? (
-              <span className="chip chip-warning">Đang cập nhật</span>
+              <span className="chip chip-warning">
+                {t("reports.inventoryFlowReport.chipUpdating")}
+              </span>
             ) : (
-              <span className="chip chip-success">Dữ liệu mới</span>
+              <span className="chip chip-success">
+                {t("reports.inventoryFlowReport.chipFresh")}
+              </span>
             )}
           </div>
         </section>
 
         <section
           className="filter-card report-filter-card"
-          aria-label="Bộ lọc báo cáo"
+          aria-label={t("reports.inventoryFlowReport.filterAria")}
         >
           <div className="filter-group">
-            <span className="filter-label">Kỳ báo cáo</span>
+            <span className="filter-label">
+              {t("reports.inventoryFlowReport.fieldPeriod")}
+            </span>
             <div className="report-date-range">
               {/*
                * `maxDate` / `minDate` khoá chéo hai ô: kỳ đảo chiều bị BE trả
@@ -569,7 +720,7 @@ export default function InventoryFlowXntReport() {
               <UiVuexyDateField
                 id="rpt01-from-date"
                 field="from"
-                aria-label="Ngày bắt đầu kỳ"
+                aria-label={t("reports.inventoryFlowReport.periodStart")}
                 value={range.from}
                 maxDate={range.to}
                 onChange={(value) => {
@@ -583,7 +734,7 @@ export default function InventoryFlowXntReport() {
               <UiVuexyDateField
                 id="rpt01-to-date"
                 field="to"
-                aria-label="Ngày kết thúc kỳ"
+                aria-label={t("reports.inventoryFlowReport.periodEnd")}
                 value={range.to}
                 minDate={range.from}
                 onChange={(value) => {
@@ -598,23 +749,27 @@ export default function InventoryFlowXntReport() {
           </div>
 
           <div className="filter-group">
-            <span className="filter-label">Tìm SKU theo mã hoặc tên</span>
+            <span className="filter-label">
+              {t("reports.inventoryFlowReport.fieldSkuSearch")}
+            </span>
             <SearchInput
               width="100%"
               value={query}
-              aria-label="Tìm SKU theo mã hoặc tên"
-              placeholder="Mã SKU / tên SKU"
+              aria-label={t("reports.inventoryFlowReport.fieldSkuSearch")}
+              placeholder={t("reports.inventoryFlowReport.skuSearchInput")}
               onChange={setQuery}
             />
           </div>
 
           <div className="filter-group">
-            <span className="filter-label">Loại hàng</span>
+            <span className="filter-label">
+              {t("reports.inventoryFlowReport.fieldKind")}
+            </span>
             <UiSelect
               fullWidth
-              aria-label="Loại hàng"
+              aria-label={t("reports.inventoryFlowReport.fieldKind")}
               value={kind}
-              options={KIND_OPTIONS}
+              options={kindOptions}
               onChange={setKind}
             />
           </div>
@@ -640,17 +795,23 @@ export default function InventoryFlowXntReport() {
               >
                 <VuexyDemoIcon name="refresh-cw" />
               </span>
-              {refreshing ? "Đang làm mới…" : "Làm mới"}
+              {refreshing
+                ? t("reports.inventoryFlowReport.refreshing")
+                : t("reports.inventoryFlowReport.refresh")}
             </button>
             <div className="refresh-meta">
               <span>
-                Dữ liệu lúc {asOf ? asOf.format("HH:mm") : EMPTY_TEXT}
+                {t("reports.inventoryFlowReport.dataAt", {
+                  time: asOf ? asOf.format("HH:mm") : EMPTY_TEXT,
+                })}
               </span>
               <small>
-                Đã ghi sổ đến{" "}
-                {watermark && watermark.isValid()
-                  ? watermark.format("DD-MM-YYYY")
-                  : EMPTY_TEXT}
+                {t("reports.inventoryFlowReport.postedUntil", {
+                  date:
+                    watermark && watermark.isValid()
+                      ? watermark.format("DD-MM-YYYY")
+                      : EMPTY_TEXT,
+                })}
               </small>
             </div>
           </div>
@@ -674,8 +835,12 @@ export default function InventoryFlowXntReport() {
         <section aria-labelledby="rpt01-quick-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">TÌNH HÌNH HIỆN TẠI</span>
-              <h2 id="rpt01-quick-title">Tổng quan cân đối</h2>
+              <span className="eyebrow">
+                {t("reports.inventoryFlowReport.quickEyebrow")}
+              </span>
+              <h2 id="rpt01-quick-title">
+                {t("reports.inventoryFlowReport.quickTitle")}
+              </h2>
             </div>
             <span className="section-meta">{periodMeta}</span>
           </div>
@@ -683,49 +848,49 @@ export default function InventoryFlowXntReport() {
             <KpiCard
               tone="opening"
               icon="warehouse"
-              label="Tồn đầu kỳ"
+              label={t("reports.inventoryFlowReport.kpiOpening")}
               value={summary.opening}
-              foot="Số dư mở trước ngày bắt đầu kỳ"
+              foot={t("reports.inventoryFlowReport.kpiOpeningFoot")}
               spark={openingSpark}
             />
             <KpiCard
               tone="inbound"
               icon="package-plus"
-              label="Nhập đã Post"
+              label={t("reports.inventoryFlowReport.kpiInbound")}
               value={summary.receiptNet}
-              foot="Đã trừ phần nhập bị đảo"
+              foot={t("reports.inventoryFlowReport.kpiInboundFoot")}
               spark={daily.map((point) => point.inbound)}
             />
             <KpiCard
               tone="product"
               icon="package-minus"
-              label="Xuất sản phẩm"
+              label={t("reports.inventoryFlowReport.kpiProduct")}
               value={summary.issueNet}
-              foot="Xuất bán / giao đã ghi nhận"
+              foot={t("reports.inventoryFlowReport.kpiProductFoot")}
               spark={daily.map((point) => point.product)}
             />
             <KpiCard
               tone="component"
               icon="briefcase-medical"
-              label="Xuất linh kiện"
+              label={t("reports.inventoryFlowReport.kpiComponent")}
               value={summary.componentNet}
-              foot="Linh kiện bảo hành đã Post"
+              foot={t("reports.inventoryFlowReport.kpiComponentFoot")}
               spark={daily.map((point) => point.component)}
             />
             <KpiCard
               tone="reversal"
               icon="refresh-cw"
-              label="Ảnh hưởng hoàn tác (+/−)"
+              label={t("reports.inventoryFlowReport.kpiReversal")}
               value={summary.reversalUnlinked}
-              foot="Điều chỉnh ngoài cột nguồn"
+              foot={t("reports.inventoryFlowReport.kpiReversalFoot")}
               spark={daily.map((point) => point.reversal)}
             />
             <KpiCard
               tone="closing"
               icon="warehouse"
-              label="Tồn cuối kỳ"
+              label={t("reports.inventoryFlowReport.kpiClosing")}
               value={summary.closing}
-              foot="Số dư chốt theo phương trình cân đối"
+              foot={t("reports.inventoryFlowReport.kpiClosingFoot")}
               spark={daily.map((point) => point.closing)}
             />
           </div>
@@ -735,57 +900,65 @@ export default function InventoryFlowXntReport() {
         <section aria-labelledby="rpt01-reconcile-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">ĐỐI SOÁT TỒN</span>
-              <h2 id="rpt01-reconcile-title">Cân đối tồn theo kỳ</h2>
+              <span className="eyebrow">
+                {t("reports.inventoryFlowReport.reconcileEyebrow")}
+              </span>
+              <h2 id="rpt01-reconcile-title">
+                {t("reports.inventoryFlowReport.reconcileTitle")}
+              </h2>
             </div>
-            <span className="section-meta">Công thức chốt theo từng SKU</span>
+            <span className="section-meta">
+              {t("reports.inventoryFlowReport.reconcileMeta")}
+            </span>
           </div>
           <article className="card equation-card">
             <EquationItem
               tone="opening"
-              label="Tồn đầu kỳ"
-              impact="Số dư mở kỳ"
+              label={t("reports.inventoryFlowReport.kpiOpening")}
+              impact={t("reports.inventoryFlowReport.impactOpening")}
               value={summary.opening}
             />
             <EquationItem
               tone="inbound"
               operator="+"
-              label="Nhập đã Post"
-              impact="Tăng tồn"
+              label={t("reports.inventoryFlowReport.kpiInbound")}
+              impact={t("reports.inventoryFlowReport.impactIncrease")}
               value={summary.receiptNet}
             />
             <EquationItem
               tone="product"
               operator={MINUS}
-              label="Xuất sản phẩm"
-              impact="Giảm tồn"
+              label={t("reports.inventoryFlowReport.kpiProduct")}
+              impact={t("reports.inventoryFlowReport.impactDecrease")}
               value={summary.issueNet}
             />
             <EquationItem
               tone="component"
               operator={MINUS}
-              label="Xuất linh kiện"
-              impact="Giảm tồn"
+              label={t("reports.inventoryFlowReport.kpiComponent")}
+              impact={t("reports.inventoryFlowReport.impactDecrease")}
               value={summary.componentNet}
             />
             <EquationItem
               tone="reversal"
               operator="+"
-              label="Ảnh hưởng hoàn tác (+/−)"
-              impact="Điều chỉnh tồn"
+              label={t("reports.inventoryFlowReport.kpiReversal")}
+              impact={t("reports.inventoryFlowReport.impactAdjust")}
               value={summary.reversalUnlinked}
             />
             <EquationItem
               tone="closing"
               operator="="
-              label="Tồn cuối kỳ"
-              impact="Số dư chốt kỳ"
+              label={t("reports.inventoryFlowReport.kpiClosing")}
+              impact={t("reports.inventoryFlowReport.impactClosing")}
               value={summary.closing}
               result
             />
             <div className="equation-note">
               <div className="equation-formula">
-                <span className="equation-note-label">Công thức đối soát</span>
+                <span className="equation-note-label">
+                  {t("reports.inventoryFlowReport.formulaLabel")}
+                </span>
                 <strong>
                   {fmt(summary.opening)} + {fmt(summary.receiptNet)} {MINUS}{" "}
                   {fmt(summary.issueNet)} {MINUS} {fmt(summary.componentNet)} +{" "}
@@ -805,10 +978,16 @@ export default function InventoryFlowXntReport() {
                   />
                 </span>
                 <div>
-                  <span>Trạng thái đối soát</span>
+                  <span>
+                    {t("reports.inventoryFlowReport.reconcileStatus")}
+                  </span>
                   <strong>
-                    {periodMatched ? "Đã khớp" : "Lệch"} · Chênh lệch{" "}
-                    {fmt(periodDelta)}
+                    {t("reports.inventoryFlowReport.statusDelta", {
+                      status: periodMatched
+                        ? t("reports.inventoryFlowReport.statusMatched")
+                        : t("reports.inventoryFlowReport.mismatch"),
+                      delta: fmt(periodDelta),
+                    })}
                   </strong>
                 </div>
               </div>
@@ -820,33 +999,49 @@ export default function InventoryFlowXntReport() {
         <section aria-labelledby="rpt01-detail-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">PHÂN TÍCH THEO SKU</span>
-              <h2 id="rpt01-detail-title">Chi tiết cân đối tồn kho</h2>
+              <span className="eyebrow">
+                {t("reports.inventoryFlowReport.detailEyebrow")}
+              </span>
+              <h2 id="rpt01-detail-title">
+                {t("reports.inventoryFlowReport.detailTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              {fmt(rowsInScope.length)} SKU trong snapshot
+              {t("reports.inventoryFlowReport.skuInSnapshot", {
+                count: fmt(rowsInScope.length),
+              })}
             </span>
           </div>
           <article className="card report-table-card">
             <header className="card-head">
               <div>
-                <h3>Đối chiếu từng SKU</h3>
+                <h3>{t("reports.inventoryFlowReport.perSkuTitle")}</h3>
                 <span className="card-subtitle">
-                  Bảng mặc định và lát cắt dùng cùng dữ liệu, cùng khóa
-                  drill-down.
+                  {t("reports.inventoryFlowReport.perSkuSubtitle")}
                 </span>
               </div>
               {allRowsMatched ? (
-                <span className="chip chip-success">Khớp công thức</span>
+                <span className="chip chip-success">
+                  {t("reports.inventoryFlowReport.formulaMatched")}
+                </span>
               ) : (
-                <span className="chip chip-error">Lệch công thức</span>
+                <span className="chip chip-error">
+                  {t("reports.inventoryFlowReport.formulaMismatch")}
+                </span>
               )}
             </header>
+
+            <SectionFilterBar
+              state={skuSectionFilter}
+              label={t("reports.inventoryFlowReport.perSkuTitle")}
+              unit="SKU"
+              data-testid="rpt01-sku-section-filter"
+            />
 
             <div
               className="report-view-tabs"
               role="tablist"
-              aria-label="Chế độ đối soát"
+              aria-label={t("reports.inventoryFlowReport.tabsAria")}
             >
               <button
                 ref={tableTabRef}
@@ -865,7 +1060,7 @@ export default function InventoryFlowXntReport() {
                 onKeyDown={onTabKeyDown}
               >
                 <VuexyDemoIcon name="chart-column-big" />
-                Bảng
+                {t("reports.inventoryFlowReport.viewTable")}
               </button>
               <button
                 ref={snapshotTabRef}
@@ -884,7 +1079,7 @@ export default function InventoryFlowXntReport() {
                 onKeyDown={onTabKeyDown}
               >
                 <VuexyDemoIcon name="grid-2x2-plus" />
-                Lát cắt
+                {t("reports.inventoryFlowReport.viewSnapshot")}
               </button>
             </div>
 
@@ -898,30 +1093,44 @@ export default function InventoryFlowXntReport() {
                 <table className="report-table">
                   <thead>
                     <tr>
-                      <th>SKU / Tên hàng</th>
-                      <th>Loại</th>
-                      <th>Đơn vị</th>
-                      <th className="num">Đầu kỳ</th>
-                      <th className="num">Nhập thuần</th>
-                      <th className="num">Xuất SP</th>
-                      <th className="num">Xuất LK</th>
-                      <th className="num">Hoàn tác</th>
-                      <th className="num">Cuối kỳ</th>
-                      <th>Đối soát</th>
-                      <th />
+                      <th>{t("reports.inventoryFlowReport.colSku")}</th>
+                      <th>{t("reports.inventoryFlowReport.colKind")}</th>
+                      <th>{t("reports.inventoryFlowReport.colUnit")}</th>
+                      <th className="num">
+                        {t("reports.inventoryFlowReport.colOpening")}
+                      </th>
+                      <th className="num">
+                        {t("reports.inventoryFlowReport.colReceiptNet")}
+                      </th>
+                      <th className="num">
+                        {t("reports.inventoryFlowReport.colIssueNet")}
+                      </th>
+                      <th className="num">
+                        {t("reports.inventoryFlowReport.colComponentNet")}
+                      </th>
+                      <th className="num">
+                        {t("reports.inventoryFlowReport.colReversal")}
+                      </th>
+                      <th className="num">
+                        {t("reports.inventoryFlowReport.colClosing")}
+                      </th>
+                      <th>{t("reports.inventoryFlowReport.colReconcile")}</th>
+                      <th className="num" />
                     </tr>
                   </thead>
                   <tbody>
-                    {rowsInScope.length === 0 ? (
+                    {skuSectionFilter.rows.length === 0 ? (
                       <tr>
                         <td className="table-empty" colSpan={11}>
                           {loading
-                            ? "Đang tải số liệu…"
-                            : "Không có SKU nào trong kỳ và bộ lọc đang chọn."}
+                            ? t("reports.inventoryFlowReport.loadingData")
+                            : skuSectionFilter.active
+                              ? t("reports.inventoryFlowReport.emptyFiltered")
+                              : t("reports.inventoryFlowReport.emptyPeriod")}
                         </td>
                       </tr>
                     ) : (
-                      rowsInScope.map((row) => (
+                      skuSectionFilter.rows.map((row) => (
                         <tr key={row.sku_code}>
                           <td>
                             <span className="sku">{row.sku_code}</span>
@@ -929,7 +1138,7 @@ export default function InventoryFlowXntReport() {
                               {row.sku_name === "" ? EMPTY_TEXT : row.sku_name}
                             </div>
                           </td>
-                          <td>{KIND_LABELS[row.sku_type] ?? EMPTY_TEXT}</td>
+                          <td>{kindLabels[row.sku_type] ?? EMPTY_TEXT}</td>
                           <td>{row.unit === "" ? EMPTY_TEXT : row.unit}</td>
                           <td className="num">{fmt(row.opening)}</td>
                           <td className="num">{fmt(row.receipt_net)}</td>
@@ -945,9 +1154,13 @@ export default function InventoryFlowXntReport() {
                           </td>
                           <td>
                             {row.matched ? (
-                              <span className="match-chip">Khớp</span>
+                              <span className="match-chip">
+                                {t("reports.inventoryFlowReport.matched")}
+                              </span>
                             ) : (
-                              <span className="chip chip-error">Lệch</span>
+                              <span className="chip chip-error">
+                                {t("reports.inventoryFlowReport.mismatch")}
+                              </span>
                             )}
                           </td>
                           <td className="num">
@@ -958,7 +1171,7 @@ export default function InventoryFlowXntReport() {
                                 openDrill(row.sku_code, event.currentTarget)
                               }
                             >
-                              Đối soát
+                              {t("reports.inventoryFlowReport.reconcile")}
                             </button>
                           </td>
                         </tr>
@@ -975,16 +1188,22 @@ export default function InventoryFlowXntReport() {
               aria-labelledby="rpt01-tab-snapshot"
               hidden={view !== "snapshot"}
             >
-              {rowsInScope.length === 0 ? (
+              {skuSectionFilter.rows.length === 0 ? (
                 <div className="state-box">
-                  <strong>Chưa có SKU nào để đối soát</strong>
+                  <strong>
+                    {skuSectionFilter.active
+                      ? t("reports.inventoryFlowReport.emptyFilteredTitle")
+                      : t("reports.inventoryFlowReport.emptyNoSkuTitle")}
+                  </strong>
                   <span>
-                    Đổi kỳ báo cáo hoặc bỏ bớt bộ lọc để xem lát cắt theo SKU.
+                    {skuSectionFilter.active
+                      ? t("reports.inventoryFlowReport.emptyFilteredHint")
+                      : t("reports.inventoryFlowReport.emptyNoSkuHint")}
                   </span>
                 </div>
               ) : (
                 <div className="report-snapshot-grid">
-                  {rowsInScope.map((row) => (
+                  {skuSectionFilter.rows.map((row) => (
                     <article className="report-slice" key={row.sku_code}>
                       <div className="report-slice-head">
                         <div>
@@ -993,37 +1212,51 @@ export default function InventoryFlowXntReport() {
                             {row.sku_name === "" ? EMPTY_TEXT : row.sku_name}
                           </strong>
                           <span>
-                            {KIND_LABELS[row.sku_type] ?? EMPTY_TEXT} ·{" "}
+                            {kindLabels[row.sku_type] ?? EMPTY_TEXT} ·{" "}
                             {row.warehouse_code === ""
                               ? EMPTY_TEXT
                               : row.warehouse_code}
                           </span>
                         </div>
                         {row.matched ? (
-                          <span className="match-chip">Khớp</span>
+                          <span className="match-chip">
+                            {t("reports.inventoryFlowReport.matched")}
+                          </span>
                         ) : (
-                          <span className="chip chip-error">Lệch</span>
+                          <span className="chip chip-error">
+                            {t("reports.inventoryFlowReport.mismatch")}
+                          </span>
                         )}
                       </div>
                       <dl className="report-slice-values">
                         <div>
-                          <dt>Tồn đầu</dt>
+                          <dt>
+                            {t("reports.inventoryFlowReport.cardOpening")}
+                          </dt>
                           <dd>{fmt(row.opening)}</dd>
                         </div>
                         <div>
-                          <dt>Nhập thuần</dt>
+                          <dt>
+                            {t("reports.inventoryFlowReport.colReceiptNet")}
+                          </dt>
                           <dd>{fmt(row.receipt_net)}</dd>
                         </div>
                         <div>
-                          <dt>Xuất SP</dt>
+                          <dt>
+                            {t("reports.inventoryFlowReport.colIssueNet")}
+                          </dt>
                           <dd>{fmt(row.issue_net)}</dd>
                         </div>
                         <div>
-                          <dt>Xuất LK</dt>
+                          <dt>
+                            {t("reports.inventoryFlowReport.colComponentNet")}
+                          </dt>
                           <dd>{fmt(row.component_issue_net)}</dd>
                         </div>
                         <div>
-                          <dt>Tồn cuối</dt>
+                          <dt>
+                            {t("reports.inventoryFlowReport.cardClosing")}
+                          </dt>
                           <dd>{fmt(row.closing)}</dd>
                         </div>
                       </dl>
@@ -1034,7 +1267,7 @@ export default function InventoryFlowXntReport() {
                           openDrill(row.sku_code, event.currentTarget)
                         }
                       >
-                        Đối soát SKU
+                        {t("reports.inventoryFlowReport.reconcileSku")}
                       </button>
                     </article>
                   ))}
@@ -1048,11 +1281,15 @@ export default function InventoryFlowXntReport() {
         <section aria-labelledby="rpt01-analysis-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">PHÂN TÍCH VẬN HÀNH</span>
-              <h2 id="rpt01-analysis-title">Luồng và xu hướng</h2>
+              <span className="eyebrow">
+                {t("reports.inventoryFlowReport.analysisEyebrow")}
+              </span>
+              <h2 id="rpt01-analysis-title">
+                {t("reports.inventoryFlowReport.analysisTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              Chỉ hiển thị dữ liệu thực tế đã ghi sổ
+              {t("reports.inventoryFlowReport.analysisMeta")}
             </span>
           </div>
           <div className="analysis-grid">
@@ -1066,16 +1303,20 @@ export default function InventoryFlowXntReport() {
                     <VuexyDemoIcon name="chart-column-big" />
                   </span>
                   <div>
-                    <h3>Luồng nhập – xuất theo ngày</h3>
+                    <h3>{t("reports.inventoryFlowReport.flowChartTitle")}</h3>
                     <span className="card-subtitle">
-                      Biến động ròng của 4 nhóm nghiệp vụ
+                      {t("reports.inventoryFlowReport.flowChartSubtitle")}
                     </span>
                   </div>
                 </div>
                 <div className="chart-head-meta">
-                  <span className="chart-unit">Đơn vị: cái</span>
+                  <span className="chart-unit">
+                    {t("reports.inventoryFlowReport.chartUnit")}
+                  </span>
                   <span className="chart-current">
-                    <small>Nhập thuần</small>
+                    <small>
+                      {t("reports.inventoryFlowReport.colReceiptNet")}
+                    </small>
                     <strong>{fmt(summary.receiptNet)}</strong>
                   </span>
                 </div>
@@ -1084,20 +1325,24 @@ export default function InventoryFlowXntReport() {
                 <div className="chart-legend">
                   {(
                     [
-                      { key: "inbound", label: "Nhập", dot: "legend-inbound" },
+                      {
+                        key: "inbound",
+                        label: t("reports.inventoryFlowReport.seriesInbound"),
+                        dot: "legend-inbound",
+                      },
                       {
                         key: "product",
-                        label: "Xuất SP",
+                        label: t("reports.inventoryFlowReport.seriesProduct"),
                         dot: "legend-product",
                       },
                       {
                         key: "component",
-                        label: "Xuất LK",
+                        label: t("reports.inventoryFlowReport.seriesComponent"),
                         dot: "legend-component",
                       },
                       {
                         key: "reversal",
-                        label: "Hoàn tác",
+                        label: t("reports.inventoryFlowReport.seriesReversal"),
                         dot: "legend-reversal",
                       },
                     ] as Array<{ key: SeriesKey; label: string; dot: string }>
@@ -1127,25 +1372,27 @@ export default function InventoryFlowXntReport() {
                     <InventoryFlowChart
                       labels={axisLabels}
                       series={flowChartSeries}
-                      ariaLabel="Biểu đồ luồng nhập xuất theo ngày"
+                      ariaLabel={t("reports.inventoryFlowReport.flowChartAria")}
                     />
                   ) : (
                     <div className="chart-empty">
-                      Không có movement nào đã ghi sổ trong kỳ đang chọn.
+                      {t("reports.inventoryFlowReport.flowChartEmpty")}
                     </div>
                   )}
                 </div>
               </div>
               <details className="chart-table">
-                <summary>Xem bảng dữ liệu thay thế</summary>
+                <summary>{t("reports.inventoryFlowReport.altTable")}</summary>
                 <table>
                   <thead>
                     <tr>
-                      <th>Ngày</th>
-                      <th>Nhập</th>
-                      <th>Xuất SP</th>
-                      <th>Xuất LK</th>
-                      <th>Hoàn tác</th>
+                      <th>{t("reports.inventoryFlowReport.colDay")}</th>
+                      <th>{t("reports.inventoryFlowReport.seriesInbound")}</th>
+                      <th>{t("reports.inventoryFlowReport.seriesProduct")}</th>
+                      <th>
+                        {t("reports.inventoryFlowReport.seriesComponent")}
+                      </th>
+                      <th>{t("reports.inventoryFlowReport.seriesReversal")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1176,20 +1423,28 @@ export default function InventoryFlowXntReport() {
                     <VuexyDemoIcon name="warehouse" />
                   </span>
                   <div>
-                    <h3>Xu hướng tồn cuối ngày</h3>
+                    <h3>
+                      {t("reports.inventoryFlowReport.closingChartTitle")}
+                    </h3>
                     <span className="card-subtitle">
-                      Số liệu đã chốt theo từng ngày
+                      {t("reports.inventoryFlowReport.closingChartSubtitle")}
                     </span>
                   </div>
                 </div>
                 <div className="chart-head-meta">
                   {periodMatched ? (
-                    <span className="chip chip-success">Đã khớp</span>
+                    <span className="chip chip-success">
+                      {t("reports.inventoryFlowReport.statusMatched")}
+                    </span>
                   ) : (
-                    <span className="chip chip-error">Lệch</span>
+                    <span className="chip chip-error">
+                      {t("reports.inventoryFlowReport.mismatch")}
+                    </span>
                   )}
                   <span className="chart-current">
-                    <small>Tồn cuối</small>
+                    <small>
+                      {t("reports.inventoryFlowReport.cardClosing")}
+                    </small>
                     <strong>{fmt(summary.closing)}</strong>
                   </span>
                 </div>
@@ -1206,7 +1461,7 @@ export default function InventoryFlowXntReport() {
                       className="legend-dot legend-reversal"
                       aria-hidden="true"
                     />
-                    Tồn cuối ngày
+                    {t("reports.inventoryFlowReport.closingSeries")}
                   </button>
                 </div>
                 <div className="chart-plot">
@@ -1218,7 +1473,9 @@ export default function InventoryFlowXntReport() {
                           ? [
                               {
                                 key: "closing",
-                                label: "Tồn cuối ngày",
+                                label: t(
+                                  "reports.inventoryFlowReport.closingSeries",
+                                ),
                                 color: CLOSING_COLOR,
                                 values: daily.map((point) => point.closing),
                               },
@@ -1229,22 +1486,24 @@ export default function InventoryFlowXntReport() {
                       gradientId="rpt01-closing-fill"
                       labelBelow
                       strokeWidth={3}
-                      ariaLabel="Biểu đồ tồn cuối ngày"
+                      ariaLabel={t(
+                        "reports.inventoryFlowReport.closingChartAria",
+                      )}
                     />
                   ) : (
                     <div className="chart-empty">
-                      Không có ngày nào đã chốt số trong kỳ đang chọn.
+                      {t("reports.inventoryFlowReport.closingChartEmpty")}
                     </div>
                   )}
                 </div>
               </div>
               <details className="chart-table">
-                <summary>Xem bảng dữ liệu thay thế</summary>
+                <summary>{t("reports.inventoryFlowReport.altTable")}</summary>
                 <table>
                   <thead>
                     <tr>
-                      <th>Ngày</th>
-                      <th>Tồn cuối</th>
+                      <th>{t("reports.inventoryFlowReport.colDay")}</th>
+                      <th>{t("reports.inventoryFlowReport.cardClosing")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1265,25 +1524,45 @@ export default function InventoryFlowXntReport() {
         <section aria-labelledby="rpt01-documents-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">THEO DÕI BỔ SUNG</span>
-              <h2 id="rpt01-documents-title">Lịch sử chứng từ</h2>
+              <span className="eyebrow">
+                {t("reports.inventoryFlowReport.documentsEyebrow")}
+              </span>
+              <h2 id="rpt01-documents-title">
+                {t("reports.inventoryFlowReport.documentsTitle")}
+              </h2>
             </div>
             <span className="section-meta">
-              {fmt(documentsInScope.length)} chứng từ trong snapshot
+              {t("reports.inventoryFlowReport.documentsInSnapshot", {
+                count: fmt(documentsInScope.length),
+              })}
             </span>
           </div>
-          {documentsInScope.length === 0 ? (
+          {documentsInScope.length > 0 ? (
+            <SectionFilterBar
+              state={documentSectionFilter}
+              label={t("reports.inventoryFlowReport.documentsTitle")}
+              unit={t("reports.inventoryFlowReport.documentsUnit")}
+              data-testid="rpt01-document-section-filter"
+            />
+          ) : null}
+          {documentSectionFilter.rows.length === 0 ? (
             <article className="card insight-card report-document-card">
               <div className="state-box">
-                <strong>Chưa có chứng từ nào đã ghi sổ trong kỳ</strong>
+                <strong>
+                  {documentSectionFilter.active
+                    ? t("reports.inventoryFlowReport.docEmptyFilteredTitle")
+                    : t("reports.inventoryFlowReport.docEmptyTitle")}
+                </strong>
                 <span>
-                  Nguồn: /reports/document-history và /reversal-documents.
+                  {documentSectionFilter.active
+                    ? t("reports.inventoryFlowReport.docEmptyFilteredHint")
+                    : t("reports.inventoryFlowReport.docEmptyHint")}
                 </span>
               </div>
             </article>
           ) : (
             <div className="insight-grid">
-              {documentsInScope.map((document) => {
+              {documentSectionFilter.rows.map((document) => {
                 const style = DOCUMENT_STYLE[document.doc_type];
                 return (
                   <article
@@ -1296,10 +1575,13 @@ export default function InventoryFlowXntReport() {
                           <VuexyDemoIcon name={style.icon} />
                         </span>
                         <div>
-                          <span className="eyebrow">NHẬT KÝ NGHIỆP VỤ</span>
+                          <span className="eyebrow">
+                            {t("reports.inventoryFlowReport.docCardEyebrow")}
+                          </span>
                           <h3>{document.document_no}</h3>
                           <span className="card-subtitle">
-                            {style.title} · {reportStatusLabel(document.status)}
+                            {documentTitles[document.doc_type]} ·{" "}
+                            {reportStatusLabel(document.status)}
                           </span>
                         </div>
                       </div>
@@ -1327,14 +1609,14 @@ export default function InventoryFlowXntReport() {
                            vì để người dùng bấm vào một nút không phản hồi. */
                         title={
                           document.drillKey === ""
-                            ? "Chứng từ chưa sinh movement nào trong kỳ nên chưa có dòng SKU để đối chiếu."
+                            ? t("reports.inventoryFlowReport.drillDisabled")
                             : undefined
                         }
                         onClick={(event) =>
                           openDrill(document.drillKey, event.currentTarget)
                         }
                       >
-                        Đối chiếu dòng chứng từ
+                        {t("reports.inventoryFlowReport.drillDocument")}
                         <VuexyDemoIcon name="arrow-right" />
                       </button>
                     </div>
@@ -1350,30 +1632,42 @@ export default function InventoryFlowXntReport() {
         <DrillDownModal titleId="rpt01-detail-title-modal" onClose={closeDrill}>
           <div className="modal-head">
             <div>
-              <div className="eyebrow">Đối soát SKU</div>
+              <div className="eyebrow">
+                {t("reports.inventoryFlowReport.modalEyebrow")}
+              </div>
               <h2 id="rpt01-detail-title-modal">
                 {drillRow.sku_code} ·{" "}
                 {drillRow.sku_name === "" ? EMPTY_TEXT : drillRow.sku_name}
               </h2>
               {drillRow.matched ? (
-                <span className="match-chip">Công thức khớp</span>
+                <span className="match-chip">
+                  {t("reports.inventoryFlowReport.modalFormulaMatched")}
+                </span>
               ) : (
-                <span className="chip chip-error">Công thức lệch</span>
+                <span className="chip chip-error">
+                  {t("reports.inventoryFlowReport.modalFormulaMismatch")}
+                </span>
               )}
             </div>
             <ModalCloseButton onClose={closeDrill} />
           </div>
           <div className="modal-grid">
             <div>
-              <div className="meta-label">Tồn đầu</div>
+              <div className="meta-label">
+                {t("reports.inventoryFlowReport.cardOpening")}
+              </div>
               <div className="meta-value">{fmt(drillRow.opening)}</div>
             </div>
             <div>
-              <div className="meta-label">Nhập thuần</div>
+              <div className="meta-label">
+                {t("reports.inventoryFlowReport.colReceiptNet")}
+              </div>
               <div className="meta-value">{fmt(drillRow.receipt_net)}</div>
             </div>
             <div>
-              <div className="meta-label">Tồn cuối</div>
+              <div className="meta-label">
+                {t("reports.inventoryFlowReport.cardClosing")}
+              </div>
               <div className="meta-value">{fmt(drillRow.closing)}</div>
             </div>
           </div>
@@ -1383,11 +1677,11 @@ export default function InventoryFlowXntReport() {
             {fmt(drillRow.component_issue_net)} +{" "}
             {fmt(drillRow.reversal_unlinked_net)} = {fmt(closingOf(drillRow))}
           </div>
-          <h3>Movement liên quan</h3>
+          <h3>{t("reports.inventoryFlowReport.movementsTitle")}</h3>
           <div className="modal-events">
             {drillMovements.length === 0 ? (
               <div>
-                <span>Không có movement trong kỳ.</span>
+                <span>{t("reports.inventoryFlowReport.movementsEmpty")}</span>
               </div>
             ) : (
               drillMovements.map((movement) => (

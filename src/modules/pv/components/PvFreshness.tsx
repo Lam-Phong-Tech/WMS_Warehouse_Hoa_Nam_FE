@@ -1,4 +1,5 @@
 import { Tooltip, UiStatusBadge } from "@/shared/ui";
+import { useT } from "@/shared/i18n/useT";
 import {
   computeFreshness,
   formatDataAsOf,
@@ -10,14 +11,21 @@ import type { PvFreshness } from "@/modules/pv/types/pv.types";
  * Logic tính tuổi dữ liệu nằm ở `lib/pv-freshness.ts` để component thuần render.
  */
 export function PvFreshnessIndicator({ meta }: { meta?: PvFreshness }) {
+  const t = useT();
   const { ageSeconds, isDegraded, thresholdSeconds } = computeFreshness(meta);
 
   return (
     <Tooltip
       title={
-        isDegraded
-          ? `Dữ liệu tồn kho cũ hơn ${thresholdSeconds}s (${ageSeconds}s). Tải lại để lấy số mới nhất.`
-          : `Ngưỡng độ tươi cho phép: ${thresholdSeconds}s.`
+        // `isDegraded` chỉ bật khi đo được tuổi dữ liệu (xem computeFreshness),
+        // nhưng hai giá trị được destructure rời nên TS không tự thu hẹp —
+        // kiểm tra thẳng `ageSeconds` để câu tooltip không bao giờ in "null".
+        isDegraded && ageSeconds !== null
+          ? t("pv.freshness.staleTooltip", {
+              threshold: thresholdSeconds,
+              age: ageSeconds,
+            })
+          : t("pv.freshness.freshTooltip", { threshold: thresholdSeconds })
       }
     >
       <UiStatusBadge
@@ -25,10 +33,13 @@ export function PvFreshnessIndicator({ meta }: { meta?: PvFreshness }) {
         data-testid="pv-freshness"
         data-pv-freshness={isDegraded ? "degraded" : "live"}
         label={
-          <>
-            {isDegraded ? "Dữ liệu có thể cũ · " : "Cập nhật lúc "}
-            {formatDataAsOf(meta?.data_as_of)}
-          </>
+          isDegraded
+            ? t("pv.freshness.staleLabel", {
+                time: formatDataAsOf(meta?.data_as_of),
+              })
+            : t("pv.freshness.liveLabel", {
+                time: formatDataAsOf(meta?.data_as_of),
+              })
         }
       />
     </Tooltip>

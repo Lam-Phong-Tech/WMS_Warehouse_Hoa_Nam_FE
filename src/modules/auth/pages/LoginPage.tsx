@@ -1,10 +1,11 @@
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
 import { Link } from "react-router-dom";
 import { useLogin } from "@/modules/auth/hooks/use-login";
 import {
-  loginSchema,
+  buildLoginSchema,
   toLoginRequest,
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
@@ -13,6 +14,7 @@ import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
 import { ROUTES } from "@/shared/constants/routes";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
 /**
  * "Ghi nhớ đăng nhập": chỉ lưu identifier (KHÔNG BAO GIỜ lưu mật khẩu) để
@@ -40,7 +42,7 @@ function persistRememberedIdentifier(identifier: string | null): void {
   }
 }
 
-function getLoginErrorMessage(error: unknown): string {
+function getLoginErrorMessage(error: unknown, t: TranslateFn): string {
   if (isAxiosError(error)) {
     const responseData = error.response?.data;
     if (
@@ -61,28 +63,30 @@ function getLoginErrorMessage(error: unknown): string {
         return error.message;
       }
       if (error.code === "ECONNABORTED") {
-        return "Máy chủ phản hồi quá thời gian. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.";
+        return t("auth.login.errorTimeout");
       }
-      return "Không kết nối được hệ thống. Kiểm tra kết nối mạng rồi thử lại; nếu vẫn lỗi, liên hệ quản trị viên.";
+      return t("auth.login.errorNetwork");
     }
 
     if (error.response.status === 401) {
-      return "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.";
+      return t("auth.login.errorInvalidCredentials");
     }
     if (error.response.status === 429) {
-      return "Đăng nhập sai quá nhiều lần nên tài khoản tạm bị khóa. Vui lòng đợi một lát rồi thử lại.";
+      return t("auth.login.errorTooManyAttempts");
     }
-    return "Đăng nhập chưa thực hiện được. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.";
+    return t("auth.login.errorGeneric");
   }
 
   return error instanceof Error && error.message
     ? error.message
-    : "Đăng nhập thất bại";
+    : t("auth.login.failed");
 }
 
 export function LoginPage() {
+  const t = useT();
   const login = useLogin();
   const rememberedIdentifier = readRememberedIdentifier();
+  const loginSchema = useMemo(() => buildLoginSchema(t), [t]);
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -97,30 +101,28 @@ export function LoginPage() {
     login.mutate(toLoginRequest(values));
   });
 
-  const errorMessage = login.isError ? getLoginErrorMessage(login.error) : null;
+  const errorMessage = login.isError
+    ? getLoginErrorMessage(login.error, t)
+    : null;
 
   const isSubmitting = login.isPending || login.isSuccess;
 
   return (
     <AuthShell
       titleId="login-title"
-      title={
-        <>
-          Chào mừng đến với Hoa Nam
-        </>
-      }
-      subtitle="Vui lòng đăng nhập vào tài khoản của bạn"
+      title={<>{t("auth.login.title")}</>}
+      subtitle={t("auth.login.subtitle")}
       loadingText={
         isSubmitting
           ? login.isPending
-            ? "Đang xác thực tài khoản..."
-            : "Đang tải quyền truy cập..."
+            ? t("auth.login.authenticating")
+            : t("auth.login.loadingAccess")
           : null
       }
     >
       {errorMessage && (
         <Box sx={{ marginBottom: "14px" }}>
-          <UiAlert tone="error" title="Không thể đăng nhập">
+          <UiAlert tone="error" title={t("auth.login.errorTitle")}>
             {errorMessage}
           </UiAlert>
         </Box>
@@ -131,7 +133,7 @@ export function LoginPage() {
           <AuthField
             control={control}
             name="identifier"
-            label="Email"
+            label={t("auth.fields.email")}
             placeholder="your@gmail.com"
             autoFocus
             disabled={isSubmitting}
@@ -140,7 +142,7 @@ export function LoginPage() {
           <AuthField
             control={control}
             name="password"
-            label="Mật khẩu"
+            label={t("auth.fields.password")}
             placeholder="············"
             type="password"
             disabled={isSubmitting}
@@ -161,10 +163,12 @@ export function LoginPage() {
             <UiFormCheckbox
               control={control}
               name="remember"
-              label="Ghi nhớ đăng nhập"
+              label={t("auth.login.remember")}
               disabled={isSubmitting}
             />
-            <Link to={ROUTES.FORGOT_PASSWORD}>Quên mật khẩu?</Link>
+            <Link to={ROUTES.FORGOT_PASSWORD}>
+              {t("auth.login.forgotPassword")}
+            </Link>
           </Box>
 
           <UiButton
@@ -173,7 +177,7 @@ export function LoginPage() {
             loading={login.isPending}
             disabled={isSubmitting}
           >
-            Đăng nhập
+            {t("auth.login.submit")}
           </UiButton>
         </Box>
       </form>

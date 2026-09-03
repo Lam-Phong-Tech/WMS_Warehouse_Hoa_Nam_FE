@@ -25,6 +25,8 @@
  * là thứ người dùng đã chọn — chứ không chỉ tin rằng nó đúng.
  */
 
+import { tStatic } from "@/shared/i18n/useT";
+
 /** Hằng số vòng của SHA-256 (FIPS 180-4 §4.2.2). */
 const ROUND_CONSTANTS = new Uint32Array([
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
@@ -157,7 +159,7 @@ async function readAllBytes(file: Blob): Promise<Uint8Array> {
     const reader = new FileReader();
     reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
     reader.onerror = () =>
-      reject(reader.error ?? new Error("Không đọc được nội dung file."));
+      reject(reader.error ?? new Error(tStatic("shared.utils.fileReadError")));
     reader.readAsArrayBuffer(file);
   });
 }

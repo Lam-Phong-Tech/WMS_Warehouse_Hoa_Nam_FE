@@ -84,7 +84,17 @@
   font-weight: 400;
 }
 
-.hn-dash *,
+/*
+ * CHỈ pseudo-element. KHÔNG được thêm lại `.hn-dash *` vào đây: quy tắc đó có
+ * độ đặc hiệu 0-1-0, bằng đúng class emotion của MUI và được nạp SAU (CSS của
+ * trang đi theo chunk lazy), nên nó đè `box-sizing: content-box` mà
+ * `.MuiInputBase-input` cố ý đặt cho <input> (MUI tính chiều cao ô nhập bằng
+ * `height: 1.4375em` + padding theo content-box). Bị ép border-box thì 1.4375em
+ * phải chứa luôn padding → ô "Tìm SKU" trong SectionFilterBar tụt còn ~24px,
+ * thấp hơn UiSelect đứng cạnh. Phần tử thường đã có border-box từ
+ * `* { box-sizing }` ở src/index.css (đặc hiệu 0-0-0, đúng tầng để MUI vẫn
+ * thắng được ở các ngoại lệ của nó).
+ */
 .hn-dash *::before,
 .hn-dash *::after {
   box-sizing: border-box;
@@ -784,7 +794,9 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 24px;
-  align-items: start;
+  /* Hai thẻ cùng hàng phải CAO BẰNG NHAU. Trước đây là `start`, nên thẻ ngắn
+     hơn (Tín hiệu hiện tại) dừng giữa hàng và hở một khoảng trống ở đáy. */
+  align-items: stretch;
   margin-top: 24px;
 }
 .hn-dash .operations-grid > :first-child {
@@ -794,8 +806,14 @@
   grid-column: span 4;
 }
 .hn-dash .queue-card {
+  display: flex;
+  flex-direction: column;
   border-top: 3px solid var(--primary);
   box-shadow: 0 8px 24px rgba(47, 43, 61, 0.1);
+}
+.hn-dash .alert-card {
+  display: flex;
+  flex-direction: column;
 }
 .hn-dash .queue-card .card-head {
   align-items: center;
@@ -810,8 +828,12 @@
 .hn-dash .queue-card .card-head > div:first-child {
   gap: 4px;
 }
+/* Chiều cao do NỘI DUNG quyết định, không khoá sàn 316px: ít việc thì khoá sàn
+   để lại một vùng rỗng to giữa dòng cuối và nút "Xem tất cả". `flex: 1` cho
+   phần danh sách nhận phần cao dư khi thẻ bị kéo giãn bằng thẻ bên cạnh. */
 .hn-dash .issue-list {
-  min-height: 316px;
+  flex: 1;
+  min-height: 0;
   padding: 12px 24px 4px;
 }
 .hn-dash .issue-row {
@@ -946,6 +968,7 @@
   stroke-linejoin: round;
 }
 .hn-dash .alert-list {
+  flex: 1;
   padding: 0 24px 24px;
 }
 .hn-dash .alert-item {
@@ -964,7 +987,8 @@
   margin-top: 4px;
   border-radius: 50%;
   background: var(--alert, var(--amber));
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--alert, var(--amber)) 13%, transparent);
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--alert, var(--amber)) 13%, transparent);
 }
 .hn-dash .alert-item:nth-child(1) {
   --alert: var(--wms-error);
@@ -1217,7 +1241,8 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 24px;
-  align-items: start;
+  /* Cặp thẻ span-6 (Cơ cấu tồn · Định mức) cũng phải cao bằng nhau. */
+  align-items: stretch;
 }
 .hn-dash .analysis-grid > :nth-child(1) {
   grid-column: span 8;

@@ -27,6 +27,8 @@
  */
 import { useMemo } from "react";
 import dayjs from "dayjs";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { tStatic } from "@/shared/i18n/useT";
 import {
   useInventoryBalance,
   useInventoryReconciliation,
@@ -97,8 +99,20 @@ export type StockReconcileSnapshot = {
 
 export type SkuThreshold = { min_qty: number | null; max_qty: number | null };
 
-/** Nhãn hiển thị khi lát cắt trải trên nhiều kho. */
-export const ALL_WAREHOUSES_LABEL = "Tất cả kho";
+/**
+ * Nhãn hiển thị khi lát cắt trải trên nhiều kho.
+ *
+ * Live binding (`export let`) chứ không phải hằng: nơi dùng import thẳng một
+ * chuỗi nên giá trị phải được cập nhật khi đổi ngôn ngữ (cùng lối
+ * `UNKNOWN_BUSINESS_LABEL` của business-labels.ts).
+ */
+export let ALL_WAREHOUSES_LABEL: string = tStatic(
+  "reports.stockReconcile.warehouseAll",
+);
+
+useLanguageStore.subscribe(() => {
+  ALL_WAREHOUSES_LABEL = tStatic("reports.stockReconcile.warehouseAll");
+});
 
 function itemKindOf(value: unknown): ItemKindCode | "" {
   const raw = text(value, "");

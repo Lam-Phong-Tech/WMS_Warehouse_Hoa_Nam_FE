@@ -349,7 +349,8 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
     scanned,
     status: normalizeStatus(row.status),
     version: num(row.version),
-    createdBy: text(row.created_by_name ?? row.created_by, "-"),
+    // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
+    createdBy: text(row.created_by_name, "-"),
     updatedAt: text(row.updated_at) || undefined,
   };
 }

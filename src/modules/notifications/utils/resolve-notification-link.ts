@@ -1,4 +1,5 @@
 import { ROUTES } from "@/shared/constants/routes";
+import { tStatic } from "@/shared/i18n/useT";
 import type { NotificationItem } from "@/modules/notifications/types/notification.types";
 
 export interface NotificationLink {
@@ -23,25 +24,25 @@ export function resolveNotificationLink(
   if (item.event_key.startsWith("inbound.")) {
     return {
       path: `${ROUTES.INBOUND}?screen=IN-03&id=${item.subject_id}`,
-      label: "Xem phiếu nhập",
+      label: tStatic("notifications.link.viewInbound"),
     };
   }
   if (item.event_key.startsWith("outbound.")) {
     return {
       path: `${ROUTES.OUTBOUND}?screen=OUT-02&id=${item.subject_id}`,
-      label: "Xem phiếu xuất",
+      label: tStatic("notifications.link.viewOutbound"),
     };
   }
   if (item.event_key.startsWith("reversal.")) {
     return {
       path: `${ROUTES.REVERSE}?screen=REV-02&id=${item.subject_id}`,
-      label: "Xem phiếu điều chỉnh",
+      label: tStatic("notifications.link.viewReversal"),
     };
   }
   if (item.event_key.startsWith("warranty.")) {
     return {
       path: `${ROUTES.WARRANTY}?screen=WAR-03&id=${item.subject_id}`,
-      label: "Xem case bảo hành",
+      label: tStatic("notifications.link.viewWarranty"),
     };
   }
 

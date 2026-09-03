@@ -34,11 +34,13 @@ import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import {
   WARRANTY_BASELINE_STATUSES,
+  WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS,
   WARRANTY_STATUS_COLORS,
   WARRANTY_STATUS_LABELS,
   formatWarrantyDateTime,
   warrantyPiiText,
 } from "@/modules/warranty/constants";
+import { businessLabel } from "@/shared/constants/business-labels";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT } from "@/shared/i18n/useT";
 import {
@@ -243,7 +245,11 @@ export default function WarrantyPage() {
       render: (row) => (
         <UiStatusBadge
           tone="neutral"
-          label={row.identification_type || EMPTY_TEXT}
+          label={businessLabel(
+            WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS,
+            row.identification_type,
+            EMPTY_TEXT,
+          )}
         />
       ),
     },

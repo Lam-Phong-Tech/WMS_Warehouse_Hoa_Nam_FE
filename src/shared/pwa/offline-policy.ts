@@ -1,8 +1,14 @@
+import { tStatic } from "@/shared/i18n/useT";
+
 const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"]);
 
 export const OFFLINE_MUTATION_CODE = "OFFLINE_MUTATION_BLOCKED";
-export const OFFLINE_MUTATION_MESSAGE =
-  "Không thể thực hiện thao tác ghi khi đang ngoại tuyến. Hệ thống không xếp hàng thay đổi tồn kho hoặc dữ liệu nghiệp vụ; hãy kết nối mạng và thử lại.";
+// Hằng export vẫn là string (API cũ, axios.ts đọc trực tiếp) — được gán một
+// lần lúc nạp module theo ngôn ngữ đã persist; chấp nhận vì chuỗi lỗi transport
+// này chỉ dựng lúc request bị chặn, tương tự tStatic ở service khác.
+export const OFFLINE_MUTATION_MESSAGE = tStatic(
+  "shared.pwa.offlineMutationBlocked",
+);
 
 export function isOfflineMutationBlocked(
   method?: string,

@@ -5,6 +5,7 @@ import {
   CATEGORICAL_PALETTE,
   chartPointEvents,
 } from "./chart-theme";
+import { useT } from "@/shared/i18n/useT";
 
 export type DonutChartItem = {
   label: string;
@@ -32,6 +33,7 @@ export function DonutChart({
   legend = true,
   onSelect,
 }: DonutChartProps) {
+  const t = useT();
   const total = items.reduce((sum, item) => sum + item.value, 0);
   const format = (value: number) => valueFormatter?.(value) ?? String(value);
 
@@ -79,7 +81,7 @@ export function DonutChart({
             show: true,
             total: {
               show: true,
-              label: centerLabel ?? "Tổng",
+              label: centerLabel ?? t("shared.charts.total"),
               formatter: () => format(total),
             },
             value: {

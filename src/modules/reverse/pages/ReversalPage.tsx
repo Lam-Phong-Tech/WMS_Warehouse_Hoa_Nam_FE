@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useT } from "@/shared/i18n/useT";
 import { Box, Tooltip, UiSelect, UiTextField } from "@/shared/ui";
 import {
   ResponsiveDataTable,
@@ -35,6 +36,7 @@ const SEARCH_DEBOUNCE_MS = 250;
 
 /** REV-00 · Danh sách phiếu điều chỉnh tồn kho bằng nghiệp vụ hoàn đảo. */
 export default function ReversalPage() {
+  const t = useT();
   const can = useHasPermission();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -95,7 +97,7 @@ export default function ReversalPage() {
   const columns: ResponsiveTableColumn<ReversalDocument>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: t("reverse.detail.colStt"),
       align: "center",
       width: 48,
       hideOnMobile: true,
@@ -112,7 +114,7 @@ export default function ReversalPage() {
     },
     {
       key: "reversal_code",
-      header: "Mã điều chỉnh",
+      header: t("reverse.detail.fieldCode"),
       width: 170,
       sortAccessor: (row) => row.reversal_code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ ĐIỀU CHỈNH đọc được.
@@ -120,7 +122,7 @@ export default function ReversalPage() {
     },
     {
       key: "ref",
-      header: "Chứng từ gốc",
+      header: t("reverse.detail.fieldSourceDoc"),
       width: 180,
       sortAccessor: (row) => row.reference_document_code || "",
       render: (row) => (
@@ -141,7 +143,7 @@ export default function ReversalPage() {
     },
     {
       key: "total_qty",
-      header: "Tổng số lượng",
+      header: t("reverse.list.colTotalQty"),
       width: 120,
       align: "right",
       sortType: "value",
@@ -150,7 +152,7 @@ export default function ReversalPage() {
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("reverse.detail.colStatus"),
       width: 210,
       sortType: "value",
       sortAccessor: (row) => row.status,
@@ -168,7 +170,7 @@ export default function ReversalPage() {
       // biết vì sao điều chỉnh. Độ dài thất thường → ellipsis + tooltip giữ
       // chiều cao dòng đều nhau (cùng cách xử lý "Vị trí gợi ý" ở INV-01).
       key: "reason",
-      header: "Lý do điều chỉnh",
+      header: t("reverse.create.reasonLabel"),
       width: 240,
       sortAccessor: (row) => row.reason || "",
       render: (row) => (
@@ -195,7 +197,7 @@ export default function ReversalPage() {
     },
     {
       key: "created_at",
-      header: "Ngày tạo",
+      header: t("reverse.detail.fieldCreatedAt"),
       width: 160,
       sortType: "value",
       hideOnMobile: true,
@@ -203,10 +205,10 @@ export default function ReversalPage() {
       render: (row) => formatDateTime(row.created_at),
     },
     {
-      // reversalService map `created_by_name ?? created_by` nên cột này ra tên
-      // người dùng khi BE trả về, fallback mã/`-` khi không có.
+      // reversalService chỉ nhận `created_by_name` (BE đã join tên); thiếu tên
+      // thì `-`, KHÔNG rơi xuống UUID `created_by`.
       key: "created_by",
-      header: "Người tạo",
+      header: t("reverse.detail.fieldCreatedBy"),
       width: 150,
       hideOnMobile: true,
       sortAccessor: (row) => row.created_by || "",
@@ -230,26 +232,24 @@ export default function ReversalPage() {
             data-testid="reversal-readonly-note"
             sx={{ mb: 1.5 }}
           >
-            Chế độ chỉ xem: tài khoản hiện tại chưa có quyền tạo, xác nhận, hoàn
-            tất hoặc hủy phiếu điều chỉnh tồn kho. Bạn vẫn có thể xem danh sách
-            và chi tiết.
+            {t("reverse.list.readonlyNote")}
           </Box>
         ) : null}
 
         <div className="toolbar">
           <UiTextField
             value={searchInput}
-            placeholder="Mã điều chỉnh, chứng từ gốc, lý do..."
+            placeholder={t("reverse.list.searchPlaceholder")}
             slotProps={{
-              htmlInput: { "aria-label": "Tìm phiếu điều chỉnh tồn kho" },
+              htmlInput: { "aria-label": t("reverse.list.searchAria") },
             }}
             onChange={(event) => setSearchInput(event.target.value)}
             sx={{ minWidth: 220 }}
           />
           <UiSelect
             value={statusFilter}
-            aria-label="Lọc trạng thái phiếu điều chỉnh"
-            placeholder="Trạng thái: Tất cả"
+            aria-label={t("reverse.list.statusFilterAria")}
+            placeholder={t("reverse.list.statusFilterPlaceholder")}
             minWidth={168}
             options={Object.entries(REVERSAL_STATUS_LABELS).map(
               ([value, label]) => ({
@@ -264,11 +264,11 @@ export default function ReversalPage() {
           />
           <UiSelect
             value={perPage}
-            aria-label="Số dòng mỗi trang"
+            aria-label={t("shared.table.rowsPerPageAria")}
             minWidth={100}
             options={perPageOptions.map((size) => ({
               value: size,
-              label: `${size} / trang`,
+              label: t("shared.table.perPage", { size }),
             }))}
             onChange={(value) => {
               setPerPage(Number(value));
@@ -278,7 +278,7 @@ export default function ReversalPage() {
           <div className="spacer" />
           {canPost ? (
             <ActionButton kind="create" onClick={() => setCreateOpen(true)}>
-              Tạo phiếu điều chỉnh
+              {t("reverse.create.submit")}
             </ActionButton>
           ) : null}
         </div>
@@ -287,7 +287,7 @@ export default function ReversalPage() {
           <Box sx={{ mb: 1.75 }}>
             <ApiErrorAlert
               error={listQuery.error}
-              title="Không tải được danh sách phiếu điều chỉnh"
+              title={t("reverse.list.loadError")}
               onRetry={() => listQuery.refetch()}
             />
           </Box>
@@ -302,7 +302,9 @@ export default function ReversalPage() {
           rowKey={(row) => row.id}
           rowSelection={rowSelection}
           selectionLabel={(row) =>
-            `Chọn phiếu điều chỉnh ${row.reversal_code || "chưa có mã"}`
+            t("reverse.list.selectRowAria", {
+              code: row.reversal_code || t("reverse.list.noCode"),
+            })
           }
           // Chỉ khoá bảng khi tải lần đầu — ResponsiveDataTable thay hẳn nội
           // dung bảng bằng "Đang tải..." khi loading=true (không giữ dòng cũ
@@ -312,7 +314,7 @@ export default function ReversalPage() {
           loading={listQuery.isLoading}
           emptyText={tableEmptyText(
             listQuery.isError ? listQuery.error : null,
-            "Không có phiếu điều chỉnh theo bộ lọc hiện tại",
+            t("reverse.list.empty"),
           )}
           // antd Table cũ mở modal chi tiết bằng onDoubleClick; ResponsiveDataTable
           // chỉ hỗ trợ onRowClick (bấm 1 lần) — đổi thành bấm 1 lần để mở, đã nêu
@@ -324,7 +326,7 @@ export default function ReversalPage() {
               sx={{ whiteSpace: "nowrap" }}
               onClick={() => setDetailId(row.id)}
             >
-              Mở
+              {t("reverse.list.open")}
             </ActionButton>
           )}
         />
@@ -333,7 +335,7 @@ export default function ReversalPage() {
           total={listPagination.total}
           current={listPagination.current}
           pageSize={listPagination.pageSize}
-          unitName="phiếu điều chỉnh"
+          unitName={t("reverse.list.unitName")}
           showSizeChanger={false}
           onChange={(nextPage) => setPage(nextPage)}
         />

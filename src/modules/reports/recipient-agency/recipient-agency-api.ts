@@ -40,6 +40,7 @@ import {
   useUserDirectory,
 } from "@/modules/reports/operations/report-data";
 import { runReportExport } from "@/modules/reports/operations/report-export";
+import { tStatic } from "@/shared/i18n/useT";
 
 export const RECIPIENT_AGENCY_TIMEZONE = "Asia/Ho_Chi_Minh";
 
@@ -690,7 +691,7 @@ export function useRecipientAgencyDetails(
       return {
         data: undefined,
         error: new Error(
-          "Lát cắt đã hết hạn. Vui lòng làm mới báo cáo trước khi đối soát.",
+          tStatic("reports.recipientAgency.snapshotExpiredDrill"),
         ) as unknown,
       };
     }
@@ -708,7 +709,9 @@ export function useRecipientAgencyDetails(
     } else {
       return {
         data: undefined,
-        error: new Error("drill_key không thuộc lát cắt hiện tại.") as unknown,
+        error: new Error(
+          tStatic("reports.recipientAgency.drillKeyInvalid"),
+        ) as unknown,
       };
     }
 
@@ -749,17 +752,13 @@ export async function exportRecipientAgencyReport({
 }): Promise<void> {
   const snapshot = SNAPSHOT_STORE.get(snapshotId);
   if (!snapshot || Date.now() - snapshot.createdAt > SNAPSHOT_TTL_MS) {
-    throw new Error(
-      "Lát cắt đã hết hạn. Vui lòng làm mới báo cáo rồi xuất lại.",
-    );
+    throw new Error(tStatic("reports.recipientAgency.snapshotExpiredExport"));
   }
   if (format !== "XLSX") {
     // `POST /reports/export` chỉ nhận xlsx|pdf và dự án chưa có kênh xuất kèm
     // PII người nhận. Nút CSV vì vậy luôn ở trạng thái khóa quyền; nhánh này
     // chỉ là chốt chặn fail-closed nếu quyền được mở mà BE chưa sẵn sàng.
-    throw new Error(
-      "Backend chưa mở kênh xuất CSV kèm thông tin cá nhân cho báo cáo này.",
-    );
+    throw new Error(tStatic("reports.recipientAgency.csvNotSupported"));
   }
   await runReportExport("xlsx", {
     reportCode: RECIPIENT_AGENCY_REPORT_CODE,

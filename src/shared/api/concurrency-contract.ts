@@ -29,6 +29,8 @@
  */
 
 import { WmsContractError } from "@/shared/api/wms-contract";
+import { tStatic } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 
 /** Hành động UI bắt buộc cho từng lớp xung đột của §8.2. */
 export type ConcurrencyAction =
@@ -61,14 +63,11 @@ const NEW_KEY_CODES = new Set(["IDEMPOTENCY_CONFLICT"]);
 /** Lớp DOWNSTREAM_DEPENDENCY của §8.2 / BR-REV-04. */
 const DEPENDENCY_CODES = new Set(["DOWNSTREAM_DEPENDENCY_EXISTS"]);
 
-const MESSAGES: Record<ConcurrencyAction, string> = {
-  RELOAD_THEN_RETRY:
-    "Phiếu đã được người khác cập nhật trong lúc bạn thao tác. Hãy tải lại phiếu rồi thực hiện lại — dùng lại đúng thao tác cũ, không tạo phiếu mới.",
-  NEW_KEY_REQUIRED:
-    "Dữ liệu gửi lên đã khác lần trước nhưng vẫn dùng chung một khoá thao tác. Hãy tải lại phiếu và bắt đầu lại thao tác từ đầu.",
-  REVERSE_DEPENDENCY:
-    "Giao dịch này đã phát sinh nghiệp vụ phía sau (đã xuất/bảo hành). Phải đảo các giao dịch phụ thuộc theo thứ tự ngược trước.",
-  STOP: "Trạng thái phiếu không cho phép thao tác này. Hãy tải lại phiếu để xem trạng thái hiện tại.",
+const MESSAGE_KEYS: Record<ConcurrencyAction, MessageKey> = {
+  RELOAD_THEN_RETRY: "shared.api.reloadThenRetry",
+  NEW_KEY_REQUIRED: "shared.api.newKeyRequired",
+  REVERSE_DEPENDENCY: "shared.api.reverseDependency",
+  STOP: "shared.api.stop",
 };
 
 interface ErrorBodyShape {
@@ -143,7 +142,7 @@ function build(
     action,
     code,
     status,
-    message: MESSAGES[action],
+    message: tStatic(MESSAGE_KEYS[action]),
     reuseIdempotencyKey: action === "RELOAD_THEN_RETRY",
   };
 }

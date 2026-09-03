@@ -38,6 +38,7 @@ const MOVEMENT_TRACE = {
   rows: [
     {
       id: "11111111-1111-4111-8111-111111111111",
+      movement_no: "MV-20260829-0003",
       occurred_at: "2026-08-29 14:30:00",
       movement_type: "REVERSAL",
       warehouse_code: "KHO-HN",
@@ -52,6 +53,7 @@ const MOVEMENT_TRACE = {
     },
     {
       id: "22222222-2222-4222-8222-222222222222",
+      movement_no: "MV-20260829-0002",
       occurred_at: "2026-08-29 14:30:00",
       movement_type: "ISSUE",
       warehouse_code: "KHO-HN",
@@ -65,6 +67,7 @@ const MOVEMENT_TRACE = {
     },
     {
       id: "33333333-3333-4333-8333-333333333333",
+      movement_no: "MV-20260825-0001",
       occurred_at: "2026-08-25 08:15:00",
       movement_type: "RECEIPT",
       warehouse_code: "KHO-HN",
@@ -168,9 +171,9 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
 
     const table = await screen.findByRole("table");
     // qty_delta = +1 ⇒ đang đảo một phiếu XUẤT, không phải phiếu nhập.
-    expect(within(table).getByText("Reversal phiếu xuất")).toBeInTheDocument();
+    expect(within(table).getByText("Đảo phiếu xuất")).toBeInTheDocument();
     expect(
-      within(table).queryByText("Reversal phiếu nhập"),
+      within(table).queryByText("Đảo phiếu nhập"),
     ).not.toBeInTheDocument();
     // Timeline dùng cách gọi nghiệp vụ của bản demo cho cùng dòng đó.
     expect(
@@ -186,7 +189,7 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     const resetButton = screen.getByRole("button", { name: "Đặt lại" });
     expect(resetButton).toBeDisabled();
 
-    await user.type(screen.getByLabelText("Actor"), "thukho");
+    await user.type(screen.getByLabelText("Người thực hiện"), "thukho");
     await user.click(screen.getByRole("button", { name: /Tra cứu/ }));
 
     expect(

@@ -25,6 +25,7 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { ActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT } from "@/shared/i18n/useT";
 
 interface NotificationDetailModalProps {
   item: NotificationItem | null;
@@ -51,6 +52,7 @@ export function NotificationDetailModal({
   onClose,
   onNavigate,
 }: NotificationDetailModalProps) {
+  const t = useT();
   const navigate = useNavigate();
   const payloadEntries = Object.entries(item?.payload ?? {}).filter(
     ([, value]) => value !== null && value !== undefined && value !== "",
@@ -64,10 +66,20 @@ export function NotificationDetailModal({
     navigate(link.path);
   };
 
+  const eventLabelKey = item
+    ? NOTIFICATION_EVENT_LABELS[item.event_key]
+    : undefined;
+  const sourceLabelKey = item
+    ? NOTIFICATION_SOURCE_MODULE_LABELS[item.source_module]
+    : undefined;
+  const subjectLabelKey = item?.subject_type
+    ? NOTIFICATION_SUBJECT_TYPE_LABELS[item.subject_type]
+    : undefined;
+
   const detailItems: UiDescriptionsItem[] = item
     ? [
         {
-          label: "Người thực hiện",
+          label: t("notifications.detail.fieldActor"),
           value: item.actor_name ? (
             <Box
               component="span"
@@ -82,28 +94,25 @@ export function NotificationDetailModal({
             </Box>
           ) : (
             <Box component="span" sx={{ color: S.textMedium }}>
-              Hệ thống
+              {t("notifications.detail.actorSystem")}
             </Box>
           ),
         },
         {
-          label: "Loại thông báo",
-          value: NOTIFICATION_EVENT_LABELS[item.event_key] ?? item.event_key,
+          label: t("notifications.detail.fieldEvent"),
+          value: eventLabelKey ? t(eventLabelKey) : item.event_key,
         },
         {
-          label: "Nguồn",
-          value:
-            NOTIFICATION_SOURCE_MODULE_LABELS[item.source_module] ??
-            item.source_module,
+          label: t("notifications.detail.fieldSource"),
+          value: sourceLabelKey ? t(sourceLabelKey) : item.source_module,
         },
         ...(item.subject_type
           ? [
               {
-                label: "Đối tượng liên quan",
+                label: t("notifications.detail.fieldSubject"),
                 value: (
                   <>
-                    {NOTIFICATION_SUBJECT_TYPE_LABELS[item.subject_type] ??
-                      item.subject_type}
+                    {subjectLabelKey ? t(subjectLabelKey) : item.subject_type}
                     {/* Thông báo chưa kèm mã nghiệp vụ của đối tượng (BE mới
                       trả subject_type + subject_id) — rút gọn + cho sao chép
                       thay vì in nguyên UUID. Khi BE bổ sung subject_code thì
@@ -119,18 +128,23 @@ export function NotificationDetailModal({
             ]
           : []),
         {
-          label: "Thời gian tạo",
+          label: t("notifications.detail.fieldCreatedAt"),
           value: formatDateTime(item.created_at),
         },
         {
-          label: "Trạng thái đọc",
+          label: t("notifications.detail.fieldReadStatus"),
           value: item.read_at ? (
             <UiStatusBadge
               tone="neutral"
-              label={`Đã đọc lúc ${formatDateTime(item.read_at)}`}
+              label={t("notifications.detail.readAt", {
+                time: formatDateTime(item.read_at),
+              })}
             />
           ) : (
-            <UiStatusBadge tone="info" label="Chưa đọc" />
+            <UiStatusBadge
+              tone="info"
+              label={t("notifications.detail.unread")}
+            />
           ),
         },
       ]
@@ -143,7 +157,7 @@ export function NotificationDetailModal({
       maxWidth="md"
       title={
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <span>Chi tiết thông báo</span>
+          <span>{t("notifications.detail.title")}</span>
           {item && (
             <StatusTag
               status={item.severity}
@@ -156,7 +170,7 @@ export function NotificationDetailModal({
       actions={
         <>
           <ActionButton kind="close" onClick={onClose}>
-            Đóng
+            {t("common.close")}
           </ActionButton>
           {link && (
             <ActionButton kind="view" onClick={handleViewDetail}>
@@ -208,10 +222,13 @@ export function NotificationDetailModal({
             >
               <UiDescriptions
                 columns={2}
-                items={payloadEntries.map(([key, value]) => ({
-                  label: NOTIFICATION_PAYLOAD_FIELD_LABELS[key] ?? key,
-                  value: formatPayloadValue(value),
-                }))}
+                items={payloadEntries.map(([key, value]) => {
+                  const fieldKey = NOTIFICATION_PAYLOAD_FIELD_LABELS[key];
+                  return {
+                    label: fieldKey ? t(fieldKey) : key,
+                    value: formatPayloadValue(value),
+                  };
+                })}
               />
             </Box>
           )}

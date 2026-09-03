@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Stack,
@@ -63,6 +63,7 @@ import type {
 import type { ReactNode } from "react";
 import { ActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
 // Tông soft-tint theo UiStatusBadge — "processing"/"default" (antd cũ) ⇒ info/neutral.
 const stateToneMap: Record<ScanCodeState, UiStatusTone> = {
@@ -72,18 +73,25 @@ const stateToneMap: Record<ScanCodeState, UiStatusTone> = {
   error: "error",
 };
 
-const STATE_LABELS: Record<ScanCodeState, string> = {
-  waiting: "Chờ quét",
-  scanned: "Đang xử lý",
-  success: "Thành công",
-  error: "Có lỗi",
-};
+function stateLabel(t: TranslateFn, state: ScanCodeState): string {
+  switch (state) {
+    case "waiting":
+      return t("scan.physical.stateWaiting");
+    case "scanned":
+      return t("scan.physical.stateProcessing");
+    case "success":
+      return t("scan.physical.stateSuccess");
+    default:
+      return t("scan.physical.stateError");
+  }
+}
 
-const CARRIER_LABELS: Record<string, string> = {
-  QR: "QR",
-  BARCODE: "Mã vạch",
-  RFID: "RFID",
-};
+function carrierLabel(t: TranslateFn, value: string): string | undefined {
+  if (value === "QR") return "QR";
+  if (value === "BARCODE") return t("scan.carrierBarcode");
+  if (value === "RFID") return "RFID";
+  return undefined;
+}
 
 // Màu badge trạng thái: hoàn tất/hợp lệ = xanh lá, lỗi/không hợp lệ = đỏ,
 // cảnh báo/chưa hoàn tất = cam vàng — theo quy ước chung của dự án.
@@ -102,18 +110,32 @@ const SCAN_BATCH_STATUS_TONE: Record<string, UiStatusTone> = {
   CANCELLED: "error",
 };
 
-const SCAN_CONTEXT_OPTIONS: Array<{ value: ScanContext; label: string }> = [
-  { value: "INBOUND", label: "Nhập kho" },
-  { value: "OUTBOUND", label: "Xuất kho" },
-  { value: "INVENTORY", label: "Tra cứu tồn kho" },
-  { value: "TRACE", label: "Truy vết" },
-  { value: "WARRANTY_RECEIVE", label: "Tiếp nhận bảo hành" },
-  { value: "WARRANTY_TEMP_ONLY", label: "Bảo hành tạm" },
-];
+function scanContextOptions(
+  t: TranslateFn,
+): Array<{ value: ScanContext; label: string }> {
+  return [
+    { value: "INBOUND", label: t("scan.physical.contextInbound") },
+    { value: "OUTBOUND", label: t("scan.physical.contextOutbound") },
+    { value: "INVENTORY", label: t("scan.physical.contextInventory") },
+    { value: "TRACE", label: t("scan.physical.contextTrace") },
+    {
+      value: "WARRANTY_RECEIVE",
+      label: t("scan.physical.contextWarrantyReceive"),
+    },
+    {
+      value: "WARRANTY_TEMP_ONLY",
+      label: t("scan.physical.contextWarrantyTemp"),
+    },
+  ];
+}
 
-function warehouseLabel(row: Record<string, unknown>) {
+function warehouseLabel(t: TranslateFn, row: Record<string, unknown>) {
   return String(
-    row.name ?? row.warehouse_name ?? row.code ?? row.warehouse_code ?? "Kho",
+    row.name ??
+      row.warehouse_name ??
+      row.code ??
+      row.warehouse_code ??
+      t("scan.physical.warehouseFallback"),
   );
 }
 
@@ -130,6 +152,7 @@ function tabLabel(icon: ReactNode, text: string) {
 }
 
 export default function PhysicalCodesPage() {
+  const t = useT();
   const [activeTab, setActiveTab] = useState("list");
   const [codes, setCodes] = useState<PhysicalCode[]>([]);
   const [batches, setBatches] = useState<ScanBatch[]>([]);
@@ -298,27 +321,30 @@ export default function PhysicalCodesPage() {
       setClassifyResult(response);
       setClassifyState("success");
       setClassifyMessage(
-        `Mã ${response.raw_code} được nhận diện là ${businessLabel(
-          SCAN_CLASSIFICATION_LABELS,
-          response.classification,
-          "đối tượng khác",
-        )}. Thao tác này chỉ dùng để tra cứu, không thay đổi tồn kho.`,
+        t("scan.physical.classifySuccess", {
+          code: response.raw_code,
+          classification: businessLabel(
+            SCAN_CLASSIFICATION_LABELS,
+            response.classification,
+            t("scan.physical.classificationOtherLower"),
+          ),
+        }),
       );
       setScanValue("");
     } catch (error: unknown) {
       setClassifyState("error");
       setClassifyMessage(
-        getApiErrorMessage(error, "Không nhận diện được mã. Vui lòng thử lại."),
+        getApiErrorMessage(error, t("scan.physical.classifyFailed")),
       );
     } finally {
       setLoading(false);
     }
-  }, [scanContext, scanValue, warehouseId]);
+  }, [scanContext, scanValue, warehouseId, t]);
 
   const codeColumns: ResponsiveTableColumn<PhysicalCode>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: t("scan.physical.colStt"),
       width: 60,
       align: "center",
       hideOnMobile: true,
@@ -327,51 +353,54 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "code_value",
-      header: "Giá trị mã",
+      header: t("scan.physical.colCodeValue"),
       sortAccessor: (row) => row.code_value,
       render: (row) => row.code_value,
     },
     {
       key: "code_type",
-      header: "Loại mã",
+      header: t("scan.physical.colCodeType"),
       sortType: "value",
       sortAccessor: (row) => row.code_type,
       hideOnMobile: true,
       render: (row) => (
         <UiStatusBadge
-          label={CARRIER_LABELS[row.code_type] ?? "Loại mã khác"}
+          label={
+            carrierLabel(t, row.code_type) ?? t("scan.physical.codeTypeOther")
+          }
         />
       ),
     },
     {
       key: "carrier_type",
-      header: "Hình thức mã",
+      header: t("scan.physical.colCarrierType"),
       sortType: "value",
       sortAccessor: (row) => row.carrier_type,
       hideOnMobile: true,
-      render: (row) => CARRIER_LABELS[row.carrier_type] ?? "Hình thức khác",
+      render: (row) =>
+        carrierLabel(t, row.carrier_type) ?? t("scan.physical.carrierOther"),
     },
     {
       key: "target_type",
-      header: "Đối tượng gắn mã",
+      header: t("scan.physical.colTargetType"),
       sortType: "value",
       sortAccessor: (row) => row.target_type,
       render: (row) =>
         businessLabel(
           SCAN_CLASSIFICATION_LABELS,
           row.target_type,
-          "Đối tượng khác",
+          t("scan.physical.classificationOther"),
         ),
     },
     {
       key: "target",
-      header: "SKU / vật chứa",
+      header: t("scan.physical.colTarget"),
       sortAccessor: (row) => row.sku_code || row.container_code || "",
       render: (row) => row.sku_code || row.container_code || EMPTY_TEXT,
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("scan.physical.colStatus"),
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
@@ -380,14 +409,14 @@ export default function PhysicalCodesPage() {
           label={businessLabel(
             MASTER_STATUS_LABELS,
             row.status,
-            "Trạng thái khác",
+            t("scan.statusOther"),
           )}
         />
       ),
     },
     {
       key: "location_hint",
-      header: "Vị trí gợi ý",
+      header: t("scan.physical.colLocationHint"),
       sortAccessor: (row) => row.location_hint ?? "",
       render: (row) => row.location_hint ?? EMPTY_TEXT,
     },
@@ -396,7 +425,7 @@ export default function PhysicalCodesPage() {
   const classifyColumns: ResponsiveTableColumn<ScanClassifyResponse>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: t("scan.physical.colStt"),
       width: 60,
       align: "center",
       hideOnMobile: true,
@@ -404,21 +433,25 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "raw_code",
-      header: "Mã",
+      header: t("scan.physical.colCode"),
       sortAccessor: (row) => row.raw_code,
       render: (row) => row.raw_code,
     },
     {
       key: "context",
-      header: "Ngữ cảnh sử dụng",
+      header: t("scan.physical.colContext"),
       sortType: "value",
       sortAccessor: (row) => row.context,
       render: (row) =>
-        businessLabel(SCAN_CONTEXT_LABELS, row.context, "Ngữ cảnh khác"),
+        businessLabel(
+          SCAN_CONTEXT_LABELS,
+          row.context,
+          t("scan.physical.contextOther"),
+        ),
     },
     {
       key: "classification",
-      header: "Nhận diện là",
+      header: t("scan.physical.colClassification"),
       sortType: "value",
       sortAccessor: (row) => row.classification,
       render: (row) => (
@@ -426,14 +459,14 @@ export default function PhysicalCodesPage() {
           label={businessLabel(
             SCAN_CLASSIFICATION_LABELS,
             row.classification,
-            "Đối tượng khác",
+            t("scan.physical.classificationOther"),
           )}
         />
       ),
     },
     {
       key: "stock_status",
-      header: "Trạng thái tồn",
+      header: t("scan.physical.colStockStatus"),
       sortType: "value",
       sortAccessor: (row) => row.stock_status,
       render: (row) => (
@@ -442,14 +475,14 @@ export default function PhysicalCodesPage() {
           label={businessLabel(
             INVENTORY_STOCK_STATUS_LABELS,
             row.stock_status,
-            "Trạng thái khác",
+            t("scan.statusOther"),
           )}
         />
       ),
     },
     {
       key: "current_location",
-      header: "Kho hiện tại",
+      header: t("scan.physical.colCurrentWarehouse"),
       sortAccessor: (row) =>
         `${row.current_location.warehouse_code} — ${row.current_location.warehouse_name}`,
       render: (row) =>
@@ -457,15 +490,20 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "stock_effect",
-      header: "Ảnh hưởng tồn kho",
-      render: () => <UiStatusBadge tone="success" label="Không thay đổi tồn" />,
+      header: t("scan.physical.colStockEffect"),
+      render: () => (
+        <UiStatusBadge
+          tone="success"
+          label={t("scan.physical.stockUnchanged")}
+        />
+      ),
     },
   ];
 
   const batchColumns: ResponsiveTableColumn<ScanBatch>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: t("scan.physical.colStt"),
       width: 60,
       align: "center",
       hideOnMobile: true,
@@ -476,21 +514,25 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "batch_no",
-      header: "Lô",
+      header: t("scan.physical.colBatch"),
       sortAccessor: (row) => row.batch_no,
       render: (row) => row.batch_no,
     },
     {
       key: "source_type",
-      header: "Nguồn quét",
+      header: t("scan.physical.colSource"),
       sortType: "value",
       sortAccessor: (row) => row.source_type,
       render: (row) =>
-        businessLabel(SCAN_CONTEXT_LABELS, row.source_type, "Nguồn khác"),
+        businessLabel(
+          SCAN_CONTEXT_LABELS,
+          row.source_type,
+          t("scan.physical.sourceOther"),
+        ),
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("scan.physical.colStatus"),
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
@@ -499,14 +541,14 @@ export default function PhysicalCodesPage() {
           label={businessLabel(
             SCAN_BATCH_STATUS_LABELS,
             row.status,
-            "Trạng thái khác",
+            t("scan.statusOther"),
           )}
         />
       ),
     },
     {
       key: "total_codes",
-      header: "Tổng dòng",
+      header: t("scan.physical.colTotalLines"),
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.total_codes,
@@ -515,7 +557,7 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "valid_count",
-      header: "Hợp lệ",
+      header: t("scan.physical.colValid"),
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.valid_count,
@@ -523,7 +565,7 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "duplicate_count",
-      header: "Đã quét trước đó",
+      header: t("scan.physical.colDuplicate"),
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.duplicate_count,
@@ -532,7 +574,7 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "unknown_count",
-      header: "Không nhận diện",
+      header: t("scan.physical.colUnknown"),
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.unknown_count,
@@ -541,7 +583,7 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "invalid_count",
-      header: "Không hợp lệ",
+      header: t("scan.physical.colInvalid"),
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.invalid_count,
@@ -549,12 +591,12 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "drilldown",
-      header: "Chi tiết",
+      header: t("scan.physical.colDetail"),
       align: "center",
       render: (row) => (
         <ActionButton
           kind="view"
-          label="Xem dòng"
+          label={t("scan.physical.viewLines")}
           onClick={() => {
             setEventBatchFilter(row.id);
             setEventBatchLabel(row.batch_no);
@@ -568,7 +610,7 @@ export default function PhysicalCodesPage() {
   const eventColumns: ResponsiveTableColumn<ScanEvent>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: t("scan.physical.colStt"),
       width: 60,
       align: "center",
       hideOnMobile: true,
@@ -579,49 +621,56 @@ export default function PhysicalCodesPage() {
     },
     {
       key: "code_value",
-      header: "Mã",
+      header: t("scan.physical.colCode"),
       sortAccessor: (row) => row.code_value,
       render: (row) => row.code_value,
     },
     {
       key: "code_type",
-      header: "Loại mã",
+      header: t("scan.physical.colCodeType"),
       sortType: "value",
       sortAccessor: (row) => row.code_type,
-      render: (row) => CARRIER_LABELS[row.code_type] ?? "Loại mã khác",
+      render: (row) =>
+        carrierLabel(t, row.code_type) ?? t("scan.physical.codeTypeOther"),
     },
     {
       key: "status",
-      header: "Kết quả",
+      header: t("scan.physical.colResult"),
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
         <UiStatusBadge
           tone={SCAN_RESULT_TONE[row.status] ?? "neutral"}
-          label={businessLabel(SCAN_RESULT_LABELS, row.status, "Kết quả khác")}
+          label={businessLabel(
+            SCAN_RESULT_LABELS,
+            row.status,
+            t("scan.physical.resultOther"),
+          )}
         />
       ),
     },
     {
       key: "message",
-      header: "Nội dung lỗi / ghi chú",
+      header: t("scan.physical.colMessage"),
       sortAccessor: (row) => row.message ?? "",
       render: (row) => row.message ?? EMPTY_TEXT,
     },
     {
       key: "scanned_at",
-      header: "Thời gian quét",
+      header: t("scan.physical.colScannedAt"),
       sortType: "value",
       sortAccessor: (row) => new Date(row.scanned_at),
       render: (row) => formatDateTime(row.scanned_at),
     },
   ];
 
+  const contextOptions = useMemo(() => scanContextOptions(t), [t]);
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ mb: 2 }}>
         <UiTabs
-          aria-label="Các tab mã vật lý"
+          aria-label={t("scan.physical.tabsAria")}
           value={activeTab}
           onChange={(key) => {
             setActiveTab(key);
@@ -634,21 +683,21 @@ export default function PhysicalCodesPage() {
               key: "list",
               label: tabLabel(
                 <UnorderedListOutlined style={{ fontSize: 15 }} />,
-                "Danh sách mã vật lý",
+                t("scan.physical.tabList"),
               ),
             },
             {
               key: "classify",
               label: tabLabel(
                 <ScanOutlined style={{ fontSize: 15 }} />,
-                "Nhận diện mã quét",
+                t("scan.physical.tabClassify"),
               ),
             },
             {
               key: "history",
               label: tabLabel(
                 <HistoryOutlined style={{ fontSize: 15 }} />,
-                "Lịch sử quét",
+                t("scan.physical.tabHistory"),
               ),
             },
           ]}
@@ -662,8 +711,8 @@ export default function PhysicalCodesPage() {
             sx={{ flexWrap: "wrap", gap: 1, alignItems: "center", mb: 2 }}
           >
             <SearchInput
-              placeholder="Giá trị mã..."
-              aria-label="Giá trị mã"
+              placeholder={t("scan.physical.searchCodePlaceholder")}
+              aria-label={t("scan.physical.colCodeValue")}
               width={285}
               value={codeSearch}
               onChange={setCodeSearch}
@@ -681,12 +730,12 @@ export default function PhysicalCodesPage() {
               disabled={!canCreatePhysicalCode}
               onClick={() => setIssueModalOpen(true)}
             >
-              Tạo mã vật lý
+              {t("scan.physical.createCode")}
             </ActionButton>
           </Stack>
           <InlineApiError
             error={listError}
-            title="Không thể tải danh sách mã vật lý"
+            title={t("scan.physical.listLoadFailed")}
             onRetry={() => setReloadKey((value) => value + 1)}
           />
           <ResponsiveDataTable
@@ -697,8 +746,8 @@ export default function PhysicalCodesPage() {
             emptyText={tableEmptyText(
               listError,
               codeSearch.trim()
-                ? "Không có mã vật lý nào khớp giá trị đang tìm."
-                : 'Chưa có mã vật lý nào — bấm "Tạo mã vật lý" để sinh mã mới.',
+                ? t("scan.physical.emptyCodesFiltered")
+                : t("scan.physical.emptyCodes"),
             )}
           />
           <Box
@@ -712,7 +761,7 @@ export default function PhysicalCodesPage() {
             }}
           >
             <UiText variant="secondary">
-              Tổng {filteredCodes.length} mã vật lý
+              {t("scan.physical.totalCodes", { count: filteredCodes.length })}
             </UiText>
             <UiPagination
               page={codePage}
@@ -728,9 +777,8 @@ export default function PhysicalCodesPage() {
       {activeTab === "classify" && (
         <UiTabPanel value={activeTab}>
           <Box sx={{ mb: 2 }}>
-            <UiAlert tone="info" title="Tra cứu mã an toàn">
-              Nhận diện mã chỉ dùng để tra cứu thông tin. Thao tác này không làm
-              tăng, giảm hoặc thay đổi tồn kho.
+            <UiAlert tone="info" title={t("scan.physical.classifyAlertTitle")}>
+              {t("scan.physical.classifyAlertBody")}
             </UiAlert>
           </Box>
           <Stack
@@ -738,26 +786,28 @@ export default function PhysicalCodesPage() {
             sx={{ flexWrap: "wrap", gap: 1, alignItems: "center", mb: 2 }}
           >
             <UiSelect
-              aria-label="Chọn kho"
-              placeholder="Chọn kho"
+              aria-label={t("scan.physical.selectWarehouse")}
+              placeholder={t("scan.physical.selectWarehouse")}
               value={warehouseId}
               minWidth={250}
               onChange={setWarehouseId}
               options={warehouses.map((row) => ({
                 value: String(row.id ?? ""),
-                label: warehouseLabel(row),
+                label: warehouseLabel(t, row),
               }))}
             />
             <UiSelect
-              aria-label="Ngữ cảnh quét"
+              aria-label={t("scan.physical.contextAria")}
               value={scanContext}
               minWidth={220}
               onChange={(value) => setScanContext(value as ScanContext)}
-              options={SCAN_CONTEXT_OPTIONS}
+              options={contextOptions}
             />
             <UiTextField
-              placeholder="Quét hoặc nhập mã..."
-              slotProps={{ htmlInput: { "aria-label": "Quét hoặc nhập mã" } }}
+              placeholder={t("scan.physical.scanInputPlaceholder")}
+              slotProps={{
+                htmlInput: { "aria-label": t("scan.physical.scanInputAria") },
+              }}
               value={scanValue}
               onChange={(event) => setScanValue(event.target.value)}
               onKeyDown={(event) => {
@@ -771,7 +821,7 @@ export default function PhysicalCodesPage() {
               onClick={submitScan}
               disabled={!warehouseId.trim()}
             >
-              Nhận diện
+              {t("scan.physical.classifyAction")}
             </ActionButton>
             <ActionButton
               kind="barcode"
@@ -779,7 +829,7 @@ export default function PhysicalCodesPage() {
               loading={loading && classifyState === "scanned"}
               disabled={!scanValue.trim() || !warehouseId.trim()}
             >
-              Nhận diện mã
+              {t("scan.physical.classifyCodeAction")}
             </ActionButton>
           </Stack>
 
@@ -791,11 +841,11 @@ export default function PhysicalCodesPage() {
                   sx={{ flexWrap: "wrap", gap: 1, alignItems: "center" }}
                 >
                   <Box component="span" sx={{ fontWeight: 600 }}>
-                    Kết quả:
+                    {t("scan.physical.resultLabel")}
                   </Box>
                   <UiStatusBadge
                     tone={stateToneMap[classifyState]}
-                    label={STATE_LABELS[classifyState]}
+                    label={stateLabel(t, classifyState)}
                   />
                   <span>{classifyMessage}</span>
                 </Stack>
@@ -805,7 +855,7 @@ export default function PhysicalCodesPage() {
 
           {loading && classifyState === "scanned" && (
             <Box sx={{ mb: 2 }}>
-              <UiAlert tone="info">Đang nhận diện mã...</UiAlert>
+              <UiAlert tone="info">{t("scan.physical.classifying")}</UiAlert>
             </Box>
           )}
 
@@ -823,7 +873,7 @@ export default function PhysicalCodesPage() {
         <UiTabPanel value={activeTab}>
           <InlineApiError
             error={historyError}
-            title="Không thể tải lịch sử quét"
+            title={t("scan.physical.historyLoadFailed")}
             onRetry={() => setReloadKey((value) => value + 1)}
           />
           <Stack
@@ -841,11 +891,11 @@ export default function PhysicalCodesPage() {
               sx={{ flexWrap: "wrap", gap: 1, alignItems: "center" }}
             >
               <Box component="span" sx={{ fontWeight: 600 }}>
-                Lô quét
+                {t("scan.physical.batchSectionTitle")}
               </Box>
               <SearchInput
-                placeholder="Tìm theo số lô..."
-                aria-label="Tìm theo số lô"
+                placeholder={t("scan.physical.searchBatchPlaceholder")}
+                aria-label={t("scan.physical.searchBatchAria")}
                 width={220}
                 value={batchSearch}
                 onChange={setBatchSearch}
@@ -867,8 +917,8 @@ export default function PhysicalCodesPage() {
             emptyText={tableEmptyText(
               historyError,
               normalizedBatchSearch
-                ? "Không có lô quét nào khớp số lô đang tìm."
-                : "Chưa có lô quét nào — lô được tạo khi thực hiện quét hàng theo phiên.",
+                ? t("scan.physical.emptyBatchesFiltered")
+                : t("scan.physical.emptyBatches"),
             )}
           />
           <Box
@@ -883,11 +933,11 @@ export default function PhysicalCodesPage() {
             }}
           >
             <UiText variant="secondary">
-              Tổng{" "}
-              {normalizedBatchSearch
-                ? filteredBatches.length
-                : batchPagination.total}{" "}
-              lô quét
+              {t("scan.physical.totalBatches", {
+                count: normalizedBatchSearch
+                  ? filteredBatches.length
+                  : batchPagination.total,
+              })}
             </UiText>
             <UiPagination
               page={batchPagination.current}
@@ -917,11 +967,11 @@ export default function PhysicalCodesPage() {
               sx={{ flexWrap: "wrap", gap: 1, alignItems: "center" }}
             >
               <Box component="span" sx={{ fontWeight: 600 }}>
-                Sự kiện quét
+                {t("scan.physical.eventSectionTitle")}
               </Box>
               <SearchInput
-                placeholder="Tìm theo mã..."
-                aria-label="Tìm theo mã sự kiện quét"
+                placeholder={t("scan.physical.searchEventPlaceholder")}
+                aria-label={t("scan.physical.searchEventAria")}
                 width={220}
                 value={eventSearch}
                 onChange={setEventSearch}
@@ -934,7 +984,9 @@ export default function PhysicalCodesPage() {
                     setEventBatchLabel("");
                     setEventPage(1);
                   }}
-                  label={`Đang lọc theo lô: ${eventBatchLabel || eventBatchFilter}`}
+                  label={t("scan.physical.filteringByBatch", {
+                    batch: eventBatchLabel || eventBatchFilter,
+                  })}
                 />
               ) : null}
             </Stack>
@@ -954,8 +1006,8 @@ export default function PhysicalCodesPage() {
             emptyText={tableEmptyText(
               historyError,
               normalizedEventSearch
-                ? "Không có sự kiện quét nào khớp mã đang tìm."
-                : "Chưa có sự kiện quét nào — mỗi lượt quét mã sẽ được ghi lại tại đây.",
+                ? t("scan.physical.emptyEventsFiltered")
+                : t("scan.physical.emptyEvents"),
             )}
           />
           <Box
@@ -969,11 +1021,11 @@ export default function PhysicalCodesPage() {
             }}
           >
             <UiText variant="secondary">
-              Tổng{" "}
-              {normalizedEventSearch
-                ? filteredEvents.length
-                : eventPagination.total}{" "}
-              sự kiện
+              {t("scan.physical.totalEvents", {
+                count: normalizedEventSearch
+                  ? filteredEvents.length
+                  : eventPagination.total,
+              })}
             </UiText>
             <UiPagination
               page={eventPagination.current}

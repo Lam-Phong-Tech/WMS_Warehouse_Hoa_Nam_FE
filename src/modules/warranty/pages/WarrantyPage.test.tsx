@@ -113,6 +113,10 @@ describe("WarrantyPage (WAR-01 hub)", () => {
 
     expect(await screen.findByText("BH-0001")).toBeInTheDocument();
     expect(screen.getByText("BH-0002")).toBeInTheDocument();
+    // Cột "Nhận diện" hiển thị nhãn tiếng Việt, không lộ enum thô của BE.
+    expect(screen.getByText("Đã xác định")).toBeInTheDocument();
+    expect(screen.getByText("Tiếp nhận tạm")).toBeInTheDocument();
+    expect(screen.queryByText("TEMP_ONLY")).not.toBeInTheDocument();
     // Chi tiết nhận diện (TEMP_ONLY/mã tạm) đã chuyển hẳn vào modal "Xem chi tiết" — cột list chỉ giữ định danh case.
     expect(
       screen.getByRole("button", { name: /Tiếp nhận bảo hành/ }),

@@ -97,7 +97,8 @@ function normalizeDocument(row: RawRecord): OutboundDocument {
     issued,
     remaining: Math.max(planned - scanned, 0),
     status,
-    createdBy: text(row.created_by_name ?? row.created_by, "-"),
+    // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
+    createdBy: text(row.created_by_name, "-"),
     version: num(row.version),
   };
 }

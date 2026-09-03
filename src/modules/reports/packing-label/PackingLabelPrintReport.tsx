@@ -40,8 +40,14 @@ import { ExportButtons } from "../operations/report-filters";
 import { useReportExport } from "../operations/report-export";
 import { useClientPagination } from "../operations/report-columns";
 import { ReportPaginationBar } from "../operations/report-table";
+import { SectionFilterBar } from "../operations/SectionFilterBar";
+import {
+  optionsFromRows,
+  useSectionFilter,
+  type SectionFilterConfig,
+} from "../operations/report-section-filter";
 import { DrillDownDialog } from "../operations/report-ui";
-import { useT } from "@/shared/i18n/useT";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   LABEL_EVENT_LIMIT,
   PACKING_LABEL_ACTIONS,
@@ -56,19 +62,21 @@ import {
 /**
  * RPT-05 — Nhãn đóng gói · Print / Reprint (bản port 1:1 mockup 8.6).
  *
- * Chuỗi hiển thị để tiếng Việt thẳng trong file như RPT-07 (bản port 1:1 còn
- * lại): mockup là hợp đồng giao diện, tách chuỗi ra bảng i18n rồi ghép lại sẽ
- * làm mất khả năng đối chiếu từng dòng chữ với mockup khi nghiệm thu.
+ * Chuỗi hiển thị đã chuyển về `messages.ts` (nhánh `reports.packingLabel.*`)
+ * theo yêu cầu i18n 100% (2026-09-03); bản VI giữ nguyên từng ký tự so với
+ * mockup nên vẫn đối chiếu được từng dòng chữ khi nghiệm thu.
  *
  * Toàn bộ số liệu đến từ `usePackingLabelReport()` — không có ô nào cứng, không
  * có nút nào không dẫn tới hành động thật.
  */
 
-const RESULT_LABELS: Readonly<Record<PackingLabelResult, string>> = {
-  PRINTED: "In thành công",
-  PRINT_FAILED: "In lỗi",
-  PENDING_PRINT: "Chờ máy in phản hồi",
-};
+const resultLabels = (
+  t: TranslateFn,
+): Readonly<Record<PackingLabelResult, string>> => ({
+  PRINTED: t("reports.packingLabel.resultPrinted"),
+  PRINT_FAILED: t("reports.packingLabel.outcomeFailed"),
+  PENDING_PRINT: t("reports.packingLabel.resultPending"),
+});
 
 const RESULT_TONES: Readonly<
   Record<PackingLabelResult, "success" | "error" | "warning">
@@ -78,10 +86,12 @@ const RESULT_TONES: Readonly<
   PENDING_PRINT: "warning",
 };
 
-const ACTION_LABELS: Readonly<Record<PackingLabelAction, string>> = {
-  PRINT: "Print",
-  REPRINT: "In lại",
-};
+const actionLabels = (
+  t: TranslateFn,
+): Readonly<Record<PackingLabelAction, string>> => ({
+  PRINT: t("reports.packingLabel.actionPrint"),
+  REPRINT: t("reports.packingLabel.outcomeReprint"),
+});
 
 const SURFACE_SX = {
   minWidth: 0,
@@ -338,25 +348,33 @@ function SectionHead({
 }
 
 function ResultBadge({ value }: { value: PackingLabelResult }) {
+  const t = useT();
   return (
     <UiStatusBadge
       size="small"
       tone={RESULT_TONES[value]}
-      label={RESULT_LABELS[value]}
+      label={resultLabels(t)[value]}
     />
   );
 }
 
 function AuditBadge({ event }: { event: PackingLabelEvent }) {
+  const t = useT();
   return (
     <UiStatusBadge
       size="small"
       tone={event.auditComplete ? "success" : "warning"}
-      label={event.auditComplete ? "Đủ audit" : "Audit chưa đủ"}
+      label={
+        event.auditComplete
+          ? t("reports.packingLabel.auditOk")
+          : t("reports.packingLabel.auditIncomplete")
+      }
       title={
         event.auditComplete
-          ? "Lần in có đủ thời điểm, máy in, người thao tác và kết quả."
-          : `Còn thiếu: ${event.auditMissing.join(", ")}.`
+          ? t("reports.packingLabel.auditOkTitle")
+          : t("reports.packingLabel.auditMissingTitle", {
+              list: event.auditMissing.join(", "),
+            })
       }
     />
   );
@@ -421,6 +439,8 @@ export default function PackingLabelPrintReport() {
   const t = useT();
   const period = usePeriodFilter("this-month");
   const exporter = useReportExport();
+  const resultLabelMap = useMemo(() => resultLabels(t), [t]);
+  const actionLabelMap = useMemo(() => actionLabels(t), [t]);
 
   const [view, setView] = useState<"table" | "snapshot">("table");
   const [advanced, setAdvanced] = useState(false);
@@ -479,7 +499,59 @@ export default function PackingLabelPrintReport() {
       });
   }, [report.events, actionFilter, resultFilter, printerFilter, keyword]);
 
-  const pagination = useClientPagination(rows, 15);
+  /**
+   * Bộ lọc RIÊNG của khối nhật ký. Nằm SAU khi 4 thẻ KPI đã tính trên rows:
+   * soi một máy in hay một nhãn không được kéo tụt luôn tỉ lệ in lại của kỳ.
+   */
+  const historyFilterConfig = useMemo<SectionFilterConfig<PackingLabelEvent>>(
+    () => ({
+      searchPlaceholder: t("reports.packingLabel.historySearchPlaceholder"),
+      searchText: (row) => [
+        row.labelCode,
+        row.outboundNo,
+        row.recipient,
+        row.actorName,
+        row.printerName,
+        row.errorCode,
+      ],
+      selects: [
+        {
+          key: "action",
+          placeholder: t("reports.packingLabel.anyAction"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.action,
+              (value) => actionLabelMap[value as PackingLabelAction] ?? value,
+            ),
+          match: (row, value) => row.action === value,
+          minWidth: 160,
+        },
+        {
+          key: "result",
+          placeholder: t("reports.packingLabel.anyResult"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.result,
+              (value) => resultLabelMap[value as PackingLabelResult] ?? value,
+            ),
+          match: (row, value) => row.result === value,
+          minWidth: 175,
+        },
+        {
+          key: "printer",
+          placeholder: t("reports.packingLabel.anyPrinter"),
+          options: (list) => optionsFromRows(list, (row) => row.printerName),
+          match: (row, value) => row.printerName === value,
+          minWidth: 165,
+        },
+      ],
+    }),
+    [t, actionLabelMap, resultLabelMap],
+  );
+  const historyFilter = useSectionFilter(rows, historyFilterConfig);
+  const pagination = useClientPagination(historyFilter.rows, 15);
 
   const metrics = useMemo(() => {
     const total = rows.length;
@@ -528,7 +600,7 @@ export default function PackingLabelPrintReport() {
   const columns = [
     {
       key: "attemptedAt",
-      header: "Thời điểm",
+      header: t("reports.packingLabel.colMoment"),
       width: 158,
       sortAccessor: (row: PackingLabelEvent) => row.attemptedAt,
       render: (row: PackingLabelEvent) =>
@@ -536,20 +608,20 @@ export default function PackingLabelPrintReport() {
     },
     {
       key: "action",
-      header: "Thao tác",
+      header: t("reports.packingLabel.colAction"),
       width: 104,
       sortAccessor: (row: PackingLabelEvent) => row.action,
-      render: (row: PackingLabelEvent) => ACTION_LABELS[row.action],
+      render: (row: PackingLabelEvent) => actionLabelMap[row.action],
     },
     {
       key: "result",
-      header: "Kết quả",
+      header: t("reports.packingLabel.colResult"),
       width: 150,
       render: (row: PackingLabelEvent) => <ResultBadge value={row.result} />,
     },
     {
       key: "label",
-      header: "Nhãn / Bản lưu",
+      header: t("reports.packingLabel.colLabelSnapshot"),
       width: 200,
       sortAccessor: (row: PackingLabelEvent) => row.labelCode,
       render: (row: PackingLabelEvent) => (
@@ -561,7 +633,7 @@ export default function PackingLabelPrintReport() {
     },
     {
       key: "outbound",
-      header: "Phiếu xuất",
+      header: t("reports.packingLabel.colOutbound"),
       width: 190,
       sortAccessor: (row: PackingLabelEvent) => row.outboundNo,
       render: (row: PackingLabelEvent) => (
@@ -573,19 +645,19 @@ export default function PackingLabelPrintReport() {
     },
     {
       key: "printer",
-      header: "Máy in",
+      header: t("reports.packingLabel.colPrinter"),
       hideOnMobile: true,
       render: (row: PackingLabelEvent) => orEmpty(row.printerName),
     },
     {
       key: "actor",
-      header: "Người thao tác",
+      header: t("reports.packingLabel.colActor"),
       hideOnMobile: true,
       render: (row: PackingLabelEvent) => orEmpty(row.actorName),
     },
     {
       key: "reason",
-      header: "Lỗi / lý do",
+      header: t("reports.packingLabel.colErrorReason"),
       hideOnMobile: true,
       render: (row: PackingLabelEvent) => (
         <CellStack
@@ -596,7 +668,7 @@ export default function PackingLabelPrintReport() {
     },
     {
       key: "audit",
-      header: "Audit",
+      header: t("reports.packingLabel.colAudit"),
       width: 140,
       render: (row: PackingLabelEvent) => <AuditBadge event={row} />,
     },
@@ -635,7 +707,7 @@ export default function PackingLabelPrintReport() {
                 textTransform: "uppercase",
               }}
             >
-              Báo cáo · Audit workspace
+              {t("reports.packingLabel.heroKicker")}
             </Box>
             <Box
               component="h1"
@@ -649,7 +721,7 @@ export default function PackingLabelPrintReport() {
                 color: S.textStrong,
               }}
             >
-              Trung tâm kiểm soát in nhãn
+              {t("reports.packingLabel.heroTitle")}
             </Box>
             <Box
               sx={{
@@ -659,8 +731,7 @@ export default function PackingLabelPrintReport() {
                 fontSize: 13,
               }}
             >
-              Theo dõi Print và In lại theo event audit, đối soát trực tiếp với
-              bản lưu nhãn bất biến.
+              {t("reports.packingLabel.heroDescription")}
             </Box>
           </Box>
           <Box
@@ -670,9 +741,13 @@ export default function PackingLabelPrintReport() {
               whiteSpace: "nowrap",
             }}
           >
-            <UiStatusBadge size="small" tone="info" label="Chỉ đọc · audit" />
+            <UiStatusBadge
+              size="small"
+              tone="info"
+              label={t("reports.packingLabel.badgeReadOnly")}
+            />
             <Box sx={{ mt: 0.875, color: S.textMedium, fontSize: 12 }}>
-              {`Kỳ đang xem: ${period.label}`}
+              {t("reports.period.viewing", { label: period.label })}
             </Box>
           </Box>
         </Box>
@@ -692,13 +767,9 @@ export default function PackingLabelPrintReport() {
           <UiStatusBadge
             size="small"
             tone="info"
-            label="Chỉ đọc · không gửi lệnh in"
+            label={t("reports.packingLabel.badgeNoPrintCommand")}
           />
-          <Box>
-            Màn hình này chỉ đọc nhật ký in nhãn và bản lưu bất biến. Lệnh Print
-            / In lại được thực hiện ở phiếu xuất kho, không phát sinh từ đây và
-            không tác động tồn kho.
-          </Box>
+          <Box>{t("reports.packingLabel.readOnlyNote")}</Box>
         </Stack>
       </Box>
 
@@ -710,8 +781,8 @@ export default function PackingLabelPrintReport() {
       >
         <SectionHead
           id="rpt-05-filter-heading"
-          title="Tìm và khoanh vùng event"
-          description="Bộ lọc áp dụng đồng thời cho tổng quan, Bảng và Lát cắt."
+          title={t("reports.packingLabel.filterTitle")}
+          description={t("reports.packingLabel.filterDescription")}
           sx={{ mb: 2.25 }}
           actions={
             <>
@@ -719,7 +790,9 @@ export default function PackingLabelPrintReport() {
                 <UiStatusBadge
                   size="small"
                   tone="primary"
-                  label={`${activeFilterCount} đang lọc`}
+                  label={t("reports.packingLabel.filteringCount", {
+                    count: activeFilterCount,
+                  })}
                 />
               ) : null}
               <UiButton
@@ -729,14 +802,16 @@ export default function PackingLabelPrintReport() {
                 aria-controls="rpt-05-advanced-filters"
                 onClick={() => setAdvanced((current) => !current)}
               >
-                {advanced ? "Thu gọn bộ lọc" : "Bộ lọc chi tiết"}
+                {advanced
+                  ? t("reports.packingLabel.collapseFilters")
+                  : t("reports.packingLabel.expandFilters")}
               </UiButton>
               <UiButton
                 appearance="outlined"
                 startIcon={<ReloadOutlined />}
                 onClick={resetFilters}
               >
-                Đặt lại
+                {t("reports.packingLabel.reset")}
               </UiButton>
               <UiButton
                 appearance="tonal"
@@ -745,7 +820,7 @@ export default function PackingLabelPrintReport() {
                 disabled={report.fetching}
                 onClick={refresh}
               >
-                Làm mới
+                {t("reports.packingLabel.refresh")}
               </UiButton>
             </>
           }
@@ -766,34 +841,45 @@ export default function PackingLabelPrintReport() {
             alignItems: "end",
           }}
         >
-          <FilterField label="Tìm kiếm" htmlFor="rpt-05-q" span={5}>
+          <FilterField
+            label={t("reports.packingLabel.searchLabel")}
+            htmlFor="rpt-05-q"
+            span={5}
+          >
             <SearchInput
               id="rpt-05-q"
               width="100%"
               value={keyword}
-              placeholder="Phiếu xuất, mã nhãn hoặc mã bản lưu"
-              aria-label="Tìm phiếu xuất, mã nhãn hoặc mã bản lưu"
+              placeholder={t("reports.packingLabel.qPlaceholder")}
+              aria-label={t("reports.packingLabel.qAria")}
               onChange={(value) => {
                 setKeyword(value);
                 pagination.reset();
               }}
             />
           </FilterField>
-          <FilterField label="Kỳ báo cáo" span={2}>
+          <FilterField label={t("reports.packingLabel.periodLabel")} span={2}>
             <UiSelect
-              aria-label="Kỳ báo cáo"
+              aria-label={t("reports.filters.periodAria")}
               fullWidth
               value={period.preset}
               onChange={(value) => period.setPreset(value as PeriodPreset)}
               options={periodPresetOptions(t)}
             />
           </FilterField>
-          <FilterField label="Khoảng thời gian" span={5} tabletSpan={2}>
+          <FilterField
+            label={t("reports.packingLabel.dateRangeLabel")}
+            span={5}
+            tabletSpan={2}
+          >
             <UiVuexyDateRangePicker
-              aria-label="Từ ngày đến ngày"
+              aria-label={t("reports.filters.dateRangeAria")}
               value={period.range}
               format="DD/MM/YYYY"
-              placeholder={["Từ ngày", "Đến ngày"]}
+              placeholder={[
+                t("reports.packingLabel.dateFrom"),
+                t("reports.packingLabel.dateTo"),
+              ]}
               allowClear={false}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"
@@ -822,11 +908,11 @@ export default function PackingLabelPrintReport() {
             borderTop: `1px dashed ${S.border}`,
           }}
         >
-          <FilterField label="Thao tác">
+          <FilterField label={t("reports.packingLabel.colAction")}>
             <UiSelect
-              aria-label="Lọc theo thao tác"
+              aria-label={t("reports.packingLabel.actionFilterAria")}
               fullWidth
-              placeholder="Tất cả thao tác"
+              placeholder={t("reports.packingLabel.allActions")}
               value={actionFilter}
               onChange={(value) => {
                 setActionFilter(value);
@@ -834,15 +920,15 @@ export default function PackingLabelPrintReport() {
               }}
               options={PACKING_LABEL_ACTIONS.map((value) => ({
                 value,
-                label: ACTION_LABELS[value],
+                label: actionLabelMap[value],
               }))}
             />
           </FilterField>
-          <FilterField label="Kết quả">
+          <FilterField label={t("reports.packingLabel.colResult")}>
             <UiSelect
-              aria-label="Lọc theo kết quả"
+              aria-label={t("reports.packingLabel.resultFilterAria")}
               fullWidth
-              placeholder="Tất cả kết quả"
+              placeholder={t("reports.packingLabel.allResults")}
               value={resultFilter}
               onChange={(value) => {
                 setResultFilter(value);
@@ -850,15 +936,15 @@ export default function PackingLabelPrintReport() {
               }}
               options={PACKING_LABEL_RESULTS.map((value) => ({
                 value,
-                label: RESULT_LABELS[value],
+                label: resultLabelMap[value],
               }))}
             />
           </FilterField>
-          <FilterField label="Máy in">
+          <FilterField label={t("reports.packingLabel.colPrinter")}>
             <UiSelect
-              aria-label="Lọc theo máy in"
+              aria-label={t("reports.packingLabel.printerFilterAria")}
               fullWidth
-              placeholder="Tất cả máy in"
+              placeholder={t("reports.packingLabel.printerAll")}
               value={printerFilter}
               onChange={(value) => {
                 setPrinterFilter(value);
@@ -886,38 +972,47 @@ export default function PackingLabelPrintReport() {
             fontSize: 12,
           }}
         >
-          <Box component="span">{`Bộ lọc đang áp dụng: ${period.label}`}</Box>
+          <Box component="span">
+            {t("reports.packingLabel.filtersApplied", { label: period.label })}
+          </Box>
           <UiButton
             appearance="outlined"
             aria-controls="rpt-05-filter-fields"
             onClick={() => setSliceFilters(true)}
           >
-            Hiện bộ lọc
+            {t("reports.packingLabel.showFilters")}
           </UiButton>
         </Box>
       </Box>
 
       {period.invalid ? (
-        <UiAlert tone="error">Từ ngày không thể sau đến ngày.</UiAlert>
+        <UiAlert tone="error">
+          {t("reports.packingLabel.dateOrderError")}
+        </UiAlert>
       ) : null}
 
       {report.error ? (
         <ApiErrorAlert
           error={report.error}
-          title="Không tải được nhật ký nhãn đóng gói"
+          title={t("reports.packingLabel.logLoadError")}
           onRetry={report.refetch}
         />
       ) : null}
 
       {report.eventsError ? (
-        <UiAlert tone="warning" title="Chưa đọc được nhật ký từng lần in">
-          {`Danh sách event lấy từ /label-print-events (quyền label.print). Không đọc được nguồn này nên bảng và lát cắt đang trống dù kỳ ${period.label} vẫn có nhãn.`}
+        <UiAlert
+          tone="warning"
+          title={t("reports.packingLabel.eventsErrorTitle")}
+        >
+          {t("reports.packingLabel.eventsErrorBody", { label: period.label })}
         </UiAlert>
       ) : null}
 
       {report.capped ? (
         <UiAlert tone="info">
-          {`Đã đọc tới trần ${formatQuantity(LABEL_EVENT_LIMIT)} lần in gần nhất — các lần in cũ hơn chưa nằm trong bảng này.`}
+          {t("reports.packingLabel.cappedNote", {
+            limit: formatQuantity(LABEL_EVENT_LIMIT),
+          })}
         </UiAlert>
       ) : null}
 
@@ -925,7 +1020,7 @@ export default function PackingLabelPrintReport() {
         <Box role="alert">
           <UiAlert
             tone="error"
-            title="Không đủ quyền xuất báo cáo"
+            title={t("reports.packingLabel.exportDeniedTitle")}
             onClose={exporter.clearExportDenied}
           >
             {exporter.exportDenied}
@@ -936,7 +1031,7 @@ export default function PackingLabelPrintReport() {
       {/* ── Tổng quan ─────────────────────────────────────────────────── */}
       <Box
         component="section"
-        aria-label="Tổng quan vận hành in nhãn"
+        aria-label={t("reports.packingLabel.kpiAria")}
         sx={{
           display: "grid",
           gridTemplateColumns: {
@@ -948,40 +1043,40 @@ export default function PackingLabelPrintReport() {
         }}
       >
         <MetricCard
-          label="Tổng lượt in"
+          label={t("reports.packingLabel.kpiTotal")}
           value={formatQuantity(metrics.total)}
-          hint="Print và In lại theo bộ lọc"
-          metaLabel="Tổng event trong kỳ"
+          hint={t("reports.packingLabel.kpiTotalHint")}
+          metaLabel={t("reports.packingLabel.kpiTotalMeta")}
           metaValue="100%"
           progress={100}
           tone="primary"
           icon={<PrinterOutlined />}
         />
         <MetricCard
-          label="In thành công"
+          label={t("reports.packingLabel.resultPrinted")}
           value={formatQuantity(metrics.printed)}
-          hint="Event trả kết quả Printed"
-          metaLabel="Tỷ lệ hoàn tất"
+          hint={t("reports.packingLabel.kpiPrintedHint")}
+          metaLabel={t("reports.packingLabel.kpiPrintedMeta")}
           metaValue={`${ratio(metrics.printed, metrics.total)}%`}
           progress={ratio(metrics.printed, metrics.total)}
           tone="success"
           icon={<CheckCircleOutlined />}
         />
         <MetricCard
-          label="In lỗi"
+          label={t("reports.packingLabel.outcomeFailed")}
           value={formatQuantity(metrics.failed)}
-          hint="Gồm cả lần còn chờ máy in phản hồi"
-          metaLabel="Tỷ lệ cần xử lý"
+          hint={t("reports.packingLabel.kpiFailedHint")}
+          metaLabel={t("reports.packingLabel.kpiFailedMeta")}
           metaValue={`${ratio(metrics.failed, metrics.total)}%`}
           progress={ratio(metrics.failed, metrics.total)}
           tone="error"
           icon={<WarningOutlined />}
         />
         <MetricCard
-          label="Lượt In lại"
+          label={t("reports.packingLabel.kpiReprint")}
           value={formatQuantity(metrics.reprinted)}
-          hint="Lần in thành công thứ hai trở đi của một nhãn"
-          metaLabel="Tỷ trọng In lại"
+          hint={t("reports.packingLabel.kpiReprintHint")}
+          metaLabel={t("reports.packingLabel.kpiReprintMeta")}
           metaValue={`${ratio(metrics.reprinted, metrics.total)}%`}
           progress={ratio(metrics.reprinted, metrics.total)}
           tone="warning"
@@ -997,11 +1092,13 @@ export default function PackingLabelPrintReport() {
       >
         <SectionHead
           id="rpt-05-history-heading"
-          title="Lịch sử Print / Reprint"
+          title={t("reports.packingLabel.sectionHistoryTitle")}
           description={
             report.asOf
-              ? `Dữ liệu chốt tại ${formatDateTime(report.asOf)} · một dòng là một event audit.`
-              : "Một dòng là một event audit của đúng một lần Print / In lại."
+              ? t("reports.packingLabel.historyAsOf", {
+                  time: formatDateTime(report.asOf),
+                })
+              : t("reports.packingLabel.historyDescription")
           }
           sx={{ px: { xs: 2.25, md: 3 }, pt: 2.75, pb: 2 }}
           actions={
@@ -1009,7 +1106,9 @@ export default function PackingLabelPrintReport() {
               <UiStatusBadge
                 size="small"
                 tone="info"
-                label={`${formatQuantity(rows.length)} event`}
+                label={t("reports.packingLabel.eventCount", {
+                  count: formatQuantity(rows.length),
+                })}
               />
               <ExportButtons
                 exporting={exporter.exporting}
@@ -1031,7 +1130,7 @@ export default function PackingLabelPrintReport() {
           direction="row"
           spacing={1}
           role="tablist"
-          aria-label="Chế độ xem event"
+          aria-label={t("reports.packingLabel.viewTablistAria")}
           sx={{
             px: { xs: 2.25, md: 3 },
             pb: 1.75,
@@ -1042,12 +1141,12 @@ export default function PackingLabelPrintReport() {
             [
               {
                 value: "table",
-                label: "Bảng",
+                label: t("reports.packingLabel.viewTable"),
                 icon: <UnorderedListOutlined />,
               },
               {
                 value: "snapshot",
-                label: "Lát cắt",
+                label: t("reports.packingLabel.viewSnapshot"),
                 icon: <AppstoreOutlined />,
               },
             ] as const
@@ -1080,6 +1179,12 @@ export default function PackingLabelPrintReport() {
         </Stack>
 
         <Box sx={{ px: { xs: 1.75, md: 2.5 }, pt: 2.25 }}>
+          <SectionFilterBar
+            state={historyFilter}
+            label={t("reports.packingLabel.sectionHistoryTitle")}
+            unit={t("reports.packingLabel.historyUnit")}
+            data-testid="rpt-05-history-section-filter"
+          />
           <Box
             id="rpt-05-table-panel"
             role="tabpanel"
@@ -1093,7 +1198,7 @@ export default function PackingLabelPrintReport() {
                 rowKey={(row) => row.eventId}
                 loading={report.loading}
                 onRowClick={(row) => setOpenLabelId(row.labelId)}
-                emptyText="Không có event Print / Reprint khớp bộ lọc."
+                emptyText={t("reports.packingLabel.tableEmpty")}
                 // Nhật ký in một kỳ có thể rất dài: cuộn trong khung và ghim
                 // tiêu đề cột thay vì kéo trang thành một dải rất dài.
                 maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
@@ -1104,7 +1209,7 @@ export default function PackingLabelPrintReport() {
                     startIcon={<AuditOutlined />}
                     onClick={() => setOpenLabelId(row.labelId)}
                   >
-                    Xem audit
+                    {t("reports.packingLabel.viewAudit")}
                   </UiButton>
                 )}
               />
@@ -1120,11 +1225,13 @@ export default function PackingLabelPrintReport() {
             {view === "snapshot" ? (
               report.loading ? (
                 <Box sx={{ py: 6, display: "grid", placeItems: "center" }}>
-                  <UiSpinner label="Đang tải lát cắt event…" />
+                  <UiSpinner
+                    label={t("reports.packingLabel.snapshotLoading")}
+                  />
                 </Box>
               ) : pagination.pageRows.length === 0 ? (
                 <Box sx={{ py: 6, textAlign: "center", color: S.textMedium }}>
-                  Không có event khớp bộ lọc.
+                  {t("reports.packingLabel.snapshotEmpty")}
                 </Box>
               ) : (
                 <Box
@@ -1190,19 +1297,19 @@ export default function PackingLabelPrintReport() {
                       >
                         {[
                           {
-                            label: "Thao tác",
-                            value: ACTION_LABELS[row.action],
+                            label: t("reports.packingLabel.colAction"),
+                            value: actionLabelMap[row.action],
                           },
                           {
-                            label: "Máy in",
+                            label: t("reports.packingLabel.colPrinter"),
                             value: orEmpty(row.printerName),
                           },
                           {
-                            label: "Người thao tác",
+                            label: t("reports.packingLabel.colActor"),
                             value: orEmpty(row.actorName),
                           },
                           {
-                            label: "Lỗi / lý do",
+                            label: t("reports.packingLabel.colErrorReason"),
                             value: orEmpty(
                               row.errorCode || row.reasonCode || row.reasonNote,
                             ),
@@ -1241,7 +1348,7 @@ export default function PackingLabelPrintReport() {
                           startIcon={<AuditOutlined />}
                           onClick={() => setOpenLabelId(row.labelId)}
                         >
-                          Xem audit
+                          {t("reports.packingLabel.viewAudit")}
                         </UiButton>
                       </Box>
                     </Box>
@@ -1276,13 +1383,9 @@ export default function PackingLabelPrintReport() {
             </Box>
             <Box>
               <Box component="b" sx={{ color: S.textStrong }}>
-                Cách đọc:{" "}
+                {t("reports.packingLabel.howToReadLabel")}{" "}
               </Box>
-              Bảng và Lát cắt dùng cùng một tập event. Kỳ báo cáo lọc theo nhãn
-              tạo trong kỳ (hợp đồng RPT-LABEL-01) nên file xuất ra khớp đúng
-              tập dòng đang xem. In lại là lần in thành công thứ hai trở đi của
-              cùng một nhãn; thử lại sau lỗi vẫn tính là Print. Mở một dòng để
-              đối soát bản lưu bất biến và lịch sử attempt của đúng nhãn đó.
+              {t("reports.packingLabel.howToReadBody")}
             </Box>
           </Stack>
         </Box>
@@ -1290,18 +1393,20 @@ export default function PackingLabelPrintReport() {
 
       {openLabelId ? (
         <DrillDownDialog
-          title="Audit nhãn đóng gói"
-          subtitle="Đối soát từ bản lưu bất biến và log sự kiện."
+          title={t("reports.packingLabel.dialogTitle")}
+          subtitle={t("reports.packingLabel.dialogSubtitle")}
           onClose={() => setOpenLabelId(null)}
         >
           {snapshot.loading ? (
             <Box sx={{ py: 5, display: "grid", placeItems: "center" }}>
-              <UiSpinner label="Đang tải bản lưu nhãn…" />
+              <UiSpinner
+                label={t("reports.packingLabel.snapshotDetailLoading")}
+              />
             </Box>
           ) : snapshot.error ? (
             <ApiErrorAlert
               error={snapshot.error}
-              title="Không đọc được bản lưu nhãn"
+              title={t("reports.packingLabel.snapshotError")}
               onRetry={snapshot.refetch}
             />
           ) : snapshot.detail ? (
@@ -1310,9 +1415,7 @@ export default function PackingLabelPrintReport() {
                 (attempt) => !attempt.auditComplete,
               ) ? (
                 <UiAlert tone="warning">
-                  Nhật ký của nhãn này còn lần in thiếu dấu vết audit (máy in,
-                  người thao tác hoặc kết quả). Không suy diễn lần in thiếu từ
-                  dữ liệu hiện hành.
+                  {t("reports.packingLabel.attemptsAuditWarning")}
                 </UiAlert>
               ) : null}
 
@@ -1334,7 +1437,7 @@ export default function PackingLabelPrintReport() {
                     color: S.textStrong,
                   }}
                 >
-                  Bản lưu bất biến
+                  {t("reports.packingLabel.immutableTitle")}
                 </Box>
                 <Box
                   sx={{
@@ -1347,27 +1450,27 @@ export default function PackingLabelPrintReport() {
                   }}
                 >
                   <DetailCell
-                    label="Mã nhãn"
+                    label={t("reports.packingLabel.fieldLabelCode")}
                     value={orEmpty(snapshot.detail.labelCode)}
                   />
                   <DetailCell
-                    label="Phiếu xuất"
+                    label={t("reports.packingLabel.colOutbound")}
                     value={orEmpty(snapshot.detail.outboundNo)}
                   />
                   <DetailCell
-                    label="Mã bản lưu"
+                    label={t("reports.packingLabel.fieldSnapshotId")}
                     value={<CopyableId value={snapshot.detail.labelId} />}
                   />
                   <DetailCell
-                    label="Phiên bản"
+                    label={t("reports.packingLabel.fieldVersion")}
                     value={orEmpty(snapshot.detail.version)}
                   />
                   <DetailCell
-                    label="Người nhận"
+                    label={t("reports.packingLabel.fieldRecipient")}
                     value={orEmpty(snapshot.detail.recipient)}
                   />
                   <DetailCell
-                    label="Hoàn tất xuất kho"
+                    label={t("reports.packingLabel.fieldAppliedAt")}
                     value={
                       snapshot.detail.appliedAt
                         ? formatDateTime(snapshot.detail.appliedAt)
@@ -1375,11 +1478,11 @@ export default function PackingLabelPrintReport() {
                     }
                   />
                   <DetailCell
-                    label="Trạng thái bản lưu"
+                    label={t("reports.packingLabel.fieldSnapshotStatus")}
                     value={orEmpty(snapshot.detail.status)}
                   />
                   <DetailCell
-                    label="Nội dung nhãn"
+                    label={t("reports.packingLabel.fieldContent")}
                     value={orEmpty(snapshot.detail.content)}
                   />
                 </Box>
@@ -1403,13 +1506,13 @@ export default function PackingLabelPrintReport() {
                     color: S.textStrong,
                   }}
                 >
-                  Lịch sử attempt của nhãn
+                  {t("reports.packingLabel.attemptsTitle")}
                 </Box>
                 <ResponsiveDataTable<PackingLabelEvent>
                   columns={[
                     {
                       key: "attemptedAt",
-                      header: "Thời điểm",
+                      header: t("reports.packingLabel.colMoment"),
                       render: (row) =>
                         row.attemptedAt
                           ? formatDateTime(row.attemptedAt)
@@ -1417,22 +1520,22 @@ export default function PackingLabelPrintReport() {
                     },
                     {
                       key: "action",
-                      header: "Thao tác",
-                      render: (row) => ACTION_LABELS[row.action],
+                      header: t("reports.packingLabel.colAction"),
+                      render: (row) => actionLabelMap[row.action],
                     },
                     {
                       key: "result",
-                      header: "Kết quả",
+                      header: t("reports.packingLabel.colResult"),
                       render: (row) => <ResultBadge value={row.result} />,
                     },
                     {
                       key: "printer",
-                      header: "Máy in",
+                      header: t("reports.packingLabel.colPrinter"),
                       render: (row) => orEmpty(row.printerName),
                     },
                     {
                       key: "reason",
-                      header: "Lỗi / lý do",
+                      header: t("reports.packingLabel.colErrorReason"),
                       render: (row) =>
                         orEmpty(
                           row.errorCode || row.reasonCode || row.reasonNote,
@@ -1441,24 +1544,26 @@ export default function PackingLabelPrintReport() {
                   ]}
                   rows={snapshot.detail.attempts}
                   rowKey={(row) => row.eventId}
-                  emptyText="Nhãn này chưa có lần in nào được ghi nhận."
+                  emptyText={t("reports.packingLabel.attemptsEmpty")}
                 />
               </Box>
 
               <Box sx={{ fontSize: 12, color: S.textMedium }}>
                 {snapshot.detail.outboundDate
-                  ? `Ngày phiếu xuất: ${formatDate(snapshot.detail.outboundDate)}.`
+                  ? t("reports.packingLabel.outboundDateLine", {
+                      date: formatDate(snapshot.detail.outboundDate),
+                    })
                   : null}{" "}
-                Bản lưu được tạo lúc{" "}
-                {snapshot.detail.createdAt
-                  ? formatDateTime(snapshot.detail.createdAt)
-                  : EMPTY_TEXT}
-                .
+                {t("reports.packingLabel.createdAtLine", {
+                  time: snapshot.detail.createdAt
+                    ? formatDateTime(snapshot.detail.createdAt)
+                    : EMPTY_TEXT,
+                })}
               </Box>
             </Box>
           ) : (
             <UiAlert tone="info">
-              Không tìm thấy bản lưu của nhãn này trong kỳ đang xem.
+              {t("reports.packingLabel.snapshotMissing")}
             </UiAlert>
           )}
         </DrillDownDialog>

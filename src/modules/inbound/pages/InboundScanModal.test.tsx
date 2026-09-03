@@ -330,7 +330,7 @@ describe("IN-03 · carton scan context (Đã quét xong thùng)", () => {
   });
 
   async function scanCode(code: string) {
-    const input = await screen.findByLabelText("Scan code");
+    const input = await screen.findByLabelText("Quét mã");
     fireEvent.change(input, { target: { value: code } });
     fireEvent.keyDown(input, { key: "Enter" });
   }
@@ -475,7 +475,7 @@ describe("IN-03 · quét mã hộp linh kiện (scan-driven)", () => {
   });
 
   async function scanCode(code: string) {
-    const input = await screen.findByLabelText("Scan code");
+    const input = await screen.findByLabelText("Quét mã");
     fireEvent.change(input, { target: { value: code } });
     fireEvent.keyDown(input, { key: "Enter" });
   }
@@ -563,7 +563,7 @@ describe("IN-03 · hỏi loại SKU mới khi quét lần đầu", () => {
   });
 
   async function scanCode(code: string) {
-    const input = await screen.findByLabelText("Scan code");
+    const input = await screen.findByLabelText("Quét mã");
     fireEvent.change(input, { target: { value: code } });
     fireEvent.keyDown(input, { key: "Enter" });
   }

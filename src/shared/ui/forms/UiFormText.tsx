@@ -24,6 +24,7 @@ import Box from "@mui/material/Box";
 import { UiIconButton } from "../components/UiButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import { SEMANTIC_LIGHT as S, inkAlphaVar } from "../tokens";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * MUI (bản đang dùng trong dự án) tự sinh/gỡ CSS động cho biến thể
@@ -87,6 +88,7 @@ export function UiFormText<T extends FieldValues>({
   maxLength,
   "data-testid": dataTestId,
 }: UiFormTextProps<T>) {
+  const t = useT();
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
   // password đang ẩn → type "password"; bấm toggle → "text" để đọc được.
@@ -95,7 +97,11 @@ export function UiFormText<T extends FieldValues>({
   const endAdornment = isPassword ? (
     <InputAdornment position="end">
       <UiIconButton
-        aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+        aria-label={
+          showPassword
+            ? t("shared.form.hidePassword")
+            : t("shared.form.showPassword")
+        }
         onClick={() => setShowPassword((prev) => !prev)}
         edge="end"
         disabled={disabled}
@@ -179,7 +185,10 @@ export function UiFormText<T extends FieldValues>({
             >
               {label}
               {required ? (
-                <Box component="span" sx={{ color: S.error, marginLeft: "2px" }}>
+                <Box
+                  component="span"
+                  sx={{ color: S.error, marginLeft: "2px" }}
+                >
                   *
                 </Box>
               ) : null}

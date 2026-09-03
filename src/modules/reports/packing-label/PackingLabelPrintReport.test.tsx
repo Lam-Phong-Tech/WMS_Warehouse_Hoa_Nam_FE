@@ -1,5 +1,5 @@
 /**
- * RPT-05 "Nhãn đóng gói · Print / Reprint" — màn port 1:1 mockup 8.6 chạy trên
+ * RPT-05 "Nhãn đóng gói · In / In lại" — màn port 1:1 mockup 8.6 chạy trên
  * endpoint thật qua `packing-label-api`.
  *
  * File này khóa những gì typecheck không bắt được:
@@ -180,7 +180,7 @@ function renderReport() {
   ]);
 }
 
-describe("RPT-05 · Nhãn đóng gói Print / Reprint", () => {
+describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
   beforeEach(() => {
     vi.mocked(http.get).mockReset();
     vi.mocked(http.getPage).mockReset();
@@ -224,7 +224,7 @@ describe("RPT-05 · Nhãn đóng gói Print / Reprint", () => {
 
     // In lại = lần in THÀNH CÔNG thứ hai; thử lại sau lỗi vẫn là Print.
     expect(within(table).getAllByText("In lại")).toHaveLength(1);
-    expect(within(table).getAllByText("Print")).toHaveLength(3);
+    expect(within(table).getAllByText("In lần đầu")).toHaveLength(3);
   });
 
   it("tổng quan tính trên đúng tập dòng đang hiển thị", async () => {
@@ -273,7 +273,7 @@ describe("RPT-05 · Nhãn đóng gói Print / Reprint", () => {
     expect(screen.getByLabelText("Lọc theo kết quả")).toBeInTheDocument();
     expect(screen.getByLabelText("Lọc theo máy in")).toBeInTheDocument();
 
-    const sliceTab = screen.getByRole("tab", { name: /Lát cắt/ });
+    const sliceTab = screen.getByRole("tab", { name: /Dạng hộp/ });
     await user.click(sliceTab);
     expect(sliceTab).toHaveAttribute("aria-selected", "true");
     // Sang Lát cắt thì lưới bộ lọc thu lại, chừa nút bung lại.

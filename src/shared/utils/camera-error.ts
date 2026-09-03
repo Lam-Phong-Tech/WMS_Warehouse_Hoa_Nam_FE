@@ -5,6 +5,8 @@
  *
  * Dùng chung cho mọi màn quét bằng camera (CameraScanModal, Inbound...).
  */
+import { tStatic } from "@/shared/i18n/useT";
+
 export function getCameraErrorMessage(error: unknown): string {
   const name =
     error instanceof DOMException
@@ -16,14 +18,14 @@ export function getCameraErrorMessage(error: unknown): string {
   switch (name) {
     case "NotAllowedError":
     case "SecurityError":
-      return "Trình duyệt đang chặn quyền dùng camera. Bấm vào biểu tượng ổ khóa cạnh thanh địa chỉ, cho phép Camera rồi thử lại; hoặc nhập mã thủ công.";
+      return tStatic("shared.scanner.errPermission");
     case "NotFoundError":
     case "OverconstrainedError":
-      return "Không tìm thấy camera trên thiết bị này. Kiểm tra camera đã cắm/bật chưa, hoặc nhập mã thủ công.";
+      return tStatic("shared.scanner.errNotFound");
     case "NotReadableError":
     case "AbortError":
-      return "Camera đang được ứng dụng khác sử dụng. Đóng ứng dụng đó rồi thử lại, hoặc nhập mã thủ công.";
+      return tStatic("shared.scanner.errBusy");
     default:
-      return "Không mở được camera. Kiểm tra quyền camera của trình duyệt rồi thử lại, hoặc nhập mã thủ công.";
+      return tStatic("shared.scanner.errGeneric");
   }
 }

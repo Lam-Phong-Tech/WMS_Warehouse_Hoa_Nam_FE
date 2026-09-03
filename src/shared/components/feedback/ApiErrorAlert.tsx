@@ -13,6 +13,7 @@ import {
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { NoPermissionState } from "./NoPermissionState";
 import { ActionButton } from "@/shared/components/actions";
+import { useT } from "@/shared/i18n/useT";
 
 export interface ApiErrorAlertProps {
   /** Lỗi bất kỳ (axios / Error / unknown). Falsy → không render gì. */
@@ -38,13 +39,15 @@ export interface ApiErrorAlertProps {
  */
 export function ApiErrorAlert({
   error,
-  title = "Đã xảy ra lỗi",
+  title,
   fallback,
   onRetry,
   style,
   testId,
 }: ApiErrorAlertProps) {
+  const t = useT();
   if (!error) return null;
+  const resolvedTitle = title ?? t("shared.states.errorTitle");
 
   if (isNoPermissionError(error)) {
     // SRS §8.2: 403 luôn trả request_id để tra soát. Hiển thị mã lỗi +
@@ -57,23 +60,24 @@ export function ApiErrorAlert({
         <NoPermissionState
           compact
           showHomeButton={false}
-          title="Không có quyền truy cập"
+          title={t("shared.states.noPermissionShortTitle")}
           description={
             <>
-              Bạn không có quyền thực hiện thao tác này. Liên hệ quản trị viên
-              để được cấp quyền.
+              {t("shared.states.noPermissionDesc")}
               {denied.code || deniedRequestId ? (
                 <>
                   <br />
                   <span data-testid="permission-denied-trace">
                     HTTP 403{denied.code ? ` · ${denied.code}` : ""}
-                    {deniedRequestId ? ` · Request ID: ${deniedRequestId}` : ""}
+                    {deniedRequestId
+                      ? ` · ${t("shared.states.requestIdTrace", { id: deniedRequestId })}`
+                      : ""}
                   </span>
                 </>
               ) : null}
             </>
           }
-          actionText={onRetry ? "Thử lại" : "Quay lại"}
+          actionText={onRetry ? t("common.retry") : t("shared.actions.goBack")}
           onAction={onRetry}
         />
       </div>
@@ -98,12 +102,12 @@ export function ApiErrorAlert({
         action={
           onRetry ? (
             <ActionButton kind="refresh" onClick={onRetry}>
-              Thử lại
+              {t("common.retry")}
             </ActionButton>
           ) : undefined
         }
       >
-        <AlertTitle>{title}</AlertTitle>
+        <AlertTitle>{resolvedTitle}</AlertTitle>
         <div>{message}</div>
         {fieldMessages.length > 0 && (
           <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>

@@ -4,6 +4,7 @@
 import type { ReactNode } from "react";
 import { UiStateSurface } from "@/shared/ui";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
+import { useT } from "@/shared/i18n/useT";
 
 export interface EmptyStateProps {
   title?: ReactNode;
@@ -17,10 +18,13 @@ export interface EmptyStateProps {
 /** WWHN-268: phát `data-ui-state="empty"` cho ma trận bằng chứng QA2. */
 export function EmptyState({
   title,
-  description = "Không có dữ liệu",
+  description,
   children,
   testId,
 }: EmptyStateProps) {
+  const t = useT();
+  const resolvedDescription =
+    description === undefined ? t("shared.states.noData") : description;
   // Test hook nằm trên phần tử bọc do FE tự kiểm soát (UiStateSurface không
   // nhận data-attribute) — giữ nguyên hợp đồng WWHN-268.
   return (
@@ -29,13 +33,17 @@ export function EmptyState({
         <UiStateSurface
           kind="empty"
           title={title}
-          description={description}
+          description={resolvedDescription}
           action={children}
         />
       ) : (
         // Không có title: mô tả (mặc định "Không có dữ liệu") là dòng chính —
         // giữ nguyên từng ký tự text hiển thị như bản antd Empty cũ.
-        <UiStateSurface kind="empty" title={description} action={children} />
+        <UiStateSurface
+          kind="empty"
+          title={resolvedDescription}
+          action={children}
+        />
       )}
     </div>
   );

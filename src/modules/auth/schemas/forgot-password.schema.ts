@@ -1,48 +1,69 @@
 import { z } from "zod";
+import { tStatic, type TranslateFn } from "@/shared/i18n/useT";
 import { STRONG_PASSWORD_REGEX } from "@/modules/auth/schemas/change-password.schema";
 
-export const forgotPasswordEmailSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, "Vui lòng nhập email")
-    .email("Email không hợp lệ"),
-});
+/**
+ * Các factory nhận `t` để lỗi validate đổi theo ngôn ngữ — component dựng
+ * schema bằng `useMemo(() => build...(t), [t])`. Bản export tĩnh bên dưới giữ
+ * cho test/nơi ngoài React (message đóng băng theo ngôn ngữ lúc import).
+ */
+export function buildForgotPasswordEmailSchema(t: TranslateFn) {
+  return z.object({
+    email: z
+      .string()
+      .trim()
+      .min(1, t("auth.validation.emailRequired"))
+      .email(t("auth.validation.emailInvalid")),
+  });
+}
+
+export const forgotPasswordEmailSchema =
+  buildForgotPasswordEmailSchema(tStatic);
 
 export type ForgotPasswordEmailFormValues = z.infer<
   typeof forgotPasswordEmailSchema
 >;
 
-export const otpSchema = z.object({
-  otp: z
-    .string()
-    .trim()
-    .length(6, "Mã OTP gồm đúng 6 chữ số")
-    .regex(/^\d{6}$/, "Mã OTP chỉ gồm chữ số"),
-});
+export function buildOtpSchema(t: TranslateFn) {
+  return z.object({
+    otp: z
+      .string()
+      .trim()
+      .length(6, t("auth.validation.otpLength"))
+      .regex(/^\d{6}$/, t("auth.validation.otpDigitsOnly")),
+  });
+}
+
+export const otpSchema = buildOtpSchema(tStatic);
 
 export type OtpFormValues = z.infer<typeof otpSchema>;
 
 /** Cùng rule "mật khẩu mạnh" với change-password.schema.ts — mật khẩu đặt qua
  * quên-mật-khẩu không được yếu hơn mật khẩu đổi thủ công. */
-export const resetPasswordFormSchema = z
-  .object({
-    newPassword: z
-      .string()
-      .min(8, "Mật khẩu mới tối thiểu 8 ký tự")
-      .refine(
-        (v) => v === v.trim(),
-        "Mật khẩu không được có khoảng trắng đầu/cuối",
-      )
-      .refine(
-        (v) => STRONG_PASSWORD_REGEX.test(v),
-        "Mật khẩu phải có ít nhất 1 chữ hoa, 1 chữ thường và 1 ký tự đặc biệt",
-      ),
-    newPasswordConfirmation: z.string().min(1, "Vui lòng xác nhận mật khẩu"),
-  })
-  .refine((v) => v.newPassword === v.newPasswordConfirmation, {
-    message: "Mật khẩu xác nhận không khớp",
-    path: ["newPasswordConfirmation"],
-  });
+export function buildResetPasswordFormSchema(t: TranslateFn) {
+  return z
+    .object({
+      newPassword: z
+        .string()
+        .min(8, t("auth.validation.newPasswordMin"))
+        .refine(
+          (v) => v === v.trim(),
+          t("auth.validation.passwordNoEdgeSpaces"),
+        )
+        .refine(
+          (v) => STRONG_PASSWORD_REGEX.test(v),
+          t("auth.validation.passwordStrength"),
+        ),
+      newPasswordConfirmation: z
+        .string()
+        .min(1, t("auth.validation.confirmPasswordRequired")),
+    })
+    .refine((v) => v.newPassword === v.newPasswordConfirmation, {
+      message: t("auth.validation.confirmPasswordMismatch"),
+      path: ["newPasswordConfirmation"],
+    });
+}
+
+export const resetPasswordFormSchema = buildResetPasswordFormSchema(tStatic);
 
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordFormSchema>;

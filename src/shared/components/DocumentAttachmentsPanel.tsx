@@ -34,6 +34,8 @@ import {
 import { formatDateTime } from "@/shared/utils/format-date";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { tStatic, useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 
 /**
  * "Chứng từ nhập/xuất/hoàn trả": khối đính kèm chứng từ dùng chung cho phiếu
@@ -55,13 +57,13 @@ export interface DocumentAttachmentsPanelProps {
 const ACCEPTED_EXTENSIONS = ".jpg,.jpeg,.png,.webp,.pdf";
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 
-/** Nhãn tiếng Việt cho attachment_type — trước đây in thẳng enum BE ra UI. */
-const ATTACHMENT_KIND_LABELS: Record<string, string> = {
-  SOURCE_DOCUMENT: "Chứng từ gốc",
-  INVOICE: "Hóa đơn",
-  DELIVERY_NOTE: "Phiếu giao hàng",
-  PHOTO: "Ảnh hiện trạng",
-  OTHER: "Khác",
+/** Nhãn i18n cho attachment_type — trước đây in thẳng enum BE ra UI. */
+const ATTACHMENT_KIND_KEYS: Record<string, MessageKey> = {
+  SOURCE_DOCUMENT: "shared.attachments.kindSourceDocument",
+  INVOICE: "shared.attachments.kindInvoice",
+  DELIVERY_NOTE: "shared.attachments.kindDeliveryNote",
+  PHOTO: "shared.attachments.kindPhoto",
+  OTHER: "shared.attachments.kindOther",
 };
 
 /** Tham chiếu ổn định cho danh sách rỗng: dùng làm dependency của effect tải ảnh. */
@@ -74,10 +76,8 @@ function formatFileSize(bytes: number): string {
 }
 
 function kindLabel(attachment: DocumentAttachment): string {
-  return (
-    ATTACHMENT_KIND_LABELS[attachment.attachment_type] ??
-    attachment.attachment_type
-  );
+  const key = ATTACHMENT_KIND_KEYS[attachment.attachment_type];
+  return key ? tStatic(key) : attachment.attachment_type;
 }
 
 function uploadedAtLabel(attachment: DocumentAttachment): string {
@@ -154,6 +154,7 @@ export function DocumentAttachmentsPanel({
   documentId,
   disabled = false,
 }: DocumentAttachmentsPanelProps) {
+  const t = useT();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryKey = ["document-attachments", documentType, documentId];
@@ -171,12 +172,12 @@ export function DocumentAttachmentsPanel({
     mutationFn: (file: File) =>
       uploadDocumentAttachment({ documentType, documentId, file }),
     onSuccess: () => {
-      toast.success("Đã tải lên chứng từ đính kèm.");
+      toast.success(t("shared.attachments.uploadSuccess"));
       void queryClient.invalidateQueries({ queryKey });
     },
     onError: (error) => {
       toast.error(
-        getApiErrorMessage(error, "Không thể tải lên chứng từ đính kèm."),
+        getApiErrorMessage(error, t("shared.attachments.uploadError")),
       );
     },
   });
@@ -185,14 +186,14 @@ export function DocumentAttachmentsPanel({
     mutationFn: (attachmentId: string) =>
       deleteDocumentAttachment(attachmentId),
     onSuccess: (_data, attachmentId) => {
-      toast.success("Đã xoá chứng từ đính kèm.");
+      toast.success(t("shared.attachments.deleteSuccess"));
       if (previewId === attachmentId) setPreviewId(null);
       setDeleteConfirmId(null);
       void queryClient.invalidateQueries({ queryKey });
     },
     onError: (error) => {
       toast.error(
-        getApiErrorMessage(error, "Không thể xoá chứng từ đính kèm."),
+        getApiErrorMessage(error, t("shared.attachments.deleteError")),
       );
     },
   });
@@ -203,7 +204,7 @@ export function DocumentAttachmentsPanel({
     // BE nhận 1 tệp/request; chọn hoặc kéo-thả nhiều tệp thì tải tuần tự.
     files.forEach((file) => {
       if (file.size > MAX_FILE_BYTES) {
-        toast.error(`${file.name}: chứng từ vượt quá 15MB.`);
+        toast.error(t("shared.attachments.fileTooLarge", { name: file.name }));
         return;
       }
       uploadMutation.mutate(file);
@@ -238,24 +239,32 @@ export function DocumentAttachmentsPanel({
       <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
         <PaperClipOutlined style={{ fontSize: 16 }} />
         <Typography sx={{ fontWeight: 700 }}>
-          {`Chứng từ đính kèm${attachments.length ? ` (${attachments.length})` : ""}`}
+          {`${t("shared.attachments.title")}${attachments.length ? ` (${attachments.length})` : ""}`}
         </Typography>
         {evidenceStatus === "PENDING" ? (
-          <Chip size="small" color="warning" label="Cần bổ sung chứng từ" />
+          <Chip
+            size="small"
+            color="warning"
+            label={t("shared.attachments.evidencePending")}
+          />
         ) : evidenceStatus === "PROVIDED" ? (
-          <Chip size="small" color="success" label="Đã có chứng từ" />
+          <Chip
+            size="small"
+            color="success"
+            label={t("shared.attachments.evidenceProvided")}
+          />
         ) : null}
       </Stack>
 
       {evidenceStatus === "PENDING" ? (
         <Alert severity="warning">
-          Bắt buộc có 1 chứng từ đính kèm để đối soát. Vui lòng tải lên.
+          {t("shared.attachments.evidenceRequiredAlert")}
         </Alert>
       ) : null}
 
       {query.isLoading ? (
         <Typography variant="body2" color="text.secondary">
-          Đang tải danh sách chứng từ...
+          {t("shared.attachments.loadingList")}
         </Typography>
       ) : (
         <>
@@ -275,7 +284,9 @@ export function DocumentAttachmentsPanel({
                     <Box
                       role="button"
                       tabIndex={0}
-                      aria-label={`Xem chứng từ ${attachment.file_name}`}
+                      aria-label={t("shared.attachments.viewAttachment", {
+                        name: attachment.file_name,
+                      })}
                       onClick={() => setPreviewId(attachment.id)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
@@ -400,7 +411,9 @@ export function DocumentAttachmentsPanel({
                 >
                   <UploadOutlined style={{ fontSize: 18 }} />
                   <Typography variant="caption">
-                    {uploadMutation.isPending ? "Đang tải lên…" : "Đính kèm"}
+                    {uploadMutation.isPending
+                      ? t("shared.attachments.uploading")
+                      : t("shared.attachments.attach")}
                   </Typography>
                   <input
                     ref={fileInputRef}
@@ -485,13 +498,13 @@ export function DocumentAttachmentsPanel({
 
           {attachments.length === 0 && disabled ? (
             <Typography variant="body2" color="text.secondary">
-              Chưa có chứng từ nào đính kèm.
+              {t("shared.attachments.noAttachments")}
             </Typography>
           ) : null}
 
           {disabled ? null : (
             <Typography variant="caption" color="text.secondary">
-              JPG/PNG/WEBP hoặc PDF, mỗi tệp ≤ 15MB. Bấm vào ảnh để xem lớn.
+              {t("shared.attachments.uploadHint")}
             </Typography>
           )}
         </>
@@ -528,7 +541,7 @@ export function DocumentAttachmentsPanel({
           </Typography>
           <ActionIconButton
             kind="close"
-            label="Đóng xem chứng từ"
+            label={t("shared.attachments.closePreview")}
             onClick={() => setPreviewId(null)}
             sx={{ position: "absolute", right: 10, top: 8 }}
           />
@@ -557,7 +570,7 @@ export function DocumentAttachmentsPanel({
             />
           ) : (
             <Typography variant="body2" color="text.secondary">
-              Không hiển thị được ảnh — tải tệp xuống để xem.
+              {t("shared.attachments.imageFallback")}
             </Typography>
           )}
         </DialogContent>
@@ -569,7 +582,7 @@ export function DocumentAttachmentsPanel({
               setPreviewId(imageAttachments[previewIndex - 1]?.id ?? null)
             }
           >
-            Ảnh trước
+            {t("shared.attachments.prevImage")}
           </ActionButton>
           <ActionButton
             kind="next"
@@ -580,7 +593,7 @@ export function DocumentAttachmentsPanel({
               setPreviewId(imageAttachments[previewIndex + 1]?.id ?? null)
             }
           >
-            Ảnh sau
+            {t("shared.attachments.nextImage")}
           </ActionButton>
           <Box sx={{ flexGrow: 1 }} />
           <ActionButton
@@ -589,10 +602,10 @@ export function DocumentAttachmentsPanel({
               previewAttachment && handleDownload(previewAttachment)
             }
           >
-            Tải xuống
+            {t("shared.actions.download")}
           </ActionButton>
           <ActionButton kind="close" onClick={() => setPreviewId(null)}>
-            Đóng
+            {t("common.close")}
           </ActionButton>
         </DialogActions>
       </Dialog>
@@ -604,7 +617,7 @@ export function DocumentAttachmentsPanel({
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>Xoá chứng từ đính kèm này?</DialogTitle>
+        <DialogTitle>{t("shared.attachments.deleteConfirmTitle")}</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
             {deleteTarget
@@ -612,7 +625,7 @@ export function DocumentAttachmentsPanel({
               : ""}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Chứng từ bị gỡ khỏi phiếu và không khôi phục được từ màn này.
+            {t("shared.attachments.deleteConfirmNote")}
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -621,7 +634,7 @@ export function DocumentAttachmentsPanel({
             onClick={() => setDeleteConfirmId(null)}
             disabled={deleteMutation.isPending}
           >
-            Không
+            {t("shared.actions.no")}
           </ActionButton>
           <ActionButton
             kind="delete"
@@ -630,7 +643,7 @@ export function DocumentAttachmentsPanel({
               if (deleteConfirmId) deleteMutation.mutate(deleteConfirmId);
             }}
           >
-            Xoá
+            {t("shared.actions.delete")}
           </ActionButton>
         </DialogActions>
       </Dialog>

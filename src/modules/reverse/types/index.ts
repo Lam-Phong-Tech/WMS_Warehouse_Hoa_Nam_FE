@@ -50,6 +50,7 @@ export interface ReversalDocument {
   reversed_at?: string;
   created_at: string;
   created_by: string;
+  /** TÊN người ghi nhận (`posted_by_name` của BE) — không phải UUID. */
   posted_by?: string;
   cancelled_at?: string;
   cancel_reason?: string;
@@ -139,6 +140,7 @@ export interface ReversibleMovement {
   warehouse_id: string;
   warehouse_name: string;
   posted_at: string;
+  /** TÊN người ghi nhận (`posted_by_name` của BE) — không phải UUID. */
   posted_by?: string;
   version?: string;
   dependency_guard?: string;

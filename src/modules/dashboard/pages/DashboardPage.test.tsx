@@ -257,20 +257,23 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard();
 
+    // Kỳ mặc định là "7 ngày gần nhất" — xem chú thích ở DashboardPage: kỳ
+    // "Hôm nay" có thể không có phiếu xuất nào nên Top 5 SKU xuất và các KPI
+    // xuất kho rỗng ngay lần mở đầu tiên.
+    const from = dayjs().subtract(6, "day").format("YYYY-MM-DD");
     await screen.findByText("Xuất sản phẩm đã Post");
+    expect(mockedGet).toHaveBeenCalledWith(
+      API_ENDPOINTS.REPORTS_XNT_ENHANCED,
+      expect.objectContaining({ params: { from_date: from, to_date: today } }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hôm nay" }));
+
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.REPORTS_XNT_ENHANCED,
       expect.objectContaining({
         params: { from_date: today, to_date: today },
       }),
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "7 ngày gần nhất" }));
-
-    const from = dayjs().subtract(6, "day").format("YYYY-MM-DD");
-    expect(mockedGet).toHaveBeenCalledWith(
-      API_ENDPOINTS.REPORTS_XNT_ENHANCED,
-      expect.objectContaining({ params: { from_date: from, to_date: today } }),
     );
   });
 });
@@ -326,11 +329,21 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
     return Promise.reject(new Error(`unexpected url ${url}`));
   }
 
-  it("vẽ đường luồng nhiều điểm dù kỳ KPI là Hôm nay", async () => {
+  /**
+   * Kỳ mặc định của màn là "7 ngày gần nhất", nên các test dưới đây phải CHỦ
+   * ĐỘNG chuyển về "Hôm nay" — đó mới là kỳ hẹp nhất và là trường hợp cửa sổ
+   * biểu đồ phải chứng minh mình tách khỏi kỳ KPI.
+   */
+  async function renderAtToday() {
     mockedGet.mockImplementation((url: string) => routeWeek(url));
     renderDashboard();
-
     await screen.findByText("Xuất sản phẩm đã Post");
+    fireEvent.click(screen.getByRole("button", { name: "Hôm nay" }));
+    await screen.findByText("Xuất sản phẩm đã Post");
+  }
+
+  it("vẽ đường luồng nhiều điểm dù kỳ KPI là Hôm nay", async () => {
+    await renderAtToday();
 
     const flow = document.querySelector("#flow-card") as HTMLElement;
     expect(flow).not.toBeNull();
@@ -346,10 +359,7 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
   });
 
   it("giữ sparkline trên thẻ KPI ở kỳ Hôm nay", async () => {
-    mockedGet.mockImplementation((url: string) => routeWeek(url));
-    renderDashboard();
-
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await renderAtToday();
 
     const sparks = [...document.querySelectorAll("#kpi-grid .kpi-spark")];
     expect(sparks.length).toBeGreaterThan(0);
@@ -360,10 +370,7 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
   });
 
   it("đọc chuỗi theo ngày ở cửa sổ 7 ngày, không theo kỳ KPI", async () => {
-    mockedGet.mockImplementation((url: string) => routeWeek(url));
-    renderDashboard();
-
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await renderAtToday();
 
     // Kỳ KPI là Hôm nay…
     expect(mockedGet).toHaveBeenCalledWith(

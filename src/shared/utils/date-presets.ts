@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import quarterOfYear from "dayjs/plugin/quarterOfYear";
+import { tStatic } from "@/shared/i18n/useT";
 
 dayjs.extend(quarterOfYear);
 
@@ -14,15 +15,42 @@ export type DashboardPeriodPreset =
   | "quarter"
   | "year";
 
+// Getter để `label` đọc theo ngôn ngữ HIỆN TẠI mỗi lần truy cập (API mảng
+// {value, label} giữ nguyên cho caller cũ; file thuần TS không gọi được hook).
 export const DASHBOARD_PERIOD_PRESETS: Array<{
   value: DashboardPeriodPreset;
   label: string;
 }> = [
-  { value: "today", label: "Hôm nay" },
-  { value: "week", label: "Tuần này" },
-  { value: "month", label: "Tháng này" },
-  { value: "quarter", label: "Quý này" },
-  { value: "year", label: "Năm này" },
+  {
+    value: "today",
+    get label() {
+      return tStatic("shared.period.today");
+    },
+  },
+  {
+    value: "week",
+    get label() {
+      return tStatic("shared.period.week");
+    },
+  },
+  {
+    value: "month",
+    get label() {
+      return tStatic("shared.period.month");
+    },
+  },
+  {
+    value: "quarter",
+    get label() {
+      return tStatic("shared.period.quarter");
+    },
+  },
+  {
+    value: "year",
+    get label() {
+      return tStatic("shared.period.year");
+    },
+  },
 ];
 
 // dayjs.OpUnitType không có "quarter" trừ khi TS thấy augmentation của plugin

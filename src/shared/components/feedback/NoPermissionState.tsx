@@ -7,6 +7,7 @@ import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { ActionButton } from "@/shared/components/actions";
 import { UiStateSurface } from "@/shared/ui";
 import { SPACING } from "@/shared/ui/tokens";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * Reusable "No Permission" state component for 403 errors.
@@ -37,15 +38,22 @@ export interface NoPermissionStateProps {
 }
 
 export function NoPermissionState({
-  title = "Bạn không có quyền truy cập",
-  description = "Bạn không có quyền thực hiện thao tác này. Liên hệ quản trị viên để được cấp quyền.",
-  actionText = "Quay lại",
+  title,
+  description,
+  actionText,
   onAction,
   showHomeButton = true,
   compact = false,
   testId,
 }: NoPermissionStateProps) {
+  const t = useT();
   const navigate = useNavigate();
+  const resolvedTitle = title ?? t("shared.states.noPermissionTitle");
+  const resolvedDescription =
+    description === undefined
+      ? t("shared.states.noPermissionDesc")
+      : description;
+  const resolvedActionText = actionText ?? t("shared.actions.goBack");
 
   const handleAction = () => {
     if (onAction) {
@@ -73,8 +81,8 @@ export function NoPermissionState({
     >
       <UiStateSurface
         kind="no-permission"
-        title={title}
-        description={description}
+        title={resolvedTitle}
+        description={resolvedDescription}
         action={
           <div
             style={{
@@ -85,11 +93,11 @@ export function NoPermissionState({
             }}
           >
             <ActionButton kind="back" onClick={handleAction}>
-              {actionText}
+              {resolvedActionText}
             </ActionButton>
             {showHomeButton && (
               <ActionButton kind="back" onClick={handleGoHome}>
-                Về trang chủ
+                {t("shared.actions.goHome")}
               </ActionButton>
             )}
           </div>

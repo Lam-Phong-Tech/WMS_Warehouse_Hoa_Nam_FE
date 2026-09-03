@@ -9,6 +9,7 @@ import Pagination from "@mui/material/Pagination";
 import Select from "@mui/material/Select";
 import { SPACING } from "@/shared/ui/tokens";
 import { UiText } from "./UiText";
+import { useT } from "@/shared/i18n/useT";
 
 export interface UiPaginationProps {
   /** Trang hiện tại (bắt đầu từ 1). */
@@ -38,6 +39,7 @@ export function UiPagination({
   showTotal = true,
   disabled = false,
 }: UiPaginationProps) {
+  const t = useT();
   // Phòng thủ NaN/undefined từ payload lỗi: Math.max(1, NaN) = NaN sẽ làm MUI
   // Pagination render chữ "NaN" — chuẩn hoá về số hữu hạn trước khi tính.
   const safeTotal = Number.isFinite(total) ? Math.max(0, total) : 0;
@@ -59,7 +61,7 @@ export function UiPagination({
   return (
     <Box
       component="nav"
-      aria-label="Phân trang"
+      aria-label={t("shared.table.pagination")}
       sx={{
         display: "flex",
         alignItems: "center",
@@ -69,7 +71,9 @@ export function UiPagination({
       }}
     >
       {showTotal ? (
-        <UiText variant="secondary">Tổng {safeTotal} bản ghi</UiText>
+        <UiText variant="secondary">
+          {t("shared.table.totalRecords", { total: safeTotal })}
+        </UiText>
       ) : null}
       <Box
         sx={{
@@ -84,12 +88,12 @@ export function UiPagination({
             size="small"
             value={safeSize}
             disabled={disabled}
-            inputProps={{ "aria-label": "Số bản ghi mỗi trang" }}
+            inputProps={{ "aria-label": t("shared.table.perPageAria") }}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
           >
             {sizeOptions.map((size) => (
               <MenuItem key={size} value={size}>
-                {size} / trang
+                {t("shared.table.perPage", { size })}
               </MenuItem>
             ))}
           </Select>

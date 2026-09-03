@@ -10,6 +10,7 @@ import {
   getErrorCode,
   type ApiErrorResponse,
 } from "@/shared/types/api-response";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * Auth route guard fail-closed:
@@ -18,6 +19,7 @@ import {
  * - chờ /auth/me xác nhận permission/data-scope của đúng JWT hiện tại.
  */
 export function ProtectedRoute() {
+  const t = useT();
   const location = useLocation();
   const isBootstrapped = useAuthStore((s) => s.isBootstrapped);
   const bootstrapError = useAuthStore((s) => s.bootstrapError);
@@ -32,7 +34,7 @@ export function ProtectedRoute() {
       <div style={{ margin: "48px auto", maxWidth: 720, padding: 24 }}>
         <ApiErrorAlert
           error={bootstrapError}
-          title="Không thể khôi phục phiên làm việc"
+          title={t("shared.states.sessionRestoreError")}
           onRetry={() => {
             void bootstrapAuth();
           }}
@@ -58,7 +60,7 @@ export function ProtectedRoute() {
       <div style={{ margin: "48px auto", maxWidth: 720, padding: 24 }}>
         <ApiErrorAlert
           error={meQuery.error}
-          title="Không thể tải hồ sơ và phân quyền"
+          title={t("shared.states.profileLoadError")}
           onRetry={() => {
             void meQuery.refetch();
           }}

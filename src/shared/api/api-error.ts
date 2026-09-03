@@ -1,3 +1,5 @@
+import { tStatic } from "@/shared/i18n/useT";
+
 /**
  * ApiErrorResponse — định nghĩa local để tránh circular dependency.
  * Xem bản gốc ở shared/types/api-response.ts.
@@ -109,7 +111,7 @@ export class ApiEnvelopeError extends Error {
   readonly data: ApiErrorResponse;
 
   constructor(data: ApiErrorResponse) {
-    super(data.message ?? "Yêu cầu không thành công");
+    super(data.message ?? tStatic("shared.apiError.requestFailed"));
     this.name = "ApiEnvelopeError";
     this.data = data;
   }
@@ -357,10 +359,7 @@ export function getMutationErrorMessage(error: unknown): string {
     const err = error as Record<string, unknown>;
     const response = err.response as Record<string, unknown> | undefined;
     const data = response?.data as ApiErrorResponse | undefined;
-    return (
-      data?.message ??
-      "Bạn không có quyền thực hiện thao tác này. Liên hệ quản trị viên để được cấp quyền."
-    );
+    return data?.message ?? tStatic("shared.apiError.noPermission");
   }
   return getApiErrorMessage(error);
 }
@@ -372,8 +371,8 @@ export function getMutationErrorMessage(error: unknown): string {
  */
 export const getNoPermissionMessage = getMutationErrorMessage;
 
-const DEFAULT_MESSAGE =
-  "Hệ thống đang gặp sự cố, vui lòng thử lại sau ít phút. Nếu vẫn lỗi, liên hệ quản trị viên.";
+/** Câu fallback chung — đọc theo ngôn ngữ tại thời điểm gọi (tStatic). */
+const defaultApiErrorMessage = () => tStatic("shared.apiError.default");
 
 /**
  * Trích thông điệp lỗi thân thiện từ bất kỳ lỗi nào (axios / Error / unknown).
@@ -382,7 +381,7 @@ const DEFAULT_MESSAGE =
  */
 export function getApiErrorMessage(
   error: unknown,
-  fallback = DEFAULT_MESSAGE,
+  fallback = defaultApiErrorMessage(),
 ): string {
   const data = getResponseData(error);
   if (data) {
@@ -421,10 +420,10 @@ export function getApiErrorMessage(
   if (isAxiosError(error)) {
     const axiosErr = error as Record<string, unknown>;
     if (axiosErr.code === "ECONNABORTED" || axiosErr.code === "ETIMEDOUT") {
-      return "Yêu cầu quá thời gian, vui lòng thử lại.";
+      return tStatic("shared.apiError.timeout");
     }
     if (axiosErr.code === "ERR_NETWORK") {
-      return "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
+      return tStatic("shared.apiError.network");
     }
 
     const response = axiosErr.response as Record<string, unknown> | undefined;
@@ -433,14 +432,16 @@ export function getApiErrorMessage(
       if (status === 429) {
         const retryAfter = Number(axiosErr._retryAfterSeconds);
         return Number.isFinite(retryAfter) && retryAfter > 0
-          ? `Thao tác tạm bị khóa do thực hiện quá nhiều lần. Vui lòng đợi ${String(Math.ceil(retryAfter))} giây rồi thử lại.`
-          : "Thao tác tạm bị khóa do thực hiện quá nhiều lần. Vui lòng đợi một lát rồi thử lại.";
+          ? tStatic("shared.apiError.rateLimitedWait", {
+              seconds: String(Math.ceil(retryAfter)),
+            })
+          : tStatic("shared.apiError.rateLimited");
       }
       if (status >= 500) return fallback;
       if (status === 404) {
-        return "Không tìm thấy dữ liệu yêu cầu — có thể đã bị xóa hoặc thay đổi. Hãy tải lại trang.";
+        return tStatic("shared.apiError.notFound");
       }
-      return "Yêu cầu chưa thực hiện được. Kiểm tra lại thông tin rồi thử lại; nếu vẫn lỗi, liên hệ quản trị viên.";
+      return tStatic("shared.apiError.generic");
     }
     // AxiosError nhưng không có mã lỗi/response cụ thể: message của axios là
     // câu kỹ thuật tiếng Anh, không đưa ra UI.

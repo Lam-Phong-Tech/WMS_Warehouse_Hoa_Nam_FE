@@ -7,6 +7,7 @@ import { useThemeStore } from "@/shared/ui/theme/theme.store";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import type { TrayOption } from "@/modules/putaway/services/putawayService";
 import { ActionIconButton } from "@/shared/components/actions";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
 export interface TraySelectionGridProps {
   trays: TrayOption[];
@@ -50,13 +51,10 @@ const CHART_HEIGHT_PADDING = 48;
  * KHÔNG cần bổ sung cho endpoint mới. Nên lấy đúng field này để tô màu ô thay
  * vì suy diễn số lượng box (không có trong response).
  */
-const STATUS_LABEL: Record<string, string> = {
-  EMPTY: "Trống",
-  PARTIAL: "Đang chứa",
-};
-
-function trayStatusLabel(status: string): string {
-  return STATUS_LABEL[status] ?? status;
+function trayStatusLabel(t: TranslateFn, status: string): string {
+  if (status === "EMPTY") return t("putaway.trayStatus.empty");
+  if (status === "PARTIAL") return t("putaway.trayStatus.partial");
+  return status;
 }
 
 function isOccupied(status: string): boolean {
@@ -206,6 +204,7 @@ export function TraySelectionGrid({
   onRefresh,
   pendingQuantity,
 }: TraySelectionGridProps) {
+  const t = useT();
   const [search, setSearch] = useState("");
   const themeMode = useThemeStore((state) => state.mode);
   const {
@@ -253,7 +252,9 @@ export function TraySelectionGrid({
   const chartSeries = useMemo(
     () =>
       groups.map((group) => ({
-        name: showRowLabels ? (group.zone ?? "Chưa phân khu") : "",
+        name: showRowLabels
+          ? (group.zone ?? t("putaway.grid.zoneUnzoned"))
+          : "",
         data: Array.from({ length: maxCols }, (_, colIndex) => {
           const tray = group.trays[colIndex];
           if (!tray) {
@@ -274,13 +275,13 @@ export function TraySelectionGrid({
             code: tray.container_code,
             trayId: tray.container_id,
             statusLabel: isSelected
-              ? "Đang chọn"
-              : trayStatusLabel(tray.status),
+              ? t("putaway.trayStatus.selected")
+              : trayStatusLabel(t, tray.status),
             meta: tray.location_hint ?? "",
           } satisfies TrayCellPoint;
         }),
       })),
-    [groups, maxCols, showRowLabels, selectedTrayId],
+    [groups, maxCols, showRowLabels, selectedTrayId, t],
   );
 
   const chartOptions: ApexOptions = useMemo(
@@ -333,19 +334,19 @@ export function TraySelectionGrid({
                 from: CELL_EMPTY,
                 to: CELL_EMPTY,
                 color: EMPTY_COLOR,
-                name: "Trống",
+                name: t("putaway.trayStatus.empty"),
               },
               {
                 from: CELL_USED,
                 to: CELL_USED,
                 color: USED_COLOR,
-                name: "Đang chứa",
+                name: t("putaway.trayStatus.partial"),
               },
               {
                 from: CELL_SELECTED,
                 to: CELL_SELECTED,
                 color: SELECTED_COLOR,
-                name: "Đang chọn",
+                name: t("putaway.trayStatus.selected"),
               },
             ],
           },
@@ -406,6 +407,7 @@ export function TraySelectionGrid({
       USED_COLOR,
       SELECTED_COLOR,
       TEXT_COLOR,
+      t,
     ],
   );
 
@@ -435,17 +437,19 @@ export function TraySelectionGrid({
         <SearchInput
           width="100%"
           value={search}
-          placeholder="Tìm mã khay, VD: A03"
-          slotProps={{ htmlInput: { "aria-label": "Tìm mã khay" } }}
+          placeholder={t("putaway.grid.searchPlaceholder")}
+          slotProps={{
+            htmlInput: { "aria-label": t("putaway.grid.searchAria") },
+          }}
           disabled={disabled}
           onChange={setSearch}
         />
         {onRefresh ? (
-          <Tooltip title="Làm mới danh sách khay">
+          <Tooltip title={t("putaway.grid.refresh")}>
             <span>
               <ActionIconButton
                 kind="refresh"
-                label="Làm mới danh sách khay"
+                label={t("putaway.grid.refresh")}
                 onClick={onRefresh}
                 disabled={disabled || loading}
               />
@@ -455,7 +459,7 @@ export function TraySelectionGrid({
       </Stack>
 
       <Box
-        aria-label="Lưới chọn khay đích"
+        aria-label={t("putaway.grid.gridAria")}
         sx={{
           maxHeight: 360,
           overflow: "auto",
@@ -485,9 +489,7 @@ export function TraySelectionGrid({
         ) : !loading ? (
           <Box sx={{ py: 3, textAlign: "center" }}>
             <Box sx={{ typography: "body2", color: "text.secondary" }}>
-              {search
-                ? "Không tìm thấy khay khớp với từ khóa."
-                : "Chưa có khay khả dụng."}
+              {search ? t("putaway.grid.noMatch") : t("putaway.grid.noTrays")}
             </Box>
           </Box>
         ) : null}
@@ -502,8 +504,7 @@ export function TraySelectionGrid({
             fontStyle: "italic",
           }}
         >
-          * Nhóm theo khu vực chỉ để hiển thị dễ nhìn, không phải sơ đồ vị trí
-          kho.
+          {t("putaway.grid.zoneNote")}
         </Box>
       ) : null}
 
@@ -524,7 +525,7 @@ export function TraySelectionGrid({
             }}
           />
           <Box sx={{ typography: "caption", color: "text.secondary" }}>
-            Trống
+            {t("putaway.trayStatus.empty")}
           </Box>
         </Stack>
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
@@ -539,7 +540,7 @@ export function TraySelectionGrid({
             }}
           />
           <Box sx={{ typography: "caption", color: "text.secondary" }}>
-            Đang chứa (vẫn chọn được)
+            {t("putaway.grid.legendUsed")}
           </Box>
         </Stack>
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
@@ -554,7 +555,7 @@ export function TraySelectionGrid({
             }}
           />
           <Box sx={{ typography: "caption", color: "text.secondary" }}>
-            Đang chọn
+            {t("putaway.trayStatus.selected")}
           </Box>
         </Stack>
       </Stack>
@@ -571,7 +572,7 @@ export function TraySelectionGrid({
         }}
       >
         <Box sx={{ typography: "caption", color: "text.secondary" }}>
-          Khay đã chọn
+          {t("putaway.grid.selectedPanelTitle")}
         </Box>
         <Box
           sx={{
@@ -582,18 +583,20 @@ export function TraySelectionGrid({
             color: selectedTray ? "success.dark" : "text.disabled",
           }}
         >
-          {selectedTray ? selectedTray.container_code : "Chưa chọn khay"}
+          {selectedTray
+            ? selectedTray.container_code
+            : t("putaway.grid.noneSelected")}
         </Box>
         {selectedTray ? (
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
             <UiStatusBadge
-              label={trayStatusLabel(selectedTray.status)}
+              label={trayStatusLabel(t, selectedTray.status)}
               tone={isOccupied(selectedTray.status) ? "info" : "success"}
             />
             {typeof pendingQuantity === "number" ? (
               <UiStatusBadge
                 tone="neutral"
-                label={`Số lượng xếp vào: ${pendingQuantity} PCS`}
+                label={t("putaway.grid.pendingQty", { qty: pendingQuantity })}
               />
             ) : null}
           </Stack>

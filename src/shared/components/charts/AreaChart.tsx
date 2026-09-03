@@ -1,6 +1,7 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import { useChartBaseOptions, CHART_COLORS } from "./chart-theme";
+import { useT } from "@/shared/i18n/useT";
 
 export type AreaChartProps = {
   categories: string[];
@@ -16,11 +17,13 @@ export type AreaChartProps = {
 export function AreaChart({
   categories,
   data,
-  name = "Giá trị",
+  name,
   height = 260,
   color = CHART_COLORS.primary,
   valueFormatter,
 }: AreaChartProps) {
+  const t = useT();
+  const seriesName = name ?? t("shared.charts.value");
   const baseChartOptions = useChartBaseOptions();
   const options: ApexOptions = {
     ...baseChartOptions,
@@ -58,7 +61,7 @@ export function AreaChart({
   return (
     <Chart
       options={options}
-      series={[{ name, data }]}
+      series={[{ name: seriesName, data }]}
       type="area"
       height={height}
     />

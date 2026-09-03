@@ -15,6 +15,7 @@ import { EmptyState } from "@/shared/components/data-display/EmptyState";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { ActionButton } from "@/shared/components/actions";
 import { ROUTES } from "@/shared/constants/routes";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   fetchAllPutawayTrays,
   type TrayOption,
@@ -33,27 +34,30 @@ type TrayBucket = "EMPTY" | "PARTIAL" | "ATTENTION";
 
 const BUCKET_META: Record<
   TrayBucket,
-  { label: string; tone: UiStatusTone; soft: string; color: string }
+  { tone: UiStatusTone; soft: string; color: string }
 > = {
   EMPTY: {
-    label: "Trống",
     tone: "success",
     soft: S.successSoft,
     color: S.successText,
   },
   PARTIAL: {
-    label: "Đang chứa",
     tone: "info",
     soft: S.infoSoft,
     color: S.infoText,
   },
   ATTENTION: {
-    label: "Cần chú ý",
     tone: "warning",
     soft: S.warningSoft,
     color: S.warningText,
   },
 };
+
+function bucketLabel(t: TranslateFn, bucket: TrayBucket): string {
+  if (bucket === "EMPTY") return t("putaway.trayStatus.empty");
+  if (bucket === "PARTIAL") return t("putaway.trayStatus.partial");
+  return t("putaway.overview.bucketAttention");
+}
 
 /** Trạng thái khay thật (EMPTY/PARTIAL) gom về 3 nhóm; còn lại (CLOSED/ISSUED/
  *  FULL...) là "cần chú ý" để người quản lý rà nhanh. */
@@ -72,6 +76,7 @@ const KPI_ORDER: Array<TrayBucket | "ALL"> = [
 ];
 
 export default function TrayOverviewPage() {
+  const t = useT();
   const traysQuery = useQuery({
     queryKey: ["putaway", "trays", "overview"],
     queryFn: fetchAllPutawayTrays,
@@ -107,7 +112,7 @@ export default function TrayOverviewPage() {
   const grouped = useMemo(() => {
     const map = new Map<string, TrayOption[]>();
     for (const tray of filtered) {
-      const zone = tray.zone_code || "Chưa gán khu vực";
+      const zone = tray.zone_code || t("putaway.overview.zoneUnassigned");
       const bucket = map.get(zone);
       if (bucket) bucket.push(tray);
       else map.set(zone, [tray]);
@@ -115,7 +120,7 @@ export default function TrayOverviewPage() {
     return [...map.entries()].sort((a, b) =>
       a[0].localeCompare(b[0], "vi", { numeric: true }),
     );
-  }, [filtered]);
+  }, [filtered, t]);
 
   return (
     <Box sx={{ p: 3 }} data-testid="ptw-tray-overview">
@@ -131,7 +136,10 @@ export default function TrayOverviewPage() {
         }}
       >
         <RouterLink to={ROUTES.PUTAWAY} style={{ textDecoration: "none" }}>
-          <ActionButton kind="back" label="Về xếp khay" />
+          <ActionButton
+            kind="back"
+            label={t("putaway.overview.backToPutaway")}
+          />
         </RouterLink>
       </Stack>
 
@@ -149,7 +157,10 @@ export default function TrayOverviewPage() {
       >
         {KPI_ORDER.map((key) => {
           const active = bucketFilter === key;
-          const label = key === "ALL" ? "Tổng số khay" : BUCKET_META[key].label;
+          const label =
+            key === "ALL"
+              ? t("putaway.overview.totalTrays")
+              : bucketLabel(t, key);
           const color = key === "ALL" ? S.primaryDark : BUCKET_META[key].color;
           return (
             <Box
@@ -189,8 +200,8 @@ export default function TrayOverviewPage() {
 
       <Box sx={{ mb: 2, maxWidth: 320 }}>
         <SearchInput
-          placeholder="Tìm theo mã khay / khu vực..."
-          aria-label="Tìm khay theo mã hoặc khu vực"
+          placeholder={t("putaway.overview.searchPlaceholder")}
+          aria-label={t("putaway.overview.searchAria")}
           value={keyword}
           onChange={setKeyword}
         />
@@ -199,15 +210,15 @@ export default function TrayOverviewPage() {
       {traysQuery.isError ? (
         <ApiErrorAlert
           error={traysQuery.error}
-          title="Không tải được danh sách khay"
+          title={t("putaway.overview.loadFailed")}
           onRetry={() => void traysQuery.refetch()}
         />
       ) : traysQuery.isPending ? (
-        <LoadingState tip="Đang tải tình trạng khay…" />
+        <LoadingState tip={t("putaway.overview.loadingTip")} />
       ) : filtered.length === 0 ? (
         <EmptyState
-          title="Không có khay phù hợp"
-          description="Thử bỏ bộ lọc hoặc đổi từ khoá tìm kiếm."
+          title={t("putaway.overview.emptyTitle")}
+          description={t("putaway.overview.emptyDescription")}
         />
       ) : (
         <Stack spacing={2}>
@@ -221,7 +232,10 @@ export default function TrayOverviewPage() {
                   mb: 1,
                 }}
               >
-                {zone} · {zoneTrays.length} khay
+                {t("putaway.overview.zoneCount", {
+                  zone,
+                  count: zoneTrays.length,
+                })}
               </Box>
               <Box
                 sx={{
@@ -261,7 +275,7 @@ export default function TrayOverviewPage() {
                       <UiStatusBadge
                         size="small"
                         tone={meta.tone}
-                        label={meta.label}
+                        label={bucketLabel(t, bucket)}
                       />
                       {tray.location_hint ? (
                         <Box sx={{ fontSize: 12, color: S.textMedium }}>

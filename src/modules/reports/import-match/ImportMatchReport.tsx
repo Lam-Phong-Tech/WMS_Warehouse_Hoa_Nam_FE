@@ -31,6 +31,7 @@ import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import { getApiErrorMessage } from "@/shared/api/api-error";
+import { useT } from "@/shared/i18n/useT";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import {
@@ -60,6 +61,12 @@ import { reportStatusLabel } from "@/modules/reports/operations/report-labels";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
 import { ReportStatusBadge } from "@/modules/reports/operations/report-drilldown";
 import { ReportPaginationBar } from "@/modules/reports/operations/report-table";
+import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
+import {
+  optionsFromRows,
+  useSectionFilter,
+  type SectionFilterConfig,
+} from "@/modules/reports/operations/report-section-filter";
 import { useClientPagination } from "@/modules/reports/operations/report-columns";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import { ExportButtons } from "@/modules/reports/operations/report-filters";
@@ -83,24 +90,6 @@ import {
 
 /** Ngày hiển thị theo chuẩn dự án (dd-MM-yyyy), không phải dd/MM của bản HTML. */
 const DISPLAY_DATE = "DD-MM-YYYY";
-
-const RESULT_OPTIONS = [
-  { value: "", label: "Tất cả kết quả" },
-  { value: "SUCCESS", label: "Thành công" },
-  { value: "FAILED", label: "Lỗi" },
-  { value: "DUPLICATE", label: "Trùng lặp" },
-];
-
-const KIND_OPTIONS = [
-  { value: "all", label: "Tất cả loại hàng" },
-  { value: "PRODUCT", label: "Sản phẩm" },
-  { value: "COMPONENT", label: "Linh kiện" },
-];
-
-const TOP_OPTIONS = [
-  { value: "10", label: "Top 10" },
-  { value: "20", label: "Top 20" },
-];
 
 const REPORT_SURFACE_SX = {
   bgcolor: S.bgSurface,
@@ -379,6 +368,7 @@ function PanelCard({
   emptyText: string;
   children: ReactNode;
 }) {
+  const t = useT();
   const iconStyle =
     iconTone === "error"
       ? { bgcolor: S.errorSoft, color: S.errorText }
@@ -447,7 +437,7 @@ function PanelCard({
       {error ? (
         <ApiErrorAlert
           error={error}
-          title={`Không tải được "${title}"`}
+          title={t("reports.importMatchReport.panelLoadFailed", { title })}
           onRetry={onRetry}
         />
       ) : loading ? (
@@ -526,12 +516,13 @@ function SliceCard({
   index: number;
   onOpen: () => void;
 }) {
+  const t = useT();
   const values: Array<[string, string]> = [
-    ["Tổng dòng", fmt(batch.total)],
-    ["Hợp lệ", fmt(batch.success)],
-    ["Lỗi", fmt(batch.failed)],
-    ["Trùng", fmt(batch.duplicate)],
-    ["Tỷ lệ", pct(batch.success, batch.total)],
+    [t("reports.importMatchReport.cardTotal"), fmt(batch.total)],
+    [t("reports.importMatchReport.cardValid"), fmt(batch.success)],
+    [t("reports.importMatchReport.cardFailed"), fmt(batch.failed)],
+    [t("reports.importMatchReport.cardDuplicate"), fmt(batch.duplicate)],
+    [t("reports.importMatchReport.cardRate"), pct(batch.success, batch.total)],
   ];
   return (
     <Box
@@ -562,7 +553,10 @@ function SliceCard({
               overflowWrap: "anywhere",
             }}
           >
-            {`Lát cắt ${String(index + 1).padStart(2, "0")} · ${batch.batchNo || EMPTY_TEXT}`}
+            {t("reports.importMatchReport.cardSliceLabel", {
+              index: String(index + 1).padStart(2, "0"),
+              code: batch.batchNo || EMPTY_TEXT,
+            })}
           </Box>
           <Box sx={{ mt: 0.25, fontSize: 12, color: S.textMedium }}>
             {`${batch.at ? fmtDateTime(batch.at) : EMPTY_TEXT} · ${batch.actor || EMPTY_TEXT}`}
@@ -603,7 +597,7 @@ function SliceCard({
       </Box>
       <Box>
         <ActionButton kind="detail" onClick={onOpen}>
-          Xem chi tiết
+          {t("reports.importMatchReport.viewDetail")}
         </ActionButton>
       </Box>
     </Box>
@@ -620,6 +614,46 @@ function SliceCard({
  * Toàn bộ số liệu đến từ API thật; không có ô nào dựng sẵn.
  */
 export default function ImportMatchReport() {
+  const t = useT();
+  const resultOptions = useMemo(
+    () => [
+      { value: "", label: t("reports.importMatchReport.optResultAll") },
+      {
+        value: "SUCCESS",
+        label: t("reports.importMatchReport.optResultSuccess"),
+      },
+      {
+        value: "FAILED",
+        label: t("reports.importMatchReport.optResultFailed"),
+      },
+      {
+        value: "DUPLICATE",
+        label: t("reports.importMatchReport.optResultDuplicate"),
+      },
+    ],
+    [t],
+  );
+  const kindOptions = useMemo(
+    () => [
+      { value: "all", label: t("reports.importMatchReport.optKindAll") },
+      {
+        value: "PRODUCT",
+        label: t("reports.importMatchReport.optKindProduct"),
+      },
+      {
+        value: "COMPONENT",
+        label: t("reports.importMatchReport.optKindComponent"),
+      },
+    ],
+    [t],
+  );
+  const topOptions = useMemo(
+    () => [
+      { value: "10", label: t("reports.importMatchReport.optTop10") },
+      { value: "20", label: t("reports.importMatchReport.optTop20") },
+    ],
+    [t],
+  );
   const [context, setContext] = useState<ImportMatchContext>("IMPORT");
   const [view, setView] = useState<"table" | "snapshot">("table");
   const [filtersExpanded, setFiltersExpanded] = useState(true);
@@ -695,11 +729,67 @@ export default function ImportMatchReport() {
     () => errorCodes.slice(0, Number(top)),
     [errorCodes, top],
   );
-  const pagination = useClientPagination(batches, 15);
+  /**
+   * Bộ lọc RIÊNG của khối nhật ký. Đặt SAU khi KPI/biểu đồ đã tính trên
+   * batches: thu hẹp danh sách để soi một batch không được làm tụt luôn các
+   * con số tổng của kỳ ở phía trên.
+   */
+  const logFilterConfig = useMemo<SectionFilterConfig<ImportMatchBatch>>(
+    () => ({
+      searchPlaceholder: t("reports.importMatchReport.logSearchPlaceholder"),
+      searchText: (row) => [
+        row.batchNo,
+        row.caption,
+        row.sourceFile,
+        row.actor,
+      ],
+      selects: [
+        {
+          key: "status",
+          placeholder: t("reports.importMatchReport.anyBatchStatus"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.status,
+              (value) => reportStatusLabel(value),
+            ),
+          match: (row, value) => row.status === value,
+          minWidth: 195,
+        },
+        {
+          key: "issue",
+          placeholder: t("reports.importMatchReport.anyIssue"),
+          options: [
+            {
+              value: "FAILED",
+              label: t("reports.importMatchReport.issueFailed"),
+            },
+            {
+              value: "DUPLICATE",
+              label: t("reports.importMatchReport.issueDuplicate"),
+            },
+            {
+              value: "CLEAN",
+              label: t("reports.importMatchReport.issueClean"),
+            },
+          ],
+          match: (row, value) => {
+            if (value === "FAILED") return row.failed > 0;
+            if (value === "DUPLICATE") return row.duplicate > 0;
+            return row.failed === 0 && row.duplicate === 0;
+          },
+          minWidth: 200,
+        },
+      ],
+    }),
+    [t],
+  );
+  const logFilter = useSectionFilter(batches, logFilterConfig);
+  const pagination = useClientPagination(logFilter.rows, 15);
 
   const statusOptions = useMemo(
     () => [
-      { value: "", label: "Tất cả trạng thái" },
+      { value: "", label: t("reports.importMatchReport.allStatuses") },
       ...[
         ...new Set(
           contextBatches
@@ -710,12 +800,12 @@ export default function ImportMatchReport() {
         .sort()
         .map((value) => ({ value, label: reportStatusLabel(value) })),
     ],
-    [contextBatches],
+    [contextBatches, t],
   );
 
   const actorOptions = useMemo(
     () => [
-      { value: "", label: "Tất cả người thực hiện" },
+      { value: "", label: t("reports.importMatchReport.allActors") },
       ...[
         ...new Set(
           contextBatches
@@ -777,14 +867,19 @@ export default function ImportMatchReport() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = fileName ?? `loi-import-${batch.batchNo}.csv`;
+      link.download = fileName ?? `loi-nhap-du-lieu-${batch.batchNo}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast.success("Đã tải tệp lỗi của batch.");
+      toast.success(t("reports.importMatchReport.downloadSuccess"));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không tải được tệp lỗi."));
+      toast.error(
+        getApiErrorMessage(
+          error,
+          t("reports.importMatchReport.downloadFailed"),
+        ),
+      );
     } finally {
       setDownloading(null);
     }
@@ -798,17 +893,17 @@ export default function ImportMatchReport() {
 
   const series = [
     {
-      name: "Hợp lệ",
+      name: t("reports.importMatchReport.seriesValid"),
       data: trend.map((point) => point.success),
       color: CHART_COLORS.success,
     },
     {
-      name: "Lỗi",
+      name: t("reports.importMatchReport.seriesFailed"),
       data: trend.map((point) => point.failed),
       color: CHART_COLORS.danger,
     },
     {
-      name: "Trùng lặp",
+      name: t("reports.importMatchReport.seriesDuplicate"),
       data: trend.map((point) => point.duplicate),
       color: CHART_COLORS.warning,
     },
@@ -867,7 +962,7 @@ export default function ImportMatchReport() {
                 color: S.primaryDark,
               }}
             >
-              BÁO CÁO VẬN HÀNH · RPT-04
+              {t("reports.importMatchReport.eyebrow")}
             </Box>
             <Box
               component="h1"
@@ -882,7 +977,7 @@ export default function ImportMatchReport() {
                 color: S.textHigh,
               }}
             >
-              Nhập liệu, đối chiếu &amp; lỗi
+              {t("reports.importMatchReport.title")}
             </Box>
             <Box
               sx={{
@@ -891,8 +986,7 @@ export default function ImportMatchReport() {
                 color: S.textMedium,
               }}
             >
-              Theo dõi chất lượng dữ liệu theo từng luồng nghiệp vụ, khoanh vùng
-              lỗi nhanh và đi thẳng tới batch cần xử lý.
+              {t("reports.importMatchReport.subtitle")}
             </Box>
           </Box>
         </Stack>
@@ -906,10 +1000,10 @@ export default function ImportMatchReport() {
           }
           label={
             activeQuery.isFetching
-              ? "Đang đồng bộ"
+              ? t("reports.importMatchReport.syncing")
               : activeQuery.isError
-                ? "Lỗi tải dữ liệu"
-                : "Dữ liệu đã tải"
+                ? t("reports.importMatchReport.loadError")
+                : t("reports.importMatchReport.dataLoaded")
           }
         />
       </Box>
@@ -917,7 +1011,7 @@ export default function ImportMatchReport() {
       {/* ── Ngữ cảnh báo cáo ─────────────────────────────────────────── */}
       <Box
         component="section"
-        aria-label="Ngữ cảnh báo cáo"
+        aria-label={t("reports.importMatchReport.contextAria")}
         sx={{
           display: "flex",
           alignItems: { xs: "stretch", md: "center" },
@@ -928,7 +1022,7 @@ export default function ImportMatchReport() {
       >
         <Box
           role="tablist"
-          aria-label="Ngữ cảnh báo cáo"
+          aria-label={t("reports.importMatchReport.contextAria")}
           sx={{
             width: { xs: "100%", md: "min(100%, 500px)" },
             p: 0.5,
@@ -963,14 +1057,14 @@ export default function ImportMatchReport() {
           onClick={refresh}
           disabled={invalid || activeQuery.isFetching}
         >
-          Làm mới
+          {t("reports.importMatchReport.refresh")}
         </UiButton>
       </Box>
 
       {/* ── Dải "lát cắt đang xem" ───────────────────────────────────── */}
       <Box
         component="section"
-        aria-label="Lát cắt đang xem"
+        aria-label={t("reports.importMatchReport.sliceAria")}
         sx={{
           ...REPORT_SURFACE_SX,
           position: "relative",
@@ -1010,7 +1104,7 @@ export default function ImportMatchReport() {
               opacity: 0.76,
             }}
           >
-            LÁT CẮT ĐANG XEM
+            {t("reports.importMatchReport.sliceEyebrow")}
           </Box>
           <Box sx={{ fontSize: 18, fontWeight: 700, lineHeight: "26px" }}>
             {CONTEXT_LABEL[context]}
@@ -1027,10 +1121,12 @@ export default function ImportMatchReport() {
           }}
         >
           <Box>
-            Kỳ: <strong>{periodLabel}</strong>
+            {t("reports.importMatchReport.periodLabel")}:{" "}
+            <strong>{periodLabel}</strong>
           </Box>
           <Box>
-            <strong>{fmt(batches.length)}</strong> batch trong phạm vi
+            <strong>{fmt(batches.length)}</strong>{" "}
+            {t("reports.importMatchReport.batchesInScope")}
           </Box>
         </Stack>
       </Box>
@@ -1061,10 +1157,16 @@ export default function ImportMatchReport() {
                 color: S.textHigh,
               }}
             >
-              Bộ lọc phân tích
+              {t("reports.importMatchReport.filterTitle")}
             </Box>
             <Box sx={{ fontSize: 12, lineHeight: "18px", color: S.textMedium }}>
-              {`${fmt(batches.length)} ${context === "IMPORT" ? "lần import" : "lần đối soát"} phù hợp điều kiện`}
+              {t("reports.importMatchReport.filterMatchCount", {
+                count: fmt(batches.length),
+                kind:
+                  context === "IMPORT"
+                    ? t("reports.importMatchReport.importRuns")
+                    : t("reports.importMatchReport.matchRuns"),
+              })}
             </Box>
           </Box>
           <Stack
@@ -1078,7 +1180,9 @@ export default function ImportMatchReport() {
                 void exporter.exportReport(format, {
                   reportCode: "import-match",
                   fileStem:
-                    context === "IMPORT" ? "import-batch" : "outbound-match",
+                    context === "IMPORT"
+                      ? "nhap-du-lieu"
+                      : "doi-soat-yeu-cau-xuat",
                   fileSuffix: `-${from}-${to}`,
                   filters: {
                     from_date: from,
@@ -1097,11 +1201,13 @@ export default function ImportMatchReport() {
                 aria-controls="rpt-04-filter-fields"
                 onClick={() => setFiltersExpanded((current) => !current)}
               >
-                {filtersExpanded ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+                {filtersExpanded
+                  ? t("reports.importMatchReport.hideFilters")
+                  : t("reports.importMatchReport.showFilters")}
               </UiButton>
             ) : null}
             <UiButton appearance="text" onClick={resetFilters}>
-              Đặt lại
+              {t("reports.importMatchReport.reset")}
             </UiButton>
           </Stack>
         </Stack>
@@ -1118,28 +1224,28 @@ export default function ImportMatchReport() {
             gap: "16px 12px",
           }}
         >
-          <FilterField label="Kết quả">
+          <FilterField label={t("reports.importMatchReport.fieldResult")}>
             <UiSelect
               fullWidth
-              aria-label="Lọc theo kết quả xử lý"
+              aria-label={t("reports.importMatchReport.resultAria")}
               value={result}
-              placeholder="Tất cả kết quả"
+              placeholder={t("reports.importMatchReport.optResultAll")}
               onChange={(value) => {
                 setResult(value as ImportMatchResultFilter);
                 pagination.reset();
               }}
-              options={RESULT_OPTIONS.filter((option) => option.value !== "")}
+              options={resultOptions.filter((option) => option.value !== "")}
             />
           </FilterField>
           {/*
            * `maxDate` / `minDate` khoá chéo hai ô để không chọn ra được kỳ đảo
            * chiều (BE trả 422).
            */}
-          <FilterField label="Từ ngày">
+          <FilterField label={t("reports.importMatchReport.fromDate")}>
             <UiVuexyDateField
               id="rpt-04-from-date"
               field="from"
-              aria-label="Từ ngày"
+              aria-label={t("reports.importMatchReport.fromDate")}
               value={range[0]}
               maxDate={range[1]}
               onChange={(value) => {
@@ -1147,11 +1253,11 @@ export default function ImportMatchReport() {
               }}
             />
           </FilterField>
-          <FilterField label="Đến ngày">
+          <FilterField label={t("reports.importMatchReport.toDate")}>
             <UiVuexyDateField
               id="rpt-04-to-date"
               field="to"
-              aria-label="Đến ngày"
+              aria-label={t("reports.importMatchReport.toDate")}
               value={range[1]}
               minDate={range[0]}
               onChange={(value) => {
@@ -1159,12 +1265,12 @@ export default function ImportMatchReport() {
               }}
             />
           </FilterField>
-          <FilterField label="Trạng thái">
+          <FilterField label={t("reports.importMatchReport.fieldStatus")}>
             <UiSelect
               fullWidth
-              aria-label="Lọc theo trạng thái batch"
+              aria-label={t("reports.importMatchReport.statusAria")}
               value={status}
-              placeholder="Tất cả trạng thái"
+              placeholder={t("reports.importMatchReport.allStatuses")}
               onChange={(value) => {
                 setStatus(value);
                 pagination.reset();
@@ -1172,12 +1278,12 @@ export default function ImportMatchReport() {
               options={statusOptions.filter((option) => option.value !== "")}
             />
           </FilterField>
-          <FilterField label="Người thực hiện">
+          <FilterField label={t("reports.importMatchReport.fieldActor")}>
             <UiSelect
               fullWidth
-              aria-label="Lọc theo người thực hiện"
+              aria-label={t("reports.importMatchReport.actorAria")}
               value={actor}
-              placeholder="Tất cả người thực hiện"
+              placeholder={t("reports.importMatchReport.allActors")}
               onChange={(value) => {
                 setActor(value);
                 pagination.reset();
@@ -1186,16 +1292,16 @@ export default function ImportMatchReport() {
             />
           </FilterField>
           {context === "MATCH" ? (
-            <FilterField label="Loại hàng">
+            <FilterField label={t("reports.importMatchReport.fieldKind")}>
               <UiSelect
                 fullWidth
-                aria-label="Lọc theo loại hàng"
+                aria-label={t("reports.importMatchReport.kindAria")}
                 value={kind}
                 onChange={(value) => {
                   setKind(value as ItemKind);
                   pagination.reset();
                 }}
-                options={KIND_OPTIONS}
+                options={kindOptions}
               />
             </FilterField>
           ) : null}
@@ -1204,7 +1310,11 @@ export default function ImportMatchReport() {
               width="100%"
               value={keyword}
               aria-label={keyLabel}
-              placeholder={context === "IMPORT" ? "Tên tệp import" : keyLabel}
+              placeholder={
+                context === "IMPORT"
+                  ? t("reports.importMatchReport.importFilePlaceholder")
+                  : keyLabel
+              }
               onChange={(value) => {
                 setKeyword(value);
                 pagination.reset();
@@ -1212,12 +1322,12 @@ export default function ImportMatchReport() {
             />
           </FilterField>
           {context === "MATCH" ? (
-            <FilterField label="Mã SKU">
+            <FilterField label={t("reports.importMatchReport.fieldSku")}>
               <SearchInput
                 width="100%"
                 value={sku}
-                aria-label="Lọc theo mã SKU"
-                placeholder="Mã SKU"
+                aria-label={t("reports.importMatchReport.skuAria")}
+                placeholder={t("reports.importMatchReport.fieldSku")}
                 onChange={(value) => {
                   setSku(value);
                   pagination.reset();
@@ -1229,27 +1339,28 @@ export default function ImportMatchReport() {
       </Box>
 
       {invalid ? (
-        <UiAlert tone="error">
-          Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
-        </UiAlert>
+        <UiAlert tone="error">{t("reports.common.dateOrderError")}</UiAlert>
       ) : null}
 
       {/* ── Tổng quan ────────────────────────────────────────────────── */}
       <Box component="section" aria-labelledby="rpt-04-kpi-title">
         <SectionHeading
           id="rpt-04-kpi-title"
-          eyebrow="TỔNG QUAN"
+          eyebrow={t("reports.importMatchReport.kpiEyebrow")}
           title={
             context === "IMPORT"
-              ? "Sức khỏe dữ liệu import"
-              : "Tiến độ đối soát"
+              ? t("reports.importMatchReport.kpiTitleImport")
+              : t("reports.importMatchReport.kpiTitleMatch")
           }
           description={
             context === "IMPORT"
-              ? "Bấm vào nhóm lỗi hoặc trùng lặp để lọc nhật ký phía dưới."
-              : "Tổng hợp theo dòng SKU trong kỳ đang xem."
+              ? t("reports.importMatchReport.kpiDescImport")
+              : t("reports.importMatchReport.kpiDescMatch")
           }
-          meta={`Kỳ ${range[0].format(DISPLAY_DATE)} – ${range[1].format(DISPLAY_DATE)}`}
+          meta={t("reports.importMatchReport.kpiMeta", {
+            from: range[0].format(DISPLAY_DATE),
+            to: range[1].format(DISPLAY_DATE),
+          })}
         />
         <Box
           sx={{
@@ -1265,17 +1376,21 @@ export default function ImportMatchReport() {
           {context === "IMPORT" ? (
             <>
               <MetricCard
-                label="Tổng dòng import"
+                label={t("reports.importMatchReport.mcTotalImported")}
                 value={fmt(totals.total)}
-                hint={`${fmt(batches.length)} batch trong kỳ`}
+                hint={t("reports.importMatchReport.mcTotalImportedHint", {
+                  count: fmt(batches.length),
+                })}
                 icon={<BarChartOutlined />}
                 tone="primary"
                 share={totals.total > 0 ? 100 : 0}
               />
               <MetricCard
-                label="Dòng hợp lệ"
+                label={t("reports.importMatchReport.mcValid")}
                 value={fmt(totals.success)}
-                hint={`${pct(totals.success, totals.total)} qua kiểm tra`}
+                hint={t("reports.importMatchReport.mcValidHint", {
+                  pct: pct(totals.success, totals.total),
+                })}
                 icon={<CheckCircleOutlined />}
                 tone="success"
                 share={
@@ -1283,9 +1398,11 @@ export default function ImportMatchReport() {
                 }
               />
               <MetricCard
-                label="Dòng không hợp lệ"
+                label={t("reports.importMatchReport.mcInvalid")}
                 value={fmt(totals.failed)}
-                hint={`${pct(totals.failed, totals.total)} cần xử lý`}
+                hint={t("reports.importMatchReport.mcInvalidHint", {
+                  pct: pct(totals.failed, totals.total),
+                })}
                 icon={<WarningOutlined />}
                 tone="error"
                 share={
@@ -1294,9 +1411,11 @@ export default function ImportMatchReport() {
                 onActivate={() => applyResultFilter("FAILED")}
               />
               <MetricCard
-                label="Trùng lặp"
+                label={t("reports.importMatchReport.mcDuplicate")}
                 value={fmt(totals.duplicate)}
-                hint={`${pct(totals.duplicate, totals.total)} thuộc nhóm lỗi`}
+                hint={t("reports.importMatchReport.mcDuplicateHint", {
+                  pct: pct(totals.duplicate, totals.total),
+                })}
                 icon={<CopyOutlined />}
                 tone="warning"
                 share={
@@ -1308,25 +1427,31 @@ export default function ImportMatchReport() {
           ) : (
             <>
               <MetricCard
-                label="Tổng dòng yêu cầu"
+                label={t("reports.importMatchReport.mcTotalRequests")}
                 value={fmt(totals.total)}
-                hint={`${fmt(batches.length)} batch đối soát`}
+                hint={t("reports.importMatchReport.mcTotalRequestsHint", {
+                  count: fmt(batches.length),
+                })}
                 icon={<BarChartOutlined />}
                 tone="primary"
                 share={totals.total > 0 ? 100 : 0}
               />
               <MetricCard
-                label="SL yêu cầu"
+                label={t("reports.importMatchReport.mcRequiredQty")}
                 value={fmt(totals.required)}
-                hint={`${fmt(totals.total)} dòng SKU`}
+                hint={t("reports.importMatchReport.mcRequiredQtyHint", {
+                  count: fmt(totals.total),
+                })}
                 icon={<StockOutlined />}
                 tone="primary"
                 share={totals.required > 0 ? 100 : 0}
               />
               <MetricCard
-                label="SL đã đối chiếu"
+                label={t("reports.importMatchReport.mcMatchedQty")}
                 value={fmt(totals.matched)}
-                hint={`${pct(totals.matched, totals.required)} khớp yêu cầu`}
+                hint={t("reports.importMatchReport.mcMatchedQtyHint", {
+                  pct: pct(totals.matched, totals.required),
+                })}
                 icon={<CheckCircleOutlined />}
                 tone="success"
                 share={
@@ -1336,9 +1461,11 @@ export default function ImportMatchReport() {
                 }
               />
               <MetricCard
-                label="SL chưa đối chiếu"
+                label={t("reports.importMatchReport.mcUnmatchedQty")}
                 value={fmt(matchRemaining)}
-                hint={`${pct(matchRemaining, totals.required)} còn xử lý`}
+                hint={t("reports.importMatchReport.mcUnmatchedQtyHint", {
+                  pct: pct(matchRemaining, totals.required),
+                })}
                 icon={<WarningOutlined />}
                 tone="warning"
                 share={
@@ -1356,9 +1483,9 @@ export default function ImportMatchReport() {
       <Box component="section" aria-labelledby="rpt-04-analysis-title">
         <SectionHeading
           id="rpt-04-analysis-title"
-          eyebrow="PHÂN TÍCH"
-          title="Diễn biến và điểm cần xử lý"
-          description="Nhận diện ngày bất thường và drill-down vào batch nguồn."
+          eyebrow={t("reports.importMatchReport.analysisEyebrow")}
+          title={t("reports.importMatchReport.analysisTitle")}
+          description={t("reports.importMatchReport.analysisDesc")}
         />
         <Box
           sx={{
@@ -1370,16 +1497,16 @@ export default function ImportMatchReport() {
           <PanelCard
             title={
               context === "IMPORT"
-                ? "Kết quả Import theo thời gian"
-                : "Kết quả đối soát theo thời gian"
+                ? t("reports.importMatchReport.trendTitleImport")
+                : t("reports.importMatchReport.trendTitleMatch")
             }
-            description="Hợp lệ, lỗi và trùng lặp theo ngày."
+            description={t("reports.importMatchReport.trendDesc")}
             icon={<BarChartOutlined />}
             loading={loading}
             error={activeQuery.error}
             onRetry={refresh}
             empty={trend.length === 0}
-            emptyText="Kỳ này chưa có dữ liệu để vẽ biểu đồ."
+            emptyText={t("reports.importMatchReport.trendEmpty")}
           >
             <MultiSeriesBarChart
               categories={trend.map((point) => axisDayLabel(point.day))}
@@ -1396,23 +1523,23 @@ export default function ImportMatchReport() {
           </PanelCard>
 
           <PanelCard
-            title="Top mã lỗi"
-            description="Bấm mã lỗi để xem batch liên quan."
+            title={t("reports.importMatchReport.topErrorTitle")}
+            description={t("reports.importMatchReport.topErrorDesc")}
             icon={<WarningOutlined />}
             iconTone="error"
             loading={loading}
             error={activeQuery.error}
             onRetry={refresh}
             empty={topErrorCodes.length === 0}
-            emptyText="Kỳ này không phát sinh mã lỗi nào."
+            emptyText={t("reports.importMatchReport.topErrorEmpty")}
             toolbar={
               <Box sx={{ width: 122 }}>
                 <UiSelect
                   fullWidth
-                  aria-label="Số mã lỗi hiển thị"
+                  aria-label={t("reports.importMatchReport.topCountAria")}
                   value={top}
                   onChange={(value) => setTop(value as "10" | "20")}
-                  options={TOP_OPTIONS}
+                  options={topOptions}
                 />
               </Box>
             }
@@ -1502,14 +1629,16 @@ export default function ImportMatchReport() {
       <Box component="section" aria-labelledby="rpt-04-detail-title">
         <SectionHeading
           id="rpt-04-detail-title"
-          eyebrow="CHI TIẾT DỮ LIỆU"
+          eyebrow={t("reports.importMatchReport.detailEyebrow")}
           title={
             context === "IMPORT"
-              ? "Nhật ký Import/Migration"
-              : "Nhật ký đối soát yêu cầu xuất"
+              ? t("reports.importMatchReport.logTitleImport")
+              : t("reports.importMatchReport.logTitleMatch")
           }
-          description="Chọn một batch để xem nguyên nhân lỗi và dữ liệu tầng dòng."
-          meta={`${fmt(batches.length)} batch`}
+          description={t("reports.importMatchReport.logDesc")}
+          meta={t("reports.importMatchReport.logMeta", {
+            count: fmt(batches.length),
+          })}
         />
         <Box
           component="article"
@@ -1517,7 +1646,7 @@ export default function ImportMatchReport() {
         >
           <Box
             role="tablist"
-            aria-label="Cách xem dữ liệu"
+            aria-label={t("reports.importMatchReport.viewAria")}
             sx={{
               mx: { xs: 2, md: 3 },
               mb: 2,
@@ -1533,8 +1662,8 @@ export default function ImportMatchReport() {
           >
             {(
               [
-                ["table", "Bảng"],
-                ["snapshot", "Lát cắt"],
+                ["table", t("reports.importMatchReport.viewTable")],
+                ["snapshot", t("reports.importMatchReport.viewSnapshot")],
               ] as const
             ).map(([value, label]) => (
               <Box
@@ -1575,9 +1704,22 @@ export default function ImportMatchReport() {
           >
             {view === "table"
               ? context === "IMPORT"
-                ? "Nhật ký lấy từ Import báo cáo SKU (/skus/import-reports); tỷ lệ hợp lệ = dòng hợp lệ ÷ tổng dòng của chính batch đó."
-                : "Nhật ký lấy từ đối soát toa yêu cầu xuất (/reports/import-match); tỷ lệ hợp lệ = dòng hợp lệ ÷ tổng dòng của chính batch đó."
-              : "Lát cắt dùng cùng dữ liệu và bộ lọc với bảng."}
+                ? t("reports.importMatchReport.noteImport")
+                : t("reports.importMatchReport.noteMatch")
+              : t("reports.importMatchReport.noteSnapshot")}
+          </Box>
+
+          <Box sx={{ mx: { xs: 2, md: 3 } }}>
+            <SectionFilterBar
+              state={logFilter}
+              label={
+                context === "IMPORT"
+                  ? t("reports.importMatchReport.logTitleImport")
+                  : t("reports.importMatchReport.logTitleMatch")
+              }
+              unit={t("reports.importMatchReport.logUnit")}
+              data-testid="rpt-04-log-section-filter"
+            />
           </Box>
 
           {view === "table" ? (
@@ -1613,14 +1755,14 @@ export default function ImportMatchReport() {
                 },
                 {
                   key: "at",
-                  header: "Thời gian",
+                  header: t("reports.importMatchReport.colTime"),
                   width: 165,
                   sortAccessor: (row) => row.at,
                   render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
                 },
                 {
                   key: "total",
-                  header: "Tổng dòng",
+                  header: t("reports.importMatchReport.colTotalRows"),
                   align: "right",
                   width: 110,
                   sortAccessor: (row) => row.total,
@@ -1628,7 +1770,7 @@ export default function ImportMatchReport() {
                 },
                 {
                   key: "success",
-                  header: "Hợp lệ",
+                  header: t("reports.importMatchReport.colValid"),
                   align: "right",
                   width: 100,
                   sortAccessor: (row) => row.success,
@@ -1636,7 +1778,7 @@ export default function ImportMatchReport() {
                 },
                 {
                   key: "failed",
-                  header: "Lỗi",
+                  header: t("reports.importMatchReport.colFailed"),
                   align: "right",
                   width: 90,
                   sortAccessor: (row) => row.failed,
@@ -1644,7 +1786,7 @@ export default function ImportMatchReport() {
                 },
                 {
                   key: "duplicate",
-                  header: "Trùng",
+                  header: t("reports.importMatchReport.colDuplicate"),
                   align: "right",
                   width: 95,
                   sortAccessor: (row) => row.duplicate,
@@ -1652,7 +1794,7 @@ export default function ImportMatchReport() {
                 },
                 {
                   key: "rate",
-                  header: "Tỷ lệ hợp lệ",
+                  header: t("reports.importMatchReport.colValidRate"),
                   align: "right",
                   width: 125,
                   sortAccessor: (row) =>
@@ -1661,13 +1803,13 @@ export default function ImportMatchReport() {
                 },
                 {
                   key: "actor",
-                  header: "Người thực hiện",
+                  header: t("reports.importMatchReport.colActor"),
                   hideOnMobile: true,
                   render: (row) => row.actor || EMPTY_TEXT,
                 },
                 {
                   key: "status",
-                  header: "Trạng thái",
+                  header: t("reports.importMatchReport.colStatus"),
                   width: 150,
                   render: (row) => (
                     <ReportStatusBadge
@@ -1681,15 +1823,17 @@ export default function ImportMatchReport() {
               rowKey={(row) => `${row.context}:${row.id}`}
               loading={loading}
               onRowClick={(row) => setOpenBatch(row)}
-              emptyText="Không có batch nào theo bộ lọc."
+              emptyText={t("reports.importMatchReport.logEmpty")}
               renderRowActions={(row) => (
                 <ActionButton
                   kind="detail"
-                  aria-label={`Chi tiết batch ${row.batchNo}`}
+                  aria-label={t("reports.importMatchReport.rowDetailAria", {
+                    code: row.batchNo,
+                  })}
                   sx={{ whiteSpace: "nowrap" }}
                   onClick={() => setOpenBatch(row)}
                 >
-                  Chi tiết
+                  {t("reports.importMatchReport.detail")}
                 </ActionButton>
               )}
               // Trang có thể đặt tới 100 dòng/trang: cuộn trong khung và ghim
@@ -1714,7 +1858,7 @@ export default function ImportMatchReport() {
                     fontSize: TYPOGRAPHY.fontSizeSecondary,
                   }}
                 >
-                  Không có batch nào theo bộ lọc.
+                  {t("reports.importMatchReport.snapshotEmpty")}
                 </Box>
               ) : (
                 <Box
@@ -1755,7 +1899,7 @@ export default function ImportMatchReport() {
         <Box role="alert">
           <UiAlert
             tone="error"
-            title="Không có quyền xuất báo cáo"
+            title={t("reports.importMatchReport.exportDeniedTitle")}
             onClose={exporter.clearExportDenied}
           >
             {exporter.exportDenied}
@@ -1766,8 +1910,11 @@ export default function ImportMatchReport() {
       {/* ── Drill-down: một ngày trên biểu đồ diễn biến ──────────────── */}
       {dayDrill ? (
         <DrillDownDialog
-          title={`${dayDrill.seriesName} · ngày ${dayjs(dayDrill.day).format(DISPLAY_DATE)}`}
-          subtitle="Các batch đã phát sinh trong ngày, theo đúng bộ lọc đang áp dụng."
+          title={t("reports.importMatchReport.dayDrillTitle", {
+            series: dayDrill.seriesName,
+            date: dayjs(dayDrill.day).format(DISPLAY_DATE),
+          })}
+          subtitle={t("reports.importMatchReport.dayDrillSubtitle")}
           onClose={() => setDayDrill(null)}
         >
           <ResponsiveDataTable<ImportMatchBatch>
@@ -1779,25 +1926,25 @@ export default function ImportMatchReport() {
               },
               {
                 key: "success",
-                header: "Hợp lệ",
+                header: t("reports.importMatchReport.colValid"),
                 align: "right",
                 render: (row) => fmt(row.success),
               },
               {
                 key: "failed",
-                header: "Lỗi",
+                header: t("reports.importMatchReport.colFailed"),
                 align: "right",
                 render: (row) => fmt(row.failed),
               },
               {
                 key: "duplicate",
-                header: "Trùng",
+                header: t("reports.importMatchReport.colDuplicate"),
                 align: "right",
                 render: (row) => fmt(row.duplicate),
               },
               {
                 key: "actor",
-                header: "Người thực hiện",
+                header: t("reports.importMatchReport.colActor"),
                 render: (row) => row.actor || EMPTY_TEXT,
               },
             ]}
@@ -1805,7 +1952,7 @@ export default function ImportMatchReport() {
               (batch) => batch.at.slice(0, 10) === dayDrill.day,
             )}
             rowKey={(row) => `${row.context}:${row.id}`}
-            emptyText="Ngày này không còn batch nào theo bộ lọc."
+            emptyText={t("reports.importMatchReport.dayDrillEmpty")}
           />
         </DrillDownDialog>
       ) : null}
@@ -1813,8 +1960,14 @@ export default function ImportMatchReport() {
       {/* ── Drill-down: chi tiết một batch ──────────────────────────── */}
       {openBatch ? (
         <DrillDownDialog
-          title={`Chi tiết batch · ${openBatch.batchNo || EMPTY_TEXT}`}
-          subtitle={`${CONTEXT_LABEL[openBatch.context]} · ${fmt(openBatch.total)} dòng · ${pct(openBatch.success, openBatch.total)} hợp lệ`}
+          title={t("reports.importMatchReport.batchDialogTitle", {
+            code: openBatch.batchNo || EMPTY_TEXT,
+          })}
+          subtitle={t("reports.importMatchReport.batchDialogSubtitle", {
+            context: CONTEXT_LABEL[openBatch.context],
+            rows: fmt(openBatch.total),
+            pct: pct(openBatch.success, openBatch.total),
+          })}
           onClose={() => setOpenBatch(null)}
         >
           <Stack
@@ -1823,15 +1976,21 @@ export default function ImportMatchReport() {
           >
             <UiStatusBadge
               tone="success"
-              label={`Hợp lệ ${fmt(openBatch.success)}`}
+              label={t("reports.importMatchReport.badgeValid", {
+                count: fmt(openBatch.success),
+              })}
             />
             <UiStatusBadge
               tone="error"
-              label={`Lỗi ${fmt(openBatch.failed)}`}
+              label={t("reports.importMatchReport.badgeFailed", {
+                count: fmt(openBatch.failed),
+              })}
             />
             <UiStatusBadge
               tone="warning"
-              label={`Trùng ${fmt(openBatch.duplicate)}`}
+              label={t("reports.importMatchReport.badgeDuplicate", {
+                count: fmt(openBatch.duplicate),
+              })}
             />
             {openBatch.errorFileAvailable ? (
               <ActionButton
@@ -1839,7 +1998,7 @@ export default function ImportMatchReport() {
                 loading={downloading === openBatch.id}
                 onClick={() => void downloadErrorFile(openBatch)}
               >
-                Tải tệp lỗi
+                {t("reports.importMatchReport.downloadErrorFile")}
               </ActionButton>
             ) : null}
           </Stack>
@@ -1857,16 +2016,31 @@ export default function ImportMatchReport() {
           >
             {[
               [
-                "Thời gian",
+                t("reports.importMatchReport.colTime"),
                 openBatch.at ? fmtDateTime(openBatch.at) : EMPTY_TEXT,
               ],
-              ["Người thực hiện", openBatch.actor || EMPTY_TEXT],
-              ["Trạng thái", reportStatusLabel(openBatch.status)],
+              [
+                t("reports.importMatchReport.colActor"),
+                openBatch.actor || EMPTY_TEXT,
+              ],
+              [
+                t("reports.importMatchReport.colStatus"),
+                reportStatusLabel(openBatch.status),
+              ],
               ...(openBatch.context === "IMPORT"
                 ? ([
-                    ["Tệp nguồn", openBatch.sourceFile || EMPTY_TEXT],
-                    ["Checksum", openBatch.checksum || EMPTY_TEXT],
-                    ["Phiên bản nguồn", openBatch.sourceVersion || EMPTY_TEXT],
+                    [
+                      t("reports.importMatchReport.fieldSourceFile"),
+                      openBatch.sourceFile || EMPTY_TEXT,
+                    ],
+                    [
+                      t("reports.importMatchReport.fieldChecksum"),
+                      openBatch.checksum || EMPTY_TEXT,
+                    ],
+                    [
+                      t("reports.importMatchReport.fieldSourceVersion"),
+                      openBatch.sourceVersion || EMPTY_TEXT,
+                    ],
                   ] as Array<[string, string]>)
                 : []),
             ].map(([label, value]) => (
@@ -1905,35 +2079,35 @@ export default function ImportMatchReport() {
               color: S.textHigh,
             }}
           >
-            Dòng lỗi của batch
+            {t("reports.importMatchReport.errorLinesTitle")}
           </Box>
           <ResponsiveDataTable<BatchErrorLine>
             columns={[
               {
                 key: "rowNo",
-                header: "Dòng",
+                header: t("reports.importMatchReport.colRowNo"),
                 width: 80,
                 render: (row) => row.rowNo,
               },
               {
                 key: "code",
-                header: "Mã lỗi",
+                header: t("reports.importMatchReport.colErrorCode"),
                 render: (row) => <Box sx={{ fontWeight: 700 }}>{row.code}</Box>,
               },
               {
                 key: "message",
-                header: "Nội dung",
+                header: t("reports.importMatchReport.colMessage"),
                 render: (row) => row.message || EMPTY_TEXT,
               },
               {
                 key: "reference",
-                header: "SKU / khóa nghiệp vụ",
+                header: t("reports.importMatchReport.colReference"),
                 render: (row) => row.reference || EMPTY_TEXT,
               },
             ]}
             rows={openBatch.errors}
             rowKey={(row) => `${row.rowNo}-${row.code}-${row.reference}`}
-            emptyText="Batch này không có dòng lỗi nào."
+            emptyText={t("reports.importMatchReport.errorLinesEmpty")}
           />
 
           {openBatch.matchLines.length > 0 ? (
@@ -1948,59 +2122,59 @@ export default function ImportMatchReport() {
                   color: S.textHigh,
                 }}
               >
-                Đối soát tầng dòng SKU
+                {t("reports.importMatchReport.matchLinesTitle")}
               </Box>
               <ResponsiveDataTable<Raw>
                 columns={[
                   {
                     key: "row_no",
-                    header: "Dòng",
+                    header: t("reports.importMatchReport.colRowNo"),
                     align: "right",
                     width: 80,
                     render: (row) => text(row.row_no),
                   },
                   {
                     key: "source_request_no",
-                    header: "Phiếu toa",
+                    header: t("reports.importMatchReport.colTicket"),
                     render: (row) => text(row.source_request_no),
                   },
                   {
                     key: "sku_code",
-                    header: "Mã SKU",
+                    header: t("reports.importMatchReport.fieldSku"),
                     render: (row) => (
                       <Box sx={{ fontWeight: 700 }}>{text(row.sku_code)}</Box>
                     ),
                   },
                   {
                     key: "required_qty",
-                    header: "Yêu cầu",
+                    header: t("reports.importMatchReport.colRequired"),
                     align: "right",
                     width: 100,
                     render: (row) => fmt(n(row.required_qty)),
                   },
                   {
                     key: "matched_qty",
-                    header: "Đối chiếu",
+                    header: t("reports.importMatchReport.colMatched"),
                     align: "right",
                     width: 110,
                     render: (row) => fmt(n(row.matched_qty)),
                   },
                   {
                     key: "scanned_qty",
-                    header: "Quét",
+                    header: t("reports.importMatchReport.colScanned"),
                     align: "right",
                     width: 90,
                     render: (row) => fmt(n(row.scanned_qty)),
                   },
                   {
                     key: "error_code",
-                    header: "Lỗi",
+                    header: t("reports.importMatchReport.colFailed"),
                     render: (row) => text(row.error_code),
                   },
                 ]}
                 rows={openBatch.matchLines}
                 rowKey={(row) => text(row.id, "")}
-                emptyText="Batch này không có dòng SKU nào."
+                emptyText={t("reports.importMatchReport.matchLinesEmpty")}
               />
             </>
           ) : null}

@@ -11,6 +11,7 @@
  */
 import { COMPONENT_TOKENS } from "@/shared/ui/tokens";
 import { flatIconClass } from "@/shared/ui/icons/icon-family";
+import { useT } from "@/shared/i18n/useT";
 
 export interface UiSpinnerProps {
   /** Cỡ glyph (px) — mặc định icon.md của token. */
@@ -26,14 +27,19 @@ export interface UiSpinnerProps {
 export function UiSpinner({
   size = COMPONENT_TOKENS.icon.md,
   color,
-  label = "Đang tải",
+  label,
   className,
   "data-testid": dataTestId,
 }: UiSpinnerProps) {
+  const t = useT();
+  // label === null nghĩa là "đã có nhãn mô tả bên cạnh" → bỏ aria-label;
+  // không truyền thì dùng nhãn mặc định theo ngôn ngữ.
+  const resolvedLabel =
+    label === null ? undefined : (label ?? t("shared.states.loadingPlain"));
   return (
     <span
       role="progressbar"
-      aria-label={label ?? undefined}
+      aria-label={resolvedLabel}
       aria-busy="true"
       className={className ? `hn-spinner ${className}` : "hn-spinner"}
       data-testid={dataTestId}

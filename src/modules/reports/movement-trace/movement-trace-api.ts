@@ -50,6 +50,10 @@ export type MovementTraceRow = {
   sourceId: string;
   actor: string;
   originalMovementId: string;
+  /** Mã nghiệp vụ (MV-…) của movement — thứ DUY NHẤT được in ra màn hình. */
+  movementNo: string;
+  /** Mã của movement gốc mà một REVERSAL đang đảo; rỗng nếu BE không tra được. */
+  originalMovementNo: string;
   correctionChainId: string;
 };
 
@@ -98,6 +102,8 @@ function toRow(raw: Raw): MovementTraceRow {
     sourceId: text(raw.source_id, ""),
     actor: text(raw.actor, ""),
     originalMovementId: text(raw.original_movement_id, ""),
+    movementNo: text(raw.movement_no, ""),
+    originalMovementNo: text(raw.original_movement_no, ""),
     correctionChainId: text(raw.correction_chain_id, ""),
   };
 }
@@ -176,7 +182,7 @@ export function useMovementTraceReport(query: MovementTraceQuery) {
  * RPT-MOV-01 phải truy ngược được. `/reports/document-history` chỉ đọc
  * `stock_documents` (nhập/xuất) nên KHÔNG bao giờ trả phiếu Reversal — phải
  * ghép thêm `/reversal-documents` mới phủ hết ba loại chứng từ mà ledger trỏ
- * tới. Thiếu mã thì màn hình rơi về `shortId(source_id)`, không bịa mã.
+ * tới. Thiếu mã thì màn hình hiện "Chưa có" — không bịa mã, không in UUID.
  */
 export function useSourceDocumentCodes({
   fromDate,

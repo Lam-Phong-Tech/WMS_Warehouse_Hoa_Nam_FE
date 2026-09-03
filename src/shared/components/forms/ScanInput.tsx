@@ -3,6 +3,7 @@ import { Input, Typography } from "antd";
 import type { InputRef } from "antd";
 import { BarcodeOutlined } from "@/shared/components/icons";
 import { ActionButton } from "@/shared/components/actions";
+import { useT } from "@/shared/i18n/useT";
 
 export interface ScanInputProps {
   value?: string;
@@ -27,16 +28,17 @@ function normalizeScanCode(value: string) {
  */
 export function ScanInput({
   value,
-  placeholder = "Scan/nhập mã...",
+  placeholder,
   disabled = false,
   autoFocus = true,
   size = "large",
   recentCodes = [],
-  duplicateMessage = "Mã này vừa được scan",
+  duplicateMessage,
   error,
   onChange,
   onScan,
 }: ScanInputProps) {
+  const t = useT();
   const inputRef = useRef<InputRef>(null);
   const [innerValue, setInnerValue] = useState(value ?? "");
   const [localError, setLocalError] = useState<string | null>(null);
@@ -63,13 +65,13 @@ export function ScanInput({
   const submit = (rawValue: string) => {
     const code = normalizeScanCode(rawValue);
     if (!code) {
-      setLocalError("Vui lòng scan hoặc nhập mã");
+      setLocalError(t("shared.scanner.emptyCode"));
       inputRef.current?.focus();
       return;
     }
 
     if (recentCodeSet.has(code)) {
-      setLocalError(duplicateMessage);
+      setLocalError(duplicateMessage ?? t("shared.scanner.duplicateCode"));
       inputRef.current?.focus();
       return;
     }
@@ -87,9 +89,9 @@ export function ScanInput({
     <div>
       <Input
         ref={inputRef}
-        aria-label="Scan code"
+        aria-label={t("shared.scanner.scanAria")}
         value={currentValue}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t("shared.scanner.placeholder")}
         disabled={disabled}
         size={size}
         prefix={<BarcodeOutlined aria-hidden="true" />}
@@ -99,7 +101,7 @@ export function ScanInput({
             disabled={disabled}
             onClick={() => submit(currentValue)}
           >
-            Scan
+            {t("shared.scanner.scan")}
           </ActionButton>
         }
         status={helpText ? "error" : undefined}

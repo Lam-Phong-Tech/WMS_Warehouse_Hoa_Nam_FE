@@ -112,7 +112,7 @@ const waterfallSteps = (
     key: "COMPONENT_ISSUE",
     label: t("reports.inventoryFlow.componentIssue"),
   },
-  { key: "REVERSAL", label: "Reversal" },
+  { key: "REVERSAL", label: t("reports.inventoryFlow.reversal") },
   { key: "CLOSING", label: t("reports.inventoryFlow.closing") },
 ];
 
@@ -120,7 +120,7 @@ const docTypeFilterOptions = (t: TranslateFn) => [
   { value: "all", label: t("reports.inventoryFlow.docAll") },
   { value: "INBOUND", label: t("reports.inventoryFlow.docInbound") },
   { value: "OUTBOUND", label: t("reports.inventoryFlow.docOutbound") },
-  { value: "REVERSAL", label: "Reversal" },
+  { value: "REVERSAL", label: t("reports.inventoryFlow.docReversal") },
 ];
 
 const DOC_STATUS_OPTIONS = ["DRAFT", "SCANNING", "POSTED", "CANCELLED"].map(
@@ -229,7 +229,7 @@ export default function TabInventoryFlow() {
       hint: t("reports.inventoryFlow.hintComponentIssue"),
     },
     {
-      label: "Reversal",
+      label: t("reports.inventoryFlow.reversal"),
       value: totals.reversalUnlinked,
       kind: "delta",
       hint: t("reports.inventoryFlow.hintReversal"),
@@ -516,7 +516,7 @@ export default function TabInventoryFlow() {
       color: CHART_COLORS.violet,
     },
     {
-      name: "Reversal",
+      name: t("reports.inventoryFlow.reversal"),
       data: daily.reversal,
       color: CHART_COLORS.danger,
     },
@@ -605,7 +605,8 @@ export default function TabInventoryFlow() {
     });
 
     const fromReversal = listOf(reversals.data?.data).map((row, index) => {
-      const actor = text(row.posted_by ?? row.created_by, "");
+      // posted_by / created_by là UUID: tra danh bạ ra tên, không in UUID.
+      const actor = users.nameOfUserId(row.posted_by ?? row.created_by);
       return {
         ...row,
         id: text(row.id, `rev-${index}`),

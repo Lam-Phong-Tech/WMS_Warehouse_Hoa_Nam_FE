@@ -36,13 +36,21 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { MultiSelectFilter } from "@/modules/reports/operations/report-table";
+import { presetRange } from "@/modules/reports/operations/report-format";
 import { usePeriodFilter } from "@/modules/reports/operations/report-period";
 import {
   RPT_CONTROL_MOTION_SX,
   RPT_SCROLL_MAX_HEIGHT,
 } from "@/modules/reports/operations/report-tokens";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
+import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
+import {
+  optionsFromRows,
+  useSectionFilter,
+  type SectionFilterConfig,
+} from "@/modules/reports/operations/report-section-filter";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { tStatic, useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { ClientSortState } from "@/shared/components/data-display/useClientSort";
 import {
   DEFAULT_RECIPIENT_AGENCY_FILTERS,
@@ -57,23 +65,35 @@ import {
   type RecipientAgencySummaryRow,
 } from "./recipient-agency-api";
 
-const RECIPIENT_TYPE_OPTIONS = [
-  { value: "DISTRIBUTOR", label: "Nhà phân phối" },
-  { value: "AGENCY", label: "Đại lý" },
-  { value: "PROJECT_CUSTOMER", label: "Khách công trình" },
-  { value: "RETAIL_CUSTOMER", label: "Khách lẻ" },
+const recipientTypeOptions = (t: TranslateFn) => [
+  { value: "DISTRIBUTOR", label: t("reports.recipientAgency.typeDistributor") },
+  { value: "AGENCY", label: t("reports.recipientAgency.typeAgency") },
+  {
+    value: "PROJECT_CUSTOMER",
+    label: t("reports.recipientAgency.typeProjectCustomer"),
+  },
+  {
+    value: "RETAIL_CUSTOMER",
+    label: t("reports.recipientAgency.typeRetailCustomer"),
+  },
 ];
 
-const PRODUCT_TYPE_OPTIONS = [
-  { value: "PRODUCT", label: "Sản phẩm" },
-  { value: "COMPONENT", label: "Linh kiện" },
+const productTypeOptions = (t: TranslateFn) => [
+  { value: "PRODUCT", label: t("reports.recipientAgency.typeProduct") },
+  { value: "COMPONENT", label: t("reports.recipientAgency.typeComponent") },
 ];
 
-const REVERSAL_STATE_OPTIONS = [
-  { value: "ALL", label: "Tất cả trạng thái hoàn tác" },
-  { value: "NOT_REVERSED", label: "Chưa hoàn tác" },
-  { value: "PARTIALLY_REVERSED", label: "Hoàn tác một phần" },
-  { value: "FULLY_REVERSED", label: "Hoàn tác toàn bộ" },
+const reversalStateOptions = (t: TranslateFn) => [
+  { value: "ALL", label: t("reports.recipientAgency.reversalAll") },
+  { value: "NOT_REVERSED", label: t("reports.recipientAgency.reversalNone") },
+  {
+    value: "PARTIALLY_REVERSED",
+    label: t("reports.recipientAgency.reversalPartial"),
+  },
+  {
+    value: "FULLY_REVERSED",
+    label: t("reports.recipientAgency.reversalFull"),
+  },
 ];
 
 const EMPTY_METRICS: RecipientAgencyMetrics = {
@@ -115,23 +135,29 @@ function optionLabel(code: string | null, name: string): string {
 function partyLabel(
   party: { code: string | null; name: string | null } | null,
 ) {
-  if (!party) return "Không áp dụng";
+  if (!party) return tStatic("reports.recipientAgency.notApplicable");
   const name = orEmpty(party.name);
   return party.code ? `${party.code} · ${name}` : name;
 }
 
 function recipientTypeLabel(type: string | null | undefined) {
   const labels: Record<string, string> = {
-    DISTRIBUTOR: "Nhà phân phối",
-    AGENCY: "Đại lý",
-    PROJECT_CUSTOMER: "Khách hàng công trình",
-    RETAIL_CUSTOMER: "Khách hàng bán lẻ",
+    DISTRIBUTOR: tStatic("reports.recipientAgency.typeDistributor"),
+    AGENCY: tStatic("reports.recipientAgency.typeAgency"),
+    PROJECT_CUSTOMER: tStatic(
+      "reports.recipientAgency.typeProjectCustomerFull",
+    ),
+    RETAIL_CUSTOMER: tStatic("reports.recipientAgency.typeRetailCustomerFull"),
   };
-  return type ? (labels[type] ?? "Nhóm người nhận khác") : EMPTY_TEXT;
+  return type
+    ? (labels[type] ?? tStatic("reports.recipientAgency.typeOther"))
+    : EMPTY_TEXT;
 }
 
 function eventTypeLabel(type: "ISSUE_POSTED" | "ISSUE_REVERSED") {
-  return type === "ISSUE_POSTED" ? "Ghi nhận xuất" : "Hoàn tác xuất";
+  return type === "ISSUE_POSTED"
+    ? tStatic("reports.recipientAgency.eventPosted")
+    : tStatic("reports.recipientAgency.eventReversed");
 }
 
 function PiiSummary({
@@ -141,34 +167,33 @@ function PiiSummary({
   details: RecipientAgencyDetails | undefined;
   canViewPii: boolean;
 }) {
+  const t = useT();
   const firstPii = details?.rows.find((row) => row.pii)?.pii;
   if (!firstPii) {
     return (
-      <UiAlert tone="info">
-        Không có thông tin liên hệ trong lát cắt này.
-      </UiAlert>
+      <UiAlert tone="info">{t("reports.recipientAgency.piiNone")}</UiAlert>
     );
   }
   if (firstPii.masked || !canViewPii) {
     return (
-      <UiAlert tone="info">
-        Thông tin liên hệ đã được máy chủ che theo quyền của tài khoản.
-      </UiAlert>
+      <UiAlert tone="info">{t("reports.recipientAgency.piiMasked")}</UiAlert>
     );
   }
   return (
     <Box sx={{ display: "grid", gap: 0.5, mt: 1.5, typography: "body2" }}>
       <Box>
-        <b>Liên hệ:</b> {orEmpty(firstPii.contact_name)}
+        <b>{t("reports.recipientAgency.piiContact")}</b>{" "}
+        {orEmpty(firstPii.contact_name)}
       </Box>
       <Box>
-        <b>Điện thoại:</b> {orEmpty(firstPii.phone)}
+        <b>{t("reports.recipientAgency.piiPhone")}</b> {orEmpty(firstPii.phone)}
       </Box>
       <Box>
-        <b>Email:</b> {orEmpty(firstPii.email)}
+        <b>{t("reports.recipientAgency.piiEmail")}</b> {orEmpty(firstPii.email)}
       </Box>
       <Box>
-        <b>Địa chỉ:</b> {orEmpty(firstPii.address)}
+        <b>{t("reports.recipientAgency.piiAddress")}</b>{" "}
+        {orEmpty(firstPii.address)}
       </Box>
     </Box>
   );
@@ -359,6 +384,7 @@ function SliceReconciliationCard({
   index: number;
   onOpen: () => void;
 }) {
+  const t = useT();
   const netIssued = Number(row.net_issued_qty) || 0;
   return (
     <Box
@@ -394,7 +420,9 @@ function SliceReconciliationCard({
             textTransform: "uppercase",
           }}
         >
-          Lát cắt {String(index + 1).padStart(2, "0")}
+          {t("reports.recipientAgency.sliceBadge", {
+            index: String(index + 1).padStart(2, "0"),
+          })}
         </Box>
         <UiStatusBadge
           tone="neutral"
@@ -439,12 +467,16 @@ function SliceReconciliationCard({
           }}
         >
           {row.agency
-            ? `Tuyến đại lý: ${partyLabel(row.agency)}`
-            : "Xuất trực tiếp, không qua đại lý"}
+            ? t("reports.recipientAgency.agencyRoute", {
+                agency: partyLabel(row.agency),
+              })
+            : t("reports.recipientAgency.directIssue")}
           <Box component="span" sx={{ mx: 0.75, color: S.border }}>
             •
           </Box>
-          Phòng ban: {partyLabel(row.requesting_department)}
+          {t("reports.recipientAgency.departmentLine", {
+            department: partyLabel(row.requesting_department),
+          })}
         </Box>
       </Box>
 
@@ -459,10 +491,18 @@ function SliceReconciliationCard({
         }}
       >
         {[
-          ["Tổng xuất", row.gross_issue_posted_qty, S.infoText],
-          ["Hoàn tác", row.reversed_issue_qty, S.warningText],
           [
-            "Xuất thuần",
+            t("reports.recipientAgency.colGross"),
+            row.gross_issue_posted_qty,
+            S.infoText,
+          ],
+          [
+            t("reports.recipientAgency.colReversed"),
+            row.reversed_issue_qty,
+            S.warningText,
+          ],
+          [
+            t("reports.recipientAgency.colNet"),
             row.net_issued_qty,
             netIssued > 0 ? S.successText : S.textMedium,
           ],
@@ -503,10 +543,12 @@ function SliceReconciliationCard({
         }}
       >
         <Box sx={{ color: S.textMedium, fontSize: 11.5 }}>
-          {quantity(row.posted_document_count)} chứng từ đã ghi nhận
+          {t("reports.recipientAgency.docsPosted", {
+            count: quantity(row.posted_document_count),
+          })}
         </Box>
         <ActionButton kind="detail" onClick={onOpen}>
-          Đối soát
+          {t("reports.recipientAgency.reconcile")}
         </ActionButton>
       </Stack>
     </Box>
@@ -575,6 +617,7 @@ function ChartPanel({
   onRetry: () => void;
   children: ReactNode;
 }) {
+  const t = useT();
   return (
     <Box
       component="section"
@@ -636,7 +679,7 @@ function ChartPanel({
       {error ? (
         <ApiErrorAlert
           error={error}
-          title={`Không tải được "${title}"`}
+          title={t("reports.common.loadError", { title })}
           onRetry={onRetry}
         />
       ) : loading ? (
@@ -655,7 +698,7 @@ function ChartPanel({
             fontSize: TYPOGRAPHY.fontSizeSecondary,
           }}
         >
-          Không có dữ liệu theo bộ lọc hiện tại.
+          {t("reports.common.noData")}
         </Box>
       ) : (
         <Box
@@ -680,10 +723,48 @@ function ChartPanel({
  * Report 08 reads one server-side snapshot. It intentionally does not join
  * generic outbound/reversal/user endpoints in the browser: that would alter
  * the ledger formula, department snapshot and document dedupe semantics.
+ *
+ * Chuỗi hiển thị đã chuyển về `messages.ts` (nhánh `reports.recipientAgency.*`)
+ * theo yêu cầu i18n 100% (2026-09-03); bản VI giữ nguyên từng ký tự so với
+ * bản port nên vẫn đối chiếu được với mockup khi nghiệm thu.
  */
 export default function RecipientAgencyReport() {
+  const t = useT();
   // Kỳ mặc định giữ nguyên "tháng này" như 7 báo cáo vận hành còn lại.
   const period = usePeriodFilter("this-month");
+  /**
+   * Kỳ nhanh nằm TRONG panel lịch, không còn ô "Kỳ báo cáo" riêng: trước đây
+   * hai control cùng set một khoảng ngày nên chọn preset thì ô ngày bị ghi đè,
+   * còn sửa ô ngày thì ô preset lặng lẽ nhảy về "Tùy chọn" — người đọc không
+   * thấy được mối liên hệ đó. Mục "Tùy chọn" cũng bỏ luôn vì nó là TRẠNG THÁI
+   * rơi vào khi tự đặt ngày, không phải một lựa chọn bấm được (bấm vào nó
+   * không đổi khoảng ngày nào cả).
+   */
+  const periodPresets = useMemo(
+    () => [
+      {
+        key: "this-week",
+        label: t("reports.period.thisWeek"),
+        range: () => presetRange("this-week"),
+      },
+      {
+        key: "this-month",
+        label: t("reports.period.thisMonth"),
+        range: () => presetRange("this-month"),
+      },
+      {
+        key: "this-quarter",
+        label: t("reports.period.thisQuarter"),
+        range: () => presetRange("this-quarter"),
+      },
+      {
+        key: "this-year",
+        label: t("reports.period.thisYear"),
+        range: () => presetRange("this-year"),
+      },
+    ],
+    [t],
+  );
   const [recipientIds, setRecipientIds] = useState<string[]>([]);
   const [recipientTypes, setRecipientTypes] = useState<string[]>([]);
   const [agencyIds, setAgencyIds] = useState<string[]>([]);
@@ -768,6 +849,75 @@ export default function RecipientAgencyReport() {
     metrics.posted_document_count,
   );
   const rows = summary?.rows ?? [];
+
+  /**
+   * Bộ lọc RIÊNG của khối bảng. Bộ lọc đầu trang gọi lại lát cắt trên máy chủ
+   * (đổi cả KPI, chart và snapshot_id); ở đây người đọc chỉ muốn khoanh vùng
+   * đúng bảng đang soi trong CÙNG một lát cắt đã chốt, nên phép lọc dừng ở
+   * client và không đụng tới lát cắt.
+   */
+  const tableFilterConfig = useMemo<
+    SectionFilterConfig<RecipientAgencySummaryRow>
+  >(
+    () => ({
+      searchPlaceholder: t("reports.recipientAgency.tableSearchPlaceholder"),
+      searchText: (row) => [
+        row.recipient.code,
+        row.recipient.name,
+        row.agency?.code,
+        row.agency?.name,
+        row.sku.code,
+        row.sku.name,
+        row.requesting_department?.name,
+      ],
+      selects: [
+        {
+          key: "recipientType",
+          placeholder: t("reports.recipientAgency.anyRecipientType"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.recipient.type,
+              (value) => recipientTypeLabel(value),
+            ),
+          match: (row, value) => row.recipient.type === value,
+          minWidth: 200,
+        },
+        {
+          key: "productType",
+          placeholder: t("reports.recipientAgency.anyProductType"),
+          options: (list) =>
+            optionsFromRows(
+              list,
+              (row) => row.sku.product_type,
+              (value) =>
+                productTypeOptions(t).find((option) => option.value === value)
+                  ?.label ?? value,
+            ),
+          match: (row, value) => row.sku.product_type === value,
+          minWidth: 165,
+        },
+        {
+          key: "reversal",
+          placeholder: t("reports.recipientAgency.anyReversal"),
+          options: [
+            {
+              value: "REVERSED",
+              label: t("reports.recipientAgency.hasReversal"),
+            },
+            { value: "CLEAN", label: t("reports.recipientAgency.noReversal") },
+          ],
+          match: (row, value) =>
+            value === "REVERSED"
+              ? Number(row.reversed_issue_qty) > 0
+              : Number(row.reversed_issue_qty) <= 0,
+          minWidth: 205,
+        },
+      ],
+    }),
+    [t],
+  );
+  const tableFilter = useSectionFilter(rows, tableFilterConfig);
   const options = optionQuery.data;
   const activeFilterCount =
     recipientIds.length +
@@ -825,9 +975,9 @@ export default function RecipientAgencyReport() {
         scope: "DETAIL",
         includePii,
       });
-      toast.success(`Đã tạo tệp ${format} từ đúng lát cắt đang xem.`);
+      toast.success(t("reports.recipientAgency.exportOk", { format }));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Xuất báo cáo thất bại."));
+      toast.error(getApiErrorMessage(error, t("reports.export.failed")));
     } finally {
       setExporting(null);
     }
@@ -836,8 +986,8 @@ export default function RecipientAgencyReport() {
   const tableColumns = [
     {
       key: "recipient",
-      header: "Người nhận / đại lý",
-      width: 175,
+      header: t("reports.recipientAgency.colRecipient"),
+      width: "23%",
       sortable: true,
       sortType: "text" as const,
       render: (row: RecipientAgencySummaryRow) => (
@@ -856,8 +1006,10 @@ export default function RecipientAgencyReport() {
           <Box
             title={`${recipientTypeLabel(row.recipient.type)} · ${
               row.agency
-                ? `Tuyến đại lý: ${partyLabel(row.agency)}`
-                : "Không qua đại lý"
+                ? t("reports.recipientAgency.agencyRoute", {
+                    agency: partyLabel(row.agency),
+                  })
+                : t("reports.recipientAgency.noAgency")
             }`}
             sx={{
               mt: 0.25,
@@ -871,16 +1023,18 @@ export default function RecipientAgencyReport() {
           >
             {recipientTypeLabel(row.recipient.type)} ·{" "}
             {row.agency
-              ? `Tuyến đại lý: ${partyLabel(row.agency)}`
-              : "Không qua đại lý"}
+              ? t("reports.recipientAgency.agencyRoute", {
+                  agency: partyLabel(row.agency),
+                })
+              : t("reports.recipientAgency.noAgency")}
           </Box>
         </Box>
       ),
     },
     {
       key: "sku",
-      header: "Mã hàng / phòng ban",
-      width: 175,
+      header: t("reports.recipientAgency.colSkuDept"),
+      width: "23%",
       sortable: true,
       sortType: "text" as const,
       render: (row: RecipientAgencySummaryRow) => (
@@ -898,7 +1052,9 @@ export default function RecipientAgencyReport() {
           </Box>
           <Box
             title={`${
-              row.sku.product_type === "COMPONENT" ? "Linh kiện" : "Sản phẩm"
+              row.sku.product_type === "COMPONENT"
+                ? t("reports.recipientAgency.typeComponent")
+                : t("reports.recipientAgency.typeProduct")
             } · ${partyLabel(row.requesting_department)}`}
             sx={{
               mt: 0.25,
@@ -910,7 +1066,9 @@ export default function RecipientAgencyReport() {
               whiteSpace: "nowrap",
             }}
           >
-            {row.sku.product_type === "COMPONENT" ? "Linh kiện" : "Sản phẩm"}
+            {row.sku.product_type === "COMPONENT"
+              ? t("reports.recipientAgency.typeComponent")
+              : t("reports.recipientAgency.typeProduct")}
             {" · "}
             {partyLabel(row.requesting_department)}
           </Box>
@@ -919,8 +1077,8 @@ export default function RecipientAgencyReport() {
     },
     {
       key: "gross",
-      header: "Tổng xuất",
-      width: 80,
+      header: t("reports.recipientAgency.colGross"),
+      width: "10%",
       align: "right" as const,
       sortable: true,
       sortType: "value" as const,
@@ -929,8 +1087,8 @@ export default function RecipientAgencyReport() {
     },
     {
       key: "reversed",
-      header: "Hoàn tác",
-      width: 80,
+      header: t("reports.recipientAgency.colReversed"),
+      width: "10%",
       align: "right" as const,
       sortable: true,
       sortType: "value" as const,
@@ -939,8 +1097,8 @@ export default function RecipientAgencyReport() {
     },
     {
       key: "net",
-      header: "Xuất thuần",
-      width: 80,
+      header: t("reports.recipientAgency.colNet"),
+      width: "10%",
       align: "right" as const,
       sortable: true,
       sortType: "value" as const,
@@ -966,8 +1124,8 @@ export default function RecipientAgencyReport() {
     },
     {
       key: "documents",
-      header: "Chứng từ",
-      width: 80,
+      header: t("reports.recipientAgency.colDocs"),
+      width: "9%",
       align: "right" as const,
       sortable: true,
       sortType: "value" as const,
@@ -1031,7 +1189,7 @@ export default function RecipientAgencyReport() {
                 color: S.primaryDark,
               }}
             >
-              BÁO CÁO VẬN HÀNH
+              {t("reports.recipientAgency.kicker")}
             </Box>
             <Box
               component="h1"
@@ -1045,7 +1203,7 @@ export default function RecipientAgencyReport() {
                 color: S.textHigh,
               }}
             >
-              Xuất theo người nhận / đại lý
+              {t("reports.recipientAgency.title")}
             </Box>
             <Box
               sx={{
@@ -1054,8 +1212,7 @@ export default function RecipientAgencyReport() {
                 color: S.textMedium,
               }}
             >
-              Theo dõi lượng xuất đã ghi nhận, lượng hoàn tác và lượng xuất
-              thuần trong cùng một lát cắt dữ liệu.
+              {t("reports.recipientAgency.description")}
             </Box>
           </Box>
         </Stack>
@@ -1074,10 +1231,10 @@ export default function RecipientAgencyReport() {
             }
             label={
               summaryQuery.isFetching
-                ? "Đang đồng bộ"
+                ? t("reports.recipientAgency.statusSyncing")
                 : summary
-                  ? "Đã chốt dữ liệu"
-                  : "Chờ dữ liệu"
+                  ? t("reports.recipientAgency.statusLocked")
+                  : t("reports.recipientAgency.statusWaiting")
             }
           />
           <UiButton
@@ -1087,14 +1244,14 @@ export default function RecipientAgencyReport() {
             onClick={refresh}
             disabled={period.invalid || summaryQuery.isFetching}
           >
-            Làm mới
+            {t("reports.recipientAgency.refresh")}
           </UiButton>
         </Stack>
       </Box>
 
       <Box
         component="section"
-        aria-label="Ngữ cảnh lát cắt báo cáo"
+        aria-label={t("reports.recipientAgency.contextAria")}
         sx={{
           ...REPORT_SURFACE_SX,
           position: "relative",
@@ -1137,7 +1294,7 @@ export default function RecipientAgencyReport() {
                 opacity: 0.82,
               }}
             >
-              LÁT CẮT ĐANG XEM
+              {t("reports.recipientAgency.sliceViewing")}
             </Box>
             <Box
               sx={{
@@ -1158,8 +1315,7 @@ export default function RecipientAgencyReport() {
                 opacity: 0.9,
               }}
             >
-              Xuất thuần = tổng lượng xuất đã ghi nhận − lượng hoàn tác phát
-              sinh trong cùng kỳ. Đại lý là chiều thống kê, không phải kho.
+              {t("reports.recipientAgency.sliceFormula")}
             </Box>
           </Box>
           <Stack
@@ -1180,7 +1336,9 @@ export default function RecipientAgencyReport() {
                 fontWeight: 700,
               }}
             >
-              {summary ? "Lát cắt đã khóa" : "Đang tạo lát cắt"}
+              {summary
+                ? t("reports.recipientAgency.sliceLocked")
+                : t("reports.recipientAgency.sliceCreating")}
             </Box>
             <Box
               sx={{
@@ -1190,8 +1348,10 @@ export default function RecipientAgencyReport() {
               }}
             >
               {summary
-                ? `Chốt lúc ${formatDateTime(summary.as_of)}`
-                : "Múi giờ Việt Nam (UTC+7)"}
+                ? t("reports.recipientAgency.lockedAt", {
+                    time: formatDateTime(summary.as_of),
+                  })
+                : t("reports.recipientAgency.timezoneBadge")}
             </Box>
           </Stack>
         </Box>
@@ -1246,11 +1406,10 @@ export default function RecipientAgencyReport() {
                   color: S.textHigh,
                 }}
               >
-                Bộ lọc báo cáo
+                {t("reports.recipientAgency.filterTitle")}
               </Box>
               <Box sx={{ mt: 0.2, fontSize: 12, color: S.textMedium }}>
-                Trong cùng bộ lọc dùng điều kiện HOẶC; giữa các bộ lọc dùng điều
-                kiện VÀ.
+                {t("reports.recipientAgency.filterHint")}
               </Box>
             </Box>
           </Stack>
@@ -1265,7 +1424,9 @@ export default function RecipientAgencyReport() {
             {activeFilterCount > 0 ? (
               <UiStatusBadge
                 tone="primary"
-                label={`${activeFilterCount} đang chọn`}
+                label={t("reports.recipientAgency.selectedCount", {
+                  count: activeFilterCount,
+                })}
               />
             ) : null}
             <UiButton
@@ -1281,7 +1442,9 @@ export default function RecipientAgencyReport() {
                 },
               }}
             >
-              {filtersExpanded ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+              {filtersExpanded
+                ? t("reports.recipientAgency.hideFilters")
+                : t("reports.recipientAgency.showFilters")}
             </UiButton>
             <UiButton
               appearance="text"
@@ -1296,7 +1459,7 @@ export default function RecipientAgencyReport() {
                 },
               }}
             >
-              Đặt lại
+              {t("reports.recipientAgency.reset")}
             </UiButton>
           </Stack>
         </Box>
@@ -1318,56 +1481,55 @@ export default function RecipientAgencyReport() {
             rowGap: 1.75,
           }}
         >
-          <FilterField label="Kỳ báo cáo" desktopSpan={3}>
-            <UiSelect
-              aria-label="Kỳ báo cáo"
-              fullWidth
-              value={period.preset}
-              onChange={(value) =>
-                period.setPreset(value as typeof period.preset)
-              }
-              options={[
-                { value: "this-week", label: "Tuần này" },
-                { value: "this-month", label: "Tháng này" },
-                { value: "this-quarter", label: "Quý này" },
-                { value: "this-year", label: "Năm này" },
-                { value: "custom", label: "Tùy chọn" },
+          <FilterField
+            label={t("reports.recipientAgency.dateRangeLabel")}
+            desktopSpan={6}
+            tabletSpan={2}
+          >
+            <UiVuexyDateRangePicker
+              aria-label={t("reports.filters.dateRangeAria")}
+              value={period.range}
+              format="DD/MM/YYYY"
+              placeholder={[
+                t("reports.recipientAgency.dateFrom"),
+                t("reports.recipientAgency.dateTo"),
               ]}
+              allowClear={false}
+              className="hn-vuexy-date-range"
+              popupClassName="hn-vuexy-date-popup"
+              presets={periodPresets}
+              onChange={(value) => {
+                if (value?.[0] && value?.[1])
+                  period.setRange([value[0], value[1]]);
+              }}
             />
+            <Box sx={{ mt: 0.5, color: S.textMedium, fontSize: 12 }}>
+              {t("reports.recipientAgency.periodViewing", {
+                label: period.label,
+              })}
+            </Box>
           </FilterField>
-          <FilterField label="Trạng thái hoàn tác" desktopSpan={3}>
+          <FilterField
+            label={t("reports.recipientAgency.reversalStateLabel")}
+            desktopSpan={3}
+          >
             <UiSelect
-              aria-label="Trạng thái hoàn tác"
+              aria-label={t("reports.recipientAgency.reversalStateLabel")}
               fullWidth
               value={reversalState}
               onChange={(value) => {
                 setReversalState(value as typeof reversalState);
                 setPage(1);
               }}
-              options={REVERSAL_STATE_OPTIONS}
+              options={reversalStateOptions(t)}
             />
           </FilterField>
-          <FilterField label="Khoảng ngày" desktopSpan={6} tabletSpan={2}>
-            <UiVuexyDateRangePicker
-              aria-label="Từ ngày đến ngày"
-              value={period.range}
-              format="DD/MM/YYYY"
-              placeholder={["Từ ngày", "Đến ngày"]}
-              allowClear={false}
-              className="hn-vuexy-date-range"
-              popupClassName="hn-vuexy-date-popup"
-              onChange={(value) => {
-                if (value?.[0] && value?.[1])
-                  period.setRange([value[0], value[1]]);
-              }}
-            />
-          </FilterField>
-          <FilterField label="Loại người nhận">
+          <FilterField label={t("reports.recipientAgency.recipientTypeLabel")}>
             <MultiSelectFilter
               minWidth={0}
-              ariaLabel="Lọc loại người nhận"
-              placeholder="Tất cả loại người nhận"
-              options={RECIPIENT_TYPE_OPTIONS}
+              ariaLabel={t("reports.recipientAgency.recipientTypeAria")}
+              placeholder={t("reports.recipientAgency.recipientTypeAll")}
+              options={recipientTypeOptions(t)}
               value={recipientTypes}
               onChange={(value) => {
                 setRecipientTypes(value);
@@ -1375,11 +1537,11 @@ export default function RecipientAgencyReport() {
               }}
             />
           </FilterField>
-          <FilterField label="Người nhận">
+          <FilterField label={t("reports.recipientAgency.recipientLabel")}>
             <MultiSelectFilter
               minWidth={0}
-              ariaLabel="Lọc người nhận"
-              placeholder="Tất cả người nhận"
+              ariaLabel={t("reports.recipientAgency.recipientAria")}
+              placeholder={t("reports.recipientAgency.recipientAll")}
               options={(options?.recipients ?? []).map((item) => ({
                 value: item.id,
                 label: optionLabel(item.code, item.name),
@@ -1391,11 +1553,11 @@ export default function RecipientAgencyReport() {
               }}
             />
           </FilterField>
-          <FilterField label="Đại lý">
+          <FilterField label={t("reports.recipientAgency.typeAgency")}>
             <MultiSelectFilter
               minWidth={0}
-              ariaLabel="Lọc đại lý"
-              placeholder="Tất cả đại lý"
+              ariaLabel={t("reports.recipientAgency.agencyAria")}
+              placeholder={t("reports.recipientAgency.agencyAll")}
               options={(options?.agencies ?? []).map((item) => ({
                 value: item.id,
                 label: optionLabel(item.code, item.name),
@@ -1407,11 +1569,11 @@ export default function RecipientAgencyReport() {
               }}
             />
           </FilterField>
-          <FilterField label="Phòng ban yêu cầu">
+          <FilterField label={t("reports.recipientAgency.departmentLabel")}>
             <MultiSelectFilter
               minWidth={0}
-              ariaLabel="Lọc phòng ban yêu cầu"
-              placeholder="Tất cả phòng ban"
+              ariaLabel={t("reports.recipientAgency.departmentAria")}
+              placeholder={t("reports.recipientAgency.departmentAll")}
               options={(options?.departments ?? []).map((item) => ({
                 value: item.id,
                 label: optionLabel(item.code, item.name),
@@ -1423,11 +1585,14 @@ export default function RecipientAgencyReport() {
               }}
             />
           </FilterField>
-          <FilterField label="Mã hàng (SKU)" desktopSpan={6}>
+          <FilterField
+            label={t("reports.recipientAgency.skuLabel")}
+            desktopSpan={6}
+          >
             <MultiSelectFilter
               minWidth={0}
-              ariaLabel="Lọc SKU"
-              placeholder="Tất cả mã hàng"
+              ariaLabel={t("reports.recipientAgency.skuAria")}
+              placeholder={t("reports.recipientAgency.skuAll")}
               options={(options?.skus ?? []).map((item) => ({
                 value: item.id,
                 label: optionLabel(item.code, item.name),
@@ -1439,12 +1604,15 @@ export default function RecipientAgencyReport() {
               }}
             />
           </FilterField>
-          <FilterField label="Loại hàng" desktopSpan={6}>
+          <FilterField
+            label={t("reports.recipientAgency.productTypeLabel")}
+            desktopSpan={6}
+          >
             <MultiSelectFilter
               minWidth={0}
-              ariaLabel="Lọc loại hàng"
-              placeholder="Sản phẩm và linh kiện"
-              options={PRODUCT_TYPE_OPTIONS}
+              ariaLabel={t("reports.recipientAgency.productTypeAria")}
+              placeholder={t("reports.recipientAgency.productTypeAll")}
+              options={productTypeOptions(t)}
               value={productTypes}
               onChange={(value) => {
                 setProductTypes(
@@ -1461,12 +1629,14 @@ export default function RecipientAgencyReport() {
       </Box>
 
       {period.invalid ? (
-        <UiAlert tone="error">Từ ngày không thể sau đến ngày.</UiAlert>
+        <UiAlert tone="error">
+          {t("reports.recipientAgency.dateOrderError")}
+        </UiAlert>
       ) : null}
       {summaryQuery.error ? (
         <ApiErrorAlert
           error={summaryQuery.error}
-          title="Không thể tạo lát cắt báo cáo"
+          title={t("reports.recipientAgency.summaryErrorTitle")}
           onRetry={() => void summaryQuery.refetch()}
         />
       ) : null}
@@ -1490,13 +1660,16 @@ export default function RecipientAgencyReport() {
                 color: S.textHigh,
               }}
             >
-              Tổng quan vận hành
+              {t("reports.recipientAgency.kpiTitle")}
             </Box>
             <Box sx={{ mt: 0.25, fontSize: 12, color: S.textMedium }}>
-              Số liệu theo lát cắt đã khóa, không suy diễn từ tồn kho hiện tại.
+              {t("reports.recipientAgency.kpiHint")}
             </Box>
           </Box>
-          <UiStatusBadge tone="neutral" label="Múi giờ Việt Nam (UTC+7)" />
+          <UiStatusBadge
+            tone="neutral"
+            label={t("reports.recipientAgency.timezoneBadge")}
+          />
         </Stack>
         <Box
           sx={{
@@ -1509,42 +1682,42 @@ export default function RecipientAgencyReport() {
           }}
         >
           <MetricCard
-            label="Tổng lượng xuất"
+            label={t("reports.recipientAgency.kpiGross")}
             value={quantity(metrics.gross_issue_posted_qty)}
-            hint="Lượng xuất đã ghi nhận trong kỳ"
+            hint={t("reports.recipientAgency.kpiGrossHint")}
             tone="info"
             icon={<ShopOutlined />}
-            metaLabel="Chuẩn đối chiếu"
+            metaLabel={t("reports.recipientAgency.kpiGrossMeta")}
             metaValue="100%"
             progress={100}
           />
           <MetricCard
-            label="Đã hoàn tác"
+            label={t("reports.recipientAgency.kpiReversed")}
             value={quantity(metrics.reversed_issue_qty)}
-            hint="Lượng xuất đã hoàn tác trong kỳ"
+            hint={t("reports.recipientAgency.kpiReversedHint")}
             tone="warning"
             icon={<SwapOutlined />}
-            metaLabel="Tỷ lệ hoàn tác"
+            metaLabel={t("reports.recipientAgency.kpiReversedMeta")}
             metaValue={`${reversedRate}%`}
             progress={reversedRate}
           />
           <MetricCard
-            label="Xuất thuần"
+            label={t("reports.recipientAgency.colNet")}
             value={quantity(metrics.net_issued_qty)}
-            hint="Tổng lượng xuất trừ lượng hoàn tác"
+            hint={t("reports.recipientAgency.kpiNetHint")}
             tone="success"
             icon={<SafetyCertificateOutlined />}
-            metaLabel="Tỷ lệ xuất thuần"
+            metaLabel={t("reports.recipientAgency.kpiNetMeta")}
             metaValue={`${netRate}%`}
             progress={netRate}
           />
           <MetricCard
-            label="Chứng từ đã ghi nhận"
+            label={t("reports.recipientAgency.kpiDocs")}
             value={quantity(metrics.posted_document_count)}
-            hint="Số chứng từ xuất không trùng"
+            hint={t("reports.recipientAgency.kpiDocsHint")}
             tone="neutral"
             icon={<TeamOutlined />}
-            metaLabel="Chứng từ có hoàn tác"
+            metaLabel={t("reports.recipientAgency.kpiDocsMeta")}
             metaValue={`${reversedDocumentRate}%`}
             progress={reversedDocumentRate}
           />
@@ -1578,14 +1751,16 @@ export default function RecipientAgencyReport() {
                 fontWeight: 700,
               }}
             >
-              Phân tích xuất thuần
+              {t("reports.recipientAgency.analysisTitle")}
             </Box>
             <Box sx={{ mt: 0.25, color: S.textMedium, fontSize: 12 }}>
-              Dữ liệu dùng chung theo người nhận và mã hàng trong lát cắt đang
-              xem.
+              {t("reports.recipientAgency.analysisHint")}
             </Box>
           </Box>
-          <UiStatusBadge tone="neutral" label="Dữ liệu dùng chung" />
+          <UiStatusBadge
+            tone="neutral"
+            label={t("reports.recipientAgency.analysisBadge")}
+          />
         </Stack>
         <Box
           sx={{
@@ -1595,8 +1770,8 @@ export default function RecipientAgencyReport() {
           }}
         >
           <ChartPanel
-            title="Xuất thuần theo người nhận"
-            description="Xếp hạng người nhận theo lượng xuất thuần. Chọn thanh dữ liệu để đối soát chứng từ nguồn."
+            title={t("reports.recipientAgency.chartRecipientTitle")}
+            description={t("reports.recipientAgency.chartRecipientDescription")}
             marker={<ShopOutlined />}
             loading={summaryQuery.isLoading}
             error={summaryQuery.error}
@@ -1622,8 +1797,8 @@ export default function RecipientAgencyReport() {
             />
           </ChartPanel>
           <ChartPanel
-            title="Xuất thuần theo mã hàng"
-            description="So sánh sản phẩm và linh kiện theo đúng loại hàng tại thời điểm ghi nhận."
+            title={t("reports.recipientAgency.chartSkuTitle")}
+            description={t("reports.recipientAgency.chartSkuDescription")}
             marker={<FileTextOutlined />}
             loading={summaryQuery.isLoading}
             error={summaryQuery.error}
@@ -1653,7 +1828,7 @@ export default function RecipientAgencyReport() {
 
       <Box
         component="section"
-        aria-label="Chọn chế độ đối soát"
+        aria-label={t("reports.recipientAgency.viewSectionAria")}
         sx={{
           ...REPORT_SURFACE_SX,
           p: 1,
@@ -1667,15 +1842,15 @@ export default function RecipientAgencyReport() {
       >
         <Box sx={{ px: { xs: 0.5, sm: 1 } }}>
           <Box sx={{ color: S.textHigh, fontSize: 13, fontWeight: 700 }}>
-            Chế độ đối soát
+            {t("reports.recipientAgency.viewTitle")}
           </Box>
           <Box sx={{ mt: 0.2, color: S.textMedium, fontSize: 12 }}>
-            Chuyển linh hoạt giữa bảng nghiệp vụ và thẻ lát cắt trực quan.
+            {t("reports.recipientAgency.viewHint")}
           </Box>
         </Box>
         <Box
           role="tablist"
-          aria-label="Chế độ xem đối soát"
+          aria-label={t("reports.recipientAgency.viewTablistAria")}
           sx={{
             p: 0.5,
             display: "grid",
@@ -1698,7 +1873,7 @@ export default function RecipientAgencyReport() {
             sx={viewTabSx(viewMode === "table")}
           >
             <UnorderedListOutlined aria-hidden="true" />
-            Bảng
+            {t("reports.recipientAgency.viewTable")}
           </Box>
           <Box
             component="button"
@@ -1716,7 +1891,7 @@ export default function RecipientAgencyReport() {
             sx={viewTabSx(viewMode === "snapshot")}
           >
             <AppstoreOutlined aria-hidden="true" />
-            Lát cắt
+            {t("reports.recipientAgency.viewSlice")}
           </Box>
         </Box>
       </Box>
@@ -1778,15 +1953,19 @@ export default function RecipientAgencyReport() {
                     fontWeight: 700,
                   }}
                 >
-                  Dữ liệu lát cắt
+                  {t("reports.recipientAgency.sliceDataTitle")}
                 </Box>
                 <Box sx={{ mt: 0.35, color: S.textMedium, fontSize: 12 }}>
-                  Mỗi thẻ là một cặp người nhận – mã hàng từ đúng dữ liệu đã
-                  chốt.
+                  {t("reports.recipientAgency.sliceDataHint")}
                 </Box>
               </Box>
             </Stack>
-            <UiStatusBadge tone="neutral" label={`${rows.length} lát cắt`} />
+            <UiStatusBadge
+              tone="neutral"
+              label={t("reports.recipientAgency.sliceCount", {
+                count: rows.length,
+              })}
+            />
           </Box>
 
           <Box
@@ -1812,7 +1991,7 @@ export default function RecipientAgencyReport() {
                   sx={{ alignItems: "center" }}
                 >
                   <UiSpinner size={18} label={null} />
-                  <Box>Đang tải dữ liệu lát cắt...</Box>
+                  <Box>{t("reports.recipientAgency.sliceLoading")}</Box>
                 </Stack>
               </Box>
             ) : rows.length ? (
@@ -1843,7 +2022,7 @@ export default function RecipientAgencyReport() {
               </Box>
             ) : (
               <Box sx={{ py: 6, textAlign: "center", color: S.textMedium }}>
-                Không có dữ liệu lát cắt phù hợp với bộ lọc hiện tại.
+                {t("reports.recipientAgency.sliceEmpty")}
               </Box>
             )}
           </Box>
@@ -1907,13 +2086,16 @@ export default function RecipientAgencyReport() {
                       color: S.textHigh,
                     }}
                   >
-                    Bảng đối soát xuất thuần
+                    {t("reports.recipientAgency.tableTitle")}
                   </Box>
                 </Stack>
                 <Box sx={{ mt: 0.75, fontSize: 12, color: S.textMedium }}>
                   {summary
-                    ? `Lát cắt dữ liệu ${summary.snapshot_id} · chốt lúc ${formatDateTime(summary.as_of)}`
-                    : "Chờ máy chủ trả lát cắt dữ liệu."}
+                    ? t("reports.recipientAgency.tableSnapshotLine", {
+                        id: summary.snapshot_id,
+                        time: formatDateTime(summary.as_of),
+                      })
+                    : t("reports.recipientAgency.tableWaiting")}
                 </Box>
               </Box>
               <Stack
@@ -1935,7 +2117,7 @@ export default function RecipientAgencyReport() {
                   }
                   onClick={() => void startExport("XLSX", false)}
                 >
-                  Xuất XLSX
+                  {t("reports.filters.exportXlsx")}
                 </ActionButton>
                 <ActionButton
                   kind="export"
@@ -1949,12 +2131,21 @@ export default function RecipientAgencyReport() {
                     !summary?.snapshot_id ||
                     !summary.permissions?.can_export_pii
                   }
-                  disabledTooltip="Dự án chưa mở quyền xuất thông tin cá nhân của người nhận cho báo cáo này."
+                  disabledTooltip={t(
+                    "reports.recipientAgency.exportPiiTooltip",
+                  )}
                   onClick={() => void startExport("CSV", true)}
                 >
-                  Xuất CSV có thông tin cá nhân
+                  {t("reports.recipientAgency.exportCsvPii")}
                 </ActionButton>
               </Stack>
+            </Box>
+            <Box sx={{ px: { xs: 1.25, md: 2.5 }, pt: { xs: 1.5, md: 2 } }}>
+              <SectionFilterBar
+                state={tableFilter}
+                label={t("reports.recipientAgency.tableTitle")}
+                data-testid="report-08-table-section-filter"
+              />
             </Box>
             <Box
               sx={{
@@ -1970,27 +2161,29 @@ export default function RecipientAgencyReport() {
                   overflowWrap: "normal !important",
                   wordBreak: "normal",
                 },
-                "& th:nth-of-type(1), & td:nth-of-type(1)": {
-                  width: "23% !important",
-                },
-                "& th:nth-of-type(2), & td:nth-of-type(2)": {
-                  width: "23% !important",
-                },
-                "& th:nth-of-type(3), & td:nth-of-type(3), & th:nth-of-type(4), & td:nth-of-type(4), & th:nth-of-type(5), & td:nth-of-type(5)":
-                  {
-                    width: "10% !important",
-                    whiteSpace: "nowrap",
-                  },
-                "& th:nth-of-type(6), & td:nth-of-type(6)": {
-                  width: "9% !important",
+                /*
+                 * Bề rộng cột nay khai trong `tableColumns` và được
+                 * ResponsiveDataTable phát ra thành <colgroup>, nên KHÔNG còn
+                 * khối nth-of-type + !important ở đây. Cách cũ chỉ vá được đúng
+                 * màn này, còn nguyên nhân — bề rộng chỉ gắn vào <th>, ô <td>
+                 * không nhận gì — vẫn nằm ở component dùng chung.
+                 */
+                "& th:nth-of-type(n + 3), & td:nth-of-type(n + 3)": {
                   whiteSpace: "nowrap",
                 },
-                "& th:nth-of-type(7), & td:nth-of-type(7)": {
-                  width: "15% !important",
-                  whiteSpace: "nowrap",
-                },
+                /*
+                 * Tiêu đề bảng bị GHIM (ResponsiveDataTable + maxBodyHeight)
+                 * nên nền của nó BẮT BUỘC phải đục: `primarySoft` là rgba ~16%
+                 * — dòng cuộn qua bên dưới ánh xuyên lên, chữ tiêu đề và chữ
+                 * của dòng chồng lên nhau. Trải đúng sắc tím đó thành một lớp
+                 * `background-image` phủ trên nền ĐỤC của thẻ (cùng cách
+                 * ResponsiveDataTable đã xử lý cho nền mặc định): màu nhìn y
+                 * hệt trước nhưng không còn nhìn xuyên. Phải khai cả
+                 * `backgroundImage` vì lớp mặc định của component vẫn nằm đó.
+                 */
                 "& thead th": {
-                  bgcolor: `${S.primarySoft} !important`,
+                  backgroundColor: `${S.bgSurface} !important`,
+                  backgroundImage: `linear-gradient(${S.primarySoft}, ${S.primarySoft}) !important`,
                   color: `${S.primaryDark} !important`,
                   fontWeight: "700 !important",
                   whiteSpace: "normal !important",
@@ -2024,19 +2217,20 @@ export default function RecipientAgencyReport() {
                 }}
               >
                 <Box sx={{ fontSize: 12, color: S.textMedium }}>
-                  Chọn một dòng để xem chứng từ nguồn, lịch sử hoàn tác và thông
-                  tin cá nhân theo quyền.
+                  {t("reports.recipientAgency.tableRowHint")}
                 </Box>
                 {summary ? (
                   <UiStatusBadge
                     tone="neutral"
-                    label={`${summary.page.total} nhóm dữ liệu`}
+                    label={t("reports.recipientAgency.groupCount", {
+                      count: summary.page.total,
+                    })}
                   />
                 ) : null}
               </Stack>
               <ResponsiveDataTable
                 columns={tableColumns}
-                rows={rows}
+                rows={tableFilter.rows}
                 rowKey={(row) => row.drill_key}
                 loading={summaryQuery.isLoading}
                 sortState={sortState}
@@ -2048,7 +2242,7 @@ export default function RecipientAgencyReport() {
                     snapshotId: summary?.snapshot_id ?? "",
                   })
                 }
-                emptyText="Không có nghiệp vụ xuất hoặc hoàn tác phù hợp với bộ lọc hiện tại."
+                emptyText={t("reports.recipientAgency.tableEmpty")}
                 mobileBreakpoint="sm"
                 // Bảng đổ trọn tập nhóm dữ liệu đã lọc: cuộn trong khung và
                 // ghim tiêu đề cột thay vì kéo trang thành một dải rất dài.
@@ -2074,7 +2268,7 @@ export default function RecipientAgencyReport() {
                         });
                       }}
                     >
-                      Đối soát
+                      {t("reports.recipientAgency.reconcile")}
                     </ActionButton>
                   </Box>
                 )}
@@ -2097,11 +2291,9 @@ export default function RecipientAgencyReport() {
               <SafetyCertificateOutlined aria-hidden="true" />
               <Box>
                 <Box component="strong" sx={{ color: S.textHigh }}>
-                  Cách tính đã khóa:
+                  {t("reports.recipientAgency.lockedFormulaLabel")}
                 </Box>{" "}
-                Xuất thuần = tổng lượng xuất đã ghi nhận − lượng hoàn tác. Số
-                chứng từ được đếm không trùng trong kỳ và không bị trừ khi hoàn
-                tác.
+                {t("reports.recipientAgency.lockedFormulaBody")}
               </Box>
             </Box>
           </Box>
@@ -2110,10 +2302,14 @@ export default function RecipientAgencyReport() {
 
       {activeDrill ? (
         <DrillDownDialog
-          title={`Đối soát: ${activeDrill.title}`}
+          title={t("reports.recipientAgency.drillTitle", {
+            title: activeDrill.title,
+          })}
           subtitle={
             activeDrill.snapshotId
-              ? `Lát cắt dữ liệu ${activeDrill.snapshotId}`
+              ? t("reports.recipientAgency.drillSubtitle", {
+                  id: activeDrill.snapshotId,
+                })
               : undefined
           }
           onClose={() => setActiveDrill(null)}
@@ -2122,7 +2318,7 @@ export default function RecipientAgencyReport() {
           {detailsQuery.error ? (
             <ApiErrorAlert
               error={detailsQuery.error}
-              title="Không tải được chứng từ nguồn"
+              title={t("reports.recipientAgency.drillErrorTitle")}
               onRetry={() => void detailsQuery.refetch()}
             />
           ) : null}
@@ -2130,45 +2326,47 @@ export default function RecipientAgencyReport() {
             columns={[
               {
                 key: "outbound",
-                header: "Chứng từ",
+                header: t("reports.recipientAgency.colDocs"),
                 render: (row) => (
                   <Box>
                     <Box sx={{ fontWeight: 700 }}>{row.outbound_no}</Box>
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
-                      Toa nguồn: {orEmpty(row.source_request_no)}
+                      {t("reports.recipientAgency.sourceRequestLine", {
+                        no: orEmpty(row.source_request_no),
+                      })}
                     </Box>
                   </Box>
                 ),
               },
               {
                 key: "event",
-                header: "Nghiệp vụ / thời điểm",
+                header: t("reports.recipientAgency.colEventMoment"),
                 render: (row) =>
                   `${eventTypeLabel(row.event_type)} · ${formatDateTime(row.occurred_at)}`,
               },
               {
                 key: "gross",
-                header: "Tổng lượng xuất",
+                header: t("reports.recipientAgency.kpiGross"),
                 align: "right",
                 render: (row) => quantity(row.gross_issue_posted_qty),
               },
               {
                 key: "reversed",
-                header: "Đã hoàn tác",
+                header: t("reports.recipientAgency.kpiReversed"),
                 align: "right",
                 render: (row) => quantity(row.reversed_issue_qty),
               },
               {
                 key: "net",
-                header: "Xuất thuần",
+                header: t("reports.recipientAgency.colNet"),
                 align: "right",
                 render: (row) => quantity(row.net_issued_qty),
               },
               {
                 key: "reversal",
-                header: "Mã nghiệp vụ gốc",
+                header: t("reports.recipientAgency.colReversalOf"),
                 hideOnMobile: true,
                 render: (row) => orEmpty(row.reversal_of_event_id),
               },
@@ -2176,7 +2374,7 @@ export default function RecipientAgencyReport() {
             rows={detailsQuery.data?.rows ?? []}
             rowKey={(row) => row.event_id}
             loading={detailsQuery.isLoading}
-            emptyText="Không có nghiệp vụ nguồn cho lát cắt dữ liệu này."
+            emptyText={t("reports.recipientAgency.drillEmpty")}
           />
           <PiiSummary
             details={detailsQuery.data}

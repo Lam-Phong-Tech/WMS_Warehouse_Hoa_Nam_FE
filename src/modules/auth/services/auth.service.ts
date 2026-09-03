@@ -15,6 +15,7 @@ import type {
 import type { MeContext, MeResponse } from "@/modules/auth/types/me.types";
 import type { User, UserRoleAssignment } from "@/shared/types/user";
 import { memoryStorage } from "@/shared/lib/memory-storage";
+import { tStatic } from "@/shared/i18n/useT";
 
 export class AuthContractError extends Error {
   readonly field: string;
@@ -151,7 +152,8 @@ function deriveContexts(
         roles.find((item) => item.scope_ref === scopeRef) ?? roles[0];
       return {
         role_id: role?.role_id ?? scopeRef,
-        role_name: role?.role_name ?? "Phạm vi kho",
+        role_name:
+          role?.role_name ?? tStatic("auth.context.warehouseScopeRole"),
         scope_type: "kho",
         org_unit_id: null,
         org_unit_name: null,

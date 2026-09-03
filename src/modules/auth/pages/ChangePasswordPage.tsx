@@ -1,11 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Navigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { useChangePassword } from "@/modules/auth/hooks/use-change-password";
 import {
-  changePasswordSchema,
+  buildChangePasswordSchema,
   type ChangePasswordFormValues,
 } from "@/modules/auth/schemas/change-password.schema";
 import { Box, UiAlert, UiButton } from "@/shared/ui";
@@ -13,10 +13,13 @@ import { AuthShell, AuthNote } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
+import { useT } from "@/shared/i18n/useT";
 
 export function ChangePasswordPage() {
+  const t = useT();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const changePassword = useChangePassword();
+  const changePasswordSchema = useMemo(() => buildChangePasswordSchema(t), [t]);
   const { control, handleSubmit, setError } = useForm<ChangePasswordFormValues>(
     {
       resolver: zodResolver(changePasswordSchema),
@@ -39,8 +42,8 @@ export function ChangePasswordPage() {
   const errorMessage = changePassword.isError
     ? isAxiosError(changePassword.error)
       ? (changePassword.error.response?.data?.message ??
-        "Đổi mật khẩu thất bại")
-      : "Đổi mật khẩu thất bại"
+        t("auth.changePassword.failed"))
+      : t("auth.changePassword.failed")
     : null;
 
   useEffect(() => {
@@ -57,15 +60,15 @@ export function ChangePasswordPage() {
   return (
     <AuthShell
       titleId="change-password-title"
-      title="Đổi mật khẩu"
-      subtitle="Thiết lập mật khẩu mới trước khi tiếp tục sử dụng hệ thống."
+      title={t("auth.changePassword.title")}
+      subtitle={t("auth.changePassword.subtitle")}
       loadingText={
-        changePassword.isPending ? "Đang cập nhật mật khẩu..." : null
+        changePassword.isPending ? t("auth.changePassword.updating") : null
       }
     >
       {errorMessage && !/mật khẩu hiện tại/i.test(errorMessage) && (
         <Box sx={{ marginBottom: "14px" }}>
-          <UiAlert tone="error" title="Không thể đổi mật khẩu">
+          <UiAlert tone="error" title={t("auth.changePassword.errorTitle")}>
             {errorMessage}
           </UiAlert>
         </Box>
@@ -76,8 +79,8 @@ export function ChangePasswordPage() {
           <AuthField
             control={control}
             name="currentPassword"
-            label="Mật khẩu hiện tại"
-            placeholder="Nhập mật khẩu hiện tại"
+            label={t("auth.changePassword.currentPassword")}
+            placeholder={t("auth.changePassword.currentPasswordPlaceholder")}
             type="password"
             autoFocus
             disabled={changePassword.isPending}
@@ -86,8 +89,8 @@ export function ChangePasswordPage() {
           <AuthField
             control={control}
             name="newPassword"
-            label="Mật khẩu mới"
-            placeholder="Tối thiểu 8 ký tự"
+            label={t("auth.fields.newPassword")}
+            placeholder={t("auth.fields.newPasswordPlaceholder")}
             type="password"
             disabled={changePassword.isPending}
           />
@@ -95,8 +98,8 @@ export function ChangePasswordPage() {
           <AuthField
             control={control}
             name="newPasswordConfirmation"
-            label="Xác nhận mật khẩu mới"
-            placeholder="Nhập lại mật khẩu mới"
+            label={t("auth.fields.confirmNewPassword")}
+            placeholder={t("auth.fields.confirmNewPasswordPlaceholder")}
             type="password"
             disabled={changePassword.isPending}
           />
@@ -107,16 +110,12 @@ export function ChangePasswordPage() {
             type="submit"
             fullWidth
           >
-            Đổi mật khẩu
+            {t("auth.changePassword.submit")}
           </UiButton>
         </Box>
       </form>
 
-      <AuthNote>
-        Sau khi đổi mật khẩu thành công, toàn bộ refresh token bị thu hồi theo
-        contract backend. Bạn sẽ được đưa về màn đăng nhập để tạo phiên JWT mới
-        bằng mật khẩu vừa đặt.
-      </AuthNote>
+      <AuthNote>{t("auth.changePassword.note")}</AuthNote>
     </AuthShell>
   );
 }

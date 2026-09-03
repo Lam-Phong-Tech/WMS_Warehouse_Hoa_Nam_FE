@@ -14,6 +14,7 @@ import {
   UiTextField,
 } from "@/shared/ui";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   ProfileOutlined,
   ApartmentOutlined,
@@ -93,8 +94,8 @@ interface MasterFormValues {
   sort_order: number;
 }
 
-function masterStatusLabel(status: string) {
-  return businessLabel(MASTER_STATUS_LABELS, status, "Trạng thái khác");
+function masterStatusLabel(status: string, t: TranslateFn) {
+  return businessLabel(MASTER_STATUS_LABELS, status, t("pv.admin.statusOther"));
 }
 
 function ruleSelectorSortKey(
@@ -163,6 +164,7 @@ function SimpleMasterTab({
   }) => Promise<unknown>;
   testId: string;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState<PvAdminSimpleMaster | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -189,8 +191,8 @@ function SimpleMasterTab({
 
   async function submit() {
     const errors: Record<string, string> = {};
-    if (!formValues.code.trim()) errors.code = "Nhập mã";
-    if (!formValues.name.trim()) errors.name = "Nhập tên";
+    if (!formValues.code.trim()) errors.code = t("pv.admin.errCode");
+    if (!formValues.name.trim()) errors.name = t("pv.admin.errName");
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
@@ -202,7 +204,11 @@ function SimpleMasterTab({
         version: editing?.version,
         payload: formValues,
       });
-      toast.success(editing ? `Đã cập nhật ${title}.` : `Đã thêm ${title}.`);
+      toast.success(
+        editing
+          ? t("pv.admin.masterUpdated", { title })
+          : t("pv.admin.masterCreated", { title }),
+      );
       setIsOpen(false);
     } catch (mutationError) {
       // Lỗi thuộc về một ô cụ thể thì hiện ngay dưới ô đó; toast chỉ báo phần
@@ -230,7 +236,9 @@ function SimpleMasterTab({
   const rowSelection = useRowSelection(filteredRows, (row) => row.id);
 
   if (isPending)
-    return <LoadingState tip="Đang tải…" testId={`${testId}-loading`} />;
+    return (
+      <LoadingState tip={t("pv.common.loading")} testId={`${testId}-loading`} />
+    );
   if (isError) return <PvErrorState error={error} onRetry={onRetry} />;
 
   // Part 5: DataTable (antd adapter, freeze) → ResponsiveDataTable — comparator
@@ -238,31 +246,31 @@ function SimpleMasterTab({
   const columns: ResponsiveTableColumn<PvAdminSimpleMaster>[] = [
     {
       key: "code",
-      header: "Mã",
+      header: t("pv.admin.colCode"),
       sortAccessor: (row) => row.code,
       render: (row) => row.code,
     },
     {
       key: "name",
-      header: "Tên",
+      header: t("pv.admin.colName"),
       sortAccessor: (row) => row.name,
       render: (row) => row.name,
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("pv.common.fieldStatus"),
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
         <UiStatusBadge
           tone={row.status === "ACTIVE" ? "success" : "neutral"}
-          label={masterStatusLabel(row.status)}
+          label={masterStatusLabel(row.status, t)}
         />
       ),
     },
     {
       key: "sort_order",
-      header: "Thứ tự",
+      header: t("pv.admin.colSortOrder"),
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.sort_order,
@@ -283,12 +291,12 @@ function SimpleMasterTab({
               : uiStateProps(UI_STATE.DISABLED, `${testId}-create-disabled`))}
             onClick={() => openForm()}
           >
-            Thêm {title}
+            {t("pv.admin.masterCreate", { title })}
           </ActionButton>
         }
       >
         <SearchInput
-          placeholder={`Tìm ${title} theo mã hoặc tên...`}
+          placeholder={t("pv.admin.masterSearch", { title })}
           value={search}
           onChange={setSearch}
           width={260}
@@ -300,10 +308,14 @@ function SimpleMasterTab({
         rowKey={(row) => row.id}
         columns={columns}
         rowSelection={rowSelection}
-        selectionLabel={(row) => `Chọn ${title} ${row.code}`}
+        selectionLabel={(row) =>
+          t("pv.admin.masterSelect", { title, code: row.code })
+        }
         loading={isFetching}
         emptyText={
-          search.trim() ? "Không có kết quả phù hợp." : `Chưa có ${title} nào.`
+          search.trim()
+            ? t("pv.common.noMatch")
+            : t("pv.admin.masterEmpty", { title })
         }
         renderRowActions={(row) => (
           <ActionButton
@@ -312,7 +324,7 @@ function SimpleMasterTab({
             data-testid={`${testId}-edit`}
             onClick={() => openForm(row)}
           >
-            Sửa
+            {t("pv.common.edit")}
           </ActionButton>
         )}
       />
@@ -321,7 +333,11 @@ function SimpleMasterTab({
         open={isOpen}
         onClose={guardBackdropClose(() => setIsOpen(false))}
         maxWidth="xs"
-        title={editing ? `Sửa ${title}` : `Thêm ${title}`}
+        title={
+          editing
+            ? t("pv.admin.masterEdit", { title })
+            : t("pv.admin.masterCreate", { title })
+        }
         actions={
           <>
             <ActionButton
@@ -329,14 +345,14 @@ function SimpleMasterTab({
               onClick={() => setIsOpen(false)}
               disabled={saving}
             >
-              Hủy
+              {t("pv.common.cancel")}
             </ActionButton>
             <ActionButton
               kind="save"
               onClick={() => void submit()}
               disabled={saving}
             >
-              {saving ? "Đang lưu..." : "Lưu"}
+              {saving ? t("pv.common.saving") : t("pv.common.save")}
             </ActionButton>
           </>
         }
@@ -345,7 +361,7 @@ function SimpleMasterTab({
           <UiTextField
             required
             fullWidth
-            label="Mã"
+            label={t("pv.admin.colCode")}
             value={formValues.code}
             onChange={(event) => {
               const value = event.target.value;
@@ -361,7 +377,7 @@ function SimpleMasterTab({
           <UiTextField
             required
             fullWidth
-            label="Tên"
+            label={t("pv.admin.colName")}
             value={formValues.name}
             onChange={(event) => {
               const value = event.target.value;
@@ -377,7 +393,7 @@ function SimpleMasterTab({
           <UiTextField
             select
             fullWidth
-            label="Trạng thái"
+            label={t("pv.common.fieldStatus")}
             value={formValues.status}
             onChange={(event) =>
               setFormValues((current) => ({
@@ -386,13 +402,15 @@ function SimpleMasterTab({
               }))
             }
           >
-            <MenuItem value="ACTIVE">Đang sử dụng</MenuItem>
-            <MenuItem value="INACTIVE">Ngừng sử dụng</MenuItem>
+            <MenuItem value="ACTIVE">{t("pv.common.statusActive")}</MenuItem>
+            <MenuItem value="INACTIVE">
+              {t("pv.common.statusInactive")}
+            </MenuItem>
           </UiTextField>
           <UiTextField
             fullWidth
             type="number"
-            label="Thứ tự hiển thị"
+            label={t("pv.admin.sortOrderDisplay")}
             value={formValues.sort_order}
             onChange={(event) =>
               setFormValues((current) => ({
@@ -409,6 +427,7 @@ function SimpleMasterTab({
 }
 
 export default function PvAdminPage() {
+  const t = useT();
   const { canManageMaster, canPublish } = useCanManagePv();
 
   const industries = usePvAdminIndustries();
@@ -491,7 +510,7 @@ export default function PvAdminPage() {
   async function submitProfile() {
     if (!profileEditing) return;
     if (!profileForm.display_name.trim()) {
-      setDisplayNameError("Nhập tên hiển thị");
+      setDisplayNameError(t("pv.admin.errDisplayName"));
       return;
     }
     setSavingProfile(true);
@@ -507,7 +526,7 @@ export default function PvAdminPage() {
           tag_ids: profileForm.tag_ids,
         },
       });
-      toast.success("Đã cập nhật hồ sơ hiển thị.");
+      toast.success(t("pv.admin.profileUpdated"));
       setProfileEditing(null);
     } catch (error) {
       toast.error(getMutationErrorMessage(error));
@@ -523,18 +542,12 @@ export default function PvAdminPage() {
         published: next,
         profileVersion: row.version,
       });
-      toast.success(
-        next
-          ? "Đã đưa sản phẩm lên ứng dụng phân vùng."
-          : "Đã gỡ sản phẩm khỏi ứng dụng phân vùng.",
-      );
+      toast.success(next ? t("pv.admin.publishOn") : t("pv.admin.publishOff"));
     } catch (error) {
       const normalized = normalizeError(error);
       if (normalized.status === 412 || normalized.status === 428) {
         await profiles.refetch();
-        toast.error(
-          "Hồ sơ sản phẩm đã được cập nhật ở phiên khác. Danh sách vừa được tải lại; hãy kiểm tra rồi thao tác lại.",
-        );
+        toast.error(t("pv.admin.publishStale"));
         return;
       }
       toast.error(getMutationErrorMessage(error));
@@ -582,19 +595,19 @@ export default function PvAdminPage() {
   const profileColumns: ResponsiveTableColumn<PvAdminProfile>[] = [
     {
       key: "sku_code",
-      header: "Mã SKU",
+      header: t("pv.admin.skuCode"),
       sortAccessor: (row) => row.sku_code,
       render: (row) => row.sku_code,
     },
     {
       key: "display_name",
-      header: "Tên hiển thị",
+      header: t("pv.admin.displayName"),
       sortAccessor: (row) => row.display_name,
       render: (row) => row.display_name,
     },
     {
       key: "industries",
-      header: "Ngành nghề",
+      header: t("pv.admin.industry"),
       sortType: "value",
       sortAccessor: (row) => row.industry_ids.length,
       render: (row) =>
@@ -620,7 +633,7 @@ export default function PvAdminPage() {
     },
     {
       key: "published",
-      header: "Hiển thị trên ứng dụng",
+      header: t("pv.admin.published"),
       sortType: "value",
       sortAccessor: (row) => Number(row.published),
       render: (row) => (
@@ -628,13 +641,17 @@ export default function PvAdminPage() {
           <PvSwitch
             checked={row.published}
             disabled={!canPublish}
-            aria-label="Bật/tắt hiển thị trên ứng dụng"
+            aria-label={t("pv.admin.publishSwitchAria")}
             data-testid="pv-admin-publish-switch"
             onChange={(checked) => togglePublish(row, checked)}
           />
           <UiStatusBadge
             tone={row.published ? "success" : "neutral"}
-            label={row.published ? "Đang hiển thị" : "Đang ẩn"}
+            label={
+              row.published
+                ? t("pv.admin.publishedShown")
+                : t("pv.admin.publishedHidden")
+            }
           />
         </Stack>
       ),
@@ -648,7 +665,7 @@ export default function PvAdminPage() {
         data-testid="pv-admin-profile-view"
         onClick={() => setProfileViewing(row)}
       >
-        Xem
+        {t("pv.common.view")}
       </ActionButton>
       <ActionButton
         kind="edit"
@@ -656,7 +673,7 @@ export default function PvAdminPage() {
         data-testid="pv-admin-profile-edit"
         onClick={() => openProfileForm(row)}
       >
-        Sửa hiển thị
+        {t("pv.admin.profileEditAction")}
       </ActionButton>
     </Stack>
   );
@@ -668,24 +685,21 @@ export default function PvAdminPage() {
         component="p"
         sx={{ color: S.textMedium, fontSize: 13, marginTop: 0 }}
       >
-        Quản lý ngành nghề, thẻ phân loại, quy tắc gợi ý và hồ sơ sản phẩm hiển
-        thị trên ứng dụng.
-        {canPublish
-          ? ""
-          : " Tài khoản hiện tại không có quyền bật hoặc tắt hiển thị sản phẩm."}
+        {t("pv.admin.lead")}
+        {canPublish ? "" : " " + t("pv.admin.leadNoPublish")}
       </Box>
 
       <Box sx={{ mb: 2 }}>
         <UiTabs
           value={activeTab}
           onChange={setActiveTab}
-          aria-label="Quản trị ứng dụng phân vùng"
+          aria-label={t("pv.admin.tabsAria")}
           items={[
             {
               key: "profiles",
               label: (
                 <TabLabel icon={<ProfileOutlined style={{ fontSize: 15 }} />}>
-                  Hồ sơ sản phẩm
+                  {t("pv.admin.tabProfiles")}
                 </TabLabel>
               ),
             },
@@ -693,7 +707,7 @@ export default function PvAdminPage() {
               key: "industries",
               label: (
                 <TabLabel icon={<ApartmentOutlined style={{ fontSize: 15 }} />}>
-                  Ngành nghề
+                  {t("pv.admin.tabIndustries")}
                 </TabLabel>
               ),
             },
@@ -701,7 +715,7 @@ export default function PvAdminPage() {
               key: "tags",
               label: (
                 <TabLabel icon={<TagOutlined style={{ fontSize: 15 }} />}>
-                  Thẻ phân loại
+                  {t("pv.admin.tabTags")}
                 </TabLabel>
               ),
             },
@@ -709,7 +723,7 @@ export default function PvAdminPage() {
               key: "rules",
               label: (
                 <TabLabel icon={<SettingOutlined style={{ fontSize: 15 }} />}>
-                  Quy tắc gợi ý
+                  {t("pv.admin.tabRules")}
                 </TabLabel>
               ),
             },
@@ -720,7 +734,10 @@ export default function PvAdminPage() {
       {activeTab === "profiles" ? (
         <UiTabPanel value={activeTab}>
           {profiles.isPending ? (
-            <LoadingState tip="Đang tải…" testId="pv-admin-profiles-loading" />
+            <LoadingState
+              tip={t("pv.common.loading")}
+              testId="pv-admin-profiles-loading"
+            />
           ) : profiles.isError ? (
             <PvErrorState
               error={profiles.error}
@@ -730,24 +747,24 @@ export default function PvAdminPage() {
             <div data-testid="pv-admin-profiles">
               <FilterBar>
                 <SearchInput
-                  placeholder="Tìm theo mã SKU hoặc tên hiển thị..."
+                  placeholder={t("pv.admin.profileSearch")}
                   value={profileSearch}
                   onChange={setProfileSearch}
                   width={260}
                 />
                 <UiSelect
                   value={profileIndustryFilter}
-                  aria-label="Lọc theo ngành nghề"
+                  aria-label={t("pv.admin.industryFilterAria")}
                   minWidth={180}
                   onChange={(value) => setProfileIndustryFilter(value)}
                   options={[
-                    { value: "ALL", label: "Tất cả ngành nghề" },
+                    { value: "ALL", label: t("pv.admin.industryAll") },
                     ...industryOptions,
                   ]}
                 />
                 <UiSelect
                   value={profilePublishedFilter}
-                  aria-label="Lọc theo trạng thái hiển thị"
+                  aria-label={t("pv.admin.publishedFilterAria")}
                   minWidth={180}
                   onChange={(value) =>
                     setProfilePublishedFilter(
@@ -755,9 +772,12 @@ export default function PvAdminPage() {
                     )
                   }
                   options={[
-                    { value: "ALL", label: "Tất cả trạng thái" },
-                    { value: "PUBLISHED", label: "Đang hiển thị" },
-                    { value: "HIDDEN", label: "Đang ẩn" },
+                    { value: "ALL", label: t("pv.common.statusAll") },
+                    {
+                      value: "PUBLISHED",
+                      label: t("pv.admin.publishedShown"),
+                    },
+                    { value: "HIDDEN", label: t("pv.admin.publishedHidden") },
                   ]}
                 />
               </FilterBar>
@@ -766,12 +786,14 @@ export default function PvAdminPage() {
                 rowKey={(row) => row.id}
                 columns={profileColumns}
                 rowSelection={profileRowSelection}
-                selectionLabel={(row) => `Chọn hồ sơ ${row.sku_code}`}
+                selectionLabel={(row) =>
+                  t("pv.admin.profileSelect", { code: row.sku_code })
+                }
                 loading={profiles.isFetching}
                 emptyText={
                   isProfileFilterActive
-                    ? "Không có kết quả phù hợp."
-                    : "Chưa có hồ sơ sản phẩm nào. Hồ sơ được tạo khi sản phẩm được đưa lên ứng dụng lần đầu."
+                    ? t("pv.common.noMatch")
+                    : t("pv.admin.profileEmpty")
                 }
                 renderRowActions={renderProfileRowActions}
               />
@@ -784,7 +806,7 @@ export default function PvAdminPage() {
         <UiTabPanel value={activeTab}>
           <SimpleMasterTab
             testId="pv-admin-industries"
-            title="ngành nghề"
+            title={t("pv.admin.masterIndustry")}
             rows={industries.data?.data ?? []}
             isPending={industries.isPending}
             isFetching={industries.isFetching}
@@ -801,7 +823,7 @@ export default function PvAdminPage() {
         <UiTabPanel value={activeTab}>
           <SimpleMasterTab
             testId="pv-admin-tags"
-            title="thẻ phân loại"
+            title={t("pv.admin.masterTag")}
             rows={tags.data?.data ?? []}
             isPending={tags.isPending}
             isFetching={tags.isFetching}
@@ -817,7 +839,10 @@ export default function PvAdminPage() {
       {activeTab === "rules" ? (
         <UiTabPanel value={activeTab}>
           {rules.isPending ? (
-            <LoadingState tip="Đang tải…" testId="pv-admin-rules-loading" />
+            <LoadingState
+              tip={t("pv.common.loading")}
+              testId="pv-admin-rules-loading"
+            />
           ) : rules.isError ? (
             <PvErrorState error={rules.error} onRetry={() => rules.refetch()} />
           ) : (
@@ -839,10 +864,10 @@ export default function PvAdminPage() {
         sx={{ "& .MuiDialogTitle-root": { pr: 6, position: "relative" } }}
         title={
           <>
-            Chi tiết hồ sơ sản phẩm
+            {t("pv.admin.profileDetailTitle")}
             <ActionIconButton
               kind="close"
-              label="Đóng"
+              label={t("common.close")}
               onClick={() => setProfileViewing(null)}
               sx={{ position: "absolute", right: 10, top: 8 }}
             />
@@ -854,19 +879,19 @@ export default function PvAdminPage() {
             columns={2}
             items={[
               {
-                label: "SKU",
+                label: t("pv.admin.sku"),
                 value: `${profileViewing.sku_code} — ${profileViewing.sku_name}`,
               },
               {
-                label: "Tên hiển thị",
+                label: t("pv.admin.displayName"),
                 value: profileViewing.display_name,
               },
               {
-                label: "Mô tả",
+                label: t("pv.admin.description"),
                 value: profileViewing.description || EMPTY_TEXT,
               },
               {
-                label: "Ngành nghề",
+                label: t("pv.admin.industry"),
                 value:
                   profileViewing.industry_ids.length > 0 ? (
                     <Stack
@@ -887,7 +912,7 @@ export default function PvAdminPage() {
                   ),
               },
               {
-                label: "Thẻ phân loại",
+                label: t("pv.admin.tags"),
                 value:
                   profileViewing.tag_ids.length > 0 ? (
                     <Stack
@@ -908,22 +933,24 @@ export default function PvAdminPage() {
                   ),
               },
               {
-                label: "Thứ tự hiển thị",
+                label: t("pv.admin.sortOrderDisplay"),
                 value: profileViewing.sort_order,
               },
               {
-                label: "Hiển thị trên ứng dụng",
+                label: t("pv.admin.published"),
                 value: (
                   <UiStatusBadge
                     tone={profileViewing.published ? "success" : "neutral"}
                     label={
-                      profileViewing.published ? "Đang hiển thị" : "Đang ẩn"
+                      profileViewing.published
+                        ? t("pv.admin.publishedShown")
+                        : t("pv.admin.publishedHidden")
                     }
                   />
                 ),
               },
               {
-                label: "Trạng thái SKU",
+                label: t("pv.admin.skuStatus"),
                 value: (
                   <UiStatusBadge
                     tone={
@@ -931,7 +958,7 @@ export default function PvAdminPage() {
                         ? "success"
                         : "neutral"
                     }
-                    label={masterStatusLabel(profileViewing.sku_status)}
+                    label={masterStatusLabel(profileViewing.sku_status, t)}
                   />
                 ),
               },
@@ -943,7 +970,7 @@ export default function PvAdminPage() {
       <UiDialog
         open={profileEditing !== null}
         onClose={guardBackdropClose(() => setProfileEditing(null))}
-        title="Sửa thông tin hiển thị"
+        title={t("pv.admin.profileEditTitle")}
         actions={
           <>
             <ActionButton
@@ -951,14 +978,14 @@ export default function PvAdminPage() {
               onClick={() => setProfileEditing(null)}
               disabled={savingProfile}
             >
-              Hủy
+              {t("pv.common.cancel")}
             </ActionButton>
             <ActionButton
               kind="save"
               onClick={() => void submitProfile()}
               disabled={savingProfile}
             >
-              {savingProfile ? "Đang lưu..." : "Lưu"}
+              {savingProfile ? t("pv.common.saving") : t("pv.common.save")}
             </ActionButton>
           </>
         }
@@ -968,7 +995,7 @@ export default function PvAdminPage() {
             <UiTextField
               required
               fullWidth
-              label="Tên hiển thị"
+              label={t("pv.admin.displayName")}
               value={profileForm.display_name}
               onChange={(event) => {
                 const value = event.target.value;
@@ -987,7 +1014,7 @@ export default function PvAdminPage() {
             <UiTextField
               fullWidth
               type="number"
-              label="Thứ tự hiển thị"
+              label={t("pv.admin.sortOrderDisplay")}
               value={profileForm.sort_order}
               onChange={(event) =>
                 setProfileForm((current) => ({
@@ -1003,7 +1030,7 @@ export default function PvAdminPage() {
               fullWidth
               multiline
               minRows={3}
-              label="Mô tả"
+              label={t("pv.admin.description")}
               value={profileForm.description}
               onChange={(event) =>
                 setProfileForm((current) => ({
@@ -1017,7 +1044,7 @@ export default function PvAdminPage() {
             <UiTextField
               select
               fullWidth
-              label="Ngành nghề"
+              label={t("pv.admin.industry")}
               value={profileForm.industry_ids}
               onChange={(event) =>
                 setProfileForm((current) => ({
@@ -1047,7 +1074,7 @@ export default function PvAdminPage() {
             <UiTextField
               select
               fullWidth
-              label="Thẻ phân loại"
+              label={t("pv.admin.tags")}
               value={profileForm.tag_ids}
               onChange={(event) =>
                 setProfileForm((current) => ({
@@ -1074,9 +1101,7 @@ export default function PvAdminPage() {
             </UiTextField>
           </Grid>
           <Grid size={12}>
-            <UiText variant="caption">
-              Bật hoặc tắt hiển thị sản phẩm bằng công tắc ở bảng danh sách.
-            </UiText>
+            <UiText variant="caption">{t("pv.admin.publishHint")}</UiText>
           </Grid>
         </Grid>
       </UiDialog>
@@ -1111,6 +1136,7 @@ function PvRuleTab({
     };
   }) => Promise<unknown>;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState<PvAdminRule | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [viewing, setViewing] = useState<PvAdminRule | null>(null);
@@ -1171,9 +1197,11 @@ function PvRuleTab({
 
   async function submit() {
     const errors: Record<string, string> = {};
-    if (!formValues.industry_id) errors.industry_id = "Chọn ngành nghề";
+    if (!formValues.industry_id) {
+      errors.industry_id = t("pv.admin.errIndustry");
+    }
     if (!formValues.priority && formValues.priority !== 0) {
-      errors.priority = "Nhập mức ưu tiên";
+      errors.priority = t("pv.admin.errPriority");
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -1194,7 +1222,7 @@ function PvRuleTab({
         },
       });
       toast.success(
-        editing ? "Đã cập nhật quy tắc gợi ý." : "Đã thêm quy tắc gợi ý.",
+        editing ? t("pv.admin.ruleUpdated") : t("pv.admin.ruleCreated"),
       );
       setIsOpen(false);
     } catch (error) {
@@ -1215,13 +1243,13 @@ function PvRuleTab({
   const columns: ResponsiveTableColumn<PvAdminRule>[] = [
     {
       key: "industry_name",
-      header: "Ngành nghề",
+      header: t("pv.admin.industry"),
       sortAccessor: (row) => row.industry_name ?? "",
       render: (row) => row.industry_name ?? "",
     },
     {
       key: "priority",
-      header: "Mức ưu tiên",
+      header: t("pv.admin.priority"),
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.priority,
@@ -1229,7 +1257,7 @@ function PvRuleTab({
     },
     {
       key: "selector",
-      header: "Điều kiện áp dụng",
+      header: t("pv.admin.selector"),
       sortAccessor: (row) => ruleSelectorSortKey(row, tagNameById),
       // PvAdminRule mới chỉ có sku_id/category_id, CHƯA có sku_code/category_name
       // nên không thể hiện tên ở FE — rút gọn + cho sao chép thay vì in UUID thô.
@@ -1237,17 +1265,17 @@ function PvRuleTab({
       render: (row) =>
         row.sku_id ? (
           <>
-            <UiStatusBadge tone="neutral" label="SKU" />{" "}
+            <UiStatusBadge tone="neutral" label={t("pv.admin.sku")} />{" "}
             <CopyableId value={row.sku_id} />
           </>
         ) : row.category_id ? (
           <>
-            <UiStatusBadge tone="neutral" label="Nhóm hàng" />{" "}
+            <UiStatusBadge tone="neutral" label={t("pv.admin.category")} />{" "}
             <CopyableId value={row.category_id} />
           </>
         ) : row.tag_id ? (
           <>
-            <UiStatusBadge tone="neutral" label="Thẻ phân loại" />{" "}
+            <UiStatusBadge tone="neutral" label={t("pv.admin.tags")} />{" "}
             {tagNameById.get(row.tag_id) ?? <CopyableId value={row.tag_id} />}
           </>
         ) : (
@@ -1256,13 +1284,13 @@ function PvRuleTab({
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: t("pv.common.fieldStatus"),
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
         <UiStatusBadge
           tone={row.status === "ACTIVE" ? "success" : "neutral"}
-          label={masterStatusLabel(row.status)}
+          label={masterStatusLabel(row.status, t)}
         />
       ),
     },
@@ -1278,27 +1306,27 @@ function PvRuleTab({
             data-testid="pv-admin-rules-create"
             onClick={() => openForm()}
           >
-            Thêm quy tắc gợi ý
+            {t("pv.admin.ruleCreate")}
           </ActionButton>
         }
       >
         <SearchInput
-          placeholder="Tìm theo ngành nghề, SKU, thẻ phân loại..."
+          placeholder={t("pv.admin.ruleSearch")}
           value={search}
           onChange={setSearch}
           width={280}
         />
         <UiSelect
           value={statusFilter}
-          aria-label="Lọc theo trạng thái"
+          aria-label={t("pv.admin.statusFilterAria")}
           minWidth={180}
           onChange={(value) =>
             setStatusFilter(value as "ALL" | "ACTIVE" | "INACTIVE")
           }
           options={[
-            { value: "ALL", label: "Tất cả trạng thái" },
-            { value: "ACTIVE", label: "Đang sử dụng" },
-            { value: "INACTIVE", label: "Ngừng sử dụng" },
+            { value: "ALL", label: t("pv.common.statusAll") },
+            { value: "ACTIVE", label: t("pv.common.statusActive") },
+            { value: "INACTIVE", label: t("pv.common.statusInactive") },
           ]}
         />
       </FilterBar>
@@ -1310,25 +1338,28 @@ function PvRuleTab({
         // Quy tắc không có mã nghiệp vụ — mô tả bằng ngành nghề + mức ưu tiên
         // thay vì đọc UUID cho người dùng trình đọc màn hình.
         selectionLabel={(row) =>
-          `Chọn quy tắc ngành ${row.industry_name ?? "chưa xác định"} · mức ưu tiên ${row.priority}`
+          t("pv.admin.ruleSelect", {
+            industry: row.industry_name ?? t("pv.admin.industryUnknown"),
+            priority: row.priority,
+          })
         }
         loading={isFetching}
         emptyText={
           search.trim() || statusFilter !== "ALL"
-            ? "Không có kết quả phù hợp."
-            : "Chưa có quy tắc gợi ý nào."
+            ? t("pv.common.noMatch")
+            : t("pv.admin.ruleEmpty")
         }
         renderRowActions={(row) => (
           <Stack direction="row" spacing={1}>
             <ActionButton kind="view" onClick={() => setViewing(row)}>
-              Xem
+              {t("pv.common.view")}
             </ActionButton>
             <ActionButton
               kind="edit"
               disabled={!canManage}
               onClick={() => openForm(row)}
             >
-              Sửa
+              {t("pv.common.edit")}
             </ActionButton>
           </Stack>
         )}
@@ -1340,10 +1371,10 @@ function PvRuleTab({
         sx={{ "& .MuiDialogTitle-root": { pr: 6, position: "relative" } }}
         title={
           <>
-            Chi tiết quy tắc gợi ý
+            {t("pv.admin.ruleDetailTitle")}
             <ActionIconButton
               kind="close"
-              label="Đóng"
+              label={t("common.close")}
               onClick={() => setViewing(null)}
               sx={{ position: "absolute", right: 10, top: 8 }}
             />
@@ -1355,26 +1386,29 @@ function PvRuleTab({
             columns={2}
             items={[
               {
-                label: "Ngành nghề",
+                label: t("pv.admin.industry"),
                 value: viewing.industry_name ?? EMPTY_TEXT,
               },
               {
-                label: "Điều kiện áp dụng",
+                label: t("pv.admin.selector"),
                 // Xem chú thích ở cột "Điều kiện áp dụng" của bảng: chưa có
                 // sku_code/category_name từ BE nên rút gọn + cho sao chép.
                 value: viewing.sku_id ? (
                   <>
-                    <UiStatusBadge tone="neutral" label="SKU" />{" "}
+                    <UiStatusBadge tone="neutral" label={t("pv.admin.sku")} />{" "}
                     <CopyableId value={viewing.sku_id} />
                   </>
                 ) : viewing.category_id ? (
                   <>
-                    <UiStatusBadge tone="neutral" label="Nhóm hàng" />{" "}
+                    <UiStatusBadge
+                      tone="neutral"
+                      label={t("pv.admin.category")}
+                    />{" "}
                     <CopyableId value={viewing.category_id} />
                   </>
                 ) : viewing.tag_id ? (
                   <>
-                    <UiStatusBadge tone="neutral" label="Thẻ phân loại" />{" "}
+                    <UiStatusBadge tone="neutral" label={t("pv.admin.tags")} />{" "}
                     {tagNameById.get(viewing.tag_id) ?? (
                       <CopyableId value={viewing.tag_id} />
                     )}
@@ -1383,13 +1417,13 @@ function PvRuleTab({
                   EMPTY_TEXT
                 ),
               },
-              { label: "Mức ưu tiên", value: viewing.priority },
+              { label: t("pv.admin.priority"), value: viewing.priority },
               {
-                label: "Trạng thái",
+                label: t("pv.common.fieldStatus"),
                 value: (
                   <UiStatusBadge
                     tone={viewing.status === "ACTIVE" ? "success" : "neutral"}
-                    label={masterStatusLabel(viewing.status)}
+                    label={masterStatusLabel(viewing.status, t)}
                   />
                 ),
               },
@@ -1402,7 +1436,7 @@ function PvRuleTab({
         open={isOpen}
         onClose={guardBackdropClose(() => setIsOpen(false))}
         maxWidth="xs"
-        title={editing ? "Sửa quy tắc gợi ý" : "Thêm quy tắc gợi ý"}
+        title={editing ? t("pv.admin.ruleEditTitle") : t("pv.admin.ruleCreate")}
         actions={
           <>
             <ActionButton
@@ -1410,14 +1444,14 @@ function PvRuleTab({
               onClick={() => setIsOpen(false)}
               disabled={saving}
             >
-              Hủy
+              {t("pv.common.cancel")}
             </ActionButton>
             <ActionButton
               kind="save"
               onClick={() => void submit()}
               disabled={saving}
             >
-              {saving ? "Đang lưu..." : "Lưu"}
+              {saving ? t("pv.common.saving") : t("pv.common.save")}
             </ActionButton>
           </>
         }
@@ -1427,7 +1461,7 @@ function PvRuleTab({
             select
             required
             fullWidth
-            label="Ngành nghề"
+            label={t("pv.admin.industry")}
             value={formValues.industry_id}
             onChange={(event) => {
               const value = event.target.value;
@@ -1450,8 +1484,8 @@ function PvRuleTab({
           </UiTextField>
           <UiTextField
             fullWidth
-            label="SKU áp dụng (chọn SKU hoặc thẻ phân loại)"
-            placeholder="Mã định danh SKU"
+            label={t("pv.admin.skuSelectorLabel")}
+            placeholder={t("pv.admin.skuIdPlaceholder")}
             value={formValues.sku_id}
             onChange={(event) =>
               setFormValues((current) => ({
@@ -1463,7 +1497,7 @@ function PvRuleTab({
           <UiTextField
             select
             fullWidth
-            label="Thẻ phân loại"
+            label={t("pv.admin.tags")}
             value={formValues.tag_id}
             onChange={(event) =>
               setFormValues((current) => ({
@@ -1473,7 +1507,7 @@ function PvRuleTab({
             }
           >
             <MenuItem value="">
-              <em>Không chọn</em>
+              <em>{t("pv.admin.tagNone")}</em>
             </MenuItem>
             {tagOptions.map((option) => (
               <MenuItem key={option.value} value={option.value}>
@@ -1485,7 +1519,7 @@ function PvRuleTab({
             required
             fullWidth
             type="number"
-            label="Mức ưu tiên"
+            label={t("pv.admin.priority")}
             value={formValues.priority}
             onChange={(event) => {
               const value = Number(event.target.value) || 0;
@@ -1504,7 +1538,7 @@ function PvRuleTab({
           <UiTextField
             select
             fullWidth
-            label="Trạng thái"
+            label={t("pv.common.fieldStatus")}
             value={formValues.status}
             onChange={(event) =>
               setFormValues((current) => ({
@@ -1513,14 +1547,12 @@ function PvRuleTab({
               }))
             }
           >
-            <MenuItem value="ACTIVE">Đang sử dụng</MenuItem>
-            <MenuItem value="INACTIVE">Ngừng sử dụng</MenuItem>
+            <MenuItem value="ACTIVE">{t("pv.common.statusActive")}</MenuItem>
+            <MenuItem value="INACTIVE">
+              {t("pv.common.statusInactive")}
+            </MenuItem>
           </UiTextField>
-          <UiText variant="caption">
-            Quy tắc phải có ít nhất một điều kiện áp dụng (SKU hoặc thẻ phân
-            loại) và mức ưu tiên không được trùng với quy tắc đang sử dụng khác
-            trong cùng ngành nghề.
-          </UiText>
+          <UiText variant="caption">{t("pv.admin.ruleHint")}</UiText>
         </Stack>
       </UiDialog>
     </div>

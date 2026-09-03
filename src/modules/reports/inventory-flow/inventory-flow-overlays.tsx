@@ -12,6 +12,7 @@
  * chung và bị xoá khỏi đây — giữ lại chỉ tổ thành mã chết.
  */
 import { useEffect, useRef, type ReactNode } from "react";
+import { useT } from "@/shared/i18n/useT";
 
 /** Danh sách phần tử focus được — đúng bộ chọn mockup dùng để bẫy Tab. */
 const FOCUSABLE =
@@ -79,11 +80,12 @@ export function DrillDownModal({
 
 /** Nút đóng của modal — đặt trong `.modal-head` đúng vị trí mockup. */
 export function ModalCloseButton({ onClose }: { onClose: () => void }) {
+  const t = useT();
   return (
     <button
       className="modal-close"
       type="button"
-      aria-label="Đóng chi tiết"
+      aria-label={t("reports.common.closeDetail")}
       onClick={onClose}
     >
       ×

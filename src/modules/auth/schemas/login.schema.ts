@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { tStatic, type TranslateFn } from "@/shared/i18n/useT";
 import type { LoginRequest } from "@/modules/auth/types/auth.types";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9._-]+$/;
@@ -9,59 +10,68 @@ function isEmailIdentifier(identifier: string): boolean {
   return identifier.includes("@");
 }
 
-export const loginSchema = z
-  .object({
-    identifier: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập email hoặc tên đăng nhập")
-      .max(254, "Email hoặc tên đăng nhập quá dài"),
-    password: z.string().min(1, "Vui lòng nhập mật khẩu"),
-    /** "Ghi nhớ đăng nhập" — chỉ lưu identifier phía client, không vào payload. */
-    remember: z.boolean().optional(),
-  })
-  .superRefine(({ identifier }, context) => {
-    if (isEmailIdentifier(identifier)) {
-      const [localPart = "", domain = "", extraPart] = identifier.split("@");
-      const hasInvalidFormat =
-        extraPart !== undefined ||
-        localPart.length === 0 ||
-        domain.length === 0 ||
-        localPart.length > 64 ||
-        identifier.includes("..") ||
-        localPart.startsWith(".") ||
-        localPart.endsWith(".") ||
-        identifier !== identifier.toLowerCase() ||
-        !EMAIL_REGEX.test(identifier);
+/**
+ * Factory nhận `t` để thông báo lỗi validate đổi theo ngôn ngữ đang chọn —
+ * component gọi với `useT()` (bọc `useMemo` dep `[t]`); message của Zod là
+ * chuỗi tĩnh nên schema phải được dựng lại mỗi khi đổi ngôn ngữ.
+ */
+export function buildLoginSchema(t: TranslateFn) {
+  return z
+    .object({
+      identifier: z
+        .string()
+        .trim()
+        .min(1, t("auth.validation.identifierRequired"))
+        .max(254, t("auth.validation.identifierTooLong")),
+      password: z.string().min(1, t("auth.validation.passwordRequired")),
+      /** "Ghi nhớ đăng nhập" — chỉ lưu identifier phía client, không vào payload. */
+      remember: z.boolean().optional(),
+    })
+    .superRefine(({ identifier }, context) => {
+      if (isEmailIdentifier(identifier)) {
+        const [localPart = "", domain = "", extraPart] = identifier.split("@");
+        const hasInvalidFormat =
+          extraPart !== undefined ||
+          localPart.length === 0 ||
+          domain.length === 0 ||
+          localPart.length > 64 ||
+          identifier.includes("..") ||
+          localPart.startsWith(".") ||
+          localPart.endsWith(".") ||
+          identifier !== identifier.toLowerCase() ||
+          !EMAIL_REGEX.test(identifier);
 
-      if (hasInvalidFormat) {
+        if (hasInvalidFormat) {
+          context.addIssue({
+            code: "custom",
+            path: ["identifier"],
+            message: t("auth.validation.emailInvalid"),
+          });
+        }
+        return;
+      }
+
+      if (identifier.length > 100) {
         context.addIssue({
           code: "custom",
           path: ["identifier"],
-          message: "Email không hợp lệ",
+          message: t("auth.validation.usernameTooLong"),
+        });
+        return;
+      }
+
+      if (!USERNAME_REGEX.test(identifier)) {
+        context.addIssue({
+          code: "custom",
+          path: ["identifier"],
+          message: t("auth.validation.usernameFormat"),
         });
       }
-      return;
-    }
+    });
+}
 
-    if (identifier.length > 100) {
-      context.addIssue({
-        code: "custom",
-        path: ["identifier"],
-        message: "Tên đăng nhập không được vượt quá 100 ký tự",
-      });
-      return;
-    }
-
-    if (!USERNAME_REGEX.test(identifier)) {
-      context.addIssue({
-        code: "custom",
-        path: ["identifier"],
-        message:
-          "Tên đăng nhập chỉ gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang",
-      });
-    }
-  });
+/** Bản tĩnh cho test/nơi ngoài React — message đóng băng theo ngôn ngữ lúc import. */
+export const loginSchema = buildLoginSchema(tStatic);
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
 

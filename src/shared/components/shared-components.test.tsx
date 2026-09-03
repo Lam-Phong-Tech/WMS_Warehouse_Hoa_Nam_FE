@@ -35,7 +35,7 @@ describe("ScanInput", () => {
     const onScan = vi.fn();
     render(<ScanInput onScan={onScan} />);
 
-    const input = screen.getByLabelText(/scan code/i);
+    const input = screen.getByLabelText(/quét mã/i);
     await user.type(input, " carton-hn-0007 {enter}");
 
     expect(onScan).toHaveBeenCalledWith("CARTON-HN-0007");
@@ -49,7 +49,7 @@ describe("ScanInput", () => {
     render(<ScanInput recentCodes={["CARTON-HN-0007"]} onScan={onScan} />);
 
     await user.type(
-      screen.getByLabelText(/scan code/i),
+      screen.getByLabelText(/quét mã/i),
       "carton-hn-0007{enter}",
     );
 

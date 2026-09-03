@@ -65,8 +65,8 @@ import { useReportExport } from "./report-export";
 
 const sourceOptions = (t: TranslateFn) => [
   { value: "all", label: t("reports.importQuality.sourceAll") },
-  { value: "IMPORT", label: "Import" },
-  { value: "SCAN", label: "Scan" },
+  { value: "IMPORT", label: t("reports.importQuality.sourceFromFile") },
+  { value: "SCAN", label: t("reports.importQuality.sourceScanShort") },
 ];
 
 const resultOptions = (t: TranslateFn) => [
@@ -619,7 +619,7 @@ export default function TabImportQuality() {
         />
         <SearchInput
           width={260}
-          placeholder="Batch / Request ID"
+          placeholder={t("reports.importQuality.batchOrRequestCode")}
           aria-label={t("reports.importQuality.searchAria")}
           value={batchKeyword}
           onChange={setBatchKeyword}
@@ -672,7 +672,7 @@ export default function TabImportQuality() {
           },
           {
             key: "batchNo",
-            header: "Batch / Request ID",
+            header: t("reports.importQuality.batchOrRequestCode"),
             sortAccessor: (row) => row.batchNo,
             render: (row) => (
               <Box>
@@ -786,7 +786,7 @@ export default function TabImportQuality() {
             columns={[
               {
                 key: "batchNo",
-                header: "Batch",
+                header: t("reports.importQuality.colBatchNo"),
                 render: (row) => row.batchNo || EMPTY_TEXT,
               },
               {
@@ -836,7 +836,7 @@ export default function TabImportQuality() {
             columns={[
               {
                 key: "batchNo",
-                header: "Batch",
+                header: t("reports.importQuality.colBatchNo"),
                 render: (row) => row.batchNo || EMPTY_TEXT,
               },
               {
@@ -856,7 +856,7 @@ export default function TabImportQuality() {
               },
               {
                 key: "reference",
-                header: "SKU / Physical Code",
+                header: t("reports.importQuality.colSkuOrPhysical"),
                 render: (row) => row.reference || EMPTY_TEXT,
               },
               {
@@ -943,7 +943,7 @@ export default function TabImportQuality() {
               },
               {
                 key: "reference",
-                header: "SKU / Physical Code",
+                header: t("reports.importQuality.colSkuOrPhysical"),
                 render: (row) => row.reference || EMPTY_TEXT,
               },
               {

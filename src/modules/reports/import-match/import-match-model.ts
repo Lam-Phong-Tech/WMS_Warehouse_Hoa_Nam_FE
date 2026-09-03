@@ -14,7 +14,9 @@
  *
  * File này là logic thuần (không React, không HTTP) để test được trực tiếp.
  */
+import { bilingual } from "@/shared/constants/business-labels";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { tStatic } from "@/shared/i18n/useT";
 import {
   dayKey,
   listOf,
@@ -27,16 +29,34 @@ import { reportStatusLabel } from "@/modules/reports/operations/report-labels";
 
 export type ImportMatchContext = "IMPORT" | "MATCH";
 
-export const CONTEXT_LABEL: Readonly<Record<ImportMatchContext, string>> = {
-  IMPORT: "Import/Migration",
-  MATCH: "Đối soát yêu cầu xuất",
-};
+/**
+ * Nhãn theo ngữ cảnh, bọc `bilingual` (đọc ngôn ngữ tại lúc truy cập thuộc
+ * tính) vì mọi call site đang index thẳng `CONTEXT_LABEL[context]`.
+ */
+export const CONTEXT_LABEL: Readonly<Record<ImportMatchContext, string>> =
+  bilingual(
+    {
+      IMPORT: "Nhập & chuyển đổi dữ liệu",
+      MATCH: "Đối soát yêu cầu xuất",
+    },
+    {
+      IMPORT: "Data import & conversion",
+      MATCH: "Issue request reconciliation",
+    },
+  );
 
 /** Nhãn cột/ô tìm kiếm đổi theo ngữ cảnh — đúng như baseline 8.5. */
-export const CONTEXT_KEY_LABEL: Readonly<Record<ImportMatchContext, string>> = {
-  IMPORT: "Tệp / mã import",
-  MATCH: "Mã đối soát / phiếu xuất",
-};
+export const CONTEXT_KEY_LABEL: Readonly<Record<ImportMatchContext, string>> =
+  bilingual(
+    {
+      IMPORT: "Tệp / mã lần nhập",
+      MATCH: "Mã đối soát / phiếu xuất",
+    },
+    {
+      IMPORT: "File / import batch code",
+      MATCH: "Reconciliation / issue document code",
+    },
+  );
 
 export type BatchErrorLine = {
   rowNo: string;
@@ -141,8 +161,10 @@ export function buildImportBatches(
       // render tự hiện "Chưa có".
       batchNo: text(row.file_name, ""),
       caption: mode
-        ? `Import danh mục SKU · ${reportStatusLabel(mode)}`
-        : "Import danh mục SKU",
+        ? tStatic("reports.importQuality.sourceSkuImportWithMode", {
+            status: reportStatusLabel(mode),
+          })
+        : tStatic("reports.importQuality.sourceSkuImport"),
       sourceFile: text(row.file_name, ""),
       checksum: text(row.file_sha256, ""),
       sourceVersion: text(row.template_version, ""),

@@ -45,6 +45,7 @@ import {
 import { useAuthStore } from "@/shared/store/auth.store";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   cancelPutawayTask,
   confirmPutawayTask,
@@ -74,13 +75,12 @@ const putawayKeys = {
   trays: ["putaway", "trays"] as const,
 };
 
-const BOX_STATUS_LABEL: Record<string, string> = {
-  RECEIVED_PENDING_PUTAWAY: "Chờ xếp khay",
-  STORED: "Đã xếp khay",
-};
-
-function boxStatusLabel(status: string): string {
-  return BOX_STATUS_LABEL[status] ?? "Chưa xác định";
+function boxStatusLabel(t: TranslateFn, status: string): string {
+  if (status === "RECEIVED_PENDING_PUTAWAY") {
+    return t("putaway.page.boxStatusPending");
+  }
+  if (status === "STORED") return t("putaway.page.boxStatusStored");
+  return t("putaway.page.boxStatusUnknown");
 }
 
 function boxStatusChipColor(status: string): "success" | "warning" {
@@ -112,6 +112,7 @@ function ApiErrorAlert({
   error: unknown;
   fallback: string;
 }) {
+  const t = useT();
   const normalized = normalizeError(error);
   const requestId = getErrorRequestId(error);
   return (
@@ -119,14 +120,18 @@ function ApiErrorAlert({
       tone={normalized.status === 403 ? "warning" : "error"}
       title={
         normalized.status === 403
-          ? "Không có quyền truy cập"
+          ? t("putaway.page.forbidden")
           : getApiErrorMessage(error, fallback)
       }
     >
       {[
-        normalized.status ? `Mã phản hồi ${normalized.status}` : undefined,
-        normalized.code ? `Mã lỗi: ${normalized.code}` : undefined,
-        requestId ? `Mã yêu cầu: ${requestId}` : undefined,
+        normalized.status
+          ? t("putaway.page.responseCode", { status: normalized.status })
+          : undefined,
+        normalized.code
+          ? t("putaway.page.errorCode", { code: normalized.code })
+          : undefined,
+        requestId ? t("putaway.page.requestId", { requestId }) : undefined,
       ]
         .filter(Boolean)
         .join(" | ")}
@@ -154,6 +159,7 @@ const HISTORY_SORT_ACCESSORS: Record<string, SortAccessor<PutawayHistory>> = {
 };
 
 export default function MvpPutawayPage() {
+  const t = useT();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
@@ -287,7 +293,7 @@ export default function MvpPutawayPage() {
 
   const openPutaway = (row: PutawayTask) => {
     if (row.status !== "RECEIVED_PENDING_PUTAWAY") {
-      toast.error("Chỉ hộp đang chờ xếp khay mới được thực hiện thao tác này.");
+      toast.error(t("putaway.page.onlyPendingBox"));
       return;
     }
     setSelected(row);
@@ -336,25 +342,27 @@ export default function MvpPutawayPage() {
         to_tray_id: tray.container_id,
       }));
       setTrayScanError(null);
-      toast.success(`Đã nhận khay ${tray.container_code}.`);
+      toast.success(
+        t("putaway.page.trayAccepted", { code: tray.container_code }),
+      );
     } catch (error) {
       setPutawayForm((current) => ({ ...current, to_tray_id: "" }));
       // Ưu tiên thông điệp thân thiện (BE / message nghiệp vụ); lỗi JS thô
       // không bao giờ lộ ra UI.
-      setTrayScanError(getApiErrorMessage(error, "Mã khay không hợp lệ."));
+      setTrayScanError(
+        getApiErrorMessage(error, t("putaway.page.trayInvalid")),
+      );
     }
   };
 
   const createDraft = async () => {
     if (!selected || !canManage) return;
     if (selected.status !== "RECEIVED_PENDING_PUTAWAY") {
-      toast.error(
-        "Hộp không còn ở trạng thái chờ xếp khay. Hãy làm mới dữ liệu.",
-      );
+      toast.error(t("putaway.page.boxNotPending"));
       return;
     }
     if (!putawayForm.to_tray_id) {
-      setTrayScanError("Quét hoặc chọn khay đích.");
+      setTrayScanError(t("putaway.page.trayRequired"));
       return;
     }
 
@@ -364,7 +372,7 @@ export default function MvpPutawayPage() {
       );
       if (!targetTray) {
         setPutawayForm((current) => ({ ...current, to_tray_id: "" }));
-        toast.error("Khay đích không còn khả dụng. Hãy quét/chọn lại.");
+        toast.error(t("putaway.page.trayUnavailable"));
         return;
       }
 
@@ -375,16 +383,12 @@ export default function MvpPutawayPage() {
         note: putawayForm.note?.trim() || null,
       });
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error(
-          "Lỗi bất biến: tạo lệnh xếp khay không được thay đổi tồn kho.",
-        );
+        throw new Error(t("putaway.page.invariantCreate"));
       }
-      toast.success(
-        "Đã tạo lệnh xếp khay nháp. Xác nhận trên danh sách để hoàn tất gán hộp vào khay.",
-      );
+      toast.success(t("putaway.page.draftCreated"));
       closePutaway();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không tạo được lệnh xếp khay."));
+      toast.error(getApiErrorMessage(error, t("putaway.page.createFailed")));
     }
   };
 
@@ -396,17 +400,11 @@ export default function MvpPutawayPage() {
         version: row.draft_version,
       });
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error(
-          "Lỗi bất biến: xác nhận xếp khay không được tạo biến động tồn.",
-        );
+        throw new Error(t("putaway.page.invariantConfirm"));
       }
-      toast.success(
-        "Xếp khay thành công. Hộp đã được gán vào khay; số lượng tồn không đổi.",
-      );
+      toast.success(t("putaway.page.confirmSuccess"));
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Không xác nhận được việc xếp khay."),
-      );
+      toast.error(getApiErrorMessage(error, t("putaway.page.confirmFailed")));
       throw error;
     }
   };
@@ -419,34 +417,29 @@ export default function MvpPutawayPage() {
         version: row.draft_version,
       });
       if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error(
-          "Lỗi bất biến: hủy lệnh xếp khay không được thay đổi tồn kho.",
-        );
+        throw new Error(t("putaway.page.invariantCancel"));
       }
-      toast.success(
-        "Đã hủy lệnh xếp khay nháp. Hộp vẫn ở trạng thái chờ xếp khay; tồn kho không đổi.",
-      );
+      toast.success(t("putaway.page.cancelSuccess"));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Không hủy được lệnh xếp khay."));
+      toast.error(getApiErrorMessage(error, t("putaway.page.cancelFailed")));
       throw error;
     }
   };
 
   const confirmWithPrompt = (row: PutawayTask) => {
     setConfirmPrompt({
-      title: "Xác nhận xếp khay?",
-      content:
-        "Hộp sẽ được gán vào khay đã chọn. Thao tác này không thay đổi số lượng tồn.",
-      okText: "Xác nhận",
+      title: t("putaway.page.confirmPromptTitle"),
+      content: t("putaway.page.confirmPromptContent"),
+      okText: t("putaway.page.confirmOk"),
       onOk: () => confirm(row),
     });
   };
 
   const cancelWithPrompt = (row: PutawayTask) => {
     setConfirmPrompt({
-      title: "Hủy lệnh xếp khay nháp?",
-      content: "Hộp sẽ quay lại trạng thái chờ xếp khay; tồn kho không đổi.",
-      okText: "Hủy lệnh",
+      title: t("putaway.page.cancelPromptTitle"),
+      content: t("putaway.page.cancelPromptContent"),
+      okText: t("putaway.page.cancelOk"),
       danger: true,
       onOk: () => cancel(row),
     });
@@ -468,21 +461,21 @@ export default function MvpPutawayPage() {
   const taskColumns: ResponsiveTableColumn<PutawayTask>[] = [
     {
       key: "box_code",
-      header: "Hộp",
+      header: t("putaway.page.colBox"),
       width: 170,
       sortable: true,
       render: (row) => <strong>{row.box_code}</strong>,
     },
     {
       key: "sku_code",
-      header: "SKU",
+      header: t("putaway.page.colSku"),
       width: 170,
       sortable: true,
       render: (row) => row.sku_code,
     },
     {
       key: "quantity",
-      header: "Số lượng",
+      header: t("putaway.page.colQuantity"),
       width: 100,
       align: "right",
       sortable: true,
@@ -491,34 +484,37 @@ export default function MvpPutawayPage() {
     },
     {
       key: "status",
-      header: "Trạng thái hộp",
+      header: t("putaway.page.colBoxStatus"),
       width: 210,
       sortable: true,
       render: (row) => (
         <UiStatusBadge
           tone={row.status === "STORED" ? "success" : "warning"}
-          label={boxStatusLabel(row.status)}
+          label={boxStatusLabel(t, row.status)}
         />
       ),
     },
     {
       key: "draft",
-      header: "Lệnh xếp khay",
+      header: t("putaway.page.colDraft"),
       width: 180,
       sortable: true,
       render: (row) =>
         row.draft_id ? (
           <UiStatusBadge
             tone="info"
-            label={row.to_tray_code || "Đã chọn khay"}
+            label={row.to_tray_code || t("putaway.page.draftSelectedTray")}
           />
         ) : (
-          <UiStatusBadge tone="neutral" label="Chưa tạo" />
+          <UiStatusBadge
+            tone="neutral"
+            label={t("putaway.page.draftNotCreated")}
+          />
         ),
     },
     {
       key: "actions",
-      header: "Hành động",
+      header: t("putaway.page.colActions"),
       width: 260,
       render: (row) => {
         const canOpenPutaway =
@@ -528,14 +524,14 @@ export default function MvpPutawayPage() {
               {
                 key: "confirm",
                 kind: "confirm" as const,
-                label: "Xác nhận xếp khay",
+                label: t("putaway.page.actionConfirm"),
                 disabled: !canManage,
                 onClick: () => confirmWithPrompt(row),
               },
               {
                 key: "cancel",
                 kind: "cancel" as const,
-                label: "Hủy lệnh nháp",
+                label: t("putaway.page.actionCancelDraft"),
                 danger: true,
                 disabled: !canManage,
                 onClick: () => cancelWithPrompt(row),
@@ -549,7 +545,7 @@ export default function MvpPutawayPage() {
             sx={{ gap: 0.25, alignItems: "center", flexWrap: "wrap" }}
           >
             <ActionButton kind="view" onClick={() => setDetailRow(row)}>
-              Xem
+              {t("putaway.page.actionView")}
             </ActionButton>
             {/* PTW-GRID: nút chính mở lưới chọn khay — trước đây ẩn trong dropdown
                 "..." khiến người dùng không thấy giao diện chọn khay. */}
@@ -559,12 +555,12 @@ export default function MvpPutawayPage() {
                 disabled={!canManage}
                 onClick={() => openPutaway(row)}
               >
-                Xếp khay
+                {t("putaway.page.actionPutaway")}
               </ActionButton>
             ) : null}
             {dropdownItems.length > 0 ? (
               <ActionDropdown
-                tooltip="Thao tác xếp khay"
+                tooltip={t("putaway.page.actionsTooltip")}
                 items={dropdownItems}
               />
             ) : null}
@@ -577,7 +573,7 @@ export default function MvpPutawayPage() {
   const historyColumns: ResponsiveTableColumn<PutawayHistory>[] = [
     {
       key: "created_at",
-      header: "Thời gian",
+      header: t("putaway.page.colTime"),
       width: 190,
       sortable: true,
       sortType: "value",
@@ -585,44 +581,49 @@ export default function MvpPutawayPage() {
     },
     {
       key: "box_code",
-      header: "Hộp",
+      header: t("putaway.page.colBox"),
       width: 170,
       sortable: true,
       render: (row) => row.box_code,
     },
     {
       key: "old_tray_code",
-      header: "Khay cũ",
+      header: t("putaway.page.colOldTray"),
       width: 150,
       sortable: true,
       render: (row) => row.old_tray_code || EMPTY_TEXT,
     },
     {
       key: "new_tray_code",
-      header: "Khay mới",
+      header: t("putaway.page.colNewTray"),
       width: 150,
       sortable: true,
       render: (row) => row.new_tray_code || EMPTY_TEXT,
     },
     {
       key: "location_hint",
-      header: "Vị trí",
+      header: t("putaway.page.colLocation"),
       width: 180,
       sortable: true,
       render: (row) => row.location_hint || EMPTY_TEXT,
     },
     {
       key: "actor_name",
-      header: "Người thao tác",
+      header: t("putaway.page.colActor"),
       width: 180,
       sortable: true,
       render: (row) => row.actor_name || EMPTY_TEXT,
     },
     {
       key: "stock_effect",
-      header: "Ảnh hưởng tồn",
+      header: t("putaway.page.colStockEffect"),
       width: 140,
-      render: () => <UiStatusBadge tone="success" label="Không đổi tồn" />,
+      render: () => (
+        <UiStatusBadge
+          tone="success"
+          label={t("putaway.page.stockUnchanged")}
+        />
+      ),
     },
   ];
 
@@ -640,36 +641,37 @@ export default function MvpPutawayPage() {
           to={ROUTES.PUTAWAY_TRAYS}
           style={{ textDecoration: "none" }}
         >
-          <ActionButton kind="view" label="Tổng quan tình trạng khay" />
+          <ActionButton
+            kind="view"
+            label={t("putaway.page.trayOverviewLink")}
+          />
         </RouterLink>
       </div>
 
       <UiCard className="master-data-panel">
         <div className="master-data-contract-strip">
-          <UiStatusBadge tone="info" label="Danh sách và lệnh xếp khay" />
-          <UiStatusBadge tone="info" label="Xác nhận vị trí lưu trữ" />
+          <UiStatusBadge tone="info" label={t("putaway.page.stripTasks")} />
+          <UiStatusBadge tone="info" label={t("putaway.page.stripConfirm")} />
           <UiStatusBadge
             tone="warning"
-            label="Yêu cầu quyền xếp khay hoặc quản lý vật chứa"
+            label={t("putaway.page.stripPermission")}
           />
-          <UiStatusBadge tone="success" label="Không thay đổi tồn kho" />
+          <UiStatusBadge
+            tone="success"
+            label={t("putaway.page.stripStockNeutral")}
+          />
         </div>
 
         <Box className="master-data-state-alert">
-          <UiAlert
-            tone="info"
-            title="Xếp khay là bước định vị sau khi đã hoàn tất nhập kho"
-          >
-            Linh kiện đã tăng tồn ở bước hoàn tất nhập kho. Màn này chỉ gán hộp
-            vào khay/vị trí; tạo, xác nhận hoặc hủy lệnh xếp khay đều không làm
-            thay đổi số lượng tồn.
+          <UiAlert tone="info" title={t("putaway.page.introTitle")}>
+            {t("putaway.page.introBody")}
           </UiAlert>
         </Box>
 
         {firstError ? (
           <ApiErrorAlert
             error={firstError}
-            fallback="Không tải được dữ liệu xếp khay."
+            fallback={t("putaway.page.loadFailed")}
           />
         ) : null}
 
@@ -688,7 +690,9 @@ export default function MvpPutawayPage() {
                       sx={{ alignItems: "center" }}
                     >
                       <InboxOutlined style={{ fontSize: 15 }} />
-                      <span>{`Chờ xếp khay (${tasks.length})`}</span>
+                      <span>
+                        {t("putaway.page.tabPending", { count: tasks.length })}
+                      </span>
                     </Stack>
                   ),
                 },
@@ -701,7 +705,7 @@ export default function MvpPutawayPage() {
                       sx={{ alignItems: "center" }}
                     >
                       <HistoryOutlined style={{ fontSize: 15 }} />
-                      <span>Lịch sử xếp khay</span>
+                      <span>{t("putaway.page.tabHistory")}</span>
                     </Stack>
                   ),
                 },
@@ -725,10 +729,10 @@ export default function MvpPutawayPage() {
               {activeTab === "pending" ? (
                 <SearchInput
                   value={searchDraft}
-                  placeholder="Tìm hộp / SKU..."
+                  placeholder={t("putaway.page.searchPendingPlaceholder")}
                   slotProps={{
                     htmlInput: {
-                      "aria-label": "Tìm hộp hoặc SKU chờ xếp khay",
+                      "aria-label": t("putaway.page.searchPendingAria"),
                     },
                   }}
                   width="100%"
@@ -737,9 +741,11 @@ export default function MvpPutawayPage() {
               ) : (
                 <SearchInput
                   value={historySearchDraft}
-                  placeholder="Tìm hộp / khay / người thao tác..."
+                  placeholder={t("putaway.page.searchHistoryPlaceholder")}
                   slotProps={{
-                    htmlInput: { "aria-label": "Tìm trong lịch sử xếp khay" },
+                    htmlInput: {
+                      "aria-label": t("putaway.page.searchHistoryAria"),
+                    },
                   }}
                   width="100%"
                   onChange={setHistorySearchDraft}
@@ -751,10 +757,10 @@ export default function MvpPutawayPage() {
                 value={
                   activeTab === "pending" ? pendingPageSize : historyPageSize
                 }
-                aria-label="Số dòng mỗi trang"
+                aria-label={t("putaway.page.pageSizeAria")}
                 options={PAGE_SIZE_OPTIONS.map((size) => ({
                   value: size,
-                  label: `${size} / trang`,
+                  label: t("putaway.page.pageSizeOption", { size }),
                 }))}
                 onChange={(value) => {
                   if (activeTab === "pending") {
@@ -777,10 +783,12 @@ export default function MvpPutawayPage() {
               rowKey={(row) => row.id}
               loading={loading}
               rowSelection={pendingSelection}
-              selectionLabel={(row) => `Chọn hộp ${row.box_code}`}
+              selectionLabel={(row) =>
+                t("putaway.page.selectBox", { code: row.box_code })
+              }
               sortState={taskSort.sortState}
               onSortChange={taskSort.requestSort}
-              emptyText="Không có hộp linh kiện chờ xếp khay"
+              emptyText={t("putaway.page.emptyPending")}
             />
             <Stack
               direction="row"
@@ -793,7 +801,7 @@ export default function MvpPutawayPage() {
               }}
             >
               <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                {`Tổng ${tasks.length} hộp`}
+                {t("putaway.page.totalBoxes", { count: tasks.length })}
               </Box>
               <UiPagination
                 page={safePendingPage}
@@ -812,13 +820,15 @@ export default function MvpPutawayPage() {
               rowKey={(row) => row.id}
               loading={loading}
               rowSelection={historySelection}
-              selectionLabel={(row) => `Chọn bản ghi ${row.box_code}`}
+              selectionLabel={(row) =>
+                t("putaway.page.selectRecord", { code: row.box_code })
+              }
               sortState={historySort.sortState}
               onSortChange={historySort.requestSort}
               emptyText={
                 historySearchDraft.trim()
-                  ? "Không tìm thấy lịch sử xếp khay phù hợp"
-                  : "Chưa có lịch sử xếp khay"
+                  ? t("putaway.page.emptyHistoryFiltered")
+                  : t("putaway.page.emptyHistory")
               }
             />
             <Stack
@@ -832,7 +842,9 @@ export default function MvpPutawayPage() {
               }}
             >
               <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                {`Tổng ${filteredHistory.length} bản ghi`}
+                {t("putaway.page.totalRecords", {
+                  count: filteredHistory.length,
+                })}
               </Box>
               <UiPagination
                 page={safeHistoryPage}
@@ -863,12 +875,14 @@ export default function MvpPutawayPage() {
             >
               <span>
                 {selected
-                  ? `PTW-01 · Xếp ${selected.box_code} vào khay`
-                  : "PTW-01 · Xếp vào khay"}
+                  ? t("putaway.page.dialogTitleWithBox", {
+                      code: selected.box_code,
+                    })
+                  : t("putaway.page.dialogTitle")}
               </span>
               <ActionIconButton
                 kind="close"
-                label="Đóng"
+                label={t("common.close")}
                 onClick={closePutaway}
               />
             </Stack>
@@ -876,7 +890,7 @@ export default function MvpPutawayPage() {
           actions={
             <>
               <ActionButton kind="close" onClick={closePutaway}>
-                Đóng
+                {t("common.close")}
               </ActionButton>
               <ActionButton
                 kind="create"
@@ -888,7 +902,9 @@ export default function MvpPutawayPage() {
                   createMutation.isPending
                 }
               >
-                {createMutation.isPending ? "Đang tạo..." : "Tạo lệnh xếp khay"}
+                {createMutation.isPending
+                  ? t("putaway.page.creating")
+                  : t("putaway.page.createDraftButton")}
               </ActionButton>
             </>
           }
@@ -906,22 +922,22 @@ export default function MvpPutawayPage() {
               >
                 <Grid container spacing={2} sx={{ alignItems: "flex-start" }}>
                   <PutawayDetailField
-                    label="Hộp"
+                    label={t("putaway.page.colBox")}
                     value={selected.box_code}
                     size={{ xs: 6, sm: 3 }}
                   />
                   <PutawayDetailField
-                    label="SKU"
+                    label={t("putaway.page.colSku")}
                     value={selected.sku_code}
                     size={{ xs: 6, sm: 3 }}
                   />
                   <PutawayDetailField
-                    label="Số lượng"
+                    label={t("putaway.page.colQuantity")}
                     value={selected.quantity}
                     size={{ xs: 6, sm: 3 }}
                   />
                   <PutawayDetailField
-                    label="Phiếu nhập"
+                    label={t("putaway.page.fieldReceipt")}
                     value={selected.receipt_code || EMPTY_TEXT}
                     size={{ xs: 6, sm: 3 }}
                   />
@@ -929,10 +945,10 @@ export default function MvpPutawayPage() {
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
-                      Trạng thái
+                      {t("putaway.page.fieldStatus")}
                     </Box>
                     <UiStatusBadge
-                      label={boxStatusLabel(selected.status)}
+                      label={boxStatusLabel(t, selected.status)}
                       tone={boxStatusChipColor(selected.status)}
                       sx={{ mt: 0.25 }}
                     />
@@ -942,22 +958,18 @@ export default function MvpPutawayPage() {
             ) : null}
 
             <Box sx={{ mb: 2 }}>
-              <UiAlert
-                tone="warning"
-                title="Tạo lệnh nháp chưa thay đổi vị trí vật lý"
-              >
-                Chỉ khi xác nhận, hộp mới được gán vào khay. Cả bước tạo lệnh và
-                bước xác nhận đều không làm thay đổi số lượng tồn kho.
+              <UiAlert tone="warning" title={t("putaway.page.draftAlertTitle")}>
+                {t("putaway.page.draftAlertBody")}
               </UiAlert>
             </Box>
 
             <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-              Chọn khay đích
+              {t("putaway.page.chooseTrayTitle")}
             </Box>
             <Stack spacing={1.5} sx={{ mb: 2 }}>
               <Box>
                 <Box sx={{ typography: "body2", fontWeight: 600, mb: 1 }}>
-                  Quét mã vạch/QR của khay
+                  {t("putaway.page.scanTrayLabel")}
                 </Box>
                 <Stack
                   direction="row"
@@ -967,7 +979,7 @@ export default function MvpPutawayPage() {
                   <Box sx={{ flex: 1 }}>
                     <ScanInput
                       value={trayScanValue}
-                      placeholder="Quét/nhập mã khay, VD: TRAY-A-01"
+                      placeholder={t("putaway.page.scanTrayPlaceholder")}
                       error={trayScanError}
                       disabled={!canManage || traysQuery.isLoading}
                       onChange={(value) => {
@@ -985,14 +997,13 @@ export default function MvpPutawayPage() {
                     mt: 0.5,
                   }}
                 >
-                  Ưu tiên camera/máy quét. Nhập mã thủ công là phương án dự
-                  phòng; mã phải xác định đúng một khay khả dụng.
+                  {t("putaway.page.scanTrayHint")}
                 </Box>
               </Box>
 
               <Box>
                 <Box sx={{ typography: "body2", fontWeight: 600, mb: 1 }}>
-                  Hoặc chọn khay trên lưới
+                  {t("putaway.page.orPickOnGrid")}
                 </Box>
                 <TraySelectionGrid
                   trays={trays}
@@ -1014,7 +1025,7 @@ export default function MvpPutawayPage() {
 
             <Stack spacing={2}>
               <UiTextField
-                label="Vị trí gợi ý"
+                label={t("putaway.page.locationHintLabel")}
                 fullWidth
                 value={putawayForm.location_hint ?? ""}
                 onChange={(event) =>
@@ -1025,10 +1036,10 @@ export default function MvpPutawayPage() {
                 }
                 disabled={!canManage}
                 slotProps={{ htmlInput: { maxLength: 255 } }}
-                placeholder="VD: Dãy trái khu linh kiện"
+                placeholder={t("putaway.page.locationHintPlaceholder")}
               />
               <UiTextField
-                label="Ghi chú"
+                label={t("putaway.page.noteLabel")}
                 fullWidth
                 multiline
                 minRows={3}
@@ -1063,58 +1074,75 @@ export default function MvpPutawayPage() {
             >
               <span>
                 {detailRow
-                  ? `Chi tiết xếp khay · ${detailRow.box_code}`
-                  : "Chi tiết xếp khay"}
+                  ? t("putaway.page.detailTitleWithBox", {
+                      code: detailRow.box_code,
+                    })
+                  : t("putaway.page.detailTitle")}
               </span>
               <ActionIconButton
                 kind="close"
-                label="Đóng"
+                label={t("common.close")}
                 onClick={() => setDetailRow(null)}
               />
             </Stack>
           }
           actions={
             <ActionButton kind="close" onClick={() => setDetailRow(null)}>
-              Đóng
+              {t("common.close")}
             </ActionButton>
           }
         >
           {detailRow ? (
             <Grid container spacing={2}>
-              <PutawayDetailField label="Hộp" value={detailRow.box_code} />
               <PutawayDetailField
-                label="SKU"
+                label={t("putaway.page.colBox")}
+                value={detailRow.box_code}
+              />
+              <PutawayDetailField
+                label={t("putaway.page.colSku")}
                 value={`${detailRow.sku_code} · ${detailRow.sku_name}`}
               />
-              <PutawayDetailField label="Số lượng" value={detailRow.quantity} />
               <PutawayDetailField
-                label="Phiếu nhập"
+                label={t("putaway.page.colQuantity")}
+                value={detailRow.quantity}
+              />
+              <PutawayDetailField
+                label={t("putaway.page.fieldReceipt")}
                 value={detailRow.receipt_code || EMPTY_TEXT}
               />
               <PutawayDetailField
-                label="Khay dự kiến"
-                value={detailRow.to_tray_code || "Chưa chọn"}
+                label={t("putaway.page.fieldPlannedTray")}
+                value={detailRow.to_tray_code || t("putaway.page.notChosen")}
               />
               <PutawayDetailField
-                label="Vị trí"
+                label={t("putaway.page.colLocation")}
                 value={detailRow.location_hint || EMPTY_TEXT}
               />
               <PutawayDetailField
-                label="Trạng thái hộp"
+                label={t("putaway.page.colBoxStatus")}
                 value={
                   <UiStatusBadge
-                    label={boxStatusLabel(detailRow.status)}
+                    label={boxStatusLabel(t, detailRow.status)}
                     tone={boxStatusChipColor(detailRow.status)}
                   />
                 }
               />
               <PutawayDetailField
-                label="Lệnh xếp khay"
-                value={detailRow.draft_id ? "Đã tạo lệnh nháp" : "Chưa tạo"}
+                label={t("putaway.page.colDraft")}
+                value={
+                  detailRow.draft_id
+                    ? t("putaway.page.draftCreatedShort")
+                    : t("putaway.page.draftNotCreated")
+                }
               />
               <PutawayDetailField
-                label="Ảnh hưởng tồn kho"
-                value={<UiStatusBadge tone="success" label="Không đổi tồn" />}
+                label={t("putaway.page.fieldStockEffect")}
+                value={
+                  <UiStatusBadge
+                    tone="success"
+                    label={t("putaway.page.stockUnchanged")}
+                  />
+                }
               />
             </Grid>
           ) : null}
@@ -1133,14 +1161,16 @@ export default function MvpPutawayPage() {
                 onClick={() => setConfirmPrompt(null)}
                 disabled={confirmBusy}
               >
-                Quay lại
+                {t("putaway.page.back")}
               </ActionButton>
               <ActionButton
                 kind="confirm"
                 onClick={() => void runConfirmPrompt()}
                 disabled={confirmBusy}
               >
-                {confirmBusy ? "Đang xử lý..." : confirmPrompt?.okText}
+                {confirmBusy
+                  ? t("putaway.page.processing")
+                  : confirmPrompt?.okText}
               </ActionButton>
             </>
           }
@@ -1151,7 +1181,7 @@ export default function MvpPutawayPage() {
 
       <CameraScanModal
         open={cameraOpen}
-        title="Quét mã vạch/QR khay đích bằng camera"
+        title={t("putaway.page.cameraTitle")}
         onClose={() => setCameraOpen(false)}
         onDetected={(code) => {
           setCameraOpen(false);

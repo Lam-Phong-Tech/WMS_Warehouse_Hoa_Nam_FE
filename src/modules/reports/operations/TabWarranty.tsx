@@ -926,7 +926,7 @@ export default function TabWarranty() {
           },
           {
             key: "physicalCode",
-            header: "Physical Code / Serial",
+            header: t("reports.warranty.colPhysicalSerial"),
             width: 190,
             hideOnMobile: true,
             render: (row) => row.physicalCode || EMPTY_TEXT,
@@ -1180,7 +1180,7 @@ export default function TabWarranty() {
           },
           {
             key: "physicalCode",
-            header: "Physical Code / Serial",
+            header: t("reports.warranty.colPhysicalSerial"),
             width: 190,
             hideOnMobile: true,
             render: (row) => row.physicalCode || EMPTY_TEXT,

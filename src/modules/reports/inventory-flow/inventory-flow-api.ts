@@ -33,6 +33,8 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { tStatic } from "@/shared/i18n/useT";
 import {
   useDocumentHistory,
   useReversalDocuments,
@@ -323,8 +325,20 @@ export type InventoryFlowSnapshot = {
   daily: FlowDailyPoint[];
 };
 
-/** Nhãn hiển thị khi lát cắt trải trên nhiều kho. */
-export const ALL_WAREHOUSES_LABEL = "Tất cả kho";
+/**
+ * Nhãn hiển thị khi lát cắt trải trên nhiều kho.
+ *
+ * Live binding (`export let`) chứ không phải hằng: nơi dùng import thẳng một
+ * chuỗi nên giá trị phải được cập nhật khi đổi ngôn ngữ (cùng lối
+ * `UNKNOWN_BUSINESS_LABEL` của business-labels.ts).
+ */
+export let ALL_WAREHOUSES_LABEL: string = tStatic(
+  "reports.inventoryFlow.warehouseAll",
+);
+
+useLanguageStore.subscribe(() => {
+  ALL_WAREHOUSES_LABEL = tStatic("reports.inventoryFlow.warehouseAll");
+});
 
 export type InventoryFlowResult = {
   snapshot: InventoryFlowSnapshot;

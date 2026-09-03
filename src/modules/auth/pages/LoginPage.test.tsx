@@ -8,7 +8,7 @@ describe("LoginPage", () => {
   it("hiển thị form đăng nhập", () => {
     renderWithProviders(<LoginPage />);
     expect(
-      screen.getByRole("heading", { name: /xin chào bạn đến với hoa nam/i }),
+      screen.getByRole("heading", { name: /chào mừng đến với hoa nam/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /đăng nhập/i }),

@@ -55,7 +55,7 @@ import {
 import type { ReactNode } from "react";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
-import { useT } from "@/shared/i18n/useT";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
 
@@ -107,16 +107,18 @@ function short(value?: string | null): string {
   return value.length > 18 ? `${value.slice(0, 14)}…` : value;
 }
 
-function labelStatus(value?: string | null): string {
-  const labels: Record<string, string> = {
-    DRAFT: "Nháp",
-    PENDING_PRINT: "Chờ chuẩn bị",
-    PREVIEWED: "Đã xem trước",
-    READY_TO_PRINT: "Sẵn sàng in",
-    PRINTED: "Đã in",
-    PRINT_FAILED: "In thất bại",
+function labelStatus(t: TranslateFn, value?: string | null): string {
+  const labels: Record<string, MessageKey> = {
+    DRAFT: "outbound.detail.labelStatusDraft",
+    PENDING_PRINT: "outbound.detail.labelStatusPendingPrint",
+    PREVIEWED: "outbound.detail.labelStatusPreviewed",
+    READY_TO_PRINT: "outbound.detail.labelStatusReadyToPrint",
+    PRINTED: "outbound.detail.labelStatusPrinted",
+    PRINT_FAILED: "outbound.detail.labelStatusPrintFailed",
   };
-  return value ? (labels[value] ?? value) : "Chưa tạo";
+  if (!value) return t("outbound.detail.labelStatusNone");
+  const key = labels[value];
+  return key ? t(key) : value;
 }
 
 /** Khung viền section dùng chung trong modal (thay Box sx lặp lại). */
@@ -937,7 +939,7 @@ export function AlignedOutboundDetailModal({
                         />
                         <DetailField
                           label={t("outbound.detail.fieldStatus")}
-                          value={labelStatus(packingLabel.status)}
+                          value={labelStatus(t, packingLabel.status)}
                         />
                         <DetailField
                           label={t("outbound.detail.fieldLabelRecipient")}
@@ -1174,10 +1176,7 @@ export function AlignedOutboundDetailModal({
           }
         >
           <Stack spacing={2}>
-            <UiAlert tone="info">
-              {t("outbound.reprint.hint")}
-              kho.
-            </UiAlert>
+            <UiAlert tone="info">{t("outbound.reprint.hint")}</UiAlert>
             <UiTextField
               select
               fullWidth

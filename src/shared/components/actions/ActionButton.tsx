@@ -17,6 +17,7 @@ import {
 import { hasScopeForAction } from "@/shared/types/permission.scope";
 import { UI_STATE, uiStateTestId } from "@/shared/constants/ui-state";
 import { UiSpinner } from "@/shared/ui";
+import { useT } from "@/shared/i18n/useT";
 
 export interface ActionButtonProps extends Omit<
   MuiButtonProps,
@@ -84,7 +85,7 @@ export function ActionButton({
   action,
   permissionCode,
   mode,
-  disabledTooltip = "Bạn không có quyền thực hiện thao tác này",
+  disabledTooltip,
   children,
   disabled,
   title,
@@ -93,7 +94,10 @@ export function ActionButton({
   "data-ui-state": dataUiState,
   ...buttonProps
 }: ActionButtonProps) {
+  const t = useT();
   const state = usePermissionState();
+  const resolvedDisabledTooltip =
+    disabledTooltip ?? t("shared.states.noPermissionAction");
   const spec = ACTION_KINDS[kind];
   const Icon = spec.icon;
   const text = label ?? children ?? spec.label;
@@ -131,8 +135,7 @@ export function ActionButton({
   const iconNode = loading ? (
     <UiSpinner size={16} label={null} />
   ) : (
-    (icon ??
-      (tonal ? <Icon /> : <Icon style={{ color: actionColor(kind) }} />))
+    (icon ?? (tonal ? <Icon /> : <Icon style={{ color: actionColor(kind) }} />))
   );
 
   return (
@@ -152,7 +155,7 @@ export function ActionButton({
       }
       disabled={Boolean(disabled) || isButtonDisabled || loading}
       aria-busy={loading || undefined}
-      title={isButtonDisabled ? disabledTooltip : title}
+      title={isButtonDisabled ? resolvedDisabledTooltip : title}
       aria-label={resolvedAriaLabel}
       sx={{
         whiteSpace: "nowrap",

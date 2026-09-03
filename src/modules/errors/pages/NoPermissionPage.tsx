@@ -2,12 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { Box, Stack, UiDescriptions, UiStatusBadge } from "@/shared/ui";
 import { NoPermissionState } from "@/shared/components/feedback/NoPermissionState";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * Trang 403 - Không có quyền truy cập.
  * Route: /errors/403
  */
 export function NoPermissionPage() {
+  const t = useT();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const permissionCodes = useAuthStore((s) => s.permissionCodes);
@@ -26,26 +28,25 @@ export function NoPermissionPage() {
     >
       <Box sx={{ maxWidth: 600, width: "100%" }}>
         <NoPermissionState
-          title="Không có quyền truy cập"
+          title={t("errors.noPermission.title")}
           description={
             <>
-              Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị
-              viên để được cấp quyền phù hợp.
+              {t("errors.noPermission.description")}
               {user && (
                 <Box sx={{ marginTop: "12px", textAlign: "left" }}>
                   <UiDescriptions
                     columns={1}
                     items={[
                       {
-                        label: "Tài khoản",
+                        label: t("errors.noPermission.account"),
                         value: user.name || user.email,
                       },
                       {
-                        label: "Email",
+                        label: t("errors.noPermission.email"),
                         value: user.email,
                       },
                       {
-                        label: "Quyền hiện tại",
+                        label: t("errors.noPermission.currentPermissions"),
                         value:
                           permissionCodes.length > 0 ? (
                             <Stack
@@ -63,14 +64,19 @@ export function NoPermissionPage() {
                               {permissionCodes.length > 5 && (
                                 <UiStatusBadge
                                   tone="neutral"
-                                  label={`+${permissionCodes.length - 5} khác`}
+                                  label={t(
+                                    "errors.noPermission.morePermissions",
+                                    {
+                                      count: permissionCodes.length - 5,
+                                    },
+                                  )}
                                 />
                               )}
                             </Stack>
                           ) : (
                             <UiStatusBadge
                               tone="error"
-                              label="Chưa có quyền nào"
+                              label={t("errors.noPermission.noPermissions")}
                             />
                           ),
                       },
@@ -80,7 +86,7 @@ export function NoPermissionPage() {
               )}
             </>
           }
-          actionText="Quay lại"
+          actionText={t("errors.noPermission.back")}
           onAction={() => navigate(-1)}
           showHomeButton={true}
         />

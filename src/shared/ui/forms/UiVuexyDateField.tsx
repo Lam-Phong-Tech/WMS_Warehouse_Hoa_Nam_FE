@@ -11,6 +11,7 @@ import {
   RADIUS,
   SEMANTIC_LIGHT as S,
 } from "@/shared/ui/tokens";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * Base DatePicker MỘT ngày theo ngôn ngữ Vuexy — biến thể một-ô của
@@ -70,7 +71,7 @@ export function UiVuexyDateField({
   value,
   onChange,
   "aria-label": ariaLabel,
-  placeholder = "Select date",
+  placeholder,
   format = "DD/MM/YYYY",
   disabled = false,
   field,
@@ -78,6 +79,8 @@ export function UiVuexyDateField({
   minDate = null,
   maxDate = null,
 }: UiVuexyDateFieldProps) {
+  const t = useT();
+  const resolvedPlaceholder = placeholder ?? t("shared.datePicker.selectDate");
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [panelMonth, setPanelMonth] = useState(() =>
     (value ?? dayjs()).startOf("month"),
@@ -150,7 +153,7 @@ export function UiVuexyDateField({
             whiteSpace: "nowrap",
           }}
         >
-          {value ? value.format(format) : placeholder}
+          {value ? value.format(format) : resolvedPlaceholder}
         </Box>
         <CalendarIcon style={{ color: S.textMedium }} />
       </Box>

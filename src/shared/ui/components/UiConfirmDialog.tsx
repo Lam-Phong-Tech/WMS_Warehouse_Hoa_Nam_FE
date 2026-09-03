@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import Box from "@mui/material/Box";
 import { UiButton } from "./UiButton";
 import { UiDialog } from "./UiDialog";
+import { useT } from "@/shared/i18n/useT";
 
 export interface UiConfirmDialogProps {
   open: boolean;
@@ -26,13 +27,16 @@ export function UiConfirmDialog({
   open,
   title,
   children,
-  confirmText = "Xác nhận",
-  cancelText = "Hủy",
+  confirmText,
+  cancelText,
   tone = "primary",
   loading = false,
   onConfirm,
   onClose,
 }: UiConfirmDialogProps) {
+  const t = useT();
+  const resolvedConfirmText = confirmText ?? t("shared.actions.confirm");
+  const resolvedCancelText = cancelText ?? t("shared.actions.cancel");
   return (
     <UiDialog
       open={open}
@@ -47,14 +51,14 @@ export function UiConfirmDialog({
             disabled={loading}
             onClick={onClose}
           >
-            {cancelText}
+            {resolvedCancelText}
           </UiButton>
           <UiButton
             color={tone === "danger" ? "error" : "primary"}
             loading={loading}
             onClick={onConfirm}
           >
-            {confirmText}
+            {resolvedConfirmText}
           </UiButton>
         </>
       }

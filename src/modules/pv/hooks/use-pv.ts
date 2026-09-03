@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { tStatic } from "@/shared/i18n/useT";
 import {
   getPvIndustries,
   getPvProduct,
@@ -135,9 +136,7 @@ export function usePvAdminProfiles(params: Record<string, string> = {}) {
  */
 function requiredVersion(version: number | undefined): number {
   if (typeof version !== "number") {
-    throw new Error(
-      "Thiếu version bản ghi đang mở. Hãy tải lại danh sách rồi thử lại.",
-    );
+    throw new Error(tStatic("pv.admin.errMissingRecordVersion"));
   }
   return version;
 }

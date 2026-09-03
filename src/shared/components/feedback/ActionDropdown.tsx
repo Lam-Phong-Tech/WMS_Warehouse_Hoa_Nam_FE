@@ -16,6 +16,7 @@ import {
   type PermissionAction,
 } from "@/shared/types/permission";
 import { hasScopeForAction } from "@/shared/types/permission.scope";
+import { useT } from "@/shared/i18n/useT";
 
 export interface ActionItem {
   key: string;
@@ -68,9 +69,10 @@ export interface ActionDropdownProps {
  */
 export function ActionDropdown({
   items,
-  tooltip = "Thao tác",
+  tooltip,
   disabled = false,
 }: ActionDropdownProps) {
+  const t = useT();
   // Hook được gọi ĐÚNG 1 LẦN (không điều kiện, không trong loop)
   const state = usePermissionState();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -108,7 +110,7 @@ export function ActionDropdown({
     <>
       <ActionIconButton
         kind="more"
-        label={tooltip}
+        label={tooltip ?? t("shared.actions.actions")}
         disabled={disabled}
         onClick={(e) => setAnchorEl(e.currentTarget)}
       />

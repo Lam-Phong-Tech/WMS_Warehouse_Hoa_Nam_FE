@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { Box, UiDescriptions, UiStatusBadge } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import { useT } from "@/shared/i18n/useT";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import { PvFreshnessIndicator } from "@/modules/pv/components/PvFreshness";
 import { PvProductCard } from "@/modules/pv/components/PvProductCard";
@@ -29,6 +30,7 @@ const CARD_SX = {
  * "bạn không có quyền", vì câu đó tự nó xác nhận SKU có tồn tại.
  */
 export default function PvProductDetailPage() {
+  const t = useT();
   const { skuId } = useParams<{ skuId: string }>();
   const product = usePvProduct(skuId);
   const primaryIndustry = product.data?.data.industries[0]?.industry_id;
@@ -42,11 +44,11 @@ export default function PvProductDetailPage() {
 
   return (
     <PvPublicLayout
-      title={detail?.display_name ?? "Chi tiết sản phẩm"}
+      title={detail?.display_name ?? t("pv.productDetail.titleFallback")}
       subtitle={
         detail ? (
           <>
-            Mã sản phẩm: {detail.sku_code}
+            {t("pv.productDetail.skuCode", { code: detail.sku_code })}
             {detail.brand_name ? ` · ${detail.brand_name}` : ""}
           </>
         ) : null
@@ -57,20 +59,25 @@ export default function PvProductDetailPage() {
     >
       <Box sx={{ marginBottom: "12px" }}>
         <Link to={ROUTES.PV_CATALOG} data-testid="pv-back-to-catalog">
-          ← Về danh mục sản phẩm
+          {t("pv.productDetail.backToCatalog")}
         </Link>
       </Box>
 
       {product.isPending ? (
-        <LoadingState tip="Đang tải sản phẩm…" testId="pv-detail-loading" />
+        <LoadingState
+          tip={t("pv.productDetail.loading")}
+          testId="pv-detail-loading"
+        />
       ) : notFound ? (
         <EmptyState
           testId="pv-detail-not-found"
-          title="Không tìm thấy sản phẩm"
-          description="Sản phẩm không tồn tại hoặc hiện chưa được công bố."
+          title={t("pv.productDetail.notFoundTitle")}
+          description={t("pv.productDetail.notFoundDesc")}
         >
           <Link to={ROUTES.PV_CATALOG}>
-            <ActionButton kind="view">Xem danh mục sản phẩm</ActionButton>
+            <ActionButton kind="view">
+              {t("pv.productDetail.viewCatalog")}
+            </ActionButton>
           </Link>
         </EmptyState>
       ) : product.isError ? (
@@ -113,7 +120,7 @@ export default function PvProductDetailPage() {
                     component="span"
                     sx={{ color: S.textDisabled, fontSize: 13 }}
                   >
-                    Chưa có ảnh sản phẩm
+                    {t("pv.productDetail.noImage")}
                   </Box>
                 )}
               </Box>
@@ -173,7 +180,7 @@ export default function PvProductDetailPage() {
                     data-stock-status={detail.stock_status}
                   />
                   <Box component="span" sx={{ fontSize: 13 }}>
-                    Tồn khả dụng kho tổng:{" "}
+                    {t("pv.productDetail.availableQty")}{" "}
                     <strong>{detail.available_qty}</strong>
                     {detail.unit ? ` ${detail.unit}` : ""}
                   </Box>
@@ -207,19 +214,19 @@ export default function PvProductDetailPage() {
                   columns={1}
                   items={[
                     {
-                      label: "Thương hiệu",
+                      label: t("pv.productDetail.specBrand"),
                       value: detail.brand_name ?? EMPTY_TEXT,
                     },
                     {
-                      label: "Nhóm hàng",
+                      label: t("pv.productDetail.specCategory"),
                       value: detail.category_name ?? EMPTY_TEXT,
                     },
                     {
-                      label: "Model",
+                      label: t("pv.productDetail.specModel"),
                       value: detail.model_name ?? EMPTY_TEXT,
                     },
                     {
-                      label: "Nguồn điện",
+                      label: t("pv.productDetail.specPowerSource"),
                       value: detail.power_source_name ?? EMPTY_TEXT,
                     },
                     ...specifications.map(([key, value]) => ({
@@ -236,7 +243,7 @@ export default function PvProductDetailPage() {
             <Box
               component="section"
               data-testid="pv-detail-related"
-              aria-label="Sản phẩm cùng ngành nghề"
+              aria-label={t("pv.productDetail.relatedTitle")}
               sx={{ marginTop: "24px" }}
             >
               <Box
@@ -248,7 +255,7 @@ export default function PvProductDetailPage() {
                   margin: "0 0 8px",
                 }}
               >
-                Sản phẩm cùng ngành nghề
+                {t("pv.productDetail.relatedTitle")}
               </Box>
               <Box
                 sx={{

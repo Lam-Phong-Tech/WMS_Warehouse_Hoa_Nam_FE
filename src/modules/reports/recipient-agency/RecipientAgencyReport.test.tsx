@@ -3,7 +3,7 @@
  * Report 08 nhưng chạy trên endpoint THẬT của dự án qua `recipient-agency-api`.
  *
  * File này khóa những gì typecheck không bắt được: KPI/bảng dựng đúng từ payload
- * BE, lượng hoàn tác được phân bổ về đúng dòng, tab Bảng/Lát cắt đổi vùng đối
+ * BE, lượng hoàn tác được phân bổ về đúng dòng, tab Dạng ngang/Dạng hộp đổi vùng đối
  * soát, nút "Đối soát" mở modal đúng dòng, và hai nút xuất phản ánh đúng quyền.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -203,12 +203,12 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     ).toBeInTheDocument();
   });
 
-  it("chuyển giữa Bảng và Lát cắt, tự thu gọn bộ lọc khi sang Lát cắt", async () => {
+  it("chuyển giữa Dạng ngang và Dạng hộp, tự thu gọn bộ lọc khi sang Dạng hộp", async () => {
     const user = userEvent.setup();
     renderReport();
 
-    const tableTab = await screen.findByRole("tab", { name: /Bảng/ });
-    const sliceTab = screen.getByRole("tab", { name: /Lát cắt/ });
+    const tableTab = await screen.findByRole("tab", { name: /Dạng ngang/ });
+    const sliceTab = screen.getByRole("tab", { name: /Dạng hộp/ });
     expect(tableTab).toHaveAttribute("aria-selected", "true");
 
     await user.click(sliceTab);

@@ -10,28 +10,34 @@ import type { ReactNode } from "react";
 import { MOTION, SEMANTIC_LIGHT as S, SPACING } from "@/shared/ui/tokens";
 import { UiIcon } from "./UiIcon";
 import { UiText } from "./UiText";
+import { useT } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
 
 export type UiStateKind = "loading" | "empty" | "error" | "no-permission";
 
 const STATE_PRESET: Record<
   UiStateKind,
-  { icon: string | null; color: string; defaultTitle: string }
+  { icon: string | null; color: string; defaultTitleKey: MessageKey }
 > = {
-  loading: { icon: null, color: S.primary, defaultTitle: "Đang tải dữ liệu…" },
+  loading: {
+    icon: null,
+    color: S.primary,
+    defaultTitleKey: "shared.states.loadingData",
+  },
   empty: {
     icon: "inbox",
     color: S.textDisabled,
-    defaultTitle: "Chưa có dữ liệu",
+    defaultTitleKey: "shared.states.emptyDefault",
   },
   error: {
     icon: "cross-circle",
     color: S.error,
-    defaultTitle: "Đã xảy ra lỗi",
+    defaultTitleKey: "shared.states.errorTitle",
   },
   "no-permission": {
     icon: "lock",
     color: S.warning,
-    defaultTitle: "Bạn không có quyền truy cập nội dung này",
+    defaultTitleKey: "shared.states.noPermissionContent",
   },
 };
 
@@ -50,6 +56,7 @@ export function UiStateSurface({
   description,
   action,
 }: UiStateSurfaceProps) {
+  const t = useT();
   const preset = STATE_PRESET[kind];
   return (
     <Box
@@ -75,7 +82,7 @@ export function UiStateSurface({
       ) : preset.icon ? (
         <UiIcon name={preset.icon} size="lg" color={preset.color} />
       ) : null}
-      <UiText variant="cardTitle">{title ?? preset.defaultTitle}</UiText>
+      <UiText variant="cardTitle">{title ?? t(preset.defaultTitleKey)}</UiText>
       {description ? <UiText variant="body">{description}</UiText> : null}
       {action ?? null}
     </Box>

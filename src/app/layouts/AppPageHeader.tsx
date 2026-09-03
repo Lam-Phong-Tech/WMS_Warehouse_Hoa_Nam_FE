@@ -19,11 +19,16 @@ import { useLocation } from "react-router-dom";
 import { Box, Stack, UiStatusBadge, SEMANTIC_LIGHT as S } from "@/shared/ui";
 import { TYPOGRAPHY } from "@/shared/ui/tokens";
 import {
+  DEFAULT_SCREEN_BY_PATH,
+  SCREEN_META,
   getBreadcrumbTrail,
+  normalizeScreen,
   resolveScreenMeta,
   UNKNOWN_SCREEN_META,
 } from "@/app/layouts/nav-data";
-import { useNavLabel } from "@/shared/i18n/nav-labels";
+import { localizeScreenMeta, useNavLabel } from "@/shared/i18n/nav-labels";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { IAM_SCOPE_LABELS } from "@/shared/constants/business-labels";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 /** Nhãn phạm vi dữ liệu theo `scope_type` của bối cảnh đang chọn. */
@@ -43,17 +48,32 @@ function scopeLabelOf(
   if (context.scope_type === "co_so" && context.org_unit_name) {
     return context.org_unit_name;
   }
-  if (context.scope_type === "he_thong") return "Toàn hệ thống";
+  // "Toàn hệ thống" / "System-wide" — map song ngữ đọc tại thời điểm render.
+  if (context.scope_type === "he_thong") return IAM_SCOPE_LABELS.SYSTEM;
   return context.org_unit_name;
+}
+
+/** screen-id đã resolve theo đúng thứ tự của `resolveScreenMeta`. */
+function resolveScreenId(pathname: string, search: string): string | null {
+  const requested = normalizeScreen(new URLSearchParams(search).get("screen"));
+  if (requested && SCREEN_META[requested]) return requested;
+  const fallback = DEFAULT_SCREEN_BY_PATH[pathname];
+  if (fallback && SCREEN_META[fallback]) return fallback;
+  return null;
 }
 
 export function AppPageHeader() {
   const location = useLocation();
   const navLabel = useNavLabel();
+  const language = useLanguageStore((s) => s.language);
   const context = useAuthStore((s) => s.currentContext);
   const isSuperAdmin = useAuthStore((s) => s.isSuperAdmin);
 
-  const meta = resolveScreenMeta(location.pathname, location.search);
+  const meta = localizeScreenMeta(
+    language,
+    resolveScreenMeta(location.pathname, location.search),
+    resolveScreenId(location.pathname, location.search),
+  );
   const trail = getBreadcrumbTrail(location.pathname);
   // Chặng giữa của breadcrumb là tên nhóm menu; route không thuộc nhóm nào
   // (403/404/hồ sơ…) thì không có eyebrow thay vì bịa ra một cụm chữ.

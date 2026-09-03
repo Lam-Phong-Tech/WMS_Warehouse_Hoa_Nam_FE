@@ -5,6 +5,7 @@ import {
   chartPointEvents,
   CHART_COLORS,
 } from "./chart-theme";
+import { useT } from "@/shared/i18n/useT";
 
 export type WaterfallPoint = {
   label: string;
@@ -42,6 +43,7 @@ export function WaterfallChart({
   valueFormatter,
   onSelect,
 }: WaterfallChartProps) {
+  const t = useT();
   const format = (value: number) => valueFormatter?.(value) ?? String(value);
 
   // Vòng `for` thay vì `map` + biến cộng dồn bên ngoài: mỗi bậc phụ thuộc số dư
@@ -133,7 +135,7 @@ export function WaterfallChart({
   return (
     <Chart
       options={options}
-      series={[{ name: "Số dư", data: bars }]}
+      series={[{ name: t("shared.charts.balance"), data: bars }]}
       type="rangeBar"
       height={height}
     />

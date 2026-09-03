@@ -28,6 +28,7 @@ import {
   classifyConcurrencyError,
   type ConcurrencyOutcome,
 } from "@/shared/api/concurrency-contract";
+import { tStatic } from "@/shared/i18n/useT";
 
 export type PostIssueAction =
   | ConcurrencyOutcome["action"]
@@ -55,9 +56,6 @@ export const STOCK_SHORTAGE_CODES = new Set([
   "INSUFFICIENT_STOCK",
   "INSUFFICIENT_AVAILABLE_STOCK",
 ]);
-
-const SHORTAGE_MESSAGE =
-  "Không đủ tồn khả dụng để xuất. Tải lại tồn, giảm số lượng hoặc bổ sung hàng rồi thực hiện lại thao tác từ đầu — không gửi lại lệnh cũ.";
 
 function readStatus(error: unknown): number | undefined {
   if (typeof error !== "object" || error === null) return undefined;
@@ -99,7 +97,7 @@ export function classifyPostIssueError(
       action: "FIX_STOCK_THEN_RESTART",
       code,
       status,
-      message: SHORTAGE_MESSAGE,
+      message: tStatic("shared.api.stockShortage"),
       reuseIdempotencyKey: false,
     };
   }

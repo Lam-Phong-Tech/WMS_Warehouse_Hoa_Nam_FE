@@ -15,6 +15,7 @@ import {
 import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
+import { useT } from "@/shared/i18n/useT";
 
 export interface UiAutocompleteOption {
   value: string | number;
@@ -67,10 +68,17 @@ export function UiFormAutocomplete<T extends FieldValues>({
   fullWidth = true,
   "data-testid": dataTestId,
   onAddNew,
-  addNewLabel = "+ Thêm mới",
+  addNewLabel,
 }: UiFormAutocompleteProps<T>) {
+  const t = useT();
   const optionsWithAddNew = onAddNew
-    ? [...options, { value: ADD_NEW_OPTION_VALUE, label: addNewLabel }]
+    ? [
+        ...options,
+        {
+          value: ADD_NEW_OPTION_VALUE,
+          label: addNewLabel ?? t("shared.form.addNew"),
+        },
+      ]
     : options;
 
   return (
@@ -122,7 +130,7 @@ export function UiFormAutocomplete<T extends FieldValues>({
             isOptionEqualToValue={(option, valueOption) =>
               option.value === valueOption.value
             }
-            noOptionsText="Không có lựa chọn"
+            noOptionsText={t("shared.form.noOptions")}
             renderOption={(optionProps, option) => {
               const { key, ...rest } = optionProps;
               if (option.value === ADD_NEW_OPTION_VALUE) {

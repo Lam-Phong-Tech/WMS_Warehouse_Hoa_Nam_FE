@@ -17,6 +17,7 @@ import { useClientSort } from "./useClientSort";
 import type { ClientSortState, SortAccessor } from "./useClientSort";
 import type { SortWordingType } from "./useClientSort";
 import { ActionButton } from "@/shared/components/actions";
+import { useT } from "@/shared/i18n/useT";
 
 export interface ResponsiveTableColumn<T> {
   key: string;
@@ -90,7 +91,7 @@ export function ResponsiveDataTable<T>({
   rows,
   rowKey,
   loading,
-  emptyText = "Không có dữ liệu",
+  emptyText,
   onRowClick,
   renderRowActions,
   mobileBreakpoint = "md",
@@ -100,7 +101,20 @@ export function ResponsiveDataTable<T>({
   selectionLabel,
   maxBodyHeight,
 }: ResponsiveDataTableProps<T>) {
+  const t = useT();
   const theme = useTheme();
+
+  /**
+   * Nền của ô tiêu đề. `action.hover` là màu BÁN TRONG SUỐT (rgba ~4%), nên khi
+   * `maxBodyHeight` ghim `thead` lại thì các dòng cuộn qua bên dưới ÁNH XUYÊN
+   * lên chữ tiêu đề — hai lớp chữ chồng nhau, không đọc được cột nào ra cột nào.
+   * Trải đúng sắc đó thành một lớp `background-image` phủ trên nền ĐỤC của thẻ:
+   * màu hiển thị y hệt trước, nhưng ô tiêu đề không còn trong suốt.
+   */
+  const headerBackground = {
+    backgroundColor: theme.palette.background.paper,
+    backgroundImage: `linear-gradient(${theme.palette.action.hover}, ${theme.palette.action.hover})`,
+  } as const;
   const isMobile = useMediaQuery(theme.breakpoints.down(mobileBreakpoint));
 
   const isControlledSort =
@@ -124,7 +138,8 @@ export function ResponsiveDataTable<T>({
     : internalSort.requestSort;
 
   const rowSelectionLabel = (row: T) =>
-    selectionLabel?.(row) ?? `Chọn dòng ${rowKey(row)}`;
+    selectionLabel?.(row) ??
+    t("shared.table.selectRowAria", { row: String(rowKey(row)) });
 
   // Thanh tóm tắt: lựa chọn có thể trôi khỏi tầm nhìn khi cuộn/đổi bộ lọc nên
   // luôn nói rõ đang chọn bao nhiêu dòng và cho bỏ chọn nhanh.
@@ -145,11 +160,11 @@ export function ResponsiveDataTable<T>({
         }}
       >
         <Typography variant="body2">
-          Đã chọn {rowSelection.selectedCount} dòng
+          {t("shared.table.selectedCount", {
+            count: rowSelection.selectedCount,
+          })}
         </Typography>
-        <ActionButton kind="clear" onClick={rowSelection.clear}>
-          Bỏ chọn
-        </ActionButton>
+        <ActionButton kind="clear" onClick={rowSelection.clear} />
       </Box>
     ) : null;
 
@@ -172,17 +187,21 @@ export function ResponsiveDataTable<T>({
       >
         {/* label=null: đã có chữ "Đang tải..." ngay bên cạnh, không lặp a11y name. */}
         <UiSpinner size={16} label={null} />
-        Đang tải...
+        {t("shared.table.loading")}
       </Box>
     );
   }
 
   if (!sortedRows.length) {
+    // `emptyText` không truyền → câu mặc định theo ngôn ngữ đang chọn (đọc qua
+    // `t()` trong render, không để làm giá trị mặc định của tham số vì tham số
+    // mặc định bị đóng băng theo ngôn ngữ lúc module được nạp).
+    const emptyContent = emptyText ?? t("shared.table.empty");
     // Chỉ tự phát hook trạng thái khi emptyText là chuỗi mặc định/thuần —
     // ReactNode do nơi gọi truyền (vd tableEmptyText của BusinessState) đã
     // tự mang data-ui-state riêng, bọc thêm sẽ thành double-wrap sai hợp đồng.
     const emptyHooks =
-      typeof emptyText === "string"
+      typeof emptyContent === "string"
         ? uiStateProps(UI_STATE.EMPTY, "ui-state-empty-table")
         : {};
     return (
@@ -190,7 +209,7 @@ export function ResponsiveDataTable<T>({
         {...emptyHooks}
         sx={{ py: 6, textAlign: "center", color: "text.secondary" }}
       >
-        {emptyText}
+        {emptyContent}
       </Box>
     );
   }
@@ -234,7 +253,7 @@ export function ResponsiveDataTable<T>({
                       ariaLabel={rowSelectionLabel(row)}
                     />
                     <Typography variant="caption" color="text.secondary">
-                      Chọn
+                      {t("shared.table.selectRow")}
                     </Typography>
                   </Box>
                 )}
@@ -308,6 +327,33 @@ export function ResponsiveDataTable<T>({
         (renderRowActions ? 96 : 0)
       : undefined;
 
+  /**
+   * `column.width` KHAI MỘT LẦN CHO CẢ CỘT qua `<colgroup>`.
+   *
+   * Trước đây bề rộng chỉ được gắn vào ô `<th>`; ô `<td>` không nhận gì. Với
+   * `table-layout: auto` (mặc định), bề rộng trên MỘT ô chỉ là ĐỀ NGHỊ — trình
+   * duyệt vẫn thương lượng lại theo nội dung các ô còn lại trong cột. Hệ quả:
+   * cột khai 80px vẫn phình theo dữ liệu, cột chữ dài lại bị bóp, và tiêu đề
+   * không nằm trên đúng dải dữ liệu của nó. `<col>` gắn bề rộng cho TOÀN cột
+   * nên tiêu đề và dữ liệu không thể lệch nhau nữa.
+   */
+  const columnWidths = [
+    ...(rowSelection ? [44] : []),
+    ...columns.map((column) => column.width),
+    ...(renderRowActions ? [96] : []),
+  ];
+
+  /**
+   * Chỉ khoá bố cục khi bảng khai bề rộng cho MỌI cột — lúc đó đây là một bản
+   * thiết kế đầy đủ và phải được tôn trọng nguyên vẹn. Khai thiếu cột nào thì
+   * giữ `auto`: bề rộng trong `<colgroup>` vẫn có tác dụng như đề nghị, còn
+   * cột chưa khai vẫn co giãn theo nội dung thay vì bị chia đều máy móc.
+   * `minWidth` + `overflowX` của wrapper lo phần tràn ngang.
+   */
+  const hasCompleteWidthPlan = columns.every(
+    (column) => column.width !== undefined && column.width !== "",
+  );
+
   return (
     <>
       {selectionSummary}
@@ -341,8 +387,58 @@ export function ResponsiveDataTable<T>({
             minWidth: tableMinWidth,
             borderCollapse: "collapse",
             fontSize: 13.5,
+            ...(hasCompleteWidthPlan ? { tableLayout: "fixed" } : null),
+            /**
+             * CĂN LỀ Ô KHAI Ở CẤP BẢNG, KHÔNG PHẢI TRÊN TỪNG Ô.
+             *
+             * `sx` của từng ô sinh ra một class emotion (độ đặc hiệu 0-1-0).
+             * 17 màn của dự án còn bọc trong `.hn-mvp-source-screen`, mà lớp đó
+             * có sẵn `.hn-mvp-source-screen td { text-align: left }` (0-1-1) —
+             * cao hơn, nên nó ĐÈ căn lề của ô `<td>`. Riêng ô tiêu đề thoát vì
+             * `SortableTh` dùng inline style (luôn thắng). Kết quả: tiêu đề căn
+             * phải còn số liệu bị kéo về trái — đúng hiện tượng "cột không
+             * thẳng hàng với dữ liệu" ở các cột số.
+             *
+             * Khai theo `[data-align]` từ cấp bảng cho độ đặc hiệu 0-2-3, cao
+             * hơn mọi rule của trang bọc ngoài, nên bảng dùng chung tự quyết
+             * định bố cục ô của nó ở mọi màn — không cần sửa 17 trang kia, và
+             * cũng không phá các bảng cũ vẫn dựa vào rule toàn cục đó.
+             */
+            "& > thead > tr > [data-align='left'], & > tbody > tr > [data-align='left']":
+              { textAlign: "left" },
+            "& > thead > tr > [data-align='center'], & > tbody > tr > [data-align='center']":
+              { textAlign: "center" },
+            "& > thead > tr > [data-align='right'], & > tbody > tr > [data-align='right']":
+              { textAlign: "right" },
+            /**
+             * WHITE-SPACE Ô DỮ LIỆU CŨNG KHAI Ở CẤP BẢNG — cùng lý do với
+             * `text-align` phía trên. Trang bọc `.hn-mvp-source-screen` có sẵn
+             * `.hn-mvp-source-screen td { white-space: nowrap }` (0-1-1) — cao
+             * hơn `overflowWrap: "anywhere"` mà mỗi ô `<td>` tự khai qua `sx`
+             * (0-1-0), nên nó VÔ HIỆU HOÁ việc xuống dòng: với `table-layout:
+             * fixed` + cột hẹp (vd "Mã điều chỉnh" 170px), mã dài không ngắt
+             * được sẽ TRÀN NGANG ra ngoài ô và ĐÈ lên dữ liệu cột kế bên (đúng
+             * hiện tượng "Mã điều chỉnh" chồng "Chứng từ gốc").
+             *
+             * Khai theo `[data-align]` (chỉ ô dữ liệu có; ô chọn/thao tác không
+             * có nên giữ nguyên `nowrap`) từ cấp bảng cho độ đặc hiệu 0-2-2,
+             * cao hơn rule trang bọc ngoài — trả lại đúng ý đồ ngắt dòng của
+             * component ở mọi màn mà không phải sửa CSS toàn cục.
+             */
+            "& > tbody > tr > [data-align]": {
+              whiteSpace: "normal",
+              overflowWrap: "anywhere",
+            },
           }}
         >
+          <colgroup>
+            {columnWidths.map((width, index) => (
+              <col
+                key={index}
+                style={width === undefined ? undefined : { width }}
+              />
+            ))}
+          </colgroup>
           <Box component="thead">
             <Box component="tr">
               {rowSelection && (
@@ -350,7 +446,7 @@ export function ResponsiveDataTable<T>({
                   component="th"
                   sx={{
                     ...selectionCellStyle,
-                    bgcolor: "action.hover",
+                    ...headerBackground,
                     borderBottom: 1,
                     borderColor: "divider",
                   }}
@@ -359,7 +455,7 @@ export function ResponsiveDataTable<T>({
                     checked={rowSelection.isAllSelected}
                     indeterminate={rowSelection.isIndeterminate}
                     onChange={rowSelection.toggleAll}
-                    ariaLabel="Chọn tất cả dòng trong trang"
+                    ariaLabel={t("shared.table.selectAllAria")}
                   />
                 </Box>
               )}
@@ -374,7 +470,7 @@ export function ResponsiveDataTable<T>({
                   fontWeight: 600,
                   fontSize: 13,
                   color: theme.palette.text.primary,
-                  backgroundColor: theme.palette.action.hover,
+                  ...headerBackground,
                   borderBottom: `1px solid ${theme.palette.divider}`,
                   whiteSpace: "nowrap",
                 };
@@ -392,9 +488,15 @@ export function ResponsiveDataTable<T>({
                     onSort={requestSort}
                     sortType={column.sortType}
                     style={headerCellStyle}
+                    data-align={column.align ?? "left"}
                   />
                 ) : (
-                  <Box component="th" key={column.key} sx={headerCellStyle}>
+                  <Box
+                    component="th"
+                    key={column.key}
+                    sx={headerCellStyle}
+                    data-align={column.align ?? "left"}
+                  >
                     {column.header}
                   </Box>
                 );
@@ -406,14 +508,14 @@ export function ResponsiveDataTable<T>({
                     padding: "10px 12px",
                     fontWeight: 600,
                     fontSize: 13,
-                    bgcolor: "action.hover",
+                    ...headerBackground,
                     borderBottom: 1,
                     borderColor: "divider",
                     textAlign: "right",
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Thao tác
+                  {t("shared.table.actions")}
                 </Box>
               )}
             </Box>
@@ -464,10 +566,10 @@ export function ResponsiveDataTable<T>({
                   <Box
                     component="td"
                     key={column.key}
+                    data-align={column.align ?? "left"}
                     sx={{
                       padding: "10px 12px",
                       verticalAlign: "top",
-                      textAlign: column.align ?? "left",
                       overflowWrap: "anywhere",
                     }}
                   >

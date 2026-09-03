@@ -206,7 +206,7 @@ export const NAV_GROUPS: NavGroupData[] = [
       {
         screen: "RPT-05",
         path: ROUTES.REPORTS_PACKING_LABEL,
-        label: "Nhãn đóng gói – Print / Reprint",
+        label: "Nhãn đóng gói – In / In lại",
         icon: "print",
       },
       {
@@ -475,7 +475,7 @@ export const SCREEN_META: Record<
     description: "Kết quả Import/Scan theo thời gian và các mã lỗi phổ biến.",
   },
   "RPT-05": {
-    title: "Nhãn đóng gói – Print / Reprint",
+    title: "Nhãn đóng gói – In / In lại",
     description: "Kết quả in nhãn theo thời gian và máy in có nhiều lỗi nhất.",
   },
   "RPT-06": {
