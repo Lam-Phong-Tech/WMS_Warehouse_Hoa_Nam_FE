@@ -15,7 +15,7 @@ import {
   UiButton,
   UiSelect,
   UiStatusBadge,
-  UiVuexyDateField,
+  UiVuexyDateRangePicker,
   type UiStatusTone,
   RADIUS,
   SEMANTIC_LIGHT as S,
@@ -769,30 +769,32 @@ export default function MovementTraceReport() {
             />
           </Box>
 
-          <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
-            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.fromDate")}</Box>
-            <UiVuexyDateField
-              id="movement-trace-from-date"
-              field="from"
-              aria-label={t("reports.movementTrace.fromDate")}
-              value={draft.fromDate}
-              maxDate={draft.toDate}
+          {/*
+           * Một bộ chọn KHOẢNG chiếm chỗ hai ô cũ — đồng bộ với các màn Báo
+           * cáo khác. Khoảng vẫn là DRAFT: chỉ vào bộ lọc khi bấm "Tra cứu",
+           * đúng như bản hai ô.
+           */}
+          <Box sx={fieldCellSx({ xs: 1, sm: 2, xl: 4 })}>
+            <Box sx={FIELD_LABEL_SX}>
+              {t("reports.movementTrace.fieldDateRange")}
+            </Box>
+            <UiVuexyDateRangePicker
+              aria-label={t("reports.movementTrace.fieldDateRange")}
+              value={[draft.fromDate, draft.toDate]}
+              format="DD/MM/YYYY"
+              placeholder={[
+                t("reports.movementTrace.fromDate"),
+                t("reports.movementTrace.toDate"),
+              ]}
+              allowClear={false}
+              className="hn-vuexy-date-range"
+              popupClassName="hn-vuexy-date-popup"
               onChange={(value) =>
-                setDraft((prev) => ({ ...prev, fromDate: value }))
-              }
-            />
-          </Box>
-
-          <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
-            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.toDate")}</Box>
-            <UiVuexyDateField
-              id="movement-trace-to-date"
-              field="to"
-              aria-label={t("reports.movementTrace.toDate")}
-              value={draft.toDate}
-              minDate={draft.fromDate}
-              onChange={(value) =>
-                setDraft((prev) => ({ ...prev, toDate: value }))
+                setDraft((prev) => ({
+                  ...prev,
+                  fromDate: value?.[0] ?? null,
+                  toDate: value?.[1] ?? null,
+                }))
               }
             />
           </Box>

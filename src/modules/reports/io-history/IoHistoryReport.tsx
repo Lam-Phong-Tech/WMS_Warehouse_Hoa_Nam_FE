@@ -37,7 +37,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
-import dayjs, { type Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { getApiErrorMessage } from "@/shared/api/api-error";
@@ -72,6 +72,7 @@ import {
   type IoHistoryRow,
   type IoTypeFilter,
 } from "./io-history-api";
+import { UiVuexyDateRangePicker } from "@/shared/ui";
 import { useT } from "@/shared/i18n/useT";
 import "./io-history-report.css";
 
@@ -91,18 +92,6 @@ const TYPE_FILTER_VALUES: ReadonlyArray<IoTypeFilter> = [
   "OUTBOUND",
   "REVERSAL",
 ];
-
-/** Hàng thứ trong tuần của lịch — mockup bắt đầu từ Thứ Hai. */
-/** Khoá nhãn bảy thứ, bắt đầu từ Thứ Hai như lịch của mockup. */
-const WEEKDAY_KEYS = [
-  "weekMon",
-  "weekTue",
-  "weekWed",
-  "weekThu",
-  "weekFri",
-  "weekSat",
-  "weekSun",
-] as const;
 
 /** Ba chuỗi của biểu đồ, đúng thứ tự và màu của mockup. */
 const CHART_SERIES: ReadonlyArray<{
@@ -271,14 +260,7 @@ export default function IoHistoryReport() {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewMode>("table");
   const [filterVisible, setFilterVisible] = useState(true);
-  const [dateOpen, setDateOpen] = useState(false);
   const [typeMenuOpen, setTypeMenuOpen] = useState(false);
-  /** Khoảng ngày đang chọn tạm trong lịch — chỉ "Áp dụng" mới đổi bộ lọc. */
-  const [draft, setDraft] = useState<{ from: string; to: string }>(() => range);
-  const [choosing, setChoosing] = useState<"from" | "to">("from");
-  const [pickerMonth, setPickerMonth] = useState<Dayjs>(() =>
-    dayjs(range.from).startOf("month"),
-  );
   const [drillId, setDrillId] = useState<string | null>(null);
 
   const { snapshot, loading, fetching, error, refetch } = useIoHistorySnapshot({
@@ -489,20 +471,12 @@ export default function IoHistoryReport() {
   const applyPreset = (next: PeriodPreset) => {
     setPreset(next);
     if (next === "custom") {
-      // Mockup mở luôn phần chọn tay khi bấm "Tùy chọn" — giữ nguyên khoảng
-      // đang xem làm khoảng nháp để người dùng chỉnh tiếp.
-      setDraft(range);
-      setPickerMonth(dayjs(range.from).startOf("month"));
-      setChoosing("from");
-      setDateOpen(true);
-      setTypeMenuOpen(false);
+      // "Tùy chọn" chỉ đánh dấu kỳ là tự đặt; khoảng đang xem giữ nguyên để
+      // người dùng chỉnh tiếp ngay trong ô ngày (picker tự mở khi bấm vào ô).
       return;
     }
     const [start, end] = presetRange(next);
-    const value = { from: start.format(ISO_DATE), to: end.format(ISO_DATE) };
-    setRange(value);
-    setDraft(value);
-    setPickerMonth(start.startOf("month"));
+    setRange({ from: start.format(ISO_DATE), to: end.format(ISO_DATE) });
   };
 
   const resetFilters = useCallback(() => {
@@ -510,11 +484,8 @@ export default function IoHistoryReport() {
     const value = { from: start.format(ISO_DATE), to: end.format(ISO_DATE) };
     setPreset("this-month");
     setRange(value);
-    setDraft(value);
-    setPickerMonth(start.startOf("month"));
     setType("");
     setQuery("");
-    setDateOpen(false);
     setTypeMenuOpen(false);
   }, []);
 
@@ -528,46 +499,6 @@ export default function IoHistoryReport() {
     readError: () => error,
     beforeRefetch: resetFilters,
   });
-
-  const toggleDatePicker = () => {
-    setDateOpen((open) => {
-      if (open) return false;
-      setDraft(range);
-      setPickerMonth(dayjs(range.from).startOf("month"));
-      setChoosing("from");
-      return true;
-    });
-    setTypeMenuOpen(false);
-  };
-
-  const pickDay = (day: string) => {
-    if (choosing === "from") {
-      setDraft((current) => ({ ...current, from: day }));
-      setChoosing("to");
-      return;
-    }
-    setDraft((current) => {
-      // Chọn ngược thì đảo lại hai đầu — đúng nhánh swap của mockup.
-      const swapped = day < current.from;
-      return swapped
-        ? { from: day, to: current.from }
-        : { ...current, to: day };
-    });
-    setChoosing("from");
-  };
-
-  const applyDate = () => {
-    setRange(draft);
-    setPreset("custom");
-    setDateOpen(false);
-    setChoosing("from");
-  };
-
-  const cancelDate = () => {
-    setDraft(range);
-    setDateOpen(false);
-    setChoosing("from");
-  };
 
   // Đổi tab bằng bàn phím thì focus phải đi theo tab đang chọn (như mockup).
   const tableTabRef = useRef<HTMLButtonElement>(null);
@@ -595,7 +526,6 @@ export default function IoHistoryReport() {
         setDrillId(null);
         return;
       }
-      setDateOpen(false);
       setTypeMenuOpen(false);
     };
     document.addEventListener("keydown", onKeyDown);
@@ -637,15 +567,6 @@ export default function IoHistoryReport() {
     }
     return null;
   })();
-
-  // ── Lịch chọn khoảng ngày ──────────────────────────────────────────────
-  const today = dayjs().startOf("day");
-  const daysInMonth = pickerMonth.daysInMonth();
-  /** Số ô đệm để ngày 1 rơi đúng cột thứ của nó (lịch bắt đầu từ Thứ Hai). */
-  const leadingBlanks = (pickerMonth.date(1).day() + 6) % 7;
-  const canGoNextMonth = pickerMonth
-    .endOf("month")
-    .isBefore(today.endOf("month"));
 
   const kpiCards = [
     {
@@ -787,135 +708,37 @@ export default function IoHistoryReport() {
                   {t("reports.ioHistory.fieldDateRange")}
                 </label>
                 <div className="rangewrap">
-                  <div className="range">
-                    <button
-                      id="rptio-from"
-                      className="control"
-                      type="button"
-                      aria-expanded={dateOpen}
-                      onClick={() => {
-                        setChoosing("from");
-                        toggleDatePicker();
-                      }}
-                    >
-                      {fmtDay(range.from)}
-                    </button>
-                    <i aria-hidden="true">→</i>
-                    <button
-                      className="control"
-                      type="button"
-                      aria-label={t("reports.ioHistory.toDate")}
-                      aria-expanded={dateOpen}
-                      onClick={() => {
-                        setChoosing("to");
-                        toggleDatePicker();
-                      }}
-                    >
-                      {fmtDay(range.to)}
-                    </button>
-                  </div>
-
-                  {dateOpen ? (
-                    <div
-                      className="picker"
-                      role="dialog"
-                      aria-label={t("reports.ioHistory.pickerAria")}
-                    >
-                      <div className="pickhead">
-                        <span>
-                          {pickerMonth.format(
-                            t("reports.ioHistory.pickerMonthFormat"),
-                          )}
-                        </span>
-                        <span className="picknav">
-                          <button
-                            type="button"
-                            aria-label={t("reports.ioHistory.prevMonth")}
-                            onClick={() =>
-                              setPickerMonth((month) =>
-                                month.subtract(1, "month"),
-                              )
-                            }
-                          >
-                            ‹
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={t("reports.ioHistory.nextMonth")}
-                            disabled={!canGoNextMonth}
-                            onClick={() =>
-                              setPickerMonth((month) => month.add(1, "month"))
-                            }
-                          >
-                            ›
-                          </button>
-                        </span>
-                      </div>
-                      <div className="pickstate">
-                        {t("reports.ioHistory.choosingLabel", {
-                          field:
-                            choosing === "from"
-                              ? t("reports.ioHistory.fromDate")
-                              : t("reports.ioHistory.toDate"),
-                        })}
-                      </div>
-                      <div className="cal">
-                        {WEEKDAY_KEYS.map((weekdayKey) => (
-                          <span key={weekdayKey}>
-                            {t(`reports.ioHistory.${weekdayKey}`)}
-                          </span>
-                        ))}
-                        {Array.from({ length: leadingBlanks }, (_, index) => (
-                          <span
-                            key={`pad-${index}`}
-                            className="day-pad"
-                            aria-hidden="true"
-                          />
-                        ))}
-                        {Array.from({ length: daysInMonth }, (_, index) => {
-                          const date = pickerMonth.date(index + 1);
-                          const iso = date.format(ISO_DATE);
-                          const selected =
-                            iso === draft.from || iso === draft.to;
-                          const between = iso >= draft.from && iso <= draft.to;
-                          return (
-                            <button
-                              key={iso}
-                              className={[
-                                "day",
-                                between ? "between" : "",
-                                selected ? "selected" : "",
-                              ]
-                                .filter((token) => token !== "")
-                                .join(" ")}
-                              type="button"
-                              disabled={date.isAfter(today, "day")}
-                              aria-label={date.format("DD/MM/YYYY")}
-                              onClick={() => pickDay(iso)}
-                            >
-                              {String(index + 1).padStart(2, "0")}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="pickfoot">
-                        <button
-                          className="btn secondary"
-                          type="button"
-                          onClick={cancelDate}
-                        >
-                          {t("reports.ioHistory.cancel")}
-                        </button>
-                        <button
-                          className="btn primary"
-                          type="button"
-                          onClick={applyDate}
-                        >
-                          {t("reports.ioHistory.apply")}
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
+                  {/*
+                   * Bộ chọn khoảng dùng CHUNG với 7 màn Báo cáo còn lại (yêu
+                   * cầu 04/09/2026: mọi picker "từ ngày → đến ngày" phải cùng
+                   * một giao diện). Trước đây màn này tự dựng lịch riêng —
+                   * cùng chức năng nhưng khác hẳn phần còn lại.
+                   * `maxDate` giữ đúng ràng buộc của lịch cũ: báo cáo lịch sử
+                   * không có dữ liệu tương lai nên không cho chọn quá hôm nay.
+                   */}
+                  <UiVuexyDateRangePicker
+                    aria-label={t("reports.ioHistory.fieldDateRange")}
+                    value={[dayjs(range.from), dayjs(range.to)]}
+                    format="DD/MM/YYYY"
+                    placeholder={[
+                      t("reports.ioHistory.fromDate"),
+                      t("reports.ioHistory.toDate"),
+                    ]}
+                    allowClear={false}
+                    maxDate={dayjs().startOf("day")}
+                    className="hn-vuexy-date-range"
+                    popupClassName="hn-vuexy-date-popup"
+                    onChange={(value) => {
+                      if (!value?.[0] || !value[1]) return;
+                      setRange({
+                        from: value[0].format(ISO_DATE),
+                        to: value[1].format(ISO_DATE),
+                      });
+                      // Tự đặt khoảng thì không còn là kỳ dựng sẵn — đúng như
+                      // nhánh "Áp dụng" của lịch cũ.
+                      setPreset("custom");
+                    }}
+                  />
                 </div>
               </div>
 
@@ -931,10 +754,7 @@ export default function IoHistoryReport() {
                     role="combobox"
                     aria-controls="rptio-type-menu"
                     aria-expanded={typeMenuOpen}
-                    onClick={() => {
-                      setTypeMenuOpen((open) => !open);
-                      setDateOpen(false);
-                    }}
+                    onClick={() => setTypeMenuOpen((open) => !open)}
                   >
                     {typeLabel}
                     <i className="down" aria-hidden="true">

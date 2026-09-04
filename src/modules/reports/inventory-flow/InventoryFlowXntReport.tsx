@@ -35,7 +35,7 @@ import {
   type ReactNode,
 } from "react";
 import dayjs from "dayjs";
-import { UiSelect, UiVuexyDateField, VuexyDemoIcon } from "@/shared/ui";
+import { UiSelect, UiVuexyDateRangePicker, VuexyDemoIcon } from "@/shared/ui";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -501,7 +501,7 @@ export default function InventoryFlowXntReport() {
         },
       ],
     }),
-    [],
+    [documentTitles, t],
   );
   const documentSectionFilter = useSectionFilter(
     documentsInScope,
@@ -713,36 +713,28 @@ export default function InventoryFlowXntReport() {
             </span>
             <div className="report-date-range">
               {/*
-               * `maxDate` / `minDate` khoá chéo hai ô: kỳ đảo chiều bị BE trả
-               * 422, chặn ngay ở lịch thì người dùng không chọn ra được một
-               * khoảng không hợp lệ.
+               * Một bộ chọn KHOẢNG thay cho hai ô ngày rời — đồng bộ với các
+               * màn Báo cáo còn lại. Picker tự khoá chéo (không cho chọn "đến"
+               * trước "từ") nên bỏ được cặp maxDate/minDate của bản hai ô; kỳ
+               * đảo chiều vì thế vẫn không dựng ra được (BE trả 422).
                */}
-              <UiVuexyDateField
-                id="rpt01-from-date"
-                field="from"
-                aria-label={t("reports.inventoryFlowReport.periodStart")}
-                value={range.from}
-                maxDate={range.to}
+              <UiVuexyDateRangePicker
+                aria-label={t("reports.inventoryFlowReport.fieldPeriod")}
+                value={[range.from, range.to]}
+                format="DD/MM/YYYY"
+                placeholder={[
+                  t("reports.inventoryFlowReport.periodStart"),
+                  t("reports.inventoryFlowReport.periodEnd"),
+                ]}
+                allowClear={false}
+                className="hn-vuexy-date-range"
+                popupClassName="hn-vuexy-date-popup"
                 onChange={(value) => {
-                  if (value === null) return;
-                  setRange((current) => ({
-                    ...current,
-                    from: value.startOf("day"),
-                  }));
-                }}
-              />
-              <UiVuexyDateField
-                id="rpt01-to-date"
-                field="to"
-                aria-label={t("reports.inventoryFlowReport.periodEnd")}
-                value={range.to}
-                minDate={range.from}
-                onChange={(value) => {
-                  if (value === null) return;
-                  setRange((current) => ({
-                    ...current,
-                    to: value.startOf("day"),
-                  }));
+                  if (!value?.[0] || !value[1]) return;
+                  setRange({
+                    from: value[0].startOf("day"),
+                    to: value[1].startOf("day"),
+                  });
                 }}
               />
             </div>

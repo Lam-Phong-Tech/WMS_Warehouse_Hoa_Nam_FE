@@ -813,7 +813,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         ) : null}
 
         <Box sx={TABLE_WRAP_SX} aria-busy={query.isLoading}>
-          <table>
+          <table className="sku-table">
             <thead>
               <tr>
                 <th className="select-col">
@@ -846,12 +846,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <SortableTh
                   label={t("masterData.sku.colCategory")}
                   sortKey="category"
+                  className="wrap-col"
                   sortState={sortState}
                   onSort={requestSort}
                 />
                 <SortableTh
                   label={t("masterData.sku.colMinStock")}
                   sortKey="minStock"
+                  className="wrap-col"
                   sortState={sortState}
                   onSort={requestSort}
                   sortType="value"
@@ -859,6 +861,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <SortableTh
                   label={t("masterData.sku.colMaxStock")}
                   sortKey="maxStock"
+                  className="wrap-col"
                   sortState={sortState}
                   onSort={requestSort}
                   sortType="value"
@@ -873,6 +876,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <SortableTh
                   label={t("masterData.sku.colPvApp")}
                   sortKey="published"
+                  className="wrap-col"
                   sortState={sortState}
                   onSort={requestSort}
                   sortType="value"
@@ -908,7 +912,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       <td className="stt-col">
                         {mvpRowNumber(page, perPage, index)}
                       </td>
-                      <td>
+                      <td className="name-col">
                         {record.sku_code ?? record.code}
                         <br />
                         <span className="muted">
@@ -943,18 +947,20 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           }
                         />
                       </td>
-                      <td>
+                      <td className="actions-col">
                         <Stack
                           direction="row"
                           spacing={1}
-                          sx={{ flexWrap: "wrap" }}
+                          sx={{ flexWrap: "nowrap" }}
                         >
+                          {/* Nhãn mặc định của kind="view" đã là "Xem"/"View"
+                              song ngữ — trước đây ghi cứng "Xem" nên bản tiếng
+                              Anh vẫn ra tiếng Việt (file này được miễn quét
+                              trong i18n-coverage nên guard không bắt được). */}
                           <ActionButton
                             kind="view"
                             onClick={() => setViewing(record)}
-                          >
-                            Xem
-                          </ActionButton>
+                          />
                           {canManage ? (
                             <ActionButton
                               kind="edit"

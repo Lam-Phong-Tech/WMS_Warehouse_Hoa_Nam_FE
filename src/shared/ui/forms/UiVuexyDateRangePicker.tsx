@@ -54,6 +54,14 @@ export interface UiVuexyDateRangePickerProps {
    * thì ô preset lặng lẽ nhảy về "Tùy chọn".
    */
   presets?: ReadonlyArray<DateRangePreset>;
+  /**
+   * Ngày muộn nhất được chọn (bao gồm chính nó). Báo cáo lịch sử không có dữ
+   * liệu tương lai nên chặn ngay ở lịch, thay vì để người dùng chọn ra một kỳ
+   * chắc chắn rỗng.
+   */
+  maxDate?: Dayjs;
+  /** Ngày sớm nhất được chọn (bao gồm chính nó). */
+  minDate?: Dayjs;
 }
 
 function isSameDay(left: Dayjs | null, right: Dayjs) {
@@ -81,6 +89,8 @@ export function UiVuexyDateRangePicker({
   popupClassName,
   "aria-label": ariaLabelProp,
   presets,
+  maxDate,
+  minDate,
 }: UiVuexyDateRangePickerProps) {
   const t = useT();
   const resolvedPlaceholder = placeholder ?? [
@@ -154,6 +164,8 @@ export function UiVuexyDateRangePicker({
 
   const rangeStartValue = draftStart?.startOf("day").valueOf() ?? null;
   const rangeEndValue = draftEnd?.startOf("day").valueOf() ?? null;
+  const maxValue = maxDate?.startOf("day").valueOf() ?? null;
+  const minValue = minDate?.startOf("day").valueOf() ?? null;
 
   const hasPresets = (presets?.length ?? 0) > 0;
 
@@ -439,9 +451,11 @@ export function UiVuexyDateRangePicker({
                   dayValue <= rangeEndValue;
                 const outsideMonth = day.month() !== panelMonth.month();
                 const disabledDay =
-                  activeField === "end" &&
-                  rangeStartValue != null &&
-                  dayValue < rangeStartValue;
+                  (activeField === "end" &&
+                    rangeStartValue != null &&
+                    dayValue < rangeStartValue) ||
+                  (maxValue != null && dayValue > maxValue) ||
+                  (minValue != null && dayValue < minValue);
 
                 return (
                   <Box

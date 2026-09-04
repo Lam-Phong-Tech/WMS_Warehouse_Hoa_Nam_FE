@@ -9,7 +9,7 @@ import {
   UiSelect,
   UiSpinner,
   UiStatusBadge,
-  UiVuexyDateField,
+  UiVuexyDateRangePicker,
   RADIUS,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
@@ -816,7 +816,7 @@ export default function ImportMatchReport() {
         .sort((a, b) => a.localeCompare(b, "vi"))
         .map((value) => ({ value, label: value })),
     ],
-    [contextBatches],
+    [contextBatches, t],
   );
 
   const resetContextFilters = () => {
@@ -1238,30 +1238,27 @@ export default function ImportMatchReport() {
             />
           </FilterField>
           {/*
-           * `maxDate` / `minDate` khoá chéo hai ô để không chọn ra được kỳ đảo
-           * chiều (BE trả 422).
+           * Một bộ chọn KHOẢNG chiếm chỗ hai ô cũ (span 2) — đồng bộ với các
+           * màn Báo cáo khác. Picker tự khoá chéo nên kỳ đảo chiều vẫn không
+           * dựng ra được (BE trả 422).
            */}
-          <FilterField label={t("reports.importMatchReport.fromDate")}>
-            <UiVuexyDateField
-              id="rpt-04-from-date"
-              field="from"
-              aria-label={t("reports.importMatchReport.fromDate")}
-              value={range[0]}
-              maxDate={range[1]}
+          <FilterField
+            label={t("reports.importMatchReport.fieldDateRange")}
+            span={2}
+          >
+            <UiVuexyDateRangePicker
+              aria-label={t("reports.importMatchReport.fieldDateRange")}
+              value={range}
+              format="DD/MM/YYYY"
+              placeholder={[
+                t("reports.importMatchReport.fromDate"),
+                t("reports.importMatchReport.toDate"),
+              ]}
+              allowClear={false}
+              className="hn-vuexy-date-range"
+              popupClassName="hn-vuexy-date-popup"
               onChange={(value) => {
-                if (value) setRange([value, range[1]]);
-              }}
-            />
-          </FilterField>
-          <FilterField label={t("reports.importMatchReport.toDate")}>
-            <UiVuexyDateField
-              id="rpt-04-to-date"
-              field="to"
-              aria-label={t("reports.importMatchReport.toDate")}
-              value={range[1]}
-              minDate={range[0]}
-              onChange={(value) => {
-                if (value) setRange([range[0], value]);
+                if (value?.[0] && value[1]) setRange([value[0], value[1]]);
               }}
             />
           </FilterField>
