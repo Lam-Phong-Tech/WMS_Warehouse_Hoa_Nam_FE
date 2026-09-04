@@ -1,6 +1,11 @@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import { useChartBaseOptions, CATEGORICAL_PALETTE } from "./chart-theme";
+import { fitAxisDensity, longestLabelChars } from "./axis-density";
+import { apexPlotWidth, useChartWidth } from "./use-chart-width";
+
+/** Cỡ chữ nhãn trục X đang đặt trong `options.xaxis.labels.style`. */
+const AXIS_FONT_SIZE = 12;
 
 export type BarChartSeries = {
   name: string;
@@ -38,6 +43,31 @@ export function BarChart({
 
   const baseChartOptions = useChartBaseOptions();
 
+  /*
+   * Trục HẠNG MỤC: giấu bớt nhãn ở đây là giấu mất tên của chính cột đang vẽ,
+   * nên thứ tự xử lý ngược với chart xu hướng — nghiêng nhãn 45° trước (sức
+   * chứa tăng ~3 lần), chỉ khi vẫn không đủ mới thưa nhãn.
+   */
+  const { ref, width } = useChartWidth();
+  const plotWidth = apexPlotWidth(width);
+  const labelChars = longestLabelChars(categories);
+  const flat = fitAxisDensity({
+    count: categories.length,
+    plotWidth,
+    labelChars,
+    fontSize: AXIS_FONT_SIZE,
+  });
+  const rotated = flat.stride > 1;
+  const density = rotated
+    ? fitAxisDensity({
+        count: categories.length,
+        plotWidth,
+        labelChars,
+        fontSize: AXIS_FONT_SIZE,
+        rotateDegrees: 45,
+      })
+    : flat;
+
   const options: ApexOptions = {
     ...baseChartOptions,
     chart: { ...baseChartOptions.chart, type: "bar" },
@@ -46,11 +76,14 @@ export function BarChart({
         distributed,
         borderRadius: 6,
         borderRadiusApplication: "end",
-        columnWidth: series.length > 1 ? "55%" : "45%",
+        columnWidth:
+          categories.length > 20 ? "88%" : series.length > 1 ? "55%" : "45%",
       },
     },
     dataLabels: {
-      enabled: true,
+      // Nhiều cột thì số trên đầu cột chồng lên nhau thành một hàng chữ dính —
+      // giá trị đã có trong tooltip và bảng dữ liệu.
+      enabled: density.showPointValues,
       formatter: (value: number) => valueFormatter?.(value) ?? String(value),
       style: { fontSize: "12px", fontWeight: 700 },
       offsetY: -20,
@@ -58,7 +91,18 @@ export function BarChart({
     colors,
     xaxis: {
       categories,
-      labels: { style: { fontSize: "12px" } },
+      labels: {
+        style: { fontSize: `${AXIS_FONT_SIZE}px` },
+        hideOverlappingLabels: true,
+        rotate: rotated ? -45 : 0,
+        rotateAlways: rotated,
+        trim: rotated,
+        maxHeight: 96,
+      },
+      tickAmount:
+        density.stride > 1
+          ? Math.max(2, Math.min(categories.length - 1, density.maxLabels - 1))
+          : undefined,
     },
     yaxis: {
       labels: {
@@ -75,11 +119,13 @@ export function BarChart({
   };
 
   return (
-    <Chart
-      options={options}
-      series={series.map((item) => ({ name: item.name, data: item.data }))}
-      type="bar"
-      height={height}
-    />
+    <div ref={ref}>
+      <Chart
+        options={options}
+        series={series.map((item) => ({ name: item.name, data: item.data }))}
+        type="bar"
+        height={height}
+      />
+    </div>
   );
 }

@@ -33,7 +33,7 @@ import {
 } from "../overview/OverviewOperations";
 import { OverviewEquation } from "../overview/OverviewEquation";
 import { OverviewFlowChart } from "../overview/OverviewFlowChart";
-import { OverviewTrendChart } from "../overview/OverviewTrendChart";
+import { OverviewStockMix } from "../overview/OverviewStockMix";
 import { OverviewComposition } from "../overview/OverviewComposition";
 import { OverviewThreshold } from "../overview/OverviewThreshold";
 import { OverviewInsights, type SignalRow } from "../overview/OverviewInsights";
@@ -45,6 +45,7 @@ import {
   buildEquation,
   buildFlowRows,
   buildTopSkus,
+  buildStockMix,
   buildTrendRows,
   countActiveWarranty,
   countSkusInStock,
@@ -98,7 +99,7 @@ export default function DashboardPage() {
     !isProfileLoaded || isSuperAdmin || permissionCodes.includes("report.view");
 
   /**
-   * Kỳ mặc định là "7 ngày gần nhất", KHÔNG phải "Hôm nay": kho có những ngày
+   * Kỳ mặc định là "7 ngày qua", KHÔNG phải "Hôm nay": kho có những ngày
    * không phát sinh phiếu xuất nào, khi đó "Top 5 SKU xuất" và các KPI xuất kho
    * rỗng ngay lần mở đầu tiên — người xem tưởng hỏng dữ liệu chứ không phải
    * "hôm nay chưa xuất hàng". Cửa sổ 7 ngày luôn bắt được nhịp vận hành thật của
@@ -221,6 +222,8 @@ export default function DashboardPage() {
     () => buildComposition(overviewData, type),
     [overviewData, type],
   );
+  // Cố ý KHÔNG phụ thuộc `type`: xem ghi chú ở `buildStockMix`.
+  const stockMix = useMemo(() => buildStockMix(overviewData), [overviewData]);
 
   const typeKey = overviewTypeKey(type);
   const onHand = overviewData?.kpi.on_hand[typeKey] ?? null;
@@ -554,6 +557,16 @@ export default function DashboardPage() {
     `${dayjs(value.from).format("DD-MM-YYYY")} → ${dayjs(value.to).format("DD-MM-YYYY")}`;
   const cutoffLabel = formatRange(range);
   const chartCutoffLabel = formatRange(chartRange);
+  /**
+   * Khoảng ngày thật của kỳ đang chọn + số ngày, hiện ngay dưới dải nút kỳ.
+   * Nút chỉ nói luật ("Tháng này"), dòng này nói kết quả — mùng 4 bấm "Tháng
+   * này" là 4 ngày chứ không phải cả tháng.
+   */
+  const rangeLabel = t("shared.datePicker.rangeSummary", {
+    from: dayjs(range.from).format("DD/MM/YYYY"),
+    to: dayjs(range.to).format("DD/MM/YYYY"),
+    days: dayjs(range.to).diff(dayjs(range.from), "day") + 1,
+  });
 
   return (
     <div className="hn-dash" data-mvp-screen="MAP-01">
@@ -589,6 +602,7 @@ export default function DashboardPage() {
         <OverviewFilters
           period={period}
           onPeriodChange={changePeriod}
+          rangeLabel={rangeLabel}
           custom={custom}
           onCustomChange={changeCustom}
           dateError={dateError}
@@ -689,8 +703,8 @@ export default function DashboardPage() {
               failed={failed}
               forbidden={forbidden}
             />
-            <OverviewTrendChart
-              rows={trendRows}
+            <OverviewStockMix
+              rows={stockMix}
               loading={loading}
               failed={failed}
               forbidden={forbidden}

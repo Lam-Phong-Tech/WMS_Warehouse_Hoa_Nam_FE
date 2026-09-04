@@ -30,9 +30,11 @@ export {
 } from "./UiDatePicker";
 export {
   UiVuexyDateRangePicker,
+  type DateRangePreset,
   type UiVuexyDateRangePickerProps,
 } from "./UiVuexyDateRangePicker";
 export {
   UiVuexyDateField,
   type UiVuexyDateFieldProps,
 } from "./UiVuexyDateField";
+export { UiAddressField, type UiAddressFieldProps } from "./UiAddressField";

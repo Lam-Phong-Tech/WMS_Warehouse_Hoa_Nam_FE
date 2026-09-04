@@ -148,11 +148,13 @@ describe("WWHN-240 · màn XNT render đúng số BE trả về", () => {
       cell.textContent?.trim(),
     );
 
-    // Thứ tự cột của mockup 8.1: SKU/Tên hàng · Loại · Đơn vị · Đầu kỳ ·
-    // Nhập thuần · Xuất SP · Xuất LK · Hoàn tác · Cuối kỳ · Đối soát · Thao tác.
-    // Loại/Đơn vị đến từ danh mục `/products` — fixture để trống danh mục nên
-    // hai ô đó hiển thị "Chưa có" theo quy ước EMPTY_TEXT.
+    // Thứ tự cột: STT · SKU/Tên hàng · Loại · Đơn vị · Đầu kỳ · Nhập thuần ·
+    // Xuất SP · Xuất LK · Hoàn tác · Cuối kỳ · Đối soát · Thao tác. Cột STT
+    // đứng đầu ở MỌI bảng báo cáo (thêm ngoài mockup 8.1). Loại/Đơn vị đến từ
+    // danh mục `/products` — fixture để trống danh mục nên hai ô đó hiển thị
+    // "Chưa có" theo quy ước EMPTY_TEXT.
     expect(cells).toEqual([
+      "1",
       "PRD-QA19-01Máy KT-2000",
       "Chưa có",
       "Chưa có",

@@ -4,6 +4,7 @@ import {
   Box,
   Grid,
   MenuItem,
+  UiAddressField,
   UiAlert,
   UiDialog,
   UiTextField,
@@ -377,14 +378,11 @@ export function RecipientCreateDialog({
             </UiTextField>
           </Grid>
           <Grid size={12}>
-            <UiTextField
+            <UiAddressField
+              data-testid="recipient-create-address"
               label={t("masterData.recipient.colAddress")}
-              fullWidth
-              multiline
-              minRows={3}
               value={form.address ?? ""}
-              onChange={(event) => {
-                const value = event.target.value;
+              onChange={(value) => {
                 setForm((current) => ({ ...current, address: value }));
                 setFieldErrors((current) =>
                   current.address ? { ...current, address: "" } : current,

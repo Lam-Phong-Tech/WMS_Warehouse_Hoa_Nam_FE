@@ -171,7 +171,7 @@ describe("DashboardPage — Tổng quan vận hành", () => {
 
     // Mặc định "Toàn bộ" → dùng total của on_hand.
     expect(
-      await screen.findByText("Xuất sản phẩm đã Post"),
+      await screen.findByText("Xuất sản phẩm đã ghi sổ"),
     ).toBeInTheDocument();
     const grid = document.querySelector("#kpi-grid") as HTMLElement;
     expect(within(grid).getByText("1.234")).toBeInTheDocument();
@@ -181,7 +181,9 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     // Linh kiện → nhánh component; thẻ xuất sản phẩm biến mất đúng như demo.
     expect(within(grid).getByText("434")).toBeInTheDocument();
     expect(within(grid).queryByText("1.234")).not.toBeInTheDocument();
-    expect(screen.queryByText("Xuất sản phẩm đã Post")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Xuất sản phẩm đã ghi sổ"),
+    ).not.toBeInTheDocument();
   });
 
   it("hiển thị tổng thật của ca quá hạn, không lấy độ dài mảng mẫu", async () => {
@@ -257,11 +259,11 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard();
 
-    // Kỳ mặc định là "7 ngày gần nhất" — xem chú thích ở DashboardPage: kỳ
+    // Kỳ mặc định là "7 ngày qua" — xem chú thích ở DashboardPage: kỳ
     // "Hôm nay" có thể không có phiếu xuất nào nên Top 5 SKU xuất và các KPI
     // xuất kho rỗng ngay lần mở đầu tiên.
     const from = dayjs().subtract(6, "day").format("YYYY-MM-DD");
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.REPORTS_XNT_ENHANCED,
       expect.objectContaining({ params: { from_date: from, to_date: today } }),
@@ -285,7 +287,7 @@ describe("DashboardPage — Tổng quan vận hành", () => {
  * liệu: `<path>` sinh ra đúng một lệnh `M` — SVG không vẽ nét nào — và
  * `sparkPoints()` bỏ hẳn sparkline vì dưới 2 giá trị. Màn hình vẫn đầy số
  * nhưng mọi đường biểu đồ đều trống. Demo ghim biểu đồ ở 7 ngày (`app.js:706`
- * luôn ghi "Biểu đồ: 7 ngày gần nhất") chính vì vậy.
+ * luôn ghi "Biểu đồ: 7 ngày qua") chính vì vậy.
  */
 describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
   const days = Array.from({ length: 7 }, (_, index) =>
@@ -330,16 +332,16 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
   }
 
   /**
-   * Kỳ mặc định của màn là "7 ngày gần nhất", nên các test dưới đây phải CHỦ
+   * Kỳ mặc định của màn là "7 ngày qua", nên các test dưới đây phải CHỦ
    * ĐỘNG chuyển về "Hôm nay" — đó mới là kỳ hẹp nhất và là trường hợp cửa sổ
    * biểu đồ phải chứng minh mình tách khỏi kỳ KPI.
    */
   async function renderAtToday() {
     mockedGet.mockImplementation((url: string) => routeWeek(url));
     renderDashboard();
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
     fireEvent.click(screen.getByRole("button", { name: "Hôm nay" }));
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
   }
 
   it("vẽ đường luồng nhiều điểm dù kỳ KPI là Hôm nay", async () => {
@@ -397,7 +399,7 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
     mockedGet.mockImplementation((url: string) => routeWeek(url));
     renderDashboard();
 
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
 
     const meta = document.querySelector(".section-meta") as HTMLElement;
     expect(meta.textContent).toContain(dayjs(days[0]).format("DD-MM-YYYY"));
@@ -408,7 +410,7 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
     mockedGet.mockImplementation((url: string) => routeWeek(url));
     renderDashboard();
 
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
 
     const lazy = [...document.querySelectorAll("[data-lazy]")];
     expect(lazy.length).toBe(2);
@@ -422,15 +424,15 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
     mockedGet.mockImplementation((url: string) => routeWeek(url));
     const { container } = renderDashboard();
 
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
 
     const live = container.querySelector(".sr-only") as HTMLElement;
     expect(live).not.toBeNull();
     expect(live.getAttribute("aria-live")).toBe("polite");
     expect(live.textContent).toBe("");
 
-    fireEvent.click(screen.getByRole("button", { name: "7 ngày gần nhất" }));
-    expect(live.textContent).toBe("Đã chọn kỳ KPI 7 ngày gần nhất");
+    fireEvent.click(screen.getByRole("button", { name: "7 ngày qua" }));
+    expect(live.textContent).toBe("Đã chọn kỳ KPI 7 ngày qua");
 
     fireEvent.click(screen.getByRole("button", { name: "Linh kiện" }));
     expect(live.textContent).toBe("Đã lọc loại hàng Linh kiện");
@@ -446,7 +448,7 @@ describe("DashboardPage — nút làm mới", () => {
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     const { container } = renderDashboard();
 
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
     const before = mockedGet.mock.calls.length;
 
     fireEvent.click(screen.getByRole("button", { name: /Làm mới/ }));
@@ -455,7 +457,7 @@ describe("DashboardPage — nút làm mới", () => {
     expect(mockedGet.mock.calls.length).toBe(before + 4);
     expect(
       (container.querySelector(".sr-only") as HTMLElement).textContent,
-    ).toBe("Đã làm mới Dashboard");
+    ).toBe("Đã làm mới trang Tổng quan");
   });
 
   /**
@@ -477,7 +479,7 @@ describe("DashboardPage — nút làm mới", () => {
     });
     renderDashboard();
 
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
     const button = screen.getByRole("button", {
       name: /Làm mới/,
     }) as HTMLButtonElement;
@@ -510,7 +512,7 @@ describe("DashboardPage — nút làm mới", () => {
     });
     renderDashboard();
 
-    await screen.findByText("Xuất sản phẩm đã Post");
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
     expect(screen.queryByText("Đang thử lại")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Làm mới/ }));

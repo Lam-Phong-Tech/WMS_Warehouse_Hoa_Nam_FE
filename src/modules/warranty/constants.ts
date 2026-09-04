@@ -5,6 +5,7 @@ import type { MessageKey } from "@/shared/i18n/messages";
 import { tStatic } from "@/shared/i18n/useT";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { formatAddress } from "@/shared/lib/vn-address";
 
 /**
  * Map nhãn đọc-tại-lúc-truy-cập: giữ nguyên shape `Record<code, string>` cho
@@ -178,8 +179,13 @@ export function maskWarrantyPhone(value?: string | null): string {
   return "*".repeat(chars.length - 3) + chars.slice(-3).join("");
 }
 
+/**
+ * Địa chỉ có thể là JSON tỉnh/xã của FE (xem @/shared/lib/vn-address) — quy
+ * về chuỗi hiển thị "số nhà, phường/xã, tỉnh/thành" TRƯỚC khi che, để phần
+ * giữ lại sau dấu phẩy cuối luôn là tỉnh/thành chứ không phải mảnh JSON.
+ */
 export function maskWarrantyAddress(value?: string | null): string {
-  const text = (value ?? "").trim();
+  const text = formatAddress(value);
   if (!text) return "";
   const parts = text
     .split(",")
@@ -198,7 +204,9 @@ export function warrantyPiiText(
   canViewPii: boolean,
   kind: "name" | "phone" | "address",
 ): string {
-  if (canViewPii) return (value ?? "").trim();
+  if (canViewPii) {
+    return kind === "address" ? formatAddress(value) : (value ?? "").trim();
+  }
   if (kind === "phone") return maskWarrantyPhone(value);
   if (kind === "address") return maskWarrantyAddress(value);
   return maskWarrantyName(value);

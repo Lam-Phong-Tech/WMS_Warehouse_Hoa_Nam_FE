@@ -23,6 +23,7 @@ import {
   MenuItem,
   Skeleton,
   Stack,
+  UiAddressField,
   UiAlert,
   UiCard,
   UiDescriptions,
@@ -446,15 +447,12 @@ export function WarehouseConfigScreen() {
                   </UiTextField>
                 </Grid>
                 <Grid size={12}>
-                  <UiTextField
+                  <UiAddressField
                     id="warehouse-address"
+                    data-testid="warehouse-address"
                     label={t("masterData.warehouse.fieldAddress")}
-                    fullWidth
-                    multiline
-                    minRows={2}
                     value={formValues.address ?? ""}
-                    onChange={(event) => {
-                      const value = event.target.value;
+                    onChange={(value) => {
                       setFormValues((current) => ({
                         ...current,
                         address: value,
@@ -466,7 +464,6 @@ export function WarehouseConfigScreen() {
                     disabled={fieldsDisabled}
                     error={Boolean(fieldErrors.address)}
                     helperText={fieldErrors.address}
-                    slotProps={{ htmlInput: { maxLength: 500 } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>

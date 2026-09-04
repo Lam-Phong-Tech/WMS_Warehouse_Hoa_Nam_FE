@@ -41,6 +41,7 @@ import {
 } from "@/modules/reports/operations/report-data";
 import { runReportExport } from "@/modules/reports/operations/report-export";
 import { tStatic } from "@/shared/i18n/useT";
+import { formatAddress } from "@/shared/lib/vn-address";
 
 export const RECIPIENT_AGENCY_TIMEZONE = "Asia/Ho_Chi_Minh";
 
@@ -922,7 +923,7 @@ function buildLedger(
             ? "PRODUCT"
             : null,
     };
-    const address = text(row.address, "");
+    const address = formatAddress(text(row.address, ""));
     const maskedPhone = text(row.contact_masked, "");
     const pii: RecipientAgencyPii | null =
       address || maskedPhone

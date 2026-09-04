@@ -19,7 +19,7 @@ vi.mock("@/modules/iam/hooks/use-iam", () => ({
           display_name: "Nguyễn Văn Kho",
           username: "nvkho01",
           phone: "0901234567",
-          email: "nvkho01@hoanam.vn",
+          email: "nvkho01@gmail.com",
           status: "ACTIVE",
           version: 2,
           last_login_at: "2026-08-10T08:14:00+07:00",

@@ -3,6 +3,7 @@ import {
   Box,
   Grid,
   Stack,
+  UiAddressField,
   UiDialog,
   UiPagination,
   UiSelect,
@@ -848,15 +849,6 @@ export function OutboundIntakeModal({
               <Grid size={{ xs: 12, md: 6 }}>
                 <UiTextField
                   fullWidth
-                  label={t("outbound.intake.fieldAddress")}
-                  value={recipientAddress}
-                  onChange={(event) => setRecipientAddress(event.target.value)}
-                  slotProps={{ htmlInput: { maxLength: 1000 } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <UiTextField
-                  fullWidth
                   label={t("outbound.intake.fieldPhone")}
                   placeholder="VD: 0901234567"
                   value={recipientPhone}
@@ -894,6 +886,15 @@ export function OutboundIntakeModal({
                     htmlInput: { max: dayjs().format("YYYY-MM-DD") },
                   }}
                   helperText={t("outbound.intake.dateHelper")}
+                />
+              </Grid>
+              <Grid size={12}>
+                <UiAddressField
+                  data-testid="outbound-recipient-address"
+                  label={t("outbound.intake.fieldAddress")}
+                  value={recipientAddress}
+                  onChange={setRecipientAddress}
+                  maxDetailLength={300}
                 />
               </Grid>
             </Grid>

@@ -1,34 +1,44 @@
+import { useMemo } from "react";
 import { useT } from "@/shared/i18n/useT";
-import { Box, UiDateRangePicker, UiSelect, UiTextField } from "@/shared/ui";
+import {
+  Box,
+  UiSelect,
+  UiTextField,
+  UiVuexyDateRangePicker,
+} from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 import {
   itemKindOptions,
-  periodPresetOptions,
   type ItemKind,
-  type PeriodPreset,
   type SelectOption,
 } from "./report-format";
+import { reportRangePresets } from "./report-range-presets";
 import type { PeriodFilterState, TimeWindow } from "./report-period";
 
+/**
+ * Bộ chọn kỳ của khối báo cáo: MỘT control duy nhất.
+ *
+ * Trước đây là cặp "ô chọn kỳ + ô ngày". Hai control cùng ghi một khoảng ngày
+ * là chỗ người dùng không biết cái nào thắng — chọn kỳ thì ô ngày bị ghi đè,
+ * còn sửa ô ngày thì ô kỳ lặng lẽ nhảy về "Tùy chọn" mà không nói vì sao. Kỳ
+ * nhanh nay nằm trong panel lịch, cùng một bộ với cả 8 màn báo cáo.
+ */
 export function PeriodFilterControls({ state }: { state: PeriodFilterState }) {
   const t = useT();
+  const presets = useMemo(() => reportRangePresets(t), [t]);
   return (
-    <>
-      <UiSelect
-        minWidth={150}
-        aria-label={t("reports.filters.periodAria")}
-        value={state.preset}
-        onChange={(value) => state.setPreset(value as PeriodPreset)}
-        options={periodPresetOptions(t)}
-      />
-      <UiDateRangePicker
-        value={state.range}
-        aria-label={t("reports.filters.dateRangeAria")}
-        onChange={(value) => {
-          if (value?.[0] && value?.[1]) state.setRange([value[0], value[1]]);
-        }}
-      />
-    </>
+    <UiVuexyDateRangePicker
+      value={state.range}
+      aria-label={t("reports.filters.dateRangeAria")}
+      format="DD/MM/YYYY"
+      allowClear={false}
+      presets={presets}
+      className="hn-vuexy-date-range"
+      popupClassName="hn-vuexy-date-popup"
+      onChange={(value) => {
+        if (value?.[0] && value?.[1]) state.setRange([value[0], value[1]]);
+      }}
+    />
   );
 }
 

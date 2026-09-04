@@ -47,6 +47,7 @@ import {
   type ItemKind,
   type Raw,
 } from "@/modules/reports/operations/report-format";
+import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import {
   useImportMatch,
   useSkuCatalog,
@@ -660,6 +661,7 @@ export default function ImportMatchReport() {
   const [range, setRange] = useState<[Dayjs, Dayjs]>(() =>
     presetRange("this-month"),
   );
+  const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const [result, setResult] = useState<ImportMatchResultFilter>("");
   const [status, setStatus] = useState("");
   const [actor, setActor] = useState("");
@@ -720,6 +722,16 @@ export default function ImportMatchReport() {
       kind,
       catalog,
     ],
+  );
+
+  // Tách ra biến để cột STT của drill-down theo ngày đánh số được theo đúng
+  // thứ tự dòng đang hiển thị (render của cột chỉ nhận `row`).
+  const dayDrillRows = useMemo(
+    () =>
+      dayDrill === null
+        ? []
+        : batches.filter((batch) => batch.at.slice(0, 10) === dayDrill.day),
+    [batches, dayDrill],
   );
 
   const totals = useMemo(() => totalsOf(batches), [batches]);
@@ -1255,6 +1267,7 @@ export default function ImportMatchReport() {
                 t("reports.importMatchReport.toDate"),
               ]}
               allowClear={false}
+              presets={periodPresets}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"
               onChange={(value) => {
@@ -1544,7 +1557,7 @@ export default function ImportMatchReport() {
             <Box
               sx={{ display: "grid", alignContent: "center", gap: 2.5, py: 1 }}
             >
-              {topErrorCodes.map((item) => (
+              {topErrorCodes.map((item, index) => (
                 <Box
                   key={item.code}
                   sx={{
@@ -1583,6 +1596,9 @@ export default function ImportMatchReport() {
                       },
                     }}
                   >
+                    <Box component="span" aria-hidden="true">
+                      {index + 1}.{" "}
+                    </Box>
                     {item.code}
                   </Box>
                   <Box
@@ -1724,10 +1740,9 @@ export default function ImportMatchReport() {
               columns={[
                 {
                   key: "stt",
-                  header: "STT",
+                  header: t("shared.table.rowNumber"),
                   align: "center",
                   width: 56,
-                  hideOnMobile: true,
                   render: (row) =>
                     mvpRowNumber(
                       pagination.page,
@@ -1917,6 +1932,13 @@ export default function ImportMatchReport() {
           <ResponsiveDataTable<ImportMatchBatch>
             columns={[
               {
+                key: "stt",
+                header: t("shared.table.rowNumber"),
+                align: "center",
+                width: 56,
+                render: (row) => dayDrillRows.indexOf(row) + 1,
+              },
+              {
                 key: "batchNo",
                 header: keyLabel,
                 render: (row) => row.batchNo || EMPTY_TEXT,
@@ -1945,9 +1967,7 @@ export default function ImportMatchReport() {
                 render: (row) => row.actor || EMPTY_TEXT,
               },
             ]}
-            rows={batches.filter(
-              (batch) => batch.at.slice(0, 10) === dayDrill.day,
-            )}
+            rows={dayDrillRows}
             rowKey={(row) => `${row.context}:${row.id}`}
             emptyText={t("reports.importMatchReport.dayDrillEmpty")}
           />
@@ -2081,6 +2101,13 @@ export default function ImportMatchReport() {
           <ResponsiveDataTable<BatchErrorLine>
             columns={[
               {
+                key: "stt",
+                header: t("shared.table.rowNumber"),
+                align: "center",
+                width: 56,
+                render: (row) => openBatch.errors.indexOf(row) + 1,
+              },
+              {
                 key: "rowNo",
                 header: t("reports.importMatchReport.colRowNo"),
                 width: 80,
@@ -2123,6 +2150,13 @@ export default function ImportMatchReport() {
               </Box>
               <ResponsiveDataTable<Raw>
                 columns={[
+                  {
+                    key: "stt",
+                    header: t("shared.table.rowNumber"),
+                    align: "center",
+                    width: 56,
+                    render: (row) => openBatch.matchLines.indexOf(row) + 1,
+                  },
                   {
                     key: "row_no",
                     header: t("reports.importMatchReport.colRowNo"),

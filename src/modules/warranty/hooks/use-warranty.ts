@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/shared/api/api-error";
+import {
+  classifyConcurrencyError,
+  isRetryableAfterReload,
+} from "@/shared/api/concurrency-contract";
 import { useT } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import {
@@ -119,17 +123,30 @@ function useInvalidateWarrantyMutation<TVariables, TResult>(
 ) {
   const queryClient = useQueryClient();
   const t = useT();
+  const reload = () =>
+    queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
   return useMutation({
     mutationFn,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: warrantyKeys.all }),
-    onError: errorFallback
-      ? (error: unknown) => {
-          toast.error(getApiErrorMessage(error, t(errorFallback)));
-        }
-      : () => {
-          // Im lặng có chủ đích — xem docblock ở trên.
-        },
+    onSuccess: reload,
+    onError: (error: unknown) => {
+      // SRS §8.2 / AC-GWT-CONC-001: 412 STALE_VERSION và 409
+      // CONCURRENCY_CONFLICT nghĩa là bản ghi đã đổi dưới chân form (tab thứ
+      // hai, mini app, người khác). KHÔNG tải lại ở đây thì cache vẫn giữ
+      // version cũ — staleTime 60s + refetchOnWindowFocus=false nghĩa là
+      // không có gì kích hoạt refetch khi modal đang mở — nên MỌI lần bấm lại
+      // đều gửi đúng version cũ đó và nhận lại đúng 412: người dùng kẹt trong
+      // dialog. Tải lại ở đây để lần bấm sau gửi version hiện hành; KHÔNG tự
+      // gửi lại hộ (auto-retry là cách nhanh nhất tạo double-post).
+      const outcome = classifyConcurrencyError(error);
+      if (outcome !== null && isRetryableAfterReload(outcome)) {
+        void reload();
+      }
+      // errorFallback rỗng: im lặng có chủ đích — xem docblock ở trên. onError
+      // vẫn phải được khai để lưới an toàn toàn cục không bắn thêm toast.
+      if (errorFallback) {
+        toast.error(getApiErrorMessage(error, t(errorFallback)));
+      }
+    },
   });
 }
 

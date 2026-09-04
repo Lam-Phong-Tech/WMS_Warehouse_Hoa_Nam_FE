@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { formatAddress } from "@/shared/lib/vn-address";
 import {
   cancelOutboundDocument,
   fetchActiveRfidCodes,
@@ -146,7 +147,9 @@ function normalizePackingLabel(row: RawRecord): PackingLabelRecord {
     outboundNo: text(row.outbound_no ?? payload.outbound_no),
     sourceRequestNo: text(row.source_request_no ?? payload.source_request_no),
     recipientName: text(row.customer_name ?? payload.recipient_name),
-    recipientAddress: text(row.customer_address ?? payload.recipient_address),
+    recipientAddress: formatAddress(
+      text(row.customer_address ?? payload.recipient_address),
+    ),
     customerPhone: text(row.customer_phone ?? payload.customer_phone),
     itemCount: num(row.item_count ?? payload.item_count),
     skuCount: num(row.sku_count ?? payload.sku_count),

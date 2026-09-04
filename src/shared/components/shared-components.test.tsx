@@ -54,6 +54,6 @@ describe("ScanInput", () => {
     );
 
     expect(onScan).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent(/vừa được scan/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(/vừa được quét/i);
   });
 });

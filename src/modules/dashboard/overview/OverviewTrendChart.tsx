@@ -1,15 +1,25 @@
 /**
  * "Xu hướng tồn cuối ngày" — đường actual của demo. Trục dọc bám dữ liệu thật
  * (demo cố định 26.800..28.800) và chỉ vẽ những ngày ĐÃ CHỐT do BE trả.
+ *
+ * Nhãn trục X thưa dần theo độ dài kỳ: demo chỉ có 7 mốc cứng, còn ở đây kỳ
+ * 30 / 90 / 365 ngày sẽ chồng chữ lên nhau nếu vẽ đủ nhãn. Xem
+ * `@/shared/components/charts/axis-density`.
  */
 import { DashIcon } from "../components/DashIcon";
 import { useT } from "@/shared/i18n/useT";
 import { OverviewStateBox } from "./OverviewStateBox";
 import { fmt, type TrendRow } from "./overview-data";
+import {
+  fitAxisDensity,
+  longestLabelChars,
+} from "@/shared/components/charts/axis-density";
 
 const W = 580;
 const H = 220;
 const PAD = 34;
+/** Cỡ chữ nhãn trục — khớp `.hn-dash .axis-text` trong CSS của bản port. */
+const AXIS_FONT_SIZE = 10;
 
 export function OverviewTrendChart({
   rows,
@@ -111,6 +121,13 @@ export function OverviewTrendChart({
   const yAt = (value: number) =>
     H - PAD - ((value - min) / Math.max(max - min, 1)) * (H - PAD * 2);
 
+  const density = fitAxisDensity({
+    count: rows.length,
+    plotWidth: W - PAD * 2,
+    labelChars: longestLabelChars(rows.map((row) => row.label)),
+    fontSize: AXIS_FONT_SIZE,
+  });
+
   const path = rows
     .map(
       (row, index) =>
@@ -176,17 +193,19 @@ export function OverviewTrendChart({
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            {rows.map((row, index) => (
-              <text
-                key={row.date}
-                className="axis-text"
-                x={xAt(index)}
-                y={H - 6}
-                textAnchor="middle"
-              >
-                {row.label}
-              </text>
-            ))}
+            {rows.map((row, index) =>
+              density.showLabel(index) ? (
+                <text
+                  key={row.date}
+                  className="axis-text"
+                  x={xAt(index)}
+                  y={H - 6}
+                  textAnchor="middle"
+                >
+                  {row.label}
+                </text>
+              ) : null,
+            )}
           </svg>
         </div>
       </div>

@@ -66,43 +66,125 @@ export function listOf(value: unknown): Raw[] {
 
 // ── Bộ lọc thời gian dùng chung cho 7 tab ────────────────────────────────
 
+/**
+ * Kỳ dựng sẵn của mọi màn báo cáo.
+ *
+ * Bộ cũ chỉ có "tuần này / tháng này / quý này / năm nay" và cả bốn đều là kỳ
+ * ĐẾN HIỆN TẠI (`[đầu kỳ → hôm nay]`). Hai vấn đề thật đã gặp:
+ *
+ *  1. Nhãn nói sai: mùng 4 bấm "Tháng này" ra 4 ngày dữ liệu, nhưng người đọc
+ *     hiểu là cả tháng. Nay nhãn ghi thẳng "(đến nay)".
+ *  2. Thiếu đúng thứ kho hay tra: không có "Hôm nay"/"Hôm qua" để soát ca vừa
+ *     chạy, và không có KỲ ĐÃ ĐÓNG ("Tháng trước") — thứ mà đối soát/quyết
+ *     toán luôn cần, vì kỳ đang chạy thì con số còn thay đổi.
+ *
+ * Chia hai nhóm theo cách người dùng nghĩ: nhóm CUỘN LÙI đếm ngược từ hôm nay,
+ * nhóm THEO LỊCH bám mốc lịch. `custom` là trạng thái rơi vào khi tự chọn ngày,
+ * không phải một mục bấm được.
+ */
 export type PeriodPreset =
-  | "this-week"
+  | "today"
+  | "yesterday"
+  | "last-7"
+  | "last-30"
   | "this-month"
+  | "last-month"
   | "this-quarter"
   | "this-year"
   | "custom";
 
+/** Kỳ cuộn lùi: đếm ngược từ hôm nay. */
+export const ROLLING_PRESETS = [
+  "today",
+  "yesterday",
+  "last-7",
+  "last-30",
+] as const satisfies ReadonlyArray<PeriodPreset>;
+
+/** Kỳ theo lịch: bám mốc đầu tháng / quý / năm. */
+export const CALENDAR_PRESETS = [
+  "this-month",
+  "last-month",
+  "this-quarter",
+  "this-year",
+] as const satisfies ReadonlyArray<PeriodPreset>;
+
+/** Mọi kỳ bấm được, đúng thứ tự hiển thị. */
+export const PERIOD_PRESETS: ReadonlyArray<Exclude<PeriodPreset, "custom">> = [
+  ...ROLLING_PRESETS,
+  ...CALENDAR_PRESETS,
+];
+
+const PRESET_LABEL_KEYS = {
+  today: "reports.period.today",
+  yesterday: "reports.period.yesterday",
+  "last-7": "reports.period.last7",
+  "last-30": "reports.period.last30",
+  "this-month": "reports.period.thisMonth",
+  "last-month": "reports.period.lastMonth",
+  "this-quarter": "reports.period.thisQuarter",
+  "this-year": "reports.period.thisYear",
+  custom: "reports.period.custom",
+} as const satisfies Record<PeriodPreset, MessageKey>;
+
+export function periodPresetLabel(
+  preset: PeriodPreset,
+  t: TranslateFn,
+): string {
+  return t(PRESET_LABEL_KEYS[preset]);
+}
+
 export const periodPresetOptions = (
   t: TranslateFn,
 ): Array<{ value: PeriodPreset; label: string }> => [
-  { value: "this-week", label: t("reports.period.thisWeek") },
-  { value: "this-month", label: t("reports.period.thisMonth") },
-  { value: "this-quarter", label: t("reports.period.thisQuarter") },
-  { value: "this-year", label: t("reports.period.thisYear") },
+  ...PERIOD_PRESETS.map((preset) => ({
+    value: preset as PeriodPreset,
+    label: periodPresetLabel(preset, t),
+  })),
   { value: "custom", label: t("reports.period.custom") },
 ];
 
 /**
- * Khoảng ngày của một preset. Tuần bắt đầu từ THỨ HAI (dayjs mặc định Chủ
- * nhật) — kho vận hành theo tuần làm việc, một báo cáo "tuần này" bắt đầu vào
- * Chủ nhật sẽ lệch hẳn một ngày so với cách người dùng đọc lịch.
+ * Khoảng ngày của một preset, tính TẠI THỜI ĐIỂM GỌI.
+ *
+ * `custom` không có khoảng riêng — rơi vào đây thì trả về kỳ mặc định để hàm
+ * luôn tổng; nơi gọi tự giữ khoảng người dùng đã chọn.
  */
 export function presetRange(preset: PeriodPreset): [Dayjs, Dayjs] {
-  const today = dayjs();
-  if (preset === "this-month") {
-    return [today.startOf("month"), today];
+  const today = dayjs().startOf("day");
+  switch (preset) {
+    case "today":
+      return [today, today];
+    case "yesterday": {
+      const yesterday = today.subtract(1, "day");
+      return [yesterday, yesterday];
+    }
+    // "7 ngày qua" tính CẢ hôm nay → lùi 6 ngày, không phải 7. Lùi 7 sẽ ra 8
+    // mốc, lệch hẳn một ngày so với con số ghi trên nhãn.
+    case "last-7":
+      return [today.subtract(6, "day"), today];
+    case "last-30":
+      return [today.subtract(29, "day"), today];
+    case "last-month": {
+      const previous = today.subtract(1, "month");
+      return [
+        previous.startOf("month"),
+        previous.endOf("month").startOf("day"),
+      ];
+    }
+    case "this-quarter": {
+      // Đầu quý = tháng đầu tiên của quý hiện tại (tránh phụ thuộc plugin
+      // quarterOfYear).
+      const quarterStartMonth = Math.floor(today.month() / 3) * 3;
+      return [today.month(quarterStartMonth).startOf("month"), today];
+    }
+    case "this-year":
+      return [today.startOf("year"), today];
+    case "this-month":
+    case "custom":
+    default:
+      return [today.startOf("month"), today];
   }
-  if (preset === "this-quarter") {
-    // Đầu quý = tháng đầu tiên của quý hiện tại (tránh phụ thuộc plugin quarterOfYear).
-    const quarterStartMonth = Math.floor(today.month() / 3) * 3;
-    return [today.month(quarterStartMonth).startOf("month"), today];
-  }
-  if (preset === "this-year") {
-    return [today.startOf("year"), today];
-  }
-  const weekday = (today.day() + 6) % 7;
-  return [today.subtract(weekday, "day").startOf("day"), today];
 }
 
 export const API_DATE = "YYYY-MM-DD";

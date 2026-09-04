@@ -39,17 +39,15 @@ import {
 } from "react";
 import dayjs from "dayjs";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { fitAxisDensity } from "@/shared/components/charts/axis-density";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import {
   hasAnyWmsPermission,
   WMS_ACTION_PERMISSIONS,
 } from "@/shared/constants/wms-permissions";
-import {
-  fmt,
-  presetRange,
-  type PeriodPreset,
-} from "@/modules/reports/operations/report-format";
+import { fmt, presetRange } from "@/modules/reports/operations/report-format";
+import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import { useReportExport } from "@/modules/reports/operations/report-export";
 import { reportStatusLabel } from "@/modules/reports/operations/report-labels";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
@@ -75,15 +73,6 @@ import {
 import { UiVuexyDateRangePicker } from "@/shared/ui";
 import { useT } from "@/shared/i18n/useT";
 import "./io-history-report.css";
-
-/** Thứ tự năm nút kỳ báo cáo của mockup; nhãn đọc qua t() trong component. */
-const PERIOD_VALUES: ReadonlyArray<PeriodPreset> = [
-  "this-week",
-  "this-month",
-  "this-quarter",
-  "this-year",
-  "custom",
-];
 
 /** Thứ tự bốn lựa chọn menu "Loại chứng từ"; nhãn đọc qua t(). */
 const TYPE_FILTER_VALUES: ReadonlyArray<IoTypeFilter> = [
@@ -121,6 +110,8 @@ const CHART_VIEW_HEIGHT = 245;
 const CHART_AXIS_Y = 232;
 const CHART_EMPTY_Y = 120;
 const CHART_POINT_RADIUS = 4;
+/** Cỡ chữ mọi nhãn trong SVG — khớp `.hn-rpt-io .chartsvg text` trong CSS. */
+const CHART_FONT_SIZE = 11;
 
 type ViewMode = "table" | "slice";
 
@@ -154,6 +145,18 @@ function qtyToneOf(value: number): string {
 function fmtDay(value: string): string {
   const parsed = dayjs(value);
   return parsed.isValid() ? parsed.format("DD/MM/YYYY") : EMPTY_TEXT;
+}
+
+/**
+ * "01/09" — dạng rút gọn CHỈ dùng cho nhãn trục X khi kỳ dài.
+ *
+ * Nhãn đủ năm chiếm gần gấp đôi bề ngang; ở kỳ 30–365 ngày, bỏ phần năm cho
+ * phép giữ gấp đôi số mốc trên trục mà vẫn không chồng chữ. Năm vẫn đọc được
+ * ở dải "kỳ đang xem" của bộ lọc và ở bảng chi tiết bên dưới.
+ */
+function fmtDayShort(value: string): string {
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format("DD/MM") : EMPTY_TEXT;
 }
 
 /**
@@ -213,26 +216,13 @@ export default function IoHistoryReport() {
     }),
     [t],
   );
-  const presetLabels = useMemo<Readonly<Record<PeriodPreset, string>>>(
-    () => ({
-      "this-week": t("reports.ioHistory.presetThisWeek"),
-      "this-month": t("reports.ioHistory.presetThisMonth"),
-      "this-quarter": t("reports.ioHistory.presetThisQuarter"),
-      "this-year": t("reports.ioHistory.presetThisYear"),
-      custom: t("reports.ioHistory.presetCustom"),
-    }),
-    [t],
-  );
-  const periodButtonLabels = useMemo<Readonly<Record<PeriodPreset, string>>>(
-    () => ({
-      "this-week": t("reports.ioHistory.periodWeek"),
-      "this-month": t("reports.ioHistory.periodMonth"),
-      "this-quarter": t("reports.ioHistory.periodQuarter"),
-      "this-year": t("reports.ioHistory.periodYear"),
-      custom: t("reports.ioHistory.periodCustom"),
-    }),
-    [t],
-  );
+  /**
+   * Kỳ nhanh nay nằm TRONG lịch chọn khoảng, không còn hàng nút "Kỳ báo cáo"
+   * riêng bên cạnh: hai control cùng ghi một khoảng ngày là chỗ người dùng
+   * không biết cái nào thắng cái nào. Bản mockup 8.3 có hàng nút đó vì nó
+   * chưa có lịch chọn khoảng dùng chung.
+   */
+  const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const allTypesLabel = t("reports.ioHistory.allTypes");
   const typeOptions = useMemo(
     () =>
@@ -251,7 +241,12 @@ export default function IoHistoryReport() {
   );
 
   // ── State của mockup (`st`) ────────────────────────────────────────────
-  const [preset, setPreset] = useState<PeriodPreset>("this-month");
+  /*
+   * Không còn state "kỳ" riêng: kỳ nhanh nằm trong lịch nên KHOẢNG NGÀY là
+   * nguồn sự thật duy nhất. Giữ thêm một biến `preset` song song chỉ tạo ra
+   * hai thứ có thể lệch nhau — bấm kỳ nhanh rồi sửa tay một ngày thì tên kỳ
+   * vẫn còn đó nhưng đã nói sai về khoảng đang xem.
+   */
   const [range, setRange] = useState<{ from: string; to: string }>(() => {
     const [start, end] = presetRange("this-month");
     return { from: start.format(ISO_DATE), to: end.format(ISO_DATE) };
@@ -339,7 +334,34 @@ export default function IoHistoryReport() {
         ? CHART_LEFT + plotWidth / 2
         : CHART_LEFT + (plotWidth * index) / (days.length - 1);
     const yOf = (value: number) => CHART_BOTTOM - (value / max) * plotHeight;
-    return { days, values, max, width, right, xOf, yOf };
+
+    /*
+     * Mật độ trục X. Mockup có 7 mốc cứng nên vẽ đủ nhãn "01/09/2026" là vừa
+     * khung; dữ liệu thật cho chọn kỳ tuỳ ý và ở kỳ 30–365 ngày thì nhãn đủ
+     * năm chồng khít lên nhau, chấm điểm dính thành dải đặc, số trên điểm đè
+     * lên đường. Thử nhãn đủ năm trước; nếu không đủ chỗ thì rút gọn về
+     * "01/09" rồi mới thưa nhãn — mất phần năm rẻ hơn mất mốc.
+     */
+    const fitFull = fitAxisDensity({
+      count: days.length,
+      plotWidth,
+      labelChars: 10,
+      fontSize: CHART_FONT_SIZE,
+      markerRadius: CHART_POINT_RADIUS,
+    });
+    const compactLabels = fitFull.stride > 1;
+    const density = compactLabels
+      ? fitAxisDensity({
+          count: days.length,
+          plotWidth,
+          labelChars: 5,
+          fontSize: CHART_FONT_SIZE,
+          markerRadius: CHART_POINT_RADIUS,
+        })
+      : fitFull;
+    const dayLabel = compactLabels ? fmtDayShort : fmtDay;
+
+    return { days, values, max, width, right, xOf, yOf, density, dayLabel };
   }, [rows, chartWidth]);
 
   // ── Lát cắt đối soát (hàm `slices()` của mockup) ───────────────────────
@@ -468,21 +490,9 @@ export default function IoHistoryReport() {
     t("reports.ioHistory.postedOnly"),
   ].join(" · ");
 
-  const applyPreset = (next: PeriodPreset) => {
-    setPreset(next);
-    if (next === "custom") {
-      // "Tùy chọn" chỉ đánh dấu kỳ là tự đặt; khoảng đang xem giữ nguyên để
-      // người dùng chỉnh tiếp ngay trong ô ngày (picker tự mở khi bấm vào ô).
-      return;
-    }
-    const [start, end] = presetRange(next);
-    setRange({ from: start.format(ISO_DATE), to: end.format(ISO_DATE) });
-  };
-
   const resetFilters = useCallback(() => {
     const [start, end] = presetRange("this-month");
     const value = { from: start.format(ISO_DATE), to: end.format(ISO_DATE) };
-    setPreset("this-month");
     setRange(value);
     setType("");
     setQuery("");
@@ -666,9 +676,14 @@ export default function IoHistoryReport() {
                   <div className="title">
                     {t("reports.ioHistory.filterTitle")}
                   </div>
+                  {/*
+                   * Ghi thẳng KHOẢNG NGÀY đang xem thay vì tên kỳ. Kỳ nhanh
+                   * giờ nằm trong lịch nên tên kỳ không còn là thứ người dùng
+                   * vừa bấm; hai mốc ngày thì luôn đúng, kể cả khoảng tự đặt.
+                   */}
                   <div className="note">
                     {t("reports.ioHistory.filterNote", {
-                      preset: presetLabels[preset],
+                      preset: `${fmtDay(range.from)} → ${fmtDay(range.to)}`,
                     })}
                   </div>
                 </div>
@@ -679,30 +694,6 @@ export default function IoHistoryReport() {
             </div>
 
             <div className="filtergrid">
-              <div className="field">
-                <label htmlFor="rptio-period">
-                  {t("reports.ioHistory.fieldPeriod")}
-                </label>
-                <div
-                  className="periods"
-                  id="rptio-period"
-                  role="group"
-                  aria-label={t("reports.ioHistory.fieldPeriod")}
-                >
-                  {PERIOD_VALUES.map((value) => (
-                    <button
-                      key={value}
-                      className={preset === value ? "period active" : "period"}
-                      type="button"
-                      aria-pressed={preset === value}
-                      onClick={() => applyPreset(value)}
-                    >
-                      {periodButtonLabels[value]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="field">
                 <label htmlFor="rptio-from">
                   {t("reports.ioHistory.fieldDateRange")}
@@ -725,6 +716,7 @@ export default function IoHistoryReport() {
                       t("reports.ioHistory.toDate"),
                     ]}
                     allowClear={false}
+                    presets={periodPresets}
                     maxDate={dayjs().startOf("day")}
                     className="hn-vuexy-date-range"
                     popupClassName="hn-vuexy-date-popup"
@@ -734,9 +726,6 @@ export default function IoHistoryReport() {
                         from: value[0].format(ISO_DATE),
                         to: value[1].format(ISO_DATE),
                       });
-                      // Tự đặt khoảng thì không còn là kỳ dựng sẵn — đúng như
-                      // nhánh "Áp dụng" của lịch cũ.
-                      setPreset("custom");
                     }}
                   />
                 </div>
@@ -999,15 +988,29 @@ export default function IoHistoryReport() {
                             const x = chart.xOf(index);
                             const y = chart.yOf(value);
                             const last = index === chart.days.length - 1;
+                            // Kỳ dài: chấm dính thành dải đặc và số trên điểm
+                            // đè lên đường — chỉ giữ ở mốc cuối để mắt vẫn bắt
+                            // được điểm gần nhất.
+                            const showPoint = chart.density.showMarkers || last;
+                            const showValue =
+                              value !== 0 &&
+                              (chart.density.showPointValues || last);
+                            if (!showPoint && !showValue) return null;
                             return (
                               <g key={chart.days[index]}>
-                                <circle
-                                  className="chart-point"
-                                  cx={x}
-                                  cy={y}
-                                  r={CHART_POINT_RADIUS}
-                                />
-                                {value === 0 ? null : (
+                                {showPoint ? (
+                                  <circle
+                                    className="chart-point"
+                                    cx={x}
+                                    cy={y}
+                                    r={
+                                      chart.density.showMarkers
+                                        ? chart.density.markerRadius
+                                        : CHART_POINT_RADIUS
+                                    }
+                                  />
+                                ) : null}
+                                {showValue ? (
                                   <text
                                     x={last ? x - 7 : x + 7}
                                     y={y - 8}
@@ -1015,23 +1018,31 @@ export default function IoHistoryReport() {
                                   >
                                     {fmt(value)}
                                   </text>
-                                )}
+                                ) : null}
                               </g>
                             );
                           })}
                         </g>
                       );
                     })}
-                    {chart.days.map((day, index) => (
-                      <text
-                        key={day}
-                        x={chart.xOf(index)}
-                        y={CHART_AXIS_Y}
-                        textAnchor="middle"
-                      >
-                        {fmtDay(day)}
-                      </text>
-                    ))}
+                    {chart.days.map((day, index) =>
+                      chart.density.showLabel(index) ? (
+                        <text
+                          key={day}
+                          x={chart.xOf(index)}
+                          y={CHART_AXIS_Y}
+                          textAnchor={
+                            index === 0
+                              ? "start"
+                              : index === chart.days.length - 1
+                                ? "end"
+                                : "middle"
+                          }
+                        >
+                          {chart.dayLabel(day)}
+                        </text>
+                      ) : null,
+                    )}
                   </>
                 )}
               </svg>
@@ -1147,6 +1158,7 @@ export default function IoHistoryReport() {
               <table>
                 <thead>
                   <tr>
+                    <th className="stt-col">{t("shared.table.rowNumber")}</th>
                     <th>{t("reports.ioHistory.colDocument")}</th>
                     <th>{t("reports.ioHistory.colType")}</th>
                     <th>{t("reports.ioHistory.colStatus")}</th>
@@ -1162,13 +1174,14 @@ export default function IoHistoryReport() {
                 <tbody>
                   {documentFilter.rows.length === 0 ? (
                     <tr>
-                      <td className="empty-row" colSpan={10}>
+                      <td className="empty-row" colSpan={11}>
                         {t("reports.ioHistory.tableEmpty")}
                       </td>
                     </tr>
                   ) : (
-                    documentFilter.rows.map((row) => (
+                    documentFilter.rows.map((row, index) => (
                       <tr key={row.id} data-drill-key={row.id}>
+                        <td className="stt-col">{index + 1}</td>
                         <td>
                           <div className="cell">
                             {row.documentNo === ""
@@ -1284,7 +1297,7 @@ export default function IoHistoryReport() {
                   {t("reports.ioHistory.sliceEmpty")}
                 </div>
               ) : (
-                slices.map((slice) => (
+                slices.map((slice, index) => (
                   <article
                     key={slice.row.id}
                     className="slice"
@@ -1292,6 +1305,9 @@ export default function IoHistoryReport() {
                   >
                     <div className="slicetop">
                       <div>
+                        <div className="stt-badge">
+                          {t("shared.table.rowNumber")} {index + 1}
+                        </div>
                         <div className="cell">
                           {slice.row.documentNo === ""
                             ? EMPTY_TEXT

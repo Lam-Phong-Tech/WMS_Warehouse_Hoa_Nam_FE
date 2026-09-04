@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
@@ -28,6 +28,14 @@ export interface DateRangePreset {
   /** Khoá ổn định để biết preset nào đang được áp dụng. */
   key: string;
   label: string;
+  /**
+   * Tên nhóm hiện thành tiêu đề nhỏ phía trên preset đầu tiên của nhóm.
+   *
+   * Có nhóm thì người dùng đọc được LUẬT của từng kỳ chứ không phải nhớ thuộc
+   * lòng: nhóm "Gần đây" đếm lùi từ hôm nay, nhóm "Theo lịch" bám mốc lịch.
+   * Bỏ trống thì dải preset là một danh sách phẳng như trước.
+   */
+  group?: string;
   /**
    * Tính khoảng ngày TẠI THỜI ĐIỂM BẤM, không tính sẵn lúc render: "Tháng này"
    * phải đúng theo hôm nay, kể cả khi tab mở qua nửa đêm.
@@ -304,17 +312,24 @@ export function UiVuexyDateRangePicker({
               aria-label={t("shared.datePicker.presets")}
               sx={presetColumnSx}
             >
-              {presets?.map((preset) => (
-                <Box
-                  key={preset.key}
-                  component="button"
-                  type="button"
-                  aria-pressed={activePresetKey === preset.key}
-                  onClick={() => applyPreset(preset)}
-                  sx={presetButtonSx(activePresetKey === preset.key)}
-                >
-                  {preset.label}
-                </Box>
+              {presets?.map((preset, index) => (
+                <Fragment key={preset.key}>
+                  {preset.group !== undefined &&
+                  preset.group !== presets[index - 1]?.group ? (
+                    <Box aria-hidden="true" sx={presetGroupLabelSx}>
+                      {preset.group}
+                    </Box>
+                  ) : null}
+                  <Box
+                    component="button"
+                    type="button"
+                    aria-pressed={activePresetKey === preset.key}
+                    onClick={() => applyPreset(preset)}
+                    sx={presetButtonSx(activePresetKey === preset.key)}
+                  >
+                    {preset.label}
+                  </Box>
+                </Fragment>
               ))}
             </Box>
           ) : null}
@@ -529,13 +544,24 @@ export function UiVuexyDateRangePicker({
             bgcolor: S.bgSubtle,
           }}
         >
+          {/*
+           * Khoảng đang chọn + SỐ NGÀY. Nhãn kỳ ("Tháng này (đến nay)") nói
+           * luật, con số này nói kết quả — thiếu nó thì người dùng vẫn phải tự
+           * trừ hai mốc trong đầu để biết mình đang xem bao nhiêu ngày.
+           */}
           <Box sx={{ minWidth: 0, color: S.textMedium, fontSize: 12 }}>
-            {t("shared.datePicker.selecting", {
-              field:
-                activeField === "start"
-                  ? t("shared.datePicker.fromDateLower")
-                  : t("shared.datePicker.toDateLower"),
-            })}
+            {draftStart && draftEnd
+              ? t("shared.datePicker.rangeSummary", {
+                  from: draftStart.format(format),
+                  to: draftEnd.format(format),
+                  days: draftEnd.diff(draftStart, "day") + 1,
+                })
+              : t("shared.datePicker.selecting", {
+                  field:
+                    activeField === "start"
+                      ? t("shared.datePicker.fromDateLower")
+                      : t("shared.datePicker.toDateLower"),
+                })}
           </Box>
           <Box sx={{ display: "flex", flexShrink: 0, gap: 0.75 }}>
             {allowClear ? (
@@ -586,6 +612,23 @@ const presetColumnSx = {
   borderBottom: { xs: `1px solid ${S.border}`, sm: "none" },
   borderRight: { xs: "none", sm: `1px solid ${S.border}` },
   bgcolor: S.bgSubtle,
+} as const;
+
+/**
+ * Tiêu đề nhóm trong dải kỳ nhanh. Ở khổ hẹp dải xếp NGANG và cuộn, lúc đó
+ * tiêu đề nhóm chen giữa các nút chỉ làm rối — ẩn đi, thứ tự nút vẫn giữ
+ * nguyên nhóm nên nghĩa không mất.
+ */
+const presetGroupLabelSx = {
+  display: { xs: "none", sm: "block" },
+  mt: 0.75,
+  px: 1.25,
+  color: S.textMedium,
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  "&:first-of-type": { mt: 0 },
 } as const;
 
 const presetButtonSx = (active: boolean) => ({

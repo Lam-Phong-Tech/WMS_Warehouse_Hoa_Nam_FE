@@ -76,10 +76,10 @@ describe("putaway real API contract", () => {
     });
     expect(() =>
       resolvePutawayTrayByScanCode(trays, "TRAY-CLOSED"),
-    ).toThrowError(/Không tìm thấy TRAY khả dụng/);
+    ).toThrowError(/Không tìm thấy khay khả dụng/);
     expect(() =>
       resolvePutawayTrayByScanCode(trays, "TRAY-UNKNOWN"),
-    ).toThrowError(/Không tìm thấy TRAY khả dụng/);
+    ).toThrowError(/Không tìm thấy khay khả dụng/);
   });
 
   it("fails closed when a scan code is ambiguous", () => {
@@ -97,7 +97,7 @@ describe("putaway real API contract", () => {
         ],
         "TRAY-A-01",
       ),
-    ).toThrowError(/khớp nhiều TRAY/);
+    ).toThrowError(/khớp nhiều khay/);
   });
 
   it("filters terminal TRAY states returned by the API", async () => {

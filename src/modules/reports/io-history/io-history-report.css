@@ -1585,3 +1585,103 @@
     transform: rotate(360deg);
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI MOCKUP · Cột STT
+   -------------------------------------------------------------------------
+   Mọi danh sách của màn báo cáo phải đánh số dòng để đối chiếu vị trí khi trao
+   đổi. Bảng chứng từ có cột STT đứng đầu; khối "lát cắt" dùng nhãn STT dạng
+   chip cho cùng một con số.
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt-io th.stt-col,
+.hn-rpt-io td.stt-col {
+  width: 56px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt-io .stt-badge {
+  width: fit-content;
+  margin-bottom: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--hnio-surface-muted);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI MOCKUP · Bảng "Lịch sử chứng từ đã ghi nhận" cuộn trong khung
+   -------------------------------------------------------------------------
+   Mockup 8.3 chỉ có 5 chứng từ cứng nên bảng luôn ngắn. Một kỳ thật có hàng
+   trăm chứng từ: để nguyên thì bảng kéo trang thành một dải rất dài, và muốn
+   đổi lại bộ lọc của CHÍNH khối đó người dùng phải cuộn ngược hết cả trang.
+
+   Cho bảng cuộn TRONG khung của nó: thanh lọc và hàng tiêu đề cột luôn nằm
+   trong tầm mắt, phần trang phía dưới không bị đẩy đi đâu. Ngưỡng chiều cao
+   dùng chung với RPT-01/RPT-02 (`--hn-rpt-scroll-h`) để 8 màn báo cáo cuộn
+   giống nhau. Là `max-height` nên kỳ ít chứng từ KHÔNG bị độn khoảng trắng —
+   chỉ kỳ dài mới sinh thanh cuộn.
+
+   Khối "Dạng hộp" (`.slices`) vốn đã cuộn trong khung từ bản port; ở đây chỉ
+   khoác cho nó cùng một bộ thanh cuộn để hai chế độ xem không lệch nhau.
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt-io {
+  --hn-rpt-scroll-h: clamp(320px, 56vh, 640px);
+  /* Dẫn xuất từ `--muted` (đã theo chế độ sáng/tối) nên không cần bản dark riêng. */
+  --hnio-scrollbar-thumb: color-mix(in srgb, var(--muted) 45%, transparent);
+  --hnio-scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--muted) 72%,
+    transparent
+  );
+}
+
+.hn-rpt-io .scroll {
+  max-height: var(--hn-rpt-scroll-h);
+  overflow-y: auto;
+  /* Cuộn hết bảng thì DỪNG, không "xuyên" ra cuộn tiếp cả trang. */
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
+.hn-rpt-io .scroll,
+.hn-rpt-io .slices {
+  scrollbar-width: thin;
+  scrollbar-color: var(--hnio-scrollbar-thumb) transparent;
+}
+
+/*
+ * Cuộn dọc mà hàng tiêu đề trôi mất thì không còn biết cột nào là cột nào.
+ *
+ * Viền dưới vẽ bằng `box-shadow: inset` chứ không phải `border-bottom`: ô
+ * sticky giữ nguyên chỗ nhưng đường viền của nó vẫn trượt theo nội dung ở một
+ * số trình duyệt, để lại khe hở giữa tiêu đề và dòng đầu tiên.
+ */
+.hn-rpt-io .scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 0;
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+
+.hn-rpt-io .scroll::-webkit-scrollbar,
+.hn-rpt-io .slices::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.hn-rpt-io .scroll::-webkit-scrollbar-thumb,
+.hn-rpt-io .slices::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--hnio-scrollbar-thumb);
+  background-clip: content-box;
+}
+.hn-rpt-io .scroll:hover::-webkit-scrollbar-thumb,
+.hn-rpt-io .slices:hover::-webkit-scrollbar-thumb {
+  background: var(--hnio-scrollbar-thumb-hover);
+  background-clip: content-box;
+}

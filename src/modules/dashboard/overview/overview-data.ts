@@ -22,7 +22,10 @@ import dayjs from "dayjs";
 import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { OPERATIONS_REPORT_ENDPOINTS } from "@/modules/reports/operations/report-data";
-import { INVENTORY_STOCK_STATUS_LABELS } from "@/shared/constants/business-labels";
+import {
+  INVENTORY_STOCK_STATUS_LABELS,
+  SKU_TYPE_LABELS,
+} from "@/shared/constants/business-labels";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import type { MessageKey } from "@/shared/i18n/messages";
 import type { DashboardOverview, SkuTypeFilter } from "../types";
@@ -509,6 +512,45 @@ export function buildComposition(
     label: INVENTORY_STOCK_STATUS_LABELS[status],
     value: pick(status),
   }));
+  const total = rows.reduce((sum, row) => sum + row.value, 0);
+  return rows.map((row) => ({
+    ...row,
+    pct: total > 0 ? Math.round((row.value / total) * 100) : 0,
+  }));
+}
+
+export interface StockMixRow {
+  key: "PRODUCT" | "COMPONENT";
+  label: string;
+  value: number;
+  pct: number;
+}
+
+/**
+ * Cơ cấu tồn theo LOẠI HÀNG (Sản phẩm / Linh kiện) — nguồn của donut
+ * `OverviewStockMix`. Cộng cả bốn trạng thái của mỗi loại: thẻ này trả lời
+ * "tồn đang nằm ở loại hàng nào", còn tách theo trạng thái là việc của
+ * `buildComposition`.
+ *
+ * KHÔNG nhận `SkuTypeFilter`: donut là biểu đồ phần-của-tổng-thể, lọc còn một
+ * loại thì chỉ còn một miếng 100% và mất hết ý nghĩa so sánh.
+ */
+export function buildStockMix(
+  overview: DashboardOverview | undefined,
+): StockMixRow[] {
+  const structure = overview?.stock_structure;
+  const rows = (["PRODUCT", "COMPONENT"] as const).map((key) => {
+    const split = structure?.[key];
+    return {
+      key,
+      label: SKU_TYPE_LABELS[key],
+      value:
+        num(split?.AVAILABLE) +
+        num(split?.QUARANTINE) +
+        num(split?.NON_SELLABLE) +
+        num(split?.DEFECTIVE),
+    };
+  });
   const total = rows.reduce((sum, row) => sum + row.value, 0);
   return rows.map((row) => ({
     ...row,

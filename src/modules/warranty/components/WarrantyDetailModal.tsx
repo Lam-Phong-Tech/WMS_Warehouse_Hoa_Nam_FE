@@ -8,6 +8,7 @@ import {
   MenuItem,
   SEMANTIC_LIGHT,
   Stack,
+  UiAddressField,
   UiAlert,
   UiDialog,
   UiFormAutocomplete,
@@ -29,6 +30,10 @@ import {
   extractFieldErrorsRaw,
   getApiErrorMessage,
 } from "@/shared/api/api-error";
+import {
+  classifyConcurrencyError,
+  isRetryableAfterReload,
+} from "@/shared/api/concurrency-contract";
 import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
@@ -45,6 +50,7 @@ import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import { formatDate } from "@/shared/utils/format-date";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
+  COMPONENT_ISSUE_STATUS_BADGE,
   WARRANTY_ATTACHMENT_TYPE_LABELS,
   WARRANTY_BASELINE_STATUSES,
   WARRANTY_DIAGNOSIS_REQUIRED_TARGETS,
@@ -56,7 +62,11 @@ import {
   WARRANTY_TERMINAL_STATUSES,
   formatWarrantyDateTime,
 } from "@/modules/warranty/constants";
-import { WARRANTY_IDENTIFICATION_STATUS_LABELS } from "@/shared/constants/business-labels";
+import {
+  businessLabel,
+  ITEM_STATUS_LABELS,
+  WARRANTY_IDENTIFICATION_STATUS_LABELS,
+} from "@/shared/constants/business-labels";
 import {
   useComponentIssues,
   useDeleteWarrantyAttachment,
@@ -86,6 +96,18 @@ import {
 // rõ, không bao giờ nối thẳng vào câu chính như toast ở đây).
 function errorText(error: unknown, fallback: string): string {
   return getApiErrorMessage(error, fallback);
+}
+
+/**
+ * `true` khi lỗi là xung đột đồng thời loại RELOAD_THEN_RETRY (412
+ * STALE_VERSION / 409 CONCURRENCY_CONFLICT). Hook mutation đã tải lại hồ sơ,
+ * nên form chỉ cần báo đúng việc phải làm — và tuyệt đối KHÔNG đổ
+ * `expected_version`/`current_version` ra toast: đó là số kỹ thuật để tra
+ * soát, người dùng đọc "(2; 3)" không hiểu gì.
+ */
+function isStaleVersionConflict(error: unknown): boolean {
+  const outcome = classifyConcurrencyError(error);
+  return outcome !== null && isRetryableAfterReload(outcome);
 }
 
 /** Annex D SCR-WAR-01 field `images`: jpg/png/webp. */
@@ -841,6 +863,11 @@ export function WarrantyDetailModal({
       setStatusFieldErrors({});
       setStatusOpen(false);
     } catch (error: unknown) {
+      if (isStaleVersionConflict(error)) {
+        setStatusFieldErrors({});
+        toast.error(t("warranty.error.caseStaleVersion"));
+        return;
+      }
       const apiFieldErrors = extractFieldErrorsRaw(error);
       const message = errorText(error, t("warranty.detail.statusUpdateError"));
       toast.error(
@@ -902,6 +929,11 @@ export function WarrantyDetailModal({
       setCorrectFieldErrors({});
       setCorrectOpen(false);
     } catch (error: unknown) {
+      if (isStaleVersionConflict(error)) {
+        setCorrectFieldErrors({});
+        toast.error(t("warranty.error.caseStaleVersion"));
+        return;
+      }
       const apiFieldErrors = extractFieldErrorsRaw(error);
       const message = errorText(error, t("warranty.detail.infoUpdateError"));
       toast.error(
@@ -989,14 +1021,8 @@ export function WarrantyDetailModal({
       width: 120,
       render: (row) => (
         <UiStatusBadge
-          tone={
-            row.status === "POSTED"
-              ? "success"
-              : row.status === "CANCELLED"
-                ? "error"
-                : "info"
-          }
-          label={row.status}
+          tone={COMPONENT_ISSUE_STATUS_BADGE[row.status]?.tone ?? "neutral"}
+          label={COMPONENT_ISSUE_STATUS_BADGE[row.status]?.label ?? row.status}
         />
       ),
     },
@@ -1432,7 +1458,14 @@ export function WarrantyDetailModal({
                         />
                         <DetailField
                           label={t("warranty.detail.fieldItemStatus")}
-                          value={detail.item_status ?? EMPTY_TEXT}
+                          value={
+                            detail.item_status
+                              ? businessLabel(
+                                  ITEM_STATUS_LABELS,
+                                  detail.item_status,
+                                )
+                              : EMPTY_TEXT
+                          }
                         />
                         <DetailField
                           label={t("warranty.detail.fieldDefectCatalog")}
@@ -2166,15 +2199,15 @@ export function WarrantyDetailModal({
               />
             </Grid>
             <Grid size={12}>
-              <UiTextField
-                fullWidth
+              <UiAddressField
+                data-testid="warranty-correct-address"
                 label={t("warranty.detail.editAddress")}
                 value={correctForm.customer_address}
                 disabled={!canViewPii}
-                onChange={(event) => {
+                onChange={(value) => {
                   setCorrectForm((current) => ({
                     ...current,
-                    customer_address: event.target.value,
+                    customer_address: value,
                   }));
                   if (correctFieldErrors.customer_address) {
                     setCorrectFieldErrors((current) => ({
@@ -2185,7 +2218,6 @@ export function WarrantyDetailModal({
                 }}
                 error={Boolean(correctFieldErrors.customer_address)}
                 helperText={correctFieldErrors.customer_address}
-                slotProps={{ htmlInput: { maxLength: 500 } }}
               />
             </Grid>
             <Grid size={12}>

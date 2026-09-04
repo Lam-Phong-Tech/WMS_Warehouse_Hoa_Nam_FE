@@ -709,14 +709,19 @@
   gap: 24px;
   align-items: stretch;
 }
-.hn-rpt01 .analysis-grid > :nth-child(1) {
-  grid-column: span 8;
-}
-.hn-rpt01 .analysis-grid > :nth-child(2) {
-  grid-column: span 4;
-}
+/*
+ * Hai thẻ biểu đồ chia đôi 6/6.
+ *
+ * Trước đây là 8 + 4. Cả hai thẻ dùng CÙNG một <InventoryFlowChart> với
+ * `viewBox="0 0 640 228"` và `preserveAspectRatio` mặc định (`meet`), nên hệ số
+ * phóng = kích thước khung vẽ / viewBox: khung 8 cột phóng nội dung to lên,
+ * khung 4 cột thu nhỏ lại và bị letterbox — cùng một cỡ chữ khai trong CSS mà
+ * ra hai cỡ khác hẳn trên màn hình. Chia đều là điều kiện đủ ở đây vì hai thẻ
+ * đã sẵn cùng viewBox và cùng cấu trúc thân thẻ (.chart-legend + .chart-plot).
+ */
 .hn-rpt01 .analysis-grid > :nth-child(1),
 .hn-rpt01 .analysis-grid > :nth-child(2) {
+  grid-column: span 6;
   align-self: stretch;
 }
 .hn-rpt01 .chart-card {
@@ -1100,13 +1105,16 @@
   line-height: 20px;
 }
 /*
- * Hai ô ngày của "Kỳ báo cáo" nằm NGANG HÀNG trên một dòng, đúng mockup —
- * đây là lưới 2 cột, không phải hai khối xếp chồng.
+ * Hai ô ngày của "Kỳ báo cáo" nằm NGANG HÀNG trên một dòng, đúng mockup.
+ *
+ * Bản hai ô rời trước đây tự chia lưới 2 cột ở đây. Nay bộ chọn khoảng
+ * (`UiVuexyDateRangePicker`) là MỘT khối tự chia hai ô bên trong nó; giữ lưới
+ * 2 cột thì cả khối bị nhét vào nửa cột, hai ô ngày chỉ còn một phần tư bề
+ * rộng và cắt cụt thành "Từ 03/0…". Ở đây chỉ còn một cột cho khối đó giãn.
  */
 .hn-rpt01 .report-date-range {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
 }
 .hn-rpt01 .report-filter-actions {
@@ -2025,4 +2033,38 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI MOCKUP · Cột STT
+   -------------------------------------------------------------------------
+   Mọi danh sách của màn báo cáo phải đánh số dòng để người đọc đối chiếu vị
+   trí khi trao đổi qua điện thoại / biên bản. Cột STT là cột ĐẦU nên nó chiếm
+   mất `:first-child` của `.chart-table` (quy tắc căn trái của mockup) — trả lại
+   căn trái cho cột nghiệp vụ đầu tiên bằng bộ chọn `+`.
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt01 .report-table th.stt-col,
+.hn-rpt01 .report-table td.stt-col,
+.hn-rpt01 .chart-table th.stt-col,
+.hn-rpt01 .chart-table td.stt-col {
+  width: 56px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt01 .chart-table th.stt-col + th,
+.hn-rpt01 .chart-table td.stt-col + td {
+  text-align: left;
+}
+.hn-rpt01 .stt-badge {
+  justify-self: start;
+  align-self: start;
+  width: fit-content;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.02em;
 }

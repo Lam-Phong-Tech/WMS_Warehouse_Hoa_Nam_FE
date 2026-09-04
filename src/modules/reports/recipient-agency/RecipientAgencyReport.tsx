@@ -36,7 +36,7 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { MultiSelectFilter } from "@/modules/reports/operations/report-table";
-import { presetRange } from "@/modules/reports/operations/report-format";
+import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import { usePeriodFilter } from "@/modules/reports/operations/report-period";
 import {
   RPT_CONTROL_MOTION_SX,
@@ -198,6 +198,9 @@ function PiiSummary({
     </Box>
   );
 }
+
+/** Mảng rỗng dùng chung khi drill-down chưa có dữ liệu. */
+const EMPTY_DRILL_ROWS: RecipientAgencyDetails["rows"] = [];
 
 const REPORT_SURFACE_SX = {
   bgcolor: S.bgSurface,
@@ -740,31 +743,7 @@ export default function RecipientAgencyReport() {
    * rơi vào khi tự đặt ngày, không phải một lựa chọn bấm được (bấm vào nó
    * không đổi khoảng ngày nào cả).
    */
-  const periodPresets = useMemo(
-    () => [
-      {
-        key: "this-week",
-        label: t("reports.period.thisWeek"),
-        range: () => presetRange("this-week"),
-      },
-      {
-        key: "this-month",
-        label: t("reports.period.thisMonth"),
-        range: () => presetRange("this-month"),
-      },
-      {
-        key: "this-quarter",
-        label: t("reports.period.thisQuarter"),
-        range: () => presetRange("this-quarter"),
-      },
-      {
-        key: "this-year",
-        label: t("reports.period.thisYear"),
-        range: () => presetRange("this-year"),
-      },
-    ],
-    [t],
-  );
+  const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const [recipientIds, setRecipientIds] = useState<string[]>([]);
   const [recipientTypes, setRecipientTypes] = useState<string[]>([]);
   const [agencyIds, setAgencyIds] = useState<string[]>([]);
@@ -833,6 +812,9 @@ export default function RecipientAgencyReport() {
     activeDrill?.snapshotId ?? null,
     activeDrill?.key ?? null,
   );
+  // Giữ MỘT tham chiếu mảng cho bảng trong modal: cột STT tra vị trí dòng
+  // bằng indexOf nên mảng phải là cùng một đối tượng giữa các lần render ô.
+  const drillRows = detailsQuery.data?.rows ?? EMPTY_DRILL_ROWS;
 
   const summary = summaryQuery.data;
   const metrics = summary?.kpis ?? EMPTY_METRICS;
@@ -984,6 +966,16 @@ export default function RecipientAgencyReport() {
   };
 
   const tableColumns = [
+    {
+      key: "stt",
+      header: t("shared.table.rowNumber"),
+      align: "center" as const,
+      width: 56,
+      // Bảng này sắp xếp CÓ KIỂM SOÁT (tableFilter.rows đã đúng thứ tự
+      // hiển thị), nên STT chạy đúng theo dòng người dùng đang nhìn.
+      render: (row: RecipientAgencySummaryRow) =>
+        tableFilter.rows.indexOf(row) + 1,
+    },
     {
       key: "recipient",
       header: t("reports.recipientAgency.colRecipient"),
@@ -2325,6 +2317,13 @@ export default function RecipientAgencyReport() {
           <ResponsiveDataTable
             columns={[
               {
+                key: "stt",
+                header: t("shared.table.rowNumber"),
+                align: "center",
+                width: 56,
+                render: (row) => drillRows.indexOf(row) + 1,
+              },
+              {
                 key: "outbound",
                 header: t("reports.recipientAgency.colDocs"),
                 render: (row) => (
@@ -2371,7 +2370,7 @@ export default function RecipientAgencyReport() {
                 render: (row) => orEmpty(row.reversal_of_event_id),
               },
             ]}
-            rows={detailsQuery.data?.rows ?? []}
+            rows={drillRows}
             rowKey={(row) => row.event_id}
             loading={detailsQuery.isLoading}
             emptyText={t("reports.recipientAgency.drillEmpty")}

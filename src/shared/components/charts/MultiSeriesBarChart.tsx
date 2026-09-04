@@ -5,6 +5,11 @@ import {
   CATEGORICAL_PALETTE,
   chartPointEvents,
 } from "./chart-theme";
+import { fitAxisDensity, longestLabelChars } from "./axis-density";
+import { apexPlotWidth, useChartWidth } from "./use-chart-width";
+
+/** Cỡ chữ nhãn trục X đang đặt trong `options.xaxis.labels.style`. */
+const AXIS_FONT_SIZE = 12;
 
 export type MultiSeriesBarSeries = {
   name: string;
@@ -54,10 +59,45 @@ export function MultiSeriesBarChart({
   onSelect,
 }: MultiSeriesBarChartProps) {
   const format = (value: number) => valueFormatter?.(value) ?? String(value);
-  const dense = categories.length > 14;
   const resolvedHeight =
     height ?? (horizontal ? Math.max(240, categories.length * 32 + 80) : 300);
-  const labelsOn = showValues ?? (!dense && series.length <= 3);
+
+  /*
+   * Ở dạng cột dọc, trục X là trục hạng mục/thời gian và là chỗ vỡ giao diện
+   * khi người dùng chọn kỳ dài: nhãn ngày chồng khít lên nhau, số trên đầu cột
+   * dính thành một hàng chữ. Nghiêng nhãn 45° trước (giữ được nhiều mốc nhất),
+   * chỉ khi vẫn không đủ chỗ mới thưa nhãn.
+   *
+   * Dạng NGANG không đi qua đây: nhãn hạng mục nằm ở trục Y, mỗi nhãn một dòng
+   * riêng nên không có chuyện chồng chữ; chiều cao đã giãn theo số dòng.
+   */
+  const { ref, width } = useChartWidth();
+  const plotWidth = apexPlotWidth(width);
+  const labelChars = longestLabelChars(categories);
+  const flat = fitAxisDensity({
+    count: categories.length,
+    plotWidth,
+    labelChars,
+    fontSize: AXIS_FONT_SIZE,
+  });
+  const rotated = !horizontal && flat.stride > 1;
+  const density = rotated
+    ? fitAxisDensity({
+        count: categories.length,
+        plotWidth,
+        labelChars,
+        fontSize: AXIS_FONT_SIZE,
+        rotateDegrees: 45,
+      })
+    : flat;
+  const dense = !horizontal && (rotated || categories.length > 14);
+  // Dạng ngang xếp mỗi hạng mục một DÒNG, nên chỗ cho nhãn số phụ thuộc chiều
+  // cao chứ không phải bề rộng — giữ nguyên ngưỡng theo số dòng như trước.
+  const labelsOn =
+    showValues ??
+    (horizontal
+      ? categories.length <= 14 && series.length <= 3
+      : !dense && density.showPointValues && series.length <= 3);
 
   const baseChartOptions = useChartBaseOptions();
 
@@ -90,7 +130,10 @@ export function MultiSeriesBarChart({
         horizontal,
         borderRadius: 4,
         borderRadiusApplication: stacked ? "end" : "end",
-        columnWidth: series.length > 1 ? "68%" : "45%",
+        // Kỳ dài: để cột thở 68% thì mỗi cột chỉ còn vài phần mười pixel và
+        // biểu đồ biến thành một dải màu đứt quãng. Dồn sát để cụm cột của mỗi
+        // mốc còn đọc được thành một khối.
+        columnWidth: dense ? "92%" : series.length > 1 ? "68%" : "45%",
         barHeight: "62%",
       },
     },
@@ -107,13 +150,21 @@ export function MultiSeriesBarChart({
     xaxis: {
       categories,
       labels: {
-        style: { fontSize: "12px" },
+        style: { fontSize: `${AXIS_FONT_SIZE}px` },
         hideOverlappingLabels: true,
-        rotate: !horizontal && dense ? -45 : 0,
+        rotate: rotated ? -45 : 0,
+        rotateAlways: rotated,
+        trim: rotated,
+        maxHeight: 96,
         formatter: horizontal
           ? (value: string) => format(Number(value))
           : undefined,
       },
+      // Số KHOẢNG chứ không phải số nhãn — n nhãn thì n−1 khoảng.
+      tickAmount:
+        !horizontal && density.stride > 1
+          ? Math.max(2, Math.min(categories.length - 1, density.maxLabels - 1))
+          : undefined,
       tickPlacement: "on",
     },
     yaxis: {
@@ -137,11 +188,13 @@ export function MultiSeriesBarChart({
   };
 
   return (
-    <Chart
-      options={options}
-      series={series.map((item) => ({ name: item.name, data: item.data }))}
-      type="bar"
-      height={resolvedHeight}
-    />
+    <div ref={ref}>
+      <Chart
+        options={options}
+        series={series.map((item) => ({ name: item.name, data: item.data }))}
+        type="bar"
+        height={resolvedHeight}
+      />
+    </div>
   );
 }

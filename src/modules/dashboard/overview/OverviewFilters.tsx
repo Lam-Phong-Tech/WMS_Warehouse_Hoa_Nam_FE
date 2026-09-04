@@ -247,6 +247,7 @@ function DatePickerField({
 export function OverviewFilters({
   period,
   onPeriodChange,
+  rangeLabel,
   custom,
   onCustomChange,
   dateError,
@@ -258,6 +259,15 @@ export function OverviewFilters({
 }: {
   period: OverviewPeriod;
   onPeriodChange: (period: OverviewPeriod) => void;
+  /**
+   * Khoảng ngày THẬT của kỳ đang chọn, kèm số ngày.
+   *
+   * Nút kỳ chỉ nói LUẬT ("Tháng này"), không nói kết quả — mùng 4 bấm "Tháng
+   * này" chỉ ra 4 ngày dữ liệu mà nhìn nhãn thì tưởng cả tháng. Dòng này nói
+   * thẳng kết quả nên không còn chỗ để hiểu nhầm, và nhãn nút vẫn ngắn (nút
+   * `white-space: nowrap`, nhồi chữ vào là vỡ dải segmented ở khổ hẹp).
+   */
+  rangeLabel: string;
   custom: DateRange;
   onCustomChange: (range: DateRange) => void;
   dateError: string;
@@ -290,6 +300,7 @@ export function OverviewFilters({
             </button>
           ))}
         </div>
+        <span className="filter-range-note">{rangeLabel}</span>
       </div>
 
       {period === "custom" ? (

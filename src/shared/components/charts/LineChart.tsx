@@ -5,6 +5,11 @@ import {
   CATEGORICAL_PALETTE,
   chartPointEvents,
 } from "./chart-theme";
+import { fitAxisDensity, longestLabelChars } from "./axis-density";
+import { apexPlotWidth, useChartWidth } from "./use-chart-width";
+
+/** Cỡ chữ nhãn trục X đang đặt trong `options.xaxis.labels.style`. */
+const AXIS_FONT_SIZE = 12;
 
 export type LineChartSeries = {
   name: string;
@@ -35,8 +40,13 @@ export type LineChartProps = {
  * cột chồng lên nhau (từ mốc "tháng" trở lên). `AreaChart` chỉ vẽ được 1 chuỗi nên
  * không thay thế được ở các chart so sánh nhiều chiều.
  *
- * Marker tắt khi chuỗi dài: trên 60 điểm thì chấm tròn dính vào nhau thành một dải
- * đặc, che mất chính đường xu hướng mà chart này tồn tại để thể hiện.
+ * Marker tắt khi chuỗi dài: khi khoảng cách giữa hai điểm hẹp hơn đường kính chấm
+ * thì chấm tròn dính vào nhau thành một dải đặc, che mất chính đường xu hướng mà
+ * chart này tồn tại để thể hiện.
+ *
+ * Ngưỡng "dài" tính theo BỀ RỘNG THẬT của khung chứ không theo số điểm cố định:
+ * cùng một kỳ 90 ngày, panel rộng trên desktop thì vừa, panel hẹp (tablet, hoặc
+ * sau khi mở sidebar) thì nhãn chồng lên nhau. Xem `axis-density`.
  */
 export function LineChart({
   categories,
@@ -45,7 +55,15 @@ export function LineChart({
   valueFormatter,
   onSelect,
 }: LineChartProps) {
-  const dense = categories.length > 60;
+  const { ref, width } = useChartWidth();
+  const density = fitAxisDensity({
+    count: categories.length,
+    plotWidth: apexPlotWidth(width),
+    labelChars: longestLabelChars(categories),
+    fontSize: AXIS_FONT_SIZE,
+    markerRadius: 4,
+  });
+  const dense = density.stride > 1;
   const format = (value: number) => valueFormatter?.(value) ?? String(value);
 
   const baseChartOptions = useChartBaseOptions();
@@ -75,11 +93,17 @@ export function LineChart({
         "markerClick",
       ),
     },
-    stroke: { curve: "smooth", width: 3 },
+    stroke: {
+      // Nội suy "smooth" trên chuỗi dày đặc vẽ ra các bướu không có trong dữ
+      // liệu (spline vọt qua điểm); kỳ dài dùng nét thẳng cho đúng số liệu.
+      curve: dense ? "straight" : "smooth",
+      width: Math.max(1.5, 3 * density.strokeScale),
+    },
     markers: {
       // Có drill-down thì marker phải luôn hiện: điểm dữ liệu chính là vùng
-      // bấm được, ẩn đi thì người dùng không biết chỗ nào bấm được.
-      size: dense && !onSelect ? 0 : 4,
+      // bấm được, ẩn đi thì người dùng không biết chỗ nào bấm được — nhưng vẫn
+      // co lại theo mật độ để không dính thành dải đặc.
+      size: density.showMarkers ? 4 : onSelect ? 2 : 0,
       strokeWidth: 2,
       hover: { size: 7 },
     },
@@ -91,12 +115,18 @@ export function LineChart({
     xaxis: {
       categories,
       labels: {
-        style: { fontSize: "12px" },
-        // Trục dày đặc thì để ApexCharts tự giãn nhãn thay vì in đè lên nhau.
+        style: { fontSize: `${AXIS_FONT_SIZE}px` },
+        // Chốt chặn cuối của ApexCharts; số nhãn đã được `tickAmount` ép về
+        // mức vừa khung nên đây chỉ là lưới an toàn.
         hideOverlappingLabels: true,
-        rotate: dense ? -45 : 0,
+        rotate: 0,
+        rotateAlways: false,
+        trim: false,
       },
-      tickAmount: dense ? 12 : undefined,
+      // Số KHOẢNG chứ không phải số nhãn — n nhãn thì n−1 khoảng.
+      tickAmount: dense
+        ? Math.max(2, Math.min(categories.length - 1, density.maxLabels - 1))
+        : undefined,
     },
     yaxis: { labels: { formatter: format } },
     legend: { show: series.length > 1, position: "top", fontSize: "12px" },
@@ -104,11 +134,13 @@ export function LineChart({
   };
 
   return (
-    <Chart
-      options={options}
-      series={series.map((item) => ({ name: item.name, data: item.data }))}
-      type="line"
-      height={height}
-    />
+    <div ref={ref}>
+      <Chart
+        options={options}
+        series={series.map((item) => ({ name: item.name, data: item.data }))}
+        type="line"
+        height={height}
+      />
+    </div>
   );
 }

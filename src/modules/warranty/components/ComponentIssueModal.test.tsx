@@ -100,7 +100,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
       />,
     );
 
-    expect(await screen.findByText(/không còn active/)).toBeInTheDocument();
+    expect(await screen.findByText(/không còn hiệu lực/)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Tạo phiếu DRAFT/ }),
     ).toBeDisabled();
@@ -175,7 +175,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     );
 
     const postButton = await screen.findByRole("button", {
-      name: /Full Post/,
+      name: /Ghi sổ toàn phiếu/,
     });
     await waitFor(() => expect(postButton).toBeEnabled());
     fireEvent.click(postButton);
@@ -209,7 +209,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     );
 
     const postButton = await screen.findByRole("button", {
-      name: /Full Post/,
+      name: /Ghi sổ toàn phiếu/,
     });
     expect(postButton).toBeDisabled();
     expect(postComponentIssue).not.toHaveBeenCalled();

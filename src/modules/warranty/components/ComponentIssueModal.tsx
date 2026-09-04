@@ -33,6 +33,10 @@ import { useT } from "@/shared/i18n/useT";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import {
+  classifyConcurrencyError,
+  isRetryableAfterReload,
+} from "@/shared/api/concurrency-contract";
 import { useCanAny } from "@/shared/components/permission";
 import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
@@ -113,6 +117,19 @@ export function ComponentIssueModal({
   const detailQuery = useComponentIssueDetail(documentId);
   const detail = detailQuery.data;
   const version = localVersion ?? detail?.version ?? null;
+
+  /**
+   * Thua race (412 STALE_VERSION / 409 CONCURRENCY_CONFLICT): `localVersion`
+   * đang che `detail.version` nên dù hook mutation đã tải lại phiếu, lần thao
+   * tác sau vẫn gửi ĐÚNG version cũ và nhận lại đúng lỗi cũ. Quên nó đi để
+   * version quay về nguồn duy nhất là bản vừa tải lại.
+   */
+  const forgetStaleLocalVersion = (error: unknown) => {
+    const outcome = classifyConcurrencyError(error);
+    if (outcome !== null && isRetryableAfterReload(outcome)) {
+      setLocalVersion(null);
+    }
+  };
 
   const warehousesQuery = useQuery({
     queryKey: ["warranty", "component-issue-warehouse"],
@@ -292,7 +309,8 @@ export function ComponentIssueModal({
       setDocumentId(created.id);
       setLocalVersion(created.version);
       onChanged?.();
-    } catch {
+    } catch (error) {
+      forgetStaleLocalVersion(error);
       // Toast lỗi đã hiện qua onError của createMutation (use-warranty.ts) —
       // bắt ở đây chỉ để mutateAsync() không ném unhandled rejection.
     }
@@ -325,7 +343,8 @@ export function ComponentIssueModal({
         }),
       );
       onChanged?.();
-    } catch {
+    } catch (error) {
+      forgetStaleLocalVersion(error);
       // Toast lỗi đã hiện qua onError của scanMutation (use-warranty.ts).
     }
   };
@@ -346,7 +365,8 @@ export function ComponentIssueModal({
       setCancelOpen(false);
       toast.success(t("warranty.componentIssue.cancelled"));
       onChanged?.();
-    } catch {
+    } catch (error) {
+      forgetStaleLocalVersion(error);
       // Toast lỗi đã hiện qua onError của cancelMutation (use-warranty.ts).
     }
   };
@@ -369,7 +389,8 @@ export function ComponentIssueModal({
         }),
       );
       onChanged?.();
-    } catch {
+    } catch (error) {
+      forgetStaleLocalVersion(error);
       // Toast lỗi đã hiện qua onError của postMutation (use-warranty.ts).
     }
   };
@@ -496,7 +517,7 @@ export function ComponentIssueModal({
                 }
                 onClick={() => setPostConfirmOpen(true)}
               >
-                Full Post
+                {t("warranty.componentIssue.postTrigger")}
               </ActionButton>
             </>
           ) : null}

@@ -12,7 +12,7 @@
  */
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import dayjs, { type Dayjs } from "dayjs";
@@ -136,5 +136,48 @@ describe("UiVuexyDateRangePicker · kỳ nhanh", () => {
         "false",
       );
     }
+  });
+
+  it("preset có `group` thì tiêu đề nhóm hiện MỘT lần cho cả nhóm", async () => {
+    const user = userEvent.setup();
+    const grouped: ReadonlyArray<DateRangePreset> = [
+      {
+        key: "today",
+        label: "Hôm nay",
+        group: "Gần đây",
+        range: () => [TODAY, TODAY],
+      },
+      {
+        key: "yesterday",
+        label: "Hôm qua",
+        group: "Gần đây",
+        range: () => [TODAY, TODAY],
+      },
+      {
+        key: "this-month",
+        label: "Tháng này",
+        group: "Theo lịch",
+        range: () => [MONTH_START, TODAY],
+      },
+    ];
+    render(<Host presets={grouped} />);
+
+    const panel = await openPanel(user);
+    // Hai preset cùng nhóm "Gần đây" chỉ sinh MỘT tiêu đề — lặp tiêu đề trên
+    // từng nút thì dải preset dài gấp đôi mà không thêm thông tin nào.
+    expect(within(panel).getAllByText("Gần đây")).toHaveLength(1);
+    expect(within(panel).getAllByText("Theo lịch")).toHaveLength(1);
+  });
+
+  it("chân panel ghi khoảng đang chọn kèm SỐ NGÀY", async () => {
+    const user = userEvent.setup();
+    render(<Host presets={PRESETS} />);
+
+    const panel = await openPanel(user);
+    // 01/09 → 04/09 là 4 ngày (tính cả hai đầu) — nhãn kỳ nói luật, dòng này
+    // nói kết quả.
+    expect(
+      within(panel).getByText("Đang xem: 01/09/2026 → 04/09/2026 · 4 ngày"),
+    ).toBeInTheDocument();
   });
 });

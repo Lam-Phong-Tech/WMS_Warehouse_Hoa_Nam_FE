@@ -254,7 +254,7 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
 
     const table = await screen.findByRole("table");
     expect(within(table).getAllByRole("row")).toHaveLength(3); // 1 header + 2
-    expect(screen.getByText("2 event")).toBeInTheDocument();
+    expect(screen.getByText("2 sự kiện")).toBeInTheDocument();
   });
 
   it("mở bộ lọc chi tiết và chuyển Bảng ↔ Lát cắt", async () => {
@@ -280,9 +280,9 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(
       await screen.findByRole("button", { name: "Hiện bộ lọc" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Xem audit/ })).toHaveLength(
-      4,
-    );
+    expect(
+      screen.getAllByRole("button", { name: /Xem vết kiểm chứng/ }),
+    ).toHaveLength(4);
   });
 
   it("mở hộp thoại audit của đúng nhãn kèm bản lưu bất biến", async () => {
@@ -290,7 +290,9 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     renderReport();
 
     await screen.findByRole("table");
-    await user.click(screen.getAllByRole("button", { name: /Xem audit/ })[0]);
+    await user.click(
+      screen.getAllByRole("button", { name: /Xem vết kiểm chứng/ })[0],
+    );
 
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Bản lưu bất biến")).toBeInTheDocument();
@@ -299,7 +301,7 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(within(dialog).getByText("Đại lý An Phát")).toBeInTheDocument();
     // Lịch sử attempt chỉ của ĐÚNG nhãn đã mở (LS-1 có 2 lần in).
     expect(
-      within(dialog).getByText("Lịch sử attempt của nhãn"),
+      within(dialog).getByText("Lịch sử lần thử của nhãn"),
     ).toBeInTheDocument();
     expect(within(dialog).getAllByText("In lại")).toHaveLength(1);
     expect(

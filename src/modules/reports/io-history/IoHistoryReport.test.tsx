@@ -243,8 +243,9 @@ describe("RPT-IO-01 · Lịch sử nhập – xuất kho", () => {
     expect(within(rows[2]).getByText("−18")).toBeInTheDocument();
     expect(within(rows[1]).getByText("+2")).toBeInTheDocument();
     // REV-…08 chưa có movement và không truy được chứng từ gốc ⇒ "Chưa có"
-    // ở ĐÚNG ô "Qty posted" (cột thứ 6; các ô khác của dòng cũng đang rỗng).
-    expect(within(rows[0]).getAllByRole("cell")[5]).toHaveTextContent(
+    // ở ĐÚNG ô "Qty posted" (cột thứ 7 kể từ cột STT; các ô khác của dòng
+    // cũng đang rỗng).
+    expect(within(rows[0]).getAllByRole("cell")[6]).toHaveTextContent(
       "Chưa có",
     );
   });

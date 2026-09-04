@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { toast } from "sonner";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -53,12 +54,51 @@ const DETAIL = {
   accessories_received: "Pin 20V, sạc",
   received_condition: "Trầy nhẹ",
   status: "CHECKING" as const,
+  item_status: "IN_WARRANTY",
   priority: "MEDIUM" as const,
   received_at: "2026-08-10T08:00:00Z",
   created_at: "2026-08-10T08:00:00Z",
   created_by: "thukho",
   version: 2,
 };
+
+/** Lỗi 412 đúng envelope của BE (ApiError::abort + UserFacingMessageLocalizer). */
+function staleVersionError(expected: number, current: number) {
+  return {
+    response: {
+      status: 412,
+      data: {
+        success: false,
+        message: "Warranty case version mismatch.",
+        error_code: "STALE_VERSION",
+        errors: { expected_version: expected, current_version: current },
+        error: {
+          code: "STALE_VERSION",
+          details: { expected_version: expected, current_version: current },
+        },
+      },
+    },
+  };
+}
+
+/** Mở dialog trạng thái và điền đủ field bắt buộc của nhánh CHECKING → REPAIRING. */
+async function openRepairingStatusDialog() {
+  fireEvent.click(
+    await screen.findByRole("button", { name: /Cập nhật trạng thái/ }),
+  );
+  const dialog = await screen.findByRole("dialog", {
+    name: "Cập nhật trạng thái bảo hành",
+  });
+  fireEvent.mouseDown(
+    within(dialog).getByRole("combobox", { name: /Trạng thái mới/ }),
+  );
+  fireEvent.click(await screen.findByRole("option", { name: "Đang sửa chữa" }));
+  fireEvent.change(
+    within(dialog).getByLabelText(/Ngày dự kiến sửa xong/),
+    { target: { value: "2026-09-30" } },
+  );
+  return dialog;
+}
 
 describe("WarrantyDetailModal (WAR-03)", () => {
   beforeEach(() => {
@@ -114,7 +154,9 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     // Tab mặc định "Tổng quan": thông tin case + cảnh báo PII/mã tạm.
     expect(await screen.findByText("BH-0001")).toBeInTheDocument();
     expect(screen.getByText(/warranty.pii.view/)).toBeInTheDocument();
-    expect(screen.getByText(/Item \/ serial \/ mã tạm/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Hiện vật \/ serial \/ mã tạm/),
+    ).toBeInTheDocument();
     expect(screen.getByText("TEMP-0001")).toBeInTheDocument();
     expect(document.body.textContent).toContain("Chết mạch nguồn");
     expect(document.body.textContent).toContain("Pin 20V, sạc");
@@ -129,6 +171,29 @@ describe("WarrantyDetailModal (WAR-03)", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: /Linh kiện/ }));
     expect(await screen.findByText("CI-0001")).toBeInTheDocument();
+  });
+
+  // Enum của BE (item_status, trạng thái phiếu linh kiện) từng render thô nên
+  // người dùng thấy "IN_WARRANTY" / "SCANNING" giữa màn tiếng Việt. Test này khoá
+  // lại: mọi enum đi qua map nhãn, DOM không được chứa giá trị thô.
+  it("dịch enum của BE sang tiếng Việt, không lộ mã thô ra UI", async () => {
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={() => {}}
+        onOpenComponentIssue={() => {}}
+      />,
+    );
+    await screen.findByText("BH-0001");
+
+    // Trạng thái item ở tab Tổng quan.
+    expect(screen.getByText("Đang bảo hành")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("IN_WARRANTY");
+
+    // Cột Trạng thái của bảng phiếu xuất linh kiện.
+    fireEvent.click(screen.getByRole("tab", { name: /Linh kiện/ }));
+    expect(await screen.findByText("Đang quét")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("SCANNING");
   });
 
   it("mở Component Issue từ nút chân modal với caseActive đúng state machine", async () => {
@@ -189,6 +254,94 @@ describe("WarrantyDetailModal (WAR-03)", () => {
       ).not.toBeInTheDocument();
     });
     expect(updateWarrantyCase).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Tái hiện lỗi UAT 04-09-2026: bấm "Cập nhật" ở dialog trạng thái, BE trả
+   * 412 STALE_VERSION vì hồ sơ đã bị cập nhật ở nơi khác (tab thứ hai / mini
+   * app / người khác). Trước khi sửa, FE:
+   *   - đổ nguyên câu tiếng Anh của BE kèm "(2; 3)" (giá trị expected/current
+   *     version) ra toast — người dùng không hiểu và không biết làm gì;
+   *   - KHÔNG tải lại hồ sơ, nên detail.version vẫn là 2 và mọi lần bấm lại
+   *     đều gửi đúng version cũ => kẹt vĩnh viễn trong dialog.
+   * SRS §8.2 / AC-GWT-CONC-001: 412 phải là RELOAD_THEN_RETRY — tải lại rồi để
+   * người dùng tự bấm lại, không tự gửi lại hộ.
+   */
+  it("412 STALE_VERSION: tải lại hồ sơ để lần bấm sau gửi version mới, không kẹt", async () => {
+    vi.mocked(fetchWarrantyCase)
+      .mockResolvedValueOnce({ ...DETAIL, version: 2 } as never)
+      .mockResolvedValue({ ...DETAIL, version: 3 } as never);
+    vi.mocked(updateWarrantyCase).mockRejectedValueOnce(staleVersionError(2, 3));
+    vi.mocked(updateWarrantyCase).mockResolvedValue({
+      ...DETAIL,
+      version: 4,
+      status: "REPAIRING",
+    } as never);
+
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={() => {}}
+        onOpenComponentIssue={() => {}}
+      />,
+    );
+    await screen.findByText("BH-0001");
+
+    await openRepairingStatusDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Cập nhật" }));
+
+    await waitFor(() => {
+      expect(vi.mocked(updateWarrantyCase)).toHaveBeenCalledTimes(1);
+    });
+    expect(
+      vi.mocked(updateWarrantyCase).mock.calls[0][1],
+    ).toMatchObject({ ifMatch: 2 });
+
+    // Sau 412, hồ sơ phải được tải lại (không đợi hết staleTime) …
+    await waitFor(() => {
+      expect(vi.mocked(fetchWarrantyCase).mock.calls.length).toBeGreaterThan(1);
+    });
+
+    // … và lần bấm tiếp theo gửi ĐÚNG version mới, không lặp lại version cũ.
+    fireEvent.click(screen.getByRole("button", { name: "Cập nhật" }));
+    await waitFor(() => {
+      expect(vi.mocked(updateWarrantyCase)).toHaveBeenCalledTimes(2);
+    });
+    expect(
+      vi.mocked(updateWarrantyCase).mock.calls[1][1],
+    ).toMatchObject({ ifMatch: 3 });
+  });
+
+  it("412 STALE_VERSION: báo bằng tiếng Việt, không đổ số version kỹ thuật ra toast", async () => {
+    const errorToast = vi.spyOn(toast, "error");
+    vi.mocked(updateWarrantyCase).mockRejectedValue(staleVersionError(2, 3));
+
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={() => {}}
+        onOpenComponentIssue={() => {}}
+      />,
+    );
+    await screen.findByText("BH-0001");
+
+    await openRepairingStatusDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Cập nhật" }));
+
+    // sonner bị mock no-op ở src/test/setup.ts nên toast không vào DOM —
+    // kiểm ngay trên lời gọi toast.error.
+    await waitFor(() => {
+      expect(errorToast).toHaveBeenCalled();
+    });
+    const shown = errorToast.mock.calls.map((call) => String(call[0]));
+    expect(shown.join(" | ")).toMatch(
+      /Hồ sơ bảo hành vừa được cập nhật ở nơi khác/,
+    );
+    // Câu tiếng Anh của BE và cặp số version kỹ thuật không được lọt ra UI.
+    for (const line of shown) {
+      expect(line).not.toContain("Warranty case version mismatch");
+      expect(line).not.toContain("(2; 3)");
+    }
   });
 
   it("case RETURNED (terminal): không cho cập nhật trạng thái và chặn xuất linh kiện", async () => {

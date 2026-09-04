@@ -75,6 +75,7 @@ import {
   useWarrantyReport,
 } from "@/modules/reports/operations/report-data";
 import { usePeriodFilter } from "@/modules/reports/operations/report-period";
+import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import {
   RPT_CONTROL_MOTION_SX,
   RPT_SCROLL_MAX_HEIGHT,
@@ -466,7 +467,7 @@ function BarList({
   const fill = tone === "info" ? S.info : S.warning;
   return (
     <Box sx={{ display: "grid", gap: 1.25 }}>
-      {items.map((item) => (
+      {items.map((item, index) => (
         <Box
           key={item.label}
           component={onSelect ? "button" : "div"}
@@ -502,6 +503,9 @@ function BarList({
                 textOverflow: "ellipsis",
               }}
             >
+              <Box component="span" aria-hidden="true">
+                {index + 1}.{" "}
+              </Box>
               {item.label}
             </Box>
             <Box
@@ -745,6 +749,13 @@ const TH_SX = {
   whiteSpace: "nowrap",
 } as const;
 
+/** Ô STT — hẹp, canh giữa, số cùng bề rộng để cột đọc thẳng hàng. */
+const STT_SX = {
+  width: 56,
+  textAlign: "center",
+  fontVariantNumeric: "tabular-nums",
+} as const;
+
 const TD_SX = {
   p: "11px 12px",
   borderBottom: `1px solid ${S.border}`,
@@ -791,6 +802,7 @@ const VIEW_TAB_SX = (active: boolean) =>
 export default function WarrantyComponentsReport() {
   const t = useT();
   const period = usePeriodFilter("this-month");
+  const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const catalog = useSkuCatalog();
   const users = useUserDirectory();
   const exporter = useReportExport();
@@ -1613,6 +1625,7 @@ export default function WarrantyComponentsReport() {
                 t("reports.warrantyReport.toDate"),
               ]}
               allowClear={false}
+              presets={periodPresets}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"
               onChange={(value) => {
@@ -2143,6 +2156,7 @@ export default function WarrantyComponentsReport() {
                 <Box component="thead">
                   <Box component="tr">
                     {[
+                      t("shared.table.rowNumber"),
                       t("reports.warrantyReport.colCaseNo"),
                       t("reports.warrantyReport.colReceivedAt"),
                       t("reports.warrantyReport.colStatus"),
@@ -2152,8 +2166,12 @@ export default function WarrantyComponentsReport() {
                       t("reports.warrantyReport.colComponents"),
                       t("reports.warrantyReport.colCustomer"),
                       t("reports.warrantyReport.colActions"),
-                    ].map((header) => (
-                      <Box component="th" key={header} sx={TH_SX}>
+                    ].map((header, headerIndex) => (
+                      <Box
+                        component="th"
+                        key={header}
+                        sx={headerIndex === 0 ? { ...TH_SX, ...STT_SX } : TH_SX}
+                      >
                         {header}
                       </Box>
                     ))}
@@ -2164,7 +2182,7 @@ export default function WarrantyComponentsReport() {
                     <Box component="tr">
                       <Box
                         component="td"
-                        colSpan={9}
+                        colSpan={10}
                         sx={{ ...TD_SX, textAlign: "center", py: 4 }}
                       >
                         <UiSpinner size={18} label={null} />
@@ -2174,7 +2192,7 @@ export default function WarrantyComponentsReport() {
                     <Box component="tr">
                       <Box
                         component="td"
-                        colSpan={9}
+                        colSpan={10}
                         sx={{
                           ...TD_SX,
                           textAlign: "center",
@@ -2186,7 +2204,7 @@ export default function WarrantyComponentsReport() {
                       </Box>
                     </Box>
                   ) : (
-                    caseFilter.rows.map((row) => {
+                    caseFilter.rows.map((row, index) => {
                       const defectText =
                         row.defectNames.filter(Boolean).join(", ") ||
                         EMPTY_TEXT;
@@ -2199,6 +2217,9 @@ export default function WarrantyComponentsReport() {
                             "&:hover": { bgcolor: S.primarySoft },
                           }}
                         >
+                          <Box component="td" sx={{ ...TD_SX, ...STT_SX }}>
+                            {index + 1}
+                          </Box>
                           <Box component="td" sx={TD_SX}>
                             <Box sx={{ color: S.primaryDark, fontWeight: 700 }}>
                               {orEmpty(row.caseNo)}
@@ -2287,7 +2308,7 @@ export default function WarrantyComponentsReport() {
                   gap: 1.5,
                 }}
               >
-                {caseFilter.rows.map((row) => (
+                {caseFilter.rows.map((row, index) => (
                   <Box
                     component="article"
                     key={row.caseNo || row.caseId}
@@ -2304,6 +2325,9 @@ export default function WarrantyComponentsReport() {
                       sx={{ justifyContent: "space-between", gap: 1 }}
                     >
                       <Box sx={{ minWidth: 0 }}>
+                        <Box sx={{ color: S.textMedium, fontSize: 11 }}>
+                          {t("shared.table.rowNumber")} {index + 1}
+                        </Box>
                         <Box sx={{ color: S.primaryDark, fontWeight: 700 }}>
                           {orEmpty(row.caseNo)}
                         </Box>
@@ -2520,16 +2544,20 @@ export default function WarrantyComponentsReport() {
           <DetailSection title={t("reports.warrantyReport.sectionDefects")}>
             {openCase.defectNames.filter(Boolean).length === 0
               ? t("reports.warrantyReport.noDefects")
-              : openCase.defectNames
-                  .filter(Boolean)
-                  .map((value) => <EventLine key={value}>{value}</EventLine>)}
+              : openCase.defectNames.filter(Boolean).map((value, index) => (
+                  <EventLine key={value} index={index}>
+                    {value}
+                  </EventLine>
+                ))}
           </DetailSection>
 
           <DetailSection title={t("reports.warrantyReport.sectionComponents")}>
             {detailComponents.length === 0
               ? t("reports.warrantyReport.noComponents")
-              : detailComponents.map((value) => (
-                  <EventLine key={value}>{value}</EventLine>
+              : detailComponents.map((value, index) => (
+                  <EventLine key={value} index={index}>
+                    {value}
+                  </EventLine>
                 ))}
           </DetailSection>
 
@@ -2549,8 +2577,8 @@ export default function WarrantyComponentsReport() {
             ) : (caseEvents.data ?? []).length === 0 ? (
               t("reports.warrantyReport.noHistory")
             ) : (
-              (caseEvents.data ?? []).map((event) => (
-                <EventLine key={event.id}>
+              (caseEvents.data ?? []).map((event, index) => (
+                <EventLine key={event.id} index={index}>
                   {fmtDateTime(event.performed_at)} ·{" "}
                   {orEmpty(event.performed_by)} · {orEmpty(event.description)}
                 </EventLine>
@@ -2591,8 +2619,23 @@ function DetailSection({
   );
 }
 
-function EventLine({ children }: { children: ReactNode }) {
+function EventLine({
+  index,
+  children,
+}: {
+  index: number;
+  children: ReactNode;
+}) {
   return (
-    <Box sx={{ py: 1, borderBottom: `1px solid ${S.border}` }}>{children}</Box>
+    <Box sx={{ py: 1, borderBottom: `1px solid ${S.border}` }}>
+      <Box
+        component="span"
+        aria-hidden="true"
+        sx={{ mr: 0.75, color: S.textMedium }}
+      >
+        {index + 1}.
+      </Box>
+      <Box component="span">{children}</Box>
+    </Box>
   );
 }

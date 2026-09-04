@@ -10,6 +10,7 @@ import {
   Radio,
   SEMANTIC_LIGHT,
   Stack,
+  UiAddressField,
   UiAlert,
   UiDialog,
   UiFormAutocomplete,
@@ -813,16 +814,15 @@ export function WarrantyIntakeModal({
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 8 }}>
-            <UiTextField
-              fullWidth
+          <Grid size={12}>
+            <UiAddressField
+              data-testid="warranty-intake-address"
               label={t("warranty.intake.address")}
               value={customerAddress}
-              onChange={(event) => setCustomerAddress(event.target.value)}
-              slotProps={{ htmlInput: { maxLength: 500 } }}
+              onChange={setCustomerAddress}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <UiTextField
               fullWidth
               type="date"
@@ -852,7 +852,7 @@ export function WarrantyIntakeModal({
                 : {})}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid size={12}>
             <UiTextField
               fullWidth
               label={t("warranty.intake.accessories")}

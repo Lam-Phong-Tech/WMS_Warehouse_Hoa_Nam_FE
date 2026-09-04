@@ -79,6 +79,7 @@ import {
   MenuItem,
   SEMANTIC_LIGHT,
   Stack,
+  UiAddressField,
   UiAlert,
   UiDescriptions,
   UiDialog,
@@ -87,6 +88,7 @@ import {
   UiTextField,
   useUiConfirm,
 } from "@/shared/ui";
+import { formatAddress } from "@/shared/lib/vn-address";
 import { useSearchParams } from "react-router-dom";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 
@@ -1615,7 +1617,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     region: (r) => r.region,
     contact: (r) => r.contact_name,
     phone: (r) => r.phone,
-    address: (r) => r.address,
+    address: (r) => formatAddress(r.address),
     status: (r) => r.status,
   });
 
@@ -1927,7 +1929,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td>{record.contact_name || EMPTY_TEXT}</td>
                     <td>{record.phone || EMPTY_TEXT}</td>
                     <td style={WRAP_TEXT_CELL_STYLE}>
-                      {record.address || EMPTY_TEXT}
+                      {formatAddress(record.address) || EMPTY_TEXT}
                     </td>
                     <td>
                       <UiStatusBadge
@@ -2205,15 +2207,12 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 </UiTextField>
               </Grid>
               <Grid size={12}>
-                <UiTextField
+                <UiAddressField
                   id="agency-address"
+                  data-testid="agency-address"
                   label={t("masterData.recipient.colAddress")}
-                  fullWidth
-                  multiline
-                  minRows={3}
                   value={form.address ?? ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
+                  onChange={(value) => {
                     setForm((current) => ({ ...current, address: value }));
                     setFieldErrors((current) =>
                       current.address ? { ...current, address: "" } : current,

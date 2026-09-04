@@ -159,8 +159,12 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
 
     // 4 thẻ: tổng 3 · nhập 1 · xuất 1 · hoàn tác 1 (summary + by_movement_type).
     expect(screen.getByText("Tổng biến động")).toBeInTheDocument();
-    expect(screen.getByText("3")).toBeInTheDocument();
-    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(3);
+    // Loại các ô nằm TRONG bảng: cột STT của ledger cũng in ra 1/2/3 nên
+    // truy vấn theo con số trần không còn duy nhất.
+    const outsideTable = (text: string) =>
+      screen.getAllByText(text).filter((node) => !table.contains(node));
+    expect(outsideTable("3").length).toBeGreaterThan(0);
+    expect(outsideTable("1").length).toBeGreaterThanOrEqual(3);
 
     // meta.timestamp của phản hồi là mốc "Chốt" hiển thị trên màn.
     expect(screen.getAllByText(/Chốt 10:00 02-09/).length).toBeGreaterThan(0);
@@ -172,9 +176,7 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     const table = await screen.findByRole("table");
     // qty_delta = +1 ⇒ đang đảo một phiếu XUẤT, không phải phiếu nhập.
     expect(within(table).getByText("Đảo phiếu xuất")).toBeInTheDocument();
-    expect(
-      within(table).queryByText("Đảo phiếu nhập"),
-    ).not.toBeInTheDocument();
+    expect(within(table).queryByText("Đảo phiếu nhập")).not.toBeInTheDocument();
     // Timeline dùng cách gọi nghiệp vụ của bản demo cho cùng dòng đó.
     expect(
       screen.getByText("Điều chỉnh tồn kho phiếu xuất"),
@@ -220,7 +222,7 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     await user.click(issueRow);
 
     const drawer = await screen.findByRole("dialog", {
-      name: /Bằng chứng movement/,
+      name: /Bằng chứng biến động/,
     });
     expect(within(drawer).getByText(/Xuất kho đã ghi sổ/)).toBeInTheDocument();
     expect(

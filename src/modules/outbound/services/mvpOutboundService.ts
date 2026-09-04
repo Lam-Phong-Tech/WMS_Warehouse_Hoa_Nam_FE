@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import type { ApiMeta } from "@/shared/types/api-response";
+import { formatAddress } from "@/shared/lib/vn-address";
 
 export type OutboundStatus = "DRAFT" | "SCANNING" | "POSTED" | "CANCELLED";
 
@@ -343,7 +344,8 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
     requestNo: text(row.request_no) || null,
     agencyId: text(row.agency_id) || null,
     recipientName: text(row.recipient_name ?? row.customer_name, "-"),
-    recipientAddress: text(row.recipient_address ?? row.customer_address, "-"),
+    recipientAddress:
+      formatAddress(text(row.recipient_address ?? row.customer_address)) || "-",
     note: row.note === undefined || row.note === null ? null : text(row.note),
     expected,
     scanned,
@@ -777,7 +779,8 @@ function normalizeLabelSnapshot(row: RawRecord): LabelSnapshotRecord {
     itemCodeValue: text(row.item_code_value ?? payload.item_code_value) || null,
     recipientName: text(row.customer_name ?? payload.recipient_name) || null,
     recipientAddress:
-      text(row.customer_address ?? payload.recipient_address) || null,
+      formatAddress(text(row.customer_address ?? payload.recipient_address)) ||
+      null,
     status: text(row.status),
     reprintCount: num(row.reprint_count),
     outboundNo: text(row.outbound_no ?? payload.outbound_no) || null,

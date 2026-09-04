@@ -19,9 +19,18 @@
  *  · Bốn nút chú giải của mockup có `aria-pressed` nhưng không nút nào gắn xử
  *    lý — đó là nút chết. Ở đây chúng bật/tắt chuỗi thật; trục Y tính lại theo
  *    các chuỗi ĐANG hiện nên biểu đồ luôn lấp đầy khung.
+ *  · Mockup chỉ có 7 mốc cứng nên vẽ đủ 7 nhãn là vừa khung. Dữ liệu thật cho
+ *    chọn kỳ tuỳ ý (30 / 90 / 365 ngày) và ở các kỳ đó việc vẽ đủ nhãn biến
+ *    trục X thành một vệt chữ chồng nhau, chấm điểm dính thành dải đặc. Nên
+ *    mật độ nhãn/chấm ở đây do `fitAxisDensity` quyết theo bề rộng khung —
+ *    xem `@/shared/components/charts/axis-density`.
  */
 import type { CSSProperties } from "react";
 import { fmt } from "@/modules/reports/operations/report-format";
+import {
+  fitAxisDensity,
+  longestLabelChars,
+} from "@/shared/components/charts/axis-density";
 
 /** Khung vẽ — số đo lấy nguyên từ bản xuất của mockup. */
 const VIEW_WIDTH = 640;
@@ -36,6 +45,10 @@ const AXIS_LABEL_X = 31;
 const AXIS_LABEL_DY = 3;
 const X_AXIS_LABEL_Y = 219;
 const POINT_RADIUS = 3.5;
+/** Cỡ chữ nhãn trục — khớp `.hn-rpt01 .chart-axis-label` trong CSS của bản port. */
+const AXIS_FONT_SIZE = 10;
+/** Khoảng cách dọc tối thiểu giữa hai nhãn giá trị cuối kỳ của hai chuỗi. */
+const END_LABEL_MIN_GAP = 11;
 
 export type ChartSeries = {
   key: string;
@@ -77,6 +90,30 @@ function areaPath(values: number[], max: number): string {
   return `${linePath(values, max)} L${at(last)},${PLOT_BOTTOM} L${at(first)},${PLOT_BOTTOM} Z`;
 }
 
+/**
+ * Giãn các nhãn giá trị cuối kỳ ra khỏi nhau.
+ *
+ * Hai chuỗi có giá trị cuối gần bằng nhau (vd "5" và "0" khi cả hai đều thấp)
+ * thì hai nhãn rơi vào cùng một chỗ và chồng chữ lên nhau. Xếp theo y rồi đẩy
+ * dần xuống cho đủ khoảng cách tối thiểu, sau đó kéo cả cụm về trong khung.
+ */
+function spreadEndLabels(rawY: number[]): number[] {
+  const order = rawY
+    .map((y, index) => ({ y, index }))
+    .sort((left, right) => left.y - right.y);
+  const resolved = [...rawY];
+  let previous = Number.NEGATIVE_INFINITY;
+  for (const item of order) {
+    const y = Math.max(item.y, previous + END_LABEL_MIN_GAP);
+    resolved[item.index] = y;
+    previous = y;
+  }
+  // Đẩy xuống có thể vượt đáy khung; kéo cả cụm lên lại đúng phần thừa.
+  const overflow = Math.max(...resolved, PLOT_BOTTOM) - PLOT_BOTTOM;
+  if (overflow <= 0) return resolved;
+  return resolved.map((y) => Math.max(PLOT_TOP + AXIS_FONT_SIZE, y - overflow));
+}
+
 export type FlowChartProps = {
   /** Nhãn trục X — một nhãn cho mỗi điểm. */
   labels: string[];
@@ -109,6 +146,24 @@ export function InventoryFlowChart({
         highest,
       ),
     0,
+  );
+
+  const density = fitAxisDensity({
+    count,
+    plotWidth: PLOT_RIGHT - PLOT_LEFT,
+    labelChars: longestLabelChars(labels),
+    fontSize: AXIS_FONT_SIZE,
+    markerRadius: POINT_RADIUS,
+  });
+
+  // Vị trí nhãn giá trị cuối kỳ của TỪNG chuỗi, đã giãn để không đè nhau.
+  const endLabelY = spreadEndLabels(
+    series.map((item) => {
+      const points = item.values.slice(0, count);
+      if (points.length === 0) return PLOT_BOTTOM;
+      const y = yOf(points[points.length - 1], max);
+      return labelBelow ? y + 10 : y - 8;
+    }),
   );
 
   return (
@@ -157,7 +212,7 @@ export function InventoryFlowChart({
         );
       })}
 
-      {series.map((item) => {
+      {series.map((item, seriesIndex) => {
         const points = item.values.slice(0, count);
         if (points.length === 0) return null;
         const lastIndex = points.length - 1;
@@ -174,21 +229,35 @@ export function InventoryFlowChart({
             <path
               className="chart-line"
               d={linePath(points, max)}
-              strokeWidth={strokeWidth}
+              strokeWidth={at(strokeWidth * density.strokeScale)}
             />
-            {points.map((value, index) => (
+            {density.showMarkers ? (
+              points.map((value, index) => (
+                <circle
+                  key={`${item.key}-${index}`}
+                  className="chart-point"
+                  cx={at(xOf(index, points.length))}
+                  cy={at(yOf(value, max))}
+                  r={at(density.markerRadius)}
+                />
+              ))
+            ) : (
+              /* Kỳ dài: chấm dính thành dải đặc che mất chính đường xu hướng —
+               * chỉ giữ chấm ở điểm cuối để mắt bắt được mốc gần nhất. */
               <circle
-                key={`${item.key}-${index}`}
                 className="chart-point"
-                cx={at(xOf(index, points.length))}
-                cy={at(yOf(value, max))}
-                r={POINT_RADIUS}
+                cx={at(lastX)}
+                cy={at(lastY)}
+                r={at(POINT_RADIUS)}
               />
-            ))}
+            )}
+            {/* Neo `end`: nhãn ở điểm cuối nằm sát mép phải khung, neo mặc định
+             * (`start`) làm số dài bị cắt cụt. */}
             <text
               className="chart-point-label"
               x={at(lastX)}
-              y={at(labelBelow ? lastY + 10 : lastY - 8)}
+              y={at(endLabelY[seriesIndex] ?? lastY)}
+              textAnchor="end"
             >
               {fmt(points[lastIndex])}
             </text>
@@ -196,17 +265,21 @@ export function InventoryFlowChart({
         );
       })}
 
-      {labels.map((label, index) => (
-        <text
-          key={`axis-${label}-${index}`}
-          className="chart-axis-label"
-          x={at(xOf(index, count))}
-          y={X_AXIS_LABEL_Y}
-          textAnchor="middle"
-        >
-          {label}
-        </text>
-      ))}
+      {labels.map((label, index) =>
+        density.showLabel(index) ? (
+          <text
+            key={`axis-${label}-${index}`}
+            className="chart-axis-label"
+            x={at(xOf(index, count))}
+            y={X_AXIS_LABEL_Y}
+            textAnchor={
+              index === 0 ? "start" : index === count - 1 ? "end" : "middle"
+            }
+          >
+            {label}
+          </text>
+        ) : null,
+      )}
     </svg>
   );
 }

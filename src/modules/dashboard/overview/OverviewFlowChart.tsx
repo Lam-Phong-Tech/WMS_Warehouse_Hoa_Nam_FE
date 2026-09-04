@@ -5,6 +5,11 @@
  * Khác demo một điểm DUY NHẤT về số học: demo cố định trục 0..1400 còn ở đây
  * trần trục tính từ dữ liệu thật (làm tròn lên) vì lượng nhập/xuất thật không
  * có trần biết trước.
+ *
+ * Khác thứ hai, về TRÌNH BÀY: demo chỉ có 7 mốc cứng nên vẽ đủ 7 nhãn là vừa
+ * khung. Ở đây người dùng chọn được kỳ dài (30 / 90 / 365 ngày) và nếu vẫn vẽ
+ * một nhãn cho mỗi ngày thì trục X biến thành vệt chữ chồng nhau. Mật độ nhãn
+ * do `fitAxisDensity` quyết theo bề rộng khung vẽ.
  */
 import { useState } from "react";
 import { DashIcon } from "../components/DashIcon";
@@ -12,10 +17,16 @@ import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { OverviewStateBox } from "./OverviewStateBox";
 import { fmt, type FlowRow } from "./overview-data";
+import {
+  fitAxisDensity,
+  longestLabelChars,
+} from "@/shared/components/charts/axis-density";
 
 const W = 580;
 const H = 250;
 const PAD = 38;
+/** Cỡ chữ nhãn trục — khớp `.hn-dash .axis-text` trong CSS của bản port. */
+const AXIS_FONT_SIZE = 10;
 
 type SeriesKey = "inbound" | "product" | "component" | "reversal";
 
@@ -160,6 +171,15 @@ export function OverviewFlowChart({
   const yAt = (value: number) =>
     H - PAD - ((value - min) / Math.max(max - min, 1)) * (H - PAD * 2);
 
+  // Chỉ thưa NHÃN — mọi điểm dữ liệu vẫn được vẽ, và bảng "dữ liệu thay thế"
+  // ngay dưới biểu đồ vẫn liệt kê đủ từng ngày.
+  const density = fitAxisDensity({
+    count: rows.length,
+    plotWidth: W - PAD * 2,
+    labelChars: longestLabelChars(rows.map((row) => row.label)),
+    fontSize: AXIS_FONT_SIZE,
+  });
+
   const linePath = (key: SeriesKey) =>
     rows
       .map(
@@ -279,17 +299,19 @@ export function OverviewFlowChart({
                 />
               );
             })}
-            {rows.map((row, index) => (
-              <text
-                key={`label-${row.date}`}
-                className="axis-text"
-                x={xAt(index)}
-                y={H - 6}
-                textAnchor="middle"
-              >
-                {row.label}
-              </text>
-            ))}
+            {rows.map((row, index) =>
+              density.showLabel(index) ? (
+                <text
+                  key={`label-${row.date}`}
+                  className="axis-text"
+                  x={xAt(index)}
+                  y={H - 6}
+                  textAnchor="middle"
+                >
+                  {row.label}
+                </text>
+              ) : null,
+            )}
             {hover !== null ? (
               <FlowTooltip
                 index={hover}

@@ -42,6 +42,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { axisDayLabel, fmt } from "@/modules/reports/operations/report-format";
+import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import {
   MOVEMENT_LABELS,
   reportStatusLabel,
@@ -264,6 +265,7 @@ export default function InventoryFlowXntReport() {
     from: dayjs().subtract(1, "day").startOf("day"),
     to: dayjs().startOf("day"),
   }));
+  const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
   const [view, setView] = useState<ViewMode>("table");
@@ -727,6 +729,7 @@ export default function InventoryFlowXntReport() {
                   t("reports.inventoryFlowReport.periodEnd"),
                 ]}
                 allowClear={false}
+                presets={periodPresets}
                 className="hn-vuexy-date-range"
                 popupClassName="hn-vuexy-date-popup"
                 onChange={(value) => {
@@ -1085,6 +1088,7 @@ export default function InventoryFlowXntReport() {
                 <table className="report-table">
                   <thead>
                     <tr>
+                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
                       <th>{t("reports.inventoryFlowReport.colSku")}</th>
                       <th>{t("reports.inventoryFlowReport.colKind")}</th>
                       <th>{t("reports.inventoryFlowReport.colUnit")}</th>
@@ -1113,7 +1117,7 @@ export default function InventoryFlowXntReport() {
                   <tbody>
                     {skuSectionFilter.rows.length === 0 ? (
                       <tr>
-                        <td className="table-empty" colSpan={11}>
+                        <td className="table-empty" colSpan={12}>
                           {loading
                             ? t("reports.inventoryFlowReport.loadingData")
                             : skuSectionFilter.active
@@ -1122,8 +1126,9 @@ export default function InventoryFlowXntReport() {
                         </td>
                       </tr>
                     ) : (
-                      skuSectionFilter.rows.map((row) => (
+                      skuSectionFilter.rows.map((row, index) => (
                         <tr key={row.sku_code}>
+                          <td className="stt-col">{index + 1}</td>
                           <td>
                             <span className="sku">{row.sku_code}</span>
                             <div className="truncate" title={row.sku_name}>
@@ -1195,10 +1200,13 @@ export default function InventoryFlowXntReport() {
                 </div>
               ) : (
                 <div className="report-snapshot-grid">
-                  {skuSectionFilter.rows.map((row) => (
+                  {skuSectionFilter.rows.map((row, index) => (
                     <article className="report-slice" key={row.sku_code}>
                       <div className="report-slice-head">
                         <div>
+                          <span className="stt-badge">
+                            {t("shared.table.rowNumber")} {index + 1}
+                          </span>
                           <strong>
                             {row.sku_code} ·{" "}
                             {row.sku_name === "" ? EMPTY_TEXT : row.sku_name}
@@ -1378,6 +1386,7 @@ export default function InventoryFlowXntReport() {
                 <table>
                   <thead>
                     <tr>
+                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
                       <th>{t("reports.inventoryFlowReport.colDay")}</th>
                       <th>{t("reports.inventoryFlowReport.seriesInbound")}</th>
                       <th>{t("reports.inventoryFlowReport.seriesProduct")}</th>
@@ -1388,8 +1397,9 @@ export default function InventoryFlowXntReport() {
                     </tr>
                   </thead>
                   <tbody>
-                    {daily.map((point) => (
+                    {daily.map((point, index) => (
                       <tr key={point.date}>
+                        <td className="stt-col">{index + 1}</td>
                         <td>{axisDayLabel(point.date)}</td>
                         <td>{fmt(point.inbound)}</td>
                         <td>{fmt(point.product)}</td>
@@ -1494,13 +1504,15 @@ export default function InventoryFlowXntReport() {
                 <table>
                   <thead>
                     <tr>
+                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
                       <th>{t("reports.inventoryFlowReport.colDay")}</th>
                       <th>{t("reports.inventoryFlowReport.cardClosing")}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {daily.map((point) => (
+                    {daily.map((point, index) => (
                       <tr key={point.date}>
+                        <td className="stt-col">{index + 1}</td>
                         <td>{axisDayLabel(point.date)}</td>
                         <td>{fmt(point.closing)}</td>
                       </tr>
@@ -1554,7 +1566,7 @@ export default function InventoryFlowXntReport() {
             </article>
           ) : (
             <div className="insight-grid">
-              {documentSectionFilter.rows.map((document) => {
+              {documentSectionFilter.rows.map((document, index) => {
                 const style = DOCUMENT_STYLE[document.doc_type];
                 return (
                   <article
@@ -1567,6 +1579,9 @@ export default function InventoryFlowXntReport() {
                           <VuexyDemoIcon name={style.icon} />
                         </span>
                         <div>
+                          <span className="stt-badge">
+                            {t("shared.table.rowNumber")} {index + 1}
+                          </span>
                           <span className="eyebrow">
                             {t("reports.inventoryFlowReport.docCardEyebrow")}
                           </span>
@@ -1676,9 +1691,10 @@ export default function InventoryFlowXntReport() {
                 <span>{t("reports.inventoryFlowReport.movementsEmpty")}</span>
               </div>
             ) : (
-              drillMovements.map((movement) => (
+              drillMovements.map((movement, index) => (
                 <div key={movement.movement_id}>
                   <strong>
+                    {index + 1}.{" "}
                     {MOVEMENT_LABELS[movement.movement_type] ??
                       movement.movement_type}
                   </strong>

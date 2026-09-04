@@ -1093,8 +1093,18 @@
 .hn-rpt02 .report-kpi-card .kpi-spark {
   display: none;
 }
+/*
+ * Hai thẻ biểu đồ chia đôi, thay cho 1.2fr / 0.8fr trước đây.
+ *
+ * KHÁC RPT-01: ở đây chia lệch KHÔNG làm chữ hai thẻ to nhỏ khác nhau. Thẻ
+ * "Cơ cấu tồn" là thanh HTML nên cỡ chữ tính bằng px màn hình, còn thẻ đối
+ * soát là donut `viewBox="0 0 360 228"` bị chặn bởi CHIỀU CAO khung vẽ
+ * (`min-height: 232px`) chứ không phải bề rộng, nên hệ số phóng của nó không
+ * đổi theo số cột. Chia đều ở đây thuần tuý để hai thẻ cân nhau về bề ngang,
+ * đồng bộ với lưới biểu đồ của Tổng quan và RPT-01.
+ */
 .hn-rpt02 .analysis-grid {
-  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
 }
@@ -1535,4 +1545,37 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BỔ SUNG NGOÀI DEMO · Cột STT
+   -------------------------------------------------------------------------
+   Mọi danh sách của màn báo cáo phải đánh số dòng để đối chiếu vị trí khi trao
+   đổi. Cột STT đứng đầu nên nó chiếm mất `:first-child` mà demo dùng để căn
+   trái cột nghiệp vụ đầu tiên trong `.chart-table` — trả lại bằng bộ chọn `+`.
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt02 .report-table th.stt-col,
+.hn-rpt02 .report-table td.stt-col,
+.hn-rpt02 .chart-table th.stt-col,
+.hn-rpt02 .chart-table td.stt-col {
+  width: 56px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt02 .chart-table th.stt-col + th,
+.hn-rpt02 .chart-table td.stt-col + td {
+  text-align: left;
+}
+.hn-rpt02 .stt-badge {
+  justify-self: start;
+  align-self: start;
+  width: fit-content;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--hnr-surface-muted);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.02em;
 }

@@ -59,7 +59,7 @@ describe("resolveNotificationLink", () => {
     );
     expect(link).toEqual({
       path: "/warranty?screen=WAR-03&id=case-1",
-      label: "Xem case bảo hành",
+      label: "Xem hồ sơ bảo hành",
     });
   });
 

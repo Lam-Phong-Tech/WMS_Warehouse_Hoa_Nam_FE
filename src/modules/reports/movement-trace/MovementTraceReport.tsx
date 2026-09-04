@@ -20,6 +20,7 @@ import {
   RADIUS,
   SEMANTIC_LIGHT as S,
 } from "@/shared/ui";
+import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import {
   BarChartOutlined,
   CloseOutlined,
@@ -349,6 +350,7 @@ export default function MovementTraceReport() {
     permissionState,
   );
 
+  const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const [draft, setDraft] = useState<AppliedFilters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<AppliedFilters>(EMPTY_FILTERS);
   const [selected, setSelected] = useState<MovementTraceRow | null>(null);
@@ -787,6 +789,7 @@ export default function MovementTraceReport() {
                 t("reports.movementTrace.toDate"),
               ]}
               allowClear={false}
+              presets={periodPresets}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"
               onChange={(value) =>
@@ -1019,7 +1022,7 @@ export default function MovementTraceReport() {
           >
             <UiStatusBadge tone="info" label={timelineCountText} />
             <Box component="span" sx={CAPTION_SX}>
-              posted_at ↑ · movement_id
+              {t("reports.movementTrace.timelineSortNote")}
             </Box>
           </Box>
         </Box>
@@ -1126,6 +1129,9 @@ export default function MovementTraceReport() {
                             gap: 1,
                           }}
                         >
+                          <Box component="span" sx={CAPTION_SX}>
+                            {t("shared.table.rowNumber")} {index + 1}
+                          </Box>
                           <UiStatusBadge
                             tone={MOVEMENT_KIND_TONES[kind]}
                             label={MOVEMENT_KIND_TIMELINE_LABELS[kind]}
@@ -1193,6 +1199,16 @@ export default function MovementTraceReport() {
         <Box sx={{ p: 0 }}>
           <ResponsiveDataTable<MovementTraceRow>
             columns={[
+              {
+                key: "stt",
+                header: t("shared.table.rowNumber"),
+                width: 64,
+                align: "center",
+                // STT bám theo VỊ TRÍ GỐC của dòng trong tập đang lọc, cùng
+                // quy ước với mvpRowNumber ở các bảng khác của dự án, nên số
+                // thứ tự không nhảy khi bấm sắp xếp cột.
+                render: (row) => ledgerFilter.rows.indexOf(row) + 1,
+              },
               {
                 key: "occurred_at",
                 header: t("reports.movementTrace.colOccurredAt"),

@@ -24,16 +24,14 @@ import {
 } from "@/shared/components/icons";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { EMPTY_TEXT, orEmpty } from "@/shared/constants/display";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
-import {
-  periodPresetOptions,
-  type PeriodPreset,
-} from "../operations/report-format";
 import { usePeriodFilter } from "../operations/report-period";
+import { reportRangePresets } from "../operations/report-range-presets";
 import { RPT_SCROLL_MAX_HEIGHT } from "../operations/report-tokens";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
 import { ExportButtons } from "../operations/report-filters";
@@ -438,6 +436,7 @@ function DetailCell({ label, value }: { label: string; value: ReactNode }) {
 export default function PackingLabelPrintReport() {
   const t = useT();
   const period = usePeriodFilter("this-month");
+  const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const exporter = useReportExport();
   const resultLabelMap = useMemo(() => resultLabels(t), [t]);
   const actionLabelMap = useMemo(() => actionLabels(t), [t]);
@@ -598,6 +597,18 @@ export default function PackingLabelPrintReport() {
   };
 
   const columns = [
+    {
+      key: "stt",
+      header: t("shared.table.rowNumber"),
+      align: "center" as const,
+      width: 56,
+      render: (row: PackingLabelEvent) =>
+        mvpRowNumber(
+          pagination.page,
+          pagination.perPage,
+          pagination.pageRows.indexOf(row),
+        ),
+    },
     {
       key: "attemptedAt",
       header: t("reports.packingLabel.colMoment"),
@@ -858,18 +869,15 @@ export default function PackingLabelPrintReport() {
               }}
             />
           </FilterField>
-          <FilterField label={t("reports.packingLabel.periodLabel")} span={2}>
-            <UiSelect
-              aria-label={t("reports.filters.periodAria")}
-              fullWidth
-              value={period.preset}
-              onChange={(value) => period.setPreset(value as PeriodPreset)}
-              options={periodPresetOptions(t)}
-            />
-          </FilterField>
+          {/*
+           * Ô "Kỳ báo cáo" rời đã bỏ: kỳ nhanh nằm trong panel lịch. Hai
+           * control cùng ghi một khoảng ngày là chỗ người dùng không biết cái
+           * nào thắng — chọn kỳ thì ô ngày bị ghi đè, sửa ô ngày thì ô kỳ lặng
+           * lẽ nhảy về "Tùy chọn". Ô ngày nay chiếm luôn phần lưới của cả hai.
+           */}
           <FilterField
             label={t("reports.packingLabel.dateRangeLabel")}
-            span={5}
+            span={7}
             tabletSpan={2}
           >
             <UiVuexyDateRangePicker
@@ -881,6 +889,7 @@ export default function PackingLabelPrintReport() {
                 t("reports.packingLabel.dateTo"),
               ]}
               allowClear={false}
+              presets={periodPresets}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"
               onChange={(value) => {
@@ -1245,7 +1254,7 @@ export default function PackingLabelPrintReport() {
                     gap: 1.75,
                   }}
                 >
-                  {pagination.pageRows.map((row) => (
+                  {pagination.pageRows.map((row, index) => (
                     <Box
                       key={row.eventId}
                       component="article"
@@ -1272,7 +1281,12 @@ export default function PackingLabelPrintReport() {
                               overflowWrap: "anywhere",
                             }}
                           >
-                            {orEmpty(row.labelCode)}
+                            {mvpRowNumber(
+                              pagination.page,
+                              pagination.perPage,
+                              index,
+                            )}
+                            . {orEmpty(row.labelCode)}
                           </Box>
                           <Box
                             sx={{
@@ -1510,6 +1524,14 @@ export default function PackingLabelPrintReport() {
                 </Box>
                 <ResponsiveDataTable<PackingLabelEvent>
                   columns={[
+                    {
+                      key: "stt",
+                      header: t("shared.table.rowNumber"),
+                      align: "center",
+                      width: 56,
+                      render: (row) =>
+                        snapshot.detail!.attempts.indexOf(row) + 1,
+                    },
                     {
                       key: "attemptedAt",
                       header: t("reports.packingLabel.colMoment"),

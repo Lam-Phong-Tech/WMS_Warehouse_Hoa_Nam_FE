@@ -11,12 +11,12 @@ const TEST_ONLY_PASSWORD = ["placeholder", "login", "pw"].join("-");
 describe("loginSchema — BE m1 auth identifier contract", () => {
   it("accepts non-gmail business email and maps it to email payload", () => {
     const values = loginSchema.parse({
-      identifier: "test-super-admin@hoanam.com",
+      identifier: "test-super-admin@gmail.com",
       password: TEST_ONLY_PASSWORD,
     });
 
     expect(toLoginRequest(values)).toEqual({
-      email: "test-super-admin@hoanam.com",
+      email: "test-super-admin@gmail.com",
       password: TEST_ONLY_PASSWORD,
     });
   });

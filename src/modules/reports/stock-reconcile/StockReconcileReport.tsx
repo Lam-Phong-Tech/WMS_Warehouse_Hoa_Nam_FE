@@ -961,13 +961,15 @@ export default function StockReconcileReport() {
                 <table>
                   <thead>
                     <tr>
+                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
                       <th>{t("reports.stockReconcileReport.colStatus")}</th>
                       <th>{t("reports.stockReconcileReport.colQuantity")}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {structure.map((item) => (
+                    {structure.map((item, index) => (
                       <tr key={item.status}>
+                        <td className="stt-col">{index + 1}</td>
                         <td>{LABELS[item.status]}</td>
                         <td>{fmt(item.value)}</td>
                       </tr>
@@ -1126,16 +1128,19 @@ export default function StockReconcileReport() {
                 <table>
                   <thead>
                     <tr>
+                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
                       <th>{t("reports.stockReconcileReport.colStatus")}</th>
                       <th>{t("reports.stockReconcileReport.colSkuCount")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
+                      <td className="stt-col">1</td>
                       <td>{t("reports.stockReconcileReport.matched")}</td>
                       <td>{fmt(matchedCount)}</td>
                     </tr>
                     <tr>
+                      <td className="stt-col">2</td>
                       <td>{t("reports.stockReconcileReport.mismatch")}</td>
                       <td>{fmt(mismatchedCount)}</td>
                     </tr>
@@ -1191,6 +1196,7 @@ export default function StockReconcileReport() {
               <table className="report-table">
                 <thead>
                   <tr>
+                    <th className="stt-col">{t("shared.table.rowNumber")}</th>
                     <th>{t("reports.stockReconcileReport.colSkuName")}</th>
                     <th className="num">
                       {t("reports.stockReconcileReport.colBalance")}
@@ -1208,14 +1214,14 @@ export default function StockReconcileReport() {
                 <tbody>
                   {varianceFilter.rows.length === 0 ? (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         {varianceFilter.active
                           ? t("reports.stockReconcileReport.emptyFiltered")
                           : t("reports.stockReconcileReport.varianceEmpty")}
                       </td>
                     </tr>
                   ) : (
-                    varianceFilter.rows.map((item) => {
+                    varianceFilter.rows.map((item, index) => {
                       const source = snapshot.rows.find(
                         (row) =>
                           row.sku_code === item.code &&
@@ -1223,6 +1229,7 @@ export default function StockReconcileReport() {
                       );
                       return (
                         <tr key={item.code}>
+                          <td className="stt-col">{index + 1}</td>
                           <td>
                             <span className="sku">{item.code}</span>
                             <div className="truncate" title={item.name}>
@@ -1297,6 +1304,7 @@ export default function StockReconcileReport() {
               <table className="report-table">
                 <thead>
                   <tr>
+                    <th className="stt-col">{t("shared.table.rowNumber")}</th>
                     <th>{t("reports.stockReconcileReport.colSkuName")}</th>
                     <th>{t("reports.stockReconcileReport.colKind")}</th>
                     <th className="num">
@@ -1317,15 +1325,16 @@ export default function StockReconcileReport() {
                 <tbody>
                   {normFilter.rows.length === 0 ? (
                     <tr>
-                      <td colSpan={7}>
+                      <td colSpan={8}>
                         {normFilter.active
                           ? t("reports.stockReconcileReport.emptyFiltered")
                           : t("reports.stockReconcileReport.normEmpty")}
                       </td>
                     </tr>
                   ) : (
-                    normFilter.rows.map((row) => (
+                    normFilter.rows.map((row, index) => (
                       <tr key={row.code}>
+                        <td className="stt-col">{index + 1}</td>
                         <td>
                           <span className="sku">{row.code}</span>
                           <div className="truncate" title={row.name}>
@@ -1438,7 +1447,7 @@ export default function StockReconcileReport() {
                 <table className="report-table">
                   <thead>
                     <tr>
-                      <th>STT</th>
+                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
                       <th>{t("reports.stockReconcileReport.colSkuKind")}</th>
                       <th>
                         {t("reports.stockReconcileReport.colStockStatus")}
@@ -1475,7 +1484,7 @@ export default function StockReconcileReport() {
                     ) : (
                       detailFilter.rows.map((row, index) => (
                         <tr key={row.drillKey}>
-                          <td>{index + 1}</td>
+                          <td className="stt-col">{index + 1}</td>
                           <td>
                             <span className="sku">{row.sku_code}</span>
                             <div className="truncate" title={row.sku_name}>
@@ -1533,10 +1542,13 @@ export default function StockReconcileReport() {
               hidden={view !== "snapshot"}
             >
               <div className="report-snapshot-grid">
-                {detailFilter.rows.map((row) => (
+                {detailFilter.rows.map((row, index) => (
                   <article className="report-slice" key={row.drillKey}>
                     <div className="report-slice-head">
                       <div>
+                        <span className="stt-badge">
+                          {t("shared.table.rowNumber")} {index + 1}
+                        </span>
                         <strong>
                           {row.sku_code} ·{" "}
                           {row.sku_name === "" ? EMPTY_TEXT : row.sku_name}
@@ -1654,9 +1666,10 @@ export default function StockReconcileReport() {
                 <span>{t("reports.stockReconcileReport.movementsEmpty")}</span>
               </div>
             ) : (
-              movementEvents.map((event) => (
+              movementEvents.map((event, index) => (
                 <div key={event.id}>
                   <strong>
+                    {index + 1}.{" "}
                     {MOVEMENT_LABELS[event.movement_type] ??
                       event.movement_type}
                   </strong>
