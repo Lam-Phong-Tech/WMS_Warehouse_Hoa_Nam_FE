@@ -33,7 +33,6 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import {
-  assignRfidToItem,
   cancelOutboundDocument,
   createPackingLabel,
   fetchAvailableQtyBySku,
@@ -58,8 +57,6 @@ import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
-
-type RfidTarget = { itemId: string; itemCode: string };
 
 /**
  * Lý do in lại nhãn thường gặp (mục 9) + "Khác" cho phép nhập tay.
@@ -178,9 +175,6 @@ export function AlignedOutboundDetailModal({
   const [reprintOpen, setReprintOpen] = useState(false);
   const [reprintReasonKey, setReprintReasonKey] = useState("");
   const [reprintReasonNote, setReprintReasonNote] = useState("");
-  const [rfidTarget, setRfidTarget] = useState<RfidTarget | null>(null);
-  const [rfidCode, setRfidCode] = useState("");
-  const [rfidHardwareUid, setRfidHardwareUid] = useState("");
   const [evidence, setEvidence] = useState<IssueEvidence | null>(null);
   const [preparedLabel, setPreparedLabel] = useState<PackingLabelRecord | null>(
     null,
@@ -529,32 +523,6 @@ export function AlignedOutboundDetailModal({
       toast.error(getApiErrorMessage(error, t("outbound.detail.cancelError"))),
   });
 
-  const rfidMutation = useMutation({
-    mutationFn: async () => {
-      if (!rfidTarget || !detail)
-        throw new Error(t("outbound.detail.needRfidTarget"));
-      if (!rfidCode.trim() || !rfidHardwareUid.trim()) {
-        throw new Error(t("outbound.detail.needRfidFields"));
-      }
-      return assignRfidToItem({
-        documentId,
-        itemId: rfidTarget.itemId,
-        codeValue: rfidCode.trim(),
-        hardwareUid: rfidHardwareUid.trim(),
-        ifMatch: version ?? detail.document.version,
-      });
-    },
-    onSuccess: async () => {
-      toast.success(t("outbound.detail.rfidAssigned"));
-      setRfidTarget(null);
-      setRfidCode("");
-      setRfidHardwareUid("");
-      await refresh();
-    },
-    onError: (error) =>
-      toast.error(getApiErrorMessage(error, t("outbound.detail.rfidError"))),
-  });
-
   // Gỡ đối chiếu là thao tác không hoàn tác được bằng nút bấm: muốn tính lại
   // vào phiếu phải quét lại sản phẩm thật — bắt buộc xác nhận trước khi gọi server.
   const handleUnmatch = async (match: OutboundItemMatchRecord) => {
@@ -600,12 +568,6 @@ export function AlignedOutboundDetailModal({
         match.itemCode || match.serialNumber || short(match.itemId),
     },
     {
-      key: "rfidCode",
-      header: "RFID",
-      width: 150,
-      render: (match) => match.rfidCode || EMPTY_TEXT,
-    },
-    {
       key: "actions",
       header: "",
       mobileLabel: t("outbound.detail.colAction"),
@@ -618,20 +580,6 @@ export function AlignedOutboundDetailModal({
               onClick={() => void handleUnmatch(match)}
             >
               {t("outbound.detail.remove")}
-            </ActionButton>
-          ) : null}
-          {match.itemId && can("physical_code.assign_rfid") ? (
-            <ActionButton
-              kind="rfid"
-              onClick={() =>
-                setRfidTarget({
-                  itemId: match.itemId as string,
-                  itemCode:
-                    match.itemCode || match.serialNumber || short(match.itemId),
-                })
-              }
-            >
-              RFID
             </ActionButton>
           ) : null}
         </Stack>
@@ -917,7 +865,7 @@ export function AlignedOutboundDetailModal({
           </Box>
 
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, lg: 8 }}>
+            <Grid size={12}>
               <Box sx={SECTION_SX}>
                 <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
                   {t("outbound.detail.step3")}
@@ -1045,17 +993,6 @@ export function AlignedOutboundDetailModal({
                     </Box>
                   )}
                 </Stack>
-              </Box>
-            </Grid>
-
-            <Grid size={{ xs: 12, lg: 4 }}>
-              <Box sx={SECTION_SX}>
-                <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                  {t("outbound.detail.rfidTitle")}
-                </Box>
-                <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                  {t("outbound.detail.rfidBody")}
-                </Box>
               </Box>
             </Grid>
           </Grid>
@@ -1204,53 +1141,6 @@ export function AlignedOutboundDetailModal({
                 placeholder={t("outbound.reprint.otherPlaceholder")}
               />
             ) : null}
-          </Stack>
-        </UiDialog>
-
-        <UiDialog
-          open={Boolean(rfidTarget)}
-          onClose={guardBackdropClose(() => setRfidTarget(null))}
-          maxWidth="xs"
-          fullWidth
-          title={t("outbound.detail.rfidDialogTitle", {
-            code: rfidTarget?.itemCode ?? "",
-          })}
-          actions={
-            <>
-              <ActionButton kind="close" onClick={() => setRfidTarget(null)}>
-                {t("common.close")}
-              </ActionButton>
-              <ActionButton
-                kind="rfid"
-                disabled={
-                  rfidMutation.isPending ||
-                  !rfidCode.trim() ||
-                  !rfidHardwareUid.trim()
-                }
-                onClick={() => rfidMutation.mutate()}
-              >
-                {rfidMutation.isPending
-                  ? t("outbound.detail.rfidAssigning")
-                  : t("outbound.detail.rfidAssign")}
-              </ActionButton>
-            </>
-          }
-        >
-          <Stack spacing={2}>
-            <UiTextField
-              fullWidth
-              value={rfidCode}
-              onChange={(event) => setRfidCode(event.target.value)}
-              label={t("outbound.detail.fieldRfidCode")}
-              placeholder={t("outbound.detail.fieldRfidCode")}
-            />
-            <UiTextField
-              fullWidth
-              value={rfidHardwareUid}
-              onChange={(event) => setRfidHardwareUid(event.target.value)}
-              label={t("outbound.detail.fieldRfidUid")}
-              placeholder={t("outbound.detail.fieldRfidUidPlaceholder")}
-            />
           </Stack>
         </UiDialog>
       </UiDialog>

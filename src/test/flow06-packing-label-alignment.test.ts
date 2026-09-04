@@ -23,20 +23,36 @@ describe("Flow 06 Packing Label alignment", () => {
     const page = read("src/modules/outbound/pages/AlignedMvpOutboundPage.tsx");
     expect(page).not.toContain("Nhãn từng Item");
 
-    // Ghi chú nghiệp vụ (Post là điều kiện duy nhất trừ tồn, RFID tùy chọn)
-    // hiển thị đúng ngữ cảnh trong modal chi tiết, không phải banner chung
-    // trên trang danh sách.
+    // Ghi chú nghiệp vụ "Post là điều kiện duy nhất trừ tồn" hiển thị đúng ngữ
+    // cảnh trong modal chi tiết, không phải banner chung trên trang danh sách.
     const modal = read(
       "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
     );
     expect(modal).toContain("outbound.detail.postedBody");
-    expect(modal).toContain("outbound.detail.rfidTitle");
-    expect(modal).toContain("outbound.detail.rfidBody");
 
     const messages = readMessages();
     expect(messages).toContain("Tồn kho đã được trừ");
-    expect(messages).toContain("RFID (tùy chọn)");
-    expect(messages).toContain("không phải điều kiện để ghi nhận xuất kho");
+  });
+
+  /**
+   * Gán mã vật lý cho từng hiện vật đã chuyển sang luồng NFC của Mini App
+   * (POST /mini-app/items/{itemId}/nfc/prepare + PATCH .../nfc), nên màn chi tiết
+   * phiếu xuất không còn thao tác gán RFID thủ công. Guard theo chiều PHỦ ĐỊNH để
+   * UI cũ không lặng lẽ quay lại: hai kênh cùng ghi physical_codes cho một hiện
+   * vật là đường dẫn tới mã trùng.
+   */
+  it("no longer offers manual RFID assignment in the outbound detail modal", () => {
+    const modal = read(
+      "src/modules/outbound/components/AlignedOutboundDetailModal.tsx",
+    );
+    expect(modal).not.toContain("assignRfidToItem");
+    expect(modal).not.toContain("rfidTarget");
+    expect(modal).not.toContain("outbound.detail.rfidDialogTitle");
+
+    // Khoá i18n của UI đã gỡ cũng phải biến mất khỏi catalog, không để lại rác.
+    const messages = readMessages();
+    expect(messages).not.toContain("rfidDialogTitle");
+    expect(messages).not.toContain("RFID (tùy chọn)");
   });
 
   it("does not include RFID or label state in the FE post readiness gate", () => {

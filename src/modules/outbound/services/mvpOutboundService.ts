@@ -901,35 +901,12 @@ export async function fetchActiveRfidCodes(): Promise<PhysicalCodeRecord[]> {
 }
 
 /**
- * Annex C assignItemRfid — PUT /outbound-documents/{id}/items/{item_id}/rfid với
- * permission physical_code.assign_rfid. Idempotent theo hardware_uid, trả
- * 409 DUPLICATE_HARDWARE_UID khi UID đã gắn item khác. RFID stock-neutral và
- * KHÔNG phải gate Post Issue (§15 OP-05).
+ * Annex C assignItemRfid (PUT /outbound-documents/{id}/items/{item_id}/rfid) không
+ * còn client FE: màn chi tiết phiếu xuất đã bỏ thao tác gán RFID thủ công, việc gắn
+ * mã vật lý cho từng hiện vật chuyển sang luồng NFC của Mini App (prepare +
+ * PATCH /mini-app/items/{itemId}/nfc).
+ *
+ * Endpoint backend vẫn còn và API_ENDPOINTS.OUTBOUND_ITEM_RFID vẫn được khai —
+ * flow06-packing-label-alignment pin hằng số đó — nên nếu dựng lại UI thì viết lại
+ * hàm gọi ở đây thay vì thêm đường dẫn mới.
  */
-export async function assignRfidToItem(input: {
-  documentId: string;
-  itemId: string;
-  codeValue: string;
-  hardwareUid: string;
-  ifMatch: number;
-}): Promise<PhysicalCodeRecord> {
-  const row = await http.put<RawRecord>(
-    endpoint(API_ENDPOINTS.OUTBOUND_ITEM_RFID, input.documentId, {
-      itemId: input.itemId,
-    }),
-    {
-      code_value: input.codeValue,
-      hardware_uid: input.hardwareUid,
-    },
-    headers(input.ifMatch),
-  );
-  return {
-    id: text(row.physical_code_id ?? row.id),
-    codeValue: text(row.code_value),
-    carrierType: text(row.carrier_type),
-    hardwareUid: text(row.hardware_uid) || null,
-    itemId: text(row.item_id ?? row.assigned_object_id) || null,
-    status: text(row.status),
-    version: num(row.version),
-  };
-}

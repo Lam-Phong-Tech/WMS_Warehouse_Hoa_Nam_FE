@@ -1,7 +1,6 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import {
-  assignRfidToItem,
   cancelOutboundDocument,
   fetchActiveRfidCodes,
   fetchAvailableQtyBySku,
@@ -25,7 +24,6 @@ import {
 } from "@/modules/outbound/services/mvpOutboundService";
 
 export {
-  assignRfidToItem,
   cancelOutboundDocument,
   fetchActiveRfidCodes,
   fetchAvailableQtyBySku,
