@@ -77,8 +77,14 @@
   --hnd-status-quarantine: #00bad1;
   --hnd-status-in-process: #ff9f43;
   --hnd-status-unclassified: rgba(47, 43, 61, 0.4);
-  --hnd-mix-product: #7367f0;
-  --hnd-mix-component: #ffb96a;
+  /*
+   * "Cơ cấu tồn kho" dùng LẠI hai sắc đã có chứ không khai hex mới: sản phẩm =
+   * tím thương hiệu (đúng bằng --hnd-status-available), linh kiện = cam nhạt
+   * của chú giải luồng. Trỏ qua var() thì đổi bảng màu một chỗ là cả hai khối
+   * đổi theo, và guard ui:tokens không phải nuốt thêm literal.
+   */
+  --hnd-mix-product: var(--wms-primary);
+  --hnd-mix-component: var(--hnd-legend-component);
 
   color: var(--muted);
   font-size: 15px;

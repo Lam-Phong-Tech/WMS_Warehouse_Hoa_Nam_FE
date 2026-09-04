@@ -14,6 +14,7 @@ export {
   type UiFormAutocompleteProps,
   type UiAutocompleteOption,
 } from "./UiFormAutocomplete";
+export { UiAutocomplete, type UiAutocompleteProps } from "./UiAutocomplete";
 export { UiFormCheckbox, type UiFormCheckboxProps } from "./UiFormCheckbox";
 export { UiFormSwitch, type UiFormSwitchProps } from "./UiFormSwitch";
 export {

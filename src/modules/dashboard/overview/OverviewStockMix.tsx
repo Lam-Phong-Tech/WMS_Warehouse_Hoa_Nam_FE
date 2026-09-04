@@ -154,13 +154,25 @@ export function OverviewStockMix({
   // vành bằng một đường tròn có stroke dày thay vì <path>.
   const isFullRing = drawable.length === 1;
 
+  /*
+   * Vòng `for` thay vì `map` + biến cộng dồn bên ngoài: mỗi lát bắt đầu ở chỗ
+   * lát trước kết thúc, mà gán lại biến ngoài từ trong callback là thứ React
+   * Compiler (react-hooks/immutability) chặn — cùng lý do đã ghi ở
+   * shared/components/charts/WaterfallChart.tsx.
+   */
+  const slices: Array<{
+    row: (typeof drawable)[number];
+    start: number;
+    end: number;
+    mid: number;
+  }> = [];
   let cursor = -Math.PI / 2;
-  const slices = drawable.map((row) => {
+  for (const row of drawable) {
     const start = cursor;
     const end = start + (row.value / total) * TAU;
     cursor = end;
-    return { row, start, end, mid: (start + end) / 2 };
-  });
+    slices.push({ row, start, end, mid: (start + end) / 2 });
+  }
 
   return (
     <article className="card chart-card" id="stock-mix-card">

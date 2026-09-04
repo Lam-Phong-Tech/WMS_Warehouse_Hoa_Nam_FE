@@ -4,15 +4,14 @@ import {
   Grid,
   Stack,
   UiAlert,
+  // SKU linh kiện cần gõ-để-lọc trên toàn danh mục (catalog lớn, không thể tải
+  // hết vào 1 dropdown) — cùng cách OutboundIntakeModal.tsx đã làm.
+  UiAutocomplete,
   UiDialog,
   UiStatusBadge,
   UiText,
   UiTextField,
 } from "@/shared/ui";
-// SKU linh kiện cần gõ-để-lọc trên toàn danh mục (catalog lớn, không thể tải
-// hết vào 1 dropdown) — cùng cách OutboundIntakeModal.tsx đã làm.
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from "@mui/material/TextField";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -587,49 +586,48 @@ export function ComponentIssueModal({
                         rowGap: 1,
                       }}
                     >
-                      <Autocomplete
-                        size="small"
+                      <UiAutocomplete
                         sx={{ minWidth: 360 }}
-                        options={skuOptions}
-                        value={
-                          line.sku_id
-                            ? {
-                                value: line.sku_id,
-                                label:
-                                  skuLabelById.get(line.sku_id) ?? line.sku_id,
-                              }
-                            : null
+                        options={
+                          // Giữ nhãn của SKU ĐANG CHỌN kể cả khi nó rơi ra ngoài
+                          // kết quả tìm kiếm hiện tại: UiAutocomplete tra nhãn
+                          // từ chính mảng options, thiếu dòng này thì ô hiện
+                          // trống ngay khi người dùng gõ một từ khoá khác.
+                          line.sku_id &&
+                          !skuOptions.some(
+                            (option) => option.value === line.sku_id,
+                          )
+                            ? [
+                                {
+                                  value: line.sku_id,
+                                  label:
+                                    skuLabelById.get(line.sku_id) ??
+                                    line.sku_id,
+                                },
+                                ...skuOptions,
+                              ]
+                            : skuOptions
                         }
-                        onChange={(_event, next) =>
+                        value={line.sku_id || null}
+                        onChange={(next) =>
                           updateDraftLine(index, {
-                            sku_id: next?.value ?? "",
+                            sku_id: next === null ? "" : String(next),
                           })
                         }
-                        onInputChange={(_event, value, reason) => {
-                          if (reason === "input") setSkuKeyword(value);
-                        }}
-                        getOptionLabel={(option) => option.label}
-                        isOptionEqualToValue={(option, val) =>
-                          option.value === val.value
-                        }
+                        onInputChange={setSkuKeyword}
+                        required
+                        label={t("warranty.componentIssue.skuLabel")}
+                        placeholder={t(
+                          "warranty.componentIssue.skuPlaceholder",
+                        )}
+                        error={Boolean(lineErrors[index]?.sku_id)}
+                        helperText={lineErrors[index]?.sku_id}
                         loading={skusQuery.isFetching}
                         noOptionsText={
                           skuKeyword.trim()
                             ? t("warranty.componentIssue.skuNoMatch")
                             : t("warranty.componentIssue.skuTypeToSearch")
                         }
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            required
-                            label={t("warranty.componentIssue.skuLabel")}
-                            placeholder={t(
-                              "warranty.componentIssue.skuPlaceholder",
-                            )}
-                            error={Boolean(lineErrors[index]?.sku_id)}
-                            helperText={lineErrors[index]?.sku_id}
-                          />
-                        )}
                       />
                       <UiTextField
                         required
