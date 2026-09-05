@@ -93,4 +93,25 @@ describe("ProtectedRoute WWHN-165", () => {
     renderProtectedRoute();
     expect(screen.getByText("Inventory Page")).toBeInTheDocument();
   });
+
+  it("có danh tính thật -> vẫn render outlet sau khi nạp persisted cache", async () => {
+    // Cổng cache (usePersistedQueryCache) chặn Outlet cho tới khi cache của ĐÚNG
+    // danh tính vừa được máy chủ xác nhận nạp xong. Test này giữ cho cổng đó
+    // không bao giờ biến thành màn hình chờ vĩnh viễn — cache là tối ưu, không
+    // được trở thành điểm chết của ứng dụng.
+    useAuthStore.setState({
+      isAuthenticated: true,
+      isProfileLoaded: true,
+      profile: {
+        user_id: "u-1",
+        warehouse_scope_ids: ["wh-1"],
+        permissions: ["inventory.view"],
+      } as never,
+      permissionCodes: ["inventory.view"],
+      isSuperAdmin: false,
+    });
+    renderProtectedRoute();
+
+    expect(await screen.findByText("Inventory Page")).toBeInTheDocument();
+  });
 });

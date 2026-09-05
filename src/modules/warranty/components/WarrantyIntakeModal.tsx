@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import dayjs from "dayjs";
 import {
   Box,
   FormControlLabel,
@@ -41,7 +40,6 @@ import {
   useCreateMvpDefect,
   useMvpDefects,
 } from "@/modules/master-data/hooks/use-mvp-master";
-import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import {
   useCreateWarrantyCase,
@@ -57,6 +55,23 @@ import {
   AnimatedInlineItem,
 } from "@/shared/components/motion";
 import { createRowKey } from "@/shared/components/motion/row-key";
+import { validatePhone } from "@/shared/constants/validation.constants";
+import {
+  MAX_WARRANTY_IMAGES,
+  MAX_WARRANTY_VIDEOS,
+  MAX_WARRANTY_VIDEO_DURATION_SECONDS,
+  probeVideoDurationSeconds,
+} from "@/modules/warranty/components/warranty-attachment-limits";
+import {
+  checkDate,
+  dateInputBounds,
+  pastDateBounds,
+} from "@/shared/validation/date-rules";
+
+/** BE create case: item_code maxLength 200 (OpenAPI SCR-WAR-01). */
+const ITEM_CODE_MAX_LENGTH = 200;
+/** Mô tả bệnh/lỗi mới: dùng chung trần văn bản tự do 2000 (BE không giới hạn). */
+const DEFECT_DESCRIPTION_MAX_LENGTH = 2000;
 
 /**
  * Khóa ổn định cho từng tệp đã chọn.
@@ -78,7 +93,9 @@ function fileRowKey(file: File): string {
 }
 
 // Annex D SCR-WAR-01 field `images`: jpg/png/webp; <=10 files; <=10MB/file.
-const MAX_INTAKE_IMAGES = 10;
+// Trần số ảnh/video + đo thời lượng dùng chung với màn chi tiết — xem
+// warranty-attachment-limits.ts.
+const MAX_INTAKE_IMAGES = MAX_WARRANTY_IMAGES;
 const MAX_INTAKE_IMAGE_BYTES = 10 * 1024 * 1024;
 const INTAKE_IMAGE_MIMES = [
   "image/jpeg",
@@ -90,27 +107,10 @@ const INTAKE_IMAGE_MIMES = [
 // WAR-02 video đính kèm: mp4/mov/webm, tách riêng khỏi 10 ảnh; <=2 video;
 // <=300MB và <=5 phút/video (BE đo lại thời lượng bằng getID3, đây chỉ là
 // kiểm tra sớm phía client để không mất công tải file quá dài).
-const MAX_INTAKE_VIDEOS = 2;
+const MAX_INTAKE_VIDEOS = MAX_WARRANTY_VIDEOS;
 const MAX_INTAKE_VIDEO_BYTES = 300 * 1024 * 1024;
-const MAX_INTAKE_VIDEO_DURATION_SECONDS = 300;
+const MAX_INTAKE_VIDEO_DURATION_SECONDS = MAX_WARRANTY_VIDEO_DURATION_SECONDS;
 const INTAKE_VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
-
-function probeVideoDurationSeconds(file: File): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const videoEl = document.createElement("video");
-    videoEl.preload = "metadata";
-    videoEl.onloadedmetadata = () => {
-      URL.revokeObjectURL(url);
-      resolve(videoEl.duration);
-    };
-    videoEl.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("cannot read video metadata"));
-    };
-    videoEl.src = url;
-  });
-}
 
 function formatIntakeFileSize(bytes: number): string {
   if (!bytes) return "0 B";
@@ -247,6 +247,28 @@ export function WarrantyIntakeModal({
   const [receivedCondition, setReceivedCondition] = useState("");
 
   const [formError, setFormError] = useState<string | null>(null);
+  /**
+   * Lỗi gắn vào từng ô (ngày mua, SĐT, mã hiện vật) — banner `formError` giữ
+   * cho lỗi server/lỗi bắt buộc như trước, nhưng lỗi định dạng phải hiện ngay
+   * dưới ô sai để người nhập biết sửa ở đâu.
+   */
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const clearFieldError = (key: string) =>
+    setFieldErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  // Ngày mua ≤ hôm nay (BE: before_or_equal:today); tính mỗi lần render để
+  // không "đóng băng" hôm nay khi trang mở qua nửa đêm.
+  const purchaseDateBounds = pastDateBounds();
+  const purchaseDateInput = dateInputBounds(purchaseDateBounds);
+  const phoneLiveCheck = customerPhone ? validatePhone(customerPhone) : null;
+  const phoneLiveError =
+    phoneLiveCheck && !phoneLiveCheck.isValid
+      ? (phoneLiveCheck.errorMessage ?? t("warranty.intake.errPhoneFormat"))
+      : undefined;
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [videoFiles, setVideoFiles] = useState<File[]>([]);
   const createMutation = useCreateWarrantyCase();
@@ -297,6 +319,13 @@ export function WarrantyIntakeModal({
     if (!newDefectForm.defect_name.trim()) {
       errors.defect_name = t("warranty.intake.errDefectName");
     }
+    if (
+      newDefectForm.description.trim().length > DEFECT_DESCRIPTION_MAX_LENGTH
+    ) {
+      errors.description = t("shared.validation.textMaxLength", {
+        max: DEFECT_DESCRIPTION_MAX_LENGTH,
+      });
+    }
     if (Object.keys(errors).length > 0) {
       setNewDefectErrors(errors);
       return;
@@ -332,11 +361,7 @@ export function WarrantyIntakeModal({
   };
   // Change Pack QR/SKU (guide §13 WAR-02): quét raw QR -> classify(WARRANTY) ->
   // tự điền item/SKU; classify cần warehouse_id (REQ-SRS-001: một kho ACTIVE).
-  const warehousesQuery = useQuery({
-    queryKey: ["warranty", "intake-warehouse"],
-    queryFn: () => fetchWarehouses({ status: "ACTIVE" }),
-    enabled: open,
-  });
+  const warehousesQuery = useActiveWarehouses({ enabled: open });
   const warehouse = warehousesQuery.data?.[0];
   const [resolvedItem, setResolvedItem] = useState<{
     skuCode?: string;
@@ -518,10 +543,40 @@ export function WarrantyIntakeModal({
     setResolvedItem(null);
     setResolveError(null);
     setFormError(null);
+    setFieldErrors({});
   };
 
   const submit = async () => {
     setFormError(null);
+    // Kiểm tra định dạng từng ô trước, gom hết lỗi rồi mới dừng — người dùng
+    // thấy mọi ô sai một lượt thay vì sửa từng lỗi qua banner.
+    const errors: Record<string, string> = {};
+    if (
+      identificationType === "IDENTIFIED" &&
+      itemCode.trim().length > ITEM_CODE_MAX_LENGTH
+    ) {
+      errors.itemCode = t("shared.validation.textMaxLength", {
+        max: ITEM_CODE_MAX_LENGTH,
+      });
+    }
+    if (customerPhone.trim()) {
+      const phoneCheck = validatePhone(customerPhone.trim());
+      if (!phoneCheck.isValid) {
+        errors.customerPhone =
+          phoneCheck.errorMessage ?? t("warranty.intake.errPhoneFormat");
+      }
+    }
+    if (purchaseDate) {
+      const dateCheck = checkDate(purchaseDate, purchaseDateBounds);
+      if (!dateCheck.ok) {
+        errors.purchaseDate = dateCheck.message;
+      }
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setFormError(Object.values(errors)[0] ?? null);
+      return;
+    }
     if (identificationType === "TEMP_ONLY") {
       if (!missingCodeReason.trim()) {
         setFormError(t("warranty.intake.errReason"));
@@ -541,10 +596,6 @@ export function WarrantyIntakeModal({
     }
     if (!customerPhone.trim()) {
       setFormError(t("warranty.intake.errPhone"));
-      return;
-    }
-    if (!/^0\d{9}$/.test(customerPhone)) {
-      setFormError(t("warranty.intake.errPhoneFormat"));
       return;
     }
     if (!reportedDefect.trim()) {
@@ -734,8 +785,10 @@ export function WarrantyIntakeModal({
                     setItemCode(value);
                     setResolvedItem(null);
                     setResolveError(null);
+                    clearFieldError("itemCode");
                   }}
                   onScan={(code) => void resolveScannedCode(code)}
+                  error={fieldErrors.itemCode ?? null}
                 />
               </Box>
             </Stack>
@@ -798,17 +851,14 @@ export function WarrantyIntakeModal({
               fullWidth
               label={t("warranty.intake.phone")}
               value={customerPhone}
-              onChange={(event) =>
+              onChange={(event) => {
                 setCustomerPhone(
                   event.target.value.replace(/\D/g, "").slice(0, 10),
-                )
-              }
-              error={Boolean(customerPhone) && !/^0\d{9}$/.test(customerPhone)}
-              helperText={
-                Boolean(customerPhone) && !/^0\d{9}$/.test(customerPhone)
-                  ? t("warranty.intake.errPhoneFormat")
-                  : undefined
-              }
+                );
+                clearFieldError("customerPhone");
+              }}
+              error={Boolean(fieldErrors.customerPhone ?? phoneLiveError)}
+              helperText={fieldErrors.customerPhone ?? phoneLiveError}
               slotProps={{
                 htmlInput: { maxLength: 10, inputMode: "numeric" },
               }}
@@ -828,12 +878,18 @@ export function WarrantyIntakeModal({
               type="date"
               label={t("warranty.intake.purchaseDate")}
               value={purchaseDate}
-              onChange={(event) => setPurchaseDate(event.target.value)}
+              onChange={(event) => {
+                setPurchaseDate(event.target.value);
+                clearFieldError("purchaseDate");
+              }}
               slotProps={{
                 inputLabel: { shrink: true },
-                htmlInput: { max: dayjs().format("YYYY-MM-DD") },
+                htmlInput: { ...purchaseDateInput },
               }}
-              helperText={t("warranty.intake.dateHelper")}
+              error={Boolean(fieldErrors.purchaseDate)}
+              helperText={
+                fieldErrors.purchaseDate ?? t("warranty.intake.dateHelper")
+              }
             />
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
@@ -1142,6 +1198,9 @@ export function WarrantyIntakeModal({
             }
             error={Boolean(newDefectErrors.description)}
             helperText={newDefectErrors.description}
+            slotProps={{
+              htmlInput: { maxLength: DEFECT_DESCRIPTION_MAX_LENGTH },
+            }}
           />
         </Stack>
       </UiDialog>

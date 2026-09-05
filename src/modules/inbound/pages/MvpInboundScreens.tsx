@@ -6,6 +6,7 @@ import {
   Stack,
   UiAlert,
   UiDialog,
+  UiNumberField,
   UiPagination,
   UiStatusBadge,
   UiTextField,
@@ -17,6 +18,7 @@ import {
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { toast } from "sonner";
 import {
   CheckCircleOutlined,
@@ -72,6 +74,11 @@ import type {
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
+
+/** Lý do hủy phiếu phải đủ ý — dưới ngưỡng này là "ok"/"x" vô nghĩa cho tra soát. */
+const CANCEL_REASON_MIN = 5;
+const CANCEL_REASON_MAX = 1000;
 
 type BarcodeResult = { rawValue?: string };
 type BarcodeDetectorInstance = {
@@ -408,11 +415,17 @@ export function InboundScanModal({
     containerId?: string;
     skuCode: string;
   } | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  // Giữ CHUỖI người dùng gõ để báo lỗi thay vì ép về 1 im lặng (ô number cũ
+  // nhận "-5"/"1e5" rồi Number() || 1 nuốt mất lỗi).
+  const [quantity, setQuantity] = useState("1");
+  const [quantityError, setQuantityError] = useState<string | null>(null);
   const [scanVersion, setScanVersion] = useState<number | null>(null);
   const [scanLog, setScanLog] = useState<ScanLogRow[]>([]);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [cancelReasonError, setCancelReasonError] = useState<string | null>(
+    null,
+  );
   const [receiptEvidence, setReceiptEvidence] =
     useState<ReceiptEvidence | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -693,7 +706,8 @@ export function InboundScanModal({
     const box = parseBoxCode(normalizedCode);
     if (box) {
       setPendingBox({ boxCode: box.boxCode, skuCode: box.skuCode });
-      setQuantity(1);
+      setQuantity("1");
+      setQuantityError(null);
       setScanCode("");
       return;
     }
@@ -727,21 +741,31 @@ export function InboundScanModal({
   // Xác nhận số lượng linh kiện trong hộp đã quét, rồi quay lại chờ quét tiếp.
   const handleConfirmBox = async () => {
     if (!pendingBox || !canScan || !isMutable) return;
-    const qty = Math.max(1, Number(quantity) || 1);
+    // Cùng NUMBER_RULES.quantity với ô nhập: nguyên, 1…1.000.000.
+    const qtyCheck = checkNumber(quantity, {
+      ...NUMBER_RULES.quantity,
+      required: true,
+    });
+    if (!qtyCheck.ok) {
+      setQuantityError(qtyCheck.message);
+      return;
+    }
     const ok = await submitScan({
       code: pendingBox.boxCode,
-      quantity: qty,
+      quantity: qtyCheck.value ?? 1,
       boxSkuCode: pendingBox.skuCode,
     });
     if (ok) {
       setPendingBox(null);
-      setQuantity(1);
+      setQuantity("1");
+      setQuantityError(null);
     }
   };
 
   const handleCancelBox = () => {
     setPendingBox(null);
-    setQuantity(1);
+    setQuantity("1");
+    setQuantityError(null);
   };
 
   // Người dùng đã chọn loại cho SKU mới: gửi lại lần quét kèm new_sku_type.
@@ -825,6 +849,19 @@ export function InboundScanModal({
   const handleCancel = async () => {
     if (!detail || scanVersion === null || !cancelReason.trim() || !canCancel)
       return;
+    const reason = cancelReason.trim();
+    if (reason.length < CANCEL_REASON_MIN) {
+      setCancelReasonError(
+        t("inbound.scan.cancelReasonShort", { min: CANCEL_REASON_MIN }),
+      );
+      return;
+    }
+    if (reason.length > CANCEL_REASON_MAX) {
+      setCancelReasonError(
+        t("shared.validation.textMaxLength", { max: CANCEL_REASON_MAX }),
+      );
+      return;
+    }
     try {
       await cancelMutation.mutateAsync({
         id: documentId,
@@ -883,7 +920,7 @@ export function InboundScanModal({
         // per_page nên KHÔNG chứa hết mọi SKU — không được coi là nguồn chính.
         const skuCode = line.sku || skuById.get(line.productId)?.sku_code;
         return skuCode ? (
-          <strong>{skuCode}</strong>
+          <SkuLink id={line.productId} code={skuCode} />
         ) : (
           <CopyableId value={line.productId} />
         );
@@ -1019,6 +1056,8 @@ export function InboundScanModal({
     },
     {
       key: "actions",
+      // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
+      truncate: 0,
       header: t("inbound.detail.colAction"),
       width: 110,
       render: (entry) =>
@@ -1349,14 +1388,15 @@ export function InboundScanModal({
                           >
                             {t("inbound.box.qtyLabel")}
                           </Box>
-                          <UiTextField
-                            type="number"
+                          <UiNumberField
                             autoFocus
                             value={quantity}
+                            rule={NUMBER_RULES.quantity}
                             disabled={!canScan || busy}
-                            onChange={(event) =>
-                              setQuantity(Number(event.target.value) || 1)
-                            }
+                            onChange={(next) => {
+                              setQuantity(next);
+                              if (quantityError) setQuantityError(null);
+                            }}
                             onKeyDown={(event) => {
                               if (event.key === "Enter") {
                                 event.preventDefault();
@@ -1364,7 +1404,13 @@ export function InboundScanModal({
                               }
                             }}
                             sx={{ width: "100%", maxWidth: 220 }}
-                            slotProps={{ htmlInput: { min: 1 } }}
+                            slotProps={{
+                              htmlInput: {
+                                "aria-label": t("inbound.box.qtyLabel"),
+                              },
+                            }}
+                            error={Boolean(quantityError)}
+                            helperText={quantityError ?? undefined}
                           />
                         </Box>
                         <ActionButton
@@ -1709,11 +1755,17 @@ export function InboundScanModal({
             multiline
             minRows={4}
             value={cancelReason}
-            onChange={(event) => setCancelReason(event.target.value)}
+            onChange={(event) => {
+              setCancelReason(event.target.value);
+              if (cancelReasonError) setCancelReasonError(null);
+            }}
             label={t("inbound.cancel.reasonLabel")}
             placeholder={t("inbound.cancel.reasonPlaceholder")}
-            slotProps={{ htmlInput: { maxLength: 1000 } }}
-            helperText={`${cancelReason.length}/1000`}
+            slotProps={{ htmlInput: { maxLength: CANCEL_REASON_MAX } }}
+            error={Boolean(cancelReasonError)}
+            helperText={
+              cancelReasonError ?? `${cancelReason.length}/${CANCEL_REASON_MAX}`
+            }
           />
         </Stack>
       </UiDialog>

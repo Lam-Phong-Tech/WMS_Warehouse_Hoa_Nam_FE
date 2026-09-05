@@ -12,6 +12,23 @@ export interface RuntimeConfig {
   readonly enableAnalytics: boolean;
   readonly enableDebug: boolean;
   readonly enablePerfMonitor: boolean;
+  /**
+   * TẠM THỜI — CHẾ ĐỘ MÁY QUÉT (kiosk).
+   *
+   * Máy quét chạy liên tục ngoài kho, mạng chập chờn. Mỗi lần `/auth/refresh`
+   * hoặc `/auth/me` lỗi HẠ TẦNG (mất mạng, 5xx, timeout), lớp bảo vệ route
+   * dựng một thẻ đỏ CHẶN cả màn và bắt người dùng bấm "Thử lại" — nhân viên
+   * đang cầm máy quét phải dừng tay, đó là chỗ "cứ 5-10 phút lại văng".
+   *
+   * Bật cờ này thì các lỗi hạ tầng đó tự thử lại ngầm (màn chờ, không hộp
+   * thoại) và thanh nhắc cập nhật ứng dụng cũng im lặng tự áp dụng.
+   *
+   * KHÔNG nới lỏng xác thực: refresh bị chối thật (401/403/422) vẫn xoá phiên
+   * và về màn đăng nhập như cũ. Cờ chỉ đổi cách HIỂN THỊ lỗi hạ tầng.
+   *
+   * HOÀN TÁC khi đợt quét kết thúc: đặt lại VITE_SCANNER_KIOSK_MODE=false.
+   */
+  readonly scannerKioskMode: boolean;
   readonly reverb: {
     readonly appKey: string | undefined;
     readonly host: string;
@@ -167,6 +184,10 @@ export const runtimeConfig: RuntimeConfig = {
   enablePerfMonitor: boolEnv(
     readEnv("VITE_ENABLE_PERF_MONITOR"),
     "VITE_ENABLE_PERF_MONITOR",
+  ),
+  scannerKioskMode: boolEnv(
+    readEnv("VITE_SCANNER_KIOSK_MODE"),
+    "VITE_SCANNER_KIOSK_MODE",
   ),
   // Không throw khi thiếu: bảng chuông thông báo tắt gracefully (không realtime,
   // FE vẫn chạy được) thay vì làm sập toàn bộ SPA vì thiếu 1 biến optional.

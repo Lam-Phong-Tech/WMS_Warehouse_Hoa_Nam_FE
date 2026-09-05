@@ -12,7 +12,6 @@ export function useNotificationsQuery(params: NotificationListParams = {}) {
   return useQuery({
     queryKey: [...NOTIFICATIONS_KEY, params],
     queryFn: () => notificationService.list(params),
-    staleTime: 15 * 1000,
   });
 }
 
@@ -28,7 +27,6 @@ export function useUnreadCountQuery(enabled: boolean) {
       return result;
     },
     enabled,
-    staleTime: 30 * 1000,
   });
 }
 

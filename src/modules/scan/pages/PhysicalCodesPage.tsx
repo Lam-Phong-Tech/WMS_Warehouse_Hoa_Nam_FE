@@ -18,13 +18,14 @@ import {
   ScanOutlined,
   UnorderedListOutlined,
 } from "@/shared/components/icons";
-import { useQuery } from "@tanstack/react-query";
+import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import {
   InlineApiError,
   tableEmptyText,
 } from "@/shared/components/feedback/BusinessState";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import type { ApiMeta } from "@/shared/types/api-response";
@@ -37,7 +38,6 @@ import {
   SCAN_RESULT_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
-import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import {
   classifyScanCodes,
   fetchPhysicalCodes,
@@ -188,10 +188,7 @@ export default function PhysicalCodesPage() {
     WMS_PERMISSION_CATALOG.PHYSICAL_CODE_CREATE,
   );
 
-  const warehousesQuery = useQuery({
-    queryKey: ["physical-codes", "active-warehouse"],
-    queryFn: () => fetchWarehouses({ status: "ACTIVE" }),
-  });
+  const warehousesQuery = useActiveWarehouses();
   const warehouses = warehousesQuery.data ?? [];
 
   useEffect(() => {
@@ -396,7 +393,14 @@ export default function PhysicalCodesPage() {
       key: "target",
       header: t("scan.physical.colTarget"),
       sortAccessor: (row) => row.sku_code || row.container_code || "",
-      render: (row) => row.sku_code || row.container_code || EMPTY_TEXT,
+      // Chỉ mã SKU mới bấm sang App xem sản phẩm được; mã thùng/khay là đối
+      // tượng chứa hàng, không có trang sản phẩm nào để mở.
+      render: (row) =>
+        row.sku_code ? (
+          <SkuLink code={row.sku_code} />
+        ) : (
+          row.container_code || EMPTY_TEXT
+        ),
     },
     {
       key: "status",

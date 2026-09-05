@@ -136,6 +136,8 @@ export default function TabPendingEvidence() {
     },
     {
       key: "action",
+      // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
+      truncate: 0,
       header: t("reports.pendingEvidence.colAction"),
       align: "center",
       width: 130,

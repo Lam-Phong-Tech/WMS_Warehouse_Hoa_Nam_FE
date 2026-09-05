@@ -14,6 +14,7 @@ export {
   type UiTextFieldProps,
   type UiFormFieldProps,
 } from "./UiTextField";
+export { UiNumberField, type UiNumberFieldProps } from "./UiNumberField";
 export { UiCard, type UiCardProps } from "./UiCard";
 export {
   UiStatusBadge,

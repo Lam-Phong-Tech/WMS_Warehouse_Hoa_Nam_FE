@@ -4,6 +4,7 @@ import {
   PWA_UPDATE_READY_EVENT,
 } from "./register-pwa";
 import { useT } from "@/shared/i18n/useT";
+import { runtimeConfig } from "@/shared/config/env";
 import "./pwa-status.css";
 
 export function PwaStatus() {
@@ -14,7 +15,16 @@ export function PwaStatus() {
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    const handleUpdateReady = () => setUpdateReady(true);
+    // TẠM THỜI — chế độ máy quét: không hỏi, tự áp bản mới ngay. Thanh nhắc
+    // "Có phiên bản ứng dụng mới" là một cửa sổ nữa bắt người đang quét phải
+    // dừng tay bấm nút. Bản mới vẫn được áp, chỉ là không hỏi.
+    const handleUpdateReady = () => {
+      if (runtimeConfig.scannerKioskMode) {
+        activateWaitingServiceWorker();
+        return;
+      }
+      setUpdateReady(true);
+    };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);

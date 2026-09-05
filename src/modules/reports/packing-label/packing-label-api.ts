@@ -1,7 +1,9 @@
 import { useMemo } from "react";
+import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { fetchAllPages } from "@/shared/api/paginate-all";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   listOf,
@@ -42,7 +44,13 @@ import { tStatic } from "@/shared/i18n/useT";
  * `eventsError`) thay vì im lặng trả bảng rỗng.
  */
 
-const STALE_MS = 60_000;
+/**
+ * Ngưỡng tươi của mọi query báo cáo — LẤY TỪ chính sách chung thay vì một số
+ * viết tay. Trước đây là 60s, trong khi BE tự cache báo cáo 300s
+ * (config/wms_cache.php ttl.report): mọi lần refetch trong khoảng đó chỉ nhận
+ * lại đúng bytes đang nằm trong Valkey — tốn một vòng request cho không.
+ */
+const STALE_MS = CACHE_POLICIES.report.staleTime;
 /** Trần 100 dòng/trang là giới hạn cứng của `/label-print-events` ở BE. */
 const EVENT_PAGE_SIZE = 100;
 /** Trần cuốn trang — 20 × 100 = 2.000 lần in gần nhất. */
@@ -209,20 +217,21 @@ function useLabelPrintEvents(enabled: boolean) {
   return useQuery({
     queryKey: ["rpt-05", "label-print-events"],
     queryFn: async () => {
-      const rows: Raw[] = [];
-      let capped = false;
-      for (let page = 1; page <= LABEL_EVENT_MAX_PAGES; page += 1) {
-        const result = await http.getPage<Raw[]>(
-          API_ENDPOINTS.LABEL_PRINT_EVENTS,
-          { params: { page, per_page: EVENT_PAGE_SIZE } },
-        );
-        const pageRows = Array.isArray(result.data) ? result.data : [];
-        rows.push(...pageRows);
-        const lastPage = n(result.meta?.last_page, 1);
-        if (pageRows.length === 0) break;
-        if (page >= lastPage) break;
-        if (page === LABEL_EVENT_MAX_PAGES) capped = true;
-      }
+      // Trang 1 tuần tự, phần còn lại song song (@/shared/api/paginate-all).
+      const pages = await fetchAllPages(
+        (page) =>
+          http.getPage<Raw[]>(API_ENDPOINTS.LABEL_PRINT_EVENTS, {
+            params: { page, per_page: EVENT_PAGE_SIZE },
+          }),
+        (result) => n(result.meta?.last_page, 1),
+        LABEL_EVENT_MAX_PAGES,
+      );
+      const rows = pages.flatMap((result) =>
+        Array.isArray(result.data) ? result.data : [],
+      );
+      // `capped` nghĩa là danh sách BỊ CẮT vì chạm trần trang, không phải "vừa đủ".
+      const capped =
+        n(pages[0]?.meta?.last_page, 1) > LABEL_EVENT_MAX_PAGES;
       return { rows, capped };
     },
     enabled,

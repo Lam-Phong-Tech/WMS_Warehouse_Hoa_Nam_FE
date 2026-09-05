@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MESSAGES_EN, MESSAGES_VI, type MessageKey } from "./messages";
+import { MESSAGES_VI, type MessageKey } from "./messages";
+import { MESSAGES_EN } from "./messages.en";
+import {
+  ensureEnglishMessages,
+  __resetEnglishMessages,
+} from "./english-messages";
 import { translate } from "./useT";
 import { NAV_GROUPS, SCREEN_META } from "@/app/layouts/nav-data";
 import { NAV_LABELS_EN, navLabel } from "./nav-labels";
@@ -49,8 +54,17 @@ describe("translate()", () => {
     expect(translate("vi", "dashboard.title")).toBe("Tổng quan vận hành");
   });
 
-  it("trả tiếng Anh khi ngôn ngữ là en", () => {
+  it("trả tiếng Anh khi ngôn ngữ là en", async () => {
+    // Từ điển EN nạp động (english-messages.ts) để không nằm trong đồ thị
+    // tải-ngay. Trước khi nạp xong, translate() cố ý rơi về tiếng Việt.
+    await ensureEnglishMessages();
     expect(translate("en", "dashboard.title")).toBe("Operations overview");
+  });
+
+  it("rơi về tiếng Việt khi từ điển EN CHƯA nạp xong", async () => {
+    __resetEnglishMessages();
+    expect(translate("en", "dashboard.title")).toBe("Tổng quan vận hành");
+    await ensureEnglishMessages();
   });
 
   it("rơi về tiếng Việt khi khoá thiếu bản EN", () => {

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
@@ -31,7 +32,13 @@ export const MOVEMENT_TRACE_TIMEZONE = "Asia/Ho_Chi_Minh";
 /** `report_code` Annex C của báo cáo này (BE phục vụ đúng mã này). */
 export const MOVEMENT_TRACE_REPORT_CODE = "movement-trace";
 
-const STALE_MS = 60_000;
+/**
+ * Ngưỡng tươi của mọi query báo cáo — LẤY TỪ chính sách chung thay vì một số
+ * viết tay. Trước đây là 60s, trong khi BE tự cache báo cáo 300s
+ * (config/wms_cache.php ttl.report): mọi lần refetch trong khoảng đó chỉ nhận
+ * lại đúng bytes đang nằm trong Valkey — tốn một vòng request cho không.
+ */
+const STALE_MS = CACHE_POLICIES.report.staleTime;
 
 /** Một dòng sổ biến động, đã chuẩn hoá từ payload BE. */
 export type MovementTraceRow = {

@@ -525,9 +525,12 @@ describe("IN-03 · quét mã hộp linh kiện (scan-driven)", () => {
     await scanCode("BOX-HN-COMP-BASE-003-0001");
     await screen.findByText("Hộp linh kiện: HN-COMP-BASE-003");
 
-    fireEvent.change(screen.getByRole("spinbutton"), {
-      target: { value: "5" },
-    });
+    // Ô số lượng là UiNumberField (type="text" + inputMode numeric), không
+    // còn là spinbutton của <input type="number">.
+    fireEvent.change(
+      screen.getByRole("textbox", { name: /Số lượng linh kiện trong hộp/ }),
+      { target: { value: "5" } },
+    );
     fireEvent.click(screen.getByRole("button", { name: /Xác nhận/ }));
 
     await waitFor(() => {

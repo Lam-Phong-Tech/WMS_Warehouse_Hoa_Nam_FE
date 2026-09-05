@@ -23,7 +23,6 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { InboundDraftModal } from "@/modules/inbound/components/InboundDraftModal";
@@ -90,8 +89,7 @@ function InboundListScreen() {
     per_page: perPage,
   });
   const rows = query.data?.data ?? [];
-  const rowSelection = useRowSelection(rows, (row) => row.id);
-  const meta = query.data?.meta;
+    const meta = query.data?.meta;
   const total = Number(meta?.total ?? rows.length);
 
   useEffect(() => {
@@ -332,12 +330,6 @@ function InboundListScreen() {
         columns={columns}
         rows={rows}
         rowKey={(row) => row.id}
-        rowSelection={rowSelection}
-        selectionLabel={(row) =>
-          t("inbound.list.selectionLabel", {
-            code: row.code || t("inbound.list.noCode"),
-          })
-        }
         loading={query.isLoading || query.isFetching}
         renderRowActions={renderRowActions}
         emptyText={tableEmptyText(

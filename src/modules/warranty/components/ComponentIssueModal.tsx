@@ -8,15 +8,22 @@ import {
   // hết vào 1 dropdown) — cùng cách OutboundIntakeModal.tsx đã làm.
   UiAutocomplete,
   UiDialog,
+  UiNumberField,
   UiStatusBadge,
   UiText,
   UiTextField,
 } from "@/shared/ui";
 import {
+  NUMBER_RULES,
+  checkNumber,
+  type NumberRule,
+} from "@/shared/validation/number-rules";
+import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { shortId } from "@/shared/utils/shortId";
 import {
   AnimatedList,
@@ -25,6 +32,7 @@ import {
 import { createRowKey } from "@/shared/components/motion/row-key";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import dayjs from "dayjs";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
@@ -37,7 +45,6 @@ import {
   isRetryableAfterReload,
 } from "@/shared/api/concurrency-contract";
 import { useCanAny } from "@/shared/components/permission";
-import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import { fetchAvailableQtyBySku } from "@/modules/outbound/services/alignedOutboundService";
 import {
@@ -61,11 +68,27 @@ interface DraftLineValue {
   /** Danh tính ổn định của dòng (xem createRowKey) — không gửi lên API. */
   key: string;
   sku_id: string;
-  required_qty: number | null;
+  /**
+   * Giữ CHUỖI người dùng gõ (không ép Number ngay) để "abc", "1e9", "-3" bị
+   * `checkNumber` báo lỗi trên ô thay vì âm thầm thành 0/NaN rồi lọt lên API.
+   */
+  required_qty: string;
 }
 
 function emptyDraftLine(): DraftLineValue {
-  return { key: createRowKey("comp-line"), sku_id: "", required_qty: null };
+  return { key: createRowKey("comp-line"), sku_id: "", required_qty: "" };
+}
+
+/** SL cần / SL mỗi lần quét: nguyên, 1…1.000.000, bắt buộc nhập. */
+const REQUIRED_QTY_RULE: NumberRule = {
+  ...NUMBER_RULES.quantity,
+  required: true,
+};
+
+/** Parse SL cần của một dòng; null khi rỗng/sai (đã có message riêng khi validate). */
+function parseRequiredQty(raw: string): number | null {
+  const check = checkNumber(raw, NUMBER_RULES.quantity);
+  return check.ok ? check.value : null;
 }
 
 interface ComponentIssueModalProps {
@@ -98,10 +121,12 @@ export function ComponentIssueModal({
   );
   const [localVersion, setLocalVersion] = useState<number | null>(null);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
-  const [scanQuantity, setScanQuantity] = useState<number>(1);
+  const [scanQuantity, setScanQuantity] = useState("1");
+  const [scanQuantityError, setScanQuantityError] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [cancelReasonError, setCancelReasonError] = useState("");
   const [recentCodes, setRecentCodes] = useState<string[]>([]);
   const [postConfirmOpen, setPostConfirmOpen] = useState(false);
 
@@ -130,11 +155,7 @@ export function ComponentIssueModal({
     }
   };
 
-  const warehousesQuery = useQuery({
-    queryKey: ["warranty", "component-issue-warehouse"],
-    queryFn: () => fetchWarehouses({ status: "ACTIVE" }),
-    enabled: !documentId,
-  });
+  const warehousesQuery = useActiveWarehouses({ enabled: !documentId });
   const warehouse = warehousesQuery.data?.[0];
   // Catalog COMPONENT có thể lên tới hàng trăm/nghìn SKU — không thể cắt cứng
   // ở per_page (per_page=100 cũ khiến SKU nằm ngoài trang đầu không bao giờ
@@ -199,8 +220,9 @@ export function ComponentIssueModal({
   const requiredBySkuId = useMemo(() => {
     const result: Record<string, number> = {};
     draftLines.forEach((line) => {
-      if (!line.sku_id || !line.required_qty) return;
-      result[line.sku_id] = (result[line.sku_id] ?? 0) + line.required_qty;
+      const qty = parseRequiredQty(line.required_qty);
+      if (!line.sku_id || qty === null) return;
+      result[line.sku_id] = (result[line.sku_id] ?? 0) + qty;
     });
     return result;
   }, [draftLines]);
@@ -258,8 +280,9 @@ export function ComponentIssueModal({
       if (!line.sku_id) {
         lineError.sku_id = t("warranty.componentIssue.errSku");
       }
-      if (!line.required_qty || line.required_qty < 1) {
-        lineError.required_qty = t("warranty.componentIssue.errQty");
+      const qtyCheck = checkNumber(line.required_qty, REQUIRED_QTY_RULE);
+      if (!qtyCheck.ok) {
+        lineError.required_qty = qtyCheck.message;
       } else if (line.sku_id) {
         const available = availabilityQuery.data?.[line.sku_id];
         if (available === undefined) {
@@ -293,12 +316,16 @@ export function ComponentIssueModal({
         warranty_case_id: caseId,
         document_date: dayjs().format("YYYY-MM-DD"),
         note: draftNote.trim() || undefined,
+        // Gửi số đã parse từ checkNumber (validateDraftLines đã chặn dòng sai).
         lines: draftLines
-          .filter((line) => line.sku_id && line.required_qty)
           .map((line) => ({
             sku_id: String(line.sku_id),
-            required_qty: Number(line.required_qty),
-          })),
+            required_qty: parseRequiredQty(line.required_qty),
+          }))
+          .filter(
+            (line): line is { sku_id: string; required_qty: number } =>
+              Boolean(line.sku_id) && line.required_qty !== null,
+          ),
       });
       toast.success(
         t("warranty.componentIssue.created", {
@@ -323,19 +350,29 @@ export function ComponentIssueModal({
       return;
     }
     if (version === null) return;
+    // SL mỗi lần quét phải hợp lệ trước khi gọi API — lỗi hiện trên ô, không
+    // âm thầm ép về 1 như trước.
+    const qtyCheck = checkNumber(scanQuantity, REQUIRED_QTY_RULE);
+    if (!qtyCheck.ok || qtyCheck.value === null) {
+      setScanQuantityError(
+        qtyCheck.ok ? t("warranty.componentIssue.errQty") : qtyCheck.message,
+      );
+      return;
+    }
+    const quantity = qtyCheck.value;
     try {
       const result = await scanMutation.mutateAsync({
         documentId,
         lineId: line.id,
         codeValue: code,
-        quantity: scanQuantity,
+        quantity,
         ifMatch: version,
       });
       setLocalVersion(result.version);
       setRecentCodes((current) => [code, ...current].slice(0, 30));
       toast.success(
         t("warranty.componentIssue.scanned", {
-          qty: scanQuantity,
+          qty: quantity,
           sku: line.sku_code,
           scanned: result.scanned_qty,
           required: line.required_qty,
@@ -351,6 +388,7 @@ export function ComponentIssueModal({
   const handleCancel = async () => {
     if (!documentId || version === null) return;
     if (!cancelReason.trim()) {
+      setCancelReasonError(t("warranty.componentIssue.needCancelReason"));
       toast.warning(t("warranty.componentIssue.needCancelReason"));
       return;
     }
@@ -426,7 +464,7 @@ export function ComponentIssueModal({
               color: line.id === selectedLineId ? "primary.main" : undefined,
             }}
           >
-            {line.sku_code}
+            <SkuLink id={line.sku_id} code={line.sku_code} />
           </Box>
           <UiText variant="secondary">{line.sku_name}</UiText>
         </Stack>
@@ -629,22 +667,17 @@ export function ComponentIssueModal({
                             : t("warranty.componentIssue.skuTypeToSearch")
                         }
                       />
-                      <UiTextField
+                      <UiNumberField
                         required
-                        type="number"
+                        rule={NUMBER_RULES.quantity}
                         label={t("warranty.componentIssue.qtyLabel")}
-                        value={line.required_qty ?? ""}
-                        onChange={(event) =>
-                          updateDraftLine(index, {
-                            required_qty: event.target.value
-                              ? Number(event.target.value)
-                              : null,
-                          })
+                        value={line.required_qty}
+                        onChange={(next) =>
+                          updateDraftLine(index, { required_qty: next })
                         }
                         error={Boolean(lineErrors[index]?.required_qty)}
                         helperText={lineErrors[index]?.required_qty}
                         sx={{ width: 130 }}
-                        slotProps={{ htmlInput: { min: 1 } }}
                       />
                       {!documentId && line.sku_id
                         ? (() => {
@@ -806,15 +839,17 @@ export function ComponentIssueModal({
                         rowGap: 1,
                       }}
                     >
-                      <UiTextField
-                        type="number"
+                      <UiNumberField
+                        rule={NUMBER_RULES.quantity}
                         label={t("warranty.componentIssue.scanQtyLabel")}
                         value={scanQuantity}
-                        onChange={(event) =>
-                          setScanQuantity(Number(event.target.value) || 1)
-                        }
-                        sx={{ width: 90 }}
-                        slotProps={{ htmlInput: { min: 1 } }}
+                        onChange={(next) => {
+                          setScanQuantity(next);
+                          setScanQuantityError("");
+                        }}
+                        error={Boolean(scanQuantityError)}
+                        helperText={scanQuantityError || undefined}
+                        sx={{ width: 110 }}
                       />
                       <Box sx={{ flex: 1, minWidth: 220 }}>
                         <ScanInput
@@ -867,7 +902,12 @@ export function ComponentIssueModal({
             minRows={3}
             label={t("warranty.componentIssue.cancelReasonLabel")}
             value={cancelReason}
-            onChange={(event) => setCancelReason(event.target.value)}
+            onChange={(event) => {
+              setCancelReason(event.target.value);
+              setCancelReasonError("");
+            }}
+            error={Boolean(cancelReasonError)}
+            helperText={cancelReasonError || undefined}
             slotProps={{ htmlInput: { maxLength: 2000 } }}
           />
         </Box>

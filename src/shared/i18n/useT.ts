@@ -9,20 +9,14 @@
  * bao giờ trả về chính tên khoá — người dùng không được nhìn thấy `a.b.c`.
  */
 import { useCallback } from "react";
+import { MESSAGES_VI, type MessageKey } from "./messages";
 import {
-  MESSAGES_EN,
-  MESSAGES_VI,
-  type MessageKey,
-  type MessageTree,
-} from "./messages";
+  englishMessages,
+  useEnglishMessages,
+} from "./english-messages";
 import { useLanguageStore, type Language } from "./language.store";
 
 export type MessageVars = Record<string, string | number>;
-
-const TRANSLATIONS: Record<Language, MessageTree | undefined> = {
-  vi: undefined, // VI đọc thẳng từ MESSAGES_VI
-  en: MESSAGES_EN,
-};
 
 function lookup(tree: unknown, key: string): string | undefined {
   let node: unknown = tree;
@@ -45,8 +39,10 @@ export function translate(
   key: MessageKey,
   vars?: MessageVars,
 ): string {
+  // Tiếng Anh nạp động (english-messages.ts). Chưa nạp xong -> englishMessages()
+  // trả null -> rơi về tiếng Việt, đúng như khoá chưa được dịch.
   const translated =
-    language === "vi" ? undefined : lookup(TRANSLATIONS[language], key);
+    language === "vi" ? undefined : lookup(englishMessages(), key);
   // Thiếu bản dịch → tiếng Việt. `MESSAGES_VI` luôn đủ khoá nên nhánh `?? key`
   // chỉ chạy khi ai đó ép kiểu sai; giữ lại để không bao giờ trả về undefined.
   return interpolate(translated ?? lookup(MESSAGES_VI, key) ?? key, vars);
@@ -65,8 +61,12 @@ export function tStatic(key: MessageKey, vars?: MessageVars): string {
 
 export function useT(): TranslateFn {
   const language = useLanguageStore((state) => state.language);
+  // Subscribe để render lại đúng một lần khi bản dịch tiếng Anh về tới nơi.
+  const english = useEnglishMessages();
   return useCallback(
     (key: MessageKey, vars?: MessageVars) => translate(language, key, vars),
-    [language],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `english` chỉ là
+    // tín hiệu "bản dịch đã về"; giá trị được đọc qua englishMessages().
+    [language, english],
   );
 }

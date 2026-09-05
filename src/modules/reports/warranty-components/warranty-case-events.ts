@@ -16,6 +16,8 @@ export function useWarrantyCaseEvents(caseId: string | null, enabled: boolean) {
     queryKey: ["rpt-06", "warranty-case-events", caseId],
     queryFn: () => fetchWarrantyCaseEvents(caseId ?? ""),
     enabled: Boolean(caseId) && enabled,
+    // GHI ĐÈ CÓ CHỦ Ý so với nhóm `report` (5 phút): dòng sự kiện của một hồ sơ
+    // bảo hành đang xử lý phải bám sát thao tác của người khác trên cùng hồ sơ.
     staleTime: 60_000,
     retry: false,
   });

@@ -1579,3 +1579,23 @@
   line-height: 18px;
   letter-spacing: 0.02em;
 }
+
+/* ── Không ô nào trong bảng danh sách được xuống dòng ─────────────────────────
+ * Chữ dài cắt bằng "…". Trần bề ngang đặt ở KHỐI BÊN TRONG ô (.cell/.sub/.sku)
+ * chứ không ở <td>: table-layout auto bỏ qua max-width của ô, nên chặn ở ô thì
+ * "…" không bao giờ hiện.
+ * .chart-table (bảng thay thế biểu đồ trong <details>) cố ý không nằm trong
+ * phạm vi này — ở đó người dùng cần đọc trọn giá trị.
+ */
+.hn-rpt02 .report-table td {
+  white-space: nowrap;
+}
+.hn-rpt02 .report-table td .cell,
+.hn-rpt02 .report-table td .sub,
+.hn-rpt02 .report-table td .sku {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

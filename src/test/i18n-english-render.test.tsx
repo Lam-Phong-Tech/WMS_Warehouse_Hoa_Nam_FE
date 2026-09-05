@@ -25,6 +25,7 @@ vi.mock("@/shared/api/http", () => ({
 import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import { ROUTES } from "@/shared/constants/routes";
 import PackingLabelReportPage from "@/modules/reports/pages/PackingLabelReportPage";
 
@@ -107,7 +108,7 @@ function ariaLabels(root: HTMLElement): string[] {
 }
 
 describe("đổi sang English · màn hình không còn chữ tiếng Việt", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.mocked(http.get).mockReset();
     vi.mocked(http.getPage).mockReset();
     vi.mocked(http.get).mockImplementation(
@@ -122,6 +123,11 @@ describe("đổi sang English · màn hình không còn chữ tiếng Việt", (
       permissionCodes: ["report.view", "report.export", "REPORT_EXPORT"],
     });
     useLanguageStore.getState().setLanguage("en");
+    // Từ điển EN nạp ĐỘNG (english-messages.ts): chưa về thì t() rơi về tiếng
+    // Việt đúng như thiết kế. Không chờ ở đây thì test đua với lượt import đó —
+    // chạy một mình thì thắng, chạy cùng cả bộ (nhiều worker tranh CPU) thì
+    // thua và cả màn hiện tiếng Việt, báo đỏ oan.
+    await ensureEnglishMessages();
   });
 
   afterEach(() => {

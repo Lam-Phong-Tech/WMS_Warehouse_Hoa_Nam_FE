@@ -54,6 +54,9 @@ function idempotencyKey(action: string, id: string) {
 }
 
 const LINES_PAGE_SIZE = 10;
+/** Lý do hủy: tối thiểu 5 ký tự (BE min:5), trần theo quy ước lý do. */
+const CANCEL_REASON_MIN = 5;
+const CANCEL_REASON_MAX = 1000;
 
 const returnConditionOptions = (
   t: TranslateFn,
@@ -117,6 +120,9 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
   const [returnCondition, setReturnCondition] =
     useState<ReversalReturnCondition>("SELLABLE");
   const [cancelReason, setCancelReason] = useState("");
+  const cancelReasonTooShort =
+    cancelReason.trim().length > 0 &&
+    cancelReason.trim().length < CANCEL_REASON_MIN;
   const [actionError, setActionError] = useState<unknown>(null);
   const [staleRecovered, setStaleRecovered] = useState(false);
   const [postConfirmOpen, setPostConfirmOpen] = useState(false);
@@ -607,10 +613,23 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       placeholder={t("reverse.detail.cancelReasonPlaceholder")}
                       onChange={(event) => setCancelReason(event.target.value)}
                       sx={{ minWidth: 320 }}
+                      slotProps={{
+                        htmlInput: { maxLength: CANCEL_REASON_MAX },
+                      }}
+                      // Đang gõ dở (< 5 ký tự) thì báo ngay tại ô, không chỉ
+                      // mờ nút hủy để người dùng biết vì sao chưa bấm được.
+                      error={cancelReasonTooShort}
+                      helperText={
+                        cancelReasonTooShort
+                          ? t("reverse.create.reasonHelper")
+                          : undefined
+                      }
                     />
                     <ActionButton
                       kind="cancel"
-                      disabled={busy || cancelReason.trim().length < 5}
+                      disabled={
+                        busy || cancelReason.trim().length < CANCEL_REASON_MIN
+                      }
                       onClick={() => void handleCancel()}
                     >
                       {t("reverse.detail.cancelAction")}

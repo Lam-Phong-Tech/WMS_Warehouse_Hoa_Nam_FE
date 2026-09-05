@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateMasterDerived } from "@/shared/cache/invalidation";
 import {
   createMvpAgency,
   createMvpDefect,
@@ -58,16 +59,20 @@ export function useMvpProductCatalogs() {
   return useQuery({
     queryKey: mvpMasterKeys.productCatalogs(),
     queryFn: getMvpProductCatalogs,
-    staleTime: 5 * 60_000,
   });
 }
 
+/**
+ * Root `inventory` chứ KHÔNG phải `mvp-master`: đây là câu hỏi về TỒN KHO của
+ * SKU, không phải thuộc tính master của SKU. Để dưới `mvp-master` thì nó thừa
+ * hưởng chính sách master (stale 10 phút, persist xuống đĩa) — sai hoàn toàn cho
+ * dữ liệu tồn. Dưới `inventory` nó nhận stale 15s và không bao giờ chạm đĩa.
+ */
 export function useMvpSkuHasStock(skuId: string, enabled: boolean) {
   return useQuery({
-    queryKey: [...mvpMasterKeys.all, "sku-has-stock", skuId],
+    queryKey: ["inventory", "sku-has-stock", skuId],
     queryFn: () => hasMvpSkuStock(skuId),
     enabled: enabled && Boolean(skuId),
-    staleTime: 30_000,
   });
 }
 
@@ -86,7 +91,12 @@ function useInvalidateMasterMutation<TResult, TVariables>(
   return useMutation({
     mutationFn,
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: mvpMasterKeys.all }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: mvpMasterKeys.all }),
+        // Danh mục dùng chung nằm ở root `ref`; không làm mới ở đây thì mọi
+        // dropdown khác giữ tên/mã cũ tới hết TTL của nhóm reference.
+        invalidateMasterDerived(queryClient),
+      ]),
     onError: () => {
       // Im lặng có chủ đích — xem docblock ở trên.
     },

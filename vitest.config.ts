@@ -5,6 +5,12 @@ import { defineConfig } from "vitest/config";
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  // Cùng hằng số build mà vite.config.ts inject. Test phải thấy một giá trị CỐ
+  // ĐỊNH: để nó rơi về nhánh timestamp thì khoá persisted cache đổi giữa hai lần
+  // chạy và test namespace sẽ nhấp nháy.
+  define: {
+    __APP_BUILD_ID__: JSON.stringify("test-build"),
+  },
   test: {
     globals: true,
     environment: "jsdom",
@@ -40,6 +46,10 @@ export default defineConfig({
       VITE_ENABLE_ANALYTICS: "false",
       VITE_ENABLE_DEBUG: "false",
       VITE_ENABLE_PERF_MONITOR: "false",
+      // Bộ test khẳng định hợp đồng MẶC ĐỊNH (fail-closed, có nút Thử lại).
+      // Ghim tắt ở đây để .env của máy đang bật chế độ máy quét không làm đỏ
+      // test — muốn kiểm chế độ đó thì mock runtimeConfig trong chính test.
+      VITE_SCANNER_KIOSK_MODE: "false",
     },
   },
   resolve: {

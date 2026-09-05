@@ -29,6 +29,7 @@
  * dự án. Nguồn nào chưa trả thì ô hiện "Chưa có" theo `EMPTY_TEXT`.
  */
 import { useMemo } from "react";
+import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
@@ -57,7 +58,13 @@ export const INVENTORY_FLOW_REPORT_CODE = "RPT-XNT-01";
 
 export const ISO_DATE = "YYYY-MM-DD";
 
-const STALE_MS = 60_000;
+/**
+ * Ngưỡng tươi của mọi query báo cáo — LẤY TỪ chính sách chung thay vì một số
+ * viết tay. Trước đây là 60s, trong khi BE tự cache báo cáo 300s
+ * (config/wms_cache.php ttl.report): mọi lần refetch trong khoảng đó chỉ nhận
+ * lại đúng bytes đang nằm trong Valkey — tốn một vòng request cho không.
+ */
+const STALE_MS = CACHE_POLICIES.report.staleTime;
 
 export type ItemKindCode = "PRODUCT" | "COMPONENT";
 

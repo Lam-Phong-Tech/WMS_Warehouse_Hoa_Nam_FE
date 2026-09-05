@@ -1,4 +1,8 @@
-import { authService } from "@/modules/auth/services/auth.service";
+import {
+  authService,
+  meResponseFromRefreshUser,
+} from "@/modules/auth/services/auth.service";
+import { queryClient } from "@/app/providers/query-client";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 let activeBootstrap: Promise<void> | null = null;
@@ -30,6 +34,20 @@ async function runBootstrap(): Promise<void> {
   try {
     const refreshed = await authService.refresh();
     useAuthStore.getState().setToken(refreshed.access_token);
+
+    // `/auth/refresh` trả kèm hồ sơ đầy đủ của đúng JWT vừa cấp. Dùng luôn ở đây
+    // để bỏ một vòng mạng NỐI TIẾP (`/auth/me`) khỏi đường tới hạn của mọi lần
+    // F5 — đo thật trên máy này là ~170-380ms mỗi lần tải trang, và dưới tải
+    // thật (VPS, 3000 người) chi phí một vòng mạng còn lớn hơn.
+    //
+    // Gieo vào React Query bằng ĐÚNG queryKey mà useMe() dùng, nên useMe() thấy
+    // dữ liệu còn tươi (staleTime 5 phút) và không bắn thêm request. Thiếu bước
+    // gieo này thì vòng mạng thứ hai vẫn còn, chỉ khác là không chặn UI nữa.
+    const profile = meResponseFromRefreshUser(refreshed.user);
+    if (profile) {
+      queryClient.setQueryData(["auth", "me", refreshed.access_token], profile);
+      useAuthStore.getState().setProfile(profile);
+    }
   } catch (error) {
     if (isInvalidSession(error)) {
       await clearSessionHint();

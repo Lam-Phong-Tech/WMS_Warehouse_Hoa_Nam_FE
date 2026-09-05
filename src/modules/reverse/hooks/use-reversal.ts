@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import {
   fetchReversalDocuments,
   fetchReversalDocument,
@@ -74,7 +75,10 @@ export function useCreateReversal() {
     mutationFn: (payload: CreateReversalRequest) =>
       createReversalDocument(payload),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+        invalidateStockDerived(queryClient),
+      ]),
     onError: () => {},
   });
 }
@@ -89,7 +93,10 @@ export function useConfirmReversal() {
     mutationFn: (payload: ReversalConfirmRequest) =>
       confirmReversalDocument(payload),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+        invalidateStockDerived(queryClient),
+      ]),
     onError: () => {},
   });
 }
@@ -99,7 +106,10 @@ export function usePostReversal() {
   return useMutation({
     mutationFn: (payload: ReversalPostRequest) => postReversalDocument(payload),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+        invalidateStockDerived(queryClient),
+      ]),
     onError: () => {},
   });
 }
@@ -110,7 +120,10 @@ export function useCancelReversal() {
     mutationFn: (payload: ReversalCancelRequest) =>
       cancelReversalDocument(payload),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: reversalKeys.all }),
+        invalidateStockDerived(queryClient),
+      ]),
     onError: () => {},
   });
 }

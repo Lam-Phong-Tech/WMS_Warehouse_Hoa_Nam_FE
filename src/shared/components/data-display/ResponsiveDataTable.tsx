@@ -18,6 +18,10 @@ import type { ClientSortState, SortAccessor } from "./useClientSort";
 import type { SortWordingType } from "./useClientSort";
 import { ActionButton } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
+import { TruncatedText } from "./TruncatedText";
+
+/** Trần bề ngang của ô khi cột không tự khai `width` (px). */
+const DEFAULT_CELL_MAX_WIDTH = 280;
 
 export interface ResponsiveTableColumn<T> {
   key: string;
@@ -35,6 +39,17 @@ export interface ResponsiveTableColumn<T> {
   sortType?: SortWordingType;
   /** Ẩn hẳn cột này ở mobile (bảng lẫn card) — dùng cho cột phụ ít quan trọng, giữ card gọn. */
   hideOnMobile?: boolean;
+  /**
+   * Số dòng tối đa của ô trước khi cắt bằng "…" (chỉ ở bảng desktop; card
+   * mobile luôn hiện đủ chữ).
+   *
+   * MẶC ĐỊNH 1: không ô nào trong danh sách được phép xuống dòng — chữ dài cắt
+   * bằng "…" và hiện đủ ở tooltip. Ô dựng sẵn nhiều dòng xếp chồng (mã + tên)
+   * vẫn giữ đủ số dòng đó, mỗi dòng tự cắt riêng (xem .hn-truncate > * trong
+   * index.css). Đặt `truncate: 2` khi muốn cho phép chữ tràn sang dòng thứ hai,
+   * `truncate: 0` để tắt hẳn.
+   */
+  truncate?: number;
 }
 
 export interface ResponsiveDataTableProps<T> {
@@ -136,6 +151,30 @@ export function ResponsiveDataTable<T>({
   const requestSort = isControlledSort
     ? controlledOnSortChange
     : internalSort.requestSort;
+
+  /**
+   * Ô bảng desktop: chữ thuần được cắt bằng CSS (mặc định 2 dòng) và mang
+   * tooltip `title` để đọc đủ khi rê chuột. Ô tự dựng JSX giữ nguyên — trừ khi
+   * cột khai `truncate` thì bọc thêm một lớp cắt.
+   */
+  const renderCell = (column: ResponsiveTableColumn<T>, row: T) => {
+    const content = column.render(row);
+    const lines = column.truncate ?? 1;
+    if (lines <= 0) return content;
+    // Trần bề ngang phải nằm trên khối BÊN TRONG ô: `max-width` đặt lên <td>
+    // bị bỏ qua ở table-layout auto (CSS 2.1 §17.5.2), nên "…" sẽ không bao
+    // giờ xuất hiện nếu chỉ chặn ở ô.
+    return (
+      <TruncatedText
+        lines={lines}
+        // Cột không khai `width` vẫn phải có trần, nếu không ô cứ nở theo chuỗi
+        // dài nhất và đẩy bảng ra ngoài khung thay vì cắt bằng "…".
+        maxWidth={column.width ?? DEFAULT_CELL_MAX_WIDTH}
+      >
+        {content}
+      </TruncatedText>
+    );
+  };
 
   const rowSelectionLabel = (row: T) =>
     selectionLabel?.(row) ??
@@ -571,9 +610,14 @@ export function ResponsiveDataTable<T>({
                       padding: "10px 12px",
                       verticalAlign: "top",
                       overflowWrap: "anywhere",
+                      // Chiều rộng cột chỉ là gợi ý cho trình duyệt; trần
+                      // thật của phần chữ nằm ở TruncatedText bên trong.
+                      ...(column.width !== undefined
+                        ? { maxWidth: column.width }
+                        : null),
                     }}
                   >
-                    {column.render(row)}
+                    {renderCell(column, row)}
                   </Box>
                 ))}
                 {renderRowActions && (

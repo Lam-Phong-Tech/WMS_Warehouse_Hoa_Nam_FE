@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import {
   Box,
   Stack,
@@ -25,7 +26,6 @@ import {
 } from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
-import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import { fetchWarrantyCase } from "@/modules/warranty/services/warrantyService";
 import type { WarrantyCase } from "@/modules/warranty/types";
 import {
@@ -117,11 +117,7 @@ export default function WarrantyComponentIssueListPage() {
     rowCount: rows.length,
   });
 
-  const warehousesQuery = useQuery({
-    queryKey: ["warehouses", "component-issue-list"],
-    queryFn: () => fetchWarehouses({ per_page: 200 }),
-    staleTime: 5 * 60 * 1000,
-  });
+  const warehousesQuery = useWarehouseDirectory();
   const warehouseById = useMemo(() => {
     const map = new Map<string, WarehouseRow>();
     (warehousesQuery.data ?? []).forEach((row) => {
@@ -144,7 +140,6 @@ export default function WarrantyComponentIssueListPage() {
     queries: caseIds.map((caseId) => ({
       queryKey: warrantyKeys.detail(caseId),
       queryFn: () => fetchWarrantyCase(caseId),
-      staleTime: 60 * 1000,
     })),
   });
   const caseById = useMemo(() => {

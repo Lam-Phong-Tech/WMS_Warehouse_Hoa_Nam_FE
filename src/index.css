@@ -439,6 +439,46 @@ body .ant-picker-dropdown .ant-picker-super-next-icon::before {
   content: "\f14e";
 }
 
+/* ── Cắt chữ trong ô danh sách ────────────────────────────────────────────
+ * Ô bảng có chữ dài (tên SKU, địa chỉ, ghi chú) chỉ có hai lối thoát: đẩy cột
+ * rộng ra sinh thanh cuộn ngang, hoặc xuống dòng làm hàng cao gấp đôi hàng
+ * khác. Cắt bằng CSS giữ chiều cao hàng đều nhau; chữ đầy đủ vẫn nằm trong
+ * DOM (đọc màn hình + Ctrl+F vẫn thấy) và hiện ở tooltip `title` khi rê chuột.
+ *
+ * Điều kiện để "…" chạy: phần tử phải bị CHẶN BỀ NGANG (td có max-width, hoặc
+ * cha là flex/grid có min-width:0) — nếu không, ô cứ nở theo nội dung và không
+ * bao giờ tràn để mà cắt.
+ */
+.hn-truncate {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ô hai dòng có chủ đích (mã + tên, thời gian + người thao tác) là các khối con
+   XẾP CHỒNG. `text-overflow` KHÔNG di truyền, nên nếu chỉ khai ở khối cha thì
+   con bị cắt cụt mà không có "…". Khai lại cho con trực tiếp: mỗi dòng tự cắt,
+   số dòng giữ nguyên như thiết kế. */
+.hn-truncate > * {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Bản 2 dòng: dùng khi ô mang hai mẩu thông tin (mã + tên) hoặc câu dài cần
+   đọc được nhiều hơn một dòng. -webkit-box vẫn là cách duy nhất được mọi
+   trình duyệt hiện hành hỗ trợ cho line-clamp. */
+.hn-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
 /* Vòng quay chờ canonical (UiSpinner) — glyph spinner của Flaticon. Đặt class ở đây
    để reduced-motion của hn-motion.css áp được và test có hook ổn định. */
 .hn-spinner {

@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/write-build-manifest.mjs",
@@ -94,7 +97,9 @@
     "ui:visual": "playwright test e2e/ui-foundation.spec.ts --project=chromium",
     "ui:responsive": "playwright test e2e/responsive-sweep.spec.ts --project=chromium",
     "ui:a11y": "playwright test e2e/wwhn-274-a11y-browser-matrix.spec.ts --project=wwhn-274-desktop-chromium --project=wwhn-274-chrome-android --project=wwhn-274-safari-ios",
-    "ui:full-gate": "yarn ui:guards && yarn ui:components && yarn ui:visual && yarn ui:responsive && yarn ui:a11y"
+    "ui:full-gate": "yarn ui:guards && yarn ui:components && yarn ui:visual && yarn ui:responsive && yarn ui:a11y",
+    "cache:policy": "node scripts/check-query-cache-policy.mjs",
+    "cache:policy:self-test": "node scripts/check-query-cache-policy.mjs --self-test"
   },
   "resolutions": {
     "nanoid": "^3.3.18",

@@ -93,10 +93,9 @@ async function openRepairingStatusDialog() {
     within(dialog).getByRole("combobox", { name: /Trạng thái mới/ }),
   );
   fireEvent.click(await screen.findByRole("option", { name: "Đang sửa chữa" }));
-  fireEvent.change(
-    within(dialog).getByLabelText(/Ngày dự kiến sửa xong/),
-    { target: { value: "2026-09-30" } },
-  );
+  fireEvent.change(within(dialog).getByLabelText(/Ngày dự kiến sửa xong/), {
+    target: { value: "2026-09-30" },
+  });
   return dialog;
 }
 
@@ -271,7 +270,9 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     vi.mocked(fetchWarrantyCase)
       .mockResolvedValueOnce({ ...DETAIL, version: 2 } as never)
       .mockResolvedValue({ ...DETAIL, version: 3 } as never);
-    vi.mocked(updateWarrantyCase).mockRejectedValueOnce(staleVersionError(2, 3));
+    vi.mocked(updateWarrantyCase).mockRejectedValueOnce(
+      staleVersionError(2, 3),
+    );
     vi.mocked(updateWarrantyCase).mockResolvedValue({
       ...DETAIL,
       version: 4,
@@ -293,9 +294,9 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     await waitFor(() => {
       expect(vi.mocked(updateWarrantyCase)).toHaveBeenCalledTimes(1);
     });
-    expect(
-      vi.mocked(updateWarrantyCase).mock.calls[0][1],
-    ).toMatchObject({ ifMatch: 2 });
+    expect(vi.mocked(updateWarrantyCase).mock.calls[0][1]).toMatchObject({
+      ifMatch: 2,
+    });
 
     // Sau 412, hồ sơ phải được tải lại (không đợi hết staleTime) …
     await waitFor(() => {
@@ -307,9 +308,9 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     await waitFor(() => {
       expect(vi.mocked(updateWarrantyCase)).toHaveBeenCalledTimes(2);
     });
-    expect(
-      vi.mocked(updateWarrantyCase).mock.calls[1][1],
-    ).toMatchObject({ ifMatch: 3 });
+    expect(vi.mocked(updateWarrantyCase).mock.calls[1][1]).toMatchObject({
+      ifMatch: 3,
+    });
   });
 
   it("412 STALE_VERSION: báo bằng tiếng Việt, không đổ số version kỹ thuật ra toast", async () => {
@@ -392,6 +393,73 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     expect(issueButton).toBeDisabled();
     fireEvent.click(issueButton);
     expect(onOpenComponentIssue).not.toHaveBeenCalled();
+  });
+
+  /**
+   * WAR-05: nhãn trả máy chỉ mở được SAU KHI sửa xong. Khoá cả hai chiều —
+   * chặn ở giai đoạn đang xử lý (nhãn sẽ thiếu bệnh lỗi/linh kiện đã thay), và
+   * PHẢI mở ở COMPLETED, đúng mốc "sửa xong, trước khi trả khách".
+   */
+  it.each([
+    ["RECEIVED", true],
+    ["CHECKING", true],
+    ["REPAIRING", true],
+    ["COMPLETED", false],
+    ["RETURNED", false],
+  ])(
+    "case %s: nút In nhãn trả máy disabled=%s",
+    async (status, shouldDisable) => {
+      vi.mocked(fetchWarrantyCase).mockResolvedValue({
+        ...DETAIL,
+        status,
+      } as never);
+      renderWithProviders(
+        <WarrantyDetailModal
+          caseId="wc-1"
+          onClose={() => {}}
+          onOpenComponentIssue={() => {}}
+        />,
+      );
+      await screen.findByText("BH-0001");
+
+      const printButton = screen.getByRole("button", {
+        name: /In nhãn trả máy/,
+      });
+      if (shouldDisable) {
+        expect(printButton).toBeDisabled();
+      } else {
+        expect(printButton).toBeEnabled();
+      }
+    },
+  );
+
+  it("mở bản xem trước nhãn trả máy khi hồ sơ đã hoàn tất xử lý", async () => {
+    vi.mocked(fetchWarrantyCase).mockResolvedValue({
+      ...DETAIL,
+      status: "COMPLETED",
+    } as never);
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={() => {}}
+        onOpenComponentIssue={() => {}}
+      />,
+    );
+    await screen.findByText("BH-0001");
+
+    fireEvent.click(screen.getByRole("button", { name: /In nhãn trả máy/ }));
+
+    const labelDialog = await screen.findByRole("dialog", {
+      name: "Nhãn trả máy bảo hành",
+    });
+    // Hai khối riêng của nhãn bảo hành so với tem đóng gói xuất kho.
+    expect(within(labelDialog).getByText("BỆNH / LỖI")).toBeInTheDocument();
+    expect(
+      within(labelDialog).getByText("LINH KIỆN ĐÃ THAY"),
+    ).toBeInTheDocument();
+    expect(
+      within(labelDialog).getByText("PWR · Không lên nguồn"),
+    ).toBeInTheDocument();
   });
 
   it("thiếu warranty.manage: không cập nhật được trạng thái", async () => {

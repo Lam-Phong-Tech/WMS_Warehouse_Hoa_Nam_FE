@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactElement, type ReactNode } from "react";
+import dayjs from "dayjs";
 import { toast } from "sonner";
 import {
   Box,
@@ -1487,6 +1488,8 @@ export default function RecipientAgencyReport() {
                 t("reports.recipientAgency.dateTo"),
               ]}
               allowClear={false}
+              // Dữ liệu chỉ có trong quá khứ: khoá ngày tương lai (mốc dưới giữ mặc định 2000).
+              maxDate={dayjs().endOf("day")}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"
               presets={periodPresets}

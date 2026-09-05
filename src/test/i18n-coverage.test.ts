@@ -19,7 +19,8 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
-import { MESSAGES_EN, MESSAGES_VI } from "@/shared/i18n/messages";
+import { MESSAGES_VI } from "@/shared/i18n/messages";
+import { MESSAGES_EN } from "@/shared/i18n/messages.en";
 import {
   AUDIT_ACTION_LABELS,
   INBOUND_STATUS_LABELS,
@@ -49,7 +50,11 @@ const VN =
  */
 const VIETNAMESE_IS_DATA: ReadonlyMap<string, string> = new Map([
   // Bảng chuỗi và lớp phủ EN của nó.
-  ["src/shared/i18n/messages.ts", "bảng chuỗi VI/EN"],
+  ["src/shared/i18n/messages.ts", "bảng chuỗi VI"],
+  [
+    "src/shared/i18n/messages.en.ts",
+    "bảng chuỗi EN; tên ngôn ngữ giữ nguyên bản ngữ là đúng UX",
+  ],
   ["src/shared/i18n/nav-labels.ts", "lớp phủ EN cho menu và tiêu đề trang"],
   ["src/shared/i18n/language.store.ts", '"Tiếng Việt" là tên ngôn ngữ'],
   // Bảng nhãn song ngữ: cả hai thứ tiếng nằm ngay trong file.

@@ -1,5 +1,6 @@
 import { tStatic } from "@/shared/i18n/useT";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { toast } from "sonner";
 import {
   createIamDepartment,
@@ -20,7 +21,6 @@ import {
   updateIamRole,
   updateIamUserWithRole,
 } from "@/modules/iam/services/iam.service";
-import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import { getMutationErrorMessage } from "@/shared/api/api-error";
 import type {
   IamDepartmentListParams,
@@ -57,7 +57,6 @@ export function useIamDepartments(params: IamDepartmentListParams = {}) {
     queryKey: iamKeys.departments(params),
     queryFn: () => getIamDepartments(params),
     select: (result) => result.data,
-    staleTime: 5 * 60_000,
   });
 }
 
@@ -74,7 +73,6 @@ export function useIamRoles(params: IamRoleListParams = {}) {
     queryKey: iamKeys.roles(params),
     queryFn: () => getIamRoles(params),
     select: (result) => result.data,
-    staleTime: 30_000,
   });
 }
 
@@ -83,7 +81,6 @@ export function useIamRolesPage(params: IamRoleListParams = {}) {
   return useQuery({
     queryKey: iamKeys.roles(params),
     queryFn: () => getIamRoles(params),
-    staleTime: 30_000,
   });
 }
 
@@ -100,11 +97,7 @@ export function useIamRole(roleId?: string) {
  * danh sách kho để gán tường minh thay vì chỉ hiển thị scope_type của vai trò.
  */
 export function useIamScopeWarehouses() {
-  return useQuery({
-    queryKey: [...iamKeys.all, "scope-warehouses"],
-    queryFn: () => fetchWarehouses({ per_page: 100 }),
-    staleTime: 5 * 60_000,
-  });
+  return useWarehouseDirectory();
 }
 
 export function useIamPermissions(params: IamPermissionListParams = {}) {
@@ -112,12 +105,20 @@ export function useIamPermissions(params: IamPermissionListParams = {}) {
     queryKey: iamKeys.permissions(params),
     queryFn: () => getIamPermissions(params),
     select: (result) => result.data,
-    staleTime: 60_000,
   });
 }
 
 function invalidateIam(queryClient: ReturnType<typeof useQueryClient>) {
-  return queryClient.invalidateQueries({ queryKey: iamKeys.all });
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: iamKeys.all }),
+    // Đổi vai trò/quyền có thể đổi luôn quyền của CHÍNH người đang thao tác.
+    // Làm mới `/auth/me` để permission mới có hiệu lực ngay thay vì chờ hết
+    // staleTime — và vì namespace của persisted cache có băm permission, việc
+    // này cũng khiến bản cache ứng với bộ quyền cũ không còn được đọc.
+    queryClient.invalidateQueries({ queryKey: ["auth"] }),
+    // Danh mục kho dùng chung phụ thuộc warehouse-scope của vai trò.
+    queryClient.invalidateQueries({ queryKey: ["ref"] }),
+  ]);
 }
 
 export function useCreateIamRole() {

@@ -10,6 +10,11 @@ import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import type { SkuTypeFilter } from "../types";
 import {
+  DATE_LIMITS,
+  dateInputBounds,
+  pastDateBounds,
+} from "@/shared/validation/date-rules";
+import {
   PERIOD_NAME_KEYS,
   activeLocale,
   type DateRange,
@@ -17,6 +22,8 @@ import {
 } from "./overview-data";
 
 const ISO = "YYYY-MM-DD";
+/** Mốc sớm nhất của ô ngày — cùng cửa sổ với các bộ chọn ngày dùng chung. */
+const MIN_DATE = dateInputBounds(pastDateBounds()).min;
 
 const WEEKDAY_KEYS: MessageKey[] = [
   "dashboard.weekday.sun",
@@ -83,6 +90,11 @@ function CalendarPopover({
   const atCurrentMonth =
     cursor.year() > todayDate.year() ||
     (cursor.year() === todayDate.year() && cursor.month() >= todayDate.month());
+  // Khoá lùi tháng ở 01/2000 như các bộ chọn ngày dùng chung — hệ thống không
+  // có dữ liệu trước mốc đó.
+  const atMinMonth =
+    cursor.year() < DATE_LIMITS.businessMinYear ||
+    (cursor.year() === DATE_LIMITS.businessMinYear && cursor.month() === 0);
 
   const cells = Array.from({ length: 42 }, (_, index) => {
     const dayOffset = index - firstWeekday + 1;
@@ -95,7 +107,7 @@ function CalendarPopover({
       outside,
       selected: raw === value,
       isToday: raw === today,
-      future: raw > today,
+      future: raw > today || raw < MIN_DATE,
       aria: t("dashboard.filters.dayLabel", {
         day: date.date(),
         monthName: monthName(date),
@@ -118,6 +130,7 @@ function CalendarPopover({
           <button
             type="button"
             aria-label={t("dashboard.filters.prevMonth")}
+            disabled={atMinMonth}
             onClick={() => setCursor(cursor.subtract(1, "month"))}
           >
             <DashIcon name="chevron-left" />
@@ -170,6 +183,7 @@ function DatePickerField({
   value,
   today,
   open,
+  invalid,
   onOpenChange,
   onChange,
   t,
@@ -179,6 +193,7 @@ function DatePickerField({
   value: string;
   today: string;
   open: boolean;
+  invalid: boolean;
   onOpenChange: (open: boolean) => void;
   onChange: (value: string) => void;
   t: TranslateFn;
@@ -210,7 +225,9 @@ function DatePickerField({
           id={id}
           type="date"
           value={value}
+          min={MIN_DATE}
           max={today}
+          aria-invalid={invalid}
           aria-haspopup="dialog"
           aria-expanded={open}
           onChange={(event) => onChange(event.target.value)}
@@ -311,6 +328,7 @@ export function OverviewFilters({
               label={t("dashboard.filters.from")}
               value={custom.from}
               today={today}
+              invalid={Boolean(dateError)}
               open={openPicker === "from"}
               onOpenChange={(open) => setOpenPicker(open ? "from" : null)}
               onChange={(value) => onCustomChange({ ...custom, from: value })}
@@ -321,6 +339,7 @@ export function OverviewFilters({
               label={t("dashboard.filters.to")}
               value={custom.to}
               today={today}
+              invalid={Boolean(dateError)}
               open={openPicker === "to"}
               onOpenChange={(open) => setOpenPicker(open ? "to" : null)}
               onChange={(value) => onCustomChange({ ...custom, to: value })}

@@ -10,6 +10,7 @@ import {
   UiAlert,
   UiButton,
   UiDialog,
+  UiNumberField,
   UiPagination,
   UiSelect,
   UiStatusBadge,
@@ -46,6 +47,16 @@ import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { checkNumber, type NumberRule } from "@/shared/validation/number-rules";
+
+/** Lý do điều chỉnh: tối thiểu 5 ký tự (BE min:5), trần theo quy ước lý do. */
+const REASON_MIN = 5;
+const REASON_MAX = 1000;
+
+/** Luật số lượng đảo theo từng dòng: nguyên, 0 … còn có thể điều chỉnh. */
+function reversalQtyRule(reversibleQty: number): NumberRule {
+  return { min: 0, max: reversibleQty, integer: true };
+}
 
 const returnConditionOptions = (
   t: TranslateFn,
@@ -62,7 +73,9 @@ const MOVEMENTS_PAGE_SIZE = 5;
 
 type ReversalDraft = Record<
   string,
-  { reversal_qty?: number; reason?: string; item_ids?: string[] }
+  // reversal_qty giữ CHUỖI đang gõ: "-1"/"1.5" phải hiện lỗi trên dòng thay vì
+  // bị Number() ép về 0 rồi rơi khỏi danh sách trong im lặng.
+  { reversal_qty?: string; reason?: string; item_ids?: string[] }
 >;
 
 function idempotencyKey() {
@@ -200,20 +213,35 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     safeMovementsPage * MOVEMENTS_PAGE_SIZE,
   );
 
-  const selectedLines = useMemo(() => {
+  // Trạng thái từng dòng có thể đảo: số đã parse qua checkNumber + lỗi (nếu có).
+  const lineStates = useMemo(() => {
     if (!selectedMovement) return [];
     return selectedMovement.lines
       .filter((line) => line.can_reverse)
-      .map((line) => ({
-        sku: line.sku,
-        reversal_qty: Number(draft[line.sku]?.reversal_qty ?? 0),
-        reason: draft[line.sku]?.reason,
-        max: line.reversible_qty,
-        item_scoped: Boolean(line.item_scoped),
-        item_ids: draft[line.sku]?.item_ids ?? [],
-      }))
-      .filter((line) => line.reversal_qty > 0);
+      .map((line) => {
+        const raw = draft[line.sku]?.reversal_qty ?? "";
+        const check = checkNumber(raw, reversalQtyRule(line.reversible_qty));
+        return {
+          sku: line.sku,
+          reversal_qty: check.ok ? (check.value ?? 0) : 0,
+          qty_error: check.ok ? undefined : check.message,
+          // Ô sai nhưng vẫn là số (vd "99" > còn lại): giữ câu "vượt" quen thuộc.
+          qty_exceeds: !check.ok && Number(raw) > line.reversible_qty,
+          reason: draft[line.sku]?.reason,
+          max: line.reversible_qty,
+          item_scoped: Boolean(line.item_scoped),
+          item_ids: draft[line.sku]?.item_ids ?? [],
+        };
+      });
   }, [draft, selectedMovement]);
+  const lineStateBySku = useMemo(
+    () => new Map(lineStates.map((state) => [state.sku, state])),
+    [lineStates],
+  );
+  const selectedLines = useMemo(
+    () => lineStates.filter((line) => line.reversal_qty > 0),
+    [lineStates],
+  );
 
   // Item-scoped (PRODUCT hoặc serial): phải chọn đúng số Item = số lượng đảo.
   const itemLineMismatch = selectedLines.find(
@@ -223,9 +251,9 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     (sum, line) => sum + line.reversal_qty,
     0,
   );
-  const invalidLine = selectedLines.find(
-    (line) => line.reversal_qty > line.max,
-  );
+  // Dòng nhập sai (âm, thập phân, vượt còn lại) chặn gửi kể cả khi không được
+  // tính vào selectedLines — không bao giờ "bỏ qua" ô sai.
+  const invalidLine = lineStates.find((line) => line.qty_error);
   const isIssueReversal = isStockRestoringMovement(
     selectedMovement?.movement_type,
   );
@@ -239,7 +267,8 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     !missingReferenceVersion &&
     selectedLines.length > 0 &&
     totalQty > 0 &&
-    reason.trim().length >= 5 &&
+    reason.trim().length >= REASON_MIN &&
+    reason.trim().length <= REASON_MAX &&
     !invalidLine &&
     !itemLineMismatch &&
     (!isIssueReversal || (Boolean(returnCondition) && physicalConfirmed));
@@ -256,7 +285,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
           return [
             line.sku,
             {
-              reversal_qty: defaultQty,
+              reversal_qty: String(defaultQty),
               reason: line.dependency_guard,
               item_ids: line.item_scoped
                 ? candidates
@@ -441,25 +470,25 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       header: t("reverse.columns.reversalQty"),
       width: 150,
       render: (line) => (
-        <UiTextField
-          type="number"
+        <UiNumberField
           size="small"
           fullWidth
           disabled={!line.can_reverse}
-          value={draft[line.sku]?.reversal_qty ?? 0}
+          rule={reversalQtyRule(line.reversible_qty)}
+          value={draft[line.sku]?.reversal_qty ?? "0"}
+          error={Boolean(lineStateBySku.get(line.sku)?.qty_error)}
+          helperText={lineStateBySku.get(line.sku)?.qty_error}
           slotProps={{
             htmlInput: {
-              min: 0,
-              max: line.reversible_qty,
               "aria-label": t("reverse.create.qtyAria", { sku: line.sku }),
             },
           }}
-          onChange={(event) =>
+          onChange={(next) =>
             setDraft((current) => ({
               ...current,
               [line.sku]: {
                 ...current[line.sku],
-                reversal_qty: Number(event.target.value || 0),
+                reversal_qty: next,
               },
             }))
           }
@@ -669,9 +698,10 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
                   placeholder={t("reverse.create.reasonPlaceholder")}
-                  error={Boolean(reason && reason.length < 5)}
+                  slotProps={{ htmlInput: { maxLength: REASON_MAX } }}
+                  error={Boolean(reason && reason.length < REASON_MIN)}
                   helperText={
-                    reason && reason.length < 5
+                    reason && reason.length < REASON_MIN
                       ? t("reverse.create.reasonHelper")
                       : undefined
                   }
@@ -754,7 +784,12 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
               {invalidLine ? (
                 <Box sx={{ mt: 1.5 }}>
                   <UiAlert tone="error">
-                    {t("reverse.create.qtyExceeds", { sku: invalidLine.sku })}
+                    {invalidLine.qty_exceeds
+                      ? t("reverse.create.qtyExceeds", { sku: invalidLine.sku })
+                      : t("reverse.create.qtyInvalid", {
+                          sku: invalidLine.sku,
+                          message: invalidLine.qty_error ?? "",
+                        })}
                   </UiAlert>
                 </Box>
               ) : null}

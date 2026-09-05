@@ -184,7 +184,6 @@ export function useAutocomplete(
       !!debouncedSearch &&
       debouncedSearch.length >= minSearchLength &&
       (!!apiUrl || !!fetcher),
-    staleTime: 30_000, // 30s
     retry: 1,
   });
 

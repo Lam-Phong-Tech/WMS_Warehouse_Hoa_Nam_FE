@@ -56,4 +56,36 @@ describe("WWHN-325 PWA static security contract", () => {
     expect(worker).toContain("CACHE_PREFIX");
     expect(worker).toContain("caches.delete(key)");
   });
+
+  it("gắn tên CacheStorage với build id thay vì hằng số v1", () => {
+    const worker = readFileSync("public/service-worker.js", "utf8");
+
+    // Ghim cứng "-v1" chính là nguyên nhân chunk của mọi build cũ nằm lại vĩnh
+    // viễn: tên file có hash nên URL mới không bao giờ ghi đè URL cũ, mà cũng
+    // không có gì xoá URL cũ đi.
+    // Khớp trên PHÉP GÁN chứ không trên chuỗi bất kỳ: tài liệu trong file vẫn
+    // được phép nhắc tên cũ để giải thích vì sao nó sai.
+    expect(worker).not.toMatch(
+      /STATIC_CACHE\s*=\s*`\$\{CACHE_PREFIX\}-static-v\d+`/,
+    );
+    expect(worker).toContain('searchParams.get("v")');
+    expect(worker).toMatch(
+      /STATIC_CACHE\s*=\s*`\$\{CACHE_PREFIX\}-static-\$\{BUILD_ID\}`/,
+    );
+  });
+
+  it("đăng ký service worker kèm build id để deploy mới thay được SW cũ", () => {
+    const register = readFileSync("src/shared/pwa/register-pwa.ts", "utf8");
+
+    expect(register).toContain("/service-worker.js?v=");
+    expect(register).toContain("__APP_BUILD_ID__");
+  });
+
+  it("cache-first cho asset có hash nội dung, SWR cho asset không hash", () => {
+    const worker = readFileSync("public/service-worker.js", "utf8");
+
+    expect(worker).toContain("CONTENT_HASHED");
+    expect(worker).toContain("cacheFirst(request)");
+    expect(worker).toContain("staleWhileRevalidate(request)");
+  });
 });

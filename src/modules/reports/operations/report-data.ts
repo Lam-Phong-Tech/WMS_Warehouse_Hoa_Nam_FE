@@ -1,7 +1,10 @@
 import { useMemo } from "react";
+import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { useQuery } from "@tanstack/react-query";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { fetchAllPages } from "@/shared/api/paginate-all";
 import { listOf, n, text, type Raw, type SelectOption } from "./report-format";
 
 /**
@@ -23,7 +26,13 @@ export const OPERATIONS_REPORT_ENDPOINTS = {
   WARRANTY_COMPONENT_USAGE: "/reports/warranty-component-usage",
 } as const;
 
-const STALE_MS = 60_000;
+/**
+ * Ngưỡng tươi của mọi query báo cáo — LẤY TỪ chính sách chung thay vì một số
+ * viết tay. Trước đây là 60s, trong khi BE tự cache báo cáo 300s
+ * (config/wms_cache.php ttl.report): mọi lần refetch trong khoảng đó chỉ nhận
+ * lại đúng bytes đang nằm trong Valkey — tốn một vòng request cho không.
+ */
+const STALE_MS = CACHE_POLICIES.report.staleTime;
 
 function cleanParams(params: Raw): Raw {
   return Object.fromEntries(
@@ -55,44 +64,71 @@ export type SkuCatalogEntry = {
   max_stock: number | null;
 };
 
-const SKU_PAGE_SIZE = 200;
-/** Trần vòng lặp phân trang — 10 trang × 200 = 2.000 SKU, đủ cho danh mục hiện tại. */
-const SKU_MAX_PAGES = 10;
+/**
+ * 100 là TRẦN THẬT của backend: `BaseRepository::paginate()` chạy
+ * `min(max($perPage, 1), 100)`. Trước đây hằng số này để 200 nên mỗi request chỉ
+ * nhận về 100 dòng — con số 200 chỉ là ảo tưởng, và số trang thực tế gấp đôi dự
+ * tính. Để đúng 100 để phép chia trang ở đây khớp với thứ máy chủ thật sự trả.
+ */
+const SKU_PAGE_SIZE = 100;
+/** Trần an toàn cho vòng phân trang — 20 trang × 100 = 2.000 SKU. */
+const SKU_MAX_PAGES = 20;
 
-async function fetchAllSkus(): Promise<SkuCatalogEntry[]> {
-  const all: SkuCatalogEntry[] = [];
-  for (let page = 1; page <= SKU_MAX_PAGES; page += 1) {
-    const result = await http.getPage<Raw[]>(API_ENDPOINTS.PRODUCTS, {
-      params: { page, per_page: SKU_PAGE_SIZE },
+function mapSkuRows(rows: Raw[]): SkuCatalogEntry[] {
+  const out: SkuCatalogEntry[] = [];
+  for (const row of rows) {
+    const code = text(row.sku_code ?? row.code, "");
+    if (code === "") continue;
+    out.push({
+      sku_id: text(row.sku_id ?? row.id, ""),
+      sku_code: code,
+      sku_name: text(row.sku_name ?? row.name, ""),
+      sku_type:
+        text(row.sku_type, "PRODUCT") === "COMPONENT" ? "COMPONENT" : "PRODUCT",
+      unit: text(row.unit ?? row.uom, ""),
+      category_id: row.category_id ? String(row.category_id) : null,
+      min_stock:
+        row.min_stock === null || row.min_stock === undefined
+          ? null
+          : n(row.min_stock),
+      max_stock:
+        row.max_stock === null || row.max_stock === undefined
+          ? null
+          : n(row.max_stock),
     });
-    const rows = Array.isArray(result.data) ? result.data : [];
-    for (const row of rows) {
-      const code = text(row.sku_code ?? row.code, "");
-      if (code === "") continue;
-      all.push({
-        sku_id: text(row.sku_id ?? row.id, ""),
-        sku_code: code,
-        sku_name: text(row.sku_name ?? row.name, ""),
-        sku_type:
-          text(row.sku_type, "PRODUCT") === "COMPONENT"
-            ? "COMPONENT"
-            : "PRODUCT",
-        unit: text(row.unit ?? row.uom, ""),
-        category_id: row.category_id ? String(row.category_id) : null,
-        min_stock:
-          row.min_stock === null || row.min_stock === undefined
-            ? null
-            : n(row.min_stock),
-        max_stock:
-          row.max_stock === null || row.max_stock === undefined
-            ? null
-            : n(row.max_stock),
-      });
-    }
-    const lastPage = n(result.meta?.last_page, 1);
-    if (page >= lastPage || rows.length === 0) break;
   }
-  return all;
+  return out;
+}
+
+function fetchSkuPage(page: number) {
+  return http.getPage<Raw[]>(API_ENDPOINTS.PRODUCTS, {
+    params: { page, per_page: SKU_PAGE_SIZE },
+  });
+}
+
+/**
+ * Tải toàn bộ danh mục SKU — nguồn để trang báo cáo biết một dòng là "Sản phẩm"
+ * hay "Linh kiện" và định mức min/max.
+ *
+ * TRƯỚC: vòng `for` có `await` bên trong, trang sau chờ trang trước xong mới đi.
+ * Với 818 SKU / 100 mỗi trang là **9 vòng mạng NỐI TIẾP** — đo thật trên máy này
+ * là ~2,1 giây, và đó là phần lớn thời gian mở lần đầu của mọi màn báo cáo.
+ *
+ * SAU: chỉ trang 1 là tuần tự (cần đọc `meta.last_page` để biết có bao nhiêu
+ * trang), các trang còn lại đi SONG SONG. 9 vòng nối tiếp -> 1 + 1 đợt song song.
+ *
+ * Không tự tăng `per_page` để giảm số trang: 100 đã là trần cứng của backend.
+ */
+async function fetchAllSkus(): Promise<SkuCatalogEntry[]> {
+  const pages = await fetchAllPages(
+    fetchSkuPage,
+    (result) => n(result.meta?.last_page, 1),
+    SKU_MAX_PAGES,
+  );
+
+  return pages.flatMap((result) =>
+    mapSkuRows(Array.isArray(result.data) ? result.data : []),
+  );
 }
 
 export type SkuCatalog = {
@@ -113,9 +149,11 @@ export type SkuCatalog = {
  */
 export function useSkuCatalog(): SkuCatalog {
   const query = useQuery({
-    queryKey: ["rpt-ops", "sku-catalog"],
+    // Root `ref`: danh mục SKU là dữ liệu tra cứu dùng chung, không phải dữ liệu
+    // riêng của trang báo cáo. Được hưởng chính sách reference (stale 30 phút,
+    // giữ RAM 4 giờ, ghi IndexedDB 24 giờ) thay vì bị coi là một báo cáo.
+    queryKey: ["ref", "sku-catalog"],
     queryFn: fetchAllSkus,
-    staleTime: 5 * 60_000,
   });
 
   return useMemo(() => {
@@ -152,12 +190,14 @@ export type UserDirectoryEntry = {
  */
 export function useUserDirectory() {
   const query = useQuery({
+    // CỐ Ý giữ ở root `rpt-ops` (nhóm `report`, KHÔNG persist) chứ không chuyển
+    // sang `ref` như các danh mục khác: đây là danh bạ NGƯỜI DÙNG (tên, email,
+    // phòng ban). Không ghi dữ liệu cá nhân xuống đĩa của máy kho dùng chung.
     queryKey: ["rpt-ops", "user-directory"],
     queryFn: () =>
       http.getPage<Raw[]>(API_ENDPOINTS.USERS, {
         params: { per_page: 200 },
       }),
-    staleTime: 5 * 60_000,
   });
 
   return useMemo(() => {
@@ -224,15 +264,11 @@ export function useWarehouseOptions(): {
   options: SelectOption[];
   loading: boolean;
 } {
-  const query = useQuery({
-    queryKey: ["rpt-ops", "warehouses"],
-    queryFn: () =>
-      http.getPage<Raw[]>(API_ENDPOINTS.WAREHOUSES, {
-        params: { per_page: 100 },
-      }),
-    staleTime: 5 * 60_000,
-  });
-  const rows = Array.isArray(query.data?.data) ? query.data.data : [];
+  // Dùng chung đúng query danh mục kho với phần còn lại của app thay vì khoá
+  // riêng `["rpt-ops","warehouses"]` — trước đây mở màn báo cáo là gọi thêm
+  // một lần /warehouses dù dữ liệu đó vừa được tải ở màn khác.
+  const query = useWarehouseDirectory();
+  const rows: Raw[] = query.data ?? [];
   return {
     loading: query.isLoading,
     options: rows
@@ -249,12 +285,11 @@ export function useCategoryOptions(): {
   loading: boolean;
 } {
   const query = useQuery({
-    queryKey: ["rpt-ops", "product-categories"],
+    queryKey: ["ref", "product-categories"],
     queryFn: () =>
       http.getPage<Raw[]>(API_ENDPOINTS.PRODUCT_CATEGORIES, {
         params: { status: "ACTIVE", per_page: 100 },
       }),
-    staleTime: 5 * 60_000,
   });
   const rows = Array.isArray(query.data?.data) ? query.data.data : [];
   return {
@@ -275,12 +310,11 @@ export function usePrinterOptions(): {
   loading: boolean;
 } {
   const query = useQuery({
-    queryKey: ["rpt-ops", "printer-configs"],
+    queryKey: ["ref", "printer-configs"],
     queryFn: () =>
       http.getPage<Raw[]>(API_ENDPOINTS.PRINTER_CONFIGS, {
         params: { per_page: 100 },
       }),
-    staleTime: 5 * 60_000,
   });
   const rows = Array.isArray(query.data?.data) ? query.data.data : [];
   return {
@@ -296,12 +330,11 @@ export function usePrinterOptions(): {
 
 export function useAgencyOptions() {
   const query = useQuery({
-    queryKey: ["rpt-ops", "agencies"],
+    queryKey: ["ref", "agencies"],
     queryFn: () =>
       http.getPage<Raw[]>(API_ENDPOINTS.AGENCIES, {
         params: { status: "ACTIVE", per_page: 200 },
       }),
-    staleTime: 5 * 60_000,
   });
   const rows = Array.isArray(query.data?.data) ? query.data.data : [];
   const entries = rows.map((row) => ({
@@ -335,12 +368,11 @@ export function useDefectOptions(): {
   loading: boolean;
 } {
   const query = useQuery({
-    queryKey: ["rpt-ops", "defects"],
+    queryKey: ["ref", "defects"],
     queryFn: () =>
       http.getPage<Raw[]>(API_ENDPOINTS.DEFECT_CATALOGS, {
         params: { status: "ACTIVE", per_page: 200 },
       }),
-    staleTime: 5 * 60_000,
   });
   const rows = Array.isArray(query.data?.data) ? query.data.data : [];
   return {
@@ -584,23 +616,19 @@ export function useWarrantyReport({
   return useQuery({
     queryKey: ["rpt-ops", "warranty-defects", baseParams],
     queryFn: async () => {
-      const rows: Raw[] = [];
-      let first: Raw = {};
-      for (let page = 1; page <= WARRANTY_MAX_PAGES; page += 1) {
-        const payload = await http.get<Raw>(
-          API_ENDPOINTS.REPORTS_WARRANTY_DEFECTS,
-          { params: { ...baseParams, page, per_page: WARRANTY_PAGE_SIZE } },
-        );
-        if (page === 1) first = payload;
-        const pageRows = listOf(payload.rows);
-        rows.push(...pageRows);
-        const lastPage = n(
-          (payload.pagination as Raw | undefined)?.last_page,
-          1,
-        );
-        if (page >= lastPage || pageRows.length === 0) break;
-      }
-      return { ...first, rows } as Raw;
+      // Trang 1 tuần tự (để biết tổng số trang), phần còn lại song song —
+      // xem @/shared/api/paginate-all. Vòng lặp await cũ biến mỗi trang thành
+      // một vòng mạng xếp hàng sau trang trước.
+      const pages = await fetchAllPages<Raw>(
+        (page) =>
+          http.get<Raw>(API_ENDPOINTS.REPORTS_WARRANTY_DEFECTS, {
+            params: { ...baseParams, page, per_page: WARRANTY_PAGE_SIZE },
+          }),
+        (payload) => n((payload.pagination as Raw | undefined)?.last_page, 1),
+        WARRANTY_MAX_PAGES,
+      );
+      const rows = pages.flatMap((payload) => listOf(payload.rows));
+      return { ...pages[0], rows } as Raw;
     },
     enabled,
     staleTime: STALE_MS,
@@ -616,17 +644,18 @@ export function useWarrantyCases({ enabled = true }: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["rpt-ops", "warranty-cases"],
     queryFn: async () => {
-      const rows: Raw[] = [];
-      for (let page = 1; page <= WARRANTY_MAX_PAGES; page += 1) {
-        const result = await http.getPage<Raw[]>(API_ENDPOINTS.WARRANTY_CASES, {
-          params: { page, per_page: WARRANTY_PAGE_SIZE },
-        });
-        const pageRows = Array.isArray(result.data) ? result.data : [];
-        rows.push(...pageRows);
-        if (page >= n(result.meta?.last_page, 1) || pageRows.length === 0)
-          break;
-      }
-      return rows;
+      // Trang 1 tuần tự, phần còn lại song song (@/shared/api/paginate-all).
+      const pages = await fetchAllPages(
+        (page) =>
+          http.getPage<Raw[]>(API_ENDPOINTS.WARRANTY_CASES, {
+            params: { page, per_page: WARRANTY_PAGE_SIZE },
+          }),
+        (result) => n(result.meta?.last_page, 1),
+        WARRANTY_MAX_PAGES,
+      );
+      return pages.flatMap((result) =>
+        Array.isArray(result.data) ? result.data : [],
+      );
     },
     enabled,
     staleTime: STALE_MS,
@@ -643,18 +672,18 @@ export function useComponentIssueDocuments({
   return useQuery({
     queryKey: ["rpt-ops", "component-issue-documents"],
     queryFn: async () => {
-      const rows: Raw[] = [];
-      for (let page = 1; page <= WARRANTY_MAX_PAGES; page += 1) {
-        const result = await http.getPage<Raw[]>(
-          API_ENDPOINTS.COMPONENT_ISSUE_DOCUMENTS,
-          { params: { page, per_page: WARRANTY_PAGE_SIZE } },
-        );
-        const pageRows = Array.isArray(result.data) ? result.data : [];
-        rows.push(...pageRows);
-        if (page >= n(result.meta?.last_page, 1) || pageRows.length === 0)
-          break;
-      }
-      return rows;
+      // Trang 1 tuần tự, phần còn lại song song (@/shared/api/paginate-all).
+      const pages = await fetchAllPages(
+        (page) =>
+          http.getPage<Raw[]>(API_ENDPOINTS.COMPONENT_ISSUE_DOCUMENTS, {
+            params: { page, per_page: WARRANTY_PAGE_SIZE },
+          }),
+        (result) => n(result.meta?.last_page, 1),
+        WARRANTY_MAX_PAGES,
+      );
+      return pages.flatMap((result) =>
+        Array.isArray(result.data) ? result.data : [],
+      );
     },
     enabled,
     staleTime: STALE_MS,
@@ -744,23 +773,19 @@ export function useOutboundByRecipient({
       // Endpoint này cắt trang ở tầng SQL (trần 100/trang) nên phải cuốn hết
       // trang: chart xu hướng theo ngày và bảng chi tiết đều cần TOÀN BỘ dòng,
       // còn `by_sku`/`by_recipient` thì máy chủ đã gộp sẵn trên cả tập.
-      const rows: Raw[] = [];
-      let first: Raw = {};
-      for (let page = 1; page <= WARRANTY_MAX_PAGES; page += 1) {
-        const payload = await http.get<Raw>(
-          OPERATIONS_REPORT_ENDPOINTS.OUTBOUND_BY_RECIPIENT,
-          { params: { ...baseParams, page, per_page: WARRANTY_PAGE_SIZE } },
-        );
-        if (page === 1) first = payload;
-        const pageRows = listOf(payload.rows);
-        rows.push(...pageRows);
-        const lastPage = n(
-          (payload.pagination as Raw | undefined)?.last_page,
-          1,
-        );
-        if (page >= lastPage || pageRows.length === 0) break;
-      }
-      return { ...first, rows } as Raw;
+      // Trang 1 tuần tự (để biết tổng số trang), phần còn lại song song —
+      // xem @/shared/api/paginate-all. Vòng lặp await cũ biến mỗi trang thành
+      // một vòng mạng xếp hàng sau trang trước.
+      const pages = await fetchAllPages<Raw>(
+        (page) =>
+          http.get<Raw>(OPERATIONS_REPORT_ENDPOINTS.OUTBOUND_BY_RECIPIENT, {
+            params: { ...baseParams, page, per_page: WARRANTY_PAGE_SIZE },
+          }),
+        (payload) => n((payload.pagination as Raw | undefined)?.last_page, 1),
+        WARRANTY_MAX_PAGES,
+      );
+      const rows = pages.flatMap((payload) => listOf(payload.rows));
+      return { ...pages[0], rows } as Raw;
     },
     enabled,
     staleTime: STALE_MS,

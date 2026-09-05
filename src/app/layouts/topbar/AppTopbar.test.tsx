@@ -16,7 +16,8 @@ import { AppTopbar } from "./AppTopbar";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { useThemeStore } from "@/shared/ui/theme/theme.store";
-import { MESSAGES_EN, MESSAGES_VI } from "@/shared/i18n/messages";
+import { MESSAGES_VI } from "@/shared/i18n/messages";
+import { MESSAGES_EN } from "@/shared/i18n/messages.en";
 
 /**
  * Topbar là thứ hiện trên MỌI màn nên test ở đây khoá đúng những điều dễ vỡ:
@@ -94,12 +95,16 @@ describe("AppTopbar", () => {
     expect(screen.getByText("Tổng quan vận hành")).toBeInTheDocument();
   });
 
-  it("đổi ngôn ngữ thì đổi chuỗi thật và ghi nhớ lựa chọn", () => {
+  it("đổi ngôn ngữ thì đổi chuỗi thật và ghi nhớ lựa chọn", async () => {
     renderTopbar();
     fireEvent.click(screen.getByRole("button", { name: "Ngôn ngữ" }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: /English/ }));
 
-    expect(screen.getByPlaceholderText("Search functions")).toBeInTheDocument();
+    // Từ điển EN nạp động nên chuỗi tiếng Anh về SAU một nhịp; trong lúc chờ
+    // giao diện giữ tiếng Việt chứ không hiện khoá thô.
+    expect(
+      await screen.findByPlaceholderText("Search functions"),
+    ).toBeInTheDocument();
     expect(useLanguageStore.getState().language).toBe("en");
     // `persist` của zustand ghi cả bao JSON, không phải chuỗi trần — đọc đúng
     // hình dạng đã lưu để test không xanh giả khi khoá đổi kiểu.

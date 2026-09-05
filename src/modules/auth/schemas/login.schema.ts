@@ -2,7 +2,12 @@ import { z } from "zod";
 import { tStatic, type TranslateFn } from "@/shared/i18n/useT";
 import type { LoginRequest } from "@/modules/auth/types/auth.types";
 
-const USERNAME_REGEX = /^[a-zA-Z0-9._-]+$/;
+/** Ký tự hợp lệ của tên đăng nhập — dùng chung với màn tạo tài khoản (IAM). */
+export const USERNAME_REGEX = /^[a-zA-Z0-9._-]+$/;
+/** Tên đăng nhập tối đa 100 ký tự (BE LoginRequest / StoreUserRequest max:100). */
+export const USERNAME_MAX_LENGTH = 100;
+/** Mật khẩu tối đa 128 ký tự (BE LoginRequest max:128). */
+export const PASSWORD_MAX_LENGTH = 128;
 const EMAIL_REGEX =
   /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
@@ -23,7 +28,10 @@ export function buildLoginSchema(t: TranslateFn) {
         .trim()
         .min(1, t("auth.validation.identifierRequired"))
         .max(254, t("auth.validation.identifierTooLong")),
-      password: z.string().min(1, t("auth.validation.passwordRequired")),
+      password: z
+        .string()
+        .min(1, t("auth.validation.passwordRequired"))
+        .max(PASSWORD_MAX_LENGTH, t("auth.validation.passwordTooLong")),
       /** "Ghi nhớ đăng nhập" — chỉ lưu identifier phía client, không vào payload. */
       remember: z.boolean().optional(),
     })
@@ -51,7 +59,7 @@ export function buildLoginSchema(t: TranslateFn) {
         return;
       }
 
-      if (identifier.length > 100) {
+      if (identifier.length > USERNAME_MAX_LENGTH) {
         context.addIssue({
           code: "custom",
           path: ["identifier"],

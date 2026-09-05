@@ -15,7 +15,6 @@ export function useMe() {
     queryKey: ["auth", "me", token],
     queryFn: () => authService.me(),
     enabled: Boolean(token),
-    staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => {
       if (isAxiosError(error)) {
         const status = error.response?.status;

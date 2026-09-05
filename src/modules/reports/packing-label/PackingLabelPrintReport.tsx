@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import dayjs from "dayjs";
 import {
   Box,
   Stack,
@@ -889,6 +890,8 @@ export default function PackingLabelPrintReport() {
                 t("reports.packingLabel.dateTo"),
               ]}
               allowClear={false}
+              // Dữ liệu chỉ có trong quá khứ: khoá ngày tương lai (mốc dưới giữ mặc định 2000).
+              maxDate={dayjs().endOf("day")}
               presets={periodPresets}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"

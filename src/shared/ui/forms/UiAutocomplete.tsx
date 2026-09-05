@@ -26,11 +26,8 @@ import type { UiAutocompleteOption } from "./UiFormAutocomplete";
  */
 const ADD_NEW_OPTION_VALUE = "__ui_autocomplete_add_new__";
 
-export interface UiAutocompleteProps {
+interface UiAutocompleteBaseProps {
   options: UiAutocompleteOption[];
-  /** Giá trị đang chọn — scalar, so khớp với `option.value`. */
-  value: string | number | null;
-  onChange: (value: string | number | null) => void;
   label?: ReactNode;
   placeholder?: string;
   required?: boolean;
@@ -53,13 +50,35 @@ export interface UiAutocompleteProps {
   onAddNew?: () => void;
   addNewLabel?: string;
   sx?: SxProps<Theme>;
+  /** Dùng khi ô không có `label` hiển thị (bộ lọc trên thanh công cụ). */
+  "aria-label"?: string;
   "data-testid"?: string;
 }
+
+/** Chọn một giá trị — xoá ô trả về `null`. */
+interface UiAutocompleteSingleProps extends UiAutocompleteBaseProps {
+  multiple?: false;
+  /** Giá trị đang chọn — scalar, so khớp với `option.value`. */
+  value: string | number | null;
+  onChange: (value: string | number | null) => void;
+}
+
+/** Chọn nhiều giá trị — mỗi lựa chọn là một chip, giá trị là mảng. */
+interface UiAutocompleteMultiProps extends UiAutocompleteBaseProps {
+  multiple: true;
+  value: Array<string | number>;
+  onChange: (value: Array<string | number>) => void;
+}
+
+export type UiAutocompleteProps =
+  | UiAutocompleteSingleProps
+  | UiAutocompleteMultiProps;
 
 export function UiAutocomplete({
   options,
   value,
   onChange,
+  multiple = false,
   label,
   placeholder,
   required = false,
@@ -73,10 +92,15 @@ export function UiAutocomplete({
   onAddNew,
   addNewLabel,
   sx,
+  "aria-label": ariaLabel,
   "data-testid": dataTestId,
 }: UiAutocompleteProps) {
   const t = useT();
-  const selected = options.find((option) => option.value === value) ?? null;
+  const selected = multiple
+    ? options.filter((option) =>
+        ((value as Array<string | number> | null) ?? []).includes(option.value),
+      )
+    : (options.find((option) => option.value === value) ?? null);
   const optionsWithAddNew = onAddNew
     ? [
         ...options,
@@ -96,13 +120,31 @@ export function UiAutocomplete({
       disabled={disabled}
       loading={loading}
       value={selected}
+      multiple={multiple}
       onChange={(_event, next) => {
-        if (next?.value === ADD_NEW_OPTION_VALUE) {
+        if (multiple) {
+          const picked = (next as UiAutocompleteOption[]) ?? [];
+          // Dòng "+ Thêm mới" không phải giá trị thật — lọc bỏ trước khi trả ra.
+          if (picked.some((option) => option.value === ADD_NEW_OPTION_VALUE)) {
+            onAddNew?.();
+          }
+          (onChange as (value: Array<string | number>) => void)(
+            picked
+              .filter((option) => option.value !== ADD_NEW_OPTION_VALUE)
+              .map((option) => option.value),
+          );
+
+          return;
+        }
+        const single = next as UiAutocompleteOption | null;
+        if (single?.value === ADD_NEW_OPTION_VALUE) {
           onAddNew?.();
 
           return;
         }
-        onChange(next?.value ?? null);
+        (onChange as (value: string | number | null) => void)(
+          single?.value ?? null,
+        );
       }}
       onInputChange={(_event, keyword, reason) => {
         // Chỉ báo khi NGƯỜI DÙNG gõ. MUI còn bắn sự kiện này lúc `reset` và lúc
@@ -146,6 +188,9 @@ export function UiAutocomplete({
       renderInput={(params) => (
         <TextField
           {...params}
+          // Ô nhập LUÔN lấp đầy khung Autocomplete: bề rộng do root quyết
+          // (fullWidth hoặc sx), không để TextField co theo nội dung.
+          fullWidth
           label={label}
           required={required}
           placeholder={placeholder}
@@ -155,6 +200,7 @@ export function UiAutocomplete({
             ...params.slotProps,
             htmlInput: {
               ...params.slotProps?.htmlInput,
+              ...(ariaLabel ? { "aria-label": ariaLabel } : {}),
               ...(dataTestId ? { "data-testid": dataTestId } : {}),
             },
           }}

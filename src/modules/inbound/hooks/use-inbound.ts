@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import {
   cancelInboundDocument,
   completeInboundCartonScan,
@@ -78,8 +79,14 @@ function useInvalidateInboundMutation<TVariables, TResult>(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
+    // Ghi sổ phiếu nhập làm đổi SỐ TỒN, bảng điều khiển và mọi báo cáo XNT —
+    // những khoá đó nằm ngoài `inboundKeys.all` nên trước đây không ai làm mới,
+    // và màn hình tồn kho tiếp tục hiện số cũ. Xem @/shared/cache/invalidation.
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: inboundKeys.all }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: inboundKeys.all }),
+        invalidateStockDerived(queryClient),
+      ]),
     onError: () => {
       // Im lặng có chủ đích — xem docblock ở trên.
     },

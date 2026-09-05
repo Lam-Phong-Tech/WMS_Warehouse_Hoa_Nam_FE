@@ -39,7 +39,12 @@ export default function PvCatalogPage() {
   const tagId = searchParams.get("tag_id") ?? "";
   const keywordParam = searchParams.get("keyword") ?? "";
   const inStockOnly = searchParams.get("in_stock") === "1";
-  const page = Number(searchParams.get("page") ?? "1") || 1;
+  // `page` trên URL do người dùng tự sửa được: "0", "-3", "2.5", "abc" đều phải
+  // về số nguyên ≥ 1, nếu không BE trả trang rỗng/422 mà màn hình không giải
+  // thích được.
+  const pageRaw = Number(searchParams.get("page") ?? "1");
+  const page =
+    Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1;
 
   const query: PvProductQuery = useMemo(
     () => ({
@@ -162,6 +167,7 @@ export default function PvCatalogPage() {
             htmlInput: {
               "aria-label": t("pv.catalog.searchAria"),
               "data-testid": "pv-search-input",
+              maxLength: 200,
             },
           }}
         />

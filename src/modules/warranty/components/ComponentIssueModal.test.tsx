@@ -90,7 +90,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     cleanupTestState();
   });
 
-  it("case không còn active: cảnh báo và không cho tạo phiếu DRAFT", async () => {
+  it("case không còn active: cảnh báo và không cho tạo phiếu", async () => {
     renderWithProviders(
       <ComponentIssueModal
         caseId="wc-1"
@@ -101,9 +101,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     );
 
     expect(await screen.findByText(/không còn hiệu lực/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Tạo phiếu DRAFT/ }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Tạo phiếu/ })).toBeDisabled();
   });
 
   it("SCANNING: quét serial gửi đúng line đang thiếu + If-Match version", async () => {
@@ -175,7 +173,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     );
 
     const postButton = await screen.findByRole("button", {
-      name: /Ghi sổ toàn phiếu/,
+      name: "Xuất linh kiện",
     });
     await waitFor(() => expect(postButton).toBeEnabled());
     fireEvent.click(postButton);
@@ -209,7 +207,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     );
 
     const postButton = await screen.findByRole("button", {
-      name: /Ghi sổ toàn phiếu/,
+      name: "Xuất linh kiện",
     });
     expect(postButton).toBeDisabled();
     expect(postComponentIssue).not.toHaveBeenCalled();
@@ -269,7 +267,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     fireEvent.change(qtyInput, { target: { value: "9" } });
 
     // Badge "Khả dụng" tô đỏ (tone error) ngay lúc gõ, không cần đợi bấm
-    // "Tạo phiếu DRAFT".
+    // "Tạo phiếu".
     const availabilityBadge = (await screen.findByText("Khả dụng: 1")).closest(
       ".MuiChip-root",
     );
@@ -278,7 +276,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
       color: SEMANTIC_LIGHT.errorText,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Tạo phiếu DRAFT/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Tạo phiếu/ }));
 
     expect(
       await screen.findByText("Vượt tồn khả dụng (còn 1)."),
@@ -318,7 +316,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
       color: SEMANTIC_LIGHT.secondaryDark,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Tạo phiếu DRAFT/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Tạo phiếu/ }));
 
     await waitFor(() => {
       expect(createComponentIssue).toHaveBeenCalled();

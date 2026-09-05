@@ -17,6 +17,7 @@
  *     cho thẻ "Cảnh báo tồn và dữ liệu" (dashboard-overview chưa có `stock_threshold`).
  */
 import { useMemo } from "react";
+import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { http } from "@/shared/api/http";
@@ -170,7 +171,9 @@ interface DashboardQuick {
 const num = (value: unknown): number =>
   typeof value === "number" && Number.isFinite(value) ? value : 0;
 
-const STALE_MS = 60_000;
+/** Ngưỡng tươi của bảng điều khiển — khớp chính sách nhóm `dashboard` và TTL
+ * cache dashboard 60s của BE (config/wms_cache.php ttl.dashboard). */
+const STALE_MS = CACHE_POLICIES.dashboard.staleTime;
 /** Demo ghi "Tự động làm mới sau 60 giây" — làm đúng như vậy, không chỉ ghi chữ. */
 const AUTO_REFRESH_MS = 60_000;
 

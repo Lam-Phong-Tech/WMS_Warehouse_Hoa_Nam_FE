@@ -25,6 +25,7 @@ import {
 import { ActionButton } from "@/shared/components/actions";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
@@ -1267,6 +1268,8 @@ export default function ImportMatchReport() {
                 t("reports.importMatchReport.toDate"),
               ]}
               allowClear={false}
+              // Dữ liệu chỉ có trong quá khứ: khoá ngày tương lai (mốc dưới giữ mặc định 2000).
+              maxDate={dayjs().endOf("day")}
               presets={periodPresets}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"
@@ -2173,7 +2176,9 @@ export default function ImportMatchReport() {
                     key: "sku_code",
                     header: t("reports.importMatchReport.fieldSku"),
                     render: (row) => (
-                      <Box sx={{ fontWeight: 700 }}>{text(row.sku_code)}</Box>
+                      <Box sx={{ fontWeight: 700 }}>
+                        <SkuLink code={text(row.sku_code)} />
+                      </Box>
                     ),
                   },
                   {

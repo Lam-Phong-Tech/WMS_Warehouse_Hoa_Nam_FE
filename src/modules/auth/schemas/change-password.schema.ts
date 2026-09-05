@@ -1,9 +1,12 @@
 import { z } from "zod";
 import { tStatic, type TranslateFn } from "@/shared/i18n/useT";
+import { PASSWORD_MAX_LENGTH } from "@/modules/auth/schemas/login.schema";
 
 // Rule khớp đúng API thật (POST /auth/change-password, xem
 // docs/employee-account-provisioning-flow.md mục 5): tối thiểu 8 ký tự, có ít
 // nhất 1 hoa, 1 thường, 1 ký tự đặc biệt, không khoảng trắng đầu/cuối.
+// BE (ResetPasswordRequest / StoreUserRequest) KHÔNG bắt buộc chữ số — đừng
+// thêm (?=.*d) ở đây kẻo FE chặt hơn BE. Trần 128 ký tự lấy theo LoginRequest.
 export const STRONG_PASSWORD_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
 
@@ -20,6 +23,7 @@ export function buildChangePasswordSchema(t: TranslateFn) {
       newPassword: z
         .string()
         .min(8, t("auth.validation.newPasswordMin"))
+        .max(PASSWORD_MAX_LENGTH, t("auth.validation.passwordTooLong"))
         .refine(
           (v) => v === v.trim(),
           t("auth.validation.passwordNoEdgeSpaces"),

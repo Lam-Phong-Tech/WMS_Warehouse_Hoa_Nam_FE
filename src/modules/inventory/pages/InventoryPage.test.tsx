@@ -141,19 +141,14 @@ describe("InventoryPage (INV-01 hub)", () => {
     expect(within(row as HTMLElement).getByText("Khớp")).toBeInTheDocument();
   });
 
-  it("cho chọn nhiều dòng tồn kho bằng checkbox (chọn tất cả trong trang)", async () => {
+  // Cột checkbox "chọn nhiều" ở bảng tồn kho đã gỡ: lựa chọn không dẫn tới
+  // hành động hàng loạt nào (không xuất, không đổi trạng thái theo lô), chỉ tô
+  // xanh rồi thôi. Test này giữ lại đúng phần khẳng định đó.
+  it("không còn cột checkbox chọn nhiều ở bảng tồn kho", async () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");
 
-    const selectAll = screen.getByRole("checkbox", {
-      name: "Chọn tất cả dòng trong trang",
-    });
-    fireEvent.click(selectAll);
-
-    expect(
-      screen.getByRole("checkbox", { name: "Chọn dòng tồn kho SKU SKU-001" }),
-    ).toBeChecked();
-    expect(screen.getByText("Đã chọn 1 dòng")).toBeInTheDocument();
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
   });
 
   it("chuyển tab Lịch sử biến động hiển thị movement", async () => {

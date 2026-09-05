@@ -249,6 +249,36 @@ function normalizeTokenResponse<
   };
 }
 
+/**
+ * Hồ sơ đầy đủ suy ra từ trường `user` mà `POST /auth/refresh` trả kèm.
+ *
+ * VÌ SAO CẦN: sau mỗi lần F5, FE gọi `/auth/refresh` rồi CHỜ nó xong mới gọi
+ * tiếp `/auth/me` — hai vòng mạng NỐI TIẾP nằm trên đúng đường tới hạn của mọi
+ * lần tải trang. Nhưng `/auth/refresh` đã trả sẵn `user` với đúng shape mà
+ * `/auth/me` trả (đối chiếu trên runtime thật: cùng roles, cùng 60 permission,
+ * cùng warehouse_scope_ids). Vòng thứ hai là thừa.
+ *
+ * KHÔNG làm yếu mô hình fail-closed: hồ sơ vẫn do MÁY CHỦ phát ra, trong chính
+ * response vừa cấp token đó — nên vẫn đúng nghĩa "permission/data-scope của đúng
+ * JWT hiện tại". Trả `null` khi payload thiếu `permissions`, để nơi gọi rơi về
+ * đường cũ (chờ `/auth/me`) thay vì tự đoán quyền.
+ */
+export function meResponseFromRefreshUser(user: unknown): MeResponse | null {
+  if (user === null || typeof user !== "object") return null;
+
+  const raw = user as BackendMeResponse;
+  // Thiếu danh sách quyền thì KHÔNG dựng hồ sơ: fail-closed phải dựa trên quyền
+  // do máy chủ khẳng định, không phải trên một object rỗng.
+  if (!Array.isArray(raw.permissions)) return null;
+
+  try {
+    return normalizeMeResponse(raw);
+  } catch {
+    // Hợp đồng lệch (thiếu id/email...) -> để nơi gọi đi tiếp bằng /auth/me.
+    return null;
+  }
+}
+
 export const authService = {
   async login(data: LoginRequest) {
     const response = await http.post<BackendLoginResponse>(

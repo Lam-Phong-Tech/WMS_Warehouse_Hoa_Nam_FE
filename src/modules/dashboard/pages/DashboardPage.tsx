@@ -18,6 +18,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT } from "@/shared/i18n/useT";
+import { checkDate, pastDateBounds } from "@/shared/validation/date-rules";
 import type { SkuTypeFilter } from "../types";
 import type { MessageKey } from "@/shared/i18n/messages";
 import "../dashboard-overview.css";
@@ -119,6 +120,13 @@ export default function DashboardPage() {
     if (!custom.from || !custom.to) return t("dashboard.dateError.required");
     if (custom.from > custom.to) return t("dashboard.dateError.order");
     if (custom.to > today) return t("dashboard.dateError.future");
+    // Chốt chặn chung (2000 → hôm nay, chuỗi ISO sai như "2026-22-01"): so
+    // chuỗi ở trên không bắt được các trường hợp này.
+    // Truyền CHUỖI để checkDate parse nghiêm ngặt (dayjs() tự cuộn 31/02 → 03/03).
+    for (const raw of [custom.from, custom.to]) {
+      const check = checkDate(raw, pastDateBounds());
+      if (!check.ok) return check.message;
+    }
     return "";
   }, [period, custom, today, t]);
 

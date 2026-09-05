@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import dayjs from "dayjs";
 import { useT } from "@/shared/i18n/useT";
 import {
   Box,
@@ -32,6 +33,8 @@ export function PeriodFilterControls({ state }: { state: PeriodFilterState }) {
       aria-label={t("reports.filters.dateRangeAria")}
       format="DD/MM/YYYY"
       allowClear={false}
+      // Báo cáo vận hành chỉ có dữ liệu ĐÃ XẢY RA: không cho chọn ngày tương lai.
+      maxDate={dayjs().endOf("day")}
       presets={presets}
       className="hn-vuexy-date-range"
       popupClassName="hn-vuexy-date-popup"
@@ -109,18 +112,27 @@ export function TimeWindowFilter({
   onChange: (next: TimeWindow) => void;
 }) {
   const t = useT();
+  // "HH:mm" so sánh chuỗi là đủ (cùng độ dài, zero-padded). Giá trị vẫn giữ
+  // nguyên để người dùng sửa — chỉ báo lỗi, không tự đảo/xoá.
+  const orderInvalid = Boolean(value.from && value.to && value.from > value.to);
+  const orderError = orderInvalid ? t("reports.common.timeOrderError") : null;
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+    <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.75 }}>
       <UiTextField
         type="time"
         sx={{ width: 132 }}
         value={value.from}
         onChange={(event) => onChange({ ...value, from: event.target.value })}
+        error={orderInvalid}
         slotProps={{
-          htmlInput: { "aria-label": t("reports.filters.timeFromAria") },
+          htmlInput: {
+            "aria-label": t("reports.filters.timeFromAria"),
+            "aria-invalid": orderInvalid,
+            step: 60,
+          },
         }}
       />
-      <Box component="span" sx={{ fontSize: 13 }}>
+      <Box component="span" sx={{ fontSize: 13, pt: 1 }}>
         →
       </Box>
       <UiTextField
@@ -128,8 +140,14 @@ export function TimeWindowFilter({
         sx={{ width: 132 }}
         value={value.to}
         onChange={(event) => onChange({ ...value, to: event.target.value })}
+        error={orderInvalid}
+        helperText={orderError ?? undefined}
         slotProps={{
-          htmlInput: { "aria-label": t("reports.filters.timeToAria") },
+          htmlInput: {
+            "aria-label": t("reports.filters.timeToAria"),
+            "aria-invalid": orderInvalid,
+            step: 60,
+          },
         }}
       />
     </Box>

@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import dayjs, { type Dayjs } from "dayjs";
+import { checkDateRange, pastDateBounds } from "@/shared/validation/date-rules";
 import { toast } from "sonner";
 import {
   Box,
@@ -353,6 +354,8 @@ export default function MovementTraceReport() {
   const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const [draft, setDraft] = useState<AppliedFilters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<AppliedFilters>(EMPTY_FILTERS);
+  // Lỗi khoảng ngày lúc bấm Tra cứu — hiện ngay dưới ô, không bắn query.
+  const [dateError, setDateError] = useState<string | null>(null);
   const [selected, setSelected] = useState<MovementTraceRow | null>(null);
   const [exporting, setExporting] = useState(false);
 
@@ -545,6 +548,17 @@ export default function MovementTraceReport() {
 
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
+    // Bộ chọn khoảng cho phép một đầu rỗng (đang gõ dở): bắt buộc đủ hai đầu
+    // hoặc bỏ trống cả hai, và cả hai phải nằm trong 2000 → hôm nay.
+    const halfOpen = (draft.fromDate === null) !== (draft.toDate === null);
+    const rangeCheck = halfOpen
+      ? { ok: false as const, message: t("shared.validation.dateRequired") }
+      : checkDateRange(draft.fromDate, draft.toDate, pastDateBounds());
+    if (!rangeCheck.ok) {
+      setDateError(rangeCheck.message);
+      return;
+    }
+    setDateError(null);
     setApplied(draft);
   };
 
@@ -560,6 +574,7 @@ export default function MovementTraceReport() {
       relation: "all",
     };
     setDraft(next);
+    setDateError(null);
     setApplied({
       ...applied,
       ...next,
@@ -789,17 +804,28 @@ export default function MovementTraceReport() {
                 t("reports.movementTrace.toDate"),
               ]}
               allowClear={false}
+              // Dữ liệu chỉ có trong quá khứ: khoá ngày tương lai (mốc dưới giữ mặc định 2000).
+              maxDate={dayjs().endOf("day")}
               presets={periodPresets}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"
-              onChange={(value) =>
+              onChange={(value) => {
+                setDateError(null);
                 setDraft((prev) => ({
                   ...prev,
                   fromDate: value?.[0] ?? null,
                   toDate: value?.[1] ?? null,
-                }))
-              }
+                }));
+              }}
             />
+            {dateError ? (
+              <Box
+                role="alert"
+                sx={{ mt: 0.5, fontSize: 12, color: "error.main" }}
+              >
+                {dateError}
+              </Box>
+            ) : null}
           </Box>
 
           <Box sx={fieldCellSx({ xs: 1, sm: 2, xl: 2 })}>

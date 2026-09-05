@@ -6,7 +6,12 @@ import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import { PvFreshnessIndicator } from "@/modules/pv/components/PvFreshness";
 import { PvProductCard } from "@/modules/pv/components/PvProductCard";
 import { PvPublicLayout } from "@/modules/pv/components/PvPublicLayout";
-import { usePvProduct, usePvRecommendations } from "@/modules/pv/hooks/use-pv";
+import {
+  usePvProduct,
+  usePvProductByCode,
+  usePvRecommendations,
+} from "@/modules/pv/hooks/use-pv";
+import { isPvSkuId } from "@/modules/pv/lib/pv-paths";
 import { EmptyState } from "@/shared/components/data-display/EmptyState";
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { ROUTES } from "@/shared/constants/routes";
@@ -32,15 +37,42 @@ const CARD_SX = {
 export default function PvProductDetailPage() {
   const t = useT();
   const { skuId } = useParams<{ skuId: string }>();
-  const product = usePvProduct(skuId);
+
+  /**
+   * Param có thể là sku_id (UUID) HOẶC mã SKU: mọi màn hình nghiệp vụ trong WMS
+   * đều cho bấm vào mã SKU để mở màn xem sản phẩm này, mà phần lớn chỗ đó chỉ
+   * có mã trong tay. Không phải UUID thì tra mã trước rồi mới gọi chi tiết —
+   * gọi thẳng `/pv/products/<mã>` chỉ nhận về 400 INVALID_PATH của BE.
+   */
+  const byId = isPvSkuId(skuId);
+  const lookup = usePvProductByCode(byId ? undefined : skuId);
+  const resolvedSkuId = byId ? skuId : lookup.data?.sku_id;
+
+  const product = usePvProduct(resolvedSkuId);
   const primaryIndustry = product.data?.data.industries[0]?.industry_id;
   const related = usePvRecommendations(primaryIndustry);
 
-  const notFound = (product.error as PublicApiError | undefined)?.isNotFound;
+  // Tra mã xong mà không SKU publish nào khớp => "không tìm thấy", đúng bằng
+  // 404 mask của BE. KHÔNG phân biệt "chưa publish" với "không tồn tại" (§13.8).
+  const lookupMissed = !byId && lookup.isSuccess && lookup.data === null;
+  const notFound =
+    lookupMissed ||
+    (product.error as PublicApiError | undefined)?.isNotFound === true;
   const detail = product.data?.data;
   const specifications = Object.entries(detail?.specifications ?? {}).filter(
     ([, value]) => value !== null && value !== "" && typeof value !== "object",
   );
+
+  /**
+   * `product` bị `enabled: false` khi chưa tra ra sku_id, và query đang tắt ở
+   * react-query v5 vẫn mang status "pending" mãi mãi. Vì vậy KHÔNG được đọc
+   * riêng `product.isPending` làm cờ tải: nhánh tra-mã-không-thấy sẽ kẹt vòng
+   * quay vô hạn thay vì hiện "không tìm thấy".
+   */
+  const loading =
+    (!byId && lookup.isPending) ||
+    (Boolean(resolvedSkuId) && product.isPending);
+  const lookupFailed = !byId && lookup.isError;
 
   return (
     <PvPublicLayout
@@ -63,12 +95,7 @@ export default function PvProductDetailPage() {
         </Link>
       </Box>
 
-      {product.isPending ? (
-        <LoadingState
-          tip={t("pv.productDetail.loading")}
-          testId="pv-detail-loading"
-        />
-      ) : notFound ? (
+      {notFound ? (
         <EmptyState
           testId="pv-detail-not-found"
           title={t("pv.productDetail.notFoundTitle")}
@@ -80,6 +107,13 @@ export default function PvProductDetailPage() {
             </ActionButton>
           </Link>
         </EmptyState>
+      ) : lookupFailed ? (
+        <PvErrorState error={lookup.error} onRetry={() => lookup.refetch()} />
+      ) : loading ? (
+        <LoadingState
+          tip={t("pv.productDetail.loading")}
+          testId="pv-detail-loading"
+        />
       ) : product.isError ? (
         <PvErrorState error={product.error} onRetry={() => product.refetch()} />
       ) : detail ? (

@@ -39,3 +39,7 @@ export {
   type UiVuexyDateFieldProps,
 } from "./UiVuexyDateField";
 export { UiAddressField, type UiAddressFieldProps } from "./UiAddressField";
+export {
+  SEARCHABLE_OPTION_THRESHOLD,
+  resolveSearchable,
+} from "./searchable-options";

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import {
   Box,
   Grid,
@@ -16,6 +16,7 @@ import {
 } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import {
@@ -23,7 +24,6 @@ import {
   type ResponsiveTableColumn,
 } from "@/shared/components";
 import { classifyScanCodes } from "@/modules/scan/services/scanService";
-import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
 import {
   WARRANTY_STATUS_COLORS,
   WARRANTY_STATUS_LABELS,
@@ -356,13 +356,20 @@ const traceLineColumns = (
     width: 130,
     render: (row) => {
       const product = nested(row, "product");
-      return text(
-        row.sku ??
-          row.sku_code ??
-          row.product_sku ??
-          row.product_code ??
-          product?.code ??
-          product?.sku_code,
+      return (
+        <SkuLink
+          id={
+            text(row.sku_id ?? row.product_id ?? product?.sku_id) || undefined
+          }
+          code={text(
+            row.sku ??
+              row.sku_code ??
+              row.product_sku ??
+              row.product_code ??
+              product?.code ??
+              product?.sku_code,
+          )}
+        />
       );
     },
   },
@@ -498,10 +505,7 @@ export function TraceModal({ movementId, onClose }: Props) {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [scanResolveError, setScanResolveError] = useState<string | null>(null);
 
-  const warehousesQuery = useQuery({
-    queryKey: ["inventory", "trace-warehouse"],
-    queryFn: () => fetchWarehouses({ status: "ACTIVE" }),
-  });
+  const warehousesQuery = useActiveWarehouses();
   const warehouse = warehousesQuery.data?.[0];
 
   const movementQuery = useStockMovement(movementId);
@@ -684,7 +688,12 @@ export function TraceModal({ movementId, onClose }: Props) {
                     label="SKU"
                     value={
                       <>
-                        <CodeText>{text(resolvedObject.sku_code)}</CodeText>{" "}
+                        <CodeText>
+                          <SkuLink
+                            id={text(resolvedObject.sku_id) || undefined}
+                            code={text(resolvedObject.sku_code)}
+                          />
+                        </CodeText>{" "}
                         {text(resolvedObject.sku_name)}
                       </>
                     }
@@ -736,7 +745,14 @@ export function TraceModal({ movementId, onClose }: Props) {
                 <>
                   <DetailField
                     label={t("inventory.trace.fieldSkuCode")}
-                    value={<CodeText>{text(resolvedObject.sku_code)}</CodeText>}
+                    value={
+                      <CodeText>
+                        <SkuLink
+                          id={text(resolvedObject.sku_id) || undefined}
+                          code={text(resolvedObject.sku_code)}
+                        />
+                      </CodeText>
+                    }
                   />
                   <DetailField
                     label={t("inventory.trace.fieldSkuName")}
@@ -922,14 +938,21 @@ export function TraceModal({ movementId, onClose }: Props) {
             />
             <DetailField
               label="SKU"
-              value={text(
-                movement.sku ??
-                  movement.sku_code ??
-                  movement.product_sku ??
-                  movement.product_code ??
-                  nested(movement, "product")?.code ??
-                  nested(movement, "product")?.sku_code,
-              )}
+              value={
+                <SkuLink
+                  id={
+                    text(movement.sku_id ?? movement.product_id) || undefined
+                  }
+                  code={text(
+                    movement.sku ??
+                      movement.sku_code ??
+                      movement.product_sku ??
+                      movement.product_code ??
+                      nested(movement, "product")?.code ??
+                      nested(movement, "product")?.sku_code,
+                  )}
+                />
+              }
             />
             <DetailField
               label="Kho"

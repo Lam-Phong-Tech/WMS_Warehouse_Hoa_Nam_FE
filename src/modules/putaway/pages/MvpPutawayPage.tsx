@@ -23,10 +23,11 @@ import {
   type SortAccessor,
 } from "@/shared/components/data-display/useClientSort";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { toast } from "sonner";
 import { HistoryOutlined, InboxOutlined } from "@/shared/components/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import { useSearchParams, Link as RouterLink } from "react-router-dom";
 import { ROUTES } from "@/shared/constants/routes";
 import {
@@ -217,6 +218,9 @@ export default function MvpPutawayPage() {
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: putawayKeys.all });
+    // Cất hàng đổi vị trí/tồn theo vị trí -> báo cáo tồn và dashboard đọc số cũ
+    // nếu chỉ làm mới cache của riêng màn cất hàng.
+    await invalidateStockDerived(queryClient);
   };
 
   const createMutation = useMutation({
@@ -276,8 +280,6 @@ export default function MvpPutawayPage() {
     (safeHistoryPage - 1) * historyPageSize,
     safeHistoryPage * historyPageSize,
   );
-  const pendingSelection = useRowSelection(pagedTasks, (row) => row.id);
-  const historySelection = useRowSelection(pagedHistory, (row) => row.id);
 
   const resetTarget = () => {
     setTrayScanValue("");
@@ -460,6 +462,15 @@ export default function MvpPutawayPage() {
 
   const taskColumns: ResponsiveTableColumn<PutawayTask>[] = [
     {
+      key: "stt",
+      header: "STT",
+      align: "center",
+      width: 56,
+      hideOnMobile: true,
+      // Vị trí trong danh sách GỐC (chưa sắp xếp) — số đi theo dòng.
+      render: (row) => tasks.indexOf(row) + 1,
+    },
+    {
       key: "box_code",
       header: t("putaway.page.colBox"),
       width: 170,
@@ -471,7 +482,7 @@ export default function MvpPutawayPage() {
       header: t("putaway.page.colSku"),
       width: 170,
       sortable: true,
-      render: (row) => row.sku_code,
+      render: (row) => <SkuLink code={row.sku_code} />,
     },
     {
       key: "quantity",
@@ -514,6 +525,8 @@ export default function MvpPutawayPage() {
     },
     {
       key: "actions",
+      // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
+      truncate: 0,
       header: t("putaway.page.colActions"),
       width: 260,
       render: (row) => {
@@ -571,6 +584,14 @@ export default function MvpPutawayPage() {
   ];
 
   const historyColumns: ResponsiveTableColumn<PutawayHistory>[] = [
+    {
+      key: "stt",
+      header: "STT",
+      align: "center",
+      width: 56,
+      hideOnMobile: true,
+      render: (row) => filteredHistory.indexOf(row) + 1,
+    },
     {
       key: "created_at",
       header: t("putaway.page.colTime"),
@@ -782,10 +803,6 @@ export default function MvpPutawayPage() {
               rows={pagedTasks}
               rowKey={(row) => row.id}
               loading={loading}
-              rowSelection={pendingSelection}
-              selectionLabel={(row) =>
-                t("putaway.page.selectBox", { code: row.box_code })
-              }
               sortState={taskSort.sortState}
               onSortChange={taskSort.requestSort}
               emptyText={t("putaway.page.emptyPending")}
@@ -819,10 +836,6 @@ export default function MvpPutawayPage() {
               rows={pagedHistory}
               rowKey={(row) => row.id}
               loading={loading}
-              rowSelection={historySelection}
-              selectionLabel={(row) =>
-                t("putaway.page.selectRecord", { code: row.box_code })
-              }
               sortState={historySort.sortState}
               onSortChange={historySort.requestSort}
               emptyText={
@@ -928,7 +941,7 @@ export default function MvpPutawayPage() {
                   />
                   <PutawayDetailField
                     label={t("putaway.page.colSku")}
-                    value={selected.sku_code}
+                    value={<SkuLink code={selected.sku_code} />}
                     size={{ xs: 6, sm: 3 }}
                   />
                   <PutawayDetailField
@@ -1100,7 +1113,11 @@ export default function MvpPutawayPage() {
               />
               <PutawayDetailField
                 label={t("putaway.page.colSku")}
-                value={`${detailRow.sku_code} · ${detailRow.sku_name}`}
+                value={
+                  <>
+                    <SkuLink code={detailRow.sku_code} /> · {detailRow.sku_name}
+                  </>
+                }
               />
               <PutawayDetailField
                 label={t("putaway.page.colQuantity")}

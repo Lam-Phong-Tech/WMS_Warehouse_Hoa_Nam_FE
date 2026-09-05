@@ -5,12 +5,14 @@ import {
   MenuItem,
   Stack,
   UiAlert,
+  UiAutocomplete,
   UiDialog,
   UiStatusBadge,
   UiTextField,
   useUiConfirm,
 } from "@/shared/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import {
@@ -26,6 +28,7 @@ import {
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { useHasPermission } from "@/shared/components/permission";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import {
@@ -57,6 +60,13 @@ import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
+import { validatePhone } from "@/shared/constants/validation.constants";
+
+/** Lý do hủy phải đủ ý cho tra soát; trần khớp BE cancel `reason` max:1000. */
+const CANCEL_REASON_MIN = 5;
+const CANCEL_REASON_MAX = 1000;
+/** Ghi chú lý do in lại nhãn — trần BE `reason` max:500. */
+const REPRINT_NOTE_MAX = 500;
 
 /**
  * Lý do in lại nhãn thường gặp (mục 9) + "Khác" cho phép nhập tay.
@@ -171,6 +181,9 @@ export function AlignedOutboundDetailModal({
   const [printerId, setPrinterId] = useState("");
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [cancelReasonError, setCancelReasonError] = useState<string | null>(
+    null,
+  );
   // Lý do in lại nhãn (mục 9): bắt buộc chọn trước khi reprint.
   const [reprintOpen, setReprintOpen] = useState(false);
   const [reprintReasonKey, setReprintReasonKey] = useState("");
@@ -270,8 +283,10 @@ export function AlignedOutboundDetailModal({
   );
   const mutable = doc?.status === "DRAFT" || doc?.status === "SCANNING";
   const posted = doc?.status === "POSTED";
-  const customerPhoneValid =
-    customerPhone === "" || /^0\d{9}$/.test(customerPhone);
+  // Dùng validatePhone chung (đầu số VN hợp lệ) thay vì regex 0+9 số tại chỗ.
+  const customerPhoneCheck =
+    customerPhone === "" ? null : validatePhone(customerPhone);
+  const customerPhoneValid = customerPhoneCheck?.isValid ?? true;
   const availability = availabilityQuery.data ?? {};
   // Chỉ có ý nghĩa TRƯỚC khi ghi nhận xuất kho ("sắp xuất, tồn có đủ không?").
   // Sau khi POSTED, tồn kho đã bị trừ đúng bằng số đã xuất nên tồn khả dụng
@@ -309,6 +324,8 @@ export function AlignedOutboundDetailModal({
         queryKey: ["mvp-outbound", "packing-labels"],
       }),
       queryClient.invalidateQueries({ queryKey: ["mvp-outbound", "list"] }),
+      // Ghi sổ phiếu xuất trừ tồn -> làm mới cả tồn kho/dashboard/báo cáo.
+      invalidateStockDerived(queryClient),
     ]);
     onChanged?.();
   };
@@ -542,7 +559,12 @@ export function AlignedOutboundDetailModal({
       key: "productId",
       header: "SKU",
       width: 180,
-      render: (row) => row.skuCode ?? short(row.productId),
+      render: (row) =>
+        row.skuCode ? (
+          <SkuLink id={row.productId} code={row.skuCode} />
+        ) : (
+          short(row.productId)
+        ),
     },
     {
       key: "expected",
@@ -569,6 +591,8 @@ export function AlignedOutboundDetailModal({
     },
     {
       key: "actions",
+      // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
+      truncate: 0,
       header: "",
       mobileLabel: t("outbound.detail.colAction"),
       width: 190,
@@ -687,22 +711,24 @@ export function AlignedOutboundDetailModal({
                 spacing={1.5}
                 sx={{ flexWrap: "wrap", rowGap: 1 }}
               >
-                <UiTextField
-                  select
+                {/* Phiếu nhiều dòng thì danh sách này dài — cho gõ mã SKU
+                    để nhảy thẳng tới dòng cần quét. */}
+                <UiAutocomplete
                   sx={{ width: 300 }}
+                  fullWidth={false}
                   label={t("outbound.detail.autoSku")}
-                  value={lineId}
-                  onChange={(event) => setLineId(event.target.value)}
-                >
-                  <MenuItem value="">{t("outbound.detail.autoSku")}</MenuItem>
-                  {detail.lines
+                  value={lineId || null}
+                  onChange={(next) =>
+                    setLineId(next == null ? "" : String(next))
+                  }
+                  placeholder={t("outbound.detail.autoSku")}
+                  options={detail.lines
                     .filter((line) => line.scanned < line.expected)
-                    .map((line) => (
-                      <MenuItem key={line.id} value={line.id}>
-                        {`${line.skuCode ?? short(line.productId)} · ${line.scanned}/${line.expected}`}
-                      </MenuItem>
-                    ))}
-                </UiTextField>
+                    .map((line) => ({
+                      value: line.id,
+                      label: `${line.skuCode ?? short(line.productId)} · ${line.scanned}/${line.expected}`,
+                    }))}
+                />
                 <UiTextField
                   sx={{ width: 330 }}
                   value={scanCode}
@@ -791,6 +817,12 @@ export function AlignedOutboundDetailModal({
                       )
                     }
                     error={!customerPhoneValid}
+                    helperText={
+                      customerPhoneValid
+                        ? undefined
+                        : (customerPhoneCheck?.errorMessage ??
+                          t("outbound.detail.blockPhone"))
+                    }
                   />
                   <ActionButton
                     kind="print"
@@ -928,28 +960,26 @@ export function AlignedOutboundDetailModal({
                         }}
                       >
                         {/*
-                         * CỐ Ý KHÔNG dùng slotProps.select.native: native:true trả về
-                         * <select>/<option> thuần nên trình duyệt vẽ menu theo kiểu
-                         * hệ điều hành — bung ra tức thì, phông và màu highlight
-                         * khác hẳn phần còn lại của app. Select bên trong UiTextField
-                         * dùng menu React (có hiệu ứng Grow theo theme adapter) và ăn theme.
+                         * CỐ Ý KHÔNG dùng <select>/<option> thuần: trình duyệt vẽ
+                         * menu theo kiểu hệ điều hành — phông và màu highlight khác
+                         * hẳn phần còn lại của app. Dropdown của design system dùng
+                         * menu React ăn theme, và cho gõ để tìm khi danh sách máy in
+                         * dài ra.
                          */}
-                        <UiTextField
-                          select
+                        <UiAutocomplete
                           label={t("outbound.detail.fieldPrinter")}
                           sx={{ width: 280 }}
-                          value={printerId}
-                          onChange={(event) => setPrinterId(event.target.value)}
-                        >
-                          <MenuItem value="" disabled>
-                            {t("outbound.detail.choosePrinter")}
-                          </MenuItem>
-                          {activePrinters.map((printer) => (
-                            <MenuItem key={printer.id} value={printer.id}>
-                              {`${printer.code} · ${printer.name}`}
-                            </MenuItem>
-                          ))}
-                        </UiTextField>
+                          fullWidth={false}
+                          value={printerId || null}
+                          onChange={(next) =>
+                            setPrinterId(next == null ? "" : String(next))
+                          }
+                          placeholder={t("outbound.detail.choosePrinter")}
+                          options={activePrinters.map((printer) => ({
+                            value: printer.id,
+                            label: `${printer.code} · ${printer.name}`,
+                          }))}
+                        />
                         <ActionButton
                           kind="print"
                           disabled={
@@ -1058,7 +1088,26 @@ export function AlignedOutboundDetailModal({
               <ActionButton
                 kind="cancel"
                 disabled={cancelMutation.isPending || !cancelReason.trim()}
-                onClick={() => cancelMutation.mutate()}
+                onClick={() => {
+                  const reason = cancelReason.trim();
+                  if (reason.length < CANCEL_REASON_MIN) {
+                    setCancelReasonError(
+                      t("outbound.detail.cancelReasonShort", {
+                        min: CANCEL_REASON_MIN,
+                      }),
+                    );
+                    return;
+                  }
+                  if (reason.length > CANCEL_REASON_MAX) {
+                    setCancelReasonError(
+                      t("shared.validation.textMaxLength", {
+                        max: CANCEL_REASON_MAX,
+                      }),
+                    );
+                    return;
+                  }
+                  cancelMutation.mutate();
+                }}
               >
                 {cancelMutation.isPending
                   ? t("outbound.detail.cancelling")
@@ -1072,9 +1121,17 @@ export function AlignedOutboundDetailModal({
             multiline
             minRows={3}
             value={cancelReason}
-            onChange={(event) => setCancelReason(event.target.value)}
+            onChange={(event) => {
+              setCancelReason(event.target.value);
+              if (cancelReasonError) setCancelReasonError(null);
+            }}
             label={t("outbound.detail.cancelReason")}
             placeholder={t("outbound.detail.cancelReason")}
+            slotProps={{ htmlInput: { maxLength: CANCEL_REASON_MAX } }}
+            error={Boolean(cancelReasonError)}
+            helperText={
+              cancelReasonError ?? `${cancelReason.length}/${CANCEL_REASON_MAX}`
+            }
           />
         </UiDialog>
 
@@ -1139,6 +1196,8 @@ export function AlignedOutboundDetailModal({
                 onChange={(event) => setReprintReasonNote(event.target.value)}
                 label={t("outbound.reprint.otherLabel")}
                 placeholder={t("outbound.reprint.otherPlaceholder")}
+                slotProps={{ htmlInput: { maxLength: REPRINT_NOTE_MAX } }}
+                helperText={`${reprintReasonNote.length}/${REPRINT_NOTE_MAX}`}
               />
             ) : null}
           </Stack>

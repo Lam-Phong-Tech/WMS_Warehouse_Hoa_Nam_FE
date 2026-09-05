@@ -22,6 +22,7 @@ import {
 } from "@/shared/components/data-display/ResponsiveDataTable";
 import { AppstoreOutlined, SwapOutlined } from "@/shared/components/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import {
   TableLoadingBanner,
   tableEmptyText,
@@ -31,7 +32,6 @@ import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useCanAny } from "@/shared/components/permission";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import {
   INVENTORY_STOCK_STATUS_LABELS,
@@ -94,7 +94,16 @@ function TabLabel({ icon, text }: { icon: ReactNode; text: string }) {
   );
 }
 
-/** Mã dạng code (SKU/chứng từ) — thay antd Typography.Text `code`. */
+/**
+ * Mã dạng code (SKU/chứng từ) — thay antd Typography.Text `code`.
+ *
+ * Ô bảng đi qua `TruncatedText` (`.hn-truncate`, overflow hidden) nên chip này
+ * PHẢI tự co và tự cắt: `<code>` mặc định là inline nên `text-overflow` không
+ * áp được lên nó, và làm phần tử flex thì nó cũng không chịu co
+ * (`min-width: auto`) — mã dài bị cắt cụt giữa ký tự, đồng thời đẩy phần tử
+ * đứng sau (nút sao chép) ra ngoài vùng thấy được. Khai `inline-block` +
+ * `minWidth: 0` + ellipsis để mã dài kết thúc bằng "…" thay vì cắt ngang.
+ */
 function CodeText({ children }: { children: ReactNode }) {
   return (
     <Box
@@ -106,6 +115,13 @@ function CodeText({ children }: { children: ReactNode }) {
         borderRadius: 1,
         backgroundColor: SEMANTIC_LIGHT.secondarySoft,
         color: SEMANTIC_LIGHT.textHigh,
+        display: "inline-block",
+        minWidth: 0,
+        maxWidth: "100%",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        verticalAlign: "middle",
       }}
     >
       {children}
@@ -178,10 +194,8 @@ export default function InventoryPage() {
   });
 
   const balances = balanceQuery.data?.rows ?? [];
-  const balanceSelection = useRowSelection(balances, (row) => row.id);
   const balanceMeta = balanceQuery.data?.meta;
   const movements = movementQuery.data?.rows ?? [];
-  const movementSelection = useRowSelection(movements, (row) => row.id);
   const movementMeta = movementQuery.data?.meta;
 
   const balancePagination = resolveApiPagination(balanceMeta, {
@@ -256,13 +270,27 @@ export default function InventoryPage() {
     {
       key: "sku",
       header: "SKU",
-      width: 140,
+      // Ô này chứa chip mã (mã SKU dài nhất của hệ ~17 ký tự monospace ≈ 130px)
+      // + nút sao chép (34px) + khoảng cách. 140px cũ không đủ chỗ nên nút sao
+      // chép nằm hẳn ngoài vùng cắt của `.hn-truncate`, chỉ ló ra một mẩu bo
+      // góc trông như ký tự lạ. 190px đủ cho cả hai mà không phải cắt chữ.
+      width: 190,
       sortAccessor: (row) => row.sku,
       render: (row) => (
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-          <CodeText>{row.sku || EMPTY_TEXT}</CodeText>
+        // `minWidth: 0` cho cả hàng flex lẫn chip mã: thiếu nó thì phần tử flex
+        // giữ nguyên bề ngang nội dung và đẩy nút sao chép ra khỏi ô thay vì
+        // để chip mã tự cắt bằng "…".
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{ alignItems: "center", minWidth: 0 }}
+        >
+          <CodeText>
+            <SkuLink code={row.sku} />
+          </CodeText>
           <ActionIconButton
             kind="copy"
+            sx={{ flexShrink: 0 }}
             onClick={(event) => {
               event.stopPropagation();
               void navigator.clipboard?.writeText(row.sku || EMPTY_TEXT);
@@ -504,9 +532,12 @@ export default function InventoryPage() {
     {
       key: "sku",
       header: "SKU",
-      width: 120,
+      // Mã SKU dài nhất của hệ (~17 ký tự) chiếm ~130px ở font thân bài; cộng
+      // 20px padding của ô là 150px. 120px cũ khiến MỌI mã trong tab này bị cắt
+      // bằng "…" dù cột kế bên còn thừa chỗ.
+      width: 160,
       sortAccessor: (row) => row.sku,
-      render: (row) => row.sku,
+      render: (row) => <SkuLink code={row.sku} />,
     },
     {
       key: "qty",
@@ -670,10 +701,6 @@ export default function InventoryPage() {
               rowKey={(row) => row.id}
               columns={balanceColumns}
               rows={balances}
-              rowSelection={balanceSelection}
-              selectionLabel={(row) =>
-                t("inventory.balance.selectionLabel", { sku: row.sku })
-              }
               loading={balanceQuery.isLoading || balanceQuery.isFetching}
               emptyText={tableEmptyText(
                 balanceQuery.isError ? balanceQuery.error : null,
@@ -799,12 +826,6 @@ export default function InventoryPage() {
               rowKey={(row) => row.id}
               columns={movementColumns}
               rows={movements}
-              rowSelection={movementSelection}
-              selectionLabel={(row) =>
-                t("inventory.movement.selectionLabel", {
-                  code: row.movementId || t("inventory.movement.noCode"),
-                })
-              }
               loading={movementQuery.isLoading || movementQuery.isFetching}
               emptyText={tableEmptyText(
                 movementQuery.isError ? movementQuery.error : null,

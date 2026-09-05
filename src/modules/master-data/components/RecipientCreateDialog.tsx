@@ -11,6 +11,7 @@ import {
 } from "@/shared/ui";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
+import { validatePhone } from "@/shared/constants/validation.constants";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   getMutationErrorMessage,
@@ -52,6 +53,18 @@ const EMPTY_AGENCY_FORM: AgencyFormState = {
   address: "",
   status: "ACTIVE",
 };
+
+/**
+ * Trần độ dài ô chữ — khớp BE BaM1RecipientController / StoreAgencyRequest.
+ * Giữ ĐỒNG BỘ với AGENCY_TEXT_MAX trong AgencyMasterScreen (ApiMasterScreens).
+ */
+const AGENCY_TEXT_MAX = {
+  agency_code: 50,
+  agency_name: 255,
+  market: 120,
+  region: 120,
+  contact_name: 200,
+} as const;
 
 // Map camelCase (extractFieldErrors) → snake_case (state form). Phải khớp với
 // AGENCY_FORM_FIELDS trong AgencyMasterScreen để lỗi server gắn đúng ô.
@@ -120,9 +133,23 @@ export function RecipientCreateDialog({
     if (!form.agency_name.trim()) {
       errors.agency_name = t("masterData.recipient.errName");
     }
+    // Trần độ dài theo BE — chỉ ghi lỗi khi ô chưa có lỗi "bắt buộc".
+    for (const key of Object.keys(AGENCY_TEXT_MAX) as Array<
+      keyof typeof AGENCY_TEXT_MAX
+    >) {
+      const max = AGENCY_TEXT_MAX[key];
+      if (!errors[key] && (form[key] ?? "").trim().length > max) {
+        errors[key] = t("shared.validation.textMaxLength", { max });
+      }
+    }
     const phone = form.phone?.trim() ?? "";
-    if (phone && !/^0\d{9}$/.test(phone)) {
-      errors.phone = t("masterData.recipient.errPhone");
+    if (phone) {
+      // Dùng luật SĐT dùng chung (10 số, đầu số VN) thay vì regex chép tay.
+      const phoneCheck = validatePhone(phone);
+      if (!phoneCheck.isValid) {
+        errors.phone =
+          phoneCheck.errorMessage ?? t("masterData.recipient.errPhone");
+      }
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -212,6 +239,9 @@ export function RecipientCreateDialog({
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiTextField
               label={t("masterData.recipient.fieldCode")}
+              slotProps={{
+                htmlInput: { maxLength: AGENCY_TEXT_MAX.agency_code },
+              }}
               required
               fullWidth
               value={form.agency_code}
@@ -232,6 +262,9 @@ export function RecipientCreateDialog({
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiTextField
               label={t("masterData.recipient.colName")}
+              slotProps={{
+                htmlInput: { maxLength: AGENCY_TEXT_MAX.agency_name },
+              }}
               required
               fullWidth
               value={form.agency_name}
@@ -286,6 +319,9 @@ export function RecipientCreateDialog({
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiTextField
               label={t("masterData.recipient.colMarket")}
+              slotProps={{
+                htmlInput: { maxLength: AGENCY_TEXT_MAX.market },
+              }}
               fullWidth
               value={form.market ?? ""}
               onChange={(event) => {
@@ -303,6 +339,9 @@ export function RecipientCreateDialog({
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiTextField
               label={t("masterData.recipient.colRegion")}
+              slotProps={{
+                htmlInput: { maxLength: AGENCY_TEXT_MAX.region },
+              }}
               fullWidth
               value={form.region ?? ""}
               onChange={(event) => {
@@ -320,6 +359,9 @@ export function RecipientCreateDialog({
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiTextField
               label={t("masterData.recipient.colContact")}
+              slotProps={{
+                htmlInput: { maxLength: AGENCY_TEXT_MAX.contact_name },
+              }}
               fullWidth
               value={form.contact_name ?? ""}
               onChange={(event) => {

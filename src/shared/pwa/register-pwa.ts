@@ -11,8 +11,13 @@ export async function registerPwa(): Promise<void> {
   if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
 
   try {
+    // `?v=<build id>` là cách build id đi được vào service worker: file nằm
+    // trong public/ nên vite `define` không chạm tới nó, còn SW đọc lại được từ
+    // `self.location.search`. Hệ quả mong muốn: deploy mới đổi URL script ->
+    // trình duyệt cài SW mới VÀ tên CacheStorage đổi theo -> chunk của build cũ
+    // bị nhánh `activate` xoá thay vì nằm lại vĩnh viễn trên máy người dùng.
     const registration = await navigator.serviceWorker.register(
-      "/service-worker.js",
+      `/service-worker.js?v=${encodeURIComponent(__APP_BUILD_ID__)}`,
       { scope: "/" },
     );
     activeRegistration = registration;

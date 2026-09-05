@@ -13,6 +13,7 @@ import {
   MenuItem,
   Stack,
   UiAlert,
+  UiAutocomplete,
   UiDescriptions,
   UiDialog,
   UiIcon,
@@ -49,24 +50,47 @@ import {
   MVP_PAGE_SIZE_OPTIONS,
   resolveApiPagination,
 } from "@/shared/components/mvp/mvp-pagination";
-import {
-  MvpSelectionCheckbox,
-  mvpRowNumber,
-} from "@/shared/components/mvp/MvpSelectionCell";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
+import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import {
   IAM_SCOPE_TYPE_LABELS,
   IAM_USER_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { DepartmentManagerModal } from "@/modules/iam/components/DepartmentManagerModal";
+import {
+  EMAIL_MAX_LENGTH,
+  validateEmail,
+  validatePhone,
+} from "@/shared/constants/validation.constants";
+import {
+  PASSWORD_MAX_LENGTH,
+  USERNAME_MAX_LENGTH,
+  USERNAME_REGEX,
+} from "@/modules/auth/schemas/login.schema";
+import { STRONG_PASSWORD_REGEX } from "@/modules/auth/schemas/change-password.schema";
+import {
+  checkDate,
+  checkDateRange,
+  dateInputBounds,
+  defaultDateBounds,
+} from "@/shared/validation/date-rules";
+
+/** BE StoreUserRequest: display_name max:255. */
+const DISPLAY_NAME_MAX_LENGTH = 255;
+/** BE Grant/Revoke/AssignUserRoleRequest: reason min:5 max:2000. */
+const REASON_MIN_LENGTH = 5;
+const REASON_MAX_LENGTH = 2000;
+/** Cửa sổ hiệu lực vai trò: mốc chung 2000 → hôm nay + 10 năm. */
+const EFFECTIVE_DATE_BOUNDS = defaultDateBounds();
+const EFFECTIVE_DATE_INPUT = dateInputBounds(EFFECTIVE_DATE_BOUNDS);
 
 const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
   { value: "ACTIVE", label: IAM_USER_STATUS_LABELS.ACTIVE },
@@ -121,9 +145,36 @@ const USER_FORM_FIELDS = [
   "phone",
   "email",
   "roleId",
+  "effectiveFrom",
+  "effectiveTo",
   "password",
   "reason",
 ] as const satisfies readonly (keyof UserFormState)[];
+
+/**
+ * Luật mật khẩu tạm/đặt lại của admin: dùng CÙNG rule mật khẩu mạnh với tự
+ * đổi mật khẩu (change-password.schema) để tài khoản mới không yếu hơn tài
+ * khoản tự đổi. BE StoreUserRequest chỉ `min:8` (không đòi chữ số) nên regex
+ * không thêm điều kiện chữ số. Trả key i18n hoặc null khi hợp lệ.
+ */
+function passwordRuleError(
+  password: string,
+  isReset: boolean,
+):
+  | "errPasswordShort"
+  | "errPasswordResetShort"
+  | "errPasswordLong"
+  | "errPasswordEdgeSpaces"
+  | "errPasswordStrength"
+  | null {
+  if (password.length < 8) {
+    return isReset ? "errPasswordResetShort" : "errPasswordShort";
+  }
+  if (password.length > PASSWORD_MAX_LENGTH) return "errPasswordLong";
+  if (password !== password.trim()) return "errPasswordEdgeSpaces";
+  if (!STRONG_PASSWORD_REGEX.test(password)) return "errPasswordStrength";
+  return null;
+}
 
 function statusLabel(status: IamUserStatus) {
   return businessLabel(IAM_USER_STATUS_LABELS, status);
@@ -278,11 +329,17 @@ export function IamUserScreen({
   const [grantPermissionId, setGrantPermissionId] = useState("");
   const [grantReason, setGrantReason] = useState("");
   const [grantError, setGrantError] = useState("");
+  /** Lỗi gắn vào từng ô của dialog cấp quyền (banner `grantError` chỉ giữ lỗi server). */
+  const [grantFieldErrors, setGrantFieldErrors] = useState<{
+    permission?: string;
+    reason?: string;
+  }>({});
   const [revokingPermissionId, setRevokingPermissionId] = useState<
     string | null
   >(null);
   const [revokeReason, setRevokeReason] = useState("");
   const [revokeError, setRevokeError] = useState("");
+  const [revokeReasonError, setRevokeReasonError] = useState("");
   /** Khối "Quyền hiệu lực" trong Dialog chi tiết (thay MUI Accordion). */
   const [isEffectiveOpen, setIsEffectiveOpen] = useState(false);
 
@@ -366,12 +423,11 @@ export function IamUserScreen({
     ? roleFilteredUsers.slice((page - 1) * perPage, page * perPage)
     : users;
 
-  const rowSelection = useRowSelection(displayedUsers, (user) => user.user_id);
-
   const {
     sortedRows: sortedUsers,
     sortState,
     requestSort,
+    originalIndexOf,
   } = useClientSort(displayedUsers, {
     name: (user) => user.display_name,
     department: (user) => departmentLabel(user),
@@ -423,6 +479,7 @@ export function IamUserScreen({
     setGrantPermissionId("");
     setGrantReason("");
     setGrantError("");
+    setGrantFieldErrors({});
     setIsGrantModalOpen(true);
   };
 
@@ -431,16 +488,33 @@ export function IamUserScreen({
     setIsGrantModalOpen(false);
   };
 
+  /** Lý do cấp/thu hồi/cập nhật: bắt buộc, 5…2000 ký tự (khớp BE). */
+  const reasonError = (reason: string): string | null => {
+    const trimmed = reason.trim();
+    if (trimmed.length < REASON_MIN_LENGTH) return t("iam.user.errReason");
+    if (trimmed.length > REASON_MAX_LENGTH) {
+      return t("shared.validation.textMaxLength", { max: REASON_MAX_LENGTH });
+    }
+    return null;
+  };
+
   const submitGrantPermission = async () => {
     if (!viewingUser) return;
+    const errors: { permission?: string; reason?: string } = {};
     if (!grantPermissionId) {
-      setGrantError(t("iam.user.errPickPermission"));
+      errors.permission = t("iam.user.errPickPermission");
+    }
+    const grantReasonMessage = reasonError(grantReason);
+    if (grantReasonMessage) {
+      errors.reason = grantReasonMessage;
+    }
+    setGrantFieldErrors(errors);
+    if (errors.permission || errors.reason) {
+      // Giữ banner như trước để người dùng cũ vẫn thấy lỗi ở chỗ quen thuộc.
+      setGrantError(errors.permission ?? errors.reason ?? "");
       return;
     }
-    if (grantReason.trim().length < 5) {
-      setGrantError(t("iam.user.errReason"));
-      return;
-    }
+    setGrantError("");
     try {
       await grantPermission.mutateAsync({
         userId: viewingUser.user_id,
@@ -459,6 +533,7 @@ export function IamUserScreen({
     setRevokingPermissionId(permissionId);
     setRevokeReason("");
     setRevokeError("");
+    setRevokeReasonError("");
   };
 
   const closeRevokeConfirm = () => {
@@ -468,10 +543,13 @@ export function IamUserScreen({
 
   const submitRevokePermission = async () => {
     if (!viewingUser || !revokingPermissionId) return;
-    if (revokeReason.trim().length < 5) {
-      setRevokeError(t("iam.user.errReason"));
+    const revokeReasonMessage = reasonError(revokeReason);
+    if (revokeReasonMessage) {
+      setRevokeReasonError(revokeReasonMessage);
+      setRevokeError(revokeReasonMessage);
       return;
     }
+    setRevokeError("");
     try {
       await revokePermission.mutateAsync({
         userId: viewingUser.user_id,
@@ -580,29 +658,82 @@ export function IamUserScreen({
     const displayName = formState.displayName.trim();
     const username = formState.username.trim();
     const phone = formState.phone.trim();
+    const email = formState.email.trim();
     const password = formState.password;
 
     if (!displayName) {
       errors.displayName = t("iam.user.errDisplayName");
+    } else if (displayName.length > DISPLAY_NAME_MAX_LENGTH) {
+      errors.displayName = t("shared.validation.textMaxLength", {
+        max: DISPLAY_NAME_MAX_LENGTH,
+      });
     }
     if (!username) {
       errors.username = t("iam.user.errUsername");
+    } else if (username.length > USERNAME_MAX_LENGTH) {
+      errors.username = t("shared.validation.textMaxLength", {
+        max: USERNAME_MAX_LENGTH,
+      });
+    } else if (!USERNAME_REGEX.test(username)) {
+      // Cùng luật với ô đăng nhập — tạo được thì phải đăng nhập được.
+      errors.username = t("iam.user.errUsernameFormat");
     }
     if (!formState.roleId) {
       errors.roleId = t("iam.user.errRole");
     }
-    if (!editingUser && password.length < 8) {
-      const passwordTooShortMessage = t("iam.user.errPasswordShort");
-      errors.password = passwordTooShortMessage;
-    } else if (editingUser && password && password.length < 8) {
-      const passwordTooShortMessage = t("iam.user.errPasswordResetShort");
-      errors.password = passwordTooShortMessage;
+    // Tạo mới: bắt buộc. Sửa: chỉ kiểm khi có nhập (rỗng = giữ mật khẩu cũ).
+    if (!editingUser || password) {
+      const passwordKey = passwordRuleError(password, Boolean(editingUser));
+      if (passwordKey) {
+        errors.password = t(`iam.user.${passwordKey}`);
+      }
     }
-    if (phone && !/^0\d{9}$/.test(phone)) {
-      errors.phone = t("iam.user.errPhone");
+    if (phone) {
+      const phoneCheck = validatePhone(phone);
+      if (!phoneCheck.isValid) {
+        errors.phone = phoneCheck.errorMessage ?? t("iam.user.errPhone");
+      }
     }
-    if (formState.reason.trim().length < 5) {
+    if (email) {
+      const emailCheck = validateEmail(email);
+      if (!emailCheck.isValid) {
+        errors.email =
+          emailCheck.errorMessage ?? t("shared.validation.emailGmailOnly");
+      }
+    }
+    // Cửa sổ hiệu lực: từng mốc nằm trong cửa sổ chung, và "từ" ≤ "đến"
+    // (BE: effective_to after_or_equal:effective_from).
+    const fromCheck = checkDate(
+      formState.effectiveFrom || null,
+      EFFECTIVE_DATE_BOUNDS,
+    );
+    if (!fromCheck.ok) {
+      errors.effectiveFrom = fromCheck.message;
+    }
+    const toCheck = checkDate(
+      formState.effectiveTo || null,
+      EFFECTIVE_DATE_BOUNDS,
+    );
+    if (!toCheck.ok) {
+      errors.effectiveTo = toCheck.message;
+    }
+    if (fromCheck.ok && toCheck.ok) {
+      const rangeCheck = checkDateRange(
+        fromCheck.value,
+        toCheck.value,
+        EFFECTIVE_DATE_BOUNDS,
+      );
+      if (!rangeCheck.ok) {
+        errors.effectiveTo = rangeCheck.message;
+      }
+    }
+    const reasonTrimmed = formState.reason.trim();
+    if (reasonTrimmed.length < REASON_MIN_LENGTH) {
       errors.reason = t("iam.user.errUpdateReason");
+    } else if (reasonTrimmed.length > REASON_MAX_LENGTH) {
+      errors.reason = t("shared.validation.textMaxLength", {
+        max: REASON_MAX_LENGTH,
+      });
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -826,14 +957,6 @@ export function IamUserScreen({
         <table>
           <thead>
             <tr>
-              <th className="select-col">
-                <MvpSelectionCheckbox
-                  checked={rowSelection.isAllSelected}
-                  indeterminate={rowSelection.isIndeterminate}
-                  onChange={rowSelection.toggleAll}
-                  ariaLabel={t("iam.user.selectAllAria")}
-                />
-              </th>
               <th className="stt-col">STT</th>
               <SortableTh
                 label={t("iam.user.colUser")}
@@ -879,33 +1002,25 @@ export function IamUserScreen({
           <tbody>
             {usersQuery.isLoading ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={8}>
                   <span className="muted">{t("iam.user.loadingData")}</span>
                 </td>
               </tr>
             ) : sortedUsers.length > 0 ? (
-              sortedUsers.map((user, index) => {
+              sortedUsers.map((user) => {
                 const primaryRole = user.roles?.[0];
                 return (
                   <tr key={user.user_id}>
-                    <td className="select-col">
-                      <MvpSelectionCheckbox
-                        checked={rowSelection.isSelected(user.user_id)}
-                        onChange={(checked) =>
-                          rowSelection.toggleOne(user.user_id, checked)
-                        }
-                        ariaLabel={t("iam.user.selectRowAria", {
-                          name: user.display_name,
-                        })}
-                      />
-                    </td>
                     <td className="stt-col">
-                      {mvpRowNumber(page, perPage, index)}
+                      {mvpRowNumber(page, perPage, originalIndexOf(user))}
                     </td>
-                    <td>
-                      {user.display_name}
-                      <br />
-                      <span className="muted">{user.username}</span>
+                    <td style={{ maxWidth: 260 }}>
+                      <TruncatedText lines={1} maxWidth={240}>
+                        {user.display_name}
+                      </TruncatedText>
+                      <TruncatedText lines={1} maxWidth={240} className="muted">
+                        {user.username}
+                      </TruncatedText>
                     </td>
                     <td>{departmentLabel(user)}</td>
                     <td>
@@ -941,7 +1056,7 @@ export function IamUserScreen({
               })
             ) : (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={8}>
                   <span className="muted">{t("iam.user.empty")}</span>
                 </td>
               </tr>
@@ -1033,6 +1148,9 @@ export function IamUserScreen({
                     disabled={isSaving}
                     error={Boolean(fieldErrors.displayName)}
                     helperText={fieldErrors.displayName}
+                    slotProps={{
+                      htmlInput: { maxLength: DISPLAY_NAME_MAX_LENGTH },
+                    }}
                   />
                   <UiTextField
                     id="iam-username"
@@ -1047,6 +1165,9 @@ export function IamUserScreen({
                     disabled={isSaving}
                     error={Boolean(fieldErrors.username)}
                     helperText={fieldErrors.username}
+                    slotProps={{
+                      htmlInput: { maxLength: USERNAME_MAX_LENGTH },
+                    }}
                   />
                   <UiTextField
                     id="iam-phone"
@@ -1079,45 +1200,44 @@ export function IamUserScreen({
                     disabled={isSaving}
                     error={Boolean(fieldErrors.email)}
                     helperText={fieldErrors.email}
+                    slotProps={{ htmlInput: { maxLength: EMAIL_MAX_LENGTH } }}
                   />
-                  <UiTextField
-                    id="iam-department"
-                    select
+                  <UiAutocomplete
+                    data-testid="iam-department"
                     label={t("iam.user.colDepartment")}
-                    fullWidth
-                    value={formState.departmentId}
-                    onChange={(event) =>
-                      updateField("departmentId", event.target.value)
+                    value={formState.departmentId || null}
+                    onChange={(next) =>
+                      updateField(
+                        "departmentId",
+                        next == null ? "" : String(next),
+                      )
                     }
                     disabled={isSaving || departmentsQuery.isLoading}
-                    slotProps={{
-                      select: { displayEmpty: true },
-                      inputLabel: { shrink: true },
-                    }}
-                  >
-                    <MenuItem value="">{t("iam.user.noDepartment")}</MenuItem>
-                    {/* Giữ được lựa chọn hiện tại khi phòng ban đã INACTIVE
-                          (danh mục dropdown chỉ nạp phòng ban ACTIVE). */}
-                    {formState.departmentId &&
-                    !departments.some(
-                      (department) =>
-                        department.department_id === formState.departmentId,
-                    ) ? (
-                      <MenuItem value={formState.departmentId}>
-                        {departmentNames.get(formState.departmentId) ??
-                          (editingUser?.department?.department_name ||
-                            formState.departmentId)}
-                      </MenuItem>
-                    ) : null}
-                    {departments.map((department) => (
-                      <MenuItem
-                        key={department.department_id}
-                        value={department.department_id}
-                      >
-                        {department.department_name}
-                      </MenuItem>
-                    ))}
-                  </UiTextField>
+                    placeholder={t("iam.user.noDepartment")}
+                    options={[
+                      // Giữ được lựa chọn hiện tại khi phòng ban đã INACTIVE
+                      // (danh mục dropdown chỉ nạp phòng ban ACTIVE).
+                      ...(formState.departmentId &&
+                      !departments.some(
+                        (department) =>
+                          department.department_id === formState.departmentId,
+                      )
+                        ? [
+                            {
+                              value: formState.departmentId,
+                              label:
+                                departmentNames.get(formState.departmentId) ??
+                                (editingUser?.department?.department_name ||
+                                  formState.departmentId),
+                            },
+                          ]
+                        : []),
+                      ...departments.map((department) => ({
+                        value: department.department_id,
+                        label: department.department_name,
+                      })),
+                    ]}
+                  />
                   <UiTextField
                     id="iam-status"
                     select
@@ -1153,100 +1273,78 @@ export function IamUserScreen({
                 <SectionTitle>{t("iam.user.sectionPermissions")}</SectionTitle>
                 <Stack spacing={2}>
                   <div>
-                    <UiTextField
-                      id="iam-role"
-                      select
+                    <UiAutocomplete
+                      data-testid="iam-role"
                       label={t("iam.user.colRole")}
                       required
-                      fullWidth
-                      value={formState.roleId}
-                      onChange={(event) =>
-                        updateField("roleId", event.target.value)
+                      value={formState.roleId || null}
+                      onChange={(next) =>
+                        updateField("roleId", next == null ? "" : String(next))
                       }
                       disabled={isSaving || roles.length === 0 || isEditingSelf}
                       error={Boolean(fieldErrors.roleId)}
                       helperText={fieldErrors.roleId}
-                    >
-                      <MenuItem value="">{t("iam.user.pickRole")}</MenuItem>
-                      {roles.map((role) => (
-                        <MenuItem key={role.role_id} value={role.role_id}>
-                          {role.role_name}
-                        </MenuItem>
-                      ))}
-                    </UiTextField>
+                      placeholder={t("iam.user.pickRole")}
+                      options={roles.map((role) => ({
+                        value: role.role_id,
+                        label: role.role_name,
+                      }))}
+                    />
                     {isEditingSelf ? (
                       <FieldHint>{t("iam.user.noSelfRoleChange")}</FieldHint>
                     ) : null}
                   </div>
                   <div>
-                    <UiTextField
-                      id="iam-extra-roles"
-                      select
+                    <UiAutocomplete
+                      data-testid="iam-extra-roles"
+                      multiple
                       label={t("iam.user.fieldExtraRoles")}
-                      fullWidth
                       value={formState.additionalRoleIds}
-                      onChange={(event) =>
-                        updateField(
-                          "additionalRoleIds",
-                          (Array.isArray(event.target.value)
-                            ? event.target.value
-                            : [event.target.value]) as string[],
-                        )
+                      onChange={(next) =>
+                        updateField("additionalRoleIds", next.map(String))
                       }
                       disabled={isSaving || roles.length === 0 || isEditingSelf}
-                      slotProps={{
-                        select: {
-                          multiple: true,
-                          displayEmpty: true,
-                          renderValue: (selected) => {
-                            const ids = selected as string[];
-                            if (ids.length === 0)
-                              return t("iam.user.noExtraRoles");
-                            return roles
-                              .filter((role) => ids.includes(role.role_id))
-                              .map((role) => role.role_name)
-                              .join(", ");
-                          },
-                        },
-                        inputLabel: { shrink: true },
-                      }}
-                    >
-                      {roles
+                      placeholder={
+                        formState.additionalRoleIds.length === 0
+                          ? t("iam.user.noExtraRoles")
+                          : undefined
+                      }
+                      options={roles
                         .filter((role) => role.role_id !== formState.roleId)
-                        .map((role) => (
-                          <MenuItem key={role.role_id} value={role.role_id}>
-                            {role.role_name}
-                          </MenuItem>
-                        ))}
-                    </UiTextField>
+                        .map((role) => ({
+                          value: role.role_id,
+                          label: role.role_name,
+                        }))}
+                    />
                     <FieldHint>{t("iam.user.extraRolesHint")}</FieldHint>
                   </div>
                   <div>
-                    <UiTextField
-                      id="iam-scope"
-                      select
+                    {/*
+                      Không đánh dấu bắt buộc: scopeRef rỗng = "Toàn hệ thống"
+                      là lựa chọn hợp lệ (BE roles.*.scope_ref nullable), nên
+                      dấu * chỉ khiến người dùng tưởng phải chọn một kho.
+                    */}
+                    <UiAutocomplete
+                      data-testid="iam-scope"
                       label={t("iam.user.fieldDataScope")}
-                      required
-                      fullWidth
                       value={formState.scopeRef}
-                      onChange={(event) =>
-                        updateField("scopeRef", event.target.value)
+                      onChange={(next) =>
+                        updateField(
+                          "scopeRef",
+                          next == null ? "" : String(next),
+                        )
                       }
                       disabled={isSaving || isEditingSelf}
-                      slotProps={{
-                        select: { displayEmpty: true },
-                        inputLabel: { shrink: true },
-                      }}
-                    >
-                      <MenuItem value="">
-                        {t("iam.user.scopeAllSystem")}
-                      </MenuItem>
-                      {warehouses.map((warehouse) => (
-                        <MenuItem key={warehouse.id} value={warehouse.id}>
-                          {warehouse.label}
-                        </MenuItem>
-                      ))}
-                    </UiTextField>
+                      options={[
+                        // "Toàn hệ thống" là lựa chọn THẬT (scopeRef rỗng),
+                        // không phải placeholder — phải chọn lại được.
+                        { value: "", label: t("iam.user.scopeAllSystem") },
+                        ...warehouses.map((warehouse) => ({
+                          value: warehouse.id,
+                          label: warehouse.label,
+                        })),
+                      ]}
+                    />
                     <FieldHint>
                       {t("iam.user.scopeHint", {
                         scope: scopeTypeLabel(selectedRole?.scope_type),
@@ -1263,8 +1361,14 @@ export function IamUserScreen({
                       updateField("effectiveFrom", event.target.value)
                     }
                     disabled={isSaving || isEditingSelf}
-                    helperText={t("iam.user.dateHelper")}
-                    slotProps={{ inputLabel: { shrink: true } }}
+                    error={Boolean(fieldErrors.effectiveFrom)}
+                    helperText={
+                      fieldErrors.effectiveFrom ?? t("iam.user.dateHelper")
+                    }
+                    slotProps={{
+                      htmlInput: { ...EFFECTIVE_DATE_INPUT },
+                      inputLabel: { shrink: true },
+                    }}
                   />
                   <UiTextField
                     id="iam-effective-to"
@@ -1276,10 +1380,19 @@ export function IamUserScreen({
                       updateField("effectiveTo", event.target.value)
                     }
                     disabled={isSaving || isEditingSelf}
-                    helperText={t("iam.user.dateHelper")}
+                    error={Boolean(fieldErrors.effectiveTo)}
+                    helperText={
+                      fieldErrors.effectiveTo ?? t("iam.user.dateHelper")
+                    }
                     slotProps={{
                       htmlInput: {
-                        min: formState.effectiveFrom || undefined,
+                        ...EFFECTIVE_DATE_INPUT,
+                        // Lịch "đến" không cho chọn trước "từ" (nếu "từ" hợp lệ).
+                        min:
+                          formState.effectiveFrom &&
+                          formState.effectiveFrom > EFFECTIVE_DATE_INPUT.min
+                            ? formState.effectiveFrom
+                            : EFFECTIVE_DATE_INPUT.min,
                       },
                       inputLabel: { shrink: true },
                     }}
@@ -1306,7 +1419,12 @@ export function IamUserScreen({
                     }
                     disabled={isSaving}
                     error={Boolean(fieldErrors.password)}
-                    helperText={fieldErrors.password}
+                    helperText={
+                      fieldErrors.password ?? t("iam.user.passwordRuleHint")
+                    }
+                    slotProps={{
+                      htmlInput: { maxLength: PASSWORD_MAX_LENGTH },
+                    }}
                   />
                   <UiTextField
                     id="iam-reason"
@@ -1325,6 +1443,7 @@ export function IamUserScreen({
                     helperText={
                       fieldErrors.reason ?? t("iam.user.updateReasonHint")
                     }
+                    slotProps={{ htmlInput: { maxLength: REASON_MAX_LENGTH } }}
                   />
                   {editingUser ? (
                     <Box>
@@ -1647,23 +1766,28 @@ export function IamUserScreen({
       >
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           {grantError ? <UiAlert tone="error">{grantError}</UiAlert> : null}
-          <UiTextField
-            select
+          <UiAutocomplete
             label={t("iam.user.fieldPermission")}
-            fullWidth
-            value={grantPermissionId}
-            onChange={(event) => setGrantPermissionId(event.target.value)}
-          >
-            <MenuItem value="">{t("iam.user.pickPermission")}</MenuItem>
-            {grantablePermissions.map((permission) => (
-              <MenuItem
-                key={permission.permission_id}
-                value={permission.permission_id}
-              >
-                {permission.permission_name} ({permission.permission_key})
-              </MenuItem>
-            ))}
-          </UiTextField>
+            value={grantPermissionId || null}
+            onChange={(next) => {
+              setGrantPermissionId(next == null ? "" : String(next));
+              setGrantFieldErrors((current) => ({
+                ...current,
+                permission: undefined,
+              }));
+            }}
+            error={Boolean(grantFieldErrors.permission)}
+            helperText={grantFieldErrors.permission}
+            placeholder={t("iam.user.pickPermission")}
+            options={grantablePermissions.map((permission) => ({
+              value: permission.permission_id,
+              label:
+                permission.permission_name +
+                " (" +
+                permission.permission_key +
+                ")",
+            }))}
+          />
           <UiTextField
             label={t("iam.user.fieldReason")}
             required
@@ -1671,8 +1795,17 @@ export function IamUserScreen({
             minRows={2}
             fullWidth
             value={grantReason}
-            onChange={(event) => setGrantReason(event.target.value)}
+            onChange={(event) => {
+              setGrantReason(event.target.value);
+              setGrantFieldErrors((current) => ({
+                ...current,
+                reason: undefined,
+              }));
+            }}
             placeholder={t("iam.user.grantReasonPlaceholder")}
+            error={Boolean(grantFieldErrors.reason)}
+            helperText={grantFieldErrors.reason}
+            slotProps={{ htmlInput: { maxLength: REASON_MAX_LENGTH } }}
           />
         </Stack>
       </UiDialog>
@@ -1710,8 +1843,14 @@ export function IamUserScreen({
             minRows={2}
             fullWidth
             value={revokeReason}
-            onChange={(event) => setRevokeReason(event.target.value)}
+            onChange={(event) => {
+              setRevokeReason(event.target.value);
+              setRevokeReasonError("");
+            }}
             placeholder={t("iam.user.revokeReasonPlaceholder")}
+            error={Boolean(revokeReasonError)}
+            helperText={revokeReasonError || undefined}
+            slotProps={{ htmlInput: { maxLength: REASON_MAX_LENGTH } }}
           />
         </Stack>
       </UiDialog>

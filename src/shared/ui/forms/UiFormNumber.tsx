@@ -18,6 +18,10 @@ import {
 } from "react-hook-form";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
+import {
+  numberInputMode,
+  sanitizeNumberTyping,
+} from "@/shared/validation/number-rules";
 
 export interface UiFormNumberProps<T extends FieldValues> {
   control: Control<T>;
@@ -33,6 +37,8 @@ export interface UiFormNumberProps<T extends FieldValues> {
   fullWidth?: boolean;
   min?: number;
   max?: number;
+  /** Chỉ nhận số nguyên: lọc dấu thập phân ngay khi gõ. */
+  integer?: boolean;
   /** Hậu tố hiển thị ở endAdornment, vd "₫", "kg". */
   suffix?: ReactNode;
   "data-testid"?: string;
@@ -72,9 +78,13 @@ function UiFormNumberInner<T extends FieldValues>({
   fullWidth = true,
   min,
   max,
+  integer = false,
   suffix,
   "data-testid": dataTestId,
 }: NumberInnerProps<T>) {
+  // Lọc ký tự theo cùng luật với checkNumber(): không "e"/"+", không âm khi
+  // sàn ≥ 0, không thập phân khi nguyên, không dài quá trần.
+  const typingRule = { min, max, integer };
   const formValue = (field.value as number | null | undefined) ?? null;
   const [text, setText] = useState<string>(
     formValue == null ? "" : String(formValue),
@@ -97,7 +107,8 @@ function UiFormNumberInner<T extends FieldValues>({
     return next;
   };
 
-  const handleChange = (raw: string) => {
+  const handleChange = (rawInput: string) => {
+    const raw = sanitizeNumberTyping(rawInput, typingRule);
     setText(raw);
     const parsed = parseNumberText(raw);
     // Chỉ đẩy vào form khi parse được (null = xoá); gõ dở thì giữ form value cũ.
@@ -143,7 +154,7 @@ function UiFormNumberInner<T extends FieldValues>({
           ) : undefined,
         },
         htmlInput: {
-          inputMode: "decimal",
+          inputMode: numberInputMode(typingRule),
           ...(dataTestId ? { "data-testid": dataTestId } : {}),
         },
       }}

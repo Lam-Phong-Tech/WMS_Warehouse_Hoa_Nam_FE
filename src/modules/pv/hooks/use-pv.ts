@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tStatic } from "@/shared/i18n/useT";
 import {
+  findPvProductByCode,
   getPvIndustries,
   getPvProduct,
   getPvProducts,
@@ -34,6 +35,8 @@ export const pvKeys = {
   products: (query: PvProductQuery) =>
     [...pvKeys.all, "products", query] as const,
   product: (skuId: string) => [...pvKeys.all, "product", skuId] as const,
+  productByCode: (skuCode: string) =>
+    [...pvKeys.all, "product-by-code", skuCode] as const,
   industries: () => [...pvKeys.all, "industries"] as const,
   recommendations: (industryId: string) =>
     [...pvKeys.all, "recommendations", industryId] as const,
@@ -60,7 +63,6 @@ export function usePvProducts(query: PvProductQuery) {
     retry: shouldRetryPublic,
     // NFR-SRS-016: read model tồn kho có max staleness <= 60s. Giữ staleTime
     // dưới ngưỡng đó để cache của client không tự tạo ra dữ liệu quá hạn.
-    staleTime: 30_000,
   });
 }
 
@@ -70,7 +72,21 @@ export function usePvProduct(skuId: string | undefined) {
     queryFn: () => getPvProduct(skuId as string),
     enabled: Boolean(skuId),
     retry: shouldRetryPublic,
-    staleTime: 30_000,
+  });
+}
+
+/**
+ * Tra sku_id từ MÃ SKU để deep-link "xem sản phẩm" đi được từ mọi màn hình
+ * nghiệp vụ (nơi thường chỉ có mã, không có UUID). `null` = không có SKU nào
+ * publish khớp đúng mã đó — trang chi tiết hiển thị "không tìm thấy" y như khi
+ * BE mask 404, KHÔNG được nói "sản phẩm tồn tại nhưng chưa publish" (§13.8).
+ */
+export function usePvProductByCode(skuCode: string | undefined) {
+  return useQuery({
+    queryKey: pvKeys.productByCode(skuCode ?? ""),
+    queryFn: () => findPvProductByCode(skuCode as string),
+    enabled: Boolean(skuCode),
+    retry: shouldRetryPublic,
   });
 }
 
@@ -79,6 +95,8 @@ export function usePvIndustries() {
     queryKey: pvKeys.industries(),
     queryFn: getPvIndustries,
     retry: shouldRetryPublic,
+    // GHI ĐÈ CÓ CHỦ Ý so với nhóm `pv` (30s): danh mục ngành hàng là dữ liệu tra
+    // cứu tĩnh, không dính tồn kho nên không chịu ràng buộc NFR-SRS-016.
     staleTime: 5 * 60_000,
   });
 }
@@ -89,7 +107,6 @@ export function usePvRecommendations(industryId: string | undefined) {
     queryFn: () => getPvRecommendations(industryId as string),
     enabled: Boolean(industryId),
     retry: shouldRetryPublic,
-    staleTime: 60_000,
   });
 }
 

@@ -38,6 +38,7 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { UiSelect, UiVuexyDateField, VuexyDemoIcon } from "@/shared/ui";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { getApiErrorMessage } from "@/shared/api/api-error";
@@ -1231,7 +1232,9 @@ export default function StockReconcileReport() {
                         <tr key={item.code}>
                           <td className="stt-col">{index + 1}</td>
                           <td>
-                            <span className="sku">{item.code}</span>
+                            <span className="sku">
+                              <SkuLink code={item.code} />
+                            </span>
                             <div className="truncate" title={item.name}>
                               {item.name === "" ? EMPTY_TEXT : item.name}
                             </div>
@@ -1486,7 +1489,9 @@ export default function StockReconcileReport() {
                         <tr key={row.drillKey}>
                           <td className="stt-col">{index + 1}</td>
                           <td>
-                            <span className="sku">{row.sku_code}</span>
+                            <span className="sku">
+                              <SkuLink code={row.sku_code} />
+                            </span>
                             <div className="truncate" title={row.sku_name}>
                               {row.sku_name === "" ? EMPTY_TEXT : row.sku_name}{" "}
                               ·{" "}

@@ -969,6 +969,8 @@ export function IamRolePermissionScreen() {
             placeholder={t("iam.role.reasonPlaceholder")}
             error={Boolean(permissionReasonError)}
             helperText={permissionReasonError || undefined}
+            // BE AssignRolePermissionRequest: reason max:2000.
+            slotProps={{ htmlInput: { maxLength: 2000 } }}
           />
         </Stack>
       </UiDialog>

@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import {
@@ -99,6 +105,27 @@ export function useComponentIssueDetail(id: string | null | undefined) {
 }
 
 /**
+ * Chi tiết NHIỀU phiếu xuất linh kiện cùng lúc — dùng cho nhãn trả máy, nơi
+ * phải liệt kê linh kiện đã thay của cả hồ sơ.
+ *
+ * Bắt buộc gọi từng phiếu: `/warranty-component-issues` (danh sách) trả dòng
+ * thô của bảng `component_issue_documents`, KHÔNG kèm `lines`; chỉ
+ * `/warranty-component-issues/{id}` mới có SKU và số lượng. Một hồ sơ thực tế
+ * chỉ có vài phiếu nên đây là vài request chứ không phải N+1 mất kiểm soát, và
+ * `useQueries` dùng CHUNG queryKey với `useComponentIssueDetail` nên phiếu nào
+ * đã mở trong modal chi tiết thì lấy thẳng từ cache.
+ */
+export function useComponentIssueDetails(ids: string[], enabled = true) {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: warrantyKeys.componentIssueDetail(id),
+      queryFn: () => fetchComponentIssueDocument(id),
+      enabled,
+    })),
+  });
+}
+
+/**
  * `onError` khai NGAY TẠI ĐÂY khi có `errorFallback` (không để trống cho
  * global `MutationCache` safety net trong query-client.ts lo) — mutation nào
  * không tự khai onError thì lưới an toàn toàn cục sẽ tự bắn thêm một toast
@@ -123,8 +150,13 @@ function useInvalidateWarrantyMutation<TVariables, TResult>(
 ) {
   const queryClient = useQueryClient();
   const t = useT();
+  // Xuất linh kiện bảo hành trừ tồn kho thật -> phải làm mới cả tồn/dashboard/
+  // báo cáo, không chỉ cache của module bảo hành.
   const reload = () =>
-    queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: warrantyKeys.all }),
+      invalidateStockDerived(queryClient),
+    ]);
   return useMutation({
     mutationFn,
     onSuccess: reload,

@@ -4,8 +4,10 @@ import {
   Grid,
   MenuItem,
   Stack,
+  UiAutocomplete,
   UiDescriptions,
   UiDialog,
+  UiNumberField,
   UiSelect,
   UiStatusBadge,
   UiTabs,
@@ -14,6 +16,7 @@ import {
   UiTextField,
 } from "@/shared/ui";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   ProfileOutlined,
@@ -27,7 +30,6 @@ import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { PvErrorState } from "@/modules/pv/components/PvErrorState";
 import { PvSwitch } from "@/modules/pv/components/PvSwitch";
 import {
@@ -45,6 +47,7 @@ import type {
   PvAdminProfile,
   PvAdminRule,
   PvAdminSimpleMaster,
+  PvAdminSimpleMasterPayload,
 } from "@/modules/pv/types/pv.types";
 import {
   getMutationErrorMessage,
@@ -54,6 +57,7 @@ import {
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { shortId } from "@/shared/utils/shortId";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import {
   WMS_PERMISSION_CATALOG as P,
   hasAnyWmsPermission,
@@ -91,8 +95,17 @@ interface MasterFormValues {
   code: string;
   name: string;
   status: "ACTIVE" | "INACTIVE";
-  sort_order: number;
+  // Giữ CHUỖI đang gõ để "1e5"/"-1" bị báo lỗi thay vì bị `Number() || 0`
+  // ép về 0 âm thầm; parse bằng checkNumber lúc submit.
+  sort_order: string;
 }
+
+/** Định dạng UUID 8-4-4-4-12 — cùng regex với BE `looksLikeUuid` (không xét version). */
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Trần mô tả hồ sơ — BE không chặn nên FE tự đặt theo mức chung của dự án. */
+const PROFILE_DESCRIPTION_MAX = 2000;
 
 function masterStatusLabel(status: string, t: TranslateFn) {
   return businessLabel(MASTER_STATUS_LABELS, status, t("pv.admin.statusOther"));
@@ -132,9 +145,14 @@ function TabLabel({
  * thuộc field ngoài danh sách sẽ rơi về toast tổng — xem `resolveFormErrors`.
  * Tên field giữ nguyên dạng của BE vì form này đặt state theo đúng payload.
  */
-const MASTER_FORM_FIELDS = ["code", "name"] as const;
+const MASTER_FORM_FIELDS = ["code", "name", "sort_order"] as const;
 
-const RULE_FORM_FIELDS = ["industry_id", "priority"] as const;
+const RULE_FORM_FIELDS = [
+  "industry_id",
+  "sku_id",
+  "tag_id",
+  "priority",
+] as const;
 
 function SimpleMasterTab({
   title,
@@ -160,7 +178,7 @@ function SimpleMasterTab({
   onSave: (input: {
     id?: string;
     version?: number;
-    payload: MasterFormValues;
+    payload: PvAdminSimpleMasterPayload;
   }) => Promise<unknown>;
   testId: string;
 }) {
@@ -172,7 +190,7 @@ function SimpleMasterTab({
     code: "",
     name: "",
     status: "ACTIVE",
-    sort_order: 0,
+    sort_order: "0",
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -183,7 +201,7 @@ function SimpleMasterTab({
       code: row?.code ?? "",
       name: row?.name ?? "",
       status: row?.status ?? "ACTIVE",
-      sort_order: row?.sort_order ?? 0,
+      sort_order: String(row?.sort_order ?? 0),
     });
     setFieldErrors({});
     setIsOpen(true);
@@ -193,7 +211,12 @@ function SimpleMasterTab({
     const errors: Record<string, string> = {};
     if (!formValues.code.trim()) errors.code = t("pv.admin.errCode");
     if (!formValues.name.trim()) errors.name = t("pv.admin.errName");
-    if (Object.keys(errors).length > 0) {
+    const sortOrderCheck = checkNumber(
+      formValues.sort_order,
+      NUMBER_RULES.sortOrder,
+    );
+    if (!sortOrderCheck.ok) errors.sort_order = sortOrderCheck.message;
+    if (Object.keys(errors).length > 0 || !sortOrderCheck.ok) {
       setFieldErrors(errors);
       return;
     }
@@ -202,7 +225,13 @@ function SimpleMasterTab({
       await onSave({
         id: editing?.id,
         version: editing?.version,
-        payload: formValues,
+        payload: {
+          code: formValues.code.trim(),
+          name: formValues.name.trim(),
+          status: formValues.status,
+          // Để trống = 0 như hành vi cũ (`Number("") || 0`).
+          sort_order: sortOrderCheck.value ?? 0,
+        },
       });
       toast.success(
         editing
@@ -233,7 +262,6 @@ function SimpleMasterTab({
         row.name.toLowerCase().includes(query),
     );
   }, [rows, search]);
-  const rowSelection = useRowSelection(filteredRows, (row) => row.id);
 
   if (isPending)
     return (
@@ -244,6 +272,14 @@ function SimpleMasterTab({
   // Part 5: DataTable (antd adapter, freeze) → ResponsiveDataTable — comparator
   // giữ nguyên ngữ nghĩa (localeCompare "vi" / numeric qua sortAccessor).
   const columns: ResponsiveTableColumn<PvAdminSimpleMaster>[] = [
+    {
+      key: "stt",
+      header: "STT",
+      align: "center",
+      width: 56,
+      hideOnMobile: true,
+      render: (row) => filteredRows.indexOf(row) + 1,
+    },
     {
       key: "code",
       header: t("pv.admin.colCode"),
@@ -307,10 +343,6 @@ function SimpleMasterTab({
         rows={filteredRows}
         rowKey={(row) => row.id}
         columns={columns}
-        rowSelection={rowSelection}
-        selectionLabel={(row) =>
-          t("pv.admin.masterSelect", { title, code: row.code })
-        }
         loading={isFetching}
         emptyText={
           search.trim()
@@ -407,18 +439,19 @@ function SimpleMasterTab({
               {t("pv.common.statusInactive")}
             </MenuItem>
           </UiTextField>
-          <UiTextField
+          <UiNumberField
             fullWidth
-            type="number"
             label={t("pv.admin.sortOrderDisplay")}
             value={formValues.sort_order}
-            onChange={(event) =>
-              setFormValues((current) => ({
-                ...current,
-                sort_order: Number(event.target.value) || 0,
-              }))
-            }
-            slotProps={{ htmlInput: { min: 0 } }}
+            rule={NUMBER_RULES.sortOrder}
+            onChange={(next) => {
+              setFormValues((current) => ({ ...current, sort_order: next }));
+              setFieldErrors((current) =>
+                current.sort_order ? { ...current, sort_order: "" } : current,
+              );
+            }}
+            error={Boolean(fieldErrors.sort_order)}
+            helperText={fieldErrors.sort_order}
           />
         </Stack>
       </UiDialog>
@@ -482,17 +515,20 @@ export default function PvAdminPage() {
   const [profileForm, setProfileForm] = useState<{
     display_name: string;
     description: string;
-    sort_order: number;
+    // Chuỗi đang gõ — parse bằng checkNumber lúc submit (xem MasterFormValues).
+    sort_order: string;
     industry_ids: string[];
     tag_ids: string[];
   }>({
     display_name: "",
     description: "",
-    sort_order: 0,
+    sort_order: "0",
     industry_ids: [],
     tag_ids: [],
   });
-  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>(
+    {},
+  );
   const [savingProfile, setSavingProfile] = useState(false);
 
   function openProfileForm(row: PvAdminProfile) {
@@ -500,17 +536,32 @@ export default function PvAdminPage() {
     setProfileForm({
       display_name: row.display_name,
       description: row.description ?? "",
-      sort_order: row.sort_order,
+      sort_order: String(row.sort_order ?? 0),
       industry_ids: row.industry_ids,
       tag_ids: row.tag_ids,
     });
-    setDisplayNameError(null);
+    setProfileErrors({});
   }
 
   async function submitProfile() {
     if (!profileEditing) return;
-    if (!profileForm.display_name.trim()) {
-      setDisplayNameError(t("pv.admin.errDisplayName"));
+    const errors: Record<string, string> = {};
+    const displayName = profileForm.display_name.trim();
+    const description = profileForm.description.trim();
+    if (!displayName) errors.display_name = t("pv.admin.errDisplayName");
+    else if (displayName.length > 255)
+      errors.display_name = t("shared.validation.textMaxLength", { max: 255 });
+    if (description.length > PROFILE_DESCRIPTION_MAX)
+      errors.description = t("shared.validation.textMaxLength", {
+        max: PROFILE_DESCRIPTION_MAX,
+      });
+    const sortOrderCheck = checkNumber(
+      profileForm.sort_order,
+      NUMBER_RULES.sortOrder,
+    );
+    if (!sortOrderCheck.ok) errors.sort_order = sortOrderCheck.message;
+    if (Object.keys(errors).length > 0 || !sortOrderCheck.ok) {
+      setProfileErrors(errors);
       return;
     }
     setSavingProfile(true);
@@ -519,9 +570,9 @@ export default function PvAdminPage() {
         id: profileEditing.id,
         version: profileEditing.version,
         payload: {
-          display_name: profileForm.display_name,
-          description: profileForm.description || null,
-          sort_order: profileForm.sort_order,
+          display_name: displayName,
+          description: description || null,
+          sort_order: sortOrderCheck.value ?? 0,
           industry_ids: profileForm.industry_ids,
           tag_ids: profileForm.tag_ids,
         },
@@ -586,18 +637,24 @@ export default function PvAdminPage() {
     profileIndustryFilter,
     profilePublishedFilter,
   ]);
-  const profileRowSelection = useRowSelection(
-    filteredProfiles,
-    (row) => row.id,
-  );
 
   // Part 5: DataTable (antd adapter, freeze) → ResponsiveDataTable.
   const profileColumns: ResponsiveTableColumn<PvAdminProfile>[] = [
     {
+      key: "stt",
+      header: "STT",
+      align: "center",
+      width: 56,
+      hideOnMobile: true,
+      render: (row) => filteredProfiles.indexOf(row) + 1,
+    },
+    {
       key: "sku_code",
       header: t("pv.admin.skuCode"),
       sortAccessor: (row) => row.sku_code,
-      render: (row) => row.sku_code,
+      // Bấm mã để xem đúng trang mà khách sẽ thấy — cách nhanh nhất để soát
+      // một hồ sơ vừa sửa trước khi bật công tắc publish.
+      render: (row) => <SkuLink id={row.sku_id} code={row.sku_code} />,
     },
     {
       key: "display_name",
@@ -785,10 +842,6 @@ export default function PvAdminPage() {
                 rows={filteredProfiles}
                 rowKey={(row) => row.id}
                 columns={profileColumns}
-                rowSelection={profileRowSelection}
-                selectionLabel={(row) =>
-                  t("pv.admin.profileSelect", { code: row.sku_code })
-                }
                 loading={profiles.isFetching}
                 emptyText={
                   isProfileFilterActive
@@ -1003,26 +1056,31 @@ export default function PvAdminPage() {
                   ...current,
                   display_name: value,
                 }));
-                if (displayNameError) setDisplayNameError(null);
+                setProfileErrors((current) =>
+                  current.display_name
+                    ? { ...current, display_name: "" }
+                    : current,
+                );
               }}
-              error={Boolean(displayNameError)}
-              helperText={displayNameError}
+              error={Boolean(profileErrors.display_name)}
+              helperText={profileErrors.display_name}
               slotProps={{ htmlInput: { maxLength: 255 } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <UiTextField
+            <UiNumberField
               fullWidth
-              type="number"
               label={t("pv.admin.sortOrderDisplay")}
               value={profileForm.sort_order}
-              onChange={(event) =>
-                setProfileForm((current) => ({
-                  ...current,
-                  sort_order: Number(event.target.value) || 0,
-                }))
-              }
-              slotProps={{ htmlInput: { min: 0 } }}
+              rule={NUMBER_RULES.sortOrder}
+              onChange={(next) => {
+                setProfileForm((current) => ({ ...current, sort_order: next }));
+                setProfileErrors((current) =>
+                  current.sort_order ? { ...current, sort_order: "" } : current,
+                );
+              }}
+              error={Boolean(profileErrors.sort_order)}
+              helperText={profileErrors.sort_order}
             />
           </Grid>
           <Grid size={12}>
@@ -1032,73 +1090,58 @@ export default function PvAdminPage() {
               minRows={3}
               label={t("pv.admin.description")}
               value={profileForm.description}
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.target.value;
                 setProfileForm((current) => ({
                   ...current,
-                  description: event.target.value,
-                }))
-              }
+                  description: value,
+                }));
+                setProfileErrors((current) =>
+                  current.description
+                    ? { ...current, description: "" }
+                    : current,
+                );
+              }}
+              error={Boolean(profileErrors.description)}
+              helperText={profileErrors.description}
+              slotProps={{
+                htmlInput: { maxLength: PROFILE_DESCRIPTION_MAX },
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <UiTextField
-              select
-              fullWidth
+            <UiAutocomplete
+              multiple
               label={t("pv.admin.industry")}
               value={profileForm.industry_ids}
-              onChange={(event) =>
+              onChange={(next) =>
                 setProfileForm((current) => ({
                   ...current,
-                  industry_ids: event.target.value as unknown as string[],
+                  industry_ids: next.map(String),
                 }))
               }
-              slotProps={{
-                select: {
-                  multiple: true,
-                  // KHÔNG `?? id`: ô select đóng lại sẽ in nguyên UUID.
-                  renderValue: (selected) =>
-                    (selected as string[])
-                      .map((id) => industryNameById.get(id) ?? EMPTY_TEXT)
-                      .join(", "),
-                },
-              }}
-            >
-              {industryOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </UiTextField>
+              options={industryOptions.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <UiTextField
-              select
-              fullWidth
+            <UiAutocomplete
+              multiple
               label={t("pv.admin.tags")}
               value={profileForm.tag_ids}
-              onChange={(event) =>
+              onChange={(next) =>
                 setProfileForm((current) => ({
                   ...current,
-                  tag_ids: event.target.value as unknown as string[],
+                  tag_ids: next.map(String),
                 }))
               }
-              slotProps={{
-                select: {
-                  multiple: true,
-                  // KHÔNG `?? id`: ô select đóng lại sẽ in nguyên UUID.
-                  renderValue: (selected) =>
-                    (selected as string[])
-                      .map((id) => tagNameById.get(id) ?? EMPTY_TEXT)
-                      .join(", "),
-                },
-              }}
-            >
-              {tagOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </UiTextField>
+              options={tagOptions.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+            />
           </Grid>
           <Grid size={12}>
             <UiText variant="caption">{t("pv.admin.publishHint")}</UiText>
@@ -1150,13 +1193,14 @@ function PvRuleTab({
     industry_id: string;
     sku_id: string;
     tag_id: string;
-    priority: number;
+    // Chuỗi đang gõ — parse bằng checkNumber lúc submit (xem MasterFormValues).
+    priority: string;
     status: "ACTIVE" | "INACTIVE";
   }>({
     industry_id: "",
     sku_id: "",
     tag_id: "",
-    priority: 1,
+    priority: "1",
     status: "ACTIVE",
   });
   const tagNameById = useMemo(
@@ -1180,7 +1224,6 @@ function PvRuleTab({
       return haystack.includes(query);
     });
   }, [rows, search, statusFilter, tagNameById]);
-  const rowSelection = useRowSelection(filteredRows, (row) => row.id);
 
   function openForm(row?: PvAdminRule) {
     setEditing(row ?? null);
@@ -1188,7 +1231,7 @@ function PvRuleTab({
       industry_id: row?.industry_id ?? "",
       sku_id: row?.sku_id ?? "",
       tag_id: row?.tag_id ?? "",
-      priority: row?.priority ?? 1,
+      priority: String(row?.priority ?? 1),
       status: row?.status ?? "ACTIVE",
     });
     setFieldErrors({});
@@ -1200,10 +1243,27 @@ function PvRuleTab({
     if (!formValues.industry_id) {
       errors.industry_id = t("pv.admin.errIndustry");
     }
-    if (!formValues.priority && formValues.priority !== 0) {
-      errors.priority = t("pv.admin.errPriority");
+    const skuId = formValues.sku_id.trim();
+    const tagId = formValues.tag_id || null;
+    // BE bắt buộc rule có ít nhất một điều kiện áp dụng (SKU hoặc thẻ) — chặn
+    // ở FE để người dùng thấy lỗi ngay ô thay vì toast 422 chung chung.
+    if (!skuId && !tagId) {
+      errors.sku_id = t("pv.admin.errSelector");
+    } else if (skuId && !UUID_PATTERN.test(skuId)) {
+      errors.sku_id = t("pv.admin.errSkuIdFormat");
     }
-    if (Object.keys(errors).length > 0) {
+    // `priority` bắt buộc (BE từ chối rỗng) — phép so sánh số cũ không bao giờ
+    // đúng vì state đã bị ép về số; giờ state là chuỗi nên kiểm tra được.
+    const priorityCheck = checkNumber(
+      formValues.priority,
+      NUMBER_RULES.sortOrder,
+    );
+    if (formValues.priority.trim() === "") {
+      errors.priority = t("pv.admin.errPriority");
+    } else if (!priorityCheck.ok) {
+      errors.priority = priorityCheck.message;
+    }
+    if (Object.keys(errors).length > 0 || !priorityCheck.ok) {
       setFieldErrors(errors);
       return;
     }
@@ -1214,10 +1274,10 @@ function PvRuleTab({
         version: editing?.version,
         payload: {
           industry_id: formValues.industry_id,
-          sku_id: formValues.sku_id.trim() ? formValues.sku_id.trim() : null,
-          tag_id: formValues.tag_id || null,
+          sku_id: skuId || null,
+          tag_id: tagId,
           category_id: null,
-          priority: formValues.priority,
+          priority: priorityCheck.value ?? 0,
           status: formValues.status,
         },
       });
@@ -1241,6 +1301,14 @@ function PvRuleTab({
 
   // Part 5: DataTable (antd adapter, freeze) → ResponsiveDataTable.
   const columns: ResponsiveTableColumn<PvAdminRule>[] = [
+    {
+      key: "stt",
+      header: "STT",
+      align: "center",
+      width: 56,
+      hideOnMobile: true,
+      render: (row) => filteredRows.indexOf(row) + 1,
+    },
     {
       key: "industry_name",
       header: t("pv.admin.industry"),
@@ -1334,15 +1402,8 @@ function PvRuleTab({
         rows={filteredRows}
         rowKey={(row) => row.id}
         columns={columns}
-        rowSelection={rowSelection}
         // Quy tắc không có mã nghiệp vụ — mô tả bằng ngành nghề + mức ưu tiên
         // thay vì đọc UUID cho người dùng trình đọc màn hình.
-        selectionLabel={(row) =>
-          t("pv.admin.ruleSelect", {
-            industry: row.industry_name ?? t("pv.admin.industryUnknown"),
-            priority: row.priority,
-          })
-        }
         loading={isFetching}
         emptyText={
           search.trim() || statusFilter !== "ALL"
@@ -1457,14 +1518,12 @@ function PvRuleTab({
         }
       >
         <Stack spacing={2} sx={{ pt: 0.5 }}>
-          <UiTextField
-            select
+          <UiAutocomplete
             required
-            fullWidth
             label={t("pv.admin.industry")}
-            value={formValues.industry_id}
-            onChange={(event) => {
-              const value = event.target.value;
+            value={formValues.industry_id || null}
+            onChange={(next) => {
+              const value = next == null ? "" : String(next);
               setFormValues((current) => ({
                 ...current,
                 industry_id: value,
@@ -1475,65 +1534,66 @@ function PvRuleTab({
             }}
             error={Boolean(fieldErrors.industry_id)}
             helperText={fieldErrors.industry_id}
-          >
-            {industryOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </UiTextField>
+            options={industryOptions.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+          />
           <UiTextField
             fullWidth
             label={t("pv.admin.skuSelectorLabel")}
             placeholder={t("pv.admin.skuIdPlaceholder")}
             value={formValues.sku_id}
-            onChange={(event) =>
-              setFormValues((current) => ({
-                ...current,
-                sku_id: event.target.value,
-              }))
-            }
+            onChange={(event) => {
+              const value = event.target.value;
+              setFormValues((current) => ({ ...current, sku_id: value }));
+              // Lỗi "thiếu điều kiện áp dụng" gắn ở ô SKU nhưng chọn thẻ cũng
+              // giải quyết được — xoá khi sửa bất kỳ ô nào trong hai.
+              setFieldErrors((current) =>
+                current.sku_id ? { ...current, sku_id: "" } : current,
+              );
+            }}
+            error={Boolean(fieldErrors.sku_id)}
+            helperText={fieldErrors.sku_id}
+            // UUID chuẩn dài 36 ký tự — dài hơn chắc chắn không phải UUID.
+            slotProps={{ htmlInput: { maxLength: 36 } }}
           />
-          <UiTextField
-            select
-            fullWidth
+          <UiAutocomplete
             label={t("pv.admin.tags")}
-            value={formValues.tag_id}
-            onChange={(event) =>
+            value={formValues.tag_id || null}
+            onChange={(next) => {
               setFormValues((current) => ({
                 ...current,
-                tag_id: event.target.value,
-              }))
-            }
-          >
-            <MenuItem value="">
-              <em>{t("pv.admin.tagNone")}</em>
-            </MenuItem>
-            {tagOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </UiTextField>
-          <UiTextField
+                tag_id: next == null ? "" : String(next),
+              }));
+              setFieldErrors((current) =>
+                current.sku_id || current.tag_id
+                  ? { ...current, sku_id: "", tag_id: "" }
+                  : current,
+              );
+            }}
+            placeholder={t("pv.admin.tagNone")}
+            error={Boolean(fieldErrors.tag_id)}
+            helperText={fieldErrors.tag_id}
+            options={tagOptions.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+          />
+          <UiNumberField
             required
             fullWidth
-            type="number"
             label={t("pv.admin.priority")}
             value={formValues.priority}
-            onChange={(event) => {
-              const value = Number(event.target.value) || 0;
-              setFormValues((current) => ({
-                ...current,
-                priority: value,
-              }));
+            rule={NUMBER_RULES.sortOrder}
+            onChange={(next) => {
+              setFormValues((current) => ({ ...current, priority: next }));
               setFieldErrors((current) =>
                 current.priority ? { ...current, priority: "" } : current,
               );
             }}
             error={Boolean(fieldErrors.priority)}
             helperText={fieldErrors.priority}
-            slotProps={{ htmlInput: { min: 0 } }}
           />
           <UiTextField
             select

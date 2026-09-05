@@ -1,6 +1,7 @@
 import { MutationCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getMutationErrorMessage, normalizeError } from "@/shared/api/api-error";
+import { applyQueryCacheDefaults } from "@/shared/cache/apply-query-defaults";
 
 // Retry đúng semantics của HTTP contract:
 // - 4xx là lỗi auth/permission/validation/business contract -> fail fast để UI
@@ -22,8 +23,11 @@ function shouldRetryQuery(failureCount: number, error: unknown): boolean {
 // user đổi vai trò/phạm vi hoặc đổi tài khoản (xem docs/TASK_BLOCKERS.md).
 //
 // Defaults thống nhất cho toàn ERP:
-// - staleTime 60s: giảm refetch thừa cho danh mục/danh sách.
-// - gcTime 5 phút: giữ cache đủ lâu khi đổi tab.
+// - staleTime/gcTime: KHÔNG còn một con số chung. Giá trị dưới đây chỉ là lưới
+//   an toàn cho query chưa có root trong QUERY_CACHE_REGISTRY; chính sách thật
+//   nằm ở @/shared/cache/cache-policy.ts và được áp theo tiền tố khoá bằng
+//   applyQueryCacheDefaults() ngay dưới đây. Lý do: danh mục kho (đổi vài tháng
+//   một lần) và số tồn kho (đổi từng phút) không thể dùng chung một ngưỡng.
 // - retry: 4xx không retry; transient/network/5xx retry tối đa 1 lần.
 // - refetchOnWindowFocus false: tránh tự refetch gây giật UI.
 // - mutations retry 0: không tự retry POST/PUT/DELETE để tránh lặp side effect.
@@ -56,3 +60,7 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Phải chạy NGAY khi module được nạp, trước khi bất kỳ query nào mount: defaults
+// đăng ký sau lần fetch đầu tiên sẽ không cứu được request đã bay đi.
+applyQueryCacheDefaults(queryClient);

@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
@@ -5,8 +6,40 @@ import { defineConfig } from "vite";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Định danh build — nguồn sự thật cho CẢ persisted query cache (IndexedDB) lẫn
+ * tên CacheStorage của service worker. Deploy mới đổi giá trị này nên hai lớp
+ * cache phía client tự hết hiệu lực, thay vì phục vụ chunk/shape của bản cũ.
+ *
+ * Thứ tự ưu tiên: SHA do CI cấp -> SHA git tại chỗ -> timestamp. Không bao giờ
+ * để rỗng: chuỗi rỗng làm mọi build trông giống nhau với client.
+ */
+function resolveBuildId(): string {
+  const fromCi =
+    process.env.WMS_BUILD_ID ??
+    process.env.SOURCE_SHA ??
+    process.env.WMS_SOURCE_SHA ??
+    process.env.GITHUB_SHA;
+  if (fromCi) return fromCi.slice(0, 12);
+
+  try {
+    return execSync("git rev-parse --short=12 HEAD", {
+      cwd: rootDir,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+  } catch {
+    return `t${Date.now().toString(36)}`;
+  }
+}
+
 export default defineConfig({
   plugins: [react()],
+
+  define: {
+    __APP_BUILD_ID__: JSON.stringify(resolveBuildId()),
+  },
 
   resolve: {
     alias: {

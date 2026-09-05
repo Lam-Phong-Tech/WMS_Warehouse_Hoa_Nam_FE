@@ -20,7 +20,6 @@ import {
 } from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { REVERSAL_STATUS_LABELS } from "@/shared/constants/business-labels";
 import { useReversalDocuments, reversalKeys } from "../hooks/use-reversal";
 import { ReversalCreateModal } from "../components/ReversalCreateModal";
@@ -58,8 +57,7 @@ export default function ReversalPage() {
     per_page: perPage,
   });
   const rows = listQuery.data?.rows ?? [];
-  const rowSelection = useRowSelection(rows, (row) => row.id);
-  const listPagination = resolveApiPagination(listQuery.data?.meta, {
+    const listPagination = resolveApiPagination(listQuery.data?.meta, {
     page,
     pageSize: perPage,
     rowCount: rows.length,
@@ -300,12 +298,6 @@ export default function ReversalPage() {
           columns={columns}
           rows={rows}
           rowKey={(row) => row.id}
-          rowSelection={rowSelection}
-          selectionLabel={(row) =>
-            t("reverse.list.selectRowAria", {
-              code: row.reversal_code || t("reverse.list.noCode"),
-            })
-          }
           // Chỉ khoá bảng khi tải lần đầu — ResponsiveDataTable thay hẳn nội
           // dung bảng bằng "Đang tải..." khi loading=true (không giữ dòng cũ
           // như overlay spinner của antd Table), nên không dùng isFetching ở

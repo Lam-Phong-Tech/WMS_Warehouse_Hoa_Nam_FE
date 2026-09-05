@@ -127,11 +127,44 @@ function describeConstraints(constraints: SkuImportConstraints | null): string {
   return `${parts.join("; ")}.`;
 }
 
-function acceptAttribute(constraints: SkuImportConstraints | null): string {
-  const extensions = constraints?.allowedExtensions?.length
+/** Phần mở rộng cho phép — BE chưa trả thì mặc định Excel. */
+function allowedExtensions(constraints: SkuImportConstraints | null): string[] {
+  return constraints?.allowedExtensions?.length
     ? constraints.allowedExtensions
     : ["xlsx", "xls"];
-  return extensions.map((extension) => `.${extension}`).join(",");
+}
+
+function acceptAttribute(constraints: SkuImportConstraints | null): string {
+  return allowedExtensions(constraints)
+    .map((extension) => `.${extension}`)
+    .join(",");
+}
+
+/**
+ * Kiểm tra sơ bộ tệp NGAY khi chọn (đuôi + dung lượng) — `accept` của input
+ * chỉ là gợi ý của hộp thoại, người dùng vẫn kéo-thả/chọn "Tất cả tệp" được;
+ * chặn sớm ở đây để không băm SHA-256 rồi gửi lên BE một tệp chắc chắn bị
+ * từ chối. Trả về thông báo lỗi, hoặc null nếu tệp qua được.
+ */
+function precheckFile(
+  file: File,
+  constraints: SkuImportConstraints | null,
+): string | null {
+  const extensions = allowedExtensions(constraints).map((value) =>
+    value.toLowerCase().replace(/^\./, ""),
+  );
+  const dot = file.name.lastIndexOf(".");
+  const extension = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : "";
+  if (!extensions.includes(extension)) {
+    return tStatic("masterData.import.errFileType", {
+      list: extensions.map((value) => `.${value}`).join(", "),
+    });
+  }
+  const maxMb = constraints?.maxFileSizeMb;
+  if (maxMb != null && maxMb > 0 && file.size > maxMb * 1024 * 1024) {
+    return tStatic("masterData.import.errFileSize", { max: maxMb });
+  }
+  return null;
 }
 
 function payloadSignature(fileSha256: string | null, updateExisting: boolean) {
@@ -389,6 +422,8 @@ export function SkuImportModal({
   const [fileSha256, setFileSha256] = useState<string | null>(null);
   const [digestPending, setDigestPending] = useState(false);
   const [digestError, setDigestError] = useState<string | null>(null);
+  // Lỗi sơ bộ của tệp vừa chọn (đuôi/dung lượng) — hiện cùng chỗ với digestError.
+  const [fileError, setFileError] = useState<string | null>(null);
   const payloadGeneration = useRef(0);
 
   const invalidatePreview = () => {
@@ -407,6 +442,7 @@ export function SkuImportModal({
     setPreviewSignature("");
     setFileSha256(null);
     setDigestError(null);
+    setFileError(null);
   };
 
   useEffect(() => {
@@ -441,7 +477,6 @@ export function SkuImportModal({
     queryFn: fetchSkuImportConstraints,
     enabled: open && canImport,
     retry: false,
-    staleTime: 5 * 60 * 1000,
   });
 
   const constraints =
@@ -649,7 +684,16 @@ export function SkuImportModal({
               accept={acceptAttribute(constraints)}
               aria-label={t("masterData.import.fileAria")}
               onChange={(event) => {
-                setFile(event.target.files?.[0] ?? null);
+                const next = event.target.files?.[0] ?? null;
+                const error = next ? precheckFile(next, constraints) : null;
+                setFileError(error);
+                if (error) {
+                  // Tệp sai đuôi/quá cỡ: không giữ lại, đổi key để input tự xoá.
+                  setFile(null);
+                  setFileInputKey((key) => key + 1);
+                } else {
+                  setFile(next);
+                }
                 invalidatePreview();
               }}
             />
@@ -691,6 +735,7 @@ export function SkuImportModal({
             </UiAlert>
           ) : null}
 
+          {fileError ? <UiAlert tone="error">{fileError}</UiAlert> : null}
           {digestError ? <UiAlert tone="error">{digestError}</UiAlert> : null}
 
           <Stack spacing={1}>

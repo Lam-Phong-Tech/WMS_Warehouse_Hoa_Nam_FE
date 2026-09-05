@@ -6,8 +6,15 @@ import { RequirePermission } from "@/app/router/RequirePermission";
 import { resolveRouteEntryPermission } from "@/app/router/access";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
 import { ROUTES } from "@/shared/constants/routes";
-import { LoginPage } from "@/modules/auth/pages/LoginPage";
 
+// LoginPage lazy như 37 route còn lại. Trước đây nó là import TĨNH nên nằm trong
+// đồ thị tải-ngay của MỌI lần F5 — kể cả với người đã đăng nhập, tức là gần như
+// mọi lượt tải trang trong ngày đều kéo theo màn hình họ không bao giờ thấy.
+const LoginPage = lazy(() =>
+  import("@/modules/auth/pages/LoginPage").then((m) => ({
+    default: m.LoginPage,
+  })),
+);
 const MainLayout = lazy(() =>
   import("@/app/layouts/MainLayout").then((m) => ({ default: m.MainLayout })),
 );
@@ -203,7 +210,7 @@ function routeEl(path: string, node: ReactNode) {
 }
 
 export const router = createBrowserRouter([
-  { path: ROUTES.LOGIN, element: <LoginPage /> },
+  { path: ROUTES.LOGIN, element: withPageLoader(<LoginPage />) },
   { path: ROUTES.PV_CATALOG, element: withPageLoader(<PvCatalogPage />) },
   {
     path: ROUTES.PV_PRODUCT_DETAIL,

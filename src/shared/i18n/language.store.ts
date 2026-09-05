@@ -14,6 +14,7 @@
  */
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { ensureEnglishMessages } from "./english-messages";
 
 export type Language = "vi" | "en";
 
@@ -42,6 +43,9 @@ export const useLanguageStore = create<LanguageState>()(
       language: "vi",
       setLanguage: (language) => {
         applyDocumentLanguage(language);
+        // Từ điển EN nạp động — bắt đầu tải ngay khi người dùng chọn, để bản
+        // dịch về sớm nhất có thể. Trong lúc chờ, t() vẫn trả tiếng Việt.
+        if (language === "en") ensureEnglishMessages();
         set({ language });
       },
     }),
@@ -52,7 +56,9 @@ export const useLanguageStore = create<LanguageState>()(
       // đặt lại ở đây — `initializeLanguage()` ở main.tsx chỉ lo trường hợp
       // rehydrate hoàn tất trước lần render đầu.
       onRehydrateStorage: () => (state) => {
-        if (state) applyDocumentLanguage(state.language);
+        if (!state) return;
+        applyDocumentLanguage(state.language);
+        if (state.language === "en") ensureEnglishMessages();
       },
     },
   ),
@@ -60,5 +66,7 @@ export const useLanguageStore = create<LanguageState>()(
 
 /** Gọi một lần lúc bootstrap để `<html lang>` khớp lựa chọn đã lưu. */
 export function initializeLanguage() {
-  applyDocumentLanguage(useLanguageStore.getState().language);
+  const { language } = useLanguageStore.getState();
+  applyDocumentLanguage(language);
+  if (language === "en") ensureEnglishMessages();
 }

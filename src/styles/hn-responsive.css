@@ -132,15 +132,78 @@ canvas {
 
 /* ---------- 5. Toolbar / filter: kiểm soát wrap và width control ----------
    Control có width px cố định (inline style) không được vượt container;
-   trên mobile các control chính chiếm full hàng cho dễ thao tác. */
-.hn-toolbar > *,
-.hn-toolbar-wrap > *,
-.hn-mvp-source-screen .toolbar > *,
-.hn-mvp-source-screen .toolbar-wrap > *,
-.hn-filter-bar__controls > *,
-.hn-wire-toolbar > * {
+   trên mobile các control chính chiếm full hàng cho dễ thao tác.
+
+   :not(...) là phần QUAN TRỌNG. Luật này có độ ưu tiên cao hơn class do sx
+   sinh ra, nên nếu áp cả cho control nhập liệu thì mọi `minWidth` mà màn hình
+   khai (ô lọc "Hành động" 200px, ô tìm kiếm 260px…) bị ghi đè thành 0: toolbar
+   chật là các ô co lại còn vài chục px, nhãn cụt thành "Hàn…", menu xổ ra thì
+   chữ gãy dòng giữa từ. Toolbar vốn đã flex-wrap wrap nên khi hết chỗ, cách
+   đúng là XUỐNG HÀNG chứ không phải bóp bẹp control. */
+.hn-toolbar
+  > *:not(.MuiFormControl-root):not(.MuiTextField-root):not(
+    .MuiAutocomplete-root
+  ),
+.hn-toolbar-wrap
+  > *:not(.MuiFormControl-root):not(.MuiTextField-root):not(
+    .MuiAutocomplete-root
+  ),
+.hn-mvp-source-screen
+  .toolbar
+  > *:not(.MuiFormControl-root):not(.MuiTextField-root):not(
+    .MuiAutocomplete-root
+  ),
+.hn-mvp-source-screen
+  .toolbar-wrap
+  > *:not(.MuiFormControl-root):not(.MuiTextField-root):not(
+    .MuiAutocomplete-root
+  ),
+.hn-filter-bar__controls
+  > *:not(.MuiFormControl-root):not(.MuiTextField-root):not(
+    .MuiAutocomplete-root
+  ),
+.hn-wire-toolbar
+  > *:not(.MuiFormControl-root):not(.MuiTextField-root):not(
+    .MuiAutocomplete-root
+  ) {
   min-width: 0;
   max-width: 100%;
+}
+
+/* Control nhập liệu vẫn không được tràn khỏi khung. */
+.hn-toolbar > .MuiFormControl-root,
+.hn-toolbar > .MuiAutocomplete-root,
+.hn-toolbar-wrap > .MuiFormControl-root,
+.hn-toolbar-wrap > .MuiAutocomplete-root,
+.hn-mvp-source-screen .toolbar > .MuiFormControl-root,
+.hn-mvp-source-screen .toolbar > .MuiAutocomplete-root,
+.hn-mvp-source-screen .toolbar-wrap > .MuiFormControl-root,
+.hn-mvp-source-screen .toolbar-wrap > .MuiAutocomplete-root,
+.hn-filter-bar__controls > .MuiFormControl-root,
+.hn-filter-bar__controls > .MuiAutocomplete-root,
+.hn-wire-toolbar > .MuiFormControl-root,
+.hn-wire-toolbar > .MuiAutocomplete-root {
+  max-width: 100%;
+}
+
+/* Điện thoại: control MUI được phép co và chiếm trọn hàng — trên màn hẹp,
+   giữ nguyên minWidth của desktop sẽ đẩy toolbar tràn ngang. */
+@media (max-width: 576px) {
+  .hn-toolbar > .MuiFormControl-root,
+  .hn-toolbar > .MuiAutocomplete-root,
+  .hn-toolbar-wrap > .MuiFormControl-root,
+  .hn-toolbar-wrap > .MuiAutocomplete-root,
+  .hn-mvp-source-screen .toolbar > .MuiFormControl-root,
+  .hn-mvp-source-screen .toolbar > .MuiAutocomplete-root,
+  .hn-mvp-source-screen .toolbar-wrap > .MuiFormControl-root,
+  .hn-mvp-source-screen .toolbar-wrap > .MuiAutocomplete-root,
+  .hn-filter-bar__controls > .MuiFormControl-root,
+  .hn-filter-bar__controls > .MuiAutocomplete-root,
+  .hn-wire-toolbar > .MuiFormControl-root,
+  .hn-wire-toolbar > .MuiAutocomplete-root {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 @media (max-width: 576px) {

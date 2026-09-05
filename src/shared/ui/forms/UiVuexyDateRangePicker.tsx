@@ -12,6 +12,7 @@ import {
   SEMANTIC_LIGHT as S,
 } from "@/shared/ui/tokens";
 import { useT } from "@/shared/i18n/useT";
+import { defaultDateBounds } from "@/shared/validation/date-rules";
 import type { MessageKey } from "@/shared/i18n/messages";
 
 const WEEKDAY_KEYS: readonly MessageKey[] = [
@@ -97,10 +98,15 @@ export function UiVuexyDateRangePicker({
   popupClassName,
   "aria-label": ariaLabelProp,
   presets,
-  maxDate,
-  minDate,
+  maxDate: maxDateProp,
+  minDate: minDateProp,
 }: UiVuexyDateRangePickerProps) {
   const t = useT();
+  // Không ô ngày nào được "vô hạn": màn không truyền mốc thì áp cửa sổ chung
+  // của dự án (date-rules.ts) — chặn cả việc bấm lùi lịch về năm 0001.
+  const fallbackBounds = useMemo(() => defaultDateBounds(), []);
+  const maxDate = maxDateProp ?? fallbackBounds.maxDate;
+  const minDate = minDateProp ?? fallbackBounds.minDate;
   const resolvedPlaceholder = placeholder ?? [
     t("shared.datePicker.fromDate"),
     t("shared.datePicker.toDate"),
@@ -172,8 +178,10 @@ export function UiVuexyDateRangePicker({
 
   const rangeStartValue = draftStart?.startOf("day").valueOf() ?? null;
   const rangeEndValue = draftEnd?.startOf("day").valueOf() ?? null;
-  const maxValue = maxDate?.startOf("day").valueOf() ?? null;
-  const minValue = minDate?.startOf("day").valueOf() ?? null;
+  const maxValue = maxDate.startOf("day").valueOf();
+  const minValue = minDate.startOf("day").valueOf();
+  const canGoPrevMonth = panelMonth.startOf("month").isAfter(minDate, "month");
+  const canGoNextMonth = panelMonth.startOf("month").isBefore(maxDate, "month");
 
   const hasPresets = (presets?.length ?? 0) > 0;
 
@@ -389,6 +397,7 @@ export function UiVuexyDateRangePicker({
                 component="button"
                 type="button"
                 aria-label={t("shared.datePicker.prevMonth")}
+                disabled={!canGoPrevMonth}
                 onClick={() =>
                   setPanelMonth((month) => month.subtract(1, "month"))
                 }
@@ -412,6 +421,7 @@ export function UiVuexyDateRangePicker({
                 component="button"
                 type="button"
                 aria-label={t("shared.datePicker.nextMonth")}
+                disabled={!canGoNextMonth}
                 onClick={() => setPanelMonth((month) => month.add(1, "month"))}
                 sx={calendarNavButtonSx}
               >
@@ -723,6 +733,7 @@ const calendarNavButtonSx = {
   cursor: "pointer",
   "&:hover": { bgcolor: S.primarySoft, color: S.primaryDark },
   "&:focus-visible": { outline: `2px solid ${S.primary}`, outlineOffset: 1 },
+  "&:disabled": { opacity: 0.35, cursor: "not-allowed" },
 } as const;
 
 const footerButtonSx = {

@@ -16,6 +16,14 @@ export interface SearchInputProps extends Omit<
 }
 
 /**
+ * Trần độ dài của MỌI ô tìm kiếm. Từ khoá đi thẳng vào query string/API; không
+ * có trần thì một chuỗi dán nhầm hàng chục nghìn ký tự cũng được gửi đi. 200
+ * đủ cho mọi mã/tên nghiệp vụ của hệ (mã ≤ 100, tên ≤ 255 nhưng không ai tìm
+ * bằng nguyên tên).
+ */
+const SEARCH_MAX_LENGTH = 200;
+
+/**
  * Ô tìm kiếm chuẩn hoá (MUI): icon tìm kiếm, nút xoá khi có giá trị, aria-label
  * tự động lấy từ placeholder nếu không truyền riêng.
  * onChange nhận string thay vì ChangeEvent để dùng trực tiếp với state setter.
@@ -66,6 +74,7 @@ export function SearchInput({
         ...slotProps,
         htmlInput: {
           "aria-label": ariaLabel,
+          maxLength: SEARCH_MAX_LENGTH,
           ...(slotProps?.htmlInput as object),
         },
         input: {

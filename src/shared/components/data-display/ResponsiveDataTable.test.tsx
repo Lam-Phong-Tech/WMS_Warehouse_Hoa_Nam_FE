@@ -191,3 +191,55 @@ describe("ResponsiveDataTable · thead ghim khi cuộn", () => {
     }
   });
 });
+
+describe("ResponsiveDataTable · cắt chữ trong ô", () => {
+  const LONG = "Bo mạch điều khiển thay thế (mẫu báo cáo bảo hành) bản dài";
+
+  it("mặc định: MỌI ô gói trong một dòng, chữ đầy đủ ở tooltip title", () => {
+    render(
+      <ResponsiveDataTable<Row>
+        columns={[{ key: "code", header: "Tên", render: () => LONG }]}
+        rows={[ROWS[0]]}
+        rowKey={(row) => row.id}
+      />,
+    );
+
+    const cell = screen.getByTitle(LONG);
+    expect(cell).toHaveClass("hn-truncate");
+    // Cắt bằng CSS nên nội dung vẫn còn nguyên trong DOM.
+    expect(cell).toHaveTextContent(LONG);
+  });
+
+  it("cột khai truncate={2} thì cho phép hai dòng", () => {
+    render(
+      <ResponsiveDataTable<Row>
+        columns={[
+          { key: "code", header: "Tên", truncate: 2, render: () => LONG },
+        ]}
+        rows={[ROWS[0]]}
+        rowKey={(row) => row.id}
+      />,
+    );
+
+    expect(screen.getByTitle(LONG)).toHaveClass("hn-truncate-2");
+  });
+
+  it("ô tự dựng JSX cũng được bọc cắt — không màn nào lọt lưới", () => {
+    render(
+      <ResponsiveDataTable<Row>
+        columns={[
+          {
+            key: "code",
+            header: "Tên",
+            render: () => <span data-testid="rich">{LONG}</span>,
+          },
+        ]}
+        rows={[ROWS[0]]}
+        rowKey={(row) => row.id}
+      />,
+    );
+
+    const rich = screen.getByTestId("rich");
+    expect(rich.parentElement).toHaveClass("hn-truncate");
+  });
+});

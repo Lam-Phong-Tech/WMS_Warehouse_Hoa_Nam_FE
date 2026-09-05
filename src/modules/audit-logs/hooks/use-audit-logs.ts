@@ -10,7 +10,6 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
     queryKey: ["audit-logs", filters],
     queryFn: () => auditLogService.getAuditLogs(filters),
     // Giữ cache trong 30 giây để tránh gọi API liên tục khi thay đổi filter
-    staleTime: 30 * 1000,
   });
 }
 

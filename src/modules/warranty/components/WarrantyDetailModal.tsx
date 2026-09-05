@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import dayjs from "dayjs";
 import { useForm } from "react-hook-form";
 import {
   Box,
@@ -46,6 +45,7 @@ import {
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
 import { useCanAny } from "@/shared/components/permission";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import { formatDate } from "@/shared/utils/format-date";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -77,6 +77,7 @@ import {
   useWarrantyEvents,
 } from "@/modules/warranty/hooks/use-warranty";
 import { downloadWarrantyAttachment } from "@/modules/warranty/services/warrantyService";
+import { WarrantyReturnLabelDialog } from "@/modules/warranty/components/WarrantyReturnLabelDialog";
 import type { ComponentIssueDocument } from "@/modules/warranty/services/componentIssueService";
 import type {
   WarrantyAttachment,
@@ -84,6 +85,19 @@ import type {
   WarrantyCaseStatus,
 } from "@/modules/warranty/types";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { validatePhone } from "@/shared/constants/validation.constants";
+import {
+  checkDate,
+  dateInputBounds,
+  futureDateBounds,
+  pastDateBounds,
+} from "@/shared/validation/date-rules";
+import {
+  MAX_WARRANTY_IMAGES,
+  MAX_WARRANTY_VIDEOS,
+  MAX_WARRANTY_VIDEO_DURATION_SECONDS,
+  probeVideoDurationSeconds,
+} from "@/modules/warranty/components/warranty-attachment-limits";
 import {
   AnimatedList,
   AnimatedListItem,
@@ -124,6 +138,8 @@ const MAX_ATTACHMENT_IMAGE_BYTES = 10 * 1024 * 1024;
 const WARRANTY_VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
 const WARRANTY_VIDEO_ACCEPT = ".mp4,.mov,.webm";
 const MAX_ATTACHMENT_VIDEO_BYTES = 300 * 1024 * 1024;
+/** BE update case: cancel_reason max:1000; FE thêm sàn 5 ký tự để lý do có nghĩa. */
+const CANCEL_REASON_MIN_LENGTH = 5;
 
 function formatBytes(bytes: number): string {
   if (!bytes) return "0 B";
@@ -715,8 +731,26 @@ export function WarrantyDetailModal({
     return () => subscription.unsubscribe();
   }, [statusDefectForm]);
 
+  // Mốc ngày tính mỗi lần render để "hôm nay" không đóng băng khi modal mở lâu:
+  // ngày mua ≤ hôm nay (BE before_or_equal:today), ngày dự kiến ≥ hôm nay
+  // (BE after_or_equal:today), cả hai nằm trong cửa sổ chung của dự án.
+  const purchaseBounds = pastDateBounds();
+  const purchaseInput = dateInputBounds(purchaseBounds);
+  const estimatedBounds = futureDateBounds();
+  const estimatedInput = dateInputBounds(estimatedBounds);
+  const correctPhoneLiveCheck =
+    canViewPii && correctForm.customer_phone
+      ? validatePhone(correctForm.customer_phone)
+      : null;
+  const correctPhoneLiveError =
+    correctPhoneLiveCheck && !correctPhoneLiveCheck.isValid
+      ? (correctPhoneLiveCheck.errorMessage ??
+        t("warranty.detail.errPhoneFormat"))
+      : undefined;
+
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [returnLabelOpen, setReturnLabelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<WarrantyDetailTab>("overview");
   const statusValue = statusForm.status;
 
@@ -757,6 +791,21 @@ export function WarrantyDetailModal({
   // isTerminal). Dùng để vừa disable nút mở phiếu, vừa chặn tạo mới trong modal.
   const canIssueComponents = Boolean(
     detail && !isTerminal && detail.status !== "COMPLETED",
+  );
+  /**
+   * Nhãn trả máy chỉ có nghĩa khi máy ĐÃ SỬA XONG: in ở giai đoạn sớm hơn thì
+   * khối "bệnh lỗi / linh kiện đã thay" còn dở dang, dán lên máy là sai lệch.
+   *
+   * Mở từ COMPLETED ("Đã hoàn tất xử lý") — đúng mốc "sửa xong, trước khi trả
+   * khách". VẪN cho in sau khi đã chuyển RETURNED: nhãn không bắt buộc và có
+   * thể mất/rách trên đường, chặn in lại chỉ tạo ra một hồ sơ không in được mà
+   * không bảo vệ được gì (nhãn không phải chứng từ kho, in không đổi tồn).
+   */
+  const canPrintReturnLabel = Boolean(
+    detail &&
+    ["COMPLETED", "RETURNED", "RETURNED_TO_CUSTOMER", "CLOSED"].includes(
+      detail.status,
+    ),
   );
   // DEC-WAR-STATE-001: chan tai form thay vi de BE tra 422 sau moi lan submit.
   const diagnosisRequired = Boolean(
@@ -805,11 +854,24 @@ export function WarrantyDetailModal({
     if (diagnosisRequired && !statusForm.confirmed_defect.trim()) {
       errors.confirmed_defect = t("warranty.detail.errCheckResult");
     }
-    if (statusForm.status === "CANCELLED" && !statusForm.cancel_reason.trim()) {
-      errors.cancel_reason = t("warranty.detail.errCancelReason");
+    if (statusForm.status === "CANCELLED") {
+      const cancelReason = statusForm.cancel_reason.trim();
+      if (!cancelReason) {
+        errors.cancel_reason = t("warranty.detail.errCancelReason");
+      } else if (cancelReason.length < CANCEL_REASON_MIN_LENGTH) {
+        errors.cancel_reason = t("warranty.detail.errCancelReasonShort");
+      }
     }
     if (estimatedDateRequired) {
       errors.estimated_completion_date = t("warranty.detail.errEstimatedDate");
+    } else if (statusForm.estimated_completion_date) {
+      const estimatedCheck = checkDate(
+        statusForm.estimated_completion_date,
+        estimatedBounds,
+      );
+      if (!estimatedCheck.ok) {
+        errors.estimated_completion_date = estimatedCheck.message;
+      }
     }
     if (noteRequiredLabel && !statusForm.reason.trim()) {
       errors.reason = noteRequiredLabel;
@@ -888,12 +950,35 @@ export function WarrantyDetailModal({
    */
   const validateCorrectionForm = (): boolean => {
     const errors: Record<string, string> = {};
-    if (
-      canViewPii &&
-      correctForm.customer_phone &&
-      !/^0\d{9}$/.test(correctForm.customer_phone)
-    ) {
-      errors.customer_phone = t("warranty.detail.errPhoneFormat");
+    // BE: defect_ids (khi có mặt) phải là mảng min:1 — dialog này luôn gửi
+    // defect_ids nên rỗng là 422 chắc chắn; chặn ngay trên ô.
+    if (correctForm.defect_ids.length === 0) {
+      errors.defect_ids = t("warranty.detail.errDefectRequired");
+    }
+    if (canViewPii && correctForm.customer_phone) {
+      const phoneCheck = validatePhone(correctForm.customer_phone.trim());
+      if (!phoneCheck.isValid) {
+        errors.customer_phone =
+          phoneCheck.errorMessage ?? t("warranty.detail.errPhoneFormat");
+      }
+    }
+    if (correctForm.purchase_date) {
+      const purchaseCheck = checkDate(
+        correctForm.purchase_date,
+        purchaseBounds,
+      );
+      if (!purchaseCheck.ok) {
+        errors.purchase_date = purchaseCheck.message;
+      }
+    }
+    if (correctForm.estimated_completion_date) {
+      const estimatedCheck = checkDate(
+        correctForm.estimated_completion_date,
+        estimatedBounds,
+      );
+      if (!estimatedCheck.ok) {
+        errors.estimated_completion_date = estimatedCheck.message;
+      }
     }
     setCorrectFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -947,22 +1032,7 @@ export function WarrantyDetailModal({
     }
   };
 
-  const handleFileSelected = (file: File | undefined) => {
-    if (!file) return;
-    const isImage = WARRANTY_IMAGE_MIMES.includes(file.type);
-    const isVideo = WARRANTY_VIDEO_MIMES.includes(file.type);
-    if (!isImage && !isVideo) {
-      toast.error(t("warranty.detail.badFileType", { name: file.name }));
-      return;
-    }
-    if (isImage && file.size > MAX_ATTACHMENT_IMAGE_BYTES) {
-      toast.error(t("warranty.detail.imageTooLarge", { name: file.name }));
-      return;
-    }
-    if (isVideo && file.size > MAX_ATTACHMENT_VIDEO_BYTES) {
-      toast.error(t("warranty.detail.videoTooLarge", { name: file.name }));
-      return;
-    }
+  const uploadAttachmentFile = (file: File) => {
     uploadMutation
       .mutateAsync({ caseId, file, attachmentType })
       .then(() =>
@@ -973,10 +1043,61 @@ export function WarrantyDetailModal({
       );
   };
 
-  const handleFilesDropped = (files: FileList | null) => {
+  /**
+   * Cùng trần với màn tiếp nhận: ≤10 ảnh, ≤2 video (≤5 phút) cho MỘT hồ sơ —
+   * đếm cả tệp đã có trên case, vì ở đây mỗi tệp tải lên ngay chứ không gom
+   * vào state như intake. Nhiều tệp một lượt thì đếm dồn theo thứ tự chọn.
+   */
+  const handleFilesDropped = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    let imageSlots = MAX_WARRANTY_IMAGES - imageAttachments.length;
+    let videoSlots = MAX_WARRANTY_VIDEOS - videoAttachments.length;
     // BE nhận 1 file/request; kéo-thả nhiều tệp thì tải tuần tự từng cái.
-    Array.from(files).forEach((file) => handleFileSelected(file));
+    for (const file of Array.from(files)) {
+      const isImage = WARRANTY_IMAGE_MIMES.includes(file.type);
+      const isVideo = WARRANTY_VIDEO_MIMES.includes(file.type);
+      if (!isImage && !isVideo) {
+        toast.error(t("warranty.detail.badFileType", { name: file.name }));
+        continue;
+      }
+      if (isImage) {
+        if (file.size > MAX_ATTACHMENT_IMAGE_BYTES) {
+          toast.error(t("warranty.detail.imageTooLarge", { name: file.name }));
+          continue;
+        }
+        if (imageSlots <= 0) {
+          toast.error(
+            t("warranty.detail.tooManyImages", { max: MAX_WARRANTY_IMAGES }),
+          );
+          continue;
+        }
+        imageSlots -= 1;
+        uploadAttachmentFile(file);
+        continue;
+      }
+      if (file.size > MAX_ATTACHMENT_VIDEO_BYTES) {
+        toast.error(t("warranty.detail.videoTooLarge", { name: file.name }));
+        continue;
+      }
+      if (videoSlots <= 0) {
+        toast.error(
+          t("warranty.detail.tooManyVideos", { max: MAX_WARRANTY_VIDEOS }),
+        );
+        continue;
+      }
+      try {
+        const duration = await probeVideoDurationSeconds(file);
+        if (duration > MAX_WARRANTY_VIDEO_DURATION_SECONDS) {
+          toast.error(t("warranty.detail.videoTooLong", { name: file.name }));
+          continue;
+        }
+      } catch {
+        toast.error(t("warranty.detail.videoUnreadable", { name: file.name }));
+        continue;
+      }
+      videoSlots -= 1;
+      uploadAttachmentFile(file);
+    }
   };
 
   const handleDownloadAttachment = (attachment: WarrantyAttachment) => {
@@ -1199,6 +1320,15 @@ export function WarrantyDetailModal({
               }
             >
               {t("warranty.detail.issueComponents")}
+            </ActionButton>
+            {/* KHÔNG bắt buộc in — nút chỉ mở bản xem trước, mọi thứ diễn ra ở
+                trình duyệt, không gọi API và không đổi trạng thái hồ sơ. */}
+            <ActionButton
+              kind="print"
+              disabled={!detail || !canPrintReturnLabel}
+              onClick={() => setReturnLabelOpen(true)}
+            >
+              {t("warranty.detail.returnLabel")}
             </ActionButton>
             <ActionButton
               kind="sync"
@@ -1454,7 +1584,13 @@ export function WarrantyDetailModal({
                         />
                         <DetailField
                           label="SKU / model"
-                          value={detail.sku || detail.sku_name || EMPTY_TEXT}
+                          value={
+                            detail.sku ? (
+                              <SkuLink code={detail.sku} />
+                            ) : (
+                              detail.sku_name || EMPTY_TEXT
+                            )
+                          }
                         />
                         <DetailField
                           label={t("warranty.detail.fieldItemStatus")}
@@ -1614,7 +1750,7 @@ export function WarrantyDetailModal({
                             onDragOver={(event) => event.preventDefault()}
                             onDrop={(event) => {
                               event.preventDefault();
-                              handleFilesDropped(event.dataTransfer.files);
+                              void handleFilesDropped(event.dataTransfer.files);
                             }}
                             sx={{
                               display: "flex",
@@ -1656,7 +1792,7 @@ export function WarrantyDetailModal({
                               hidden
                               disabled={uploadMutation.isPending}
                               onChange={(event) => {
-                                handleFilesDropped(event.target.files);
+                                void handleFilesDropped(event.target.files);
                                 event.target.value = "";
                               }}
                             />
@@ -1727,7 +1863,7 @@ export function WarrantyDetailModal({
                         onDragOver={(event) => event.preventDefault()}
                         onDrop={(event) => {
                           event.preventDefault();
-                          handleFilesDropped(event.dataTransfer.files);
+                          void handleFilesDropped(event.dataTransfer.files);
                         }}
                         sx={{
                           display: "flex",
@@ -1776,7 +1912,7 @@ export function WarrantyDetailModal({
                           hidden
                           disabled={uploadMutation.isPending}
                           onChange={(event) => {
-                            handleFilesDropped(event.target.files);
+                            void handleFilesDropped(event.target.files);
                             event.target.value = "";
                           }}
                         />
@@ -2107,7 +2243,7 @@ export function WarrantyDetailModal({
                 helperText={correctFieldErrors.estimated_completion_date}
                 slotProps={{
                   inputLabel: { shrink: true },
-                  htmlInput: { min: dayjs().format("YYYY-MM-DD") },
+                  htmlInput: { ...estimatedInput },
                 }}
               />
             </Grid>
@@ -2133,7 +2269,7 @@ export function WarrantyDetailModal({
                 helperText={correctFieldErrors.purchase_date}
                 slotProps={{
                   inputLabel: { shrink: true },
-                  htmlInput: { max: dayjs().format("YYYY-MM-DD") },
+                  htmlInput: { ...purchaseInput },
                 }}
               />
             </Grid>
@@ -2183,15 +2319,11 @@ export function WarrantyDetailModal({
                   }
                 }}
                 error={
-                  (Boolean(correctForm.customer_phone) &&
-                    !/^0\d{9}$/.test(correctForm.customer_phone)) ||
+                  Boolean(correctPhoneLiveError) ||
                   Boolean(correctFieldErrors.customer_phone)
                 }
                 helperText={
-                  Boolean(correctForm.customer_phone) &&
-                  !/^0\d{9}$/.test(correctForm.customer_phone)
-                    ? t("warranty.detail.errPhoneFormat")
-                    : correctFieldErrors.customer_phone
+                  correctPhoneLiveError ?? correctFieldErrors.customer_phone
                 }
                 slotProps={{
                   htmlInput: { maxLength: 10, inputMode: "numeric" },
@@ -2336,7 +2468,7 @@ export function WarrantyDetailModal({
                 helperText={statusFieldErrors.estimated_completion_date}
                 slotProps={{
                   inputLabel: { shrink: true },
-                  htmlInput: { min: dayjs().format("YYYY-MM-DD") },
+                  htmlInput: { ...estimatedInput },
                 }}
               />
             ) : null}
@@ -2454,6 +2586,14 @@ export function WarrantyDetailModal({
           </Stack>
         </UiDialog>
       </UiDialog>
+
+      {/* Nhãn trả máy — mount NGOÀI dialog chi tiết (anh em của nó) để hộp
+          thoại in không phải nằm trong vùng cuộn của modal cha. */}
+      <WarrantyReturnLabelDialog
+        open={returnLabelOpen}
+        detail={detail ?? null}
+        onClose={() => setReturnLabelOpen(false)}
+      />
     </>
   );
 }

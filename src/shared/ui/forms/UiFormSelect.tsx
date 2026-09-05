@@ -4,6 +4,11 @@
  * RHF Controller + MUI FormControl (size small) + InputLabel + Select +
  * MenuItem + FormHelperText. Hỗ trợ multiple; placeholder render qua
  * renderValue (màu textDisabled từ token) với displayEmpty.
+ *
+ * Danh sách DÀI (> SEARCHABLE_OPTION_THRESHOLD option, nhãn dạng chuỗi) tự đổi
+ * sang ô gõ-để-tìm — cùng quy tắc với UiSelect. Hình dạng GIÁ TRỊ trong form
+ * giữ nguyên ("" khi chưa chọn, mảng khi multiple) để schema/validate không
+ * phải biết ô đang ở dạng nào. Ép tay bằng prop `searchable`.
  */
 import { useId } from "react";
 import { Fragment } from "react";
@@ -20,6 +25,8 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import { SEMANTIC_LIGHT } from "@/shared/ui/tokens";
+import { UiAutocomplete } from "./UiAutocomplete";
+import { resolveSearchable } from "./searchable-options";
 
 export interface UiSelectOption {
   value: string | number;
@@ -41,6 +48,11 @@ export interface UiFormSelectProps<T extends FieldValues> {
   disabled?: boolean;
   /** Mặc định true. */
   fullWidth?: boolean;
+  /**
+   * Ép có/không ô tìm kiếm. Bỏ trống = tự quyết theo số option (xem
+   * resolveSearchable).
+   */
+  searchable?: boolean;
   "data-testid"?: string;
 }
 
@@ -55,6 +67,7 @@ export function UiFormSelect<T extends FieldValues>({
   helperText,
   disabled = false,
   fullWidth = true,
+  searchable,
   "data-testid": dataTestId,
 }: UiFormSelectProps<T>) {
   const reactId = useId();
@@ -89,6 +102,51 @@ export function UiFormSelect<T extends FieldValues>({
     return matched ? matched.label : String(selected);
   };
 
+  if (resolveSearchable(options, searchable)) {
+    // Nhãn đã được resolveSearchable bảo đảm là chuỗi.
+    const choices = options as Array<{
+      value: string | number;
+      label: string;
+      disabled?: boolean;
+    }>;
+    return (
+      <Controller
+        control={control}
+        name={name}
+        render={({ field, fieldState }) => {
+          const message = fieldState.error?.message ?? helperText;
+          const common = {
+            options: choices,
+            label,
+            required,
+            disabled,
+            fullWidth,
+            placeholder,
+            error: Boolean(fieldState.error),
+            helperText: message,
+            "data-testid": dataTestId,
+          } as const;
+          return multiple ? (
+            <UiAutocomplete
+              {...common}
+              multiple
+              value={(field.value as Array<string | number>) ?? []}
+              onChange={(next) => field.onChange(next)}
+            />
+          ) : (
+            <UiAutocomplete
+              {...common}
+              value={(field.value as string | number | null) ?? null}
+              // Giữ nguyên "" là "chưa chọn" như nhánh Select, không đổi sang
+              // null giữa chừng làm lệch schema của form.
+              onChange={(next) => field.onChange(next ?? "")}
+            />
+          );
+        }}
+      />
+    );
+  }
+
   return (
     <Controller
       control={control}
@@ -117,6 +175,7 @@ export function UiFormSelect<T extends FieldValues>({
               </InputLabel>
             ) : null}
             <Select
+              MenuProps={{ slotProps: { paper: { sx: { maxWidth: 520 } } } }}
               labelId={label != null ? labelId : undefined}
               label={label}
               multiple={multiple}
@@ -133,6 +192,8 @@ export function UiFormSelect<T extends FieldValues>({
                   key={String(option.value)}
                   value={option.value}
                   disabled={option.disabled}
+                  // Nhãn dài không gãy dòng: menu tự nở thay vì bẻ chữ.
+                  sx={{ whiteSpace: "nowrap" }}
                 >
                   {option.label}
                 </MenuItem>

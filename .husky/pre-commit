@@ -105,8 +105,14 @@ IFS=$OLD_IFS
 
   # --- Nhóm B: heuristic "password = ..." dễ false-positive với dữ liệu mẫu trong docs
   # -> chỉ áp dụng cho file code, bỏ qua docs/.
+  #
+  # Bảng chuỗi giao diện cũng được miễn: `password: "Password"` ở messages.en.ts
+  # là NHÃN Ô NHẬP tiếng Anh, không phải giá trị bí mật (bản tiếng Việt không
+  # dính vì "Mật khẩu" có dấu, nằm ngoài lớp ký tự ASCII của regex). Đây là file
+  # từ điển thuần chuỗi hiển thị, không bao giờ chứa credential.
   case "$FILE" in
     docs/*) : ;;
+    src/shared/i18n/messages*.ts) : ;;
     *)
       if printf '%s\n' "$ADDED_LINES" | grep -q -E "password['\"]?[[:space:]]*[:=][[:space:]]*['\"][A-Za-z0-9!@#\$%^&*()_+={}\[\]|;:',.<>?/~\`-]{6,}['\"]"; then
         echo "❌ CREDENTIAL DETECTED in $FILE (hardcoded password)"

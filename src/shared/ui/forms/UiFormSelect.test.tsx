@@ -1,6 +1,8 @@
 /**
  * Test UiFormSelect — mở/chọn option, aria combobox/listbox, keyboard
- * ArrowDown, placeholder màu textDisabled, multiple, lỗi validation.
+ * ArrowDown, placeholder màu textDisabled, multiple, lỗi validation, và quy
+ * tắc "danh sách dài thì gõ được để tìm" (hình dạng giá trị trong form phải
+ * giữ nguyên).
  */
 import { useEffect } from "react";
 import { describe, expect, it } from "vitest";
@@ -15,6 +17,53 @@ import {
   type UiFormSelectProps,
   type UiSelectOption,
 } from "./UiFormSelect";
+import { SEARCHABLE_OPTION_THRESHOLD } from "./searchable-options";
+
+/** Vượt ngưỡng để rơi vào nhánh tìm kiếm. */
+const LONG_OPTIONS: UiSelectOption[] = Array.from(
+  { length: SEARCHABLE_OPTION_THRESHOLD + 4 },
+  (_unused, index) => ({
+    value: `kho-${index}`,
+    label: index === 2 ? "Kho Bình Dương" : `Kho số ${index}`,
+  }),
+);
+
+function LongSingleHost() {
+  const { control, watch } = useForm<SingleValues>({
+    defaultValues: { kho: "" },
+  });
+  const value = watch("kho");
+  return (
+    <MuiThemeProvider theme={muiTheme}>
+      <UiFormSelect
+        control={control}
+        name="kho"
+        label="Kho"
+        options={LONG_OPTIONS}
+      />
+      <output data-testid="form-value">{JSON.stringify(value)}</output>
+    </MuiThemeProvider>
+  );
+}
+
+function LongMultiHost() {
+  const { control, watch } = useForm<MultiValues>({
+    defaultValues: { khos: [] },
+  });
+  const value = watch("khos");
+  return (
+    <MuiThemeProvider theme={muiTheme}>
+      <UiFormSelect
+        control={control}
+        name="khos"
+        label="Kho"
+        options={LONG_OPTIONS}
+        multiple
+      />
+      <output data-testid="form-value">{JSON.stringify(value)}</output>
+    </MuiThemeProvider>
+  );
+}
 
 const OPTIONS: UiSelectOption[] = [
   { value: "a", label: "Kho A" },
@@ -143,5 +192,50 @@ describe("UiFormSelect", () => {
     expect(screen.getByTestId("form-value")).toHaveTextContent('["a","b"]');
     await user.keyboard("{Escape}");
     expect(trigger).toHaveTextContent("Kho A, Kho B");
+  });
+});
+
+describe("UiFormSelect — ngưỡng tìm kiếm", () => {
+  it("danh sách dài: gõ để lọc, chọn xong form vẫn giữ giá trị scalar", async () => {
+    const user = userEvent.setup();
+    render(<LongSingleHost />);
+
+    const input = screen.getByRole("combobox");
+    expect(input.tagName).toBe("INPUT");
+
+    await user.click(input);
+    await user.keyboard("bình dương");
+    const matches = screen.getAllByRole("option");
+    expect(matches).toHaveLength(1);
+
+    await user.click(matches[0]);
+    expect(screen.getByTestId("form-value")).toHaveTextContent('"kho-2"');
+  });
+
+  it("xoá lựa chọn ghi lại chuỗi rỗng, không phải null", async () => {
+    const user = userEvent.setup();
+    render(<LongSingleHost />);
+
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getAllByRole("option")[0]);
+    expect(screen.getByTestId("form-value")).toHaveTextContent('"kho-0"');
+
+    await user.click(screen.getByTitle("Clear"));
+    expect(screen.getByTestId("form-value")).toHaveTextContent('""');
+  });
+
+  it("multiple: giá trị vẫn là mảng id", async () => {
+    const user = userEvent.setup();
+    render(<LongMultiHost />);
+
+    const input = screen.getByRole("combobox");
+    await user.click(input);
+    await user.click(screen.getAllByRole("option")[0]);
+    await user.keyboard("bình dương");
+    await user.click(screen.getAllByRole("option")[0]);
+
+    expect(screen.getByTestId("form-value")).toHaveTextContent(
+      '["kho-0","kho-2"]',
+    );
   });
 });

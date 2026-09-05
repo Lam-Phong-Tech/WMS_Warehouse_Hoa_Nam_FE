@@ -8,7 +8,7 @@
  * chuỗi ISO. Label/error/helper render bằng MUI FormControl/FormLabel/
  * FormHelperText (label 13px theo theme) để đồng nhất với các field khác.
  */
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import type { ReactNode } from "react";
 import {
   Controller,
@@ -22,6 +22,7 @@ import FormControl from "@mui/material/FormControl";
 import FormHelperText from "@mui/material/FormHelperText";
 import FormLabel from "@mui/material/FormLabel";
 import { ANTD_PICKER_ICONS, antdAllowClear } from "@/shared/ui/icons";
+import { defaultDateBounds } from "@/shared/validation/date-rules";
 
 export interface UiFormDateProps<T extends FieldValues> {
   control: Control<T>;
@@ -38,6 +39,13 @@ export interface UiFormDateProps<T extends FieldValues> {
   /** Mặc định true. */
   fullWidth?: boolean;
   "data-testid"?: string;
+  /**
+   * Mốc ngày. antd cho GÕ TAY nên không có mốc thì "31-12-9999" được nhận;
+   * bỏ trống = cửa sổ chung của dự án (date-rules.ts). Ngày sinh/ngày chứng
+   * từ truyền mốc hẹp hơn (birthDateBounds/pastDateBounds).
+   */
+  minDate?: Dayjs | null;
+  maxDate?: Dayjs | null;
 }
 
 export function UiFormDate<T extends FieldValues>({
@@ -52,9 +60,14 @@ export function UiFormDate<T extends FieldValues>({
   helperText,
   fullWidth = true,
   "data-testid": dataTestId,
+  minDate: minDateProp,
+  maxDate: maxDateProp,
 }: UiFormDateProps<T>) {
   // id nối FormLabel ↔ input bên trong DatePicker (antd áp id lên input gốc).
   const inputId = useId();
+  const fallbackBounds = useMemo(() => defaultDateBounds(), []);
+  const minDate = minDateProp ?? fallbackBounds.minDate;
+  const maxDate = maxDateProp ?? fallbackBounds.maxDate;
 
   return (
     <Controller
@@ -81,6 +94,8 @@ export function UiFormDate<T extends FieldValues>({
               onChange={(date) => field.onChange(date)}
               onBlur={field.onBlur}
               format={format}
+              minDate={minDate}
+              maxDate={maxDate}
               // Calendar/clear mặc định của antd là @ant-design/icons — ép Flaticon.
               suffixIcon={ANTD_PICKER_ICONS.suffixIcon}
               allowClear={antdAllowClear(allowClear)}

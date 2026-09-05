@@ -38,6 +38,15 @@ const EMPTY_FORM: FormState = {
   description: "",
 };
 
+/** Trần độ dài khớp BE AuthDepartmentController::store/update. */
+const CODE_MAX_LENGTH = 80;
+const NAME_MAX_LENGTH = 200;
+const DESCRIPTION_MAX_LENGTH = 500;
+
+type FieldErrors = Partial<
+  Record<"department_code" | "department_name" | "description", string>
+>;
+
 /**
  * Mục 14: tạo/sửa phòng ban (BE Auth\DepartmentController đã có store/update,
  * FE trước đây chỉ đọc). Một chỗ để tạo phòng ban rồi gán người dùng vào ở màn
@@ -49,6 +58,7 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
   const createMutation = useCreateIamDepartment();
   const updateMutation = useUpdateIamDepartment();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const departments = departmentsQuery.data ?? [];
   const isEditing = form.department_id !== null;
@@ -56,9 +66,26 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
   const canSave =
     form.department_code.trim() !== "" && form.department_name.trim() !== "";
 
-  const resetForm = () => setForm(EMPTY_FORM);
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setFieldErrors({});
+  };
 
-  const startEdit = (department: IamDepartment) =>
+  /** Cập nhật một ô và xoá lỗi của chính ô đó (giống IamUserScreen). */
+  const updateField = <K extends keyof FormState>(
+    key: K,
+    value: FormState[K],
+  ) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((current) => {
+      if (!(key in current)) return current;
+      const next = { ...current };
+      delete next[key as keyof FieldErrors];
+      return next;
+    });
+  };
+
+  const startEdit = (department: IamDepartment) => {
     setForm({
       department_id: department.department_id,
       department_code: department.department_code,
@@ -66,8 +93,39 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
       status: department.status,
       description: department.description ?? "",
     });
+    setFieldErrors({});
+  };
+
+  const validate = (): boolean => {
+    const errors: FieldErrors = {};
+    const code = form.department_code.trim();
+    const name = form.department_name.trim();
+    const description = form.description.trim();
+    if (!code) {
+      errors.department_code = t("iam.department.errCodeRequired");
+    } else if (code.length > CODE_MAX_LENGTH) {
+      errors.department_code = t("shared.validation.textMaxLength", {
+        max: CODE_MAX_LENGTH,
+      });
+    }
+    if (!name) {
+      errors.department_name = t("iam.department.errNameRequired");
+    } else if (name.length > NAME_MAX_LENGTH) {
+      errors.department_name = t("shared.validation.textMaxLength", {
+        max: NAME_MAX_LENGTH,
+      });
+    }
+    if (description.length > DESCRIPTION_MAX_LENGTH) {
+      errors.description = t("shared.validation.textMaxLength", {
+        max: DESCRIPTION_MAX_LENGTH,
+      });
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const submit = () => {
+    if (!validate()) return;
     const payload = {
       department_code: form.department_code.trim(),
       department_name: form.department_name.trim(),
@@ -110,25 +168,27 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
         >
           <UiTextField
             label={t("iam.department.fieldCode")}
+            required
             value={form.department_code}
             onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                department_code: event.target.value,
-              }))
+              updateField("department_code", event.target.value)
             }
-            placeholder="VD: HN-DEPT-KHO"
+            placeholder={t("iam.department.codePlaceholder")}
+            error={Boolean(fieldErrors.department_code)}
+            helperText={fieldErrors.department_code}
+            slotProps={{ htmlInput: { maxLength: CODE_MAX_LENGTH } }}
           />
           <UiTextField
             label={t("iam.department.fieldName")}
+            required
             value={form.department_name}
             onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                department_name: event.target.value,
-              }))
+              updateField("department_name", event.target.value)
             }
             placeholder={t("iam.department.namePlaceholder")}
+            error={Boolean(fieldErrors.department_name)}
+            helperText={fieldErrors.department_name}
+            slotProps={{ htmlInput: { maxLength: NAME_MAX_LENGTH } }}
           />
           <UiTextField
             select
@@ -151,10 +211,11 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
           <UiTextField
             label={t("iam.department.fieldDescription")}
             value={form.description}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, description: event.target.value }))
-            }
+            onChange={(event) => updateField("description", event.target.value)}
             placeholder={t("iam.department.descriptionPlaceholder")}
+            error={Boolean(fieldErrors.description)}
+            helperText={fieldErrors.description}
+            slotProps={{ htmlInput: { maxLength: DESCRIPTION_MAX_LENGTH } }}
           />
         </Box>
         <Stack direction="row" spacing={1}>

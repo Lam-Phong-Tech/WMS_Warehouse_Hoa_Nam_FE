@@ -12,6 +12,7 @@ import {
   SEMANTIC_LIGHT as S,
 } from "@/shared/ui/tokens";
 import { useT } from "@/shared/i18n/useT";
+import { defaultDateBounds } from "@/shared/validation/date-rules";
 
 /**
  * Base DatePicker MỘT ngày theo ngôn ngữ Vuexy — biến thể một-ô của
@@ -76,10 +77,15 @@ export function UiVuexyDateField({
   disabled = false,
   field,
   id,
-  minDate = null,
-  maxDate = null,
+  minDate: minDateProp = null,
+  maxDate: maxDateProp = null,
 }: UiVuexyDateFieldProps) {
   const t = useT();
+  // Không ô ngày nào được "vô hạn": màn không truyền mốc thì áp cửa sổ chung
+  // của dự án (date-rules.ts) — chặn cả việc bấm lùi lịch về năm 0001.
+  const fallbackBounds = useMemo(() => defaultDateBounds(), []);
+  const minDate = minDateProp ?? fallbackBounds.minDate;
+  const maxDate = maxDateProp ?? fallbackBounds.maxDate;
   const resolvedPlaceholder = placeholder ?? t("shared.datePicker.selectDate");
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [panelMonth, setPanelMonth] = useState(() =>
@@ -90,8 +96,10 @@ export function UiVuexyDateField({
   const days = useMemo(() => buildCalendarDays(panelMonth), [panelMonth]);
   const selectedValue = value?.startOf("day").valueOf() ?? null;
   const todayValue = dayjs().startOf("day").valueOf();
-  const minValue = minDate?.startOf("day").valueOf() ?? null;
-  const maxValue = maxDate?.startOf("day").valueOf() ?? null;
+  const minValue = minDate.startOf("day").valueOf();
+  const maxValue = maxDate.startOf("day").valueOf();
+  const canGoPrevMonth = panelMonth.startOf("month").isAfter(minDate, "month");
+  const canGoNextMonth = panelMonth.startOf("month").isBefore(maxDate, "month");
 
   const openPicker = (event: MouseEvent<HTMLElement>) => {
     if (disabled) return;
@@ -205,6 +213,7 @@ export function UiVuexyDateField({
             component="button"
             type="button"
             aria-label="Previous month"
+            disabled={!canGoPrevMonth}
             onClick={() => setPanelMonth((m) => m.subtract(1, "month"))}
             sx={calendarNavButtonSx}
           >
@@ -214,6 +223,7 @@ export function UiVuexyDateField({
             component="button"
             type="button"
             aria-label="Next month"
+            disabled={!canGoNextMonth}
             onClick={() => setPanelMonth((m) => m.add(1, "month"))}
             sx={calendarNavButtonSx}
           >
@@ -336,4 +346,5 @@ const calendarNavButtonSx = {
   transition: `background ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
   "&:hover": { bgcolor: S.primarySoft, color: S.primaryDark },
   "&:focus-visible": { outline: `2px solid ${S.primary}`, outlineOffset: 1 },
+  "&:disabled": { opacity: 0.35, cursor: "not-allowed" },
 } as const;

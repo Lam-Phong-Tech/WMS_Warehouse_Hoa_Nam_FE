@@ -1,5 +1,11 @@
 import { useT } from "@/shared/i18n/useT";
 import { useEffect, useState } from "react";
+import dayjs from "dayjs";
+import {
+  checkDateRange,
+  dateTimeInputBounds,
+  pastDateBounds,
+} from "@/shared/validation/date-rules";
 import {
   Box,
   UiPagination,
@@ -34,6 +40,20 @@ import {
 import { ActionButton } from "@/shared/components/actions";
 
 const SEARCH_DEBOUNCE_MS = 250;
+const LOCAL_DATETIME = "YYYY-MM-DDTHH:mm";
+
+/**
+ * Parse giá trị datetime-local NGHIÊM NGẶT: dayjs tự "cuộn" tháng/ngày sai
+ * thành ngày hợp lệ kế tiếp, nên đối chiếu lại chuỗi sau khi format; sai thì
+ * trả Dayjs invalid để checkDate báo "không hợp lệ". Rỗng → null (không lọc).
+ */
+function parseLocalDateTime(raw: string): dayjs.Dayjs | null {
+  if (!raw) return null;
+  const parsed = dayjs(raw);
+  return parsed.isValid() && parsed.format(LOCAL_DATETIME) === raw
+    ? parsed
+    : dayjs("");
+}
 
 /** Chữ phụ trên toolbar (thay MUI Typography body2 color text.secondary). */
 const TOOLBAR_TEXT_SX = {
@@ -65,7 +85,29 @@ export function AuditLogsPage() {
   // datetime-local có dạng "YYYY-MM-DDTHH:mm"; BE nhận "Y-m-d H:i:s".
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  // Khoảng thời gian ĐÃ hợp lệ gần nhất — query chỉ dùng cặp này, nên gõ dở
+  // "đến" < "từ" hay năm 9999 không bao giờ bắn lên API; ô vẫn giữ giá trị
+  // đang gõ để người dùng sửa.
+  const [appliedRange, setAppliedRange] = useState({ from: "", to: "" });
   const [userId, setUserId] = useState("");
+  const dateRangeCheck = checkDateRange(
+    parseLocalDateTime(dateFrom),
+    parseLocalDateTime(dateTo),
+    pastDateBounds(),
+  );
+  const dateError = dateRangeCheck.ok ? null : dateRangeCheck.message;
+  const dateTimeBounds = dateTimeInputBounds(pastDateBounds());
+  const applyDateRange = (from: string, to: string) => {
+    setDateFrom(from);
+    setDateTo(to);
+    setPage(1);
+    const check = checkDateRange(
+      parseLocalDateTime(from),
+      parseLocalDateTime(to),
+      pastDateBounds(),
+    );
+    if (check.ok) setAppliedRange({ from, to });
+  };
 
   // Danh bạ người dùng để lọc "ai đã thao tác". Best-effort: nếu tài khoản
   // không có quyền xem người dùng thì query lỗi và dropdown chỉ rỗng, phần
@@ -99,8 +141,8 @@ export function AuditLogsPage() {
       module: module || undefined,
       action: action || undefined,
       user_id: userId || undefined,
-      date_from: toApiDateTime(dateFrom),
-      date_to: toApiDateTime(dateTo),
+      date_from: toApiDateTime(appliedRange.from),
+      date_to: toApiDateTime(appliedRange.to),
     },
   );
 
@@ -205,12 +247,15 @@ export function AuditLogsPage() {
           label={t("audit.fromLabel")}
           slotProps={{
             inputLabel: { shrink: true },
-            htmlInput: { "aria-label": t("audit.fromAria") },
+            htmlInput: {
+              "aria-label": t("audit.fromAria"),
+              "aria-invalid": Boolean(dateError),
+              ...dateTimeBounds,
+            },
           }}
-          onChange={(event) => {
-            setDateFrom(event.target.value);
-            setPage(1);
-          }}
+          onChange={(event) => applyDateRange(event.target.value, dateTo)}
+          error={Boolean(dateError)}
+          helperText={dateError ?? undefined}
           sx={{ minWidth: 210 }}
         />
         <UiTextField
@@ -219,12 +264,14 @@ export function AuditLogsPage() {
           label={t("audit.toLabel")}
           slotProps={{
             inputLabel: { shrink: true },
-            htmlInput: { "aria-label": t("audit.toAria") },
+            htmlInput: {
+              "aria-label": t("audit.toAria"),
+              "aria-invalid": Boolean(dateError),
+              ...dateTimeBounds,
+            },
           }}
-          onChange={(event) => {
-            setDateTo(event.target.value);
-            setPage(1);
-          }}
+          onChange={(event) => applyDateRange(dateFrom, event.target.value)}
+          error={Boolean(dateError)}
           sx={{ minWidth: 210 }}
         />
         <UiSelect

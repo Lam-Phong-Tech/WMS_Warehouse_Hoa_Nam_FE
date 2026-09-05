@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import dayjs from "dayjs";
 import {
   Box,
   Grid,
-  MenuItem,
   Stack,
   UiAlert,
+  UiAutocomplete,
   UiDialog,
   UiTextField,
 } from "@/shared/ui";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   getApiErrorMessage,
@@ -23,7 +23,7 @@ import {
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { fetchWarehouses } from "@/modules/master-data/services/warehouse.service";
+import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import {
   useCreateInbound,
   useInboundDetail,
@@ -34,6 +34,11 @@ import type {
   UpdateInboundPayload,
 } from "@/modules/inbound/types";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  checkDate,
+  dateInputBounds,
+  pastDateBounds,
+} from "@/shared/validation/date-rules";
 
 interface FormValues {
   warehouseId: string;
@@ -109,10 +114,10 @@ export function InboundDraftModal({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const initializedRef = useRef<string | null>(null);
   const detailQuery = useInboundDetail(documentId);
-  const warehousesQuery = useQuery({
-    queryKey: ["warehouses", "inbound-active"],
-    queryFn: () => fetchWarehouses({ status: "ACTIVE", per_page: 100 }),
-  });
+  // Dùng chung query kho ACTIVE của toàn app (@/shared/data/reference-queries)
+  // thay vì khoá riêng: chín màn hình từng giữ chín khoá khác nhau cho cùng một
+  // danh mục. `per_page` cũ ở đây vô nghĩa vì hợp đồng canonical chỉ có 1 kho ACTIVE.
+  const warehousesQuery = useActiveWarehouses();
   const createMutation = useCreateInbound();
   const updateMutation = useUpdateInbound();
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
@@ -169,10 +174,27 @@ export function InboundDraftModal({
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
+    // Ngày chứng từ là ngày ĐÃ XẢY RA: kiểm bằng mốc chung (2000 → hôm nay)
+    // thay vì so chuỗi — so chuỗi không bắt được "2026-22-01" hay năm 9999.
     if (!formValues.documentDate) {
       errors.documentDate = t("inbound.draft.errDocumentDate");
-    } else if (formValues.documentDate > localToday()) {
-      errors.documentDate = t("inbound.draft.errDocumentDateFuture");
+    } else {
+      const dateCheck = checkDate(formValues.documentDate, {
+        ...pastDateBounds(),
+        required: true,
+      });
+      if (!dateCheck.ok) {
+        // Ngày hợp lệ nhưng ở tương lai → giữ câu báo riêng của màn; mọi lỗi
+        // khác (sai định dạng, trước 2000) lấy thẳng từ checkDate.
+        const parsed = dayjs(formValues.documentDate);
+        const wellFormed =
+          parsed.isValid() &&
+          parsed.format("YYYY-MM-DD") === formValues.documentDate;
+        errors.documentDate =
+          wellFormed && parsed.isAfter(dayjs(), "day")
+            ? t("inbound.draft.errDocumentDateFuture")
+            : dateCheck.message;
+      }
     }
     if (!documentId && !formValues.warehouseId) {
       errors.warehouseId = t("inbound.draft.errWarehouse");
@@ -334,7 +356,7 @@ export function InboundDraftModal({
             disabled={!mutable}
             slotProps={{
               inputLabel: { shrink: true },
-              htmlInput: { max: localToday() },
+              htmlInput: dateInputBounds(pastDateBounds()),
             }}
             error={Boolean(fieldErrors.documentDate)}
             helperText={
@@ -343,18 +365,16 @@ export function InboundDraftModal({
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
-          {/* Part 4 Vuexy sync: Autocomplete (MUI trần) → UiTextField select
-              cùng danh sách kho; chọn kho vẫn chỉ cập nhật state form. */}
-          <UiTextField
-            select
+          {/* Danh sách kho gõ-để-tìm: số kho tăng theo thời gian, cuộn tay
+              hết menu là hỏng thao tác nhập nhanh. */}
+          <UiAutocomplete
             label={t("inbound.draft.warehouse")}
             required
-            fullWidth
-            value={formValues.warehouseId}
-            onChange={(event) => {
+            value={formValues.warehouseId || null}
+            onChange={(next) => {
               setFormValues((current) => ({
                 ...current,
-                warehouseId: event.target.value,
+                warehouseId: next == null ? "" : String(next),
               }));
               if (fieldErrors.warehouseId) {
                 setFieldErrors((current) => ({
@@ -366,18 +386,12 @@ export function InboundDraftModal({
             disabled={!mutable || Boolean(documentId)}
             error={Boolean(fieldErrors.warehouseId)}
             helperText={fieldErrors.warehouseId}
-          >
-            {warehouseSelectOptions.length === 0 ? (
-              <MenuItem value="" disabled>
-                {t("inbound.draft.warehousePlaceholder")}
-              </MenuItem>
-            ) : null}
-            {warehouseSelectOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </UiTextField>
+            placeholder={t("inbound.draft.warehousePlaceholder")}
+            options={warehouseSelectOptions.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+          />
         </Grid>
         <Grid size={12}>
           <UiTextField

@@ -59,6 +59,9 @@
 .hn-mvp-source-screen table.sku-table td.name-col {
   white-space: normal;
   min-width: 200px;
+  /* KHÔNG đặt max-width ở đây: với table-layout auto, trình duyệt bỏ qua
+     max-width của ô (CSS 2.1 §17.5.2). Trần bề ngang của phần chữ nằm ở
+     TruncatedText (prop maxWidth) bên trong ô. */
 }
 /* Tiêu đề dài ("Định mức tối thiểu", "Ứng dụng phân vùng"…) xuống 2 dòng để
    cột co về đúng bề rộng của số/badge bên dưới — phần bề ngang thu lại ở đây

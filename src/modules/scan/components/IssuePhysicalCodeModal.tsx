@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import {
   Box,
   Grid,
   MenuItem,
   UiAlert,
+  UiAutocomplete,
   UiDialog,
   UiStatusBadge,
   UiTextField,
@@ -125,6 +127,8 @@ export function IssuePhysicalCodeModal({
     onSuccess: (result) => {
       toast.success(t("scan.issue.created", { code: result.code_value }));
       queryClient.invalidateQueries({ queryKey: ["scan"] });
+      // Phát mã hiện vật gắn với hiện vật trong kho -> tồn/truy vết đọc lại.
+      void invalidateStockDerived(queryClient);
       onIssued?.(result);
       resetForm();
     },
@@ -272,37 +276,32 @@ export function IssuePhysicalCodeModal({
       ) : (
         <Grid container spacing={2}>
           <Grid size={12}>
-            <UiTextField
-              select
+            {/* Danh mục SKU là danh sách dài nhất của app — bắt buộc gõ
+                được để tìm thay vì cuộn hết menu. */}
+            <UiAutocomplete
               required
-              fullWidth
               label={t("scan.issue.skuLabel")}
-              value={skuId ?? ""}
-              onChange={(event) => {
-                setSkuId(event.target.value || null);
+              value={skuId}
+              onChange={(next) => {
+                setSkuId(next == null ? null : String(next));
                 if (fieldErrors.skuId) {
                   setFieldErrors((current) => ({ ...current, skuId: "" }));
                 }
               }}
               error={Boolean(fieldErrors.skuId)}
               helperText={fieldErrors.skuId}
-            >
-              <MenuItem value="" disabled>
-                {t("scan.issue.skuPlaceholder")}
-              </MenuItem>
-              {skuOptions.length === 0 ? (
-                <MenuItem value="__empty__" disabled>
-                  {skuQuery.isLoading
-                    ? t("scan.issue.loading")
-                    : t("scan.issue.skuEmpty")}
-                </MenuItem>
-              ) : null}
-              {skuOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </UiTextField>
+              placeholder={t("scan.issue.skuPlaceholder")}
+              loading={skuQuery.isLoading}
+              noOptionsText={
+                skuQuery.isLoading
+                  ? t("scan.issue.loading")
+                  : t("scan.issue.skuEmpty")
+              }
+              options={skuOptions.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiTextField

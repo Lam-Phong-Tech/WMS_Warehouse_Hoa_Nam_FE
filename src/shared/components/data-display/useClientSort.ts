@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 /**
  * Cột chữ (mã, tên, email...) sort theo alphabet → tooltip/aria nói "A → Z";
@@ -72,5 +72,23 @@ export function useClientSort<T>(
     return withIndex.map((entry) => entry.row);
   }, [rows, accessors, sortState]);
 
-  return { sortedRows, sortState, requestSort };
+  /**
+   * Vị trí của dòng trong DANH SÁCH GỐC (chưa sắp xếp) — cột STT lấy số từ đây
+   * để số thứ tự đi theo dòng dữ liệu khi bấm sắp xếp, thay vì đứng yên thành
+   * cái thang 1..n. Cùng quy ước với các bảng dùng ResponsiveDataTable
+   * (`rows.indexOf(row)`), chỉ khác là tra bằng Map nên không quét lại mảng
+   * cho từng dòng.
+   */
+  const originalIndex = useMemo(() => {
+    const map = new Map<T, number>();
+    rows.forEach((row, index) => map.set(row, index));
+    return map;
+  }, [rows]);
+
+  const originalIndexOf = useCallback(
+    (row: T) => originalIndex.get(row) ?? 0,
+    [originalIndex],
+  );
+
+  return { sortedRows, sortState, requestSort, originalIndexOf };
 }

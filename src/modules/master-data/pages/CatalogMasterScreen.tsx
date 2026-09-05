@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactElement } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateMasterDerived } from "@/shared/cache/invalidation";
 import { toast } from "sonner";
 import {
   AppstoreOutlined,
@@ -8,6 +9,8 @@ import {
   ShopOutlined,
   ThunderboltOutlined,
 } from "@/shared/components/icons";
+import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { ResponsiveDataTable } from "@/shared/components";
 import type { ResponsiveTableColumn } from "@/shared/components";
 import {
@@ -39,13 +42,13 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import {
   Box,
   Grid,
   MenuItem,
   Stack,
   UiAlert,
+  UiAutocomplete,
   UiCard,
   UiDialog,
   UiPagination,
@@ -55,7 +58,9 @@ import {
   UiTabPanel,
   UiText,
   UiTextField,
+  UiNumberField,
 } from "@/shared/ui";
+import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 
 interface CatalogTabMeta {
   kind: CatalogMasterKind;
@@ -133,7 +138,8 @@ interface CatalogFormValues {
   name: string;
   brand_id?: string;
   description?: string;
-  sort_order?: number;
+  // Giữ CHUỖI đang gõ để "1e5"/"-1" bị báo lỗi thay vì bị ép về 0 âm thầm.
+  sort_order: string;
   status: MasterStatus;
 }
 
@@ -142,7 +148,7 @@ const EMPTY_FORM: CatalogFormValues = {
   name: "",
   brand_id: undefined,
   description: "",
-  sort_order: 0,
+  sort_order: "0",
   status: "ACTIVE",
 };
 
@@ -213,7 +219,6 @@ export function CatalogMasterScreen() {
     queryKey: ["catalog-master", "brand-options"],
     queryFn: getActiveBrandOptions,
     enabled: supportsBrand,
-    staleTime: 5 * 60_000,
   });
 
   const rows = listQuery.data?.data ?? [];
@@ -222,7 +227,6 @@ export function CatalogMasterScreen() {
     pageSize: perPage,
     rowCount: rows.length,
   });
-  const rowSelection = useRowSelection(rows, (record) => record.id);
 
   const brandOptions = useMemo(
     () =>
@@ -239,12 +243,19 @@ export function CatalogMasterScreen() {
   }, [brandQuery.data]);
 
   const saveMutation = useMutation({
-    mutationFn: (values: CatalogFormValues) => {
+    mutationFn: ({
+      values,
+      sortOrder,
+    }: {
+      values: CatalogFormValues;
+      /** Đã parse bằng checkNumber ở handleSubmit — không parse lại. */
+      sortOrder: number | null;
+    }) => {
       const payload: CatalogMasterPayload = {
         code: values.code,
         name: values.name,
         description: values.description ?? null,
-        sort_order: values.sort_order ?? 0,
+        sort_order: sortOrder ?? 0,
         status: values.status,
         brand_id: supportsBrand ? (values.brand_id ?? null) : null,
       };
@@ -258,7 +269,10 @@ export function CatalogMasterScreen() {
         : createCatalogMaster(activeKind, payload);
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["catalog-master"] }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["catalog-master"] }),
+        invalidateMasterDerived(queryClient),
+      ]),
     // Rỗng có chủ đích: màn này chủ ý chỉ hiện banner lỗi dưới form
     // (setFormError), không toast. Thiếu onError thì global MutationCache
     // (query-client.ts) vẫn tự bắn thêm 1 toast ngoài ý muốn, chồng lên banner.
@@ -289,7 +303,7 @@ export function CatalogMasterScreen() {
       name: record.name,
       brand_id: record.brand_id ?? undefined,
       description: record.description ?? "",
-      sort_order: record.sort_order,
+      sort_order: record.sort_order != null ? String(record.sort_order) : "0",
       status: record.status,
     });
     setIsModalOpen(true);
@@ -321,6 +335,13 @@ export function CatalogMasterScreen() {
       errors.name = t("masterData.catalog.errNameLength");
     if ((values.description ?? "").length > 2000)
       errors.description = t("masterData.catalog.errDescriptionLength");
+    // Thứ tự hiển thị: nguyên 0…9999 (BE chỉ có integer|min:0 — trần lấy từ
+    // NUMBER_RULES để không nhận số vô nghĩa).
+    const sortOrderCheck = checkNumber(
+      values.sort_order,
+      NUMBER_RULES.sortOrder,
+    );
+    if (!sortOrderCheck.ok) errors.sort_order = sortOrderCheck.message;
     if (!values.status) errors.status = t("masterData.status.chooseStatus");
     return errors;
   };
@@ -338,8 +359,15 @@ export function CatalogMasterScreen() {
       return;
     }
     setFieldErrors({});
+    const sortOrderCheck = checkNumber(
+      values.sort_order,
+      NUMBER_RULES.sortOrder,
+    );
     try {
-      await saveMutation.mutateAsync(values);
+      await saveMutation.mutateAsync({
+        values,
+        sortOrder: sortOrderCheck.ok ? sortOrderCheck.value : null,
+      });
       toast.success(
         editingRecord
           ? t("masterData.catalog.updated", { item: activeTab.itemLabel })
@@ -375,6 +403,16 @@ export function CatalogMasterScreen() {
   };
 
   const columns: ResponsiveTableColumn<CatalogMasterRecord>[] = [
+    {
+      key: "stt",
+      header: "STT",
+      align: "center",
+      width: 56,
+      hideOnMobile: true,
+      // Số lấy theo VỊ TRÍ GỐC trong trang (trước khi bảng tự sắp xếp) nên nó
+      // đi theo dòng khi bấm sắp xếp cột, không thành thang 1..n đứng yên.
+      render: (record) => mvpRowNumber(page, perPage, rows.indexOf(record)),
+    },
     {
       key: "code",
       header: activeTab.codeLabel,
@@ -421,19 +459,13 @@ export function CatalogMasterScreen() {
       header: t("masterData.common.description"),
       width: 280,
       sortAccessor: (record) => record.description ?? "",
+      // Mô tả dài trước đây xuống dòng làm hàng cao gấp đôi các hàng khác. Cắt
+      // gọn trên MỘT dòng, chữ đầy đủ nằm ở tooltip title.
       render: (record) =>
         record.description ? (
-          <Box
-            component="span"
-            sx={{
-              display: "inline-block",
-              maxWidth: 280,
-              whiteSpace: "normal",
-              wordBreak: "break-word",
-            }}
-          >
+          <TruncatedText lines={1} maxWidth={280}>
             {record.description}
-          </Box>
+          </TruncatedText>
         ) : (
           <Box component="span" sx={{ color: "text.secondary" }}>
             —
@@ -461,6 +493,8 @@ export function CatalogMasterScreen() {
       key: "actions",
       header: "",
       width: 96,
+      // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
+      truncate: 0,
       render: (record) =>
         canManage ? (
           <ActionButton
@@ -589,10 +623,6 @@ export function CatalogMasterScreen() {
               emptyText={t("masterData.catalog.empty", {
                 item: activeTab.itemLabel,
               })}
-              rowSelection={rowSelection}
-              selectionLabel={(record) =>
-                t("masterData.catalog.selectionLabel", { code: record.code })
-              }
             />
 
             <Stack
@@ -721,14 +751,12 @@ export function CatalogMasterScreen() {
             </Grid>
             {supportsBrand ? (
               <Grid size={12}>
-                <UiTextField
-                  id="catalog-brand"
-                  select
+                <UiAutocomplete
+                  data-testid="catalog-brand"
                   label={t("masterData.catalog.brand")}
-                  fullWidth
-                  value={formValues.brand_id ?? ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
+                  value={formValues.brand_id ?? null}
+                  onChange={(next) => {
+                    const value = next == null ? "" : String(next);
                     setFormValues((current) => ({
                       ...current,
                       brand_id: value || undefined,
@@ -742,20 +770,12 @@ export function CatalogMasterScreen() {
                   helperText={
                     fieldErrors.brand_id || t("masterData.catalog.brandHelper")
                   }
-                  slotProps={{
-                    select: { displayEmpty: true },
-                    inputLabel: { shrink: true },
-                  }}
-                >
-                  <MenuItem value="">
-                    {t("masterData.catalog.brandOptional")}
-                  </MenuItem>
-                  {brandOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </UiTextField>
+                  placeholder={t("masterData.catalog.brandOptional")}
+                  options={brandOptions.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
+                />
               </Grid>
             ) : null}
             <Grid size={12}>
@@ -782,6 +802,29 @@ export function CatalogMasterScreen() {
                 error={Boolean(fieldErrors.description)}
                 helperText={fieldErrors.description}
                 slotProps={{ htmlInput: { maxLength: 2000 } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <UiNumberField
+                id="catalog-sort-order"
+                label={t("masterData.catalog.displayOrder")}
+                fullWidth
+                value={formValues.sort_order}
+                rule={NUMBER_RULES.sortOrder}
+                onChange={(next) => {
+                  setFormValues((current) => ({
+                    ...current,
+                    sort_order: next,
+                  }));
+                  setFieldErrors((current) =>
+                    current.sort_order
+                      ? { ...current, sort_order: "" }
+                      : current,
+                  );
+                }}
+                disabled={saveMutation.isPending}
+                error={Boolean(fieldErrors.sort_order)}
+                helperText={fieldErrors.sort_order}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import { useSearchParams } from "react-router-dom";
 import {
   Box,
@@ -30,7 +31,6 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -101,8 +101,7 @@ export default function AlignedMvpOutboundPage() {
   });
 
   const rows = listQuery.data?.data ?? [];
-  const rowSelection = useRowSelection(rows, (row) => row.id);
-  const pagination = resolveApiPagination(listQuery.data?.meta, {
+    const pagination = resolveApiPagination(listQuery.data?.meta, {
     page,
     pageSize: perPage,
     rowCount: rows.length,
@@ -291,8 +290,10 @@ export default function AlignedMvpOutboundPage() {
     );
   };
 
-  const refreshAll = () =>
+  const refreshAll = () => {
     void queryClient.invalidateQueries({ queryKey: ["mvp-outbound"] });
+    void invalidateStockDerived(queryClient);
+  };
 
   const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
     perPage as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
@@ -366,12 +367,6 @@ export default function AlignedMvpOutboundPage() {
           columns={columns}
           rows={rows}
           rowKey={(row) => row.id}
-          rowSelection={rowSelection}
-          selectionLabel={(row) =>
-            t("outbound.list.selectionLabel", {
-              code: row.code || t("outbound.list.noCode"),
-            })
-          }
           loading={listQuery.isLoading || listQuery.isFetching}
           emptyText={tableEmptyText(
             listQuery.isError ? listQuery.error : null,

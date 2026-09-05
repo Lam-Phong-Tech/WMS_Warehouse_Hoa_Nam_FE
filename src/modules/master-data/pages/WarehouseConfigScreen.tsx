@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateMasterDerived } from "@/shared/cache/invalidation";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import {
   fetchWarehouse,
-  fetchWarehouses,
   updateWarehouse,
 } from "@/modules/master-data/services/warehouse.service";
 import type { MasterStatus } from "@/modules/master-data/types/mvp-master.types";
@@ -16,6 +17,7 @@ import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { validatePhone } from "@/shared/constants/validation.constants";
 import { ActionButton } from "@/shared/components/actions";
 import {
   Box,
@@ -25,6 +27,7 @@ import {
   Stack,
   UiAddressField,
   UiAlert,
+  UiAutocomplete,
   UiCard,
   UiDescriptions,
   UiDialog,
@@ -117,11 +120,15 @@ function validateForm(
   if ((values.contact_person ?? "").length > 200) {
     errors.contact_person = t("masterData.warehouse.errContactLength");
   }
-  const phone = values.phone ?? "";
-  if (phone.length > 30) {
-    errors.phone = t("masterData.warehouse.errPhoneLength");
-  } else if (phone && !/^0\d{9}$/.test(phone)) {
-    errors.phone = t("masterData.warehouse.errPhoneFormat");
+  const phone = (values.phone ?? "").trim();
+  if (phone) {
+    // Luật SĐT dùng chung (10 số, đầu số VN) — thay regex chép tay để mọi màn
+    // báo cùng một thông điệp.
+    const phoneCheck = validatePhone(phone);
+    if (!phoneCheck.isValid) {
+      errors.phone =
+        phoneCheck.errorMessage ?? t("masterData.warehouse.errPhoneFormat");
+    }
   }
   return errors;
 }
@@ -144,10 +151,9 @@ export function WarehouseConfigScreen() {
   });
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const listQuery = useQuery({
-    queryKey: ["warehouse", "list"],
-    queryFn: () => fetchWarehouses({ per_page: 50 }),
-  });
+  // per_page 50 -> danh mục dùng chung (200): bao trùm giá trị cũ nên không màn
+  // hình nào mất dữ liệu, đổi lại gộp được với mọi nơi khác cùng hỏi danh mục kho.
+  const listQuery = useWarehouseDirectory();
 
   const warehouses = useMemo(
     () => (listQuery.data ?? []).map(toWarehouse).filter((row) => row.id),
@@ -191,7 +197,14 @@ export function WarehouseConfigScreen() {
         phone: values.phone?.trim() || null,
         status: values.status,
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["warehouse"] }),
+    // Danh mục kho dùng chung nằm ở `["ref","warehouses",...]`. Chỉ vô hiệu
+    // `["warehouse"]` thì dropdown ở mọi màn khác vẫn giữ tên cũ tới 30 phút,
+    // và bản đã ghi xuống IndexedDB còn giữ lâu hơn.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["warehouse"] }),
+        invalidateMasterDerived(queryClient),
+      ]),
     // Rỗng có chủ đích: màn này chủ ý chỉ hiện banner lỗi dưới form
     // (setSaveError), không toast. Thiếu onError thì global MutationCache
     // (query-client.ts) vẫn tự bắn thêm 1 toast ngoài ý muốn, chồng lên banner.
@@ -273,7 +286,7 @@ export function WarehouseConfigScreen() {
 
   return (
     <>
-      <Stack spacing={2} sx={{ maxWidth: 880, mx: "auto", width: "100%" }}>
+      <Stack spacing={2} sx={{ width: "100%" }}>
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
           <ActionButton
             kind="save"
@@ -335,26 +348,22 @@ export function WarehouseConfigScreen() {
               {warehouses.length > 1 ? (
                 <Grid container sx={{ mb: 2 }}>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <UiTextField
-                      id="warehouse-select"
-                      select
+                    <UiAutocomplete
+                      data-testid="warehouse-select"
                       label={t("masterData.warehouse.pick")}
-                      fullWidth
                       value={resolvedId}
-                      onChange={(event) => {
-                        setSelectedId(event.target.value);
+                      onChange={(next) => {
+                        if (next == null) return;
+                        setSelectedId(String(next));
                         setSaveError("");
                         setSavedAt("");
                         setFieldErrors({});
                       }}
-                      slotProps={{ inputLabel: { shrink: true } }}
-                    >
-                      {warehouses.map((row) => (
-                        <MenuItem key={row.id} value={row.id}>
-                          {row.code} · {row.name}
-                        </MenuItem>
-                      ))}
-                    </UiTextField>
+                      options={warehouses.map((row) => ({
+                        value: row.id,
+                        label: row.code + " · " + row.name,
+                      }))}
+                    />
                   </Grid>
                 </Grid>
               ) : null}
@@ -400,6 +409,7 @@ export function WarehouseConfigScreen() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <UiTextField
                     id="warehouse-name"
+                    slotProps={{ htmlInput: { maxLength: 200 } }}
                     label={t("masterData.warehouse.fieldName")}
                     required
                     fullWidth

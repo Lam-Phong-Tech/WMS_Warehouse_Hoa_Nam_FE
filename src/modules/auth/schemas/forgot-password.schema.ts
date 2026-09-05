@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { tStatic, type TranslateFn } from "@/shared/i18n/useT";
 import { STRONG_PASSWORD_REGEX } from "@/modules/auth/schemas/change-password.schema";
+import { PASSWORD_MAX_LENGTH } from "@/modules/auth/schemas/login.schema";
+import { EMAIL_MAX_LENGTH } from "@/shared/constants/validation.constants";
 
 /**
  * Các factory nhận `t` để lỗi validate đổi theo ngôn ngữ — component dựng
@@ -13,6 +15,7 @@ export function buildForgotPasswordEmailSchema(t: TranslateFn) {
       .string()
       .trim()
       .min(1, t("auth.validation.emailRequired"))
+      .max(EMAIL_MAX_LENGTH, t("auth.validation.emailTooLong"))
       .email(t("auth.validation.emailInvalid")),
   });
 }
@@ -46,6 +49,7 @@ export function buildResetPasswordFormSchema(t: TranslateFn) {
       newPassword: z
         .string()
         .min(8, t("auth.validation.newPasswordMin"))
+        .max(PASSWORD_MAX_LENGTH, t("auth.validation.passwordTooLong"))
         .refine(
           (v) => v === v.trim(),
           t("auth.validation.passwordNoEdgeSpaces"),

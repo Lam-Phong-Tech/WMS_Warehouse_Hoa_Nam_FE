@@ -19,6 +19,7 @@ import {
 import { ToolOutlined } from "@/shared/components/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import {
   TableLoadingBanner,
   tableEmptyText,
@@ -30,7 +31,6 @@ import {
 } from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import {
   WARRANTY_BASELINE_STATUSES,
@@ -128,7 +128,6 @@ export default function WarrantyPage() {
   const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
 
   const rows = listQuery.data?.data ?? [];
-  const rowSelection = useRowSelection(rows, (row) => row.id);
   const pagination = resolveApiPagination(listQuery.data?.meta, {
     page,
     pageSize: perPage,
@@ -219,9 +218,13 @@ export default function WarrantyPage() {
       width: 170,
       sortAccessor: (row) => row.sku || row.sku_name || "",
       render: (row) =>
-        row.identification_type === "TEMP_ONLY" && !row.sku
-          ? t("warranty.list.manualDescription")
-          : row.sku || row.sku_name || EMPTY_TEXT,
+        row.identification_type === "TEMP_ONLY" && !row.sku ? (
+          t("warranty.list.manualDescription")
+        ) : row.sku ? (
+          <SkuLink code={row.sku} />
+        ) : (
+          row.sku_name || EMPTY_TEXT
+        ),
     },
     {
       key: "defect",
@@ -415,12 +418,6 @@ export default function WarrantyPage() {
           columns={columns}
           rows={rows}
           rowKey={(row) => row.id}
-          rowSelection={rowSelection}
-          selectionLabel={(row) =>
-            t("warranty.list.selectionLabel", {
-              code: row.case_code || t("warranty.list.noCode"),
-            })
-          }
           loading={listQuery.isLoading || listQuery.isFetching}
           emptyText={tableEmptyText(
             listQuery.isError ? listQuery.error : null,

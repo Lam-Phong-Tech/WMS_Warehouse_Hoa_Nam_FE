@@ -10,13 +10,13 @@ import {
   // nên dùng bản không-RHF.
   UiAutocomplete,
   UiDialog,
+  UiNumberField,
   UiPagination,
   UiSelect,
   UiStatusBadge,
   UiTextField,
   type UiStatusTone,
 } from "@/shared/ui";
-import dayjs from "dayjs";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/shared/api/api-error";
@@ -50,6 +50,22 @@ import {
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
+import { validatePhone } from "@/shared/constants/validation.constants";
+import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
+import {
+  checkDate,
+  dateInputBounds,
+  pastDateBounds,
+} from "@/shared/validation/date-rules";
+
+/** Trần độ dài mã phiếu yêu cầu — khớp `import_no`/`request_no` max:80 của BE. */
+const REQUEST_NO_MAX = 80;
+/**
+ * Trần dung lượng tệp Excel — cùng số với MAX_FILE_BYTES của
+ * DocumentAttachmentsPanel (không export, chép lại để tránh kéo cả panel vào).
+ */
+const MAX_FILE_BYTES = 15 * 1024 * 1024;
+const EXCEL_EXTENSIONS = [".xlsx", ".xls"];
 
 type IntakeMode = "manual" | "excel";
 
@@ -57,14 +73,15 @@ interface LineInput {
   /** Khóa ổn định cho hiệu ứng thêm/xóa dòng — không gửi lên API. */
   key: string;
   product_id: string;
-  required_qty: number;
+  /** Giữ CHUỖI đang gõ để báo lỗi thay vì ép về 1 im lặng; parse bằng checkNumber. */
+  required_qty: string;
 }
 
 function createEmptyLine(): LineInput {
   return {
     key: createRowKey("outbound-line"),
     product_id: "",
-    required_qty: 1,
+    required_qty: "1",
   };
 }
 
@@ -113,6 +130,29 @@ const IMPORT_STATUS_LABEL: Record<string, MessageKey> = {
   CONSUMED: "outbound.intake.statusConsumed",
 };
 
+/**
+ * Số lượng đã qua validateManualForm nên luôn hợp lệ ở đây; parse lại bằng
+ * cùng checkNumber để không có hai đường parse lệch nhau.
+ */
+function parseRequiredQty(raw: string): number {
+  const result = checkNumber(raw, NUMBER_RULES.quantity);
+  return result.ok && result.value != null ? result.value : Number(raw);
+}
+
+/** Kiểm tra tệp Excel trước khi tải lên: đuôi tệp và dung lượng. */
+function checkExcelFile(file: File, t: TranslateFn): string | null {
+  const name = file.name.toLowerCase();
+  if (!EXCEL_EXTENSIONS.some((ext) => name.endsWith(ext))) {
+    return t("outbound.intake.errFileType");
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    return t("outbound.intake.errFileSize", {
+      max: Math.round(MAX_FILE_BYTES / (1024 * 1024)),
+    });
+  }
+  return null;
+}
+
 /** Bảng xem trước phân trang client-side như antd Table cũ (pageSize 10). */
 const PREVIEW_PAGE_SIZE = 10;
 
@@ -133,11 +173,20 @@ export function OutboundIntakeModal({
   const [createAgencyOpen, setCreateAgencyOpen] = useState(false);
   const [mode, setMode] = useState<IntakeMode>("manual");
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [preview, setPreview] = useState<OutboundImportResult | null>(null);
   const [previewPage, setPreviewPage] = useState(1);
   const [resolutions, setResolutions] = useState<
     Record<number, LineResolution>
+  >({});
+  // Ô "SL yêu cầu" ghi đè ở bảng xem trước: giữ chuỗi đang gõ + lỗi theo dòng,
+  // để "-5"/"abc" hiện lỗi ngay và chặn nút tạo phiếu thay vì bị bỏ qua.
+  const [overrideQtyDrafts, setOverrideQtyDrafts] = useState<
+    Record<number, string>
+  >({});
+  const [overrideQtyErrors, setOverrideQtyErrors] = useState<
+    Record<number, string>
   >({});
   const [recipientOverride, setRecipientOverride] = useState({
     receiver_name: "",
@@ -158,11 +207,12 @@ export function OutboundIntakeModal({
     requestNo?: string;
     recipientName?: string;
     recipientPhone?: string;
+    requestDate?: string;
     lines: Record<number, { product_id?: string; required_qty?: string }>;
   }>({ lines: {} });
 
   const clearFieldError = (
-    field: "requestNo" | "recipientName" | "recipientPhone",
+    field: "requestNo" | "recipientName" | "recipientPhone" | "requestDate",
   ) =>
     setFieldErrors((prev) =>
       prev[field] ? { ...prev, [field]: undefined } : prev,
@@ -178,17 +228,37 @@ export function OutboundIntakeModal({
 
   const validateManualForm = () => {
     const errors: typeof fieldErrors = { lines: {} };
-    if (!requestNo.trim()) errors.requestNo = t("outbound.intake.errRequestNo");
+    if (!requestNo.trim()) {
+      errors.requestNo = t("outbound.intake.errRequestNo");
+    } else if (requestNo.trim().length > REQUEST_NO_MAX) {
+      errors.requestNo = t("shared.validation.textMaxLength", {
+        max: REQUEST_NO_MAX,
+      });
+    }
     if (!recipientName.trim())
       errors.recipientName = t("outbound.intake.errRecipient");
-    if (recipientPhone && !/^0\d{9}$/.test(recipientPhone)) {
-      errors.recipientPhone = t("outbound.intake.errPhone");
+    if (recipientPhone) {
+      const phone = validatePhone(recipientPhone);
+      if (!phone.isValid) {
+        errors.recipientPhone =
+          phone.errorMessage ?? t("outbound.intake.errPhone");
+      }
+    }
+    // Ngày yêu cầu là ngày đã xảy ra (tuỳ chọn): chỉ kiểm khi có nhập.
+    if (requestDate) {
+      const dateCheck = checkDate(requestDate, pastDateBounds());
+      if (!dateCheck.ok) errors.requestDate = dateCheck.message;
     }
     lines.forEach((line, index) => {
       const lineError: { product_id?: string; required_qty?: string } = {};
       if (!line.product_id) lineError.product_id = t("outbound.intake.errSku");
-      if (!line.required_qty || line.required_qty < 1) {
-        lineError.required_qty = t("outbound.intake.errQty");
+      // Cùng NUMBER_RULES.quantity với ô nhập: nguyên, 1…1.000.000.
+      const qtyCheck = checkNumber(line.required_qty, {
+        ...NUMBER_RULES.quantity,
+        required: true,
+      });
+      if (!qtyCheck.ok) {
+        lineError.required_qty = qtyCheck.message;
       }
       if (lineError.product_id || lineError.required_qty) {
         errors.lines[index] = lineError;
@@ -202,6 +272,7 @@ export function OutboundIntakeModal({
       errors.requestNo ||
       errors.recipientName ||
       errors.recipientPhone ||
+      errors.requestDate ||
       Object.keys(errors.lines).length > 0,
     );
 
@@ -329,12 +400,15 @@ export function OutboundIntakeModal({
     setPreview(null);
     setPreviewPage(1);
     setResolutions({});
+    setOverrideQtyDrafts({});
+    setOverrideQtyErrors({});
     setRecipientOverride({
       receiver_name: "",
       receiver_address: "",
       receiver_contact_phone: "",
     });
     setFile(null);
+    setFileError(null);
     setFileInputKey((key) => key + 1);
     setMode("manual");
     setRequestNo("");
@@ -364,7 +438,7 @@ export function OutboundIntakeModal({
         customer_address: recipientAddress.trim(),
         recipient_contact_phone: recipientPhone.trim() || undefined,
         sku_id: line.product_id,
-        required_qty: Number(line.required_qty),
+        required_qty: parseRequiredQty(line.required_qty),
         agency_id: agencyId || null,
       }));
       return validateOutboundRequestRows(rows);
@@ -415,6 +489,17 @@ export function OutboundIntakeModal({
   const consumeMutation = useMutation({
     mutationFn: async () => {
       if (!preview) throw new Error(t("outbound.intake.needPreview"));
+      // Không bao giờ gửi khi còn ô SL ghi đè sai — nút đã disable, đây là
+      // chốt chặn cuối.
+      const [badRow, badMessage] = Object.entries(overrideQtyErrors)[0] ?? [];
+      if (badRow !== undefined) {
+        throw new Error(
+          t("outbound.intake.errOverrideQty", {
+            row: badRow,
+            message: badMessage,
+          }),
+        );
+      }
       const consumeLines = Object.entries(resolutions)
         .map(([rowNo, value]) => ({
           row_no: Number(rowNo),
@@ -551,29 +636,47 @@ export function OutboundIntakeModal({
       width: 140,
       align: "right",
       render: (row) => (
-        <UiTextField
-          type="number"
-          sx={{ width: 110 }}
+        <UiNumberField
+          sx={{ width: 130 }}
+          rule={NUMBER_RULES.quantity}
           slotProps={{
             htmlInput: {
-              min: 1,
-              step: 1,
               "aria-label": t("outbound.intake.requiredQtyAria", {
                 row: row.rowNo,
               }),
             },
           }}
           value={
-            resolutions[row.rowNo]?.required_qty ??
-            (Number(row.normalized.required_qty ?? 0) || "")
+            overrideQtyDrafts[row.rowNo] ??
+            String(
+              resolutions[row.rowNo]?.required_qty ??
+                (Number(row.normalized.required_qty ?? 0) || ""),
+            )
           }
-          onChange={(event) => {
-            const parsed = Number(event.target.value);
+          error={Boolean(overrideQtyErrors[row.rowNo])}
+          helperText={overrideQtyErrors[row.rowNo]}
+          onChange={(next) => {
+            setOverrideQtyDrafts((current) => ({
+              ...current,
+              [row.rowNo]: next,
+            }));
+            const qtyCheck = checkNumber(next, NUMBER_RULES.quantity);
+            setOverrideQtyErrors((current) => {
+              const rest = { ...current };
+              delete rest[row.rowNo];
+              return qtyCheck.ok
+                ? rest
+                : { ...rest, [row.rowNo]: qtyCheck.message };
+            });
+            // Chỉ ghi vào resolutions khi giá trị hợp lệ; ô rỗng = giữ nguyên
+            // như file. Sai thì giữ ghi đè cũ và chặn tạo phiếu bằng lỗi ở trên.
+            if (!qtyCheck.ok) return;
+            const parsed = qtyCheck.value ?? undefined;
             setResolutions((current) => ({
               ...current,
               [row.rowNo]: {
                 ...current[row.rowNo],
-                required_qty: parsed ? parsed : undefined,
+                required_qty: parsed,
               },
             }));
           }}
@@ -653,7 +756,8 @@ export function OutboundIntakeModal({
 
   const overridePhoneValid =
     recipientOverride.receiver_contact_phone === "" ||
-    /^0\d{9}$/.test(recipientOverride.receiver_contact_phone);
+    validatePhone(recipientOverride.receiver_contact_phone).isValid;
+  const hasOverrideQtyErrors = Object.keys(overrideQtyErrors).length > 0;
 
   const previewRows = preview?.rows ?? [];
   // Tồn không đủ ở BẤT KỲ dòng nào (khả dụng đã biết và < SL yêu cầu) thì CHẶN
@@ -667,7 +771,11 @@ export function OutboundIntakeModal({
     return available < rowRequiredQty(row);
   });
   const consumable =
-    Boolean(preview) && canImport && overridePhoneValid && !hasShortStock;
+    Boolean(preview) &&
+    canImport &&
+    overridePhoneValid &&
+    !hasShortStock &&
+    !hasOverrideQtyErrors;
 
   const previewPaged = previewRows.length > PREVIEW_PAGE_SIZE;
   const pagedPreviewRows = previewPaged
@@ -747,7 +855,7 @@ export function OutboundIntakeModal({
                     }}
                     error={Boolean(fieldErrors.requestNo)}
                     helperText={fieldErrors.requestNo}
-                    slotProps={{ htmlInput: { maxLength: 80 } }}
+                    slotProps={{ htmlInput: { maxLength: REQUEST_NO_MAX } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -822,13 +930,14 @@ export function OutboundIntakeModal({
                     error={
                       Boolean(fieldErrors.recipientPhone) ||
                       (Boolean(recipientPhone) &&
-                        !/^0\d{9}$/.test(recipientPhone))
+                        !validatePhone(recipientPhone).isValid)
                     }
                     helperText={
                       fieldErrors.recipientPhone ??
                       (Boolean(recipientPhone) &&
-                      !/^0\d{9}$/.test(recipientPhone)
-                        ? t("outbound.intake.errPhone")
+                      !validatePhone(recipientPhone).isValid
+                        ? (validatePhone(recipientPhone).errorMessage ??
+                          t("outbound.intake.errPhone"))
                         : undefined)
                     }
                     slotProps={{
@@ -842,12 +951,18 @@ export function OutboundIntakeModal({
                     type="date"
                     label={t("outbound.intake.fieldRequestDate")}
                     value={requestDate}
-                    onChange={(event) => setRequestDate(event.target.value)}
+                    onChange={(event) => {
+                      setRequestDate(event.target.value);
+                      clearFieldError("requestDate");
+                    }}
                     slotProps={{
                       inputLabel: { shrink: true },
-                      htmlInput: { max: dayjs().format("YYYY-MM-DD") },
+                      htmlInput: dateInputBounds(pastDateBounds()),
                     }}
-                    helperText={t("outbound.intake.dateHelper")}
+                    error={Boolean(fieldErrors.requestDate)}
+                    helperText={
+                      fieldErrors.requestDate ?? t("outbound.intake.dateHelper")
+                    }
                   />
                 </Grid>
                 <Grid size={12}>
@@ -917,18 +1032,13 @@ export function OutboundIntakeModal({
                             t("outbound.intake.skuHelper")
                           }
                         />
-                        <UiTextField
+                        <UiNumberField
                           required
-                          type="number"
+                          rule={NUMBER_RULES.quantity}
                           label={t("outbound.intake.fieldQty")}
                           value={line.required_qty}
-                          onChange={(event) => {
-                            updateLine(index, {
-                              required_qty: Math.max(
-                                1,
-                                Math.trunc(Number(event.target.value) || 1),
-                              ),
-                            });
+                          onChange={(next) => {
+                            updateLine(index, { required_qty: next });
                             clearLineError(index);
                           }}
                           error={Boolean(
@@ -936,7 +1046,6 @@ export function OutboundIntakeModal({
                           )}
                           helperText={fieldErrors.lines[index]?.required_qty}
                           sx={{ width: 130 }}
-                          slotProps={{ htmlInput: { min: 1, step: 1 } }}
                         />
                         <ActionButton
                           kind="delete"
@@ -992,8 +1101,21 @@ export function OutboundIntakeModal({
                 type="file"
                 accept=".xlsx,.xls"
                 aria-label={t("outbound.intake.fileAria")}
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                aria-invalid={Boolean(fileError)}
+                onChange={(event) => {
+                  const picked = event.target.files?.[0] ?? null;
+                  setFile(picked);
+                  setFileError(picked ? checkExcelFile(picked, t) : null);
+                }}
               />
+              {fileError ? (
+                <Box
+                  role="alert"
+                  sx={{ typography: "body2", color: "error.main" }}
+                >
+                  {fileError}
+                </Box>
+              ) : null}
               <Box sx={{ typography: "body2", color: "text.secondary" }}>
                 {t("outbound.intake.fileHint")}
               </Box>
@@ -1001,7 +1123,10 @@ export function OutboundIntakeModal({
                 <ActionButton
                   kind="upload"
                   disabled={
-                    !canImport || !file || validateFileMutation.isPending
+                    !canImport ||
+                    !file ||
+                    Boolean(fileError) ||
+                    validateFileMutation.isPending
                   }
                   onClick={() => validateFileMutation.mutate()}
                 >

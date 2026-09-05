@@ -4,6 +4,7 @@ import { cookieStorage } from "@/shared/lib/cookie-storage";
 import { memoryStorage } from "@/shared/lib/memory-storage";
 import { queryClient } from "@/app/providers/query-client";
 import { useNotificationStore } from "@/shared/store/notification.store";
+import { clearPersistedQueryCache } from "@/shared/cache/query-persister";
 import { disconnectEcho } from "@/shared/lib/echo";
 import type { User } from "@/shared/types/user";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
@@ -126,6 +127,10 @@ export const useAuthStore = create<AuthState>()(
           isProfileLoaded: false,
         });
         queryClient.clear();
+        // queryClient.clear() chỉ dọn RAM. Máy trong kho là máy DÙNG CHUNG giữa
+        // các ca, nên phải xoá luôn bản sao trên IndexedDB — nếu không, ca sau
+        // đăng nhập tài khoản khác vẫn còn danh mục/kho của ca trước nằm trên đĩa.
+        void clearPersistedQueryCache();
         disconnectEcho();
         useNotificationStore.getState().reset();
       },

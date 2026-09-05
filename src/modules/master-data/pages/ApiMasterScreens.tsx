@@ -45,10 +45,7 @@ import {
   MVP_PAGE_SIZE_OPTIONS,
   resolveApiPagination,
 } from "@/shared/components/mvp/mvp-pagination";
-import {
-  MvpSelectionCheckbox,
-  mvpRowNumber,
-} from "@/shared/components/mvp/MvpSelectionCell";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import {
   WMS_PERMISSION_CATALOG,
   hasAnyWmsPermission,
@@ -65,9 +62,10 @@ import {
   recipientTypeLabel,
   type RecipientType,
 } from "@/shared/constants/recipient-types";
-import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
+import { SkuLink } from "@/shared/components/data-display/SkuLink";
+import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
@@ -81,13 +79,18 @@ import {
   Stack,
   UiAddressField,
   UiAlert,
+  UiAutocomplete,
+  type UiAutocompleteOption,
   UiDescriptions,
   UiDialog,
+  UiNumberField,
   UiSelect,
   UiStatusBadge,
   UiTextField,
   useUiConfirm,
 } from "@/shared/ui";
+import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
+import { validatePhone } from "@/shared/constants/validation.constants";
 import { formatAddress } from "@/shared/lib/vn-address";
 import { useSearchParams } from "react-router-dom";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -220,6 +223,18 @@ const EMPTY_SKU_FORM: SkuFormState = {
 };
 
 /**
+ * Trần độ dài ô chữ của SKU — khớp BE StoreProductRequest/UpdateProductRequest
+ * (sku_code max:100, sku_name max:255, unit max:30, version_code max:30) để
+ * người dùng bị chặn ngay ở ô nhập thay vì nhận 422 sau khi bấm Lưu.
+ */
+const SKU_TEXT_MAX = {
+  code: 100,
+  name: 255,
+  unit: 30,
+  versionCode: 30,
+} as const;
+
+/**
  * Các ô nhập có chỗ hiển thị lỗi riêng (`error` + `helperText`) trong modal SKU.
  * Lỗi server thuộc field nằm ngoài danh sách này sẽ rơi về banner tổng — xem
  * `resolveFormErrors`. Tên field ở dạng camelCase vì `extractFieldErrors` đã
@@ -255,10 +270,10 @@ const EMPTY_CATALOGS: ProductCatalogRefs = {
  * thay vì tràn ngang. Không áp cho cột mã (SKU/hãng/lỗi) vì các mã đó ngắn và
  * không được phép ẩn/cắt.
  */
-const WRAP_TEXT_CELL_STYLE: CSSProperties = {
-  whiteSpace: "normal",
-  wordBreak: "break-word",
+/** Ô chữ dài (địa chỉ, mô tả): chặn bề ngang để TruncatedText cắt được. */
+const TRUNCATE_CELL_STYLE: CSSProperties = {
   maxWidth: 320,
+  whiteSpace: "normal",
 };
 
 /**
@@ -290,10 +305,10 @@ const FIELD_CAPTION_SX = {
 } as const;
 
 /**
- * Bản UiTextField select cho form SKU — KHÔNG dùng lại UiSelect (bản toolbar,
- * không có label nổi/error/helperText). Giữ đúng hành vi gốc: option "Giữ liên
- * kết hiện tại (đã ngừng sử dụng)" khi giá trị đang chọn không còn trong danh
- * sách ACTIVE.
+ * Select danh mục cho form SKU — Hãng/Nhóm hàng/Model/Nguồn điện/Quy cách là
+ * các danh mục dài vài chục dòng nên dùng UiAutocomplete (gõ để lọc theo mã +
+ * tên) thay cho menu cuộn. Giữ đúng hành vi gốc: option "Giữ liên kết hiện tại
+ * (đã ngừng sử dụng)" khi giá trị đang chọn không còn trong danh sách ACTIVE.
  */
 function SkuCatalogSelect({
   id,
@@ -317,36 +332,31 @@ function SkuCatalogSelect({
   const t = useT();
   const rows = options ?? [];
   const isMissing = Boolean(value) && !rows.some((row) => row.id === value);
+  // UiAutocomplete tra nhãn từ chính mảng options: thiếu dòng "giữ liên kết
+  // cũ" thì SKU đang trỏ vào danh mục đã ngừng sử dụng sẽ hiện ô trống.
+  const choices: UiAutocompleteOption[] = [
+    ...(isMissing
+      ? [{ value, label: t("masterData.sku.keepInactiveLink") }]
+      : []),
+    ...rows.map((row) => ({
+      value: row.id,
+      label: `${row.code} · ${row.name}`,
+    })),
+  ];
   return (
     <Box>
-      <UiTextField
-        id={id}
-        select
+      <UiAutocomplete
+        data-testid={id}
         label={label}
         required={required}
         disabled={disabled}
-        fullWidth
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
+        value={value || null}
+        options={choices}
+        onChange={(next) => onChange(next == null ? "" : String(next))}
+        placeholder={t("masterData.sku.catalogSearchPlaceholder")}
         error={Boolean(error)}
         helperText={error}
-        slotProps={{
-          select: { displayEmpty: true },
-          inputLabel: { shrink: true },
-        }}
-      >
-        <MenuItem value="">{t("masterData.sku.notChosen")}</MenuItem>
-        {isMissing ? (
-          <MenuItem value={value}>
-            {t("masterData.sku.keepInactiveLink")}
-          </MenuItem>
-        ) : null}
-        {rows.map((row) => (
-          <MenuItem key={row.id} value={row.id}>
-            {row.code} · {row.name}
-          </MenuItem>
-        ))}
-      </UiTextField>
+      />
       {!error && isMissing ? (
         <Box sx={FIELD_CAPTION_SX}>{t("masterData.sku.inactiveLinkHint")}</Box>
       ) : null}
@@ -451,20 +461,19 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       rowCount: pendingInfoOnly ? filteredRows.length : apiRows.length,
     },
   );
-  const rowSelection = useRowSelection(
+  const { sortedRows, sortState, requestSort, originalIndexOf } = useClientSort(
     rows,
-    (record) => record.sku_id ?? record.id ?? "",
+    {
+      skuCode: (r) => r.sku_code ?? r.code,
+      type: (r) => skuTypeLabel(r.sku_type, t),
+      brand: (r) => refLabel(brandIndex, r.brand_id),
+      category: (r) => refLabel(categoryIndex, r.category_id),
+      minStock: (r) => r.min_stock ?? null,
+      maxStock: (r) => r.max_stock ?? null,
+      status: (r) => r.status,
+      published: (r) => (r.published_to_app ? 1 : 0),
+    },
   );
-  const { sortedRows, sortState, requestSort } = useClientSort(rows, {
-    skuCode: (r) => r.sku_code ?? r.code,
-    type: (r) => skuTypeLabel(r.sku_type, t),
-    brand: (r) => refLabel(brandIndex, r.brand_id),
-    category: (r) => refLabel(categoryIndex, r.category_id),
-    minStock: (r) => r.min_stock ?? null,
-    maxStock: (r) => r.max_stock ?? null,
-    status: (r) => r.status,
-    published: (r) => (r.published_to_app ? 1 : 0),
-  });
 
   const togglePublish = async (record: SkuRecord) => {
     if (!canPublish) return;
@@ -549,10 +558,59 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     setFieldErrors({});
   };
 
+  /**
+   * Kiểm tra định mức tồn theo luật chung (NUMBER_RULES.stockMin/stockMax) —
+   * trả về giá trị đã parse để `submit` gửi thẳng, không parse lại lần hai.
+   */
+  const parseStockThresholds = (): {
+    errors: Record<string, string>;
+    minStock: number | null;
+    maxStock: number | null;
+  } => {
+    const errors: Record<string, string> = {};
+    // Định mức tồn (phục vụ báo cáo định mức tồn): min ≥ 0 — 0 là định mức
+    // THẬT, không phải "chưa đặt"; max ≥ 1; max PHẢI LỚN HƠN min (không phải ≥).
+    // Để trống = chưa đặt định mức, không bắt buộc. Cùng rule với BE
+    // ValidatesSkuStockThresholds + CHECK chk_skus_stock_thresholds; trần/số lẻ
+    // lấy từ NUMBER_RULES để không nhận "10000000000000" hay "1e5".
+    const minCheck = checkNumber(form.minStock, NUMBER_RULES.stockMin);
+    const maxCheck = checkNumber(form.maxStock, NUMBER_RULES.stockMax);
+    if (!minCheck.ok) errors.minStock = minCheck.message;
+    if (!maxCheck.ok) errors.maxStock = maxCheck.message;
+    const minStock = minCheck.ok ? minCheck.value : null;
+    const maxStock = maxCheck.ok ? maxCheck.value : null;
+    if (
+      !errors.minStock &&
+      !errors.maxStock &&
+      minStock !== null &&
+      maxStock !== null &&
+      maxStock <= minStock
+    ) {
+      errors.maxStock = t("masterData.sku.errMaxLessMin");
+    }
+    return { errors, minStock, maxStock };
+  };
+
   const validateSkuForm = (): boolean => {
     const errors: Record<string, string> = {};
     if (!form.code.trim()) errors.code = t("masterData.sku.errCode");
+    else if (form.code.trim().length > SKU_TEXT_MAX.code)
+      errors.code = t("shared.validation.textMaxLength", {
+        max: SKU_TEXT_MAX.code,
+      });
     if (!form.name.trim()) errors.name = t("masterData.sku.errName");
+    else if (form.name.trim().length > SKU_TEXT_MAX.name)
+      errors.name = t("shared.validation.textMaxLength", {
+        max: SKU_TEXT_MAX.name,
+      });
+    if (form.unit.trim().length > SKU_TEXT_MAX.unit)
+      errors.unit = t("shared.validation.textMaxLength", {
+        max: SKU_TEXT_MAX.unit,
+      });
+    if (form.versionCode.trim().length > SKU_TEXT_MAX.versionCode)
+      errors.versionCode = t("shared.validation.textMaxLength", {
+        max: SKU_TEXT_MAX.versionCode,
+      });
     if (!form.brandId) errors.brandId = t("masterData.sku.errBrand");
     if (!form.categoryId) errors.categoryId = t("masterData.sku.errCategory");
     if (!form.modelId) errors.modelId = t("masterData.sku.errModel");
@@ -561,35 +619,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     if (form.publishedToApp && form.status !== "ACTIVE") {
       errors.publishedToApp = t("masterData.sku.errPublishInactive");
     }
-    // Định mức tồn (phục vụ báo cáo định mức tồn): min ≥ 0 — 0 là định mức
-    // THẬT, không phải "chưa đặt"; max ≥ 1; max PHẢI LỚN HƠN min (không phải ≥).
-    // Để trống = chưa đặt định mức, không bắt buộc. Cùng rule với BE
-    // ValidatesSkuStockThresholds + CHECK chk_skus_stock_thresholds.
-    const minStockTrim = form.minStock.trim();
-    const maxStockTrim = form.maxStock.trim();
-    const minStockNum = minStockTrim === "" ? null : Number(minStockTrim);
-    const maxStockNum = maxStockTrim === "" ? null : Number(maxStockTrim);
-    if (
-      minStockNum !== null &&
-      (!Number.isFinite(minStockNum) || minStockNum < 0)
-    ) {
-      errors.minStock = t("masterData.sku.errMinStock");
-    }
-    if (
-      maxStockNum !== null &&
-      (!Number.isFinite(maxStockNum) || maxStockNum < 1)
-    ) {
-      errors.maxStock = t("masterData.sku.errMaxStock");
-    }
-    if (
-      !errors.minStock &&
-      !errors.maxStock &&
-      minStockNum !== null &&
-      maxStockNum !== null &&
-      maxStockNum <= minStockNum
-    ) {
-      errors.maxStock = t("masterData.sku.errMaxLessMin");
-    }
+    Object.assign(errors, parseStockThresholds().errors);
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -600,6 +630,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     if (!validateSkuForm()) return;
     const code = form.code.trim();
     const name = form.name.trim();
+    // Đã qua validate nên chỉ còn lấy giá trị parse sẵn cho payload.
+    const { minStock, maxStock } = parseStockThresholds();
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
       const confirmed = await confirmAction({
         title: t("masterData.sku.deactivateTitle"),
@@ -622,11 +654,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       model_id: form.modelId,
       power_source_id: form.powerSourceId,
       package_variant_id: form.packageVariantId,
-      version_code: form.versionCode,
-      min_stock:
-        form.minStock.trim() === "" ? null : Number(form.minStock.trim()),
-      max_stock:
-        form.maxStock.trim() === "" ? null : Number(form.maxStock.trim()),
+      version_code: form.versionCode.trim(),
+      min_stock: minStock,
+      max_stock: maxStock,
     };
 
     try {
@@ -818,14 +848,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <table className="sku-table">
             <thead>
               <tr>
-                <th className="select-col">
-                  <MvpSelectionCheckbox
-                    checked={rowSelection.isAllSelected}
-                    indeterminate={rowSelection.isIndeterminate}
-                    onChange={rowSelection.toggleAll}
-                    ariaLabel={t("masterData.sku.selectAllAria")}
-                  />
-                </th>
                 <th className="stt-col">STT</th>
                 <SortableTh
                   label="SKU"
@@ -889,37 +911,34 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <tbody>
               {query.isLoading ? (
                 <tr>
-                  <td colSpan={11} className="muted">
+                  <td colSpan={10} className="muted">
                     {t("masterData.common.loadingData")}
                   </td>
                 </tr>
               ) : sortedRows.length > 0 ? (
-                sortedRows.map((record, index) => {
+                sortedRows.map((record) => {
                   const recordId = record.sku_id ?? record.id ?? "";
                   const isPublished = Boolean(record.published_to_app);
                   const statusAllowsPublish = record.status === "ACTIVE";
                   return (
                     <tr key={recordId}>
-                      <td className="select-col">
-                        <MvpSelectionCheckbox
-                          checked={rowSelection.isSelected(recordId)}
-                          onChange={(checked) =>
-                            rowSelection.toggleOne(recordId, checked)
-                          }
-                          ariaLabel={t("masterData.sku.selectRowAria", {
-                            code: record.sku_code ?? record.code ?? "",
-                          })}
-                        />
-                      </td>
                       <td className="stt-col">
-                        {mvpRowNumber(page, perPage, index)}
+                        {mvpRowNumber(page, perPage, originalIndexOf(record))}
                       </td>
                       <td className="name-col">
-                        {record.sku_code ?? record.code}
-                        <br />
-                        <span className="muted">
-                          {record.sku_name ?? record.name}
-                        </span>
+                        <TruncatedText lines={1} maxWidth={300}>
+                          <SkuLink
+                            id={record.sku_id ?? undefined}
+                            code={record.sku_code ?? record.code ?? ""}
+                          />
+                        </TruncatedText>
+                        <TruncatedText
+                          lines={1}
+                          maxWidth={300}
+                          className="muted"
+                        >
+                          {record.sku_name ?? record.name ?? ""}
+                        </TruncatedText>
                       </td>
                       <td>{skuTypeLabel(record.sku_type, t)}</td>
                       {/* Bỏ title={brand_id/category_id}: tooltip trước đây in
@@ -1001,7 +1020,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 })
               ) : (
                 <tr>
-                  <td colSpan={11} className="muted">
+                  <td colSpan={10} className="muted">
                     {t("masterData.sku.empty")}
                   </td>
                 </tr>
@@ -1050,7 +1069,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 items={[
                   {
                     label: t("masterData.sku.fieldCode"),
-                    value: viewing.sku_code ?? viewing.code,
+                    value: (
+                      <SkuLink
+                        id={viewing.sku_id ?? undefined}
+                        code={viewing.sku_code ?? viewing.code ?? ""}
+                      />
+                    ),
                   },
                   {
                     label: t("masterData.sku.fieldName"),
@@ -1190,6 +1214,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   <Stack spacing={2}>
                     <UiTextField
                       id="sku-code"
+                      slotProps={{
+                        htmlInput: { maxLength: SKU_TEXT_MAX.code },
+                      }}
                       label={t("masterData.sku.fieldCode")}
                       required
                       fullWidth
@@ -1212,6 +1239,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     />
                     <UiTextField
                       id="sku-name"
+                      slotProps={{
+                        htmlInput: { maxLength: SKU_TEXT_MAX.name },
+                      }}
                       label={t("masterData.sku.fieldName")}
                       required
                       fullWidth
@@ -1250,6 +1280,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     </UiTextField>
                     <UiTextField
                       id="sku-unit"
+                      slotProps={{
+                        htmlInput: { maxLength: SKU_TEXT_MAX.unit },
+                      }}
                       label={t("masterData.sku.fieldUnit")}
                       fullWidth
                       value={form.unit}
@@ -1438,6 +1471,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     />
                     <UiTextField
                       id="sku-version-code"
+                      slotProps={{
+                        htmlInput: { maxLength: SKU_TEXT_MAX.versionCode },
+                      }}
                       label={t("masterData.sku.fieldVersion")}
                       fullWidth
                       value={form.versionCode}
@@ -1458,47 +1494,51 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       error={Boolean(fieldErrors.versionCode)}
                       helperText={fieldErrors.versionCode}
                     />
-                    <UiTextField
+                    <UiNumberField
                       id="sku-min-stock"
                       label={t("masterData.sku.fieldMinStock")}
                       fullWidth
-                      type="number"
                       value={form.minStock}
+                      rule={NUMBER_RULES.stockMin}
                       placeholder={t("masterData.sku.thresholdPlaceholder")}
                       helperText={
-                        fieldErrors.minStock ??
+                        fieldErrors.minStock ||
                         t("masterData.sku.minStockHelper")
                       }
                       error={Boolean(fieldErrors.minStock)}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          minStock: event.target.value,
-                        }))
-                      }
+                      onChange={(next) => {
+                        setForm((current) => ({ ...current, minStock: next }));
+                        // Lỗi "max ≤ min" gắn ở ô max nhưng sửa min cũng làm
+                        // nó hết đúng → xoá cả hai.
+                        setFieldErrors((current) =>
+                          current.minStock || current.maxStock
+                            ? { ...current, minStock: "", maxStock: "" }
+                            : current,
+                        );
+                      }}
                       disabled={isSaving}
-                      slotProps={{ htmlInput: { min: 0, step: "any" } }}
                     />
-                    <UiTextField
+                    <UiNumberField
                       id="sku-max-stock"
                       label={t("masterData.sku.fieldMaxStock")}
                       fullWidth
-                      type="number"
                       value={form.maxStock}
+                      rule={NUMBER_RULES.stockMax}
                       placeholder={t("masterData.sku.thresholdPlaceholder")}
                       helperText={
-                        fieldErrors.maxStock ??
+                        fieldErrors.maxStock ||
                         t("masterData.sku.maxStockHelper")
                       }
                       error={Boolean(fieldErrors.maxStock)}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          maxStock: event.target.value,
-                        }))
-                      }
+                      onChange={(next) => {
+                        setForm((current) => ({ ...current, maxStock: next }));
+                        setFieldErrors((current) =>
+                          current.maxStock
+                            ? { ...current, maxStock: "" }
+                            : current,
+                        );
+                      }}
                       disabled={isSaving}
-                      slotProps={{ htmlInput: { min: 1, step: "any" } }}
                     />
                     <Box>
                       <FormControlLabel
@@ -1562,6 +1602,19 @@ const EMPTY_AGENCY_FORM: AgencyFormState = {
  * trả về, giá trị bên phải là tên field snake_case mà `fieldErrors` của form
  * này đang dùng; thiếu bước map lại thì lỗi sẽ không khớp ô nào và biến mất.
  */
+/**
+ * Trần độ dài ô chữ nơi nhận — khớp BE BaM1RecipientController /
+ * StoreAgencyRequest (agency_code 50, agency_name 255, market/region 120,
+ * contact_name 200). Giữ ĐỒNG BỘ với `RecipientCreateDialog` (form tạo nhanh).
+ */
+const AGENCY_TEXT_MAX = {
+  agency_code: 50,
+  agency_name: 255,
+  market: 120,
+  region: 120,
+  contact_name: 200,
+} as const;
+
 const AGENCY_FORM_FIELDS = {
   agencyCode: "agency_code",
   agencyName: "agency_name",
@@ -1607,19 +1660,21 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     pageSize: perPage,
     rowCount: rows.length,
   });
-  const rowSelection = useRowSelection(rows, (record) => record.agency_id);
-  const { sortedRows, sortState, requestSort } = useClientSort(rows, {
-    code: (r) => r.agency_code,
-    name: (r) => r.agency_name,
-    recipientType: (r) =>
-      r.recipient_type ? recipientTypeLabel(r.recipient_type) : null,
-    market: (r) => r.market,
-    region: (r) => r.region,
-    contact: (r) => r.contact_name,
-    phone: (r) => r.phone,
-    address: (r) => formatAddress(r.address),
-    status: (r) => r.status,
-  });
+  const { sortedRows, sortState, requestSort, originalIndexOf } = useClientSort(
+    rows,
+    {
+      code: (r) => r.agency_code,
+      name: (r) => r.agency_name,
+      recipientType: (r) =>
+        r.recipient_type ? recipientTypeLabel(r.recipient_type) : null,
+      market: (r) => r.market,
+      region: (r) => r.region,
+      contact: (r) => r.contact_name,
+      phone: (r) => r.phone,
+      address: (r) => formatAddress(r.address),
+      status: (r) => r.status,
+    },
+  );
 
   const openCreate = () => {
     if (!canManage) return;
@@ -1674,9 +1729,23 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     if (!form.agency_name.trim()) {
       errors.agency_name = t("masterData.recipient.errName");
     }
+    // Trần độ dài theo BE — chỉ ghi lỗi khi ô chưa có lỗi "bắt buộc".
+    for (const key of Object.keys(AGENCY_TEXT_MAX) as Array<
+      keyof typeof AGENCY_TEXT_MAX
+    >) {
+      const max = AGENCY_TEXT_MAX[key];
+      if (!errors[key] && (form[key] ?? "").trim().length > max) {
+        errors[key] = t("shared.validation.textMaxLength", { max });
+      }
+    }
     const phone = form.phone?.trim() ?? "";
-    if (phone && !/^0\d{9}$/.test(phone)) {
-      errors.phone = t("masterData.recipient.errPhone");
+    if (phone) {
+      // Dùng luật SĐT dùng chung (10 số, đầu số VN) thay vì regex chép tay.
+      const phoneCheck = validatePhone(phone);
+      if (!phoneCheck.isValid) {
+        errors.phone =
+          phoneCheck.errorMessage ?? t("masterData.recipient.errPhone");
+      }
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -1821,14 +1890,6 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <table>
             <thead>
               <tr>
-                <th className="select-col">
-                  <MvpSelectionCheckbox
-                    checked={rowSelection.isAllSelected}
-                    indeterminate={rowSelection.isIndeterminate}
-                    onChange={rowSelection.toggleAll}
-                    ariaLabel={t("masterData.recipient.selectAllAria")}
-                  />
-                </th>
                 <th className="stt-col">STT</th>
                 <SortableTh
                   label={t("masterData.recipient.colCode")}
@@ -1891,29 +1952,22 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <tbody>
               {query.isLoading ? (
                 <tr>
-                  <td colSpan={12} className="muted">
+                  <td colSpan={11} className="muted">
                     {t("masterData.common.loadingData")}
                   </td>
                 </tr>
               ) : sortedRows.length > 0 ? (
-                sortedRows.map((record, index) => (
+                sortedRows.map((record) => (
                   <tr key={record.agency_id}>
-                    <td className="select-col">
-                      <MvpSelectionCheckbox
-                        checked={rowSelection.isSelected(record.agency_id)}
-                        onChange={(checked) =>
-                          rowSelection.toggleOne(record.agency_id, checked)
-                        }
-                        ariaLabel={t("masterData.recipient.selectRowAria", {
-                          name: record.agency_name,
-                        })}
-                      />
-                    </td>
                     <td className="stt-col">
-                      {mvpRowNumber(page, perPage, index)}
+                      {mvpRowNumber(page, perPage, originalIndexOf(record))}
                     </td>
                     <td>{record.agency_code}</td>
-                    <td>{record.agency_name}</td>
+                    <td style={TRUNCATE_CELL_STYLE}>
+                      <TruncatedText lines={1} maxWidth={220}>
+                        {record.agency_name}
+                      </TruncatedText>
+                    </td>
                     <td>
                       {record.recipient_type ? (
                         <UiStatusBadge
@@ -1928,8 +1982,10 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <td>{record.region || EMPTY_TEXT}</td>
                     <td>{record.contact_name || EMPTY_TEXT}</td>
                     <td>{record.phone || EMPTY_TEXT}</td>
-                    <td style={WRAP_TEXT_CELL_STYLE}>
-                      {formatAddress(record.address) || EMPTY_TEXT}
+                    <td style={TRUNCATE_CELL_STYLE}>
+                      <TruncatedText maxWidth={300}>
+                        {formatAddress(record.address) || EMPTY_TEXT}
+                      </TruncatedText>
                     </td>
                     <td>
                       <UiStatusBadge
@@ -1955,7 +2011,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={12} className="muted">
+                  <td colSpan={11} className="muted">
                     {t("masterData.recipient.empty")}
                   </td>
                 </tr>
@@ -2019,6 +2075,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-code"
+                  slotProps={{
+                    htmlInput: { maxLength: AGENCY_TEXT_MAX.agency_code },
+                  }}
                   label={t("masterData.recipient.fieldCode")}
                   required
                   fullWidth
@@ -2043,6 +2102,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-name"
+                  slotProps={{
+                    htmlInput: { maxLength: AGENCY_TEXT_MAX.agency_name },
+                  }}
                   label={t("masterData.recipient.colName")}
                   required
                   fullWidth
@@ -2105,6 +2167,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-market"
+                  slotProps={{
+                    htmlInput: { maxLength: AGENCY_TEXT_MAX.market },
+                  }}
                   label={t("masterData.recipient.colMarket")}
                   fullWidth
                   value={form.market ?? ""}
@@ -2123,6 +2188,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-region"
+                  slotProps={{
+                    htmlInput: { maxLength: AGENCY_TEXT_MAX.region },
+                  }}
                   label={t("masterData.recipient.colRegion")}
                   fullWidth
                   value={form.region ?? ""}
@@ -2141,6 +2209,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-contact-name"
+                  slotProps={{
+                    htmlInput: { maxLength: AGENCY_TEXT_MAX.contact_name },
+                  }}
                   label={t("masterData.recipient.colContact")}
                   fullWidth
                   value={form.contact_name ?? ""}
@@ -2241,6 +2312,17 @@ const EMPTY_DEFECT_FORM: DefectPayload = {
 };
 
 /**
+ * Trần độ dài ô chữ lỗi/bệnh — khớp BE StoreDefectCatalogRequest (defect_code
+ * 80, defect_name 200); `description` BE không chặn nên FE tự đặt 2000 (mức
+ * chung cho mô tả tự do của dự án).
+ */
+const DEFECT_TEXT_MAX = {
+  defect_code: 80,
+  defect_name: 200,
+  description: 2000,
+} as const;
+
+/**
  * Các ô nhập có chỗ hiển thị lỗi riêng (`error` + `helperText`) trong modal lỗi
  * / bệnh. Lỗi server thuộc field ngoài danh sách này rơi về banner tổng — xem
  * `resolveFormErrors`. Khoá bên trái là tên camelCase mà `extractFieldErrors`
@@ -2285,13 +2367,15 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     pageSize: perPage,
     rowCount: rows.length,
   });
-  const rowSelection = useRowSelection(rows, (record) => record.defect_id);
-  const { sortedRows, sortState, requestSort } = useClientSort(rows, {
-    code: (r) => r.defect_code,
-    name: (r) => r.defect_name,
-    description: (r) => r.description,
-    status: (r) => r.status,
-  });
+  const { sortedRows, sortState, requestSort, originalIndexOf } = useClientSort(
+    rows,
+    {
+      code: (r) => r.defect_code,
+      name: (r) => r.defect_name,
+      description: (r) => r.description,
+      status: (r) => r.status,
+    },
+  );
 
   const openCreate = () => {
     if (!canManage) return;
@@ -2335,6 +2419,14 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       errors.defect_code = t("masterData.defect.errCode");
     if (!form.defect_name.trim())
       errors.defect_name = t("masterData.defect.errName");
+    for (const key of Object.keys(DEFECT_TEXT_MAX) as Array<
+      keyof typeof DEFECT_TEXT_MAX
+    >) {
+      const max = DEFECT_TEXT_MAX[key];
+      if (!errors[key] && (form[key] ?? "").trim().length > max) {
+        errors[key] = t("shared.validation.textMaxLength", { max });
+      }
+    }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -2459,14 +2551,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <table>
             <thead>
               <tr>
-                <th className="select-col">
-                  <MvpSelectionCheckbox
-                    checked={rowSelection.isAllSelected}
-                    indeterminate={rowSelection.isIndeterminate}
-                    onChange={rowSelection.toggleAll}
-                    ariaLabel={t("masterData.defect.selectAllAria")}
-                  />
-                </th>
                 <th className="stt-col">STT</th>
                 <SortableTh
                   label={t("masterData.defect.colCode")}
@@ -2499,31 +2583,26 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <tbody>
               {query.isLoading ? (
                 <tr>
-                  <td colSpan={7} className="muted">
+                  <td colSpan={6} className="muted">
                     {t("masterData.common.loadingData")}
                   </td>
                 </tr>
               ) : sortedRows.length > 0 ? (
-                sortedRows.map((record, index) => (
+                sortedRows.map((record) => (
                   <tr key={record.defect_id}>
-                    <td className="select-col">
-                      <MvpSelectionCheckbox
-                        checked={rowSelection.isSelected(record.defect_id)}
-                        onChange={(checked) =>
-                          rowSelection.toggleOne(record.defect_id, checked)
-                        }
-                        ariaLabel={t("masterData.defect.selectRowAria", {
-                          name: record.defect_name,
-                        })}
-                      />
-                    </td>
                     <td className="stt-col">
-                      {mvpRowNumber(page, perPage, index)}
+                      {mvpRowNumber(page, perPage, originalIndexOf(record))}
                     </td>
                     <td>{record.defect_code}</td>
-                    <td>{record.defect_name}</td>
-                    <td style={WRAP_TEXT_CELL_STYLE}>
-                      {record.description || EMPTY_TEXT}
+                    <td style={TRUNCATE_CELL_STYLE}>
+                      <TruncatedText lines={1} maxWidth={220}>
+                        {record.defect_name}
+                      </TruncatedText>
+                    </td>
+                    <td style={TRUNCATE_CELL_STYLE}>
+                      <TruncatedText maxWidth={300}>
+                        {record.description || EMPTY_TEXT}
+                      </TruncatedText>
                     </td>
                     <td>
                       <UiStatusBadge
@@ -2549,7 +2628,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="muted">
+                  <td colSpan={6} className="muted">
                     {t("masterData.defect.empty")}
                   </td>
                 </tr>
@@ -2613,6 +2692,9 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="defect-code"
+                  slotProps={{
+                    htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_code },
+                  }}
                   label={t("masterData.defect.colCode")}
                   required
                   fullWidth
@@ -2632,12 +2714,14 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   disabled={isSaving}
                   error={Boolean(fieldErrors.defect_code)}
                   helperText={fieldErrors.defect_code}
-                  slotProps={{ htmlInput: { maxLength: 80 } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="defect-name"
+                  slotProps={{
+                    htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_name },
+                  }}
                   label={t("masterData.defect.colName")}
                   required
                   fullWidth
@@ -2657,12 +2741,14 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   disabled={isSaving}
                   error={Boolean(fieldErrors.defect_name)}
                   helperText={fieldErrors.defect_name}
-                  slotProps={{ htmlInput: { maxLength: 200 } }}
                 />
               </Grid>
               <Grid size={12}>
                 <UiTextField
                   id="defect-description"
+                  slotProps={{
+                    htmlInput: { maxLength: DEFECT_TEXT_MAX.description },
+                  }}
                   label={t("masterData.common.description")}
                   fullWidth
                   multiline
