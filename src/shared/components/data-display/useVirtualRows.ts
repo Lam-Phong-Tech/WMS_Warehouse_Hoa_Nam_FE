@@ -146,19 +146,48 @@ export function useVirtualRows<T>(
    * người vừa lọc còn 3 dòng vẫn đang đứng ở offset của 5.956 dòng trước đó và
    * nhìn thấy một bảng trắng.
    *
-   * Mốc theo CHÍNH mảng `rows`: nó chỉ đổi tham chiếu khi dữ liệu/bộ lọc/sắp
-   * xếp đổi. Lần chạy đầu tiên (mount) cũng gọi `scrollToOffset(0)` — vô hại vì
-   * khung cuộn vốn đang ở 0.
+   * KHÔNG ĐƯỢC mốc theo THAM CHIẾU của mảng `rows` — đây là lỗi đã dính và chỉ
+   * lộ ra khi chạy trong app thật (bàn đo không thấy vì ở đó `rows` được
+   * `useMemo` nên tham chiếu ổn định).
+   *
+   * Màn báo cáo dựng `rows` bằng `rows.filter(...)` NGAY TRONG THÂN RENDER, nên
+   * mỗi lượt render sinh một MẢNG MỚI dù nội dung y hệt. Cuộn làm virtualizer
+   * đổi state ⇒ render lại ⇒ mảng mới ⇒ effect tưởng "đổi bộ lọc" ⇒ kéo khung
+   * cuộn về 0 ⇒ cửa sổ quay lại đúng dòng đầu. Triệu chứng: cuộn hết bảng mà
+   * vẫn chỉ thấy dòng 1–17.
+   *
+   * Mốc theo NỘI DUNG, rẻ và đủ đúng: số dòng + tham chiếu của dòng ĐẦU và dòng
+   * CUỐI. `filter`/`map` dựng mảng mới nhưng giữ nguyên CÁC OBJECT dòng, nên bộ
+   * ba này ổn định khi tập không đổi và đổi ngay khi lọc/sắp xếp đổi. Trường hợp
+   * duy nhất lọt lưới là hoán vị giữ nguyên hai đầu — hậu quả chỉ là không tự
+   * cuộn về đầu, không mất dòng nào.
    */
   const scrollToOffset = virtualizer.scrollToOffset;
-  const previousRows = useRef<T[] | null>(null);
+  const previous = useRef<{ length: number; first: unknown; last: unknown }>({
+    length: -1,
+    first: undefined,
+    last: undefined,
+  });
   useEffect(() => {
-    if (!enabled) return;
-    if (previousRows.current === rows) return;
-    previousRows.current = rows;
+    // KHÔNG chặn theo `enabled`. Lọc từ 5.969 xuống 12 dòng làm cuộn ảo TẮT
+    // (dưới ngưỡng) — nếu bỏ qua việc kéo khung cuộn về 0 thì người dùng ở lại
+    // offset của tập cũ và nhìn thấy một vùng TRẮNG, đúng lỗi đã tái hiện được
+    // trong app thật. Việc đưa khung cuộn về đầu là đúng ở CẢ hai chế độ.
+    const first = rows[0];
+    const last = rows[rows.length - 1];
+    const before = previous.current;
+    if (
+      before.length === rows.length &&
+      before.first === first &&
+      before.last === last
+    ) {
+      return;
+    }
+    previous.current = { length: rows.length, first, last };
     const scroller = getScroller();
     if (scroller) scroller.scrollTop = 0;
-    scrollToOffset(0);
+    // `scrollToOffset` chỉ có nghĩa khi virtualizer đang chạy.
+    if (enabled) scrollToOffset(0);
     // `getScroller` là ref callback ổn định của nơi gọi; đưa vào deps sẽ buộc
     // nơi gọi phải memo hoá thêm một lớp mà không đổi hành vi.
     // eslint-disable-next-line react-hooks/exhaustive-deps

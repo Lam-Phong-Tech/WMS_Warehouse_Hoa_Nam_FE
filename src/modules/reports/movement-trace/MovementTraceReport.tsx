@@ -68,7 +68,6 @@ import {
   MOVEMENT_TRACE_REPORT_CODE,
   MOVEMENT_TRACE_TIMEZONE,
   useMovementTraceReport,
-  useSourceDocumentCodes,
   type MovementTraceRow,
 } from "./movement-trace-api";
 import {
@@ -86,8 +85,7 @@ import {
   type TraceBy,
 } from "./movement-trace-labels";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
-import { useRenderWindow } from "@/shared/components/data-display/useRenderWindow";
-import { WindowedMore } from "@/shared/components/data-display/WindowedMore";
+import { VirtualList } from "@/shared/components/data-display/VirtualList";
 
 /**
  * RPT-MOV-01 — "Truy vết hàng hóa" (/reports/traceability).
@@ -404,7 +402,6 @@ export default function MovementTraceReport() {
   };
 
   const report = useMovementTraceReport(serverParams);
-  const documentCodes = useSourceDocumentCodes({ fromDate, toDate });
 
   /**
    * Gợi ý bộ lọc kỳ. Phép dò mang THEO bộ lọc phi-thời-gian đang áp dụng: màn
@@ -432,14 +429,18 @@ export default function MovementTraceReport() {
     probe: rangeAdviceProbe,
   });
 
-  const documentCodeOf = useCallback(
-    (row: MovementTraceRow): string => {
-      if (row.sourceId === "") return "";
-      // Không tra được mã thì "Chưa có" — không in UUID (kể cả rút gọn).
-      return documentCodes.byId.get(row.sourceId) ?? EMPTY_TEXT;
-    },
-    [documentCodes.byId],
-  );
+  /**
+   * Mã chứng từ nguồn nay do BE tra sẵn (`source_no`).
+   *
+   * Trước đây màn này gọi thêm HAI request chỉ để dựng bảng tra UUID -> mã:
+   * `/reports/document-history` (KHÔNG phân trang, 328 KB nén / 1,69 MB giải
+   * nén) và `/reversal-documents?per_page=200`. Cả hai đã bỏ — quy tắc hiển thị
+   * giữ nguyên: không tra được thì "Chưa có", tuyệt đối không in UUID.
+   */
+  const documentCodeOf = useCallback((row: MovementTraceRow): string => {
+    if (row.sourceId === "") return "";
+    return row.sourceNo !== "" ? row.sourceNo : EMPTY_TEXT;
+  }, []);
 
   /** posted_at ↑ · movement_id — đúng thứ tự demo công bố ở đầu timeline. */
   const orderedRows = useMemo(() => {
@@ -573,13 +574,6 @@ export default function MovementTraceReport() {
     [documentCodeOf, t],
   );
   const ledgerFilter = useSectionFilter(rows, ledgerFilterConfig);
-
-  /**
-   * Dòng thời gian vẽ dần. Bộ đếm "N biến động" ngay trên đầu khối vẫn lấy từ
-   * `timelineFilter.rows.length` — tức TOÀN BỘ tập đã lọc, không phải phần đang
-   * vẽ — nên con số công bố không đổi; chỉ số node DOM đổi.
-   */
-  const timelineWindow = useRenderWindow(timelineFilter.rows);
 
   const movementCountText = t("reports.movementTrace.movementCount", {
     count: formatQuantity(rows.length),
@@ -1125,119 +1119,108 @@ export default function MovementTraceReport() {
             data-testid="movement-trace-timeline-filter"
           />
         </Box>
-        <Box
-          sx={{
-            px: 3,
-            pt: 0,
-            pb: 3,
-            maxHeight: RPT_SCROLL_MAX_HEIGHT,
-            overflowY: "auto",
-            overscrollBehavior: "contain",
-            scrollBehavior: "smooth",
-          }}
-        >
-          {timelineFilter.rows.length === 0 ? (
-            <Box sx={{ fontSize: 13, color: S.textMedium }}>
-              {t("reports.movementTrace.timelineEmpty")}
-            </Box>
-          ) : (
-            <Box
-              component="ol"
-              role="list"
-              sx={{ listStyle: "none", m: 0, p: 0 }}
-            >
-              {timelineWindow.visible.map((row, index) => {
-                const kind = movementKindOf(row);
-                const isLast = index === timelineWindow.shown - 1;
-                const documentCode = documentCodeOf(row);
-                const details = [
-                  row.productCode || EMPTY_TEXT,
-                  `Δ ${row.qtyDelta}`,
-                  documentCode,
-                  row.originalMovementId !== ""
-                    ? t("reports.movementTrace.reversalOf", {
-                        code: row.originalMovementNo || EMPTY_TEXT,
-                      })
-                    : "",
-                ].filter(Boolean);
+        <Box sx={{ px: 3, pt: 0, pb: 3 }}>
+          {/*
+            Dòng thời gian nhận TRỌN tập đã lọc (bảng và timeline phải mô tả
+            cùng một tập). Trước đây nó nới dần bằng useRenderWindow: cuộn tới
+            đáy của một lát cắt 5.956 biến động thì cả 5.956 mục nằm trong DOM.
+            VirtualList giữ số phần tử theo KHUNG NHÌN, mọi mục vẫn tới được
+            bằng cuộn — cùng adapter useVirtualRows với bảng, không chép logic.
+          */}
+          <VirtualList<MovementTraceRow>
+            rows={timelineFilter.rows}
+            rowKey={(row) => row.id}
+            maxHeight={RPT_SCROLL_MAX_HEIGHT}
+            data-testid="movement-trace-timeline"
+            emptyText={
+              <Box sx={{ fontSize: 13, color: S.textMedium }}>
+                {t("reports.movementTrace.timelineEmpty")}
+              </Box>
+            }
+            renderRow={(row, index, isLast) => {
+              const kind = movementKindOf(row);
+              const documentCode = documentCodeOf(row);
+              const details = [
+                row.productCode || EMPTY_TEXT,
+                `Δ ${row.qtyDelta}`,
+                documentCode,
+                row.originalMovementId !== ""
+                  ? t("reports.movementTrace.reversalOf", {
+                      code: row.originalMovementNo || EMPTY_TEXT,
+                    })
+                  : "",
+              ].filter(Boolean);
 
-                return (
+              return (
+                <Box sx={{ display: "flex", gap: 1.5 }}>
                   <Box
-                    component="li"
-                    key={row.id}
-                    sx={{ display: "flex", gap: 1.5 }}
+                    aria-hidden="true"
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
                   >
                     <Box
-                      aria-hidden="true"
                       sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
+                        width: 10,
+                        height: 10,
+                        flexShrink: 0,
+                        borderRadius: "50%",
+                        mt: "5px",
+                        bgcolor: TIMELINE_DOT_COLORS[MOVEMENT_KIND_TONES[kind]],
+                      }}
+                    />
+                    {isLast ? null : (
+                      <Box
+                        sx={{
+                          width: 2,
+                          flexGrow: 1,
+                          mt: "4px",
+                          bgcolor: S.border,
+                        }}
+                      />
+                    )}
+                  </Box>
+                  <Box sx={{ minWidth: 0, pb: isLast ? 0 : 2 }}>
+                    <Box
+                      sx={{
+                        fontSize: 15,
+                        fontWeight: 500,
+                        color: S.textHigh,
                       }}
                     >
                       <Box
                         sx={{
-                          width: 10,
-                          height: 10,
-                          flexShrink: 0,
-                          borderRadius: "50%",
-                          mt: "5px",
-                          bgcolor:
-                            TIMELINE_DOT_COLORS[MOVEMENT_KIND_TONES[kind]],
-                        }}
-                      />
-                      {isLast ? null : (
-                        <Box
-                          sx={{
-                            width: 2,
-                            flexGrow: 1,
-                            mt: "4px",
-                            bgcolor: S.border,
-                          }}
-                        />
-                      )}
-                    </Box>
-                    <Box sx={{ minWidth: 0, pb: isLast ? 0 : 2 }}>
-                      <Box
-                        sx={{
-                          fontSize: 15,
-                          fontWeight: 500,
-                          color: S.textHigh,
+                          display: "flex",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 1,
                         }}
                       >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                            gap: 1,
-                          }}
-                        >
-                          <Box component="span" sx={CAPTION_SX}>
-                            {t("shared.table.rowNumber")} {index + 1}
-                          </Box>
-                          <UiStatusBadge
-                            tone={MOVEMENT_KIND_TONES[kind]}
-                            label={MOVEMENT_KIND_TIMELINE_LABELS[kind]}
-                          />
-                          <Box component="span" sx={CAPTION_SX}>
-                            {row.movementNo || EMPTY_TEXT}
-                          </Box>
+                        <Box component="span" sx={CAPTION_SX}>
+                          {t("shared.table.rowNumber")} {index + 1}
+                        </Box>
+                        <UiStatusBadge
+                          tone={MOVEMENT_KIND_TONES[kind]}
+                          label={MOVEMENT_KIND_TIMELINE_LABELS[kind]}
+                        />
+                        <Box component="span" sx={CAPTION_SX}>
+                          {row.movementNo || EMPTY_TEXT}
                         </Box>
                       </Box>
-                      <Box sx={{ fontSize: 12, color: S.textDisabled }}>
-                        {formatTraceDateTime(row.occurredAt)}
-                      </Box>
-                      <Box sx={{ fontSize: 13, color: S.textMedium }}>
-                        {details.join(" · ")}
-                      </Box>
+                    </Box>
+                    <Box sx={{ fontSize: 12, color: S.textDisabled }}>
+                      {formatTraceDateTime(row.occurredAt)}
+                    </Box>
+                    <Box sx={{ fontSize: 13, color: S.textMedium }}>
+                      {details.join(" · ")}
                     </Box>
                   </Box>
-                );
-              })}
-            </Box>
-          )}
-          <WindowedMore window={timelineWindow} />
+                </Box>
+              );
+            }}
+          />
         </Box>
       </Box>
 

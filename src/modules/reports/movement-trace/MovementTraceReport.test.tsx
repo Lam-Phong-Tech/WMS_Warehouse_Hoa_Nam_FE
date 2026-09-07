@@ -3,9 +3,15 @@
  * thật `/reports/movement-trace`.
  *
  * File này khóa những gì typecheck không bắt được: KPI/timeline/ledger dựng
- * đúng từ payload BE, `source_id` (UUID) được đổi sang mã chứng từ người đọc
- * được, bút toán đảo được gọi đúng tên theo chiều qty_delta, bộ lọc phụ +
+ * đúng từ payload BE, cột "Chứng từ" hiện MÃ người đọc được chứ không phải
+ * UUID, bút toán đảo được gọi đúng tên theo chiều qty_delta, bộ lọc phụ +
  * "Đặt lại" thật sự đổi tập dòng, và bấm một dòng mở drawer bằng chứng.
+ *
+ * ĐỔI HỢP ĐỒNG (07/09/2026): mã chứng từ nguồn nay do BE tra sẵn và trả trong
+ * chính `source_no` của từng dòng. Màn hình KHÔNG còn gọi
+ * `/reports/document-history` + `/reversal-documents` để tự ghép bảng tra —
+ * riêng document-history tốn 328 KB nén / 1,69 MB giải nén cho đúng hai trường.
+ * Fixture dưới đây vì thế mang `source_no`, và hai payload phụ đã bỏ.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, within } from "@testing-library/react";
@@ -48,6 +54,7 @@ const MOVEMENT_TRACE = {
       actor: "approver.hn",
       source_type: "REVERSAL_DOCUMENT",
       source_id: "rev-1",
+      source_no: "REV-2026-00007",
       original_movement_id: "22222222-2222-4222-8222-222222222222",
       correction_chain_id: "chain-2",
     },
@@ -63,6 +70,7 @@ const MOVEMENT_TRACE = {
       actor: "vanhanh.hn",
       source_type: "OUTBOUND_DOCUMENT",
       source_id: "out-1",
+      source_no: "OUT-2026-00018",
       correction_chain_id: "chain-2",
     },
     {
@@ -77,22 +85,15 @@ const MOVEMENT_TRACE = {
       actor: "thukho.hn",
       source_type: "INBOUND_DOCUMENT",
       source_id: "in-1",
+      source_no: "IN-2026-00031",
       correction_chain_id: "chain-1",
     },
   ],
 };
 
-const PAYLOAD: Record<string, unknown> = {
-  "/reports/document-history": {
-    rows: [
-      { id: "in-1", document_no: "IN-2026-00031" },
-      { id: "out-1", document_no: "OUT-2026-00018" },
-    ],
-  },
-};
+const PAYLOAD: Record<string, unknown> = {};
 
 const PAGE_PAYLOAD: Record<string, unknown> = {
-  "/reversal-documents": [{ id: "rev-1", reversal_code: "REV-2026-00007" }],
   "/products": [
     {
       sku_id: "sku-vent",

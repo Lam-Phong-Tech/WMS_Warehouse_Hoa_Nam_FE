@@ -420,6 +420,55 @@ export function ResponsiveDataTable<T>({
   const spacerColSpan = columnWidths.length;
 
   /**
+   * SX DỰNG SẴN — một lần cho mỗi lượt render, thay vì một lần cho mỗi Ô.
+   *
+   * Trước đây mỗi `<Box component="td">` và mỗi `<Box component="tr">` nhận một
+   * OBJECT LITERAL MỚI. Với bảng 9 cột, một lượt dựng lại tạo 9 × số dòng object
+   * style; `sx` của dòng còn là một HÀM `(theme) => theme.transitions.create(...)`
+   * nên nó chạy lại cho TỪNG dòng. Emotion có cache theo chuỗi style đã tuần tự
+   * hoá, nhưng chi phí TUẦN TỰ HOÁ thì vẫn phải trả đủ mỗi lần.
+   *
+   * Nội dung style KHÔNG đổi một pixel nào — chỉ đổi số lần dựng object.
+   * `docs/perf/F5_INP_2026-09-07.md` §4.1 đã chỉ đích danh engine `sx` là phần
+   * còn lại của thời gian dựng; đây là phần cắt được mà không đụng design system.
+   */
+  const rowSx = {
+    cursor: onRowClick ? "pointer" : undefined,
+    // Dòng đổi nền mượt khi rê chuột thay vì nhảy màu một phát — cùng nhịp với
+    // `MuiTableRow` khai trong theme (mui-adapter).
+    transition: theme.transitions.create("background-color", {
+      duration: theme.transitions.duration.shortest,
+    }),
+    "&:hover": { bgcolor: "action.hover" },
+    "&:not(:last-of-type)": { borderBottom: 1, borderColor: "divider" },
+  } as const;
+
+  const cellSxByKey = new Map(
+    columns.map((column) => [
+      column.key,
+      {
+        padding: "10px 12px",
+        verticalAlign: "top",
+        overflowWrap: "anywhere",
+        // Chiều rộng cột chỉ là gợi ý cho trình duyệt; trần thật của phần chữ
+        // nằm ở TruncatedText bên trong.
+        ...(column.width !== undefined ? { maxWidth: column.width } : null),
+      },
+    ]),
+  );
+
+  const actionCellSx = {
+    padding: "10px 12px",
+    textAlign: "right",
+    whiteSpace: "nowrap",
+  } as const;
+
+  const selectionBodyCellSx = {
+    ...selectionCellStyle,
+    verticalAlign: "top",
+  } as const;
+
+  /**
    * Chỉ khoá bố cục khi bảng khai bề rộng cho MỌI cột — lúc đó đây là một bản
    * thiết kế đầy đủ và phải được tôn trọng nguyên vẹn. Khai thiếu cột nào thì
    * giữ `auto`: bề rộng trong `<colgroup>` vẫn có tác dụng như đề nghị, còn
@@ -634,25 +683,12 @@ export function ResponsiveDataTable<T>({
                   virtualEnabled ? virtual.items[position]?.index : undefined
                 }
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
-                sx={{
-                  cursor: onRowClick ? "pointer" : undefined,
-                  // Dòng đổi nền mượt khi rê chuột thay vì nhảy màu một phát —
-                  // cùng nhịp với `MuiTableRow` khai trong theme (mui-adapter).
-                  transition: (theme) =>
-                    theme.transitions.create("background-color", {
-                      duration: theme.transitions.duration.shortest,
-                    }),
-                  "&:hover": { bgcolor: "action.hover" },
-                  "&:not(:last-of-type)": {
-                    borderBottom: 1,
-                    borderColor: "divider",
-                  },
-                }}
+                sx={rowSx}
               >
                 {rowSelection && (
                   <Box
                     component="td"
-                    sx={{ ...selectionCellStyle, verticalAlign: "top" }}
+                    sx={selectionBodyCellSx}
                     // Ô checkbox nằm trong dòng có onRowClick (mở modal chi tiết) —
                     // chặn nổi bọt để tick chọn không mở luôn chi tiết.
                     onClick={(event) => event.stopPropagation()}
@@ -671,16 +707,7 @@ export function ResponsiveDataTable<T>({
                     component="td"
                     key={column.key}
                     data-align={column.align ?? "left"}
-                    sx={{
-                      padding: "10px 12px",
-                      verticalAlign: "top",
-                      overflowWrap: "anywhere",
-                      // Chiều rộng cột chỉ là gợi ý cho trình duyệt; trần
-                      // thật của phần chữ nằm ở TruncatedText bên trong.
-                      ...(column.width !== undefined
-                        ? { maxWidth: column.width }
-                        : null),
-                    }}
+                    sx={cellSxByKey.get(column.key)}
                   >
                     {renderCell(column, row)}
                   </Box>
@@ -688,11 +715,7 @@ export function ResponsiveDataTable<T>({
                 {renderRowActions && (
                   <Box
                     component="td"
-                    sx={{
-                      padding: "10px 12px",
-                      textAlign: "right",
-                      whiteSpace: "nowrap",
-                    }}
+                    sx={actionCellSx}
                     onClick={(event) => event.stopPropagation()}
                   >
                     {renderRowActions(row)}

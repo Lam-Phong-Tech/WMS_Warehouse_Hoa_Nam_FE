@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
@@ -55,6 +54,15 @@ export type MovementTraceRow = {
   physicalCode: string;
   sourceType: string;
   sourceId: string;
+  /**
+   * Mã chứng từ nguồn ĐỌC ĐƯỢC (PN-…/PX-…/REV-…) do BE tra sẵn từ source_id.
+   *
+   * Trước đây màn hình tự ghép bằng hai request phụ (/reports/document-history
+   * KHÔNG phân trang + /reversal-documents) chỉ để dựng Map<uuid, mã>. Riêng
+   * document-history tốn 328 KB nén / 1,69 MB giải nén cho đúng HAI trường.
+   * BE nay trả thẳng, cùng khuôn mẫu với original_movement_no.
+   */
+  sourceNo: string;
   actor: string;
   originalMovementId: string;
   /** Mã nghiệp vụ (MV-…) của movement — thứ DUY NHẤT được in ra màn hình. */
@@ -107,6 +115,7 @@ function toRow(raw: Raw): MovementTraceRow {
     physicalCode: text(raw.physical_code, ""),
     sourceType: text(raw.source_type, ""),
     sourceId: text(raw.source_id, ""),
+    sourceNo: text(raw.source_no, ""),
     actor: text(raw.actor, ""),
     originalMovementId: text(raw.original_movement_id, ""),
     movementNo: text(raw.movement_no, ""),
@@ -180,73 +189,4 @@ export function useMovementTraceReport(query: MovementTraceQuery) {
     staleTime: STALE_MS,
     placeholderData: (previous) => previous,
   });
-}
-
-/**
- * Bảng tra `source_id` → mã chứng từ hiển thị.
- *
- * `stock_movements.source_id` là UUID; §13.10 lại đòi cột "Chứng từ / dòng" của
- * RPT-MOV-01 phải truy ngược được. `/reports/document-history` chỉ đọc
- * `stock_documents` (nhập/xuất) nên KHÔNG bao giờ trả phiếu Reversal — phải
- * ghép thêm `/reversal-documents` mới phủ hết ba loại chứng từ mà ledger trỏ
- * tới. Thiếu mã thì màn hình hiện "Chưa có" — không bịa mã, không in UUID.
- */
-export function useSourceDocumentCodes({
-  fromDate,
-  toDate,
-  enabled = true,
-}: {
-  fromDate?: string;
-  toDate?: string;
-  enabled?: boolean;
-}) {
-  const documents = useQuery({
-    queryKey: ["rpt-mov-01", "document-history", fromDate, toDate],
-    queryFn: () =>
-      http.get<Raw>(API_ENDPOINTS.REPORTS_DOCUMENT_HISTORY, {
-        params: cleanParams({
-          from_date: fromDate,
-          to_date: toDate,
-          doc_type: "all",
-        }),
-      }),
-    enabled,
-    staleTime: STALE_MS,
-    placeholderData: (previous) => previous,
-  });
-
-  const reversals = useQuery({
-    queryKey: ["rpt-mov-01", "reversal-documents", fromDate, toDate],
-    queryFn: () =>
-      http.getPage<Raw[]>(API_ENDPOINTS.REVERSAL_DOCUMENTS, {
-        params: cleanParams({
-          from_date: fromDate,
-          to_date: toDate,
-          per_page: 200,
-        }),
-      }),
-    enabled,
-    staleTime: STALE_MS,
-    placeholderData: (previous) => previous,
-  });
-
-  const byId = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const row of listOf(documents.data?.rows)) {
-      const code = text(row.document_no, "");
-      const id = text(row.id, "");
-      if (id !== "" && code !== "") map.set(id, code);
-    }
-    for (const row of listOf(reversals.data?.data)) {
-      const code = text(row.reversal_code ?? row.reversal_no, "");
-      const id = text(row.id, "");
-      if (id !== "" && code !== "") map.set(id, code);
-    }
-    return map;
-  }, [documents.data, reversals.data]);
-
-  return {
-    byId,
-    loading: documents.isLoading || reversals.isLoading,
-  };
 }
