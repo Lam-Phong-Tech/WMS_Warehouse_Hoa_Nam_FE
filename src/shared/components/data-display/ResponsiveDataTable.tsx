@@ -7,7 +7,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import type { ReactNode } from "react";
+import { useCallback, useRef, type ReactNode } from "react";
 import { MvpSelectionCheckbox } from "@/shared/components/mvp/MvpSelectionCell";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { UiSpinner } from "@/shared/ui";
@@ -15,6 +15,7 @@ import type { RowSelectionState } from "@/shared/hooks/useRowSelection";
 import { SortableTh } from "./SortableTh";
 import { useClientSort } from "./useClientSort";
 import { useRenderWindow } from "./useRenderWindow";
+import { useVirtualRows } from "./useVirtualRows";
 import { WindowedMore } from "./WindowedMore";
 import type { ClientSortState, SortAccessor } from "./useClientSort";
 import type { SortWordingType } from "./useClientSort";
@@ -163,6 +164,26 @@ export function ResponsiveDataTable<T>({
   const visibleRows = renderWindow.visible;
 
   const moreRowsFooter = <WindowedMore window={renderWindow} />;
+
+  /**
+   * CUỘN ẢO cho bảng desktop có KHUNG CUỘN RIÊNG.
+   *
+   * `maxBodyHeight` là điều kiện bắt buộc vì đó chính là lúc `WindowedMore`
+   * hỏng: sentinel của nó nằm NGOÀI hộp cuộn nên cuộn trong bảng không bao giờ
+   * nới thêm dòng (xem phần đầu useVirtualRows). Bảng cuộn theo cả trang giữ
+   * nguyên đường `useRenderWindow` — ở đó sentinel vẫn đúng.
+   *
+   * Ở mobile bảng đã chuyển sang danh sách card và không có khung cuộn riêng
+   * nên cũng giữ nguyên đường cũ.
+   */
+  const scrollerRef = useRef<HTMLElement | null>(null);
+  const getScroller = useCallback(() => scrollerRef.current, []);
+  const virtual = useVirtualRows(
+    sortedRows,
+    getScroller,
+    !isMobile && maxBodyHeight !== undefined,
+  );
+  const { enabled: virtualEnabled, measureRow } = virtual;
 
   /**
    * Ô bảng desktop: chữ thuần được cắt bằng CSS (mặc định 2 dòng) và mang
@@ -395,6 +416,9 @@ export function ResponsiveDataTable<T>({
     ...(renderRowActions ? [96] : []),
   ];
 
+  /** Dòng đệm của cuộn ảo phải phủ đúng số ô của một dòng thật. */
+  const spacerColSpan = columnWidths.length;
+
   /**
    * Chỉ khoá bố cục khi bảng khai bề rộng cho MỌI cột — lúc đó đây là một bản
    * thiết kế đầy đủ và phải được tôn trọng nguyên vẹn. Khai thiếu cột nào thì
@@ -410,6 +434,7 @@ export function ResponsiveDataTable<T>({
     <>
       {selectionSummary}
       <Box
+        ref={scrollerRef}
         sx={{
           overflowX: "auto",
           border: 1,
@@ -573,7 +598,27 @@ export function ResponsiveDataTable<T>({
             </Box>
           </Box>
           <Box component="tbody">
-            {visibleRows.map((row) => (
+            {/**
+             * Dòng ĐỆM của cuộn ảo: giữ đúng chiều cao của phần chưa vẽ để thanh
+             * cuộn phản ánh CẢ tập ngay từ đầu. `aria-hidden` để nó không lọt vào
+             * cây trợ năng — `getAllByRole("row")` của test vẫn chỉ đếm dòng thật.
+             */}
+            {virtualEnabled && virtual.paddingTop > 0 && (
+              <tr aria-hidden="true" data-virtual-spacer="top">
+                <td
+                  colSpan={spacerColSpan}
+                  style={{
+                    height: virtual.paddingTop,
+                    padding: 0,
+                    border: 0,
+                  }}
+                />
+              </tr>
+            )}
+            {(virtualEnabled
+              ? virtual.items.map((item) => item.row)
+              : visibleRows
+            ).map((row, position) => (
               <Box
                 component="tr"
                 // role tường minh = role ngầm định của <tr>: các test contract
@@ -581,6 +626,13 @@ export function ResponsiveDataTable<T>({
                 // thuộc tính không thấy implicit role của HTML table.
                 role="row"
                 key={rowKey(row)}
+                // Cuộn ảo đo chiều cao THẬT của dòng sau khi vẽ (ô hai tầng,
+                // badge, chữ xuống dòng đều cao khác nhau); `data-index` cho
+                // virtualizer biết con số đo được thuộc về dòng nào.
+                ref={virtualEnabled ? measureRow : undefined}
+                data-index={
+                  virtualEnabled ? virtual.items[position]?.index : undefined
+                }
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 sx={{
                   cursor: onRowClick ? "pointer" : undefined,
@@ -648,10 +700,24 @@ export function ResponsiveDataTable<T>({
                 )}
               </Box>
             ))}
+            {virtualEnabled && virtual.paddingBottom > 0 && (
+              <tr aria-hidden="true" data-virtual-spacer="bottom">
+                <td
+                  colSpan={spacerColSpan}
+                  style={{
+                    height: virtual.paddingBottom,
+                    padding: 0,
+                    border: 0,
+                  }}
+                />
+              </tr>
+            )}
           </Box>
         </Box>
       </Box>
-      {moreRowsFooter}
+      {/* Cuộn ảo đã cho tới được MỌI dòng bằng cách cuộn — nút "Hiện thêm" trở
+          nên vô nghĩa (và chính nó là chỗ hỏng trước đây). */}
+      {virtualEnabled ? null : moreRowsFooter}
     </>
   );
 }

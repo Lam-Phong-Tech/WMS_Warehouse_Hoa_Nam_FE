@@ -7,6 +7,7 @@ import { preloadRoute } from "./app/router/route-preload";
 import { MainLayout } from "./app/router/route-components";
 import { warmIdb } from "./shared/cache/idb";
 import { mark } from "./shared/perf/marks";
+import { initWebVitals } from "./shared/perf/rum";
 import { registerPwa } from "./shared/pwa/register-pwa";
 import { initializeLanguage } from "./shared/i18n/language.store";
 import { initializeTheme } from "./shared/ui/theme/theme.store";
@@ -37,6 +38,10 @@ import "./styles/hn-motion.css";
 // `isBootstrapped` chỉ bật sau khi rehydrate + thử refresh xong (kể cả lỗi) —
 // ProtectedRoute chờ cờ này trước khi quyết định redirect /login.
 mark("boot");
+// RUM: đo Web Vitals THẬT trên máy người dùng (lấy mẫu; xem shared/perf/rum.ts).
+// Đặt ngay sau mark("boot") để observer "largest-contentful-paint" có mặt trước
+// khi trình duyệt vẽ khung hình đầu tiên — cài muộn hơn sẽ bỏ lỡ chính LCP.
+initWebVitals();
 void bootstrapAuth();
 
 // TẢI SONG SONG shell + chunk của trang đích, KHÔNG chờ xác thực xong.
