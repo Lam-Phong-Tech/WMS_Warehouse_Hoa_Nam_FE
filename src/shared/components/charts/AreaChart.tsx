@@ -1,4 +1,4 @@
-import Chart from "react-apexcharts";
+import { LazyApexChart as Chart } from "./LazyApexChart";
 import type { ApexOptions } from "apexcharts";
 import { useChartBaseOptions, CHART_COLORS } from "./chart-theme";
 import { useT } from "@/shared/i18n/useT";

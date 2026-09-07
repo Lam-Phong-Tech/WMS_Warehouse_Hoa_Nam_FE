@@ -157,6 +157,8 @@ export interface PvAdminProfile {
   published: boolean;
   industry_ids: string[];
   tag_ids: string[];
+  /** Ảnh hồ sơ theo thứ tự hiển thị; ảnh `is_primary` là ảnh đại diện thẻ sản phẩm. */
+  images: PvImage[];
   version: number;
 }
 
@@ -184,6 +186,15 @@ export interface PvAdminProfilePayload {
   sort_order: number;
   industry_ids: string[];
   tag_ids: string[];
+  /**
+   * Ảnh sản phẩm hiển thị trên App PV, THEO THỨ TỰ (index = sort_order).
+   *
+   * `undefined` = "không đụng tới ảnh"; `[]` = "xoá hết ảnh". BE phân biệt hai
+   * trường hợp này (xem `imageListInput`), nên đừng chuẩn hoá `undefined` thành
+   * mảng rỗng ở tầng service: làm vậy thì một lần sửa tên hiển thị cũng xoá sạch
+   * ảnh của hồ sơ.
+   */
+  images?: PvImage[];
 }
 
 /**

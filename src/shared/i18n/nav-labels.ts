@@ -30,6 +30,7 @@ export const NAV_LABELS_EN: Record<string, string> = {
   "MAP-01": "Operations overview",
   "MST-01": "SKU list",
   "MST-CAT-01": "Product catalog",
+  "MST-PV-01": "PV App products",
   "AGY-01": "Agencies / recipients",
   "DEF-01": "Defect catalog",
   "IN-01": "Inbound documents",
@@ -40,7 +41,8 @@ export const NAV_LABELS_EN: Record<string, string> = {
   "INV-01": "Stock lookup & reconciliation",
   "TRACE-01": "Physical code trace",
   "REV-00": "Stock adjustment documents",
-  "RPT-01": "Inbound – Outbound – Stock & documents",
+  "RPT-01": "Inbound report",
+  "RPT-01B": "Outbound report",
   "RPT-02": "Inventory & reconciliation",
   "RPT-03": "Goods traceability",
   "RPT-04": "Data entry / matching & errors",
@@ -121,6 +123,11 @@ export const SCREEN_META_EN: Record<string, ScreenMetaText> = {
     description:
       "Brands, product groups, models, power sources and packaging specs used when creating SKUs.",
   },
+  "MST-PV-01": {
+    title: "PV App products",
+    description:
+      "Products currently shown on the PV App with their images; add products, edit display info and toggle visibility.",
+  },
   "WH-01": {
     title: "Warehouse settings",
     description:
@@ -167,9 +174,14 @@ export const SCREEN_META_EN: Record<string, ScreenMetaText> = {
     description: "Pick a document to create a stock adjustment.",
   },
   "RPT-01": {
-    title: "Inbound – Outbound – Stock",
+    title: "Inbound report",
     description:
-      "Stock balance by period, daily movements and every document generated.",
+      "Posted inbound quantities by day and by SKU, plus inbound documents.",
+  },
+  "RPT-01B": {
+    title: "Outbound report",
+    description:
+      "Posted outbound quantities by day and by SKU, plus outbound documents.",
   },
   "RPT-02": {
     title: "Inventory & reconciliation",

@@ -24,4 +24,11 @@ export const PV_API_ENDPOINTS = {
 
   /** REQ-SRS-020 — publish, permission RIÊNG pv.publish. */
   PRODUCT_PUBLISH: (skuId: string) => `/pv/products/${skuId}/publish`,
+
+  /**
+   * MST-PV-01 — upload ảnh sản phẩm lên object storage của hệ thống (MinIO ở
+   * dev, Cloudflare R2 ở deploy). Gate bằng `pv.master.manage`; trả về URL công
+   * khai để gắn vào `images[]` của product-profiles.
+   */
+  ADMIN_PRODUCT_IMAGES: "/pv-admin/product-images",
 } as const;

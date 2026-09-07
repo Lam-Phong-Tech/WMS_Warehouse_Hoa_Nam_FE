@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import Chart from "react-apexcharts";
+import { LazyApexChart as Chart } from "@/shared/components/charts/LazyApexChart";
 import type { ApexOptions } from "apexcharts";
 import { Box, Stack, Tooltip, UiStatusBadge } from "@/shared/ui";
 import { PALETTE, TYPOGRAPHY, type ThemeModeName } from "@/shared/ui/tokens";

@@ -53,6 +53,36 @@ describe("MUI adapter ↔ tokens", () => {
     );
     expect(muiTheme.transitions.easing.easeInOut).toBe(MOTION.easing.standard);
   });
+
+  /**
+   * Hồi quy: popup của Autocomplete từng dán SÁT ô neo. Lúc lật lên, mép dưới
+   * popup trùng mép trên ô nhập — đúng chỗ NHÃN NỔI của MUI đang đứng (nhãn
+   * chồm lên ~9px) — nên nhãn bị cắt đôi, nhìn như vỡ giao diện (màn Cấu hình
+   * kho, ô Tỉnh/Thành phố). Khe hở khi lật lên phải VƯỢT phần nhãn nhô ra.
+   */
+  it("popup Autocomplete chừa khe hở, hướng lật lên đủ vượt nhãn nổi", () => {
+    // `slotProps.popper` của MUI là union (object | hàm theo ownerState) nên
+    // không truy cập thẳng được; ở đây theme khai object nên thu hẹp bằng cast.
+    const popperSlotProps = muiTheme.components?.MuiAutocomplete?.defaultProps
+      ?.slotProps?.popper as
+      | { modifiers?: Array<{ name?: string; options?: unknown }> }
+      | undefined;
+    const offsetModifier = popperSlotProps?.modifiers?.find(
+      (modifier) => modifier.name === "offset",
+    );
+    expect(offsetModifier).toBeDefined();
+
+    const { offset: offsetOf } = offsetModifier?.options as {
+      offset: (arg: { placement: string }) => [number, number];
+    };
+    expect(offsetOf({ placement: "bottom-start" })).toEqual([0, C.menu.gap]);
+    expect(offsetOf({ placement: "top-start" })).toEqual([0, C.menu.gapAbove]);
+
+    // Nhãn nổi MUI nhô lên nửa chiều cao của chính nó trên mép ô nhập.
+    const labelOverhang = TYPOGRAPHY.fontSizeSecondary;
+    expect(C.menu.gapAbove).toBeGreaterThan(labelOverhang / 2);
+    expect(C.menu.gapAbove).toBeGreaterThan(C.menu.gap);
+  });
 });
 
 describe("antd adapter ↔ tokens", () => {

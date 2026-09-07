@@ -29,6 +29,7 @@
  *    dùng chung, thêm nữa sẽ thành hai chân trang chồng nhau.
  */
 import {
+  useDeferredValue,
   useCallback,
   useEffect,
   useMemo,
@@ -51,6 +52,9 @@ import { reportRangePresets } from "@/modules/reports/operations/report-range-pr
 import { useReportExport } from "@/modules/reports/operations/report-export";
 import { reportStatusLabel } from "@/modules/reports/operations/report-labels";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { useReportRangeAdvice } from "@/modules/reports/operations/report-coverage";
+import { DOCUMENT_HISTORY_COVERAGE_PROBE } from "@/modules/reports/operations/report-probes";
+import { ReportRangeAdviceBanner } from "@/modules/reports/operations/ReportRangeAdviceBanner";
 import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
 import {
   optionsFromRows,
@@ -71,6 +75,7 @@ import {
   type IoTypeFilter,
 } from "./io-history-api";
 import { UiVuexyDateRangePicker } from "@/shared/ui";
+import { useTabView } from "@/shared/ui/use-tab-view";
 import { useT } from "@/shared/i18n/useT";
 import "./io-history-report.css";
 
@@ -253,7 +258,26 @@ export default function IoHistoryReport() {
   });
   const [type, setType] = useState<IoTypeFilter>("");
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<ViewMode>("table");
+    /**
+   * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
+   * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
+   * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
+   * @/shared/ui/use-tab-view.
+   */
+  const viewTab = useTabView<ViewMode>("table");
+  const view = viewTab.view;
+  const shownView = viewTab.shown;
+  const setView = viewTab.select;
+  /**
+   * Tab đổi view: nút bấm đọc `view` (cập nhật GẤP → tô sáng tức thì), còn các
+   * PANEL nặng đọc `deferredView` (bản trễ, React vẽ ở lượt ngắt được). Đo trước khi
+   * sửa (Playwright, CPU x4): một cú bấm "Dạng hộp" khoá luồng chính tới ~930 ms
+   * vì panel mới (bảng hàng trăm dòng / lưới thẻ) phải layout + paint trọn một
+   * lượt cùng lúc với việc tô sáng tab. Tách hai lượt thì tab phản hồi ngay,
+   * panel theo sau.
+   */
+  const deferredView = useDeferredValue(view);
+
   const [filterVisible, setFilterVisible] = useState(true);
   const [typeMenuOpen, setTypeMenuOpen] = useState(false);
   const [drillId, setDrillId] = useState<string | null>(null);
@@ -279,6 +303,24 @@ export default function IoHistoryReport() {
         .includes(needle);
     });
   }, [snapshot.rows, range.from, range.to, type, query]);
+
+  /**
+   * Gợi ý bộ lọc kỳ. Đọc `snapshot.rows` (TRƯỚC bộ lọc loại/tìm kiếm) chứ
+   * không đọc `rows`: kỳ trống vì người dùng gõ nhầm từ khoá là chuyện khác
+   * hẳn với kỳ trống vì kho không phát sinh, và chỉ chuyện thứ hai mới đáng
+   * khuyên đổi kỳ.
+   */
+  const dataDays = useMemo(
+    () => snapshot.rows.map((row) => row.postedAt.slice(0, 10)),
+    [snapshot.rows],
+  );
+  const rangeAdvice = useReportRangeAdvice({
+    from: range.from,
+    to: range.to,
+    dataDays,
+    loading,
+    probe: DOCUMENT_HISTORY_COVERAGE_PROBE,
+  });
 
   // ── Bốn thẻ KPI (hàm `kpis()` của mockup) ──────────────────────────────
   const inboundRows = ofType(rows, "INBOUND");
@@ -844,6 +886,11 @@ export default function IoHistoryReport() {
           </section>
         ) : null}
 
+        <ReportRangeAdviceBanner
+          advice={rangeAdvice}
+          onApply={(next) => setRange({ from: next.from, to: next.to })}
+        />
+
         {pageAlert !== null ? (
           <div className={pageAlert.tone} role="note">
             {pageAlert.body}
@@ -1092,7 +1139,7 @@ export default function IoHistoryReport() {
             className="tab"
             type="button"
             role="tab"
-            aria-selected={view === "table"}
+            aria-selected={shownView === "table"}
             aria-controls="rptio-panel-table"
             onClick={() => switchView("table")}
           >
@@ -1105,7 +1152,7 @@ export default function IoHistoryReport() {
             className="tab"
             type="button"
             role="tab"
-            aria-selected={view === "slice"}
+            aria-selected={shownView === "slice"}
             aria-controls="rptio-panel-slice"
             onClick={() => switchView("slice")}
           >
@@ -1123,7 +1170,7 @@ export default function IoHistoryReport() {
         />
 
         {/* ── Bảng ──────────────────────────────────────────────────────── */}
-        {view === "table" ? (
+        {deferredView === "table" ? (
           <section
             id="rptio-panel-table"
             className="card"

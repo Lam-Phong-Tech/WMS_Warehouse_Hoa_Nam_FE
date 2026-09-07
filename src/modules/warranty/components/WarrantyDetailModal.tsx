@@ -87,6 +87,12 @@ import type {
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { validatePhone } from "@/shared/constants/validation.constants";
 import {
+  FILE_RULES,
+  acceptAttribute,
+  checkFile,
+  matchesFileRule,
+} from "@/shared/validation/file-rules";
+import {
   checkDate,
   dateInputBounds,
   futureDateBounds,
@@ -124,20 +130,17 @@ function isStaleVersionConflict(error: unknown): boolean {
   return outcome !== null && isRetryableAfterReload(outcome);
 }
 
-/** Annex D SCR-WAR-01 field `images`: jpg/png/webp. */
-const WARRANTY_IMAGE_MIMES = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-];
-const WARRANTY_IMAGE_ACCEPT = ".jpg,.jpeg,.png,.webp";
-const MAX_ATTACHMENT_IMAGE_BYTES = 10 * 1024 * 1024;
-
-/** WAR-02: video đính kèm bổ sung được ở màn chi tiết, không chỉ lúc tiếp nhận. */
-const WARRANTY_VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
-const WARRANTY_VIDEO_ACCEPT = ".mp4,.mov,.webm";
-const MAX_ATTACHMENT_VIDEO_BYTES = 300 * 1024 * 1024;
+/**
+ * Đuôi/MIME/dung lượng lấy từ lớp luật dùng chung (file-rules.ts) — trước đây
+ * bốn bộ hằng số chép tay ở đây, ở WarrantyIntakeModal, OutboundIntakeModal và
+ * DocumentAttachmentsPanel. Trần SỐ LƯỢNG ảnh/video và thời lượng video vẫn ở
+ * warranty-attachment-limits.ts vì đó là luật nghiệp vụ của hồ sơ, không phải
+ * luật của tệp.
+ */
+const IMAGE_RULE = FILE_RULES.warrantyImage;
+const VIDEO_RULE = FILE_RULES.warrantyVideo;
+const WARRANTY_IMAGE_ACCEPT = acceptAttribute(IMAGE_RULE);
+const WARRANTY_VIDEO_ACCEPT = acceptAttribute(VIDEO_RULE);
 /** BE update case: cancel_reason max:1000; FE thêm sàn 5 ký tự để lý do có nghĩa. */
 const CANCEL_REASON_MIN_LENGTH = 5;
 
@@ -1054,14 +1057,17 @@ export function WarrantyDetailModal({
     let videoSlots = MAX_WARRANTY_VIDEOS - videoAttachments.length;
     // BE nhận 1 file/request; kéo-thả nhiều tệp thì tải tuần tự từng cái.
     for (const file of Array.from(files)) {
-      const isImage = WARRANTY_IMAGE_MIMES.includes(file.type);
-      const isVideo = WARRANTY_VIDEO_MIMES.includes(file.type);
+      // Phân loại theo LUẬT (đuôi + MIME) chứ không chỉ MIME: trình duyệt trả
+      // file.type rỗng cho khá nhiều tệp lấy từ USB/điện thoại cũ.
+      const isImage = matchesFileRule(file, IMAGE_RULE);
+      const isVideo = matchesFileRule(file, VIDEO_RULE);
       if (!isImage && !isVideo) {
         toast.error(t("warranty.detail.badFileType", { name: file.name }));
         continue;
       }
       if (isImage) {
-        if (file.size > MAX_ATTACHMENT_IMAGE_BYTES) {
+        const check = checkFile(file, IMAGE_RULE);
+        if (!check.ok) {
           toast.error(t("warranty.detail.imageTooLarge", { name: file.name }));
           continue;
         }
@@ -1075,7 +1081,8 @@ export function WarrantyDetailModal({
         uploadAttachmentFile(file);
         continue;
       }
-      if (file.size > MAX_ATTACHMENT_VIDEO_BYTES) {
+      const check = checkFile(file, VIDEO_RULE);
+      if (!check.ok) {
         toast.error(t("warranty.detail.videoTooLarge", { name: file.name }));
         continue;
       }

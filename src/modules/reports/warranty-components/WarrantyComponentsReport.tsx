@@ -14,16 +14,18 @@
  * Mọi ô lọc đều tác động thật lên lát cắt đang xem (KPI, ba biểu đồ, bảng, thẻ
  * lát cắt) — không có điều khiển trang trí.
  */
-import { useMemo, useState, type ReactNode } from "react";
+import { useRenderWindow } from "@/shared/components/data-display/useRenderWindow";
+import { useTabView } from "@/shared/ui/use-tab-view";
+import { WindowedMore } from "@/shared/components/data-display/WindowedMore";
+import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
 import dayjs from "dayjs";
 import {
   Box,
-  Checkbox,
   Menu,
-  MenuItem,
   Stack,
   UiAlert,
   UiButton,
+  UiOptionPicker,
   UiSelect,
   UiSpinner,
   UiTextField,
@@ -31,6 +33,8 @@ import {
   MOTION,
   RADIUS,
   SEMANTIC_LIGHT as S,
+  FILTER_GRID_COLUMNS_SX,
+  filterGridColumnSx,
 } from "@/shared/ui";
 import {
   AppstoreOutlined,
@@ -82,6 +86,9 @@ import {
 } from "@/modules/reports/operations/report-tokens";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { useReportRangeAdvice } from "@/modules/reports/operations/report-coverage";
+import { WARRANTY_COVERAGE_PROBE } from "@/modules/reports/operations/report-probes";
+import { ReportRangeAdviceBanner } from "@/modules/reports/operations/ReportRangeAdviceBanner";
 import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
 import {
   optionsFromRows,
@@ -139,6 +146,10 @@ const CARD_SX = {
   borderRadius: `${RADIUS.card}px`,
   bgcolor: S.bgSurface,
   boxShadow: S.shadowCard,
+  // Bỏ qua layout/paint khi thẻ nằm ngoài màn hình (xem ghi chú cùng tên trong
+  // stock-reconcile-report.css). Trình duyệt giữ chỗ 480px rồi tự nhớ cỡ thật.
+  contentVisibility: "auto",
+  containIntrinsicSize: "auto 480px",
 } as const;
 
 /** `.report-select` / `.report-input` của baseline: cao 40px, viền 1px, bo 6px. */
@@ -244,11 +255,8 @@ function FilterField({
     <Box
       sx={{
         minWidth: 0,
-        gridColumn: {
-          xs: "1 / -1",
-          md: `span ${span.md}`,
-          xl: `span ${span.xl}`,
-        },
+        // Ô rộng của mockup (khoảng ngày, 4/12) chiếm 2 cột lưới; còn lại 1 cột.
+        gridColumn: filterGridColumnSx(span.xl >= 4),
         "& .MuiFormControl-root, & .MuiTextField-root": {
           width: "100%",
           minWidth: 0,
@@ -538,19 +546,24 @@ function BarList({
   );
 }
 
-/** Ô chọn nhiều giá trị mang dáng `.report-select` (OR trong cùng bộ lọc). */
+/**
+ * Ô chọn nhiều giá trị mang dáng `.report-select` (OR trong cùng bộ lọc).
+ *
+ * Chỉ còn cái NÚT là của riêng màn này; danh sách bên trong dùng chung
+ * `UiOptionPicker` (cao 5 dòng, dài quá ngưỡng thì có ô tìm).
+ */
 function MultiSelectControl({
   ariaLabel,
   summary,
   options,
   value,
-  onToggle,
+  onChange,
 }: {
   ariaLabel: string;
   summary: string;
   options: Array<{ value: string; label: string }>;
   value: string[];
-  onToggle: (next: string) => void;
+  onChange: (next: string[]) => void;
 }) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   return (
@@ -586,21 +599,13 @@ function MultiSelectControl({
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
       >
-        {options.map((option) => (
-          <MenuItem
-            key={option.value}
-            dense
-            onClick={() => onToggle(option.value)}
-          >
-            <Checkbox
-              size="small"
-              checked={value.includes(option.value)}
-              tabIndex={-1}
-              sx={{ p: 0.5, mr: 1 }}
-            />
-            {option.label}
-          </MenuItem>
-        ))}
+        <UiOptionPicker
+          options={options}
+          value={value}
+          onChange={onChange}
+          aria-label={ariaLabel}
+          width={280}
+        />
       </Menu>
     </>
   );
@@ -839,7 +844,26 @@ export default function WarrantyComponentsReport() {
   const [ownerTerm, setOwnerTerm] = useState("");
   const [departmentTerm, setDepartmentTerm] = useState("");
   const [filtersHidden, setFiltersHidden] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "snapshot">("table");
+    /**
+   * Đổi tab KHÔNG khoá luồng chính: `shownViewMode` (tab đang sáng) cập nhật ở mức GẤP
+   * nên người dùng thấy phản hồi ngay, còn `viewMode` — thứ quyết định panel nào
+   * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
+   * @/shared/ui/use-tab-view.
+   */
+  const viewModeTab = useTabView<"table" | "snapshot">("table");
+  const viewMode = viewModeTab.view;
+  const shownViewMode = viewModeTab.shown;
+  const setViewMode = viewModeTab.select;
+  /**
+   * Tab đổi view: nút bấm đọc `viewMode` (cập nhật GẤP → tô sáng tức thì), còn các
+   * PANEL nặng đọc `deferredViewMode` (bản trễ, React vẽ ở lượt ngắt được). Đo trước khi
+   * sửa (Playwright, CPU x4): một cú bấm "Dạng hộp" khoá luồng chính tới ~930 ms
+   * vì panel mới (bảng hàng trăm dòng / lưới thẻ) phải layout + paint trọn một
+   * lượt cùng lúc với việc tô sáng tab. Tách hai lượt thì tab phản hồi ngay,
+   * panel theo sau.
+   */
+  const deferredViewMode = useDeferredValue(viewMode);
+
   const [openCase, setOpenCase] = useState<WarrantyCaseRow | null>(null);
   const [piiReason, setPiiReason] = useState("");
 
@@ -1055,6 +1079,13 @@ export default function WarrantyComponentsReport() {
   );
   const caseFilter = useSectionFilter(viewRows, caseFilterConfig);
 
+  /**
+   * Cửa sổ vẽ cho lưới thẻ dài — xem useRenderWindow. Con số ở KPI/biểu đồ và
+   * bộ đếm của khối vẫn tính trên TOÀN BỘ tập đã lọc; chỉ số thẻ được vẽ ra DOM
+   * là bị cắt, và người đọc luôn thấy "đang hiển thị N/M".
+   */
+  const caseWindow = useRenderWindow(caseFilter.rows);
+
   // ── Số liệu KPI ───────────────────────────────────────────────────────
   const openCount = viewRows.filter((row) =>
     ["RECEIVED", "CHECKING", "REPAIRING"].includes(row.status),
@@ -1097,6 +1128,29 @@ export default function WarrantyComponentsReport() {
     return `conic-gradient(${stops.join(", ")})`;
   }, [statusCounts, statusTotal]);
 
+  /**
+   * Gợi ý cho ô lọc "SKU / mã máy": lấy thẳng từ lát cắt đã tải nên mọi dòng
+   * gợi ý chắc chắn ra kết quả — không gợi ý SKU không có hồ sơ nào trong kỳ.
+   *
+   * Nhãn ghép "MÃ · Tên" để gõ mã hay gõ tên sản phẩm đều lọc trúng danh sách,
+   * còn giá trị ghi vào ô là MÃ — đúng thứ `matches()` phía trên và tham số
+   * `model` của API xuất tệp đang so khớp.
+   */
+  const skuSuggestions = useMemo(() => {
+    const byCode = new Map<string, string>();
+    for (const row of cases) {
+      const code = row.model.trim();
+      // "UNKNOWN_MODEL" là chỗ máy chủ điền khi hồ sơ chưa định danh được SKU,
+      // không phải một mã máy có thật — gợi ý nó chỉ gây hiểu nhầm.
+      if (!code || code === "UNKNOWN_MODEL" || byCode.has(code)) continue;
+      const name = row.skuName.trim();
+      byCode.set(code, name ? `${code} · ${name}` : code);
+    }
+    return [...byCode.entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "vi"));
+  }, [cases]);
+
   const defectItems = useMemo(() => {
     const counter = new Map<string, number>();
     for (const row of viewRows) {
@@ -1129,6 +1183,24 @@ export default function WarrantyComponentsReport() {
 
   // ── Trạng thái xuất tệp ───────────────────────────────────────────────
   const loading = warranty.isLoading || rawCases.isLoading;
+
+  /**
+   * Gợi ý bộ lọc kỳ. Mốc của một hồ sơ là NGÀY TIẾP NHẬN (`received_at`) —
+   * cùng trường mà `/reports/warranty-defects` cắt kỳ theo, nên lời khuyên và
+   * tập dòng máy chủ trả về luôn nói về cùng một thứ. Tính trên `cases` (toàn
+   * bộ hồ sơ của kỳ), không phải `viewRows` đã qua các bộ lọc phụ.
+   */
+  const rangeAdviceDays = useMemo(
+    () => cases.map((row) => row.receivedAt.slice(0, 10)),
+    [cases],
+  );
+  const rangeAdvice = useReportRangeAdvice({
+    from: period.from,
+    to: period.to,
+    dataDays: rangeAdviceDays,
+    loading,
+    probe: WARRANTY_COVERAGE_PROBE,
+  });
   const piiReasonTrimmed = piiReason.trim();
   const piiReasonInvalid =
     canExportPii &&
@@ -1424,6 +1496,11 @@ export default function WarrantyComponentsReport() {
         <UiAlert tone="error">{t("reports.common.dateOrderError")}</UiAlert>
       ) : null}
 
+      <ReportRangeAdviceBanner
+        advice={rangeAdvice}
+        onApply={(next) => period.setRange([dayjs(next.from), dayjs(next.to)])}
+      />
+
       {piiReasonInvalid ? (
         <UiAlert tone="warning">
           {t("reports.warranty.piiReasonHint", { min: PII_REASON_MIN_LENGTH })}
@@ -1565,11 +1642,7 @@ export default function WarrantyComponentsReport() {
               xs: filtersHidden ? "none" : "grid",
               md: "grid",
             },
-            gridTemplateColumns: {
-              xs: "1fr",
-              md: "repeat(6, minmax(0, 1fr))",
-              xl: "repeat(12, minmax(0, 1fr))",
-            },
+            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
             columnGap: "14px",
             rowGap: 2,
           }}
@@ -1608,7 +1681,7 @@ export default function WarrantyComponentsReport() {
                 label: WARRANTY_STATUS_LABEL[status],
               }))}
               value={statusFilter}
-              onToggle={toggleStatus}
+              onChange={setStatusFilter}
             />
           </FilterField>
 
@@ -1653,13 +1726,7 @@ export default function WarrantyComponentsReport() {
                 label: DUE_RISK_LABEL[risk],
               }))}
               value={riskFilter}
-              onToggle={(value) =>
-                setRiskFilter((current) =>
-                  current.includes(value)
-                    ? current.filter((item) => item !== value)
-                    : [...current, value],
-                )
-              }
+              onChange={setRiskFilter}
             />
           </FilterField>
 
@@ -1731,6 +1798,7 @@ export default function WarrantyComponentsReport() {
               aria-label={t("reports.warrantyReport.fieldSku")}
               value={skuTerm}
               onChange={setSkuTerm}
+              suggestions={skuSuggestions}
             />
           </FilterField>
 
@@ -2063,10 +2131,10 @@ export default function WarrantyComponentsReport() {
                 role="tab"
                 id="report-07-view-table"
                 aria-controls="report-07-panel-table"
-                aria-selected={viewMode === "table"}
-                tabIndex={viewMode === "table" ? 0 : -1}
+                aria-selected={shownViewMode === "table"}
+                tabIndex={shownViewMode === "table" ? 0 : -1}
                 onClick={() => setViewMode("table")}
-                sx={VIEW_TAB_SX(viewMode === "table")}
+                sx={VIEW_TAB_SX(shownViewMode === "table")}
               >
                 <UnorderedListOutlined aria-hidden="true" />
                 {t("reports.warrantyReport.viewTable")}
@@ -2077,10 +2145,10 @@ export default function WarrantyComponentsReport() {
                 role="tab"
                 id="report-07-view-snapshot"
                 aria-controls="report-07-panel-snapshot"
-                aria-selected={viewMode === "snapshot"}
-                tabIndex={viewMode === "snapshot" ? 0 : -1}
+                aria-selected={shownViewMode === "snapshot"}
+                tabIndex={shownViewMode === "snapshot" ? 0 : -1}
                 onClick={() => setViewMode("snapshot")}
-                sx={VIEW_TAB_SX(viewMode === "snapshot")}
+                sx={VIEW_TAB_SX(shownViewMode === "snapshot")}
               >
                 <AppstoreOutlined aria-hidden="true" />
                 {t("reports.warrantyReport.viewSnapshot")}
@@ -2103,7 +2171,7 @@ export default function WarrantyComponentsReport() {
             id="report-07-panel-table"
             role="tabpanel"
             aria-labelledby="report-07-view-table"
-            hidden={viewMode !== "table"}
+            hidden={deferredViewMode !== "table"}
             sx={{ p: 2 }}
           >
             <Stack
@@ -2289,7 +2357,7 @@ export default function WarrantyComponentsReport() {
             id="report-07-panel-snapshot"
             role="tabpanel"
             aria-labelledby="report-07-view-snapshot"
-            hidden={viewMode !== "snapshot"}
+            hidden={deferredViewMode !== "snapshot"}
             sx={{ p: 2 }}
           >
             {caseFilter.rows.length === 0 ? (
@@ -2308,7 +2376,7 @@ export default function WarrantyComponentsReport() {
                   gap: 1.5,
                 }}
               >
-                {caseFilter.rows.map((row, index) => (
+                {caseWindow.visible.map((row, index) => (
                   <Box
                     component="article"
                     key={row.caseNo || row.caseId}
@@ -2447,6 +2515,7 @@ export default function WarrantyComponentsReport() {
                     </Box>
                   </Box>
                 ))}
+                <WindowedMore window={caseWindow} />
               </Box>
             )}
           </Box>

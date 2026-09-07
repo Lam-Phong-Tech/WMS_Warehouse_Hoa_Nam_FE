@@ -8,14 +8,17 @@
  * canonical Ui* — không re-export để tránh 2 public choice cùng purpose.
  */
 export { default as Box, type BoxProps } from "@mui/material/Box";
-export { default as Drawer, type DrawerProps } from "@mui/material/Drawer";
+// Drawer/Menu/Popover: cùng props MUI, thêm đúng một việc là không render khi
+// trang chứa nó đang bị giữ sống ở trạng thái ẩn (xem components/PageOverlays).
+export { Drawer, Menu, Popover } from "./components/PageOverlays";
+export type { DrawerProps } from "@mui/material/Drawer";
+export type { MenuProps } from "@mui/material/Menu";
+export type { PopoverProps } from "@mui/material/Popover";
 export { default as useMediaQuery } from "@mui/material/useMediaQuery";
 export { default as Stack, type StackProps } from "@mui/material/Stack";
 export { default as Grid, type GridProps } from "@mui/material/Grid";
 export { default as Divider, type DividerProps } from "@mui/material/Divider";
 export { default as Tooltip, type TooltipProps } from "@mui/material/Tooltip";
-export { default as Popover, type PopoverProps } from "@mui/material/Popover";
-export { default as Menu, type MenuProps } from "@mui/material/Menu";
 export {
   default as MenuItem,
   type MenuItemProps,

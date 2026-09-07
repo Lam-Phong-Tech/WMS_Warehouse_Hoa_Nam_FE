@@ -15,6 +15,8 @@ import {
   UiText,
   UiTextField,
   type UiTabItem,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import {
   ResponsiveDataTable,
@@ -58,6 +60,7 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -265,7 +268,7 @@ export default function InventoryPage() {
       width: 60,
       hideOnMobile: true,
       render: (row) =>
-        mvpRowNumber(balancePage, balancePerPage, balances.indexOf(row)),
+        mvpRowNumber(balancePage, balancePerPage, rowIndexOf(balances, row)),
     },
     {
       key: "sku",
@@ -493,7 +496,7 @@ export default function InventoryPage() {
       width: 60,
       hideOnMobile: true,
       render: (row) =>
-        mvpRowNumber(movementPage, movementPerPage, movements.indexOf(row)),
+        mvpRowNumber(movementPage, movementPerPage, rowIndexOf(movements, row)),
     },
     {
       key: "time",
@@ -607,13 +610,13 @@ export default function InventoryPage() {
                   },
                 }}
                 onChange={(e) => setSearchInput(e.target.value)}
-                sx={{ minWidth: 220 }}
+                sx={TOOLBAR_SEARCH_SX}
               />
               <UiSelect
                 value={skuType}
                 aria-label={t("inventory.balance.typeFilterAria")}
                 placeholder={t("inventory.balance.typeFilterPlaceholder")}
-                minWidth={150}
+                minWidth={FILTER_WIDTH.select}
                 options={[
                   {
                     value: "PRODUCT",
@@ -660,7 +663,7 @@ export default function InventoryPage() {
               <UiSelect
                 value={balancePerPage}
                 aria-label={t("inventory.balance.pageSizeAria")}
-                minWidth={100}
+                minWidth={FILTER_WIDTH.pageSize}
                 options={pageSizeOptions(balancePerPage).map((size) => ({
                   value: size,
                   label: `${size} / trang`,
@@ -762,7 +765,7 @@ export default function InventoryPage() {
                   setMovementSearch(e.target.value);
                   setMovementPage(1);
                 }}
-                sx={{ minWidth: 220 }}
+                sx={TOOLBAR_SEARCH_SX}
               />
               <UiSelect
                 value={movementType}
@@ -792,7 +795,7 @@ export default function InventoryPage() {
               <UiSelect
                 value={movementPerPage}
                 aria-label={t("inventory.balance.pageSizeAria")}
-                minWidth={100}
+                minWidth={FILTER_WIDTH.pageSize}
                 options={pageSizeOptions(movementPerPage).map((size) => ({
                   value: size,
                   label: `${size} / trang`,

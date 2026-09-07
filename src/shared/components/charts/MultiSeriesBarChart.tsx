@@ -1,4 +1,4 @@
-import Chart from "react-apexcharts";
+import { LazyApexChart as Chart } from "./LazyApexChart";
 import type { ApexOptions } from "apexcharts";
 import {
   useChartBaseOptions,
@@ -24,6 +24,14 @@ export type MultiSeriesBarChartProps = {
   stacked?: boolean;
   /** true = thanh nằm ngang (nhãn category dài, vd tên SKU / nơi nhận). */
   horizontal?: boolean;
+  /**
+   * Đưa trục GIÁ TRỊ lên TRÊN (chỉ có nghĩa khi `horizontal`).
+   *
+   * Dùng khi biểu đồ cao hơn khung chứa và khung phải cuộn: trục nằm ở đáy thì
+   * vừa cuộn một nhịp là người đọc mất thang đo, còn nằm trên thì nó ở ngay
+   * dưới chú giải, đúng chỗ mắt nhìn đầu tiên.
+   */
+  valueAxisOnTop?: boolean;
   height?: number;
   valueFormatter?: (value: number) => string;
   /** Bật nhãn số trên thân cột. Mặc định tắt khi có nhiều mốc để tránh chữ đè. */
@@ -53,6 +61,7 @@ export function MultiSeriesBarChart({
   series,
   stacked = false,
   horizontal = false,
+  valueAxisOnTop = false,
   height,
   valueFormatter,
   showValues,
@@ -134,7 +143,11 @@ export function MultiSeriesBarChart({
         // biểu đồ biến thành một dải màu đứt quãng. Dồn sát để cụm cột của mỗi
         // mốc còn đọc được thành một khối.
         columnWidth: dense ? "92%" : series.length > 1 ? "68%" : "45%",
-        barHeight: "62%",
+        // `barHeight` là bề dày của CẢ CỤM trong một dòng hạng mục: cụm 6 chuỗi
+        // để 62% thì mỗi thanh chỉ được 62/6 ≈ 10% chiều cao dòng, mảnh như sợi
+        // chỉ. Nhiều chuỗi thì dồn cụm sát lại — khoảng hở cần nhìn thấy là hở
+        // GIỮA các dòng, không phải trong cụm. Một chuỗi giữ 62% như cũ.
+        barHeight: series.length > 1 ? "84%" : "62%",
       },
     },
     colors: series.map(
@@ -149,6 +162,7 @@ export function MultiSeriesBarChart({
     },
     xaxis: {
       categories,
+      position: horizontal && valueAxisOnTop ? "top" : "bottom",
       labels: {
         style: { fontSize: `${AXIS_FONT_SIZE}px` },
         hideOverlappingLabels: true,

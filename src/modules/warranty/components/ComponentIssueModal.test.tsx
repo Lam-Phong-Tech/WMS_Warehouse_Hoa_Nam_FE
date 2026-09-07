@@ -213,7 +213,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
     expect(postComponentIssue).not.toHaveBeenCalled();
   });
 
-  it("hủy phiếu bắt buộc lý do và gửi If-Match", async () => {
+  it("hủy phiếu bắt buộc lý do ≥ 5 ký tự (không tính khoảng trắng) và gửi If-Match", async () => {
     vi.mocked(fetchComponentIssueDocument).mockResolvedValue(
       makeDetail() as never,
     );
@@ -232,13 +232,28 @@ describe("ComponentIssueModal (COMP-01)", () => {
     );
 
     fireEvent.click(await screen.findByRole("button", { name: /Hủy phiếu/ }));
-    const reasonInput = await screen.findByLabelText("Lý do hủy (bắt buộc)");
+    const reasonInput = await screen.findByLabelText(
+      "Lý do hủy (tối thiểu 5 ký tự)",
+    );
 
     // Chưa nhập lý do → không gọi API.
     fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy" }));
     expect(cancelComponentIssue).not.toHaveBeenCalled();
 
-    fireEvent.change(reasonInput, { target: { value: "Nhập nhầm kho" } });
+    // Chỉ toàn khoảng trắng cũng là RỖNG — trước 06/09/2026 ô này chỉ kiểm
+    // `trim()` khác rỗng nên "x" một ký tự là hủy được hồ sơ.
+    fireEvent.change(reasonInput, { target: { value: "        " } });
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy" }));
+    expect(cancelComponentIssue).not.toHaveBeenCalled();
+
+    // Dưới sàn 5 ký tự → vẫn chặn.
+    fireEvent.change(reasonInput, { target: { value: "x" } });
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy" }));
+    expect(cancelComponentIssue).not.toHaveBeenCalled();
+    expect(await screen.findByText(/ít nhất 5 ký tự/i)).toBeInTheDocument();
+
+    // Có khoảng trắng thừa hai đầu: gửi lên BE phải là chuỗi đã cắt.
+    fireEvent.change(reasonInput, { target: { value: "  Nhập nhầm kho  " } });
     fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy" }));
 
     await waitFor(() => {

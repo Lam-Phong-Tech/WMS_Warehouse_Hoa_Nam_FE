@@ -87,6 +87,14 @@ const VIETNAMESE_IS_DATA: ReadonlyMap<string, string> = new Map([
     "src/modules/reports/stock-reconcile/stock-reconcile-labels.ts",
     "map nhãn tồn kho & đối soát, song ngữ",
   ],
+  [
+    "src/modules/reports/packing-label/packing-label-labels.ts",
+    "map nhãn lỗi in / trạng thái bản lưu nhãn, song ngữ",
+  ],
+  [
+    "src/shared/constants/agency-place-labels.ts",
+    "map thị trường song ngữ + tên tỉnh/thành (danh từ riêng, không dịch)",
+  ],
   // Nguồn VI của cây menu; bản EN nằm ở nav-labels.ts.
   ["src/app/layouts/nav-data.ts", "nhãn menu VI; EN ở nav-labels.ts"],
   // Chuỗi tiếng Việt là DỮ LIỆU đối sánh / payload gửi BE, không phải nhãn.

@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
@@ -907,7 +908,9 @@ export function InboundScanModal({
       width: 56,
       align: "center",
       render: (line) =>
-        (detail?.lines.findIndex((item) => item.id === line.id) ?? 0) + 1,
+        (detail?.lines
+          ? rowIndexOfBy(detail.lines, line, (item) => item.id)
+          : 0) + 1,
     },
     {
       key: "sku",
@@ -973,7 +976,7 @@ export function InboundScanModal({
         mvpRowNumber(
           safeScanEntryPage,
           SCAN_ENTRY_PAGE_SIZE,
-          pagedScanEntries.findIndex((item) => item.id === entry.id),
+          rowIndexOfBy(pagedScanEntries, entry, (item) => item.id),
         ),
     },
     {

@@ -1,3 +1,4 @@
+import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -19,10 +20,28 @@ import {
   type NumberRule,
 } from "@/shared/validation/number-rules";
 import {
+  TEXT_LIMITS,
+  TEXT_RULES,
+  checkText,
+  type TextRule,
+} from "@/shared/validation/text-rules";
+import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
+
+/**
+ * Lý do hủy phiếu xuất linh kiện: bắt buộc + SÀN 5 ký tự như mọi lý do khác
+ * trong dự án (xuất kho, đảo kho, đồng bộ quyền). Trước 06/09/2026 ô này chỉ
+ * cần khác rỗng — gõ đúng một chữ "x" là hủy được hồ sơ. Trần giữ 2000 theo ô
+ * cũ, không siết xuống 1000 để không từ chối lý do BE vẫn nhận.
+ */
+const CANCEL_REASON_MAX = TEXT_LIMITS.noteMax;
+const CANCEL_REASON_RULE: TextRule = {
+  ...TEXT_RULES.reason,
+  max: CANCEL_REASON_MAX,
+};
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { shortId } from "@/shared/utils/shortId";
 import {
@@ -387,15 +406,23 @@ export function ComponentIssueModal({
 
   const handleCancel = async () => {
     if (!documentId || version === null) return;
-    if (!cancelReason.trim()) {
-      setCancelReasonError(t("warranty.componentIssue.needCancelReason"));
-      toast.warning(t("warranty.componentIssue.needCancelReason"));
+    const reasonCheck = checkText(cancelReason, CANCEL_REASON_RULE);
+    if (!reasonCheck.ok) {
+      const message =
+        reasonCheck.reason === "required"
+          ? t("warranty.componentIssue.needCancelReason")
+          : t("warranty.componentIssue.cancelReasonShort", {
+              min: TEXT_LIMITS.reasonMin,
+            });
+      setCancelReasonError(message);
+      toast.warning(message);
       return;
     }
     try {
       const result = await cancelMutation.mutateAsync({
         documentId,
-        reason: cancelReason.trim(),
+        // Chuỗi đã trim do checkText trả về — không trim lại lần hai.
+        reason: reasonCheck.value,
         ifMatch: version,
       });
       setLocalVersion(result.version);
@@ -448,7 +475,7 @@ export function ComponentIssueModal({
               : undefined
           }
         >
-          {(detail?.lines ?? []).findIndex((item) => item.id === line.id) + 1}
+          {rowIndexOfBy(detail?.lines ?? [], line, (item) => item.id) + 1}
         </Box>
       ),
     },
@@ -900,7 +927,9 @@ export function ComponentIssueModal({
             fullWidth
             multiline
             minRows={3}
-            label={t("warranty.componentIssue.cancelReasonLabel")}
+            label={t("warranty.componentIssue.cancelReasonLabel", {
+              min: TEXT_LIMITS.reasonMin,
+            })}
             value={cancelReason}
             onChange={(event) => {
               setCancelReason(event.target.value);
@@ -908,7 +937,7 @@ export function ComponentIssueModal({
             }}
             error={Boolean(cancelReasonError)}
             helperText={cancelReasonError || undefined}
-            slotProps={{ htmlInput: { maxLength: 2000 } }}
+            slotProps={{ htmlInput: { maxLength: CANCEL_REASON_MAX } }}
           />
         </Box>
       </UiDialog>

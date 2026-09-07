@@ -130,6 +130,42 @@ describe("BalanceDetailModal", () => {
     expect(screen.getByText("MV-0001")).toBeInTheDocument();
   });
 
+  it("cột Mã NFC: hiện mã chip của hiện vật đã dán, không lẫn với Mã vật lý", async () => {
+    mockSubledger({
+      items: [
+        {
+          id: "item-1",
+          item_code: "ITM-001",
+          serial_number: "SN-001",
+          status: "IN_STOCK",
+          physical_code: "QR-001",
+          nfc_code: "NFC-04A2B3C4D5",
+          nfc_hardware_uid: "04A2B3C4D5",
+          nfc_status: "ASSIGNED",
+        },
+      ],
+    });
+
+    renderWithProviders(
+      <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
+    );
+
+    expect(await screen.findByText("Mã NFC")).toBeInTheDocument();
+    expect(screen.getByText("NFC-04A2B3C4D5")).toBeInTheDocument();
+    // Mã in vẫn đứng riêng ở cột Mã vật lý — hai ô không được nuốt nhau.
+    expect(screen.getByText("QR-001")).toBeInTheDocument();
+  });
+
+  it("cột Mã NFC: hiện vật chưa dán chip hiển thị rõ trạng thái, không để trống", async () => {
+    // Chip dán lúc xuất kho nên hàng đang trong kho thường chưa có — ô phải nói
+    // rõ "chưa dán chip" chứ không phải dấu gạch hay khoảng trắng.
+    renderWithProviders(
+      <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
+    );
+
+    expect(await screen.findByText("Chưa dán chip")).toBeInTheDocument();
+  });
+
   it("gọi useBalanceSubledger và useStockMovements đúng tham số (subledger theo balance.id, movement theo SKU)", () => {
     renderWithProviders(
       <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,

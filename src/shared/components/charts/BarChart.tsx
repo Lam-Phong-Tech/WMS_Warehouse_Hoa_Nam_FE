@@ -1,4 +1,4 @@
-import Chart from "react-apexcharts";
+import { LazyApexChart as Chart } from "./LazyApexChart";
 import type { ApexOptions } from "apexcharts";
 import { useChartBaseOptions, CATEGORICAL_PALETTE } from "./chart-theme";
 import { fitAxisDensity, longestLabelChars } from "./axis-density";

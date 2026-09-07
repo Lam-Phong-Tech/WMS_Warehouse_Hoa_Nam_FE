@@ -121,11 +121,13 @@ function renderGrid(
 }
 
 describe("TraySelectionGrid", () => {
-  it("sort natural theo tray_code (A02 truoc A10)", () => {
+  it("sort natural theo tray_code (A02 truoc A10)", async () => {
     renderGrid();
-    const codes = screen
-      .getAllByRole("option")
-      .map((el) => el.querySelector("p")?.textContent);
+    // Chart vào qua LazyApexChart (lazy() + Suspense) nên lần mount ĐẦU TIÊN
+    // trong file là bất đồng bộ; các test sau hưởng module đã nạp.
+    const codes = (await screen.findAllByRole("option")).map(
+      (el) => el.querySelector("p")?.textContent,
+    );
     expect(codes).toEqual(["A02", "A10", "B02"]);
   });
 

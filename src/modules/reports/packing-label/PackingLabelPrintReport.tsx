@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
+import { useTabView } from "@/shared/ui/use-tab-view";
 import dayjs from "dayjs";
 import {
   Box,
@@ -11,6 +12,8 @@ import {
   UiVuexyDateRangePicker,
   RADIUS,
   SEMANTIC_LIGHT as S,
+  FILTER_GRID_COLUMNS_SX,
+  filterGridColumnSx,
 } from "@/shared/ui";
 import {
   AppstoreOutlined,
@@ -35,6 +38,9 @@ import { usePeriodFilter } from "../operations/report-period";
 import { reportRangePresets } from "../operations/report-range-presets";
 import { RPT_SCROLL_MAX_HEIGHT } from "../operations/report-tokens";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { useReportRangeAdvice } from "../operations/report-coverage";
+import { LABEL_LOG_COVERAGE_PROBE } from "../operations/report-probes";
+import { ReportRangeAdviceBanner } from "../operations/ReportRangeAdviceBanner";
 import { ExportButtons } from "../operations/report-filters";
 import { useReportExport } from "../operations/report-export";
 import { useClientPagination } from "../operations/report-columns";
@@ -57,6 +63,12 @@ import {
   type PackingLabelEvent,
   type PackingLabelResult,
 } from "./packing-label-api";
+import {
+  LABEL_SNAPSHOT_STATUS_LABELS,
+  packingLabelFailureText,
+} from "./packing-label-labels";
+import { businessLabel } from "@/shared/constants/business-labels";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 /**
  * RPT-05 — Nhãn đóng gói · Print / Reprint (bản port 1:1 mockup 8.6).
@@ -91,6 +103,22 @@ const actionLabels = (
   PRINT: t("reports.packingLabel.actionPrint"),
   REPRINT: t("reports.packingLabel.outcomeReprint"),
 });
+
+/**
+ * Ba mẩu dữ liệu của một lần in — mã lỗi máy, lý do, câu mô tả của BE — sau
+ * khi Việt hoá và bỏ trùng; mẩu đầu là NGUYÊN NHÂN.
+ *
+ * Bỏ trùng vì bộ dữ liệu ghi cả mã lỗi lẫn mã lý do cho cùng một sự việc
+ * (PRINTER_JAMMED + PAPER_JAM); dịch xong hai mã đó về đúng một câu, in cả hai
+ * thì ô nào cũng lặp lại chính nó. Gộp ở một chỗ để bảng, thẻ Dạng hộp, hộp
+ * thoại kiểm chứng và ô tìm kiếm luôn đọc CÙNG một chuỗi.
+ */
+function failureParts(row: PackingLabelEvent, t: TranslateFn): string[] {
+  const parts = [row.errorCode, row.reasonCode, row.reasonNote]
+    .map((value) => packingLabelFailureText(value, t))
+    .filter((value) => value !== "");
+  return [...new Set(parts)];
+}
 
 const SURFACE_SX = {
   minWidth: 0,
@@ -248,24 +276,19 @@ function FilterField({
   label,
   htmlFor,
   span = 2,
-  tabletSpan = 1,
   children,
 }: {
   label: string;
   htmlFor?: string;
   span?: number;
-  tabletSpan?: number;
   children: ReactNode;
 }) {
   return (
     <Box
       sx={{
         minWidth: 0,
-        gridColumn: {
-          xs: "span 1",
-          sm: `span ${tabletSpan}`,
-          xl: `span ${span}`,
-        },
+        // Ô rộng của mockup (tìm 5/12, khoảng ngày 7/12) chiếm 2 cột lưới.
+        gridColumn: filterGridColumnSx(span >= 4),
       }}
     >
       <Box
@@ -442,7 +465,26 @@ export default function PackingLabelPrintReport() {
   const resultLabelMap = useMemo(() => resultLabels(t), [t]);
   const actionLabelMap = useMemo(() => actionLabels(t), [t]);
 
-  const [view, setView] = useState<"table" | "snapshot">("table");
+    /**
+   * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
+   * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
+   * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
+   * @/shared/ui/use-tab-view.
+   */
+  const viewTab = useTabView<"table" | "snapshot">("table");
+  const view = viewTab.view;
+  const shownView = viewTab.shown;
+  const setView = viewTab.select;
+  /**
+   * Tab đổi view: nút bấm đọc `view` (cập nhật GẤP → tô sáng tức thì), còn các
+   * PANEL nặng đọc `deferredView` (bản trễ, React vẽ ở lượt ngắt được). Đo trước khi
+   * sửa (Playwright, CPU x4): một cú bấm "Dạng hộp" khoá luồng chính tới ~930 ms
+   * vì panel mới (bảng hàng trăm dòng / lưới thẻ) phải layout + paint trọn một
+   * lượt cùng lúc với việc tô sáng tab. Tách hai lượt thì tab phản hồi ngay,
+   * panel theo sau.
+   */
+  const deferredView = useDeferredValue(view);
+
   const [advanced, setAdvanced] = useState(false);
   const [sliceFilters, setSliceFilters] = useState(false);
   const [keyword, setKeyword] = useState("");
@@ -473,6 +515,23 @@ export default function PackingLabelPrintReport() {
     actorNames,
   });
 
+  /**
+   * Gợi ý bộ lọc kỳ, tính trên `report.events` — tức TRƯỚC bộ lọc hành động /
+   * kết quả / máy in / từ khoá của màn: lọc phụ ra rỗng là lựa chọn của người
+   * dùng, không phải dấu hiệu chọn sai kỳ.
+   */
+  const rangeAdviceDays = useMemo(
+    () => report.events.map((event) => event.attemptedAt.slice(0, 10)),
+    [report.events],
+  );
+  const rangeAdvice = useReportRangeAdvice({
+    from: period.from,
+    to: period.to,
+    dataDays: rangeAdviceDays,
+    loading: report.loading,
+    probe: LABEL_LOG_COVERAGE_PROBE,
+  });
+
   const rows = useMemo(() => {
     const needle = keyword.trim().toLocaleLowerCase("vi");
     return report.events
@@ -488,16 +547,18 @@ export default function PackingLabelPrintReport() {
           event.recipient,
           event.printerName,
           event.actorName,
+          // Tìm được bằng CHỮ đang hiện trên màn ("kẹt giấy") chứ không chỉ
+          // bằng mã thô, nhưng vẫn giữ mã để người quen tra mã không mất đường.
+          ...failureParts(event, t),
           event.errorCode,
           event.reasonCode,
-          event.reasonNote,
         ]
           .filter(Boolean)
           .join(" ")
           .toLocaleLowerCase("vi")
           .includes(needle);
       });
-  }, [report.events, actionFilter, resultFilter, printerFilter, keyword]);
+  }, [report.events, actionFilter, resultFilter, printerFilter, keyword, t]);
 
   /**
    * Bộ lọc RIÊNG của khối nhật ký. Nằm SAU khi 4 thẻ KPI đã tính trên rows:
@@ -512,6 +573,7 @@ export default function PackingLabelPrintReport() {
         row.recipient,
         row.actorName,
         row.printerName,
+        ...failureParts(row, t),
         row.errorCode,
       ],
       selects: [
@@ -607,7 +669,7 @@ export default function PackingLabelPrintReport() {
         mvpRowNumber(
           pagination.page,
           pagination.perPage,
-          pagination.pageRows.indexOf(row),
+          rowIndexOf(pagination.pageRows, row),
         ),
     },
     {
@@ -671,12 +733,15 @@ export default function PackingLabelPrintReport() {
       key: "reason",
       header: t("reports.packingLabel.colErrorReason"),
       hideOnMobile: true,
-      render: (row: PackingLabelEvent) => (
-        <CellStack
-          title={orEmpty(row.errorCode)}
-          note={orEmpty(row.reasonCode || row.reasonNote)}
-        />
-      ),
+      render: (row: PackingLabelEvent) => {
+        const [cause, ...detail] = failureParts(row, t);
+        return (
+          <CellStack
+            title={orEmpty(cause)}
+            note={orEmpty(detail.join(" · "))}
+          />
+        );
+      },
     },
     {
       key: "audit",
@@ -843,11 +908,7 @@ export default function PackingLabelPrintReport() {
           hidden={!filtersVisible}
           sx={{
             display: filtersVisible ? "grid" : "none",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, minmax(0, 1fr))",
-              xl: "repeat(12, minmax(0, 1fr))",
-            },
+            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
             columnGap: 1.5,
             rowGap: 1.75,
             alignItems: "end",
@@ -879,7 +940,6 @@ export default function PackingLabelPrintReport() {
           <FilterField
             label={t("reports.packingLabel.dateRangeLabel")}
             span={7}
-            tabletSpan={2}
           >
             <UiVuexyDateRangePicker
               aria-label={t("reports.filters.dateRangeAria")}
@@ -908,11 +968,7 @@ export default function PackingLabelPrintReport() {
           hidden={!advanced || !filtersVisible}
           sx={{
             display: advanced && filtersVisible ? "grid" : "none",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, minmax(0, 1fr))",
-              xl: "repeat(12, minmax(0, 1fr))",
-            },
+            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
             columnGap: 1.5,
             rowGap: 1.75,
             mt: 2,
@@ -1002,6 +1058,11 @@ export default function PackingLabelPrintReport() {
           {t("reports.packingLabel.dateOrderError")}
         </UiAlert>
       ) : null}
+
+      <ReportRangeAdviceBanner
+        advice={rangeAdvice}
+        onApply={(next) => period.setRange([dayjs(next.from), dayjs(next.to)])}
+      />
 
       {report.error ? (
         <ApiErrorAlert
@@ -1163,7 +1224,7 @@ export default function PackingLabelPrintReport() {
               },
             ] as const
           ).map((tab) => {
-            const active = view === tab.value;
+            const active = shownView === tab.value;
             return (
               <UiButton
                 key={tab.value}
@@ -1201,9 +1262,9 @@ export default function PackingLabelPrintReport() {
             id="rpt-05-table-panel"
             role="tabpanel"
             aria-labelledby="rpt-05-table-tab"
-            hidden={view !== "table"}
+            hidden={deferredView !== "table"}
           >
-            {view === "table" ? (
+            {deferredView === "table" ? (
               <ResponsiveDataTable<PackingLabelEvent>
                 columns={columns}
                 rows={pagination.pageRows}
@@ -1232,9 +1293,9 @@ export default function PackingLabelPrintReport() {
             id="rpt-05-snapshot-panel"
             role="tabpanel"
             aria-labelledby="rpt-05-snapshot-tab"
-            hidden={view !== "snapshot"}
+            hidden={deferredView !== "snapshot"}
           >
-            {view === "snapshot" ? (
+            {deferredView === "snapshot" ? (
               report.loading ? (
                 <Box sx={{ py: 6, display: "grid", placeItems: "center" }}>
                   <UiSpinner
@@ -1327,9 +1388,7 @@ export default function PackingLabelPrintReport() {
                           },
                           {
                             label: t("reports.packingLabel.colErrorReason"),
-                            value: orEmpty(
-                              row.errorCode || row.reasonCode || row.reasonNote,
-                            ),
+                            value: orEmpty(failureParts(row, t)[0]),
                           },
                         ].map((item) => (
                           <Box key={item.label} sx={{ minWidth: 0 }}>
@@ -1496,7 +1555,14 @@ export default function PackingLabelPrintReport() {
                   />
                   <DetailCell
                     label={t("reports.packingLabel.fieldSnapshotStatus")}
-                    value={orEmpty(snapshot.detail.status)}
+                    value={
+                      snapshot.detail.status
+                        ? businessLabel(
+                            LABEL_SNAPSHOT_STATUS_LABELS,
+                            snapshot.detail.status,
+                          )
+                        : EMPTY_TEXT
+                    }
                   />
                   <DetailCell
                     label={t("reports.packingLabel.fieldContent")}
@@ -1533,7 +1599,7 @@ export default function PackingLabelPrintReport() {
                       align: "center",
                       width: 56,
                       render: (row) =>
-                        snapshot.detail!.attempts.indexOf(row) + 1,
+                        rowIndexOf(snapshot.detail!.attempts, row) + 1,
                     },
                     {
                       key: "attemptedAt",
@@ -1561,10 +1627,7 @@ export default function PackingLabelPrintReport() {
                     {
                       key: "reason",
                       header: t("reports.packingLabel.colErrorReason"),
-                      render: (row) =>
-                        orEmpty(
-                          row.errorCode || row.reasonCode || row.reasonNote,
-                        ),
+                      render: (row) => orEmpty(failureParts(row, t)[0]),
                     },
                   ]}
                   rows={snapshot.detail.attempts}

@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import type { ResponsiveTableColumn } from "@/shared/components/data-display/ResponsiveDataTable";
 import type { ClientSortState } from "@/shared/components/data-display/useClientSort";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import type { Raw } from "./report-format";
 
@@ -75,7 +76,7 @@ export function toResponsiveColumns(
     render: (row: Raw) => {
       const value = column.dataIndex ? row[column.dataIndex] : undefined;
       if (column.render) {
-        return column.render(value, row, displayedRows.indexOf(row));
+        return column.render(value, row, rowIndexOf(displayedRows, row));
       }
       return (value ?? null) as ReactNode;
     },

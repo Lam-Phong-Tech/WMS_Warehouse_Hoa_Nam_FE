@@ -1,0 +1,237 @@
+{
+ "tag": "baseline",
+ "cpu": 1,
+ "base": "http://localhost:5199",
+ "pages": [
+  {
+   "path": "/dashboard",
+   "warm": false,
+   "ttfb": 11.600000008940697,
+   "fcp": 260,
+   "lcp": 1220,
+   "lcpEl": "span.card-subtitle \"Tập trung xử lý công việc ảnh hưởng vận \"",
+   "cls": 0.000005815933957511996,
+   "tbt": 0,
+   "longTasks": 0,
+   "dom": 1041,
+   "requests": 71,
+   "kb": 383
+  },
+  {
+   "path": "/dashboard",
+   "warm": true,
+   "ttfb": 7.200000002980232,
+   "fcp": 204,
+   "lcp": 1544,
+   "lcpEl": "span.card-subtitle \"Tập trung xử lý công việc ảnh hưởng vận \"",
+   "cls": 0.0000057950562737442666,
+   "tbt": 0,
+   "longTasks": 0,
+   "dom": 1041,
+   "requests": 70,
+   "kb": 383
+  },
+  {
+   "path": "/inventory",
+   "warm": false,
+   "ttfb": 6.9000000059604645,
+   "fcp": 260,
+   "lcp": 1060,
+   "lcpEl": "h1.MuiBox-root \"Tra cứu tồn & đối soát\"",
+   "cls": 0.006964603435257334,
+   "tbt": 84,
+   "longTasks": 2,
+   "dom": 932,
+   "requests": 106,
+   "kb": 393
+  },
+  {
+   "path": "/inventory",
+   "warm": true,
+   "ttfb": 6.800000011920929,
+   "fcp": 244,
+   "lcp": 1144,
+   "lcpEl": "h1.MuiBox-root \"Tra cứu tồn & đối soát\"",
+   "cls": 0.006964580718185676,
+   "tbt": 14,
+   "longTasks": 1,
+   "dom": 932,
+   "requests": 106,
+   "kb": 393
+  },
+  {
+   "path": "/inbound",
+   "warm": false,
+   "ttfb": 6.399999991059303,
+   "fcp": 224,
+   "lcp": 1284,
+   "lcpEl": "h1.MuiBox-root \"Danh sách phiếu nhập\"",
+   "cls": 0.006891755346604335,
+   "tbt": 0,
+   "longTasks": 0,
+   "dom": 741,
+   "requests": 113,
+   "kb": 394
+  },
+  {
+   "path": "/inbound",
+   "warm": true,
+   "ttfb": 4.700000002980232,
+   "fcp": 228,
+   "lcp": 960,
+   "lcpEl": "h1.MuiBox-root \"Danh sách phiếu nhập\"",
+   "cls": 0.0000057924840348901735,
+   "tbt": 0,
+   "longTasks": 0,
+   "dom": 741,
+   "requests": 113,
+   "kb": 394
+  },
+  {
+   "path": "/outbound",
+   "warm": false,
+   "ttfb": 6.5,
+   "fcp": 212,
+   "lcp": 936,
+   "lcpEl": "h1.MuiBox-root \"Danh sách phiếu xuất\"",
+   "cls": 0.0068917555591206485,
+   "tbt": 0,
+   "longTasks": 0,
+   "dom": 782,
+   "requests": 114,
+   "kb": 395
+  },
+  {
+   "path": "/outbound",
+   "warm": true,
+   "ttfb": 3.300000011920929,
+   "fcp": 184,
+   "lcp": 992,
+   "lcpEl": "h1.MuiBox-root \"Danh sách phiếu xuất\"",
+   "cls": 0.000005657875096356427,
+   "tbt": 0,
+   "longTasks": 0,
+   "dom": 782,
+   "requests": 114,
+   "kb": 395
+  },
+  {
+   "path": "/warranty",
+   "warm": false,
+   "ttfb": 5.700000002980232,
+   "fcp": 216,
+   "lcp": 944,
+   "lcpEl": "h1.MuiBox-root \"Danh sách bảo hành\"",
+   "cls": 0.007168077685476493,
+   "tbt": 3,
+   "longTasks": 1,
+   "dom": 831,
+   "requests": 127,
+   "kb": 394
+  },
+  {
+   "path": "/warranty",
+   "warm": true,
+   "ttfb": 6.5,
+   "fcp": 264,
+   "lcp": 1148,
+   "lcpEl": "h1.MuiBox-root \"Danh sách bảo hành\"",
+   "cls": 0.000005817102797237444,
+   "tbt": 0,
+   "longTasks": 0,
+   "dom": 831,
+   "requests": 127,
+   "kb": 394
+  },
+  {
+   "path": "/reports/inventory-flow",
+   "warm": false,
+   "ttfb": 4.899999991059303,
+   "fcp": 200,
+   "lcp": 928,
+   "lcpEl": "footer.MuiBox-root \"Hoa Nam ©2026 — Phát triển bởi Lam Phong\"",
+   "cls": 0.013653618011127935,
+   "tbt": 0,
+   "longTasks": 1,
+   "dom": 3948,
+   "requests": 92,
+   "kb": 388
+  },
+  {
+   "path": "/reports/inventory-flow",
+   "warm": true,
+   "ttfb": 5.9000000059604645,
+   "fcp": 204,
+   "lcp": 948,
+   "lcpEl": "footer.MuiBox-root \"Hoa Nam ©2026 — Phát triển bởi Lam Phong\"",
+   "cls": 0.01381536140961902,
+   "tbt": 6,
+   "longTasks": 1,
+   "dom": 3948,
+   "requests": 92,
+   "kb": 388
+  },
+  {
+   "path": "/login",
+   "warm": false,
+   "ttfb": 3.9000000059604645,
+   "fcp": 488,
+   "lcp": 488,
+   "lcpEl": "img.MuiBox-root",
+   "cls": 0.000008916658629115225,
+   "tbt": 0,
+   "longTasks": 0,
+   "dom": 137,
+   "requests": 159,
+   "kb": 823
+  }
+ ],
+ "interactions": [
+  {
+   "label": "Bấm tab trong báo cáo Tồn kho & đối soát",
+   "path": "/reports/stock-reconcile",
+   "inp": 48,
+   "samples": 7,
+   "worst": {
+    "name": "pointerdown",
+    "d": 48
+   }
+  },
+  {
+   "label": "Gõ vào ô lọc của báo cáo Truy vết",
+   "path": "/reports/traceability",
+   "inp": 72,
+   "samples": 14,
+   "worst": {
+    "name": "keydown",
+    "d": 72
+   }
+  },
+  {
+   "label": "Mở modal chi tiết ở Tồn kho",
+   "path": "/inventory",
+   "inp": 96,
+   "samples": 4,
+   "worst": {
+    "name": "pointerdown",
+    "d": 96
+   }
+  },
+  {
+   "label": "Chuyển trang (pagination) ở Nhập kho",
+   "path": "/inbound",
+   "inp": null,
+   "note": "không thực hiện được: TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiti"
+  },
+  {
+   "label": "Mở menu điều hướng và bấm mục",
+   "path": "/dashboard",
+   "inp": 24,
+   "samples": 7,
+   "worst": {
+    "name": "pointerdown",
+    "d": 24
+   }
+  }
+ ]
+}

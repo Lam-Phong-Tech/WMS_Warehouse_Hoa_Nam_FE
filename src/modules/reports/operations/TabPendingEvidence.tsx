@@ -22,6 +22,7 @@ import { ReportKpi, ReportKpiRow, ReportSectionHeading } from "./report-ui";
 import { RPT_CARD_SX } from "./report-tokens";
 import { ReportPaginationBar } from "./report-table";
 import { useClientPagination } from "./report-columns";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 /**
  * Yêu cầu vận hành mục 8 ("Chứng từ nhập/xuất/hoàn trả"): phiếu được phép tạo
@@ -87,7 +88,7 @@ export default function TabPendingEvidence() {
         mvpRowNumber(
           pagination.page,
           pagination.perPage,
-          pagination.pageRows.indexOf(row),
+          rowIndexOf(pagination.pageRows, row),
         ),
     },
     {

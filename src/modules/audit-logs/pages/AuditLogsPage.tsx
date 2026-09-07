@@ -13,6 +13,8 @@ import {
   UiTextField,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { TableLoadingBanner } from "@/shared/components/feedback/BusinessState";
@@ -202,7 +204,7 @@ export function AuditLogsPage() {
             htmlInput: { "aria-label": t("audit.searchAria") },
           }}
           onChange={(event) => setSearchInput(event.target.value)}
-          sx={{ minWidth: 260 }}
+          sx={TOOLBAR_SEARCH_SX}
         />
         <UiSelect
           value={module}
@@ -277,7 +279,7 @@ export function AuditLogsPage() {
         <UiSelect
           value={perPage}
           aria-label={t("audit.pageSizeAria")}
-          minWidth={100}
+          minWidth={FILTER_WIDTH.pageSize}
           onChange={(value) => {
             setPerPage(Number(value));
             setPage(1);

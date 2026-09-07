@@ -7,8 +7,10 @@
  * do — xem @/shared/lib/vn-address). `onChange` nhận chuỗi JSON đã serialize
  * (rỗng khi người dùng xoá hết) — nơi gọi cứ ghi thẳng vào payload.
  *
- * Danh mục tỉnh/xã tải từ provinces.open-api.vn (cache module + localStorage);
- * mất mạng thì ô "Địa chỉ cụ thể" vẫn nhập được và có nút tải lại.
+ * Danh mục tỉnh/xã đọc từ JSON TRONG REPO (@/shared/lib/vn-address/data) —
+ * không gọi dịch vụ ngoài: tỉnh/thành nằm trong bundle nên luôn sẵn sàng,
+ * phường/xã ở chunk riêng nạp lười. Chunk hỏng thì có cảnh báo + nút tải lại,
+ * còn ô tỉnh/thành và "Địa chỉ cụ thể" vẫn dùng bình thường.
  */
 import { useId, useMemo, type ReactNode } from "react";
 import Autocomplete from "@mui/material/Autocomplete";

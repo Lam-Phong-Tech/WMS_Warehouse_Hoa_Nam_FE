@@ -19,8 +19,10 @@ import { DocumentAttachmentsPanel } from "@/shared/components/DocumentAttachment
 import { fetchDocumentAttachments } from "@/shared/api/documentAttachmentService";
 import {
   RETURN_CONDITION_LABELS,
+  REVERSAL_REASON_LABELS,
   SOURCE_DOCUMENT_TYPE_LABELS,
   businessLabel,
+  enumLabelOrText,
 } from "@/shared/constants/business-labels";
 import {
   ResponsiveDataTable,
@@ -467,7 +469,10 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                               fontSize: 12,
                             }}
                           >
-                            {doc.reason_code}
+                            {enumLabelOrText(
+                              REVERSAL_REASON_LABELS,
+                              doc.reason_code,
+                            )}
                           </Box>
                         ) : null}
                         {doc.reason}

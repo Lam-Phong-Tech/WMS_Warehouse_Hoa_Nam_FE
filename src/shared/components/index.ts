@@ -43,10 +43,7 @@ export {
   TopPagination,
   type TopPaginationProps,
 } from "./data-display/TopPagination";
-export {
-  CopyableId,
-  type CopyableIdProps,
-} from "./data-display/CopyableId";
+export { CopyableId, type CopyableIdProps } from "./data-display/CopyableId";
 export { SkuLink, type SkuLinkProps } from "./data-display/SkuLink";
 export { shortId } from "@/shared/utils/shortId";
 

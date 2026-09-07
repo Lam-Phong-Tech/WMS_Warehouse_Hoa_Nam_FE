@@ -230,8 +230,7 @@ function useLabelPrintEvents(enabled: boolean) {
         Array.isArray(result.data) ? result.data : [],
       );
       // `capped` nghĩa là danh sách BỊ CẮT vì chạm trần trang, không phải "vừa đủ".
-      const capped =
-        n(pages[0]?.meta?.last_page, 1) > LABEL_EVENT_MAX_PAGES;
+      const capped = n(pages[0]?.meta?.last_page, 1) > LABEL_EVENT_MAX_PAGES;
       return { rows, capped };
     },
     enabled,

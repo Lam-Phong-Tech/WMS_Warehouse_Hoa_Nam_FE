@@ -35,6 +35,11 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { tStatic, useT } from "@/shared/i18n/useT";
+import {
+  FILE_RULES,
+  acceptAttribute,
+  checkFile,
+} from "@/shared/validation/file-rules";
 import type { MessageKey } from "@/shared/i18n/messages";
 
 /**
@@ -54,8 +59,14 @@ export interface DocumentAttachmentsPanelProps {
   disabled?: boolean;
 }
 
-const ACCEPTED_EXTENSIONS = ".jpg,.jpeg,.png,.webp,.pdf";
-const MAX_FILE_BYTES = 15 * 1024 * 1024;
+/**
+ * Luật tệp lấy từ lớp dùng chung (file-rules.ts) thay vì hai hằng số tại chỗ:
+ * `accept` CHỈ lọc hộp thoại chọn tệp, còn vùng KÉO-THẢ bên dưới đi thẳng vào
+ * `handleFilesChosen` — trước đây chỗ đó chỉ đo dung lượng nên thả một `.exe`
+ * vào là tệp bay lên API (rà soát 06/09/2026).
+ */
+const ATTACHMENT_FILE_RULE = FILE_RULES.documentAttachment;
+const ACCEPTED_EXTENSIONS = acceptAttribute(ATTACHMENT_FILE_RULE);
 
 /** Nhãn i18n cho attachment_type — trước đây in thẳng enum BE ra UI. */
 const ATTACHMENT_KIND_KEYS: Record<string, MessageKey> = {
@@ -203,8 +214,10 @@ export function DocumentAttachmentsPanel({
     if (files.length === 0) return;
     // BE nhận 1 tệp/request; chọn hoặc kéo-thả nhiều tệp thì tải tuần tự.
     files.forEach((file) => {
-      if (file.size > MAX_FILE_BYTES) {
-        toast.error(t("shared.attachments.fileTooLarge", { name: file.name }));
+      // Kiểm CẢ loại tệp lẫn dung lượng — đường kéo-thả không qua `accept`.
+      const check = checkFile(file, ATTACHMENT_FILE_RULE);
+      if (!check.ok) {
+        toast.error(check.message);
         return;
       }
       uploadMutation.mutate(file);

@@ -88,12 +88,16 @@ import {
   UiStatusBadge,
   UiTextField,
   useUiConfirm,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { validatePhone } from "@/shared/constants/validation.constants";
+import { codeFormatError } from "@/shared/validation/text-rules";
 import { formatAddress } from "@/shared/lib/vn-address";
 import { useSearchParams } from "react-router-dom";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { agencyPlaceLabel } from "@/shared/constants/agency-place-labels";
 
 /**
  * BE chưa có tham số lọc "SKU chờ điền thông tin" riêng (không đáng để thêm 1
@@ -598,6 +602,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       errors.code = t("shared.validation.textMaxLength", {
         max: SKU_TEXT_MAX.code,
       });
+    else {
+      const codeError = codeFormatError(form.code.trim(), editing?.code);
+      if (codeError) errors.code = codeError;
+    }
     if (!form.name.trim()) errors.name = t("masterData.sku.errName");
     else if (form.name.trim().length > SKU_TEXT_MAX.name)
       errors.name = t("shared.validation.textMaxLength", {
@@ -718,7 +726,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             slotProps={{
               htmlInput: { "aria-label": t("masterData.sku.searchAria") },
             }}
-            sx={{ minWidth: 190 }}
+            sx={TOOLBAR_SEARCH_SX}
           />
           <UiSelect
             aria-label={t("masterData.sku.typeFilterAria")}
@@ -728,7 +736,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setPage(1);
             }}
             placeholder={t("masterData.sku.typeFilterPlaceholder")}
-            minWidth={128}
+            minWidth={FILTER_WIDTH.select}
             options={[
               { value: "PRODUCT", label: t("masterData.sku.typeProduct") },
               { value: "COMPONENT", label: t("masterData.sku.typeComponent") },
@@ -743,7 +751,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setPage(1);
             }}
             placeholder={t("masterData.sku.brandFilterPlaceholder")}
-            minWidth={136}
+            minWidth={FILTER_WIDTH.select}
             options={brands.map((brand) => ({
               value: brand.id,
               label: brand.name || brand.code,
@@ -757,7 +765,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setPage(1);
             }}
             placeholder={t("masterData.status.allPlaceholder")}
-            minWidth={128}
+            minWidth={FILTER_WIDTH.select}
             options={statusOptions(t)}
           />
           <UiSelect
@@ -767,7 +775,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setPerPage(Number(value));
               setPage(1);
             }}
-            minWidth={92}
+            minWidth={FILTER_WIDTH.pageSize}
             options={perPageOptions.map((size) => ({
               value: size,
               label: `${size} / trang`,
@@ -1613,6 +1621,9 @@ const AGENCY_TEXT_MAX = {
   market: 120,
   region: 120,
   contact_name: 200,
+  // Địa chỉ lưu dạng JSON (UiAddressField): chi tiết 200 + tên tỉnh/xã + khoá
+  // ≈ 350 ký tự, trần 500 cùng số với màn cấu hình kho.
+  address: 500,
 } as const;
 
 const AGENCY_FORM_FIELDS = {
@@ -1667,8 +1678,10 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       name: (r) => r.agency_name,
       recipientType: (r) =>
         r.recipient_type ? recipientTypeLabel(r.recipient_type) : null,
-      market: (r) => r.market,
-      region: (r) => r.region,
+      // Sắp theo CHỮ người dùng đọc: mã `CAN_THO` và nhãn 'Cần Thơ' cho ra
+      // hai thứ tự khác nhau, xếp theo mã thì cột nhìn như xếp lung tung.
+      market: (r) => agencyPlaceLabel(r.market) || null,
+      region: (r) => agencyPlaceLabel(r.region) || null,
       contact: (r) => r.contact_name,
       phone: (r) => r.phone,
       address: (r) => formatAddress(r.address),
@@ -1725,6 +1738,12 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     }
     if (!form.agency_code.trim()) {
       errors.agency_code = t("masterData.recipient.errCode");
+    } else {
+      const codeError = codeFormatError(
+        form.agency_code.trim(),
+        editing?.agency_code,
+      );
+      if (codeError) errors.agency_code = codeError;
     }
     if (!form.agency_name.trim()) {
       errors.agency_name = t("masterData.recipient.errName");
@@ -1832,7 +1851,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             slotProps={{
               htmlInput: { "aria-label": t("masterData.recipient.searchAria") },
             }}
-            sx={{ minWidth: 220 }}
+            sx={TOOLBAR_SEARCH_SX}
           />
           <UiSelect
             aria-label={t("masterData.recipient.typeFilterAria")}
@@ -1856,7 +1875,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setPage(1);
             }}
             placeholder={t("masterData.status.allPlaceholder")}
-            minWidth={128}
+            minWidth={FILTER_WIDTH.select}
             options={statusOptions(t)}
           />
           <UiSelect
@@ -1866,7 +1885,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setPerPage(Number(value));
               setPage(1);
             }}
-            minWidth={92}
+            minWidth={FILTER_WIDTH.pageSize}
             options={perPageOptions.map((size) => ({
               value: size,
               label: `${size} / trang`,
@@ -1978,8 +1997,8 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         EMPTY_TEXT
                       )}
                     </td>
-                    <td>{record.market || EMPTY_TEXT}</td>
-                    <td>{record.region || EMPTY_TEXT}</td>
+                    <td>{agencyPlaceLabel(record.market) || EMPTY_TEXT}</td>
+                    <td>{agencyPlaceLabel(record.region) || EMPTY_TEXT}</td>
                     <td>{record.contact_name || EMPTY_TEXT}</td>
                     <td>{record.phone || EMPTY_TEXT}</td>
                     <td style={TRUNCATE_CELL_STYLE}>
@@ -2417,6 +2436,13 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     const errors: Record<string, string> = {};
     if (!form.defect_code.trim())
       errors.defect_code = t("masterData.defect.errCode");
+    else {
+      const codeError = codeFormatError(
+        form.defect_code.trim(),
+        editing?.defect_code,
+      );
+      if (codeError) errors.defect_code = codeError;
+    }
     if (!form.defect_name.trim())
       errors.defect_name = t("masterData.defect.errName");
     for (const key of Object.keys(DEFECT_TEXT_MAX) as Array<
@@ -2507,7 +2533,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             slotProps={{
               htmlInput: { "aria-label": t("masterData.defect.searchAria") },
             }}
-            sx={{ minWidth: 220 }}
+            sx={TOOLBAR_SEARCH_SX}
           />
           <UiSelect
             aria-label={t("masterData.status.filterAria")}
@@ -2517,7 +2543,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setPage(1);
             }}
             placeholder={t("masterData.status.allPlaceholder")}
-            minWidth={128}
+            minWidth={FILTER_WIDTH.select}
             options={statusOptions(t)}
           />
           <UiSelect
@@ -2527,7 +2553,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               setPerPage(Number(value));
               setPage(1);
             }}
-            minWidth={92}
+            minWidth={FILTER_WIDTH.pageSize}
             options={perPageOptions.map((size) => ({
               value: size,
               label: `${size} / trang`,

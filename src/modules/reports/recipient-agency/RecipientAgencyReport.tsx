@@ -1,4 +1,13 @@
-import { useMemo, useState, type ReactElement, type ReactNode } from "react";
+import { useRenderWindow } from "@/shared/components/data-display/useRenderWindow";
+import { useTabView } from "@/shared/ui/use-tab-view";
+import { WindowedMore } from "@/shared/components/data-display/WindowedMore";
+import {
+  useDeferredValue,
+  useMemo,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import dayjs from "dayjs";
 import { toast } from "sonner";
 import {
@@ -13,10 +22,15 @@ import {
   RADIUS,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
+  FILTER_GRID_COLUMNS_SX,
+  filterGridColumnSx,
 } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { useReportRangeAdvice } from "@/modules/reports/operations/report-coverage";
+import { OUTBOUND_RECIPIENT_COVERAGE_PROBE } from "@/modules/reports/operations/report-probes";
+import { ReportRangeAdviceBanner } from "@/modules/reports/operations/ReportRangeAdviceBanner";
 import { HorizontalBarChart } from "@/shared/components/charts/HorizontalBarChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
 import {
@@ -65,6 +79,8 @@ import {
   type RecipientAgencyMetrics,
   type RecipientAgencySummaryRow,
 } from "./recipient-agency-api";
+import AgencyComparisonTab from "./AgencyComparisonTab";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 const recipientTypeOptions = (t: TranslateFn) => [
   { value: "DISTRIBUTOR", label: t("reports.recipientAgency.typeDistributor") },
@@ -563,23 +579,18 @@ function FilterField({
   label,
   children,
   desktopSpan = 3,
-  tabletSpan = 1,
 }: {
   label: string;
   children: ReactNode;
   desktopSpan?: number;
-  tabletSpan?: number;
 }) {
   return (
     <Box
       sx={{
         minWidth: 0,
         position: "relative",
-        gridColumn: {
-          xs: "span 1",
-          sm: `span ${tabletSpan}`,
-          xl: `span ${desktopSpan}`,
-        },
+        // Ô rộng của mockup (khoảng ngày 6/12) chiếm 2 cột lưới; còn lại 1 cột.
+        gridColumn: filterGridColumnSx(desktopSpan >= 4),
         "& .MuiFormControl-root, & .MuiButton-root, & .ant-picker": {
           width: "100%",
           minWidth: 0,
@@ -768,7 +779,28 @@ export default function RecipientAgencyReport() {
   } | null>(null);
   const [exporting, setExporting] = useState<"XLSX" | "CSV" | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "snapshot">("table");
+    /**
+   * Đổi tab KHÔNG khoá luồng chính: `shownViewMode` (tab đang sáng) cập nhật ở mức GẤP
+   * nên người dùng thấy phản hồi ngay, còn `viewMode` — thứ quyết định panel nào
+   * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
+   * @/shared/ui/use-tab-view.
+   */
+  const viewModeTab = useTabView<"table" | "snapshot">("table");
+  const viewMode = viewModeTab.view;
+  const shownViewMode = viewModeTab.shown;
+  const setViewMode = viewModeTab.select;
+  /**
+   * Nút tab đọc `viewMode` (GẤP → tô sáng ngay); hai panel nặng bên dưới đọc bản
+   * trễ để React vẽ chúng ở lượt ngắt được. Xem ghi chú cùng tên ở
+   * StockReconcileReport.
+   */
+  const deferredViewMode = useDeferredValue(viewMode);
+  /**
+   * Tab cấp trang: lát cắt RPT-07 (mặc định) hay màn so sánh nhiều đối tượng.
+   * Mặc định KHÔNG phải "so sánh" vì lát cắt mới là thứ người dùng vào trang
+   * này để xem hằng ngày; so sánh là việc định kỳ của quản lý.
+   */
+  const [pageTab, setPageTab] = useState<"slice" | "comparison">("slice");
 
   const { refreshing, refresh } = useReportRefresh({
     refetch: () => Promise.all([summaryQuery.refetch(), optionQuery.refetch()]),
@@ -816,6 +848,14 @@ export default function RecipientAgencyReport() {
   // Giữ MỘT tham chiếu mảng cho bảng trong modal: cột STT tra vị trí dòng
   // bằng indexOf nên mảng phải là cùng một đối tượng giữa các lần render ô.
   const drillRows = detailsQuery.data?.rows ?? EMPTY_DRILL_ROWS;
+
+  const rangeAdvice = useReportRangeAdvice({
+    from: period.from,
+    to: period.to,
+    dataDays: summaryQuery.dataDays,
+    loading: summaryQuery.isLoading,
+    probe: OUTBOUND_RECIPIENT_COVERAGE_PROBE,
+  });
 
   const summary = summaryQuery.data;
   const metrics = summary?.kpis ?? EMPTY_METRICS;
@@ -901,6 +941,12 @@ export default function RecipientAgencyReport() {
     [t],
   );
   const tableFilter = useSectionFilter(rows, tableFilterConfig);
+
+  /**
+   * Cửa sổ vẽ cho lưới thẻ "lát cắt đối soát" — xem useRenderWindow. Bộ đếm và
+   * mọi KPI của khối vẫn tính trên TOÀN BỘ `rows`; chỉ số thẻ vẽ ra DOM bị cắt.
+   */
+  const sliceWindow = useRenderWindow(rows);
   const options = optionQuery.data;
   const activeFilterCount =
     recipientIds.length +
@@ -975,7 +1021,7 @@ export default function RecipientAgencyReport() {
       // Bảng này sắp xếp CÓ KIỂM SOÁT (tableFilter.rows đã đúng thứ tự
       // hiển thị), nên STT chạy đúng theo dòng người dùng đang nhìn.
       render: (row: RecipientAgencySummaryRow) =>
-        tableFilter.rows.indexOf(row) + 1,
+        rowIndexOf(tableFilter.rows, row) + 1,
     },
     {
       key: "recipient",
@@ -1209,10 +1255,20 @@ export default function RecipientAgencyReport() {
             </Box>
           </Box>
         </Stack>
+        {/*
+          Trạng thái lát cắt + nút Làm mới CHỈ thuộc tab lát cắt. Tab so sánh có
+          thanh công cụ riêng của nó; để cả hai cùng hiện thì trên màn có hai
+          nút "Làm mới" cạnh nhau mà không nói được cái nào làm mới cái gì.
+        */}
         <Stack
           direction="row"
           spacing={1}
-          sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
+          sx={{
+            alignItems: "center",
+            flexWrap: "wrap",
+            rowGap: 1,
+            display: pageTab === "slice" ? "flex" : "none",
+          }}
         >
           <UiStatusBadge
             tone={
@@ -1242,817 +1298,789 @@ export default function RecipientAgencyReport() {
         </Stack>
       </Box>
 
+      {/*
+        Tab CẤP TRANG. Tab "Lát cắt" là toàn bộ màn RPT-07 cũ, không đổi một
+        dòng nào; tab "So sánh" là một màn riêng có bộ lọc, KPI và thứ bậc đọc
+        của chính nó. Cố ý KHÔNG nhét mục so sánh vào dưới lát cắt: hai tab trả
+        lời hai câu hỏi khác nhau ("kỳ này xuất cho ai, bao nhiêu" ↔ "giữa các
+        đối tượng thì ai đang mạnh/yếu"), gộp lại thì cả hai đều dài và loãng.
+
+        Dựng có điều kiện (không phải ẩn bằng CSS) là CỐ Ý: tab so sánh tải một
+        cửa sổ rộng gấp đôi kỳ đang xem, không được phép chạy khi người dùng
+        chưa mở tới nó.
+      */}
       <Box
-        component="section"
-        aria-label={t("reports.recipientAgency.contextAria")}
+        role="tablist"
+        aria-label={t("reports.recipientAgency.pageTablistAria")}
         sx={{
-          ...REPORT_SURFACE_SX,
-          position: "relative",
-          overflow: "hidden",
-          p: { xs: 2, md: 2.25 },
-          minHeight: { md: 112 },
-          bgcolor: S.primary,
-          backgroundImage: `linear-gradient(118deg, ${S.primaryDark}, ${S.primary})`,
-          color: S.onPrimary,
+          // Cùng khuôn với dải tab của RPT-04 (`ImportMatchReport`) và với dải
+          // "Dạng ngang / Dạng hộp" ở ngay dưới màn này: khung viền mỏng nền
+          // chìm, hai pill cao 38px, pill đang chọn tô nền chính. Bản đầu dựng
+          // hai THẺ to có icon + mô tả nên nó nặng hơn cả tiêu đề trang và
+          // trông như một mục nội dung chứ không phải một bộ chuyển chế độ.
+          width: { xs: "100%", md: "min(100%, 560px)" },
+          p: 0.5,
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 0.5,
+          border: `1px solid ${S.border}`,
+          borderRadius: `${RADIUS.card}px`,
+          bgcolor: S.bgSubtle,
         }}
       >
-        <Box
-          aria-hidden="true"
-          sx={{
-            position: "absolute",
-            width: 190,
-            height: 190,
-            right: -64,
-            top: -98,
-            border: `32px solid ${S.primaryLight}`,
-            borderRadius: "50%",
-            opacity: 0.2,
-          }}
-        />
-        <Box
-          sx={{
-            position: "relative",
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) auto" },
-            gap: 2,
-            alignItems: "center",
-          }}
-        >
-          <Box>
+        {(
+          [
+            {
+              key: "slice" as const,
+              icon: <FileTextOutlined aria-hidden="true" />,
+              label: t("reports.recipientAgency.pageTabSlice"),
+              hint: t("reports.recipientAgency.pageTabSliceHint"),
+            },
+            {
+              key: "comparison" as const,
+              icon: <SwapOutlined aria-hidden="true" />,
+              label: t("reports.agencyComparison.tabLabel"),
+              hint: t("reports.agencyComparison.tabHint"),
+            },
+          ] as const
+        ).map((tab) => {
+          const active = pageTab === tab.key;
+          return (
             <Box
-              sx={{
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                opacity: 0.82,
-              }}
+              key={tab.key}
+              component="button"
+              type="button"
+              role="tab"
+              id={`report-08-page-tab-${tab.key}`}
+              data-report-page-tab={tab.key}
+              aria-controls={`report-08-page-panel-${tab.key}`}
+              aria-selected={active}
+              tabIndex={active ? 0 : -1}
+              // Câu mô tả không mất đi, chỉ rời khỏi dải tab: nó là thứ đọc một
+              // lần rồi thôi, không đáng chiếm hai dòng cố định trên mọi lượt xem.
+              title={tab.hint}
+              onClick={() => setPageTab(tab.key)}
+              sx={{ ...viewTabSx(active), flex: 1 }}
             >
-              {t("reports.recipientAgency.sliceViewing")}
+              {tab.icon}
+              {tab.label}
             </Box>
-            <Box
-              sx={{
-                mt: 0.5,
-                fontSize: { xs: 19, md: 22 },
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {period.label}
-            </Box>
-            <Box
-              sx={{
-                mt: 1,
-                maxWidth: 640,
-                fontSize: 13,
-                lineHeight: 1.5,
-                opacity: 0.9,
-              }}
-            >
-              {t("reports.recipientAgency.sliceFormula")}
-            </Box>
-          </Box>
-          <Stack
-            direction={{ xs: "row", md: "column" }}
-            spacing={1}
-            sx={{
-              alignItems: { xs: "stretch", md: "flex-end" },
-              justifyContent: "center",
-            }}
-          >
-            <Box
-              sx={{
-                px: 1.25,
-                py: 0.75,
-                borderRadius: `${RADIUS.control}px`,
-                bgcolor: S.primaryDark,
-                fontSize: 12,
-                fontWeight: 700,
-              }}
-            >
-              {summary
-                ? t("reports.recipientAgency.sliceLocked")
-                : t("reports.recipientAgency.sliceCreating")}
-            </Box>
-            <Box
-              sx={{
-                fontSize: 12,
-                opacity: 0.82,
-                textAlign: { xs: "left", md: "right" },
-              }}
-            >
-              {summary
-                ? t("reports.recipientAgency.lockedAt", {
-                    time: formatDateTime(summary.as_of),
-                  })
-                : t("reports.recipientAgency.timezoneBadge")}
-            </Box>
-          </Stack>
-        </Box>
+          );
+        })}
       </Box>
 
-      <Box
-        component="section"
-        aria-labelledby="report-08-filters"
-        sx={{ ...REPORT_SURFACE_SX, overflow: "visible" }}
-      >
+      {pageTab === "comparison" ? (
         <Box
+          id="report-08-page-panel-comparison"
+          role="tabpanel"
+          aria-labelledby="report-08-page-tab-comparison"
+          sx={{ minWidth: 0 }}
+        >
+          <AgencyComparisonTab />
+        </Box>
+      ) : (
+        <Box
+          id="report-08-page-panel-slice"
+          role="tabpanel"
+          aria-labelledby="report-08-page-tab-slice"
           sx={{
-            px: { xs: 1.75, md: 2.5 },
-            py: 1.5,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 1,
-            borderBottom:
-              viewMode === "table" || filtersExpanded
-                ? `1px solid ${S.border}`
-                : "none",
-            minHeight: { md: 64 },
+            minWidth: 0,
+            display: "grid",
+            gap: { xs: 1.5, md: 2.25 },
+            "& > *": { minWidth: 0 },
           }}
         >
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ alignItems: "center", minWidth: 0 }}
+          <Box
+            component="section"
+            aria-label={t("reports.recipientAgency.contextAria")}
+            sx={{
+              ...REPORT_SURFACE_SX,
+              position: "relative",
+              overflow: "hidden",
+              p: { xs: 2, md: 2.25 },
+              minHeight: { md: 112 },
+              bgcolor: S.primary,
+              backgroundImage: `linear-gradient(118deg, ${S.primaryDark}, ${S.primary})`,
+              color: S.onPrimary,
+            }}
           >
             <Box
               aria-hidden="true"
               sx={{
-                width: 30,
-                height: 30,
+                position: "absolute",
+                width: 190,
+                height: 190,
+                right: -64,
+                top: -98,
+                border: `32px solid ${S.primaryLight}`,
+                borderRadius: "50%",
+                opacity: 0.2,
+              }}
+            />
+            <Box
+              sx={{
+                position: "relative",
                 display: "grid",
-                placeItems: "center",
-                borderRadius: `${RADIUS.control}px`,
-                bgcolor: S.primarySoft,
-                color: S.primaryDark,
-                fontSize: 15,
+                gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) auto" },
+                gap: 2,
+                alignItems: "center",
               }}
             >
-              <FilterOutlined />
-            </Box>
-            <Box>
-              <Box
-                id="report-08-filters"
-                sx={{
-                  fontSize: TYPOGRAPHY.fontSizeSecondary,
-                  fontWeight: 700,
-                  color: S.textHigh,
-                }}
-              >
-                {t("reports.recipientAgency.filterTitle")}
-              </Box>
-              <Box sx={{ mt: 0.2, fontSize: 12, color: S.textMedium }}>
-                {t("reports.recipientAgency.filterHint")}
-              </Box>
-            </Box>
-          </Stack>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ alignItems: "center", flex: "none" }}
-          >
-            {viewMode === "snapshot" && !filtersExpanded ? (
-              <UiStatusBadge tone="neutral" label={period.label} />
-            ) : null}
-            {activeFilterCount > 0 ? (
-              <UiStatusBadge
-                tone="primary"
-                label={t("reports.recipientAgency.selectedCount", {
-                  count: activeFilterCount,
-                })}
-              />
-            ) : null}
-            <UiButton
-              appearance={filtersExpanded ? "tonal" : "outlined"}
-              startIcon={<FilterOutlined />}
-              aria-expanded={filtersExpanded}
-              aria-controls="report-08-filter-fields"
-              onClick={() => setFiltersExpanded((current) => !current)}
-              sx={{
-                display: {
-                  xs: "inline-flex",
-                  md: viewMode === "snapshot" ? "inline-flex" : "none",
-                },
-              }}
-            >
-              {filtersExpanded
-                ? t("reports.recipientAgency.hideFilters")
-                : t("reports.recipientAgency.showFilters")}
-            </UiButton>
-            <UiButton
-              appearance="text"
-              onClick={resetFilters}
-              sx={{
-                display: {
-                  xs: filtersExpanded ? "inline-flex" : "none",
-                  md:
-                    viewMode === "table" || filtersExpanded
-                      ? "inline-flex"
-                      : "none",
-                },
-              }}
-            >
-              {t("reports.recipientAgency.reset")}
-            </UiButton>
-          </Stack>
-        </Box>
-        <Box
-          id="report-08-filter-fields"
-          sx={{
-            p: { xs: 1.75, md: 2.5 },
-            pt: { md: 2.25 },
-            display: {
-              xs: filtersExpanded ? "grid" : "none",
-              md: viewMode === "table" || filtersExpanded ? "grid" : "none",
-            },
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, minmax(0, 1fr))",
-              xl: "repeat(12, minmax(0, 1fr))",
-            },
-            columnGap: 1.5,
-            rowGap: 1.75,
-          }}
-        >
-          <FilterField
-            label={t("reports.recipientAgency.dateRangeLabel")}
-            desktopSpan={6}
-            tabletSpan={2}
-          >
-            <UiVuexyDateRangePicker
-              aria-label={t("reports.filters.dateRangeAria")}
-              value={period.range}
-              format="DD/MM/YYYY"
-              placeholder={[
-                t("reports.recipientAgency.dateFrom"),
-                t("reports.recipientAgency.dateTo"),
-              ]}
-              allowClear={false}
-              // Dữ liệu chỉ có trong quá khứ: khoá ngày tương lai (mốc dưới giữ mặc định 2000).
-              maxDate={dayjs().endOf("day")}
-              className="hn-vuexy-date-range"
-              popupClassName="hn-vuexy-date-popup"
-              presets={periodPresets}
-              onChange={(value) => {
-                if (value?.[0] && value?.[1])
-                  period.setRange([value[0], value[1]]);
-              }}
-            />
-            <Box sx={{ mt: 0.5, color: S.textMedium, fontSize: 12 }}>
-              {t("reports.recipientAgency.periodViewing", {
-                label: period.label,
-              })}
-            </Box>
-          </FilterField>
-          <FilterField
-            label={t("reports.recipientAgency.reversalStateLabel")}
-            desktopSpan={3}
-          >
-            <UiSelect
-              aria-label={t("reports.recipientAgency.reversalStateLabel")}
-              fullWidth
-              value={reversalState}
-              onChange={(value) => {
-                setReversalState(value as typeof reversalState);
-                setPage(1);
-              }}
-              options={reversalStateOptions(t)}
-            />
-          </FilterField>
-          <FilterField label={t("reports.recipientAgency.recipientTypeLabel")}>
-            <MultiSelectFilter
-              minWidth={0}
-              ariaLabel={t("reports.recipientAgency.recipientTypeAria")}
-              placeholder={t("reports.recipientAgency.recipientTypeAll")}
-              options={recipientTypeOptions(t)}
-              value={recipientTypes}
-              onChange={(value) => {
-                setRecipientTypes(value);
-                setPage(1);
-              }}
-            />
-          </FilterField>
-          <FilterField label={t("reports.recipientAgency.recipientLabel")}>
-            <MultiSelectFilter
-              minWidth={0}
-              ariaLabel={t("reports.recipientAgency.recipientAria")}
-              placeholder={t("reports.recipientAgency.recipientAll")}
-              options={(options?.recipients ?? []).map((item) => ({
-                value: item.id,
-                label: optionLabel(item.code, item.name),
-              }))}
-              value={recipientIds}
-              onChange={(value) => {
-                setRecipientIds(value);
-                setPage(1);
-              }}
-            />
-          </FilterField>
-          <FilterField label={t("reports.recipientAgency.typeAgency")}>
-            <MultiSelectFilter
-              minWidth={0}
-              ariaLabel={t("reports.recipientAgency.agencyAria")}
-              placeholder={t("reports.recipientAgency.agencyAll")}
-              options={(options?.agencies ?? []).map((item) => ({
-                value: item.id,
-                label: optionLabel(item.code, item.name),
-              }))}
-              value={agencyIds}
-              onChange={(value) => {
-                setAgencyIds(value);
-                setPage(1);
-              }}
-            />
-          </FilterField>
-          <FilterField label={t("reports.recipientAgency.departmentLabel")}>
-            <MultiSelectFilter
-              minWidth={0}
-              ariaLabel={t("reports.recipientAgency.departmentAria")}
-              placeholder={t("reports.recipientAgency.departmentAll")}
-              options={(options?.departments ?? []).map((item) => ({
-                value: item.id,
-                label: optionLabel(item.code, item.name),
-              }))}
-              value={departmentIds}
-              onChange={(value) => {
-                setDepartmentIds(value);
-                setPage(1);
-              }}
-            />
-          </FilterField>
-          <FilterField
-            label={t("reports.recipientAgency.skuLabel")}
-            desktopSpan={6}
-          >
-            <MultiSelectFilter
-              minWidth={0}
-              ariaLabel={t("reports.recipientAgency.skuAria")}
-              placeholder={t("reports.recipientAgency.skuAll")}
-              options={(options?.skus ?? []).map((item) => ({
-                value: item.id,
-                label: optionLabel(item.code, item.name),
-              }))}
-              value={skuIds}
-              onChange={(value) => {
-                setSkuIds(value);
-                setPage(1);
-              }}
-            />
-          </FilterField>
-          <FilterField
-            label={t("reports.recipientAgency.productTypeLabel")}
-            desktopSpan={6}
-          >
-            <MultiSelectFilter
-              minWidth={0}
-              ariaLabel={t("reports.recipientAgency.productTypeAria")}
-              placeholder={t("reports.recipientAgency.productTypeAll")}
-              options={productTypeOptions(t)}
-              value={productTypes}
-              onChange={(value) => {
-                setProductTypes(
-                  value.filter(
-                    (item): item is "PRODUCT" | "COMPONENT" =>
-                      item === "PRODUCT" || item === "COMPONENT",
-                  ),
-                );
-                setPage(1);
-              }}
-            />
-          </FilterField>
-        </Box>
-      </Box>
-
-      {period.invalid ? (
-        <UiAlert tone="error">
-          {t("reports.recipientAgency.dateOrderError")}
-        </UiAlert>
-      ) : null}
-      {summaryQuery.error ? (
-        <ApiErrorAlert
-          error={summaryQuery.error}
-          title={t("reports.recipientAgency.summaryErrorTitle")}
-          onRetry={() => void summaryQuery.refetch()}
-        />
-      ) : null}
-
-      <Box component="section" aria-labelledby="report-08-kpis">
-        <Stack
-          direction="row"
-          sx={{
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 1,
-            mb: 1.25,
-          }}
-        >
-          <Box>
-            <Box
-              id="report-08-kpis"
-              sx={{
-                fontSize: TYPOGRAPHY.cardTitle.fontSize,
-                fontWeight: 700,
-                color: S.textHigh,
-              }}
-            >
-              {t("reports.recipientAgency.kpiTitle")}
-            </Box>
-            <Box sx={{ mt: 0.25, fontSize: 12, color: S.textMedium }}>
-              {t("reports.recipientAgency.kpiHint")}
-            </Box>
-          </Box>
-          <UiStatusBadge
-            tone="neutral"
-            label={t("reports.recipientAgency.timezoneBadge")}
-          />
-        </Stack>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "repeat(2, minmax(0, 1fr))",
-              md: "repeat(4, minmax(0, 1fr))",
-            },
-            gap: 1.5,
-          }}
-        >
-          <MetricCard
-            label={t("reports.recipientAgency.kpiGross")}
-            value={quantity(metrics.gross_issue_posted_qty)}
-            hint={t("reports.recipientAgency.kpiGrossHint")}
-            tone="info"
-            icon={<ShopOutlined />}
-            metaLabel={t("reports.recipientAgency.kpiGrossMeta")}
-            metaValue="100%"
-            progress={100}
-          />
-          <MetricCard
-            label={t("reports.recipientAgency.kpiReversed")}
-            value={quantity(metrics.reversed_issue_qty)}
-            hint={t("reports.recipientAgency.kpiReversedHint")}
-            tone="warning"
-            icon={<SwapOutlined />}
-            metaLabel={t("reports.recipientAgency.kpiReversedMeta")}
-            metaValue={`${reversedRate}%`}
-            progress={reversedRate}
-          />
-          <MetricCard
-            label={t("reports.recipientAgency.colNet")}
-            value={quantity(metrics.net_issued_qty)}
-            hint={t("reports.recipientAgency.kpiNetHint")}
-            tone="success"
-            icon={<SafetyCertificateOutlined />}
-            metaLabel={t("reports.recipientAgency.kpiNetMeta")}
-            metaValue={`${netRate}%`}
-            progress={netRate}
-          />
-          <MetricCard
-            label={t("reports.recipientAgency.kpiDocs")}
-            value={quantity(metrics.posted_document_count)}
-            hint={t("reports.recipientAgency.kpiDocsHint")}
-            tone="neutral"
-            icon={<TeamOutlined />}
-            metaLabel={t("reports.recipientAgency.kpiDocsMeta")}
-            metaValue={`${reversedDocumentRate}%`}
-            progress={reversedDocumentRate}
-          />
-        </Box>
-      </Box>
-
-      <Box
-        component="section"
-        aria-labelledby="report-08-common-analysis"
-        sx={{
-          display: "grid",
-          gap: 1.25,
-          minWidth: 0,
-        }}
-      >
-        <Stack
-          direction="row"
-          sx={{
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 1,
-          }}
-        >
-          <Box>
-            <Box
-              id="report-08-common-analysis"
-              sx={{
-                color: S.textHigh,
-                fontSize: TYPOGRAPHY.cardTitle.fontSize,
-                fontWeight: 700,
-              }}
-            >
-              {t("reports.recipientAgency.analysisTitle")}
-            </Box>
-            <Box sx={{ mt: 0.25, color: S.textMedium, fontSize: 12 }}>
-              {t("reports.recipientAgency.analysisHint")}
-            </Box>
-          </Box>
-          <UiStatusBadge
-            tone="neutral"
-            label={t("reports.recipientAgency.analysisBadge")}
-          />
-        </Stack>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
-            gap: 2,
-          }}
-        >
-          <ChartPanel
-            title={t("reports.recipientAgency.chartRecipientTitle")}
-            description={t("reports.recipientAgency.chartRecipientDescription")}
-            marker={<ShopOutlined />}
-            loading={summaryQuery.isLoading}
-            error={summaryQuery.error}
-            onRetry={() => void summaryQuery.refetch()}
-            empty={Boolean(summary && !summary.chart_by_recipient.length)}
-          >
-            <HorizontalBarChart
-              items={chartItems(summary?.chart_by_recipient ?? [])}
-              height={300}
-              valueFormatter={quantity}
-              color={CHART_COLORS.primary}
-              onSelect={(item) => {
-                const point = (summary?.chart_by_recipient ?? []).find(
-                  (candidate) => candidate.label === item.label,
-                );
-                if (point)
-                  setActiveDrill({
-                    key: point.drill_key,
-                    title: item.label,
-                    snapshotId: summary?.snapshot_id ?? "",
-                  });
-              }}
-            />
-          </ChartPanel>
-          <ChartPanel
-            title={t("reports.recipientAgency.chartSkuTitle")}
-            description={t("reports.recipientAgency.chartSkuDescription")}
-            marker={<FileTextOutlined />}
-            loading={summaryQuery.isLoading}
-            error={summaryQuery.error}
-            onRetry={() => void summaryQuery.refetch()}
-            empty={Boolean(summary && !summary.chart_by_sku.length)}
-          >
-            <HorizontalBarChart
-              items={chartItems(summary?.chart_by_sku ?? [])}
-              height={300}
-              valueFormatter={quantity}
-              color={CHART_COLORS.info}
-              onSelect={(item) => {
-                const point = (summary?.chart_by_sku ?? []).find(
-                  (candidate) => candidate.label === item.label,
-                );
-                if (point)
-                  setActiveDrill({
-                    key: point.drill_key,
-                    title: item.label,
-                    snapshotId: summary?.snapshot_id ?? "",
-                  });
-              }}
-            />
-          </ChartPanel>
-        </Box>
-      </Box>
-
-      <Box
-        component="section"
-        aria-label={t("reports.recipientAgency.viewSectionAria")}
-        sx={{
-          ...REPORT_SURFACE_SX,
-          p: 1,
-          display: "flex",
-          alignItems: { xs: "stretch", sm: "center" },
-          justifyContent: "space-between",
-          flexDirection: { xs: "column", sm: "row" },
-          gap: 1.25,
-          borderTop: `2px solid ${S.primary}`,
-        }}
-      >
-        <Box sx={{ px: { xs: 0.5, sm: 1 } }}>
-          <Box sx={{ color: S.textHigh, fontSize: 13, fontWeight: 700 }}>
-            {t("reports.recipientAgency.viewTitle")}
-          </Box>
-          <Box sx={{ mt: 0.2, color: S.textMedium, fontSize: 12 }}>
-            {t("reports.recipientAgency.viewHint")}
-          </Box>
-        </Box>
-        <Box
-          role="tablist"
-          aria-label={t("reports.recipientAgency.viewTablistAria")}
-          sx={{
-            p: 0.5,
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: 0.5,
-            borderRadius: `${RADIUS.control}px`,
-            bgcolor: S.bgSubtle,
-          }}
-        >
-          <Box
-            component="button"
-            type="button"
-            role="tab"
-            id="report-08-view-table"
-            data-report-view-switch="table"
-            aria-controls="report-08-panel-table"
-            aria-selected={viewMode === "table"}
-            tabIndex={viewMode === "table" ? 0 : -1}
-            onClick={() => setViewMode("table")}
-            sx={viewTabSx(viewMode === "table")}
-          >
-            <UnorderedListOutlined aria-hidden="true" />
-            {t("reports.recipientAgency.viewTable")}
-          </Box>
-          <Box
-            component="button"
-            type="button"
-            role="tab"
-            id="report-08-view-snapshot"
-            data-report-view-switch="snapshot"
-            aria-controls="report-08-panel-snapshot"
-            aria-selected={viewMode === "snapshot"}
-            tabIndex={viewMode === "snapshot" ? 0 : -1}
-            onClick={() => {
-              setViewMode("snapshot");
-              setFiltersExpanded(false);
-            }}
-            sx={viewTabSx(viewMode === "snapshot")}
-          >
-            <AppstoreOutlined aria-hidden="true" />
-            {t("reports.recipientAgency.viewSlice")}
-          </Box>
-        </Box>
-      </Box>
-
-      <Box
-        id="report-08-panel-snapshot"
-        data-report-view-panel="snapshot"
-        role="tabpanel"
-        aria-labelledby="report-08-view-snapshot"
-        sx={{
-          display: viewMode === "snapshot" ? "block" : "none",
-          minWidth: 0,
-        }}
-      >
-        <Box
-          component="section"
-          aria-labelledby="report-08-snapshot-data"
-          sx={{
-            ...REPORT_SURFACE_SX,
-            overflow: "hidden",
-            borderTop: `3px solid ${S.primary}`,
-          }}
-        >
-          <Box
-            sx={{
-              px: { xs: 1.75, md: 2.5 },
-              py: { xs: 1.75, md: 2 },
-              display: "flex",
-              alignItems: { xs: "flex-start", sm: "center" },
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 1.5,
-              borderBottom: `1px solid ${S.border}`,
-              bgcolor: S.bgSubtle,
-            }}
-          >
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-              <Box
-                aria-hidden="true"
-                sx={{
-                  width: 30,
-                  height: 30,
-                  display: "grid",
-                  placeItems: "center",
-                  borderRadius: `${RADIUS.control}px`,
-                  bgcolor: S.primarySoft,
-                  color: S.primaryDark,
-                  fontSize: 15,
-                }}
-              >
-                <AppstoreOutlined />
-              </Box>
               <Box>
                 <Box
-                  id="report-08-snapshot-data"
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    opacity: 0.82,
+                  }}
+                >
+                  {t("reports.recipientAgency.sliceViewing")}
+                </Box>
+                <Box
+                  sx={{
+                    mt: 0.5,
+                    fontSize: { xs: 19, md: 22 },
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {period.label}
+                </Box>
+                <Box
+                  sx={{
+                    mt: 1,
+                    maxWidth: 640,
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    opacity: 0.9,
+                  }}
+                >
+                  {t("reports.recipientAgency.sliceFormula")}
+                </Box>
+              </Box>
+              <Stack
+                direction={{ xs: "row", md: "column" }}
+                spacing={1}
+                sx={{
+                  alignItems: { xs: "stretch", md: "flex-end" },
+                  justifyContent: "center",
+                }}
+              >
+                <Box
+                  sx={{
+                    px: 1.25,
+                    py: 0.75,
+                    borderRadius: `${RADIUS.control}px`,
+                    bgcolor: S.primaryDark,
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {summary
+                    ? t("reports.recipientAgency.sliceLocked")
+                    : t("reports.recipientAgency.sliceCreating")}
+                </Box>
+                <Box
+                  sx={{
+                    fontSize: 12,
+                    opacity: 0.82,
+                    textAlign: { xs: "left", md: "right" },
+                  }}
+                >
+                  {summary
+                    ? t("reports.recipientAgency.lockedAt", {
+                        time: formatDateTime(summary.as_of),
+                      })
+                    : t("reports.recipientAgency.timezoneBadge")}
+                </Box>
+              </Stack>
+            </Box>
+          </Box>
+
+          <Box
+            component="section"
+            aria-labelledby="report-08-filters"
+            sx={{ ...REPORT_SURFACE_SX, overflow: "visible" }}
+          >
+            <Box
+              sx={{
+                px: { xs: 1.75, md: 2.5 },
+                py: 1.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+                borderBottom:
+                  viewMode === "table" || filtersExpanded
+                    ? `1px solid ${S.border}`
+                    : "none",
+                minHeight: { md: 64 },
+              }}
+            >
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ alignItems: "center", minWidth: 0 }}
+              >
+                <Box
+                  aria-hidden="true"
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: `${RADIUS.control}px`,
+                    bgcolor: S.primarySoft,
+                    color: S.primaryDark,
+                    fontSize: 15,
+                  }}
+                >
+                  <FilterOutlined />
+                </Box>
+                <Box>
+                  <Box
+                    id="report-08-filters"
+                    sx={{
+                      fontSize: TYPOGRAPHY.fontSizeSecondary,
+                      fontWeight: 700,
+                      color: S.textHigh,
+                    }}
+                  >
+                    {t("reports.recipientAgency.filterTitle")}
+                  </Box>
+                  <Box sx={{ mt: 0.2, fontSize: 12, color: S.textMedium }}>
+                    {t("reports.recipientAgency.filterHint")}
+                  </Box>
+                </Box>
+              </Stack>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ alignItems: "center", flex: "none" }}
+              >
+                {viewMode === "snapshot" && !filtersExpanded ? (
+                  <UiStatusBadge tone="neutral" label={period.label} />
+                ) : null}
+                {activeFilterCount > 0 ? (
+                  <UiStatusBadge
+                    tone="primary"
+                    label={t("reports.recipientAgency.selectedCount", {
+                      count: activeFilterCount,
+                    })}
+                  />
+                ) : null}
+                <UiButton
+                  appearance={filtersExpanded ? "tonal" : "outlined"}
+                  startIcon={<FilterOutlined />}
+                  aria-expanded={filtersExpanded}
+                  aria-controls="report-08-filter-fields"
+                  onClick={() => setFiltersExpanded((current) => !current)}
+                  sx={{
+                    display: {
+                      xs: "inline-flex",
+                      md: viewMode === "snapshot" ? "inline-flex" : "none",
+                    },
+                  }}
+                >
+                  {filtersExpanded
+                    ? t("reports.recipientAgency.hideFilters")
+                    : t("reports.recipientAgency.showFilters")}
+                </UiButton>
+                <UiButton
+                  appearance="text"
+                  onClick={resetFilters}
+                  sx={{
+                    display: {
+                      xs: filtersExpanded ? "inline-flex" : "none",
+                      md:
+                        viewMode === "table" || filtersExpanded
+                          ? "inline-flex"
+                          : "none",
+                    },
+                  }}
+                >
+                  {t("reports.recipientAgency.reset")}
+                </UiButton>
+              </Stack>
+            </Box>
+            <Box
+              id="report-08-filter-fields"
+              sx={{
+                p: { xs: 1.75, md: 2.5 },
+                pt: { md: 2.25 },
+                display: {
+                  xs: filtersExpanded ? "grid" : "none",
+                  md: viewMode === "table" || filtersExpanded ? "grid" : "none",
+                },
+                gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
+                columnGap: 1.5,
+                rowGap: 1.75,
+              }}
+            >
+              <FilterField
+                label={t("reports.recipientAgency.dateRangeLabel")}
+                desktopSpan={6}
+              >
+                <UiVuexyDateRangePicker
+                  aria-label={t("reports.filters.dateRangeAria")}
+                  value={period.range}
+                  format="DD/MM/YYYY"
+                  placeholder={[
+                    t("reports.recipientAgency.dateFrom"),
+                    t("reports.recipientAgency.dateTo"),
+                  ]}
+                  allowClear={false}
+                  // Dữ liệu chỉ có trong quá khứ: khoá ngày tương lai (mốc dưới giữ mặc định 2000).
+                  maxDate={dayjs().endOf("day")}
+                  className="hn-vuexy-date-range"
+                  popupClassName="hn-vuexy-date-popup"
+                  presets={periodPresets}
+                  onChange={(value) => {
+                    if (value?.[0] && value?.[1])
+                      period.setRange([value[0], value[1]]);
+                  }}
+                />
+                <Box sx={{ mt: 0.5, color: S.textMedium, fontSize: 12 }}>
+                  {t("reports.recipientAgency.periodViewing", {
+                    label: period.label,
+                  })}
+                </Box>
+              </FilterField>
+              <FilterField
+                label={t("reports.recipientAgency.reversalStateLabel")}
+                desktopSpan={3}
+              >
+                <UiSelect
+                  aria-label={t("reports.recipientAgency.reversalStateLabel")}
+                  fullWidth
+                  value={reversalState}
+                  onChange={(value) => {
+                    setReversalState(value as typeof reversalState);
+                    setPage(1);
+                  }}
+                  options={reversalStateOptions(t)}
+                />
+              </FilterField>
+              <FilterField
+                label={t("reports.recipientAgency.recipientTypeLabel")}
+              >
+                <MultiSelectFilter
+                  minWidth={0}
+                  ariaLabel={t("reports.recipientAgency.recipientTypeAria")}
+                  placeholder={t("reports.recipientAgency.recipientTypeAll")}
+                  options={recipientTypeOptions(t)}
+                  value={recipientTypes}
+                  onChange={(value) => {
+                    setRecipientTypes(value);
+                    setPage(1);
+                  }}
+                />
+              </FilterField>
+              <FilterField label={t("reports.recipientAgency.recipientLabel")}>
+                <MultiSelectFilter
+                  minWidth={0}
+                  ariaLabel={t("reports.recipientAgency.recipientAria")}
+                  placeholder={t("reports.recipientAgency.recipientAll")}
+                  options={(options?.recipients ?? []).map((item) => ({
+                    value: item.id,
+                    label: optionLabel(item.code, item.name),
+                  }))}
+                  value={recipientIds}
+                  onChange={(value) => {
+                    setRecipientIds(value);
+                    setPage(1);
+                  }}
+                />
+              </FilterField>
+              <FilterField label={t("reports.recipientAgency.typeAgency")}>
+                <MultiSelectFilter
+                  minWidth={0}
+                  ariaLabel={t("reports.recipientAgency.agencyAria")}
+                  placeholder={t("reports.recipientAgency.agencyAll")}
+                  options={(options?.agencies ?? []).map((item) => ({
+                    value: item.id,
+                    label: optionLabel(item.code, item.name),
+                  }))}
+                  value={agencyIds}
+                  onChange={(value) => {
+                    setAgencyIds(value);
+                    setPage(1);
+                  }}
+                />
+              </FilterField>
+              <FilterField label={t("reports.recipientAgency.departmentLabel")}>
+                <MultiSelectFilter
+                  minWidth={0}
+                  ariaLabel={t("reports.recipientAgency.departmentAria")}
+                  placeholder={t("reports.recipientAgency.departmentAll")}
+                  options={(options?.departments ?? []).map((item) => ({
+                    value: item.id,
+                    label: optionLabel(item.code, item.name),
+                  }))}
+                  value={departmentIds}
+                  onChange={(value) => {
+                    setDepartmentIds(value);
+                    setPage(1);
+                  }}
+                />
+              </FilterField>
+              <FilterField
+                label={t("reports.recipientAgency.skuLabel")}
+                desktopSpan={6}
+              >
+                <MultiSelectFilter
+                  minWidth={0}
+                  ariaLabel={t("reports.recipientAgency.skuAria")}
+                  placeholder={t("reports.recipientAgency.skuAll")}
+                  options={(options?.skus ?? []).map((item) => ({
+                    value: item.id,
+                    label: optionLabel(item.code, item.name),
+                  }))}
+                  value={skuIds}
+                  onChange={(value) => {
+                    setSkuIds(value);
+                    setPage(1);
+                  }}
+                />
+              </FilterField>
+              <FilterField
+                label={t("reports.recipientAgency.productTypeLabel")}
+                desktopSpan={6}
+              >
+                <MultiSelectFilter
+                  minWidth={0}
+                  ariaLabel={t("reports.recipientAgency.productTypeAria")}
+                  placeholder={t("reports.recipientAgency.productTypeAll")}
+                  options={productTypeOptions(t)}
+                  value={productTypes}
+                  onChange={(value) => {
+                    setProductTypes(
+                      value.filter(
+                        (item): item is "PRODUCT" | "COMPONENT" =>
+                          item === "PRODUCT" || item === "COMPONENT",
+                      ),
+                    );
+                    setPage(1);
+                  }}
+                />
+              </FilterField>
+            </Box>
+          </Box>
+
+          {period.invalid ? (
+            <UiAlert tone="error">
+              {t("reports.recipientAgency.dateOrderError")}
+            </UiAlert>
+          ) : null}
+          {summaryQuery.error ? (
+            <ApiErrorAlert
+              error={summaryQuery.error}
+              title={t("reports.recipientAgency.summaryErrorTitle")}
+              onRetry={() => void summaryQuery.refetch()}
+            />
+          ) : null}
+
+          <ReportRangeAdviceBanner
+            advice={rangeAdvice}
+            onApply={(next) => {
+              period.setRange([dayjs(next.from), dayjs(next.to)]);
+              setPage(1);
+            }}
+          />
+
+          <Box component="section" aria-labelledby="report-08-kpis">
+            <Stack
+              direction="row"
+              sx={{
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+                mb: 1.25,
+              }}
+            >
+              <Box>
+                <Box
+                  id="report-08-kpis"
+                  sx={{
+                    fontSize: TYPOGRAPHY.cardTitle.fontSize,
+                    fontWeight: 700,
+                    color: S.textHigh,
+                  }}
+                >
+                  {t("reports.recipientAgency.kpiTitle")}
+                </Box>
+                <Box sx={{ mt: 0.25, fontSize: 12, color: S.textMedium }}>
+                  {t("reports.recipientAgency.kpiHint")}
+                </Box>
+              </Box>
+              <UiStatusBadge
+                tone="neutral"
+                label={t("reports.recipientAgency.timezoneBadge")}
+              />
+            </Stack>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "repeat(2, minmax(0, 1fr))",
+                  md: "repeat(4, minmax(0, 1fr))",
+                },
+                gap: 1.5,
+              }}
+            >
+              <MetricCard
+                label={t("reports.recipientAgency.kpiGross")}
+                value={quantity(metrics.gross_issue_posted_qty)}
+                hint={t("reports.recipientAgency.kpiGrossHint")}
+                tone="info"
+                icon={<ShopOutlined />}
+                metaLabel={t("reports.recipientAgency.kpiGrossMeta")}
+                metaValue="100%"
+                progress={100}
+              />
+              <MetricCard
+                label={t("reports.recipientAgency.kpiReversed")}
+                value={quantity(metrics.reversed_issue_qty)}
+                hint={t("reports.recipientAgency.kpiReversedHint")}
+                tone="warning"
+                icon={<SwapOutlined />}
+                metaLabel={t("reports.recipientAgency.kpiReversedMeta")}
+                metaValue={`${reversedRate}%`}
+                progress={reversedRate}
+              />
+              <MetricCard
+                label={t("reports.recipientAgency.colNet")}
+                value={quantity(metrics.net_issued_qty)}
+                hint={t("reports.recipientAgency.kpiNetHint")}
+                tone="success"
+                icon={<SafetyCertificateOutlined />}
+                metaLabel={t("reports.recipientAgency.kpiNetMeta")}
+                metaValue={`${netRate}%`}
+                progress={netRate}
+              />
+              <MetricCard
+                label={t("reports.recipientAgency.kpiDocs")}
+                value={quantity(metrics.posted_document_count)}
+                hint={t("reports.recipientAgency.kpiDocsHint")}
+                tone="neutral"
+                icon={<TeamOutlined />}
+                metaLabel={t("reports.recipientAgency.kpiDocsMeta")}
+                metaValue={`${reversedDocumentRate}%`}
+                progress={reversedDocumentRate}
+              />
+            </Box>
+          </Box>
+
+          <Box
+            component="section"
+            aria-labelledby="report-08-common-analysis"
+            sx={{
+              display: "grid",
+              gap: 1.25,
+              minWidth: 0,
+            }}
+          >
+            <Stack
+              direction="row"
+              sx={{
+                alignItems: "flex-end",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
+              <Box>
+                <Box
+                  id="report-08-common-analysis"
                   sx={{
                     color: S.textHigh,
                     fontSize: TYPOGRAPHY.cardTitle.fontSize,
                     fontWeight: 700,
                   }}
                 >
-                  {t("reports.recipientAgency.sliceDataTitle")}
+                  {t("reports.recipientAgency.analysisTitle")}
                 </Box>
-                <Box sx={{ mt: 0.35, color: S.textMedium, fontSize: 12 }}>
-                  {t("reports.recipientAgency.sliceDataHint")}
+                <Box sx={{ mt: 0.25, color: S.textMedium, fontSize: 12 }}>
+                  {t("reports.recipientAgency.analysisHint")}
                 </Box>
               </Box>
+              <UiStatusBadge
+                tone="neutral"
+                label={t("reports.recipientAgency.analysisBadge")}
+              />
             </Stack>
-            <UiStatusBadge
-              tone="neutral"
-              label={t("reports.recipientAgency.sliceCount", {
-                count: rows.length,
-              })}
-            />
-          </Box>
-
-          <Box
-            sx={{
-              p: { xs: 1.5, md: 2.5 },
-              maxHeight: { md: 560 },
-              overflowY: { md: "auto" },
-              bgcolor: S.bgSubtle,
-            }}
-          >
-            {summaryQuery.isLoading ? (
-              <Box
-                sx={{
-                  minHeight: 180,
-                  display: "grid",
-                  placeItems: "center",
-                  color: S.textMedium,
-                }}
-              >
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: "center" }}
-                >
-                  <UiSpinner size={18} label={null} />
-                  <Box>{t("reports.recipientAgency.sliceLoading")}</Box>
-                </Stack>
-              </Box>
-            ) : rows.length ? (
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    lg: "repeat(2, minmax(0, 1fr))",
-                  },
-                  gap: 1.5,
-                }}
-              >
-                {rows.map((row, index) => (
-                  <SliceReconciliationCard
-                    key={row.drill_key}
-                    row={row}
-                    index={index}
-                    onOpen={() =>
-                      setActiveDrill({
-                        key: row.drill_key,
-                        title: `${partyLabel(row.recipient)} · ${partyLabel(row.sku)}`,
-                        snapshotId: summary?.snapshot_id ?? "",
-                      })
-                    }
-                  />
-                ))}
-              </Box>
-            ) : (
-              <Box sx={{ py: 6, textAlign: "center", color: S.textMedium }}>
-                {t("reports.recipientAgency.sliceEmpty")}
-              </Box>
-            )}
-          </Box>
-        </Box>
-      </Box>
-
-      <Box
-        id="report-08-panel-table"
-        data-report-view-panel="table"
-        role="tabpanel"
-        aria-labelledby="report-08-view-table"
-        sx={{ display: viewMode === "table" ? "block" : "none", minWidth: 0 }}
-      >
-        <Box component="section" aria-labelledby="report-08-table">
-          <Box
-            sx={{
-              ...REPORT_SURFACE_SX,
-              overflow: "hidden",
-              borderTop: `3px solid ${S.info}`,
-            }}
-          >
             <Box
               sx={{
-                px: { xs: 1.75, md: 2.5 },
-                py: { xs: 1.75, md: 2 },
-                display: "flex",
-                alignItems: { xs: "flex-start", md: "center" },
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 1.5,
-                borderBottom: `1px solid ${S.border}`,
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  lg: "repeat(2, minmax(0, 1fr))",
+                },
+                gap: 2,
+              }}
+            >
+              <ChartPanel
+                title={t("reports.recipientAgency.chartRecipientTitle")}
+                description={t(
+                  "reports.recipientAgency.chartRecipientDescription",
+                )}
+                marker={<ShopOutlined />}
+                loading={summaryQuery.isLoading}
+                error={summaryQuery.error}
+                onRetry={() => void summaryQuery.refetch()}
+                empty={Boolean(summary && !summary.chart_by_recipient.length)}
+              >
+                <HorizontalBarChart
+                  items={chartItems(summary?.chart_by_recipient ?? [])}
+                  height={300}
+                  valueFormatter={quantity}
+                  color={CHART_COLORS.primary}
+                  onSelect={(item) => {
+                    const point = (summary?.chart_by_recipient ?? []).find(
+                      (candidate) => candidate.label === item.label,
+                    );
+                    if (point)
+                      setActiveDrill({
+                        key: point.drill_key,
+                        title: item.label,
+                        snapshotId: summary?.snapshot_id ?? "",
+                      });
+                  }}
+                />
+              </ChartPanel>
+              <ChartPanel
+                title={t("reports.recipientAgency.chartSkuTitle")}
+                description={t("reports.recipientAgency.chartSkuDescription")}
+                marker={<FileTextOutlined />}
+                loading={summaryQuery.isLoading}
+                error={summaryQuery.error}
+                onRetry={() => void summaryQuery.refetch()}
+                empty={Boolean(summary && !summary.chart_by_sku.length)}
+              >
+                <HorizontalBarChart
+                  items={chartItems(summary?.chart_by_sku ?? [])}
+                  height={300}
+                  valueFormatter={quantity}
+                  color={CHART_COLORS.info}
+                  onSelect={(item) => {
+                    const point = (summary?.chart_by_sku ?? []).find(
+                      (candidate) => candidate.label === item.label,
+                    );
+                    if (point)
+                      setActiveDrill({
+                        key: point.drill_key,
+                        title: item.label,
+                        snapshotId: summary?.snapshot_id ?? "",
+                      });
+                  }}
+                />
+              </ChartPanel>
+            </Box>
+          </Box>
+
+          <Box
+            component="section"
+            aria-label={t("reports.recipientAgency.viewSectionAria")}
+            sx={{
+              ...REPORT_SURFACE_SX,
+              p: 1,
+              display: "flex",
+              alignItems: { xs: "stretch", sm: "center" },
+              justifyContent: "space-between",
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 1.25,
+              borderTop: `2px solid ${S.primary}`,
+            }}
+          >
+            <Box sx={{ px: { xs: 0.5, sm: 1 } }}>
+              <Box sx={{ color: S.textHigh, fontSize: 13, fontWeight: 700 }}>
+                {t("reports.recipientAgency.viewTitle")}
+              </Box>
+              <Box sx={{ mt: 0.2, color: S.textMedium, fontSize: 12 }}>
+                {t("reports.recipientAgency.viewHint")}
+              </Box>
+            </Box>
+            <Box
+              role="tablist"
+              aria-label={t("reports.recipientAgency.viewTablistAria")}
+              sx={{
+                p: 0.5,
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 0.5,
+                borderRadius: `${RADIUS.control}px`,
                 bgcolor: S.bgSubtle,
               }}
             >
-              <Box>
+              <Box
+                component="button"
+                type="button"
+                role="tab"
+                id="report-08-view-table"
+                data-report-view-switch="table"
+                aria-controls="report-08-panel-table"
+                aria-selected={shownViewMode === "table"}
+                tabIndex={shownViewMode === "table" ? 0 : -1}
+                onClick={() => setViewMode("table")}
+                sx={viewTabSx(shownViewMode === "table")}
+              >
+                <UnorderedListOutlined aria-hidden="true" />
+                {t("reports.recipientAgency.viewTable")}
+              </Box>
+              <Box
+                component="button"
+                type="button"
+                role="tab"
+                id="report-08-view-snapshot"
+                data-report-view-switch="snapshot"
+                aria-controls="report-08-panel-snapshot"
+                aria-selected={shownViewMode === "snapshot"}
+                tabIndex={shownViewMode === "snapshot" ? 0 : -1}
+                onClick={() => {
+                  setViewMode("snapshot");
+                  setFiltersExpanded(false);
+                }}
+                sx={viewTabSx(shownViewMode === "snapshot")}
+              >
+                <AppstoreOutlined aria-hidden="true" />
+                {t("reports.recipientAgency.viewSlice")}
+              </Box>
+            </Box>
+          </Box>
+
+          <Box
+            id="report-08-panel-snapshot"
+            data-report-view-panel="snapshot"
+            role="tabpanel"
+            aria-labelledby="report-08-view-snapshot"
+            sx={{
+              display: deferredViewMode === "snapshot" ? "block" : "none",
+              minWidth: 0,
+            }}
+          >
+            <Box
+              component="section"
+              aria-labelledby="report-08-snapshot-data"
+              sx={{
+                ...REPORT_SURFACE_SX,
+                overflow: "hidden",
+                borderTop: `3px solid ${S.primary}`,
+              }}
+            >
+              <Box
+                sx={{
+                  px: { xs: 1.75, md: 2.5 },
+                  py: { xs: 1.75, md: 2 },
+                  display: "flex",
+                  alignItems: { xs: "flex-start", sm: "center" },
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 1.5,
+                  borderBottom: `1px solid ${S.border}`,
+                  bgcolor: S.bgSubtle,
+                }}
+              >
                 <Stack
                   direction="row"
                   spacing={1}
@@ -2066,234 +2094,376 @@ export default function RecipientAgencyReport() {
                       display: "grid",
                       placeItems: "center",
                       borderRadius: `${RADIUS.control}px`,
-                      bgcolor: S.infoSoft,
-                      color: S.infoText,
+                      bgcolor: S.primarySoft,
+                      color: S.primaryDark,
                       fontSize: 15,
                     }}
                   >
-                    <BarChartOutlined />
+                    <AppstoreOutlined />
                   </Box>
-                  <Box
-                    id="report-08-table"
-                    sx={{
-                      fontSize: TYPOGRAPHY.cardTitle.fontSize,
-                      fontWeight: 700,
-                      color: S.textHigh,
-                    }}
-                  >
-                    {t("reports.recipientAgency.tableTitle")}
-                  </Box>
-                </Stack>
-                <Box sx={{ mt: 0.75, fontSize: 12, color: S.textMedium }}>
-                  {summary
-                    ? t("reports.recipientAgency.tableSnapshotLine", {
-                        id: summary.snapshot_id,
-                        time: formatDateTime(summary.as_of),
-                      })
-                    : t("reports.recipientAgency.tableWaiting")}
-                </Box>
-              </Box>
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{ flexWrap: "wrap", rowGap: 1 }}
-              >
-                <ActionButton
-                  kind="exportExcel"
-                  module="reports"
-                  action="export"
-                  permissionCode={WMS_PERMISSION_CATALOG.REPORT_EXPORT}
-                  mode="disable"
-                  loading={exporting === "XLSX"}
-                  disabled={
-                    Boolean(exporting) ||
-                    !summary?.snapshot_id ||
-                    !summary.permissions?.can_export
-                  }
-                  onClick={() => void startExport("XLSX", false)}
-                >
-                  {t("reports.filters.exportXlsx")}
-                </ActionButton>
-                <ActionButton
-                  kind="export"
-                  module="reports"
-                  action="export"
-                  permissionCode={WMS_PERMISSION_CATALOG.REPORT_EXPORT}
-                  mode="disable"
-                  loading={exporting === "CSV"}
-                  disabled={
-                    Boolean(exporting) ||
-                    !summary?.snapshot_id ||
-                    !summary.permissions?.can_export_pii
-                  }
-                  disabledTooltip={t(
-                    "reports.recipientAgency.exportPiiTooltip",
-                  )}
-                  onClick={() => void startExport("CSV", true)}
-                >
-                  {t("reports.recipientAgency.exportCsvPii")}
-                </ActionButton>
-              </Stack>
-            </Box>
-            <Box sx={{ px: { xs: 1.25, md: 2.5 }, pt: { xs: 1.5, md: 2 } }}>
-              <SectionFilterBar
-                state={tableFilter}
-                label={t("reports.recipientAgency.tableTitle")}
-                data-testid="report-08-table-section-filter"
-              />
-            </Box>
-            <Box
-              sx={{
-                px: { xs: 1.25, md: 2.5 },
-                py: { xs: 1.5, md: 2 },
-                "& table": {
-                  fontVariantNumeric: "tabular-nums",
-                  tableLayout: "fixed",
-                },
-                "& th, & td": {
-                  overflow: "hidden",
-                  boxSizing: "border-box",
-                  overflowWrap: "normal !important",
-                  wordBreak: "normal",
-                },
-                /*
-                 * Bề rộng cột nay khai trong `tableColumns` và được
-                 * ResponsiveDataTable phát ra thành <colgroup>, nên KHÔNG còn
-                 * khối nth-of-type + !important ở đây. Cách cũ chỉ vá được đúng
-                 * màn này, còn nguyên nhân — bề rộng chỉ gắn vào <th>, ô <td>
-                 * không nhận gì — vẫn nằm ở component dùng chung.
-                 */
-                "& th:nth-of-type(n + 3), & td:nth-of-type(n + 3)": {
-                  whiteSpace: "nowrap",
-                },
-                /*
-                 * Tiêu đề bảng bị GHIM (ResponsiveDataTable + maxBodyHeight)
-                 * nên nền của nó BẮT BUỘC phải đục: `primarySoft` là rgba ~16%
-                 * — dòng cuộn qua bên dưới ánh xuyên lên, chữ tiêu đề và chữ
-                 * của dòng chồng lên nhau. Trải đúng sắc tím đó thành một lớp
-                 * `background-image` phủ trên nền ĐỤC của thẻ (cùng cách
-                 * ResponsiveDataTable đã xử lý cho nền mặc định): màu nhìn y
-                 * hệt trước nhưng không còn nhìn xuyên. Phải khai cả
-                 * `backgroundImage` vì lớp mặc định của component vẫn nằm đó.
-                 */
-                "& thead th": {
-                  backgroundColor: `${S.bgSurface} !important`,
-                  backgroundImage: `linear-gradient(${S.primarySoft}, ${S.primarySoft}) !important`,
-                  color: `${S.primaryDark} !important`,
-                  fontWeight: "700 !important",
-                  whiteSpace: "normal !important",
-                  lineHeight: "1.3 !important",
-                },
-                "& tbody tr:nth-of-type(even)": { bgcolor: S.bgSubtle },
-                "& tbody tr:hover": { bgcolor: `${S.primarySoft} !important` },
-                "& tbody td": {
-                  py: "13px !important",
-                  verticalAlign: "middle",
-                },
-                "& tbody td:nth-of-type(3), & tbody td:nth-of-type(4), & tbody td:nth-of-type(5), & tbody td:nth-of-type(6)":
-                  {
-                    fontWeight: 650,
-                  },
-                "& tbody td:last-of-type button": {
-                  width: "100%",
-                  minWidth: 0,
-                  px: "8px !important",
-                },
-              }}
-            >
-              <Stack
-                direction="row"
-                sx={{
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 1,
-                  mb: 1.5,
-                }}
-              >
-                <Box sx={{ fontSize: 12, color: S.textMedium }}>
-                  {t("reports.recipientAgency.tableRowHint")}
-                </Box>
-                {summary ? (
-                  <UiStatusBadge
-                    tone="neutral"
-                    label={t("reports.recipientAgency.groupCount", {
-                      count: summary.page.total,
-                    })}
-                  />
-                ) : null}
-              </Stack>
-              <ResponsiveDataTable
-                columns={tableColumns}
-                rows={tableFilter.rows}
-                rowKey={(row) => row.drill_key}
-                loading={summaryQuery.isLoading}
-                sortState={sortState}
-                onSortChange={onSort}
-                onRowClick={(row) =>
-                  setActiveDrill({
-                    key: row.drill_key,
-                    title: `${partyLabel(row.recipient)} · ${partyLabel(row.sku)}`,
-                    snapshotId: summary?.snapshot_id ?? "",
-                  })
-                }
-                emptyText={t("reports.recipientAgency.tableEmpty")}
-                mobileBreakpoint="sm"
-                // Bảng đổ trọn tập nhóm dữ liệu đã lọc: cuộn trong khung và
-                // ghim tiêu đề cột thay vì kéo trang thành một dải rất dài.
-                maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
-                renderRowActions={(row) => (
-                  <Box
-                    data-offline-drill-key={row.drill_key}
-                    data-offline-drill-title={`${partyLabel(row.recipient)} · ${partyLabel(row.sku)}`}
-                    sx={{
-                      display: "flex",
-                      width: "100%",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <ActionButton
-                      kind="detail"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setActiveDrill({
-                          key: row.drill_key,
-                          title: `${partyLabel(row.recipient)} · ${partyLabel(row.sku)}`,
-                          snapshotId: summary?.snapshot_id ?? "",
-                        });
+                  <Box>
+                    <Box
+                      id="report-08-snapshot-data"
+                      sx={{
+                        color: S.textHigh,
+                        fontSize: TYPOGRAPHY.cardTitle.fontSize,
+                        fontWeight: 700,
                       }}
                     >
-                      {t("reports.recipientAgency.reconcile")}
-                    </ActionButton>
+                      {t("reports.recipientAgency.sliceDataTitle")}
+                    </Box>
+                    <Box sx={{ mt: 0.35, color: S.textMedium, fontSize: 12 }}>
+                      {t("reports.recipientAgency.sliceDataHint")}
+                    </Box>
+                  </Box>
+                </Stack>
+                <UiStatusBadge
+                  tone="neutral"
+                  label={t("reports.recipientAgency.sliceCount", {
+                    count: rows.length,
+                  })}
+                />
+              </Box>
+
+              <Box
+                sx={{
+                  p: { xs: 1.5, md: 2.5 },
+                  maxHeight: { md: 560 },
+                  overflowY: { md: "auto" },
+                  bgcolor: S.bgSubtle,
+                }}
+              >
+                {summaryQuery.isLoading ? (
+                  <Box
+                    sx={{
+                      minHeight: 180,
+                      display: "grid",
+                      placeItems: "center",
+                      color: S.textMedium,
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: "center" }}
+                    >
+                      <UiSpinner size={18} label={null} />
+                      <Box>{t("reports.recipientAgency.sliceLoading")}</Box>
+                    </Stack>
+                  </Box>
+                ) : rows.length ? (
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        lg: "repeat(2, minmax(0, 1fr))",
+                      },
+                      gap: 1.5,
+                    }}
+                  >
+                    {sliceWindow.visible.map((row, index) => (
+                      <SliceReconciliationCard
+                        key={row.drill_key}
+                        row={row}
+                        index={index}
+                        onOpen={() =>
+                          setActiveDrill({
+                            key: row.drill_key,
+                            title: `${partyLabel(row.recipient)} · ${partyLabel(row.sku)}`,
+                            snapshotId: summary?.snapshot_id ?? "",
+                          })
+                        }
+                      />
+                    ))}
+                    <WindowedMore window={sliceWindow} />
+                  </Box>
+                ) : (
+                  <Box sx={{ py: 6, textAlign: "center", color: S.textMedium }}>
+                    {t("reports.recipientAgency.sliceEmpty")}
                   </Box>
                 )}
-              />
+              </Box>
             </Box>
-            <Box
-              sx={{
-                px: { xs: 1.75, md: 2.5 },
-                py: 1.25,
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 1,
-                borderTop: `1px solid ${S.border}`,
-                bgcolor: S.bgSubtle,
-                fontSize: 12,
-                lineHeight: 1.45,
-                color: S.textMedium,
-              }}
-            >
-              <SafetyCertificateOutlined aria-hidden="true" />
-              <Box>
-                <Box component="strong" sx={{ color: S.textHigh }}>
-                  {t("reports.recipientAgency.lockedFormulaLabel")}
-                </Box>{" "}
-                {t("reports.recipientAgency.lockedFormulaBody")}
+          </Box>
+
+          <Box
+            id="report-08-panel-table"
+            data-report-view-panel="table"
+            role="tabpanel"
+            aria-labelledby="report-08-view-table"
+            sx={{
+              display: deferredViewMode === "table" ? "block" : "none",
+              minWidth: 0,
+            }}
+          >
+            <Box component="section" aria-labelledby="report-08-table">
+              <Box
+                sx={{
+                  ...REPORT_SURFACE_SX,
+                  overflow: "hidden",
+                  borderTop: `3px solid ${S.info}`,
+                }}
+              >
+                <Box
+                  sx={{
+                    px: { xs: 1.75, md: 2.5 },
+                    py: { xs: 1.75, md: 2 },
+                    display: "flex",
+                    alignItems: { xs: "flex-start", md: "center" },
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 1.5,
+                    borderBottom: `1px solid ${S.border}`,
+                    bgcolor: S.bgSubtle,
+                  }}
+                >
+                  <Box>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: "center" }}
+                    >
+                      <Box
+                        aria-hidden="true"
+                        sx={{
+                          width: 30,
+                          height: 30,
+                          display: "grid",
+                          placeItems: "center",
+                          borderRadius: `${RADIUS.control}px`,
+                          bgcolor: S.infoSoft,
+                          color: S.infoText,
+                          fontSize: 15,
+                        }}
+                      >
+                        <BarChartOutlined />
+                      </Box>
+                      <Box
+                        id="report-08-table"
+                        sx={{
+                          fontSize: TYPOGRAPHY.cardTitle.fontSize,
+                          fontWeight: 700,
+                          color: S.textHigh,
+                        }}
+                      >
+                        {t("reports.recipientAgency.tableTitle")}
+                      </Box>
+                    </Stack>
+                    <Box sx={{ mt: 0.75, fontSize: 12, color: S.textMedium }}>
+                      {summary
+                        ? t("reports.recipientAgency.tableSnapshotLine", {
+                            id: summary.snapshot_id,
+                            time: formatDateTime(summary.as_of),
+                          })
+                        : t("reports.recipientAgency.tableWaiting")}
+                    </Box>
+                  </Box>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ flexWrap: "wrap", rowGap: 1 }}
+                  >
+                    <ActionButton
+                      kind="exportExcel"
+                      module="reports"
+                      action="export"
+                      permissionCode={WMS_PERMISSION_CATALOG.REPORT_EXPORT}
+                      mode="disable"
+                      loading={exporting === "XLSX"}
+                      disabled={
+                        Boolean(exporting) ||
+                        !summary?.snapshot_id ||
+                        !summary.permissions?.can_export
+                      }
+                      onClick={() => void startExport("XLSX", false)}
+                    >
+                      {t("reports.filters.exportXlsx")}
+                    </ActionButton>
+                    <ActionButton
+                      kind="export"
+                      module="reports"
+                      action="export"
+                      permissionCode={WMS_PERMISSION_CATALOG.REPORT_EXPORT}
+                      mode="disable"
+                      loading={exporting === "CSV"}
+                      disabled={
+                        Boolean(exporting) ||
+                        !summary?.snapshot_id ||
+                        !summary.permissions?.can_export_pii
+                      }
+                      disabledTooltip={t(
+                        "reports.recipientAgency.exportPiiTooltip",
+                      )}
+                      onClick={() => void startExport("CSV", true)}
+                    >
+                      {t("reports.recipientAgency.exportCsvPii")}
+                    </ActionButton>
+                  </Stack>
+                </Box>
+                <Box sx={{ px: { xs: 1.25, md: 2.5 }, pt: { xs: 1.5, md: 2 } }}>
+                  <SectionFilterBar
+                    state={tableFilter}
+                    label={t("reports.recipientAgency.tableTitle")}
+                    data-testid="report-08-table-section-filter"
+                  />
+                </Box>
+                <Box
+                  sx={{
+                    px: { xs: 1.25, md: 2.5 },
+                    py: { xs: 1.5, md: 2 },
+                    "& table": {
+                      fontVariantNumeric: "tabular-nums",
+                      tableLayout: "fixed",
+                    },
+                    "& th, & td": {
+                      overflow: "hidden",
+                      boxSizing: "border-box",
+                      overflowWrap: "normal !important",
+                      wordBreak: "normal",
+                    },
+                    /*
+                     * Bề rộng cột nay khai trong `tableColumns` và được
+                     * ResponsiveDataTable phát ra thành <colgroup>, nên KHÔNG còn
+                     * khối nth-of-type + !important ở đây. Cách cũ chỉ vá được đúng
+                     * màn này, còn nguyên nhân — bề rộng chỉ gắn vào <th>, ô <td>
+                     * không nhận gì — vẫn nằm ở component dùng chung.
+                     */
+                    "& th:nth-of-type(n + 3), & td:nth-of-type(n + 3)": {
+                      whiteSpace: "nowrap",
+                    },
+                    /*
+                     * Tiêu đề bảng bị GHIM (ResponsiveDataTable + maxBodyHeight)
+                     * nên nền của nó BẮT BUỘC phải đục: `primarySoft` là rgba ~16%
+                     * — dòng cuộn qua bên dưới ánh xuyên lên, chữ tiêu đề và chữ
+                     * của dòng chồng lên nhau. Trải đúng sắc tím đó thành một lớp
+                     * `background-image` phủ trên nền ĐỤC của thẻ (cùng cách
+                     * ResponsiveDataTable đã xử lý cho nền mặc định): màu nhìn y
+                     * hệt trước nhưng không còn nhìn xuyên. Phải khai cả
+                     * `backgroundImage` vì lớp mặc định của component vẫn nằm đó.
+                     */
+                    "& thead th": {
+                      backgroundColor: `${S.bgSurface} !important`,
+                      backgroundImage: `linear-gradient(${S.primarySoft}, ${S.primarySoft}) !important`,
+                      color: `${S.primaryDark} !important`,
+                      fontWeight: "700 !important",
+                      whiteSpace: "normal !important",
+                      lineHeight: "1.3 !important",
+                    },
+                    "& tbody tr:nth-of-type(even)": { bgcolor: S.bgSubtle },
+                    "& tbody tr:hover": {
+                      bgcolor: `${S.primarySoft} !important`,
+                    },
+                    "& tbody td": {
+                      py: "13px !important",
+                      verticalAlign: "middle",
+                    },
+                    "& tbody td:nth-of-type(3), & tbody td:nth-of-type(4), & tbody td:nth-of-type(5), & tbody td:nth-of-type(6)":
+                      {
+                        fontWeight: 650,
+                      },
+                    "& tbody td:last-of-type button": {
+                      width: "100%",
+                      minWidth: 0,
+                      px: "8px !important",
+                    },
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    sx={{
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 1,
+                      mb: 1.5,
+                    }}
+                  >
+                    <Box sx={{ fontSize: 12, color: S.textMedium }}>
+                      {t("reports.recipientAgency.tableRowHint")}
+                    </Box>
+                    {summary ? (
+                      <UiStatusBadge
+                        tone="neutral"
+                        label={t("reports.recipientAgency.groupCount", {
+                          count: summary.page.total,
+                        })}
+                      />
+                    ) : null}
+                  </Stack>
+                  <ResponsiveDataTable
+                    columns={tableColumns}
+                    rows={tableFilter.rows}
+                    rowKey={(row) => row.drill_key}
+                    loading={summaryQuery.isLoading}
+                    sortState={sortState}
+                    onSortChange={onSort}
+                    onRowClick={(row) =>
+                      setActiveDrill({
+                        key: row.drill_key,
+                        title: `${partyLabel(row.recipient)} · ${partyLabel(row.sku)}`,
+                        snapshotId: summary?.snapshot_id ?? "",
+                      })
+                    }
+                    emptyText={t("reports.recipientAgency.tableEmpty")}
+                    mobileBreakpoint="sm"
+                    // Bảng đổ trọn tập nhóm dữ liệu đã lọc: cuộn trong khung và
+                    // ghim tiêu đề cột thay vì kéo trang thành một dải rất dài.
+                    maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
+                    renderRowActions={(row) => (
+                      <Box
+                        data-offline-drill-key={row.drill_key}
+                        data-offline-drill-title={`${partyLabel(row.recipient)} · ${partyLabel(row.sku)}`}
+                        sx={{
+                          display: "flex",
+                          width: "100%",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <ActionButton
+                          kind="detail"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setActiveDrill({
+                              key: row.drill_key,
+                              title: `${partyLabel(row.recipient)} · ${partyLabel(row.sku)}`,
+                              snapshotId: summary?.snapshot_id ?? "",
+                            });
+                          }}
+                        >
+                          {t("reports.recipientAgency.reconcile")}
+                        </ActionButton>
+                      </Box>
+                    )}
+                  />
+                </Box>
+                <Box
+                  sx={{
+                    px: { xs: 1.75, md: 2.5 },
+                    py: 1.25,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
+                    borderTop: `1px solid ${S.border}`,
+                    bgcolor: S.bgSubtle,
+                    fontSize: 12,
+                    lineHeight: 1.45,
+                    color: S.textMedium,
+                  }}
+                >
+                  <SafetyCertificateOutlined aria-hidden="true" />
+                  <Box>
+                    <Box component="strong" sx={{ color: S.textHigh }}>
+                      {t("reports.recipientAgency.lockedFormulaLabel")}
+                    </Box>{" "}
+                    {t("reports.recipientAgency.lockedFormulaBody")}
+                  </Box>
+                </Box>
               </Box>
             </Box>
           </Box>
         </Box>
-      </Box>
+      )}
 
       {activeDrill ? (
         <DrillDownDialog
@@ -2324,7 +2494,7 @@ export default function RecipientAgencyReport() {
                 header: t("shared.table.rowNumber"),
                 align: "center",
                 width: 56,
-                render: (row) => drillRows.indexOf(row) + 1,
+                render: (row) => rowIndexOf(drillRows, row) + 1,
               },
               {
                 key: "outbound",

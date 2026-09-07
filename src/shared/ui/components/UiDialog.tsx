@@ -11,6 +11,7 @@ import Box from "@mui/material/Box";
 import type { DialogProps } from "@mui/material/Dialog";
 import type { DrawerProps } from "@mui/material/Drawer";
 import { useId } from "react";
+import { usePageVisible } from "@/shared/ui/page-visibility";
 import type { ReactNode } from "react";
 import { COMPONENT_TOKENS as C } from "@/shared/ui/tokens";
 import { UiText } from "./UiText";
@@ -25,6 +26,12 @@ export function UiDialog({ title, actions, children, ...rest }: UiDialogProps) {
   // Auto aria-labelledby: dialog lấy tên accessible từ DialogTitle khi có
   // title (caller vẫn override được qua props vì {...rest} spread sau).
   const titleId = useId();
+  // Dialog render qua portal nên nằm NGOÀI cây DOM của trang. Trang thuộc nhóm
+  // keep-alive bị ẩn (display:none) thì dialog của nó vẫn hiện đè lên trang mới.
+  // Không render khi trang ẩn (không phải open=false — xem usePageVisible); trang
+  // hiện lại thì mount lại với đúng `open` của caller (state còn nguyên).
+  const pageVisible = usePageVisible();
+  if (!pageVisible) return null;
   return (
     <Dialog
       fullWidth
@@ -53,6 +60,8 @@ export function UiDrawer({
   children,
   ...rest
 }: UiDrawerProps) {
+  const pageVisible = usePageVisible();
+  if (!pageVisible) return null;
   return (
     <Drawer anchor="right" {...rest}>
       <Box sx={{ width, maxWidth: "100vw" }}>

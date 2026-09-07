@@ -48,6 +48,22 @@ export const COMPONENT_TOKENS = {
     titleFontWeight: TYPOGRAPHY.cardTitle.fontWeight,
   },
   /**
+   * MENU/POPUP xổ ra từ một ô nhập (Autocomplete, Select, Menu) — lớp NỔI trên
+   * mặt trang nên phải tách khỏi ô neo bằng một khe hở.
+   *
+   * `gapAbove` > `gap`: khi popper LẬT LÊN, mép dưới của popup trùng đúng mép
+   * trên (border-box) của ô nhập — chính là nơi NHÃN NỔI của MUI đang đứng,
+   * nhô lên khoảng 9px. Khe hở dưới 10 sẽ cắt đôi nhãn.
+   */
+  menu: {
+    /** khe hở khi popup xổ XUỐNG dưới ô */
+    gap: SPACING.xs,
+    /** khe hở khi popup LẬT LÊN trên ô — phải chừa được nhãn nổi (~9px) */
+    gapAbove: SPACING.md,
+    radius: RADIUS.card,
+    shadow: S.shadowFloating,
+  },
+  /**
    * Bảng: GIỮ mật độ hiện hành của app (font 13, cell padding 10) — chưa đo
    * được table Vuexy ở Part 1/2; đo và chốt lại trong Part 3 (screen migration).
    */

@@ -19,8 +19,9 @@ export {
   fetchWards,
   peekProvinces,
   peekWards,
+  preloadVnWards,
   stripDivisionPrefix,
-  vnAddressBaseUrl,
+  VN_ADDRESS_DATA_VERSION,
   type VnProvince,
   type VnWard,
 } from "./vn-address.api";

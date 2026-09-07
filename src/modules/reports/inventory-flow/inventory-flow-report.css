@@ -382,6 +382,14 @@
   text-align: right;
 }
 .hn-rpt01 .card {
+  /*
+   * Bỏ qua layout/paint cho thẻ đang nằm ngoài màn hình. Trace một màn báo cáo
+   * cho thấy ~60% thời gian luồng chính là style/layout/paint, phần lớn cho các
+   * thẻ ở dưới mà người dùng chưa cuộn tới. `auto 480px` giữ chỗ để thanh cuộn
+   * không nhảy; sau lần vẽ đầu trình duyệt tự nhớ kích thước thật.
+   */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
   border: 1px solid var(--hnf-card-line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -723,6 +731,81 @@
 .hn-rpt01 .analysis-grid > :nth-child(2) {
   grid-column: span 6;
   align-self: stretch;
+}
+/* Thẻ biểu đồ đứng một mình (trang tách theo chiều) ăn trọn 12 cột. */
+.hn-rpt01 .analysis-grid.is-single > :nth-child(1) {
+  grid-column: span 12;
+}
+/*
+ * Khối biểu đồ và khối lịch sử chứng từ đứng cạnh nhau 6/6 — xem ghi chú ở
+ * InventoryFlowXntReport.tsx.
+ */
+.hn-rpt01 .report-split-grid {
+  /*
+   * Chiều cao hàng khai TƯỜNG MINH, không để nội dung tự quyết.
+   *
+   * Nếu để auto thì cột chứng từ (26 thẻ) kéo hàng cao lên gần 2000px và cột
+   * biểu đồ phải giãn theo — đúng cái lệch mà bản trước mắc phải. Một con số
+   * duy nhất ở đây quyết định cả hai cột, phần dôi của mỗi cột tự cuộn trong
+   * khung của nó.
+   */
+  --hn-rpt-split-row-h: clamp(520px, 58vh, 580px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: var(--hn-rpt-split-row-h);
+  gap: 24px;
+  align-items: stretch;
+}
+.hn-rpt01 .report-split-grid > section {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+/*
+ * HAI CỘT KẾT THÚC CÙNG MỘT ĐƯỜNG.
+ *
+ * Mỗi cột là một flex column có chiều cao XÁC ĐỊNH (ô lưới ở trên), nên khối
+ * nội dung cuối cột ăn hết phần còn lại — cột trái là thẻ biểu đồ, cột phải là
+ * lưới thẻ chứng từ (đã trừ thanh lọc riêng của nó). Không cần đo tay chiều cao
+ * thanh lọc: flex tự chia.
+ */
+.hn-rpt01 .report-split-grid .analysis-grid,
+.hn-rpt01 .report-split-grid .insight-grid,
+.hn-rpt01 .report-split-grid > section > .report-document-card {
+  min-height: 0;
+  flex: 1;
+}
+.hn-rpt01 .report-split-grid .insight-grid {
+  /* Chiều cao do phần dôi của cột quyết định, không cần trần riêng nữa. */
+  max-height: none;
+  align-content: start;
+  /* Chừa chỗ cho thanh cuộn mảnh, không đè lên viền thẻ. */
+  padding-right: 6px;
+}
+/* Trong cột nửa trang, thẻ chứng từ xếp 2 mỗi hàng thay vì 3. */
+.hn-rpt01 .report-split-grid .insight-grid > * {
+  grid-column: span 6;
+}
+/*
+ * Thanh chú giải của cột biểu đồ — CÙNG hình dạng, CÙNG chiều cao với
+ * SectionFilterBar của cột bên phải (viền `S.border`, nền `S.bgSubtle`, bo
+ * `RADIUS.control`, đệm 8px, cách khối dưới 12px). Nhờ nó thẻ biểu đồ và thẻ
+ * chứng từ đầu tiên khởi đầu ở CÙNG một đường ngang.
+ */
+.hn-rpt01 .report-chart-toolbar {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  padding: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--wms-radius-control);
+  background: var(--wms-bg-subtle);
+}
+
+/* Thẻ biểu đồ nhận chiều cao từ ô lưới, không giữ sàn của bản full-width nữa. */
+.hn-rpt01 .report-split-grid .report-chart-card {
+  min-height: 0;
 }
 .hn-rpt01 .chart-card {
   display: flex;
@@ -1137,6 +1220,16 @@
 }
 .hn-rpt01 .report-kpi-grid {
   grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+/*
+ * Trang tách theo chiều (nhập / xuất) chỉ còn 2–3 thẻ KPI; giữ lưới 6 cột thì
+ * 3–4 cột đứng trống và hàng thẻ tụt về nửa trái. Số cột bằng đúng số thẻ.
+ */
+.hn-rpt01 .report-kpi-grid.is-inbound {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.hn-rpt01 .report-kpi-grid.is-outbound {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .hn-rpt01 .report-kpi-card {
   --accent: var(--report-accent);
@@ -1669,12 +1762,46 @@
   .hn-rpt01 .analysis-grid > :nth-child(2) {
     grid-column: span 12;
   }
+  /* Hết chỗ cho hai cột: biểu đồ và lịch sử chứng từ xếp chồng như trước, và
+     lưới thẻ quay lại trần cuộn dùng chung của trang. */
+  .hn-rpt01 .report-split-grid {
+    grid-template-columns: 1fr;
+  }
+  .hn-rpt01 .report-split-grid {
+    grid-template-rows: auto;
+  }
+  .hn-rpt01 .report-split-grid .analysis-grid,
+  .hn-rpt01 .report-split-grid .insight-grid,
+  .hn-rpt01 .report-split-grid > section > .report-document-card {
+    flex: none;
+  }
+  .hn-rpt01 .report-split-grid .insight-grid {
+    max-height: var(--hn-rpt-scroll-h);
+  }
+  .hn-rpt01 .report-split-grid .report-chart-card {
+    min-height: 382px;
+  }
   .hn-rpt01 .insight-grid > :nth-child(1),
   .hn-rpt01 .insight-grid > :nth-child(2) {
     grid-column: span 6;
   }
   .hn-rpt01 .insight-grid > :nth-child(3) {
     grid-column: span 12;
+  }
+}
+
+/*
+ * Lưới 4 cột của thẻ lọc cần ≥ 1046px (sàn 300+230+180 + khối "Làm mới" 276 +
+ * 3 khe) — chỉ có từ 1536px viewport. RPT-02 đã có ngưỡng này; RPT-01 trước
+ * đây chỉ đổi ở 1280 nên dải 1280–1535 vừa tràn phải vừa cắt cụt hai ô ngày.
+ */
+@media (max-width: 1535.95px) {
+  .hn-rpt01 .report-filter-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-rpt01 .report-filter-actions {
+    justify-self: stretch;
+    justify-content: flex-end;
   }
 }
 
@@ -1837,7 +1964,9 @@
 }
 
 @media (max-width: 575.95px) {
-  .hn-rpt01 .report-kpi-grid {
+  .hn-rpt01 .report-kpi-grid,
+  .hn-rpt01 .report-kpi-grid.is-inbound,
+  .hn-rpt01 .report-kpi-grid.is-outbound {
     grid-template-columns: 1fr;
   }
   /* Dưới 576px một dòng không đủ chỗ cho hai ô ngày — mới xếp chồng. */
@@ -1979,6 +2108,11 @@
  * các màn khác, tức là lại lệch đúng thứ vừa đồng bộ. Độ đặc hiệu 0-3-0 nên
  * thắng cả ba quy tắc kia bất kể thứ tự khai báo.
  *
+ * PHẠM VI (2026-09-06): trước đây chỉ khoá trong `.report-filter-card` nên
+ * SectionFilterBar bên trong các khối vẫn dính `font: inherit` +
+ * `min-height: 40px` ở trên và cao 54px, đứng cạnh UiSelect 39px thì lệch hẳn
+ * một tầng. Nay khoá cho MỌI control dùng chung nằm trong trang.
+ *
  * KHOÁ CHIỀU CAO Ở LỚP VỎ, KHÔNG PHẢI Ở Ô NHẬP: hạ `min-height` của
  * `.MuiInputBase-input` xuống 0 gỡ luôn chiều cao 38px mà theme đặt cho ô nhập,
  * nên ô "Tìm SKU" tụt còn 33px trong khi "Loại hàng" vẫn 40px — thanh lọc
@@ -1986,18 +2120,18 @@
  * 38px và ba nhãn thẳng hàng; vì vậy khoá vỏ ở `--wms-control-height` rồi cho
  * ruột giãn đầy vỏ.
  */
-.hn-rpt01 .report-filter-card .hn-vuexy-date-field,
-.hn-rpt01 .report-filter-card .MuiInputBase-root {
+.hn-rpt01 .hn-vuexy-date-field,
+.hn-rpt01 .MuiInputBase-root {
   height: var(--wms-control-height);
   min-height: var(--wms-control-height);
 }
-.hn-rpt01 .report-filter-card .MuiInputBase-input {
+.hn-rpt01 .MuiInputBase-input {
   height: 100%;
   min-height: 0;
   padding-block: 0;
 }
 /* Ruột của UiSelect là một div, phải tự căn giữa chữ khi vỏ bị khoá chiều cao. */
-.hn-rpt01 .report-filter-card .MuiSelect-select {
+.hn-rpt01 .MuiSelect-select {
   display: flex;
   align-items: center;
   height: 100%;

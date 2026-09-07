@@ -3,6 +3,7 @@ import {
   meResponseFromRefreshUser,
 } from "@/modules/auth/services/auth.service";
 import { queryClient } from "@/app/providers/query-client";
+import { mark } from "@/shared/perf/marks";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 let activeBootstrap: Promise<void> | null = null;
@@ -23,16 +24,59 @@ async function clearSessionHint(): Promise<void> {
   await Promise.resolve(useAuthStore.persist.clearStorage());
 }
 
+/**
+ * Đường dẫn KHÔNG cần đăng nhập. Vào thẳng một trong số này mà chưa từng đăng
+ * nhập trên máy thì không có gì để làm mới — xem `shouldAttemptRefresh`.
+ */
+const PUBLIC_PATH_PREFIXES = ["/login", "/forgot-password", "/reset-password", "/pv"];
+
+/**
+ * Có nên thử `POST /auth/refresh` lúc khởi động không?
+ *
+ * TRƯỚC: luôn thử. Hệ quả đo được: mở trang /login trên máy sạch luôn tốn một
+ * request CHẮC CHẮN HỎNG — BE trả 422 vì không có refresh token ở body lẫn
+ * cookie (AuthController validate 'refresh_token' => required). Request đó nằm
+ * trên đường tới nội dung đầu tiên của trang đăng nhập, và mỗi lần F5 của khách
+ * vãng lai đều tạo một dòng lỗi trong log BE.
+ *
+ * SAU: chỉ thử khi CÓ LÝ DO tin rằng phiên tồn tại —
+ *   (a) còn dấu vết phiên đã đăng nhập (cookie `erp-auth` giữ `user`), hoặc
+ *   (b) đang vào một đường dẫn CẦN đăng nhập (kể cả khi không còn dấu vết:
+ *       cookie refresh là HttpOnly nên JavaScript không đọc được, phải thử mới
+ *       biết — giữ nguyên hành vi fail-closed của ProtectedRoute).
+ *
+ * Nói cách khác: chỉ BỎ QUA đúng một trường hợp — trang công khai + không dấu
+ * vết phiên. Mọi trường hợp khác vẫn thử y như trước.
+ */
+function shouldAttemptRefresh(): boolean {
+  if (useAuthStore.getState().user !== null) return true;
+  if (typeof window === "undefined") return true;
+  const path = window.location.pathname;
+  return !PUBLIC_PATH_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(prefix + "/"),
+  );
+}
+
 async function runBootstrap(): Promise<void> {
   useAuthStore.setState({ isBootstrapped: false, bootstrapError: null });
   await Promise.resolve(useAuthStore.persist.rehydrate());
+
+  if (!shouldAttemptRefresh()) {
+    // Không có phiên để khôi phục: đánh dấu đã khởi động xong và dừng. KHÔNG gọi
+    // logout()/clearStorage() ở đây — không có gì để dọn, và gọi thừa sẽ xoá mất
+    // dấu vết của một tab khác đang đăng nhập.
+    useAuthStore.setState({ isBootstrapped: true });
+    return;
+  }
 
   // Always attempt one refresh. After F5 the access/refresh tokens held in JS
   // memory are intentionally gone, while the server-issued HttpOnly refresh cookie
   // can still represent a valid session. JavaScript cannot inspect that cookie, so
   // "no memory token" must never be used as proof that the user is logged out.
   try {
+    mark("refresh:start");
     const refreshed = await authService.refresh();
+    mark("refresh:done");
     useAuthStore.getState().setToken(refreshed.access_token);
 
     // `/auth/refresh` trả kèm hồ sơ đầy đủ của đúng JWT vừa cấp. Dùng luôn ở đây

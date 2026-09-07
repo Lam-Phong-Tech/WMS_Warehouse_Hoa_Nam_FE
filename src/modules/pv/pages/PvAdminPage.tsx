@@ -14,9 +14,11 @@ import {
   UiTabPanel,
   UiText,
   UiTextField,
+  FILTER_WIDTH,
 } from "@/shared/ui";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
+import { codeFormatError } from "@/shared/validation/text-rules";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   ProfileOutlined,
@@ -71,6 +73,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 function useCanManagePv() {
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
@@ -210,6 +213,10 @@ function SimpleMasterTab({
   async function submit() {
     const errors: Record<string, string> = {};
     if (!formValues.code.trim()) errors.code = t("pv.admin.errCode");
+    else {
+      const codeError = codeFormatError(formValues.code.trim(), editing?.code);
+      if (codeError) errors.code = codeError;
+    }
     if (!formValues.name.trim()) errors.name = t("pv.admin.errName");
     const sortOrderCheck = checkNumber(
       formValues.sort_order,
@@ -278,7 +285,7 @@ function SimpleMasterTab({
       align: "center",
       width: 56,
       hideOnMobile: true,
-      render: (row) => filteredRows.indexOf(row) + 1,
+      render: (row) => rowIndexOf(filteredRows, row) + 1,
     },
     {
       key: "code",
@@ -335,7 +342,7 @@ function SimpleMasterTab({
           placeholder={t("pv.admin.masterSearch", { title })}
           value={search}
           onChange={setSearch}
-          width={260}
+          width={FILTER_WIDTH.search}
         />
       </FilterBar>
 
@@ -646,7 +653,7 @@ export default function PvAdminPage() {
       align: "center",
       width: 56,
       hideOnMobile: true,
-      render: (row) => filteredProfiles.indexOf(row) + 1,
+      render: (row) => rowIndexOf(filteredProfiles, row) + 1,
     },
     {
       key: "sku_code",
@@ -807,7 +814,7 @@ export default function PvAdminPage() {
                   placeholder={t("pv.admin.profileSearch")}
                   value={profileSearch}
                   onChange={setProfileSearch}
-                  width={260}
+                  width={FILTER_WIDTH.search}
                 />
                 <UiSelect
                   value={profileIndustryFilter}
@@ -1307,7 +1314,7 @@ function PvRuleTab({
       align: "center",
       width: 56,
       hideOnMobile: true,
-      render: (row) => filteredRows.indexOf(row) + 1,
+      render: (row) => rowIndexOf(filteredRows, row) + 1,
     },
     {
       key: "industry_name",
@@ -1382,7 +1389,7 @@ function PvRuleTab({
           placeholder={t("pv.admin.ruleSearch")}
           value={search}
           onChange={setSearch}
-          width={280}
+          width={FILTER_WIDTH.search}
         />
         <UiSelect
           value={statusFilter}

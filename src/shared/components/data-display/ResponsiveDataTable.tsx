@@ -14,6 +14,8 @@ import { UiSpinner } from "@/shared/ui";
 import type { RowSelectionState } from "@/shared/hooks/useRowSelection";
 import { SortableTh } from "./SortableTh";
 import { useClientSort } from "./useClientSort";
+import { useRenderWindow } from "./useRenderWindow";
+import { WindowedMore } from "./WindowedMore";
 import type { ClientSortState, SortAccessor } from "./useClientSort";
 import type { SortWordingType } from "./useClientSort";
 import { ActionButton } from "@/shared/components/actions";
@@ -153,6 +155,16 @@ export function ResponsiveDataTable<T>({
     : internalSort.requestSort;
 
   /**
+   * Bảng nhận trọn tập đã lọc (báo cáo truy vết: 5.956 dòng) trước đây đổ hết
+   * vào DOM và khoá luồng chính hàng chục giây. Vẽ dần thay vì vẽ hết — xem
+   * useRenderWindow. Bảng dưới ngưỡng đi đúng đường cũ, không đổi gì.
+   */
+  const renderWindow = useRenderWindow(sortedRows);
+  const visibleRows = renderWindow.visible;
+
+  const moreRowsFooter = <WindowedMore window={renderWindow} />;
+
+  /**
    * Ô bảng desktop: chữ thuần được cắt bằng CSS (mặc định 2 dòng) và mang
    * tooltip `title` để đọc đủ khi rê chuột. Ô tự dựng JSX giữ nguyên — trừ khi
    * cột khai `truncate` thì bọc thêm một lớp cắt.
@@ -259,7 +271,7 @@ export function ResponsiveDataTable<T>({
       <>
         {selectionSummary}
         <Stack spacing={1.5}>
-          {sortedRows.map((row) => (
+          {visibleRows.map((row) => (
             <Card
               key={rowKey(row)}
               variant="outlined"
@@ -338,6 +350,7 @@ export function ResponsiveDataTable<T>({
             </Card>
           ))}
         </Stack>
+        {moreRowsFooter}
       </>
     );
   }
@@ -560,7 +573,7 @@ export function ResponsiveDataTable<T>({
             </Box>
           </Box>
           <Box component="tbody">
-            {sortedRows.map((row) => (
+            {visibleRows.map((row) => (
               <Box
                 component="tr"
                 // role tường minh = role ngầm định của <tr>: các test contract
@@ -638,6 +651,7 @@ export function ResponsiveDataTable<T>({
           </Box>
         </Box>
       </Box>
+      {moreRowsFooter}
     </>
   );
 }

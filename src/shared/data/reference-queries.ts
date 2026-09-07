@@ -34,7 +34,8 @@ export const referenceKeys = {
    * số kho ACTIVE khác 1. Hai truy vấn này có ngữ nghĩa khác nhau, không phải
    * hai biến thể phân trang của cùng một thứ.
    */
-  activeWarehouses: () => [...referenceKeys.all, "warehouses", "active"] as const,
+  activeWarehouses: () =>
+    [...referenceKeys.all, "warehouses", "active"] as const,
   /** Toàn bộ kho trong scope — dùng cho dropdown/bộ lọc/bản đồ mã kho -> tên. */
   warehouseDirectory: () =>
     [...referenceKeys.all, "warehouses", "directory"] as const,
@@ -57,7 +58,9 @@ export interface ReferenceQueryOptions {
 }
 
 /** Kho ACTIVE canonical. Dùng ở mọi modal cần "kho đang hoạt động". */
-export function useActiveWarehouses({ enabled = true }: ReferenceQueryOptions = {}) {
+export function useActiveWarehouses({
+  enabled = true,
+}: ReferenceQueryOptions = {}) {
   return useQuery({
     queryKey: referenceKeys.activeWarehouses(),
     queryFn: () => fetchWarehouses({ status: "ACTIVE" }),

@@ -16,6 +16,11 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     [ROUTES.MASTER_DATA]: [P.SKU_VIEW, P.SKU_MANAGE],
     [ROUTES.SKU_CREATE]: [P.SKU_MANAGE],
     [ROUTES.CATALOG_MASTER]: [P.CATALOG_VIEW, P.CATALOG_MANAGE],
+    // MST-PV-01 gate ĐÚNG bằng API mà nó gọi: /pv-admin/resources/product-profiles
+    // (pv.master.manage) và PATCH /pv/products/{id}/publish (pv.publish). KHÔNG
+    // dùng catalog.* — đó là danh mục hãng/nhóm hàng của kho, không phải App PV,
+    // và gate nhầm sẽ mở màn cho vai không có quyền ghi hồ sơ App PV.
+    [ROUTES.PV_PRODUCT_CATALOG]: [P.PV_MASTER_MANAGE, P.PV_PUBLISH],
     [ROUTES.WAREHOUSE_CONFIG]: [P.WAREHOUSE_VIEW, P.WAREHOUSE_MANAGE],
     [ROUTES.AGENCIES]: [P.AGENCY_VIEW, P.AGENCY_MANAGE],
     [ROUTES.AGENCY_CREATE]: [P.AGENCY_MANAGE],
@@ -84,6 +89,7 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     // 8 trang báo cáo con dùng chung report.view (không phân quyền riêng
     // từng trang — phản hồi người dùng 2026-08-30).
     [ROUTES.REPORTS_INVENTORY_FLOW]: [P.REPORT_VIEW],
+    [ROUTES.REPORTS_OUTBOUND_FLOW]: [P.REPORT_VIEW],
     [ROUTES.REPORTS_STOCK_RECONCILE]: [P.REPORT_VIEW],
     [ROUTES.REPORTS_TRACEABILITY]: [P.REPORT_VIEW],
     [ROUTES.REPORTS_IMPORT_QUALITY]: [P.REPORT_VIEW],

@@ -41,6 +41,13 @@ interface AuthState {
   logout: () => void;
 }
 
+/**
+ * Object `MeResponse` đã áp dụng gần nhất — dùng để chặn lần `setProfile` thứ
+ * hai với đúng dữ liệu đó (xem ghi chú trong `setProfile`). Đặt ngoài store vì
+ * đây là chi tiết chống rung, không phải state hiển thị.
+ */
+let lastAppliedMe: MeResponse | null = null;
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -90,6 +97,21 @@ export const useAuthStore = create<AuthState>()(
       setCurrentContext: (context) => set({ currentContext: context }),
 
       setProfile: (me) => {
+        // BỎ QUA khi đúng object hồ sơ đó vừa được áp dụng.
+        //
+        // ĐO ĐƯỢC: mỗi lần F5, `bootstrapAuth` gieo hồ sơ lấy từ payload
+        // `/auth/refresh` vào React Query rồi gọi `setProfile`; ngay sau đó
+        // `useMe()` mount, thấy dữ liệu đã gieo còn tươi và effect của nó gọi
+        // `setProfile` LẦN HAI với CÙNG object. Vì hàm này dựng `profile` mới
+        // mỗi lần, danh tính state đổi ⇒ effect của `usePersistedQueryCache`
+        // (deps có `profile`) huỷ lần chạy đang dở rồi chạy lại ⇒ đọc
+        // IndexedDB HAI lần và màn hình chờ kéo dài thêm một lượt, ngay trên
+        // đường tới hạn của F5. So sánh theo THAM CHIẾU là đủ và không bỏ sót
+        // hồ sơ thật sự mới: hồ sơ mới luôn là object mới (response mới hoặc
+        // `normalizeMeResponse` dựng lại).
+        if (me === lastAppliedMe && get().isProfileLoaded) return;
+        lastAppliedMe = me;
+
         const { active_context, available_contexts, ...profile } = me;
         const isSuperAdmin =
           me.is_super_admin ??
@@ -114,6 +136,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         memoryStorage.clear();
+        lastAppliedMe = null;
         set({
           token: null,
           user: null,

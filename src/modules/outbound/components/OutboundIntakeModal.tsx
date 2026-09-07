@@ -51,6 +51,11 @@ import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { validatePhone } from "@/shared/constants/validation.constants";
+import {
+  FILE_RULES,
+  acceptAttribute,
+  checkFile,
+} from "@/shared/validation/file-rules";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import {
   checkDate,
@@ -61,11 +66,11 @@ import {
 /** Trần độ dài mã phiếu yêu cầu — khớp `import_no`/`request_no` max:80 của BE. */
 const REQUEST_NO_MAX = 80;
 /**
- * Trần dung lượng tệp Excel — cùng số với MAX_FILE_BYTES của
- * DocumentAttachmentsPanel (không export, chép lại để tránh kéo cả panel vào).
+ * Luật tệp Excel lấy từ lớp dùng chung (file-rules.ts) — trước đây hai hằng số
+ * chép tay ở đây, ở SkuImportModal và ở DocumentAttachmentsPanel, lệch nhau
+ * lúc nào không hay.
  */
-const MAX_FILE_BYTES = 15 * 1024 * 1024;
-const EXCEL_EXTENSIONS = [".xlsx", ".xls"];
+const EXCEL_FILE_RULE = FILE_RULES.excelImport;
 
 type IntakeMode = "manual" | "excel";
 
@@ -141,16 +146,15 @@ function parseRequiredQty(raw: string): number {
 
 /** Kiểm tra tệp Excel trước khi tải lên: đuôi tệp và dung lượng. */
 function checkExcelFile(file: File, t: TranslateFn): string | null {
-  const name = file.name.toLowerCase();
-  if (!EXCEL_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-    return t("outbound.intake.errFileType");
-  }
-  if (file.size > MAX_FILE_BYTES) {
-    return t("outbound.intake.errFileSize", {
-      max: Math.round(MAX_FILE_BYTES / (1024 * 1024)),
-    });
-  }
-  return null;
+  // Luật (đuôi + MIME + dung lượng) ở file-rules; câu lỗi giữ nguyên chữ của
+  // màn xuất kho nên chỉ đọc `reason` để chọn câu.
+  const check = checkFile(file, EXCEL_FILE_RULE);
+  if (check.ok) return null;
+  return check.reason === "type"
+    ? t("outbound.intake.errFileType")
+    : t("outbound.intake.errFileSize", {
+        max: Math.round(EXCEL_FILE_RULE.maxBytes / (1024 * 1024)),
+      });
 }
 
 /** Bảng xem trước phân trang client-side như antd Table cũ (pageSize 10). */
@@ -1099,7 +1103,7 @@ export function OutboundIntakeModal({
               <input
                 key={fileInputKey}
                 type="file"
-                accept=".xlsx,.xls"
+                accept={acceptAttribute(EXCEL_FILE_RULE)}
                 aria-label={t("outbound.intake.fileAria")}
                 aria-invalid={Boolean(fileError)}
                 onChange={(event) => {

@@ -292,7 +292,26 @@ export function BalanceDetailModal({
             ) : null}
           </Stack>
         ) : (
-          <UiText variant="secondary">-</UiText>
+          <UiText variant="secondary">{EMPTY_TEXT}</UiText>
+        ),
+    },
+    {
+      // Chip NFC được dán lúc XUẤT KHO và ghi bằng Mini App, nên phần lớn hiện
+      // vật đang nằm trong kho sẽ trống ô này — đó là trạng thái nghiệp vụ bình
+      // thường chứ không phải dữ liệu bị thiếu. Vì vậy ô rỗng nói rõ "chưa dán
+      // chip" thay vì EMPTY_TEXT chung ("Chưa có") vốn đọc như một trường bị bỏ
+      // sót. `nfc_code` là alias `NFC-<hardware_uid>` do BE trả về, chỉ có mặt
+      // khi chip còn ACTIVE (chip mất/thay đã bị BE lọc ra).
+      key: "nfc_code",
+      header: t("inventory.detail.colNfcCode"),
+      width: 180,
+      render: (row) =>
+        row.nfc_code || row.nfc_hardware_uid ? (
+          <CodeText>{text(row.nfc_code ?? row.nfc_hardware_uid)}</CodeText>
+        ) : (
+          <UiText variant="secondary">
+            {t("inventory.detail.nfcUnassigned")}
+          </UiText>
         ),
     },
     {

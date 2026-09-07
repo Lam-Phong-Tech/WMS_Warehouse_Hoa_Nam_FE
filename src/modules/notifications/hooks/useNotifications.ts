@@ -8,10 +8,24 @@ import type { NotificationListParams } from "@/modules/notifications/types/notif
 const NOTIFICATIONS_KEY = ["notifications"];
 const UNREAD_COUNT_KEY = ["notifications", "unread-count"];
 
-export function useNotificationsQuery(params: NotificationListParams = {}) {
+/**
+ * Danh sách thông báo.
+ *
+ * `enabled` mặc định `true` để màn /notifications giữ nguyên hành vi. Chuông
+ * trên topbar truyền `false` cho tới khi người dùng MỞ dropdown: danh sách 5
+ * dòng đó chỉ được vẽ bên trong menu, nhưng trước đây nó bắn một request trên
+ * MỌI lần F5 của MỌI màn — cùng nhịp với các request dữ liệu của trang, tranh
+ * một trong sáu kết nối HTTP/1.1 của origin. Badge số chưa đọc vẫn hiện ngay vì
+ * đi bằng `useUnreadCountQuery` riêng.
+ */
+export function useNotificationsQuery(
+  params: NotificationListParams = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: [...NOTIFICATIONS_KEY, params],
     queryFn: () => notificationService.list(params),
+    enabled: options.enabled ?? true,
   });
 }
 

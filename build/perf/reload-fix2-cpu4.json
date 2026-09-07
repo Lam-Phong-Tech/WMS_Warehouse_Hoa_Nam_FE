@@ -1,0 +1,1435 @@
+{
+ "tag": "fix2-cpu4",
+ "base": "http://localhost:5199",
+ "cpu": 4,
+ "pages": {
+  "/dashboard": [
+   {
+    "path": "/dashboard",
+    "content": 2180,
+    "ttfb": 6,
+    "dcl": 406,
+    "load": 579,
+    "fcp": 612,
+    "lcp": 1572,
+    "js": {
+     "n": 58,
+     "kb": 1375,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 393
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 404,
+      "end": 709,
+      "ms": 305,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1380,
+      "end": 1817,
+      "ms": 437,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 1388,
+      "end": 1673,
+      "ms": 285,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1395,
+      "end": 1735,
+      "ms": 340,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1401,
+      "end": 1673,
+      "ms": 272,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1406,
+      "end": 1723,
+      "ms": 317,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 322,
+     "wms:refresh:start": 398,
+     "skeletonFirst": 543,
+     "skeletonLast": 543,
+     "wms:refresh:done": 739,
+     "wms:cache:start": 750,
+     "wms:cache:ready": 762,
+     "shell": 1376,
+     "main": 1376,
+     "wms:gate:open": 765
+    },
+    "longTasks": [
+     {
+      "t": 253,
+      "d": 158
+     },
+     {
+      "t": 458,
+      "d": 84
+     },
+     {
+      "t": 612,
+      "d": 120
+     },
+     {
+      "t": 764,
+      "d": 642
+     },
+     {
+      "t": 1709,
+      "d": 103
+     },
+     {
+      "t": 1813,
+      "d": 213
+     },
+     {
+      "t": 2092,
+      "d": 64
+     }
+    ],
+    "tbt": 1034,
+    "dom": 1043
+   },
+   {
+    "path": "/dashboard",
+    "content": 1411,
+    "ttfb": 3,
+    "dcl": 300,
+    "load": 568,
+    "fcp": 588,
+    "lcp": 984,
+    "js": {
+     "n": 58,
+     "kb": 1375,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 275
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 298,
+      "end": 633,
+      "ms": 335,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 900,
+      "end": 1037,
+      "ms": 138,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 904,
+      "end": 1045,
+      "ms": 141,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 906,
+      "end": 1083,
+      "ms": 177,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 911,
+      "end": 1178,
+      "ms": 268,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 914,
+      "end": 1185,
+      "ms": 270,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 240,
+     "wms:refresh:start": 287,
+     "skeletonFirst": 524,
+     "skeletonLast": 524,
+     "wms:refresh:done": 651,
+     "wms:cache:start": 657,
+     "wms:cache:ready": 679,
+     "shell": 897,
+     "main": 897,
+     "wms:gate:open": 681
+    },
+    "longTasks": [
+     {
+      "t": 166,
+      "d": 137
+     },
+     {
+      "t": 369,
+      "d": 92
+     },
+     {
+      "t": 462,
+      "d": 62
+     },
+     {
+      "t": 680,
+      "d": 234
+     },
+     {
+      "t": 1131,
+      "d": 98
+     },
+     {
+      "t": 1229,
+      "d": 87
+     }
+    ],
+    "tbt": 410,
+    "dom": 1043
+   },
+   {
+    "path": "/dashboard",
+    "content": 1132,
+    "ttfb": 3,
+    "dcl": 239,
+    "load": 393,
+    "fcp": 416,
+    "lcp": 724,
+    "js": {
+     "n": 58,
+     "kb": 1375,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 228
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 236,
+      "end": 384,
+      "ms": 148,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 610,
+      "end": 761,
+      "ms": 151,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 614,
+      "end": 746,
+      "ms": 132,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 617,
+      "end": 754,
+      "ms": 137,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 622,
+      "end": 746,
+      "ms": 125,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 628,
+      "end": 784,
+      "ms": 157,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 202,
+     "wms:refresh:start": 233,
+     "skeletonFirst": 361,
+     "skeletonLast": 361,
+     "wms:refresh:done": 402,
+     "wms:cache:start": 408,
+     "wms:cache:ready": 426,
+     "shell": 609,
+     "main": 609,
+     "wms:gate:open": 440
+    },
+    "longTasks": [
+     {
+      "t": 150,
+      "d": 90
+     },
+     {
+      "t": 283,
+      "d": 78
+     },
+     {
+      "t": 439,
+      "d": 189
+     },
+     {
+      "t": 780,
+      "d": 57
+     },
+     {
+      "t": 1003,
+      "d": 54
+     }
+    ],
+    "tbt": 218,
+    "dom": 1043
+   }
+  ],
+  "/inventory": [
+   {
+    "path": "/inventory",
+    "content": 2446,
+    "ttfb": 4,
+    "dcl": 375,
+    "load": 581,
+    "fcp": 616,
+    "lcp": 1464,
+    "js": {
+     "n": 97,
+     "kb": 1512,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 363
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 370,
+      "end": 721,
+      "ms": 352,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1309,
+      "end": 1458,
+      "ms": 149,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 1313,
+      "end": 1777,
+      "ms": 463,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 1317,
+      "end": 1822,
+      "ms": 505,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 241,
+     "wms:refresh:start": 365,
+     "skeletonFirst": 552,
+     "skeletonLast": 1477,
+     "wms:refresh:done": 730,
+     "wms:cache:start": 741,
+     "wms:cache:ready": 751,
+     "shell": 1304,
+     "main": 1305,
+     "wms:gate:open": 757
+    },
+    "longTasks": [
+     {
+      "t": 181,
+      "d": 196
+     },
+     {
+      "t": 468,
+      "d": 83
+     },
+     {
+      "t": 756,
+      "d": 560
+     },
+     {
+      "t": 1783,
+      "d": 505
+     },
+     {
+      "t": 2320,
+      "d": 122
+     }
+    ],
+    "tbt": 1216,
+    "dom": 934
+   },
+   {
+    "path": "/inventory",
+    "content": 1915,
+    "ttfb": 4,
+    "dcl": 343,
+    "load": 551,
+    "fcp": 592,
+    "lcp": 1360,
+    "js": {
+     "n": 97,
+     "kb": 1512,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 331
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 337,
+      "end": 873,
+      "ms": 536,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1282,
+      "end": 1411,
+      "ms": 130,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 1285,
+      "end": 1411,
+      "ms": 126,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 1290,
+      "end": 1453,
+      "ms": 164,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 242,
+     "wms:refresh:start": 333,
+     "skeletonFirst": 520,
+     "skeletonLast": 1429,
+     "wms:refresh:done": 878,
+     "wms:cache:start": 886,
+     "wms:cache:ready": 890,
+     "shell": 1278,
+     "main": 1278,
+     "wms:gate:open": 893
+    },
+    "longTasks": [
+     {
+      "t": 163,
+      "d": 181
+     },
+     {
+      "t": 447,
+      "d": 73
+     },
+     {
+      "t": 891,
+      "d": 399
+     },
+     {
+      "t": 1440,
+      "d": 299
+     },
+     {
+      "t": 1772,
+      "d": 138
+     }
+    ],
+    "tbt": 840,
+    "dom": 934
+   },
+   {
+    "path": "/inventory",
+    "content": 1669,
+    "ttfb": 3,
+    "dcl": 354,
+    "load": 582,
+    "fcp": 612,
+    "lcp": 1336,
+    "js": {
+     "n": 97,
+     "kb": 1512,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 342
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 350,
+      "end": 710,
+      "ms": 360,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1239,
+      "end": 1371,
+      "ms": 132,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 1244,
+      "end": 1371,
+      "ms": 127,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 1247,
+      "end": 1372,
+      "ms": 125,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 263,
+     "wms:refresh:start": 346,
+     "skeletonFirst": 546,
+     "skeletonLast": 1395,
+     "wms:refresh:done": 721,
+     "wms:cache:start": 728,
+     "wms:cache:ready": 733,
+     "shell": 1237,
+     "main": 1237,
+     "wms:gate:open": 735
+    },
+    "longTasks": [
+     {
+      "t": 202,
+      "d": 154
+     },
+     {
+      "t": 450,
+      "d": 96
+     },
+     {
+      "t": 735,
+      "d": 512
+     },
+     {
+      "t": 1396,
+      "d": 235
+     }
+    ],
+    "tbt": 797,
+    "dom": 934
+   }
+  ],
+  "/master-data/skus": [
+   {
+    "path": "/master-data/skus",
+    "content": 1951,
+    "ttfb": 3,
+    "dcl": 361,
+    "load": 567,
+    "fcp": 612,
+    "lcp": 1356,
+    "js": {
+     "n": 95,
+     "kb": 1516,
+     "wireKb": 0,
+     "fromCache": 95,
+     "lastEnd": 350
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 356,
+      "end": 668,
+      "ms": 312,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1178,
+      "end": 1335,
+      "ms": 157,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/products?page=1&per_page=15",
+      "start": 1181,
+      "end": 1648,
+      "ms": 467,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/brands?status=ACTIVE&per_page=200",
+      "start": 1184,
+      "end": 1413,
+      "ms": 229,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-categories?status=ACTIVE&per_page=200",
+      "start": 1188,
+      "end": 1413,
+      "ms": 225,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-models?status=ACTIVE&per_page=200",
+      "start": 1191,
+      "end": 1413,
+      "ms": 222,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/power-sources?status=ACTIVE&per_page=200",
+      "start": 1197,
+      "end": 1412,
+      "ms": 215,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/package-variants?status=ACTIVE&per_page=200",
+      "start": 1202,
+      "end": 1462,
+      "ms": 260,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 254,
+     "wms:refresh:start": 353,
+     "skeletonFirst": 535,
+     "skeletonLast": 535,
+     "wms:refresh:done": 674,
+     "wms:cache:start": 683,
+     "wms:cache:ready": 690,
+     "shell": 1175,
+     "main": 1175,
+     "wms:gate:open": 693
+    },
+    "longTasks": [
+     {
+      "t": 194,
+      "d": 170
+     },
+     {
+      "t": 455,
+      "d": 80
+     },
+     {
+      "t": 692,
+      "d": 509
+     },
+     {
+      "t": 1467,
+      "d": 127
+     },
+     {
+      "t": 1652,
+      "d": 162
+     }
+    ],
+    "tbt": 798,
+    "dom": 927
+   },
+   {
+    "path": "/master-data/skus",
+    "content": 1881,
+    "ttfb": 3,
+    "dcl": 340,
+    "load": 541,
+    "fcp": 568,
+    "lcp": 1088,
+    "js": {
+     "n": 95,
+     "kb": 1516,
+     "wireKb": 0,
+     "fromCache": 95,
+     "lastEnd": 329
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 335,
+      "end": 477,
+      "ms": 142,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1043,
+      "end": 1231,
+      "ms": 188,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/products?page=1&per_page=15",
+      "start": 1044,
+      "end": 1213,
+      "ms": 169,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/brands?status=ACTIVE&per_page=200",
+      "start": 1046,
+      "end": 1206,
+      "ms": 160,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-categories?status=ACTIVE&per_page=200",
+      "start": 1049,
+      "end": 1206,
+      "ms": 156,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-models?status=ACTIVE&per_page=200",
+      "start": 1051,
+      "end": 1207,
+      "ms": 156,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/power-sources?status=ACTIVE&per_page=200",
+      "start": 1055,
+      "end": 1208,
+      "ms": 152,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/package-variants?status=ACTIVE&per_page=200",
+      "start": 1058,
+      "end": 1334,
+      "ms": 276,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 250,
+     "wms:refresh:start": 332,
+     "skeletonFirst": 510,
+     "skeletonLast": 582,
+     "wms:refresh:done": 530,
+     "wms:cache:start": 555,
+     "wms:cache:ready": 565,
+     "wms:gate:open": 567,
+     "shell": 1039,
+     "main": 1039
+    },
+    "longTasks": [
+     {
+      "t": 184,
+      "d": 158
+     },
+     {
+      "t": 438,
+      "d": 72
+     },
+     {
+      "t": 915,
+      "d": 142
+     },
+     {
+      "t": 1230,
+      "d": 224
+     },
+     {
+      "t": 1566,
+      "d": 197
+     }
+    ],
+    "tbt": 543,
+    "dom": 927
+   },
+   {
+    "path": "/master-data/skus",
+    "content": 1801,
+    "ttfb": 3,
+    "dcl": 353,
+    "load": 555,
+    "fcp": 588,
+    "lcp": 1192,
+    "js": {
+     "n": 95,
+     "kb": 1516,
+     "wireKb": 0,
+     "fromCache": 95,
+     "lastEnd": 343
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 349,
+      "end": 575,
+      "ms": 226,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1055,
+      "end": 1272,
+      "ms": 216,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/products?page=1&per_page=15",
+      "start": 1059,
+      "end": 1308,
+      "ms": 249,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/brands?status=ACTIVE&per_page=200",
+      "start": 1063,
+      "end": 1251,
+      "ms": 188,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-categories?status=ACTIVE&per_page=200",
+      "start": 1067,
+      "end": 1251,
+      "ms": 184,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-models?status=ACTIVE&per_page=200",
+      "start": 1071,
+      "end": 1251,
+      "ms": 180,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/power-sources?status=ACTIVE&per_page=200",
+      "start": 1077,
+      "end": 1250,
+      "ms": 174,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/package-variants?status=ACTIVE&per_page=200",
+      "start": 1082,
+      "end": 1377,
+      "ms": 296,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 268,
+     "wms:refresh:start": 346,
+     "skeletonFirst": 526,
+     "skeletonLast": 526,
+     "wms:refresh:done": 586,
+     "wms:cache:start": 604,
+     "wms:cache:ready": 641,
+     "shell": 1052,
+     "main": 1052,
+     "wms:gate:open": 649
+    },
+    "longTasks": [
+     {
+      "t": 185,
+      "d": 169
+     },
+     {
+      "t": 452,
+      "d": 73
+     },
+     {
+      "t": 645,
+      "d": 437
+     },
+     {
+      "t": 1313,
+      "d": 179
+     },
+     {
+      "t": 1572,
+      "d": 158
+     }
+    ],
+    "tbt": 766,
+    "dom": 927
+   }
+  ],
+  "/reports/inventory-flow": [
+   {
+    "path": "/reports/inventory-flow",
+    "content": 2050,
+    "ttfb": 5,
+    "dcl": 344,
+    "load": 623,
+    "fcp": 648,
+    "lcp": 1244,
+    "js": {
+     "n": 80,
+     "kb": 1470,
+     "wireKb": 0,
+     "fromCache": 80,
+     "lastEnd": 327
+    },
+    "css": {
+     "n": 3,
+     "kb": 232
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 338,
+      "end": 572,
+      "ms": 234,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1099,
+      "end": 1245,
+      "ms": 146,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/skus/lookup",
+      "start": 1103,
+      "end": 1301,
+      "ms": 199,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 1105,
+      "end": 1349,
+      "ms": 244,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-ledger?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 1108,
+      "end": 1400,
+      "ms": 292,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/document-history?from_date=2026-09-06&to_date=2026-09-07&doc_type=all",
+      "start": 1111,
+      "end": 1401,
+      "ms": 290,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reversal-documents?from_date=2026-09-06&to_date=2026-09-07&per_page=200",
+      "start": 1115,
+      "end": 1561,
+      "ms": 447,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 240,
+     "wms:refresh:start": 330,
+     "skeletonFirst": 577,
+     "skeletonLast": 665,
+     "wms:refresh:done": 608,
+     "wms:cache:start": 642,
+     "wms:cache:ready": 650,
+     "wms:gate:open": 655,
+     "shell": 1098,
+     "main": 1098
+    },
+    "longTasks": [
+     {
+      "t": 175,
+      "d": 171
+     },
+     {
+      "t": 481,
+      "d": 96
+     },
+     {
+      "t": 955,
+      "d": 159
+     },
+     {
+      "t": 1116,
+      "d": 108
+     },
+     {
+      "t": 1336,
+      "d": 107
+     },
+     {
+      "t": 1460,
+      "d": 254
+     },
+     {
+      "t": 1715,
+      "d": 181
+     },
+     {
+      "t": 1914,
+      "d": 109
+     }
+    ],
+    "tbt": 785,
+    "dom": 3951
+   },
+   {
+    "path": "/reports/inventory-flow",
+    "content": 1918,
+    "ttfb": 4,
+    "dcl": 283,
+    "load": 489,
+    "fcp": 516,
+    "lcp": 1096,
+    "js": {
+     "n": 80,
+     "kb": 1470,
+     "wireKb": 0,
+     "fromCache": 80,
+     "lastEnd": 272
+    },
+    "css": {
+     "n": 3,
+     "kb": 232
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 279,
+      "end": 424,
+      "ms": 146,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1007,
+      "end": 1138,
+      "ms": 131,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/skus/lookup",
+      "start": 1010,
+      "end": 1204,
+      "ms": 195,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 1012,
+      "end": 1154,
+      "ms": 142,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-ledger?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 1015,
+      "end": 1138,
+      "ms": 123,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/document-history?from_date=2026-09-06&to_date=2026-09-07&doc_type=all",
+      "start": 1018,
+      "end": 1151,
+      "ms": 133,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reversal-documents?from_date=2026-09-06&to_date=2026-09-07&per_page=200",
+      "start": 1022,
+      "end": 1151,
+      "ms": 129,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 215,
+     "wms:refresh:start": 276,
+     "skeletonFirst": 454,
+     "skeletonLast": 536,
+     "wms:refresh:done": 479,
+     "wms:cache:start": 503,
+     "wms:cache:ready": 514,
+     "wms:gate:open": 516,
+     "shell": 1005,
+     "main": 1005
+    },
+    "longTasks": [
+     {
+      "t": 162,
+      "d": 121
+     },
+     {
+      "t": 376,
+      "d": 77
+     },
+     {
+      "t": 881,
+      "d": 142
+     },
+     {
+      "t": 1218,
+      "d": 270
+     },
+     {
+      "t": 1489,
+      "d": 159
+     },
+     {
+      "t": 1677,
+      "d": 121
+     },
+     {
+      "t": 1799,
+      "d": 71
+     }
+    ],
+    "tbt": 611,
+    "dom": 3951
+   },
+   {
+    "path": "/reports/inventory-flow",
+    "content": 2199,
+    "ttfb": 5,
+    "dcl": 379,
+    "load": 572,
+    "fcp": 608,
+    "lcp": 1328,
+    "js": {
+     "n": 80,
+     "kb": 1470,
+     "wireKb": 0,
+     "fromCache": 80,
+     "lastEnd": 366
+    },
+    "css": {
+     "n": 3,
+     "kb": 232
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 374,
+      "end": 681,
+      "ms": 307,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1178,
+      "end": 1316,
+      "ms": 138,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/skus/lookup",
+      "start": 1183,
+      "end": 1370,
+      "ms": 187,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 1186,
+      "end": 1317,
+      "ms": 131,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-ledger?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 1190,
+      "end": 1317,
+      "ms": 127,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/document-history?from_date=2026-09-06&to_date=2026-09-07&doc_type=all",
+      "start": 1195,
+      "end": 1329,
+      "ms": 134,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reversal-documents?from_date=2026-09-06&to_date=2026-09-07&per_page=200",
+      "start": 1199,
+      "end": 1355,
+      "ms": 156,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {
+     "wms:boot": 280,
+     "wms:refresh:start": 370,
+     "skeletonFirst": 547,
+     "skeletonLast": 547,
+     "wms:refresh:done": 687,
+     "wms:cache:start": 696,
+     "wms:cache:ready": 699,
+     "shell": 1174,
+     "main": 1175,
+     "wms:gate:open": 702
+    },
+    "longTasks": [
+     {
+      "t": 212,
+      "d": 170
+     },
+     {
+      "t": 489,
+      "d": 57
+     },
+     {
+      "t": 700,
+      "d": 500
+     },
+     {
+      "t": 1200,
+      "d": 74
+     },
+     {
+      "t": 1399,
+      "d": 403
+     },
+     {
+      "t": 1802,
+      "d": 132
+     },
+     {
+      "t": 1962,
+      "d": 130
+     },
+     {
+      "t": 2093,
+      "d": 58
+     }
+    ],
+    "tbt": 1124,
+    "dom": 3951
+   }
+  ]
+ }
+}

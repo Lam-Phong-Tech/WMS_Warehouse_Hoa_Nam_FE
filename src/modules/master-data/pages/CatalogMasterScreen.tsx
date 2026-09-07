@@ -59,8 +59,12 @@ import {
   UiText,
   UiTextField,
   UiNumberField,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
+import { codeFormatError } from "@/shared/validation/text-rules";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 interface CatalogTabMeta {
   kind: CatalogMasterKind;
@@ -327,6 +331,11 @@ export function CatalogMasterScreen() {
       });
     else if (code.length > 80)
       errors.code = t("masterData.catalog.errCodeLength");
+    else {
+      // Mã danh mục cũng đi vào mã SKU/nhãn in — cùng bộ ký tự với mọi mã khác.
+      const codeError = codeFormatError(code, editingRecord?.code);
+      if (codeError) errors.code = codeError;
+    }
     if (!name)
       errors.name = t("masterData.catalog.errNameRequired", {
         label: activeTab.nameLabel,
@@ -411,7 +420,7 @@ export function CatalogMasterScreen() {
       hideOnMobile: true,
       // Số lấy theo VỊ TRÍ GỐC trong trang (trước khi bảng tự sắp xếp) nên nó
       // đi theo dòng khi bấm sắp xếp cột, không thành thang 1..n đứng yên.
-      render: (record) => mvpRowNumber(page, perPage, rows.indexOf(record)),
+      render: (record) => mvpRowNumber(page, perPage, rowIndexOf(rows, record)),
     },
     {
       key: "code",
@@ -579,7 +588,7 @@ export function CatalogMasterScreen() {
                     setKeyword(event.target.value);
                     setPage(1);
                   }}
-                  sx={{ minWidth: 220 }}
+                  sx={TOOLBAR_SEARCH_SX}
                 />
                 <UiSelect
                   aria-label={t("masterData.status.filterAria")}
@@ -599,7 +608,7 @@ export function CatalogMasterScreen() {
                     setPerPage(Number(value));
                     setPage(1);
                   }}
-                  minWidth={100}
+                  minWidth={FILTER_WIDTH.pageSize}
                   options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
                     value: size,
                     label: `${size} / trang`,

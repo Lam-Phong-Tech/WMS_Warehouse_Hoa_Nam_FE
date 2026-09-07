@@ -40,8 +40,10 @@ import {
   PUTAWAY_STATUS_LABELS,
   SCAN_CLASSIFICATION_LABELS,
   SCAN_RESULT_LABELS,
+  REVERSAL_REASON_LABELS,
   SOURCE_DOCUMENT_TYPE_LABELS,
   businessLabel,
+  enumLabelOrText,
 } from "@/shared/constants/business-labels";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
@@ -492,7 +494,13 @@ const chainColumns = (
     key: "reason",
     header: t("inventory.trace.colReason"),
     render: (row) =>
-      text(row.reason_text ?? row.reason_code ?? row.reversal_document_no),
+      text(
+        row.reason_text ??
+          (row.reason_code
+            ? enumLabelOrText(REVERSAL_REASON_LABELS, row.reason_code)
+            : null) ??
+          row.reversal_document_no,
+      ),
   },
 ];
 
@@ -940,9 +948,7 @@ export function TraceModal({ movementId, onClose }: Props) {
               label="SKU"
               value={
                 <SkuLink
-                  id={
-                    text(movement.sku_id ?? movement.product_id) || undefined
-                  }
+                  id={text(movement.sku_id ?? movement.product_id) || undefined}
                   code={text(
                     movement.sku ??
                       movement.sku_code ??

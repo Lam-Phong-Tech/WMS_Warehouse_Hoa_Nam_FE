@@ -1,4 +1,7 @@
-import { bilingual } from "@/shared/constants/business-labels";
+import {
+  bilingual,
+  enumLabelOrText,
+} from "@/shared/constants/business-labels";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { tStatic } from "@/shared/i18n/useT";
 import type { UiStatusTone } from "@/shared/ui";
@@ -180,6 +183,49 @@ const RELATION_LABELS = bilingual(
 );
 
 /** Bộ lọc "Tra theo". */
+/**
+ * `stock_movements.source_type` — chứng từ nào đẻ ra dòng biến động này.
+ * Đây là cột KỸ THUẬT của sổ, trước đây in nguyên `STOCK_DOCUMENT` /
+ * `OPENING_ADJUSTMENT` ngay dưới mã chứng từ ở cột Nguồn.
+ */
+export const MOVEMENT_SOURCE_TYPE_LABELS: Readonly<
+  Record<string, string>
+> = bilingual(
+  {
+    STOCK_DOCUMENT: "Phiếu nhập / xuất kho",
+    INBOUND_DOCUMENT: "Phiếu nhập kho",
+    OUTBOUND_DOCUMENT: "Phiếu xuất kho",
+    INBOUND: "Phiếu nhập kho",
+    OUTBOUND: "Phiếu xuất kho",
+    COMPONENT_ISSUE_DOCUMENT: "Phiếu xuất linh kiện",
+    REVERSAL_DOCUMENT: "Phiếu điều chỉnh tồn",
+    OPENING_BALANCE: "Tồn đầu kỳ",
+    OPENING_ADJUSTMENT: "Điều chỉnh tồn đầu kỳ",
+    SEEDER: "Dữ liệu dựng sẵn",
+    SEED_COVERAGE: "Dữ liệu dựng sẵn",
+  },
+  {
+    STOCK_DOCUMENT: "Receipt / issue document",
+    INBOUND_DOCUMENT: "Receipt document",
+    OUTBOUND_DOCUMENT: "Issue document",
+    INBOUND: "Receipt document",
+    OUTBOUND: "Issue document",
+    COMPONENT_ISSUE_DOCUMENT: "Component issue document",
+    REVERSAL_DOCUMENT: "Stock adjustment document",
+    OPENING_BALANCE: "Opening balance",
+    OPENING_ADJUSTMENT: "Opening balance adjustment",
+    SEEDER: "Seed data",
+    SEED_COVERAGE: "Seed data",
+  },
+);
+
+/** Nhãn cột Nguồn; mã lạ vẫn đọc được thay vì hiện nguyên dạng máy. */
+export function movementSourceLabel(
+  value: string | null | undefined,
+): string {
+  return enumLabelOrText(MOVEMENT_SOURCE_TYPE_LABELS, value);
+}
+
 export const TRACE_BY_OPTIONS = [
   {
     value: "physical",

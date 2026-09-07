@@ -155,6 +155,8 @@ export const API_ENDPOINTS = {
 
   // Canonical foundation/master routes from BE m1.
   PRODUCTS: "/products",
+  /** Bảng tra SKU gọn, toàn danh mục trong MỘT request — dành cho báo cáo. */
+  SKU_LOOKUP: "/skus/lookup",
   PRODUCT: "/products/:id",
   PRODUCT_MASTERS: "/product-masters",
   PRODUCT_CATEGORIES: "/product-categories",

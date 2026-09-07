@@ -54,9 +54,7 @@ describe("SideNav RBAC filtering", () => {
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.getByText("Danh sách phiếu xuất")).toBeInTheDocument();
     expect(screen.getByText("Tra cứu tồn & đối soát")).toBeInTheDocument();
-    expect(
-      screen.getByText("Nhập – Xuất – Tồn"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Báo cáo nhập kho")).toBeInTheDocument();
   });
 
   it("hides routes and groups that the user cannot access", () => {
@@ -66,9 +64,7 @@ describe("SideNav RBAC filtering", () => {
 
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.queryByText("Danh sách bảo hành")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Nhập – Xuất – Tồn"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Báo cáo nhập kho")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Danh sách linh kiện chờ xếp khay"),
     ).not.toBeInTheDocument();
@@ -150,9 +146,7 @@ describe("SideNav RBAC filtering", () => {
       screen.getByText("Danh sách linh kiện chờ xếp khay"),
     ).toBeInTheDocument();
     expect(screen.getByText("Danh sách bảo hành")).toBeInTheDocument();
-    expect(
-      screen.getByText("Nhập – Xuất – Tồn"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Báo cáo nhập kho")).toBeInTheDocument();
   });
 });
 

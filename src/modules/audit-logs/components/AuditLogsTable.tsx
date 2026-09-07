@@ -1,3 +1,4 @@
+import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useT } from "@/shared/i18n/useT";
 import { useState } from "react";
 import {
@@ -145,7 +146,7 @@ export function AuditLogsTable({
         mvpRowNumber(
           page,
           perPage,
-          data.findIndex((item) => item.id === row.id),
+          rowIndexOfBy(data, row, (item) => item.id),
         ),
     },
     {

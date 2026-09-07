@@ -1,0 +1,137 @@
+# =============================================================================
+# CẤU HÌNH PHỤC VỤ BẢN BUILD FE (dist/) TRÊN MÔI TRƯỜNG THẬT
+# -----------------------------------------------------------------------------
+# VÌ SAO FILE NÀY TỒN TẠI
+#
+# Toàn bộ phần tối ưu phía mã nguồn (07/09/2026) chỉ phát huy khi máy chủ tĩnh
+# làm đúng ba việc: NÉN, ĐẶT CACHE ĐÚNG, và KHÔNG bắt trình duyệt hỏi lại.
+# Trước đó repo FE không có bất kỳ cấu hình máy chủ nào, còn `vite preview` —
+# thứ dùng để đo — trả `Cache-Control: no-cache` cho CẢ file có hash nội dung và
+# KHÔNG nén gì cả. Nghĩa là mỗi lần F5 trên môi trường thật, trình duyệt phát
+# ~33 request điều kiện (If-None-Match) cho những file KHÔNG BAO GIỜ đổi nội
+# dung, mỗi request một vòng mạng. Trên mạng văn phòng 30–60 ms RTT, riêng khoản
+# đó đã ăn hết ngân sách 1,5 giây.
+#
+# Ba quy tắc dưới đây, theo đúng thứ tự quan trọng:
+#
+#   1. /assets/* có hash nội dung trong tên  → immutable, 1 năm, KHÔNG hỏi lại.
+#   2. index.html + service-worker.js        → no-cache (phải hỏi lại mỗi lần,
+#      nếu không người dùng kẹt ở bản cũ sau khi deploy).
+#   3. Nén: gzip_static/brotli_static nếu build sẵn .gz/.br, không thì gzip on.
+#
+# CÁCH DÙNG: chép vào máy chủ (vd /etc/nginx/conf.d/wms-fe.conf), sửa
+# `server_name`, `root` và `WMS_API_UPSTREAM` rồi `nginx -t && nginx -s reload`.
+# File này là MẪU, không được nạp tự động ở bất kỳ đâu.
+# =============================================================================
+
+# --- Cache theo loại nội dung ------------------------------------------------
+# Tên file trong /assets đã mang hash nội dung (vite): nội dung đổi ⇒ TÊN đổi.
+# Vì vậy "immutable" là an toàn tuyệt đối và là thứ cắt được nhiều vòng mạng
+# nhất — trình duyệt dùng thẳng bản trong đĩa, không hỏi máy chủ lần nào nữa.
+map $uri $wms_cache_control {
+    default                         "no-cache";
+    "~^/assets/"                    "public, max-age=31536000, immutable";
+    "~^/pwa-icon-.*\.png$"          "public, max-age=604800";
+}
+
+server {
+    listen 443 ssl;
+    http2 on;                 # BẮT BUỘC: một lần F5 tải ~33 file; trên HTTP/1.1
+                              # trình duyệt chỉ mở 6 kết nối/origin nên chúng
+                              # xếp hàng thành 6 đợt nối tiếp.
+    server_name khohoanamfe.example;   # ← ĐỔI
+
+    # ssl_certificate      /etc/letsencrypt/live/<domain>/fullchain.pem;
+    # ssl_certificate_key  /etc/letsencrypt/live/<domain>/privkey.pem;
+
+    root /var/www/wms-fe;     # ← thư mục chứa nội dung `dist/` sau khi build
+    index index.html;
+
+    # --- Nén -----------------------------------------------------------------
+    # Bản build có ~1,3 MB JS + 185 KB CSS. Nén gzip đưa xuống ~410 KB.
+    gzip on;
+    gzip_vary on;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_types
+        application/javascript
+        application/json
+        application/manifest+json
+        image/svg+xml
+        text/css
+        text/plain;
+
+    # Nếu build sẵn .gz/.br (khuyến nghị: nén một lần lúc build, không nén lại
+    # mỗi request) thì bật hai dòng dưới — cần module ngx_brotli cho brotli.
+    # gzip_static on;
+    # brotli_static on;
+
+    add_header Cache-Control $wms_cache_control always;
+
+    # --- Tài nguyên tĩnh có hash --------------------------------------------
+    location /assets/ {
+        # Thiếu file trong /assets là lỗi thật (deploy hụt), KHÔNG được rơi về
+        # index.html — rơi về sẽ trả HTML cho một thẻ <script>, trình duyệt báo
+        # lỗi MIME khó hiểu thay vì 404 rõ ràng.
+        try_files $uri =404;
+        access_log off;
+    }
+
+    # --- Service worker + manifest ------------------------------------------
+    # PHẢI no-cache: đây là hai file quyết định người dùng có nhận được bản mới
+    # hay không. Cache chúng là tự khoá mình ở bản cũ.
+    location = /service-worker.js {
+        add_header Cache-Control "no-cache, must-revalidate" always;
+        try_files $uri =404;
+    }
+    location = /manifest.webmanifest {
+        add_header Cache-Control "no-cache" always;
+        types { } default_type application/manifest+json;
+        try_files $uri =404;
+    }
+
+    # --- (TUỲ CHỌN, KHUYẾN NGHỊ) API CÙNG ORIGIN -----------------------------
+    # Bật khối này và đặt VITE_API_BASE_URL="https://<domain FE>/api/v1" lúc
+    # build thì FE và API cùng origin ⇒ trình duyệt KHÔNG phát request preflight
+    # OPTIONS nào nữa. Đo được ở stack dev: mỗi preflight là một vòng Laravel
+    # 140–430 ms, và một lần F5 màn Tổng quan chạm 7 đường dẫn khác nhau.
+    # Cùng origin cũng làm cookie refresh HttpOnly hết cần SameSite=None.
+    #
+    # location /api/ {
+    #     proxy_pass         http://WMS_API_UPSTREAM;   # ← ĐỔI (vd 10.0.0.5:8080)
+    #     proxy_http_version 1.1;
+    #     proxy_set_header   Host              $host;
+    #     proxy_set_header   X-Real-IP         $remote_addr;
+    #     proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+    #     proxy_set_header   X-Forwarded-Proto $scheme;
+    #     proxy_set_header   X-Forwarded-Host  $host;
+    #     proxy_set_header   X-Forwarded-Port  $server_port;
+    #     proxy_set_header   Connection        "";        # giữ keepalive
+    #     proxy_buffering    on;
+    #     proxy_read_timeout 120s;
+    #     # Response của API tự mang Cache-Control: no-store (NoStoreApiResponses),
+    #     # nên KHÔNG áp $wms_cache_control ở đây.
+    #     add_header Cache-Control "" always;
+    # }
+
+    # --- SPA fallback --------------------------------------------------------
+    # Mọi đường dẫn còn lại trả index.html để React Router tự định tuyến. Đặt
+    # SAU các location ở trên để không nuốt mất /assets và service worker.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # index.html không bao giờ được cache: nó là nơi trỏ tới tên file có hash
+    # của bản build hiện hành.
+    location = /index.html {
+        add_header Cache-Control "no-cache, must-revalidate" always;
+    }
+}
+
+# --- Chuyển hướng HTTP → HTTPS ----------------------------------------------
+server {
+    listen 80;
+    server_name khohoanamfe.example;   # ← ĐỔI
+    return 301 https://$host$request_uri;
+}

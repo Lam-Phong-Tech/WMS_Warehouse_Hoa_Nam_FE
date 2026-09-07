@@ -161,6 +161,10 @@ const PAGE_PAYLOAD: Record<string, unknown[]> = {
   ],
 };
 
+// Danh mục SKU của màn báo cáo giờ đi qua GET /skus/lookup (một request, không
+// phân trang — xem fetchAllSkus); cùng dòng dữ liệu với "/products" ở trên.
+PAYLOAD["/skus/lookup"] = PAGE_PAYLOAD["/products"];
+
 function renderReport() {
   renderWithProviders(<WarrantyComponentsReport />, [ROUTES.REPORTS_WARRANTY]);
 }
@@ -265,7 +269,7 @@ describe("RPT-06 · Báo cáo Bảo hành & linh kiện", () => {
     renderReport();
     await waitForData();
 
-    await user.type(screen.getByLabelText("SKU / mẫu sản phẩm"), "HN-500");
+    await user.type(screen.getByLabelText("SKU / mã máy"), "HN-500");
     expect(
       within(await caseTable()).queryByText("BH-2026-0001"),
     ).not.toBeInTheDocument();
@@ -285,6 +289,28 @@ describe("RPT-06 · Báo cáo Bảo hành & linh kiện", () => {
     expect(
       within(filtered).queryByText("BH-2026-0003"),
     ).not.toBeInTheDocument();
+  });
+
+  it("ô lọc SKU gợi ý theo tên sản phẩm, chọn gợi ý thì ghi mã máy vào ô", async () => {
+    const user = userEvent.setup();
+    renderReport();
+    await waitForData();
+
+    const skuField = screen.getByLabelText("SKU / mã máy");
+    // Gõ TÊN sản phẩm cũng ra gợi ý, dù bộ lọc so khớp theo mã máy.
+    await user.type(skuField, "Máy bơm");
+    const option = await screen.findByRole("option", {
+      name: "HN-500 · Máy bơm Hoa Nam 500W",
+    });
+    // Chỉ đúng SKU khớp mới còn trong danh sách gợi ý.
+    expect(screen.getAllByRole("option")).toHaveLength(1);
+
+    await user.click(option);
+    expect(skuField).toHaveValue("HN-500");
+
+    const table = await caseTable();
+    expect(within(table).getByText("BH-2026-0002")).toBeInTheDocument();
+    expect(within(table).queryByText("BH-2026-0001")).not.toBeInTheDocument();
   });
 
   it("chuyển tab Dạng hộp đổi vùng đối soát sang thẻ, không còn bảng", async () => {

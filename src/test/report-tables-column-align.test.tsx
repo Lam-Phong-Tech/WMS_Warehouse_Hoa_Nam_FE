@@ -107,6 +107,10 @@ const PAGE_PAYLOAD: Record<string, unknown[]> = {
   ],
 };
 
+// Danh mục SKU của màn báo cáo giờ đi qua GET /skus/lookup (một request, không
+// phân trang — xem fetchAllSkus); cùng dòng dữ liệu với "/products" ở trên.
+PAYLOAD["/skus/lookup"] = PAGE_PAYLOAD["/products"];
+
 /**
  * So căn lề của từng `<th>` với ô dữ liệu CÙNG CỘT ở dòng đầu tiên có dữ liệu.
  * Bỏ qua bảng đang ở trạng thái rỗng (dòng `colSpan`) vì lúc đó không có ô nào

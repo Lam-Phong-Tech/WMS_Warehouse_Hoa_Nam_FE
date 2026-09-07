@@ -39,6 +39,7 @@ const PROFILE: PvAdminProfile = {
   published: false,
   industry_ids: [],
   tag_ids: [],
+  images: [],
   version: 3,
 };
 

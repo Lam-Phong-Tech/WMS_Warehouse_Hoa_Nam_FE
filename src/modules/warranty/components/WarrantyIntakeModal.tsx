@@ -57,6 +57,11 @@ import {
 import { createRowKey } from "@/shared/components/motion/row-key";
 import { validatePhone } from "@/shared/constants/validation.constants";
 import {
+  FILE_RULES,
+  acceptAttribute,
+  checkFile,
+} from "@/shared/validation/file-rules";
+import {
   MAX_WARRANTY_IMAGES,
   MAX_WARRANTY_VIDEOS,
   MAX_WARRANTY_VIDEO_DURATION_SECONDS,
@@ -96,21 +101,18 @@ function fileRowKey(file: File): string {
 // Trần số ảnh/video + đo thời lượng dùng chung với màn chi tiết — xem
 // warranty-attachment-limits.ts.
 const MAX_INTAKE_IMAGES = MAX_WARRANTY_IMAGES;
-const MAX_INTAKE_IMAGE_BYTES = 10 * 1024 * 1024;
-const INTAKE_IMAGE_MIMES = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-];
+/**
+ * Đuôi/MIME/dung lượng của tệp lấy từ lớp luật dùng chung (file-rules.ts) —
+ * cùng một luật với màn chi tiết, không chép lại lần hai.
+ */
+const IMAGE_RULE = FILE_RULES.warrantyImage;
 
 // WAR-02 video đính kèm: mp4/mov/webm, tách riêng khỏi 10 ảnh; <=2 video;
 // <=300MB và <=5 phút/video (BE đo lại thời lượng bằng getID3, đây chỉ là
 // kiểm tra sớm phía client để không mất công tải file quá dài).
 const MAX_INTAKE_VIDEOS = MAX_WARRANTY_VIDEOS;
-const MAX_INTAKE_VIDEO_BYTES = 300 * 1024 * 1024;
 const MAX_INTAKE_VIDEO_DURATION_SECONDS = MAX_WARRANTY_VIDEO_DURATION_SECONDS;
-const INTAKE_VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
+const VIDEO_RULE = FILE_RULES.warrantyVideo;
 
 function formatIntakeFileSize(bytes: number): string {
   if (!bytes) return "0 B";
@@ -406,12 +408,15 @@ export function WarrantyIntakeModal({
     if (!incoming) return;
     const accepted: File[] = [];
     Array.from(incoming).forEach((file, index) => {
-      if (!INTAKE_IMAGE_MIMES.includes(file.type)) {
-        toast.error(t("warranty.intake.badImageType", { name: file.name }));
-        return;
-      }
-      if (file.size > MAX_INTAKE_IMAGE_BYTES) {
-        toast.error(t("warranty.intake.imageTooLarge", { name: file.name }));
+      // Kiểm đuôi + MIME + dung lượng bằng một luật duy nhất; câu lỗi giữ
+      // nguyên chữ của màn tiếp nhận nên chỉ đọc reason để chọn câu.
+      const check = checkFile(file, IMAGE_RULE);
+      if (!check.ok) {
+        toast.error(
+          check.reason === "type"
+            ? t("warranty.intake.badImageType", { name: file.name })
+            : t("warranty.intake.imageTooLarge", { name: file.name }),
+        );
         return;
       }
       const slot = imageFiles.length + accepted.length + index * 0;
@@ -434,12 +439,13 @@ export function WarrantyIntakeModal({
     if (!incoming) return;
     const accepted: File[] = [];
     for (const file of Array.from(incoming)) {
-      if (!INTAKE_VIDEO_MIMES.includes(file.type)) {
-        toast.error(t("warranty.intake.badVideoType", { name: file.name }));
-        continue;
-      }
-      if (file.size > MAX_INTAKE_VIDEO_BYTES) {
-        toast.error(t("warranty.intake.videoTooLarge", { name: file.name }));
+      const check = checkFile(file, VIDEO_RULE);
+      if (!check.ok) {
+        toast.error(
+          check.reason === "type"
+            ? t("warranty.intake.badVideoType", { name: file.name })
+            : t("warranty.intake.videoTooLarge", { name: file.name }),
+        );
         continue;
       }
       if (videoFiles.length + accepted.length >= MAX_INTAKE_VIDEOS) {
@@ -1009,7 +1015,7 @@ export function WarrantyIntakeModal({
                 </Box>
                 <input
                   type="file"
-                  accept=".jpg,.jpeg,.png,.webp"
+                  accept={acceptAttribute(IMAGE_RULE)}
                   multiple
                   hidden
                   disabled={busy}
@@ -1100,7 +1106,7 @@ export function WarrantyIntakeModal({
               </UiText>
               <input
                 type="file"
-                accept=".mp4,.mov,.webm"
+                accept={acceptAttribute(VIDEO_RULE)}
                 multiple
                 hidden
                 disabled={busy}

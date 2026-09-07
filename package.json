@@ -99,7 +99,9 @@
     "ui:a11y": "playwright test e2e/wwhn-274-a11y-browser-matrix.spec.ts --project=wwhn-274-desktop-chromium --project=wwhn-274-chrome-android --project=wwhn-274-safari-ios",
     "ui:full-gate": "yarn ui:guards && yarn ui:components && yarn ui:visual && yarn ui:responsive && yarn ui:a11y",
     "cache:policy": "node scripts/check-query-cache-policy.mjs",
-    "cache:policy:self-test": "node scripts/check-query-cache-policy.mjs --self-test"
+    "cache:policy:self-test": "node scripts/check-query-cache-policy.mjs --self-test",
+    "vn-address:sync": "node scripts/gen-vn-address-data.mjs",
+    "vn-address:check": "node scripts/gen-vn-address-data.mjs --check"
   },
   "resolutions": {
     "nanoid": "^3.3.18",

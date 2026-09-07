@@ -62,6 +62,7 @@ import { useClientPagination } from "./report-columns";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { ReportStatusBadge } from "./report-drilldown";
 import { useReportExport } from "./report-export";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 const sourceOptions = (t: TranslateFn) => [
   { value: "all", label: t("reports.importQuality.sourceAll") },
@@ -667,7 +668,7 @@ export default function TabImportQuality() {
               mvpRowNumber(
                 pagination.page,
                 pagination.perPage,
-                pagination.pageRows.indexOf(row),
+                rowIndexOf(pagination.pageRows, row),
               ),
           },
           {

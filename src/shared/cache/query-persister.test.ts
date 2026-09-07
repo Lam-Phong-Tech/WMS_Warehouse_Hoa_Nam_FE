@@ -24,7 +24,9 @@ function fakeQuery(
 
 describe("bộ lọc ghi xuống IndexedDB", () => {
   it("cho phép danh mục dùng chung và master", () => {
-    expect(isPersistable(fakeQuery(["ref", "warehouses", "active"]))).toBe(true);
+    expect(isPersistable(fakeQuery(["ref", "warehouses", "active"]))).toBe(
+      true,
+    );
     expect(isPersistable(fakeQuery(["mvp-master", "skus", {}]))).toBe(true);
     expect(isPersistable(fakeQuery(["catalog-master", "brand-options"]))).toBe(
       true,
@@ -32,7 +34,9 @@ describe("bộ lọc ghi xuống IndexedDB", () => {
   });
 
   it("cho phép báo cáo/bảng điều khiển (đã kèm revalidate + trần dung lượng)", () => {
-    expect(isPersistable(fakeQuery(["dashboard", "overview-quick"]))).toBe(true);
+    expect(isPersistable(fakeQuery(["dashboard", "overview-quick"]))).toBe(
+      true,
+    );
     expect(isPersistable(fakeQuery(["rpt-ops", "xnt", "a", "b"]))).toBe(true);
   });
 

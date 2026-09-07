@@ -6,6 +6,7 @@ import { useMe } from "@/modules/auth/hooks/use-me";
 import { Loading } from "@/shared/components/feedback/Loading";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { ROUTES } from "@/shared/constants/routes";
+import { mark } from "@/shared/perf/marks";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { usePersistedQueryCache } from "@/shared/cache/use-persisted-cache";
 import {
@@ -113,5 +114,7 @@ export function ProtectedRoute() {
   // tự làm cho toàn bộ lớp persist trở nên vô nghĩa sau mỗi lần F5.
   if (!isCacheReady) return <Loading />;
 
+  // Mốc "cổng mở": từ đây trang đích mới được render và mới bắt đầu gọi API.
+  mark("gate:open");
   return <Outlet />;
 }

@@ -1,0 +1,1158 @@
+{
+ "tag": "baseline-prod-2",
+ "base": "http://localhost:5199",
+ "cpu": 1,
+ "pages": {
+  "/dashboard": [
+   {
+    "path": "/dashboard",
+    "content": 2231,
+    "ttfb": 6,
+    "dcl": 85,
+    "load": 197,
+    "fcp": 240,
+    "lcp": 2248,
+    "js": {
+     "n": 58,
+     "kb": 1459,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 117
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 84,
+      "end": 807,
+      "ms": 723,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1207,
+      "end": 1910,
+      "ms": 702,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1209,
+      "end": 1964,
+      "ms": 754,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 1210,
+      "end": 2134,
+      "ms": 925,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1211,
+      "end": 1910,
+      "ms": 700,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1211,
+      "end": 1902,
+      "ms": 691,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1211,
+      "end": 2032,
+      "ms": 821,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 1132,
+      "d": 79
+     },
+     {
+      "t": 2160,
+      "d": 53
+     }
+    ],
+    "tbt": 32,
+    "dom": 1041
+   },
+   {
+    "path": "/dashboard",
+    "content": 1916,
+    "ttfb": 7,
+    "dcl": 114,
+    "load": 168,
+    "fcp": 224,
+    "lcp": 1928,
+    "js": {
+     "n": 58,
+     "kb": 1459,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 118
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 113,
+      "end": 971,
+      "ms": 858,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1304,
+      "end": 1660,
+      "ms": 357,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1304,
+      "end": 1709,
+      "ms": 405,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 1304,
+      "end": 1867,
+      "ms": 563,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1305,
+      "end": 1781,
+      "ms": 477,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1305,
+      "end": 1775,
+      "ms": 470,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1306,
+      "end": 1836,
+      "ms": 531,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 1041
+   },
+   {
+    "path": "/dashboard",
+    "content": 1782,
+    "ttfb": 7,
+    "dcl": 117,
+    "load": 178,
+    "fcp": 240,
+    "lcp": 1748,
+    "js": {
+     "n": 58,
+     "kb": 1459,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 124
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 117,
+      "end": 947,
+      "ms": 830,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1274,
+      "end": 1689,
+      "ms": 414,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1275,
+      "end": 1689,
+      "ms": 414,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 1275,
+      "end": 1694,
+      "ms": 419,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1276,
+      "end": 1656,
+      "ms": 380,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1276,
+      "end": 1662,
+      "ms": 387,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 1276,
+      "end": 1746,
+      "ms": 470,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 1041
+   },
+   {
+    "path": "/dashboard",
+    "content": 1482,
+    "ttfb": 7,
+    "dcl": 108,
+    "load": 165,
+    "fcp": 224,
+    "lcp": 1460,
+    "js": {
+     "n": 58,
+     "kb": 1459,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 113
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 108,
+      "end": 554,
+      "ms": 446,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 887,
+      "end": 1396,
+      "ms": 509,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 888,
+      "end": 1417,
+      "ms": 529,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 888,
+      "end": 1404,
+      "ms": 516,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 889,
+      "end": 1405,
+      "ms": 516,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 889,
+      "end": 1404,
+      "ms": 515,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 889,
+      "end": 1417,
+      "ms": 528,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 1041
+   }
+  ],
+  "/master-data/skus": [
+   {
+    "path": "/master-data/skus",
+    "content": 2687,
+    "ttfb": 5,
+    "dcl": 104,
+    "load": 172,
+    "fcp": 232,
+    "lcp": 1176,
+    "js": {
+     "n": 95,
+     "kb": 1601,
+     "wireKb": 0,
+     "fromCache": 95,
+     "lastEnd": 218
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 103,
+      "end": 780,
+      "ms": 677,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1152,
+      "end": 2082,
+      "ms": 931,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1152,
+      "end": 2086,
+      "ms": 934,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/products?page=1&per_page=15",
+      "start": 1152,
+      "end": 2489,
+      "ms": 1337,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/brands?status=ACTIVE&per_page=200",
+      "start": 1153,
+      "end": 2312,
+      "ms": 1159,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-categories?status=ACTIVE&per_page=200",
+      "start": 1153,
+      "end": 2412,
+      "ms": 1260,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-models?status=ACTIVE&per_page=200",
+      "start": 1153,
+      "end": 2316,
+      "ms": 1163,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/power-sources?status=ACTIVE&per_page=200",
+      "start": 1153,
+      "end": 2527,
+      "ms": 1373,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/package-variants?status=ACTIVE&per_page=200",
+      "start": 1154,
+      "end": 2526,
+      "ms": 1373,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 1096,
+      "d": 58
+     },
+     {
+      "t": 2491,
+      "d": 66
+     },
+     {
+      "t": 2592,
+      "d": 69
+     }
+    ],
+    "tbt": 43,
+    "dom": 925
+   },
+   {
+    "path": "/master-data/skus",
+    "content": 2101,
+    "ttfb": 8,
+    "dcl": 184,
+    "load": 246,
+    "fcp": 312,
+    "lcp": 1232,
+    "js": {
+     "n": 95,
+     "kb": 1601,
+     "wireKb": 0,
+     "fromCache": 95,
+     "lastEnd": 205
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 183,
+      "end": 831,
+      "ms": 648,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1205,
+      "end": 1891,
+      "ms": 686,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1205,
+      "end": 1931,
+      "ms": 726,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/products?page=1&per_page=15",
+      "start": 1206,
+      "end": 1993,
+      "ms": 787,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/brands?status=ACTIVE&per_page=200",
+      "start": 1206,
+      "end": 1890,
+      "ms": 684,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-categories?status=ACTIVE&per_page=200",
+      "start": 1206,
+      "end": 1871,
+      "ms": 665,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-models?status=ACTIVE&per_page=200",
+      "start": 1207,
+      "end": 1871,
+      "ms": 664,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/power-sources?status=ACTIVE&per_page=200",
+      "start": 1207,
+      "end": 2240,
+      "ms": 1033,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/package-variants?status=ACTIVE&per_page=200",
+      "start": 1207,
+      "end": 2266,
+      "ms": 1059,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 1152,
+      "d": 55
+     },
+     {
+      "t": 1995,
+      "d": 59
+     },
+     {
+      "t": 2268,
+      "d": 57
+     }
+    ],
+    "tbt": 21,
+    "dom": 925
+   },
+   {
+    "path": "/master-data/skus",
+    "content": 2555,
+    "ttfb": 9,
+    "dcl": 142,
+    "load": 231,
+    "fcp": 280,
+    "lcp": 1736,
+    "js": {
+     "n": 95,
+     "kb": 1601,
+     "wireKb": 0,
+     "fromCache": 95,
+     "lastEnd": 153
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 140,
+      "end": 1342,
+      "ms": 1202,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1705,
+      "end": 2346,
+      "ms": 641,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1706,
+      "end": 2345,
+      "ms": 639,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/products?page=1&per_page=15",
+      "start": 1706,
+      "end": 2454,
+      "ms": 748,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/brands?status=ACTIVE&per_page=200",
+      "start": 1706,
+      "end": 2406,
+      "ms": 699,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-categories?status=ACTIVE&per_page=200",
+      "start": 1707,
+      "end": 2374,
+      "ms": 668,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-models?status=ACTIVE&per_page=200",
+      "start": 1707,
+      "end": 2346,
+      "ms": 639,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/power-sources?status=ACTIVE&per_page=200",
+      "start": 1708,
+      "end": 2648,
+      "ms": 941,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/package-variants?status=ACTIVE&per_page=200",
+      "start": 1708,
+      "end": 2652,
+      "ms": 944,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 2457,
+      "d": 55
+     }
+    ],
+    "tbt": 5,
+    "dom": 925
+   },
+   {
+    "path": "/master-data/skus",
+    "content": 2232,
+    "ttfb": 8,
+    "dcl": 150,
+    "load": 229,
+    "fcp": 284,
+    "lcp": 1332,
+    "js": {
+     "n": 95,
+     "kb": 1601,
+     "wireKb": 0,
+     "fromCache": 95,
+     "lastEnd": 162
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 149,
+      "end": 908,
+      "ms": 759,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1297,
+      "end": 2022,
+      "ms": 726,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1298,
+      "end": 2312,
+      "ms": 1014,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/products?page=1&per_page=15",
+      "start": 1299,
+      "end": 2085,
+      "ms": 786,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/brands?status=ACTIVE&per_page=200",
+      "start": 1299,
+      "end": 2008,
+      "ms": 709,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-categories?status=ACTIVE&per_page=200",
+      "start": 1300,
+      "end": 2031,
+      "ms": 732,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/product-models?status=ACTIVE&per_page=200",
+      "start": 1300,
+      "end": 1978,
+      "ms": 678,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/power-sources?status=ACTIVE&per_page=200",
+      "start": 1300,
+      "end": 2643,
+      "ms": 1343,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/package-variants?status=ACTIVE&per_page=200",
+      "start": 1301,
+      "end": 2644,
+      "ms": 1344,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 1242,
+      "d": 59
+     },
+     {
+      "t": 2089,
+      "d": 78
+     }
+    ],
+    "tbt": 37,
+    "dom": 925
+   }
+  ],
+  "/warranty": [
+   {
+    "path": "/warranty",
+    "content": 2574,
+    "ttfb": 5,
+    "dcl": 103,
+    "load": 188,
+    "fcp": 240,
+    "lcp": 1808,
+    "js": {
+     "n": 118,
+     "kb": 1961,
+     "wireKb": 0,
+     "fromCache": 118,
+     "lastEnd": 198
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 102,
+      "end": 1381,
+      "ms": 1280,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1765,
+      "end": 2254,
+      "ms": 489,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1768,
+      "end": 2231,
+      "ms": 462,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/warranty-cases?page=1&per_page=10",
+      "start": 1769,
+      "end": 2455,
+      "ms": 686,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/defects?status=ACTIVE&per_page=100",
+      "start": 1770,
+      "end": 2524,
+      "ms": 755,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 1708,
+      "d": 61
+     }
+    ],
+    "tbt": 11,
+    "dom": 831
+   },
+   {
+    "path": "/warranty",
+    "content": 2087,
+    "ttfb": 11,
+    "dcl": 191,
+    "load": 289,
+    "fcp": 400,
+    "lcp": 1304,
+    "js": {
+     "n": 118,
+     "kb": 1961,
+     "wireKb": 0,
+     "fromCache": 118,
+     "lastEnd": 219
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 189,
+      "end": 876,
+      "ms": 687,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1265,
+      "end": 1897,
+      "ms": 632,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1266,
+      "end": 1897,
+      "ms": 632,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/warranty-cases?page=1&per_page=10",
+      "start": 1266,
+      "end": 1978,
+      "ms": 712,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/defects?status=ACTIVE&per_page=100",
+      "start": 1267,
+      "end": 1972,
+      "ms": 706,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 125,
+      "d": 66
+     },
+     {
+      "t": 1202,
+      "d": 64
+     }
+    ],
+    "tbt": 30,
+    "dom": 831
+   },
+   {
+    "path": "/warranty",
+    "content": 2065,
+    "ttfb": 11,
+    "dcl": 170,
+    "load": 264,
+    "fcp": 364,
+    "lcp": 1376,
+    "js": {
+     "n": 118,
+     "kb": 1961,
+     "wireKb": 0,
+     "fromCache": 118,
+     "lastEnd": 200
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 168,
+      "end": 948,
+      "ms": 780,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1338,
+      "end": 1841,
+      "ms": 503,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1339,
+      "end": 1842,
+      "ms": 503,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/warranty-cases?page=1&per_page=10",
+      "start": 1339,
+      "end": 1883,
+      "ms": 544,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/defects?status=ACTIVE&per_page=100",
+      "start": 1340,
+      "end": 1902,
+      "ms": 562,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 105,
+      "d": 69
+     },
+     {
+      "t": 1281,
+      "d": 58
+     },
+     {
+      "t": 1888,
+      "d": 66
+     },
+     {
+      "t": 1981,
+      "d": 57
+     }
+    ],
+    "tbt": 50,
+    "dom": 831
+   },
+   {
+    "path": "/warranty",
+    "content": 2046,
+    "ttfb": 7,
+    "dcl": 167,
+    "load": 242,
+    "fcp": 332,
+    "lcp": 1200,
+    "js": {
+     "n": 118,
+     "kb": 1961,
+     "wireKb": 0,
+     "fromCache": 118,
+     "lastEnd": 201
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 165,
+      "end": 779,
+      "ms": 613,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1162,
+      "end": 1870,
+      "ms": 708,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1162,
+      "end": 1869,
+      "ms": 707,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/warranty-cases?page=1&per_page=10",
+      "start": 1163,
+      "end": 1924,
+      "ms": 761,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/defects?status=ACTIVE&per_page=100",
+      "start": 1164,
+      "end": 1902,
+      "ms": 737,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 1110,
+      "d": 54
+     },
+     {
+      "t": 1952,
+      "d": 54
+     }
+    ],
+    "tbt": 8,
+    "dom": 831
+   }
+  ]
+ }
+}

@@ -1,15 +1,28 @@
 /**
- * Danh mục địa giới hành chính Việt Nam sau sáp nhập (2 cấp) — nguồn
- * https://provinces.open-api.vn/ (API v2, CORS mở, không cần khoá).
+ * Danh mục địa giới hành chính Việt Nam sau sáp nhập (2 cấp: Tỉnh/Thành →
+ * Phường/Xã) — ĐỌC TỪ JSON TRONG REPO, không gọi dịch vụ ngoài lúc chạy.
  *
- * - GET /api/v2/p/            → 34 tỉnh/thành (mảng, `wards: []`)
- * - GET /api/v2/p/{code}?depth=2 → 1 tỉnh kèm danh sách phường/xã
+ *   src/shared/lib/vn-address/data/vn-provinces.json   34 tỉnh   (~5 KB)
+ *   src/shared/lib/vn-address/data/vn-wards.json       3321 xã   (~294 KB)
  *
- * Cache 2 lớp: bộ nhớ module (promise dedupe trong phiên) + localStorage
- * (TTL 30 ngày) để app dùng ngoài kho/offline PWA vẫn có danh mục sau lần
- * tải đầu. Không dùng axios `api` của dự án vì đây là dịch vụ ngoài, không
- * được gắn Bearer token nội bộ.
+ * Vì sao bỏ gọi API lúc chạy: bản cũ tải trực tiếp provinces.open-api.vn nên
+ * ô "Tỉnh/Thành" phụ thuộc mạng ngoài + CORS + thời gian sống của dịch vụ đó,
+ * và nhánh phường/xã nuốt lỗi im lặng — payload thiếu `wards` (proxy/CDN cắt
+ * `?depth=2`) bị cache là danh sách RỖNG cho tới hết phiên, người dùng chỉ
+ * thấy "Không có lựa chọn" mà không có cảnh báo hay nút tải lại.
+ *
+ * Nay:
+ * - Tỉnh/thành nạp TĨNH theo bundle → có ngay ở lần render đầu, không loading,
+ *   không bao giờ lỗi, chạy được offline.
+ * - Phường/xã nằm ở chunk riêng, nạp bằng dynamic import (cùng origin, HTTP
+ *   cache) và được hâm sẵn ngay khi ô địa chỉ mount.
+ * - Danh sách xã RỖNG bị coi là LỖI, không bao giờ được cache.
+ *
+ * Cập nhật khi địa giới đổi: `yarn vn-address:sync` rồi commit JSON.
+ * `yarn vn-address:check` kiểm tra tính toàn vẹn mà không cần mạng.
  */
+
+import provincesDoc from "./data/vn-provinces.json";
 
 export interface VnProvince {
   code: number;
@@ -26,102 +39,22 @@ export interface VnWard {
   province_code: number;
 }
 
-const DEFAULT_BASE_URL = "https://provinces.open-api.vn/api/v2";
-const STORAGE_PREFIX = "wms.vn-address.v2";
-const STORAGE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const REQUEST_TIMEOUT_MS = 12_000;
-
-export function vnAddressBaseUrl(): string {
-  const override = import.meta.env?.VITE_VN_ADDRESS_API_URL;
-  const base =
-    typeof override === "string" && override.trim()
-      ? override.trim()
-      : DEFAULT_BASE_URL;
-  return base.replace(/\/+$/, "");
+interface RawWard {
+  code: number;
+  name: string;
+  codename: string;
+  division_type: string;
 }
 
-interface StoredEntry<T> {
-  savedAt: number;
-  data: T;
+interface WardsDoc {
+  version: string;
+  source: string;
+  count: number;
+  wardsByProvince: Record<string, RawWard[]>;
 }
 
-function readStorage<T>(key: string): T | null {
-  try {
-    const raw = globalThis.localStorage?.getItem(`${STORAGE_PREFIX}.${key}`);
-    if (!raw) return null;
-    const entry = JSON.parse(raw) as StoredEntry<T>;
-    if (
-      !entry ||
-      typeof entry.savedAt !== "number" ||
-      Date.now() - entry.savedAt > STORAGE_TTL_MS
-    ) {
-      return null;
-    }
-    return entry.data;
-  } catch {
-    return null;
-  }
-}
-
-function writeStorage<T>(key: string, data: T): void {
-  try {
-    const entry: StoredEntry<T> = { savedAt: Date.now(), data };
-    globalThis.localStorage?.setItem(
-      `${STORAGE_PREFIX}.${key}`,
-      JSON.stringify(entry),
-    );
-  } catch {
-    // quota / private mode — cache chỉ là tối ưu, không phải yêu cầu
-  }
-}
-
-async function fetchJson<T>(path: string): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  try {
-    const response = await fetch(`${vnAddressBaseUrl()}${path}`, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      throw new Error(`vn-address: HTTP ${response.status} for ${path}`);
-    }
-    return (await response.json()) as T;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function toProvince(row: Record<string, unknown>): VnProvince | null {
-  const code = Number(row.code);
-  const name = typeof row.name === "string" ? row.name.trim() : "";
-  if (!Number.isFinite(code) || !name) return null;
-  return {
-    code,
-    name,
-    codename: typeof row.codename === "string" ? row.codename : "",
-    division_type:
-      typeof row.division_type === "string" ? row.division_type : "",
-  };
-}
-
-function toWard(
-  row: Record<string, unknown>,
-  provinceCode: number,
-): VnWard | null {
-  const code = Number(row.code);
-  const name = typeof row.name === "string" ? row.name.trim() : "";
-  if (!Number.isFinite(code) || !name) return null;
-  return {
-    code,
-    name,
-    codename: typeof row.codename === "string" ? row.codename : "",
-    division_type:
-      typeof row.division_type === "string" ? row.division_type : "",
-    province_code: Number(row.province_code ?? provinceCode) || provinceCode,
-  };
-}
+/** Ngày sinh dữ liệu (YYYY-MM-DD) — hiện ở gợi ý lỗi và log kiểm tra. */
+export const VN_ADDRESS_DATA_VERSION: string = provincesDoc.version;
 
 const collator = new Intl.Collator("vi", { sensitivity: "base" });
 
@@ -142,90 +75,85 @@ function sortByBareName<T extends { name: string }>(rows: T[]): T[] {
   );
 }
 
-let provincesPromise: Promise<VnProvince[]> | null = null;
-let provincesCache: VnProvince[] | null = null;
-const wardsPromise = new Map<number, Promise<VnWard[]>>();
-const wardsCache = new Map<number, VnWard[]>();
+const provincesCache: VnProvince[] = sortByBareName(
+  provincesDoc.provinces.map((row) => ({
+    code: row.code,
+    name: row.name,
+    codename: row.codename,
+    division_type: row.division_type,
+  })),
+);
 
-/** Đọc cache đồng bộ (bộ nhớ → localStorage) để render ngay không nháy. */
-export function peekProvinces(): VnProvince[] | null {
-  if (provincesCache) return provincesCache;
-  const stored = readStorage<VnProvince[]>("provinces");
-  if (stored && stored.length > 0) {
-    provincesCache = stored;
-    return stored;
-  }
-  return null;
+const wardsCache = new Map<number, VnWard[]>();
+let wardsDocPromise: Promise<WardsDoc> | null = null;
+
+function loadWardsDoc(): Promise<WardsDoc> {
+  // Chunk riêng: chỉ tải khi thực sự có ô địa chỉ trên màn hình.
+  wardsDocPromise ??= import("./data/vn-wards.json")
+    .then((module) => (module.default ?? module) as unknown as WardsDoc)
+    .catch((error: unknown) => {
+      // Chunk lỗi (deploy mới xoá file cũ, mạng rớt giữa chừng) → cho thử lại.
+      wardsDocPromise = null;
+      throw error instanceof Error
+        ? error
+        : new Error("vn-address: không nạp được danh mục phường/xã");
+    });
+  return wardsDocPromise;
 }
 
+/**
+ * Hâm sẵn chunk phường/xã ngay khi ô địa chỉ mount, để lúc người dùng chọn
+ * xong tỉnh thì danh sách xã đã nằm trong bộ nhớ (không nháy spinner).
+ * Nuốt lỗi có chủ đích: đây chỉ là tối ưu, `fetchWards` mới là đường thật.
+ */
+export function preloadVnWards(): void {
+  void loadWardsDoc().catch(() => undefined);
+}
+
+function selectWards(doc: WardsDoc, provinceCode: number): VnWard[] {
+  const rows = doc.wardsByProvince[String(provinceCode)];
+  // Rỗng = dữ liệu hỏng, KHÔNG cache. Đây chính là bẫy của bản gọi API cũ.
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error(`vn-address: tỉnh ${provinceCode} không có phường/xã`);
+  }
+  return sortByBareName(
+    rows.map((row) => ({
+      code: row.code,
+      name: row.name,
+      codename: row.codename,
+      division_type: row.division_type,
+      province_code: provinceCode,
+    })),
+  );
+}
+
+/** Danh sách tỉnh/thành — luôn sẵn sàng, đồng bộ, không bao giờ null. */
+export function peekProvinces(): VnProvince[] {
+  return provincesCache;
+}
+
+/** Xã của một tỉnh nếu chunk đã nạp; null = chưa nạp xong (hiện spinner). */
 export function peekWards(provinceCode: number | null): VnWard[] | null {
   if (provinceCode === null) return null;
-  const cached = wardsCache.get(provinceCode);
-  if (cached) return cached;
-  const stored = readStorage<VnWard[]>(`wards.${provinceCode}`);
-  if (stored && stored.length > 0) {
-    wardsCache.set(provinceCode, stored);
-    return stored;
-  }
-  return null;
+  return wardsCache.get(provinceCode) ?? null;
 }
 
 export function fetchProvinces(): Promise<VnProvince[]> {
-  const cached = peekProvinces();
-  if (cached) return Promise.resolve(cached);
-  if (provincesPromise) return provincesPromise;
-  provincesPromise = fetchJson<Array<Record<string, unknown>>>("/p/")
-    .then((rows) => {
-      const provinces = sortByBareName(
-        (Array.isArray(rows) ? rows : [])
-          .map(toProvince)
-          .filter((row): row is VnProvince => row !== null),
-      );
-      if (provinces.length === 0) {
-        throw new Error("vn-address: empty province list");
-      }
-      provincesCache = provinces;
-      writeStorage("provinces", provinces);
-      return provinces;
-    })
-    .finally(() => {
-      provincesPromise = null;
-    });
-  return provincesPromise;
+  return Promise.resolve(provincesCache);
 }
 
 export function fetchWards(provinceCode: number): Promise<VnWard[]> {
-  const cached = peekWards(provinceCode);
+  const cached = wardsCache.get(provinceCode);
   if (cached) return Promise.resolve(cached);
-  const inflight = wardsPromise.get(provinceCode);
-  if (inflight) return inflight;
-  const promise = fetchJson<Record<string, unknown>>(
-    `/p/${provinceCode}?depth=2`,
-  )
-    .then((row) => {
-      const rawWards = Array.isArray(row?.wards)
-        ? (row.wards as Array<Record<string, unknown>>)
-        : [];
-      const wards = sortByBareName(
-        rawWards
-          .map((ward) => toWard(ward, provinceCode))
-          .filter((ward): ward is VnWard => ward !== null),
-      );
-      wardsCache.set(provinceCode, wards);
-      writeStorage(`wards.${provinceCode}`, wards);
-      return wards;
-    })
-    .finally(() => {
-      wardsPromise.delete(provinceCode);
-    });
-  wardsPromise.set(provinceCode, promise);
-  return promise;
+  return loadWardsDoc().then((doc) => {
+    const wards = selectWards(doc, provinceCode);
+    wardsCache.set(provinceCode, wards);
+    return wards;
+  });
 }
 
 /** Chỉ dùng trong test — xoá cache bộ nhớ để mỗi case bắt đầu sạch. */
 export function __resetVnAddressCache(): void {
-  provincesPromise = null;
-  provincesCache = null;
-  wardsPromise.clear();
   wardsCache.clear();
+  wardsDocPromise = null;
 }

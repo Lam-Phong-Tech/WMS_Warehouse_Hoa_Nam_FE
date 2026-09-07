@@ -1,0 +1,497 @@
+{
+ "tag": "marks-1",
+ "base": "http://localhost:5199",
+ "cpu": 1,
+ "pages": {
+  "/dashboard": [
+   {
+    "path": "/dashboard",
+    "content": 1465,
+    "ttfb": 6,
+    "dcl": 86,
+    "load": 193,
+    "fcp": 0,
+    "lcp": 0,
+    "js": {
+     "n": 58,
+     "kb": 1459,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 125
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 85,
+      "end": 491,
+      "ms": 405,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 889,
+      "end": 1281,
+      "ms": 391,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 891,
+      "end": 1294,
+      "ms": 403,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 892,
+      "end": 1394,
+      "ms": 503,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 892,
+      "end": 1285,
+      "ms": 393,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 893,
+      "end": 1294,
+      "ms": 401,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 893,
+      "end": 1395,
+      "ms": 502,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {},
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 1041
+   },
+   {
+    "path": "/dashboard",
+    "content": 1090,
+    "ttfb": 6,
+    "dcl": 96,
+    "load": 150,
+    "fcp": 0,
+    "lcp": 0,
+    "js": {
+     "n": 58,
+     "kb": 1459,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 100
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 95,
+      "end": 496,
+      "ms": 401,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 830,
+      "end": 1002,
+      "ms": 172,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 830,
+      "end": 1001,
+      "ms": 171,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 831,
+      "end": 1014,
+      "ms": 184,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 831,
+      "end": 1015,
+      "ms": 184,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 831,
+      "end": 1056,
+      "ms": 224,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 832,
+      "end": 1030,
+      "ms": 199,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {},
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 1041
+   },
+   {
+    "path": "/dashboard",
+    "content": 944,
+    "ttfb": 5,
+    "dcl": 93,
+    "load": 143,
+    "fcp": 0,
+    "lcp": 0,
+    "js": {
+     "n": 58,
+     "kb": 1459,
+     "wireKb": 0,
+     "fromCache": 58,
+     "lastEnd": 99
+    },
+    "css": {
+     "n": 3,
+     "kb": 241
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 92,
+      "end": 320,
+      "ms": 228,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 651,
+      "end": 849,
+      "ms": 198,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 652,
+      "end": 836,
+      "ms": 185,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-overview?from_date=2026-08-25&to_date=2026-09-07",
+      "start": 652,
+      "end": 885,
+      "ms": 233,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 653,
+      "end": 875,
+      "ms": 222,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-daily?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 654,
+      "end": 886,
+      "ms": 232,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/dashboard-quick?from_date=2026-09-01&to_date=2026-09-07",
+      "start": 654,
+      "end": 917,
+      "ms": 263,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {},
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 1041
+   }
+  ],
+  "/inventory": [
+   {
+    "path": "/inventory",
+    "content": 1406,
+    "ttfb": 7,
+    "dcl": 98,
+    "load": 163,
+    "fcp": 0,
+    "lcp": 0,
+    "js": {
+     "n": 97,
+     "kb": 1596,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 190
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 96,
+      "end": 563,
+      "ms": 467,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 918,
+      "end": 1091,
+      "ms": 174,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 919,
+      "end": 1091,
+      "ms": 172,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 920,
+      "end": 1303,
+      "ms": 383,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 921,
+      "end": 1305,
+      "ms": 384,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {},
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 932
+   },
+   {
+    "path": "/inventory",
+    "content": 992,
+    "ttfb": 5,
+    "dcl": 91,
+    "load": 153,
+    "fcp": 0,
+    "lcp": 0,
+    "js": {
+     "n": 97,
+     "kb": 1596,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 106
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 90,
+      "end": 302,
+      "ms": 213,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 651,
+      "end": 878,
+      "ms": 227,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 652,
+      "end": 872,
+      "ms": 220,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 652,
+      "end": 881,
+      "ms": 229,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 652,
+      "end": 932,
+      "ms": 280,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {},
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 932
+   },
+   {
+    "path": "/inventory",
+    "content": 1174,
+    "ttfb": 6,
+    "dcl": 121,
+    "load": 190,
+    "fcp": 0,
+    "lcp": 0,
+    "js": {
+     "n": 97,
+     "kb": 1596,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 141
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 120,
+      "end": 466,
+      "ms": 346,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 831,
+      "end": 1027,
+      "ms": 197,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 832,
+      "end": 1033,
+      "ms": 201,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 832,
+      "end": 1090,
+      "ms": 258,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 832,
+      "end": 1047,
+      "ms": 215,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "marks": {},
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 932
+   }
+  ]
+ }
+}

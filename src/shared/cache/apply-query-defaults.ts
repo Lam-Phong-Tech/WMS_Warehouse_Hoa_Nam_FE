@@ -16,7 +16,9 @@ import { CACHE_POLICIES, QUERY_CACHE_REGISTRY } from "./cache-policy";
  */
 export function assertNoNestedPrefixes(): void {
   const roots = QUERY_CACHE_REGISTRY.map(([root]) => root);
-  const duplicates = roots.filter((root, index) => roots.indexOf(root) !== index);
+  const duplicates = roots.filter(
+    (root, index) => roots.indexOf(root) !== index,
+  );
   if (duplicates.length > 0) {
     throw new Error(
       `[cache] Duplicate query root in QUERY_CACHE_REGISTRY: ${[...new Set(duplicates)].join(", ")}`,

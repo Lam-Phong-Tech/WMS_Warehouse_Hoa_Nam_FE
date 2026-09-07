@@ -384,9 +384,34 @@ svg {
 }
 
 /* Chuyển trang: nội dung route mới hiện lên thay vì "chớp" một cái.
-   Gắn ở <section class="hn-mvp-screen"> trong MainLayout, chạy lại nhờ đổi key. */
+   Gắn ở <section class="hn-mvp-screen"> trong MainLayout, chạy lại nhờ đổi key.
+
+   ĐO ĐƯỢC 07/09/2026: bản cũ chạy `hn-fade-in-up` 280 ms, tức nội dung bắt đầu
+   từ opacity 0 — người dùng chờ THÊM gần 0,3 giây sau khi dữ liệu đã sẵn sàng,
+   và Chrome không tính LCP cho cây đang opacity 0 nên chỉ số cũng bị đội lên
+   đúng chừng đó. Hiệu ứng vẫn giữ, nhưng:
+     · bắt đầu ở opacity .4 (chữ đọc được ngay từ khung hình đầu),
+     · rút xuống 160 ms,
+     · và KHÔNG chạy ở màn đầu tiên sau khi tải trang (thuộc tính
+       [data-hn-first-load] do main.tsx đặt, MainLayout gỡ sau khung hình đầu) —
+       lúc F5 không có trang cũ nào để "chuyển" đi cả. */
 .hn-page-transition {
-  animation: hn-fade-in-up var(--hn-dur-slow) var(--hn-ease-out) backwards;
+  animation: hn-page-enter 160ms var(--hn-ease-out) backwards;
+}
+
+@keyframes hn-page-enter {
+  from {
+    opacity: 0.4;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+html[data-hn-first-load] .hn-page-transition {
+  animation: none;
 }
 
 /* Xếp lớp trễ cho danh sách tĩnh: cha thêm .hn-stagger, con hiện lần lượt. */

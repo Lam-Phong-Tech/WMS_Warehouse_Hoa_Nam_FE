@@ -2,7 +2,14 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useT } from "@/shared/i18n/useT";
-import { Box, Tooltip, UiSelect, UiTextField } from "@/shared/ui";
+import {
+  Box,
+  Tooltip,
+  UiSelect,
+  UiTextField,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
+} from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -20,7 +27,11 @@ import {
 } from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
-import { REVERSAL_STATUS_LABELS } from "@/shared/constants/business-labels";
+import {
+  REVERSAL_REASON_LABELS,
+  REVERSAL_STATUS_LABELS,
+  enumLabelOrText,
+} from "@/shared/constants/business-labels";
 import { useReversalDocuments, reversalKeys } from "../hooks/use-reversal";
 import { ReversalCreateModal } from "../components/ReversalCreateModal";
 import { ReversalDetailModal } from "../components/ReversalDetailModal";
@@ -30,6 +41,7 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -57,7 +69,7 @@ export default function ReversalPage() {
     per_page: perPage,
   });
   const rows = listQuery.data?.rows ?? [];
-    const listPagination = resolveApiPagination(listQuery.data?.meta, {
+  const listPagination = resolveApiPagination(listQuery.data?.meta, {
     page,
     pageSize: perPage,
     rowCount: rows.length,
@@ -103,12 +115,7 @@ export default function ReversalPage() {
       // nên STT tính theo vị trí trong `rows` (thứ tự trang hiện tại từ API)
       // — không còn tự bám theo thứ tự sau khi bấm sắp xếp cột khác như hành
       // vi cũ của antd Table (đã nêu trong báo cáo bàn giao).
-      render: (row) =>
-        mvpRowNumber(
-          page,
-          perPage,
-          rows.findIndex((r) => r.id === row.id),
-        ),
+      render: (row) => mvpRowNumber(page, perPage, rowIndexOf(rows, row)),
     },
     {
       key: "reversal_code",
@@ -187,7 +194,7 @@ export default function ReversalPage() {
           </Tooltip>
           {row.reason_code ? (
             <Box sx={{ fontSize: 12, color: "text.secondary" }}>
-              {row.reason_code}
+              {enumLabelOrText(REVERSAL_REASON_LABELS, row.reason_code)}
             </Box>
           ) : null}
         </div>
@@ -242,7 +249,7 @@ export default function ReversalPage() {
               htmlInput: { "aria-label": t("reverse.list.searchAria") },
             }}
             onChange={(event) => setSearchInput(event.target.value)}
-            sx={{ minWidth: 220 }}
+            sx={TOOLBAR_SEARCH_SX}
           />
           <UiSelect
             value={statusFilter}
@@ -263,7 +270,7 @@ export default function ReversalPage() {
           <UiSelect
             value={perPage}
             aria-label={t("shared.table.rowsPerPageAria")}
-            minWidth={100}
+            minWidth={FILTER_WIDTH.pageSize}
             options={perPageOptions.map((size) => ({
               value: size,
               label: t("shared.table.perPage", { size }),

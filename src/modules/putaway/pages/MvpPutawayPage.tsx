@@ -12,6 +12,7 @@ import {
   UiTabs,
   UiTabPanel,
   UiTextField,
+  FILTER_WIDTH,
 } from "@/shared/ui";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import {
@@ -59,6 +60,7 @@ import {
   type PutawayTask,
 } from "@/modules/putaway/services/putawayService";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 type PutawayFormValues = {
   to_tray_id: string;
@@ -468,7 +470,7 @@ export default function MvpPutawayPage() {
       width: 56,
       hideOnMobile: true,
       // Vị trí trong danh sách GỐC (chưa sắp xếp) — số đi theo dòng.
-      render: (row) => tasks.indexOf(row) + 1,
+      render: (row) => rowIndexOf(tasks, row) + 1,
     },
     {
       key: "box_code",
@@ -590,7 +592,7 @@ export default function MvpPutawayPage() {
       align: "center",
       width: 56,
       hideOnMobile: true,
-      render: (row) => filteredHistory.indexOf(row) + 1,
+      render: (row) => rowIndexOf(filteredHistory, row) + 1,
     },
     {
       key: "created_at",
@@ -790,7 +792,7 @@ export default function MvpPutawayPage() {
                     setHistoryPageSize(Number(value));
                   }
                 }}
-                minWidth={100}
+                minWidth={FILTER_WIDTH.pageSize}
               />
             </Grid>
           </Grid>

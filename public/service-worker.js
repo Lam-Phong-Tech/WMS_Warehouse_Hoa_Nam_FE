@@ -61,6 +61,18 @@ self.addEventListener("activate", (event) => {
             .map((key) => caches.delete(key)),
         ),
       )
+      // NAVIGATION PRELOAD: khi tab đã đóng một lúc, Chrome dừng service worker
+      // để tiết kiệm bộ nhớ. Lần F5 kế tiếp phải KHỞI ĐỘNG LẠI worker (dựng máy
+      // ảo JS, chạy lại file này) TRƯỚC khi handler `fetch` bên dưới được gọi và
+      // mới bắt đầu đi lấy index.html — vài chục tới hơn trăm mili giây chết
+      // ngay đầu mỗi lần tải trang. Bật preload thì trình duyệt gửi request điều
+      // hướng NGAY, song song với việc khởi động worker; handler chỉ việc nhận
+      // lại kết quả qua `event.preloadResponse`.
+      .then(() =>
+        self.registration.navigationPreload
+          ? self.registration.navigationPreload.enable().catch(() => {})
+          : undefined,
+      )
       .then(() => self.clients.claim()),
   );
 });
@@ -126,7 +138,13 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
+      // `event.preloadResponse` là request điều hướng mà trình duyệt đã gửi sẵn
+      // trong lúc worker khởi động (xem navigationPreload ở nhánh `activate`).
+      // Không có nó (trình duyệt không hỗ trợ, hoặc worker vốn đang chạy) thì
+      // rơi về `fetch(request)` — hành vi network-first không đổi.
+      Promise.resolve(event.preloadResponse)
+        .catch(() => undefined)
+        .then((preloaded) => preloaded || fetch(request))
         .then((response) => {
           if (response.ok) {
             const copy = response.clone();

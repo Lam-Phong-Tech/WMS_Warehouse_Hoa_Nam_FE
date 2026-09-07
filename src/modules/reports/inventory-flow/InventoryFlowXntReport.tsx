@@ -25,8 +25,16 @@
  *  · Đường sparkline trong thẻ KPI: mockup vẽ hình trang trí cứng. Ở đây mỗi
  *    thẻ vẽ đúng chuỗi theo ngày của CHÍNH chỉ số đó; kỳ không có ngày nào có
  *    số liệu thì không vẽ (thà trống còn hơn một đường bịa).
+ *  · MỘT BẢN PORT, HAI TRANG (yêu cầu người dùng 2026-09-06). Trang gộp cả ba
+ *    câu chuyện Nhập + Xuất + Tồn khiến khách đọc bị loạn, nên màn này nhận
+ *    thêm prop `variant` và mỗi route chỉ vẽ phần thuộc CHIỀU của nó:
+ *    "Báo cáo nhập kho" (RPT-01) và "Báo cáo xuất kho" (RPT-01B). Phần TỒN
+ *    (tồn đầu/cuối kỳ, khối cân đối, biểu đồ tồn cuối ngày, cột đối soát) bỏ
+ *    hẳn — RPT-02 "Tồn kho & đối soát" đã lo đúng phần đó.
+ *    KHÔNG đổi nguồn số, công thức hay số đo khối nào: chỉ chọn phần hiển thị.
  */
 import {
+  useDeferredValue,
   useCallback,
   useMemo,
   useRef,
@@ -34,8 +42,11 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
+import { useRenderWindow } from "@/shared/components/data-display/useRenderWindow";
+import { WindowedMore } from "@/shared/components/data-display/WindowedMore";
 import dayjs from "dayjs";
 import { UiSelect, UiVuexyDateRangePicker, VuexyDemoIcon } from "@/shared/ui";
+import { useTabView } from "@/shared/ui/use-tab-view";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -49,6 +60,9 @@ import {
   reportStatusLabel,
 } from "@/modules/reports/operations/report-labels";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { useReportRangeAdvice } from "@/modules/reports/operations/report-coverage";
+import { LEDGER_COVERAGE_PROBE } from "@/modules/reports/operations/report-probes";
+import { ReportRangeAdviceBanner } from "@/modules/reports/operations/ReportRangeAdviceBanner";
 import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
 import {
   optionsFromRows,
@@ -86,15 +100,35 @@ const FLOW_COLORS = {
   reversal: "var(--hnf-chart-reversal)",
 } as const;
 
-/** Màu nét biểu đồ "Xu hướng tồn cuối ngày". */
-const CLOSING_COLOR = "var(--hnf-chart-closing)";
-
 /** Dấu trừ của mockup là U+2212, không phải dấu gạch nối. */
 const MINUS = "−";
 
 type ViewMode = "table" | "snapshot";
 
 type SeriesKey = "inbound" | "product" | "component" | "reversal";
+
+/** Chiều nghiệp vụ của trang — mỗi route dựng đúng một biến thể. */
+export type FlowVariant = "inbound" | "outbound";
+
+/**
+ * Chuỗi biểu đồ / cột bảng thuộc từng chiều.
+ *
+ * "Hoàn tác" có mặt ở CẢ hai chiều: `reversal_unlinked_net` là phần hoàn tác
+ * KHÔNG truy được chứng từ gốc, nên báo cáo không suy diễn nó thuộc nhập hay
+ * xuất — thà hiện ở cả hai còn hơn giấu mất một số đã ghi sổ.
+ */
+const VARIANT_SERIES: Readonly<Record<FlowVariant, readonly SeriesKey[]>> = {
+  inbound: ["inbound", "reversal"],
+  outbound: ["product", "component", "reversal"],
+};
+
+/** Loại chứng từ hiện ở mục "Lịch sử chứng từ" của từng chiều. */
+const VARIANT_DOC_TYPES: Readonly<
+  Record<FlowVariant, readonly FlowDocument["doc_type"][]>
+> = {
+  inbound: ["INBOUND", "REVERSAL"],
+  outbound: ["OUTBOUND", "REVERSAL"],
+};
 
 /** Khung sparkline `viewBox="0 0 46 18"` của mockup. */
 const SPARK = { left: 2, right: 44, top: 4, bottom: 15 };
@@ -177,36 +211,6 @@ function KpiCard({
   );
 }
 
-function EquationItem({
-  tone,
-  operator,
-  label,
-  impact,
-  value,
-  result = false,
-}: {
-  tone: KpiTone;
-  operator?: string;
-  label: string;
-  impact: string;
-  value: number;
-  result?: boolean;
-}) {
-  return (
-    <article
-      className={result ? "equation-item result" : "equation-item"}
-      data-tone={tone}
-      data-operator={operator}
-    >
-      <div className="equation-item-head">
-        <span className="equation-label">{label}</span>
-        <span className="equation-impact">{impact}</span>
-      </div>
-      <strong className="equation-value">{fmt(value)}</strong>
-    </article>
-  );
-}
-
 /** Ba biến thể thẻ chứng từ của mockup, khoá theo loại chứng từ. */
 const DOCUMENT_STYLE: Readonly<
   Record<FlowDocument["doc_type"], { className: string; icon: VuexyIconName }>
@@ -225,8 +229,46 @@ const DOCUMENT_STYLE: Readonly<
   },
 };
 
-export default function InventoryFlowXntReport() {
+export default function InventoryFlowXntReport({
+  variant,
+}: {
+  variant: FlowVariant;
+}) {
   const t = useT();
+  const seriesKeys = VARIANT_SERIES[variant];
+  const docTypes = VARIANT_DOC_TYPES[variant];
+  /** Chữ riêng của từng chiều; mọi nhãn còn lại dùng chung một bộ khoá. */
+  const copy = useMemo(
+    () =>
+      variant === "inbound"
+        ? {
+            breadcrumb: t("reports.inventoryFlowReport.inboundBreadcrumb"),
+            title: t("reports.inventoryFlowReport.inboundTitle"),
+            subtitle: t("reports.inventoryFlowReport.inboundSubtitle"),
+            quickTitle: t("reports.inventoryFlowReport.inboundQuickTitle"),
+            detailTitle: t("reports.inventoryFlowReport.inboundDetailTitle"),
+            perSkuTitle: t("reports.inventoryFlowReport.inboundPerSkuTitle"),
+            chartTitle: t("reports.inventoryFlowReport.inboundChartTitle"),
+            chartSubtitle: t(
+              "reports.inventoryFlowReport.inboundChartSubtitle",
+            ),
+            chartAria: t("reports.inventoryFlowReport.inboundChartAria"),
+          }
+        : {
+            breadcrumb: t("reports.inventoryFlowReport.outboundBreadcrumb"),
+            title: t("reports.inventoryFlowReport.outboundTitle"),
+            subtitle: t("reports.inventoryFlowReport.outboundSubtitle"),
+            quickTitle: t("reports.inventoryFlowReport.outboundQuickTitle"),
+            detailTitle: t("reports.inventoryFlowReport.outboundDetailTitle"),
+            perSkuTitle: t("reports.inventoryFlowReport.outboundPerSkuTitle"),
+            chartTitle: t("reports.inventoryFlowReport.outboundChartTitle"),
+            chartSubtitle: t(
+              "reports.inventoryFlowReport.outboundChartSubtitle",
+            ),
+            chartAria: t("reports.inventoryFlowReport.outboundChartAria"),
+          },
+    [t, variant],
+  );
   const kindLabels = useMemo<Readonly<Record<string, string>>>(
     () => ({
       PRODUCT: t("reports.inventoryFlowReport.kindProduct"),
@@ -269,7 +311,26 @@ export default function InventoryFlowXntReport() {
   const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
-  const [view, setView] = useState<ViewMode>("table");
+    /**
+   * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
+   * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
+   * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
+   * @/shared/ui/use-tab-view.
+   */
+  const viewTab = useTabView<ViewMode>("table");
+  const view = viewTab.view;
+  const shownView = viewTab.shown;
+  const setView = viewTab.select;
+  /**
+   * Tab đổi view: nút bấm đọc `view` (cập nhật GẤP → tô sáng tức thì), còn các
+   * PANEL nặng đọc `deferredView` (bản trễ, React vẽ ở lượt ngắt được). Đo trước khi
+   * sửa (Playwright, CPU x4): một cú bấm "Dạng hộp" khoá luồng chính tới ~930 ms
+   * vì panel mới (bảng hàng trăm dòng / lưới thẻ) phải layout + paint trọn một
+   * lượt cùng lúc với việc tô sáng tab. Tách hai lượt thì tab phản hồi ngay,
+   * panel theo sau.
+   */
+  const deferredView = useDeferredValue(view);
+
   /** Bốn chú giải của biểu đồ luồng — mockup để nút chết, đây bật/tắt thật. */
   const [flowSeries, setFlowSeries] = useState<Record<SeriesKey, boolean>>({
     inbound: true,
@@ -277,7 +338,6 @@ export default function InventoryFlowXntReport() {
     component: true,
     reversal: true,
   });
-  const [closingVisible, setClosingVisible] = useState(true);
 
   /**
    * Dòng đang mở hộp thoại được CHỤP tại thời điểm bấm (mockup cũng vậy:
@@ -294,6 +354,23 @@ export default function InventoryFlowXntReport() {
       from: range.from.format(ISO_DATE),
       to: range.to.format(ISO_DATE),
     });
+
+  /**
+   * Gợi ý bộ lọc kỳ. Ngày "có phát sinh" đọc từ chính sổ movement mà biểu đồ
+   * theo ngày đang vẽ — KHÔNG dùng `snapshot.rows` (đã gộp theo SKU, mất mốc
+   * thời gian) để lời khuyên và thứ người dùng nhìn thấy luôn cùng một nguồn.
+   */
+  const dataDays = useMemo(
+    () => snapshot.ledger.map((row) => row.posted_at.slice(0, 10)),
+    [snapshot.ledger],
+  );
+  const rangeAdvice = useReportRangeAdvice({
+    from: range.from.format(ISO_DATE),
+    to: range.to.format(ISO_DATE),
+    dataDays,
+    loading,
+    probe: LEDGER_COVERAGE_PROBE,
+  });
 
   // ── Tập dòng trong phạm vi bộ lọc ──────────────────────────────────────
   const rowsInScope = useMemo(() => {
@@ -387,34 +464,17 @@ export default function InventoryFlowXntReport() {
     [daily],
   );
 
-  /** Sparkline "Tồn đầu kỳ": số dư mở của TỪNG ngày trong kỳ. */
-  const openingSpark = useMemo(() => {
-    const values = [summary.opening];
-    for (let index = 0; index < daily.length - 1; index += 1) {
-      values.push(daily[index].closing);
-    }
-    return values;
-  }, [daily, summary.opening]);
-
-  // ── Đối soát phương trình của cả kỳ ────────────────────────────────────
-  const expectedClosing =
-    summary.opening +
-    summary.receiptNet -
-    summary.issueNet -
-    summary.componentNet +
-    summary.reversalUnlinked;
-  const periodDelta = summary.closing - expectedClosing;
-  const periodMatched = Math.abs(periodDelta) <= 1e-6;
-  const allRowsMatched = rowsInScope.every((row) => row.matched);
-
   // ── Chứng từ trong phạm vi lọc ─────────────────────────────────────────
   const documentsInScope = useMemo(() => {
-    if (!filtered) return snapshot.documents;
-    return snapshot.documents.filter(
+    const ofVariant = snapshot.documents.filter((document) =>
+      docTypes.includes(document.doc_type),
+    );
+    if (!filtered) return ofVariant;
+    return ofVariant.filter(
       (document) =>
         document.drillKey !== "" && codesInScope.has(document.drillKey),
     );
-  }, [filtered, snapshot.documents, codesInScope]);
+  }, [filtered, snapshot.documents, codesInScope, docTypes]);
 
   /**
    * Bộ lọc RIÊNG của khối "Đối chiếu từng SKU". Bộ lọc đầu trang đổi luôn KPI,
@@ -439,23 +499,6 @@ export default function InventoryFlowXntReport() {
               (value) => kindLabels[value] ?? value,
             ),
           match: (row, value) => row.sku_type === value,
-        },
-        {
-          key: "matched",
-          placeholder: t("reports.inventoryFlowReport.anyMatchStatus"),
-          options: [
-            {
-              value: "matched",
-              label: t("reports.inventoryFlowReport.matched"),
-            },
-            {
-              value: "mismatch",
-              label: t("reports.inventoryFlowReport.mismatch"),
-            },
-          ],
-          match: (row, value) =>
-            value === "matched" ? row.matched : !row.matched,
-          minWidth: 200,
         },
       ],
     }),
@@ -489,7 +532,7 @@ export default function InventoryFlowXntReport() {
                 documentTitles[value as FlowDocument["doc_type"]] ?? value,
             ),
           match: (row, value) => row.doc_type === value,
-          minWidth: 190,
+          minWidth: 160,
         },
         {
           key: "status",
@@ -501,6 +544,7 @@ export default function InventoryFlowXntReport() {
               (value) => reportStatusLabel(value),
             ),
           match: (row, value) => row.status === value,
+          minWidth: 150,
         },
       ],
     }),
@@ -510,6 +554,14 @@ export default function InventoryFlowXntReport() {
     documentsInScope,
     documentSectionFilterConfig,
   );
+
+  /**
+   * Cửa sổ vẽ cho lưới thẻ dài — xem useRenderWindow. Con số ở KPI/biểu đồ và
+   * bộ đếm của khối vẫn tính trên TOÀN BỘ tập đã lọc; chỉ số thẻ được vẽ ra DOM
+   * là bị cắt, và người đọc luôn thấy "đang hiển thị N/M".
+   */
+  const skuSectionWindow = useRenderWindow(skuSectionFilter.rows);
+  const documentSectionWindow = useRenderWindow(documentSectionFilter.rows);
 
   // ── Hộp thoại đối soát ─────────────────────────────────────────────────
   const drillRow = drill?.row ?? null;
@@ -550,7 +602,6 @@ export default function InventoryFlowXntReport() {
       component: true,
       reversal: true,
     });
-    setClosingVisible(true);
   }, []);
 
   const { refreshing, refresh } = useReportRefresh({
@@ -602,18 +653,6 @@ export default function InventoryFlowXntReport() {
         body: <>{t("reports.inventoryFlowReport.loadingData")}</>,
       };
     }
-    if (!periodMatched) {
-      return {
-        tone: "page-alert",
-        body: (
-          <>
-            {t("reports.inventoryFlowReport.deltaWarningA")}{" "}
-            <strong>{fmt(periodDelta)}</strong>{" "}
-            {t("reports.inventoryFlowReport.deltaWarningB")}
-          </>
-        ),
-      };
-    }
     return null;
   })();
 
@@ -642,7 +681,7 @@ export default function InventoryFlowXntReport() {
       },
     ] as Array<{ key: SeriesKey; label: string; color: string }>
   )
-    .filter((item) => flowSeries[item.key])
+    .filter((item) => seriesKeys.includes(item.key) && flowSeries[item.key])
     .map((item) => ({
       key: item.key,
       label: item.label,
@@ -668,7 +707,7 @@ export default function InventoryFlowXntReport() {
           <span aria-hidden="true">/</span>
           <span>{t("reports.inventoryFlowReport.breadcrumbReports")}</span>
           <span aria-hidden="true">/</span>
-          <strong>{t("reports.inventoryFlowReport.breadcrumbCurrent")}</strong>
+          <strong>{copy.breadcrumb}</strong>
         </div>
 
         <section className="page-header" aria-labelledby="rpt01-page-title">
@@ -678,10 +717,8 @@ export default function InventoryFlowXntReport() {
                 code: INVENTORY_FLOW_REPORT_CODE,
               })}
             </span>
-            <h1 id="rpt01-page-title">
-              {t("reports.inventoryFlowReport.title")}
-            </h1>
-            <p>{t("reports.inventoryFlowReport.subtitle")}</p>
+            <h1 id="rpt01-page-title">{copy.title}</h1>
+            <p>{copy.subtitle}</p>
           </div>
           <div className="scope-block">
             <span className="chip chip-primary">{warehouseLabel}</span>
@@ -821,6 +858,16 @@ export default function InventoryFlowXntReport() {
           </div>
         </section>
 
+        <ReportRangeAdviceBanner
+          advice={rangeAdvice}
+          onApply={(next) =>
+            setRange({
+              from: dayjs(next.from).startOf("day"),
+              to: dayjs(next.to).startOf("day"),
+            })
+          }
+        />
+
         {pageAlert ? (
           <div className={pageAlert.tone} role="note">
             {pageAlert.body}
@@ -834,45 +881,46 @@ export default function InventoryFlowXntReport() {
               <span className="eyebrow">
                 {t("reports.inventoryFlowReport.quickEyebrow")}
               </span>
-              <h2 id="rpt01-quick-title">
-                {t("reports.inventoryFlowReport.quickTitle")}
-              </h2>
+              <h2 id="rpt01-quick-title">{copy.quickTitle}</h2>
             </div>
             <span className="section-meta">{periodMeta}</span>
           </div>
-          <div className="kpi-grid report-kpi-grid">
-            <KpiCard
-              tone="opening"
-              icon="warehouse"
-              label={t("reports.inventoryFlowReport.kpiOpening")}
-              value={summary.opening}
-              foot={t("reports.inventoryFlowReport.kpiOpeningFoot")}
-              spark={openingSpark}
-            />
-            <KpiCard
-              tone="inbound"
-              icon="package-plus"
-              label={t("reports.inventoryFlowReport.kpiInbound")}
-              value={summary.receiptNet}
-              foot={t("reports.inventoryFlowReport.kpiInboundFoot")}
-              spark={daily.map((point) => point.inbound)}
-            />
-            <KpiCard
-              tone="product"
-              icon="package-minus"
-              label={t("reports.inventoryFlowReport.kpiProduct")}
-              value={summary.issueNet}
-              foot={t("reports.inventoryFlowReport.kpiProductFoot")}
-              spark={daily.map((point) => point.product)}
-            />
-            <KpiCard
-              tone="component"
-              icon="briefcase-medical"
-              label={t("reports.inventoryFlowReport.kpiComponent")}
-              value={summary.componentNet}
-              foot={t("reports.inventoryFlowReport.kpiComponentFoot")}
-              spark={daily.map((point) => point.component)}
-            />
+          <div
+            className={
+              variant === "inbound"
+                ? "kpi-grid report-kpi-grid is-inbound"
+                : "kpi-grid report-kpi-grid is-outbound"
+            }
+          >
+            {variant === "inbound" ? (
+              <KpiCard
+                tone="inbound"
+                icon="package-plus"
+                label={t("reports.inventoryFlowReport.kpiInbound")}
+                value={summary.receiptNet}
+                foot={t("reports.inventoryFlowReport.kpiInboundFoot")}
+                spark={daily.map((point) => point.inbound)}
+              />
+            ) : (
+              <>
+                <KpiCard
+                  tone="product"
+                  icon="package-minus"
+                  label={t("reports.inventoryFlowReport.kpiProduct")}
+                  value={summary.issueNet}
+                  foot={t("reports.inventoryFlowReport.kpiProductFoot")}
+                  spark={daily.map((point) => point.product)}
+                />
+                <KpiCard
+                  tone="component"
+                  icon="briefcase-medical"
+                  label={t("reports.inventoryFlowReport.kpiComponent")}
+                  value={summary.componentNet}
+                  foot={t("reports.inventoryFlowReport.kpiComponentFoot")}
+                  spark={daily.map((point) => point.component)}
+                />
+              </>
+            )}
             <KpiCard
               tone="reversal"
               icon="refresh-cw"
@@ -881,126 +929,17 @@ export default function InventoryFlowXntReport() {
               foot={t("reports.inventoryFlowReport.kpiReversalFoot")}
               spark={daily.map((point) => point.reversal)}
             />
-            <KpiCard
-              tone="closing"
-              icon="warehouse"
-              label={t("reports.inventoryFlowReport.kpiClosing")}
-              value={summary.closing}
-              foot={t("reports.inventoryFlowReport.kpiClosingFoot")}
-              spark={daily.map((point) => point.closing)}
-            />
           </div>
         </section>
 
-        {/* ── Cân đối tồn theo kỳ ───────────────────────────────────────── */}
-        <section aria-labelledby="rpt01-reconcile-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("reports.inventoryFlowReport.reconcileEyebrow")}
-              </span>
-              <h2 id="rpt01-reconcile-title">
-                {t("reports.inventoryFlowReport.reconcileTitle")}
-              </h2>
-            </div>
-            <span className="section-meta">
-              {t("reports.inventoryFlowReport.reconcileMeta")}
-            </span>
-          </div>
-          <article className="card equation-card">
-            <EquationItem
-              tone="opening"
-              label={t("reports.inventoryFlowReport.kpiOpening")}
-              impact={t("reports.inventoryFlowReport.impactOpening")}
-              value={summary.opening}
-            />
-            <EquationItem
-              tone="inbound"
-              operator="+"
-              label={t("reports.inventoryFlowReport.kpiInbound")}
-              impact={t("reports.inventoryFlowReport.impactIncrease")}
-              value={summary.receiptNet}
-            />
-            <EquationItem
-              tone="product"
-              operator={MINUS}
-              label={t("reports.inventoryFlowReport.kpiProduct")}
-              impact={t("reports.inventoryFlowReport.impactDecrease")}
-              value={summary.issueNet}
-            />
-            <EquationItem
-              tone="component"
-              operator={MINUS}
-              label={t("reports.inventoryFlowReport.kpiComponent")}
-              impact={t("reports.inventoryFlowReport.impactDecrease")}
-              value={summary.componentNet}
-            />
-            <EquationItem
-              tone="reversal"
-              operator="+"
-              label={t("reports.inventoryFlowReport.kpiReversal")}
-              impact={t("reports.inventoryFlowReport.impactAdjust")}
-              value={summary.reversalUnlinked}
-            />
-            <EquationItem
-              tone="closing"
-              operator="="
-              label={t("reports.inventoryFlowReport.kpiClosing")}
-              impact={t("reports.inventoryFlowReport.impactClosing")}
-              value={summary.closing}
-              result
-            />
-            <div className="equation-note">
-              <div className="equation-formula">
-                <span className="equation-note-label">
-                  {t("reports.inventoryFlowReport.formulaLabel")}
-                </span>
-                <strong>
-                  {fmt(summary.opening)} + {fmt(summary.receiptNet)} {MINUS}{" "}
-                  {fmt(summary.issueNet)} {MINUS} {fmt(summary.componentNet)} +{" "}
-                  {fmt(summary.reversalUnlinked)} = {fmt(expectedClosing)}
-                </strong>
-              </div>
-              <div
-                className={
-                  periodMatched
-                    ? "equation-status"
-                    : "equation-status is-mismatch"
-                }
-              >
-                <span className="equation-status-icon" aria-hidden="true">
-                  <VuexyDemoIcon
-                    name={periodMatched ? "circle-dot" : "triangle-alert"}
-                  />
-                </span>
-                <div>
-                  <span>
-                    {t("reports.inventoryFlowReport.reconcileStatus")}
-                  </span>
-                  <strong>
-                    {t("reports.inventoryFlowReport.statusDelta", {
-                      status: periodMatched
-                        ? t("reports.inventoryFlowReport.statusMatched")
-                        : t("reports.inventoryFlowReport.mismatch"),
-                      delta: fmt(periodDelta),
-                    })}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </article>
-        </section>
-
-        {/* ── Chi tiết cân đối tồn kho ──────────────────────────────────── */}
+        {/* ── Chi tiết theo SKU ─────────────────────────────────────────── */}
         <section aria-labelledby="rpt01-detail-title">
           <div className="section-heading">
             <div>
               <span className="eyebrow">
                 {t("reports.inventoryFlowReport.detailEyebrow")}
               </span>
-              <h2 id="rpt01-detail-title">
-                {t("reports.inventoryFlowReport.detailTitle")}
-              </h2>
+              <h2 id="rpt01-detail-title">{copy.detailTitle}</h2>
             </div>
             <span className="section-meta">
               {t("reports.inventoryFlowReport.skuInSnapshot", {
@@ -1011,25 +950,16 @@ export default function InventoryFlowXntReport() {
           <article className="card report-table-card">
             <header className="card-head">
               <div>
-                <h3>{t("reports.inventoryFlowReport.perSkuTitle")}</h3>
+                <h3>{copy.perSkuTitle}</h3>
                 <span className="card-subtitle">
                   {t("reports.inventoryFlowReport.perSkuSubtitle")}
                 </span>
               </div>
-              {allRowsMatched ? (
-                <span className="chip chip-success">
-                  {t("reports.inventoryFlowReport.formulaMatched")}
-                </span>
-              ) : (
-                <span className="chip chip-error">
-                  {t("reports.inventoryFlowReport.formulaMismatch")}
-                </span>
-              )}
             </header>
 
             <SectionFilterBar
               state={skuSectionFilter}
-              label={t("reports.inventoryFlowReport.perSkuTitle")}
+              label={copy.perSkuTitle}
               unit="SKU"
               data-testid="rpt01-sku-section-filter"
             />
@@ -1043,15 +973,15 @@ export default function InventoryFlowXntReport() {
                 ref={tableTabRef}
                 id="rpt01-tab-table"
                 className={
-                  view === "table"
+                  shownView === "table"
                     ? "button button-primary"
                     : "button button-ghost"
                 }
                 type="button"
                 role="tab"
-                aria-selected={view === "table"}
+                aria-selected={shownView === "table"}
                 aria-controls="rpt01-panel-table"
-                tabIndex={view === "table" ? 0 : -1}
+                tabIndex={shownView === "table" ? 0 : -1}
                 onClick={() => setView("table")}
                 onKeyDown={onTabKeyDown}
               >
@@ -1062,15 +992,15 @@ export default function InventoryFlowXntReport() {
                 ref={snapshotTabRef}
                 id="rpt01-tab-snapshot"
                 className={
-                  view === "snapshot"
+                  shownView === "snapshot"
                     ? "button button-primary"
                     : "button button-ghost"
                 }
                 type="button"
                 role="tab"
-                aria-selected={view === "snapshot"}
+                aria-selected={shownView === "snapshot"}
                 aria-controls="rpt01-panel-snapshot"
-                tabIndex={view === "snapshot" ? 0 : -1}
+                tabIndex={shownView === "snapshot" ? 0 : -1}
                 onClick={() => setView("snapshot")}
                 onKeyDown={onTabKeyDown}
               >
@@ -1083,7 +1013,7 @@ export default function InventoryFlowXntReport() {
               id="rpt01-panel-table"
               role="tabpanel"
               aria-labelledby="rpt01-tab-table"
-              hidden={view !== "table"}
+              hidden={deferredView !== "table"}
             >
               <div className="table-wrap">
                 <table className="report-table">
@@ -1093,32 +1023,33 @@ export default function InventoryFlowXntReport() {
                       <th>{t("reports.inventoryFlowReport.colSku")}</th>
                       <th>{t("reports.inventoryFlowReport.colKind")}</th>
                       <th>{t("reports.inventoryFlowReport.colUnit")}</th>
-                      <th className="num">
-                        {t("reports.inventoryFlowReport.colOpening")}
-                      </th>
-                      <th className="num">
-                        {t("reports.inventoryFlowReport.colReceiptNet")}
-                      </th>
-                      <th className="num">
-                        {t("reports.inventoryFlowReport.colIssueNet")}
-                      </th>
-                      <th className="num">
-                        {t("reports.inventoryFlowReport.colComponentNet")}
-                      </th>
+                      {variant === "inbound" ? (
+                        <th className="num">
+                          {t("reports.inventoryFlowReport.colReceiptNet")}
+                        </th>
+                      ) : (
+                        <>
+                          <th className="num">
+                            {t("reports.inventoryFlowReport.colIssueNet")}
+                          </th>
+                          <th className="num">
+                            {t("reports.inventoryFlowReport.colComponentNet")}
+                          </th>
+                        </>
+                      )}
                       <th className="num">
                         {t("reports.inventoryFlowReport.colReversal")}
                       </th>
-                      <th className="num">
-                        {t("reports.inventoryFlowReport.colClosing")}
-                      </th>
-                      <th>{t("reports.inventoryFlowReport.colReconcile")}</th>
                       <th className="num" />
                     </tr>
                   </thead>
                   <tbody>
                     {skuSectionFilter.rows.length === 0 ? (
                       <tr>
-                        <td className="table-empty" colSpan={12}>
+                        <td
+                          className="table-empty"
+                          colSpan={variant === "inbound" ? 7 : 8}
+                        >
                           {loading
                             ? t("reports.inventoryFlowReport.loadingData")
                             : skuSectionFilter.active
@@ -1140,28 +1071,18 @@ export default function InventoryFlowXntReport() {
                           </td>
                           <td>{kindLabels[row.sku_type] ?? EMPTY_TEXT}</td>
                           <td>{row.unit === "" ? EMPTY_TEXT : row.unit}</td>
-                          <td className="num">{fmt(row.opening)}</td>
-                          <td className="num">{fmt(row.receipt_net)}</td>
-                          <td className="num">{fmt(row.issue_net)}</td>
-                          <td className="num">
-                            {fmt(row.component_issue_net)}
-                          </td>
+                          {variant === "inbound" ? (
+                            <td className="num">{fmt(row.receipt_net)}</td>
+                          ) : (
+                            <>
+                              <td className="num">{fmt(row.issue_net)}</td>
+                              <td className="num">
+                                {fmt(row.component_issue_net)}
+                              </td>
+                            </>
+                          )}
                           <td className="num">
                             {fmt(row.reversal_unlinked_net)}
-                          </td>
-                          <td className="num">
-                            <strong>{fmt(row.closing)}</strong>
-                          </td>
-                          <td>
-                            {row.matched ? (
-                              <span className="match-chip">
-                                {t("reports.inventoryFlowReport.matched")}
-                              </span>
-                            ) : (
-                              <span className="chip chip-error">
-                                {t("reports.inventoryFlowReport.mismatch")}
-                              </span>
-                            )}
                           </td>
                           <td className="num">
                             <button
@@ -1186,7 +1107,7 @@ export default function InventoryFlowXntReport() {
               id="rpt01-panel-snapshot"
               role="tabpanel"
               aria-labelledby="rpt01-tab-snapshot"
-              hidden={view !== "snapshot"}
+              hidden={deferredView !== "snapshot"}
             >
               {skuSectionFilter.rows.length === 0 ? (
                 <div className="state-box">
@@ -1203,7 +1124,7 @@ export default function InventoryFlowXntReport() {
                 </div>
               ) : (
                 <div className="report-snapshot-grid">
-                  {skuSectionFilter.rows.map((row, index) => (
+                  {skuSectionWindow.visible.map((row, index) => (
                     <article className="report-slice" key={row.sku_code}>
                       <div className="report-slice-head">
                         <div>
@@ -1221,46 +1142,38 @@ export default function InventoryFlowXntReport() {
                               : row.warehouse_code}
                           </span>
                         </div>
-                        {row.matched ? (
-                          <span className="match-chip">
-                            {t("reports.inventoryFlowReport.matched")}
-                          </span>
-                        ) : (
-                          <span className="chip chip-error">
-                            {t("reports.inventoryFlowReport.mismatch")}
-                          </span>
-                        )}
                       </div>
                       <dl className="report-slice-values">
+                        {variant === "inbound" ? (
+                          <div>
+                            <dt>
+                              {t("reports.inventoryFlowReport.colReceiptNet")}
+                            </dt>
+                            <dd>{fmt(row.receipt_net)}</dd>
+                          </div>
+                        ) : (
+                          <>
+                            <div>
+                              <dt>
+                                {t("reports.inventoryFlowReport.colIssueNet")}
+                              </dt>
+                              <dd>{fmt(row.issue_net)}</dd>
+                            </div>
+                            <div>
+                              <dt>
+                                {t(
+                                  "reports.inventoryFlowReport.colComponentNet",
+                                )}
+                              </dt>
+                              <dd>{fmt(row.component_issue_net)}</dd>
+                            </div>
+                          </>
+                        )}
                         <div>
                           <dt>
-                            {t("reports.inventoryFlowReport.cardOpening")}
+                            {t("reports.inventoryFlowReport.colReversal")}
                           </dt>
-                          <dd>{fmt(row.opening)}</dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {t("reports.inventoryFlowReport.colReceiptNet")}
-                          </dt>
-                          <dd>{fmt(row.receipt_net)}</dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {t("reports.inventoryFlowReport.colIssueNet")}
-                          </dt>
-                          <dd>{fmt(row.issue_net)}</dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {t("reports.inventoryFlowReport.colComponentNet")}
-                          </dt>
-                          <dd>{fmt(row.component_issue_net)}</dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {t("reports.inventoryFlowReport.cardClosing")}
-                          </dt>
-                          <dd>{fmt(row.closing)}</dd>
+                          <dd>{fmt(row.reversal_unlinked_net)}</dd>
                         </div>
                       </dl>
                       <button
@@ -1274,82 +1187,70 @@ export default function InventoryFlowXntReport() {
                       </button>
                     </article>
                   ))}
+                  <WindowedMore window={skuSectionWindow} />
                 </div>
               )}
             </div>
           </article>
         </section>
 
-        {/* ── Luồng và xu hướng ─────────────────────────────────────────── */}
-        <section aria-labelledby="rpt01-analysis-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("reports.inventoryFlowReport.analysisEyebrow")}
+        {/*
+         * ── Luồng và xu hướng · Lịch sử chứng từ ────────────────────────
+         * Hai khối đứng cạnh nhau 6/6 (yêu cầu người dùng 2026-09-06): trang
+         * một chiều không còn đủ nội dung để mỗi khối chiếm trọn bề ngang —
+         * biểu đồ bị kéo quá to còn lưới chứng từ thì thưa. Bề rộng nửa trang
+         * cũng đúng bằng bề rộng thẻ biểu đồ của mockup 8.1 gốc.
+         */}
+        <div className="report-split-grid">
+          <section aria-labelledby="rpt01-analysis-title">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">
+                  {t("reports.inventoryFlowReport.analysisEyebrow")}
+                </span>
+                <h2 id="rpt01-analysis-title">
+                  {t("reports.inventoryFlowReport.analysisTitle")}
+                </h2>
+              </div>
+              <span className="section-meta">
+                {t("reports.inventoryFlowReport.analysisMeta")}
               </span>
-              <h2 id="rpt01-analysis-title">
-                {t("reports.inventoryFlowReport.analysisTitle")}
-              </h2>
             </div>
-            <span className="section-meta">
-              {t("reports.inventoryFlowReport.analysisMeta")}
-            </span>
-          </div>
-          <div className="analysis-grid">
-            <article
-              className="card chart-card report-chart-card"
-              data-chart-series="movement"
-            >
-              <header className="card-head chart-card-head">
-                <div className="chart-heading">
-                  <span className="chart-icon" aria-hidden="true">
-                    <VuexyDemoIcon name="chart-column-big" />
-                  </span>
-                  <div>
-                    <h3>{t("reports.inventoryFlowReport.flowChartTitle")}</h3>
-                    <span className="card-subtitle">
-                      {t("reports.inventoryFlowReport.flowChartSubtitle")}
-                    </span>
-                  </div>
-                </div>
-                <div className="chart-head-meta">
-                  <span className="chart-unit">
-                    {t("reports.inventoryFlowReport.chartUnit")}
-                  </span>
-                  <span className="chart-current">
-                    <small>
-                      {t("reports.inventoryFlowReport.colReceiptNet")}
-                    </small>
-                    <strong>{fmt(summary.receiptNet)}</strong>
-                  </span>
-                </div>
-              </header>
-              <div className="chart-wrap">
-                <div className="chart-legend">
-                  {(
-                    [
-                      {
-                        key: "inbound",
-                        label: t("reports.inventoryFlowReport.seriesInbound"),
-                        dot: "legend-inbound",
-                      },
-                      {
-                        key: "product",
-                        label: t("reports.inventoryFlowReport.seriesProduct"),
-                        dot: "legend-product",
-                      },
-                      {
-                        key: "component",
-                        label: t("reports.inventoryFlowReport.seriesComponent"),
-                        dot: "legend-component",
-                      },
-                      {
-                        key: "reversal",
-                        label: t("reports.inventoryFlowReport.seriesReversal"),
-                        dot: "legend-reversal",
-                      },
-                    ] as Array<{ key: SeriesKey; label: string; dot: string }>
-                  ).map((item) => (
+            {/*
+             * Chú giải đứng THÀNH THANH RIÊNG phía trên thẻ, không nằm trong thẻ
+             * như mockup 8.1: cột bên phải có thanh lọc riêng của khối, nếu cột
+             * trái vào thẳng thẻ thì thẻ hai bên lệch nhau đúng một tầng. Chú
+             * giải vốn cũng là control (bật/tắt chuỗi) nên đứng cùng hàng với bộ
+             * lọc là đúng vai, không phải bày ra cho cân.
+             */}
+            <div className="report-chart-toolbar">
+              <div className="chart-legend">
+                {(
+                  [
+                    {
+                      key: "inbound",
+                      label: t("reports.inventoryFlowReport.seriesInbound"),
+                      dot: "legend-inbound",
+                    },
+                    {
+                      key: "product",
+                      label: t("reports.inventoryFlowReport.seriesProduct"),
+                      dot: "legend-product",
+                    },
+                    {
+                      key: "component",
+                      label: t("reports.inventoryFlowReport.seriesComponent"),
+                      dot: "legend-component",
+                    },
+                    {
+                      key: "reversal",
+                      label: t("reports.inventoryFlowReport.seriesReversal"),
+                      dot: "legend-reversal",
+                    },
+                  ] as Array<{ key: SeriesKey; label: string; dot: string }>
+                )
+                  .filter((item) => seriesKeys.includes(item.key))
+                  .map((item) => (
                     <button
                       key={item.key}
                       className="legend-button"
@@ -1369,273 +1270,231 @@ export default function InventoryFlowXntReport() {
                       {item.label}
                     </button>
                   ))}
-                </div>
-                <div className="chart-plot">
-                  {hasDays ? (
-                    <InventoryFlowChart
-                      labels={axisLabels}
-                      series={flowChartSeries}
-                      ariaLabel={t("reports.inventoryFlowReport.flowChartAria")}
-                    />
-                  ) : (
-                    <div className="chart-empty">
-                      {t("reports.inventoryFlowReport.flowChartEmpty")}
-                    </div>
-                  )}
-                </div>
               </div>
-              <details className="chart-table">
-                <summary>{t("reports.inventoryFlowReport.altTable")}</summary>
-                <table>
-                  <thead>
-                    <tr>
-                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
-                      <th>{t("reports.inventoryFlowReport.colDay")}</th>
-                      <th>{t("reports.inventoryFlowReport.seriesInbound")}</th>
-                      <th>{t("reports.inventoryFlowReport.seriesProduct")}</th>
-                      <th>
-                        {t("reports.inventoryFlowReport.seriesComponent")}
-                      </th>
-                      <th>{t("reports.inventoryFlowReport.seriesReversal")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {daily.map((point, index) => (
-                      <tr key={point.date}>
-                        <td className="stt-col">{index + 1}</td>
-                        <td>{axisDayLabel(point.date)}</td>
-                        <td>{fmt(point.inbound)}</td>
-                        <td>{fmt(point.product)}</td>
-                        <td>{fmt(point.component)}</td>
-                        <td>{fmt(point.reversal)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </details>
-            </article>
-
-            <article
-              className="card chart-card report-chart-card"
-              data-chart-series="closing"
-            >
-              <header className="card-head chart-card-head">
-                <div className="chart-heading">
-                  <span
-                    className="chart-icon chart-icon-success"
-                    aria-hidden="true"
-                  >
-                    <VuexyDemoIcon name="warehouse" />
-                  </span>
-                  <div>
-                    <h3>
-                      {t("reports.inventoryFlowReport.closingChartTitle")}
-                    </h3>
-                    <span className="card-subtitle">
-                      {t("reports.inventoryFlowReport.closingChartSubtitle")}
+            </div>
+            <div className="analysis-grid is-single">
+              <article
+                className="card chart-card report-chart-card"
+                data-chart-series="movement"
+              >
+                <header className="card-head chart-card-head">
+                  <div className="chart-heading">
+                    <span className="chart-icon" aria-hidden="true">
+                      <VuexyDemoIcon name="chart-column-big" />
                     </span>
+                    <div>
+                      <h3>{copy.chartTitle}</h3>
+                      <span className="card-subtitle">
+                        {copy.chartSubtitle}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="chart-head-meta">
+                    <span className="chart-unit">
+                      {t("reports.inventoryFlowReport.chartUnit")}
+                    </span>
+                    {variant === "inbound" ? (
+                      <span className="chart-current">
+                        <small>
+                          {t("reports.inventoryFlowReport.colReceiptNet")}
+                        </small>
+                        <strong>{fmt(summary.receiptNet)}</strong>
+                      </span>
+                    ) : (
+                      <>
+                        <span className="chart-current">
+                          <small>
+                            {t("reports.inventoryFlowReport.colIssueNet")}
+                          </small>
+                          <strong>{fmt(summary.issueNet)}</strong>
+                        </span>
+                        <span className="chart-current">
+                          <small>
+                            {t("reports.inventoryFlowReport.colComponentNet")}
+                          </small>
+                          <strong>{fmt(summary.componentNet)}</strong>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </header>
+                <div className="chart-wrap">
+                  <div className="chart-plot">
+                    {hasDays ? (
+                      <InventoryFlowChart
+                        labels={axisLabels}
+                        series={flowChartSeries}
+                        ariaLabel={copy.chartAria}
+                      />
+                    ) : (
+                      <div className="chart-empty">
+                        {t("reports.inventoryFlowReport.flowChartEmpty")}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="chart-head-meta">
-                  {periodMatched ? (
-                    <span className="chip chip-success">
-                      {t("reports.inventoryFlowReport.statusMatched")}
-                    </span>
-                  ) : (
-                    <span className="chip chip-error">
-                      {t("reports.inventoryFlowReport.mismatch")}
-                    </span>
-                  )}
-                  <span className="chart-current">
-                    <small>
-                      {t("reports.inventoryFlowReport.cardClosing")}
-                    </small>
-                    <strong>{fmt(summary.closing)}</strong>
+                <details className="chart-table">
+                  <summary>{t("reports.inventoryFlowReport.altTable")}</summary>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th className="stt-col">
+                          {t("shared.table.rowNumber")}
+                        </th>
+                        <th>{t("reports.inventoryFlowReport.colDay")}</th>
+                        {variant === "inbound" ? (
+                          <th>
+                            {t("reports.inventoryFlowReport.seriesInbound")}
+                          </th>
+                        ) : (
+                          <>
+                            <th>
+                              {t("reports.inventoryFlowReport.seriesProduct")}
+                            </th>
+                            <th>
+                              {t("reports.inventoryFlowReport.seriesComponent")}
+                            </th>
+                          </>
+                        )}
+                        <th>
+                          {t("reports.inventoryFlowReport.seriesReversal")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {daily.map((point, index) => (
+                        <tr key={point.date}>
+                          <td className="stt-col">{index + 1}</td>
+                          <td>{axisDayLabel(point.date)}</td>
+                          {variant === "inbound" ? (
+                            <td>{fmt(point.inbound)}</td>
+                          ) : (
+                            <>
+                              <td>{fmt(point.product)}</td>
+                              <td>{fmt(point.component)}</td>
+                            </>
+                          )}
+                          <td>{fmt(point.reversal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              </article>
+            </div>
+          </section>
+
+          {/* ── Lịch sử chứng từ ──────────────────────────────────────────── */}
+          <section aria-labelledby="rpt01-documents-title">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">
+                  {t("reports.inventoryFlowReport.documentsEyebrow")}
+                </span>
+                <h2 id="rpt01-documents-title">
+                  {t("reports.inventoryFlowReport.documentsTitle")}
+                </h2>
+              </div>
+              <span className="section-meta">
+                {t("reports.inventoryFlowReport.documentsInSnapshot", {
+                  count: fmt(documentsInScope.length),
+                })}
+              </span>
+            </div>
+            {documentsInScope.length > 0 ? (
+              <SectionFilterBar
+                state={documentSectionFilter}
+                label={t("reports.inventoryFlowReport.documentsTitle")}
+                unit={t("reports.inventoryFlowReport.documentsUnit")}
+                data-testid="rpt01-document-section-filter"
+              />
+            ) : null}
+            {documentSectionFilter.rows.length === 0 ? (
+              <article className="card insight-card report-document-card">
+                <div className="state-box">
+                  <strong>
+                    {documentSectionFilter.active
+                      ? t("reports.inventoryFlowReport.docEmptyFilteredTitle")
+                      : t("reports.inventoryFlowReport.docEmptyTitle")}
+                  </strong>
+                  <span>
+                    {documentSectionFilter.active
+                      ? t("reports.inventoryFlowReport.docEmptyFilteredHint")
+                      : t("reports.inventoryFlowReport.docEmptyHint")}
                   </span>
                 </div>
-              </header>
-              <div className="chart-wrap">
-                <div className="chart-legend">
-                  <button
-                    className="legend-button"
-                    type="button"
-                    aria-pressed={closingVisible}
-                    onClick={() => setClosingVisible((open) => !open)}
-                  >
-                    <span
-                      className="legend-dot legend-reversal"
-                      aria-hidden="true"
-                    />
-                    {t("reports.inventoryFlowReport.closingSeries")}
-                  </button>
-                </div>
-                <div className="chart-plot">
-                  {hasDays ? (
-                    <InventoryFlowChart
-                      labels={axisLabels}
-                      series={
-                        closingVisible
-                          ? [
-                              {
-                                key: "closing",
-                                label: t(
-                                  "reports.inventoryFlowReport.closingSeries",
-                                ),
-                                color: CLOSING_COLOR,
-                                values: daily.map((point) => point.closing),
-                              },
-                            ]
-                          : []
-                      }
-                      filled
-                      gradientId="rpt01-closing-fill"
-                      labelBelow
-                      strokeWidth={3}
-                      ariaLabel={t(
-                        "reports.inventoryFlowReport.closingChartAria",
-                      )}
-                    />
-                  ) : (
-                    <div className="chart-empty">
-                      {t("reports.inventoryFlowReport.closingChartEmpty")}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <details className="chart-table">
-                <summary>{t("reports.inventoryFlowReport.altTable")}</summary>
-                <table>
-                  <thead>
-                    <tr>
-                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
-                      <th>{t("reports.inventoryFlowReport.colDay")}</th>
-                      <th>{t("reports.inventoryFlowReport.cardClosing")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {daily.map((point, index) => (
-                      <tr key={point.date}>
-                        <td className="stt-col">{index + 1}</td>
-                        <td>{axisDayLabel(point.date)}</td>
-                        <td>{fmt(point.closing)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </details>
-            </article>
-          </div>
-        </section>
-
-        {/* ── Lịch sử chứng từ ──────────────────────────────────────────── */}
-        <section aria-labelledby="rpt01-documents-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("reports.inventoryFlowReport.documentsEyebrow")}
-              </span>
-              <h2 id="rpt01-documents-title">
-                {t("reports.inventoryFlowReport.documentsTitle")}
-              </h2>
-            </div>
-            <span className="section-meta">
-              {t("reports.inventoryFlowReport.documentsInSnapshot", {
-                count: fmt(documentsInScope.length),
-              })}
-            </span>
-          </div>
-          {documentsInScope.length > 0 ? (
-            <SectionFilterBar
-              state={documentSectionFilter}
-              label={t("reports.inventoryFlowReport.documentsTitle")}
-              unit={t("reports.inventoryFlowReport.documentsUnit")}
-              data-testid="rpt01-document-section-filter"
-            />
-          ) : null}
-          {documentSectionFilter.rows.length === 0 ? (
-            <article className="card insight-card report-document-card">
-              <div className="state-box">
-                <strong>
-                  {documentSectionFilter.active
-                    ? t("reports.inventoryFlowReport.docEmptyFilteredTitle")
-                    : t("reports.inventoryFlowReport.docEmptyTitle")}
-                </strong>
-                <span>
-                  {documentSectionFilter.active
-                    ? t("reports.inventoryFlowReport.docEmptyFilteredHint")
-                    : t("reports.inventoryFlowReport.docEmptyHint")}
-                </span>
-              </div>
-            </article>
-          ) : (
-            <div className="insight-grid">
-              {documentSectionFilter.rows.map((document, index) => {
-                const style = DOCUMENT_STYLE[document.doc_type];
-                return (
-                  <article
-                    key={`${document.doc_type}-${document.id}`}
-                    className={`card insight-card ${style.className} report-document-card`}
-                  >
-                    <header className="card-head insight-card-head">
-                      <div className="insight-heading">
-                        <span className="insight-icon" aria-hidden="true">
-                          <VuexyDemoIcon name={style.icon} />
-                        </span>
-                        <div>
-                          <span className="stt-badge">
-                            {t("shared.table.rowNumber")} {index + 1}
+              </article>
+            ) : (
+              <div className="insight-grid">
+                {documentSectionWindow.visible.map((document, index) => {
+                  const style = DOCUMENT_STYLE[document.doc_type];
+                  return (
+                    <article
+                      key={`${document.doc_type}-${document.id}`}
+                      className={`card insight-card ${style.className} report-document-card`}
+                    >
+                      <header className="card-head insight-card-head">
+                        <div className="insight-heading">
+                          <span className="insight-icon" aria-hidden="true">
+                            <VuexyDemoIcon name={style.icon} />
                           </span>
-                          <span className="eyebrow">
-                            {t("reports.inventoryFlowReport.docCardEyebrow")}
-                          </span>
-                          <h3>{document.document_no}</h3>
-                          <span className="card-subtitle">
-                            {documentTitles[document.doc_type]} ·{" "}
-                            {reportStatusLabel(document.status)}
+                          <div>
+                            <span className="stt-badge">
+                              {t("shared.table.rowNumber")} {index + 1}
+                            </span>
+                            <span className="eyebrow">
+                              {t("reports.inventoryFlowReport.docCardEyebrow")}
+                            </span>
+                            <h3>{document.document_no}</h3>
+                            <span className="card-subtitle">
+                              {documentTitles[document.doc_type]} ·{" "}
+                              {reportStatusLabel(document.status)}
+                            </span>
+                          </div>
+                        </div>
+                      </header>
+                      <div className="insight-body">
+                        <div className="document-line">
+                          <strong>
+                            {document.counterpart === ""
+                              ? EMPTY_TEXT
+                              : document.counterpart}
+                          </strong>
+                          <span>
+                            {formatDateTime(document.posted_at)} ·{" "}
+                            {document.warehouse_code === ""
+                              ? EMPTY_TEXT
+                              : document.warehouse_code}
                           </span>
                         </div>
-                      </div>
-                    </header>
-                    <div className="insight-body">
-                      <div className="document-line">
-                        <strong>
-                          {document.counterpart === ""
-                            ? EMPTY_TEXT
-                            : document.counterpart}
-                        </strong>
-                        <span>
-                          {formatDateTime(document.posted_at)} ·{" "}
-                          {document.warehouse_code === ""
-                            ? EMPTY_TEXT
-                            : document.warehouse_code}
-                        </span>
-                      </div>
-                      <button
-                        className="button insight-action"
-                        type="button"
-                        disabled={document.drillKey === ""}
-                        /* Nút chỉ tắt khi chứng từ chưa truy được SKU nào (phiếu
+                        <button
+                          className="button insight-action"
+                          type="button"
+                          disabled={document.drillKey === ""}
+                          /* Nút chỉ tắt khi chứng từ chưa truy được SKU nào (phiếu
                            chưa Post nên chưa sinh movement) — nói rõ lý do thay
                            vì để người dùng bấm vào một nút không phản hồi. */
-                        title={
-                          document.drillKey === ""
-                            ? t("reports.inventoryFlowReport.drillDisabled")
-                            : undefined
-                        }
-                        onClick={(event) =>
-                          openDrill(document.drillKey, event.currentTarget)
-                        }
-                      >
-                        {t("reports.inventoryFlowReport.drillDocument")}
-                        <VuexyDemoIcon name="arrow-right" />
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
+                          title={
+                            document.drillKey === ""
+                              ? t("reports.inventoryFlowReport.drillDisabled")
+                              : undefined
+                          }
+                          onClick={(event) =>
+                            openDrill(document.drillKey, event.currentTarget)
+                          }
+                        >
+                          {t("reports.inventoryFlowReport.drillDocument")}
+                          <VuexyDemoIcon name="arrow-right" />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+                <WindowedMore window={documentSectionWindow} />
+              </div>
+            )}
+          </section>
+        </div>
       </div>
 
       {drillRow !== null ? (

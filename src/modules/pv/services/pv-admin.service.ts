@@ -139,10 +139,35 @@ export function updatePvRule(
   );
 }
 
+/**
+ * `images` chỉ được ghép vào body khi payload THỰC SỰ có khoá đó. BE coi khoá
+ * `images` vắng mặt là "giữ nguyên ảnh" và `images: []` là "xoá hết ảnh"; nếu ở
+ * đây trải thẳng `payload.images` thì mọi màn chỉ sửa chữ (SCR-PV-ADM-01) sẽ gửi
+ * `images: undefined` → JSON.stringify bỏ khoá đi, đúng ý — nhưng chuẩn hoá
+ * `?? []` thì lại xoá sạch ảnh. Giữ nhánh tường minh để ý định đọc được ngay.
+ */
+function profileBody(payload: PvAdminProfilePayload) {
+  const body: Record<string, unknown> = {
+    display_name: payload.display_name,
+    description: payload.description ?? null,
+    sort_order: payload.sort_order,
+    industry_ids: payload.industry_ids,
+    tag_ids: payload.tag_ids,
+  };
+  if (payload.images !== undefined) {
+    body.images = payload.images.map((image) => ({
+      url: image.url,
+      alt_text: image.alt_text ?? null,
+      is_primary: image.is_primary,
+    }));
+  }
+  return body;
+}
+
 export function createPvProfile(payload: PvAdminProfilePayload) {
   return http.post<PvAdminProfile>(
     PV_API_ENDPOINTS.ADMIN_RESOURCES("product-profiles"),
-    payload,
+    { ...profileBody(payload), sku_id: payload.sku_id },
   );
 }
 
@@ -157,13 +182,7 @@ export function updatePvProfile(
 ) {
   return http.patch<PvAdminProfile>(
     PV_API_ENDPOINTS.ADMIN_RESOURCE("product-profiles", id),
-    {
-      display_name: payload.display_name,
-      description: payload.description ?? null,
-      sort_order: payload.sort_order,
-      industry_ids: payload.industry_ids,
-      tag_ids: payload.tag_ids,
-    },
+    profileBody(payload),
     ifMatch(assertVersion(version, tStatic("pv.admin.actionUpdateMaster"))),
   );
 }

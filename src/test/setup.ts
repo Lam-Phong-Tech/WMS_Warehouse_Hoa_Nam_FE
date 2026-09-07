@@ -1115,6 +1115,7 @@ vi.mock("@/app/router/access", () => ({
     "/warranty/component-issues": ["warranty.component_issue"],
     "/reverse": ["inventory.reversal.post"],
     "/reports/inventory-flow": ["report.view"],
+    "/reports/outbound-flow": ["report.view"],
     "/reports/stock-reconcile": ["report.view"],
     "/reports/traceability": ["report.view"],
     "/reports/import-quality": ["report.view"],

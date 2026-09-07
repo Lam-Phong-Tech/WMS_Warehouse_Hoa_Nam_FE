@@ -12,6 +12,7 @@ import {
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { validatePhone } from "@/shared/constants/validation.constants";
+import { codeFormatError } from "@/shared/validation/text-rules";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   getMutationErrorMessage,
@@ -64,6 +65,9 @@ const AGENCY_TEXT_MAX = {
   market: 120,
   region: 120,
   contact_name: 200,
+  // Địa chỉ lưu dạng JSON (UiAddressField): chi tiết 200 + tên tỉnh/xã + khoá
+  // ≈ 350 ký tự, trần 500 cùng số với màn cấu hình kho.
+  address: 500,
 } as const;
 
 // Map camelCase (extractFieldErrors) → snake_case (state form). Phải khớp với
@@ -129,6 +133,10 @@ export function RecipientCreateDialog({
     }
     if (!form.agency_code.trim()) {
       errors.agency_code = t("masterData.recipient.errCode");
+    } else {
+      // Dialog này chỉ TẠO MỚI nên không có mã cũ để bỏ qua.
+      const codeError = codeFormatError(form.agency_code.trim());
+      if (codeError) errors.agency_code = codeError;
     }
     if (!form.agency_name.trim()) {
       errors.agency_name = t("masterData.recipient.errName");

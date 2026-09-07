@@ -80,6 +80,15 @@ export const NAV_GROUPS: NavGroupData[] = [
         icon: "apps",
       },
       {
+        // MST-PV-01: danh mục sản phẩm ĐANG hiển thị trên App PV (lưới ảnh +
+        // thêm sản phẩm). Khác MST-CAT-01 ở trên — đó là master hãng/nhóm hàng
+        // nuôi form tạo SKU, không phải thứ khách nhìn thấy trên ứng dụng.
+        screen: "MST-PV-01",
+        path: ROUTES.PV_PRODUCT_CATALOG,
+        label: "Sản phẩm trên App PV",
+        icon: "gallery",
+      },
+      {
         screen: "AGY-01",
         path: ROUTES.AGENCIES,
         label: "Danh mục đại lý / nơi nhận",
@@ -180,10 +189,19 @@ export const NAV_GROUPS: NavGroupData[] = [
     railDivider: true,
     items: [
       {
+        // 2026-09-06: một trang gộp Nhập + Xuất + Tồn khiến khách đọc bị loạn.
+        // Tách theo CHIỀU nghiệp vụ thành hai mục; phần Tồn bỏ hẳn (đã có
+        // RPT-02 "Tồn kho & đối soát" lo phần đó).
         screen: "RPT-01",
         path: ROUTES.REPORTS_INVENTORY_FLOW,
-        label: "Nhập – Xuất – Tồn",
-        icon: "arrows-repeat",
+        label: "Nhập kho",
+        icon: "arrow-down-to-square",
+      },
+      {
+        screen: "RPT-01B",
+        path: ROUTES.REPORTS_OUTBOUND_FLOW,
+        label: "Xuất kho",
+        icon: "arrow-up-from-square",
       },
       {
         screen: "RPT-02",
@@ -268,6 +286,7 @@ export const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.IAM_USERS]: "IAM-01",
   [ROUTES.MASTER_DATA]: "MST-01",
   [ROUTES.CATALOG_MASTER]: "MST-CAT-01",
+  [ROUTES.PV_PRODUCT_CATALOG]: "MST-PV-01",
   [ROUTES.WAREHOUSE_CONFIG]: "WH-01",
   [ROUTES.AGENCIES]: "AGY-01",
   [ROUTES.DEFECTS]: "DEF-01",
@@ -280,6 +299,7 @@ export const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.SCAN]: "TRACE-01",
   [ROUTES.REVERSE]: "REV-00",
   [ROUTES.REPORTS_INVENTORY_FLOW]: "RPT-01",
+  [ROUTES.REPORTS_OUTBOUND_FLOW]: "RPT-01B",
   [ROUTES.REPORTS_STOCK_RECONCILE]: "RPT-02",
   [ROUTES.REPORTS_TRACEABILITY]: "RPT-03",
   [ROUTES.REPORTS_IMPORT_QUALITY]: "RPT-04",
@@ -412,6 +432,11 @@ export const SCREEN_META: Record<
     description:
       "Hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách đóng gói dùng khi tạo SKU.",
   },
+  "MST-PV-01": {
+    title: "Sản phẩm trên App PV",
+    description:
+      "Danh sách sản phẩm đang hiển thị trên App PV kèm ảnh; thêm sản phẩm, sửa thông tin hiển thị và bật/tắt hiển thị.",
+  },
   "WH-01": {
     title: "Cấu hình kho",
     description:
@@ -458,9 +483,14 @@ export const SCREEN_META: Record<
     description: "Danh sách phiếu để chọn tạo điều chỉnh tồn kho.",
   },
   "RPT-01": {
-    title: "Nhập – Xuất – Tồn",
+    title: "Báo cáo nhập kho",
     description:
-      "Cân đối tồn theo kỳ, biến động theo ngày và toàn bộ chứng từ phát sinh.",
+      "Lượng nhập đã ghi sổ theo ngày, theo SKU và chứng từ nhập trong kỳ.",
+  },
+  "RPT-01B": {
+    title: "Báo cáo xuất kho",
+    description:
+      "Lượng xuất đã ghi sổ theo ngày, theo SKU và chứng từ xuất trong kỳ.",
   },
   "RPT-02": {
     title: "Tồn kho & đối soát",

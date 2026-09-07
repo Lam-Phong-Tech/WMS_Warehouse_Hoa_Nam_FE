@@ -1,201 +1,57 @@
 /* eslint-disable react-refresh/only-export-components */
-import { lazy, Suspense, type ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { resolveRouteEntryPermission } from "@/app/router/access";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
 import { ROUTES } from "@/shared/constants/routes";
-
-// LoginPage lazy như 37 route còn lại. Trước đây nó là import TĨNH nên nằm trong
-// đồ thị tải-ngay của MỌI lần F5 — kể cả với người đã đăng nhập, tức là gần như
-// mọi lượt tải trang trong ngày đều kéo theo màn hình họ không bao giờ thấy.
-const LoginPage = lazy(() =>
-  import("@/modules/auth/pages/LoginPage").then((m) => ({
-    default: m.LoginPage,
-  })),
-);
-const MainLayout = lazy(() =>
-  import("@/app/layouts/MainLayout").then((m) => ({ default: m.MainLayout })),
-);
-const ChangePasswordPage = lazy(() =>
-  import("@/modules/auth/pages/ChangePasswordPage").then((m) => ({
-    default: m.ChangePasswordPage,
-  })),
-);
-const ForgotPasswordPage = lazy(() =>
-  import("@/modules/auth/pages/ForgotPasswordPage").then((m) => ({
-    default: m.ForgotPasswordPage,
-  })),
-);
-const NoPermissionPage = lazy(() =>
-  import("@/modules/errors/pages/NoPermissionPage").then((m) => ({
-    default: m.NoPermissionPage,
-  })),
-);
-const AuditLogsPage = lazy(() =>
-  import("@/modules/audit-logs/pages/AuditLogsPage").then((m) => ({
-    default: m.AuditLogsPage,
-  })),
-);
-const NotificationsPage = lazy(
-  () => import("@/modules/notifications/pages/NotificationsPage"),
-);
-const DashboardPage = lazy(() =>
-  import("@/modules/dashboard/pages/DashboardPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const IamUsersGd1Page = lazy(() =>
-  import("@/modules/iam/pages/IamUsersGd1Page").then((m) => ({
-    default: m.IamUsersGd1Page,
-  })),
-);
-const IamRolePermissionScreen = lazy(() =>
-  import("@/modules/iam/pages/IamRolePermissionScreen").then((m) => ({
-    default: m.IamRolePermissionScreen,
-  })),
-);
-const SkuMasterScreen = lazy(() =>
-  import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
-    default: m.SkuMasterScreen,
-  })),
-);
-const CatalogMasterScreen = lazy(() =>
-  import("@/modules/master-data/pages/CatalogMasterScreen").then((m) => ({
-    default: m.CatalogMasterScreen,
-  })),
-);
-const WarehouseConfigScreen = lazy(() =>
-  import("@/modules/master-data/pages/WarehouseConfigScreen").then((m) => ({
-    default: m.WarehouseConfigScreen,
-  })),
-);
-const AgencyMasterScreen = lazy(() =>
-  import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
-    default: m.AgencyMasterScreen,
-  })),
-);
-const DefectMasterScreen = lazy(() =>
-  import("@/modules/master-data/pages/MvpMasterScreens").then((m) => ({
-    default: m.DefectMasterScreen,
-  })),
-);
-const PhysicalCodesPage = lazy(() =>
-  import("@/modules/scan/pages/PhysicalCodesPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const InboundPage = lazy(() =>
-  import("@/modules/inbound/pages/InboundPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const PutawayPage = lazy(() =>
-  import("@/modules/putaway/pages/PutawayPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const TrayOverviewPage = lazy(() =>
-  import("@/modules/putaway/pages/TrayOverviewPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const OutboundPage = lazy(() =>
-  import("@/modules/outbound/pages/OutboundPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const InventoryPage = lazy(() =>
-  import("@/modules/inventory/pages/InventoryPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const WarrantyPage = lazy(() =>
-  import("@/modules/warranty/pages/WarrantyPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const WarrantyComponentIssueListPage = lazy(() =>
-  import("@/modules/warranty/pages/WarrantyComponentIssueListPage").then(
-    (m) => ({ default: m.default }),
-  ),
-);
-const ReversalPage = lazy(() =>
-  import("@/modules/reverse/pages/ReversalPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const InventoryFlowReportPage = lazy(() =>
-  import("@/modules/reports/pages/InventoryFlowReportPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const StockReconcileReportPage = lazy(() =>
-  import("@/modules/reports/pages/StockReconcileReportPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const TraceabilityReportPage = lazy(() =>
-  import("@/modules/reports/pages/TraceabilityReportPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const ImportQualityReportPage = lazy(() =>
-  import("@/modules/reports/pages/ImportQualityReportPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const PackingLabelReportPage = lazy(() =>
-  import("@/modules/reports/pages/PackingLabelReportPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const WarrantyReportPage = lazy(() =>
-  import("@/modules/reports/pages/WarrantyReportPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const RecipientReportPage = lazy(() =>
-  import("@/modules/reports/pages/RecipientReportPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const PendingEvidenceReportPage = lazy(() =>
-  import("@/modules/reports/pages/PendingEvidenceReportPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const NotFoundPage = lazy(() =>
-  import("@/modules/errors/pages/NotFoundPage").then((m) => ({
-    default: m.NotFoundPage,
-  })),
-);
-const FoundationCatalogPage = lazy(() =>
-  import("@/shared/ui/catalog/FoundationCatalogPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const ProfilePage = lazy(() =>
-  import("@/modules/auth/pages/ProfilePage").then((m) => ({
-    default: m.ProfilePage,
-  })),
-);
-const PvCatalogPage = lazy(() =>
-  import("@/modules/pv/pages/PvCatalogPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const PvProductDetailPage = lazy(() =>
-  import("@/modules/pv/pages/PvProductDetailPage").then((m) => ({
-    default: m.default,
-  })),
-);
-const PvAdminPage = lazy(() =>
-  import("@/modules/pv/pages/PvAdminPage").then((m) => ({
-    default: m.default,
-  })),
-);
+// Mọi màn khai báo MỘT LẦN ở route-components.ts (router và route-preload dùng
+// chung). Chúng là `lazyRoute`: vẫn tách chunk như `React.lazy`, nhưng khi chunk
+// ĐÃ được nạp trước thì render THẲNG, không treo Suspense — xem lazy-route.tsx
+// để biết vì sao điều đó cắt ~300 ms khỏi mỗi lần F5.
+import {
+  AgencyMasterScreen,
+  AuditLogsPage,
+  CatalogMasterScreen,
+  ChangePasswordPage,
+  DashboardPage,
+  DefectMasterScreen,
+  ForgotPasswordPage,
+  FoundationCatalogPage,
+  IamRolePermissionScreen,
+  IamUsersGd1Page,
+  ImportQualityReportPage,
+  InboundPage,
+  InventoryFlowReportPage,
+  InventoryPage,
+  LoginPage,
+  MainLayout,
+  NoPermissionPage,
+  NotFoundPage,
+  NotificationsPage,
+  OutboundFlowReportPage,
+  OutboundPage,
+  PackingLabelReportPage,
+  PendingEvidenceReportPage,
+  PhysicalCodesPage,
+  ProfilePage,
+  PutawayPage,
+  PvAdminPage,
+  PvCatalogPage,
+  PvProductCatalogPage,
+  PvProductDetailPage,
+  RecipientReportPage,
+  ReversalPage,
+  SkuMasterScreen,
+  StockReconcileReportPage,
+  TraceabilityReportPage,
+  TrayOverviewPage,
+  WarehouseConfigScreen,
+  WarrantyComponentIssueListPage,
+  WarrantyPage,
+  WarrantyReportPage,
+} from "@/app/router/route-components";
 
 function withPageLoader(node: ReactNode) {
   return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
@@ -280,6 +136,13 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.CATALOG_MASTER,
             element: routeEl(ROUTES.CATALOG_MASTER, <CatalogMasterScreen />),
+          },
+          {
+            path: ROUTES.PV_PRODUCT_CATALOG,
+            element: routeEl(
+              ROUTES.PV_PRODUCT_CATALOG,
+              <PvProductCatalogPage />,
+            ),
           },
           {
             path: ROUTES.WAREHOUSE_CONFIG,
@@ -368,6 +231,13 @@ export const router = createBrowserRouter([
             element: routeEl(
               ROUTES.REPORTS_INVENTORY_FLOW,
               <InventoryFlowReportPage />,
+            ),
+          },
+          {
+            path: ROUTES.REPORTS_OUTBOUND_FLOW,
+            element: routeEl(
+              ROUTES.REPORTS_OUTBOUND_FLOW,
+              <OutboundFlowReportPage />,
             ),
           },
           {

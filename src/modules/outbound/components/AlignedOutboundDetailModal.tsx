@@ -204,8 +204,10 @@ export function AlignedOutboundDetailModal({
     queryFn: () => fetchOutboundDetail(documentId),
   });
   const labelQuery = useQuery({
-    queryKey: ["mvp-outbound", "packing-labels"],
-    queryFn: fetchPackingLabels,
+    // Khoá PHẢI mang documentId vì truy vấn nay chỉ lấy nhãn của đúng phiếu này.
+    // Giữ khoá chung cũ thì phiếu mở sau sẽ đọc trúng cache nhãn của phiếu trước.
+    queryKey: ["mvp-outbound", "packing-labels", documentId],
+    queryFn: () => fetchPackingLabels(documentId),
   });
   const printerQuery = useQuery({
     queryKey: ["mvp-outbound", "printers"],

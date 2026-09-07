@@ -21,6 +21,13 @@
  *  · thêm guard rằng adapter vẫn CHUẨN HOÁ đủ ba tầng cột của hợp đồng BE
  *    (`*_gross` / `*_reversal` / `*_net`) để hợp đồng WWHN-240 không bị âm thầm
  *    rơi mất ở tầng dữ liệu khi UI chỉ còn hiển thị cột thuần.
+ *
+ * PHẠM VI ĐÃ ĐỔI LẦN HAI (2026-09-06, yêu cầu người dùng): màn gộp Nhập + Xuất
+ * + Tồn tách làm HAI trang theo chiều nghiệp vụ và phần TỒN bỏ hẳn (RPT-02 lo
+ * phần đó). Bảng vì thế không còn cột Đầu kỳ / Cuối kỳ / Đối soát; mỗi trang
+ * chỉ giữ cột thuần của CHIỀU mình cộng cột Hoàn tác. Bộ test giữ nguyên lý do
+ * tồn tại — assert đúng ô người dùng THẤY trên cùng fixture hợp đồng BE — và
+ * chạy trên CẢ hai trang để không chiều nào render lệch cột mà lọt lưới.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -53,6 +60,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { ROUTES } from "@/shared/constants/routes";
 import InventoryFlowReportPage from "@/modules/reports/pages/InventoryFlowReportPage";
+import OutboundFlowReportPage from "@/modules/reports/pages/OutboundFlowReportPage";
 
 /**
  * Một dòng XNT đúng shape `lines[]` của `buildXnt()`. Mỗi giá trị số xuất
@@ -92,12 +100,29 @@ function xntPayload() {
   };
 }
 
-/** Mở màn RPT-01 và chờ dòng SKU của fixture xuất hiện trong bảng. */
+/** Mở màn RPT-01 (nhập kho) và chờ dòng SKU của fixture xuất hiện trong bảng. */
 async function openXntScreen() {
   renderWithProviders(<InventoryFlowReportPage />, [
     ROUTES.REPORTS_INVENTORY_FLOW,
   ]);
   return screen.findByText("PRD-QA19-01");
+}
+
+/** Mở màn RPT-01B (xuất kho) — cùng fixture, khác chiều hiển thị. */
+async function openOutboundScreen() {
+  renderWithProviders(<OutboundFlowReportPage />, [
+    ROUTES.REPORTS_OUTBOUND_FLOW,
+  ]);
+  return screen.findByText("PRD-QA19-01");
+}
+
+/** Nội dung từng ô của dòng SKU đang hiển thị. */
+function cellsOfSkuRow(): Array<string | undefined> {
+  const row = screen.getByText("PRD-QA19-01").closest("tr");
+  expect(row).not.toBeNull();
+  return Array.from((row as HTMLElement).children).map((cell) =>
+    cell.textContent?.trim(),
+  );
 }
 
 describe("WWHN-240 · màn XNT render đúng số BE trả về", () => {
@@ -140,31 +165,37 @@ describe("WWHN-240 · màn XNT render đúng số BE trả về", () => {
     );
   });
 
-  it("từng ô cột thuần đúng số BE trả về, không tráo/mất cột", async () => {
+  it("trang NHẬP: từng ô cột thuần đúng số BE trả về, không tráo/mất cột", async () => {
     await openXntScreen();
-    const row = screen.getByText("PRD-QA19-01").closest("tr");
-    expect(row).not.toBeNull();
-    const cells = Array.from((row as HTMLElement).children).map((cell) =>
-      cell.textContent?.trim(),
-    );
 
-    // Thứ tự cột: STT · SKU/Tên hàng · Loại · Đơn vị · Đầu kỳ · Nhập thuần ·
-    // Xuất SP · Xuất LK · Hoàn tác · Cuối kỳ · Đối soát · Thao tác. Cột STT
-    // đứng đầu ở MỌI bảng báo cáo (thêm ngoài mockup 8.1). Loại/Đơn vị đến từ
-    // danh mục `/products` — fixture để trống danh mục nên hai ô đó hiển thị
-    // "Chưa có" theo quy ước EMPTY_TEXT.
-    expect(cells).toEqual([
+    // Thứ tự cột: STT · SKU/Tên hàng · Loại · Đơn vị · Nhập thuần · Hoàn tác ·
+    // Thao tác. Cột STT đứng đầu ở MỌI bảng báo cáo (thêm ngoài mockup 8.1).
+    // Loại/Đơn vị đến từ danh mục `/products` — fixture để trống danh mục nên
+    // hai ô đó hiển thị "Chưa có" theo quy ước EMPTY_TEXT.
+    expect(cellsOfSkuRow()).toEqual([
       "1",
       "PRD-QA19-01Máy KT-2000",
       "Chưa có",
       "Chưa có",
-      "100",
       "18",
+      "0",
+      "Đối soát",
+    ]);
+  });
+
+  it("trang XUẤT: cột Xuất SP / Xuất LK đúng số BE trả về, không tráo/mất cột", async () => {
+    await openOutboundScreen();
+
+    // Thứ tự cột: STT · SKU/Tên hàng · Loại · Đơn vị · Xuất SP · Xuất LK ·
+    // Hoàn tác · Thao tác.
+    expect(cellsOfSkuRow()).toEqual([
+      "1",
+      "PRD-QA19-01Máy KT-2000",
+      "Chưa có",
+      "Chưa có",
       "50",
       "7",
       "0",
-      "61",
-      "Khớp",
       "Đối soát",
     ]);
   });

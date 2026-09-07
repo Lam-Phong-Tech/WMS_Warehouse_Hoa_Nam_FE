@@ -7,6 +7,7 @@ import {
 import { businessLabel } from "@/shared/constants/business-labels";
 import { fmt, fmtDateTime, text, n, type Raw } from "./report-format";
 import { MOVEMENT_LABELS, statusTone } from "./report-labels";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 /**
  * Bảng movement dùng cho mọi drill-down "số này ở đâu ra": bấm một bậc
@@ -105,7 +106,7 @@ export function MovementTable({
     <ResponsiveDataTable<Raw>
       columns={columns}
       rows={rows}
-      rowKey={(row) => text(row.id, String(rows.indexOf(row)))}
+      rowKey={(row) => text(row.id, String(rowIndexOf(rows, row)))}
       loading={loading}
       emptyText={resolvedEmptyText}
     />
@@ -160,7 +161,7 @@ export function DocumentLinesTable({ lines }: { lines: Raw[] }) {
     <ResponsiveDataTable<Raw>
       columns={columns}
       rows={lines}
-      rowKey={(row) => text(row.id, String(lines.indexOf(row)))}
+      rowKey={(row) => text(row.id, String(rowIndexOf(lines, row)))}
       emptyText={t("reports.drilldown.linesEmpty")}
     />
   );

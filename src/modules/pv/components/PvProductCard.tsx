@@ -39,6 +39,9 @@ export function PvProductCard({ product }: { product: PvProduct }) {
     >
       <Box
         sx={{
+          // `position: relative` để ảnh định vị TUYỆT ĐỐI theo ô này — xem chú
+          // thích cùng vấn đề ở MST-PV-01 (PvProductCatalogPage).
+          position: "relative",
           aspectRatio: "4 / 3",
           backgroundColor: S.bgSubtle,
           display: "grid",
@@ -52,7 +55,17 @@ export function PvProductCard({ product }: { product: PvProduct }) {
             src={primaryImage.url}
             alt={primaryImage.alt_text ?? product.display_name}
             loading="lazy"
-            sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+            sx={{
+              // `contain` chứ KHÔNG phải `cover`: ảnh sản phẩm do người quản kho
+              // tự tải lên nên tỉ lệ tuỳ ý — ảnh dọc nhét vào khung 4:3 bằng
+              // `cover` sẽ bị phóng to rồi cắt cụt trên/dưới (phản hồi người dùng
+              // 06/09/2026). Giữ trọn khung hình, phần thừa để lộ nền của ô.
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+            }}
           />
         ) : (
           <Box component="span" sx={{ color: S.textDisabled, fontSize: 12 }}>

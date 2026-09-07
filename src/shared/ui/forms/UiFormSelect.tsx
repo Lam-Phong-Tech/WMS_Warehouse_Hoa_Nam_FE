@@ -27,6 +27,7 @@ import Select from "@mui/material/Select";
 import { SEMANTIC_LIGHT } from "@/shared/ui/tokens";
 import { UiAutocomplete } from "./UiAutocomplete";
 import { resolveSearchable } from "./searchable-options";
+import { OPTION_LIST_MAX_HEIGHT } from "./option-window";
 
 export interface UiSelectOption {
   value: string | number;
@@ -175,7 +176,17 @@ export function UiFormSelect<T extends FieldValues>({
               </InputLabel>
             ) : null}
             <Select
-              MenuProps={{ slotProps: { paper: { sx: { maxWidth: 520 } } } }}
+              // Trần cao 5 dòng — cùng luật với UiSelect (xem option-window).
+              MenuProps={{
+                slotProps: {
+                  paper: {
+                    sx: {
+                      maxWidth: 520,
+                      maxHeight: OPTION_LIST_MAX_HEIGHT + 16,
+                    },
+                  },
+                },
+              }}
               labelId={label != null ? labelId : undefined}
               label={label}
               multiple={multiple}

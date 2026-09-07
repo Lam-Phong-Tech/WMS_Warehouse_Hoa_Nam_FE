@@ -329,6 +329,14 @@
 
 /* ── Thẻ (card) ─────────────────────────────────────────────────────────── */
 .hn-rpt-io .card {
+  /*
+   * Bỏ qua layout/paint cho thẻ đang nằm ngoài màn hình. Trace một màn báo cáo
+   * cho thấy ~60% thời gian luồng chính là style/layout/paint, phần lớn cho các
+   * thẻ ở dưới mà người dùng chưa cuộn tới. `auto 480px` giữ chỗ để thanh cuộn
+   * không nhảy; sau lần vẽ đầu trình duyệt tự nhớ kích thước thật.
+   */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--hnio-card-line);
@@ -401,12 +409,30 @@
 }
 
 /* ── Bộ lọc ─────────────────────────────────────────────────────────────── */
+/*
+ * Thẻ bộ lọc là MỘT hàng flex-wrap: 3 ô lọc + hàng nút. Lưới 12 cột của mockup
+ * (Kỳ 5 + Khoảng ngày 4 + Loại 3 / Tìm nhanh 7 + nút 5) hết lý do tồn tại khi ô
+ * "Kỳ" gộp vào lịch (`report-period-single-control`): 3 ô còn lại vừa khít
+ * một hàng, ở màn rộng bị kéo dài vô lý (khoảng ngày ~600px ở 1920) còn hàng
+ * nút neo tuyệt đối thì đè lên ô "Tìm nhanh". Mỗi ô có cỡ gốc + trần riêng;
+ * màn rộng thì nút nằm cùng hàng sát phải, hẹp dần thì nút rồi từng ô lần
+ * lượt xuống hàng — không cần điểm ngắt riêng cho lưới nữa.
+ *
+ * `content-visibility: visible`: thẻ này KHÔNG được hưởng `content-visibility:
+ * auto` của `.card` — chế độ đó kèm paint containment nên menu "Loại chứng
+ * từ" (position:absolute, xổ xuống dưới đáy thẻ) bị cắt và nửa dưới không bấm
+ * được.
+ */
 .hn-rpt-io .filters {
   position: relative;
-  display: block;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 16px;
   margin-bottom: 20px;
   padding: 16px 20px;
   overflow: visible;
+  content-visibility: visible;
   border: 1px solid var(--hnio-card-line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -417,27 +443,24 @@
   display: none;
 }
 
+/* Các ô lọc là con trực tiếp của hàng flex ở trên (không thêm lớp bọc). */
 .hn-rpt-io .filtergrid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 14px 16px;
-  padding: 0;
+  display: contents;
 }
 
 .hn-rpt-io .filtergrid > .field:nth-child(1) {
-  grid-column: span 5;
+  flex: 1 1 300px;
+  max-width: 380px;
 }
 
 .hn-rpt-io .filtergrid > .field:nth-child(2) {
-  grid-column: span 4;
+  flex: 1 1 220px;
+  max-width: 300px;
 }
 
 .hn-rpt-io .filtergrid > .field:nth-child(3) {
-  grid-column: span 3;
-}
-
-.hn-rpt-io .filtergrid > .field:nth-child(4) {
-  grid-column: span 7;
+  flex: 1 1 240px;
+  max-width: 420px;
 }
 
 .hn-rpt-io .field {
@@ -708,17 +731,17 @@
 
 /* ── Hàng nút của bộ lọc ────────────────────────────────────────────────── */
 /*
- * `.report-03` neo hàng nút vào góc dưới-phải của thẻ bộ lọc; bề rộng bằng
- * đúng 5/12 lưới cộng khoảng đệm, để nó nằm gọn cạnh ô "Tìm nhanh".
+ * Là một mục của hàng flex ở `.filters`: `margin-left: auto` đẩy nó sát mép
+ * phải khi còn chỗ trên cùng hàng với 3 ô lọc; hết chỗ thì nó xuống hàng riêng
+ * và vẫn sát phải. (Mockup neo bằng `position: absolute` — cách đó đè lên ô
+ * "Tìm nhanh" ngay khi lưới bớt ô, xem ghi chú ở `.filters`.)
  */
 .hn-rpt-io .actions {
-  position: absolute;
-  right: 20px;
-  bottom: 16px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  width: calc((100% - 40px - 176px) * 5 / 12 + 64px);
+  margin-left: auto;
   padding: 0;
   border-top: 0;
 }
@@ -1451,25 +1474,6 @@
 
 /* ── Điểm ngắt (giữ nguyên thứ tự khai báo của mockup) ──────────────────── */
 @media (max-width: 1199px) {
-  .hn-rpt-io .filtergrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  /* `:nth-child(n)` để bằng đúng độ đặc hiệu của bốn luật span ở trên. */
-  .hn-rpt-io .filtergrid > .field:nth-child(n) {
-    grid-column: auto;
-  }
-
-  .hn-rpt-io .filtergrid > .field.search:nth-child(n) {
-    grid-column: 1 / -1;
-  }
-
-  .hn-rpt-io .actions {
-    position: static;
-    width: auto;
-    margin-top: 12px;
-  }
-
   .hn-rpt-io .slices {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1491,16 +1495,15 @@
     justify-content: flex-start;
   }
 
-  .hn-rpt-io .filtergrid {
-    grid-template-columns: 1fr;
-  }
-
-  .hn-rpt-io .filtergrid > .field.search:nth-child(n) {
-    grid-column: auto;
+  /* Điện thoại: mỗi ô lọc một hàng, hàng nút chiếm trọn bề ngang. */
+  .hn-rpt-io .filtergrid > .field:nth-child(n) {
+    flex-basis: 100%;
+    max-width: none;
   }
 
   .hn-rpt-io .actions {
-    flex-wrap: wrap;
+    width: 100%;
+    margin-left: 0;
     justify-content: flex-start;
   }
 

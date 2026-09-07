@@ -1,6 +1,10 @@
 /**
- * Báo cáo vận hành (8 trang riêng trong sidebar) — smoke render THẬT của cả
- * tám trang.
+ * Báo cáo vận hành (9 trang riêng trong sidebar) — smoke render THẬT của cả
+ * chín trang.
+ *
+ * 2026-09-06: RPT-01 "Nhập – Xuất – Tồn" tách làm hai trang theo CHIỀU nghiệp
+ * vụ ("Báo cáo nhập kho" giữ route cũ, "Báo cáo xuất kho" ở
+ * /reports/outbound-flow) nên danh sách dài thêm một dòng.
  *
  * Trước đây đây là 1 trang với 8 tab nội trang (AlignedReportsPage); phản hồi
  * người dùng 2026-08-30 tách mỗi tab thành MỘT route/trang riêng, sổ ra ở
@@ -39,6 +43,7 @@ import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import InventoryFlowReportPage from "@/modules/reports/pages/InventoryFlowReportPage";
+import OutboundFlowReportPage from "@/modules/reports/pages/OutboundFlowReportPage";
 import StockReconcileReportPage from "@/modules/reports/pages/StockReconcileReportPage";
 import TraceabilityReportPage from "@/modules/reports/pages/TraceabilityReportPage";
 import ImportQualityReportPage from "@/modules/reports/pages/ImportQualityReportPage";
@@ -336,6 +341,10 @@ const PAGE_PAYLOAD: Record<string, unknown[]> = {
   ],
 };
 
+// Danh mục SKU của màn báo cáo giờ đi qua GET /skus/lookup (một request, không
+// phân trang — xem fetchAllSkus); cùng dòng dữ liệu với "/products" ở trên.
+PAYLOAD["/skus/lookup"] = PAGE_PAYLOAD["/products"];
+
 const PAGES: Array<{
   Page: ComponentType;
   path: string;
@@ -347,9 +356,15 @@ const PAGES: Array<{
     path: ROUTES.REPORTS_INVENTORY_FLOW,
     // Bản port 1:1 mockup 8.1 dựng trang nguyên khối, mốc là vỏ trang RPT-01.
     testId: "wwhn-258-report-screen",
-    // Cụm "Lịch sử chứng từ" còn nằm ở nhãn khác trên trang nên phải khớp
-    // CHÍNH XÁC tiêu đề mục cuối, nếu không sẽ dính hai phần tử.
-    heading: /^Lịch sử chứng từ$/,
+    // Neo vào tiêu đề mục tổng quan: nó vừa duy nhất trên trang, vừa chứng minh
+    // đúng BIẾN THỂ (nhập / xuất) đã render — hai trang dùng chung một vỏ.
+    heading: /^Tổng quan nhập kho$/,
+  },
+  {
+    Page: OutboundFlowReportPage,
+    path: ROUTES.REPORTS_OUTBOUND_FLOW,
+    testId: "wwhn-258-report-screen",
+    heading: /^Tổng quan xuất kho$/,
   },
   {
     Page: StockReconcileReportPage,
@@ -400,7 +415,7 @@ const PAGES: Array<{
   },
 ];
 
-describe("Báo cáo vận hành · 8 trang render được với payload thật", () => {
+describe("Báo cáo vận hành · 9 trang render được với payload thật", () => {
   beforeEach(() => {
     vi.mocked(http.get).mockReset();
     vi.mocked(http.getPage).mockReset();
@@ -437,7 +452,7 @@ describe("Báo cáo vận hành · 8 trang render được với payload thật"
 });
 
 /**
- * Cả 8 màn Báo cáo đều TỰ dựng header riêng (eyebrow "BÁO CÁO VẬN HÀNH ·
+ * Cả 9 màn Báo cáo đều TỰ dựng header riêng (eyebrow "BÁO CÁO VẬN HÀNH ·
  * RPT-xx" + tiêu đề + mô tả). `MainLayout` chỉ bỏ `AppPageHeader` cho những
  * route có tên trong `ROUTES_WITH_OWN_HEADER`; route nào bị bỏ sót khỏi danh
  * sách đó sẽ hiện HAI tiêu đề chồng nhau — lỗi đã gặp thật với RPT-04
@@ -447,7 +462,7 @@ describe("Báo cáo vận hành · 8 trang render được với payload thật"
  * số cục bộ (không export) và điều cần chốt là "không route báo cáo nào rơi
  * khỏi danh sách", chứ không phải cách layout dựng cây component.
  */
-describe("MainLayout · 8 route Báo cáo đều tự dựng header", () => {
+describe("MainLayout · 9 route Báo cáo đều tự dựng header", () => {
   it("mọi route /reports/* đều nằm trong ROUTES_WITH_OWN_HEADER", () => {
     const source = readFileSync(
       resolve(process.cwd(), "src/app/layouts/MainLayout.tsx"),
@@ -464,7 +479,7 @@ describe("MainLayout · 8 route Báo cáo đều tự dựng header", () => {
         key.startsWith("REPORTS_") &&
         String(ROUTES[key as keyof typeof ROUTES]).startsWith("/reports/"),
     );
-    expect(reportRouteKeys).toHaveLength(8);
+    expect(reportRouteKeys).toHaveLength(9);
 
     const missing = reportRouteKeys.filter(
       (key) => !listed.includes(`ROUTES.${key}`),

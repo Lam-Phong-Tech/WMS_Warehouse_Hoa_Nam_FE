@@ -48,10 +48,15 @@ import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { checkNumber, type NumberRule } from "@/shared/validation/number-rules";
+import { TEXT_RULES, checkText } from "@/shared/validation/text-rules";
 
-/** Lý do điều chỉnh: tối thiểu 5 ký tự (BE min:5), trần theo quy ước lý do. */
-const REASON_MIN = 5;
-const REASON_MAX = 1000;
+/**
+ * Lý do điều chỉnh: luật lấy từ lớp dùng chung (bắt buộc, 5…1000 ký tự, đếm
+ * SAU KHI TRIM). Trước 06/09/2026 ô này đo `reason.length` còn nút Tạo đo
+ * `reason.trim().length` — gõ 5 dấu cách thì ô sạch mà nút vẫn xám.
+ */
+const REASON_RULE = TEXT_RULES.reason;
+const REASON_MAX = REASON_RULE.max;
 
 /** Luật số lượng đảo theo từng dòng: nguyên, 0 … còn có thể điều chỉnh. */
 function reversalQtyRule(reversibleQty: number): NumberRule {
@@ -262,13 +267,14 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     totalQty;
   const missingReferenceVersion =
     Boolean(selectedMovement) && !selectedMovement?.version;
+  // MỘT phép kiểm duy nhất cho cả câu lỗi dưới ô lẫn trạng thái nút lưu.
+  const reasonCheck = checkText(reason, REASON_RULE);
   const canSubmit =
     Boolean(selectedMovement?.can_reverse) &&
     !missingReferenceVersion &&
     selectedLines.length > 0 &&
     totalQty > 0 &&
-    reason.trim().length >= REASON_MIN &&
-    reason.trim().length <= REASON_MAX &&
+    reasonCheck.ok &&
     !invalidLine &&
     !itemLineMismatch &&
     (!isIssueReversal || (Boolean(returnCondition) && physicalConfirmed));
@@ -308,7 +314,9 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       reference_document_type:
         selectedMovement.source_document_type || selectedMovement.movement_type,
       reference_version: selectedMovement.version,
-      reason,
+      // Gửi chuỗi đã trim — cùng chuỗi mà checkText đã đo, không để BE nhận
+      // "  lý do  " trong khi FE đếm 5 ký tự trên bản đã cắt.
+      reason: reason.trim(),
       ...(isIssueReversal
         ? {
             return_condition: returnCondition,
@@ -699,9 +707,9 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   onChange={(event) => setReason(event.target.value)}
                   placeholder={t("reverse.create.reasonPlaceholder")}
                   slotProps={{ htmlInput: { maxLength: REASON_MAX } }}
-                  error={Boolean(reason && reason.length < REASON_MIN)}
+                  error={Boolean(reason) && !reasonCheck.ok}
                   helperText={
-                    reason && reason.length < REASON_MIN
+                    reason && !reasonCheck.ok
                       ? t("reverse.create.reasonHelper")
                       : undefined
                   }

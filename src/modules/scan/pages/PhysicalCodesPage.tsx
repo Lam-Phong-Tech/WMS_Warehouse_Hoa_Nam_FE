@@ -12,6 +12,7 @@ import {
   UiText,
   UiTextField,
   type UiStatusTone,
+  FILTER_WIDTH,
 } from "@/shared/ui";
 import {
   HistoryOutlined,
@@ -64,6 +65,7 @@ import type { ReactNode } from "react";
 import { ActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 // Tông soft-tint theo UiStatusBadge — "processing"/"default" (antd cũ) ⇒ info/neutral.
 const stateToneMap: Record<ScanCodeState, UiStatusTone> = {
@@ -346,7 +348,7 @@ export default function PhysicalCodesPage() {
       align: "center",
       hideOnMobile: true,
       render: (row) =>
-        (codePage - 1) * codePerPage + filteredCodes.indexOf(row) + 1,
+        (codePage - 1) * codePerPage + rowIndexOf(filteredCodes, row) + 1,
     },
     {
       key: "code_value",
@@ -513,7 +515,7 @@ export default function PhysicalCodesPage() {
       hideOnMobile: true,
       render: (row) =>
         (batchPagination.current - 1) * batchPerPage +
-        filteredBatches.indexOf(row) +
+        rowIndexOf(filteredBatches, row) +
         1,
     },
     {
@@ -620,7 +622,7 @@ export default function PhysicalCodesPage() {
       hideOnMobile: true,
       render: (row) =>
         (eventPagination.current - 1) * eventPerPage +
-        filteredEvents.indexOf(row) +
+        rowIndexOf(filteredEvents, row) +
         1,
     },
     {
@@ -717,7 +719,7 @@ export default function PhysicalCodesPage() {
             <SearchInput
               placeholder={t("scan.physical.searchCodePlaceholder")}
               aria-label={t("scan.physical.colCodeValue")}
-              width={285}
+              width={FILTER_WIDTH.search}
               value={codeSearch}
               onChange={setCodeSearch}
             />

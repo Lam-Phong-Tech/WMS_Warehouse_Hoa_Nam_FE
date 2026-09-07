@@ -1,0 +1,241 @@
+{
+ "tag": "final2-cpu4",
+ "cpu": 4,
+ "base": "http://localhost:5199",
+ "pages": [
+  {
+   "path": "/dashboard",
+   "warm": false,
+   "ttfb": 4.9000000059604645,
+   "fcp": 504,
+   "lcp": 876,
+   "lcpEl": "span.card-subtitle \"Tập trung xử lý công việc ảnh hưởng vận \"",
+   "cls": 0.008119530178326475,
+   "tbt": 168,
+   "longTasks": 4,
+   "dom": 1043,
+   "requests": 69,
+   "kb": 383
+  },
+  {
+   "path": "/dashboard",
+   "warm": true,
+   "ttfb": 2.5,
+   "fcp": 504,
+   "lcp": 824,
+   "lcpEl": "span.card-subtitle \"Tập trung xử lý công việc ảnh hưởng vận \"",
+   "cls": 0.0020014551742250208,
+   "tbt": 251,
+   "longTasks": 5,
+   "dom": 1043,
+   "requests": 69,
+   "kb": 383
+  },
+  {
+   "path": "/inventory",
+   "warm": false,
+   "ttfb": 3.4000000059604645,
+   "fcp": 484,
+   "lcp": 1064,
+   "lcpEl": "h1.MuiBox-root \"Tra cứu tồn & đối soát\"",
+   "cls": 0.000005794165883371695,
+   "tbt": 788,
+   "longTasks": 4,
+   "dom": 934,
+   "requests": 105,
+   "kb": 393
+  },
+  {
+   "path": "/inventory",
+   "warm": true,
+   "ttfb": 3,
+   "fcp": 516,
+   "lcp": 1112,
+   "lcpEl": "h1.MuiBox-root \"Tra cứu tồn & đối soát\"",
+   "cls": 0.000003885888203017833,
+   "tbt": 585,
+   "longTasks": 4,
+   "dom": 934,
+   "requests": 105,
+   "kb": 393
+  },
+  {
+   "path": "/inbound",
+   "warm": false,
+   "ttfb": 6,
+   "fcp": 508,
+   "lcp": 1084,
+   "lcpEl": "h1.MuiBox-root \"Danh sách phiếu nhập\"",
+   "cls": 0.006889823388203017,
+   "tbt": 201,
+   "longTasks": 4,
+   "dom": 743,
+   "requests": 112,
+   "kb": 394
+  },
+  {
+   "path": "/inbound",
+   "warm": true,
+   "ttfb": 3.2999999970197678,
+   "fcp": 476,
+   "lcp": 924,
+   "lcpEl": "h1.MuiBox-root \"Danh sách phiếu nhập\"",
+   "cls": 0.006889823388203017,
+   "tbt": 360,
+   "longTasks": 4,
+   "dom": 743,
+   "requests": 112,
+   "kb": 394
+  },
+  {
+   "path": "/outbound",
+   "warm": false,
+   "ttfb": 4.100000008940697,
+   "fcp": 556,
+   "lcp": 956,
+   "lcpEl": "h1.MuiBox-root \"Danh sách phiếu xuất\"",
+   "cls": 0.006891461894999479,
+   "tbt": 425,
+   "longTasks": 5,
+   "dom": 784,
+   "requests": 113,
+   "kb": 395
+  },
+  {
+   "path": "/outbound",
+   "warm": true,
+   "ttfb": 4.300000011920929,
+   "fcp": 656,
+   "lcp": 1456,
+   "lcpEl": "h1.MuiBox-root \"Danh sách phiếu xuất\"",
+   "cls": 0.000003885888203017833,
+   "tbt": 727,
+   "longTasks": 4,
+   "dom": 784,
+   "requests": 113,
+   "kb": 395
+  },
+  {
+   "path": "/warranty",
+   "warm": false,
+   "ttfb": 2.5,
+   "fcp": 688,
+   "lcp": 1368,
+   "lcpEl": "h1.MuiBox-root \"Danh sách bảo hành\"",
+   "cls": 0.000003885888203017833,
+   "tbt": 984,
+   "longTasks": 6,
+   "dom": 833,
+   "requests": 126,
+   "kb": 394
+  },
+  {
+   "path": "/warranty",
+   "warm": true,
+   "ttfb": 4.200000002980232,
+   "fcp": 624,
+   "lcp": 1360,
+   "lcpEl": "h1.MuiBox-root \"Danh sách bảo hành\"",
+   "cls": 0.000003885888203017833,
+   "tbt": 1304,
+   "longTasks": 6,
+   "dom": 833,
+   "requests": 126,
+   "kb": 394
+  },
+  {
+   "path": "/reports/inventory-flow",
+   "warm": false,
+   "ttfb": 4.300000011920929,
+   "fcp": 760,
+   "lcp": 1720,
+   "lcpEl": "p \"Toàn bộ phát sinh NHẬP đã ghi sổ trong k\"",
+   "cls": 0.036842921906145513,
+   "tbt": 1061,
+   "longTasks": 7,
+   "dom": 3951,
+   "requests": 92,
+   "kb": 388
+  },
+  {
+   "path": "/reports/inventory-flow",
+   "warm": true,
+   "ttfb": 4.199999988079071,
+   "fcp": 452,
+   "lcp": 1088,
+   "lcpEl": "p \"Toàn bộ phát sinh NHẬP đã ghi sổ trong k\"",
+   "cls": 0.018039449909979424,
+   "tbt": 572,
+   "longTasks": 5,
+   "dom": 3951,
+   "requests": 92,
+   "kb": 388
+  },
+  {
+   "path": "/login",
+   "warm": false,
+   "ttfb": 2.7999999970197678,
+   "fcp": 1212,
+   "lcp": 1212,
+   "lcpEl": "img.MuiBox-root",
+   "cls": 0,
+   "tbt": 259,
+   "longTasks": 3,
+   "dom": 139,
+   "requests": 159,
+   "kb": 824
+  }
+ ],
+ "interactions": [
+  {
+   "label": "Bấm tab trong báo cáo Tồn kho & đối soát",
+   "path": "/reports/stock-reconcile",
+   "inp": 184,
+   "samples": 7,
+   "worst": {
+    "name": "pointerdown",
+    "d": 184
+   }
+  },
+  {
+   "label": "Gõ vào ô lọc của báo cáo Truy vết",
+   "path": "/reports/traceability",
+   "inp": 88,
+   "samples": 18,
+   "worst": {
+    "name": "keydown",
+    "d": 88
+   }
+  },
+  {
+   "label": "Mở modal chi tiết ở Tồn kho",
+   "path": "/inventory",
+   "inp": 512,
+   "samples": 4,
+   "worst": {
+    "name": "pointerdown",
+    "d": 512
+   }
+  },
+  {
+   "label": "Chuyển trang (pagination) ở Nhập kho",
+   "path": "/inbound",
+   "inp": 200,
+   "samples": 4,
+   "worst": {
+    "name": "pointerdown",
+    "d": 200
+   }
+  },
+  {
+   "label": "Mở menu điều hướng và bấm mục",
+   "path": "/dashboard",
+   "inp": 88,
+   "samples": 7,
+   "worst": {
+    "name": "pointerdown",
+    "d": 88
+   }
+  }
+ ]
+}

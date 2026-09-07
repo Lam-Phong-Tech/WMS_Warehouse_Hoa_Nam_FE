@@ -1,3 +1,4 @@
+import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useState } from "react";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
@@ -9,6 +10,8 @@ import {
   UiStatusBadge,
   UiText,
   UiTextField,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import {
   ResponsiveDataTable,
@@ -165,7 +168,7 @@ export default function WarrantyComponentIssueListPage() {
         mvpRowNumber(
           page,
           perPage,
-          rows.findIndex((item) => item.id === row.id),
+          rowIndexOfBy(rows, row, (item) => item.id),
         ),
     },
     {
@@ -262,7 +265,7 @@ export default function WarrantyComponentIssueListPage() {
             },
           }}
           onChange={(event) => setSearchInput(event.target.value)}
-          sx={{ minWidth: 240 }}
+          sx={TOOLBAR_SEARCH_SX}
         />
         <UiSelect
           value={status}
@@ -281,7 +284,7 @@ export default function WarrantyComponentIssueListPage() {
         <UiSelect
           value={perPage}
           aria-label={t("warranty.componentList.pageSizeAria")}
-          minWidth={100}
+          minWidth={FILTER_WIDTH.pageSize}
           options={perPageOptions.map((size) => ({
             value: size,
             label: `${size} / trang`,

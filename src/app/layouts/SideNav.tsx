@@ -21,6 +21,7 @@
  */
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { preloadRoute } from "@/app/router/route-preload";
 import { Box, Tooltip, VuexyNavIcon } from "@/shared/ui";
 import { COMPONENT_TOKENS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import {
@@ -295,7 +296,10 @@ export function SideNav({
           type="button"
           className={`hn-mvp-nav-btn hn-mvp-direct${active ? " active" : ""}`}
           aria-current={active ? "page" : undefined}
+          data-nav-path={item.path}
           onClick={() => handleDirectClick(item)}
+          onPointerEnter={() => preloadRoute(item.path)}
+          onFocus={() => preloadRoute(item.path)}
           sx={{
             ...topRowSx(collapsed, active && collapsed),
             // Ở rail, mục đang chọn chỉ tô nền hover (demo); khi mở rộng thì
@@ -420,7 +424,10 @@ export function SideNav({
                   type="button"
                   className={`hn-mvp-nav-btn${active ? " active" : ""}`}
                   aria-current={active ? "page" : undefined}
+                  data-nav-path={item.path}
                   onClick={() => goTo(item)}
+                  onPointerEnter={() => preloadRoute(item.path)}
+                  onFocus={() => preloadRoute(item.path)}
                   sx={childRowSx(active)}
                 >
                   <Box component="span" sx={labelSx}>

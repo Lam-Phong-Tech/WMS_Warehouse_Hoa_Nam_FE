@@ -11,13 +11,22 @@
  * Cùng dáng và cùng hành vi so khớp option (`isOptionEqualToValue` theo
  * `value`) với `UiFormAutocomplete` để hai lối vào không lệch nhau về giao diện.
  */
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import Autocomplete from "@mui/material/Autocomplete";
+import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import type { SxProps, Theme } from "@mui/material/styles";
 import { useT } from "@/shared/i18n/useT";
 import type { UiAutocompleteOption } from "./UiFormAutocomplete";
+import { OPTION_LIST_MAX_HEIGHT, useOptionWindow } from "./option-window";
+
+/**
+ * Lọc mặc định của MUI, gọi tay để CẮT bớt kết quả trước khi dựng. Giữ nguyên
+ * cách so khớp cũ (không dấu, không phân biệt hoa thường) — chỗ này chỉ thêm
+ * bước cắt, không đổi luật tìm.
+ */
+const filterByLabel = createFilterOptions<UiAutocompleteOption>();
 
 /**
  * Sentinel của dòng "+ Thêm mới" — không phải giá trị thật, chỉ để nhận diện
@@ -96,11 +105,30 @@ export function UiAutocomplete({
   "data-testid": dataTestId,
 }: UiAutocompleteProps) {
   const t = useT();
-  const selected = multiple
-    ? options.filter((option) =>
-        ((value as Array<string | number> | null) ?? []).includes(option.value),
-      )
-    : (options.find((option) => option.value === value) ?? null);
+  // Từ khoá đang gõ chỉ dùng để ĐẶT LẠI cửa sổ dựng (gõ tiếp = danh sách khác,
+  // phải quay về đầu). Việc lọc vẫn do MUI quyết định trong `filterOptions`,
+  // nên không kiểm soát `inputValue` để khỏi phá hành vi "mở lại thì hiện đủ
+  // danh sách" của option đang chọn.
+  const [typed, setTyped] = useState("");
+  const listWindow = useOptionWindow(options.length, typed);
+  /**
+   * PHẢI memo hoá ở nhánh multiple: MUI so `value` bằng identity, và mảng mới ở
+   * mỗi lần render làm nó tưởng lựa chọn vừa đổi — hiệu ứng `resetInputValue`
+   * chạy theo và XOÁ SẠCH chữ đang gõ (ở chế độ nhiều lựa chọn nó luôn đặt ô
+   * nhập về rỗng). Triệu chứng: gõ tìm trong ô chọn-nhiều thì ô luôn trống và
+   * danh sách không bao giờ được lọc.
+   */
+  const selected = useMemo(
+    () =>
+      multiple
+        ? options.filter((option) =>
+            ((value as Array<string | number> | null) ?? []).includes(
+              option.value,
+            ),
+          )
+        : (options.find((option) => option.value === value) ?? null),
+    [multiple, options, value],
+  );
   const optionsWithAddNew = onAddNew
     ? [
         ...options,
@@ -147,10 +175,35 @@ export function UiAutocomplete({
         );
       }}
       onInputChange={(_event, keyword, reason) => {
+        setTyped(keyword);
         // Chỉ báo khi NGƯỜI DÙNG gõ. MUI còn bắn sự kiện này lúc `reset` và lúc
         // chọn xong option — chuyển tiếp cả hai sẽ ghi đè từ khoá tìm kiếm bằng
         // nhãn vừa chọn rồi gọi lại API một lượt thừa.
         if (reason === "input") onInputChange?.(keyword);
+      }}
+      /*
+       * Danh mục thật (SKU, đại lý) tới vài nghìn dòng. Dựng hết một lượt thì
+       * cú bấm mở menu treo cả giây, trong khi hộp chỉ cao 5 dòng — cắt còn
+       * `listWindow.limit` dòng, cuộn tới đáy mới dựng thêm một nhịp.
+       */
+      filterOptions={(all, state) => {
+        const matched = filterByLabel(all, state);
+        const rows = matched.filter(
+          (option) => option.value !== ADD_NEW_OPTION_VALUE,
+        );
+        const addNewRow = matched.find(
+          (option) => option.value === ADD_NEW_OPTION_VALUE,
+        );
+        const sliced = rows.slice(0, listWindow.limit);
+        // "+ Thêm mới" luôn là dòng CUỐI và không bao giờ bị cắt mất: nó là lối
+        // thoát khi tìm không ra, đúng lúc danh sách bị cắt nhất.
+        return addNewRow ? [...sliced, addNewRow] : sliced;
+      }}
+      slotProps={{
+        listbox: {
+          onScroll: listWindow.onListScroll,
+          sx: { maxHeight: OPTION_LIST_MAX_HEIGHT },
+        },
       }}
       getOptionLabel={(option) => option.label}
       getOptionDisabled={(option) => Boolean(option.disabled)}

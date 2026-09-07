@@ -5,6 +5,7 @@
  * (option.value) — single: string | number | null; multiple: Array<value>.
  * So khớp option theo `value` (isOptionEqualToValue).
  */
+import { useState } from "react";
 import type { ReactNode } from "react";
 import {
   Controller,
@@ -12,10 +13,11 @@ import {
   type FieldValues,
   type Path,
 } from "react-hook-form";
-import Autocomplete from "@mui/material/Autocomplete";
+import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import { useT } from "@/shared/i18n/useT";
+import { OPTION_LIST_MAX_HEIGHT, useOptionWindow } from "./option-window";
 
 export interface UiAutocompleteOption {
   value: string | number;
@@ -30,6 +32,9 @@ export interface UiAutocompleteOption {
  * không bao giờ trùng value thật, vốn thường là UUID).
  */
 const ADD_NEW_OPTION_VALUE = "__ui_form_autocomplete_add_new__";
+
+/** Lọc mặc định của MUI, gọi tay để cắt bớt trước khi dựng (xem UiAutocomplete). */
+const filterByLabel = createFilterOptions<UiAutocompleteOption>();
 
 export interface UiFormAutocompleteProps<T extends FieldValues> {
   control: Control<T>;
@@ -71,6 +76,10 @@ export function UiFormAutocomplete<T extends FieldValues>({
   addNewLabel,
 }: UiFormAutocompleteProps<T>) {
   const t = useT();
+  // Xem UiAutocomplete: từ khoá chỉ để đặt lại cửa sổ dựng, không kiểm soát
+  // `inputValue` của MUI.
+  const [typed, setTyped] = useState("");
+  const listWindow = useOptionWindow(options.length, typed);
   const optionsWithAddNew = onAddNew
     ? [
         ...options,
@@ -125,6 +134,28 @@ export function UiFormAutocomplete<T extends FieldValues>({
               }
             }}
             onBlur={field.onBlur}
+            onInputChange={(_event, keyword) => setTyped(keyword)}
+            /*
+             * Cắt danh sách còn `listWindow.limit` dòng rồi cuộn tới đâu dựng
+             * tới đó — cùng luật với UiAutocomplete/UiOptionPicker.
+             */
+            filterOptions={(all, state) => {
+              const matched = filterByLabel(all, state);
+              const rows = matched.filter(
+                (option) => option.value !== ADD_NEW_OPTION_VALUE,
+              );
+              const addNewRow = matched.find(
+                (option) => option.value === ADD_NEW_OPTION_VALUE,
+              );
+              const sliced = rows.slice(0, listWindow.limit);
+              return addNewRow ? [...sliced, addNewRow] : sliced;
+            }}
+            slotProps={{
+              listbox: {
+                onScroll: listWindow.onListScroll,
+                sx: { maxHeight: OPTION_LIST_MAX_HEIGHT },
+              },
+            }}
             getOptionLabel={(option) => option.label}
             getOptionDisabled={(option) => Boolean(option.disabled)}
             isOptionEqualToValue={(option, valueOption) =>

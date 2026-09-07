@@ -21,6 +21,8 @@ import {
   UiStatusBadge,
   UiTextField,
   type UiStatusTone,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import {
   useCreateIamUser,
@@ -854,7 +856,7 @@ export function IamUserScreen({
           slotProps={{
             htmlInput: { "aria-label": t("iam.user.searchAria") },
           }}
-          sx={{ minWidth: 190 }}
+          sx={TOOLBAR_SEARCH_SX}
         />
         <UiSelect
           value={roleFilter}
@@ -865,7 +867,7 @@ export function IamUserScreen({
           disabled={rolesQuery.isLoading}
           aria-label={t("iam.user.roleFilterAria")}
           placeholder={t("iam.user.roleFilterPlaceholder")}
-          minWidth={128}
+          minWidth={FILTER_WIDTH.select}
           options={roles.map((role) => ({
             value: role.role_id,
             label: role.role_name,
@@ -880,7 +882,7 @@ export function IamUserScreen({
           disabled={departmentsQuery.isLoading}
           aria-label={t("iam.user.departmentFilterAria")}
           placeholder={t("iam.user.departmentFilterPlaceholder")}
-          minWidth={136}
+          minWidth={FILTER_WIDTH.select}
           options={departments.map((department) => ({
             value: department.department_id,
             label: department.department_name,
@@ -894,7 +896,7 @@ export function IamUserScreen({
           }}
           aria-label={t("iam.user.statusFilterAria")}
           placeholder={t("iam.user.statusFilterPlaceholder")}
-          minWidth={128}
+          minWidth={FILTER_WIDTH.select}
           options={STATUS_OPTIONS.map((status) => ({
             value: status.value,
             label: status.label,
@@ -907,7 +909,7 @@ export function IamUserScreen({
             setPage(1);
           }}
           aria-label={t("iam.user.pageSizeAria")}
-          minWidth={92}
+          minWidth={FILTER_WIDTH.pageSize}
           options={perPageOptions.map((size) => ({
             value: size,
             label: `${size} / trang`,

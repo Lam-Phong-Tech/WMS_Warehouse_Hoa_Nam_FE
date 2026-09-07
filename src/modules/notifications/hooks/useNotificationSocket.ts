@@ -1,15 +1,20 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getEcho, disconnectEcho } from "@/shared/lib/echo";
+import { connectEcho, disconnectEcho } from "@/shared/lib/echo";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useNotificationStore } from "@/shared/store/notification.store";
 import type { NotificationItem } from "@/modules/notifications/types/notification.types";
 
 /**
  * Subscribe channel private `user.{id}` sau khi có phiên đăng nhập. Không có
- * VITE_REVERB_APP_KEY (hoặc Reverb down) thì getEcho() trả null — bảng chuông
- * chỉ mất realtime, GET /notifications định kỳ/khi mở dropdown vẫn hoạt động.
+ * VITE_REVERB_APP_KEY (hoặc Reverb down) thì `connectEcho()` trả null — bảng
+ * chuông chỉ mất realtime, GET /notifications khi mở dropdown vẫn hoạt động.
+ *
+ * `connectEcho()` là BẤT ĐỒNG BỘ vì laravel-echo + pusher-js nay nạp lười (~110 KB
+ * không còn nằm trên đường tới hạn của mỗi lần F5 — xem shared/lib/echo.ts).
+ * Effect vì thế phải chống hai tình huống: unmount trước khi thư viện về, và
+ * người dùng đăng xuất giữa chừng.
  */
 export function useNotificationSocket(): void {
   const userId = useAuthStore((s) => s.user?.user_id);
@@ -21,22 +26,31 @@ export function useNotificationSocket(): void {
   useEffect(() => {
     if (!isAuthenticated || !userId) return;
 
-    const echo = getEcho();
-    if (!echo) return;
+    let cancelled = false;
+    let leave: (() => void) | null = null;
 
-    const channel = echo.private(`user.${userId}`);
-    channel.subscribed(() => setConnected(true));
-    channel.listen(".notification.created", (payload: NotificationItem) => {
-      increment();
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      if (payload.severity === "warning" || payload.severity === "critical") {
-        toast.warning(payload.title, { description: payload.body });
-      }
+    void connectEcho().then((echo) => {
+      if (cancelled || !echo) return;
+
+      const channel = echo.private(`user.${userId}`);
+      channel.subscribed(() => setConnected(true));
+      channel.listen(".notification.created", (payload: NotificationItem) => {
+        increment();
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        if (payload.severity === "warning" || payload.severity === "critical") {
+          toast.warning(payload.title, { description: payload.body });
+        }
+      });
+
+      leave = () => {
+        echo.leave(`user.${userId}`);
+        setConnected(false);
+      };
     });
 
     return () => {
-      echo.leave(`user.${userId}`);
-      setConnected(false);
+      cancelled = true;
+      leave?.();
     };
   }, [isAuthenticated, userId, increment, setConnected, queryClient]);
 

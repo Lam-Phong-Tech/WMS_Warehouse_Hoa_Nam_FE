@@ -4,8 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { normalizeError } from "@/shared/api/api-error";
 import { fetchAllPages } from "@/shared/api/paginate-all";
 import { listOf, n, text, type Raw, type SelectOption } from "./report-format";
+import { agencyPlaceLabel } from "@/shared/constants/agency-place-labels";
 
 /**
  * Nguồn dữ liệu của trang Báo cáo vận hành.
@@ -64,16 +66,6 @@ export type SkuCatalogEntry = {
   max_stock: number | null;
 };
 
-/**
- * 100 là TRẦN THẬT của backend: `BaseRepository::paginate()` chạy
- * `min(max($perPage, 1), 100)`. Trước đây hằng số này để 200 nên mỗi request chỉ
- * nhận về 100 dòng — con số 200 chỉ là ảo tưởng, và số trang thực tế gấp đôi dự
- * tính. Để đúng 100 để phép chia trang ở đây khớp với thứ máy chủ thật sự trả.
- */
-const SKU_PAGE_SIZE = 100;
-/** Trần an toàn cho vòng phân trang — 20 trang × 100 = 2.000 SKU. */
-const SKU_MAX_PAGES = 20;
-
 function mapSkuRows(rows: Raw[]): SkuCatalogEntry[] {
   const out: SkuCatalogEntry[] = [];
   for (const row of rows) {
@@ -100,32 +92,55 @@ function mapSkuRows(rows: Raw[]): SkuCatalogEntry[] {
   return out;
 }
 
-function fetchSkuPage(page: number) {
-  return http.getPage<Raw[]>(API_ENDPOINTS.PRODUCTS, {
-    params: { page, per_page: SKU_PAGE_SIZE },
-  });
-}
-
 /**
  * Tải toàn bộ danh mục SKU — nguồn để trang báo cáo biết một dòng là "Sản phẩm"
  * hay "Linh kiện" và định mức min/max.
  *
- * TRƯỚC: vòng `for` có `await` bên trong, trang sau chờ trang trước xong mới đi.
- * Với 818 SKU / 100 mỗi trang là **9 vòng mạng NỐI TIẾP** — đo thật trên máy này
- * là ~2,1 giây, và đó là phần lớn thời gian mở lần đầu của mọi màn báo cáo.
+ * LỊCH SỬ: bản đầu cuốn `GET /products` theo trang với vòng `for` có `await` —
+ * 818 SKU / 100 mỗi trang = 9 vòng mạng NỐI TIẾP (~2,1 s). Bản hai đi song song
+ * (1 + 1 đợt), còn ~9 request và ~50 KB JSON đủ trường mỗi lần mở màn báo cáo
+ * đầu tiên của phiên. Với 3.000 người, riêng việc cuốn trang đó là ~45 req/s
+ * dội vào backend.
  *
- * SAU: chỉ trang 1 là tuần tự (cần đọc `meta.last_page` để biết có bao nhiêu
- * trang), các trang còn lại đi SONG SONG. 9 vòng nối tiếp -> 1 + 1 đợt song song.
- *
- * Không tự tăng `per_page` để giảm số trang: 100 đã là trần cứng của backend.
+ * BÂY GIỜ: BE có `GET /skus/lookup` — một request, chỉ 9 cột, không phân trang,
+ * cache phía server 30 phút theo namespace master (tự mới khi có ai sửa SKU).
+ * 9 request ⇒ 1. Trường trả về vẫn cùng tên (`sku_id`, `sku_code`…) nên
+ * `mapSkuRows` dùng chung, không đổi hình dạng dữ liệu cho 6 màn đang dùng.
  */
 async function fetchAllSkus(): Promise<SkuCatalogEntry[]> {
+  try {
+    const rows = await http.get<Raw[]>(API_ENDPOINTS.SKU_LOOKUP);
+    return mapSkuRows(Array.isArray(rows) ? rows : []);
+  } catch (error) {
+    if (!isRouteMissing(error)) throw error;
+    return fetchAllSkusPaged();
+  }
+}
+
+/**
+ * BE chưa có `/skus/lookup` (FE lên UAT trước BE — CI của BE đang đỏ nên deploy
+ * BE bị chặn, xem docs/perf): 404/405 ⇒ cuốn trang `GET /products` như bản cũ.
+ * Mọi lỗi khác (401/403/5xx, mất mạng) vẫn ném ra để React Query xử lý như
+ * thường — chỉ "route không tồn tại" mới là dấu hiệu BE cũ.
+ */
+function isRouteMissing(error: unknown): boolean {
+  const status = normalizeError(error).status;
+  return status === 404 || status === 405;
+}
+
+const SKU_PAGE_SIZE = 100;
+/** Trần an toàn cho vòng phân trang — 20 trang × 100 = 2.000 SKU. */
+const SKU_MAX_PAGES = 20;
+
+async function fetchAllSkusPaged(): Promise<SkuCatalogEntry[]> {
   const pages = await fetchAllPages(
-    fetchSkuPage,
+    (page: number) =>
+      http.getPage<Raw[]>(API_ENDPOINTS.PRODUCTS, {
+        params: { page, per_page: SKU_PAGE_SIZE },
+      }),
     (result) => n(result.meta?.last_page, 1),
     SKU_MAX_PAGES,
   );
-
   return pages.flatMap((result) =>
     mapSkuRows(Array.isArray(result.data) ? result.data : []),
   );
@@ -354,12 +369,14 @@ export function useAgencyOptions() {
         value: entry.agency_id,
         label: `${entry.agency_code} · ${entry.agency_name}`,
       })),
+    // `value` giữ nguyên mã BE (bộ lọc gửi lại đúng chuỗi đó), chỉ `label`
+    // được Việt hoá; xếp theo label vì đó là thứ người dùng dò mắt.
     marketOptions: [...new Set(entries.map((e) => e.market).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, "vi"))
-      .map((value) => ({ value, label: value })),
+      .map((value) => ({ value, label: agencyPlaceLabel(value) }))
+      .sort((a, b) => a.label.localeCompare(b.label, "vi")),
     regionOptions: [...new Set(entries.map((e) => e.region).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, "vi"))
-      .map((value) => ({ value, label: value })),
+      .map((value) => ({ value, label: agencyPlaceLabel(value) }))
+      .sort((a, b) => a.label.localeCompare(b.label, "vi")),
   };
 }
 
@@ -750,6 +767,7 @@ export function useOutboundByRecipient({
   market,
   region,
   skuCode,
+  maxPages = WARRANTY_MAX_PAGES,
   enabled = true,
 }: PeriodArgs & {
   recipientType?: string;
@@ -757,6 +775,17 @@ export function useOutboundByRecipient({
   market?: string;
   region?: string;
   skuCode?: string;
+  /**
+   * Trần số trang cuốn về. Mặc định giữ nguyên trần chung (10 trang = 1.000
+   * dòng) cho lát cắt RPT-07 — đó là MỘT kỳ báo cáo nên hiếm khi chạm trần.
+   *
+   * Tab "So sánh đối tượng nhận hàng" đọc cửa sổ RỘNG GẤP ĐÔI (kỳ đang xem +
+   * kỳ liền trước, để tính được +/- so với kỳ trước và mốc bắt đầu có dữ liệu
+   * của từng đại lý) nên phải nâng trần — nếu không, phép so sánh sẽ dựa trên
+   * một tập dòng bị cắt lặng lẽ. Nơi gọi đối chiếu `pagination.total` với số
+   * dòng nhận được để biết có bị cắt hay không và nói ra trên màn hình.
+   */
+  maxPages?: number;
 }) {
   const baseParams = cleanParams({
     from_date: from,
@@ -768,7 +797,9 @@ export function useOutboundByRecipient({
     sku_code: skuCode,
   });
   return useQuery({
-    queryKey: ["rpt-ops", "outbound-by-recipient", baseParams],
+    // `maxPages` nằm TRONG khoá: hai nơi gọi cùng một cửa sổ nhưng khác trần sẽ
+    // nhận về hai tập dòng khác nhau — dùng chung một ô cache là sai số liệu.
+    queryKey: ["rpt-ops", "outbound-by-recipient", baseParams, maxPages],
     queryFn: async () => {
       // Endpoint này cắt trang ở tầng SQL (trần 100/trang) nên phải cuốn hết
       // trang: chart xu hướng theo ngày và bảng chi tiết đều cần TOÀN BỘ dòng,
@@ -782,7 +813,7 @@ export function useOutboundByRecipient({
             params: { ...baseParams, page, per_page: WARRANTY_PAGE_SIZE },
           }),
         (payload) => n((payload.pagination as Raw | undefined)?.last_page, 1),
-        WARRANTY_MAX_PAGES,
+        maxPages,
       );
       const rows = pages.flatMap((payload) => listOf(payload.rows));
       return { ...pages[0], rows } as Raw;

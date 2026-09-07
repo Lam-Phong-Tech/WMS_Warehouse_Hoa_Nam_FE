@@ -165,14 +165,27 @@ function normalizePackingLabel(row: RawRecord): PackingLabelRecord {
 /**
  * Canonical label read. We intentionally ignore legacy item-level snapshots
  * (outbound_document_id empty) because they are immutable history only.
+ *
+ * TRUYỀN `documentId` KHI CHỈ CẦN NHÃN CỦA MỘT PHIẾU. Không truyền thì hàm này
+ * kéo NGUYÊN bảng nhãn về bằng vòng lặp phân trang TUẦN TỰ (tới 20 lượt gọi) —
+ * chi phí đó tăng mãi theo số nhãn đã in, trong khi nơi gọi thường chỉ cần đúng
+ * một dòng. BE nhận bộ lọc `outbound_document_id` (bổ sung, không phá client cũ).
  */
-export async function fetchPackingLabels(): Promise<PackingLabelRecord[]> {
+export async function fetchPackingLabels(
+  documentId?: string,
+): Promise<PackingLabelRecord[]> {
   const rows: RawRecord[] = [];
   let page = 1;
   for (;;) {
     const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
       API_ENDPOINTS.LABEL_SNAPSHOTS,
-      { params: { page, per_page: 100 } },
+      {
+        params: {
+          page,
+          per_page: 100,
+          ...(documentId ? { outbound_document_id: documentId } : {}),
+        },
+      },
     );
     const data = Array.isArray(result.data)
       ? result.data

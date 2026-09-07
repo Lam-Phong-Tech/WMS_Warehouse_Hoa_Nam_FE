@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { queryClient } from "@/app/providers/query-client";
+import { mark } from "@/shared/perf/marks";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { startQueryPersistence } from "./query-persister";
 import type { CacheIdentity } from "./cache-namespace";
@@ -50,7 +51,9 @@ export function usePersistedQueryCache(): boolean {
     };
 
     let cancelled = false;
+    mark("cache:start");
     void startQueryPersistence(queryClient, identity).finally(() => {
+      mark("cache:ready");
       if (!cancelled) setReady(true);
     });
 

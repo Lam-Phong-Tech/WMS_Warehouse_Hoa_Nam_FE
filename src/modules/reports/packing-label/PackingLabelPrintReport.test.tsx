@@ -157,6 +157,21 @@ const PAYLOAD: Record<string, unknown> = {
       (event) => event.label_snapshot_id === LABEL_1,
     ),
   },
+  [`/label-snapshots/${LABEL_2}`]: {
+    id: LABEL_2,
+    status: "PRINT_FAILED",
+    version: 1,
+    applied_at: null,
+    created_at: "2026-09-01T09:00:00+07:00",
+    label_payload: {
+      label_code: "PL-PX-0002",
+      outbound_no: "PX-0002",
+      item_ids: ["it-4"],
+    },
+    print_events: PRINT_EVENTS.filter(
+      (event) => event.label_snapshot_id === LABEL_2,
+    ),
+  },
 };
 
 const PAGE_PAYLOAD: Record<string, unknown[]> = {
@@ -217,9 +232,9 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(within(table).getAllByText("Nguyễn Kho Vận")).toHaveLength(4);
     expect(within(table).getAllByText(/Zebra ZD421/)).toHaveLength(2);
 
-    // `FAILED` của trigger đọc ra đúng nhãn nghiệp vụ, kèm mã lỗi.
+    // `FAILED` của trigger đọc ra đúng nhãn nghiệp vụ, kèm lý do đã Việt hoá.
     expect(within(table).getByText("In lỗi")).toBeInTheDocument();
-    expect(within(table).getByText("PAPER_OUT")).toBeInTheDocument();
+    expect(within(table).getByText("Máy in hết giấy")).toBeInTheDocument();
     expect(within(table).getByText("Máy in hết giấy nhãn")).toBeInTheDocument();
 
     // In lại = lần in THÀNH CÔNG thứ hai; thử lại sau lỗi vẫn là Print.
@@ -307,6 +322,46 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(
       within(dialog).getByText("Nhãn đầu bị nhòe khi dán"),
     ).toBeInTheDocument();
+  });
+
+  /**
+   * Người dùng báo lỗi 2026-09-06: cột "Lỗi / lý do" in nguyên mã máy in
+   * (PRINTER_JAMMED / PAPER_JAM) giữa màn tiếng Việt. Khoá cả hai chỗ hiển
+   * thị — bảng chính và hộp thoại kiểm chứng — để mã thô không quay lại.
+   */
+  it("dịch mã lỗi máy in sang tiếng Việt, không in mã thô ra bảng", async () => {
+    const user = userEvent.setup();
+    renderReport();
+
+    const table = await screen.findByRole("table");
+    expect(table).not.toHaveTextContent("PAPER_OUT");
+
+    const failedRow = within(table)
+      .getAllByRole("row")
+      .find((row) => row.textContent?.includes("Máy in hết giấy nhãn"));
+    await user.click(
+      within(failedRow!).getByRole("button", { name: /Xem vết kiểm chứng/ }),
+    );
+
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      await within(dialog).findByText("Máy in hết giấy"),
+    ).toBeInTheDocument();
+    expect(dialog).not.toHaveTextContent("PAPER_OUT");
+  });
+
+  it("dịch trạng thái bản lưu của BE thay vì in enum PRINTED", async () => {
+    const user = userEvent.setup();
+    renderReport();
+
+    await screen.findByRole("table");
+    await user.click(
+      screen.getAllByRole("button", { name: /Xem vết kiểm chứng/ })[0],
+    );
+
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText("Đã in")).toBeInTheDocument();
+    expect(dialog).not.toHaveTextContent("PRINTED");
   });
 
   it("hai nút xuất mở theo quyền REPORT_EXPORT", async () => {

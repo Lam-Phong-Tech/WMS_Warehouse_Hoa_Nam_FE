@@ -1,6 +1,15 @@
+import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Box, Stack, UiSelect, UiStatusBadge, UiTextField } from "@/shared/ui";
+import {
+  Box,
+  Stack,
+  UiSelect,
+  UiStatusBadge,
+  UiTextField,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
+} from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -89,7 +98,7 @@ function InboundListScreen() {
     per_page: perPage,
   });
   const rows = query.data?.data ?? [];
-    const meta = query.data?.meta;
+  const meta = query.data?.meta;
   const total = Number(meta?.total ?? rows.length);
 
   useEffect(() => {
@@ -148,7 +157,7 @@ function InboundListScreen() {
         mvpRowNumber(
           page,
           perPage,
-          rows.findIndex((item) => item.id === row.id),
+          rowIndexOfBy(rows, row, (item) => item.id),
         ),
     },
     {
@@ -275,7 +284,7 @@ function InboundListScreen() {
             htmlInput: { "aria-label": t("inbound.list.searchAria") },
           }}
           onChange={(event) => setSearchInput(event.target.value)}
-          sx={{ minWidth: 220 }}
+          sx={TOOLBAR_SEARCH_SX}
         />
         <UiSelect
           value={status ?? ""}
@@ -299,7 +308,7 @@ function InboundListScreen() {
             setPerPage(Number(value));
             setPage(1);
           }}
-          minWidth={100}
+          minWidth={FILTER_WIDTH.pageSize}
         />
         <Box sx={{ flex: 1 }} />
         {canCreate ? (

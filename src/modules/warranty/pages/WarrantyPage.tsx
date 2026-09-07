@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -11,6 +12,8 @@ import {
   UiText,
   UiTextField,
   type UiStatusTone,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import {
   ResponsiveDataTable,
@@ -182,7 +185,7 @@ export default function WarrantyPage() {
         mvpRowNumber(
           page,
           perPage,
-          rows.findIndex((item) => item.id === row.id),
+          rowIndexOfBy(rows, row, (item) => item.id),
         ),
     },
     {
@@ -325,7 +328,7 @@ export default function WarrantyPage() {
               setPage(1);
               searchRef.current?.focus();
             }}
-            sx={{ minWidth: 220 }}
+            sx={TOOLBAR_SEARCH_SX}
           />
 
           <UiSelect
@@ -346,7 +349,7 @@ export default function WarrantyPage() {
             value={identification}
             aria-label={t("warranty.list.identificationFilterAria")}
             placeholder={t("warranty.list.identificationFilterPlaceholder")}
-            minWidth={148}
+            minWidth={FILTER_WIDTH.select}
             options={[
               { value: "IDENTIFIED", label: t("warranty.list.identified") },
               {
@@ -363,7 +366,9 @@ export default function WarrantyPage() {
             value={defectId}
             aria-label={t("warranty.list.defectFilterAria")}
             placeholder={t("warranty.list.defectFilterPlaceholder")}
-            minWidth={148}
+            // Nhãn lựa chọn là "DEF-013 · Chập điện / cháy mô-tơ" — ô hẹp làm
+            // menu gãy dòng giữa tên bệnh/lỗi (phản hồi người dùng 07/09/2026).
+            minWidth={FILTER_WIDTH.selectWide}
             options={(defectsQuery.data?.data ?? []).map((defect) => ({
               value: defect.defect_id,
               label: `${defect.defect_code} · ${defect.defect_name}`,
@@ -376,7 +381,7 @@ export default function WarrantyPage() {
           <UiSelect
             value={perPage}
             aria-label={t("warranty.list.pageSizeAria")}
-            minWidth={100}
+            minWidth={FILTER_WIDTH.pageSize}
             options={perPageOptions.map((size) => ({
               value: size,
               label: `${size} / trang`,

@@ -101,3 +101,42 @@ describe("UiSelect — ngưỡng tìm kiếm", () => {
     expect(screen.getByRole("combobox").tagName).not.toBe("INPUT");
   });
 });
+
+/**
+ * Kênh báo lỗi thêm ngày 06/09/2026: trước đó UiSelect KHÔNG có
+ * error/helperText/required, nên ô select bắt buộc đặt trong form không có chỗ
+ * nào hiện câu lỗi — validate bắt được nhưng người dùng không thấy gì.
+ */
+describe("UiSelect — báo lỗi", () => {
+  it("hiện helperText ở CẢ hai nhánh (dropdown thường và ô tìm kiếm)", () => {
+    const { unmount } = render(
+      <Host options={SHORT} error helperText="Chưa chọn kho" />,
+    );
+    expect(screen.getByText("Chưa chọn kho")).toBeInTheDocument();
+    unmount();
+
+    render(<Host options={LONG} error helperText="Chưa chọn SKU" />);
+    expect(screen.getByText("Chưa chọn SKU")).toBeInTheDocument();
+  });
+
+  it("gắn aria-invalid và aria-describedby để trình đọc màn hình đọc được lỗi", () => {
+    render(<Host options={SHORT} error helperText="Chưa chọn kho" />);
+    const control = screen.getByRole("combobox");
+    expect(control).toHaveAttribute("aria-invalid", "true");
+    const describedBy = control.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy as string)).toHaveTextContent(
+      "Chưa chọn kho",
+    );
+  });
+
+  it("không lỗi thì không gắn aria-invalid", () => {
+    render(<Host options={SHORT} />);
+    expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("required hiện dấu sao trên nhãn", () => {
+    render(<Host options={SHORT} label="Kho" required />);
+    expect(screen.getByText("Kho").textContent).toContain("*");
+  });
+});

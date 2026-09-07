@@ -16,6 +16,13 @@ export const ROUTES = {
   MASTER_DATA: "/master-data/skus",
   SKU_CREATE: "/master-data/skus/new",
   CATALOG_MASTER: "/master-data/catalog",
+  /**
+   * MST-PV-01 — danh mục sản phẩm hiển thị trên App PV (lưới thẻ có ảnh + nút
+   * thêm sản phẩm). Đặt dưới `/master-data` chứ không phải `/pv-admin`: đây là
+   * màn DANH MỤC người quản kho dùng hằng ngày, còn `/pv-admin` là bàn quản trị
+   * master của App PV (ngành nghề / thẻ / quy tắc gợi ý).
+   */
+  PV_PRODUCT_CATALOG: "/master-data/pv-products",
   WAREHOUSE_CONFIG: "/master-data/warehouse",
   AGENCIES: "/master-data/agencies",
   AGENCY_CREATE: "/master-data/agencies/new",
@@ -49,7 +56,10 @@ export const ROUTES = {
   // Báo cáo vận hành — mỗi mục là MỘT trang riêng trong sidebar (không còn
   // gộp vào 1 route "/reports" với tab bar nội trang — phản hồi người dùng
   // 2026-08-30). Thứ tự khớp RPT-01..RPT-08 ở nav-data.ts.
+  // RPT-01 giữ nguyên path lịch sử (deep-link / guard đang trỏ vào đây)
+  // nhưng từ 2026-09-06 chỉ còn phần NHẬP; phần XUẤT tách sang route dưới.
   REPORTS_INVENTORY_FLOW: "/reports/inventory-flow",
+  REPORTS_OUTBOUND_FLOW: "/reports/outbound-flow",
   REPORTS_STOCK_RECONCILE: "/reports/stock-reconcile",
   REPORTS_TRACEABILITY: "/reports/traceability",
   REPORTS_IMPORT_QUALITY: "/reports/import-quality",

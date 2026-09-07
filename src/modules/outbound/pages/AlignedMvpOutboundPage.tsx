@@ -12,6 +12,8 @@ import {
   UiStatusBadge,
   UiTextField,
   type UiStatusTone,
+  FILTER_WIDTH,
+  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import { useT } from "@/shared/i18n/useT";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -45,6 +47,7 @@ import {
 } from "@/modules/outbound/services/alignedOutboundService";
 import { ActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -101,7 +104,7 @@ export default function AlignedMvpOutboundPage() {
   });
 
   const rows = listQuery.data?.data ?? [];
-    const pagination = resolveApiPagination(listQuery.data?.meta, {
+  const pagination = resolveApiPagination(listQuery.data?.meta, {
     page,
     pageSize: perPage,
     rowCount: rows.length,
@@ -146,7 +149,7 @@ export default function AlignedMvpOutboundPage() {
       align: "center",
       width: 48,
       hideOnMobile: true,
-      render: (row) => mvpRowNumber(page, perPage, rows.indexOf(row)),
+      render: (row) => mvpRowNumber(page, perPage, rowIndexOf(rows, row)),
     },
     {
       key: "code",
@@ -316,7 +319,7 @@ export default function AlignedMvpOutboundPage() {
               htmlInput: { "aria-label": t("outbound.list.searchAria") },
             }}
             onChange={(event) => setSearchInput(event.target.value)}
-            sx={{ minWidth: 220 }}
+            sx={TOOLBAR_SEARCH_SX}
           />
           <UiSelect
             aria-label={t("outbound.list.statusFilterAria")}
@@ -340,7 +343,7 @@ export default function AlignedMvpOutboundPage() {
               setPerPage(Number(value));
               setPage(1);
             }}
-            minWidth={100}
+            minWidth={FILTER_WIDTH.pageSize}
           />
           <Box className="spacer" sx={{ flex: 1 }} />
           {canImport ? (

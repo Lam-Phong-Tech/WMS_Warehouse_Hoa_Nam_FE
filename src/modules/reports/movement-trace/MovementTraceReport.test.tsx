@@ -103,6 +103,10 @@ const PAGE_PAYLOAD: Record<string, unknown> = {
   ],
 };
 
+// Danh mục SKU của màn báo cáo giờ đi qua GET /skus/lookup (một request, không
+// phân trang — xem fetchAllSkus); cùng dòng dữ liệu với "/products" ở trên.
+PAYLOAD["/skus/lookup"] = PAGE_PAYLOAD["/products"];
+
 function renderReport() {
   renderWithProviders(<MovementTraceReport />, [ROUTES.REPORTS_TRACEABILITY]);
 }
@@ -226,7 +230,8 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     });
     expect(within(drawer).getByText(/Xuất kho đã ghi sổ/)).toBeInTheDocument();
     expect(
-      within(drawer).getByText(/OUT-2026-00018 · OUTBOUND_DOCUMENT/),
+      // Nguồn hiện tên chứng từ tiếng Việt, không phải mã `source_type` của BE.
+      within(drawer).getByText(/OUT-2026-00018 · Phiếu xuất kho/),
     ).toBeInTheDocument();
     expect(within(drawer).getByText("vanhanh.hn")).toBeInTheDocument();
     expect(

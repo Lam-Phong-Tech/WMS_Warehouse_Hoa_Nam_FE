@@ -14,6 +14,7 @@
  */
 import { createTheme } from "@mui/material/styles";
 import Grow from "@mui/material/Grow";
+import type { PopperProps } from "@mui/material/Popper";
 import { MUI_ICON_SLOTS } from "@/shared/ui/icons";
 import {
   BREAKPOINTS,
@@ -39,303 +40,342 @@ const CONTROL_TRANSITION = [
   `transform ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
 ].join(", ");
 
+/**
+ * POPUP XỔ RA (Autocomplete) — mặc định MUI dán popper SÁT ô neo. Khi không đủ
+ * chỗ bên dưới, popper lật lên và mép dưới của nó trùng đúng mép trên
+ * (border-box) của ô nhập — nhưng NHÃN NỔI của MUI chồm lên mép đó ~9px, nên
+ * nhãn bị popup CẮT ĐÔI, còn danh sách thì dính liền vào ô như một mảng trắng
+ * vỡ giữa trang (lỗi người dùng báo ở màn Cấu hình kho khi chọn Tỉnh/Thành).
+ *
+ * Sửa MỘT chỗ ở theme cho MỌI autocomplete của app: chừa khe hở theo hướng mở,
+ * hướng LẬT LÊN rộng hơn vì phải vượt qua chiều cao nhãn nổi.
+ *
+ * KHÔNG cần tự tính trần chiều cao: `max-height: 40vh` sẵn có của MUI luôn nhỏ
+ * hơn khoảng trống của phía mà popper chọn (phía rộng hơn luôn ≥ 0.5vh − 30px,
+ * vượt 0.4vh với mọi khung nhìn cao từ 300px) — đã đo ở 380/480/640/900px.
+ */
+const menuOffsetModifier: NonNullable<PopperProps["modifiers"]>[number] = {
+  name: "offset",
+  options: {
+    offset: ({ placement }: { placement: string }) => [
+      0,
+      placement.startsWith("top") ? C.menu.gapAbove : C.menu.gap,
+    ],
+  },
+};
+
 function buildMuiTheme(mode: ThemeModeName) {
   const P = PALETTE[mode];
   return createTheme({
-  breakpoints: { values: { ...BREAKPOINTS } },
-  palette: {
-    mode,
-    primary: { main: P.primary, dark: P.primaryDark, light: P.primaryLight },
-    secondary: { main: P.secondary, dark: P.secondaryDark },
-    error: { main: P.error, dark: P.errorDark },
-    warning: { main: P.warning, dark: P.warningDark },
-    success: { main: P.success, dark: P.successDark },
-    info: { main: P.info, dark: P.infoDark },
-    background: { default: P.bgCanvas, paper: P.bgSurface },
-    text: {
-      primary: P.textHigh,
-      secondary: P.textMedium,
-      disabled: P.textDisabled,
+    breakpoints: { values: { ...BREAKPOINTS } },
+    palette: {
+      mode,
+      primary: { main: P.primary, dark: P.primaryDark, light: P.primaryLight },
+      secondary: { main: P.secondary, dark: P.secondaryDark },
+      error: { main: P.error, dark: P.errorDark },
+      warning: { main: P.warning, dark: P.warningDark },
+      success: { main: P.success, dark: P.successDark },
+      info: { main: P.info, dark: P.infoDark },
+      background: { default: P.bgCanvas, paper: P.bgSurface },
+      text: {
+        primary: P.textHigh,
+        secondary: P.textMedium,
+        disabled: P.textDisabled,
+      },
+      divider: P.divider,
     },
-    divider: P.divider,
-  },
-  shape: { borderRadius: C.button.radius },
-  transitions: {
-    duration: {
-      shortest: MOTION.duration.instant,
-      shorter: MOTION.duration.fast,
-      short: MOTION.duration.normal,
-      standard: MOTION.duration.normal,
-      complex: MOTION.duration.slow,
-      enteringScreen: MOTION.duration.slow,
-      leavingScreen: MOTION.duration.normal,
+    shape: { borderRadius: C.button.radius },
+    transitions: {
+      duration: {
+        shortest: MOTION.duration.instant,
+        shorter: MOTION.duration.fast,
+        short: MOTION.duration.normal,
+        standard: MOTION.duration.normal,
+        complex: MOTION.duration.slow,
+        enteringScreen: MOTION.duration.slow,
+        leavingScreen: MOTION.duration.normal,
+      },
+      easing: {
+        easeInOut: MOTION.easing.standard,
+        easeOut: MOTION.easing.out,
+        easeIn: MOTION.easing.in,
+        sharp: MOTION.easing.standard,
+      },
     },
-    easing: {
-      easeInOut: MOTION.easing.standard,
-      easeOut: MOTION.easing.out,
-      easeIn: MOTION.easing.in,
-      sharp: MOTION.easing.standard,
+    typography: {
+      fontFamily: TYPOGRAPHY.fontFamily,
+      fontSize: TYPOGRAPHY.fontSizeBody,
+      button: {
+        fontSize: C.button.fontSize,
+        fontWeight: C.button.fontWeight,
+        textTransform: "none",
+      },
     },
-  },
-  typography: {
-    fontFamily: TYPOGRAPHY.fontFamily,
-    fontSize: TYPOGRAPHY.fontSizeBody,
-    button: {
-      fontSize: C.button.fontSize,
-      fontWeight: C.button.fontWeight,
-      textTransform: "none",
-    },
-  },
-  components: {
-    MuiButton: {
-      defaultProps: { size: "small", disableElevation: true },
-      styleOverrides: {
-        root: {
-          height: C.button.height,
-          borderRadius: C.button.radius,
-          fontWeight: C.button.fontWeight,
-          fontSize: C.button.fontSize,
-          textTransform: "none",
-          transition: CONTROL_TRANSITION,
-          "&:hover:not(.Mui-disabled)": { transform: "translateY(-1px)" },
-          "&:active:not(.Mui-disabled)": {
-            transform: "translateY(0) scale(0.97)",
-            transitionDuration: `${MOTION.duration.instant}ms`,
+    components: {
+      MuiButton: {
+        defaultProps: { size: "small", disableElevation: true },
+        styleOverrides: {
+          root: {
+            height: C.button.height,
+            borderRadius: C.button.radius,
+            fontWeight: C.button.fontWeight,
+            fontSize: C.button.fontSize,
+            textTransform: "none",
+            transition: CONTROL_TRANSITION,
+            "&:hover:not(.Mui-disabled)": { transform: "translateY(-1px)" },
+            "&:active:not(.Mui-disabled)": {
+              transform: "translateY(0) scale(0.97)",
+              transitionDuration: `${MOTION.duration.instant}ms`,
+            },
+            // Focus phải thấy được bằng mắt: global :where(...) trong
+            // hn-motion.css có specificity 0 nên bị mọi `outline: none` cục bộ
+            // đè mất — khai lại ở đây với specificity thật của component.
+            "&:focus-visible": {
+              outline: `2px solid ${S.primary}`,
+              outlineOffset: 2,
+            },
           },
-          // Focus phải thấy được bằng mắt: global :where(...) trong
-          // hn-motion.css có specificity 0 nên bị mọi `outline: none` cục bộ
-          // đè mất — khai lại ở đây với specificity thật của component.
-          "&:focus-visible": {
-            outline: `2px solid ${S.primary}`,
-            outlineOffset: 2,
-          },
-        },
-        startIcon: {
-          "& > *:nth-of-type(1)": { fontSize: 16 },
-        },
-      },
-    },
-    MuiTextField: {
-      defaultProps: { size: "small" },
-    },
-    MuiFormControl: {
-      defaultProps: { size: "small" },
-    },
-    MuiSelect: {
-      defaultProps: { size: "small", ...MUI_ICON_SLOTS.MuiSelect },
-      styleOverrides: {
-        select: {
-          paddingTop: C.input.paddingY,
-          paddingBottom: C.input.paddingY,
-          paddingLeft: C.input.paddingX - 2,
-          fontSize: C.input.fontSize,
-        },
-      },
-    },
-    MuiOutlinedInput: {
-      styleOverrides: {
-        root: { borderRadius: C.input.radius },
-        input: {
-          paddingTop: C.input.paddingY,
-          paddingBottom: C.input.paddingY,
-          fontSize: C.input.fontSize,
-        },
-        notchedOutline: {
-          borderColor: C.input.borderColor,
-          transition: [
-            `border-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
-            `border-width ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
-          ].join(", "),
-        },
-      },
-    },
-    MuiMenuItem: {
-      styleOverrides: {
-        root: {
-          fontSize: C.input.fontSize,
-          minHeight: C.button.height,
-          transition: CONTROL_TRANSITION,
-        },
-      },
-    },
-    MuiFormLabel: {
-      styleOverrides: {
-        root: {
-          fontSize: C.input.labelFontSize,
-          // Nhãn field giữ màu chữ bình thường kể cả khi field lỗi — chỉ viền
-          // input và helperText đổi đỏ (quyết định UX có sẵn của dự án).
-          "&.Mui-error": { color: S.textHigh },
-          // BUG: InputLabel tự nhân thêm transform scale(0.75) khi ở trạng
-          // thái nổi lên viền (shrink) — nếu root fontSize đặt thẳng 13px thì
-          // chữ HIỂN THỊ THẬT chỉ còn 13*0.75=9.75px, quá nhỏ khiến dấu tiếng
-          // Việt (ã, ạ, ộ...) vỡ nét/trông như mất nửa chữ (đo được qua
-          // getComputedStyle trên label thật — xem ghi chú soát UI 2026-08-29).
-          // Bù ngược 0.75 chỉ ở trạng thái shrink để chữ nổi hiển thị đúng
-          // 13px thật; trạng thái nghỉ (chưa nổi) không có transform nên vẫn
-          // đúng 13px như trước, không đổi.
-          "&.MuiInputLabel-shrink": {
-            fontSize: `${(C.input.labelFontSize / 0.75).toFixed(4)}px`,
-          },
-        },
-        asterisk: { color: S.error },
-      },
-    },
-    MuiFormHelperText: {
-      styleOverrides: {
-        root: { fontSize: 12.5 },
-      },
-    },
-    MuiDialog: {
-      defaultProps: {
-        slots: { transition: Grow },
-        transitionDuration: {
-          enter: MOTION.duration.slow,
-          exit: MOTION.duration.normal,
-        },
-        closeAfterTransition: true,
-      },
-      styleOverrides: {
-        paper: { borderRadius: C.modal.radius },
-      },
-    },
-    MuiDrawer: {
-      defaultProps: {
-        transitionDuration: {
-          enter: MOTION.duration.slow,
-          exit: MOTION.duration.normal,
-        },
-      },
-    },
-    MuiTableRow: {
-      styleOverrides: {
-        root: {
-          transition: `background-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
-        },
-      },
-    },
-    MuiTab: {
-      styleOverrides: {
-        root: { transition: CONTROL_TRANSITION, textTransform: "none" },
-      },
-    },
-    MuiListItemButton: {
-      styleOverrides: {
-        root: { transition: CONTROL_TRANSITION },
-      },
-    },
-    MuiTooltip: {
-      defaultProps: {
-        enterDelay: 250,
-        enterNextDelay: 250,
-        leaveDelay: 0,
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          transition: [
-            `box-shadow ${MOTION.duration.normal}ms ${MOTION.easing.standard}`,
-            `border-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
-          ].join(", "),
-        },
-      },
-    },
-    MuiDialogTitle: {
-      styleOverrides: {
-        root: {
-          fontSize: C.modal.titleFontSize,
-          fontWeight: C.modal.titleFontWeight,
-          padding: "16px 20px",
-        },
-      },
-    },
-    MuiDialogContent: {
-      styleOverrides: {
-        // MUI đặt paddingTop:0 cho DialogContent khi nó đứng NGAY SAU DialogTitle
-        // (selector `.MuiDialogTitle-root + &`). Hệ quả: NHÃN NỔI (floating label) của
-        // hàng field TRÊN CÙNG nhô lên trên viền input → vượt mép vùng cuộn overflow
-        // của DialogContent và bị CẮT MẤT NỬA TRÊN. Trả lại một khoảng đệm đỉnh đủ để
-        // nhãn không bị cắt, dùng CHÍNH selector của MUI (đặt sau nên thắng theo thứ
-        // tự, cùng độ đặc hiệu) — sửa MỘT chỗ cho MỌI modal toàn dự án.
-        root: {
-          fontSize: TYPOGRAPHY.fontSizeBody,
-          ".MuiDialogTitle-root + &": { paddingTop: "14px" },
-        },
-      },
-    },
-    MuiChip: {
-      defaultProps: { ...MUI_ICON_SLOTS.MuiChip },
-      styleOverrides: {
-        root: {
-          borderRadius: C.chip.radius,
-          fontSize: C.chip.fontSize,
-          transition: CONTROL_TRANSITION,
-        },
-      },
-    },
-    /**
-     * Alert (lỗi API, cảnh báo nghiệp vụ) xuất hiện giữa luồng thao tác và đẩy
-     * nội dung bên dưới xuống — hiện tức thì làm cả trang giật một nhịp. Dùng
-     * lại keyframes toàn cục của hn-motion.css để giữ một nguồn định nghĩa.
-     */
-    MuiAlert: {
-      defaultProps: { ...MUI_ICON_SLOTS.MuiAlert },
-      styleOverrides: {
-        root: {
-          animation: `hn-fade-in-up ${MOTION.duration.normal}ms ${MOTION.easing.out} backwards`,
-        },
-      },
-    },
-    /**
-     * Các component MUI tự vẽ icon mặc định (bộ SVG nội bộ của MUI). Ép về
-     * Flaticon Uicons ở đây để cả app chỉ còn MỘT bộ icon — chi tiết slug xem
-     * src/shared/ui/icons/icon-slots.tsx.
-     */
-    MuiNativeSelect: {
-      defaultProps: { ...MUI_ICON_SLOTS.MuiNativeSelect },
-    },
-    MuiAutocomplete: {
-      defaultProps: { ...MUI_ICON_SLOTS.MuiAutocomplete },
-    },
-    MuiCheckbox: {
-      defaultProps: { ...MUI_ICON_SLOTS.MuiCheckbox },
-    },
-    MuiRadio: {
-      defaultProps: { ...MUI_ICON_SLOTS.MuiRadio },
-    },
-    MuiPaginationItem: {
-      defaultProps: { ...MUI_ICON_SLOTS.MuiPaginationItem },
-    },
-    MuiTabs: {
-      defaultProps: { ...MUI_ICON_SLOTS.MuiTabs },
-    },
-    MuiIconButton: {
-      defaultProps: { size: "small" },
-      styleOverrides: {
-        root: {
-          fontSize: C.icon.md,
-          // Vùng bấm tối thiểu: size="small" mặc định chỉ ~28px, quá nhỏ cho
-          // thao tác trong kho (WCAG khuyến nghị ≥44, tokens khai heightTouch
-          // 44). 34px là mức cân bằng không phá layout bảng dày.
-          minWidth: 34,
-          minHeight: 34,
-          "@media (pointer: coarse)": {
-            minWidth: CONTROL.heightTouch,
-            minHeight: CONTROL.heightTouch,
-          },
-          transition: CONTROL_TRANSITION,
-          "&:active:not(.Mui-disabled)": {
-            transform: "scale(0.92)",
-            transitionDuration: `${MOTION.duration.instant}ms`,
-          },
-          "&:focus-visible": {
-            outline: `2px solid ${S.primary}`,
-            outlineOffset: 2,
+          startIcon: {
+            "& > *:nth-of-type(1)": { fontSize: 16 },
           },
         },
       },
+      MuiTextField: {
+        defaultProps: { size: "small" },
+      },
+      MuiFormControl: {
+        defaultProps: { size: "small" },
+      },
+      MuiSelect: {
+        defaultProps: { size: "small", ...MUI_ICON_SLOTS.MuiSelect },
+        styleOverrides: {
+          select: {
+            paddingTop: C.input.paddingY,
+            paddingBottom: C.input.paddingY,
+            paddingLeft: C.input.paddingX - 2,
+            fontSize: C.input.fontSize,
+          },
+        },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: { borderRadius: C.input.radius },
+          input: {
+            paddingTop: C.input.paddingY,
+            paddingBottom: C.input.paddingY,
+            fontSize: C.input.fontSize,
+          },
+          notchedOutline: {
+            borderColor: C.input.borderColor,
+            transition: [
+              `border-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
+              `border-width ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
+            ].join(", "),
+          },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            fontSize: C.input.fontSize,
+            minHeight: C.button.height,
+            transition: CONTROL_TRANSITION,
+          },
+        },
+      },
+      MuiFormLabel: {
+        styleOverrides: {
+          root: {
+            fontSize: C.input.labelFontSize,
+            // Nhãn field giữ màu chữ bình thường kể cả khi field lỗi — chỉ viền
+            // input và helperText đổi đỏ (quyết định UX có sẵn của dự án).
+            "&.Mui-error": { color: S.textHigh },
+            // BUG: InputLabel tự nhân thêm transform scale(0.75) khi ở trạng
+            // thái nổi lên viền (shrink) — nếu root fontSize đặt thẳng 13px thì
+            // chữ HIỂN THỊ THẬT chỉ còn 13*0.75=9.75px, quá nhỏ khiến dấu tiếng
+            // Việt (ã, ạ, ộ...) vỡ nét/trông như mất nửa chữ (đo được qua
+            // getComputedStyle trên label thật — xem ghi chú soát UI 2026-08-29).
+            // Bù ngược 0.75 chỉ ở trạng thái shrink để chữ nổi hiển thị đúng
+            // 13px thật; trạng thái nghỉ (chưa nổi) không có transform nên vẫn
+            // đúng 13px như trước, không đổi.
+            "&.MuiInputLabel-shrink": {
+              fontSize: `${(C.input.labelFontSize / 0.75).toFixed(4)}px`,
+            },
+          },
+          asterisk: { color: S.error },
+        },
+      },
+      MuiFormHelperText: {
+        styleOverrides: {
+          root: { fontSize: 12.5 },
+        },
+      },
+      MuiDialog: {
+        defaultProps: {
+          slots: { transition: Grow },
+          transitionDuration: {
+            enter: MOTION.duration.slow,
+            exit: MOTION.duration.normal,
+          },
+          closeAfterTransition: true,
+        },
+        styleOverrides: {
+          paper: { borderRadius: C.modal.radius },
+        },
+      },
+      MuiDrawer: {
+        defaultProps: {
+          transitionDuration: {
+            enter: MOTION.duration.slow,
+            exit: MOTION.duration.normal,
+          },
+        },
+      },
+      MuiTableRow: {
+        styleOverrides: {
+          root: {
+            transition: `background-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
+          },
+        },
+      },
+      MuiTab: {
+        styleOverrides: {
+          root: { transition: CONTROL_TRANSITION, textTransform: "none" },
+        },
+      },
+      MuiListItemButton: {
+        styleOverrides: {
+          root: { transition: CONTROL_TRANSITION },
+        },
+      },
+      MuiTooltip: {
+        defaultProps: {
+          enterDelay: 250,
+          enterNextDelay: 250,
+          leaveDelay: 0,
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            transition: [
+              `box-shadow ${MOTION.duration.normal}ms ${MOTION.easing.standard}`,
+              `border-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
+            ].join(", "),
+          },
+        },
+      },
+      MuiDialogTitle: {
+        styleOverrides: {
+          root: {
+            fontSize: C.modal.titleFontSize,
+            fontWeight: C.modal.titleFontWeight,
+            padding: "16px 20px",
+          },
+        },
+      },
+      MuiDialogContent: {
+        styleOverrides: {
+          // MUI đặt paddingTop:0 cho DialogContent khi nó đứng NGAY SAU DialogTitle
+          // (selector `.MuiDialogTitle-root + &`). Hệ quả: NHÃN NỔI (floating label) của
+          // hàng field TRÊN CÙNG nhô lên trên viền input → vượt mép vùng cuộn overflow
+          // của DialogContent và bị CẮT MẤT NỬA TRÊN. Trả lại một khoảng đệm đỉnh đủ để
+          // nhãn không bị cắt, dùng CHÍNH selector của MUI (đặt sau nên thắng theo thứ
+          // tự, cùng độ đặc hiệu) — sửa MỘT chỗ cho MỌI modal toàn dự án.
+          root: {
+            fontSize: TYPOGRAPHY.fontSizeBody,
+            ".MuiDialogTitle-root + &": { paddingTop: "14px" },
+          },
+        },
+      },
+      MuiChip: {
+        defaultProps: { ...MUI_ICON_SLOTS.MuiChip },
+        styleOverrides: {
+          root: {
+            borderRadius: C.chip.radius,
+            fontSize: C.chip.fontSize,
+            transition: CONTROL_TRANSITION,
+          },
+        },
+      },
+      /**
+       * Alert (lỗi API, cảnh báo nghiệp vụ) xuất hiện giữa luồng thao tác và đẩy
+       * nội dung bên dưới xuống — hiện tức thì làm cả trang giật một nhịp. Dùng
+       * lại keyframes toàn cục của hn-motion.css để giữ một nguồn định nghĩa.
+       */
+      MuiAlert: {
+        defaultProps: { ...MUI_ICON_SLOTS.MuiAlert },
+        styleOverrides: {
+          root: {
+            animation: `hn-fade-in-up ${MOTION.duration.normal}ms ${MOTION.easing.out} backwards`,
+          },
+        },
+      },
+      /**
+       * Các component MUI tự vẽ icon mặc định (bộ SVG nội bộ của MUI). Ép về
+       * Flaticon Uicons ở đây để cả app chỉ còn MỘT bộ icon — chi tiết slug xem
+       * src/shared/ui/icons/icon-slots.tsx.
+       */
+      MuiNativeSelect: {
+        defaultProps: { ...MUI_ICON_SLOTS.MuiNativeSelect },
+      },
+      MuiAutocomplete: {
+        defaultProps: {
+          ...MUI_ICON_SLOTS.MuiAutocomplete,
+          slotProps: {
+            popper: {
+              modifiers: [menuOffsetModifier],
+            },
+          },
+        },
+        styleOverrides: {
+          // Popup là lớp NỔI: bóng floating + bo góc card để tách hẳn khỏi mặt
+          // trang, thay elevation-1 nhạt của MUI (nhìn như chữ dán lên trang).
+          paper: {
+            borderRadius: C.menu.radius,
+            boxShadow: C.menu.shadow,
+          },
+        },
+      },
+      MuiCheckbox: {
+        defaultProps: { ...MUI_ICON_SLOTS.MuiCheckbox },
+      },
+      MuiRadio: {
+        defaultProps: { ...MUI_ICON_SLOTS.MuiRadio },
+      },
+      MuiPaginationItem: {
+        defaultProps: { ...MUI_ICON_SLOTS.MuiPaginationItem },
+      },
+      MuiTabs: {
+        defaultProps: { ...MUI_ICON_SLOTS.MuiTabs },
+      },
+      MuiIconButton: {
+        defaultProps: { size: "small" },
+        styleOverrides: {
+          root: {
+            fontSize: C.icon.md,
+            // Vùng bấm tối thiểu: size="small" mặc định chỉ ~28px, quá nhỏ cho
+            // thao tác trong kho (WCAG khuyến nghị ≥44, tokens khai heightTouch
+            // 44). 34px là mức cân bằng không phá layout bảng dày.
+            minWidth: 34,
+            minHeight: 34,
+            "@media (pointer: coarse)": {
+              minWidth: CONTROL.heightTouch,
+              minHeight: CONTROL.heightTouch,
+            },
+            transition: CONTROL_TRANSITION,
+            "&:active:not(.Mui-disabled)": {
+              transform: "scale(0.92)",
+              transitionDuration: `${MOTION.duration.instant}ms`,
+            },
+            "&:focus-visible": {
+              outline: `2px solid ${S.primary}`,
+              outlineOffset: 2,
+            },
+          },
+        },
+      },
     },
-  },
   });
 }
 

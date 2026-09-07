@@ -355,6 +355,14 @@
   text-align: right;
 }
 .hn-rpt02 .card {
+  /*
+   * Bỏ qua layout/paint cho thẻ đang nằm ngoài màn hình. Trace một màn báo cáo
+   * cho thấy ~60% thời gian luồng chính là style/layout/paint, phần lớn cho các
+   * thẻ ở dưới mà người dùng chưa cuộn tới. `auto 480px` giữ chỗ để thanh cuộn
+   * không nhảy; sau lần vẽ đầu trình duyệt tự nhớ kích thước thật.
+   */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
   border: 1px solid var(--hnr-card-line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -1236,7 +1244,12 @@
   stroke-linejoin: round;
 }
 
-@media (max-width: 1399.95px) {
+/*
+ * Lưới 4 cột của thẻ lọc cần ≥ 1046px (sàn 300+230+180 + khối "Làm mới" 276 +
+ * 3 khe) — chỉ có từ 1536px viewport. Dưới đó chuyển 2 cột; ngưỡng cũ 1400
+ * để hở dải 1400–1535 bị tràn phải, còn 1280–1399 thì cắt cụt hai ô ngày.
+ */
+@media (max-width: 1535.95px) {
   .hn-rpt02 .report-filter-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

@@ -20,6 +20,8 @@ import {
   type UiStatusTone,
   RADIUS,
   SEMANTIC_LIGHT as S,
+  FILTER_GRID_COLUMNS_SX,
+  filterGridColumnSx,
 } from "@/shared/ui";
 import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import {
@@ -48,6 +50,9 @@ import { tStatic, useT } from "@/shared/i18n/useT";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { useSkuCatalog } from "@/modules/reports/operations/report-data";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { useReportRangeAdvice } from "@/modules/reports/operations/report-coverage";
+import { movementTraceCoverageProbe } from "@/modules/reports/operations/report-probes";
+import { ReportRangeAdviceBanner } from "@/modules/reports/operations/ReportRangeAdviceBanner";
 import {
   RPT_CONTROL_MOTION_SX,
   RPT_SCROLL_MAX_HEIGHT,
@@ -75,10 +80,14 @@ import {
   RELATION_OPTIONS,
   TRACE_BY_OPTIONS,
   movementKindOf,
+  movementSourceLabel,
   serverMovementType,
   type RelationFilter,
   type TraceBy,
 } from "./movement-trace-labels";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
+import { useRenderWindow } from "@/shared/components/data-display/useRenderWindow";
+import { WindowedMore } from "@/shared/components/data-display/WindowedMore";
 
 /**
  * RPT-MOV-01 — "Truy vết hàng hóa" (/reports/traceability).
@@ -151,16 +160,21 @@ const CARD_SX = {
   bgcolor: S.bgSurface,
   boxShadow: S.shadowCard,
   overflow: "hidden",
+  // Bỏ qua layout/paint khi thẻ nằm ngoài màn hình (xem ghi chú cùng tên trong
+  // stock-reconcile-report.css). Trình duyệt giữ chỗ 480px rồi tự nhớ cỡ thật.
+  contentVisibility: "auto",
+  containIntrinsicSize: "auto 480px",
 } as const;
 
 /** Ô lưới của bộ lọc — ép mọi control con chiếm trọn bề rộng cột. */
+/**
+ * Ô của lưới lọc dùng chung (FILTER_GRID_COLUMNS_SX — cột đều, tự tính số cột).
+ * Chỉ còn `xl` của mockup có nghĩa: ô rộng (≥ 4/12: ô tìm, khoảng ngày) chiếm
+ * 2 cột từ `md`; `xs`/`sm` giữ trong chữ ký để 9 chỗ gọi không phải đổi.
+ */
 const fieldCellSx = (span: { xs: number; sm: number; xl: number }) => ({
   minWidth: 0,
-  gridColumn: {
-    xs: `span ${span.xs}`,
-    sm: `span ${span.sm}`,
-    xl: `span ${span.xl}`,
-  },
+  gridColumn: filterGridColumnSx(span.xl >= 4),
   "& .MuiFormControl-root, & .MuiButton-root": {
     width: "100%",
     minWidth: 0,
@@ -392,6 +406,32 @@ export default function MovementTraceReport() {
   const report = useMovementTraceReport(serverParams);
   const documentCodes = useSourceDocumentCodes({ fromDate, toDate });
 
+  /**
+   * Gợi ý bộ lọc kỳ. Phép dò mang THEO bộ lọc phi-thời-gian đang áp dụng: màn
+   * này là một phép TRA CỨU, nên "12 tháng gần đây có dữ liệu" phải là câu nói
+   * về đúng mã / loại movement người dùng đang tra, không phải về cả kho.
+   */
+  const rangeAdviceProbe = useMemo(
+    () =>
+      movementTraceCoverageProbe({
+        code_value: serverParams.codeValue,
+        product_id: serverParams.productId,
+        movement_type: serverParams.movementType,
+      }),
+    [serverParams.codeValue, serverParams.productId, serverParams.movementType],
+  );
+  const rangeAdviceDays = useMemo(
+    () => (report.data?.rows ?? []).map((row) => row.occurredAt.slice(0, 10)),
+    [report.data],
+  );
+  const rangeAdvice = useReportRangeAdvice({
+    from: fromDate ?? "",
+    to: toDate ?? "",
+    dataDays: rangeAdviceDays,
+    loading: report.isLoading,
+    probe: rangeAdviceProbe,
+  });
+
   const documentCodeOf = useCallback(
     (row: MovementTraceRow): string => {
       if (row.sourceId === "") return "";
@@ -441,7 +481,9 @@ export default function MovementTraceReport() {
       }
       if (source !== "") {
         const haystack =
-          `${documentCodeOf(row)} ${row.sourceType} ${row.sourceId}`.toLowerCase();
+          `${documentCodeOf(row)} ${row.sourceType} ${movementSourceLabel(
+            row.sourceType,
+          )} ${row.sourceId}`.toLowerCase();
         if (!haystack.includes(source)) return false;
       }
       if (actor !== "" && !row.actor.toLowerCase().includes(actor)) {
@@ -498,6 +540,7 @@ export default function MovementTraceReport() {
         row.productCode,
         documentCodeOf(row),
         row.sourceType,
+        movementSourceLabel(row.sourceType),
         row.actor,
         row.correctionChainId,
         row.movementNo,
@@ -530,6 +573,13 @@ export default function MovementTraceReport() {
     [documentCodeOf, t],
   );
   const ledgerFilter = useSectionFilter(rows, ledgerFilterConfig);
+
+  /**
+   * Dòng thời gian vẽ dần. Bộ đếm "N biến động" ngay trên đầu khối vẫn lấy từ
+   * `timelineFilter.rows.length` — tức TOÀN BỘ tập đã lọc, không phải phần đang
+   * vẽ — nên con số công bố không đổi; chỉ số node DOM đổi.
+   */
+  const timelineWindow = useRenderWindow(timelineFilter.rows);
 
   const movementCountText = t("reports.movementTrace.movementCount", {
     count: formatQuantity(rows.length),
@@ -740,11 +790,7 @@ export default function MovementTraceReport() {
             columnGap: 1.5,
             rowGap: 1.5,
             alignItems: "end",
-            gridTemplateColumns: {
-              xs: "minmax(0, 1fr)",
-              sm: "repeat(2, minmax(0, 1fr))",
-              xl: "repeat(12, minmax(0, 1fr))",
-            },
+            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
           }}
         >
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
@@ -760,7 +806,8 @@ export default function MovementTraceReport() {
             />
           </Box>
 
-          <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 4 })}>
+          {/* Ô tìm 1 cột (~280px đủ cho placeholder) để nút "Tra cứu" còn chỗ cùng hàng ở 1920. */}
+          <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
             <Box sx={FIELD_LABEL_SX}>
               {draft.traceBy === "physical"
                 ? t("reports.movementTrace.physicalCode")
@@ -848,11 +895,7 @@ export default function MovementTraceReport() {
             columnGap: 1.5,
             rowGap: 1.5,
             alignItems: "end",
-            gridTemplateColumns: {
-              xs: "minmax(0, 1fr)",
-              sm: "repeat(2, minmax(0, 1fr))",
-              xl: "repeat(12, minmax(0, 1fr))",
-            },
+            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
           }}
         >
           <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
@@ -953,6 +996,21 @@ export default function MovementTraceReport() {
           </Box>
         </Box>
       </Box>
+
+      <ReportRangeAdviceBanner
+        advice={rangeAdvice}
+        onApply={(next) => {
+          // Màn này có tầng draft: ghi cả hai để ô lịch và kết quả cùng nói một
+          // khoảng — chỉ đổi `applied` thì picker vẫn hiện kỳ cũ.
+          const range = {
+            fromDate: dayjs(next.from).startOf("day"),
+            toDate: dayjs(next.to).startOf("day"),
+          };
+          setDateError(null);
+          setDraft((prev) => ({ ...prev, ...range }));
+          setApplied((prev) => ({ ...prev, ...range }));
+        }}
+      />
 
       {report.isError ? (
         <ApiErrorAlert
@@ -1088,9 +1146,9 @@ export default function MovementTraceReport() {
               role="list"
               sx={{ listStyle: "none", m: 0, p: 0 }}
             >
-              {timelineFilter.rows.map((row, index) => {
+              {timelineWindow.visible.map((row, index) => {
                 const kind = movementKindOf(row);
-                const isLast = index === timelineFilter.rows.length - 1;
+                const isLast = index === timelineWindow.shown - 1;
                 const documentCode = documentCodeOf(row);
                 const details = [
                   row.productCode || EMPTY_TEXT,
@@ -1179,6 +1237,7 @@ export default function MovementTraceReport() {
               })}
             </Box>
           )}
+          <WindowedMore window={timelineWindow} />
         </Box>
       </Box>
 
@@ -1233,7 +1292,7 @@ export default function MovementTraceReport() {
                 // STT bám theo VỊ TRÍ GỐC của dòng trong tập đang lọc, cùng
                 // quy ước với mvpRowNumber ở các bảng khác của dự án, nên số
                 // thứ tự không nhảy khi bấm sắp xếp cột.
-                render: (row) => ledgerFilter.rows.indexOf(row) + 1,
+                render: (row) => rowIndexOf(ledgerFilter.rows, row) + 1,
               },
               {
                 key: "occurred_at",
@@ -1279,7 +1338,7 @@ export default function MovementTraceReport() {
                     {documentCodeOf(row) || EMPTY_TEXT}
                     <br />
                     <Box component="span" sx={CAPTION_SX}>
-                      {row.sourceType || EMPTY_TEXT}
+                      {movementSourceLabel(row.sourceType) || EMPTY_TEXT}
                     </Box>
                   </>
                 ),
@@ -1415,7 +1474,10 @@ export default function MovementTraceReport() {
                   <EvidenceField
                     label={t("reports.movementTrace.fieldSourceDoc")}
                     value={
-                      [documentCodeOf(selected), selected.sourceType]
+                      [
+                        documentCodeOf(selected),
+                        movementSourceLabel(selected.sourceType),
+                      ]
                         .filter(Boolean)
                         .join(" · ") || EMPTY_TEXT
                     }

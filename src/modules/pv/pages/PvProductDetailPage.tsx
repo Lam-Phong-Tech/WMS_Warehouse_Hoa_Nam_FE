@@ -132,10 +132,14 @@ export default function PvProductDetailPage() {
             <Box sx={{ ...CARD_SX, overflow: "hidden" }}>
               <Box
                 sx={{
+                  // `position: relative` để ảnh định vị TUYỆT ĐỐI theo ô này —
+                  // xem chú thích cùng vấn đề ở MST-PV-01 (PvProductCatalogPage).
+                  position: "relative",
                   aspectRatio: "4 / 3",
                   backgroundColor: S.bgSubtle,
                   display: "grid",
                   placeItems: "center",
+                  overflow: "hidden",
                 }}
               >
                 {detail.images[0] ? (
@@ -144,9 +148,14 @@ export default function PvProductDetailPage() {
                     src={detail.images[0].url}
                     alt={detail.images[0].alt_text ?? detail.display_name}
                     sx={{
+                      // `contain`: ảnh sản phẩm tỉ lệ tuỳ ý, `cover` cắt cụt ảnh
+                      // dọc/ngang — và đây là ảnh CHÍNH khách nhìn để quyết định
+                      // mua (phản hồi người dùng 06/09/2026).
+                      position: "absolute",
+                      inset: 0,
                       width: "100%",
                       height: "100%",
-                      objectFit: "cover",
+                      objectFit: "contain",
                     }}
                   />
                 ) : (
@@ -176,7 +185,8 @@ export default function PvProductDetailPage() {
                       sx={{
                         width: 72,
                         height: 56,
-                        objectFit: "cover",
+                        objectFit: "contain",
+                        backgroundColor: S.bgSubtle,
                         borderRadius: `${RADIUS.control}px`,
                         flex: "0 0 auto",
                       }}

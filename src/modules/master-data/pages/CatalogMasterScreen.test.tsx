@@ -70,7 +70,9 @@ describe("CatalogMasterScreen · Danh mục sản phẩm", () => {
     const header = await screen.findByText("STT");
     expect(header).toBeInTheDocument();
 
-    await waitFor(() => expect(screen.getByText("NHOM-PT")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("NHOM-PT")).toBeInTheDocument(),
+    );
     const firstRow = screen.getByText("NHOM-PT").closest('[role="row"]');
     const secondRow = screen.getByText("NHOM-MG").closest('[role="row"]');
     expect(

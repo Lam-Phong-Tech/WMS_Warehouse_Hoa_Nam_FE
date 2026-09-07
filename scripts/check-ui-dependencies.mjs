@@ -71,12 +71,22 @@ export function checkDependencies(pkg, srcBlob) {
 
   for (const name of Object.keys(pkg.dependencies ?? {})) {
     if (INDIRECT_RUNTIME_DEPS[name]) continue;
-    // Import khớp: from "pkg", from "pkg/sub", import "pkg...", require("pkg...
+    // Import khớp: from "pkg", from "pkg/sub", import "pkg...", import("pkg...,
+    // require("pkg...
+    //
+    // 07/09/2026 — THÊM `import("pkg")`: ba package NẶNG NHẤT của dự án nay cố ý
+    // chỉ nạp ĐỘNG, để chúng ra khỏi đồ thị tải ngay của mỗi lần F5 —
+    // `react-apexcharts` (888 KB, qua `LazyApexChart`), `laravel-echo` và
+    // `pusher-js` (~110 KB, qua `shared/lib/echo.ts`). Bản cũ chỉ nhận import
+    // TĨNH nên gọi chúng là "dep chết" và đòi gỡ khỏi package.json — làm theo
+    // đúng lời guard là app hỏng. Đó là thiếu sót của phép dò, không phải của mã.
     const used =
       srcBlob.includes(`from "${name}"`) ||
       srcBlob.includes(`from "${name}/`) ||
       srcBlob.includes(`import "${name}"`) ||
       srcBlob.includes(`import "${name}/`) ||
+      srcBlob.includes(`import("${name}"`) ||
+      srcBlob.includes(`import("${name}/`) ||
       srcBlob.includes(`require("${name}"`) ||
       srcBlob.includes(`require("${name}/`);
     if (!used) {
@@ -122,6 +132,16 @@ if (args.includes("--self-test")) {
     [
       "fixture dep chết (left-pad không import) phải ĐỎ",
       checkDependencies(deadPkg, cleanBlob).some((v) => v.includes("left-pad")),
+    ],
+    [
+      "dep CHỈ nạp động (import(\"pkg\")) phải XANH — không phải dep chết",
+      checkDependencies(
+        {
+          dependencies: { ...cleanPkg.dependencies, "heavy-lib": "1" },
+          devDependencies: cleanPkg.devDependencies,
+        },
+        `${cleanBlob}\nconst X = lazy(() => import("heavy-lib"));`,
+      ).length === 0,
     ],
   ];
 

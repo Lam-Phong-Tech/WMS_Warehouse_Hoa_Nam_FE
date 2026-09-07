@@ -1,0 +1,973 @@
+{
+ "tag": "baseline-prod",
+ "base": "http://localhost:5199",
+ "cpu": 1,
+ "pages": {
+  "C:/Git/dashboard": [
+   {
+    "path": "C:/Git/dashboard",
+    "error": "Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5199C:/Git/dashboard\", waitin"
+   },
+   {
+    "path": "C:/Git/dashboard",
+    "error": "Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5199C:/Git/dashboard\", waitin"
+   },
+   {
+    "path": "C:/Git/dashboard",
+    "error": "Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5199C:/Git/dashboard\", waitin"
+   },
+   {
+    "path": "C:/Git/dashboard",
+    "error": "Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5199C:/Git/dashboard\", waitin"
+   }
+  ],
+  "/inventory": [
+   {
+    "path": "/inventory",
+    "content": 1618,
+    "ttfb": 5,
+    "dcl": 79,
+    "load": 196,
+    "fcp": 220,
+    "lcp": 1060,
+    "js": {
+     "n": 97,
+     "kb": 1596,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 164
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 79,
+      "end": 635,
+      "ms": 556,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1033,
+      "end": 1465,
+      "ms": 431,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1035,
+      "end": 1475,
+      "ms": 441,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 1035,
+      "end": 1525,
+      "ms": 489,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 1036,
+      "end": 1525,
+      "ms": 489,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 967,
+      "d": 68
+     },
+     {
+      "t": 1528,
+      "d": 69
+     }
+    ],
+    "tbt": 37,
+    "dom": 932
+   },
+   {
+    "path": "/inventory",
+    "content": 1511,
+    "ttfb": 4,
+    "dcl": 85,
+    "load": 136,
+    "fcp": 180,
+    "lcp": 1144,
+    "js": {
+     "n": 97,
+     "kb": 1596,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 93
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 84,
+      "end": 785,
+      "ms": 701,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1124,
+      "end": 1374,
+      "ms": 250,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1124,
+      "end": 1385,
+      "ms": 260,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 1125,
+      "end": 1448,
+      "ms": 324,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 1125,
+      "end": 1421,
+      "ms": 296,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 932
+   },
+   {
+    "path": "/inventory",
+    "content": 1556,
+    "ttfb": 6,
+    "dcl": 90,
+    "load": 149,
+    "fcp": 192,
+    "lcp": 1256,
+    "js": {
+     "n": 97,
+     "kb": 1596,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 106
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 89,
+      "end": 902,
+      "ms": 812,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1240,
+      "end": 1505,
+      "ms": 265,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1240,
+      "end": 1449,
+      "ms": 209,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 1240,
+      "end": 1449,
+      "ms": 209,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 1241,
+      "end": 1462,
+      "ms": 222,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 932
+   },
+   {
+    "path": "/inventory",
+    "content": 1110,
+    "ttfb": 3,
+    "dcl": 62,
+    "load": 109,
+    "fcp": 140,
+    "lcp": 704,
+    "js": {
+     "n": 97,
+     "kb": 1596,
+     "wireKb": 0,
+     "fromCache": 97,
+     "lastEnd": 70
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 61,
+      "end": 353,
+      "ms": 292,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 688,
+      "end": 1026,
+      "ms": 338,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 688,
+      "end": 1024,
+      "ms": 336,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inventory/balances?per_page=10&page=1",
+      "start": 689,
+      "end": 1053,
+      "ms": 365,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/stock-movements?per_page=10&page=1",
+      "start": 689,
+      "end": 1044,
+      "ms": 355,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 932
+   }
+  ],
+  "/inbound": [
+   {
+    "path": "/inbound",
+    "content": 1383,
+    "ttfb": 6,
+    "dcl": 71,
+    "load": 128,
+    "fcp": 164,
+    "lcp": 804,
+    "js": {
+     "n": 105,
+     "kb": 1679,
+     "wireKb": 0,
+     "fromCache": 105,
+     "lastEnd": 109
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 71,
+      "end": 459,
+      "ms": 388,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 790,
+      "end": 1014,
+      "ms": 224,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 790,
+      "end": 1014,
+      "ms": 224,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inbound-documents?page=1&per_page=10",
+      "start": 790,
+      "end": 1329,
+      "ms": 538,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 741
+   },
+   {
+    "path": "/inbound",
+    "content": 1334,
+    "ttfb": 5,
+    "dcl": 103,
+    "load": 165,
+    "fcp": 200,
+    "lcp": 1104,
+    "js": {
+     "n": 105,
+     "kb": 1679,
+     "wireKb": 0,
+     "fromCache": 105,
+     "lastEnd": 116
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 101,
+      "end": 757,
+      "ms": 656,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1086,
+      "end": 1358,
+      "ms": 272,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1086,
+      "end": 1324,
+      "ms": 238,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inbound-documents?page=1&per_page=10",
+      "start": 1086,
+      "end": 1287,
+      "ms": 201,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 741
+   },
+   {
+    "path": "/inbound",
+    "content": 1097,
+    "ttfb": 5,
+    "dcl": 69,
+    "load": 117,
+    "fcp": 152,
+    "lcp": 700,
+    "js": {
+     "n": 105,
+     "kb": 1679,
+     "wireKb": 0,
+     "fromCache": 105,
+     "lastEnd": 79
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 68,
+      "end": 360,
+      "ms": 292,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 685,
+      "end": 967,
+      "ms": 282,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 685,
+      "end": 967,
+      "ms": 282,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inbound-documents?page=1&per_page=10",
+      "start": 685,
+      "end": 1059,
+      "ms": 374,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 741
+   },
+   {
+    "path": "/inbound",
+    "content": 986,
+    "ttfb": 4,
+    "dcl": 82,
+    "load": 134,
+    "fcp": 168,
+    "lcp": 740,
+    "js": {
+     "n": 105,
+     "kb": 1679,
+     "wireKb": 0,
+     "fromCache": 105,
+     "lastEnd": 97
+    },
+    "css": {
+     "n": 2,
+     "kb": 195
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 80,
+      "end": 384,
+      "ms": 304,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 724,
+      "end": 935,
+      "ms": 212,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 724,
+      "end": 955,
+      "ms": 231,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/inbound-documents?page=1&per_page=10",
+      "start": 724,
+      "end": 936,
+      "ms": 212,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 741
+   }
+  ],
+  "/reports/inventory-flow": [
+   {
+    "path": "/reports/inventory-flow",
+    "content": 1539,
+    "ttfb": 5,
+    "dcl": 72,
+    "load": 128,
+    "fcp": 160,
+    "lcp": 856,
+    "js": {
+     "n": 79,
+     "kb": 1554,
+     "wireKb": 0,
+     "fromCache": 79,
+     "lastEnd": 97
+    },
+    "css": {
+     "n": 3,
+     "kb": 232
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 71,
+      "end": 410,
+      "ms": 339,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 799,
+      "end": 1109,
+      "ms": 310,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 799,
+      "end": 1127,
+      "ms": 328,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/skus/lookup",
+      "start": 800,
+      "end": 1348,
+      "ms": 548,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 800,
+      "end": 1388,
+      "ms": 588,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-ledger?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 800,
+      "end": 1358,
+      "ms": 558,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/document-history?from_date=2026-09-06&to_date=2026-09-07&doc_type=all",
+      "start": 801,
+      "end": 1482,
+      "ms": 681,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reversal-documents?from_date=2026-09-06&to_date=2026-09-07&per_page=200",
+      "start": 801,
+      "end": 1374,
+      "ms": 573,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [
+     {
+      "t": 736,
+      "d": 64
+     }
+    ],
+    "tbt": 14,
+    "dom": 3948
+   },
+   {
+    "path": "/reports/inventory-flow",
+    "content": 1632,
+    "ttfb": 5,
+    "dcl": 114,
+    "load": 178,
+    "fcp": 220,
+    "lcp": 1164,
+    "js": {
+     "n": 79,
+     "kb": 1554,
+     "wireKb": 0,
+     "fromCache": 79,
+     "lastEnd": 126
+    },
+    "css": {
+     "n": 3,
+     "kb": 232
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 114,
+      "end": 797,
+      "ms": 684,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 1141,
+      "end": 1421,
+      "ms": 281,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 1141,
+      "end": 1410,
+      "ms": 269,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/skus/lookup",
+      "start": 1141,
+      "end": 1544,
+      "ms": 403,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 1141,
+      "end": 1510,
+      "ms": 368,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-ledger?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 1142,
+      "end": 1441,
+      "ms": 299,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/document-history?from_date=2026-09-06&to_date=2026-09-07&doc_type=all",
+      "start": 1142,
+      "end": 1460,
+      "ms": 318,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reversal-documents?from_date=2026-09-06&to_date=2026-09-07&per_page=200",
+      "start": 1142,
+      "end": 1758,
+      "ms": 616,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 3948
+   },
+   {
+    "path": "/reports/inventory-flow",
+    "content": 1108,
+    "ttfb": 5,
+    "dcl": 79,
+    "load": 125,
+    "fcp": 160,
+    "lcp": 720,
+    "js": {
+     "n": 79,
+     "kb": 1554,
+     "wireKb": 0,
+     "fromCache": 79,
+     "lastEnd": 90
+    },
+    "css": {
+     "n": 3,
+     "kb": 232
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 78,
+      "end": 368,
+      "ms": 290,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 702,
+      "end": 1028,
+      "ms": 327,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 702,
+      "end": 1027,
+      "ms": 325,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/skus/lookup",
+      "start": 702,
+      "end": 1031,
+      "ms": 329,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 702,
+      "end": 1030,
+      "ms": 328,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-ledger?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 702,
+      "end": 1029,
+      "ms": 326,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/document-history?from_date=2026-09-06&to_date=2026-09-07&doc_type=all",
+      "start": 702,
+      "end": 1028,
+      "ms": 325,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reversal-documents?from_date=2026-09-06&to_date=2026-09-07&per_page=200",
+      "start": 703,
+      "end": 1299,
+      "ms": 597,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 3948
+   },
+   {
+    "path": "/reports/inventory-flow",
+    "content": 1184,
+    "ttfb": 4,
+    "dcl": 88,
+    "load": 133,
+    "fcp": 164,
+    "lcp": 788,
+    "js": {
+     "n": 79,
+     "kb": 1554,
+     "wireKb": 0,
+     "fromCache": 79,
+     "lastEnd": 96
+    },
+    "css": {
+     "n": 3,
+     "kb": 232
+    },
+    "font": {
+     "n": 1,
+     "kb": 377,
+     "names": [
+      "uicons-regular-rounded-J3WOUERV-0sU45oCT.woff2"
+     ]
+    },
+    "api": [
+     {
+      "url": "/auth/refresh",
+      "start": 87,
+      "end": 430,
+      "ms": 343,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications/unread-count",
+      "start": 767,
+      "end": 1009,
+      "ms": 242,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/notifications?per_page=5",
+      "start": 767,
+      "end": 1033,
+      "ms": 266,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/skus/lookup",
+      "start": 767,
+      "end": 1137,
+      "ms": 370,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-xnt-enhanced?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 767,
+      "end": 1022,
+      "ms": 255,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/inventory-ledger?from_date=2026-09-06&to_date=2026-09-07",
+      "start": 767,
+      "end": 1029,
+      "ms": 262,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reports/document-history?from_date=2026-09-06&to_date=2026-09-07&doc_type=all",
+      "start": 767,
+      "end": 1040,
+      "ms": 273,
+      "ttfb": 0,
+      "kb": 0
+     },
+     {
+      "url": "/reversal-documents?from_date=2026-09-06&to_date=2026-09-07&per_page=200",
+      "start": 768,
+      "end": 1294,
+      "ms": 527,
+      "ttfb": 0,
+      "kb": 0
+     }
+    ],
+    "longTasks": [],
+    "tbt": 0,
+    "dom": 3948
+   }
+  ]
+ }
+}

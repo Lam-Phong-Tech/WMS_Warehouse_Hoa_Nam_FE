@@ -10,10 +10,7 @@
  */
 import { useCallback } from "react";
 import { MESSAGES_VI, type MessageKey } from "./messages";
-import {
-  englishMessages,
-  useEnglishMessages,
-} from "./english-messages";
+import { englishMessages, useEnglishMessages } from "./english-messages";
 import { useLanguageStore, type Language } from "./language.store";
 
 export type MessageVars = Record<string, string | number>;

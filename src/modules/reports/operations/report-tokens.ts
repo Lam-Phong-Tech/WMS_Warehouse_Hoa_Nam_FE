@@ -39,6 +39,35 @@ export const RPT_CAPTION_SX = {
 export const RPT_SCROLL_MAX_HEIGHT = "clamp(320px, 56vh, 640px)";
 
 /**
+ * Chiều cao THÂN BIỂU ĐỒ của hai thẻ xếp cạnh nhau trong một hàng 6/6.
+ *
+ * VÌ SAO CÓ: hai biểu đồ cạnh nhau tự nhiên KHÔNG bằng chiều cao. Cột ngang
+ * cao theo số dòng (10 SKU × 6 đối tượng ≈ 816px) còn đường xu hướng thì cố
+ * định — thả tự do là một thẻ dài gấp đôi thẻ kia, chừa một mảng trống to bằng
+ * nửa màn hình ở cột ngắn. Ép CÙNG một chiều cao thân thì hai thẻ bằng nhau và
+ * hàng đọc thành một khối.
+ *
+ * Là SỐ PX (không phải clamp như RPT_SCROLL_MAX_HEIGHT) vì ApexCharts chỉ nhận
+ * `height` dạng số — cùng một con số mới ép được cả hai bên bằng nhau.
+ *
+ * Biểu đồ nào tự nhiên cao hơn thì CUỘN trong khung, không bóp thanh cột: bóp
+ * theo chiều cao khung thì ở "Top 20"/"Tất cả" mỗi thanh còn 2–3px, mất luôn
+ * thứ người ta mở biểu đồ ra để nhìn.
+ */
+export const PAIRED_CHART_HEIGHT = 460;
+
+/**
+ * Trần chiều cao của KHUNG bọc biểu đồ trong hàng 6/6.
+ *
+ * Cao hơn `PAIRED_CHART_HEIGHT` đúng 16px vì ApexCharts luôn vẽ ra khối cao
+ * hơn `height` được truyền khoảng 15px (khung bọc của thư viện) — đo được ở
+ * 300/460/600px đều lệch đúng 15. Không chừa chỗ đó thì trường hợp biểu đồ
+ * "vừa khít khung" vẫn sinh một thanh cuộn thừa vài px, và trục hoành bị giấu
+ * đúng cái phần lẽ ra không cần giấu.
+ */
+export const PAIRED_CHART_FRAME_HEIGHT = PAIRED_CHART_HEIGHT + 16;
+
+/**
  * Chuyển động của các nút TỰ DỰNG trong 8 màn Báo cáo (`<Box component="button">`
  * làm tab "Bảng / Lát cắt", chip lọc, nút mở drawer…).
  *

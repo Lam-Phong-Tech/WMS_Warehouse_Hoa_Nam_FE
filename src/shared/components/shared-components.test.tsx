@@ -48,10 +48,7 @@ describe("ScanInput", () => {
     const onScan = vi.fn();
     render(<ScanInput recentCodes={["CARTON-HN-0007"]} onScan={onScan} />);
 
-    await user.type(
-      screen.getByLabelText(/quét mã/i),
-      "carton-hn-0007{enter}",
-    );
+    await user.type(screen.getByLabelText(/quét mã/i), "carton-hn-0007{enter}");
 
     expect(onScan).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(/vừa được quét/i);

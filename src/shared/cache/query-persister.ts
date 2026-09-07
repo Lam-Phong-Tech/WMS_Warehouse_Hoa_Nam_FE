@@ -1,5 +1,9 @@
 import { dehydrate, hydrate } from "@tanstack/react-query";
-import type { DehydratedState, Query, QueryClient } from "@tanstack/react-query";
+import type {
+  DehydratedState,
+  Query,
+  QueryClient,
+} from "@tanstack/react-query";
 import {
   isPersistDenied,
   PERSISTABLE_ROOTS,
@@ -149,9 +153,7 @@ async function writeNow(client: QueryClient): Promise<void> {
 async function pruneOtherNamespaces(): Promise<void> {
   const keys = await idbKeys();
   await Promise.all(
-    keys
-      .filter((key) => key !== activeNamespace)
-      .map((key) => idbDelete(key)),
+    keys.filter((key) => key !== activeNamespace).map((key) => idbDelete(key)),
   );
   // Bản ghi của schema cũ không khớp tiền tố hiện tại cũng bị dọn ở trên —
   // điều kiện lọc duy nhất là "không phải namespace đang dùng".
@@ -167,7 +169,49 @@ function scheduleWrite(client: QueryClient): void {
   }, WRITE_DEBOUNCE_MS);
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+/** Client nào đã được gắn listener "rời trang" (chỉ gắn một lần cho mỗi client). */
+let flushListenerClient: QueryClient | null = null;
+
+/**
+ * GHI NGAY khi người dùng rời trang, nếu còn một lần ghi đang chờ debounce.
+ *
+ * VÌ SAO CẦN — đo được 07/09/2026: mở màn Danh sách SKU rồi F5 SAU 2 giây thì
+ * lần tải sau chỉ còn 2 request (`/auth/refresh` + số thông báo chưa đọc), 6
+ * request danh mục lấy thẳng từ IndexedDB. Nhưng F5 TRƯỚC khi hết 2 giây thì
+ * chưa có gì kịp ghi, và lần tải sau vẫn phải gọi lại đủ 6 request. Người dùng
+ * bấm F5 nhanh — nhất là khi đang sốt ruột vì trang chậm — nên đúng lúc cần
+ * cache nhất lại là lúc không có.
+ *
+ * `pagehide` là sự kiện đáng tin nhất cho việc này: nó chạy cả khi trang vào
+ * bfcache và cả trên iOS, khác `beforeunload`/`unload`. Kèm `visibilitychange`
+ * để bắt luôn trường hợp người dùng chuyển sang tab khác rồi không quay lại.
+ *
+ * Best-effort: transaction IndexedDB mở trước khi trang chết thường vẫn hoàn
+ * tất; nếu không thì mất đúng một lần ghi — bằng đúng hành vi cũ, không tệ hơn.
+ */
+function ensureFlushOnLeave(client: QueryClient): void {
+  if (typeof window === "undefined") return;
+  if (flushListenerClient === client) return;
+  flushListenerClient = client;
+
+  const flush = () => {
+    if (!writeTimer) return; // không có lần ghi nào đang chờ
+    clearTimeout(writeTimer);
+    writeTimer = null;
+    void writeNow(client);
+  };
+
+  window.addEventListener("pagehide", flush);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flush();
+  });
+}
+
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: T,
+): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
@@ -230,6 +274,7 @@ export async function startQueryPersistence(
       scheduleWrite(client);
     }
   });
+  ensureFlushOnLeave(client);
 
   void pruneOtherNamespaces();
 }

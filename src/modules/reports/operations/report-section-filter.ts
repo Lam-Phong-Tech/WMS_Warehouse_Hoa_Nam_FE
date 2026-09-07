@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { startTransition, useCallback, useMemo, useState } from "react";
 
 /**
  * BỘ LỌC NẰM TRONG TỪNG KHỐI của 8 màn Báo cáo vận hành.
@@ -89,8 +89,27 @@ export function useSectionFilter<T>(
   rows: T[],
   config: SectionFilterConfig<T>,
 ): SectionFilterState<T> {
-  const [keyword, setKeyword] = useState("");
+  const [keyword, setKeywordState] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
+
+  /**
+   * Đổi từ khoá là việc CÓ THỂ CHỜ (transition), không phải việc gấp.
+   *
+   * Màn báo cáo là một component rất lớn: đo tại chỗ, một lần render lại của màn
+   * Truy vết tốn ~200 ms — không phải vì phép lọc (quét 5.956 dòng chỉ ~1 ms nhờ
+   * bộ nhớ đệm chuỗi tìm bên dưới) mà vì hàng trăm `sx` của MUI phải dựng lại.
+   * Nếu để lượt render đó là việc GẤP, ký tự vừa gõ chỉ hiện lên sau khi nó chạy
+   * xong — đúng cảm giác "gõ bị khựng".
+   *
+   * `startTransition` đánh dấu lượt đó là ngắt được: người dùng gõ tiếp thì
+   * React bỏ dở lượt đang dựng để xử lý phím trước. Ô nhập vẫn hiện chữ tức thì
+   * vì `SectionFilterBar` giữ một bản nháp cục bộ (xem file đó) — hai mảnh này
+   * PHẢI đi cùng nhau: chỉ có transition mà không có bản nháp thì ô nhập lại là
+   * thứ bị chậm.
+   */
+  const setKeyword = useCallback((next: string) => {
+    startTransition(() => setKeywordState(next));
+  }, []);
 
   const selects = useMemo(() => config.selects ?? [], [config.selects]);
 
@@ -106,6 +125,33 @@ export function useSectionFilter<T>(
     [selects, rows],
   );
 
+  /**
+   * Chuỗi tìm kiếm của từng dòng, dựng MỘT LẦN rồi dùng lại cho mọi lần gõ.
+   *
+   * Trước đây mỗi ký tự gõ vào chạy lại `searchText(row)` + `normalize()` cho
+   * TỪNG trường của TỪNG dòng. Sổ ledger truy vết có 5.956 dòng × 7 trường ≈
+   * 42.000 lần `String().toLowerCase().trim()` cho mỗi phím. Nội dung dòng không
+   * đổi giữa hai lần gõ, nên toàn bộ phần đó là làm lại y hệt.
+   *
+   * Map dựng một lượt khi `rows`/`config` đổi (đo được ~17 ms cho 6.000 dòng,
+   * chạy lúc dữ liệu về chứ không phải lúc gõ) và tự bỏ đi khi hai thứ đó đổi —
+   * đổi ngôn ngữ làm `config` đổi tham chiếu, nên nhãn dịch trong chuỗi tìm kiếm
+   * không bao giờ bị kẹt ở ngôn ngữ cũ.
+   *
+   * Dựng SẴN chứ không dựng lười: React Compiler cấm sửa một giá trị đã memo hoá
+   * bên trong một memo khác ("This value cannot be modified").
+   */
+  const haystacks = useMemo(() => {
+    const map = new Map<T, string>();
+    const searchText = config.searchText;
+    if (searchText) {
+      for (const row of rows) {
+        map.set(row, (searchText(row) ?? []).map(normalize).join(" "));
+      }
+    }
+    return map;
+  }, [rows, config]);
+
   const filtered = useMemo(() => {
     const needle = normalize(keyword);
     const activeSelects = selects.filter(
@@ -118,12 +164,9 @@ export function useSectionFilter<T>(
         if (!select.match(row, values[select.key] as string)) return false;
       }
       if (needle === "") return true;
-      const haystack = (config.searchText?.(row) ?? [])
-        .map((part) => normalize(part))
-        .join(" ");
-      return haystack.includes(needle);
+      return (haystacks.get(row) ?? "").includes(needle);
     });
-  }, [rows, keyword, values, selects, config]);
+  }, [rows, keyword, values, selects, haystacks]);
 
   const active =
     keyword.trim() !== "" ||
@@ -138,7 +181,7 @@ export function useSectionFilter<T>(
     setValue: (key, value) => setValues((prev) => ({ ...prev, [key]: value })),
     active,
     clear: () => {
-      setKeyword("");
+      setKeywordState("");
       setValues({});
     },
     config,

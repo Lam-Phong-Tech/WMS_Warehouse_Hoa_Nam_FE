@@ -158,7 +158,13 @@ export function AppTopbar({
   const rawUnread = useNotificationStore((state) => state.unreadCount);
   const unreadCount = Number.isFinite(rawUnread) ? rawUnread : 0;
   useUnreadCountQuery(isAuthenticated);
-  const notifications = useNotificationsQuery({ per_page: 5 });
+  // Danh sách 5 thông báo chỉ được VẼ bên trong dropdown, nên chỉ gọi khi người
+  // dùng mở chuông — trước đây nó là một request trên MỌI lần F5 của MỌI màn,
+  // bắn cùng nhịp với các request dữ liệu của trang.
+  const notifications = useNotificationsQuery(
+    { per_page: 5 },
+    { enabled: openMenu === "notification" },
+  );
   const notificationItems = Array.isArray(notifications.data?.data)
     ? notifications.data.data
     : [];

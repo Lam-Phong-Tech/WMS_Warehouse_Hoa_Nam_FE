@@ -105,6 +105,22 @@ export function idbDelete(key: string): Promise<unknown> {
   return runTx("readwrite", (store) => store.delete(key));
 }
 
+/**
+ * Mở sẵn kết nối IndexedDB, KHÔNG chờ kết quả.
+ *
+ * VÌ SAO: cổng nạp persisted cache (`use-persisted-cache.ts`) chỉ chạy SAU khi
+ * máy chủ xác nhận danh tính, nên lần `indexedDB.open()` đầu tiên nằm NỐI TIẾP
+ * ngay sau vòng mạng `/auth/refresh`. Trên máy Windows của kho (Defender quét
+ * file, Chromium đóng backing store sau mỗi lần tải lại) đó là hàng chục tới
+ * hàng trăm mili giây chết trên đúng đường tới hạn của mỗi lần F5. Mở kết nối
+ * KHÔNG cần biết danh tính; chỉ việc ĐỌC mới cần.
+ *
+ * Không nới lỏng ranh giới nào: hàm này không đọc và không hydrate gì cả.
+ */
+export function warmIdb(): void {
+  void openDb();
+}
+
 export async function idbKeys(): Promise<string[]> {
   const keys = await runTx<IDBValidKey[]>(
     "readonly",

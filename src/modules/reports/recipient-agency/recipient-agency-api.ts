@@ -201,6 +201,16 @@ export const DEFAULT_RECIPIENT_AGENCY_FILTERS: RecipientAgencyFilters = {
 
 // ── Sổ sự kiện dựng phía client ──────────────────────────────────────────
 
+/**
+ * Một sự kiện của sổ xuất dựng phía client.
+ *
+ * XUẤT RA NGOÀI (cùng `useRecipientAgencyLedger`) để tab "So sánh đối tượng
+ * nhận hàng" tính trên CHÍNH sổ này thay vì dựng lại một phép cộng thứ hai từ
+ * dòng thô: hai tab nằm trên cùng một trang, nếu mỗi tab tự phân bổ hoàn tác
+ * theo cách riêng thì cùng một đại lý sẽ ra hai con số khác nhau.
+ */
+export type RecipientAgencyLedgerEvent = LedgerEvent;
+
 type LedgerEvent = {
   event_id: string;
   event_type: "ISSUE_POSTED" | "ISSUE_REVERSED";
@@ -475,6 +485,15 @@ export function useRecipientAgencySummary(filters: RecipientAgencyFilters) {
     [outbound.data, reversals.data, documents.data, catalog, users],
   );
 
+  /**
+   * Ngày CÓ phát sinh trong kỳ, đọc TRƯỚC `matchesFilters` — gợi ý bộ lọc kỳ
+   * phải nói về kho, không về các bộ lọc phụ mà người dùng vừa tự chọn.
+   */
+  const dataDays = useMemo(
+    () => events.map((event) => event.occurred_at.slice(0, 10)),
+    [events],
+  );
+
   // Mốc "chốt lát cắt" = lần dữ liệu nguồn về gần nhất. Trong lúc đổi bộ lọc,
   // react-query giữ dữ liệu cũ làm placeholder và `dataUpdatedAt` tạm về 0 —
   // khi đó dòng "Chốt lúc …" hiện EMPTY_TEXT đúng như mọi ô chưa có dữ liệu.
@@ -555,6 +574,104 @@ export function useRecipientAgencySummary(filters: RecipientAgencyFilters) {
 
   return {
     data: computed?.summary,
+    dataDays,
+    isLoading: outbound.isLoading || reversals.isLoading || documents.isLoading,
+    isFetching:
+      outbound.isFetching || reversals.isFetching || documents.isFetching,
+    error: outbound.error ?? reversals.error ?? documents.error ?? null,
+    refetch,
+  };
+}
+
+/**
+ * Trần trang cho cửa sổ phân tích của tab so sánh: 30 × 100 = 3.000 dòng xuất.
+ *
+ * Cửa sổ đó là "kỳ đang xem + kỳ liền trước" nên rộng gấp đôi lát cắt thường;
+ * trần 10 trang dùng chung sẽ cắt mất phần đuôi mà người đọc không hề biết.
+ * Vẫn giữ MỘT trần cứng chứ không cuốn vô hạn — bộ lọc quá rộng phải bị chặn ở
+ * đây, và `truncated` bên dưới nói thẳng ra khi chạm trần.
+ */
+const COMPARISON_MAX_PAGES = 30;
+
+export type RecipientAgencyLedger = {
+  events: RecipientAgencyLedgerEvent[];
+  /** true = máy chủ còn dòng chưa tải hết (chạm trần trang) ⇒ số liệu chưa đủ. */
+  truncated: boolean;
+  /** Tổng số dòng máy chủ báo có trong cửa sổ — để nói rõ đã cắt bao nhiêu. */
+  serverRowTotal: number;
+  loadedRowCount: number;
+  isLoading: boolean;
+  isFetching: boolean;
+  error: unknown;
+  refetch: () => Promise<void>;
+};
+
+/**
+ * Sổ xuất THÔ của một cửa sổ thời gian bất kỳ — không lọc, không gộp.
+ *
+ * Tab "So sánh đối tượng nhận hàng" cần một cửa sổ rộng hơn kỳ đang xem (để có
+ * kỳ liền trước làm mốc so sánh) và tự gộp theo nhiều chiều khác nhau
+ * (đại lý × SKU, đại lý × mốc thời gian), nên nó đọc sổ ở dạng sự kiện chứ
+ * không mượn `useRecipientAgencySummary` — hàm đó đã gộp sẵn theo đúng một
+ * chiều của lát cắt RPT-07.
+ */
+export function useRecipientAgencyLedger({
+  from,
+  to,
+  enabled = true,
+}: {
+  from: string;
+  to: string;
+  enabled?: boolean;
+}): RecipientAgencyLedger {
+  const active = enabled && Boolean(from && to);
+  const outbound = useOutboundByRecipient({
+    from,
+    to,
+    maxPages: COMPARISON_MAX_PAGES,
+    enabled: active,
+  });
+  const reversals = useReversalDocuments({ from, to, enabled: active });
+  const documents = useDocumentHistory({
+    from,
+    to,
+    docType: "outbound",
+    enabled: active,
+  });
+  const catalog = useSkuCatalog();
+  const users = useUserDirectory();
+
+  const events = useMemo(
+    () =>
+      buildLedger(
+        outbound.data,
+        reversals.data,
+        documents.data,
+        catalog,
+        users,
+      ),
+    [outbound.data, reversals.data, documents.data, catalog, users],
+  );
+
+  const loadedRowCount = listOf(outbound.data?.rows).length;
+  const serverRowTotal = n(
+    (outbound.data?.pagination as Raw | undefined)?.total,
+    loadedRowCount,
+  );
+
+  const refetch = useCallback(async () => {
+    await Promise.all([
+      outbound.refetch(),
+      reversals.refetch(),
+      documents.refetch(),
+    ]);
+  }, [outbound, reversals, documents]);
+
+  return {
+    events,
+    truncated: serverRowTotal > loadedRowCount,
+    serverRowTotal,
+    loadedRowCount,
     isLoading: outbound.isLoading || reversals.isLoading || documents.isLoading,
     isFetching:
       outbound.isFetching || reversals.isFetching || documents.isFetching,

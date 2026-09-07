@@ -134,6 +134,10 @@ const PAGE_PAYLOAD: Record<string, unknown[]> = {
   ],
 };
 
+// Danh mục SKU của màn báo cáo giờ đi qua GET /skus/lookup (một request, không
+// phân trang — xem fetchAllSkus); cùng dòng dữ liệu với "/products" ở trên.
+PAYLOAD["/skus/lookup"] = PAGE_PAYLOAD["/products"];
+
 function renderReport() {
   renderWithProviders(<RecipientAgencyReport />, [ROUTES.REPORTS_RECIPIENT]);
 }
@@ -216,7 +220,7 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     expect(
       await screen.findByRole("button", { name: "Hiện bộ lọc" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Dữ liệu lát cắt")).toBeInTheDocument();
+    expect(screen.getByText("Dữ liệu báo cáo")).toBeInTheDocument();
   });
 
   it("bật xuất XLSX theo quyền report.export và khóa xuất CSV kèm PII", async () => {

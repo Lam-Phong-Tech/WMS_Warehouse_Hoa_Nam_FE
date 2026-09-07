@@ -3,6 +3,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { AppProviders } from "./app/providers/AppProviders";
 import { bootstrapAuth } from "./app/bootstrap-auth";
+import { preloadRoute } from "./app/router/route-preload";
+import { MainLayout } from "./app/router/route-components";
+import { warmIdb } from "./shared/cache/idb";
+import { mark } from "./shared/perf/marks";
 import { registerPwa } from "./shared/pwa/register-pwa";
 import { initializeLanguage } from "./shared/i18n/language.store";
 import { initializeTheme } from "./shared/ui/theme/theme.store";
@@ -32,12 +36,41 @@ import "./styles/hn-motion.css";
 // trước khi render, để đảm bảo state đã sẵn sàng và không bị ghi đè bất ngờ.
 // `isBootstrapped` chỉ bật sau khi rehydrate + thử refresh xong (kể cả lỗi) —
 // ProtectedRoute chờ cờ này trước khi quyết định redirect /login.
+mark("boot");
 void bootstrapAuth();
+
+// TẢI SONG SONG shell + chunk của trang đích, KHÔNG chờ xác thực xong.
+//
+// ĐO ĐƯỢC: mỗi lần F5 ở trang cần đăng nhập là một chuỗi NỐI TIẾP 5 chặng —
+// bundle chính chạy → POST /auth/refresh → ProtectedRoute mở cổng → lúc đó mới
+// bắt đầu import() MainLayout (62 KB) → MainLayout render outlet mới bắt đầu
+// import() trang đích (~57 KB+). Bốn chặng sau chỉ là TẢI FILE TĨNH, không phụ
+// thuộc kết quả xác thực, nên chúng có thể chạy cùng lúc với vòng mạng refresh.
+//
+// KHÔNG đụng tới thứ tự cổng của ProtectedRoute: đây chỉ là tải trước MÃ NGUỒN.
+// Trang vẫn chỉ được render sau khi có hồ sơ người dùng và cache sẵn sàng —
+// bảo đảm phạm vi dữ liệu giữ nguyên. Người chưa đăng nhập tải thừa hai chunk;
+// đổi lại người đã đăng nhập (tuyệt đại đa số lượt tải) bớt được hai vòng.
+//
+// Từ 07/09/2026 dùng `MainLayout.preload()` thay cho `import()` trần: cùng một
+// đối tượng mà router render, nên khi chunk về xong thì lần render đầu KHÔNG
+// treo Suspense — đó là chỗ React 19 chặn commit thêm 300 ms (xem lazy-route.tsx).
+void MainLayout.preload();
+if (typeof window !== "undefined") preloadRoute(window.location.pathname);
+// Mở IndexedDB SONG SONG với vòng mạng refresh. Cổng nạp cache chỉ đọc sau khi
+// máy chủ xác nhận danh tính, nhưng việc MỞ kết nối thì không cần chờ ai.
+warmIdb();
 void registerPwa();
 // Đặt <html lang> và data-theme TRƯỚC lần render đầu tiên: nếu để React làm sau
 // khi mount, người dùng chọn "Tối" sẽ thấy một nhịp trắng loá lúc tải trang.
 initializeLanguage();
 initializeTheme();
+
+// Màn ĐẦU TIÊN sau khi tải trang không chạy hiệu ứng "chuyển trang": lúc F5
+// không có trang cũ nào để chuyển đi, mà hiệu ứng thì hoãn nội dung thêm ~0,3 s.
+// MainLayout gỡ thuộc tính này ngay sau khung hình đầu, nên mọi lần điều hướng
+// SAU đó vẫn có hiệu ứng như cũ (xem hn-motion.css).
+document.documentElement.setAttribute("data-hn-first-load", "");
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

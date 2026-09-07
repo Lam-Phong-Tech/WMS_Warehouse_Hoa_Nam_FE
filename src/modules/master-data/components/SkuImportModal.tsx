@@ -22,6 +22,14 @@ import {
   type SkuImportRowError,
 } from "@/modules/master-data/services/sku-import.service";
 import { sha256OfFile } from "@/shared/utils/file-digest";
+import {
+  FILE_RULES,
+  acceptAttribute as acceptFromRule,
+  buildFileRule,
+  checkFile,
+  describeExtensions,
+  type FileRule,
+} from "@/shared/validation/file-rules";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, tStatic, type TranslateFn } from "@/shared/i18n/useT";
 import { formatDateTime } from "@/shared/utils/format-date";
@@ -127,17 +135,25 @@ function describeConstraints(constraints: SkuImportConstraints | null): string {
   return `${parts.join("; ")}.`;
 }
 
-/** Phần mở rộng cho phép — BE chưa trả thì mặc định Excel. */
-function allowedExtensions(constraints: SkuImportConstraints | null): string[] {
-  return constraints?.allowedExtensions?.length
-    ? constraints.allowedExtensions
-    : ["xlsx", "xls"];
+/**
+ * Luật tệp cho lần nhập này. Khác mọi ô upload còn lại, danh sách đuôi và trần
+ * dung lượng ở đây do BE trả về (GET .../constraints) nên phải dựng động —
+ * buildFileRule() chuẩn hoá "xlsx" thành ".xlsx" và rơi về luật Excel dùng
+ * chung khi BE chưa trả cấu hình.
+ */
+function importFileRule(constraints: SkuImportConstraints | null): FileRule {
+  return buildFileRule({
+    extensions: constraints?.allowedExtensions,
+    maxBytes:
+      constraints?.maxFileSizeMb != null && constraints.maxFileSizeMb > 0
+        ? constraints.maxFileSizeMb * 1024 * 1024
+        : null,
+    fallback: FILE_RULES.excelImport,
+  });
 }
 
 function acceptAttribute(constraints: SkuImportConstraints | null): string {
-  return allowedExtensions(constraints)
-    .map((extension) => `.${extension}`)
-    .join(",");
+  return acceptFromRule(importFileRule(constraints));
 }
 
 /**
@@ -150,21 +166,18 @@ function precheckFile(
   file: File,
   constraints: SkuImportConstraints | null,
 ): string | null {
-  const extensions = allowedExtensions(constraints).map((value) =>
-    value.toLowerCase().replace(/^\./, ""),
-  );
-  const dot = file.name.lastIndexOf(".");
-  const extension = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : "";
-  if (!extensions.includes(extension)) {
-    return tStatic("masterData.import.errFileType", {
-      list: extensions.map((value) => `.${value}`).join(", "),
-    });
-  }
-  const maxMb = constraints?.maxFileSizeMb;
-  if (maxMb != null && maxMb > 0 && file.size > maxMb * 1024 * 1024) {
-    return tStatic("masterData.import.errFileSize", { max: maxMb });
-  }
-  return null;
+  // Luật (đuôi + MIME + dung lượng) nằm ở file-rules; câu lỗi giữ nguyên chữ
+  // của màn nhập SKU nên chỉ đọc reason để chọn câu.
+  const rule = importFileRule(constraints);
+  const check = checkFile(file, rule);
+  if (check.ok) return null;
+  return check.reason === "type"
+    ? tStatic("masterData.import.errFileType", {
+        list: describeExtensions(rule),
+      })
+    : tStatic("masterData.import.errFileSize", {
+        max: Math.round(rule.maxBytes / (1024 * 1024)),
+      });
 }
 
 function payloadSignature(fileSha256: string | null, updateExisting: boolean) {

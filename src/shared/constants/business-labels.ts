@@ -59,6 +59,40 @@ export function businessLabel(
   return labels[key] ?? fallback ?? UNKNOWN_BUSINESS_LABEL;
 }
 
+/** HOA + ít nhất một gạch dưới — hình dạng mã enum của BE. */
+const ENUM_CODE_SHAPE = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/u;
+
+/** `OPENING_BALANCE` → `Opening Balance`. Chỉ dùng khi CHƯA có nhãn. */
+export function spellOutEnumCode(code: string): string {
+  return code
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * Nhãn cho cột VỪA chứa enum của BE VỪA có thể chứa chữ người dùng tự gõ
+ * (`agencies.market`, `reversal_documents.reason_code`… đều là VARCHAR tự do).
+ *
+ * Khác `businessLabel` ở chỗ KHÔNG quy mọi thứ lạ về “Chưa xác định”:
+ *  1. trùng bảng nhãn (bỏ qua hoa/thường) → nhãn;
+ *  2. trông như mã → tách gạch dưới cho đọc được, vẫn tra soát được;
+ *  3. còn lại → giữ nguyên từng ký tự, vì đó là chữ người dùng đã nhập.
+ */
+export function enumLabelOrText(
+  labels: Readonly<Record<string, string>>,
+  value: string | null | undefined,
+): string {
+  const raw = String(value ?? "").trim();
+  if (raw === "") return "";
+  const mapped = labels[raw.toUpperCase()];
+  if (mapped !== undefined) return mapped;
+  if (ENUM_CODE_SHAPE.test(raw)) return spellOutEnumCode(raw);
+  return raw;
+}
+
 export const INBOUND_STATUS_LABELS = bilingual(
   {
     DRAFT: "Nháp",
@@ -200,6 +234,22 @@ export const CONTAINER_TYPE_LABELS = bilingual(
     CARTON: "Carton",
     BOX: "Box",
     TRAY: "Tray",
+  },
+);
+
+/**
+ * Lý do điều chỉnh tồn — `reversal_documents.reason_code`. BE tự đặt
+ * `CORRECTION` cho mọi phiếu tạo qua API, `MANUAL` đến từ dữ liệu dựng sẵn;
+ * cột khai `nullable|string|max:80` nên vẫn phải chịu được giá trị lạ.
+ */
+export const REVERSAL_REASON_LABELS = bilingual(
+  {
+    CORRECTION: "Điều chỉnh sai sót",
+    MANUAL: "Điều chỉnh thủ công",
+  },
+  {
+    CORRECTION: "Correction",
+    MANUAL: "Manual adjustment",
   },
 );
 

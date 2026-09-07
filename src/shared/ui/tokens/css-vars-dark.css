@@ -11,35 +11,35 @@
  * `:root[data-theme="dark"]` — thuộc tính do theme.store đặt lên <html>.
  */
 :root[data-theme="dark"] {
-  --wms-primary: #7367F0;
-  --wms-primary-dark: #968CFF;
-  --wms-primary-light: #ABA4F6;
+  --wms-primary: #7367f0;
+  --wms-primary-dark: #968cff;
+  --wms-primary-light: #aba4f6;
   --wms-primary-soft: rgba(115, 103, 240, 0.23);
-  --wms-on-primary: #FFFFFF;
+  --wms-on-primary: #ffffff;
   --wms-secondary: #808390;
-  --wms-secondary-dark: #8F929E;
+  --wms-secondary-dark: #8f929e;
   --wms-secondary-soft: rgba(128, 131, 144, 0.23);
-  --wms-success: #28C76F;
-  --wms-success-dark: #24B364;
+  --wms-success: #28c76f;
+  --wms-success-dark: #24b364;
   --wms-success-soft: rgba(40, 199, 111, 0.23);
-  --wms-success-text: #70E6A7;
-  --wms-warning: #FF9F43;
-  --wms-warning-dark: #E68F3C;
+  --wms-success-text: #70e6a7;
+  --wms-warning: #ff9f43;
+  --wms-warning-dark: #e68f3c;
   --wms-warning-soft: rgba(255, 159, 67, 0.23);
-  --wms-warning-text: #FFC27A;
-  --wms-error: #FF4C51;
-  --wms-error-dark: #E64449;
+  --wms-warning-text: #ffc27a;
+  --wms-error: #ff4c51;
+  --wms-error-dark: #e64449;
   --wms-error-soft: rgba(255, 76, 81, 0.23);
-  --wms-error-text: #FF8A8E;
-  --wms-info: #00BAD1;
-  --wms-info-dark: #00A7BC;
+  --wms-error-text: #ff8a8e;
+  --wms-info: #00bad1;
+  --wms-info-dark: #00a7bc;
   --wms-info-soft: rgba(0, 186, 209, 0.23);
-  --wms-info-text: #5FDDEC;
-  --wms-bg-canvas: #25253C;
-  --wms-bg-surface: #2F2F48;
-  --wms-bg-subtle: #35354F;
+  --wms-info-text: #5fddec;
+  --wms-bg-canvas: #25253c;
+  --wms-bg-surface: #2f2f48;
+  --wms-bg-subtle: #35354f;
   --wms-ink-rgb: 231, 227, 252;
-  --wms-text-strong: #E7E3FC;
+  --wms-text-strong: #e7e3fc;
   --wms-text-high: rgba(231, 227, 252, 0.9);
   --wms-text-medium: rgba(231, 227, 252, 0.68);
   --wms-text-disabled: rgba(231, 227, 252, 0.4);
@@ -49,18 +49,18 @@
   --wms-focus-ring: 0 0 0 3px rgba(115, 103, 240, 0.35);
   --wms-shadow-card: 0 3px 14px rgba(12, 12, 24, 0.32);
   --wms-shadow-floating: 0 12px 32px rgba(12, 12, 24, 0.44);
-  --wms-grey-100: #2B2B42;
-  --wms-grey-200: #35354F;
-  --wms-grey-300: #41415A;
-  --wms-grey-500: #6E6E86;
+  --wms-grey-100: #2b2b42;
+  --wms-grey-200: #35354f;
+  --wms-grey-300: #41415a;
+  --wms-grey-500: #6e6e86;
 
   /* Nav — mirror NAV_COLOR_DARK */
-  --wms-nav-active-gradient-end: #8379EA;
-  --wms-nav-hover: #3A3A55;
-  --wms-nav-border: rgba(231, 227, 252, 0.10);
+  --wms-nav-active-gradient-end: #8379ea;
+  --wms-nav-hover: #3a3a55;
+  --wms-nav-border: rgba(231, 227, 252, 0.1);
   --wms-nav-item-text: rgba(231, 227, 252, 0.78);
-  --wms-nav-muted: rgba(231, 227, 252, 0.60);
+  --wms-nav-muted: rgba(231, 227, 252, 0.6);
   --wms-nav-marker: rgba(231, 227, 252, 0.42);
-  --wms-nav-focus: #A79EFF;
+  --wms-nav-focus: #a79eff;
   color-scheme: dark;
 }

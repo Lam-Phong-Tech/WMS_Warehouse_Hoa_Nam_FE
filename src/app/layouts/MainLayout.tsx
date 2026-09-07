@@ -11,7 +11,8 @@
  * style nằm hoàn toàn trong UiAppShell/sx token.
  */
 import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { KeepAliveOutlet } from "@/app/layouts/KeepAliveOutlet";
 import { SideNav } from "@/app/layouts/SideNav";
 import { AppTopbar } from "@/app/layouts/topbar/AppTopbar";
 import { getBreadcrumbTrail } from "@/app/layouts/nav-data";
@@ -33,6 +34,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { ROUTES } from "@/shared/constants/routes";
 import { useNavigate } from "react-router-dom";
+import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
 
 /**
  * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
@@ -47,6 +49,7 @@ import { useNavigate } from "react-router-dom";
 const ROUTES_WITH_OWN_HEADER: string[] = [
   ROUTES.DASHBOARD,
   ROUTES.REPORTS_INVENTORY_FLOW,
+  ROUTES.REPORTS_OUTBOUND_FLOW,
   ROUTES.REPORTS_STOCK_RECONCILE,
   ROUTES.REPORTS_TRACEABILITY,
   ROUTES.REPORTS_IMPORT_QUALITY,
@@ -65,6 +68,7 @@ const ROUTES_FULL_BLEED: string[] = [
   ROUTES.DASHBOARD,
   ROUTES.REPORTS_STOCK_RECONCILE,
   ROUTES.REPORTS_INVENTORY_FLOW,
+  ROUTES.REPORTS_OUTBOUND_FLOW,
   ROUTES.REPORTS_PENDING_EVIDENCE,
 ];
 
@@ -99,6 +103,27 @@ export function MainLayout() {
   useEffect(() => {
     setMobileNavOpen(false);
   }, [location.pathname, location.search]);
+
+  // Sau khi shell đã lên và app rảnh: nạp dần chunk của các màn hay dùng, để lần
+  // đầu bấm sang màn khác không phải nhìn skeleton chờ tải mã (xem route-preload.ts).
+  useEffect(() => {
+    preloadCommonRoutesWhenIdle();
+  }, []);
+
+  // Màn ĐẦU TIÊN sau khi tải trang không chạy hiệu ứng chuyển trang: `main.tsx`
+  // đặt `data-hn-first-load` trên <html>, `hn-motion.css` tắt animation khi còn
+  // thuộc tính đó. Gỡ ngay sau khung hình đầu của shell, nên mọi lần điều hướng
+  // SAU vẫn có hiệu ứng như cũ. Lý do: lúc F5 không có trang cũ nào để chuyển đi,
+  // mà hiệu ứng thì bắt người dùng chờ thêm gần 0,3 giây sau khi đã có dữ liệu.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.documentElement.removeAttribute("data-hn-first-load");
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   const persistSidebarCollapsed = (next: boolean) => {
     try {
       localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, next ? "1" : "0");
@@ -184,18 +209,17 @@ export function MainLayout() {
           )}
           {ownsHeader ? null : <AppPageHeader />}
           {/*
-           * key theo pathname + ?screen= → remount chạy lại hiệu ứng chuyển màn
-           * (hn-page-transition). KHÔNG đưa cả search vào key: 7 trang giữ bộ
-           * lọc/phân trang trên query — remount theo search sẽ mất state.
+           * Trang KHÔNG keep-alive: key theo pathname + ?screen= → remount chạy lại
+           * hiệu ứng chuyển màn (hn-page-transition). KHÔNG đưa cả search vào key:
+           * 7 trang giữ bộ lọc/phân trang trên query — remount theo search sẽ mất
+           * state. Nhóm báo cáo đi qua keep-alive (xem KeepAliveOutlet): màn đã mở
+           * được giữ ẩn, quay lại là hiện ngay; display:none→block tự chạy lại
+           * animation chuyển màn nên không mất hiệu ứng.
            */}
-          <Box
-            component="section"
-            key={`${location.pathname}|${requestedScreen ?? ""}`}
+          <KeepAliveOutlet
+            transitionKey={`${location.pathname}|${requestedScreen ?? ""}`}
             className="hn-mvp-screen hn-page-transition"
-            sx={{ minWidth: 0 }}
-          >
-            <Outlet />
-          </Box>
+          />
         </Box>
       </UiAppShell>
       {!isDesktop ? (

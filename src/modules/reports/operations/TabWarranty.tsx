@@ -83,6 +83,7 @@ import {
   PII_REASON_MIN_LENGTH,
   useReportExport,
 } from "./report-export";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 const WARRANTY_STATUSES = [
   "RECEIVED",
@@ -906,7 +907,7 @@ export default function TabWarranty() {
               mvpRowNumber(
                 componentPagination.page,
                 componentPagination.perPage,
-                componentPagination.pageRows.indexOf(row),
+                rowIndexOf(componentPagination.pageRows, row),
               ),
           },
           {
@@ -1152,7 +1153,7 @@ export default function TabWarranty() {
               mvpRowNumber(
                 casePagination.page,
                 casePagination.perPage,
-                casePagination.pageRows.indexOf(row),
+                rowIndexOf(casePagination.pageRows, row),
               ),
           },
           {

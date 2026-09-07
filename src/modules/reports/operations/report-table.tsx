@@ -2,12 +2,11 @@ import { useT } from "@/shared/i18n/useT";
 import { useState, type ReactNode } from "react";
 import {
   Box,
-  Checkbox,
   Grid,
   Menu,
-  MenuItem,
   UiButton,
   UiDialog,
+  UiOptionPicker,
   UiPagination,
 } from "@/shared/ui";
 import { DownOutlined } from "@/shared/components/icons";
@@ -119,7 +118,14 @@ export function ReportRowDetailModal({
   );
 }
 
-/** Select nhiều lựa chọn cho toolbar báo cáo (bệnh/lỗi, nơi nhận, SKU...). */
+/**
+ * Select nhiều lựa chọn cho toolbar báo cáo (bệnh/lỗi, nơi nhận, SKU...).
+ *
+ * Ruột là `UiOptionPicker`: danh sách dài thì có ô tìm, mở ra chỉ cao 5 dòng và
+ * dựng dần theo lượt cuộn. Trước đây ô này đổ THẲNG cả danh mục vào menu —
+ * "Nơi nhận"/"SKU" của kho thật là vài trăm dòng nên vừa không tìm được vừa
+ * kéo dài menu quá màn hình.
+ */
 export function MultiSelectFilter({
   value,
   onChange,
@@ -145,14 +151,6 @@ export function MultiSelectFilter({
         ? selected[0].label
         : t("reports.common.selectedCount", { count: selected.length });
 
-  const toggle = (optionValue: string) => {
-    onChange(
-      value.includes(optionValue)
-        ? value.filter((item) => item !== optionValue)
-        : [...value, optionValue],
-    );
-  };
-
   return (
     <>
       <UiButton
@@ -170,32 +168,33 @@ export function MultiSelectFilter({
           color: selected.length === 0 ? "text.disabled" : "text.primary",
         }}
       >
-        {summary}
+        {/* Tên nơi nhận/đại lý lấy từ dữ liệu có thể dài hơn ô: cắt "…" thay vì tràn. */}
+        <Box
+          component="span"
+          sx={{
+            minWidth: 0,
+            flex: 1,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {summary}
+        </Box>
       </UiButton>
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
       >
-        {options.length === 0 ? (
-          <MenuItem disabled>{t("reports.common.noOptions")}</MenuItem>
-        ) : (
-          options.map((option) => (
-            <MenuItem
-              key={option.value}
-              dense
-              onClick={() => toggle(option.value)}
-            >
-              <Checkbox
-                size="small"
-                checked={value.includes(option.value)}
-                tabIndex={-1}
-                sx={{ p: 0.5, mr: 1 }}
-              />
-              {option.label}
-            </MenuItem>
-          ))
-        )}
+        <UiOptionPicker
+          options={options}
+          value={value}
+          onChange={onChange}
+          aria-label={ariaLabel}
+          emptyText={t("reports.common.noOptions")}
+          width={Math.max(minWidth, 280)}
+        />
       </Menu>
     </>
   );

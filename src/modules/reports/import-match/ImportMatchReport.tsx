@@ -1,5 +1,12 @@
-import { useMemo, useState, type ReactElement, type ReactNode } from "react";
+import {
+  useDeferredValue,
+  useMemo,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import dayjs, { type Dayjs } from "dayjs";
+import { useTabView } from "@/shared/ui/use-tab-view";
 import { toast } from "sonner";
 import {
   Box,
@@ -13,6 +20,8 @@ import {
   RADIUS,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
+  FILTER_GRID_COLUMNS_SX,
+  filterGridColumnSx,
 } from "@/shared/ui";
 import {
   BarChartOutlined,
@@ -61,6 +70,9 @@ import {
 } from "@/modules/reports/operations/report-tokens";
 import { reportStatusLabel } from "@/modules/reports/operations/report-labels";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
+import { useReportRangeAdvice } from "@/modules/reports/operations/report-coverage";
+import { IMPORT_MATCH_COVERAGE_PROBE } from "@/modules/reports/operations/report-probes";
+import { ReportRangeAdviceBanner } from "@/modules/reports/operations/ReportRangeAdviceBanner";
 import { ReportStatusBadge } from "@/modules/reports/operations/report-drilldown";
 import { ReportPaginationBar } from "@/modules/reports/operations/report-table";
 import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
@@ -89,6 +101,7 @@ import {
   type ImportMatchContext,
   type ImportMatchResultFilter,
 } from "./import-match-model";
+import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 /** Ngày hiển thị theo chuẩn dự án (dd-MM-yyyy), không phải dd/MM của bản HTML. */
 const DISPLAY_DATE = "DD-MM-YYYY";
@@ -484,7 +497,8 @@ function FilterField({
     <Box
       sx={{
         minWidth: 0,
-        gridColumn: { xs: "span 1", sm: `span ${span}`, xl: `span ${span}` },
+        // Ô `span 2` của mockup (khoảng ngày, ô tìm dài) chiếm 2 cột lưới.
+        gridColumn: filterGridColumnSx(span >= 2),
         "& .MuiFormControl-root, & .MuiTextField-root, & .ant-picker": {
           width: "100%",
           minWidth: 0,
@@ -657,7 +671,26 @@ export default function ImportMatchReport() {
     [t],
   );
   const [context, setContext] = useState<ImportMatchContext>("IMPORT");
-  const [view, setView] = useState<"table" | "snapshot">("table");
+    /**
+   * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
+   * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
+   * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
+   * @/shared/ui/use-tab-view.
+   */
+  const viewTab = useTabView<"table" | "snapshot">("table");
+  const view = viewTab.view;
+  const shownView = viewTab.shown;
+  const setView = viewTab.select;
+  /**
+   * Tab đổi view: nút bấm đọc `view` (cập nhật GẤP → tô sáng tức thì), còn các
+   * PANEL nặng đọc `deferredView` (bản trễ, React vẽ ở lượt ngắt được). Đo trước khi
+   * sửa (Playwright, CPU x4): một cú bấm "Dạng hộp" khoá luồng chính tới ~930 ms
+   * vì panel mới (bảng hàng trăm dòng / lưới thẻ) phải layout + paint trọn một
+   * lượt cùng lúc với việc tô sáng tab. Tách hai lượt thì tab phản hồi ngay,
+   * panel theo sau.
+   */
+  const deferredView = useDeferredValue(view);
+
   const [filtersExpanded, setFiltersExpanded] = useState(true);
   const [range, setRange] = useState<[Dayjs, Dayjs]>(() =>
     presetRange("this-month"),
@@ -724,6 +757,28 @@ export default function ImportMatchReport() {
       catalog,
     ],
   );
+
+  /**
+   * Gợi ý bộ lọc kỳ, tính trên `contextBatches` — tức TRƯỚC các bộ lọc phụ
+   * (kết quả, trạng thái, người thực hiện, từ khoá). Lọc phụ ra rỗng là do
+   * người dùng chọn, không phải do kỳ chọn sai.
+   *
+   * Ngữ cảnh IMPORT đọc `/skus/import-reports` — endpoint KHÔNG nhận tham số
+   * ngày, màn tự cắt kỳ ở client — nên tập mốc ngoài kỳ đã nằm sẵn trong tay
+   * và không cần dò thêm. Ngữ cảnh MATCH thì endpoint đã cắt theo kỳ, phải dò.
+   */
+  const rangeAdviceDays = useMemo(
+    () => contextBatches.map((batch) => batch.at.slice(0, 10)),
+    [contextBatches],
+  );
+  const rangeAdvice = useReportRangeAdvice({
+    from,
+    to,
+    dataDays: rangeAdviceDays,
+    loading,
+    probe: IMPORT_MATCH_COVERAGE_PROBE,
+    knownCoverageDays: context === "IMPORT" ? rangeAdviceDays : null,
+  });
 
   // Tách ra biến để cột STT của drill-down theo ngày đánh số được theo đúng
   // thứ tự dòng đang hiển thị (render của cột chỉ nhận `row`).
@@ -1207,7 +1262,7 @@ export default function ImportMatchReport() {
                 })
               }
             />
-            {view === "snapshot" ? (
+            {deferredView === "snapshot" ? (
               <UiButton
                 appearance="text"
                 aria-expanded={filtersExpanded}
@@ -1229,11 +1284,7 @@ export default function ImportMatchReport() {
           hidden={!showFilters}
           sx={{
             display: showFilters ? "grid" : "none",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(3, minmax(0, 1fr))",
-              xl: "repeat(5, minmax(0, 1fr))",
-            },
+            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
             gap: "16px 12px",
           }}
         >
@@ -1354,6 +1405,14 @@ export default function ImportMatchReport() {
       {invalid ? (
         <UiAlert tone="error">{t("reports.common.dateOrderError")}</UiAlert>
       ) : null}
+
+      <ReportRangeAdviceBanner
+        advice={rangeAdvice}
+        onApply={(next) => {
+          setRange([dayjs(next.from), dayjs(next.to)]);
+          pagination.reset();
+        }}
+      />
 
       {/* ── Tổng quan ────────────────────────────────────────────────── */}
       <Box component="section" aria-labelledby="rpt-04-kpi-title">
@@ -1546,15 +1605,14 @@ export default function ImportMatchReport() {
             empty={topErrorCodes.length === 0}
             emptyText={t("reports.importMatchReport.topErrorEmpty")}
             toolbar={
-              <Box sx={{ width: 122 }}>
-                <UiSelect
-                  fullWidth
-                  aria-label={t("reports.importMatchReport.topCountAria")}
-                  value={top}
-                  onChange={(value) => setTop(value as "10" | "20")}
-                  options={topOptions}
-                />
-              </Box>
+              // Không ép 122px: nhãn "10 mã nhiều nhất" cần ~208px, UiSelect tự
+              // nới theo nhãn (fitSelectMinWidth) nên để nó tự quyết bề rộng.
+              <UiSelect
+                aria-label={t("reports.importMatchReport.topCountAria")}
+                value={top}
+                onChange={(value) => setTop(value as "10" | "20")}
+                options={topOptions}
+              />
             }
           >
             <Box
@@ -1688,14 +1746,14 @@ export default function ImportMatchReport() {
                 type="button"
                 role="tab"
                 data-report-view={value}
-                aria-selected={view === value}
-                tabIndex={view === value ? 0 : -1}
+                aria-selected={shownView === value}
+                tabIndex={shownView === value ? 0 : -1}
                 onClick={() => {
                   setView(value);
                   setFiltersExpanded(value === "table");
                 }}
                 sx={{
-                  ...tabSx(view === value),
+                  ...tabSx(shownView === value),
                   flex: "0 0 auto",
                   minWidth: 108,
                 }}
@@ -1738,7 +1796,7 @@ export default function ImportMatchReport() {
             />
           </Box>
 
-          {view === "table" ? (
+          {deferredView === "table" ? (
             <ResponsiveDataTable<ImportMatchBatch>
               columns={[
                 {
@@ -1750,7 +1808,7 @@ export default function ImportMatchReport() {
                     mvpRowNumber(
                       pagination.page,
                       pagination.perPage,
-                      pagination.pageRows.indexOf(row),
+                      rowIndexOf(pagination.pageRows, row),
                     ),
                 },
                 {
@@ -1939,7 +1997,7 @@ export default function ImportMatchReport() {
                 header: t("shared.table.rowNumber"),
                 align: "center",
                 width: 56,
-                render: (row) => dayDrillRows.indexOf(row) + 1,
+                render: (row) => rowIndexOf(dayDrillRows, row) + 1,
               },
               {
                 key: "batchNo",
@@ -2108,7 +2166,7 @@ export default function ImportMatchReport() {
                 header: t("shared.table.rowNumber"),
                 align: "center",
                 width: 56,
-                render: (row) => openBatch.errors.indexOf(row) + 1,
+                render: (row) => rowIndexOf(openBatch.errors, row) + 1,
               },
               {
                 key: "rowNo",
@@ -2158,7 +2216,7 @@ export default function ImportMatchReport() {
                     header: t("shared.table.rowNumber"),
                     align: "center",
                     width: 56,
-                    render: (row) => openBatch.matchLines.indexOf(row) + 1,
+                    render: (row) => rowIndexOf(openBatch.matchLines, row) + 1,
                   },
                   {
                     key: "row_no",

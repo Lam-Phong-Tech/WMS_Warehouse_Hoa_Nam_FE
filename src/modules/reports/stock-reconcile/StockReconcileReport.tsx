@@ -27,6 +27,7 @@
  *    bừa thành "Lệch".
  */
 import {
+  useDeferredValue,
   useCallback,
   useMemo,
   useRef,
@@ -35,8 +36,16 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
+import { useRenderWindow } from "@/shared/components/data-display/useRenderWindow";
+import { useTabView } from "@/shared/ui/use-tab-view";
+import { WindowedRowsFooter } from "@/shared/components/data-display/WindowedRowsFooter";
 import dayjs, { type Dayjs } from "dayjs";
-import { UiSelect, UiVuexyDateField, VuexyDemoIcon } from "@/shared/ui";
+import {
+  UiButton,
+  UiSelect,
+  UiVuexyDateField,
+  VuexyDemoIcon,
+} from "@/shared/ui";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -217,7 +226,26 @@ export default function StockReconcileReport() {
   const [asOf, setAsOf] = useState<Dayjs>(() => dayjs().startOf("day"));
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
-  const [view, setView] = useState<ViewMode>("table");
+    /**
+   * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
+   * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
+   * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
+   * @/shared/ui/use-tab-view.
+   */
+  const viewTab = useTabView<ViewMode>("table");
+  const view = viewTab.view;
+  const shownView = viewTab.shown;
+  const setView = viewTab.select;
+  /**
+   * Tab đổi view: nút bấm đọc `view` (cập nhật GẤP → tô sáng tức thì), còn các
+   * PANEL nặng đọc `deferredView` (bản trễ, React vẽ ở lượt ngắt được). Đo trước khi
+   * sửa (Playwright, CPU x4): một cú bấm "Dạng hộp" khoá luồng chính tới ~930 ms
+   * vì panel mới (bảng hàng trăm dòng / lưới thẻ) phải layout + paint trọn một
+   * lượt cùng lúc với việc tô sáng tab. Tách hai lượt thì tab phản hồi ngay,
+   * panel theo sau.
+   */
+  const deferredView = useDeferredValue(view);
+
   /** Chú giải MATCH / MISMATCH của vòng tròn — demo để nút chết, đây bật/tắt thật. */
   const [series, setSeries] = useState({ match: true, mismatch: true });
 
@@ -503,6 +531,15 @@ export default function StockReconcileReport() {
     [],
   );
   const detailFilter = useSectionFilter(rowsInScope, detailFilterConfig);
+
+  /**
+   * Cửa sổ vẽ cho ba bảng dài của màn này. Ba bảng dựng tay (không qua
+   * ResponsiveDataTable) nên phải tự nới dần — xem useRenderWindow. Số liệu ở KPI
+   * và biểu đồ vẫn tính trên TOÀN BỘ tập đã lọc, chỉ số dòng được vẽ ra là bị cắt.
+   */
+  const varianceWindow = useRenderWindow(varianceFilter.rows);
+  const normWindow = useRenderWindow(normFilter.rows);
+  const detailWindow = useRenderWindow(detailFilter.rows);
 
   // ── 5. Chi tiết + hộp thoại bằng chứng ──────────────────────────────────
   const drillRow = drill?.row ?? null;
@@ -1222,7 +1259,7 @@ export default function StockReconcileReport() {
                       </td>
                     </tr>
                   ) : (
-                    varianceFilter.rows.map((item, index) => {
+                    varianceWindow.visible.map((item, index) => {
                       const source = snapshot.rows.find(
                         (row) =>
                           row.sku_code === item.code &&
@@ -1256,6 +1293,7 @@ export default function StockReconcileReport() {
                       );
                     })
                   )}
+                  <WindowedRowsFooter window={varianceWindow} colSpan={7} />
                 </tbody>
               </table>
             </div>
@@ -1335,7 +1373,7 @@ export default function StockReconcileReport() {
                       </td>
                     </tr>
                   ) : (
-                    normFilter.rows.map((row, index) => (
+                    normWindow.visible.map((row, index) => (
                       <tr key={row.code}>
                         <td className="stt-col">{index + 1}</td>
                         <td>
@@ -1365,6 +1403,7 @@ export default function StockReconcileReport() {
                       </tr>
                     ))
                   )}
+                  <WindowedRowsFooter window={normWindow} colSpan={8} />
                 </tbody>
               </table>
             </div>
@@ -1404,12 +1443,12 @@ export default function StockReconcileReport() {
                 <button
                   ref={tableTabRef}
                   id="rpt02-tab-table"
-                  className={`button ${view === "table" ? "button-primary" : "button-ghost"}`}
+                  className={`button ${shownView === "table" ? "button-primary" : "button-ghost"}`}
                   type="button"
                   role="tab"
-                  aria-selected={view === "table"}
+                  aria-selected={shownView === "table"}
                   aria-controls="rpt02-panel-table"
-                  tabIndex={view === "table" ? 0 : -1}
+                  tabIndex={shownView === "table" ? 0 : -1}
                   onClick={() => setView("table")}
                   onKeyDown={onTabKeyDown}
                 >
@@ -1419,12 +1458,12 @@ export default function StockReconcileReport() {
                 <button
                   ref={snapshotTabRef}
                   id="rpt02-tab-snapshot"
-                  className={`button ${view === "snapshot" ? "button-primary" : "button-ghost"}`}
+                  className={`button ${shownView === "snapshot" ? "button-primary" : "button-ghost"}`}
                   type="button"
                   role="tab"
-                  aria-selected={view === "snapshot"}
+                  aria-selected={shownView === "snapshot"}
                   aria-controls="rpt02-panel-snapshot"
-                  tabIndex={view === "snapshot" ? 0 : -1}
+                  tabIndex={shownView === "snapshot" ? 0 : -1}
                   onClick={() => setView("snapshot")}
                   onKeyDown={onTabKeyDown}
                 >
@@ -1444,7 +1483,7 @@ export default function StockReconcileReport() {
               id="rpt02-panel-table"
               role="tabpanel"
               aria-labelledby="rpt02-tab-table"
-              hidden={view !== "table"}
+              hidden={deferredView !== "table"}
             >
               <div className="table-wrap">
                 <table className="report-table">
@@ -1485,7 +1524,7 @@ export default function StockReconcileReport() {
                         </td>
                       </tr>
                     ) : (
-                      detailFilter.rows.map((row, index) => (
+                      detailWindow.visible.map((row, index) => (
                         <tr key={row.drillKey}>
                           <td className="stt-col">{index + 1}</td>
                           <td>
@@ -1535,6 +1574,7 @@ export default function StockReconcileReport() {
                         </tr>
                       ))
                     )}
+                    <WindowedRowsFooter window={detailWindow} colSpan={9} />
                   </tbody>
                 </table>
               </div>
@@ -1544,10 +1584,10 @@ export default function StockReconcileReport() {
               id="rpt02-panel-snapshot"
               role="tabpanel"
               aria-labelledby="rpt02-tab-snapshot"
-              hidden={view !== "snapshot"}
+              hidden={deferredView !== "snapshot"}
             >
               <div className="report-snapshot-grid">
-                {detailFilter.rows.map((row, index) => (
+                {detailWindow.visible.map((row, index) => (
                   <article className="report-slice" key={row.drillKey}>
                     <div className="report-slice-head">
                       <div>
@@ -1604,6 +1644,23 @@ export default function StockReconcileReport() {
                   </article>
                 ))}
               </div>
+              {detailWindow.hasMore ? (
+                <div style={{ textAlign: "center", padding: 12 }}>
+                  <span style={{ marginRight: 12 }}>
+                    {t("shared.table.showingSome", {
+                      shown: detailWindow.shown,
+                      total: detailWindow.total,
+                    })}
+                  </span>
+                  <UiButton
+                    size="small"
+                    appearance="outlined"
+                    onClick={detailWindow.showMore}
+                  >
+                    {t("shared.table.showMore")}
+                  </UiButton>
+                </div>
+              ) : null}
             </div>
           </article>
         </section>
