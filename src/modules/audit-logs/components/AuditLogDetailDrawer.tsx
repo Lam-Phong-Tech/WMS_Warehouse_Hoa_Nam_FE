@@ -1,12 +1,12 @@
 import { useT } from "@/shared/i18n/useT";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Box,
+  Collapse,
   Grid,
   Stack,
   UiDialog,
   UiStatusBadge,
-  type UiStatusTone,
   SEMANTIC_LIGHT as S,
   RADIUS,
   TYPOGRAPHY,
@@ -14,27 +14,17 @@ import {
 import { toast } from "sonner";
 import type { AuditLog } from "../types/audit-logs.types";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { AUDIT_MODULE_LABELS } from "@/shared/constants/business-labels";
 import {
-  AUDIT_ACTION_LABELS,
-  AUDIT_MODULE_LABELS,
-  businessLabel,
-} from "@/shared/constants/business-labels";
-import { ActionIconButton } from "@/shared/components/actions";
+  auditActionLabel,
+  auditActionTone,
+  auditDataEntries,
+  auditObjectTypeLabel,
+  describeAuditLog,
+} from "../constants/audit-log-labels";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { EMPTY_TEXT } from "@/shared/constants/display";
-
-// Map preset màu antd Tag cũ → tone UiStatusBadge (cùng bảng với AuditLogsTable).
-const ACTION_TONES: Record<string, UiStatusTone> = {
-  CREATE: "success",
-  UPDATE: "info",
-  DELETE: "error",
-  REVOKE_ROLE_SCOPE: "warning",
-  SYNC_ROLE_SCOPES: "primary",
-  SUBMIT: "info",
-  CANCEL: "error",
-  ARCHIVE: "neutral",
-  RESTORE: "success",
-};
 
 /** Cặp nhãn/giá trị trong Dialog "Chi tiết nhật ký hệ thống" (thay antd Descriptions.Item). */
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
@@ -54,7 +44,20 @@ function DetailField({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function JsonBlock({ title, value }: { title: string; value: unknown }) {
+/**
+ * Khối "Dữ liệu trước/sau thay đổi".
+ *
+ * Trước đây in thẳng `JSON.stringify` — người dùng đọc được đúng dấu ngoặc và
+ * `{"status": "SCANNING"}`. Nay dịch thành danh sách "tên trường – giá trị"
+ * tiếng Việt (xem `auditDataEntries`), JSON gốc vẫn bung ra được cho quản trị
+ * đối chiếu khi tra soát sự cố.
+ */
+function AuditDataBlock({ title, data }: { title: string; data: unknown }) {
+  const t = useT();
+  const [showRaw, setShowRaw] = useState(false);
+  const entries = auditDataEntries(data as Record<string, unknown> | null);
+  if (entries.length === 0) return null;
+
   return (
     <Box>
       <Box
@@ -70,19 +73,54 @@ function JsonBlock({ title, value }: { title: string; value: unknown }) {
         {title}
       </Box>
       <Box
-        component="pre"
         sx={{
           bgcolor: S.bgSubtle,
           border: `1px solid ${S.border}`,
           borderRadius: `${RADIUS.card}px`,
           p: 2,
-          maxHeight: 300,
-          overflow: "auto",
-          fontSize: 12,
-          m: 0,
         }}
       >
-        {JSON.stringify(value, null, 2)}
+        <Grid container spacing={1.5}>
+          {entries.map((entry) => (
+            <Grid key={entry.key} size={{ xs: 12, sm: 6 }}>
+              <Box sx={{ fontSize: 12, color: S.textMedium }}>
+                {entry.label}
+              </Box>
+              <Box
+                sx={{
+                  fontSize: TYPOGRAPHY.fontSizeSecondary,
+                  color: S.textHigh,
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {entry.value}
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+        <Box sx={{ mt: 1.5 }}>
+          <ActionButton
+            kind="detail"
+            aria-expanded={showRaw}
+            onClick={() => setShowRaw((prev) => !prev)}
+          >
+            {showRaw ? t("audit.hideRawData") : t("audit.showRawData")}
+          </ActionButton>
+        </Box>
+        <Collapse in={showRaw} unmountOnExit>
+          <Box
+            component="pre"
+            sx={{
+              mt: 1.5,
+              mb: 0,
+              maxHeight: 240,
+              overflow: "auto",
+              fontSize: 12,
+            }}
+          >
+            {JSON.stringify(data, null, 2)}
+          </Box>
+        </Collapse>
       </Box>
     </Box>
   );
@@ -104,12 +142,6 @@ export function AuditLogDetailDrawer({
   // cha (AuditLogsPage tách riêng cờ `detailOpen` với bản ghi đang xem) — ở đây
   // trả null khi chưa có bản ghi thì `open` cũng đang false, không mất hiệu ứng.
   if (!auditLog) return null;
-
-  const actionLabel = businessLabel(
-    AUDIT_ACTION_LABELS,
-    auditLog.action,
-    t("audit.actionOther"),
-  );
 
   // Thay Typography.Text copyable của antd: nút copy tường minh + toast.
   const copyIp = () => {
@@ -158,8 +190,8 @@ export function AuditLogDetailDrawer({
               label={t("audit.colAction")}
               value={
                 <UiStatusBadge
-                  tone={ACTION_TONES[auditLog.action] ?? "neutral"}
-                  label={actionLabel}
+                  tone={auditActionTone(auditLog.action)}
+                  label={auditActionLabel(auditLog.action)}
                 />
               }
             />
@@ -169,9 +201,10 @@ export function AuditLogDetailDrawer({
                 AUDIT_MODULE_LABELS[auditLog.module] || t("audit.moduleOther")
               }
             />
-            {/* BE chưa trả mã nghiệp vụ của đối tượng (chỉ có object_type +
-              object_id) — hiện loại đối tượng kèm định danh rút gọn, không nối
-              nguyên UUID vào câu. Khi BE bổ sung object_code thì hiện mã đó. */}
+            {/* `object_type` là tên bảng/slug route của BE — hiện nhãn tiếng
+              Việt của loại đối tượng, kèm định danh rút gọn (BE chưa trả mã
+              nghiệp vụ; khi có object_code thì hiện mã đó). Giá trị kỹ thuật
+              gốc giữ ở tooltip cho quản trị tra soát. */}
             <DetailField
               label={t("audit.colObject")}
               value={
@@ -180,7 +213,14 @@ export function AuditLogDetailDrawer({
                   spacing={0.5}
                   sx={{ alignItems: "center", flexWrap: "wrap" }}
                 >
-                  <span>{auditLog.object_type}</span>
+                  <Box
+                    component="span"
+                    title={auditLog.object_type || undefined}
+                  >
+                    {auditLog.object_type
+                      ? auditObjectTypeLabel(auditLog.object_type)
+                      : EMPTY_TEXT}
+                  </Box>
                   {auditLog.object_id ? (
                     <CopyableId value={auditLog.object_id} />
                   ) : null}
@@ -216,19 +256,26 @@ export function AuditLogDetailDrawer({
                 )
               }
             />
+            {/* Không in `auditLog.description` của BE: đó là chuỗi ghép máy
+              `"{ACTION} {object_type} #{uuid}"`. Dựng câu tiếng Việt từ cùng
+              nguyên liệu (kèm số chứng từ nếu có). */}
             <DetailField
               label={t("audit.colDescription")}
-              value={auditLog.description}
+              value={describeAuditLog(auditLog)}
             />
           </Grid>
         </Box>
 
-        {auditLog.before_data && (
-          <JsonBlock
-            title={t("audit.beforeData")}
-            value={auditLog.before_data}
-          />
-        )}
+        <AuditDataBlock
+          title={t("audit.beforeData")}
+          data={auditLog.before_data}
+        />
+        {/* `after_data` là phần giàu thông tin nhất (số chứng từ, mục đích,
+          ảnh hưởng tồn...) nhưng trước đây không hiện ra màn nào. */}
+        <AuditDataBlock
+          title={t("audit.afterData")}
+          data={auditLog.after_data}
+        />
       </Stack>
     </UiDialog>
   );

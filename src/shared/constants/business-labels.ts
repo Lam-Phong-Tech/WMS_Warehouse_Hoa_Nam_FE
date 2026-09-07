@@ -627,6 +627,26 @@ export const AUDIT_ACTION_LABELS = bilingual(
     PUTAWAY_CONFIRM: "Xác nhận xếp khay",
     WARRANTY_STATUS_CHANGE: "Đổi trạng thái bảo hành",
     REPORT_EXPORTED: "Xuất báo cáo",
+    // Nhập/xuất kho, linh kiện — action THẬT đang nằm trong bảng `audit_log`
+    // (đếm 2026-09-07: ITEM_REGISTERED_AT_POST_RECEIPT 3815 bản ghi,
+    // CREATE_INBOUND 339, POST_RECEIPT 323...). Thiếu các khoá này thì cột
+    // "Hành động" rơi hết về "Hành động khác" — mất thông tin chứ không chỉ
+    // xấu chữ.
+    CREATE_INBOUND: "Tạo phiếu nhập kho",
+    POST_RECEIPT: "Ghi sổ nhập kho",
+    SCAN_INBOUND: "Quét nhận hàng phiếu nhập",
+    ITEM_REGISTERED_AT_POST_RECEIPT: "Ghi nhận hiện vật khi ghi sổ nhập",
+    CREATE_OUTBOUND: "Tạo phiếu xuất kho",
+    CREATE_COMPONENT_ISSUE: "Tạo phiếu xuất linh kiện",
+    POST_COMPONENT_ISSUE: "Ghi sổ xuất linh kiện",
+    REVERSAL_CANCELLED: "Hủy điều chỉnh tồn",
+    WARRANTY_CASE_RECEIVED: "Tiếp nhận hồ sơ bảo hành",
+    PV_PRODUCT_IMAGE_UPLOADED: "Tải ảnh sản phẩm App PV",
+    // Phiên làm việc / bảo mật.
+    SWITCH_CONTEXT: "Đổi kho làm việc",
+    LOGIN_FAILED: "Đăng nhập thất bại",
+    TOKEN_REFRESH_FAILED: "Làm mới phiên thất bại",
+    AUTHZ_PERMISSION_DENIED: "Từ chối vì thiếu quyền",
   },
   {
     CREATE: "Create",
@@ -664,6 +684,20 @@ export const AUDIT_ACTION_LABELS = bilingual(
     PUTAWAY_CONFIRM: "Confirm putaway",
     WARRANTY_STATUS_CHANGE: "Change warranty status",
     REPORT_EXPORTED: "Report exported",
+    CREATE_INBOUND: "Create inbound document",
+    POST_RECEIPT: "Post goods receipt",
+    SCAN_INBOUND: "Inbound receiving scan",
+    ITEM_REGISTERED_AT_POST_RECEIPT: "Item registered on receipt posting",
+    CREATE_OUTBOUND: "Create outbound document",
+    CREATE_COMPONENT_ISSUE: "Create component issue",
+    POST_COMPONENT_ISSUE: "Post component issue",
+    REVERSAL_CANCELLED: "Stock adjustment cancelled",
+    WARRANTY_CASE_RECEIVED: "Warranty case received",
+    PV_PRODUCT_IMAGE_UPLOADED: "PV product image uploaded",
+    SWITCH_CONTEXT: "Switch working warehouse",
+    LOGIN_FAILED: "Sign-in failed",
+    TOKEN_REFRESH_FAILED: "Session refresh failed",
+    AUTHZ_PERMISSION_DENIED: "Denied: missing permission",
   },
 );
 

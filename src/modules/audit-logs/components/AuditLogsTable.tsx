@@ -5,7 +5,6 @@ import {
   Box,
   Stack,
   UiStatusBadge,
-  type UiStatusTone,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
 } from "@/shared/ui";
@@ -22,28 +21,17 @@ import {
 import type { RowSelectionState } from "@/shared/hooks/useRowSelection";
 import type { AuditLog } from "../types/audit-logs.types";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { AUDIT_MODULE_LABELS } from "@/shared/constants/business-labels";
+// Nhãn/câu chữ tiếng Việt của màn Nhật ký (loại đối tượng, mô tả, màu badge)
+// nằm chung một chỗ với Dialog chi tiết — xem constants/audit-log-labels.ts.
 import {
-  AUDIT_ACTION_LABELS,
-  AUDIT_MODULE_LABELS,
-  businessLabel,
-} from "@/shared/constants/business-labels";
+  auditActionLabel,
+  auditActionTone,
+  auditObjectTypeLabel,
+  describeAuditLog,
+} from "../constants/audit-log-labels";
 import { ActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
-
-// Map preset màu antd Tag cũ → tone UiStatusBadge (recipe Part 4:
-// green→success, blue/cyan→info, red/magenta→error, orange→warning,
-// purple→primary, gray→neutral, lime→success).
-const ACTION_TONES: Record<string, UiStatusTone> = {
-  CREATE: "success",
-  UPDATE: "info",
-  DELETE: "error",
-  REVOKE_ROLE_SCOPE: "warning",
-  SYNC_ROLE_SCOPES: "primary",
-  SUBMIT: "info",
-  CANCEL: "error",
-  ARCHIVE: "neutral",
-  RESTORE: "success",
-};
 
 /** Chữ trong ô bảng (thay Typography body2). */
 const CELL_TEXT_SX = {
@@ -167,12 +155,8 @@ export function AuditLogsTable({
       sortable: true,
       render: (row) => (
         <UiStatusBadge
-          tone={ACTION_TONES[row.action] ?? "neutral"}
-          label={businessLabel(
-            AUDIT_ACTION_LABELS,
-            row.action,
-            t("audit.actionOther"),
-          )}
+          tone={auditActionTone(row.action)}
+          label={auditActionLabel(row.action)}
         />
       ),
     },
@@ -195,7 +179,11 @@ export function AuditLogsTable({
       sortable: true,
       render: (row) => (
         <Stack spacing={0} sx={{ minWidth: 0 }}>
+          {/* `object_type` là TÊN BẢNG/slug route của BE (`stock_document`,
+            `label-print-events`) — phải qua map nhãn, giá trị gốc giữ ở
+            tooltip cho quản trị tra soát. */}
           <Box
+            title={row.object_type || undefined}
             sx={{
               ...CELL_TEXT_SX,
               whiteSpace: "nowrap",
@@ -203,7 +191,9 @@ export function AuditLogsTable({
               textOverflow: "ellipsis",
             }}
           >
-            {row.object_type || EMPTY_TEXT}
+            {row.object_type
+              ? auditObjectTypeLabel(row.object_type)
+              : EMPTY_TEXT}
           </Box>
           {/* title giữ UUID đầy đủ CÓ CHỦ ĐÍCH: đây là màn nhật ký kỹ thuật cho
             quản trị, phần hiển thị đã rút gọn để không vỡ cột và bản đầy đủ chỉ
@@ -262,10 +252,11 @@ export function AuditLogsTable({
     {
       key: "description",
       header: t("audit.colDescription"),
-      // Mô tả audit log thường kèm UUID nên rất dài; để nguyên thì ô nở hết cỡ
-      // và đẩy cả bảng tràn ngang, buộc người xem phải kéo thanh cuộn. Chặn trần
-      // bề rộng rồi cắt bằng "…" — nội dung đầy đủ vẫn có ở tooltip và ở Dialog
-      // chi tiết. KHÔNG đặt `width` cho cột: cột cố định càng làm bảng rộng thêm.
+      // `description` của BE là chuỗi ghép máy `"{ACTION} {object_type} #{uuid}"`
+      // — không đọc được. Dựng lại câu tiếng Việt từ hành động + loại đối tượng
+      // + số chứng từ; chuỗi gốc giữ ở tooltip để đối chiếu khi cần.
+      // Chặn trần bề rộng rồi cắt bằng "…": để nguyên thì ô nở hết cỡ và đẩy cả
+      // bảng tràn ngang. KHÔNG đặt `width` cho cột (cột cố định càng rộng thêm).
       render: (row) => (
         <Box
           title={row.description}
@@ -277,7 +268,7 @@ export function AuditLogsTable({
             textOverflow: "ellipsis",
           }}
         >
-          {row.description}
+          {describeAuditLog(row)}
         </Box>
       ),
     },

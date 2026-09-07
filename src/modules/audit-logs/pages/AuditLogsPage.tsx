@@ -1,16 +1,13 @@
 import { useT } from "@/shared/i18n/useT";
 import { useEffect, useState } from "react";
-import dayjs from "dayjs";
-import {
-  checkDateRange,
-  dateTimeInputBounds,
-  pastDateBounds,
-} from "@/shared/validation/date-rules";
+import type { Dayjs } from "dayjs";
+import { pastDateBounds } from "@/shared/validation/date-rules";
 import {
   Box,
   UiPagination,
   UiSelect,
   UiTextField,
+  UiVuexyDateRangePicker,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
   FILTER_WIDTH,
@@ -37,25 +34,19 @@ import type {
 import {
   AUDIT_ACTION_LABELS,
   AUDIT_MODULE_LABELS,
-  businessLabel,
 } from "@/shared/constants/business-labels";
+import {
+  auditActionLabel,
+  auditObjectTypeLabel,
+  auditResultLabel,
+  describeAuditLog,
+} from "@/modules/audit-logs/constants/audit-log-labels";
 import { ActionButton } from "@/shared/components/actions";
 
 const SEARCH_DEBOUNCE_MS = 250;
-const LOCAL_DATETIME = "YYYY-MM-DDTHH:mm";
 
-/**
- * Parse giá trị datetime-local NGHIÊM NGẶT: dayjs tự "cuộn" tháng/ngày sai
- * thành ngày hợp lệ kế tiếp, nên đối chiếu lại chuỗi sau khi format; sai thì
- * trả Dayjs invalid để checkDate báo "không hợp lệ". Rỗng → null (không lọc).
- */
-function parseLocalDateTime(raw: string): dayjs.Dayjs | null {
-  if (!raw) return null;
-  const parsed = dayjs(raw);
-  return parsed.isValid() && parsed.format(LOCAL_DATETIME) === raw
-    ? parsed
-    : dayjs("");
-}
+/** Định dạng BE nhận cho `date_from`/`date_to` (`Y-m-d H:i:s`). */
+const API_DATE_TIME = "YYYY-MM-DD HH:mm:ss";
 
 /** Chữ phụ trên toolbar (thay MUI Typography body2 color text.secondary). */
 const TOOLBAR_TEXT_SX = {
@@ -83,33 +74,16 @@ export function AuditLogsPage() {
   const [search, setSearch] = useState("");
   const [module, setModule] = useState<AuditModule | "">("");
   const [action, setAction] = useState<AuditAction | "">("");
-  // Lọc theo khoảng thời gian / khung giờ (mục 13). Giá trị từ input
-  // datetime-local có dạng "YYYY-MM-DDTHH:mm"; BE nhận "Y-m-d H:i:s".
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  // Khoảng thời gian ĐÃ hợp lệ gần nhất — query chỉ dùng cặp này, nên gõ dở
-  // "đến" < "từ" hay năm 9999 không bao giờ bắn lên API; ô vẫn giữ giá trị
-  // đang gõ để người dùng sửa.
-  const [appliedRange, setAppliedRange] = useState({ from: "", to: "" });
+  // Lọc theo khoảng ngày (mục 13) — cùng một control lịch với các màn báo cáo
+  // (UiVuexyDateRangePicker) thay cho 2 ô `datetime-local` của trình duyệt:
+  // lịch chọn theo NGÀY, nên khoảng gửi lên BE là trọn ngày (00:00:00 →
+  // 23:59:59). Bản thân control đã chặn "đến" < "từ" và ngày ngoài mốc cho
+  // phép, không cần lớp kiểm tra riêng ở màn nữa.
+  const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [userId, setUserId] = useState("");
-  const dateRangeCheck = checkDateRange(
-    parseLocalDateTime(dateFrom),
-    parseLocalDateTime(dateTo),
-    pastDateBounds(),
-  );
-  const dateError = dateRangeCheck.ok ? null : dateRangeCheck.message;
-  const dateTimeBounds = dateTimeInputBounds(pastDateBounds());
-  const applyDateRange = (from: string, to: string) => {
-    setDateFrom(from);
-    setDateTo(to);
-    setPage(1);
-    const check = checkDateRange(
-      parseLocalDateTime(from),
-      parseLocalDateTime(to),
-      pastDateBounds(),
-    );
-    if (check.ok) setAppliedRange({ from, to });
-  };
+  // Nhật ký là dữ liệu ĐÃ XẢY RA: chặn ngày tương lai ngay trên lịch (cùng
+  // luật với bộ lọc kỳ của báo cáo).
+  const maxSelectableDate = pastDateBounds().maxDate;
 
   // Danh bạ người dùng để lọc "ai đã thao tác". Best-effort: nếu tài khoản
   // không có quyền xem người dùng thì query lỗi và dropdown chỉ rỗng, phần
@@ -122,8 +96,10 @@ export function AuditLogsPage() {
       : user.display_name,
   }));
 
-  const toApiDateTime = (value: string) =>
-    value ? `${value.replace("T", " ")}:00` : undefined;
+  // Trọn ngày: "từ" lấy 00:00:00, "đến" lấy 23:59:59 — chọn cùng một ngày ở
+  // hai đầu vẫn ra đủ bản ghi của ngày đó.
+  const dateFromParam = range?.[0]?.startOf("day").format(API_DATE_TIME);
+  const dateToParam = range?.[1]?.endOf("day").format(API_DATE_TIME);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -143,8 +119,8 @@ export function AuditLogsPage() {
       module: module || undefined,
       action: action || undefined,
       user_id: userId || undefined,
-      date_from: toApiDateTime(appliedRange.from),
-      date_to: toApiDateTime(appliedRange.to),
+      date_from: dateFromParam,
+      date_to: dateToParam,
     },
   );
 
@@ -173,16 +149,18 @@ export function AuditLogsPage() {
         t("audit.colResult"),
         t("audit.colDescription"),
       ],
+      // File Excel là bản in ra cho người đọc: dùng đúng nhãn/câu chữ đang
+      // hiện trên bảng, không xuất enum thô của BE.
       selectedLogs.map((log) => [
         formatDateTime(log.created_at),
-        businessLabel(AUDIT_ACTION_LABELS, log.action, log.action),
+        auditActionLabel(log.action),
         AUDIT_MODULE_LABELS[log.module] || log.module,
-        log.object_type,
+        auditObjectTypeLabel(log.object_type),
         log.object_id ?? "",
         log.actor?.email || log.actor?.display_name || t("audit.system"),
         log.ip_address ?? "",
-        log.result ?? "",
-        log.description,
+        auditResultLabel(log.result),
+        describeAuditLog(log),
       ]),
       `nhat-ky-he-thong-trang-${pagination.current}`,
     );
@@ -243,39 +221,20 @@ export function AuditLogsPage() {
           }}
           options={userOptions}
         />
-        <UiTextField
-          type="datetime-local"
-          value={dateFrom}
-          label={t("audit.fromLabel")}
-          slotProps={{
-            inputLabel: { shrink: true },
-            htmlInput: {
-              "aria-label": t("audit.fromAria"),
-              "aria-invalid": Boolean(dateError),
-              ...dateTimeBounds,
-            },
-          }}
-          onChange={(event) => applyDateRange(event.target.value, dateTo)}
-          error={Boolean(dateError)}
-          helperText={dateError ?? undefined}
-          sx={{ minWidth: 210 }}
-        />
-        <UiTextField
-          type="datetime-local"
-          value={dateTo}
-          label={t("audit.toLabel")}
-          slotProps={{
-            inputLabel: { shrink: true },
-            htmlInput: {
-              "aria-label": t("audit.toAria"),
-              "aria-invalid": Boolean(dateError),
-              ...dateTimeBounds,
-            },
-          }}
-          onChange={(event) => applyDateRange(dateFrom, event.target.value)}
-          error={Boolean(dateError)}
-          sx={{ minWidth: 210 }}
-        />
+        {/* Lịch "Từ ngày / Đến ngày" của dự án (cùng control với bộ lọc kỳ ở
+          các màn báo cáo) — thay 2 ô `datetime-local` mà mỗi trình duyệt vẽ
+          một kiểu, tiếng Anh và định dạng dd/mm/yyyy --:-- khó đọc. */}
+        <Box sx={{ width: FILTER_WIDTH.dateRange, maxWidth: "100%" }}>
+          <UiVuexyDateRangePicker
+            value={range}
+            aria-label={t("audit.rangeAria")}
+            maxDate={maxSelectableDate}
+            onChange={(next) => {
+              setRange(next);
+              setPage(1);
+            }}
+          />
+        </Box>
         <UiSelect
           value={perPage}
           aria-label={t("audit.pageSizeAria")}

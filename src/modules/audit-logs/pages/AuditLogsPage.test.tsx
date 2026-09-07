@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import dayjs from "dayjs";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -82,7 +84,7 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
   it("bố cục đồng bộ các trang khác: toolbar lọc, tổng số bản ghi, STT và checkbox chọn nhiều", async () => {
     renderWithProviders(<AuditLogsPage />);
 
-    expect(await screen.findByText("app_user")).toBeInTheDocument();
+    expect(await screen.findByText("Tài khoản người dùng")).toBeInTheDocument();
 
     // Toolbar cùng chuẩn WarrantyPage/InventoryPage.
     expect(screen.getByLabelText("Tìm nhật ký hệ thống")).toBeInTheDocument();
@@ -108,7 +110,7 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
 
   it("UUID đối tượng hiển thị rút gọn, không in nguyên 36 ký tự làm vỡ cột", async () => {
     renderWithProviders(<AuditLogsPage />);
-    await screen.findByText("app_user");
+    await screen.findByText("Tài khoản người dùng");
 
     expect(screen.getByText(`#01a042bb…083f`)).toBeInTheDocument();
     // Chuỗi UUID đầy đủ chỉ còn ở tooltip (title), không nằm trong ô Đối tượng.
@@ -116,9 +118,59 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     expect(screen.getByTitle(LOG_ID)).toBeInTheDocument();
   });
 
+  it("cột Đối tượng và Mô tả là tiếng Việt, không in enum/tên bảng thô của BE", async () => {
+    renderWithProviders(<AuditLogsPage />);
+    await screen.findByText("Tài khoản người dùng");
+
+    // `object_type` (tên bảng) chỉ còn ở tooltip, không phải chữ hiển thị.
+    expect(screen.queryByText("app_user")).not.toBeInTheDocument();
+    expect(screen.getByTitle("app_user")).toBeInTheDocument();
+
+    // `description` của BE là chuỗi ghép máy "{ACTION} {object_type} #{uuid}".
+    expect(
+      screen.queryByText(`TOKEN_REFRESH app_user #${LOG_ID}`),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Làm mới phiên — Tài khoản người dùng 01a042…ec083f"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Tạo mới — Tệp đính kèm chứng từ f1e034…17b5df"),
+    ).toBeInTheDocument();
+  });
+
+  it("lọc thời gian dùng lịch 'Từ ngày / Đến ngày', không phải ô datetime của trình duyệt", async () => {
+    const user = userEvent.setup();
+    const { container } = renderWithProviders(<AuditLogsPage />);
+    await screen.findByText("Tài khoản người dùng");
+
+    expect(container.querySelector('input[type="datetime-local"]')).toBeNull();
+    expect(screen.getByLabelText("Lọc theo khoảng ngày")).toBeInTheDocument();
+
+    // Chọn hôm kia → hôm nay rồi Áp dụng: khoảng gửi lên BE là TRỌN NGÀY.
+    const today = dayjs().startOf("day");
+    const from = today.subtract(2, "day");
+    await user.click(screen.getByRole("button", { name: "Từ ngày" }));
+    await user.click(
+      screen.getByRole("button", { name: from.format("DD/MM/YYYY") }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: today.format("DD/MM/YYYY") }),
+    );
+    await user.click(screen.getByRole("button", { name: "Áp dụng" }));
+
+    await waitFor(() => {
+      expect(auditLogService.getAuditLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          date_from: `${from.format("YYYY-MM-DD")} 00:00:00`,
+          date_to: `${today.format("YYYY-MM-DD")} 23:59:59`,
+        }),
+      );
+    });
+  });
+
   it("chọn tất cả bật khối thao tác hàng loạt và bỏ chọn tắt đi", async () => {
     renderWithProviders(<AuditLogsPage />);
-    await screen.findByText("app_user");
+    await screen.findByText("Tài khoản người dùng");
 
     fireEvent.click(screen.getByLabelText("Chọn tất cả nhật ký trong trang"));
     expect(await screen.findByText("Đã chọn 2")).toBeInTheDocument();
@@ -134,7 +186,7 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
 
   it("tick chọn dòng không mở Dialog chi tiết, bấm nút Xem mới mở", async () => {
     renderWithProviders(<AuditLogsPage />);
-    await screen.findByText("app_user");
+    await screen.findByText("Tài khoản người dùng");
 
     const rowCheckboxes = screen
       .getAllByRole("checkbox")
