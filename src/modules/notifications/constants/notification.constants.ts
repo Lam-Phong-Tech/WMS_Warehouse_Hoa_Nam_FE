@@ -27,6 +27,7 @@ export const NOTIFICATION_EVENT_LABELS: Record<string, MessageKey> = {
   "inbound.created": "notifications.event.inboundCreated",
   "inbound.scan_started": "notifications.event.inboundScanStarted",
   "inbound.completed": "notifications.event.inboundCompleted",
+  "inbound.sku_info_pending": "notifications.event.inboundSkuInfoPending",
   "inbound.cancelled": "notifications.event.inboundCancelled",
   "outbound.created": "notifications.event.outboundCreated",
   "outbound.scan_started": "notifications.event.outboundScanStarted",
@@ -67,6 +68,8 @@ export const NOTIFICATION_SUBJECT_TYPE_LABELS: Record<string, MessageKey> = {
 export const NOTIFICATION_PAYLOAD_FIELD_LABELS: Record<string, MessageKey> = {
   document_id: "notifications.payload.documentId",
   doc_no: "notifications.payload.docNo",
+  sku_codes: "notifications.payload.skuCodes",
+  source: "notifications.payload.source",
   warehouse_id: "notifications.payload.warehouseId",
   type: "notifications.payload.type",
   reversal_id: "notifications.payload.reversalId",

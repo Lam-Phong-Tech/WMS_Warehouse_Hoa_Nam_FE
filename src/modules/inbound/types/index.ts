@@ -17,6 +17,14 @@ export interface InboundDocument {
   version: number;
   sourceReference?: string;
   note?: string;
+  /**
+   * Phiếu còn SKU sinh ra lúc quét mà chưa đủ thông tin (tên thật + đơn vị
+   * tính) nên chưa Ghi nhận nhập kho được — hay gặp nhất với phiếu do Mini App
+   * gửi lên. BE tính bằng SkuInboundInfoRule, FE KHÔNG tự suy ra.
+   */
+  pendingProductInfo: boolean;
+  /** Số SKU đang thiếu thông tin trong phiếu (0 khi đã đủ). */
+  pendingProductInfoCount: number;
 }
 
 export interface InboundLine {

@@ -30,6 +30,8 @@ type InboundListParams = {
   status?: string;
   page?: number;
   per_page?: number;
+  /** Lọc phiếu còn SKU chưa đủ thông tin; bỏ trống = không lọc. */
+  pendingProductInfo?: boolean;
 };
 export const inboundKeys = {
   all: ["inbound"] as const,

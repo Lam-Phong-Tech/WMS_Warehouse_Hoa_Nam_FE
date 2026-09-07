@@ -34,6 +34,12 @@ type ListParams = {
   per_page?: number;
   search?: string;
   status?: string;
+  /**
+   * Chỉ lấy phiếu còn SKU mới chưa đủ thông tin (true) hoặc phần còn lại
+   * (false). Bỏ trống = không lọc. Lọc chạy TRONG SQL ở BE nên trang 1 không bị
+   * thiếu dòng như cách lọc sau phân trang.
+   */
+  pendingProductInfo?: boolean;
 };
 type RawRecord = Record<string, unknown>;
 type ScanOptions = {
@@ -149,6 +155,12 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     version: num(row.version ?? row.lock_version ?? 1),
     sourceReference: text(row.source_reference ?? row.source_name) || undefined,
     note: text(row.note) || undefined,
+    // Phiếu (thường là phiếu Mini App quét ra SKU mới) đang chờ người ở web bổ
+    // sung tên + ĐVT. Mặc định FALSE khi BE không trả cờ — ngược với cờ trên
+    // từng dòng: ở đây "không biết" mà báo đỏ thì mọi phiếu của bản BE cũ đều bị
+    // gắn nhãn sai, còn bỏ sót thì mở phiếu ra vẫn thấy.
+    pendingProductInfo: row.pending_product_info === true,
+    pendingProductInfoCount: num(row.pending_product_info_count),
   };
 }
 function normalizeLine(
@@ -318,6 +330,10 @@ export async function fetchInboundDocuments(
         per_page: params.per_page ?? 20,
         keyword: params.search?.trim() || undefined,
         status: params.status || undefined,
+        pending_product_info:
+          params.pendingProductInfo === undefined
+            ? undefined
+            : params.pendingProductInfo,
       },
     },
   );

@@ -83,6 +83,8 @@ function InboundListScreen() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | undefined>();
+  // undefined = không lọc; true = chỉ phiếu chờ bổ sung thông tin SKU.
+  const [pendingInfo, setPendingInfo] = useState<boolean | undefined>();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [draftOpen, setDraftOpen] = useState(false);
@@ -96,6 +98,7 @@ function InboundListScreen() {
     status,
     page,
     per_page: perPage,
+    pendingProductInfo: pendingInfo,
   });
   const rows = query.data?.data ?? [];
   const meta = query.data?.meta;
@@ -211,10 +214,29 @@ function InboundListScreen() {
     {
       key: "status",
       header: t("inbound.list.colStatus"),
-      width: 160,
+      width: 220,
       sortType: "value",
       sortAccessor: (row) => row.status,
-      render: (row) => statusTag(row.status, t),
+      // Phiếu Mini App quét ra SKU mới nằm ở "Đang quét nhận hàng" và KHÔNG Ghi
+      // nhận nhập kho được cho tới khi có người bổ sung tên + ĐVT. Không có dấu
+      // ở đây thì phải mở từng phiếu mới biết — nên nó nằm ngay cạnh trạng thái.
+      render: (row) => (
+        <Stack sx={{ gap: 0.5, alignItems: "flex-start" }}>
+          {statusTag(row.status, t)}
+          {row.pendingProductInfo ? (
+            <UiStatusBadge
+              tone="warning"
+              label={
+                row.pendingProductInfoCount > 0
+                  ? t("inbound.list.pendingInfoBadgeCount", {
+                      count: row.pendingProductInfoCount,
+                    })
+                  : t("inbound.list.pendingInfoBadge")
+              }
+            />
+          ) : null}
+        </Stack>
+      ),
     },
     {
       key: "updatedAt",
@@ -296,6 +318,19 @@ function InboundListScreen() {
             setPage(1);
           }}
           minWidth={168}
+        />
+        <UiSelect
+          value={pendingInfo === undefined ? "" : pendingInfo ? "1" : "0"}
+          aria-label={t("inbound.list.infoFilterAria")}
+          placeholder={t("inbound.list.infoFilterPlaceholder")}
+          options={[
+            { value: "1", label: t("inbound.list.infoFilterPending") },
+            { value: "0", label: t("inbound.list.infoFilterComplete") },
+          ]}
+          onChange={(value) => {
+            setPendingInfo(value === "" ? undefined : value === "1");
+            setPage(1);
+          }}
         />
         <UiSelect
           value={perPage}

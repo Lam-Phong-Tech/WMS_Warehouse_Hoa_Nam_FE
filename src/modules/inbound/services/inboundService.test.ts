@@ -98,6 +98,63 @@ describe("inbound real API contract", () => {
     });
   });
 
+  it("mang cờ chờ bổ sung thông tin SKU của BE ra danh sách, không tự suy ra ở FE", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [
+        {
+          id: "IN-MINI",
+          doc_no: "PN-MINI-001",
+          status: "SCANNING",
+          pending_product_info: true,
+          pending_product_info_count: 2,
+          lines: [],
+        },
+        { id: "IN-OK", doc_no: "PN-OK-001", status: "SCANNING", lines: [] },
+      ],
+      meta: { current_page: 1, last_page: 1, total: 2 },
+    });
+
+    const result = await fetchInboundDocuments({ pendingProductInfo: true });
+
+    expect(http.getPage).toHaveBeenCalledWith("/inbound-documents", {
+      params: {
+        page: 1,
+        per_page: 20,
+        keyword: undefined,
+        status: undefined,
+        pending_product_info: true,
+      },
+    });
+    expect(result.data[0]).toMatchObject({
+      pendingProductInfo: true,
+      pendingProductInfoCount: 2,
+    });
+    // BE cũ không trả cờ: coi như đủ thông tin, không gắn nhãn đỏ oan cho phiếu.
+    expect(result.data[1]).toMatchObject({
+      pendingProductInfo: false,
+      pendingProductInfoCount: 0,
+    });
+  });
+
+  it("không gửi tham số lọc thông tin SKU khi người dùng chưa chọn", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, last_page: 1, total: 0 },
+    });
+
+    await fetchInboundDocuments({ status: "SCANNING" });
+
+    expect(http.getPage).toHaveBeenCalledWith("/inbound-documents", {
+      params: {
+        page: 1,
+        per_page: 20,
+        keyword: undefined,
+        status: "SCANNING",
+        pending_product_info: undefined,
+      },
+    });
+  });
+
   it("fails closed when BE returns a superseded inbound status", async () => {
     vi.mocked(http.getPage).mockResolvedValue({
       data: [{ id: "IN-LEGACY", status: "APPROVED", lines: [] }],

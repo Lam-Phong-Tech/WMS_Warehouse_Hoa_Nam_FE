@@ -33,6 +33,18 @@ describe("resolveNotificationLink", () => {
     });
   });
 
+  it("đưa thông báo chờ bổ sung thông tin SKU thẳng vào màn quét của phiếu đó", () => {
+    // Nút "Bổ sung thông tin" nằm trong màn IN-03, nên bấm vào chuông phải mở
+    // đúng chỗ làm việc chứ không phải danh sách chung.
+    const link = resolveNotificationLink(
+      makeItem({ event_key: "inbound.sku_info_pending", subject_id: "doc-9" }),
+    );
+    expect(link).toEqual({
+      path: "/inbound?screen=IN-03&id=doc-9",
+      label: "Xem phiếu nhập",
+    });
+  });
+
   it("maps outbound.* to outbound detail screen", () => {
     const link = resolveNotificationLink(
       makeItem({ event_key: "outbound.posted", subject_id: "doc-2" }),
