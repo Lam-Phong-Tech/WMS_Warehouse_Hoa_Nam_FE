@@ -302,3 +302,107 @@ docker compose exec -T -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: -e DB_URL
 # BE — đo tải nhóm báo cáo
 node load/report-endpoints-load.mjs --concurrency 25 --seconds 25 --label check
 ```
+
+---
+
+# PHẦN II — vòng hoàn thiện (cùng ngày, sau khi merge)
+
+## 11. Việc đã làm thêm
+
+1. **Gộp nhánh `perf/virtual-and-be-opt`** vào bản làm việc chính (`0d34abe`).
+2. **Cuộn ảo cho DÒNG THỜI GIAN**, qua một component dùng chung mới
+   (`VirtualList`) chia chung adapter `useVirtualRows` với bảng — không chép
+   logic hiệu năng sang màn thứ hai.
+3. **Bỏ 2 trong 3 request** của màn Truy vết: BE trả sẵn `source_no`.
+4. **Dựng sẵn `sx`** của ô/dòng bảng một lần mỗi lượt render thay vì một lần
+   mỗi ô.
+5. **Sửa 2 lỗi của chính lớp cuộn ảo**, chỉ lộ ra khi chạy trong trình duyệt
+   thật (xem §12).
+
+## 12. Hai lỗi bàn đo KHÔNG bắt được — và vì sao
+
+Bàn đo dựng `rows` bằng `useMemo`, nên **tham chiếu mảng ổn định**. Màn báo cáo
+thật dựng `rows.filter(...)` **ngay trong thân render**, nên mỗi lượt render là
+một mảng MỚI dù nội dung y hệt. Khác biệt đó sinh ra hai lỗi:
+
+| Lỗi | Triệu chứng trong app thật | Sửa |
+|---|---|---|
+| `useVirtualRows` mốc việc "quay về đầu" theo **tham chiếu** mảng | Cuộn làm virtualizer đổi state → render lại → mảng mới → effect tưởng "đổi bộ lọc" → kéo khung cuộn về 0. Cuộn mãi vẫn chỉ thấy dòng đầu; chiều cao dòng học sai **403 px** thay vì **77 px** | Mốc theo **nội dung**: số dòng + tham chiếu dòng đầu/dòng cuối |
+| Lọc xuống dưới ngưỡng làm cuộn ảo **tắt**, nhưng khung cuộn giữ nguyên offset cũ | Đang ở offset **361.777 px** rồi lọc còn vài dòng ⇒ **vùng trắng**, người dùng tưởng bộ lọc không ra kết quả | Kéo khung cuộn về đầu ở **cả hai** chế độ |
+
+Cả hai đã có test hàng rào (`VirtualList.test.tsx`).
+
+**Bài học về cách đo:** đo A/B **tuần tự** trên máy dev cho kết quả **sai dấu** —
+lần đầu đo, thay đổi chỉ giảm số object style lại "chậm hơn 88 %". Nguyên nhân:
+các phiên khác đang biên dịch/chạy test. `run-ab-bench.mjs` chạy xen kẽ A,B,A,B
+và đảo thứ tự mỗi cặp; sau đó chênh lệch mới ổn định và đúng dấu.
+
+## 13. Số liệu vòng 2
+
+### 13.1 Bỏ request thừa (đo cùng một thời điểm)
+
+| | Số request | Byte trên dây |
+|---|---:|---:|
+| Trước | 3 | 1.115.392 B |
+| Sau | **1** | **781.105 B** |
+| Chênh | −2 | **−334.287 B = −30,0 %** |
+
+Riêng `document-history` bị bỏ: 328.105 B nén / **1.694.863 B giải nén** — tải về
+chỉ để dùng **hai** trường.
+
+### 13.2 Dòng thời gian, trong app thật (`/reports/traceability`, 5.969 biến động)
+
+| | Trước | Sau |
+|---|---:|---:|
+| Mục trong DOM | nới dần tới **5.969** | **15** |
+| DOM node cả trang | — | **1.826** |
+| Mục xa nhất tới được bằng cuộn | — | **5.968 / 5.968** |
+| Lọc xong khung cuộn | giữ offset cũ (vùng trắng) | **về 0** |
+
+### 13.3 `sx` dựng sẵn — A/B xen kẽ, 11 cặp
+
+| Chỉ số | Đổi |
+|---|---|
+| INP một cú gõ ô lọc | **−6 % đến −20 %** (hai lượt đo độc lập) |
+| Long task của cú gõ đó | **−6 % đến −19 %** |
+| Sắp xếp một cột | 0 % |
+| Thời gian dựng bảng | trong nhiễu (+1 % và +14 %) |
+
+Cải thiện nhỏ nhưng cùng dấu ở cả hai lượt, và rủi ro bằng 0 (style sinh ra y
+hệt). Sau khi cuộn ảo đã cắt số dòng vẽ xuống ~17, chi phí mỗi ô đương nhiên
+không còn là phần lớn — kết quả này khớp với dự đoán đó.
+
+**Lưu ý đọc số tuyệt đối:** cùng một bản mã, INP đo được **40 ms** lúc máy rảnh
+và **96 ms** lúc máy bận (đang build + các phiên khác chạy). Cả hai đều dưới
+ngưỡng 100 ms, nhưng đừng so số tuyệt đối giữa hai lượt đo khác thời điểm — chỉ
+so trong cùng một lượt A/B.
+
+## 14. Gate sau vòng 2 (bản làm việc chính)
+
+| Gate | Kết quả |
+|---|---|
+| `yarn typecheck` | **PASS** (cả trong pre-commit hook) |
+| `yarn lint` | **PASS** — 0 error, 62 warning |
+| `yarn build` | **PASS** |
+| `yarn test` | **16 đỏ / 1.501 xanh (1.517)** — toàn bộ 16 đỏ nằm ở file của phiên khác + nhóm governance pin SHA đã trôi; đã kiểm từng file |
+| `yarn ui:guards` | 1 vi phạm **có sẵn** (`KeepAliveOutlet.tsx`). Guard đã bắt đúng file MỚI của tôi (`VirtualList.tsx` import `@mui/material`) và đã sửa sang `@/shared/ui` |
+| BE `tests/Feature/Cache/` | **5/5** của MovementTracePagingCacheTest |
+| Kiểm bằng trình duyệt thật | **PASS** — timeline, bảng, `source_no`, reset khi lọc |
+
+## 15. Còn lại sau vòng 2
+
+| # | Việc | Trạng thái |
+|---|---|---|
+| R1 | FE vẫn tải trọn tập ledger (781 KB nén) | **Đã giảm 30 %**, nhưng chưa phân trang. Chặn cuối cùng là **timeline + hai bộ lọc client-side** dựng từ chính `rows`. Cần endpoint aggregate cho timeline trước — là quyết định nghiệp vụ |
+| R2 | Long task khi kéo thanh cuộn tới đáy | 529–656 ms ở CPU ×4 (≈130–165 ms ở ×1) |
+| R3 | `sx` engine của MUI | Đã cắt phần rẻ; phần còn lại đụng design system |
+| R5 | ETag/304 | **Không làm được** khi còn `Cache-Control: no-store` — quyết định bảo mật |
+| — | **10.000 người dùng đồng thời** | **VẪN CHƯA CHỨNG MINH ĐƯỢC.** Không có số đo mới nào ở vòng 2 thay đổi kết luận của `LOAD_TEST_10000_USERS.md` |
+
+## 16. Commit vòng 2
+
+| Repo | SHA | Nội dung |
+|---|---|---|
+| FE | `0d34abe` | merge nhánh `perf/virtual-and-be-opt` |
+| FE | `d06025c` | cuộn ảo dòng thời gian + bỏ 2 request + sửa 2 lỗi cuộn ảo |
+| BE | `fb168d5` | `movement-trace` trả sẵn `source_no` |
