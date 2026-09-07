@@ -9,9 +9,14 @@ import { warmIdb } from "./shared/cache/idb";
 import { mark } from "./shared/perf/marks";
 import { initWebVitals } from "./shared/perf/rum";
 import { registerPwa } from "./shared/pwa/register-pwa";
+import { watchIconFontHealth } from "./shared/ui/icons/icon-font-health";
 import { initializeLanguage } from "./shared/i18n/language.store";
 import { initializeTheme } from "./shared/ui/theme/theme.store";
 import "@flaticon/flaticon-uicons/css/regular/rounded.css";
+// Bản sao @font-face trong repo — PHẢI đứng ngay sau CSS của package (là
+// khai báo sau cùng cho cùng họ font). Giữ icon sống khi node_modules dở
+// dang; xem đầu file hn-icon-font.css.
+import "./styles/hn-icon-font.css";
 // Canonical design tokens (DEC-UI-BASELINE-01) — PHẢI đứng trước mọi CSS khác.
 // Đây là entrypoint CSS global DUY NHẤT của dự án (guard: yarn ui:styles).
 // Part 4 teardown: các lớp wireframe (hoa-nam-wireframe, hoa-nam-ant-overrides,
@@ -66,6 +71,9 @@ if (typeof window !== "undefined") preloadRoute(window.location.pathname);
 // máy chủ xác nhận danh tính, nhưng việc MỞ kết nối thì không cần chờ ai.
 warmIdb();
 void registerPwa();
+// Font icon hỏng thì CẢ giao diện thành ô vuông mà không lỗi ở đâu —
+// nghe sự kiện để console nói thẳng ra nguyên nhân.
+watchIconFontHealth();
 // Đặt <html lang> và data-theme TRƯỚC lần render đầu tiên: nếu để React làm sau
 // khi mount, người dùng chọn "Tối" sẽ thấy một nhịp trắng loá lúc tải trang.
 initializeLanguage();

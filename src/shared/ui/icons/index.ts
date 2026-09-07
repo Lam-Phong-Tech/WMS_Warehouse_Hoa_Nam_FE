@@ -3,6 +3,7 @@
  * con — dùng `@/shared/ui` (hoặc `@/shared/ui/icons`).
  */
 export { ICON_FAMILY, flatIconClass } from "./icon-family";
+export { watchIconFontHealth } from "./icon-font-health";
 export {
   createFlatIcon,
   type FlatIconElementProps,

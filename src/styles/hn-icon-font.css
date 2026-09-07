@@ -1,0 +1,36 @@
+/* ==========================================================================
+   FONT ICON — BẢN SAO TRONG REPO của webfont Flaticon Uicons.
+
+   VÌ SAO CÓ FILE NÀY:
+   CSS của @flaticon/flaticon-uicons khai @font-face trỏ tới file .woff2 nằm
+   TRONG node_modules. Trình duyệt tải file font đó thành một request RIÊNG,
+   muộn và IM LẶNG. Nên bất cứ lúc nào node_modules dở dang — đang chạy
+   `yarn install`, bị `npx --prefix` phá, OneDrive đồng bộ nửa chừng, clone mới
+   chưa cài — thì font 404 nhưng các rule `content: "\f1xx"` của package VẪN áp:
+   toàn bộ icon của app biến thành ô vuông (tofu) mà không có một lỗi nào hiện
+   ra ở đâu cả. Đúng một dòng CSS hỏng làm cả giao diện trông như vỡ.
+
+   Khai lại @font-face ở đây, trỏ vào bản sao nằm trong src/, để DỮ LIỆU GLYPH
+   đi theo mã nguồn thay vì theo node_modules. File nạp NGAY SAU CSS của package
+   trong src/main.tsx nên đây là khai báo sau cùng cho cùng một họ font.
+
+   Bản sao nằm ở public/ chứ không phải src/: public/ được phục vụ NGUYÊN VĂN
+   ở một URL tuyệt đối cố định (/fonts/...) giống hệt nhau ở dev, `vite preview`
+   và bản build. Để trong src/ thì URL phụ thuộc việc Vite có viết lại `url()`
+   trong CSS hay không — đúng loại phụ thuộc ngầm mà file này sinh ra để loại bỏ.
+
+   Bản sao đồng bộ bằng `yarn ui:icons:sync`; guard `yarn ui:icons` đối chiếu
+   từng byte với font trong package nên không thể lệch âm thầm.
+   ========================================================================== */
+
+@font-face {
+  font-family: uicons-regular-rounded;
+  font-style: normal;
+  font-weight: 400;
+  /* block chứ không swap: với FONT ICON, "swap" nghĩa là trong lúc chờ font sẽ
+     hiện đúng cái ô vuông mà file này sinh ra để diệt. block giữ chỗ trống rồi
+     mới vẽ glyph — không bao giờ vẽ ký tự thay thế. */
+  font-display: block;
+  src: url("/fonts/uicons-regular-rounded.woff2") format("woff2");
+}
+

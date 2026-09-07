@@ -33,6 +33,9 @@ const ENTRYPOINT = "src/main.tsx";
  */
 export const CSS_MANIFEST = [
   loadIconFamily().cssImport,
+  // Bản sao @font-face trong repo — ngay sau CSS của package để là khai báo
+  // sau cùng cho cùng họ font (xem src/styles/hn-icon-font.css).
+  "./styles/hn-icon-font.css",
   "./shared/ui/tokens/css-vars.css",
   "./shared/ui/tokens/css-vars-dark.css",
   "./index.css",

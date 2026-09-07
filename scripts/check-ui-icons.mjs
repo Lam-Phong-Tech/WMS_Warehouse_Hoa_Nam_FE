@@ -16,10 +16,17 @@
  *  5. Emoji pictograph được dùng làm icon trong JSX/chuỗi hiển thị.
  *  6. Codepoint Flaticon hardcode trong src/index.css (mũi tên panel
  *     DatePicker) lệch so với package đang cài.
+ *  7. Bản sao webfont trong repo (public/fonts) thiếu hoặc lệch byte so với
+ *     font của package — bản sao này là thứ giữ cho icon không thành ô vuông
+ *     khi node_modules dở dang, nên nó lệch là mất luôn lưới an toàn.
+ *
+ * --sync-font: chép lại webfont từ package vào public/fonts (chạy sau khi
+ * đổi ICON_FAMILY hoặc nâng phiên bản @flaticon/flaticon-uicons).
  *
  * --self-test: chạy fixture vi phạm + fixture sạch để chứng minh guard đỏ/xanh
  * đúng chỗ.
  */
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -34,6 +41,10 @@ const FAMILY = loadIconFamily();
 const ENTRYPOINT = "src/main.tsx";
 const ICON_SLOTS_FILE = "src/shared/ui/icons/icon-slots.tsx";
 const CSS_WITH_CODEPOINTS = "src/index.css";
+/** CSS trong repo khai lại @font-face trỏ vào bản sao webfont (xem file đó). */
+const VENDOR_CSS = "src/styles/hn-icon-font.css";
+const VENDOR_CSS_IMPORT = "./styles/hn-icon-font.css";
+const VENDOR_FONT_DIR = "public/fonts";
 const MUI_ADAPTER_FILE = "src/shared/ui/theme/mui-adapter.ts";
 const EXCLUDES = ["__snapshots__"];
 
@@ -226,6 +237,41 @@ export function findEmojiLines(content) {
 
 /* ------------------------------------------------------------------------ */
 
+/**
+ * Đường dẫn (relative repo) tới file .woff2 mà CSS CỦA PACKAGE đang trỏ tới.
+ * Đọc thẳng từ @font-face nên tự đi theo ICON_FAMILY, không hardcode tên file
+ * (tên có hash, đổi mỗi lần package phát hành).
+ */
+export function resolvePackageFontFile(cssText, family = FAMILY) {
+  // Cố ý dùng phép cắt chuỗi thay cho regex: đường dẫn font nằm trong
+  // url(...) của @font-face, không cần bắt mẫu phức tạp.
+  const faceStart = cssText.indexOf("@font-face");
+  if (faceStart < 0) return null;
+  const face = cssText.slice(faceStart, cssText.indexOf("}", faceStart));
+  const urlStart = face.indexOf("url(");
+  if (urlStart < 0) return null;
+  const raw = face
+    .slice(urlStart + 4, face.indexOf(")", urlStart))
+    .trim()
+    .replace(/['"]/g, "");
+  if (!raw.endsWith(".woff2")) return null;
+  const cssDir = path.posix.dirname(family.cssFile);
+  return path.posix.normalize(path.posix.join(cssDir, raw));
+}
+
+/** Đường dẫn bản sao trong repo — tên file theo đúng họ font đang chọn. */
+export function vendoredFontFile(family = FAMILY) {
+  return `${VENDOR_FONT_DIR}/${family.fontFamily}.woff2`;
+}
+
+function sha256(absPath) {
+  if (!fs.existsSync(absPath)) return null;
+  return crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(absPath))
+    .digest("hex");
+}
+
 export function checkIcons({
   files,
   contents,
@@ -236,6 +282,7 @@ export function checkIcons({
   cssSource,
   entrypointSource = "",
   family = FAMILY,
+  fontVendor = null,
 }) {
   const violations = [];
 
@@ -353,6 +400,55 @@ export function checkIcons({
     );
   }
 
+  // 9. Bản sao webfont trong repo — lưới an toàn khi node_modules dở dang.
+  //    CSS của package trỏ @font-face vào node_modules; file đó biến mất là
+  //    TOÀN BỘ icon thành ô vuông mà không lỗi ở đâu. Bản sao trong src/ chỉ
+  //    cứu được nếu nó CÓ và ĐÚNG font đang chọn — nên phải chốt ở CI.
+  if (fontVendor) {
+    const {
+      packageFontFile,
+      vendorFontFile,
+      packageSha,
+      vendorSha,
+      vendorCssSource,
+    } = fontVendor;
+    if (!packageFontFile) {
+      violations.push(
+        `${family.cssFile}: không đọc được @font-face .woff2 — package @flaticon đổi cấu trúc?`,
+      );
+    } else if (!packageSha) {
+      violations.push(
+        `${packageFontFile}: KHÔNG CÓ trên đĩa — node_modules thiếu hoặc đang cài dở. Chạy "yarn install" rồi thử lại.`,
+      );
+    }
+    if (!vendorSha) {
+      violations.push(
+        `${vendorFontFile}: thiếu bản sao webfont trong repo — chạy "yarn ui:icons:sync"`,
+      );
+    } else if (packageSha && vendorSha !== packageSha) {
+      violations.push(
+        `${vendorFontFile}: lệch byte so với ${packageFontFile} — chạy "yarn ui:icons:sync"`,
+      );
+    }
+    const fontUrl = `/fonts/${family.fontFamily}.woff2`;
+    if (!vendorCssSource.includes(`font-family: ${family.fontFamily}`)) {
+      violations.push(
+        `${VENDOR_CSS}: @font-face không khai font-family: ${family.fontFamily} — lệch với ICON_FAMILY`,
+      );
+    }
+    if (!vendorCssSource.includes(fontUrl)) {
+      violations.push(`${VENDOR_CSS}: @font-face không trỏ tới ${fontUrl}`);
+    }
+    if (
+      entrypointSource &&
+      !entrypointSource.includes(`"${VENDOR_CSS_IMPORT}"`)
+    ) {
+      violations.push(
+        `${ENTRYPOINT}: không import "${VENDOR_CSS_IMPORT}" — mất bản sao font dự phòng`,
+      );
+    }
+  }
+
   return violations;
 }
 
@@ -433,6 +529,26 @@ function selfTest() {
 if (process.argv.includes("--self-test")) selfTest();
 
 const cssText = fs.readFileSync(path.join(REPO_ROOT, FAMILY.cssFile), "utf8");
+const packageFontFile = resolvePackageFontFile(cssText);
+const vendorFontFile = vendoredFontFile();
+const packageFontAbs = packageFontFile
+  ? path.join(REPO_ROOT, packageFontFile)
+  : null;
+const vendorFontAbs = path.join(REPO_ROOT, vendorFontFile);
+
+if (process.argv.includes("--sync-font")) {
+  if (!packageFontAbs || !fs.existsSync(packageFontAbs)) {
+    console.error(
+      `[ui:icons --sync-font] FAIL — không thấy ${packageFontFile ?? "(@font-face .woff2)"}. Chạy "yarn install" trước.`,
+    );
+    process.exit(1);
+  }
+  fs.mkdirSync(path.dirname(vendorFontAbs), { recursive: true });
+  fs.copyFileSync(packageFontAbs, vendorFontAbs);
+  console.log(`[ui:icons --sync-font] ${packageFontFile} -> ${vendorFontFile}`);
+  process.exit(0);
+}
+
 const files = walk(path.join(REPO_ROOT, "src"), [".ts", ".tsx", ".css"], {
   exclude: EXCLUDES,
 });
@@ -448,6 +564,15 @@ process.exit(
       slotsSource: read(ICON_SLOTS_FILE),
       adapterSource: read(MUI_ADAPTER_FILE),
       cssSource: read(CSS_WITH_CODEPOINTS),
+      fontVendor: {
+        packageFontFile,
+        vendorFontFile,
+        packageSha: packageFontAbs ? sha256(packageFontAbs) : null,
+        vendorSha: sha256(vendorFontAbs),
+        vendorCssSource: fs.existsSync(path.join(REPO_ROOT, VENDOR_CSS))
+          ? read(VENDOR_CSS)
+          : "",
+      },
     }),
     "ui:icons",
   ),
