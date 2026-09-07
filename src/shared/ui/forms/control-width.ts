@@ -35,6 +35,13 @@ export const FILTER_WIDTH = {
   /** Ô tìm kiếm trên thanh công cụ (cùng cỡ với thanh lọc trong thẻ báo cáo). */
   search: 240,
   /**
+   * Lịch chọn khoảng ngày (`UiVuexyDateRangePicker`) khi đứng trên thanh công
+   * cụ `.toolbar` (flex) thay vì trong lưới ô lọc của thẻ báo cáo. Control là
+   * hai ô cạnh nhau, mỗi ô chứa "Từ ngày · 07/09/2026" + icon lịch, nên hẹp
+   * hơn ngưỡng này là ngày bị cắt thành "07/09/20…".
+   */
+  dateRange: 340,
+  /**
    * Cột của lưới ô lọc trong thẻ báo cáo (FILTER_GRID_COLUMNS_SX). 250px đủ
    * cho nhãn dài nhất hiện có ("Tất cả trạng thái hoàn tác" ≈ 213px + phụ
    * kiện) nên không ô nào bị "…" ở bất kỳ bề rộng nào từ 1280px trở lên.

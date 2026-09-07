@@ -73,3 +73,12 @@
 .hn-mvp-source-screen table.sku-table td.actions-col {
   white-space: nowrap;
 }
+/* Cột ảnh sản phẩm: bề rộng cố định bằng ô ảnh (40px) + đệm hai bên, không để
+   bảng mượn chỗ của cột này khi tên hàng dài. */
+.hn-mvp-source-screen table.sku-table th.thumb-col,
+.hn-mvp-source-screen table.sku-table td.thumb-col {
+  width: 56px;
+  padding-left: 8px;
+  padding-right: 8px;
+  text-align: center;
+}

@@ -782,9 +782,31 @@
   /* Chừa chỗ cho thanh cuộn mảnh, không đè lên viền thẻ. */
   padding-right: 6px;
 }
+/*
+ * THẺ BIỂU ĐỒ TRONG CỘT NỬA TRANG — khung cao CỐ ĐỊNH nên nội dung phải vừa.
+ *
+ * Đo được trước khi sửa: đầu thẻ 124px + vùng vẽ 276px + dòng "Xem bảng dữ liệu
+ * thay thế" 18px = 418px trong thẻ chỉ cao 372px, phần dôi bị `overflow: hidden`
+ * của thẻ CẮT MẤT (không cuộn được, không có dấu hiệu gì cho người dùng biết).
+ *
+ * Hai lớp bảo vệ: hạ sàn vùng vẽ để nội dung vừa khung ở kích thước thường, và
+ * cho thẻ tự cuộn nếu tiêu đề dài bất thường vẫn làm tràn — cắt mất nội dung là
+ * điều không được phép xảy ra nữa.
+ */
+.hn-rpt01 .report-split-grid .report-chart-card {
+  overflow-y: auto;
+}
+.hn-rpt01 .report-split-grid .chart-wrap {
+  min-height: 0;
+}
+.hn-rpt01 .report-split-grid .chart-plot,
+.hn-rpt01 .report-split-grid .chart-svg {
+  min-height: 180px;
+}
+
 /* Trong cột nửa trang, thẻ chứng từ xếp 2 mỗi hàng thay vì 3. */
-.hn-rpt01 .report-split-grid .insight-grid > * {
-  grid-column: span 6;
+.hn-rpt01 .report-split-grid .insight-grid {
+  --insight-cols: 2;
 }
 /*
  * Thanh chú giải của cột biểu đồ — CÙNG hình dạng, CÙNG chiều cao với
@@ -813,8 +835,10 @@
   flex-direction: column;
   border-top: 3px solid var(--primary);
 }
+/* Đầu thẻ không được co dưới nội dung — xem ghi chú ở .insight-card-head. */
 .hn-rpt01 .chart-card-head {
   min-height: 104px;
+  flex-shrink: 0;
   align-items: center;
   border-bottom: 1px solid rgba(115, 103, 240, 0.12);
   background: linear-gradient(
@@ -976,8 +1000,14 @@
   stroke: var(--series-color, var(--primary));
   stroke-width: 2.5;
 }
+/*
+ * Sàn của ô trống PHẢI bằng sàn của .chart-plot (232px), không cao hơn.
+ * Cao hơn thì trong thẻ biểu đồ nửa trang (khung cao cố định) ô trống dôi ra
+ * khỏi vùng vẽ và đè xuống phần dưới thẻ. Ô trống là flex item được kéo giãn
+ * nên vẫn luôn lấp đầy đúng chiều cao thật của vùng vẽ.
+ */
 .hn-rpt01 .chart-empty {
-  min-height: 280px;
+  min-height: 232px;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -1020,14 +1050,35 @@
 }
 
 /* ── vùng 1 · thẻ chứng từ ───────────────────────────────────────────────── */
+/*
+ * LƯỚI THẺ LÀ HÀNG FLEX BỌC DÒNG, KHÔNG PHẢI GRID — đọc kỹ trước khi đổi lại.
+ *
+ * Mockup dùng grid 12 cột. Nhưng tiêu đề thẻ chứng từ là MÃ dài không có chỗ
+ * ngắt tự nhiên, mà grid chốt chiều cao hàng theo "phần đóng góp nội tại" của
+ * thẻ — đo khi chữ CHƯA phải xuống dòng — rồi mới bố trí thật trong cột hẹp
+ * làm mã xuống 3 dòng. Hàng đã chốt 236px trong khi nội dung cần 344px, phần
+ * dôi ra đè lên thân thẻ (lỗi người dùng báo 07/09/2026). Chiều cao DÒNG của
+ * flex thì lấy theo kích thước ĐÃ bố trí của các thẻ nên không thể lệch.
+ *
+ * Số cột khai bằng biến để mọi điểm ngắt chỉ đổi một con số, và bề rộng thẻ
+ * tính từ chính biến khe hở — không có số px chép tay nào để lệch về sau.
+ * Guard chống hồi quy: src/test/layout-overflow-guards.test.ts
+ */
 .hn-rpt01 .insight-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 24px;
+  --insight-gap: 24px;
+  --insight-cols: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--insight-gap);
   align-items: stretch;
+  align-content: flex-start;
 }
 .hn-rpt01 .insight-grid > * {
-  grid-column: span 4;
+  width: calc(
+    (100% - (var(--insight-cols) - 1) * var(--insight-gap)) /
+      var(--insight-cols)
+  );
+  min-width: 0;
 }
 .hn-rpt01 .insight-card {
   --insight-accent: var(--primary);
@@ -1050,8 +1101,20 @@
   --insight-accent: var(--teal);
   --insight-soft: var(--blue-soft);
 }
+/*
+ * `flex-shrink: 0` Ở ĐÂY LÀ BẮT BUỘC — đừng gỡ.
+ *
+ * Khai `min-height` trên một flex item THAY THẾ mức tối thiểu tự động theo nội
+ * dung (`min-height: auto`), nghĩa là đầu thẻ được phép co xuống DƯỚI chiều cao
+ * chữ của chính nó. Thẻ là flex column có sàn chiều cao còn thân thẻ `flex: 1`,
+ * nên khi mã chứng từ dài phải xuống 3 dòng (cửa sổ hẹp) đầu thẻ bị ép về đúng
+ * 96–124px và phần chữ dôi ra ĐÈ LÊN thân thẻ — lỗi người dùng báo 07/09/2026.
+ * Chặn co thì `min-height` trở lại đúng nghĩa "sàn" và thẻ tự cao thêm.
+ * Guard chống hồi quy: src/test/layout-overflow-guards.test.ts
+ */
 .hn-rpt01 .insight-card .insight-card-head {
   min-height: 124px;
+  flex-shrink: 0;
   align-items: flex-start;
   border-bottom: 1px solid
     color-mix(in srgb, var(--insight-accent) 16%, transparent);
@@ -1754,9 +1817,12 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
   }
-  .hn-rpt01 .analysis-grid,
-  .hn-rpt01 .insight-grid {
+  .hn-rpt01 .analysis-grid {
     gap: 16px;
+  }
+  .hn-rpt01 .insight-grid {
+    --insight-gap: 16px;
+    --insight-cols: 2;
   }
   .hn-rpt01 .analysis-grid > :nth-child(1),
   .hn-rpt01 .analysis-grid > :nth-child(2) {
@@ -1780,13 +1846,6 @@
   }
   .hn-rpt01 .report-split-grid .report-chart-card {
     min-height: 382px;
-  }
-  .hn-rpt01 .insight-grid > :nth-child(1),
-  .hn-rpt01 .insight-grid > :nth-child(2) {
-    grid-column: span 6;
-  }
-  .hn-rpt01 .insight-grid > :nth-child(3) {
-    grid-column: span 12;
   }
 }
 
@@ -1834,11 +1893,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .hn-rpt01 .analysis-grid > :nth-child(1),
-  .hn-rpt01 .analysis-grid > :nth-child(2),
-  .hn-rpt01 .insight-grid > :nth-child(1),
-  .hn-rpt01 .insight-grid > :nth-child(2),
-  .hn-rpt01 .insight-grid > :nth-child(3) {
+  .hn-rpt01 .analysis-grid > :nth-child(2) {
     grid-column: 1 / -1;
+  }
+  .hn-rpt01 .insight-grid {
+    --insight-cols: 1;
   }
 }
 

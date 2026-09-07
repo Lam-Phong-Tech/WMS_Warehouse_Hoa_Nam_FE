@@ -26,7 +26,19 @@ export function WindowedMore<T>({
   );
   if (!renderWindow.hasMore) return null;
   return (
-    <div style={{ textAlign: "center", padding: 12, gridColumn: "1 / -1" }}>
+    /*
+     * Chiếm trọn một hàng ở CẢ hai kiểu lưới: `gridColumn` cho lưới grid,
+     * `width: 100%` cho lưới flex bọc dòng (lưới thẻ báo cáo dùng flex — xem
+     * ghi chú ở .insight-grid trong inventory-flow-report.css).
+     */
+    <div
+      style={{
+        textAlign: "center",
+        padding: 12,
+        gridColumn: "1 / -1",
+        width: "100%",
+      }}
+    >
       <span ref={sentinelRef} aria-hidden="true" />
       <span style={{ marginRight: 12, fontSize: 13 }}>
         {t("shared.table.showingSome", {

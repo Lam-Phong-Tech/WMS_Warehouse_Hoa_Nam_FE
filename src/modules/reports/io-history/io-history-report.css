@@ -345,8 +345,15 @@
   box-shadow: var(--shadow);
 }
 
+/*
+ * `flex-shrink: 0`: đầu thẻ khai min-height nên mất mức tối thiểu tự động theo
+ * nội dung. Thẻ nào là flex column thì đầu thẻ co được xuống dưới chiều cao chữ
+ * và phần dôi đè lên thân — cùng lỗi đã sửa ở RPT-01 (07/09/2026).
+ * Guard: src/test/layout-overflow-guards.test.ts
+ */
 .hn-rpt-io .cardhead {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 14px;

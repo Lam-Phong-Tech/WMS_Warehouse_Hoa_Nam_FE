@@ -489,8 +489,14 @@
   min-height: 360px;
   border-top: 3px solid var(--primary);
 }
+/*
+ * Đầu thẻ khai min-height nên mất mức tối thiểu tự động theo nội dung;
+ * không chặn co thì tiêu đề dài sẽ tràn xuống đè phần thân (cùng lỗi đã sửa ở
+ * RPT-01). Guard: src/test/layout-overflow-guards.test.ts
+ */
 .hn-rpt02 .chart-card-head {
   min-height: 104px;
+  flex-shrink: 0;
   align-items: center;
   border-bottom: 1px solid rgba(115, 103, 240, 0.12);
   background: linear-gradient(
@@ -624,8 +630,9 @@
   height: 100%;
   min-height: 232px;
 }
+/* Sàn ô trống phải bằng sàn .chart-plot (232px) — xem ghi chú ở RPT-01. */
 .hn-rpt02 .chart-empty {
-  min-height: 280px;
+  min-height: 232px;
   display: grid;
   place-items: center;
   padding: 24px;
