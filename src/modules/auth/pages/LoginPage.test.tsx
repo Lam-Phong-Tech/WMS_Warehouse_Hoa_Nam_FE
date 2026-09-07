@@ -25,7 +25,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: /đăng nhập/i }));
 
     expect(
-      await screen.findByText(/vui lòng nhập email hoặc tên đăng nhập/i),
+      await screen.findByText(/vui lòng nhập email/i),
     ).toBeInTheDocument();
     expect(
       await screen.findByText(/vui lòng nhập mật khẩu/i),

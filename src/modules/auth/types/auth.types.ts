@@ -4,7 +4,8 @@ import type { User } from "@/shared/types/user";
 
 /**
  * POST /auth/login accepts exactly one identity field: email OR username.
- * The UI maps a single "email / username" input into one of these shapes.
+ * FE chỉ dùng nhánh `email` — màn đăng nhập bắt buộc nhập email đầy đủ; nhánh
+ * `username` giữ lại vì hợp đồng BE vẫn nhận (client khác / công cụ nội bộ).
  */
 export type LoginRequest =
   | { email: string; username?: never; password: string }

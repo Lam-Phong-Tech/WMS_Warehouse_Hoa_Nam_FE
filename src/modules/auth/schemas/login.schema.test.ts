@@ -21,16 +21,17 @@ describe("loginSchema — BE m1 auth identifier contract", () => {
     });
   });
 
-  it("accepts username and maps it to username payload", () => {
-    const values = loginSchema.parse({
-      identifier: "ADMIN",
-      password: TEST_ONLY_PASSWORD,
-    });
-
-    expect(toLoginRequest(values)).toEqual({
-      username: "admin",
-      password: TEST_ONLY_PASSWORD,
-    });
+  it("rejects a bare username — email đầy đủ mới đăng nhập được", () => {
+    expect(
+      loginSchema.safeParse({ identifier: "admin", password: TEST_ONLY_PASSWORD })
+        .success,
+    ).toBe(false);
+    expect(
+      loginSchema.safeParse({
+        identifier: "warehouse-keeper-01",
+        password: TEST_ONLY_PASSWORD,
+      }).success,
+    ).toBe(false);
   });
 
   it("accepts exact lowercase email and never silently fixes email casing", () => {
@@ -60,11 +61,12 @@ describe("loginSchema — BE m1 auth identifier contract", () => {
   it("does not impose password-strength rules on login", () => {
     const shortPw = "x";
     expect(
-      loginSchema.safeParse({ identifier: "admin", password: shortPw }).success,
+      loginSchema.safeParse({ identifier: "admin@gmail.com", password: shortPw })
+        .success,
     ).toBe(true);
   });
 
-  it("rejects malformed email and invalid username characters", () => {
+  it("rejects malformed email", () => {
     const anyPw = "abc";
     expect(
       loginSchema.safeParse({ identifier: "admin@", password: anyPw }).success,
@@ -82,7 +84,7 @@ describe("loginSchema — BE m1 auth identifier contract", () => {
       }).success,
     ).toBe(false);
     expect(
-      loginSchema.safeParse({ identifier: "admin user", password: anyPw })
+      loginSchema.safeParse({ identifier: "admin user@gmail.com", password: anyPw })
         .success,
     ).toBe(false);
   });

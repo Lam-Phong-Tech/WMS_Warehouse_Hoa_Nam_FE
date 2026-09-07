@@ -677,7 +677,7 @@ export function IamUserScreen({
         max: USERNAME_MAX_LENGTH,
       });
     } else if (!USERNAME_REGEX.test(username)) {
-      // Cùng luật với ô đăng nhập — tạo được thì phải đăng nhập được.
+      // Cùng luật ký tự với cột `username` của BE (StoreUserRequest).
       errors.username = t("iam.user.errUsernameFormat");
     }
     if (!formState.roleId) {
