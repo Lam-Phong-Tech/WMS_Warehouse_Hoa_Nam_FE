@@ -40,7 +40,6 @@ import {
   PvAdminPage,
   PvCatalogPage,
   PvProductCatalogPage,
-  PvProductDetailPage,
   RecipientReportPage,
   ReversalPage,
   SkuMasterScreen,
@@ -68,10 +67,6 @@ function routeEl(path: string, node: ReactNode) {
 export const router = createBrowserRouter([
   { path: ROUTES.LOGIN, element: withPageLoader(<LoginPage />) },
   { path: ROUTES.PV_CATALOG, element: withPageLoader(<PvCatalogPage />) },
-  {
-    path: ROUTES.PV_PRODUCT_DETAIL,
-    element: withPageLoader(<PvProductDetailPage />),
-  },
   {
     path: ROUTES.CHANGE_PASSWORD,
     element: withPageLoader(<ChangePasswordPage />),

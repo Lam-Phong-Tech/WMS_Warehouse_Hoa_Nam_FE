@@ -213,11 +213,14 @@ describe("WWHN-252 · độ tươi dữ liệu tồn kho (NFR-SRS-016)", () => {
 });
 
 describe("WWHN-252 · route và quyền", () => {
-  it("SCR-PV-01/02 là route công khai nên không nằm trong bảng gate quyền", () => {
+  it("SCR-PV-01 là route công khai nên không nằm trong bảng gate quyền", () => {
     expect(ROUTES.PV_CATALOG).toBe("/pv");
-    expect(ROUTES.PV_PRODUCT_DETAIL).toBe("/pv/products/:skuId");
     expect(ROUTE_PERMISSIONS[ROUTES.PV_CATALOG]).toBeUndefined();
-    expect(ROUTE_PERMISSIONS[ROUTES.PV_PRODUCT_DETAIL]).toBeUndefined();
+  });
+
+  it("SCR-PV-02 (chi tiết sản phẩm) đã gỡ bỏ — không còn route", () => {
+    expect(ROUTES).not.toHaveProperty("PV_PRODUCT_DETAIL");
+    expect(JSON.stringify(ROUTES)).not.toContain("/pv/products");
   });
 
   it("SCR-PV-ADM-01 mở cho pv.master.manage hoặc pv.publish, KHÔNG mở cho sku.manage", () => {

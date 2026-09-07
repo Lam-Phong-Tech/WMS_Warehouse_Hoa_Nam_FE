@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { useAuthStore } from "@/shared/store/auth.store";
 import type { PvAdminProfile } from "@/modules/pv/types/pv.types";
@@ -113,11 +113,46 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
 
     renderWithProviders(<PvProductCatalogPage />);
 
+    // Màn mở ra ở Dạng ngang, lưới thẻ nằm sau một cú bấm.
+    fireEvent.click(await screen.findByTestId("pv-catalog-view-card"));
+
     const cards = await screen.findAllByTestId("pv-catalog-card");
     expect(cards).toHaveLength(2);
     expect(screen.getByAltText("Ảnh chính")).toBeInTheDocument();
     // Sản phẩm chưa có ảnh vẫn lên lưới, kèm nhãn thay cho ảnh trống.
     expect(screen.getByTestId("pv-catalog-card-no-image")).toBeInTheDocument();
+  });
+
+  /**
+   * Yêu cầu người dùng 07/09/2026: màn này chỉ có một kiểu hiển thị (lưới thẻ),
+   * và vào trang phải mở sẵn ở DẠNG NGANG.
+   *
+   * Khoá luôn cả hai chiều đổi: dạng ngang phải cho ĐÚNG tập sản phẩm đang xem,
+   * công tắc công bố / nút Sửa vẫn dùng được ở đó — nếu không thì đổi kiểu hiển
+   * thị lại mất thao tác.
+   */
+  it("mở trang ở Dạng ngang, đổi qua Dạng hộp thì hiện lưới thẻ", async () => {
+    signInWith(["pv.master.manage", "pv.publish"]);
+
+    renderWithProviders(<PvProductCatalogPage />);
+
+    const table = await screen.findByRole("table");
+    expect(screen.getByTestId("pv-catalog-table")).toBeInTheDocument();
+    expect(screen.queryByTestId("pv-catalog-grid")).not.toBeInTheDocument();
+    // Hai sản phẩm của fixture, không rơi rớt dòng nào khi đổi kiểu hiển thị.
+    expect(within(table).getByText("Máy khoan cầm tay HN")).toBeInTheDocument();
+    expect(within(table).getByText("Máy mài góc HN")).toBeInTheDocument();
+    expect(within(table).getByAltText("Ảnh chính")).toBeInTheDocument();
+    expect(screen.getAllByTestId("pv-catalog-publish-switch")).toHaveLength(2);
+    expect(screen.getAllByTestId("pv-catalog-edit")).toHaveLength(2);
+
+    fireEvent.click(screen.getByTestId("pv-catalog-view-card"));
+    expect(await screen.findByTestId("pv-catalog-grid")).toBeInTheDocument();
+    expect(screen.queryByTestId("pv-catalog-table")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("pv-catalog-view-table"));
+    expect(await screen.findByTestId("pv-catalog-table")).toBeInTheDocument();
+    expect(screen.queryByTestId("pv-catalog-grid")).not.toBeInTheDocument();
   });
 
   it("người chỉ có pv.master.manage không bật/tắt được hiển thị", async () => {

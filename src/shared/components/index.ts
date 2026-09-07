@@ -45,6 +45,10 @@ export {
 } from "./data-display/TopPagination";
 export { CopyableId, type CopyableIdProps } from "./data-display/CopyableId";
 export { SkuLink, type SkuLinkProps } from "./data-display/SkuLink";
+export {
+  SkuThumbnail,
+  type SkuThumbnailProps,
+} from "./data-display/SkuThumbnail";
 export { shortId } from "@/shared/utils/shortId";
 
 // feedback/ — trạng thái, lỗi

@@ -5,45 +5,38 @@ import { EMPTY_TEXT } from "@/shared/constants/display";
 import { SkuLink } from "./SkuLink";
 
 /**
- * Mã SKU bấm được ở mọi màn nghiệp vụ -> mở App xem sản phẩm.
+ * Mã SKU hiển thị thuần, KHÔNG bấm được (trang chi tiết App PV đã gỡ 07/09/2026).
  *
- * Ba bất biến khoá ở đây đều là thứ đã hỏng trong thực tế nếu làm sai: link
- * điều hướng tại chỗ sẽ ném người dùng ra khỏi shell WMS, bấm trong bảng sẽ
- * kích hoạt luôn onClick của dòng, và ô SKU rỗng không được thành link chết.
+ * Hai bất biến còn lại đều là thứ đã hỏng trong thực tế nếu làm sai: ô SKU rỗng
+ * không được in chuỗi rỗng, và bấm vào mã không được kích hoạt hành vi nào.
  */
 describe("SkuLink", () => {
-  it("ưu tiên sku_id khi có, để trang PV khỏi phải tra lại mã", () => {
+  it("hiển thị MÃ chứ không phải UUID khi có cả hai", () => {
     renderWithProviders(
       <SkuLink id="11111111-1111-4111-8111-111111111111" code="HN-PRD-001" />,
     );
 
-    const link = screen.getByTestId("sku-link");
-    expect(link).toHaveAttribute(
-      "href",
-      "/pv/products/11111111-1111-4111-8111-111111111111",
-    );
-    // Chữ hiển thị vẫn là MÃ chứ không phải UUID.
-    expect(link).toHaveTextContent("HN-PRD-001");
+    expect(screen.getByTestId("sku-code")).toHaveTextContent("HN-PRD-001");
   });
 
-  it("dùng mã SKU khi màn hình không có sku_id", () => {
+  it("hiển thị mã SKU khi màn hình không có sku_id", () => {
     renderWithProviders(<SkuLink code="HN-COMP-BASE-003" />);
 
-    expect(screen.getByTestId("sku-link")).toHaveAttribute(
-      "href",
-      "/pv/products/HN-COMP-BASE-003",
+    expect(screen.getByTestId("sku-code")).toHaveTextContent(
+      "HN-COMP-BASE-003",
     );
   });
 
-  it("mở tab mới — App PV nằm ngoài shell WMS đang thao tác dở", () => {
+  it("không phải link — không điều hướng đi đâu", () => {
     renderWithProviders(<SkuLink code="HN-PRD-001" />);
 
-    const link = screen.getByTestId("sku-link");
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    const cell = screen.getByTestId("sku-code");
+    expect(cell.tagName).toBe("SPAN");
+    expect(cell).not.toHaveAttribute("href");
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
-  it("không kích hoạt onClick của dòng bảng bao ngoài", () => {
+  it("bấm vào mã không kích hoạt hành vi riêng nào", () => {
     const onRowClick = vi.fn();
     renderWithProviders(
       <div onClick={onRowClick} role="presentation">
@@ -51,23 +44,21 @@ describe("SkuLink", () => {
       </div>,
     );
 
-    fireEvent.click(screen.getByTestId("sku-link"));
-    expect(onRowClick).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("sku-code"));
+    // Ô chỉ là chữ: sự kiện nổi bọt lên dòng như mọi text khác trong ô.
+    expect(onRowClick).toHaveBeenCalledTimes(1);
   });
 
-  it("ô rỗng vẫn là ô rỗng, không phải link chết", () => {
+  it("ô rỗng vẫn là ô rỗng chuẩn của dự án", () => {
     renderWithProviders(<SkuLink code="" />);
 
-    expect(screen.queryByTestId("sku-link")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sku-code")).not.toBeInTheDocument();
     expect(screen.getByText(EMPTY_TEXT)).toBeInTheDocument();
   });
 
-  it("mã có ký tự đặc biệt được encode đúng trong URL", () => {
+  it("mã có ký tự đặc biệt hiển thị nguyên văn, không bị encode", () => {
     renderWithProviders(<SkuLink code="HN/PRD 001" />);
 
-    expect(screen.getByTestId("sku-link")).toHaveAttribute(
-      "href",
-      "/pv/products/HN%2FPRD%20001",
-    );
+    expect(screen.getByTestId("sku-code")).toHaveTextContent("HN/PRD 001");
   });
 });

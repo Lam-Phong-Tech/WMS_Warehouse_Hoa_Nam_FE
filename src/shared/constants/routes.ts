@@ -76,10 +76,10 @@ export const ROUTES = {
   USER_ROLE_SCOPES: "/user-role-scopes",
 
   // 07 · App PV (SRS §3: "Người xem App PV" là actor ẩn danh, read-only)
-  // SCR-PV-01/02 nằm NGOÀI ProtectedRoute — xem app/router/index.tsx. Không đặt
+  // SCR-PV-01 nằm NGOÀI ProtectedRoute — xem app/router/index.tsx. Không đặt
   // dưới prefix nội bộ nào để link chia sẻ ra ngoài ngắn và ổn định.
+  // SCR-PV-02 (chi tiết sản phẩm) đã gỡ bỏ 07/09/2026.
   PV_CATALOG: "/pv",
-  PV_PRODUCT_DETAIL: "/pv/products/:skuId",
   /** SCR-PV-ADM-01 — màn NỘI BỘ, gate pv.master.manage hoặc pv.publish. */
   PV_ADMIN: "/pv-admin",
 

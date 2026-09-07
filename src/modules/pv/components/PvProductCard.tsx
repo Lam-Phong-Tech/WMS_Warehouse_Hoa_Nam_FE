@@ -1,8 +1,6 @@
-import { Link } from "react-router-dom";
 import { Box, UiStatusBadge } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { useT } from "@/shared/i18n/useT";
-import { pvProductDetailPath } from "@/modules/pv/lib/pv-paths";
 import type { PvProduct } from "@/modules/pv/types/pv.types";
 
 /**
@@ -20,8 +18,6 @@ export function PvProductCard({ product }: { product: PvProduct }) {
 
   return (
     <Box
-      component={Link}
-      to={pvProductDetailPath(product.sku_id)}
       data-testid="pv-product-card"
       data-sku-code={product.sku_code}
       sx={{
@@ -31,8 +27,6 @@ export function PvProductCard({ product }: { product: PvProduct }) {
         border: `1px solid ${S.border}`,
         borderRadius: `${RADIUS.card}px`,
         boxShadow: S.shadowCard,
-        color: "inherit",
-        textDecoration: "none",
         overflow: "hidden",
         height: "100%",
       }}

@@ -121,16 +121,16 @@ describe("MST-01 · định mức tồn theo SKU", () => {
     const cells = within(configured as HTMLTableRowElement).getAllByRole(
       "cell",
     );
-    // Thứ tự cột: STT, SKU, Loại, Hãng, Nhóm hàng, min, max, ...
-    expect(cells[5]).toHaveTextContent("0");
-    expect(cells[6]).toHaveTextContent("1.200");
+    // Thứ tự cột: STT, Ảnh, SKU, Loại, Hãng, Nhóm hàng, min, max, ...
+    expect(cells[6]).toHaveTextContent("0");
+    expect(cells[7]).toHaveTextContent("1.200");
 
     const unset = screen.getByText("SKU-CHUA-DAT").closest("tr");
     const unsetCells = within(unset as HTMLTableRowElement).getAllByRole(
       "cell",
     );
-    expect(unsetCells[5]).toHaveTextContent("Chưa có");
     expect(unsetCells[6]).toHaveTextContent("Chưa có");
+    expect(unsetCells[7]).toHaveTextContent("Chưa có");
   });
 
   it("STT đi theo dòng khi bấm sắp xếp, không đứng yên thành thang 1..n", () => {

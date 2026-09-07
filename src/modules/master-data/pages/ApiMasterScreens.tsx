@@ -65,6 +65,7 @@ import {
 import { useAuthStore } from "@/shared/store/auth.store";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
+import { SkuThumbnail } from "@/shared/components/data-display/SkuThumbnail";
 import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
@@ -857,6 +858,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <thead>
               <tr>
                 <th className="stt-col">STT</th>
+                {/* Cột ảnh: nhận diện hàng bằng hình nhanh hơn đọc mã — nhiều mã
+                    DongCheng chỉ khác nhau ở cỡ/đuôi mã máy. */}
+                <th className="thumb-col" aria-label={t("masterData.sku.colImage")} />
                 <SortableTh
                   label="SKU"
                   sortKey="skuCode"
@@ -919,7 +923,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <tbody>
               {query.isLoading ? (
                 <tr>
-                  <td colSpan={10} className="muted">
+                  <td colSpan={11} className="muted">
                     {t("masterData.common.loadingData")}
                   </td>
                 </tr>
@@ -932,6 +936,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <tr key={recordId}>
                       <td className="stt-col">
                         {mvpRowNumber(page, perPage, originalIndexOf(record))}
+                      </td>
+                      <td className="thumb-col">
+                        <SkuThumbnail
+                          url={record.image_url}
+                          name={record.sku_name ?? record.name}
+                        />
                       </td>
                       <td className="name-col">
                         <TruncatedText lines={1} maxWidth={300}>
@@ -1028,7 +1038,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 })
               ) : (
                 <tr>
-                  <td colSpan={10} className="muted">
+                  <td colSpan={11} className="muted">
                     {t("masterData.sku.empty")}
                   </td>
                 </tr>
@@ -1072,6 +1082,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 p: 2,
               }}
             >
+              {/* Ảnh sản phẩm mở đầu modal: xem chi tiết một mã hàng thì thứ
+                  đầu tiên người dùng cần là nhìn thấy nó trông thế nào. */}
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                <SkuThumbnail
+                  url={viewing.image_url}
+                  name={viewing.sku_name ?? viewing.name}
+                  size={180}
+                />
+              </Box>
               <UiDescriptions
                 columns={2}
                 items={[

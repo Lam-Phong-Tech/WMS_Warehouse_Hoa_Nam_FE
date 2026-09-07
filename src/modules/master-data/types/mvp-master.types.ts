@@ -64,6 +64,12 @@ export interface SkuRecord {
    * theo kho). null/undefined = chưa đặt định mức, không tính cảnh báo. */
   min_stock?: number | null;
   max_stock?: number | null;
+  /**
+   * Ảnh đại diện của mã hàng (ảnh chính trong hồ sơ App PV). BE gắn thêm ở
+   * ProductController::index/show chứ không phải cột của bảng `sku`; mã chưa có
+   * hồ sơ/ảnh thì để trống.
+   */
+  image_url?: string | null;
 }
 
 export interface SkuPayload {

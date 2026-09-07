@@ -22,6 +22,7 @@ import {
   Grid,
   Stack,
   UiAutocomplete,
+  UiButton,
   UiCard,
   UiDialog,
   UiPagination,
@@ -32,6 +33,15 @@ import {
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { FilterBar, SearchInput } from "@/shared/components";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  AppstoreOutlined,
+  CameraOutlined,
+  UnorderedListOutlined,
+} from "@/shared/components/icons";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { UiStateSurface } from "@/shared/ui";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
@@ -135,6 +145,119 @@ function primaryImage(profile: PvAdminProfile): PvImage | undefined {
   );
 }
 
+/**
+ * Kiểu hiển thị danh sách: "ngang" = bảng một dòng một sản phẩm, "hộp" = lưới
+ * thẻ có ảnh (đúng thứ App PV cho khách xem).
+ *
+ * Mặc định là NGANG (yêu cầu người dùng 07/09/2026): việc thường ngày ở màn này
+ * là rà nhiều sản phẩm — mã, ngành, trạng thái công bố — nên một dòng một sản
+ * phẩm cho nhiều thông tin hơn trong một tầm nhìn. Dạng hộp vẫn là cách xem
+ * đúng thứ khách thấy, chỉ đổi thứ tự ưu tiên chứ không bỏ.
+ */
+type PvCatalogView = "card" | "table";
+
+/**
+ * Ảnh đại diện của một hồ sơ, dùng chung cho THẺ và DÒNG.
+ *
+ * URL ảnh nằm trên CDN ngoài, nên nó CHẾT ĐƯỢC mà DB không hề biết (ảnh bị xoá
+ * trên Cloudinary, host cũ ngừng chạy). Không bắt `onError` thì trình duyệt vẽ
+ * icon ảnh vỡ + chuỗi alt tràn ra giữa thẻ. Rơi về đúng ô "Chưa có ảnh" để lưới
+ * vẫn đọc được và người quản trị thấy ngay sản phẩm nào cần thay ảnh.
+ *
+ * `compact` = ô nhỏ trong bảng: chỗ đó không đủ cho câu chữ nên trạng thái
+ * thiếu/hỏng ảnh nói bằng icon + tooltip, vẫn phân biệt được bằng màu.
+ */
+function PvCatalogImage({
+  profile,
+  t,
+  compact = false,
+}: {
+  profile: PvAdminProfile;
+  t: TranslateFn;
+  compact?: boolean;
+}) {
+  const image = primaryImage(profile);
+  const [broken, setBroken] = useState(false);
+  const showImage = Boolean(image) && !broken;
+  const fallbackText = broken
+    ? t("pv.productCatalog.cardImageBroken")
+    : t("pv.productCatalog.cardNoImage");
+
+  return (
+    <Box
+      sx={{
+        // `position: relative` để ảnh bên trong định vị TUYỆT ĐỐI theo ô này.
+        // `height: 100%` trên grid item KHÔNG giải được khi hàng grid tự co
+        // (phần trăm chiều cao đối chiếu với hàng, mà hàng lại co theo nội
+        // dung): ảnh dọc 502x940 vẫn tràn ra 348px rồi bị `overflow:hidden`
+        // cắt, đúng triệu chứng ban đầu. `inset: 0` trên phần tử absolute thì
+        // đối chiếu với padding-box — mà `aspect-ratio` đã định nghĩa nó rõ ràng.
+        position: "relative",
+        aspectRatio: "4 / 3",
+        width: compact ? 60 : "100%",
+        flex: "none",
+        backgroundColor: S.bgSubtle,
+        display: "grid",
+        placeItems: "center",
+        overflow: "hidden",
+        borderRadius: compact ? `${RADIUS.control}px` : 0,
+      }}
+    >
+      {showImage && image ? (
+        <Box
+          component="img"
+          src={image.url}
+          alt={image.alt_text ?? profile.display_name}
+          loading="lazy"
+          onError={() => setBroken(true)}
+          sx={{
+            // `contain` chứ KHÔNG phải `cover`: ảnh sản phẩm do người dùng tự
+            // tải lên nên tỉ lệ tuỳ ý — ảnh dọc 502x940 nhét vào khung 4:3 bằng
+            // `cover` sẽ bị phóng to rồi cắt cụt trên/dưới, chỉ còn một lát giữa
+            // (phản hồi người dùng 06/09/2026). `contain` giữ trọn khung hình,
+            // phần thừa để lộ nền `bgSubtle` của ô.
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+          }}
+        />
+      ) : compact ? (
+        <Box
+          component="span"
+          title={fallbackText}
+          aria-label={fallbackText}
+          role="img"
+          sx={{
+            fontSize: 16,
+            lineHeight: 1,
+            color: broken ? S.errorText : S.textDisabled,
+          }}
+          data-testid="pv-catalog-row-no-image"
+          data-image-broken={broken || undefined}
+        >
+          <CameraOutlined />
+        </Box>
+      ) : (
+        <Box
+          component="span"
+          sx={{
+            fontSize: 12,
+            color: broken ? S.errorText : S.textDisabled,
+            px: 1,
+            textAlign: "center",
+          }}
+          data-testid="pv-catalog-card-no-image"
+          data-image-broken={broken || undefined}
+        >
+          {fallbackText}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
 function useCanManagePv() {
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
@@ -177,19 +300,9 @@ function PvCatalogCard({
   onTogglePublish: (next: boolean) => void;
   t: TranslateFn;
 }) {
-  const image = primaryImage(profile);
   const industries = profile.industry_ids
     .map((id) => industryNameById.get(id))
     .filter((name): name is string => Boolean(name));
-
-  /**
-   * URL ảnh nằm trên CDN ngoài, nên nó CHẾT ĐƯỢC mà DB không hề biết (ảnh bị xoá
-   * trên Cloudinary, host cũ ngừng chạy). Không bắt `onError` thì trình duyệt vẽ
-   * icon ảnh vỡ + chuỗi alt tràn ra giữa thẻ. Rơi về đúng ô "Chưa có ảnh" để lưới
-   * vẫn đọc được và người quản trị thấy ngay sản phẩm nào cần thay ảnh.
-   */
-  const [imageBroken, setImageBroken] = useState(false);
-  const showImage = Boolean(image) && !imageBroken;
 
   return (
     <Box
@@ -206,60 +319,7 @@ function PvCatalogCard({
         overflow: "hidden",
       }}
     >
-      <Box
-        sx={{
-          // `position: relative` để ảnh bên trong định vị TUYỆT ĐỐI theo ô này.
-          // `height: 100%` trên grid item KHÔNG giải được khi hàng grid tự co
-          // (phần trăm chiều cao đối chiếu với hàng, mà hàng lại co theo nội
-          // dung): ảnh dọc 502x940 vẫn tràn ra 348px rồi bị `overflow:hidden`
-          // cắt, đúng triệu chứng ban đầu. `inset: 0` trên phần tử absolute thì
-          // đối chiếu với padding-box — mà `aspect-ratio` đã định nghĩa nó rõ ràng.
-          position: "relative",
-          aspectRatio: "4 / 3",
-          backgroundColor: S.bgSubtle,
-          display: "grid",
-          placeItems: "center",
-          overflow: "hidden",
-        }}
-      >
-        {showImage && image ? (
-          <Box
-            component="img"
-            src={image.url}
-            alt={image.alt_text ?? profile.display_name}
-            loading="lazy"
-            onError={() => setImageBroken(true)}
-            sx={{
-              // `contain` chứ KHÔNG phải `cover`: ảnh sản phẩm do người dùng tự
-              // tải lên nên tỉ lệ tuỳ ý — ảnh dọc 502x940 nhét vào khung 4:3 bằng
-              // `cover` sẽ bị phóng to rồi cắt cụt trên/dưới, chỉ còn một lát giữa
-              // (phản hồi người dùng 06/09/2026). `contain` giữ trọn khung hình,
-              // phần thừa để lộ nền `bgSubtle` của ô.
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-            }}
-          />
-        ) : (
-          <Box
-            component="span"
-            sx={{
-              fontSize: 12,
-              color: imageBroken ? S.errorText : S.textDisabled,
-              px: 1,
-              textAlign: "center",
-            }}
-            data-testid="pv-catalog-card-no-image"
-            data-image-broken={imageBroken || undefined}
-          >
-            {imageBroken
-              ? t("pv.productCatalog.cardImageBroken")
-              : t("pv.productCatalog.cardNoImage")}
-          </Box>
-        )}
-      </Box>
+      <PvCatalogImage profile={profile} t={t} />
 
       <Box sx={{ p: 1.5, display: "grid", gap: "6px", flex: 1 }}>
         <Box
@@ -327,6 +387,9 @@ export function PvProductCatalogPage() {
   const t = useT();
   const { canManage, canPublish } = useCanManagePv();
 
+  // Kiểu hiển thị là lựa chọn của PHIÊN LÀM VIỆC, không nằm trong bộ lọc: đổi
+  // qua dạng hộp không được đụng tới trang / từ khoá đang xem.
+  const [view, setView] = useState<PvCatalogView>("table");
   const [keyword, setKeyword] = useState("");
   const [industryFilter, setIndustryFilter] = useState(FILTER_ALL);
   const [publishedFilter, setPublishedFilter] = useState(FILTER_ALL);
@@ -544,6 +607,77 @@ export function PvProductCatalogPage() {
     }
   }
 
+  /**
+   * Cột của DẠNG NGANG — cùng bộ thông tin với thẻ, chỉ đổi cách xếp: ảnh thu
+   * nhỏ, tên + mã, ngành nghề, công tắc công bố. Nút Sửa đi qua
+   * `renderRowActions` để nó hiện ở cả bảng desktop lẫn card mobile của
+   * ResponsiveDataTable.
+   *
+   * Sắp xếp là client-side trên ĐÚNG trang đang xem (`sortAccessor`), cùng cách
+   * bảng hồ sơ ở SCR-PV-ADM-01 làm — endpoint hồ sơ không nhận tham số sort.
+   */
+  const tableColumns: ResponsiveTableColumn<PvAdminProfile>[] = [
+    {
+      key: "image",
+      header: t("pv.productCatalog.colImage"),
+      width: 76,
+      align: "center",
+      render: (row) => <PvCatalogImage profile={row} t={t} compact />,
+    },
+    {
+      key: "display_name",
+      header: t("pv.admin.displayName"),
+      sortAccessor: (row) => row.display_name,
+      render: (row) => row.display_name,
+    },
+    {
+      key: "sku_code",
+      header: t("pv.admin.skuCode"),
+      sortAccessor: (row) => row.sku_code,
+      // Bấm mã để mở đúng trang khách sẽ thấy — giống cột mã ở bảng hồ sơ.
+      render: (row) => <SkuLink id={row.sku_id} code={row.sku_code} />,
+    },
+    {
+      key: "industries",
+      header: t("pv.admin.industry"),
+      sortType: "value",
+      sortAccessor: (row) => row.industry_ids.length,
+      hideOnMobile: true,
+      render: (row) => {
+        const names = row.industry_ids
+          .map((id) => industryNameById.get(id))
+          .filter((name): name is string => Boolean(name));
+        return names.length > 0 ? names.join(", ") : EMPTY_TEXT;
+      },
+    },
+    {
+      key: "published",
+      header: t("pv.admin.published"),
+      sortType: "value",
+      sortAccessor: (row) => Number(row.published),
+      width: 210,
+      render: (row) => (
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <PvSwitch
+            checked={row.published}
+            disabled={!canPublish || setPublished.isPending}
+            aria-label={t("pv.admin.publishSwitchAria")}
+            data-testid="pv-catalog-publish-switch"
+            onChange={(next) => void togglePublish(row, next)}
+          />
+          <UiStatusBadge
+            tone={row.published ? "success" : "neutral"}
+            label={
+              row.published
+                ? t("pv.admin.publishedShown")
+                : t("pv.admin.publishedHidden")
+            }
+          />
+        </Stack>
+      ),
+    },
+  ];
+
   const isFilterActive =
     keyword.trim() !== "" ||
     industryFilter !== FILTER_ALL ||
@@ -625,6 +759,55 @@ export function PvProductCatalogPage() {
             />
           </FilterBar>
 
+          {/* Thanh chọn kiểu hiển thị — cùng dáng tablist với các màn báo cáo
+              ("Dạng ngang" / "Dạng hộp") để cả app chỉ có MỘT cách nói về việc
+              đổi cách xem một danh sách. */}
+          <Stack
+            direction="row"
+            spacing={1}
+            role="tablist"
+            aria-label={t("pv.productCatalog.viewTablistAria")}
+          >
+            {(
+              [
+                {
+                  value: "table",
+                  label: t("pv.productCatalog.viewTable"),
+                  icon: <UnorderedListOutlined />,
+                },
+                {
+                  value: "card",
+                  label: t("pv.productCatalog.viewCard"),
+                  icon: <AppstoreOutlined />,
+                },
+              ] as const
+            ).map((tab) => {
+              const active = view === tab.value;
+              return (
+                <UiButton
+                  key={tab.value}
+                  role="tab"
+                  appearance={active ? "tonal" : "text"}
+                  startIcon={tab.icon}
+                  aria-selected={active}
+                  tabIndex={active ? 0 : -1}
+                  sx={{ color: active ? undefined : S.textMedium }}
+                  data-testid={`pv-catalog-view-${tab.value}`}
+                  onClick={() => setView(tab.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+                      return;
+                    }
+                    event.preventDefault();
+                    setView(view === "card" ? "table" : "card");
+                  }}
+                >
+                  {tab.label}
+                </UiButton>
+              );
+            })}
+          </Stack>
+
           {profiles.isLoading ? (
             <LoadingState tip={t("pv.common.loading")} />
           ) : profiles.isError ? (
@@ -663,6 +846,23 @@ export function PvProductCatalogPage() {
                     </ActionButton>
                   )
                 }
+              />
+            </Box>
+          ) : view === "table" ? (
+            <Box data-testid="pv-catalog-table">
+              <ResponsiveDataTable<PvAdminProfile>
+                columns={tableColumns}
+                rows={visibleRows}
+                rowKey={(row) => row.id}
+                renderRowActions={(row) => (
+                  <ActionIconButton
+                    kind="edit"
+                    label={t("pv.productCatalog.editAction")}
+                    disabled={!canManage}
+                    onClick={() => openEdit(row)}
+                    data-testid="pv-catalog-edit"
+                  />
+                )}
               />
             </Box>
           ) : (

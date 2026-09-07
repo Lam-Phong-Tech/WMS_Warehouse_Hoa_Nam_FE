@@ -164,9 +164,6 @@ export const PendingEvidenceReportPage = lazyRoute(
 export const PvCatalogPage = lazyRoute(
   () => import("@/modules/pv/pages/PvCatalogPage"),
 );
-export const PvProductDetailPage = lazyRoute(
-  () => import("@/modules/pv/pages/PvProductDetailPage"),
-);
 export const PvAdminPage = lazyRoute(
   () => import("@/modules/pv/pages/PvAdminPage"),
 );
