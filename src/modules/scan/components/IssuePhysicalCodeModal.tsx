@@ -95,14 +95,23 @@ export function IssuePhysicalCodeModal({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
 
+  // Gõ-để-lọc gọi BE theo keyword (ProductRepository::$searchable =
+  // sku_code/sku_name). KHÔNG nạp cứng N dòng đầu rồi lọc serial tại FE: danh
+  // mục thật xếp theo mã thì trang đầu toàn dụng cụ cầm tay (theo SỐ LƯỢNG),
+  // nên bộ lọc `is_serial_tracked` vứt gần hết và ô chọn gần như rỗng.
+  const [skuKeyword, setSkuKeyword] = useState("");
   const skuQuery = useMvpSkus({
     status: "ACTIVE",
     sku_type: "PRODUCT",
-    per_page: 200,
+    keyword: skuKeyword.trim(),
+    per_page: 50,
   });
   const skuOptions = useMemo(
     () =>
       (skuQuery.data?.data ?? [])
+        // Mã giấy/RFID chỉ cấp cho hàng theo dõi từng số máy. BE chưa có bộ lọc
+        // theo cách theo dõi nên vẫn lọc ở đây — nhưng lọc trên KẾT QUẢ TÌM
+        // KIẾM, không phải trên một trang cắt cứng.
         .filter((sku) => sku.is_serial_tracked)
         .map((sku) => ({
           value: sku.sku_id,
@@ -291,9 +300,10 @@ export function IssuePhysicalCodeModal({
               error={Boolean(fieldErrors.skuId)}
               helperText={fieldErrors.skuId}
               placeholder={t("scan.issue.skuPlaceholder")}
-              loading={skuQuery.isLoading}
+              onInputChange={setSkuKeyword}
+              loading={skuQuery.isFetching}
               noOptionsText={
-                skuQuery.isLoading
+                skuQuery.isFetching
                   ? t("scan.issue.loading")
                   : t("scan.issue.skuEmpty")
               }

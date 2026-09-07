@@ -12,7 +12,6 @@ import {
   UiDialog,
   UiNumberField,
   UiPagination,
-  UiSelect,
   UiStatusBadge,
   UiTextField,
   type UiStatusTone,
@@ -615,24 +614,51 @@ export function OutboundIntakeModal({
       key: "sku_mapping",
       header: t("outbound.intake.colReassignSku"),
       width: 260,
-      render: (row) => (
-        <UiSelect
-          aria-label={t("outbound.intake.reassignAria", { row: row.rowNo })}
-          placeholder={t("outbound.intake.keepAsIs")}
-          minWidth={240}
-          value={resolutions[row.rowNo]?.sku_id ?? ""}
-          onChange={(value) =>
-            setResolutions((current) => ({
-              ...current,
-              [row.rowNo]: {
-                ...current[row.rowNo],
-                sku_id: value || undefined,
-              },
-            }))
-          }
-          options={skuOptions}
-        />
-      ),
+      // Gõ-để-lọc trên TOÀN danh mục, giống ô SKU của dòng nhập tay. Trước đây ô
+      // này dùng `skuOptions` — danh sách cắt cứng ở 100 dòng đầu; với danh mục
+      // thật (955 mã sản phẩm ACTIVE) thì gần như không bao giờ chọn được đúng mã
+      // mà dòng import đang cần gán lại.
+      render: (row) => {
+        const selected = resolutions[row.rowNo]?.sku_id ?? "";
+        return (
+          <UiAutocomplete
+            sx={{ minWidth: 240 }}
+            aria-label={t("outbound.intake.reassignAria", { row: row.rowNo })}
+            placeholder={t("outbound.intake.keepAsIs")}
+            options={
+              // Giữ nhãn của SKU ĐANG CHỌN kể cả khi nó rơi ra ngoài kết quả tìm
+              // kiếm hiện tại (mọi dòng dùng chung một keyword).
+              selected &&
+              !skuSearchOptions.some((option) => option.value === selected)
+                ? [
+                    {
+                      value: selected,
+                      label: skuLabelById.get(selected) ?? selected,
+                    },
+                    ...skuSearchOptions,
+                  ]
+                : skuSearchOptions
+            }
+            value={selected || null}
+            onChange={(value) =>
+              setResolutions((current) => ({
+                ...current,
+                [row.rowNo]: {
+                  ...current[row.rowNo],
+                  sku_id: value === null ? undefined : String(value),
+                },
+              }))
+            }
+            onInputChange={setSkuKeyword}
+            loading={skuSearchQuery.isFetching}
+            noOptionsText={
+              skuKeyword.trim()
+                ? t("outbound.intake.skuNoMatch")
+                : t("outbound.intake.skuTypeToSearch")
+            }
+          />
+        );
+      },
     },
     {
       key: "qty",
