@@ -624,6 +624,36 @@ export const MESSAGES_VI = {
       resultValid: "Hợp lệ",
       resultRemoved: "Đã gỡ",
       removeAction: "Gỡ mã",
+      colInfo: "Thông tin SKU",
+      infoComplete: "Đủ thông tin",
+      infoIncomplete: "Thiếu thông tin",
+      fillInfo: "Bổ sung thông tin",
+      infoBlockedTitle: "Còn {count} SKU mới chưa đủ thông tin",
+      infoBlockedBody:
+        "Bấm Bổ sung thông tin ở từng dòng để đặt tên và đơn vị tính. Ghi nhận nhập kho chỉ mở khi mọi SKU đã đủ thông tin.",
+    },
+    skuInfo: {
+      title: "Bổ sung thông tin SKU mới",
+      intro:
+        "SKU {code} được tạo tự động khi quét nên mới chỉ có mã. Đặt tên đọc được và đơn vị tính trước khi ghi nhận nhập kho.",
+      fieldCode: "Mã SKU",
+      fieldName: "Tên SKU",
+      fieldUnit: "Đơn vị tính",
+      fieldBrand: "Thương hiệu",
+      fieldCategory: "Nhóm hàng",
+      fieldModel: "Sê-ri máy",
+      fieldPowerSource: "Nguồn điện",
+      namePlaceholder: "Ví dụ: Máy khoan búa DCPB16",
+      unitPlaceholder: "Ví dụ: Cái",
+      optionalHint:
+        "Bốn mục dưới không bắt buộc — chưa có mục phù hợp trong danh mục thì để trống, người quản lý danh mục bổ sung sau ở màn Danh mục SKU.",
+      errName: "Nhập tên SKU đọc được.",
+      errNameSameAsCode: "Tên SKU phải khác mã SKU.",
+      errUnit: "Nhập đơn vị tính.",
+      submit: "Lưu thông tin",
+      saving: "Đang lưu...",
+      saved: "Đã bổ sung thông tin cho SKU {code}.",
+      saveError: "Không lưu được thông tin SKU.",
     },
     placeholder: {
       scanModal:
@@ -1660,6 +1690,7 @@ export const MESSAGES_VI = {
       colCategory: "Nhóm hàng",
       colMinStock: "Định mức tối thiểu",
       colMaxStock: "Định mức tối đa",
+      colImage: "Ảnh",
       colPvApp: "Ứng dụng phân vùng",
       publishedBadge: "Đang hiển thị",
       unpublishedBadge: "Chưa hiển thị",
@@ -4084,10 +4115,7 @@ export const MESSAGES_VI = {
     actionFilterPlaceholder: "Hành động: Tất cả",
     actorFilterAria: "Lọc theo người thực hiện",
     actorFilterPlaceholder: "Người dùng: Tất cả",
-    fromLabel: "Từ thời điểm",
-    fromAria: "Lọc từ thời điểm",
-    toLabel: "Đến thời điểm",
-    toAria: "Lọc đến thời điểm",
+    rangeAria: "Lọc theo khoảng ngày",
     pageSizeAria: "Số dòng mỗi trang",
     total: "Tổng {count} bản ghi",
     selected: "Đã chọn {count}",
@@ -4105,6 +4133,9 @@ export const MESSAGES_VI = {
     fieldRecordId: "Định danh bản ghi",
     copyIpAria: "Sao chép địa chỉ IP",
     beforeData: "Dữ liệu trước thay đổi",
+    afterData: "Dữ liệu sau thay đổi",
+    showRawData: "Xem dữ liệu gốc",
+    hideRawData: "Ẩn dữ liệu gốc",
   },
   shared: {
     table: {
@@ -4234,6 +4265,10 @@ export const MESSAGES_VI = {
     },
     skuLink: {
       openTitle: "Xem thông tin sản phẩm {code} trên App xem sản phẩm",
+    },
+    skuThumbnail: {
+      alt: "Ảnh sản phẩm",
+      noImage: "Chưa có ảnh sản phẩm",
     },
     status: {
       active: "Hoạt động",
@@ -4498,12 +4533,7 @@ export const MESSAGES_VI = {
       switchError: "Không thể chuyển phạm vi kho, vui lòng thử lại.",
     },
     validation: {
-      identifierRequired: "Vui lòng nhập email hoặc tên đăng nhập",
-      identifierTooLong: "Email hoặc tên đăng nhập quá dài",
       emailInvalid: "Email không hợp lệ",
-      usernameTooLong: "Tên đăng nhập không được vượt quá 100 ký tự",
-      usernameFormat:
-        "Tên đăng nhập chỉ gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang",
       passwordRequired: "Vui lòng nhập mật khẩu",
       emailRequired: "Vui lòng nhập email",
       otpLength: "Mã OTP gồm đúng 6 chữ số",
@@ -4545,6 +4575,10 @@ export const MESSAGES_VI = {
       statNoImage: "{count} sản phẩm chưa có ảnh",
       addAction: "Thêm sản phẩm",
       editAction: "Sửa sản phẩm",
+      viewTablistAria: "Kiểu hiển thị danh sách",
+      viewTable: "Dạng ngang",
+      viewCard: "Dạng hộp",
+      colImage: "Ảnh",
       publishedAll: "Tất cả trạng thái hiển thị",
       cardNoImage: "Chưa có ảnh",
       cardImageBroken: "Ảnh không tải được",

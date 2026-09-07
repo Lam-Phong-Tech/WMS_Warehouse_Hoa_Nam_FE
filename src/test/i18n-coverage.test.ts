@@ -92,6 +92,10 @@ const VIETNAMESE_IS_DATA: ReadonlyMap<string, string> = new Map([
     "map nhãn lỗi in / trạng thái bản lưu nhãn, song ngữ",
   ],
   [
+    "src/modules/audit-logs/constants/audit-log-labels.ts",
+    "map nhãn loại đối tượng / trường dữ liệu nhật ký, song ngữ",
+  ],
+  [
     "src/shared/constants/agency-place-labels.ts",
     "map thị trường song ngữ + tên tỉnh/thành (danh từ riêng, không dịch)",
   ],

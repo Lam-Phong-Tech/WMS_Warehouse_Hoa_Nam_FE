@@ -34,8 +34,39 @@ export interface InboundLine {
   posted: number;
   remaining: number;
   validation: "VALID" | "INVALID" | "UNKNOWN";
+  /**
+   * SKU của dòng đã đủ thông tin để được Ghi nhận nhập kho hay chưa (BE tính
+   * theo SkuInboundInfoRule, KHÔNG suy ra ở FE): SKU sinh tự động lúc quét chỉ
+   * có mã, tên tạm bằng chính mã và chưa có đơn vị tính.
+   */
+  /** Đơn vị tính hiện tại của SKU — để form bổ sung thông tin prefill đúng. */
+  productUnit: string;
+  infoComplete: boolean;
+  /** Các trường còn thiếu — hiện tại BE trả "sku_name" và/hoặc "unit". */
+  missingInfo: string[];
   selected: boolean;
   note?: string;
+}
+
+/** Payload bổ sung thông tin cho SKU mới của một dòng phiếu nhập. */
+export interface CompleteInboundLineSkuPayload {
+  skuName: string;
+  unit: string;
+  brandId?: string | null;
+  categoryId?: string | null;
+  modelId?: string | null;
+  powerSourceId?: string | null;
+}
+
+export interface CompleteInboundLineSkuResult {
+  documentId: string;
+  lineId: string;
+  skuId: string;
+  skuCode: string;
+  skuName: string;
+  unit: string;
+  infoComplete: boolean;
+  missingInfo: string[];
 }
 
 export interface InboundDetail {

@@ -24,7 +24,9 @@ import {
 } from "@/shared/constants/wms-permissions";
 import {
   completeInboundCartonScan,
+  completeInboundLineSku,
   createInboundDocument,
+  fetchInboundDetail,
   fetchInboundDocuments,
   fetchInboundScanEntries,
   postInboundReceipt,
@@ -871,5 +873,93 @@ describe("inbound real API contract", () => {
         ifMatch: 5,
       }),
     ).rejects.toBe(originalError);
+  });
+});
+
+/**
+ * Cờ "SKU đủ thông tin" do BE tính (SkuInboundInfoRule) — FE chỉ đọc lại. Hai ca
+ * dưới khoá đúng chỗ dễ trôi: tên trường trên payload, và mặc định khi BE cũ
+ * không trả cờ (phải là ĐỦ, nếu không mọi phiếu đều bị khoá nút Ghi nhận).
+ */
+describe("inbound · cờ thông tin SKU trên từng dòng phiếu", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("đọc cờ thiếu thông tin và đơn vị tính hiện tại từ dòng phiếu", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "IN-1",
+      doc_no: "PN-001",
+      status: "SCANNING",
+      version: 4,
+      lines: [
+        {
+          id: "L-1",
+          product_id: "SKU-NEW",
+          product_code: "HN-NEW-0001",
+          product_name: "HN-NEW-0001",
+          product_unit: "",
+          product_info_complete: false,
+          product_missing_info: ["sku_name", "unit"],
+          qty_planned: 0,
+          scanned_qty: 1,
+        },
+      ],
+    });
+
+    const detail = await fetchInboundDetail("IN-1");
+
+    expect(detail.lines[0].infoComplete).toBe(false);
+    expect(detail.lines[0].missingInfo).toEqual(["sku_name", "unit"]);
+    expect(detail.lines[0].productUnit).toBe("");
+  });
+
+  it("coi là đủ thông tin khi server không trả cờ", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "IN-1",
+      status: "SCANNING",
+      version: 1,
+      lines: [{ id: "L-1", product_id: "SKU-1", scanned_qty: 1 }],
+    });
+
+    const detail = await fetchInboundDetail("IN-1");
+
+    expect(detail.lines[0].infoComplete).toBe(true);
+    expect(detail.lines[0].missingInfo).toEqual([]);
+  });
+
+  it("gửi tên + đơn vị tính lên đúng dòng phiếu và bỏ qua danh mục không chọn", async () => {
+    vi.mocked(http.patch).mockResolvedValue({
+      document_id: "IN-1",
+      line_id: "L-2",
+      sku_id: "SKU-NEW",
+      sku_code: "HN-NEW-0001",
+      sku_name: "Máy khoan mới",
+      unit: "Cái",
+      info_complete: true,
+      missing_info: [],
+    });
+
+    const result = await completeInboundLineSku("IN-1", "L-2", {
+      skuName: "  Máy khoan mới  ",
+      unit: " Cái ",
+      brandId: "BRAND-1",
+    });
+
+    expect(http.patch).toHaveBeenCalledWith(
+      "/inbound-documents/IN-1/lines/L-2/sku",
+      { sku_name: "Máy khoan mới", unit: "Cái", brand_id: "BRAND-1" },
+    );
+    expect(result.infoComplete).toBe(true);
+  });
+
+  it("đòi quyền quét nhập kho trước khi gọi server", async () => {
+    expect(
+      hasAnyWmsPermission(
+        ["inbound.scan"],
+        WMS_ACTION_PERMISSIONS.SCAN_INBOUND,
+        false,
+      ),
+    ).toBe(true);
   });
 });

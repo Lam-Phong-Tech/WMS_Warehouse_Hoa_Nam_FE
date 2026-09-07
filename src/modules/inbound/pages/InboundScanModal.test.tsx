@@ -27,9 +27,23 @@ vi.mock("@/modules/inbound/hooks/use-inbound", () => ({
     isPending: false,
     mutateAsync: vi.fn(),
   })),
+  useCompleteInboundLineSku: vi.fn(() => ({
+    isPending: false,
+    mutateAsync: vi.fn(),
+  })),
 }));
 vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useMvpSkus: vi.fn(() => ({ data: { data: [SKU_ROW] }, isLoading: false })),
+  useMvpProductCatalogs: vi.fn(() => ({
+    data: {
+      brands: [],
+      categories: [],
+      models: [],
+      powerSources: [],
+      packageVariants: [],
+    },
+    isLoading: false,
+  })),
 }));
 // §4.3: mã quét không composite được classify read-only để nhận diện CARTON.
 vi.mock("@/modules/scan/services/scanService", () => ({
@@ -39,6 +53,7 @@ vi.mock("@/modules/scan/services/scanService", () => ({
 import {
   useCancelInbound,
   useCompleteInboundCartonScan,
+  useCompleteInboundLineSku,
   useInboundDetail,
   useInboundScanEntries,
   usePostInboundReceipt,
@@ -88,6 +103,29 @@ const DETAIL = {
       remaining: 1,
       validation: "VALID" as const,
       selected: false,
+      productUnit: "Cái",
+      infoComplete: true,
+      missingInfo: [] as string[],
+    },
+  ],
+};
+
+/**
+ * SKU vừa sinh ra lúc quét: BE mới chỉ đặt được mã, tên tạm bằng chính mã và
+ * chưa có đơn vị tính — đúng trạng thái khoá nút Ghi nhận nhập kho.
+ */
+const DETAIL_MISSING_INFO = {
+  ...DETAIL,
+  lines: [
+    {
+      ...DETAIL.lines[0],
+      id: "L-2",
+      productId: "SKU-NEW",
+      sku: "HN-NEW-0001",
+      skuName: "HN-NEW-0001",
+      productUnit: "",
+      infoComplete: false,
+      missingInfo: ["sku_name", "unit"] as string[],
     },
   ],
 };
@@ -660,5 +698,146 @@ describe("IN-03 · hỏi loại SKU mới khi quét lần đầu", () => {
       expect(scanMutate).toHaveBeenCalledTimes(2);
     });
     expect(scanMutate.mock.calls[1][0].newSkuType).toBe("PRODUCT");
+  });
+});
+
+/**
+ * SKU mới sinh ra lúc quét chỉ có mã. Cho Ghi nhận nhập kho ở trạng thái đó là
+ * đưa hàng vào kho dưới một dòng không ai đọc được, và sau khi có movement thì
+ * BE khoá luôn mã/tracking (SKU_IDENTITY_IMMUTABLE_AFTER_STOCK) — nên phải chặn
+ * TRƯỚC lúc Post. BE chặn cứng cùng luật ở post-receipt; các ca dưới đây khoá
+ * phần FE báo sớm.
+ */
+describe("IN-03 · chặn Ghi nhận khi SKU mới chưa đủ thông tin", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    grant([P.INBOUND_VIEW, P.INBOUND_SCAN, P.INBOUND_CREATE, P.INBOUND_POST]);
+  });
+
+  afterEach(() => {
+    cleanupTestState();
+  });
+
+  it("khoá nút Ghi nhận và nêu rõ còn bao nhiêu SKU thiếu thông tin", async () => {
+    mockHooks([ACTIVE_ENTRY]);
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: DETAIL_MISSING_INFO,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    expect(
+      await screen.findByText("Còn 1 SKU mới chưa đủ thông tin"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ghi nhận nhập" })).toBeDisabled();
+    expect(screen.getByText("Thiếu thông tin")).toBeInTheDocument();
+  });
+
+  it("mở lại nút Ghi nhận khi mọi dòng đã đủ thông tin", async () => {
+    mockHooks([ACTIVE_ENTRY]);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Ghi nhận nhập" }),
+    ).toBeEnabled();
+    // Banner cảnh báo chỉ xuất hiện khi thật sự còn dòng thiếu thông tin.
+    expect(
+      screen.queryByText(/chưa đủ thông tin/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("gửi tên và đơn vị tính của SKU mới lên đúng dòng phiếu", async () => {
+    const completeMutate = vi.fn().mockResolvedValue({
+      documentId: "IN-1",
+      lineId: "L-2",
+      skuId: "SKU-NEW",
+      skuCode: "HN-NEW-0001",
+      skuName: "Máy khoan mới",
+      unit: "Cái",
+      infoComplete: true,
+      missingInfo: [],
+    });
+    mockHooks([ACTIVE_ENTRY]);
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: DETAIL_MISSING_INFO,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    vi.mocked(useCompleteInboundLineSku).mockReturnValue({
+      isPending: false,
+      mutateAsync: completeMutate,
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Bổ sung thông tin" }),
+    );
+
+    fireEvent.change(await screen.findByLabelText(/Tên SKU/), {
+      target: { value: "Máy khoan mới" },
+    });
+    fireEvent.change(screen.getByLabelText(/Đơn vị tính/), {
+      target: { value: "Cái" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thông tin" }));
+
+    await waitFor(() => {
+      expect(completeMutate).toHaveBeenCalledTimes(1);
+    });
+    expect(completeMutate.mock.calls[0][0]).toEqual({
+      id: "IN-1",
+      lineId: "L-2",
+      payload: { skuName: "Máy khoan mới", unit: "Cái" },
+    });
+  });
+
+  it("không cho lưu khi tên SKU vẫn trùng mã SKU", async () => {
+    const completeMutate = vi.fn();
+    mockHooks([ACTIVE_ENTRY]);
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: DETAIL_MISSING_INFO,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    vi.mocked(useCompleteInboundLineSku).mockReturnValue({
+      isPending: false,
+      mutateAsync: completeMutate,
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Bổ sung thông tin" }),
+    );
+    fireEvent.change(await screen.findByLabelText(/Tên SKU/), {
+      target: { value: "hn-new-0001" },
+    });
+    fireEvent.change(screen.getByLabelText(/Đơn vị tính/), {
+      target: { value: "Cái" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thông tin" }));
+
+    expect(
+      await screen.findByText("Tên SKU phải khác mã SKU."),
+    ).toBeInTheDocument();
+    expect(completeMutate).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { invalidateStockDerived } from "@/shared/cache/invalidation";
+import {
+  invalidateMasterDerived,
+  invalidateStockDerived,
+} from "@/shared/cache/invalidation";
 import {
   cancelInboundDocument,
   completeInboundCartonScan,
+  completeInboundLineSku,
   createInboundDocument,
   ensureComponentLine,
   fetchInboundDetail,
@@ -15,6 +19,7 @@ import {
   updateInboundDocument,
 } from "@/modules/inbound/services/inboundService";
 import type {
+  CompleteInboundLineSkuPayload,
   CreateInboundPayload,
   PostReceiptRequest,
   UpdateInboundPayload,
@@ -216,6 +221,34 @@ export function useUnscanInbound() {
       reason?: string;
     }) => unscanInboundEntry(id, entryId, ifMatch, reason),
   );
+}
+
+/**
+ * Bổ sung thông tin cho SKU mới ngay trong phiếu nhập. Ngoài cache phiếu nhập
+ * còn phải làm mới cache MASTER: thao tác này sửa chính bản ghi SKU, nên màn
+ * Danh mục SKU và bộ lọc "SKU chờ điền thông tin" đang mở phải thấy ngay.
+ */
+export function useCompleteInboundLineSku() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      lineId,
+      payload,
+    }: {
+      id: string;
+      lineId: string;
+      payload: CompleteInboundLineSkuPayload;
+    }) => completeInboundLineSku(id, lineId, payload),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: inboundKeys.all }),
+        invalidateMasterDerived(queryClient),
+      ]),
+    onError: () => {
+      // Im lặng có chủ đích — xem docblock của useInvalidateInboundMutation.
+    },
+  });
 }
 
 export function usePostInboundReceipt() {

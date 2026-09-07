@@ -627,6 +627,36 @@ export const MESSAGES_EN: MessageTree = {
       resultValid: "Valid",
       resultRemoved: "Removed",
       removeAction: "Remove code",
+      colInfo: "SKU details",
+      infoComplete: "Details complete",
+      infoIncomplete: "Details missing",
+      fillInfo: "Add details",
+      infoBlockedTitle: "{count} new SKU(s) still missing details",
+      infoBlockedBody:
+        "Use Add details on each row to set a name and unit. Posting the receipt unlocks once every SKU has its details.",
+    },
+    skuInfo: {
+      title: "Add details for the new SKU",
+      intro:
+        "SKU {code} was created automatically during scanning, so it only has a code. Give it a readable name and a unit before posting the receipt.",
+      fieldCode: "SKU code",
+      fieldName: "SKU name",
+      fieldUnit: "Unit",
+      fieldBrand: "Brand",
+      fieldCategory: "Category",
+      fieldModel: "Model series",
+      fieldPowerSource: "Power source",
+      namePlaceholder: "e.g. DCPB16 hammer drill",
+      unitPlaceholder: "e.g. Piece",
+      optionalHint:
+        "The four fields below are optional — leave them empty when the catalogue has no matching entry; the catalogue owner completes them later on the SKU list screen.",
+      errName: "Enter a readable SKU name.",
+      errNameSameAsCode: "The SKU name must differ from the SKU code.",
+      errUnit: "Enter a unit.",
+      submit: "Save details",
+      saving: "Saving...",
+      saved: "Details added for SKU {code}.",
+      saveError: "Could not save the SKU details.",
     },
     placeholder: {
       scanModal:
@@ -1673,6 +1703,7 @@ export const MESSAGES_EN: MessageTree = {
       colCategory: "Category",
       colMinStock: "Minimum threshold",
       colMaxStock: "Maximum threshold",
+      colImage: "Photo",
       colPvApp: "Zoning app",
       publishedBadge: "Visible",
       unpublishedBadge: "Not visible",
@@ -4106,10 +4137,7 @@ export const MESSAGES_EN: MessageTree = {
     actionFilterPlaceholder: "Action: All",
     actorFilterAria: "Filter by operator",
     actorFilterPlaceholder: "User: All",
-    fromLabel: "From",
-    fromAria: "Filter from",
-    toLabel: "To",
-    toAria: "Filter to",
+    rangeAria: "Filter by date range",
     pageSizeAria: "Rows per page",
     total: "{count} records in total",
     selected: "{count} selected",
@@ -4127,6 +4155,9 @@ export const MESSAGES_EN: MessageTree = {
     fieldRecordId: "Record id",
     copyIpAria: "Copy the IP address",
     beforeData: "Data before the change",
+    afterData: "Data after the change",
+    showRawData: "Show raw data",
+    hideRawData: "Hide raw data",
   },
   shared: {
     table: {
@@ -4258,6 +4289,10 @@ export const MESSAGES_EN: MessageTree = {
     },
     skuLink: {
       openTitle: "View product {code} in the product viewer app",
+    },
+    skuThumbnail: {
+      alt: "Product photo",
+      noImage: "No product photo yet",
     },
     status: {
       active: "Active",
@@ -4524,12 +4559,7 @@ export const MESSAGES_EN: MessageTree = {
       switchError: "Unable to switch warehouse scope, please try again.",
     },
     validation: {
-      identifierRequired: "Please enter your email or username",
-      identifierTooLong: "Email or username is too long",
       emailInvalid: "Invalid email",
-      usernameTooLong: "Username must not exceed 100 characters",
-      usernameFormat:
-        "Username may only contain letters, digits, dots, underscores or hyphens",
       passwordRequired: "Please enter your password",
       emailRequired: "Please enter your email",
       otpLength: "The OTP must be exactly 6 digits",
@@ -4567,6 +4597,10 @@ export const MESSAGES_EN: MessageTree = {
       statNoImage: "{count} products without an image",
       addAction: "Add product",
       editAction: "Edit product",
+      viewTablistAria: "List view mode",
+      viewTable: "List",
+      viewCard: "Cards",
+      colImage: "Image",
       publishedAll: "All visibility states",
       cardNoImage: "No image yet",
       cardImageBroken: "Image failed to load",

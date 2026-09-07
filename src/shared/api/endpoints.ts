@@ -62,6 +62,13 @@ export const API_ENDPOINTS = {
   INBOUND_REVERSE: "/inbound-documents/:id/reversals",
   /** ERD bảng 28: gỡ mã quét sai trước Post (status ACTIVE -> REMOVED). */
   INBOUND_UNSCAN: "/inbound-documents/:id/unscan",
+  /**
+   * Bổ sung thông tin cho SKU MỚI ngay trong phiếu nhập (tên + đơn vị tính).
+   * Không dùng PATCH /skus/:id vì route đó đòi quyền sku.manage mà vai Nhân
+   * viên kho không có; endpoint này gác inbound.scan và chỉ đụng được SKU nằm
+   * trên dòng của chính phiếu đang quét.
+   */
+  INBOUND_LINE_SKU: "/inbound-documents/:id/lines/:lineId/sku",
   /** Annex D SCR-IN-01: đọc lại bảng mã đã quét sau khi tải lại trang. */
   INBOUND_SCAN_ENTRIES: "/inbound-documents/:id/scan-entries",
   /**

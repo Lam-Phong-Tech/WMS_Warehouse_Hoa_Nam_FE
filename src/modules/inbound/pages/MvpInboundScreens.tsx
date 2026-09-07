@@ -54,6 +54,7 @@ import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
+import { InboundSkuInfoModal } from "@/modules/inbound/components/InboundSkuInfoModal";
 import type { SkuRecord } from "@/modules/master-data/types/mvp-master.types";
 import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import type { ScanClassifyResponse } from "@/modules/scan/types";
@@ -458,6 +459,16 @@ export function InboundScanModal({
   const totalScanned =
     detail?.lines.reduce((sum, line) => sum + line.scanned, 0) ?? 0;
   const hasScanned = totalScanned > 0;
+  const [skuInfoLine, setSkuInfoLine] = useState<InboundLine | null>(null);
+  // Dòng có SKU chưa đủ thông tin. Cờ do BE tính (SkuInboundInfoRule) theo ĐÚNG
+  // luật mà guard Post Receipt dùng, FE chỉ đọc lại để báo sớm và khoá nút —
+  // không tự suy từ danh sách SKU tải sẵn (danh sách đó giới hạn per_page nên
+  // thiếu đúng những SKU vừa sinh ra lúc quét).
+  const linesMissingInfo = useMemo(
+    () => (detail?.lines ?? []).filter((line) => !line.infoComplete),
+    [detail?.lines],
+  );
+  const hasMissingSkuInfo = linesMissingInfo.length > 0;
   const isMutable =
     detail?.document.status === "DRAFT" ||
     detail?.document.status === "SCANNING";
@@ -819,6 +830,7 @@ export function InboundScanModal({
       scanVersion === null ||
       !hasScanned ||
       !canPost ||
+      hasMissingSkuInfo ||
       detail.document.status !== "SCANNING"
     )
       return;
@@ -959,6 +971,40 @@ export function InboundScanModal({
       width: 140,
       align: "right",
       render: (line) => <strong>{line.scanned}</strong>,
+    },
+    {
+      key: "info",
+      // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
+      truncate: 0,
+      header: t("inbound.detail.colInfo"),
+      width: 210,
+      render: (line) =>
+        line.infoComplete ? (
+          <UiStatusBadge
+            tone="success"
+            label={t("inbound.detail.infoComplete")}
+          />
+        ) : (
+          <Stack
+            direction="row"
+            sx={{ alignItems: "center", gap: 1, flexWrap: "wrap" }}
+          >
+            <UiStatusBadge
+              tone="warning"
+              sx={{ flexShrink: 0 }}
+              label={t("inbound.detail.infoIncomplete")}
+            />
+            {canScan && isMutable ? (
+              <ActionButton
+                kind="edit"
+                disabled={working}
+                onClick={() => setSkuInfoLine(line)}
+              >
+                {t("inbound.detail.fillInfo")}
+              </ActionButton>
+            ) : null}
+          </Stack>
+        ),
     },
     // Ghi chú migrate (Part 4): antd Table cũ có expandable row liệt kê chip
     // mã đã quét theo dòng — ResponsiveDataTable không có expandable row;
@@ -1165,6 +1211,7 @@ export function InboundScanModal({
                 disabled={
                   !canPost ||
                   !hasScanned ||
+                  hasMissingSkuInfo ||
                   detail.document.status !== "SCANNING" ||
                   postMutation.isPending
                 }
@@ -1497,6 +1544,20 @@ export function InboundScanModal({
                 <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
                   {t("inbound.detail.receivedTitle")}
                 </Box>
+                {hasMissingSkuInfo ? (
+                  <Box sx={{ mb: 2 }}>
+                    <UiAlert tone="warning">
+                      <Box sx={{ fontWeight: 700 }}>
+                        {t("inbound.detail.infoBlockedTitle", {
+                          count: linesMissingInfo.length,
+                        })}
+                      </Box>
+                      <Box sx={{ typography: "body2" }}>
+                        {t("inbound.detail.infoBlockedBody")}
+                      </Box>
+                    </UiAlert>
+                  </Box>
+                ) : null}
                 <ResponsiveDataTable<InboundLine>
                   columns={lineColumns}
                   rows={detail.lines}
@@ -1772,6 +1833,18 @@ export function InboundScanModal({
           />
         </Stack>
       </UiDialog>
+
+      {skuInfoLine ? (
+        <InboundSkuInfoModal
+          documentId={documentId}
+          line={skuInfoLine}
+          onClose={() => setSkuInfoLine(null)}
+          onSaved={() => {
+            setSkuInfoLine(null);
+            void detailQuery.refetch();
+          }}
+        />
+      ) : null}
 
       {confirmDialog}
     </>

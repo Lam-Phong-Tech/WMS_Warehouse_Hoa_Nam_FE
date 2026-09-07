@@ -12,6 +12,8 @@ import {
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import type { ApiMeta } from "@/shared/types/api-response";
 import type {
+  CompleteInboundLineSkuPayload,
+  CompleteInboundLineSkuResult,
   ComponentLineEnsureResult,
   CreateInboundPayload,
   InboundCartonCompleteResult,
@@ -170,6 +172,15 @@ function normalizeLine(
     posted,
     remaining: Math.max(expected - scanned, 0),
     validation: scanned <= expected ? "VALID" : "INVALID",
+    // Mặc định COI LÀ ĐỦ khi BE không trả cờ (bản BE cũ, hoặc payload replay
+    // dựng lại từ idempotency store). Mặc định ngược lại sẽ khoá nút Ghi nhận
+    // của mọi phiếu chỉ vì thiếu một trường mới — chốt chặn thật nằm ở BE
+    // (422 INBOUND_SKU_INFO_INCOMPLETE), FE chỉ báo sớm.
+    productUnit: text(row.product_unit ?? row.unit),
+    infoComplete: row.product_info_complete !== false,
+    missingInfo: Array.isArray(row.product_missing_info)
+      ? (row.product_missing_info as unknown[]).map((field) => text(field))
+      : [],
     selected: false,
     note: text(row.note) || undefined,
   };
@@ -429,6 +440,54 @@ export async function registerInboundBox(
       box_code: requireNonEmptyString(boxCode, "box_code"),
     },
   );
+}
+
+/**
+ * Bổ sung thông tin cho SKU MỚI của một dòng phiếu nhập (tên đọc được + đơn vị
+ * tính bắt buộc; bốn danh mục tuỳ chọn). Đây là điều kiện để mở khoá nút Ghi
+ * nhận nhập kho — BE chặn cứng cùng luật ở post-receipt.
+ */
+export async function completeInboundLineSku(
+  documentId: string,
+  lineId: string,
+  payload: CompleteInboundLineSkuPayload,
+): Promise<CompleteInboundLineSkuResult> {
+  assertWmsActionPermission(
+    WMS_ACTION_PERMISSIONS.SCAN_INBOUND,
+    "complete inbound line sku info",
+  );
+  const path = API_ENDPOINTS.INBOUND_LINE_SKU.replace(
+    ":id",
+    requireNonEmptyString(documentId, "documentId"),
+  ).replace(":lineId", requireNonEmptyString(lineId, "lineId"));
+  const body: RawRecord = {
+    sku_name: requireNonEmptyString(payload.skuName.trim(), "sku_name"),
+    unit: requireNonEmptyString(payload.unit.trim(), "unit"),
+  };
+  // Bốn danh mục CHỈ gửi khi người dùng có đụng tới: BE phân biệt "vắng khoá =
+  // không đổi" với "null = xoá về trống", nên gửi thừa sẽ vô tình xoá dữ liệu
+  // mà người quản lý danh mục đã điền trước đó.
+  if (payload.brandId !== undefined) body.brand_id = payload.brandId || null;
+  if (payload.categoryId !== undefined)
+    body.category_id = payload.categoryId || null;
+  if (payload.modelId !== undefined) body.model_id = payload.modelId || null;
+  if (payload.powerSourceId !== undefined)
+    body.power_source_id = payload.powerSourceId || null;
+
+  const response = await http.patch<RawRecord>(path, body);
+
+  return {
+    documentId: text(response.document_id, documentId),
+    lineId: text(response.line_id, lineId),
+    skuId: text(response.sku_id),
+    skuCode: text(response.sku_code),
+    skuName: text(response.sku_name),
+    unit: text(response.unit),
+    infoComplete: response.info_complete !== false,
+    missingInfo: Array.isArray(response.missing_info)
+      ? (response.missing_info as unknown[]).map((field) => text(field))
+      : [],
+  };
 }
 
 export async function scanInboundDocument(
