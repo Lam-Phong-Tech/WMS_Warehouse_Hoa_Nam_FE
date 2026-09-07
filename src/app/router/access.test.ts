@@ -71,14 +71,18 @@ describe("WMS route access contract", () => {
       ],
       // WWHN-242: REV-00 là màn đọc, BE cấp GET reversal-documents bằng inventory.view.
       [ROUTES.REVERSE]: ["inventory.view", "inventory.reversal.post"],
-      [ROUTES.REPORTS_INVENTORY_FLOW]: ["report.view"],
-      [ROUTES.REPORTS_STOCK_RECONCILE]: ["report.view"],
-      [ROUTES.REPORTS_TRACEABILITY]: ["report.view"],
-      [ROUTES.REPORTS_IMPORT_QUALITY]: ["report.view"],
-      [ROUTES.REPORTS_PACKING_LABEL]: ["report.view"],
-      [ROUTES.REPORTS_WARRANTY]: ["report.view"],
-      [ROUTES.REPORTS_RECIPIENT]: ["report.view"],
-      [ROUTES.REPORTS_PENDING_EVIDENCE]: ["report.view"],
+      // BA 07/09/2026: mỗi màn báo cáo một mã riêng, thay `report.view` dùng chung.
+      // `report.view` KHÔNG được có mặt ở đây — resolver so bằng phép HOẶC nên thêm
+      // vào là mở lại cả 9 màn cho mọi vai có nó (xem vòng lặp bên dưới).
+      [ROUTES.REPORTS_INVENTORY_FLOW]: ["report.inventory_flow.view"],
+      [ROUTES.REPORTS_OUTBOUND_FLOW]: ["report.outbound_flow.view"],
+      [ROUTES.REPORTS_STOCK_RECONCILE]: ["report.stock_reconcile.view"],
+      [ROUTES.REPORTS_TRACEABILITY]: ["report.traceability.view"],
+      [ROUTES.REPORTS_IMPORT_QUALITY]: ["report.import_quality.view"],
+      [ROUTES.REPORTS_PACKING_LABEL]: ["report.packing_label.view"],
+      [ROUTES.REPORTS_WARRANTY]: ["report.warranty.view"],
+      [ROUTES.REPORTS_RECIPIENT]: ["report.recipient.view"],
+      [ROUTES.REPORTS_PENDING_EVIDENCE]: ["report.io_history.view"],
       [ROUTES.AUDIT_LOGS]: "audit_log.view",
       [ROUTES.PROFILE]: undefined,
     });
@@ -94,6 +98,7 @@ describe("WMS route access contract", () => {
     ).toEqual([]);
     for (const path of [
       ROUTES.REPORTS_INVENTORY_FLOW,
+      ROUTES.REPORTS_OUTBOUND_FLOW,
       ROUTES.REPORTS_STOCK_RECONCILE,
       ROUTES.REPORTS_TRACEABILITY,
       ROUTES.REPORTS_IMPORT_QUALITY,
@@ -103,6 +108,10 @@ describe("WMS route access contract", () => {
       ROUTES.REPORTS_PENDING_EVIDENCE,
     ]) {
       expect(ROUTE_PERMISSIONS[path]).not.toContain("report.export");
+      // Hàng rào của đợt tách quyền theo màn: `report.view` lọt vào bất kỳ mảng nào
+      // ở trên là vô hiệu hoá toàn bộ phân quyền báo cáo, vì mọi vai đọc được báo
+      // cáo đều giữ mã đó. Bắt tại đây thay vì đợi phát hiện trên môi trường thật.
+      expect(ROUTE_PERMISSIONS[path]).not.toContain("report.view");
     }
   });
 

@@ -139,7 +139,10 @@ export const WWHN_202_READ_SURFACES: readonly Wwhn202ReadSurface[] = [
     surface: "reconcile",
     endpointKey: "INVENTORY_RECONCILIATION",
     path: "/reports/inventory-reconciliation",
-    permission: "report.view",
+    // 07/09/2026: BE đổi từ `report.view` sang mã riêng của màn RPT-02 khi BA tách
+    // quyền xem báo cáo theo từng màn (endpoint này chỉ phục vụ Tồn kho & đối soát).
+    // Pin đối chiếu với Wwhn202OutboundBalanceEvidenceTest::READ_SURFACE_PERMISSIONS.
+    permission: "report.stock_reconcile.view",
     serviceExport: "fetchInventoryReconciliation",
     serviceModule: "src/modules/inventory/services/inventoryService.ts",
   },

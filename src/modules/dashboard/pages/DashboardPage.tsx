@@ -98,6 +98,21 @@ export default function DashboardPage() {
 
   const canViewReport =
     !isProfileLoaded || isSuperAdmin || permissionCodes.includes("report.view");
+  /**
+   * Mọi nội dung BẢO HÀNH của màn tổng quan (thẻ "Hồ sơ bảo hành cần theo dõi",
+   * dòng việc P1 "Hồ sơ bảo hành quá hạn", tín hiệu cảnh báo quá hạn) chỉ hiện
+   * cho vai đọc được hồ sơ bảo hành. Nhân viên kho KHÔNG có `warranty.view`:
+   * cả ba khối đều dẫn sang /warranty — màn mà RequirePermission chặn — nên với
+   * họ đó là số liệu không tra ngược được và một nút bấm vào là 403.
+   *
+   * `/reports/dashboard-overview` vẫn trả khối warranty cho mọi vai có
+   * `report.view`; đây là gate HIỂN THỊ, không phải gate dữ liệu.
+   */
+  const canViewWarranty =
+    !isProfileLoaded ||
+    isSuperAdmin ||
+    permissionCodes.includes("warranty.view") ||
+    permissionCodes.includes("warranty.manage");
 
   /**
    * Kỳ mặc định là "7 ngày qua", KHÔNG phải "Hôm nay": kho có những ngày
@@ -353,15 +368,19 @@ export default function DashboardPage() {
         count: source.inventory_mismatch,
         route: ROUTES.INVENTORY,
       },
-      {
-        id: "DASH-KPI-15",
-        severity: "P1",
-        title: t("dashboard.issue.warrantyTitle"),
-        detail: t("dashboard.issue.warrantyDetail", { count: overdue }),
-        technical: "Active / overdue",
-        count: source.warranty_overdue,
-        route: ROUTES.WARRANTY,
-      },
+      ...(canViewWarranty
+        ? [
+            {
+              id: "DASH-KPI-15",
+              severity: "P1" as const,
+              title: t("dashboard.issue.warrantyTitle"),
+              detail: t("dashboard.issue.warrantyDetail", { count: overdue }),
+              technical: "Active / overdue",
+              count: source.warranty_overdue,
+              route: ROUTES.WARRANTY,
+            },
+          ]
+        : []),
       {
         id: "DASH-KPI-13",
         severity: "P1",
@@ -392,7 +411,7 @@ export default function DashboardPage() {
     ];
     // Demo chỉ liệt kê việc CÓ số lượng — không dựng dòng rỗng cho vui mắt.
     return rows.filter((row) => row.count > 0);
-  }, [overviewData, t]);
+  }, [overviewData, canViewWarranty, t]);
 
   const alerts = useMemo<AlertRow[]>(() => {
     if (!overviewData) return [];
@@ -406,7 +425,7 @@ export default function DashboardPage() {
         route: ROUTES.INVENTORY,
       });
     const overdue = overviewData.warranty.overdue_count;
-    if (overdue > 0)
+    if (overdue > 0 && canViewWarranty)
       rows.push({
         title: t("dashboard.signal.warrantyTitle", { count: overdue }),
         copy: t("dashboard.signal.warrantyCopy", {
@@ -424,7 +443,7 @@ export default function DashboardPage() {
         route: ROUTES.INVENTORY,
       });
     return rows;
-  }, [overviewData, quick.data, t]);
+  }, [overviewData, quick.data, canViewWarranty, t]);
 
   const lastUpdatedAt = overview.dataUpdatedAt
     ? dayjs(overview.dataUpdatedAt)
@@ -607,164 +626,181 @@ export default function DashboardPage() {
           {announcement}
         </div>
 
-        <OverviewFilters
-          period={period}
-          onPeriodChange={changePeriod}
-          rangeLabel={rangeLabel}
-          custom={custom}
-          onCustomChange={changeCustom}
-          dateError={dateError}
-          type={type}
-          onTypeChange={changeType}
-          lastUpdatedLabel={lastUpdatedLabel}
-          refreshing={busy || manualRefresh}
-          onRefresh={refreshAll}
-        />
+        {/*
+          Không có quyền đọc số liệu -> BỎ HẲN phần thân, không render thẻ khoá
+          "Không có quyền xem" nữa (yêu cầu người dùng 07/09/2026).
+          Trước đây mỗi widget tự vẽ một OverviewStateBox kind="forbidden", nên màn
+          hình đầy thẻ khoá + banner đỏ — nhiễu mà không cho người xem thêm hành động
+          nào. Bộ lọc kỳ cũng ẩn theo vì nó chỉ tồn tại để đổi tham số truy vấn.
 
-        {pageAlert ? (
-          <div
-            className={`page-alert ${pageAlert.tone}`}
-            role="status"
-            aria-live="polite"
-          >
-            {pageAlert.copy}
-          </div>
-        ) : null}
+          Chip trạng thái ở header vẫn giữ badge "forbidden", đó là chỗ DUY NHẤT còn
+          nói ra lý do màn trống — bỏ nốt thì không phân biệt được với lúc mất mạng.
+        */}
+        {forbidden ? null : (
+          <>
+            <OverviewFilters
+              period={period}
+              onPeriodChange={changePeriod}
+              rangeLabel={rangeLabel}
+              custom={custom}
+              onCustomChange={changeCustom}
+              dateError={dateError}
+              type={type}
+              onTypeChange={changeType}
+              lastUpdatedLabel={lastUpdatedLabel}
+              refreshing={busy || manualRefresh}
+              onRefresh={refreshAll}
+            />
 
-        <section aria-labelledby="quick-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("dashboard.section.quickEyebrow")}
-              </span>
-              <h2 id="quick-title">{t("dashboard.section.quickTitle")}</h2>
-            </div>
-            <span className="section-meta">
-              {t("dashboard.section.quickMeta", {
-                period: periodName,
-                range: chartCutoffLabel,
-              })}
-            </span>
-          </div>
-          <OverviewKpiGrid
-            cards={kpiCards}
-            periodName={periodName}
-            loading={loading}
-            failed={failed}
-            forbidden={forbidden}
-          />
-        </section>
+            {pageAlert ? (
+              <div
+                className={`page-alert ${pageAlert.tone}`}
+                role="status"
+                aria-live="polite"
+              >
+                {pageAlert.copy}
+              </div>
+            ) : null}
 
-        <OverviewOperations
-          issues={issues}
-          alerts={alerts}
-          loading={loading}
-          failed={failed}
-          forbidden={forbidden}
-          onNavigate={(route) => navigate(route)}
-        />
+            <section aria-labelledby="quick-title">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">
+                    {t("dashboard.section.quickEyebrow")}
+                  </span>
+                  <h2 id="quick-title">{t("dashboard.section.quickTitle")}</h2>
+                </div>
+                <span className="section-meta">
+                  {t("dashboard.section.quickMeta", {
+                    period: periodName,
+                    range: chartCutoffLabel,
+                  })}
+                </span>
+              </div>
+              <OverviewKpiGrid
+                cards={kpiCards}
+                periodName={periodName}
+                loading={loading}
+                failed={failed}
+                forbidden={forbidden}
+              />
+            </section>
 
-        <section aria-labelledby="reconcile-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("dashboard.section.reconcileEyebrow")}
-              </span>
-              <h2 id="reconcile-title">
-                {t("dashboard.section.reconcileTitle")}
-              </h2>
-            </div>
-            <span className="section-meta">
-              {t("dashboard.section.reconcileMeta", { range: cutoffLabel })}
-            </span>
-          </div>
-          <OverviewEquation
-            totals={equation}
-            loading={enabled && xnt.isLoading}
-            failed={xnt.isError}
-            forbidden={forbidden}
-          />
-        </section>
-
-        <section
-          aria-labelledby="analysis-title"
-          data-lazy
-          ref={revealAnalysis}
-        >
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("dashboard.section.analysisEyebrow")}
-              </span>
-              <h2 id="analysis-title">
-                {t("dashboard.section.analysisTitle")}
-              </h2>
-            </div>
-            <span className="section-meta">
-              {t("dashboard.section.analysisMeta")}
-            </span>
-          </div>
-          <div className="analysis-grid">
-            <OverviewFlowChart
-              rows={chartFlowRows}
+            <OverviewOperations
+              issues={issues}
+              alerts={alerts}
               loading={loading}
               failed={failed}
               forbidden={forbidden}
+              onNavigate={(route) => navigate(route)}
             />
-            <OverviewStockMix
-              rows={stockMix}
-              loading={loading}
-              failed={failed}
-              forbidden={forbidden}
-            />
-            <OverviewComposition
-              rows={composition}
-              loading={loading}
-              failed={failed}
-              forbidden={forbidden}
-            />
-            <OverviewThreshold
-              belowMin={quick.data?.below_min_stock_count ?? null}
-              aboveMax={quick.data?.above_max_stock_count ?? null}
-              loading={enabled && quick.isLoading}
-              failed={quick.isError}
-              forbidden={forbidden}
-            />
-          </div>
-        </section>
 
-        <section
-          className="insight-section"
-          aria-labelledby="insight-title"
-          data-lazy
-          ref={revealInsight}
-        >
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("dashboard.section.insightEyebrow")}
-              </span>
-              <h2 id="insight-title">{t("dashboard.section.insightTitle")}</h2>
-            </div>
-            <span className="section-meta">
-              {t("dashboard.section.insightMeta")}
-            </span>
-          </div>
-          <OverviewInsights
-            warranty={{
-              active: countActiveWarranty(overviewData),
-              overdue: overviewData?.warranty.overdue_count ?? 0,
-              oldestDays: oldestOverdueDays(overviewData),
-            }}
-            topSkus={topSkus}
-            signals={signals}
-            periodLabel={periodName}
-            loading={loading}
-            failed={failed}
-            forbidden={forbidden}
-            onNavigate={(route) => navigate(route)}
-          />
-        </section>
+            <section aria-labelledby="reconcile-title">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">
+                    {t("dashboard.section.reconcileEyebrow")}
+                  </span>
+                  <h2 id="reconcile-title">
+                    {t("dashboard.section.reconcileTitle")}
+                  </h2>
+                </div>
+                <span className="section-meta">
+                  {t("dashboard.section.reconcileMeta", { range: cutoffLabel })}
+                </span>
+              </div>
+              <OverviewEquation
+                totals={equation}
+                loading={enabled && xnt.isLoading}
+                failed={xnt.isError}
+                forbidden={forbidden}
+              />
+            </section>
+
+            <section
+              aria-labelledby="analysis-title"
+              data-lazy
+              ref={revealAnalysis}
+            >
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">
+                    {t("dashboard.section.analysisEyebrow")}
+                  </span>
+                  <h2 id="analysis-title">
+                    {t("dashboard.section.analysisTitle")}
+                  </h2>
+                </div>
+                <span className="section-meta">
+                  {t("dashboard.section.analysisMeta")}
+                </span>
+              </div>
+              <div className="analysis-grid">
+                <OverviewFlowChart
+                  rows={chartFlowRows}
+                  loading={loading}
+                  failed={failed}
+                  forbidden={forbidden}
+                />
+                <OverviewStockMix
+                  rows={stockMix}
+                  loading={loading}
+                  failed={failed}
+                  forbidden={forbidden}
+                />
+                <OverviewComposition
+                  rows={composition}
+                  loading={loading}
+                  failed={failed}
+                  forbidden={forbidden}
+                />
+                <OverviewThreshold
+                  belowMin={quick.data?.below_min_stock_count ?? null}
+                  aboveMax={quick.data?.above_max_stock_count ?? null}
+                  loading={enabled && quick.isLoading}
+                  failed={quick.isError}
+                  forbidden={forbidden}
+                />
+              </div>
+            </section>
+
+            <section
+              className="insight-section"
+              aria-labelledby="insight-title"
+              data-lazy
+              ref={revealInsight}
+            >
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">
+                    {t("dashboard.section.insightEyebrow")}
+                  </span>
+                  <h2 id="insight-title">
+                    {t("dashboard.section.insightTitle")}
+                  </h2>
+                </div>
+                <span className="section-meta">
+                  {t("dashboard.section.insightMeta")}
+                </span>
+              </div>
+              <OverviewInsights
+                showWarranty={canViewWarranty}
+                warranty={{
+                  active: countActiveWarranty(overviewData),
+                  overdue: overviewData?.warranty.overdue_count ?? 0,
+                  oldestDays: oldestOverdueDays(overviewData),
+                }}
+                topSkus={topSkus}
+                signals={signals}
+                periodLabel={periodName}
+                loading={loading}
+                failed={failed}
+                forbidden={forbidden}
+                onNavigate={(route) => navigate(route)}
+              />
+            </section>
+          </>
+        )}
       </div>
     </div>
   );

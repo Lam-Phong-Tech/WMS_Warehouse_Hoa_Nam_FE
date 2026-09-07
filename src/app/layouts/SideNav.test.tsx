@@ -25,6 +25,19 @@ function resetAuthStore() {
   });
 }
 
+/**
+ * Tra mục RPT-01 theo `data-nav-path` chứ KHÔNG theo nhãn.
+ *
+ * Đợt tách menu Báo cáo 06/09 đổi nhãn RPT-01 thành "Nhập kho" — trùng đúng tên
+ * NHÓM menu "Nhập kho", nên `getByText("Nhập kho")` khớp hai phần tử khác nhau và
+ * assert theo nhãn vừa mơ hồ vừa vỡ mỗi lần đổi tên hiển thị.
+ */
+function reportsInventoryFlowItem(): HTMLElement | null {
+  return document.querySelector<HTMLElement>(
+    `[data-nav-path="${ROUTES.REPORTS_INVENTORY_FLOW}"]`,
+  );
+}
+
 function renderSideNav(initialPath: string = ROUTES.INBOUND) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
@@ -45,7 +58,11 @@ describe("SideNav RBAC filtering", () => {
       // fixture cấp nó sẽ không mở được mục menu nào nữa.
       "outbound.view",
       "inventory.view",
+      // BA 07/09/2026: `report.view` là quyền ĐỌC dữ liệu, tự nó KHÔNG còn mở màn báo
+      // cáo nào. Cửa vào RPT-01 là `report.inventory_flow.view` — fixture cấp cả hai,
+      // đúng như BE seed cho một vai được xem báo cáo.
       "report.view",
+      "report.inventory_flow.view",
     ]);
 
     renderSideNav();
@@ -54,7 +71,16 @@ describe("SideNav RBAC filtering", () => {
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.getByText("Danh sách phiếu xuất")).toBeInTheDocument();
     expect(screen.getByText("Tra cứu tồn & đối soát")).toBeInTheDocument();
-    expect(screen.getByText("Báo cáo nhập kho")).toBeInTheDocument();
+    expect(reportsInventoryFlowItem()).not.toBeNull();
+  });
+
+  it("report.view một mình KHÔNG mở màn báo cáo nào (BA 07/09/2026)", () => {
+    // Hàng rào của đợt tách quyền: trước đây fixture này đủ để thấy cả 9 màn.
+    withPermissions(["inventory.view", "report.view"]);
+
+    renderSideNav();
+
+    expect(reportsInventoryFlowItem()).toBeNull();
   });
 
   it("hides routes and groups that the user cannot access", () => {
@@ -64,7 +90,7 @@ describe("SideNav RBAC filtering", () => {
 
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.queryByText("Danh sách bảo hành")).not.toBeInTheDocument();
-    expect(screen.queryByText("Báo cáo nhập kho")).not.toBeInTheDocument();
+    expect(reportsInventoryFlowItem()).toBeNull();
     expect(
       screen.queryByText("Danh sách linh kiện chờ xếp khay"),
     ).not.toBeInTheDocument();
@@ -146,7 +172,7 @@ describe("SideNav RBAC filtering", () => {
       screen.getByText("Danh sách linh kiện chờ xếp khay"),
     ).toBeInTheDocument();
     expect(screen.getByText("Danh sách bảo hành")).toBeInTheDocument();
-    expect(screen.getByText("Báo cáo nhập kho")).toBeInTheDocument();
+    expect(reportsInventoryFlowItem()).not.toBeNull();
   });
 });
 

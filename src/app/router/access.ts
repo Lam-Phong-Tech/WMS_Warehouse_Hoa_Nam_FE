@@ -86,17 +86,25 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     // REVERSAL_POST là fail-closed sai — khoá luôn màn danh sách của các vai chỉ đọc.
     // Hành vi ghi vẫn ẩn theo REVERSAL_POST bên trong REV-00/REV-01.
     [ROUTES.REVERSE]: [P.INVENTORY_VIEW, P.REVERSAL_POST],
-    // 8 trang báo cáo con dùng chung report.view (không phân quyền riêng
-    // từng trang — phản hồi người dùng 2026-08-30).
-    [ROUTES.REPORTS_INVENTORY_FLOW]: [P.REPORT_VIEW],
-    [ROUTES.REPORTS_OUTBOUND_FLOW]: [P.REPORT_VIEW],
-    [ROUTES.REPORTS_STOCK_RECONCILE]: [P.REPORT_VIEW],
-    [ROUTES.REPORTS_TRACEABILITY]: [P.REPORT_VIEW],
-    [ROUTES.REPORTS_IMPORT_QUALITY]: [P.REPORT_VIEW],
-    [ROUTES.REPORTS_PACKING_LABEL]: [P.REPORT_VIEW],
-    [ROUTES.REPORTS_WARRANTY]: [P.REPORT_VIEW],
-    [ROUTES.REPORTS_RECIPIENT]: [P.REPORT_VIEW],
-    [ROUTES.REPORTS_PENDING_EVIDENCE]: [P.REPORT_VIEW],
+    // BA 07/09/2026 — 9 trang báo cáo gate theo TỪNG MÀN, thay cho `report.view` dùng
+    // chung (quy ước cũ 2026-08-30). Lý do đổi: BA chốt Nhân viên kho chỉ thấy 6/9 màn
+    // và Nhân viên bảo hành 4/9, mà một mã chung chỉ diễn tả được "hết" hoặc "không".
+    //
+    // KHÔNG thêm P.REPORT_VIEW vào các mảng dưới đây: resolver so bằng
+    // `hasAnyWmsPermission` (phép HOẶC), nên chỉ cần một mã khớp là qua — kèm
+    // REPORT_VIEW vào sẽ mở lại cả 9 màn cho mọi vai có nó.
+    //
+    // `report.view` vẫn cần cho DỮ LIỆU (endpoint reports/* dùng chung + Dashboard) và
+    // được cấp song song ở BE; nó chỉ không còn là cửa vào màn nữa.
+    [ROUTES.REPORTS_INVENTORY_FLOW]: [P.REPORT_INVENTORY_FLOW_VIEW],
+    [ROUTES.REPORTS_OUTBOUND_FLOW]: [P.REPORT_OUTBOUND_FLOW_VIEW],
+    [ROUTES.REPORTS_STOCK_RECONCILE]: [P.REPORT_STOCK_RECONCILE_VIEW],
+    [ROUTES.REPORTS_TRACEABILITY]: [P.REPORT_TRACEABILITY_VIEW],
+    [ROUTES.REPORTS_IMPORT_QUALITY]: [P.REPORT_IMPORT_QUALITY_VIEW],
+    [ROUTES.REPORTS_PACKING_LABEL]: [P.REPORT_PACKING_LABEL_VIEW],
+    [ROUTES.REPORTS_WARRANTY]: [P.REPORT_WARRANTY_VIEW],
+    [ROUTES.REPORTS_RECIPIENT]: [P.REPORT_RECIPIENT_VIEW],
+    [ROUTES.REPORTS_PENDING_EVIDENCE]: [P.REPORT_IO_HISTORY_VIEW],
     // WWHN-252 · SCR-PV-ADM-01: hai quyền TÁCH BIỆT cùng mở được màn quản trị
     // App PV — pv.master.manage (ngành nghề/tag/rule/hồ sơ hiển thị) và
     // pv.publish (bật/tắt hiển thị công khai). Vào được màn không có nghĩa là

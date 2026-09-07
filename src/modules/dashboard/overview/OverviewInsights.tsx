@@ -35,6 +35,7 @@ function InsightShell({
 
 export function OverviewInsights({
   warranty,
+  showWarranty = true,
   topSkus,
   signals,
   periodLabel,
@@ -44,6 +45,13 @@ export function OverviewInsights({
   onNavigate,
 }: {
   warranty: WarrantyInsight;
+  /**
+   * false = người dùng KHÔNG có quyền bảo hành (`warranty.view`): bỏ hẳn thẻ
+   * "Hồ sơ bảo hành cần theo dõi" khỏi hàng, không hiện dạng rỗng/403. Thẻ này
+   * dẫn thẳng sang /warranty — vai không vào được màn đó thì thẻ chỉ là ngõ cụt.
+   * Hai thẻ còn lại giãn ra 6/12 cột nhờ modifier `insight-grid--two`.
+   */
+  showWarranty?: boolean;
   topSkus: TopSkuRow[];
   signals: SignalRow[];
   periodLabel: string;
@@ -53,6 +61,9 @@ export function OverviewInsights({
   onNavigate: (route: string) => void;
 }) {
   const t = useT();
+  const gridClass = showWarranty
+    ? "insight-grid"
+    : "insight-grid insight-grid--two";
   const blocked = loading || failed || forbidden;
   const blockedBox = loading ? (
     <OverviewStateBox
@@ -76,10 +87,12 @@ export function OverviewInsights({
 
   if (blocked) {
     return (
-      <div className="insight-grid">
-        <InsightShell className="insight-card-warranty">
-          {blockedBox}
-        </InsightShell>
+      <div className={gridClass}>
+        {showWarranty ? (
+          <InsightShell className="insight-card-warranty">
+            {blockedBox}
+          </InsightShell>
+        ) : null}
         <InsightShell className="insight-card-ranking">
           {blockedBox}
         </InsightShell>
@@ -93,67 +106,69 @@ export function OverviewInsights({
   const maxIssue = topSkus.reduce((max, row) => Math.max(max, row.value), 0);
 
   return (
-    <div className="insight-grid">
-      <InsightShell className="insight-card-warranty">
-        <header className="card-head insight-card-head">
-          <div className="insight-heading">
-            <span className="insight-icon" aria-hidden="true">
-              <DashIcon name="briefcase-medical" />
-            </span>
-            <div>
-              <span className="eyebrow">
-                {t("dashboard.insight.warrantyEyebrow")}
+    <div className={gridClass}>
+      {showWarranty ? (
+        <InsightShell className="insight-card-warranty">
+          <header className="card-head insight-card-head">
+            <div className="insight-heading">
+              <span className="insight-icon" aria-hidden="true">
+                <DashIcon name="briefcase-medical" />
               </span>
-              <h2>{t("dashboard.insight.warrantyTitle")}</h2>
-              <span className="card-subtitle">
-                {t("dashboard.insight.warrantySubtitle")}
-              </span>
+              <div>
+                <span className="eyebrow">
+                  {t("dashboard.insight.warrantyEyebrow")}
+                </span>
+                <h2>{t("dashboard.insight.warrantyTitle")}</h2>
+                <span className="card-subtitle">
+                  {t("dashboard.insight.warrantySubtitle")}
+                </span>
+              </div>
             </div>
-          </div>
-          <span
-            className={`chip ${warranty.overdue > 3 ? "chip-error" : "chip-warning"}`}
-          >
-            {t("dashboard.insight.warrantyChip", {
-              count: fmt(warranty.overdue),
-            })}
-          </span>
-        </header>
-        <div className="insight-body">
-          <div className="metric-pair">
-            <div className="metric-box">
-              <span>{t("dashboard.insight.active")}</span>
-              <strong>{fmt(warranty.active)}</strong>
-              <small>{t("dashboard.insight.activeNote")}</small>
-            </div>
-            <div className="metric-box metric-box-alert">
-              <span>{t("dashboard.insight.overdue")}</span>
-              <strong>{fmt(warranty.overdue)}</strong>
-              <small>{t("dashboard.insight.overdueNote")}</small>
-            </div>
-          </div>
-          <div className="insight-highlight">
-            <span className="insight-highlight-icon" aria-hidden="true">
-              <DashIcon name="file-clock" />
+            <span
+              className={`chip ${warranty.overdue > 3 ? "chip-error" : "chip-warning"}`}
+            >
+              {t("dashboard.insight.warrantyChip", {
+                count: fmt(warranty.overdue),
+              })}
             </span>
-            <div>
-              <span>{t("dashboard.insight.oldest")}</span>
-              <strong>
-                {t("dashboard.insight.oldestValue", {
-                  days: fmt(warranty.oldestDays),
-                })}
-              </strong>
+          </header>
+          <div className="insight-body">
+            <div className="metric-pair">
+              <div className="metric-box">
+                <span>{t("dashboard.insight.active")}</span>
+                <strong>{fmt(warranty.active)}</strong>
+                <small>{t("dashboard.insight.activeNote")}</small>
+              </div>
+              <div className="metric-box metric-box-alert">
+                <span>{t("dashboard.insight.overdue")}</span>
+                <strong>{fmt(warranty.overdue)}</strong>
+                <small>{t("dashboard.insight.overdueNote")}</small>
+              </div>
             </div>
+            <div className="insight-highlight">
+              <span className="insight-highlight-icon" aria-hidden="true">
+                <DashIcon name="file-clock" />
+              </span>
+              <div>
+                <span>{t("dashboard.insight.oldest")}</span>
+                <strong>
+                  {t("dashboard.insight.oldestValue", {
+                    days: fmt(warranty.oldestDays),
+                  })}
+                </strong>
+              </div>
+            </div>
+            <button
+              className="text-button insight-action"
+              type="button"
+              onClick={() => onNavigate("/warranty")}
+            >
+              <span>{t("dashboard.insight.warrantyAction")}</span>
+              <DashIcon name="arrow-right" />
+            </button>
           </div>
-          <button
-            className="text-button insight-action"
-            type="button"
-            onClick={() => onNavigate("/warranty")}
-          >
-            <span>{t("dashboard.insight.warrantyAction")}</span>
-            <DashIcon name="arrow-right" />
-          </button>
-        </div>
-      </InsightShell>
+        </InsightShell>
+      ) : null}
 
       <InsightShell className="insight-card-ranking">
         <header

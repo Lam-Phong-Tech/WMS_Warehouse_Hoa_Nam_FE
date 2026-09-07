@@ -1077,57 +1077,28 @@ vi.mock("@/modules/auth/utils/permission", async () => {
   };
 });
 
-vi.mock("@/app/router/access", () => ({
-  ROUTE_PERMISSIONS: {
-    "/dashboard": undefined,
-    "/system/users": ["iam.user.view", "iam.user.manage"],
-    "/system/users/new": ["iam.user.manage"],
-    "/system/roles": [
-      "iam.role.view",
-      "iam.role.manage",
-      "iam.permission.view",
-    ],
-    "/master-data/skus": ["sku.view", "sku.manage"],
-    "/master-data/skus/new": ["sku.manage"],
-    "/master-data/catalog": ["catalog.view", "catalog.manage"],
-    "/master-data/warehouse": ["warehouse.view", "warehouse.manage"],
-    "/master-data/agencies": ["agency.view", "agency.manage"],
-    "/master-data/agencies/new": ["agency.manage"],
-    "/master-data/defects": ["defect.view", "defect.manage"],
-    "/master-data/defects/new": ["defect.manage"],
-    "/scan": ["inventory.trace", "scan.classify"],
-    "/inbound": [
-      "inbound.view",
-      "inbound.create",
-      "inbound.scan",
-      "inbound.post",
-    ],
-    "/putaway": ["container.view", "container.manage"],
-    // "outbound.create" đã gỡ: BE thu hồi mã này 27/08 (không route nào đọc tới).
-    "/outbound": [
-      "outbound.view",
-      "outbound.scan",
-      "outbound.post",
-      "outbound.import",
-    ],
-    "/inventory": ["inventory.view"],
-    "/warranty": ["warranty.manage", "warranty.component_issue"],
-    "/warranty/component-issues": ["warranty.component_issue"],
-    "/reverse": ["inventory.reversal.post"],
-    "/reports/inventory-flow": ["report.view"],
-    "/reports/outbound-flow": ["report.view"],
-    "/reports/stock-reconcile": ["report.view"],
-    "/reports/traceability": ["report.view"],
-    "/reports/import-quality": ["report.view"],
-    "/reports/packing-label": ["report.view"],
-    "/reports/warranty": ["report.view"],
-    "/reports/recipient": ["report.view"],
-    "/reports/pending-evidence": ["report.view"],
-    // WWHN-252 · SCR-PV-ADM-01 (route NỘI BỘ). SCR-PV-01/02 là route công khai
-    // nên KHÔNG có mặt ở bảng này — chúng không đi qua RequirePermission.
-    "/pv-admin": ["pv.master.manage", "pv.publish"],
-    "/component-catalog": undefined,
-    "/profile": undefined,
+/**
+ * Mock `@/app/router/access` — BẢNG QUYỀN ROUTE LẤY TỪ FILE THẬT, không chép tay.
+ *
+ * Bản trước là một literal chép tay của ROUTE_PERMISSIONS. Vì mock này là TOÀN CỤC,
+ * mọi test đi qua nav/route (SideNav, RequirePermission, ...) đọc bản chép chứ không
+ * đọc file thật — nên sửa luật ở `src/app/router/access.ts` mà quên sửa ở đây thì cả
+ * bộ test vẫn XANH trong khi đang kiểm luật cũ. Bản chép đó đã trôi ở `/scan`,
+ * `/putaway`, `/reverse`, `/warranty` và toàn bộ nhóm `/reports/*`.
+ *
+ * Nay chỉ còn phần phụ là chép tay: các route của những module cũ (org-unit, HR,
+ * sales, ...) mà bộ test legacy còn dựng nhưng ROUTE_PERMISSIONS thật không khai —
+ * chúng không tồn tại trong app hiện tại nên không thể suy ra từ đâu.
+ */
+vi.mock("@/app/router/access", async () => {
+  const actual = await vi.importActual<typeof import("@/app/router/access")>(
+    "@/app/router/access",
+  );
+
+  const LEGACY_ROUTE_PERMISSIONS: Record<
+    string,
+    string | string[] | undefined
+  > = {
     "/org-units": "ORG_VIEW",
     "/departments": "DEPT_VIEW",
     "/employees": "EMP_VIEW",
@@ -1152,8 +1123,16 @@ vi.mock("@/app/router/access", () => ({
     "/sales-orders": "SALES_ORDER_VIEW",
     "/sales-channels": "SALES_CHANNEL_VIEW",
     "/audit-logs": "AUDIT_LOG_VIEW",
-  },
-}));
+  };
+
+  return {
+    ...actual,
+    ROUTE_PERMISSIONS: {
+      ...actual.ROUTE_PERMISSIONS,
+      ...LEGACY_ROUTE_PERMISSIONS,
+    },
+  };
+});
 
 vi.mock("@/shared/hooks/usePermission", async () => {
   const { useAuthStore } = await vi.importActual<

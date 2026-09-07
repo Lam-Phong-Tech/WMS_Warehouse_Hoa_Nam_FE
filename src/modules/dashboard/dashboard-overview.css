@@ -1809,6 +1809,11 @@
 .hn-dash .insight-grid > * {
   grid-column: span 4;
 }
+/* Vai không có quyền bảo hành chỉ còn 2 thẻ — giãn đều 6/12 thay vì để trống
+   một phần ba hàng. Xem prop showWarranty của OverviewInsights. */
+.hn-dash .insight-grid--two > * {
+  grid-column: span 6;
+}
 .hn-dash .insight-card {
   --insight-accent: var(--primary);
   --insight-soft: var(--primary-soft);

@@ -234,6 +234,65 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     expect(mockedGet).not.toHaveBeenCalled();
     // Không có widget nào lộ số liệu.
     expect(screen.queryByText("1.234")).not.toBeInTheDocument();
+
+    // Yêu cầu người dùng 07/09/2026: thiếu quyền thì BỎ HẲN widget, không hiện thẻ
+    // khoá "Không có quyền xem" lẫn banner đỏ. Bản trước vẽ 5 thẻ khoá + banner mà
+    // người xem không làm được gì với chúng.
+    expect(screen.queryByText("Không có quyền xem")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/không có quyền report\.view/i),
+    ).not.toBeInTheDocument();
+    // Cả tiêu đề khối lẫn bộ lọc kỳ đều ẩn theo — bỏ widget mà giữ tiêu đề thì còn
+    // trơ lại mấy dòng heading rỗng.
+    expect(screen.queryByText("Tổng quan nhanh")).not.toBeInTheDocument();
+    // Chip trạng thái ở header GIỮ LẠI: đó là chỗ duy nhất còn nói ra lý do màn
+    // trống, bỏ nốt thì không phân biệt được với lúc mất mạng.
+    expect(screen.getByText("Giới hạn quyền")).toBeInTheDocument();
+  });
+
+  it("thiếu warranty.view thì bỏ HẲN mọi nội dung bảo hành khỏi màn", async () => {
+    // Nhân viên kho: có report.view (số liệu vẫn đọc được) nhưng KHÔNG có
+    // warranty.view. Ba khối bảo hành của màn — thẻ "Hồ sơ bảo hành cần theo
+    // dõi", dòng việc P1 và tín hiệu quá hạn — đều dẫn sang /warranty, màn mà
+    // RequirePermission chặn. Giữ lại là bày số liệu kèm ba ngõ cụt 403.
+    useAuthStore.setState({
+      isProfileLoaded: true,
+      isSuperAdmin: false,
+      permissionCodes: ["report.view", "inventory.view"],
+    });
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard();
+
+    // Phần KHÔNG liên quan bảo hành vẫn đủ: đây là gate hiển thị, không phải
+    // gate dữ liệu — nếu màn trống thì test này vô nghĩa.
+    expect(await screen.findByText("Top 5 SKU xuất")).toBeInTheDocument();
+
+    expect(
+      document.querySelector(".insight-card-warranty"),
+    ).not.toBeInTheDocument();
+    // Hai thẻ còn lại phải giãn 6/12, nếu không hàng hụt mất một phần ba.
+    expect(document.querySelector(".insight-grid--two")).toBeInTheDocument();
+    // 137 là số ca quá hạn: nó xuất hiện ở CẢ dòng việc lẫn tín hiệu cảnh báo.
+    expect(screen.queryByText("137 quá hạn")).not.toBeInTheDocument();
+    expect(screen.queryByText(/hồ sơ bảo hành/i)).not.toBeInTheDocument();
+  });
+
+  it("có warranty.view thì giữ nguyên khối bảo hành", async () => {
+    useAuthStore.setState({
+      isProfileLoaded: true,
+      isSuperAdmin: false,
+      permissionCodes: ["report.view", "warranty.view"],
+    });
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard();
+
+    expect(await screen.findByText("137 quá hạn")).toBeInTheDocument();
+    expect(
+      document.querySelector(".insight-card-warranty"),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector(".insight-grid--two"),
+    ).not.toBeInTheDocument();
   });
 
   it("lỗi nguồn đọc chính thì không thay số liệu bằng 0", async () => {

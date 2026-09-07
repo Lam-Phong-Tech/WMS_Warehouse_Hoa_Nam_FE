@@ -94,6 +94,26 @@ export const WMS_PERMISSION_CATALOG = {
   REVERSAL_POST: "inventory.reversal.post",
   REPORT_VIEW: "report.view",
   REPORT_EXPORT: "report.export",
+  /**
+   * BA 07/09/2026 — quyền VÀO TỪNG MÀN báo cáo, tách khỏi `report.view` (giờ chỉ còn
+   * là quyền ĐỌC DỮ LIỆU: endpoint reports/* dùng chung + widget Dashboard).
+   *
+   * Lý do tách: BA yêu cầu Nhân viên kho thấy 6/9 màn và Nhân viên bảo hành thấy 4/9,
+   * mà một mã `report.view` duy nhất chỉ biểu diễn được "thấy hết" hoặc "không thấy".
+   *
+   * `ROUTE_PERMISSIONS` gate mỗi màn bằng CHỈ mã của màn đó — KHÔNG kèm REPORT_VIEW,
+   * vì `hasAnyWmsPermission` là phép HOẶC nên thêm vào sẽ mở lại cả 9 màn cho mọi vai
+   * có `report.view`, tức xoá sạch tác dụng của đợt tách này.
+   */
+  REPORT_INVENTORY_FLOW_VIEW: "report.inventory_flow.view",
+  REPORT_OUTBOUND_FLOW_VIEW: "report.outbound_flow.view",
+  REPORT_STOCK_RECONCILE_VIEW: "report.stock_reconcile.view",
+  REPORT_TRACEABILITY_VIEW: "report.traceability.view",
+  REPORT_IMPORT_QUALITY_VIEW: "report.import_quality.view",
+  REPORT_PACKING_LABEL_VIEW: "report.packing_label.view",
+  REPORT_WARRANTY_VIEW: "report.warranty.view",
+  REPORT_RECIPIENT_VIEW: "report.recipient.view",
+  REPORT_IO_HISTORY_VIEW: "report.io_history.view",
   /** BE canonical seed dùng lowercase `audit_log.view`. */
   AUDIT_LOG_VIEW: "audit_log.view",
 } as const;
