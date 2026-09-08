@@ -315,7 +315,11 @@ export default function WarrantyPage() {
             hợp lệ cho cả "warranty receive/search" nên WAR-01 có nút camera fallback. */}
           <UiTextField
             value={searchInput}
-            placeholder={t("warranty.list.searchPlaceholder")}
+            placeholder={t(
+              canViewPii
+                ? "warranty.list.searchPlaceholder"
+                : "warranty.list.searchPlaceholderNoPii",
+            )}
             slotProps={{
               htmlInput: { "aria-label": t("warranty.list.searchAria") },
               input: { inputRef: searchRef, autoFocus: true },

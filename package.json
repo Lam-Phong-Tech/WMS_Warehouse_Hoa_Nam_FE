@@ -102,7 +102,9 @@
     "cache:policy": "node scripts/check-query-cache-policy.mjs",
     "cache:policy:self-test": "node scripts/check-query-cache-policy.mjs --self-test",
     "vn-address:sync": "node scripts/gen-vn-address-data.mjs",
-    "vn-address:check": "node scripts/gen-vn-address-data.mjs --check"
+    "vn-address:check": "node scripts/gen-vn-address-data.mjs --check",
+    "sec:headers": "node scripts/check-frontend-security-headers.mjs",
+    "sec:headers:self-test": "node scripts/check-frontend-security-headers.mjs --self-test"
   },
   "resolutions": {
     "nanoid": "^3.3.18",

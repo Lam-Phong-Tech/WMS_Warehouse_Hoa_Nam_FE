@@ -1,3 +1,8 @@
+import {
+  resolveRealtimeScheme,
+  transportViolation,
+} from "@/shared/config/transport-security";
+
 type RuntimeEnvName = "local" | "dev" | "uat" | "prod" | "test";
 
 export interface RuntimeConfig {
@@ -41,6 +46,13 @@ const DEFAULT_API_TIMEOUT_MS = 10000;
 const DEFAULT_HEALTH_PATH = "/health";
 const CANONICAL_API_BASE_PATH = "/api/v1";
 
+/**
+ * Tên môi trường phải được phân giải TRƯỚC mọi URL, vì luật vận chuyển
+ * (WWHN-SEC-04) phụ thuộc nó. Khai báo hàm được hoisted nên đặt hằng này ở đây
+ * là hợp lệ dù `normalizeEnvName` nằm bên dưới.
+ */
+const ENV_NAME: RuntimeEnvName = normalizeEnvName(readEnv("VITE_APP_ENV"));
+
 function readEnv(key: string): string | undefined {
   const value = import.meta.env[key];
   return typeof value === "string" ? value.trim() : undefined;
@@ -53,19 +65,28 @@ function normalizeUrl(value: string | undefined, key: string): string {
     );
   }
 
+  let parsed: URL;
   try {
-    const parsed = new URL(value);
+    parsed = new URL(value);
     if (!["http:", "https:"].includes(parsed.protocol)) {
       throw new Error("URL must use http or https");
     }
     if (parsed.username || parsed.password) {
       throw new Error("URL must not embed credentials");
     }
-    return parsed.toString().replace(/\/$/, "");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid URL";
     throw new Error(`[env] ${key} is invalid: ${message}`, { cause: error });
   }
+
+  // WWHN-SEC-04 — chặn cứng http:// tới host thật. Đặt NGOÀI try/catch ở trên
+  // để câu lỗi đi thẳng tới người vận hành thay vì bị gói lại thành "is invalid".
+  const violation = transportViolation(parsed, key, ENV_NAME);
+  if (violation) {
+    throw new Error(`[env] ${violation}`);
+  }
+
+  return parsed.toString().replace(/\/$/, "");
 }
 
 function normalizeApiBaseUrl(value: string | undefined): string {
@@ -163,7 +184,7 @@ export function resolveApiUrl(baseUrl: string, relativePath: string): string {
 export const runtimeConfig: RuntimeConfig = {
   appTitle: readEnv("VITE_APP_TITLE") || "WMS Hoa Nam",
   appVersion: readEnv("VITE_APP_VERSION") || "0.0.0",
-  envName: normalizeEnvName(readEnv("VITE_APP_ENV")),
+  envName: ENV_NAME,
   apiBaseUrl: normalizeApiBaseUrl(readEnv("VITE_API_BASE_URL")),
   apiHealthPath: pathEnv(readEnv("VITE_API_HEALTH_PATH")),
   apiTimeoutMs: numberEnv(
@@ -191,12 +212,26 @@ export const runtimeConfig: RuntimeConfig = {
   ),
   // Không throw khi thiếu: bảng chuông thông báo tắt gracefully (không realtime,
   // FE vẫn chạy được) thay vì làm sập toàn bộ SPA vì thiếu 1 biến optional.
-  reverb: {
-    appKey: readEnv("VITE_REVERB_APP_KEY") || undefined,
-    host: readEnv("VITE_REVERB_HOST") || "localhost",
-    port: numberEnv(readEnv("VITE_REVERB_PORT"), 6001),
-    scheme: readEnv("VITE_REVERB_SCHEME") === "https" ? "https" : "http",
-  },
+  reverb: (() => {
+    const host = readEnv("VITE_REVERB_HOST") || "localhost";
+    const requested = readEnv("VITE_REVERB_SCHEME");
+    // WWHN-SEC-04 — `ws://` tới host thật bị trình duyệt chặn vì mixed content
+    // khi trang chạy https, nên để nguyên là hỏng âm thầm. Nâng lên wss và nói
+    // to ra, thay vì throw: realtime là tính năng optional, không đáng làm sập
+    // cả SPA (xem ghi chú ngay trên).
+    const scheme = resolveRealtimeScheme(requested, host);
+    if (requested !== undefined && requested !== scheme) {
+      console.warn(
+        `[env] VITE_REVERB_SCHEME=${requested} ignored for host "${host}": realtime is forced to ${scheme} to avoid mixed content.`,
+      );
+    }
+    return {
+      appKey: readEnv("VITE_REVERB_APP_KEY") || undefined,
+      host,
+      port: numberEnv(readEnv("VITE_REVERB_PORT"), 6001),
+      scheme,
+    };
+  })(),
 };
 
 export const apiHealthUrl = resolveApiUrl(

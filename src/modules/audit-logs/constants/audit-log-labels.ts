@@ -58,7 +58,7 @@ const OBJECT_TYPE_LABELS = bilingual(
     inbound_document: "Phiếu nhập kho",
     outbound_document: "Phiếu xuất kho",
     component_issue_document: "Phiếu xuất linh kiện",
-    reversal_document: "Phiếu điều chỉnh tồn",
+    reversal_document: "Phiếu đảo",
     document_attachment: "Tệp đính kèm chứng từ",
     stock_movement: "Biến động tồn",
     warranty_case: "Hồ sơ bảo hành",

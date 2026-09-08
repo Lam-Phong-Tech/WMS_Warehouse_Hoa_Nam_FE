@@ -4,6 +4,8 @@ export const ROUTES = {
   CHANGE_PASSWORD: "/change-password",
   FORGOT_PASSWORD: "/forgot-password",
   PROFILE: "/profile",
+  // WWHN-SEC-08 — tu dang ky xac thuc hai buoc.
+  MFA_SETUP: "/profile/mfa",
   NOTIFICATIONS: "/notifications",
 
   // 00 · Tổng quan

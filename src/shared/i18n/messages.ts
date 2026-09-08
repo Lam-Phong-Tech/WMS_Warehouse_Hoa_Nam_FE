@@ -215,7 +215,7 @@ export const MESSAGES_VI = {
       issueProduct: "Xuất sản phẩm",
       issueComponent: "Xuất linh kiện",
       decrease: "Giảm tồn",
-      reversal: "Hoàn tác có dấu",
+      reversal: "Đảo có dấu",
       reversalImpact: "Điều chỉnh tồn",
       closing: "Tồn cuối kỳ",
       closingImpact: "Số dư chốt kỳ",
@@ -223,13 +223,13 @@ export const MESSAGES_VI = {
       mismatched: "Chưa khớp · Chênh lệch {difference}",
       formulaLabel: "Công thức đối soát",
       formula:
-        "Đầu kỳ + Nhập − Xuất sản phẩm − Xuất linh kiện + Hoàn tác có dấu = Cuối kỳ",
+        "Đầu kỳ + Nhập − Xuất sản phẩm − Xuất linh kiện + Đảo có dấu = Cuối kỳ",
       statusLabel: "Trạng thái đối soát",
     },
     flow: {
       eyebrow: "LUỒNG 7 NGÀY",
       title: "Luồng nhập – xuất 7 ngày",
-      subtitle: "Theo dõi lượng nhập, xuất và hoàn tác theo ngày",
+      subtitle: "Theo dõi lượng nhập, xuất và đảo theo ngày",
       unit: "Đơn vị: cái",
       loadingTitle: "Đang tải biểu đồ",
       loadingCopy: "Nạp chuỗi sổ cái theo ngày.",
@@ -242,10 +242,10 @@ export const MESSAGES_VI = {
       inbound: "Nhập",
       issueProduct: "Xuất SP",
       issueComponent: "Xuất LK",
-      reversal: "Hoàn tác",
+      reversal: "Phiếu đảo",
       svgTitle: "Luồng nhập xuất 7 ngày",
       svgDesc:
-        "Area chart bốn chuỗi nhập, xuất sản phẩm, xuất linh kiện và hoàn tác. Di chuột vào từng ngày để xem số liệu chi tiết; có bảng dữ liệu thay thế phía dưới.",
+        "Area chart bốn chuỗi nhập, xuất sản phẩm, xuất linh kiện và phiếu đảo. Di chuột vào từng ngày để xem số liệu chi tiết; có bảng dữ liệu thay thế phía dưới.",
       tableSummary: "Xem bảng dữ liệu thay thế",
       colDate: "Ngày",
       tooltipDate: "Ngày {label}",
@@ -951,7 +951,12 @@ export const MESSAGES_VI = {
       edit: "Sửa",
       maskedNotice:
         "Thông tin khách hàng (tên/SĐT/địa chỉ) đang được che theo quyền",
-      searchPlaceholder: "Quét hoặc nhập mã hồ sơ / mã máy / mã tạm / SĐT...",
+      searchPlaceholder:
+        "Quét hoặc nhập mã hồ sơ / mã máy / mã tạm / tên khách / SĐT / sản phẩm...",
+      // §13.8: thiếu warranty.pii.view thì BE chặn tra theo tên/SĐT, nên đừng
+      // mời người dùng gõ thứ chắc chắn không ra kết quả.
+      searchPlaceholderNoPii:
+        "Quét hoặc nhập mã hồ sơ / mã máy / mã tạm / sản phẩm...",
       searchAria: "Tìm hồ sơ bảo hành",
       statusFilterAria: "Lọc trạng thái bảo hành",
       statusFilterPlaceholder: "Trạng thái: Tất cả",
@@ -1384,7 +1389,7 @@ export const MESSAGES_VI = {
       typeReceipt: "Nhập kho",
       typeIssue: "Xuất kho",
       typeComponentIssue: "Xuất linh kiện bảo hành",
-      typeReversal: "Điều chỉnh tồn kho",
+      typeReversal: "Phiếu đảo",
       pageSizeAria: "Số dòng mỗi trang",
       total: "Tổng {count} biến động",
       loadError: "Không thể tải lịch sử biến động",
@@ -1582,10 +1587,28 @@ export const MESSAGES_VI = {
       fieldPhone: "Số điện thoại",
       readOnlyNotice:
         "Tài khoản hiện tại chỉ có quyền xem nên không thể sửa cấu hình kho.",
-      confirmTitle: "Đổi trạng thái kho?",
-      confirmOk: "Đồng ý",
-      confirmBody:
-        "Hệ thống chỉ cho phép đúng một kho Đang hoạt động. Thao tác đổi trạng thái không tạo chứng từ và không làm thay đổi tồn kho.",
+      // confirmTitle/confirmOk/confirmBody ĐÃ GỠ 07/09/2026: một câu chung cho cả hai
+      // chiều không nói được việc sắp xảy ra. Thay bằng cặp confirmPause*/confirmResume*
+      // bên dưới.
+      // Đổi trạng thái kho chỉ Super Admin (BA 07/09/2026). Nói rõ AI được làm: người
+      // có warehouse.manage vẫn sửa được các ô khác, nên ô trạng thái xám đi mà không
+      // giải thích sẽ bị đọc thành lỗi giao diện.
+      statusSuperAdminOnly:
+        "Chỉ Super Admin được đổi trạng thái hoạt động của kho. Các thông tin còn lại bạn vẫn sửa được.",
+      pausedTitle: "Kho đang tạm dừng hoạt động",
+      pausedBody:
+        "Mọi thao tác ghi trên toàn hệ thống đang bị khoá: không nhập, xuất, xếp khay, quét, xử lý bảo hành hay sửa danh mục được. Xem, tra cứu, xuất báo cáo và nhật ký hệ thống vẫn dùng bình thường.",
+      // Hai chiều đổi trạng thái có hậu quả khác hẳn nhau nên tách hẳn câu chữ: một bên
+      // đóng băng cả hệ thống, một bên mở lại. Dùng chung một câu "Đổi trạng thái kho?"
+      // thì người bấm không biết mình vừa sắp làm gì.
+      confirmPauseTitle: "Tạm dừng hoạt động kho?",
+      confirmPauseOk: "Tạm dừng kho",
+      confirmPauseBody:
+        "Ngay sau khi lưu, toàn bộ nghiệp vụ ghi của hệ thống sẽ bị khoá: nhập, xuất, xếp khay, quét, bảo hành và sửa danh mục đều dừng. Xem, tra cứu, báo cáo và nhật ký vẫn chạy. Chỉ Super Admin mở lại được.",
+      confirmResumeTitle: "Mở lại hoạt động kho?",
+      confirmResumeOk: "Mở lại kho",
+      confirmResumeBody:
+        "Hệ thống sẽ nhận lại mọi thao tác ghi ngay sau khi lưu.",
     },
     catalog: {
       brand: "Hãng",
@@ -2028,7 +2051,7 @@ export const MESSAGES_VI = {
       hintComponentIssue: "Xuất linh kiện cho hồ sơ bảo hành, thuần",
       hintReversal:
         "Điều chỉnh chưa gắn giao dịch gốc (phần đã gắn đã trừ vào từng cột trên)",
-      hintClosing: "Tồn đầu + Nhập − Xuất SP − Xuất LK + Hoàn tác",
+      hintClosing: "Tồn đầu + Nhập − Xuất SP − Xuất LK + Đảo",
       colSkuCode: "Mã SKU",
       colSkuName: "Tên SKU",
       colStockStatus: "Trạng thái tồn",
@@ -2049,7 +2072,7 @@ export const MESSAGES_VI = {
       posted: "Đã ghi nhận tồn",
       notPosted: "Chưa đổi tồn",
       colCreatedAt: "Ngày tạo",
-      colPostedAt: "Ngày POSTED",
+      colPostedAt: "Ngày ghi sổ",
       colQtySku: "Số lượng / SKU",
       colSourceRecipient: "Nguồn hàng / Người nhận",
       colActor: "Người thực hiện",
@@ -2069,17 +2092,17 @@ export const MESSAGES_VI = {
       kpiComponentNet: "Xuất linh kiện bảo hành thuần",
       kpiComponentNetHint:
         "Xuất linh kiện phục vụ sửa chữa bảo hành, tách riêng khỏi xuất sản phẩm",
-      kpiOrphanReversal: "Hoàn tác chưa gắn gốc",
+      kpiOrphanReversal: "Phiếu đảo chưa gắn gốc",
       kpiOrphanReversalHint: "Điều chỉnh không truy được giao dịch gốc",
       kpiClosing: "Tồn cuối kỳ",
       kpiClosingHint: "Kết quả của phương trình cân đối",
       waterfallTitle: "Tổng quan cân đối tồn kho",
       waterfallDescription:
-        "Tồn đầu + Nhập − Xuất SP − Xuất LK bảo hành + Hoàn tác = Tồn cuối. Bấm vào một bậc để xem biến động tồn / phiếu tạo ra số đó.",
+        "Tồn đầu + Nhập − Xuất SP − Xuất LK bảo hành + Đảo = Tồn cuối. Bấm vào một bậc để xem biến động tồn / phiếu tạo ra số đó.",
       waterfallEmpty:
         "Kỳ này chưa có biến động tồn kho nào theo bộ lọc đang chọn.",
       waterfallNote:
-        "Nhập/Xuất là số THUẦN (đã trừ phần bị đảo). Phần hoàn tác còn lại trên biểu đồ là điều chỉnh chưa gắn được giao dịch gốc.",
+        "Nhập/Xuất là số THUẦN (đã trừ phần bị đảo). Phần đảo còn lại trên biểu đồ là điều chỉnh chưa gắn được giao dịch gốc.",
       skuTableTitle: "Chi tiết cân đối theo SKU",
       skuTableDescription:
         "Từng chiều Nhập / Xuất / Xuất linh kiện tách tổng phát sinh · đã đảo · thuần — đây là bảng đối soát đứng sau con số trên biểu đồ waterfall.",
@@ -2098,7 +2121,7 @@ export const MESSAGES_VI = {
       trendSeries: "Tồn cuối ngày",
       docTitle: "Lịch sử chứng từ",
       docDescription:
-        "Toàn bộ phiếu Nhập / Xuất / Hoàn tác phát sinh trong khoảng thời gian được chọn.",
+        "Toàn bộ phiếu Nhập / Xuất / Đảo phát sinh trong khoảng thời gian được chọn.",
       docFilterLabel: "Bộ lọc riêng cho bảng Lịch sử chứng từ",
       docFilterHint: "Kỳ đang xem: {label} · {count} chứng từ",
       docTypeAria: "Loại chứng từ",
@@ -2111,7 +2134,7 @@ export const MESSAGES_VI = {
       searchPlaceholder: "Mã phiếu / SKU / người nhận",
       searchAria: "Tìm mã phiếu, SKU hoặc người nhận",
       reversalReadError:
-        "Không đọc được danh sách phiếu hoàn tác ( {error} ) — bảng dưới đang chỉ hiển thị phiếu Nhập/Xuất.",
+        "Không đọc được danh sách phiếu đảo ( {error} ) — bảng dưới đang chỉ hiển thị phiếu Nhập/Xuất.",
       docLoadError: "Không tải được lịch sử chứng từ",
       docEmpty: "Không có chứng từ nào theo bộ lọc.",
       docDetailAria: "Xem chi tiết chứng từ",
@@ -2128,8 +2151,8 @@ export const MESSAGES_VI = {
       docDetailMovements: "Biến động tồn liên quan",
       docDetailMovementsEmpty:
         "Không tìm thấy biến động tồn gắn với phiếu này trong kỳ đang lọc ở phần biểu đồ.",
-      reversal: "Hoàn tác",
-      docReversal: "Hoàn tác",
+      reversal: "Phiếu đảo",
+      docReversal: "Phiếu đảo",
       warehouseAll: "Tất cả kho",
     },
     warranty: {
@@ -2422,7 +2445,7 @@ export const MESSAGES_VI = {
       categoryAria: "Nhóm hàng",
       stockStatusAll: "Tất cả trạng thái tồn",
       stockStatusAria: "Trạng thái tồn",
-      reconcileAll: "MATCH và MISMATCH",
+      reconcileAll: "Tất cả trạng thái đối soát",
       reconcileAria: "Trạng thái đối soát",
       detailThresholdAria: "Trạng thái định mức ở bảng chi tiết",
       detailEmpty: "Không có SKU nào theo bộ lọc.",
@@ -2636,7 +2659,7 @@ export const MESSAGES_VI = {
       milestoneWarranty: "Bảo hành — xuất linh kiện",
       milestoneReceipt: "Nhập kho",
       milestoneIssue: "Xuất kho",
-      milestoneReversal: "Trả hàng / Hoàn tác",
+      milestoneReversal: "Trả hàng / Đảo",
       qtyLine: "Số lượng: {sign}{qty} · Kho {warehouse}",
       docLine: " · Chứng từ {doc}",
       actorLine: "Người thực hiện: {actor}",
@@ -2676,12 +2699,12 @@ export const MESSAGES_VI = {
         "Hiện vật này chưa có mốc vòng đời nào trong dữ liệu truy vết.",
       relatedMovements: "Biến động tồn liên quan",
       milestoneNote:
-        "Mốc được suy từ `movement_type` và `source_type` của từng dòng sổ biến động: Xếp khay / Bảo hành nhận diện qua nguồn phát sinh, Nhập / Xuất / Hoàn tác nhận diện qua loại biến động.",
+        "Mốc được suy từ `movement_type` và `source_type` của từng dòng sổ biến động: Xếp khay / Bảo hành nhận diện qua nguồn phát sinh, Nhập / Xuất / Đảo nhận diện qua loại biến động.",
     },
     pendingEvidence: {
       inbound: "Phiếu nhập",
       outbound: "Phiếu xuất",
-      reversal: "Phiếu điều chỉnh tồn",
+      reversal: "Phiếu đảo",
       colDocType: "Loại phiếu",
       colDocNo: "Số phiếu",
       colReason: "Lý do thiếu chứng từ",
@@ -2690,7 +2713,7 @@ export const MESSAGES_VI = {
       openDocument: "Mở phiếu",
       title: "Danh sách chứng từ cần bổ sung",
       description:
-        "Phiếu nhập / xuất / điều chỉnh tồn đã tạo nhưng còn thiếu chứng từ đính kèm để đối soát. Bấm 'Mở phiếu' để bổ sung chứng từ cho đúng phiếu.",
+        "Phiếu nhập / xuất / đảo đã tạo nhưng còn thiếu chứng từ đính kèm để đối soát. Bấm 'Mở phiếu' để bổ sung chứng từ cho đúng phiếu.",
       kpiTotal: "Tổng phiếu thiếu chứng từ",
       loadError: "Không tải được danh sách chứng từ cần bổ sung",
       empty:
@@ -2706,13 +2729,13 @@ export const MESSAGES_VI = {
       typeOther: "Nhóm người nhận khác",
       typeProduct: "Sản phẩm",
       typeComponent: "Linh kiện",
-      reversalAll: "Tất cả trạng thái hoàn tác",
-      reversalNone: "Chưa hoàn tác",
-      reversalPartial: "Hoàn tác một phần",
-      reversalFull: "Hoàn tác toàn bộ",
+      reversalAll: "Tất cả trạng thái đảo",
+      reversalNone: "Chưa đảo",
+      reversalPartial: "Đảo một phần",
+      reversalFull: "Đảo toàn bộ",
       notApplicable: "Không áp dụng",
       eventPosted: "Ghi nhận xuất",
-      eventReversed: "Hoàn tác xuất",
+      eventReversed: "Đảo phiếu xuất",
       piiNone: "Không có thông tin liên hệ trong báo cáo này.",
       piiMasked:
         "Thông tin liên hệ đã được máy chủ che theo quyền của tài khoản.",
@@ -2725,14 +2748,14 @@ export const MESSAGES_VI = {
       directIssue: "Xuất trực tiếp, không qua đại lý",
       departmentLine: "Phòng ban: {department}",
       colGross: "Tổng xuất",
-      colReversed: "Hoàn tác",
+      colReversed: "Đã đảo",
       colNet: "Xuất thuần",
       docsPosted: "{count} chứng từ đã ghi nhận",
       reconcile: "Đối soát",
       kicker: "BÁO CÁO VẬN HÀNH",
       title: "Xuất theo người nhận / đại lý",
       description:
-        "Theo dõi lượng xuất đã ghi nhận, lượng hoàn tác và lượng xuất thuần trong cùng một dữ liệu báo cáo.",
+        "Theo dõi lượng xuất đã ghi nhận, lượng đảo và lượng xuất thuần trong cùng một dữ liệu báo cáo.",
       statusSyncing: "Đang đồng bộ",
       statusLocked: "Đã chốt dữ liệu",
       statusWaiting: "Chờ dữ liệu",
@@ -2740,7 +2763,7 @@ export const MESSAGES_VI = {
       contextAria: "Ngữ cảnh báo cáo",
       sliceViewing: "BÁO CÁO ĐANG XEM",
       sliceFormula:
-        "Xuất thuần = tổng lượng xuất đã ghi nhận − lượng hoàn tác phát sinh trong cùng kỳ. Đại lý là chiều thống kê, không phải kho.",
+        "Xuất thuần = tổng lượng xuất đã ghi nhận − lượng đảo phát sinh trong cùng kỳ. Đại lý là chiều thống kê, không phải kho.",
       sliceLocked: "Báo cáo đã khóa",
       sliceCreating: "Đang tạo báo cáo",
       lockedAt: "Chốt lúc {time}",
@@ -2754,7 +2777,7 @@ export const MESSAGES_VI = {
       reset: "Đặt lại",
       periodLabel: "Kỳ báo cáo",
       periodViewing: "Đang xem: {label}",
-      reversalStateLabel: "Trạng thái hoàn tác",
+      reversalStateLabel: "Trạng thái đảo",
       dateRangeLabel: "Khoảng ngày",
       dateFrom: "Từ ngày",
       dateTo: "Đến ngày",
@@ -2783,14 +2806,14 @@ export const MESSAGES_VI = {
       kpiGross: "Tổng lượng xuất",
       kpiGrossHint: "Lượng xuất đã ghi nhận trong kỳ",
       kpiGrossMeta: "Chuẩn đối chiếu",
-      kpiReversed: "Đã hoàn tác",
-      kpiReversedHint: "Lượng xuất đã hoàn tác trong kỳ",
-      kpiReversedMeta: "Tỷ lệ hoàn tác",
-      kpiNetHint: "Tổng lượng xuất trừ lượng hoàn tác",
+      kpiReversed: "Đã đảo",
+      kpiReversedHint: "Lượng xuất đã đảo trong kỳ",
+      kpiReversedMeta: "Tỷ lệ đảo",
+      kpiNetHint: "Tổng lượng xuất trừ lượng đảo",
       kpiNetMeta: "Tỷ lệ xuất thuần",
       kpiDocs: "Chứng từ đã ghi nhận",
       kpiDocsHint: "Số chứng từ xuất không trùng",
-      kpiDocsMeta: "Chứng từ có hoàn tác",
+      kpiDocsMeta: "Chứng từ có đảo",
       analysisTitle: "Phân tích xuất thuần",
       analysisHint:
         "Dữ liệu dùng chung theo người nhận và mã hàng trong báo cáo đang xem.",
@@ -2823,21 +2846,21 @@ export const MESSAGES_VI = {
       tableSearchPlaceholder: "Tìm người nhận, đại lý, mã hàng…",
       anyRecipientType: "Mọi nhóm người nhận",
       anyProductType: "Mọi loại hàng",
-      anyReversal: "Mọi trạng thái hoàn tác",
-      hasReversal: "Có hoàn tác",
-      noReversal: "Không hoàn tác",
+      anyReversal: "Mọi trạng thái đảo",
+      hasReversal: "Có đảo",
+      noReversal: "Không đảo",
       tableRowHint:
-        "Chọn một dòng để xem chứng từ nguồn, lịch sử hoàn tác và thông tin cá nhân theo quyền.",
+        "Chọn một dòng để xem chứng từ nguồn, lịch sử đảo và thông tin cá nhân theo quyền.",
       groupCount: "{count} nhóm dữ liệu",
       colRecipient: "Người nhận / đại lý",
       colSkuDept: "Mã hàng / phòng ban",
       noAgency: "Không qua đại lý",
       colDocs: "Chứng từ",
       tableEmpty:
-        "Không có nghiệp vụ xuất hoặc hoàn tác phù hợp với bộ lọc hiện tại.",
+        "Không có nghiệp vụ xuất hoặc đảo phù hợp với bộ lọc hiện tại.",
       lockedFormulaLabel: "Cách tính đã khóa:",
       lockedFormulaBody:
-        "Xuất thuần = tổng lượng xuất đã ghi nhận − lượng hoàn tác. Số chứng từ được đếm không trùng trong kỳ và không bị trừ khi hoàn tác.",
+        "Xuất thuần = tổng lượng xuất đã ghi nhận − lượng đảo. Số chứng từ được đếm không trùng trong kỳ và không bị trừ khi đảo.",
       drillTitle: "Đối soát: {title}",
       drillSubtitle: "Dữ liệu báo cáo {id}",
       drillErrorTitle: "Không tải được chứng từ nguồn",
@@ -2856,7 +2879,7 @@ export const MESSAGES_VI = {
       pageTablistAria: "Chế độ xem của báo cáo xuất theo người nhận / đại lý",
       pageTabSlice: "Báo cáo theo kỳ",
       pageTabSliceHint:
-        "Kỳ này đã xuất cho ai, bao nhiêu, còn hoàn tác hay chứng từ nào cần đối soát.",
+        "Kỳ này đã xuất cho ai, bao nhiêu, còn đảo hay chứng từ nào cần đối soát.",
     },
     agencyComparison: {
       tabLabel: "So sánh đơn vị nhận hàng",
@@ -3057,7 +3080,7 @@ export const MESSAGES_VI = {
       eyebrow: "BÁO CÁO VẬN HÀNH · RPT-MOV-01",
       title: "Truy vết hàng hóa",
       subtitle:
-        "Điều tra sổ cái chỉ-ghi-thêm, chứng từ nguồn và chuỗi hoàn tác theo SKU hoặc mã vật lý.",
+        "Điều tra sổ cái chỉ-ghi-thêm, chứng từ nguồn và chuỗi đảo theo SKU hoặc mã vật lý.",
       badgeWarehouse: "Kho tổng Hoa Nam",
       badgeScope: "Điều tra báo cáo kho",
       // Ngày giờ theo cách viết của mockup. Bản EN đổi thứ tự ngày/tháng nhưng
@@ -3096,10 +3119,10 @@ export const MESSAGES_VI = {
       statTotal: "Tổng biến động",
       statTotalHint: "Theo báo cáo API hiện tại",
       statReceipt: "Nhập đã ghi sổ",
-      statReceiptHint: "Biến động tồn kho RECEIPT_POSTED",
+      statReceiptHint: "Biến động tồn của phiếu nhập đã ghi sổ",
       statIssue: "Xuất đã ghi sổ",
-      statIssueHint: "Biến động tồn kho ISSUE_POSTED",
-      statReversal: "Hoàn tác",
+      statIssueHint: "Biến động tồn của phiếu xuất đã ghi sổ",
+      statReversal: "Phiếu đảo",
       statReversalHint: "Biến động tồn kho reversal đã ghi nhận",
       analysisEyebrow: "PHÂN TÍCH VẬN HÀNH",
       analysisTitle: "Dòng thời gian Biến động tồn kho Trace",
@@ -3112,14 +3135,14 @@ export const MESSAGES_VI = {
       anyMovementType: "Mọi loại biến động",
       anyActor: "Mọi người",
       movementCount: "{count} biến động",
-      reversalOf: "hoàn tác {code}",
+      reversalOf: "đảo {code}",
       detailEyebrow: "DỮ LIỆU CHI TIẾT",
       ledgerTitle: "Sổ tồn kho biến động",
       ledgerHint: "Bấm dòng để xem bằng chứng · chỉ đọc",
       colOccurredAt: "Thời điểm (GMT+7)",
       colQtyDelta: "SL thay đổi",
       colSource: "Chứng từ / dòng",
-      colChain: "Điều chỉnh tồn kho chain",
+      colChain: "Chuỗi phiếu đảo",
       colStatus: "Trạng thái",
       drawerAria: "Bằng chứng biến động {code}",
       drawerEyebrow: "CHI TIẾT ĐỐI SOÁT",
@@ -3209,7 +3232,7 @@ export const MESSAGES_VI = {
       chartDefectDesc: "Nhóm lỗi còn mở theo đúng báo cáo.",
       chartDefectEmpty: "Không có bệnh/lỗi nào trong báo cáo đang xem.",
       chartComponentTitle: "Linh kiện đã xuất",
-      chartComponentDesc: "Top linh kiện từ chứng từ POSTED trong báo cáo.",
+      chartComponentDesc: "Top linh kiện từ chứng từ đã ghi sổ trong báo cáo.",
       chartComponentEmpty:
         "Chưa có linh kiện nào được xuất trong báo cáo đang xem.",
       detailEyebrow: "DỮ LIỆU CHI TIẾT",
@@ -3242,8 +3265,8 @@ export const MESSAGES_VI = {
       dialogEyebrow: "CHI TIẾT ĐỐI SOÁT",
       sectionDefects: "Lỗi kỹ thuật đang hiệu lực",
       noDefects: "Chưa có lỗi hiệu lực",
-      sectionComponents: "Linh kiện đã xuất (POSTED)",
-      noComponents: "Chưa có linh kiện POSTED",
+      sectionComponents: "Linh kiện đã xuất (chứng từ đã ghi sổ)",
+      noComponents: "Chưa có linh kiện nào trên chứng từ đã ghi sổ",
       sectionHistory: "Lịch sử phân công",
       historyForbidden:
         "Tài khoản của bạn không có quyền xem lịch sử hồ sơ bảo hành.",
@@ -3406,7 +3429,7 @@ export const MESSAGES_VI = {
     ioHistory: {
       typeInbound: "Nhập kho",
       typeOutbound: "Xuất kho",
-      typeReversal: "Hoàn tác",
+      typeReversal: "Phiếu đảo",
       allTypes: "Tất cả loại đã ghi nhận",
       allDocTypes: "Tất cả loại chứng từ",
       searchPlaceholder: "Tìm số chứng từ, đối tác, SKU…",
@@ -3420,7 +3443,7 @@ export const MESSAGES_VI = {
       kpiInboundNote: "{qty} đơn vị tăng",
       kpiOutbound: "Xuất kho",
       kpiOutboundNote: "{qty} đơn vị giảm",
-      kpiReversal: "Hoàn tác",
+      kpiReversal: "Phiếu đảo",
       kpiReversalNote: "{qty} đơn vị đã xác định dấu",
       kpiNet: "Ảnh hưởng ròng",
       kpiNetNote: "Chỉ cộng biến động / số lượng có dấu xác định",
@@ -3451,7 +3474,7 @@ export const MESSAGES_VI = {
       quickSearchPlaceholder: "Mã phiếu / yêu cầu / người nhận",
       resetting: "Đang đặt lại…",
       reset: "Đặt lại",
-      exportDenied: "Cần quyền xuất báo cáo (REPORT_EXPORT)",
+      exportDenied: "Cần quyền xuất báo cáo",
       exportXlsx: "Xuất XLSX",
       exportPdf: "Xuất PDF",
       summaryEyebrow: "TÌNH HÌNH HIỆN TẠI",
@@ -3495,11 +3518,11 @@ export const MESSAGES_VI = {
       tfootSameRows: "Cùng tập dòng với KPI và biểu đồ",
       sliceTitle: "Báo cáo đối soát",
       sliceNote:
-        "Gom theo chứng từ gốc và các hoàn tác có cùng biến động liên kết.",
+        "Gom theo chứng từ gốc và các phiếu đảo có cùng biến động liên kết.",
       sourceRowCount: "{count} dòng nguồn",
       sliceEmpty: "Không có báo cáo đã ghi nhận theo bộ lọc.",
       sliceTotal: "Tổng",
-      sliceReversal: "Hoàn tác",
+      sliceReversal: "Phiếu đảo",
       sliceNet: "Thuần",
       sliceMilestones: "{count} mốc nghiệp vụ",
       reconcile: "Đối soát",
@@ -3537,7 +3560,7 @@ export const MESSAGES_VI = {
       kindAll: "Tất cả loại hàng",
       docInbound: "Phiếu nhập",
       docOutbound: "Phiếu xuất",
-      docReversal: "Phiếu hoàn tác",
+      docReversal: "Phiếu đảo",
       skuSearchPlaceholder: "Tìm SKU, tên hàng, kho…",
       anyKind: "Mọi loại hàng",
       anyMatchStatus: "Mọi trạng thái đối soát",
@@ -3553,7 +3576,7 @@ export const MESSAGES_VI = {
       seriesInbound: "Nhập",
       seriesProduct: "Xuất SP",
       seriesComponent: "Xuất LK",
-      seriesReversal: "Hoàn tác",
+      seriesReversal: "Phiếu đảo",
       periodMeta: "Kỳ {from} – {to} · Đơn vị: cái",
       // Hai trang tách theo CHIỀU nghiệp vụ (2026-09-06). Phần còn lại của
       // nhóm khoá này dùng chung cho cả hai trang.
@@ -3610,7 +3633,7 @@ export const MESSAGES_VI = {
       kpiProductFoot: "Xuất bán / giao đã ghi nhận",
       kpiComponent: "Xuất linh kiện",
       kpiComponentFoot: "Linh kiện bảo hành đã ghi sổ",
-      kpiReversal: "Ảnh hưởng hoàn tác (+/−)",
+      kpiReversal: "Ảnh hưởng đảo (+/−)",
       kpiReversalFoot: "Điều chỉnh ngoài cột nguồn",
       kpiClosing: "Tồn cuối kỳ",
       kpiClosingFoot: "Số dư chốt theo phương trình cân đối",
@@ -3644,7 +3667,7 @@ export const MESSAGES_VI = {
       colReceiptNet: "Nhập thuần",
       colIssueNet: "Xuất SP",
       colComponentNet: "Xuất LK",
-      colReversal: "Hoàn tác",
+      colReversal: "Phiếu đảo",
       colClosing: "Cuối kỳ",
       colReconcile: "Đối soát",
       emptyFiltered: "Không có SKU nào khớp bộ lọc của khối.",
@@ -4473,6 +4496,39 @@ export const MESSAGES_VI = {
       errorGeneric:
         "Đăng nhập chưa thực hiện được. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
     },
+    // WWHN-SEC-08 — xác thực hai bước.
+    mfa: {
+      challengeTitle: "Xác thực hai bước",
+      challengeSubtitle:
+        "Mở ứng dụng xác thực trên điện thoại và nhập mã 6 chữ số đang hiển thị.",
+      codeLabel: "Mã xác thực",
+      codeHelp: "Hoặc nhập một mã khôi phục nếu bạn không có điện thoại.",
+      verifySubmit: "Xác nhận",
+      setupTitle: "Xác thực hai bước",
+      setupSubtitle:
+        "Thêm một lớp bảo vệ nữa cho tài khoản: ngoài mật khẩu, mỗi lần đăng nhập cần thêm mã 6 chữ số từ điện thoại của bạn.",
+      statusEnabled: "Đang bật",
+      statusDisabled: "Chưa bật",
+      requiredForRole:
+        "Vai trò của bạn bắt buộc dùng xác thực hai bước. Hãy hoàn tất đăng ký trước khi tiếp tục sử dụng hệ thống.",
+      startEnroll: "Bắt đầu đăng ký",
+      step1:
+        "1. Quét mã QR bằng Google Authenticator, Microsoft Authenticator hoặc 1Password.",
+      step2: "2. Nhập mã 6 chữ số đang hiển thị trong ứng dụng để xác nhận.",
+      manualKeyLabel: "Không quét được? Nhập tay khoá này:",
+      confirmSubmit: "Xác nhận và bật",
+      recoveryTitle: "Mã khôi phục",
+      recoveryHelp:
+        "Lưu ngay các mã dưới đây ở nơi an toàn. Mỗi mã dùng được MỘT lần và sẽ KHÔNG hiển thị lại. Chúng là cách duy nhất để đăng nhập nếu bạn mất điện thoại.",
+      recoveryRemaining: "Còn {count} mã khôi phục chưa dùng.",
+      disableTitle: "Tắt xác thực hai bước",
+      disableHelp:
+        "Cần mật khẩu hiện tại và một mã hợp lệ. Vai trò bắt buộc MFA sẽ không tắt được.",
+      disableSubmit: "Tắt xác thực hai bước",
+      enableSuccess: "Đã bật xác thực hai bước",
+      disableSuccess: "Đã tắt xác thực hai bước",
+      errorTitle: "Không thực hiện được",
+    },
     changePassword: {
       title: "Đổi mật khẩu",
       subtitle: "Thiết lập mật khẩu mới trước khi tiếp tục sử dụng hệ thống.",
@@ -5069,15 +5125,15 @@ export const MESSAGES_VI = {
       returnUnknown: "Chưa xác định tình trạng hàng về kho",
     },
     create: {
-      title: "Tạo phiếu điều chỉnh tồn kho",
-      confirmTitle: "Tạo phiếu điều chỉnh tồn kho?",
+      title: "Tạo phiếu đảo",
+      confirmTitle: "Tạo phiếu đảo?",
       selectedCount: "Đã chọn {count} sản phẩm",
       noAvailableItems: "Không có sản phẩm khả dụng",
       created:
         "Đã tạo phiếu điều chỉnh {code} (nháp) — hãy đính kèm chứng từ rồi bấm Hoàn tất điều chỉnh.",
       staleError:
         "{message}. Dữ liệu đã thay đổi; vui lòng tải lại danh sách và chọn lại giao dịch.",
-      createError: "Không thể tạo phiếu điều chỉnh tồn kho",
+      createError: "Không thể tạo phiếu đảo",
       selecting: "Đang chọn",
       colMovementCode: "Mã biến động",
       colType: "Loại",
@@ -5152,8 +5208,8 @@ export const MESSAGES_VI = {
       confirmSuccess:
         "Đã xác nhận hàng vật lý quay lại kho; tồn kho chưa thay đổi ở bước này.",
       confirmError: "Không thể xác nhận hàng đã về kho",
-      postSuccess: "Đã hoàn tất điều chỉnh tồn kho.",
-      postError: "Không thể hoàn tất điều chỉnh tồn kho",
+      postSuccess: "Đã hoàn tất phiếu đảo.",
+      postError: "Không thể hoàn tất phiếu đảo",
       cancelSuccess: "Đã hủy phiếu điều chỉnh; tồn kho không thay đổi.",
       cancelError: "Không thể hủy phiếu điều chỉnh",
       codeCopied: "Đã sao chép mã điều chỉnh.",
@@ -5199,17 +5255,17 @@ export const MESSAGES_VI = {
       linesError: "Không thể tải các dòng điều chỉnh",
       linesTitle: "Dòng điều chỉnh ({count})",
       linesEmpty: "Chưa có dòng điều chỉnh",
-      postConfirmTitle: "Hoàn tất phiếu điều chỉnh tồn kho?",
+      postConfirmTitle: "Hoàn tất phiếu đảo?",
       processing: "Đang xử lý...",
       postConfirmBody:
         "Đây là bước làm phát sinh giao dịch đối ứng và thay đổi tồn kho. Giao dịch gốc vẫn được giữ nguyên. Nếu cần điều chỉnh tiếp, phải tạo phiếu điều chỉnh mới.",
     },
     list: {
       readonlyNote:
-        "Chế độ chỉ xem: tài khoản hiện tại chưa có quyền tạo, xác nhận, hoàn tất hoặc hủy phiếu điều chỉnh tồn kho. Bạn vẫn có thể xem danh sách và chi tiết.",
+        "Chế độ chỉ xem: tài khoản hiện tại chưa có quyền tạo, xác nhận, hoàn tất hoặc hủy phiếu đảo. Bạn vẫn có thể xem danh sách và chi tiết.",
       colTotalQty: "Tổng số lượng",
       searchPlaceholder: "Mã điều chỉnh, chứng từ gốc, lý do...",
-      searchAria: "Tìm phiếu điều chỉnh tồn kho",
+      searchAria: "Tìm phiếu đảo",
       statusFilterAria: "Lọc trạng thái phiếu điều chỉnh",
       statusFilterPlaceholder: "Trạng thái: Tất cả",
       loadError: "Không tải được danh sách phiếu điều chỉnh",
@@ -5264,7 +5320,7 @@ export const MESSAGES_VI = {
       outboundPosted: "Ghi sổ xuất kho",
       outboundCancelled: "Huỷ phiếu xuất",
       reversalCreated: "Tạo phiếu điều chỉnh",
-      reversalPosted: "Ghi sổ điều chỉnh tồn kho",
+      reversalPosted: "Ghi sổ phiếu đảo",
       reversalCancelled: "Huỷ phiếu điều chỉnh",
       stockShortageDetected: "Tồn kho không đủ",
       warrantyCaseCreated: "Tiếp nhận hồ sơ bảo hành",

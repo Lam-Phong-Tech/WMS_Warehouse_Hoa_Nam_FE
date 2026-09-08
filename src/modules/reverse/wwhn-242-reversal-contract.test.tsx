@@ -140,7 +140,7 @@ async function clickPostAndConfirm() {
   await waitFor(() => expect(postButton).toBeEnabled());
   fireEvent.click(postButton);
   const confirmDialog = await screen.findByRole("dialog", {
-    name: /Hoàn tất phiếu điều chỉnh tồn kho/i,
+    name: /Hoàn tất phiếu đảo/i,
   });
   fireEvent.click(
     within(confirmDialog).getByRole("button", {

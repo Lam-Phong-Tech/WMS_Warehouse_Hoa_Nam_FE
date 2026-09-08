@@ -256,7 +256,7 @@ export const REVERSAL_REASON_LABELS = bilingual(
 export const REVERSAL_STATUS_LABELS = bilingual(
   {
     DRAFT: "Nháp · chưa thay đổi tồn kho",
-    POSTED: "Đã ghi nhận điều chỉnh tồn kho",
+    POSTED: "Đã ghi sổ phiếu đảo",
     CANCELLED: "Đã hủy",
   },
   {
@@ -325,7 +325,7 @@ export const MOVEMENT_TYPE_LABELS = bilingual(
     RECEIPT: "Nhập kho",
     ISSUE: "Xuất kho",
     COMPONENT_ISSUE: "Xuất linh kiện",
-    REVERSAL: "Điều chỉnh tồn kho",
+    REVERSAL: "Phiếu đảo",
   },
   {
     RECEIPT: "Receipt",
@@ -371,7 +371,7 @@ export const SOURCE_DOCUMENT_TYPE_LABELS = bilingual(
     RECEIPT: "Phiếu nhập",
     ISSUE: "Phiếu xuất",
     COMPONENT_ISSUE: "Phiếu xuất linh kiện",
-    REVERSAL: "Phiếu điều chỉnh tồn",
+    REVERSAL: "Phiếu đảo",
   },
   {
     receipt: "Receipt document",
@@ -622,8 +622,8 @@ export const AUDIT_ACTION_LABELS = bilingual(
     DISPATCH: "Xuất giao",
     CONVERT: "Chuyển đổi",
     RECORD_LOSS: "Ghi nhận thất thoát",
-    CREATE_REVERSAL: "Tạo điều chỉnh tồn",
-    REVERSAL_POST: "Ghi nhận điều chỉnh tồn",
+    CREATE_REVERSAL: "Tạo phiếu đảo",
+    REVERSAL_POST: "Ghi sổ phiếu đảo",
     PUTAWAY_CONFIRM: "Xác nhận xếp khay",
     WARRANTY_STATUS_CHANGE: "Đổi trạng thái bảo hành",
     REPORT_EXPORTED: "Xuất báo cáo",
@@ -639,7 +639,7 @@ export const AUDIT_ACTION_LABELS = bilingual(
     CREATE_OUTBOUND: "Tạo phiếu xuất kho",
     CREATE_COMPONENT_ISSUE: "Tạo phiếu xuất linh kiện",
     POST_COMPONENT_ISSUE: "Ghi sổ xuất linh kiện",
-    REVERSAL_CANCELLED: "Hủy điều chỉnh tồn",
+    REVERSAL_CANCELLED: "Hủy phiếu đảo",
     WARRANTY_CASE_RECEIVED: "Tiếp nhận hồ sơ bảo hành",
     PV_PRODUCT_IMAGE_UPLOADED: "Tải ảnh sản phẩm App PV",
     // Phiên làm việc / bảo mật.

@@ -17,6 +17,7 @@ import { SideNav } from "@/app/layouts/SideNav";
 import { AppTopbar } from "@/app/layouts/topbar/AppTopbar";
 import { getBreadcrumbTrail } from "@/app/layouts/nav-data";
 import { AppPageHeader } from "@/app/layouts/AppPageHeader";
+import { WarehousePausedBanner } from "@/app/layouts/WarehousePausedBanner";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
 import { Loading } from "@/shared/components";
@@ -207,6 +208,12 @@ export function MainLayout() {
               }))}
             />
           )}
+          {/*
+           * Đặt TRÊN header trang: kho tạm dừng là trạng thái toàn hệ thống (BE đóng
+           * băng mọi thao tác ghi), nên phải thấy được ở MỌI màn — không riêng màn
+           * Cấu hình kho, vì chỗ người dùng gặp lỗi 409 lại là màn nhập/xuất/bảo hành.
+           */}
+          <WarehousePausedBanner />
           {ownsHeader ? null : <AppPageHeader />}
           {/*
            * Trang KHÔNG keep-alive: key theo pathname + ?screen= → remount chạy lại

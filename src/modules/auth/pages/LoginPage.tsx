@@ -1,15 +1,15 @@
-import { useMemo } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
 import { Link } from "react-router-dom";
-import { useLogin } from "@/modules/auth/hooks/use-login";
+import { useLogin, useMfaVerify } from "@/modules/auth/hooks/use-login";
 import {
   buildLoginSchema,
   toLoginRequest,
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
-import { Box, UiAlert, UiButton, UiFormCheckbox } from "@/shared/ui";
+import { Box, UiAlert, UiButton, UiFormCheckbox, UiTextField } from "@/shared/ui";
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
@@ -85,6 +85,8 @@ function getLoginErrorMessage(error: unknown, t: TranslateFn): string {
 export function LoginPage() {
   const t = useT();
   const login = useLogin();
+  const mfaVerify = useMfaVerify();
+  const [mfaCode, setMfaCode] = useState("");
   const rememberedIdentifier = readRememberedIdentifier();
   const loginSchema = useMemo(() => buildLoginSchema(t), [t]);
   const { control, handleSubmit } = useForm<LoginFormValues>({
@@ -101,11 +103,76 @@ export function LoginPage() {
     login.mutate(toLoginRequest(values));
   });
 
+  // WWHN-SEC-08 — bước 2. Điều kiện render dựa trên KẾT QUẢ của bước 1, không
+  // phải một state riêng: state riêng có thể lệch với dữ liệu (ví dụ người dùng
+  // bấm Back rồi submit lại) và tạo ra màn hình nhập mã cho một phiên chờ đã hết.
+  const challenge = login.data?.kind === "mfa_required" ? login.data : null;
+
+  const mfaErrorMessage = mfaVerify.isError
+    ? getLoginErrorMessage(mfaVerify.error, t)
+    : null;
+
+  const onSubmitMfa = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (challenge === null || mfaCode.trim() === "") return;
+    mfaVerify.mutate({ mfaToken: challenge.mfa_token, code: mfaCode.trim() });
+  };
+
   const errorMessage = login.isError
     ? getLoginErrorMessage(login.error, t)
     : null;
 
   const isSubmitting = login.isPending || login.isSuccess;
+
+  // WWHN-SEC-08 — màn nhập mã. Trả về sớm, KHÔNG render kèm form mật khẩu:
+  // để hai form cùng tồn tại thì người dùng có thể submit lại mật khẩu và sinh
+  // một phiên chờ thứ hai, còn phiên đang hiển thị thì im lặng chết.
+  if (challenge !== null) {
+    return (
+      <AuthShell
+        titleId="login-mfa-title"
+        title={<>{t("auth.mfa.challengeTitle")}</>}
+        subtitle={t("auth.mfa.challengeSubtitle")}
+        loadingText={mfaVerify.isPending ? t("auth.login.authenticating") : null}
+      >
+        {mfaErrorMessage && (
+          <Box sx={{ marginBottom: "14px" }}>
+            <UiAlert tone="error" title={t("auth.login.errorTitle")}>
+              {mfaErrorMessage}
+            </UiAlert>
+          </Box>
+        )}
+
+        <form onSubmit={onSubmitMfa} noValidate>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <UiTextField
+              label={t("auth.mfa.codeLabel")}
+              value={mfaCode}
+              onChange={(event) => setMfaCode(event.target.value)}
+              placeholder="123456"
+              autoFocus
+              // inputMode numeric bật bàn phím số trên điện thoại, nhưng KHÔNG
+              // dùng type="number": mã bắt đầu bằng 0 sẽ bị trình duyệt cắt mất,
+              // và mã khôi phục có cả chữ lẫn dấu gạch.
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              disabled={mfaVerify.isPending}
+              helperText={t("auth.mfa.codeHelp")}
+            />
+
+            <UiButton
+              type="submit"
+              fullWidth
+              loading={mfaVerify.isPending}
+              disabled={mfaVerify.isPending || mfaCode.trim() === ""}
+            >
+              {t("auth.mfa.verifySubmit")}
+            </UiButton>
+          </Box>
+        </form>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell

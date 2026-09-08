@@ -69,6 +69,8 @@ function renderHarness(
 }
 
 const LOGIN_OK = {
+  // WWHN-SEC-08: login tra ve union co discriminant.
+  kind: "authenticated" as const,
   access_token: "access-token",
   refresh_token: "refresh-token",
   token_type: "bearer" as const,
@@ -86,6 +88,8 @@ describe("useLogin WWHN-165", () => {
 
   it("khôi phục protected URL sau login và commit access/refresh token", async () => {
     vi.mocked(authService.login).mockResolvedValue({
+      // WWHN-SEC-08: login tra ve union co discriminant.
+      kind: "authenticated" as const,
       access_token: "access-token",
       refresh_token: "refresh-token",
       token_type: "bearer",
@@ -116,6 +120,8 @@ describe("useLogin WWHN-165", () => {
       scope_ref: "WH-HN-02",
     };
     vi.mocked(authService.login).mockResolvedValue({
+      // WWHN-SEC-08: login tra ve union co discriminant.
+      kind: "authenticated" as const,
       access_token: "access-token",
       refresh_token: "refresh-token",
       token_type: "bearer",

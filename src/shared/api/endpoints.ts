@@ -8,6 +8,12 @@ export const API_ENDPOINTS = {
   FORGOT_PASSWORD: "/auth/forgot-password",
   VERIFY_OTP: "/auth/verify-otp",
   RESET_PASSWORD: "/auth/reset-password",
+  // WWHN-SEC-08 — xác thực hai bước.
+  MFA_STATUS: "/auth/mfa/status",
+  MFA_ENROLL: "/auth/mfa/enroll",
+  MFA_CONFIRM: "/auth/mfa/confirm",
+  MFA_DISABLE: "/auth/mfa/disable",
+  MFA_VERIFY: "/auth/mfa/verify",
   USERS: "/users",
   ROLES: "/roles",
   PERMISSIONS: "/permissions",

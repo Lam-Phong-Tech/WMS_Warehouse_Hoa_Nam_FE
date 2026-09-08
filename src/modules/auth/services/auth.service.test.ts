@@ -55,6 +55,11 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
       email: "qa@example.com",
       password: "secret",
     });
+    // WWHN-SEC-08: login tra ve union — phai thu hep truoc khi doc token.
+    // Chinh viec TypeScript bat buoc buoc nay la thu chan duoc lop loi
+    // "tuong da dang nhap" o nhanh MFA.
+    expect(result.kind).toBe("authenticated");
+    if (result.kind !== "authenticated") throw new Error("unreachable");
     expect(result.access_token).toBe("access-token");
     expect(memoryStorage.setRefreshToken).toHaveBeenCalledWith("refresh-token");
   });

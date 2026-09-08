@@ -12,15 +12,20 @@
 # dung, mỗi request một vòng mạng. Trên mạng văn phòng 30–60 ms RTT, riêng khoản
 # đó đã ăn hết ngân sách 1,5 giây.
 #
-# Ba quy tắc dưới đây, theo đúng thứ tự quan trọng:
+# Ba quy tắc, theo đúng thứ tự quan trọng:
 #
 #   1. /assets/* có hash nội dung trong tên  → immutable, 1 năm, KHÔNG hỏi lại.
 #   2. index.html + service-worker.js        → no-cache (phải hỏi lại mỗi lần,
 #      nếu không người dùng kẹt ở bản cũ sau khi deploy).
 #   3. Nén: gzip_static/brotli_static nếu build sẵn .gz/.br, không thì gzip on.
 #
+# WWHN-SEC-04 (07/09/2026) bổ sung lớp thứ hai: HEADER BẢO MẬT. Trước đó origin
+# của FE không phát một header bảo mật nào — không HSTS, không CSP, không
+# nosniff — trong khi origin của API đã có đủ (BE `SecurityHeaders`). Nghĩa là
+# chính trang chứa phiên đăng nhập lại là phần không được bảo vệ.
+#
 # CÁCH DÙNG: chép vào máy chủ (vd /etc/nginx/conf.d/wms-fe.conf), sửa
-# `server_name`, `root` và `WMS_API_UPSTREAM` rồi `nginx -t && nginx -s reload`.
+# `server_name`, `root`, các placeholder WMS_* rồi `nginx -t && nginx -s reload`.
 # File này là MẪU, không được nạp tự động ở bất kỳ đâu.
 # =============================================================================
 
@@ -28,6 +33,10 @@
 # Tên file trong /assets đã mang hash nội dung (vite): nội dung đổi ⇒ TÊN đổi.
 # Vì vậy "immutable" là an toàn tuyệt đối và là thứ cắt được nhiều vòng mạng
 # nhất — trình duyệt dùng thẳng bản trong đĩa, không hỏi máy chủ lần nào nữa.
+#
+# CHÚ Ý (WWHN-SEC-04): map này giờ phải phủ HẾT mọi trường hợp, kể cả
+# service-worker.js / manifest / index.html. Lý do ở phần "BẪY add_header" bên
+# dưới — không được đặt `add_header Cache-Control` riêng trong từng location nữa.
 map $uri $wms_cache_control {
     default                         "no-cache";
     "~^/assets/"                    "public, max-age=31536000, immutable";
@@ -41,11 +50,28 @@ server {
                               # xếp hàng thành 6 đợt nối tiếp.
     server_name khohoanamfe.example;   # ← ĐỔI
 
+    # --- TLS -----------------------------------------------------------------
     # ssl_certificate      /etc/letsencrypt/live/<domain>/fullchain.pem;
     # ssl_certificate_key  /etc/letsencrypt/live/<domain>/privkey.pem;
+    #
+    # Chốt phiên bản giao thức: TLS 1.0/1.1 đã bị mọi trình duyệt hiện đại bỏ và
+    # là điểm trừ trong mọi bài quét tuân thủ. Không khai `ssl_ciphers` cho
+    # TLS 1.3 (bộ mã của nó cố định); dòng ciphers dưới đây chỉ áp cho 1.2.
+    ssl_protocols             TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_ciphers               ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_session_cache         shared:WMS_TLS:10m;
+    ssl_session_timeout       1d;
+    ssl_session_tickets       off;   # tickets không có forward secrecy nếu key không xoay
+    # ssl_stapling            on;    # bật khi chứng chỉ có OCSP responder
+    # ssl_stapling_verify     on;
+    # ssl_trusted_certificate /etc/letsencrypt/live/<domain>/chain.pem;
 
     root /var/www/wms-fe;     # ← thư mục chứa nội dung `dist/` sau khi build
     index index.html;
+
+    # Không công bố phiên bản nginx trong header Server và trang lỗi.
+    server_tokens off;
 
     # --- Nén -----------------------------------------------------------------
     # Bản build có ~1,3 MB JS + 185 KB CSS. Nén gzip đưa xuống ~410 KB.
@@ -67,7 +93,103 @@ server {
     # gzip_static on;
     # brotli_static on;
 
+    # =========================================================================
+    # BẪY add_header CỦA NGINX — ĐỌC TRƯỚC KHI SỬA
+    # -------------------------------------------------------------------------
+    # `add_header` KHÔNG cộng dồn theo kiểu kế thừa. Nếu một khối `location` có
+    # dù chỉ MỘT `add_header` của riêng nó thì TOÀN BỘ `add_header` khai ở cấp
+    # `server` bị bỏ qua trong location đó.
+    #
+    # Bản trước của file này đặt `add_header Cache-Control ...` trong ba
+    # location (`/service-worker.js`, `/manifest.webmanifest`, `/index.html`).
+    # Nếu cứ thế thêm header bảo mật ở cấp server thì chúng sẽ biến mất đúng ở
+    # `index.html` — tức đúng cái tài liệu HTML mà CSP và HSTS cần bảo vệ nhất,
+    # còn các file .js thì lại có. Một lỗ hổng gần như không thể phát hiện bằng
+    # mắt vì `curl` một file asset vẫn thấy header đầy đủ.
+    #
+    # CÁCH XỬ LÝ: gom Cache-Control vào `map $wms_cache_control` ở trên và KHÔNG
+    # dùng `add_header` trong bất kỳ location tĩnh nào nữa. Cả server chỉ còn
+    # MỘT bộ `add_header` duy nhất — không có gì để mà mất.
+    #
+    # Nếu sau này bạn cần thêm header cho riêng một location, PHẢI chép lại đủ
+    # cả bộ dưới đây vào location đó.
+    # =========================================================================
+
     add_header Cache-Control $wms_cache_control always;
+
+    # --- HSTS ---------------------------------------------------------------
+    # Chỉ có ý nghĩa trên khối 443. `includeSubDomains` an toàn vì toàn bộ tên
+    # miền con của hệ thống đều đã chạy https.
+    #
+    # `preload` CỐ Ý CHƯA BẬT: đưa tên miền vào danh sách preload của trình
+    # duyệt là thao tác gần như KHÔNG gỡ lại được (mất nhiều tháng), nên chỉ bật
+    # sau khi đã chạy ổn định với max-age này ít nhất vài tuần và chắc chắn mọi
+    # tên miền con đều có chứng chỉ. Thêm ` ; preload` khi DevOps đã xác nhận.
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # --- Content Security Policy --------------------------------------------
+    # ĐÃ ĐỐI CHIẾU VỚI BẢN BUILD THẬT, không phải policy chép mẫu:
+    #
+    #  script-src 'self'
+    #      `dist/index.html` do vite sinh ra KHÔNG có script inline nào — chỉ
+    #      một thẻ <script type="module" src="/assets/...">. Đã grep bản build:
+    #      không có `eval(` hay `new Function(` trong bất kỳ chunk nào. Vì vậy
+    #      KHÔNG cần 'unsafe-inline' và KHÔNG cần 'unsafe-eval' cho script.
+    #
+    #  style-src 'self' 'unsafe-inline'
+    #      ĐÂY LÀ CHỖ DUY NHẤT PHẢI NỚI, và nó bắt buộc: giao diện dựng trên
+    #      MUI v9 + Emotion, thư viện này chèn thẻ <style> vào <head> lúc chạy.
+    #      Bỏ 'unsafe-inline' sẽ làm trắng toàn bộ giao diện. Cách gỡ đúng là
+    #      cấp nonce cho Emotion (CacheProvider + nonce), nhưng nonce phải sinh
+    #      MỚI theo từng response nên máy chủ tĩnh phải chèn nó vào HTML bằng
+    #      sub_filter và SPA phải đọc lại — một thay đổi kiến trúc riêng, không
+    #      thuộc phạm vi lớp header này. Rủi ro còn lại hẹp: 'unsafe-inline'
+    #      cho STYLE không cho phép chạy mã, chỉ cho phép chèn CSS.
+    #
+    #  img-src ... data: blob:
+    #      data: cho icon nội tuyến; blob: cho ảnh xem trước sau khi tải về qua
+    #      Bearer rồi dựng object URL (luồng tải tệp đính kèm/ảnh sản phẩm).
+    #
+    #  connect-src
+    #      Phải liệt kê origin của API và của WebSocket realtime (Reverb). Nếu
+    #      bạn bật khối proxy /api/ bên dưới thì API cùng origin và 'self' đã đủ
+    #      — khi đó xoá WMS_API_ORIGIN đi cho chặt.
+    #
+    #  worker-src 'self' blob:
+    #      service-worker.js cùng origin; blob: vì bundler có thể tạo worker từ
+    #      blob URL.
+    #
+    #  frame-ancestors 'none' + form-action 'self' + base-uri 'self'
+    #      Chống nhúng iframe (clickjacking), chống cướp đích form, và chống
+    #      chèn <base> để lái đường dẫn tương đối sang máy chủ khác.
+    #
+    #  object-src 'none'  → chặn <embed>/<object>, không có nhu cầu nào dùng.
+    #
+    # ← ĐỔI các placeholder WMS_*_ORIGIN cho đúng hệ thống của bạn, hoặc xoá hẳn
+    #   nếu không dùng (ví dụ không có realtime thì bỏ phần wss://).
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://WMS_STORAGE_ORIGIN; font-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; connect-src 'self' https://WMS_API_ORIGIN wss://WMS_REALTIME_ORIGIN; upgrade-insecure-requests" always;
+
+    # --- Các header bảo mật còn lại -----------------------------------------
+    add_header X-Content-Type-Options "nosniff" always;
+
+    # Giữ song song với `frame-ancestors 'none'`: trình duyệt cũ không hiểu CSP
+    # level 2 vẫn được bảo vệ.
+    add_header X-Frame-Options "DENY" always;
+
+    # Cross-origin chỉ gửi origin, không gửi đường dẫn — đường dẫn của WMS có
+    # chứa mã chứng từ và id nghiệp vụ, không nên rò sang máy chủ ảnh/CDN.
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # QUAN TRỌNG — KHÁC VỚI POLICY CỦA BACKEND.
+    # BE đặt `camera=()` vì API không bao giờ cần camera. FE thì NGƯỢC LẠI:
+    # màn nhập kho dùng `navigator.mediaDevices.getUserMedia({video:...})` để
+    # quét mã (src/modules/inbound/pages/MvpInboundScreens.tsx). Chép nguyên
+    # policy của BE sang đây sẽ làm CHẾT máy quét mà không báo lỗi rõ ràng.
+    add_header Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()" always;
+
+    # Cách ly ngữ cảnh duyệt: chặn cửa sổ do trang khác mở giữ tham chiếu tới
+    # window của ứng dụng.
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
 
     # --- Tài nguyên tĩnh có hash --------------------------------------------
     location /assets/ {
@@ -79,14 +201,12 @@ server {
     }
 
     # --- Service worker + manifest ------------------------------------------
-    # PHẢI no-cache: đây là hai file quyết định người dùng có nhận được bản mới
-    # hay không. Cache chúng là tự khoá mình ở bản cũ.
+    # Cache-Control của hai file này do `map` ở trên lo (nhánh `default` =
+    # "no-cache"). KHÔNG thêm `add_header` vào đây — xem "BẪY add_header".
     location = /service-worker.js {
-        add_header Cache-Control "no-cache, must-revalidate" always;
         try_files $uri =404;
     }
     location = /manifest.webmanifest {
-        add_header Cache-Control "no-cache" always;
         types { } default_type application/manifest+json;
         try_files $uri =404;
     }
@@ -110,8 +230,13 @@ server {
     #     proxy_set_header   Connection        "";        # giữ keepalive
     #     proxy_buffering    on;
     #     proxy_read_timeout 120s;
-    #     # Response của API tự mang Cache-Control: no-store (NoStoreApiResponses),
-    #     # nên KHÔNG áp $wms_cache_control ở đây.
+    #
+    #     # CÓ CHỦ Ý đặt add_header ở đây — theo "BẪY add_header", việc này bỏ
+    #     # toàn bộ header cấp server cho riêng /api/. Đó đúng là điều ta muốn:
+    #     # response của API đã tự mang đủ header bảo mật của nó (BE
+    #     # `SecurityHeaders`) và `Cache-Control: no-store, private`
+    #     # (`NoStoreApiResponses`). Nếu để nginx cộng thêm, mỗi response API sẽ
+    #     # có HAI dòng Strict-Transport-Security/CSP trùng nhau.
     #     add_header Cache-Control "" always;
     # }
 
@@ -121,15 +246,12 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
     }
-
-    # index.html không bao giờ được cache: nó là nơi trỏ tới tên file có hash
-    # của bản build hiện hành.
-    location = /index.html {
-        add_header Cache-Control "no-cache, must-revalidate" always;
-    }
 }
 
 # --- Chuyển hướng HTTP → HTTPS ----------------------------------------------
+# Đây là lưới an toàn cho người gõ tay địa chỉ, KHÔNG phải cơ chế bảo vệ chính:
+# request đầu tiên của bundle đã bị chặn từ trước bởi luật vận chuyển trong
+# `src/shared/config/transport-security.ts` (chặn cả lúc build lẫn lúc chạy).
 server {
     listen 80;
     server_name khohoanamfe.example;   # ← ĐỔI

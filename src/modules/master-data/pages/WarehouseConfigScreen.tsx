@@ -15,6 +15,7 @@ import {
 } from "@/shared/api/api-error";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useCan } from "@/shared/components/permission";
+import { useAuthStore } from "@/shared/store/auth.store";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { validatePhone } from "@/shared/constants/validation.constants";
@@ -137,6 +138,14 @@ export function WarehouseConfigScreen() {
   const t = useT();
   const queryClient = useQueryClient();
   const canManage = useCan(P.WAREHOUSE_MANAGE);
+  /**
+   * BA 07/09/2026 — bật/tắt kho CHỈ Super Admin, tách khỏi `warehouse.manage`.
+   *
+   * Không dùng `useCan` được: đây không phải một mã quyền mà là chính vai trò. Cổng
+   * thật nằm ở BE (WarehouseController::update trả 403 ACCESS_DENIED); chỗ này chỉ để
+   * người không đủ quyền không bấm vào rồi mới biết.
+   */
+  const canChangeStatus = useAuthStore((state) => state.isSuperAdmin);
 
   const [selectedId, setSelectedId] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -282,6 +291,25 @@ export function WarehouseConfigScreen() {
     Boolean(formValues.status) &&
     formValues.status !== warehouse?.status;
 
+  /**
+   * Hai chiều đổi trạng thái có hậu quả khác hẳn nhau nên hộp xác nhận phải nói đúng
+   * việc sắp xảy ra: tạm dừng = đóng băng ghi toàn hệ thống, mở lại = nhận ghi trở lại.
+   * Dùng chung một câu "Đổi trạng thái kho?" thì người bấm Đồng ý không biết mình vừa
+   * làm gì — mà đây là thao tác dừng cả kho.
+   */
+  const pausing = statusChanged && formValues.status === "INACTIVE";
+  const confirmCopy = pausing
+    ? {
+        title: t("masterData.warehouse.confirmPauseTitle"),
+        body: t("masterData.warehouse.confirmPauseBody"),
+        ok: t("masterData.warehouse.confirmPauseOk"),
+      }
+    : {
+        title: t("masterData.warehouse.confirmResumeTitle"),
+        body: t("masterData.warehouse.confirmResumeBody"),
+        ok: t("masterData.warehouse.confirmResumeOk"),
+      };
+
   const fieldsDisabled = !canManage || saveMutation.isPending;
 
   return (
@@ -320,6 +348,15 @@ export function WarehouseConfigScreen() {
             {t("masterData.warehouse.noneBody")}
           </UiAlert>
         ) : null}
+
+        {/*
+          KHÔNG lặp lại cảnh báo "kho đang tạm dừng" ở đây. Nó là trạng thái TOÀN HỆ
+          THỐNG nên do shell dựng một lần cho mọi màn (AppLayout -> WarehousePausedBanner);
+          màn này nằm trong shell đó, thêm nữa là hiện hai dải giống hệt nhau chồng lên
+          nhau — đã thấy tận mắt khi chụp màn hình preview.
+
+          Trạng thái hiện tại của kho vẫn đọc được ngay dưới đây ở ô "Trạng thái hiện tại".
+        */}
 
         {warehouses.length > 1 ? (
           <UiAlert
@@ -434,7 +471,13 @@ export function WarehouseConfigScreen() {
                     label={t("masterData.status.label")}
                     required
                     fullWidth
-                    disabled={fieldsDisabled}
+                    disabled={fieldsDisabled || !canChangeStatus}
+                    helperText={
+                      fieldErrors.status ||
+                      (canManage && !canChangeStatus
+                        ? t("masterData.warehouse.statusSuperAdminOnly")
+                        : undefined)
+                    }
                     value={formValues.status}
                     onChange={(event) => {
                       const value = event.target.value as MasterStatus;
@@ -447,7 +490,6 @@ export function WarehouseConfigScreen() {
                       );
                     }}
                     error={Boolean(fieldErrors.status)}
-                    helperText={fieldErrors.status}
                   >
                     {statusOptions(t).map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -544,7 +586,7 @@ export function WarehouseConfigScreen() {
           onClose={() => setConfirmOpen(false)}
           maxWidth="xs"
           fullWidth
-          title={t("masterData.warehouse.confirmTitle")}
+          title={confirmCopy.title}
           actions={
             <>
               <ActionButton kind="cancel" onClick={() => setConfirmOpen(false)}>
@@ -552,16 +594,15 @@ export function WarehouseConfigScreen() {
               </ActionButton>
               <ActionButton
                 kind="confirm"
+                data-testid="warehouse-status-confirm"
                 onClick={() => void confirmStatusChange()}
               >
-                {t("masterData.warehouse.confirmOk")}
+                {confirmCopy.ok}
               </ActionButton>
             </>
           }
         >
-          <UiText variant="body">
-            {t("masterData.warehouse.confirmBody")}
-          </UiText>
+          <UiText variant="body">{confirmCopy.body}</UiText>
         </UiDialog>
       </Stack>
     </>

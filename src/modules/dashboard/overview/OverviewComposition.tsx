@@ -144,8 +144,10 @@ export function OverviewComposition({
             >
               <i />
               <span>
-                {row.label}{" "}
-                <small className="composition-code">({row.status})</small>
+                {/* Bỏ hậu tố mã enum "(AVAILABLE)": nhãn tiếng Việt đã đủ nghĩa, mã
+                    kỹ thuật lộ ra màn người dùng là thứ sheet 06 (UI-24/UI-25) cấm
+                    và cũng trái luật "enum phải qua map nhãn" của dự án. */}
+                {row.label}
               </span>
               <span className="composition-figure">
                 <strong>{fmt(row.value)}</strong>
@@ -168,10 +170,7 @@ export function OverviewComposition({
           <tbody>
             {rows.map((row) => (
               <tr key={row.status}>
-                <td>
-                  {row.label}{" "}
-                  <small className="composition-code">({row.status})</small>
-                </td>
+                <td>{row.label}</td>
                 <td>{fmt(row.value)}</td>
                 <td>{row.pct}%</td>
               </tr>

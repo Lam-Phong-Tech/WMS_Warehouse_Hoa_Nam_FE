@@ -175,7 +175,7 @@ export const NAV_GROUPS: NavGroupData[] = [
       {
         screen: "REV-00",
         path: ROUTES.REVERSE,
-        label: "Danh sách phiếu điều chỉnh tồn kho",
+        label: "Danh sách phiếu đảo",
         icon: "rotate-left",
       },
     ],
@@ -479,8 +479,8 @@ export const SCREEN_META: Record<
     description: "Truy vết mã vật lý.",
   },
   "REV-00": {
-    title: "Danh sách phiếu điều chỉnh tồn kho",
-    description: "Danh sách phiếu để chọn tạo điều chỉnh tồn kho.",
+    title: "Danh sách phiếu đảo",
+    description: "Danh sách phiếu để chọn tạo phiếu đảo.",
   },
   "RPT-01": {
     title: "Báo cáo nhập kho",
@@ -519,7 +519,7 @@ export const SCREEN_META: Record<
   "RPT-08": {
     title: "Lịch sử nhập – xuất kho",
     description:
-      "Lịch sử chứng từ nhập / xuất / hoàn tác đã ghi nhận theo posted_at.",
+      "Lịch sử chứng từ nhập / xuất / đảo đã ghi nhận theo posted_at.",
   },
   "AUDIT-01": {
     title: "Nhật ký hệ thống",

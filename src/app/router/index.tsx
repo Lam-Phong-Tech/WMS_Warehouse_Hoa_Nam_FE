@@ -35,6 +35,7 @@ import {
   PackingLabelReportPage,
   PendingEvidenceReportPage,
   PhysicalCodesPage,
+  MfaSetupPage,
   ProfilePage,
   PutawayPage,
   PvAdminPage,
@@ -307,6 +308,14 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.PROFILE,
             element: routeEl(ROUTES.PROFILE, <ProfilePage />),
+          },
+          {
+            // WWHN-SEC-08 — tu phuc vu, KHONG bao routeEl: dung mot vai tro bi
+            // chan boi EnforceMfaEnrollment moi can vao day, nen doi them quyen
+            // se tao vong lap "khong vao duoc vi chua dang ky, khong dang ky
+            // duoc vi khong vao duoc".
+            path: ROUTES.MFA_SETUP,
+            element: <MfaSetupPage />,
           },
           // 403 nằm TRONG MainLayout: người dùng đã đăng nhập nên phải giữ
           // sidebar/topbar để đi tiếp chỗ khác, thay vì mắc kẹt ở một trang

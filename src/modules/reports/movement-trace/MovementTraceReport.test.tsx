@@ -162,7 +162,7 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     expect(within(rows[1]).getByText("REV-2026-00007")).toBeInTheDocument();
     expect(within(rows[2]).getByText("OUT-2026-00018")).toBeInTheDocument();
 
-    // 4 thẻ: tổng 3 · nhập 1 · xuất 1 · hoàn tác 1 (summary + by_movement_type).
+    // 4 thẻ: tổng 3 · nhập 1 · xuất 1 · đảo 1 (summary + by_movement_type).
     expect(screen.getByText("Tổng biến động")).toBeInTheDocument();
     // Loại các ô nằm TRONG bảng: cột STT của ledger cũng in ra 1/2/3 nên
     // truy vấn theo con số trần không còn duy nhất.
@@ -183,9 +183,7 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     expect(within(table).getByText("Đảo phiếu xuất")).toBeInTheDocument();
     expect(within(table).queryByText("Đảo phiếu nhập")).not.toBeInTheDocument();
     // Timeline dùng cách gọi nghiệp vụ của bản demo cho cùng dòng đó.
-    expect(
-      screen.getByText("Điều chỉnh tồn kho phiếu xuất"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Phiếu đảo cho phiếu xuất")).toBeInTheDocument();
   });
 
   it("lọc theo Actor rồi Đặt lại đưa ledger về đủ ba dòng", async () => {

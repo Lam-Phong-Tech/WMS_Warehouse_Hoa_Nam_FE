@@ -33,6 +33,11 @@ export const ForgotPasswordPage = lazyRoute(() =>
     default: m.ForgotPasswordPage,
   })),
 );
+export const MfaSetupPage = lazyRoute(() =>
+  import("@/modules/auth/pages/MfaSetupPage").then((m) => ({
+    default: m.MfaSetupPage,
+  })),
+);
 export const ProfilePage = lazyRoute(() =>
   import("@/modules/auth/pages/ProfilePage").then((m) => ({
     default: m.ProfilePage,

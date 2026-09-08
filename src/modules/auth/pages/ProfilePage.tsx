@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   Box,
   Stack,
@@ -22,6 +23,7 @@ import {
 } from "@/modules/audit-logs/services/audit-logs.service";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { ROUTES } from "@/shared/constants/routes";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
 function permissionHistoryActionLabel(t: TranslateFn, action: string): string {
@@ -208,6 +210,18 @@ export function ProfilePage() {
             },
           ]}
         />
+      </UiCard>
+
+      {/* WWHN-SEC-08 — lối vào duy nhất tới màn đăng ký MFA.
+          Không có thẻ này thì /profile/mfa tồn tại nhưng không ai tìm thấy, và
+          "tính năng đã có" trên giấy tờ lại bằng "không ai bật" trên thực tế. */}
+      <UiCard title={t("auth.mfa.setupTitle")}>
+        <Stack spacing="12px">
+          <UiText>{t("auth.mfa.setupSubtitle")}</UiText>
+          <Box>
+            <Link to={ROUTES.MFA_SETUP}>{t("auth.mfa.startEnroll")}</Link>
+          </Box>
+        </Stack>
       </UiCard>
 
       <UiCard title={t("auth.profile.historyTitle")}>

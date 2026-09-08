@@ -17,7 +17,7 @@ export const MOVEMENT_LABELS: Readonly<Record<string, string>> = bilingual(
     RECEIPT: "Nhập kho",
     ISSUE: "Xuất kho",
     COMPONENT_ISSUE: "Xuất linh kiện",
-    REVERSAL: "Điều chỉnh tồn kho",
+    REVERSAL: "Phiếu đảo",
   },
   {
     OPENING: "Opening balance",

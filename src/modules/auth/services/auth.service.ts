@@ -3,8 +3,10 @@ import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import type {
   ChangePasswordRequest,
   ForgotPasswordRequest,
+  AuthenticatedLogin,
   LoginRequest,
   LoginResponse,
+  LoginResult,
   RefreshResponse,
   ResetPasswordRequest,
   SwitchContextRequest,
@@ -13,6 +15,11 @@ import type {
   VerifyOtpResponse,
 } from "@/modules/auth/types/auth.types";
 import type { MeContext, MeResponse } from "@/modules/auth/types/me.types";
+import type {
+  MfaConfirmResult,
+  MfaEnrollment,
+  MfaStatus,
+} from "@/modules/auth/types/mfa.types";
 import type { User, UserRoleAssignment } from "@/shared/types/user";
 import { memoryStorage } from "@/shared/lib/memory-storage";
 import { tStatic } from "@/shared/i18n/useT";
@@ -37,6 +44,9 @@ type BackendUser = Partial<User> & {
 };
 
 type BackendLoginResponse = {
+  /** WWHN-SEC-08: co mat khi tai khoan da bat MFA — KHONG kem access_token. */
+  mfa_required?: boolean;
+  mfa_token?: string;
   access_token?: string;
   refresh_token?: string;
   token_type?: string;
@@ -280,14 +290,56 @@ export function meResponseFromRefreshUser(user: unknown): MeResponse | null {
 }
 
 export const authService = {
-  async login(data: LoginRequest) {
+  async login(data: LoginRequest): Promise<LoginResult> {
     const response = await http.post<BackendLoginResponse>(
       API_ENDPOINTS.LOGIN,
       data,
     );
+
+    // WWHN-SEC-08: mat khau dung moi la yeu to thu nhat. BE dung o day va KHONG
+    // phat token nao; FE phai nhan ra nhanh nay truoc khi normalize, vi
+    // normalizeLoginResponse() se nem AuthContractError khi thieu access_token.
+    if (response.mfa_required === true) {
+      return {
+        kind: "mfa_required",
+        mfa_required: true,
+        mfa_token: requireNonEmptyString(response.mfa_token, "mfa_token"),
+        expires_in: requirePositiveNumber(response.expires_in, "expires_in"),
+      };
+    }
+
     const normalized = normalizeLoginResponse(response);
     memoryStorage.setRefreshToken(normalized.refresh_token);
-    return normalized;
+    return { kind: "authenticated", ...normalized };
+  },
+
+  /**
+   * Buoc 2 cua dang nhap. `code` co the la ma TOTP 6 chu so hoac mot ma khoi phuc.
+   */
+  async verifyMfa(mfaToken: string, code: string): Promise<AuthenticatedLogin> {
+    const response = await http.post<BackendLoginResponse>(
+      API_ENDPOINTS.MFA_VERIFY,
+      { mfa_token: mfaToken, code },
+    );
+    const normalized = normalizeLoginResponse(response);
+    memoryStorage.setRefreshToken(normalized.refresh_token);
+    return { kind: "authenticated", ...normalized };
+  },
+
+  mfaStatus() {
+    return http.get<MfaStatus>(API_ENDPOINTS.MFA_STATUS);
+  },
+
+  mfaEnroll() {
+    return http.post<MfaEnrollment>(API_ENDPOINTS.MFA_ENROLL, {});
+  },
+
+  mfaConfirm(code: string) {
+    return http.post<MfaConfirmResult>(API_ENDPOINTS.MFA_CONFIRM, { code });
+  },
+
+  mfaDisable(password: string, code: string) {
+    return http.post<null>(API_ENDPOINTS.MFA_DISABLE, { password, code });
   },
 
   logout() {

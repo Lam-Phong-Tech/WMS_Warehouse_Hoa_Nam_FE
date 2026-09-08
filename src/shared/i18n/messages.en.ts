@@ -958,7 +958,9 @@ export const MESSAGES_EN: MessageTree = {
       maskedNotice:
         "Customer details (name/phone/address) are masked according to permission",
       searchPlaceholder:
-        "Scan or type case / device code / temp code / phone...",
+        "Scan or type case / device code / temp code / customer / phone / product...",
+      searchPlaceholderNoPii:
+        "Scan or type case / device code / temp code / product...",
       searchAria: "Search warranty cases",
       statusFilterAria: "Filter warranty status",
       statusFilterPlaceholder: "Status: All",
@@ -1596,10 +1598,19 @@ export const MESSAGES_EN: MessageTree = {
       fieldPhone: "Phone number",
       readOnlyNotice:
         "This account only has view permission, so the warehouse configuration cannot be edited.",
-      confirmTitle: "Change the warehouse status?",
-      confirmOk: "Confirm",
-      confirmBody:
-        "The system allows exactly one Operating warehouse. Changing the status creates no document and does not change stock.",
+      statusSuperAdminOnly:
+        "Only a Super Admin may change the warehouse operating status. You can still edit the other fields.",
+      pausedTitle: "The warehouse is paused",
+      pausedBody:
+        "Every write across the system is locked: no receipts, issues, put-away, scanning, warranty handling or master-data edits. Viewing, searching, exporting reports and the audit log still work.",
+      confirmPauseTitle: "Pause the warehouse?",
+      confirmPauseOk: "Pause warehouse",
+      confirmPauseBody:
+        "As soon as you save, every write in the system stops: receipts, issues, put-away, scanning, warranty and master-data edits all halt. Viewing, searching, reports and the audit log keep working. Only a Super Admin can reopen it.",
+      confirmResumeTitle: "Reopen the warehouse?",
+      confirmResumeOk: "Reopen warehouse",
+      confirmResumeBody:
+        "The system starts accepting writes again as soon as you save.",
     },
     catalog: {
       brand: "Brand",
@@ -2438,7 +2449,7 @@ export const MESSAGES_EN: MessageTree = {
       categoryAria: "Category",
       stockStatusAll: "All stock statuses",
       stockStatusAria: "Stock status",
-      reconcileAll: "MATCH and MISMATCH",
+      reconcileAll: "All reconciliation statuses",
       reconcileAria: "Reconciliation status",
       detailThresholdAria: "Threshold status in the detail table",
       detailEmpty: "No SKU for the current filters.",
@@ -3112,9 +3123,9 @@ export const MESSAGES_EN: MessageTree = {
       statTotal: "Total movements",
       statTotalHint: "For the current API slice",
       statReceipt: "Posted receipts",
-      statReceiptHint: "RECEIPT_POSTED stock movements",
+      statReceiptHint: "Stock movements from posted receipts",
       statIssue: "Posted issues",
-      statIssueHint: "ISSUE_POSTED stock movements",
+      statIssueHint: "Stock movements from posted issues",
       statReversal: "Reversals",
       statReversalHint: "Recorded reversal stock movements",
       analysisEyebrow: "OPERATIONS ANALYSIS",
@@ -3226,7 +3237,7 @@ export const MESSAGES_EN: MessageTree = {
       chartDefectDesc: "Defect groups still open in this report snapshot.",
       chartDefectEmpty: "No defects in the slice in view.",
       chartComponentTitle: "Components issued",
-      chartComponentDesc: "Top components from POSTED documents in the slice.",
+      chartComponentDesc: "Top components from posted documents in the slice.",
       chartComponentEmpty: "No components were issued in the slice in view.",
       detailEyebrow: "DETAILED DATA",
       detailTitle: "Case reconciliation",
@@ -3258,8 +3269,8 @@ export const MESSAGES_EN: MessageTree = {
       dialogEyebrow: "RECONCILIATION DETAIL",
       sectionDefects: "Active technical defects",
       noDefects: "No active defects",
-      sectionComponents: "Components issued (POSTED)",
-      noComponents: "No POSTED components",
+      sectionComponents: "Components issued (posted documents)",
+      noComponents: "No components on posted documents",
       sectionHistory: "Assignment history",
       historyForbidden:
         "Your account is not allowed to view warranty case history.",
@@ -3467,7 +3478,7 @@ export const MESSAGES_EN: MessageTree = {
       quickSearchPlaceholder: "Document / request / recipient",
       resetting: "Resetting…",
       reset: "Reset",
-      exportDenied: "The REPORT_EXPORT permission is required",
+      exportDenied: "Report export permission is required",
       exportXlsx: "Export XLSX",
       exportPdf: "Export PDF",
       summaryEyebrow: "CURRENT STATUS",
@@ -4497,6 +4508,38 @@ export const MESSAGES_EN: MessageTree = {
         "Too many failed sign-in attempts, so the account is temporarily locked. Please wait a moment and try again.",
       errorGeneric:
         "Sign-in could not be completed. Please try again; if the problem persists, contact your administrator.",
+    },
+    mfa: {
+      challengeTitle: "Two-factor authentication",
+      challengeSubtitle:
+        "Open the authenticator app on your phone and enter the 6-digit code shown there.",
+      codeLabel: "Verification code",
+      codeHelp: "Or enter a recovery code if you do not have your phone.",
+      verifySubmit: "Verify",
+      setupTitle: "Two-factor authentication",
+      setupSubtitle:
+        "Add one more layer of protection: besides your password, each sign-in also needs a 6-digit code from your phone.",
+      statusEnabled: "Enabled",
+      statusDisabled: "Not enabled",
+      requiredForRole:
+        "Your role requires two-factor authentication. Finish the setup before continuing to use the system.",
+      startEnroll: "Start setup",
+      step1:
+        "1. Scan the QR code with Google Authenticator, Microsoft Authenticator or 1Password.",
+      step2: "2. Enter the 6-digit code shown in the app to confirm.",
+      manualKeyLabel: "Cannot scan? Enter this key manually:",
+      confirmSubmit: "Confirm and enable",
+      recoveryTitle: "Recovery codes",
+      recoveryHelp:
+        "Save these codes somewhere safe now. Each code works ONCE and will NOT be shown again. They are the only way back in if you lose your phone.",
+      recoveryRemaining: "{count} recovery codes left.",
+      disableTitle: "Turn off two-factor authentication",
+      disableHelp:
+        "Requires your current password and a valid code. Roles that require MFA cannot turn it off.",
+      disableSubmit: "Turn off two-factor authentication",
+      enableSuccess: "Two-factor authentication enabled",
+      disableSuccess: "Two-factor authentication turned off",
+      errorTitle: "Could not complete",
     },
     changePassword: {
       title: "Change password",

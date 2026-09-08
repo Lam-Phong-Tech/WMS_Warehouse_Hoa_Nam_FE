@@ -1,7 +1,4 @@
-import {
-  bilingual,
-  enumLabelOrText,
-} from "@/shared/constants/business-labels";
+import { bilingual, enumLabelOrText } from "@/shared/constants/business-labels";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { tStatic } from "@/shared/i18n/useT";
 import type { UiStatusTone } from "@/shared/ui";
@@ -61,7 +58,7 @@ export const MOVEMENT_KIND_LABELS: Readonly<Record<MovementTraceKind, string>> =
       COMPONENT_ISSUE: "Xuất linh kiện",
       RECEIPT_REVERSAL: "Đảo phiếu nhập",
       ISSUE_REVERSAL: "Đảo phiếu xuất",
-      REVERSAL: "Điều chỉnh tồn kho",
+      REVERSAL: "Phiếu đảo",
     },
     {
       OPENING: "Opening balance",
@@ -76,8 +73,9 @@ export const MOVEMENT_KIND_LABELS: Readonly<Record<MovementTraceKind, string>> =
 
 /**
  * Nhãn dùng ở dòng thời gian. Demo CỐ Ý gọi bút toán đảo bằng tên nghiệp vụ
- * ("Điều chỉnh tồn kho phiếu xuất") ở timeline và bằng tên kỹ thuật
- * ("Đảo phiếu xuất") ở bảng — giữ đúng hai cách gọi, không hợp nhất.
+ * ("Phiếu đảo cho phiếu xuất") ở timeline và bằng tên kỹ thuật
+ * ("Đảo phiếu xuất") ở bảng — giữ đúng hai cách gọi, không hợp nhất. Tên nghiệp vụ
+ * đổi từ "Điều chỉnh tồn kho ..." sang "Phiếu đảo ..." theo sheet 06 (UI-23).
  *
  * Chép tay lại cả bảng thay vì spread `MOVEMENT_KIND_LABELS`: spread một Proxy
  * song ngữ sẽ đóng băng ngôn ngữ lúc import (cùng lý do đã ghi ở trên).
@@ -90,9 +88,9 @@ export const MOVEMENT_KIND_TIMELINE_LABELS: Readonly<
     RECEIPT: "Nhập kho đã ghi sổ",
     ISSUE: "Xuất kho đã ghi sổ",
     COMPONENT_ISSUE: "Xuất linh kiện",
-    RECEIPT_REVERSAL: "Điều chỉnh tồn kho phiếu nhập",
-    ISSUE_REVERSAL: "Điều chỉnh tồn kho phiếu xuất",
-    REVERSAL: "Điều chỉnh tồn kho",
+    RECEIPT_REVERSAL: "Phiếu đảo cho phiếu nhập",
+    ISSUE_REVERSAL: "Phiếu đảo cho phiếu xuất",
+    REVERSAL: "Phiếu đảo",
   },
   {
     OPENING: "Opening balance",
@@ -188,41 +186,38 @@ const RELATION_LABELS = bilingual(
  * Đây là cột KỸ THUẬT của sổ, trước đây in nguyên `STOCK_DOCUMENT` /
  * `OPENING_ADJUSTMENT` ngay dưới mã chứng từ ở cột Nguồn.
  */
-export const MOVEMENT_SOURCE_TYPE_LABELS: Readonly<
-  Record<string, string>
-> = bilingual(
-  {
-    STOCK_DOCUMENT: "Phiếu nhập / xuất kho",
-    INBOUND_DOCUMENT: "Phiếu nhập kho",
-    OUTBOUND_DOCUMENT: "Phiếu xuất kho",
-    INBOUND: "Phiếu nhập kho",
-    OUTBOUND: "Phiếu xuất kho",
-    COMPONENT_ISSUE_DOCUMENT: "Phiếu xuất linh kiện",
-    REVERSAL_DOCUMENT: "Phiếu điều chỉnh tồn",
-    OPENING_BALANCE: "Tồn đầu kỳ",
-    OPENING_ADJUSTMENT: "Điều chỉnh tồn đầu kỳ",
-    SEEDER: "Dữ liệu dựng sẵn",
-    SEED_COVERAGE: "Dữ liệu dựng sẵn",
-  },
-  {
-    STOCK_DOCUMENT: "Receipt / issue document",
-    INBOUND_DOCUMENT: "Receipt document",
-    OUTBOUND_DOCUMENT: "Issue document",
-    INBOUND: "Receipt document",
-    OUTBOUND: "Issue document",
-    COMPONENT_ISSUE_DOCUMENT: "Component issue document",
-    REVERSAL_DOCUMENT: "Stock adjustment document",
-    OPENING_BALANCE: "Opening balance",
-    OPENING_ADJUSTMENT: "Opening balance adjustment",
-    SEEDER: "Seed data",
-    SEED_COVERAGE: "Seed data",
-  },
-);
+export const MOVEMENT_SOURCE_TYPE_LABELS: Readonly<Record<string, string>> =
+  bilingual(
+    {
+      STOCK_DOCUMENT: "Phiếu nhập / xuất kho",
+      INBOUND_DOCUMENT: "Phiếu nhập kho",
+      OUTBOUND_DOCUMENT: "Phiếu xuất kho",
+      INBOUND: "Phiếu nhập kho",
+      OUTBOUND: "Phiếu xuất kho",
+      COMPONENT_ISSUE_DOCUMENT: "Phiếu xuất linh kiện",
+      REVERSAL_DOCUMENT: "Phiếu đảo",
+      OPENING_BALANCE: "Tồn đầu kỳ",
+      OPENING_ADJUSTMENT: "Điều chỉnh tồn đầu kỳ",
+      SEEDER: "Dữ liệu dựng sẵn",
+      SEED_COVERAGE: "Dữ liệu dựng sẵn",
+    },
+    {
+      STOCK_DOCUMENT: "Receipt / issue document",
+      INBOUND_DOCUMENT: "Receipt document",
+      OUTBOUND_DOCUMENT: "Issue document",
+      INBOUND: "Receipt document",
+      OUTBOUND: "Issue document",
+      COMPONENT_ISSUE_DOCUMENT: "Component issue document",
+      REVERSAL_DOCUMENT: "Stock adjustment document",
+      OPENING_BALANCE: "Opening balance",
+      OPENING_ADJUSTMENT: "Opening balance adjustment",
+      SEEDER: "Seed data",
+      SEED_COVERAGE: "Seed data",
+    },
+  );
 
 /** Nhãn cột Nguồn; mã lạ vẫn đọc được thay vì hiện nguyên dạng máy. */
-export function movementSourceLabel(
-  value: string | null | undefined,
-): string {
+export function movementSourceLabel(value: string | null | undefined): string {
   return enumLabelOrText(MOVEMENT_SOURCE_TYPE_LABELS, value);
 }
 

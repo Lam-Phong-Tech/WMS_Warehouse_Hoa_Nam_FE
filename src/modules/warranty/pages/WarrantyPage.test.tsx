@@ -135,6 +135,31 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     ).not.toBeInTheDocument();
   });
 
+  // §13.8: BE chặn tra theo tên/SĐT khi thiếu warranty.pii.view, nên placeholder
+  // không được mời gõ thứ chắc chắn không ra kết quả.
+  it("thiếu warranty.pii.view: placeholder ô tìm không hứa tên khách / SĐT", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+
+    await screen.findByText("BH-0001");
+    const placeholder = screen
+      .getByRole("textbox", { name: /Tìm hồ sơ bảo hành/ })
+      .getAttribute("placeholder");
+    expect(placeholder).toContain("sản phẩm");
+    expect(placeholder).not.toContain("tên khách");
+  });
+
+  it("có warranty.pii.view: placeholder ô tìm hứa cả tên khách và sản phẩm", async () => {
+    grant(["warranty.manage", "warranty.pii.view"]);
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+
+    await screen.findByText("BH-0001");
+    const placeholder = screen
+      .getByRole("textbox", { name: /Tìm hồ sơ bảo hành/ })
+      .getAttribute("placeholder");
+    expect(placeholder).toContain("tên khách");
+    expect(placeholder).toContain("sản phẩm");
+  });
+
   it("bấm Mở mở modal chi tiết đúng case (WAR-03)", async () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
 

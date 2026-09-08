@@ -3,6 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
+import {
+  transportViolation,
+  type TransportEnvName,
+} from "./src/shared/config/transport-security";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,8 +71,39 @@ function apiPreconnect(apiBaseUrl: string | undefined) {
   };
 }
 
+/**
+ * WWHN-SEC-04 — chặn bản dựng trỏ tới host thật qua http://.
+ *
+ * `env.ts` đã chặn lúc SPA khởi động, nhưng lúc đó artifact sai ĐÃ tồn tại và
+ * có thể đã được đẩy lên máy chủ. Chặn thêm ở đây để lỗi cấu hình chết ngay
+ * trong pipeline, trước khi có gì để deploy. Cùng dùng chung một luật với
+ * runtime nên hai tầng không thể nói khác nhau.
+ */
+function assertSecureBuildConfig(env: Record<string, string>) {
+  const envName = (env.VITE_APP_ENV || "local").toLowerCase() as TransportEnvName;
+
+  for (const key of ["VITE_API_BASE_URL", "VITE_STORAGE_URL"] as const) {
+    const value = env[key];
+    if (!value) continue;
+
+    let parsed: URL;
+    try {
+      parsed = new URL(value);
+    } catch {
+      // Hình dạng URL sai là việc của env.ts (câu lỗi ở đó chi tiết hơn).
+      continue;
+    }
+
+    const violation = transportViolation(parsed, key, envName);
+    if (violation) {
+      throw new Error(`[vite] Bản dựng bị chặn vì cấu hình không an toàn: ${violation}`);
+    }
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, rootDir, "VITE_");
+  assertSecureBuildConfig(env);
   return {
   plugins: [react(), apiPreconnect(env.VITE_API_BASE_URL)],
 

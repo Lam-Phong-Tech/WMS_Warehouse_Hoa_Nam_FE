@@ -38,6 +38,24 @@ export interface LoginResponse {
   available_contexts: AuthContext[];
 }
 
+/**
+ * WWHN-SEC-08 — POST /auth/login nay tra ve MOT TRONG HAI ket qua.
+ *
+ * Dung union co discriminant thay vi mot interface co field optional: kieu
+ * optional cho phep doc `access_token` o nhanh MFA ma TypeScript khong phan
+ * doi, tuc la de lot dung loi "tuong da dang nhap" ma ta muon chan.
+ */
+export type AuthenticatedLogin = LoginResponse & { kind: "authenticated" };
+
+export type MfaRequiredLogin = {
+  kind: "mfa_required";
+  mfa_required: true;
+  mfa_token: string;
+  expires_in: number;
+};
+
+export type LoginResult = AuthenticatedLogin | MfaRequiredLogin;
+
 /** POST /auth/change-password — BE dùng Laravel confirmed cho new_password. */
 export interface ChangePasswordRequest {
   current_password: string;

@@ -199,7 +199,7 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     expect(within(dialog).getByText(/Đối soát:/)).toBeInTheDocument();
     expect(within(dialog).getAllByText("PX-0001").length).toBeGreaterThan(0);
     expect(within(dialog).getByText(/Ghi nhận xuất/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/Hoàn tác xuất/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Đảo phiếu xuất/)).toBeInTheDocument();
     expect(
       within(dialog).getByText(
         /Thông tin liên hệ đã được máy chủ che theo quyền của tài khoản./,
