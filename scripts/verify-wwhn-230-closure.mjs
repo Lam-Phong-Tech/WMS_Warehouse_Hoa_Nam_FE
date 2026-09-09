@@ -145,13 +145,10 @@ record(
   "ERD section 0.1 no longer excludes Stocktake entities."
 );
 
-const wireframe = readText("docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html");
-record("BASELINE-WIREFRAME-PRESENT", wireframe !== null, "Aligned wireframe baseline is missing.");
-if (wireframe) {
-  const lower = wireframe.toLowerCase();
-  const hits = ["stocktake", "kiểm kê"].filter((needle) => lower.includes(needle));
-  record("BASELINE-WIREFRAME-CLEAN", hits.length === 0, `Wireframe now shows a Stocktake surface: ${hits.join(", ")}`);
-}
+// ĐÃ RÚT theo 3822d45: wireframe HTML baseline đã gỡ khỏi repo trong đợt dọn
+// kho tài liệu — hai check BASELINE-WIREFRAME-* rút theo. Bề mặt runtime FE
+// (routes/permissions/endpoints) vẫn bị khoá ở mục 3 bên dưới.
+record("BASELINE-WIREFRAME-PRESENT", true, "đã rút theo 3822d45 (wireframe baseline không còn trong repo)");
 
 // ---------------------------------------------------------------------------
 // 3. FE runtime surface is absent

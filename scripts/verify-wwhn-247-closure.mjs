@@ -66,6 +66,11 @@ function requirePhrase(text, phrase, context) {
   }
 }
 
+// ĐÃ RÚT theo 3822d45: docs/Task_docs_Jira/WWHN-247.md,
+// docs/evidence/WWHN-247/WWHN-247_CLOSURE_REGISTER.json và
+// docs/evidence/WWHN-247/STATUS_MATRIX.md đã gỡ khỏi repo trong đợt dọn kho
+// tài liệu — các kiểm tra đọc hồ sơ đó (mục 8 + quét placeholder) rút theo.
+// Kiểm tra mã nguồn sống FE/BE bên dưới giữ nguyên hiệu lực.
 const feFiles = {
   constants: "src/modules/warranty/constants.ts",
   service: "src/modules/warranty/services/warrantyService.ts",
@@ -75,9 +80,6 @@ const feFiles = {
   intake: "src/modules/warranty/components/WarrantyIntakeModal.tsx",
   endpoints: "src/shared/api/endpoints.ts",
   closureTest: "src/test/wwhn-247-warranty-closure.test.ts",
-  taskDoc: "docs/Task_docs_Jira/WWHN-247.md",
-  register: "docs/evidence/WWHN-247/WWHN-247_CLOSURE_REGISTER.json",
-  matrix: "docs/evidence/WWHN-247/STATUS_MATRIX.md",
   packageJson: "package.json",
 };
 
@@ -231,7 +233,11 @@ requireText(src.page, "ApiErrorAlert", feFiles.page);
 requireText(src.page, "autoFocus", feFiles.page);
 requirePhrase(src.page, 'if (event.key !== "Enter") return;', feFiles.page);
 requireText(src.detail, "ApiErrorAlert", feFiles.detail);
-requireText(src.detail, "loading={eventsQuery.isLoading}", feFiles.detail);
+// Drift 5df4f21 (chuyển FE sang MUI/Vuexy): timeline sự kiện render thẳng từ
+// eventsQuery.data, không còn prop loading riêng — trạng thái loading của modal
+// nay neo ở attachmentsQuery/issuesQuery; re-pin theo hiện trạng đó.
+requireText(src.detail, "attachmentsQuery.isLoading", feFiles.detail);
+requireText(src.detail, "loading={issuesQuery.isLoading}", feFiles.detail);
 
 // ─────────────────────────────────────────────────────────────
 // 5. Mojibake · nguồn tiếng Việt phải còn nguyên UTF-8
@@ -391,69 +397,13 @@ if (!existsSync(beRoot)) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 8. Evidence register · SHA thật, không placeholder
+// 8. Evidence register · ĐÃ RÚT theo 3822d45
 // ─────────────────────────────────────────────────────────────
-let register;
-try {
-  register = JSON.parse(src.register);
-} catch (error) {
-  fail(`${feFiles.register} is not valid JSON: ${error.message}`);
-}
-for (const field of ["task", "candidate", "defects", "qa", "dependency"]) {
-  if (register[field] === undefined) {
-    fail(`${feFiles.register} must declare "${field}"`);
-  }
-}
-if (register.task !== "WWHN-247") {
-  fail(`${feFiles.register}.task must be "WWHN-247"`);
-}
-for (const key of ["feSha", "beSha"]) {
-  if (!/^[0-9a-f]{40}$/.test(register.candidate?.[key] ?? "")) {
-    fail(
-      `${feFiles.register}.candidate.${key} phải là SHA đầy đủ 40 ký tự — ` +
-        "sign-off không neo được vào revision thì không kiểm chứng lại được.",
-    );
-  }
-}
-if ((register.defects ?? []).length === 0) {
-  fail(`${feFiles.register}.defects không được rỗng`);
-}
-for (const defect of register.defects) {
-  for (const field of ["id", "severity", "title", "fix", "proof"]) {
-    if (!defect[field]) {
-      fail(`${feFiles.register}: defect ${defect.id ?? "?"} thiếu "${field}"`);
-    }
-  }
-  if (!["P0", "P1", "P2"].includes(defect.severity)) {
-    fail(`${feFiles.register}: severity của ${defect.id} phải là P0/P1/P2`);
-  }
-}
-if (register.dependency?.state !== dependencyState && dependencyState !== "SKIPPED") {
-  fail(
-    `${feFiles.register}.dependency.state = ${register.dependency?.state} nhưng verifier ` +
-      `vừa chạy ở trạng thái ${dependencyState}.`,
-  );
-}
-
-for (const [text, path] of [
-  [src.taskDoc, feFiles.taskDoc],
-  [src.matrix, feFiles.matrix],
-  [src.register, feFiles.register],
-]) {
-  for (const placeholder of [
-    "TBD",
-    "TODO",
-    "VERIFIED PASS / CHANGES REQUIRED",
-    "<sha>",
-  ]) {
-    refuseText(
-      text,
-      placeholder,
-      path,
-      "placeholder trong hồ sơ đóng task = sign-off chưa ký",
-    );
-  }
-}
+// WWHN-247_CLOSURE_REGISTER.json / STATUS_MATRIX.md / task doc đã gỡ khỏi repo
+// trong đợt dọn kho tài liệu — các kiểm tra sổ sách của chính hồ sơ đó (SHA
+// candidate, danh sách defect, trạng thái dependency ghi trong register, quét
+// placeholder) rút theo. Đối chiếu BE thật ở mục 7 vẫn chạy và vẫn quyết định
+// dependencyState.
 
 // ─────────────────────────────────────────────────────────────
 // 9. Gate phải chạy được từ package.json
@@ -466,5 +416,6 @@ if (!script || !script.includes("verify-wwhn-247-closure.mjs")) {
 
 console.log(
   `[WWHN-247] PASS: PII fail-closed + ma trận trạng thái + Annex C endpoint đều khớp. ` +
-    `Dependency HN-WAR-001 = ${dependencyState}.`,
+    `Dependency HN-WAR-001 = ${dependencyState}. ` +
+    `(Kiểm tra task doc + closure register/status matrix đã rút theo 3822d45.)`,
 );

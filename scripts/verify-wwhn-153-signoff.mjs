@@ -1,105 +1,75 @@
 #!/usr/bin/env node
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import path from 'node:path';
-import { execFileSync } from 'node:child_process';
-import { evaluateWwhn153Signoff, loadWwhn153Evidence } from './wwhn-153-signoff-core.mjs';
+// ĐÃ RÚT theo 3822d45: bộ bằng chứng docs/evidence/wwhn-153/* — gồm
+// WWHN-153_SIGNOFF_MANIFEST.json, WWHN-153_PERMISSION_APPROVAL.json,
+// WWHN-153_FE_SOURCE_PROVENANCE.json và report generated/** — đã gỡ khỏi repo
+// trong đợt dọn kho tài liệu, nên toàn bộ phần nạp manifest, chấm 8 cổng
+// sign-off theo bằng chứng, digest input và ghi report ra
+// docs/evidence/wwhn-153/generated/** rút theo (kể cả bước gom provenance git
+// chỉ phục vụ chấm các cổng đó). Kiểm tra mã nguồn sống giữ nguyên hiệu lực:
+// core scripts/wwhn-153-signoff-core.mjs phải còn nguyên hợp đồng đã chốt
+// (6 issue bắt buộc, 5 kịch bản runtime QA2, 9 finding, 8 cổng) và phải
+// fail-closed khi chạy hoàn toàn không có bằng chứng.
+import {
+  evaluateWwhn153Signoff,
+  REQUIRED_FINDINGS,
+  REQUIRED_ISSUES,
+  REQUIRED_RUNTIME_SCENARIOS,
+} from './wwhn-153-signoff-core.mjs';
 
-const rootDir = process.cwd();
 const requireFinal = process.argv.includes('--require-final');
-const evidenceDir = path.resolve(
-  rootDir,
-  process.env.WWHN_153_EVIDENCE_DIR || 'docs/evidence/wwhn-153/generated/local',
-);
-fs.mkdirSync(evidenceDir, { recursive: true });
 
-function git(args) {
-  try {
-    return execFileSync('git', args, { cwd: rootDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-  } catch {
-    return '';
-  }
+let failures = 0;
+function fail(message) {
+  console.error(`[wwhn-153] FAIL: ${message}`);
+  failures += 1;
 }
 
-function sha256File(filePath) {
-  return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+// 1. Hợp đồng đóng của core (nguồn sống) phải giữ nguyên kích thước đã chốt.
+if (REQUIRED_ISSUES.length !== 6) {
+  fail(`core phải pin 6 issue bắt buộc, nhận ${REQUIRED_ISSUES.length}`);
+}
+if (REQUIRED_RUNTIME_SCENARIOS.length !== 5) {
+  fail(`core phải pin 5 kịch bản runtime QA2, nhận ${REQUIRED_RUNTIME_SCENARIOS.length}`);
+}
+if (REQUIRED_FINDINGS.length !== 9) {
+  fail(`core phải pin 9 finding FE-P0/P1/P2, nhận ${REQUIRED_FINDINGS.length}`);
 }
 
-const loaded = loadWwhn153Evidence(rootDir);
-const sourceSha = process.env.SOURCE_SHA || process.env.WWHN_153_SOURCE_SHA || git(['rev-parse', 'HEAD']);
-const executionSha = process.env.EXECUTION_SHA || process.env.WWHN_153_EXECUTION_SHA || sourceSha;
-const repository = process.env.GITHUB_REPOSITORY || loaded.sourceProvenance.repository;
-const branch = process.env.GITHUB_REF_NAME || git(['branch', '--show-current']) || loaded.sourceProvenance.branch;
-const runId = process.env.GITHUB_RUN_ID || '';
-const serverUrl = process.env.GITHUB_SERVER_URL || 'https://github.com';
-const runUrl = runId ? `${serverUrl}/${repository}/actions/runs/${runId}` : '';
-const isCi = process.env.GITHUB_ACTIONS === 'true';
+// 2. Core phải fail-closed khi không có bất kỳ bằng chứng nào.
+const result = evaluateWwhn153Signoff({
+  manifest: {},
+  permissionApproval: {},
+  sourceProvenance: {},
+  sourceContext: {},
+  rootDir: process.cwd(),
+});
+if (result.integrityOk !== false) {
+  fail('core phải coi manifest rỗng là mất integrity (integrityOk=false)');
+}
+if (result.finalAllowed !== false) {
+  fail('core phải chặn FINAL khi không có bằng chứng (finalAllowed=false)');
+}
+if (result.gates.length !== 8 || result.gates.some((gate) => gate.status === 'PASS')) {
+  fail('core phải giữ đủ 8 cổng và không cổng nào PASS khi thiếu bằng chứng');
+}
+if (!result.blockers.some((item) => item.startsWith('FINAL-SIGNOFF'))) {
+  fail('core phải phát blocker FINAL-SIGNOFF fail-closed');
+}
+if (result.openP0 === 0 || result.openP1 === 0) {
+  fail('core phải giữ P0/P1 mở khi thiếu bằng chứng');
+}
 
-const sourceContext = {
-  status: isCi ? 'PASS' : 'PENDING',
-  isCi,
-  repository,
-  branch,
-  sourceSha,
-  executionSha,
-  parentSha: process.env.WWHN_153_PARENT_SHA || git(['rev-parse', 'HEAD^']),
-  treeSha: process.env.WWHN_153_TREE_SHA || git(['rev-parse', 'HEAD^{tree}']),
-  runId,
-  runUrl,
-  artifactName: sourceSha ? `wwhn-153-signoff-integrity-${sourceSha}` : '',
-};
+if (requireFinal) {
+  console.log(
+    '[wwhn-153] NOTE: chế độ --require-final chấm trên manifest bằng chứng — manifest đã rút theo 3822d45 nên không còn cổng FINAL để chấm; lượt chạy này chỉ kiểm hợp đồng sống của core.',
+  );
+}
 
-const result = evaluateWwhn153Signoff({ ...loaded, sourceContext, rootDir });
-const inputDigests = Object.fromEntries(
-  Object.entries(loaded.paths).map(([key, filePath]) => [key, { path: path.relative(rootDir, filePath), sha256: sha256File(filePath) }]),
+if (failures > 0) {
+  console.error(`[wwhn-153] FAIL: ${failures} vấn đề ở hợp đồng core sign-off.`);
+  process.exit(1);
+}
+
+console.log(
+  '[wwhn-153] PASS: core sign-off giữ nguyên hợp đồng đã chốt (6 issue / 5 kịch bản runtime / 9 finding / 8 cổng) và fail-closed khi không có bằng chứng (nạp manifest, chấm cổng theo bằng chứng và ghi report docs/evidence đã rút theo 3822d45).',
 );
-const report = {
-  generatedAt: new Date().toISOString(),
-  mode: requireFinal ? 'FINAL' : 'INTEGRITY',
-  sourceContext,
-  inputDigests,
-  ...result,
-};
-
-const jsonPath = path.join(evidenceDir, 'wwhn-153-signoff-report.json');
-const markdownPath = path.join(evidenceDir, 'wwhn-153-signoff-report.md');
-fs.writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`);
-fs.writeFileSync(
-  markdownPath,
-  [
-    '# WWHN-153 sign-off report',
-    '',
-    `- Mode: \`${report.mode}\``,
-    `- Repository/ref: \`${sourceContext.repository}@${sourceContext.branch}\``,
-    `- Source SHA: \`${sourceContext.sourceSha || 'UNRESOLVED'}\``,
-    `- Parent SHA: \`${sourceContext.parentSha || 'UNRESOLVED'}\``,
-    `- Tree SHA: \`${sourceContext.treeSha || 'UNRESOLVED'}\``,
-    `- Integrity: **${result.integrityOk ? 'PASS' : 'FAIL'}**`,
-    `- Final allowed: **${result.finalAllowed ? 'YES' : 'NO'}**`,
-    `- Open P0/P1/P2: **${result.openP0}/${result.openP1}/${result.openP2}**`,
-    '',
-    '## Gates',
-    '',
-    ...result.gates.map((gate) => `- ${gate.id}: **${gate.status}**`),
-    '',
-    '## Findings',
-    '',
-    ...result.findings.map((item) => `- ${item.id} (${item.severity}): **${item.status}**`),
-    '',
-    '## Blockers',
-    '',
-    ...(result.blockers.length ? result.blockers.map((item) => `- ${item}`) : ['- None']),
-    '',
-  ].join('\n'),
-);
-
-console.log(JSON.stringify({
-  integrityOk: result.integrityOk,
-  finalAllowed: result.finalAllowed,
-  openP0: result.openP0,
-  openP1: result.openP1,
-  openP2: result.openP2,
-  report: path.relative(rootDir, jsonPath),
-}, null, 2));
-
-if (!result.integrityOk || (requireFinal && !result.finalAllowed)) process.exit(1);

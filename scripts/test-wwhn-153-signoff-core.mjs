@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
 import { evaluateWwhn153Signoff } from './wwhn-153-signoff-core.mjs';
+// ĐÃ RÚT theo 3822d45: bộ manifest/approval/provenance PENDING từng đọc từ
+// docs/evidence/wwhn-153 — nay là fixture nhúng (chép nguyên trạng từ
+// 3822d45^, xem wwhn-153-signoff-fixtures.mjs). Self-test giữ nguyên phạm vi.
+import {
+  PENDING_SIGNOFF_MANIFEST,
+  PENDING_PERMISSION_APPROVAL,
+  PENDING_SOURCE_PROVENANCE,
+} from './wwhn-153-signoff-fixtures.mjs';
 
 const H = 'a'.repeat(64);
 const H2 = 'b'.repeat(64);
@@ -17,8 +23,7 @@ const scenario = (id, statuses, extra = {}) => ({
 });
 
 const rootDir = process.cwd();
-const evidenceDir = path.resolve(rootDir, 'docs/evidence/wwhn-153');
-const manifest = JSON.parse(fs.readFileSync(path.join(evidenceDir, 'WWHN-153_SIGNOFF_MANIFEST.json'), 'utf8'));
+const manifest = structuredClone(PENDING_SIGNOFF_MANIFEST);
 manifest.officialContractRelease = {
   issueKey: 'WWHN-31', status: 'PASS', version: '1.0.0', backendCommitSha: '4'.repeat(40),
   artifactPath: 'missing/openapi.yaml', artifactSha256: H, changelogPath: 'missing/changelog.md', changelogSha256: H2,
@@ -114,9 +119,9 @@ assert.equal(
   'FAIL',
 );
 
-const pendingManifest = JSON.parse(fs.readFileSync(path.join(evidenceDir, 'WWHN-153_SIGNOFF_MANIFEST.json'), 'utf8'));
-const pendingApproval = JSON.parse(fs.readFileSync(path.join(evidenceDir, 'WWHN-153_PERMISSION_APPROVAL.json'), 'utf8'));
-const pendingProvenance = JSON.parse(fs.readFileSync(path.join(evidenceDir, 'WWHN-153_FE_SOURCE_PROVENANCE.json'), 'utf8'));
+const pendingManifest = structuredClone(PENDING_SIGNOFF_MANIFEST);
+const pendingApproval = structuredClone(PENDING_PERMISSION_APPROVAL);
+const pendingProvenance = structuredClone(PENDING_SOURCE_PROVENANCE);
 const pending = evaluateWwhn153Signoff({ manifest: pendingManifest, permissionApproval: pendingApproval, sourceProvenance: pendingProvenance, sourceContext: { status: 'PENDING' }, rootDir });
 assert.equal(pending.integrityOk, true);
 assert.equal(pending.finalAllowed, false);

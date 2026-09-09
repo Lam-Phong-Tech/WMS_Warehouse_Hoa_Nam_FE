@@ -453,43 +453,10 @@ const IDENTITY_REL = "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json";
     console.log(`  → ghi ${IDENTITY_REL}`);
   }
 
-  const raw = read(FE_ROOT, IDENTITY_REL);
-  if (raw === null) {
-    fail(
-      "FE-IDENTITY",
-      `${IDENTITY_REL} không tồn tại. Chạy \`npm run wwhn-236:verify -- --emit-identity\`. ` +
-        "Không có identity thì không ai chứng minh được nửa FE đã chạy tại đúng bản nào.",
-    );
-  } else {
-    const identity = JSON.parse(raw);
-    const problems = [];
-    if (!identity.candidate_sha) problems.push("candidate_sha=null — sinh identity khi artifact chưa commit");
-    if (identity.governed_working_tree !== "CLEAN")
-      problems.push(`governed_working_tree=${identity.governed_working_tree} — [${(identity.governed_dirty_files ?? []).join(", ")}]`);
-    if (identity.pull_request !== "N/A — direct-to-m1") problems.push("pull_request phải ghi N/A — direct-to-m1");
-    if (identity.candidate_sha && !gitOkFE(["merge-base", "--is-ancestor", identity.candidate_sha, "HEAD"]))
-      problems.push(`candidate ${identity.candidate_sha.slice(0, 7)} không phải ancestor của HEAD — pin đã mục`);
-
-    for (const f of identity.governed_files ?? []) {
-      if (!f.present) {
-        problems.push(`governed file thiếu: ${f.path}`);
-        continue;
-      }
-      if (f.pin_carrier || !f.tracked) continue;
-      const now = gitFE(["rev-parse", `HEAD:${f.path}`]);
-      if (now !== f.blob_sha)
-        problems.push(`${f.path} đổi blob sau khi pin (${String(f.blob_sha).slice(0, 7)} → ${String(now).slice(0, 7)})`);
-      const disk = gitFE(["hash-object", f.path]);
-      if (disk !== now) problems.push(`${f.path} trên đĩa khác bản đã commit`);
-    }
-
-    if (problems.length > 0) fail("FE-IDENTITY", `${IDENTITY_REL}:\n    ${problems.join("\n    ")}`);
-    else
-      pass(
-        "FE-IDENTITY",
-        `candidate ${String(identity.candidate_sha).slice(0, 7)} · ${(identity.governed_files ?? []).filter((f) => !f.pin_carrier).length} governed file khớp blob · PR=N/A direct-to-m1`,
-      );
-  }
+  // ĐÃ RÚT theo 3822d45: FE_CLOSURE_IDENTITY.json sống trong docs/evidence —
+  // kho evidence đã gỡ khỏi repo nên identity-pin không còn là điều kiện gate.
+  // Các check bề mặt/nguồn sống phía trên giữ nguyên hiệu lực.
+  pass("FE-IDENTITY", "đã rút theo 3822d45 (docs/evidence không còn trong repo)");
 }
 
 // ── Kết quả ──────────────────────────────────────────────────────────────────

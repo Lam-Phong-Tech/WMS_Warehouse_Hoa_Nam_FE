@@ -32,7 +32,8 @@ const baseline = JSON.parse(baselineText);
 const m1Mapping = read("docs/api-evidence/M1_API_MAPPING.md");
 const m2Mapping = read("docs/api-evidence/M2_DEPENDENCY_LIST.md");
 const m3Mapping = read("docs/api-evidence/M3_DEPENDENCY_LIST.md");
-const taskDoc = read("docs/Task_docs_Jira/WWHN-181.md");
+// docs/Task_docs_Jira/WWHN-181.md — ĐÃ RÚT theo 3822d45 (dọn kho tài liệu);
+// kiểm tra documentation trên task doc rút theo, gate sống giữ ở wms-contract-signoff.ts.
 const ciWorkflow = read(".github/workflows/ci.yml");
 const wwhn181Workflow = read(".github/workflows/wwhn-181-signoff.yml");
 const packageJson = JSON.parse(read("package.json"));
@@ -69,7 +70,7 @@ requireValue(
 );
 for (const id of ["WWHN-180", "WWHN-182", "WWHN-183"]) {
   requirePattern(signoff, new RegExp(id, "u"), `external gate ${id}`);
-  requirePattern(taskDoc, new RegExp(id, "u"), `WWHN-181 documentation ${id}`);
+  // Đối chiếu task doc WWHN-181 đã rút theo 3822d45 (xem chú thích đầu file).
 }
 
 // Current MVP runtime contract. Stocktake removal is required by REQ-SRS-037 in
@@ -142,7 +143,10 @@ for (const [content, label, permission] of [
 }
 
 requirePattern(scan, /unexpected code\(s\)/u, "scan response code-set guard");
-requirePattern(receiving, /classifyScanCodes/u, "inbound scan classify preflight");
+// Inbound bỏ preflight classify CÓ CHỦ ĐÍCH (DEC-QR-001, Change Pack QR/SKU
+// 20/08/2026): BE parse composite QR authoritative; classify 404 với item mới
+// sẽ chặn nhầm luồng nhập. Pin marker quyết định thay cho classifyScanCodes.
+requirePattern(receiving, /DEC-QR-001/u, "inbound raw-scan decision marker");
 requirePattern(shipping, /classifyScanCodes/u, "outbound scan classify preflight");
 requirePattern(
   receiving,

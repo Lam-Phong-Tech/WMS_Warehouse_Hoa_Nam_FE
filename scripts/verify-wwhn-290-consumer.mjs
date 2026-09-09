@@ -30,7 +30,6 @@ const beRoot = join(
   "WMS_Warehouse_Hoa_Nam_BE",
 );
 
-const EVIDENCE = "docs/evidence/wwhn-290/WWHN-290_FE_CONSUMER_CONFIRMATION.md";
 const APPROVED_VERSION = "2.0.0";
 const CANONICAL_BASE_PATH = "/api/v1";
 
@@ -54,32 +53,13 @@ function read(relativePath) {
   return readFileSync(absolute, "utf8");
 }
 
-// 1. Tài liệu consumer phải tồn tại và khai đúng một contract source.
-const evidence = read(EVIDENCE);
-if (evidence) {
-  for (const marker of [
-    "DEV290-P1-03R",
-    APPROVED_VERSION,
-    CANONICAL_BASE_PATH,
-    "CONSUMER EVIDENCE ONLY",
-    "storage/api-docs/api-docs.json",
-  ]) {
-    if (evidence.includes(marker)) {
-      pass(`tài liệu consumer khai "${marker}"`);
-    } else {
-      fail(`tài liệu consumer thiếu "${marker}"`);
-    }
-  }
-
-  // Fail-closed: FE không được tự ký các cổng của vai trò khác.
-  if (evidence.includes("không") && evidence.includes("ký thay")) {
-    pass(
-      "tài liệu consumer giữ nguyên ranh giới vai trò (không ký thay QA1/PM/Data)",
-    );
-  } else {
-    fail("tài liệu consumer phải nói rõ FE không ký thay QA1/PM/Tech/Data");
-  }
-}
+// 1. ĐÃ RÚT theo 3822d45: docs/evidence/wwhn-290/WWHN-290_FE_CONSUMER_CONFIRMATION.md
+// đã gỡ khỏi repo trong đợt dọn kho tài liệu — 6 kiểm tra đọc tài liệu consumer
+// (5 marker + ranh giới "không ký thay") rút theo. Kiểm tra mã nguồn sống
+// (env.ts, .env.example, hai HTTP client, đối chiếu pin BE) giữ nguyên hiệu lực.
+pass(
+  "đã rút theo 3822d45 (tài liệu consumer WWHN-290_FE_CONSUMER_CONFIRMATION.md: 5 marker + ranh giới vai trò)",
+);
 
 // 2. Invariant namespace phải nằm trong mã, không chỉ trong tài liệu.
 const env = read("src/shared/config/env.ts");
@@ -173,5 +153,5 @@ if (failures > 0) {
 }
 
 console.log(
-  "[WWHN-290] PASS: FE consumer pin đúng một contract source (2.0.0 / /api/v1) và không tự ký cổng của vai trò khác.",
+  "[WWHN-290] PASS: FE consumer pin đúng một contract source (2.0.0 / /api/v1) trong mã nguồn sống — env.ts, .env.example, hai HTTP client, đối chiếu pin BE (kiểm tra tài liệu consumer đã rút theo 3822d45).",
 );

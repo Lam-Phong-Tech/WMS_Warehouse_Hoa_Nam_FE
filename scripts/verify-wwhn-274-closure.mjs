@@ -22,8 +22,12 @@ function rejectText(content, needle, label) {
   }
 }
 
-const taskDoc = requireFile("docs/Task_docs_Jira/WWHN-274.md");
-const e2e = requireFile("e2e/wwhn-274-release-signoff.spec.ts");
+// ĐÃ RÚT theo 3822d45: docs/Task_docs_Jira/WWHN-274.md,
+// e2e/wwhn-274-release-signoff.spec.ts và wireframe HTML
+// (docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html) đã gỡ khỏi
+// repo trong đợt dọn kho tài liệu — kiểm tra đọc các artefact đó rút theo.
+// Kiểm tra mã nguồn sống (workflow, .env.example, docs baseline còn lại,
+// playwright.config.ts, exact-SHA runner, package.json) giữ nguyên hiệu lực.
 const workflow = requireFile(
   ".github/workflows/wwhn-274-fe-release-signoff.yml",
 );
@@ -33,14 +37,10 @@ const techGuide = requireFile(
 );
 const srs = requireFile("docs/HN_SRS_FRD_v1.12_FULL.md");
 const erd = requireFile("docs/HoaNam_ERD_Moi_Nhat.md");
-const wireframe = requireFile(
-  "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html",
-);
 
 for (const [content, label] of [
   [srs, "SRS/FRD baseline"],
   [erd, "ERD baseline"],
-  [wireframe, "wireframe baseline"],
   [techGuide, "techstack baseline"],
 ]) {
   if (!content.trim()) failures.push(`${label} is empty`);
@@ -100,36 +100,8 @@ requireEnv(
   "credentialed browser requests",
 );
 
-for (const viewport of [
-  "1440, height: 900",
-  "768, height: 1024",
-  "375, height: 812",
-]) {
-  requireText(e2e, viewport, `required viewport ${viewport}`);
-}
-for (const state of [
-  "Loading",
-  "Empty",
-  "Error",
-  "No permission",
-  "API error + field errors",
-  "Confirm action",
-  "Disabled until valid",
-]) {
-  requireText(e2e, state, `shared UI state ${state}`);
-}
-requireText(e2e, "/errors/403", "direct URL permission fail-closed route");
-requireText(
-  e2e,
-  "FE_CONTROLLED_NOT_QA_UAT",
-  "controlled-evidence truth boundary",
-);
-requireText(e2e, "sourceSha", "exact SHA evidence metadata");
-requireText(e2e, "timestamp", "timestamp evidence metadata");
-requireText(e2e, "browserProject", "browser evidence metadata");
-requireText(e2e, "role", "role evidence metadata");
-requireText(e2e, "viewport", "viewport evidence metadata");
-requireText(e2e, "login-api-422-retry-safe", "API error/retry scenario");
+// ĐÃ RÚT theo 3822d45: các assert viewport/shared-UI-state/metadata trên
+// e2e/wwhn-274-release-signoff.spec.ts đọc spec đã gỡ khỏi repo — rút theo.
 
 for (const gate of [
   "npm run format:check",
@@ -214,15 +186,9 @@ for (const [scriptName, mustContain] of [
 const gitignore = requireFile(".gitignore");
 requireText(gitignore, "*.tsbuildinfo", "ignored TypeScript build cache");
 
-for (const boundary of [
-  "FE-controlled",
-  "WWHN-272",
-  "WWHN-275",
-  "Stocktake",
-  "P0/P1/P2",
-]) {
-  requireText(taskDoc, boundary, `task traceability boundary ${boundary}`);
-}
+// ĐÃ RÚT theo 3822d45: vòng kiểm boundary truy vết (FE-controlled/WWHN-272/
+// WWHN-275/Stocktake/P0-P1-P2) đọc docs/Task_docs_Jira/WWHN-274.md đã gỡ khỏi
+// repo — rút theo.
 
 // ---------------------------------------------------------------------------
 // Vòng 2 — register FE274-*. Vòng 1 chỉ chứng minh "gate tồn tại"; reviewer bác
@@ -231,53 +197,17 @@ for (const boundary of [
 // bằng chứng bàn phím/a11y/ma trận trình duyệt. Ba nhóm assert dưới đây khoá
 // từng nguyên nhân đó lại để một lần sửa sau này không âm thầm tụt về mức cũ.
 // ---------------------------------------------------------------------------
-const realEnvSpec = requireFile("e2e/wwhn-274-real-env-smoke.spec.ts");
-const a11ySpec = requireFile("e2e/wwhn-274-a11y-browser-matrix.spec.ts");
+// ĐÃ RÚT theo 3822d45: e2e/wwhn-274-real-env-smoke.spec.ts và
+// e2e/wwhn-274-a11y-browser-matrix.spec.ts đã gỡ khỏi repo cùng toàn bộ bộ
+// e2e — các assert FE274-P1-06 (cấm page.route/route.fulfill trong real-env
+// smoke, kèm helper stripComments chỉ phục vụ nhóm này) và FE274-P2-03 (needle
+// a11y NFR-SRS-006/getByLabel/ant-input-affix-wrapper trong spec) rút theo.
+// Ma trận project trình duyệt trong playwright.config.ts + workflow và các
+// gate real-env/a11y trong workflow bên dưới vẫn được kiểm nguyên vẹn.
 const exactShaRunner = requireFile(
   "scripts/run-wwhn-274-exact-sha-evidence.mjs",
 );
 const playwrightConfig = requireFile("playwright.config.ts");
-
-/** Bỏ comment trước khi kiểm cấm-dùng: docstring được phép *nhắc tên* API bị cấm. */
-function stripComments(content) {
-  return content
-    .replace(/\/\*[\s\S]*?\*\//gu, "")
-    .replace(/^[^\n]*?\/\/.*$/gmu, "");
-}
-
-// FE274-P1-06 — bằng chứng tích hợp thật. Một dòng `page.route(` ở đây là đủ để
-// biến "real integration" trở lại thành mock, tức là đúng lỗi mà reviewer đã chỉ.
-const realEnvCode = stripComments(realEnvSpec);
-rejectText(realEnvCode, "page.route(", "mock route trong real-env smoke");
-rejectText(realEnvCode, "route.fulfill(", "mock response trong real-env smoke");
-for (const needle of [
-  "WWHN_274_REQUIRE_REAL_ENV",
-  "WWHN_274_REAL_BASE_URL",
-  "WWHN_274_REAL_API_BASE_URL",
-  "/auth/refresh",
-  "/auth/login",
-  "/auth/me",
-  "/health",
-  "FE_BE_REAL_INTEGRATION",
-]) {
-  requireText(realEnvSpec, needle, `real-env smoke contract ${needle}`);
-}
-
-// FE274-P2-03 — a11y + ma trận trình duyệt/thiết bị neo vào NFR-SRS-006
-// (desktop >=1280, tablet >=768, mobile >=360; Chrome/Edge, Chrome Android, Safari iOS).
-for (const needle of [
-  "NFR-SRS-006",
-  "1280",
-  "768",
-  "360",
-  "getByLabel",
-  "toBeFocused",
-  // Phép đo focus phải đọc trên wrapper của AntD. Đo thẳng trên <input> trả
-  // "none|3px|none" ở CẢ hai trạng thái, làm bài test vô nghĩa và báo đỏ giả.
-  "ant-input-affix-wrapper",
-]) {
-  requireText(a11ySpec, needle, `a11y/browser matrix contract ${needle}`);
-}
 for (const project of [
   "wwhn-274-desktop-chromium",
   "wwhn-274-chrome-android",
@@ -301,19 +231,9 @@ requireText(
 // đầu mỗi lệnh `playwright test`, nên bước E2E sau xoá bằng chứng của bước trước —
 // artifact "exact-SHA" khi đó chỉ còn lần chạy cuối; thư mục này cũng nằm trong
 // .gitignore nên không pin theo SHA được.
-for (const [spec, label] of [
-  [e2e, "controlled evidence"],
-  [a11ySpec, "a11y evidence"],
-  [realEnvSpec, "real-env evidence"],
-]) {
-  requireText(spec, '"evidence"', `${label} ghi dưới docs/evidence`);
-  requireText(spec, '"generated"', `${label} ghi dưới generated/<sha>`);
-  rejectText(
-    stripComments(spec),
-    '"test-results"',
-    `${label} ghi vào outputDir bị Playwright dọn giữa các lần chạy`,
-  );
-}
+// ĐÃ RÚT theo 3822d45: vòng kiểm "evidence"/"generated"/cấm "test-results"
+// trên ba e2e spec đọc spec đã gỡ khỏi repo — rút theo; assert phía workflow
+// ngay dưới giữ nguyên.
 rejectText(
   workflow,
   "test-results/wwhn-274",
@@ -369,40 +289,9 @@ requireText(
   "real-env gate fail-closed (không skip im lặng)",
 );
 
-// FE274-P2-01/P2-02 — nguồn review phải là m1 của repo canonical, và register
-// vòng 2 phải nêu đủ ID để reviewer đối chiếu 1-1 với comment trên Jira.
-requireText(
-  taskDoc,
-  "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_FE",
-  "canonical FE repository URL",
-);
-// Chỉ chặn URL review thật trỏ nhánh không tồn tại; tài liệu vẫn được phép *nói về*
-// nhánh sai đó khi mô tả FE274-P2-01.
-rejectText(
-  taskDoc,
-  "Hoa_Nam_FE/tree/m1ee",
-  "non-canonical review branch URL",
-);
-rejectText(
-  taskDoc,
-  "Hoa_Nam_FE/blob/m1ee",
-  "non-canonical review branch URL",
-);
-for (const id of [
-  "FE274-P1-01",
-  "FE274-P1-02",
-  "FE274-P1-03",
-  "FE274-P1-04",
-  "FE274-P1-05",
-  "FE274-P1-06",
-  "FE274-P2-01",
-  "FE274-P2-02",
-  "FE274-P2-03",
-]) {
-  requireText(taskDoc, id, `round-2 register entry ${id}`);
-}
-requireText(taskDoc, "NFR-SRS-006", "browser/device matrix requirement anchor");
-requireText(taskDoc, "REQ-SRS-037", "no-Stocktake requirement anchor");
+// ĐÃ RÚT theo 3822d45: khối FE274-P2-01/P2-02 (URL repo canonical, cấm nhánh
+// m1ee, đủ 9 ID register vòng 2, anchor NFR-SRS-006/REQ-SRS-037) đọc
+// docs/Task_docs_Jira/WWHN-274.md đã gỡ khỏi repo — rút theo.
 
 if (failures.length > 0) {
   console.error("WWHN-274 closure verification FAILED:");
@@ -410,7 +299,9 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("WWHN-274 source-controlled closure contract PASS");
+console.log(
+  "WWHN-274 source-controlled closure contract PASS (env/workflow/playwright-config/exact-SHA-runner/package-script checks; task-doc, e2e-spec and wireframe checks retired by 3822d45)",
+);
 console.log(
   "Truth boundary: FE controlled evidence only; independent QA/UAT/DevOps evidence remains role-owned.",
 );

@@ -144,7 +144,10 @@ if (governance) {
 // ---------------------------------------------------------------------------
 // FE296-P1-02 — exact identity for FE SHA / BE SHA / build id / URL / timestamp.
 // ---------------------------------------------------------------------------
-const pin = readJson("docs/evidence/WWHN-296/RUNTIME_IDENTITY_PIN.json");
+// ĐÃ RÚT theo 3822d45: RUNTIME_IDENTITY_PIN.json (docs/evidence/WWHN-296) đã
+// gỡ khỏi repo — khối kiểm tra identity-pin bên dưới giữ nguyên làm tư liệu
+// nhưng không chạy nữa (pin = null).
+const pin = null;
 if (pin) {
   const sha40 = /^[0-9a-f]{40}$/u;
   if (!sha40.test(String(pin.frontend?.sha ?? ""))) {
@@ -315,7 +318,8 @@ if (pin) {
 // ---------------------------------------------------------------------------
 // FE296-P1-03..07 / P2-01 — external gates stay fail-closed, owned and current.
 // ---------------------------------------------------------------------------
-const taskDoc = read("docs/Task_docs_Jira/WWHN-296.md");
+// ĐÃ RÚT theo 3822d45: docs/Task_docs_Jira/WWHN-296.md đã gỡ khỏi repo.
+const taskDoc = null;
 if (taskDoc) {
   for (const gate of ["WWHN-294", "WWHN-295", "WWHN-297", "WWHN-79"]) {
     if (!taskDoc.includes(gate))
@@ -341,9 +345,8 @@ if (taskDoc) {
   }
 }
 
-const devopsRegister = read(
-  "docs/evidence/devops/DEVOPS_EXACT_EVIDENCE_REGISTER.md",
-);
+// ĐÃ RÚT theo 3822d45: DEVOPS_EXACT_EVIDENCE_REGISTER.md (docs/evidence/devops).
+const devopsRegister = null;
 if (devopsRegister) {
   if (!devopsRegister.includes("ATT-11432")) {
     fail("DevOps register must record the ATT-11432 supersession.");
@@ -411,7 +414,7 @@ if (failures.length) {
 }
 
 console.log(
-  "[wwhn-296] PASS: no-Stocktake authority re-derived from the pinned baselines; identity pinned to a clean " +
-    "checkout of the exact FE/BE SHA (manifest sourceSha == executionSha == pinned SHA, no local-uncommitted); " +
-    "evidence pack matches SHA256SUMS; external prod/QA gates stay fail-closed.",
+  "[wwhn-296] PASS: no-Stocktake authority re-derived from the pinned baselines; " +
+    ".env.example and dev-guide runtime contract hold " +
+    "(identity-pin/task-doc/devops-register checks retired by 3822d45).",
 );

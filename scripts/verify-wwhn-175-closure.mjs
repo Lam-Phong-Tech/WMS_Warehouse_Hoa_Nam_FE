@@ -28,78 +28,12 @@ function requirePatterns(path, patterns) {
   return content;
 }
 
-const taskDoc = requirePatterns("docs/Task_docs_Jira/WWHN-175.md", [
-  /FE-owned closure: COMPLETE/i,
-  /Final Jira acceptance: PENDING_INDEPENDENT_APPROVAL/i,
-  /P0 trực tiếp[\s\S]*CLOSED \/ N\/A/i,
-  /WWHN-176/,
-  /WWHN-177/,
-  /HN-FE-001-REUSABLE-FE-FOUNDATION\.md/,
-  /1440x900/,
-  /768x1024/,
-  /375x812/,
-  /React\/Vite/,
-  /Next\.js/,
-  /BRANCH_SCOPE_MAP\.md/,
-  /không tự ký thay/i,
-]);
-
-requirePatterns("docs/evidence/wwhn-175/README.md", [
-  /FE_EVIDENCE_READY_FOR_INDEPENDENT_REVIEW/,
-  /WWHN-175_CLOSURE_REGISTER\.json/,
-  /WWHN-176_QA2_EXECUTION_MATRIX\.md/,
-  /WWHN-177_DEVOPS_HANDOFF\.md/,
-]);
-
-requirePatterns("docs/evidence/wwhn-175/ARCHITECTURE_DISPOSITION.md", [
-  /PROPOSED_FOR_FORMAL_ACCEPTANCE/,
-  /React\/Vite SPA shell/,
-  /Next\.js shell/,
-  /React 19/,
-  /Vite 8/,
-  /BA\/Tech Lead/,
-]);
-
-requirePatterns(
-  "docs/evidence/wwhn-175/WWHN-176_QA2_EXECUTION_MATRIX.md",
-  [
-    /READY_FOR_QA2_EXECUTION/,
-    /Chrome\/Edge/,
-    /1440x900/,
-    /768x1024/,
-    /375x812/,
-    /keyboard/i,
-    /screen-reader/i,
-  ],
-);
-
-requirePatterns("docs/evidence/wwhn-175/WWHN-177_DEVOPS_HANDOFF.md", [
-  /PIPELINE_READY_FOR_DEVOPS_ACCEPTANCE/,
-  /dist\/build-manifest\.json/,
-  /GitHub Environment `DEV`/,
-  /NOT_CONFIGURED_ARTIFACT_ONLY/,
-  /không invent|does not invent/i,
-]);
-
-requirePatterns("docs/evidence/wwhn-175/BRANCH_SCOPE_MAP.md", [
-  /dev@3f168d816aad7d5e32690ec392c83992a3e3a494/,
-  /m1@79321532b6325b9be598aabdc49f92806b116b1f/,
-  /ahead by 81/,
-  /Exact closure file allowlist/,
-  /outside closure scope/i,
-]);
-
-requirePatterns("e2e/wwhn-175-foundation-evidence.spec.ts", [
-  /WWHN-175/,
-  /WWHN-176/,
-  /1440/,
-  /768/,
-  /375/,
-  /keyboard-modal-focus/,
-  /toBeFocused/,
-  /getByRole\("dialog"/,
-  /evidenceBoundary/,
-]);
+// ── Tài liệu canonical + docs/evidence/wwhn-175 + e2e — ĐÃ RÚT theo 3822d45 ─
+// docs/Task_docs_Jira/WWHN-175.md, toàn bộ docs/evidence/wwhn-175/* (README,
+// ARCHITECTURE_DISPOSITION, QA2 matrix, DEVOPS_HANDOFF, BRANCH_SCOPE_MAP,
+// CLOSURE_REGISTER) và e2e/wwhn-175-foundation-evidence.spec.ts đã được gỡ
+// khỏi repo trong đợt dọn kho tài liệu (commit 3822d45); các kiểm tra đọc
+// artefact đó rút theo. Kiểm tra mã nguồn sống phía dưới giữ nguyên hiệu lực.
 
 for (const implementationPath of [
   "src/app/providers/AppProviders.tsx",
@@ -112,37 +46,13 @@ for (const implementationPath of [
   "src/shared/store/auth.store.ts",
   "src/shared/components/index.ts",
   "src/shared/components/README.md",
-  "src/modules/component-catalog/ComponentCatalogPage.tsx",
+  // ComponentCatalogPage.tsx đã gỡ khi UI hợp nhất về canonical @/shared/ui
+  // (chương trình Vuexy Part 4/5) — không còn là điều kiện đóng task.
 ]) {
   readRequired(implementationPath);
 }
 
-const registerPath =
-  "docs/evidence/wwhn-175/WWHN-175_CLOSURE_REGISTER.json";
-const registerText = readRequired(registerPath);
-if (registerText) {
-  try {
-    const register = JSON.parse(registerText);
-    if (register.task !== "WWHN-175") fail(`${registerPath}: wrong task`);
-    if (register.branch !== "m1") fail(`${registerPath}: branch must be m1`);
-    if (register.feOwnedStatus !== "COMPLETE") {
-      fail(`${registerPath}: feOwnedStatus must be COMPLETE`);
-    }
-    if (register.finalAcceptanceStatus !== "PENDING_INDEPENDENT_APPROVAL") {
-      fail(`${registerPath}: final acceptance boundary is not truthful`);
-    }
-    if (register.severity?.p0?.status !== "CLOSED_NA") {
-      fail(`${registerPath}: P0 disposition must be CLOSED_NA`);
-    }
-    for (const gate of ["qa2", "devops", "baTechLead"]) {
-      if (register.independentGates?.[gate]?.status !== "PENDING") {
-        fail(`${registerPath}: ${gate} must remain explicitly PENDING`);
-      }
-    }
-  } catch (error) {
-    fail(`${registerPath} invalid JSON: ${error.message}`);
-  }
-}
+// ── WWHN-175_CLOSURE_REGISTER.json — ĐÃ RÚT theo 3822d45 (docs/evidence) ───
 
 const packageJson = JSON.parse(readRequired("package.json") || "{}");
 if (
@@ -188,9 +98,8 @@ if (/- main/.test(pushBlock)) {
   fail("CI push branches must not retain non-existent main branch");
 }
 
-if (!/không tự ký thay QA2, DevOps, BA hoặc Tech Lead/i.test(taskDoc)) {
-  fail("Task document must preserve independent owner boundary");
-}
+// Ranh giới "không tự ký thay QA2/DevOps/BA/Tech Lead" từng nằm trong tài
+// liệu canonical — đã rút theo 3822d45 cùng khối tài liệu phía trên.
 
 if (failures.length > 0) {
   for (const failure of failures) {
@@ -200,5 +109,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "[wwhn-175] PASS: canonical evidence, architecture disposition, exact branch scope, QA2 runtime suite, immutable DEV handoff and independent acceptance boundaries are wired.",
+  "[wwhn-175] PASS: live foundation files, script/CI wiring and branch scope hold (doc/evidence/e2e checks retired by 3822d45).",
 );

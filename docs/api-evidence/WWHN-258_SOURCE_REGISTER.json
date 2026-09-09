@@ -15,36 +15,44 @@
     "previousPinnedSha": "83c94c3",
     "reason": "Pin cũ thuộc lần đóng technical trước; nhánh đã tiến rất xa và trang báo cáo thay đổi lớn (FE258-P1-02). Pin theo bất biến mức đối tượng thay vì theo hash cả tệp."
   },
+  "repinNote": "10/09/2026: AlignedReportsPage.tsx đã xoá khi trang báo cáo tách thành 8 route (phản hồi người dùng 2026-08-30); màn bảo hành PII sống ở warranty-components/WarrantyComponentsReport.tsx (RPT-06) + pages/WarrantyReportPage.tsx, trần export ở operations/report-export.ts. Re-pin đúng triết lý mức-đối-tượng của register. flow06-gate-doc-anchor rút hẳn: tài liệu tổng hợp đã xoá từ f9f7206, kho docs/ gỡ nốt ở 3822d45.",
   "guardedObjects": [
     {
       "id": "report-pii-reason-gated",
-      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
+      "file": "src/modules/reports/warranty-components/WarrantyComponentsReport.tsx",
       "mustContain": [
         "WMS_PERMISSION_CATALOG.WARRANTY_PII_EXPORT",
-        "report === \"warranty\" && canExportPii",
+        "canExportPii &&",
         "piiReasonTrimmed.length >= PII_REASON_MIN_LENGTH"
       ],
       "rationale": "§13.8 — ô lý do và việc gửi `reason` chỉ tồn tại với actor có warranty.pii.export; thiếu quyền mà gửi reason thì BE trả 403."
     },
     {
       "id": "report-pii-render-mask",
-      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
+      "file": "src/modules/reports/warranty-components/WarrantyComponentsReport.tsx",
       "mustContain": [
-        "warrantyPiiText(text(value, \"\"), canViewPii, \"name\")",
-        "warrantyPiiText(text(value, \"\"), canViewPii, \"phone\")",
-        "warrantyPiiText(text(value, \"\"), canViewPii, \"address\")"
+        "customerName: warrantyPiiText(",
+        "customerPhone: warrantyPiiText(",
+        "customerAddress: warrantyPiiText(",
+        "canViewPii"
       ],
       "rationale": "Fail-closed tầng render: ba cột PII không được là `dataIndex` trần đổ thẳng payload BE."
     },
     {
       "id": "report-export-row-limit",
-      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
-      "mustContain": ["EXPORT_ROW_LIMIT = 10000", "exceedsExportRowLimit"],
-      "rationale": "BE chặn export > 10.000 dòng bằng 422 REPORT_EXPORT_ROW_LIMIT_EXCEEDED; màn hình phải cảnh báo trước."
+      "file": "src/modules/reports/operations/report-export.ts",
+      "mustContain": ["EXPORT_ROW_LIMIT = 10000"],
+      "rationale": "BE chặn export > 10.000 dòng bằng 422 REPORT_EXPORT_ROW_LIMIT_EXCEEDED; lớp export dùng chung cho 8 trang phải khai trần này."
+    },
+    {
+      "id": "report-export-row-limit-warning",
+      "file": "src/modules/reports/warranty-components/WarrantyComponentsReport.tsx",
+      "mustContain": ["exceedsExportRowLimit"],
+      "rationale": "Màn hình phải cảnh báo vượt trần TRƯỚC khi gọi export, không đợi BE 422."
     },
     {
       "id": "report-export-permission-denied-state",
-      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
+      "file": "src/modules/reports/warranty-components/WarrantyComponentsReport.tsx",
       "mustContain": [
         "UI_STATE.PERMISSION_DENIED",
         "report-export-permission-denied"
@@ -53,19 +61,9 @@
     },
     {
       "id": "report-screen-scope-class",
-      "file": "src/modules/reports/pages/AlignedReportsPage.tsx",
-      "mustContain": ["hn-mvp-source-screen", "data-mvp-screen=\"RPT-01\""],
+      "file": "src/modules/reports/pages/WarrantyReportPage.tsx",
+      "mustContain": ["hn-mvp-source-screen", "data-mvp-screen=\"RPT-06\""],
       "rationale": "FE258-P2-02 — CSS `.toolbar`/`.spacer` chỉ áp dưới `.hn-mvp-source-screen`; class cũ làm toolbar mất flex/wrap ở 390px."
-    },
-    {
-      "id": "flow06-gate-doc-anchor",
-      "file": "docs/HoaNam_Tai_lieu_tong_hop_Moi_Nhat.md",
-      "mustContain": ["đúng 01 Packing Label cho phiếu/lô"],
-      "mustNotContain": [
-        "01 nhãn/item",
-        "PRODUCT bắt buộc active RFID trước Post Issue"
-      ],
-      "rationale": "Bước 'Current-baseline documentation semantics' của flow06-fe-exact-sha.yml grep đúng đường dẫn này; tệp bị xoá ở f9f7206 làm cổng đỏ vĩnh viễn từ 16/08/2026."
     },
     {
       "id": "be-export-job-pii-gate",
@@ -79,8 +77,7 @@
     }
   ],
   "requiredTests": [
-    "src/test/wwhn-258-report-pii-rbac.test.tsx",
-    "e2e/wwhn-258-report-qa2.spec.ts"
+    "src/test/wwhn-258-report-pii-rbac.test.tsx"
   ],
   "qa2EvidenceShots": [
     "role-01-report-view-only.png",

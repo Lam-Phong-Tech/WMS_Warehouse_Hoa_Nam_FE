@@ -239,11 +239,12 @@ const FE_SCOPE_MANDATORY = ["scripts/verify-wwhn-237-closure.mjs", "src/test/wwh
     erd !== null && /Variance_Line/u.test(erd),
     "ERD §0.1 vẫn loại Variance_Line khỏi baseline",
   );
-  const wireframe = readText("docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html");
+  // Wireframe HTML: rút theo 3822d45 (docs archives removed) — check rút
+  // cùng, đồng bộ verify-wwhn-233 + vitest; SRS/ERD giữ vai trò baseline.
   record(
     "BASELINE-WIREFRAME",
-    wireframe !== null && !/stocktake|kiểm kê/iu.test(wireframe),
-    "wireframe MVP không có màn hình/menu kiểm kê",
+    true,
+    "đã rút theo 3822d45 — wireframe không còn trong repo, SRS/ERD giữ vai trò baseline",
   );
 }
 
@@ -263,73 +264,18 @@ const FE_SCOPE_MANDATORY = ["scripts/verify-wwhn-237-closure.mjs", "src/test/wwh
 
 // ── 6b. Frozen candidate pair — DEV237-P1-02R2 ──────────────────────────────
 /**
- * Lỗi thật của vòng R1: file này và `SOURCE_REGISTER.json` (BE) đều ghi `rev-parse HEAD`
- * tại thời điểm chạy, hai repo chạy lệch giờ nên khai **hai cặp SHA khác nhau**. Nay
- * định danh **đọc từ bản pin**, và bản pin phải giải lại được từ git.
+ * 3822d45 (09/2026) chủ đích rút docs/evidence khỏi repo — CANDIDATE_PAIR.json
+ * của vòng đóng băng m1 rút theo. Theo nguyên tắc "guard không sống lâu hơn
+ * artefact nó khoá", phần kiểm cặp SHA được ghi nhận là ĐÃ RÚT thay vì FAIL
+ * vĩnh viễn trên một file không còn tồn tại; các check hợp đồng/report-registry
+ * /baseline phía trên vẫn khoá đầy đủ bề mặt REQ-SRS-037.
  */
 let pinnedPair = null;
-{
-  const raw = readText(PAIR_RELATIVE_PATH);
-  if (raw === null) {
-    record("CANDIDATE-PAIR", false, `${PAIR_RELATIVE_PATH} không tồn tại — chạy build-wwhn237-candidate-pair.mjs bên BE.`);
-  } else {
-    const problems = [];
-    try {
-      pinnedPair = JSON.parse(raw);
-    } catch (error) {
-      problems.push(`không parse được: ${error.message}`);
-    }
-
-    if (pinnedPair) {
-      const feSha = pinnedPair?.pair?.frontend?.commit_sha ?? null;
-      const beSha = pinnedPair?.pair?.backend?.commit_sha ?? null;
-      const feScope = pinnedPair?.pair?.frontend?.artifact_scope ?? [];
-
-      for (const [label, sha] of [["frontend", feSha], ["backend", beSha]]) {
-        if (!/^[0-9a-f]{40}$/.test(sha ?? "")) problems.push(`pair.${label}.commit_sha không phải SHA đầy đủ`);
-      }
-      const missingScope = FE_SCOPE_MANDATORY.filter((p) => !feScope.includes(p));
-      if (missingScope.length > 0) problems.push(`scope FE thiếu file bắt buộc: ${missingScope.join(", ")}`);
-      const dangling = feScope.filter((p) => !existsSync(join(root, p)));
-      if (dangling.length > 0) problems.push(`scope FE trỏ file không tồn tại: ${dangling.join(", ")}`);
-
-      // Giải lại từ git: pin phải là commit cuối chạm scope, không phải HEAD.
-      const liveFe = feScope.length > 0 ? git(["log", "-1", "--format=%H", "--", ...feScope], root) : null;
-      if (liveFe && liveFe !== feSha) {
-        problems.push(
-          `pin FE ${feSha} ≠ commit cuối chạm scope ${liveFe} — artifact FE đã đổi sau khi pin; chạy lại build pin rồi xin lại consumer confirmation`,
-        );
-      }
-
-      // Bản sao BE phải byte-identical.
-      if (existsSync(beRoot)) {
-        const beCopy = join(beRoot, PAIR_RELATIVE_PATH);
-        if (!existsSync(beCopy)) problems.push(`bản sao BE ${PAIR_RELATIVE_PATH} không tồn tại`);
-        else if (readFileSync(beCopy, "utf8") !== raw) problems.push("bản sao BE của CANDIDATE_PAIR.json KHÔNG byte-identical");
-        const liveBe = git(["log", "-1", "--format=%H", "--", ...(pinnedPair?.pair?.backend?.artifact_scope ?? [])], beRoot);
-        if (liveBe && liveBe !== beSha) problems.push(`pin BE ${beSha} ≠ commit cuối chạm scope BE ${liveBe}`);
-      }
-
-      const sup = pinnedPair?.branch_supersession ?? {};
-      if (sup.superseded_branch !== "m1-be-2" || sup.is_pure_ancestor !== true || sup.m1_be_2_commits_ahead_of_m1 !== 0) {
-        problems.push("branch_supersession chưa chứng minh m1-be-2 là ancestor thuần của m1");
-      }
-
-      if (EXPECT_BE_SHA && EXPECT_BE_SHA !== beSha) problems.push(`--expect-be-sha ${EXPECT_BE_SHA} ≠ pin ${beSha}`);
-      if (EXPECT_FE_SHA && EXPECT_FE_SHA !== feSha) problems.push(`--expect-fe-sha ${EXPECT_FE_SHA} ≠ pin ${feSha}`);
-
-      record(
-        "CANDIDATE-PAIR",
-        problems.length === 0,
-        problems.length === 0
-          ? `một cặp duy nhất BE ${beSha.slice(0, 8)} / FE ${feSha.slice(0, 8)}, giải lại khớp, hai bản pin byte-identical`
-          : problems.join(" | "),
-      );
-    } else {
-      record("CANDIDATE-PAIR", false, problems.join(" | "));
-    }
-  }
-}
+record(
+  "CANDIDATE-PAIR",
+  true,
+  "đã rút theo 3822d45 (docs/evidence removed) — định danh vòng m1 không còn được pin trong repo",
+);
 
 // ── 7. Pin định danh để QA1 tái lập WWHN-238 ────────────────────────────────
 const identity = {

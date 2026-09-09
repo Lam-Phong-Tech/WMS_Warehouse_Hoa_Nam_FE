@@ -5,10 +5,9 @@ import { join, relative } from "node:path";
 const root = process.cwd();
 const envExamplePath = join(root, ".env.example");
 const healthPath = join(root, "public", "health.json");
-const closureRegisterPath = join(
-  root,
-  "docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json",
-);
+// ĐÃ RÚT theo 3822d45: WWHN-156_CLOSURE_REGISTER.json (docs/evidence) không
+// còn trong repo — hợp đồng health canonical/legacy được khoá ngay tại các
+// hằng số canonicalBackendHealthPath/legacyBackendHealthPath bên dưới.
 
 const requiredEnvKeys = [
   "VITE_APP_ENV",
@@ -164,13 +163,7 @@ for (const [key, value] of Object.entries(expectedHealth)) {
   if (health[key] !== value) fail(`public/health.json ${key} expected ${value}, got ${health[key]}.`);
 }
 
-const register = JSON.parse(readRequiredFile(closureRegisterPath));
-if (register.healthContract?.backendHealthResolvedPath !== canonicalBackendHealthPath) {
-  fail("WWHN-156 closure register does not lock /api/v1/health.");
-}
-if (register.healthContract?.legacyRejectedPath !== legacyBackendHealthPath) {
-  fail("WWHN-156 closure register does not reject /api/health.");
-}
+// Đối chiếu closure register — ĐÃ RÚT theo 3822d45 (xem chú thích đầu file).
 if (smokeContract.frontendHealthPath !== "/health.json") fail("FE smoke contract must expose /health.json.");
 if (smokeContract.loginEndpoint !== "/auth/login") fail("Login smoke endpoint must be /auth/login.");
 if (smokeContract.masterApiSmokePaths.length < 4) {

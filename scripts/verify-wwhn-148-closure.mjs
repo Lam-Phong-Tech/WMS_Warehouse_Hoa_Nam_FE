@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, globSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -23,36 +23,10 @@ function requirePatterns(path, patterns) {
   return content;
 }
 
-const canonicalDoc = requirePatterns("docs/Task_docs_Jira/WWHN-148.md", [
-  /WWHN-146/,
-  /WWHN-147/,
-  /WWHN-149/,
-  /WWHN-180/,
-  /WWHN-182/,
-  /WWHN-183/,
-  /fail-closed/i,
-  /403/,
-  /409/,
-  /412/,
-  /422/,
-  /Idempotency-Key/,
-  /named DEV\/UAT/i,
-  /blob/i,
-  /SHA256/,
-]);
-
-const backReferenceFiles = globSync("docs/**/*.md", { cwd: root }).filter(
-  (file) =>
-    file.replace(/\\/g, "/") !== "docs/Task_docs_Jira/WWHN-148.md" &&
-    /docs\/Task_docs_Jira\/WWHN-148\.md/.test(
-      readFileSync(join(root, file), "utf8"),
-    ),
-);
-if (!backReferenceFiles.length) {
-  fail(
-    "No published doc references docs/Task_docs_Jira/WWHN-148.md — the reuse/traceability back-reference was lost",
-  );
-}
+// ── Tài liệu canonical + back-reference — ĐÃ RÚT theo 3822d45 ──────────────
+// docs/Task_docs_Jira/WWHN-148.md và các doc tham chiếu chéo đã được gỡ khỏi
+// repo trong đợt dọn kho tài liệu (commit 3822d45); các kiểm tra đọc artefact
+// đó rút theo. Kiểm tra mã nguồn sống phía dưới giữ nguyên hiệu lực.
 
 // WWHN-296 refreshed the active M1 mapping to the current MVP baseline. Keep
 // critical posting paths and explicitly prove that historical Stocktake was removed.
@@ -65,70 +39,9 @@ requirePatterns("docs/api-evidence/M1_API_MAPPING.md", [
   /independent gates/i,
 ]);
 
-const manifestPath = "docs/evidence/wwhn-148/WWHN-148_CLOSURE_MANIFEST.json";
-const manifestText = readRequired(manifestPath);
-if (manifestText) {
-  try {
-    const manifest = JSON.parse(manifestText);
-    if (manifest.schemaVersion !== "2.0.0") {
-      fail(`${manifestPath} schemaVersion must be 2.0.0.`);
-    }
-    if (manifest.task !== "WWHN-148" || manifest.branch !== "m1") {
-      fail(`${manifestPath} task/branch mismatch.`);
-    }
-    for (const key of [
-      "WWHN-146",
-      "WWHN-147",
-      "WWHN-149",
-      "WWHN-180",
-      "WWHN-182",
-      "WWHN-183",
-    ]) {
-      if (!manifest.gates?.[key]) fail(`${manifestPath} is missing gate ${key}.`);
-    }
-    if (manifest.finalPolicy?.failClosed !== true) {
-      fail(`${manifestPath} must be fail-closed.`);
-    }
-    if (manifest.finalPolicy?.controlledMocksMayOpenFinal !== false) {
-      fail(`${manifestPath} must reject controlled mocks for final.`);
-    }
-    if (manifest.finalPolicy?.blobImageCommentsAccepted !== false) {
-      fail(`${manifestPath} must reject blob-image comments.`);
-    }
-    const scenarios = new Set(manifest.qa2RuntimeScenarios ?? []);
-    for (const scenario of [
-      "RESPONSIVE_DESKTOP_TABLET_MOBILE",
-      "RBAC_ROUTE_DENY_403",
-      "DIRECT_API_403",
-      "VALIDATION_422_FIELD_MAPPING",
-      "CONFLICT_409",
-      "IDEMPOTENCY_REPLAY",
-      "IDEMPOTENCY_CONFLICT",
-      "STALE_WRITE_409_OR_412",
-      "NO_STACK_TRACE_OR_SECRET",
-      "REQUEST_ID_TRACEABILITY",
-    ]) {
-      if (!scenarios.has(scenario)) {
-        fail(`${manifestPath} is missing runtime scenario ${scenario}.`);
-      }
-    }
-  } catch (error) {
-    fail(`${manifestPath} is invalid JSON: ${error.message}`);
-  }
-}
-
-requirePatterns("docs/evidence/wwhn-148/QA2_RUNTIME_EVIDENCE_RUNBOOK.md", [
-  /named DEV\/UAT/,
-  /immutable build ID/i,
-  /direct API 403/i,
-  /HTTP 422/,
-  /HTTP 409/,
-  /409 hoặc 412/,
-  /Idempotency replay/i,
-  /SHA256SUMS/,
-  /INVALID_EVIDENCE/,
-  /blob URL/i,
-]);
+// ── Closure manifest + QA2 runbook (docs/evidence/wwhn-148) — ĐÃ RÚT ───────
+// Thư mục docs/evidence đã bị gỡ khỏi repo theo 3822d45; hai kiểm tra đọc
+// WWHN-148_CLOSURE_MANIFEST.json và QA2_RUNTIME_EVIDENCE_RUNBOOK.md rút theo.
 
 const normalizationPath = "docs/api-evidence/WWHN-148_NORMALIZATION_REGISTER.json";
 const normalizationText = readRequired(normalizationPath);
@@ -176,13 +89,7 @@ for (const required of [
   if (!required.test(viteConfig)) fail(`vite.config.ts is missing ${required}`);
 }
 
-requirePatterns("e2e/wms-runtime-evidence.spec.ts", [
-  /desktop-1440x900/,
-  /tablet-1024x768/,
-  /mobile-390x844/,
-  /errors\/403/,
-  /status\(\)\)\.toBe\(422\)/,
-]);
+// ── e2e/wms-runtime-evidence.spec.ts — ĐÃ RÚT theo 3822d45 (bộ e2e đã gỡ) ──
 
 requirePatterns("src/test/wwhn-148-critical-response-contract.test.ts", [
   /accepts canonical snake_case success evidence/,
@@ -211,13 +118,8 @@ requirePatterns(".github/workflows/ci.yml", [
   /npm run wwhn-148:verify/,
 ]);
 
-if (
-  !/FE-owned remediation complete; final acceptance pending independent evidence/i.test(
-    canonicalDoc,
-  )
-) {
-  fail("WWHN-148 must state the independent-evidence boundary truthfully.");
-}
+// Ranh giới independent-evidence từng nằm trong tài liệu canonical — đã rút
+// theo 3822d45 cùng khối tài liệu phía trên.
 
 if (failures.length) {
   for (const failure of failures) console.error(`[wwhn-148] ERROR: ${failure}`);
@@ -225,5 +127,5 @@ if (failures.length) {
 }
 
 console.log(
-  "[wwhn-148] PASS: current MVP FE closure, runtime handoff, traceability and fail-closed independent-evidence boundary are consistent.",
+  "[wwhn-148] PASS: live-source closure checks hold (M1 mapping, normalization register, vite config, contract test, script/CI wiring); doc/evidence/e2e checks retired by 3822d45.",
 );

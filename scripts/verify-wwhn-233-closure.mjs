@@ -327,17 +327,10 @@ let disposition = null;
     fail("ANCHOR", "ERD §0.1 không còn loại Stocktake khỏi baseline.");
   }
 
-  const wireframe = readIfExists(
-    "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html",
-  );
-  if (wireframe === null) {
-    fail("ANCHOR", "Wireframe MVP baseline không tồn tại.");
-  } else if (/stocktake|kiểm kê/iu.test(wireframe)) {
-    fail(
-      "ANCHOR",
-      "Wireframe MVP xuất hiện màn hình kiểm kê — căn cứ 'zero màn hình' không còn đúng.",
-    );
-  }
+  // Wireframe HTML: 3822d45 (09/2026) rút khỏi repo có chủ đích ("remove
+  // stale docs archives") — anchor wireframe rút theo, đồng bộ với register
+  // (ruleAuthority.baselineRetirements) và test vitest. SRS + ERD ở trên vẫn
+  // là hai anchor còn hiệu lực.
 
   if (!failures.some((entry) => entry.startsWith("[ANCHOR]"))) {
     pass("ANCHOR", "SRS / ERD / Wireframe giữ nguyên anchor no-Stocktake.");
@@ -570,10 +563,13 @@ const gitOut = (args) => {
     seen.push(rel);
 
     if (registered.has(rel)) {
-      const token = registered.get(rel);
-      const stripped = executable.split(token).join("");
+      // Một path có thể cần strip NHIỀU token (vd messages.en.ts:
+      // key recountNote + chữ "Recounting" trong chính câu dịch).
+      const tokens = [registered.get(rel)].flat();
+      let stripped = executable;
+      for (const token of tokens) stripped = stripped.split(token).join("");
       if (SURFACE_RE.test(stripped)) {
-        offenders.push(`${rel} (có bề mặt kiểm kê ngoài token đã đăng ký "${token}")`);
+        offenders.push(`${rel} (có bề mặt kiểm kê ngoài token đã đăng ký "${tokens.join('", "')}")`);
       }
       continue;
     }

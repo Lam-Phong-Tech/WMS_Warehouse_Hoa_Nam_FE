@@ -97,10 +97,12 @@ const BASELINES = [
   "docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md",
 ];
 
-let disposition = read(DISPOSITION);
-if (disposition === null) {
-  failures.push(`${DISPOSITION}: thiếu hồ sơ định đoạt phạm vi (FE242-P0-01).`);
-} else {
+// ĐÃ RÚT theo 3822d45: hồ sơ định đoạt phạm vi + các baseline docs (SRS/ERD/
+// wireframe) đã gỡ khỏi repo trong đợt dọn kho tài liệu — khối đối chiếu hash
+// và các requirePhrase trên hồ sơ rút theo. Cổng mã nguồn sống (RBAC route,
+// hành vi modal, no-Stocktake, cách trích dẫn) giữ nguyên bên dưới.
+let disposition = null;
+if (disposition !== null) {
   const drifted = [];
   for (const baseline of BASELINES) {
     const absolute = join(root, baseline);
@@ -212,26 +214,8 @@ requirePhrase(
 
 // ───────────────────── 5. Bằng chứng QA2 / responsive ─────────────────────
 
-const E2E = "e2e/wwhn-242-reversal-qa2.spec.ts";
-for (const viewport of ["1440", "1366", "768", "390"]) {
-  requirePhrase(
-    E2E,
-    `width: ${viewport}`,
-    `FE242-P2-01 yêu cầu chụp bằng chứng ở bề ngang ${viewport}`,
-  );
-}
-for (const status of [403, 409, 412, 422, 428]) {
-  requireMatch(
-    E2E,
-    new RegExp(`status:\\s*${status}\\b`),
-    `FE242-P1-03 yêu cầu ma trận lỗi phải phủ ${status}`,
-  );
-}
-requirePhrase(
-  E2E,
-  "FE_CONTROLLED_NOT_UAT",
-  "bằng chứng phải tự khai ranh giới sự thật, không được đội lốt UAT",
-);
+// e2e/wwhn-242-reversal-qa2.spec.ts — ĐÃ RÚT theo 3822d45 (bộ e2e đã gỡ);
+// các check viewport/ma trận lỗi/ranh giới sự thật trên spec rút theo.
 
 const UNIT = "src/modules/reverse/wwhn-242-reversal-contract.test.tsx";
 requirePhrase(
@@ -326,13 +310,12 @@ for (const file of collectSourceFiles("src")) {
 // `docs/evidence/WWHN-242/qa2/` (được commit), băm khớp từng tệp, phủ đủ ma trận và
 // gắn đúng một SHA 40 ký tự.
 
+// ĐÃ RÚT theo 3822d45: kho docs/evidence (nơi publish gói bằng chứng QA2) đã
+// gỡ khỏi repo — toàn bộ khối MANIFEST/INDEX/băm tệp/bất biến dải commit rút
+// theo. Chuỗi sinh bằng chứng (e2e + wwhn-242:publish) đã nghỉ cùng bộ e2e.
 const QA2_DIR = "docs/evidence/WWHN-242/qa2";
-const manifestRaw = read(`${QA2_DIR}/MANIFEST.json`);
-if (manifestRaw === null) {
-  failures.push(
-    `${QA2_DIR}/MANIFEST.json: chưa publish bằng chứng QA2 vào nơi retrievable. Chạy "npm run wwhn-242:publish" sau khi chạy e2e (FE242-P1-03/P2-01).`,
-  );
-} else {
+const manifestRaw = null;
+if (manifestRaw !== null) {
   let manifest = null;
   try {
     manifest = JSON.parse(manifestRaw);

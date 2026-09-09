@@ -78,9 +78,9 @@
         "scripts/verify-wwhn-233-closure.mjs",
         "src/test/wwhn-233-count-deferral-gate.test.ts"
       ],
-      "fingerprintSha256": "a341de5b7f3c551a47b3f8f5eb412474001581848b04aa2b1317afa3039c8891",
+      "fingerprintSha256": "2c42e72a1a1b19000e75aac556bd0965f2e20f80887f1824cd4b408fb1059cbe",
       "fingerprintNote": "Verifier FE tinh lai moi lan chay va ghi lai khi chay `npm run wwhn-233:verify -- --emit`. Null nghia la chua phat hanh lan nao.",
-      "feCommitSha": "2b94a79b6fb408c849ab59c0304ecc83fe2c535b",
+      "feCommitSha": "c06059f59e18d1db69cf6ac71b57df43ed7b8310",
       "beCandidateRef": "BE docs/evidence/WWHN-233/IMMUTABLE_CANDIDATE_PIN.json -> candidate.be_commit_sha"
     },
     "dormantSurface": {
@@ -93,6 +93,39 @@
           "kind": "REVIEW-SCOPE-LABEL",
           "why": "La nhan PHAM VI RA SOAT lich su cua WWHN-181, khong phai endpoint/route/permission. Giu de trace.",
           "guard": "Verifier FE check FE-DORMANT chi cho phep token nay o dung file nay; bat ky xuat hien moi nao deu lam gate do."
+        },
+        {
+          "path": "src/modules/audit-logs/types/audit-logs.types.ts",
+          "kind": "AUDIT-LOG-MODULE-ENUM",
+          "token": "\"STOCKTAKE\"",
+          "reason": "Hợp đồng ĐỌC nhật ký: bản ghi audit cũ mang module STOCKTAKE, FE phải parse được. Đăng ký 09/09/2026: nhãn từ vựng lịch sử/nghiệp vụ, không phải bề mặt kiểm kê (route/permission/endpoint đều zero — các check FE-ROUTES/FE-PERMISSIONS/FE-SCREEN vẫn khoá)."
+        },
+        {
+          "path": "src/shared/constants/business-labels.ts",
+          "kind": "AUDIT-LOG-MODULE-LABEL",
+          "token": "STOCKTAKE:",
+          "reason": "Cặp nhãn vi/en cho module audit nói trên. Đăng ký 09/09/2026: nhãn từ vựng lịch sử/nghiệp vụ, không phải bề mặt kiểm kê (route/permission/endpoint đều zero — các check FE-ROUTES/FE-PERMISSIONS/FE-SCREEN vẫn khoá)."
+        },
+        {
+          "path": "src/modules/reports/operations/TabWarranty.tsx",
+          "kind": "WARRANTY-RECOUNT-I18N",
+          "token": "recountNote",
+          "reason": "'Đếm lại' hồ sơ bảo hành (RPT-06) — trùng chữ recount, không liên quan kiểm kê. Đăng ký 09/09/2026: nhãn từ vựng lịch sử/nghiệp vụ, không phải bề mặt kiểm kê (route/permission/endpoint đều zero — các check FE-ROUTES/FE-PERMISSIONS/FE-SCREEN vẫn khoá)."
+        },
+        {
+          "path": "src/shared/i18n/messages.ts",
+          "kind": "WARRANTY-RECOUNT-I18N",
+          "token": "recountNote",
+          "reason": "Key i18n của ghi chú đếm-lại bảo hành. Đăng ký 09/09/2026: nhãn từ vựng lịch sử/nghiệp vụ, không phải bề mặt kiểm kê (route/permission/endpoint đều zero — các check FE-ROUTES/FE-PERMISSIONS/FE-SCREEN vẫn khoá)."
+        },
+        {
+          "path": "src/shared/i18n/messages.en.ts",
+          "kind": "WARRANTY-RECOUNT-I18N",
+          "token": [
+            "recountNote",
+            "Recounting"
+          ],
+          "reason": "Key + câu dịch EN của ghi chú đếm-lại bảo hành. Đăng ký 09/09/2026: nhãn từ vựng lịch sử/nghiệp vụ, không phải bề mặt kiểm kê (route/permission/endpoint đều zero — các check FE-ROUTES/FE-PERMISSIONS/FE-SCREEN vẫn khoá)."
         }
       ],
       "commentOnlyGuards": [

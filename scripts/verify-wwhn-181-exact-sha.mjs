@@ -26,11 +26,11 @@ const sourceFiles = [
   ".github/workflows/ci.yml",
   ".github/workflows/wwhn-181-signoff.yml",
   "package.json",
-  "docs/Task_docs_Jira/WWHN-181.md",
+  // docs/Task_docs_Jira/WWHN-181.md + docs/evidence/WWHN-181/*.{json,md} —
+  // ĐÃ RÚT theo 3822d45 (dọn kho tài liệu); gói bằng chứng chỉ còn băm các
+  // nguồn sống bên dưới.
   "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json",
   "docs/api-evidence/M1_API_MAPPING.md",
-  "docs/evidence/WWHN-181/FINAL_GATE_EVIDENCE.template.json",
-  "docs/evidence/WWHN-181/RUNTIME_EVIDENCE_CHECKLIST.md",
   "scripts/run-wwhn-153-runtime-evidence.mjs",
   "scripts/run-wwhn-181-runtime-ui-evidence.mjs",
   "scripts/verify-wms-contract-signoff.mjs",

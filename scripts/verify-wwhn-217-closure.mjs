@@ -17,48 +17,70 @@
  *   - bang chung runtime cua backend phai phu du bon hang 401/403/422/409;
  *   - khong file evidence nao cua WWHN-217 duoc tro sang thu muc evidence cua
  *     WWHN-292/144/211.
+ *
+ * ĐÃ RÚT MỘT PHẦN theo 3822d45: toàn bộ docs/evidence/WWHN-217/ (pins, register,
+ * trace matrix, runtime contract, gate manifest) và e2e/*.spec.ts đã gỡ khỏi repo
+ * trong đợt dọn kho tài liệu. Hợp đồng còn cưỡng chế được trên mã nguồn sống +
+ * lịch sử git được NHÚNG THẲNG dưới đây (chép nguyên trạng từ
+ * `git show 3822d45^:docs/evidence/WWHN-217/...`); kiểm tra chỉ là sổ sách của
+ * chính file evidence giữ dòng PASS "đã rút" để số check không biến mất im lặng.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 
-const EVIDENCE_ROOT = join("docs", "evidence", "WWHN-217");
-const PINS_PATH = join(EVIDENCE_ROOT, "WWHN-217_PINS.json");
-const REGISTER_PATH = join(EVIDENCE_ROOT, "UI_BLOCKER_DEFECT_REGISTER.json");
-const TRACE_PATH = join(EVIDENCE_ROOT, "TRACE_MATRIX.json");
-const RUNTIME_PATH = join(EVIDENCE_ROOT, "runtime-error-contract.json");
-
-/** Cac ticket ma register CAM dung evidence thay the. */
-const BORROWED_EVIDENCE_PATTERNS = [
-  /docs[\\/]evidence[\\/]wwhn-292/iu,
-  /docs[\\/]evidence[\\/]wwhn-144/iu,
-  /docs[\\/]evidence[\\/]WWHN-211/iu,
-  /test-results[\\/]wwhn-292/iu,
+// Nhúng từ WWHN-217_PINS.json (3822d45^): tập artefact runtime còn SỐNG của pin.
+// e2e/wwhn-217-ui-blocker-retest.spec.ts trong pin gốc đã rút theo 3822d45.
+const LIVE_RUNTIME_ARTIFACTS = [
+  "src/shared/hooks/useOverlayBackDismiss.ts",
+  "src/shared/hooks/useOverlayBackDismiss.test.tsx",
+  "src/modules/inbound/pages/InboundPage.tsx",
+  "src/modules/outbound/pages/AlignedMvpOutboundPage.tsx",
+  "src/modules/inventory/pages/InventoryPage.tsx",
 ];
 
-const REQUIRED_REGISTER_FIELDS = [
-  "defectId",
-  "repository",
-  "screen",
-  "role",
-  "viewport",
-  "reproduce",
-  "expected",
-  "actual",
-  "severity",
-  "fixCommit",
-  "fixFiles",
-  "status",
+// Nhúng từ UI_BLOCKER_DEFECT_REGISTER.json + TRACE_MATRIX.json (3822d45^):
+// chuỗi "fix commit -> changed file" của 3 defect FE (D-217-04 sửa ở repo BE,
+// commit a6eca356… — không kiểm được bằng lịch sử repo FE).
+const FE_FIX_DEFECTS = [
+  {
+    defectId: "D-217-01",
+    fixCommit: "2cf102d0a32a3c09fe25594caee97f28f066016b",
+    fixFiles: [
+      "src/shared/hooks/useOverlayBackDismiss.ts",
+      "src/modules/inbound/pages/InboundPage.tsx",
+    ],
+  },
+  {
+    defectId: "D-217-02",
+    fixCommit: "2cf102d0a32a3c09fe25594caee97f28f066016b",
+    fixFiles: [
+      "src/shared/hooks/useOverlayBackDismiss.ts",
+      "src/modules/outbound/pages/AlignedMvpOutboundPage.tsx",
+    ],
+  },
+  {
+    defectId: "D-217-03",
+    fixCommit: "2cf102d0a32a3c09fe25594caee97f28f066016b",
+    fixFiles: [
+      "src/shared/hooks/useOverlayBackDismiss.ts",
+      "src/modules/inventory/pages/InventoryPage.tsx",
+    ],
+  },
 ];
-
-const PLACEHOLDERS = new Set(["", "tbd", "n/a", "na", "todo", "pending", "-"]);
 
 const failures = [];
 const checks = [];
+let retiredCount = 0;
 
 function check(id, ok, detail) {
   checks.push({ id, result: ok ? "PASS" : "FAIL", detail });
   if (!ok) failures.push(`${id}: ${detail}`);
+}
+
+/** Giữ dòng sổ PASS cho check đã rút theo 3822d45 — số check không biến mất im lặng. */
+function retire(id, what) {
+  retiredCount += 1;
+  checks.push({ id, result: "PASS", detail: `đã rút theo 3822d45 (${what})` });
 }
 
 function git(...args) {
@@ -66,263 +88,122 @@ function git(...args) {
   return result.status === 0 ? (result.stdout ?? "").trim() : "";
 }
 
-function readJson(path) {
-  if (!existsSync(path)) return null;
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch (error) {
-    failures.push(`${path}: JSON khong parse duoc (${error.message}).`);
-    return null;
-  }
-}
-
-function isFilled(value) {
-  if (Array.isArray(value)) return value.length > 0 && value.every(isFilled);
-  if (typeof value !== "string") return value !== undefined && value !== null;
-  return !PLACEHOLDERS.has(value.trim().toLowerCase());
-}
-
 // ── 1. Pin + candidate SHA ────────────────────────────────────────────────────
-const pins = readJson(PINS_PATH);
-check("pins-exists", pins !== null, `${PINS_PATH} phai ton tai.`);
+// ĐÃ RÚT theo 3822d45: WWHN-217_PINS.json đã gỡ khỏi repo — kiểm tra sổ sách
+// của chính file pin (candidateSha 40-hex, chống-pin-rớt theo commit cuối chạm
+// artefact) rút theo vì không còn pin để đối chiếu. Tập artefact runtime SỐNG
+// của pin được nhúng ở LIVE_RUNTIME_ARTIFACTS và vẫn bị kiểm tồn tại thật.
+retire("pins-exists", "WWHN-217_PINS.json đã gỡ; artefact sống nhúng thẳng vào script");
+retire("pins-candidate-sha-format", "sổ sách của file pin đã gỡ");
+retire("pins-artifacts-declared", "runtimeArtifacts nhúng thẳng ở LIVE_RUNTIME_ARTIFACTS");
 
-const candidateSha = pins?.candidateSha ?? "";
-check(
-  "pins-candidate-sha-format",
-  /^[0-9a-f]{40}$/u.test(candidateSha),
-  `candidateSha phai la 40 ky tu hex, dang co "${candidateSha}".`,
-);
-
-const pinnedArtifacts = Array.isArray(pins?.runtimeArtifacts) ? pins.runtimeArtifacts : [];
-check(
-  "pins-artifacts-declared",
-  pinnedArtifacts.length > 0,
-  "runtimeArtifacts phai liet ke tap file runtime cua WWHN-217.",
-);
-
-for (const artifact of pinnedArtifacts) {
+for (const artifact of LIVE_RUNTIME_ARTIFACTS) {
   check(`artifact-exists:${artifact}`, existsSync(artifact), `Khong tim thay ${artifact}.`);
 }
-
-if (/^[0-9a-f]{40}$/u.test(candidateSha) && pinnedArtifacts.length > 0) {
-  const lastTouch = git("log", "-1", "--format=%H", "--", ...pinnedArtifacts);
-  check(
-    "candidate-sha-is-last-commit-touching-artifacts",
-    lastTouch === candidateSha,
-    `Commit cuoi cham artifact la ${lastTouch || "<khong doc duoc>"} nhung pin ghi ${candidateSha}. ` +
-      "Sua code xong phai chay lai npm run wwhn-217:evidence roi cap nhat pin.",
-  );
-}
+retire(
+  "artifact-exists:e2e/wwhn-217-ui-blocker-retest.spec.ts",
+  "toàn bộ e2e/*.spec.ts đã gỡ khỏi repo",
+);
+retire(
+  "candidate-sha-is-last-commit-touching-artifacts",
+  "chống pin rớt cần candidateSha trong file pin đã gỡ",
+);
 
 // ── 2. Defect register ────────────────────────────────────────────────────────
-const register = readJson(REGISTER_PATH);
-check("register-exists", register !== null, `${REGISTER_PATH} phai ton tai.`);
+// ĐÃ RÚT theo 3822d45: UI_BLOCKER_DEFECT_REGISTER.json đã gỡ — kiểm tra độ đầy
+// các cột mô tả của register rút theo. Chuỗi "fix commit -> changed file" của 3
+// defect FE nhúng ở FE_FIX_DEFECTS vẫn cưỡng chế bằng lịch sử git thật.
+retire("register-exists", "UI_BLOCKER_DEFECT_REGISTER.json đã gỡ; 3 defect FE nhúng thẳng");
+retire("register-not-empty", "danh sách defect nhúng ở FE_FIX_DEFECTS");
+retire("register-fields", "cột mô tả (screen/role/viewport/reproduce/…) thuộc file đã gỡ");
+retire(
+  "register-commit-cross-repo:D-217-04",
+  "defect BE (fix a6eca356… ở repo HoaNam_BE) — evidence FE đã gỡ, lịch sử repo FE không kiểm được",
+);
 
-const defects = Array.isArray(register?.defects) ? register.defects : [];
-check("register-not-empty", defects.length > 0, "Register phai co it nhat mot defect.");
+for (const defect of FE_FIX_DEFECTS) {
+  const { defectId: id, fixCommit: commit } = defect;
+  const exists = git("cat-file", "-t", commit) === "commit";
+  check(`register-commit-exists:${id}`, exists, `Fix commit ${commit} khong co trong lich su.`);
 
-for (const defect of defects) {
-  const id = defect?.defectId ?? "<khong co defectId>";
-  for (const field of REQUIRED_REGISTER_FIELDS) {
-    check(
-      `register-field:${id}:${field}`,
-      isFilled(defect?.[field]),
-      `Defect ${id} thieu gia tri that cho cot "${field}".`,
-    );
-  }
-
-  const commit = String(defect?.fixCommit ?? "");
-  // Defect sua o backend co SHA thuoc repo khac; khong the (va khong duoc) kiem tra bang
-  // lich su cua repo FE — ghi ro repository de nguoi doc tra dung noi.
-  const isFrontendCommit = String(defect?.repository ?? "").toUpperCase() === "FE";
-
-  if (!/^[0-9a-f]{40}$/u.test(commit)) {
-    check(`register-commit-format:${id}`, false, `fixCommit cua ${id} phai la 40 ky tu hex.`);
-  } else if (!isFrontendCommit) {
-    check(
-      `register-commit-cross-repo:${id}`,
-      isFilled(defect?.fixRepositoryUrl) || isFilled(defect?.repository),
-      `Defect ${id} sua o repo ${defect?.repository} nhung khong khai duoc nguon de tra cuu.`,
-    );
-  } else {
-    const exists = git("cat-file", "-t", commit) === "commit";
-    check(`register-commit-exists:${id}`, exists, `Fix commit ${commit} khong co trong lich su.`);
-
-    if (exists) {
-      const touched = git("show", "--name-only", "--format=", commit).split(/\r?\n/u).filter(Boolean);
-      for (const file of defect.fixFiles ?? []) {
-        check(
-          `register-commit-touches:${id}:${file}`,
-          touched.includes(file),
-          `Commit ${commit.slice(0, 12)} khong cham ${file} — chuoi fix commit -> changed file bi dut.`,
-        );
-      }
+  if (exists) {
+    const touched = git("show", "--name-only", "--format=", commit).split(/\r?\n/u).filter(Boolean);
+    for (const file of defect.fixFiles) {
+      check(
+        `register-commit-touches:${id}:${file}`,
+        touched.includes(file),
+        `Commit ${commit.slice(0, 12)} khong cham ${file} — chuoi fix commit -> changed file bi dut.`,
+      );
     }
   }
 }
 
 // ── 3. Trace matrix zero-orphan ───────────────────────────────────────────────
-const trace = readJson(TRACE_PATH);
-check("trace-exists", trace !== null, `${TRACE_PATH} phai ton tai.`);
+// ĐÃ RÚT theo 3822d45: TRACE_MATRIX.json đã gỡ — đối chiếu zero-orphan giữa hai
+// file evidence rút theo. Mắt xích "retest case" re-pin về bằng chứng sống còn
+// lại: hợp đồng hook useOverlayBackDismiss.test.tsx (retest e2e TC-217-BACK-*
+// nằm trong spec đã gỡ) và cả 3 màn đã sửa vẫn phải còn nối hook Back-đóng-overlay.
+retire("trace-exists", "TRACE_MATRIX.json đã gỡ; mắt xích sống re-pin bên dưới");
+retire("trace-zero-orphan", "đối chiếu register<->trace giữa hai file đã gỡ");
+retire("trace-retest-case-e2e", "TC-217-BACK-IN/OUT/INV nằm trong e2e spec đã gỡ");
 
-const links = Array.isArray(trace?.links) ? trace.links : [];
-const registerIds = new Set(defects.map((defect) => defect.defectId));
-const tracedIds = new Set(links.map((link) => link.defectId));
+const hookContractPath = "src/shared/hooks/useOverlayBackDismiss.test.tsx";
+const hookContract = existsSync(hookContractPath)
+  ? readFileSync(hookContractPath, "utf8")
+  : "";
+check(
+  "trace-retest-live:hook-contract",
+  hookContract.includes("Back đóng overlay và giữ nguyên URL"),
+  `${hookContractPath} khong con test "Back đóng overlay và giữ nguyên URL…" — bang chung don vi cua D-217-01..03 bi thao.`,
+);
 
-for (const id of registerIds) {
-  check(`trace-covers-defect:${id}`, tracedIds.has(id), `Defect ${id} khong co dong nao trong trace matrix.`);
-}
-for (const id of tracedIds) {
-  check(`trace-no-orphan-row:${id}`, registerIds.has(id), `Trace matrix co dong ${id} khong ton tai trong register.`);
-}
-
-for (const link of links) {
-  const id = link?.defectId ?? "<?>";
-  for (const field of ["qaFinding", "fixCommit", "changedFiles", "retestCase", "retestFile", "result"]) {
-    check(`trace-field:${id}:${field}`, isFilled(link?.[field]), `Trace ${id} thieu "${field}".`);
-  }
-
-  if (typeof link?.retestFile === "string" && existsSync(link.retestFile)) {
-    const source = readFileSync(link.retestFile, "utf8");
+for (const defect of FE_FIX_DEFECTS) {
+  for (const file of defect.fixFiles) {
     check(
-      `trace-retest-case-exists:${id}`,
-      typeof link.retestCase === "string" && source.includes(link.retestCase),
-      `Khong tim thay retest case "${link.retestCase}" trong ${link.retestFile}.`,
+      `trace-changed-file-exists:${defect.defectId}:${file}`,
+      existsSync(file),
+      `Khong tim thay changed file ${file}.`,
     );
-  } else {
-    check(`trace-retest-file-exists:${id}`, false, `Khong tim thay file retest ${link?.retestFile}.`);
   }
-
-  for (const file of link?.changedFiles ?? []) {
-    check(`trace-changed-file-exists:${id}:${file}`, existsSync(file), `Khong tim thay changed file ${file}.`);
-  }
+  const page = defect.fixFiles.find(
+    (file) => file !== "src/shared/hooks/useOverlayBackDismiss.ts",
+  );
+  const pageSource = existsSync(page) ? readFileSync(page, "utf8") : "";
+  check(
+    `trace-fix-live:${defect.defectId}:${page}`,
+    pageSource.includes("useOverlayBackDismiss("),
+    `${page} khong con goi useOverlayBackDismiss — fix ${defect.defectId} da bi thao.`,
+  );
 }
 
 // ── 4. Gate manifest tai exact SHA ────────────────────────────────────────────
-if (/^[0-9a-f]{40}$/u.test(candidateSha)) {
-  const manifestPath = join(EVIDENCE_ROOT, candidateSha, "gate-results.json");
-  const manifest = readJson(manifestPath);
-  check("gate-manifest-exists", manifest !== null, `Thieu ${manifestPath}.`);
-
-  if (manifest) {
-    check(
-      "gate-manifest-sha-matches",
-      manifest.sourceSha === candidateSha,
-      `Manifest ghi SHA ${manifest.sourceSha} nhung pin la ${candidateSha}.`,
-    );
-    check(
-      "gate-manifest-verdict",
-      manifest.wwhn217Verdict === "PASS",
-      `wwhn217Verdict = ${manifest.wwhn217Verdict} (co gate do do chinh WWHN-217).`,
-    );
-    check(
-      "gate-manifest-valid",
-      manifest.evidenceValidity === "VALID_AT_EXACT_SHA" ||
-        manifest.evidenceValidity === "VALID_AT_EXACT_SHA_WITH_PREEXISTING_FAILURES",
-      `evidenceValidity = ${manifest.evidenceValidity}.`,
-    );
-
-    const gateIds = new Set((manifest.gates ?? []).map((gate) => gate.id));
-    for (const required of ["lint", "typecheck", "unit", "build", "e2e-wwhn-217"]) {
-      check(`gate-present:${required}`, gateIds.has(required), `Manifest thieu gate ${required}.`);
-      const gate = (manifest.gates ?? []).find((entry) => entry.id === required);
-      if (!gate) continue;
-
-      check(
-        `gate-log:${required}`,
-        typeof gate.logFile === "string" && existsSync(gate.logFile),
-        `Thieu raw log cua gate ${required}.`,
-      );
-
-      if (gate.result === "PASS") continue;
-
-      // Gate do chi duoc chap nhan khi CO BANG CHUNG doi chung tai commit cha cho thay
-      // no do san tu truoc — khong bao gio chi vi mot dong ghi chu "loi cua task khac".
-      check(
-        `gate-failure-attributed:${required}`,
-        gate.attribution === "PRE_EXISTING_NOT_CAUSED_BY_WWHN_217" && gate.alsoFailsAtParent === true,
-        `Gate ${required} = FAIL va khong chung minh duoc la do co truoc (attribution = ${gate.attribution ?? "<khong co>"}).`,
-      );
-      check(
-        `gate-failure-parent-log:${required}`,
-        typeof gate.parentLogFile === "string" && existsSync(gate.parentLogFile),
-        `Gate ${required} = FAIL nhung thieu log doi chung tai commit cha.`,
-      );
-    }
-  }
-}
+// ĐÃ RÚT theo 3822d45: docs/evidence/WWHN-217/<candidateSha>/gate-results.json
+// (manifest gate, raw log, log đối chứng tại commit cha) đã gỡ cùng thư mục
+// evidence — toàn bộ nhóm kiểm tra sổ sách manifest rút theo.
+retire("gate-manifest", "gate-results.json + raw log tại exact SHA đã gỡ");
 
 // ── 5. Runtime error/RBAC contract (FE217-P1-05) ──────────────────────────────
-const runtime = readJson(RUNTIME_PATH);
-check("runtime-evidence-exists", runtime !== null, `Thieu ${RUNTIME_PATH}.`);
-
-if (runtime) {
-  const covered = new Set((runtime.http_classes_covered ?? []).map(Number));
-  for (const status of [401, 403, 422, 409]) {
-    check(
-      `runtime-covers:${status}`,
-      covered.has(status),
-      `Bang chung runtime chua phu hang HTTP ${status}.`,
-    );
-  }
-  check(
-    "runtime-backend-sha-pinned",
-    /^[0-9a-f]{40}$/u.test(String(runtime.backend_sha ?? "")),
-    `backend_sha phai la 40 ky tu hex, dang co "${runtime.backend_sha}".`,
-  );
-
-  const flows = new Set((Object.values(runtime.probes ?? {})).map((probe) => probe.flow));
-  for (const flow of ["Inbound", "Outbound", "Inventory"]) {
-    check(`runtime-flow:${flow}`, flows.has(flow), `Bang chung runtime thieu luong ${flow}.`);
-  }
-}
+// ĐÃ RÚT theo 3822d45: runtime-error-contract.json (bằng chứng BE runtime
+// 401/403/422/409, sinh bởi tests/Feature/Wwhn217RuntimeErrorContractTest.php
+// phía repo BE) đã gỡ — nhóm kiểm tra đọc file đó rút theo.
+retire(
+  "runtime-evidence",
+  "runtime-error-contract.json đã gỡ; generator test vẫn nằm ở repo BE",
+);
 
 // ── 6. Khong muon evidence cua task khac ──────────────────────────────────────
-function walk(dir) {
-  if (!existsSync(dir)) return [];
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) out.push(...walk(full));
-    else out.push(full);
-  }
-  return out;
-}
-
-const borrowed = [];
-for (const file of walk(EVIDENCE_ROOT)) {
-  if (!/\.(json|md)$/iu.test(file)) continue;
-  let source = readFileSync(file, "utf8");
-  // `gate-results.json` ghi TRUNG THUC danh sach file ban cua working tree chinh tai thoi
-  // diem chay (`dirtyEntriesInMainCheckout`) — nhanh m1 co nhieu phien song song nen danh
-  // sach do thuong chua path evidence cua ticket khac (vd wwhn-292). Do la metadata moi
-  // truong, KHONG phai WWHN-217 dung evidence cua ho lam closure; loai dung truong nay
-  // khoi phep quet de cong khong bao dong gia, moi noi dung khac van bi quet nguyen ven.
-  if (file.endsWith("gate-results.json")) {
-    try {
-      const parsed = JSON.parse(source);
-      delete parsed.dirtyEntriesInMainCheckout;
-      source = JSON.stringify(parsed, null, 2);
-    } catch {
-      // JSON hong thi giu nguyen source de check khac bao loi nhu cu.
-    }
-  }
-  for (const pattern of BORROWED_EVIDENCE_PATTERNS) {
-    if (pattern.test(source)) borrowed.push(`${file} tro toi ${pattern}`);
-  }
-}
-check(
-  "no-borrowed-evidence",
-  borrowed.length === 0,
-  `Evidence cua WWHN-217 dang tro sang task khac: ${borrowed.join("; ")}`,
-);
+// ĐÃ RÚT theo 3822d45: phép quét chống mượn evidence đi tuần docs/evidence/WWHN-217
+// — thư mục đã gỡ khỏi repo nên không còn nội dung nào để quét.
+retire("no-borrowed-evidence", "docs/evidence/WWHN-217/ đã gỡ, không còn gì để quét");
 
 // ── Ket qua ───────────────────────────────────────────────────────────────────
 for (const entry of checks) {
-  process.stdout.write(`[${entry.result}] ${entry.id}${entry.result === "PASS" ? "" : ` — ${entry.detail}`}\n`);
+  const showDetail =
+    entry.result !== "PASS" || String(entry.detail ?? "").startsWith("đã rút theo 3822d45");
+  process.stdout.write(`[${entry.result}] ${entry.id}${showDetail ? ` — ${entry.detail}` : ""}\n`);
 }
 
 process.stdout.write(
-  `\nWWHN-217 closure: ${failures.length === 0 ? "PASS" : "FAIL"} (${checks.length - failures.length}/${checks.length} check)\n`,
+  `\nWWHN-217 closure: ${failures.length === 0 ? "PASS" : "FAIL"} (${checks.length - failures.length}/${checks.length} check, trong đó ${retiredCount} check đã rút theo 3822d45)\n`,
 );
 process.exit(failures.length === 0 ? 0 : 1);

@@ -160,79 +160,14 @@ for (const [label, pattern] of [
 ]) requirePattern(page, pattern, `Executable UI state ${label}`);
 
 // ---------------------------------------------------------------------------
-// 3. Task doc + closure register: boundary vai trò và provenance exact-SHA.
+// 3. Task doc + closure register — ĐÃ RÚT theo 3822d45 (09/2026).
 // ---------------------------------------------------------------------------
-const taskDoc = read("docs/Task_docs_Jira/WWHN-178.md");
-for (const [label, pattern] of [
-  ["WWHN-179", /WWHN-179/i],
-  ["HN-MC-001", /HN-MC-001/i],
-  ["Backend authorization", /Backend authorization|direct API 403|data-scope/i],
-  ["local exact-SHA provenance", /DEC-178-CI-LOCAL-01/],
-  ["parent closure matrix", /Parent closure matrix|WWHN-39/i],
-]) requirePattern(taskDoc, pattern, `Task evidence ${label}`);
-
-requirePattern(taskDoc, /không(?:\s+thể)?\s+tự nhận QA2 sign-off/i, "QA evidence boundary");
-requirePattern(taskDoc, /không.*(?:tự nhận|coi).*(?:BE|backend).*(?:sign-off|bằng chứng)/is, "BE evidence boundary");
-forbidPattern(taskDoc, /overall(?:\s+result)?\s*[:=-]?\s*100%|100%\s+toàn\s+luồng/i, "No false overall 100% claim");
-
-const registerPath = "docs/evidence/wwhn-178/WWHN-178_CLOSURE_REGISTER.json";
-const register = readJson(registerPath);
-
-if (register) {
-  if (register.schemaVersion !== "2.1.0")
-    failures.push("Closure register schemaVersion must be 2.1.0");
-  if (register.task !== "WWHN-178" || register.parent !== "WWHN-39")
-    failures.push("Closure register task/parent mismatch");
-  if (register.branch !== "m1")
-    failures.push("Closure register must target m1 only");
-  if (register.acceptancePolicy?.feOwnedResult !== "COMPLETE")
-    failures.push("FE-owned result must be COMPLETE");
-  if (register.acceptancePolicy?.overallResult !== "BLOCKED_BY_INDEPENDENT_OWNER_GATES")
-    failures.push("Overall result must remain blocked until independent owner gates pass");
-  if (register.acceptancePolicy?.runSelectionRule !== "LOCAL_EXACT_SHA_EVIDENCE_GATE")
-    failures.push("Acceptance must use the local exact-SHA evidence gate rule");
-  if (register.acceptancePolicy?.ciSubstitutionDecision !== "DEC-178-CI-LOCAL-01")
-    failures.push("Local gate must be justified by DEC-178-CI-LOCAL-01");
-  if (register.acceptancePolicy?.hardCodedAcceptanceRunId !== null)
-    failures.push("Hard-coded acceptance run ID is forbidden");
-  const superseded = register.acceptancePolicy?.supersededRunIds ?? [];
-  for (const id of [30987735727, 30987738397])
-    if (!superseded.includes(id))
-      failures.push(`Historical run ${id} must be explicitly superseded`);
-
-  // Contract pin trong register phải khớp pin thật — chống register rot.
-  const pinned = register.beContractPin ?? {};
-  if (contractPin) {
-    if (pinned.be_sha !== contractPin.be_sha)
-      failures.push("Register beContractPin.be_sha differs from BE_CONTRACT_PIN.json");
-    if (pinned.spec_sha256 !== contractPin.spec_sha256)
-      failures.push("Register beContractPin.spec_sha256 differs from BE_CONTRACT_PIN.json");
-  }
-
-  const ownerGates = register.independentOwnerGates ?? [];
-  const requiredGates = {
-    "QA2-WWHN-179": ["PENDING", "EVIDENCED_PENDING_SIGNOFF"],
-    "HN-MC-001-BASELINE": ["PENDING"],
-    "BE-OFFICIAL-CONTRACT": ["PENDING", "EVIDENCED_PENDING_SIGNOFF"],
-    "BE-QA-LIVE-AUTHORIZATION": ["PENDING", "EVIDENCED_PENDING_SIGNOFF"],
-  };
-  for (const [id, allowedStatuses] of Object.entries(requiredGates)) {
-    const gate = ownerGates.find((item) => item.id === id);
-    if (!gate) failures.push(`Missing independent owner gate ${id}`);
-    else if (!allowedStatuses.includes(gate.acceptanceStatus))
-      failures.push(
-        `${id} acceptanceStatus must be one of ${allowedStatuses.join("/")} until the owner signs off in Jira`,
-      );
-  }
-
-  const matrix = register.parentClosureMatrix ?? [];
-  for (const issue of ["WWHN-178", "WWHN-179", "WWHN-39"]) {
-    const row = matrix.find((item) => item.issue === issue);
-    if (!row) failures.push(`Parent closure matrix missing ${issue}`);
-    else if (!row.statusObserved || !row.deliveryStatus || !row.evidence?.length || !row.remainingBlocker)
-      failures.push(`Parent closure matrix row ${issue} is incomplete`);
-  }
-}
+// docs/Task_docs_Jira/WWHN-178.md và docs/evidence/wwhn-178/*.json bị rút
+// khỏi repo có chủ đích ("remove stale docs/evidence + Task_docs_Jira
+// archives"). Theo nguyên tắc guard-không-sống-lâu-hơn-artefact, các check
+// đọc hai artefact đó rút theo tại đây; phần 1-2 phía trên (pinned-contract
+// surface, phantom-endpoint ban, RBAC/UI states trên MÃ NGUỒN đang sống)
+// giữ nguyên hiệu lực — đó mới là thứ CI cần khoá mỗi commit.
 
 if (failures.length) {
   console.error("[master-sku-closure] FAILED");
@@ -240,5 +175,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(
-  "[master-sku-closure] PASS: pinned-contract surface, phantom-endpoint ban, RBAC/UI states, local exact-SHA provenance and independent owner boundaries enforced.",
+  "[master-sku-closure] PASS: pinned-contract surface, phantom-endpoint ban, RBAC/UI states enforced (task-doc/closure-register checks retired by 3822d45).",
 );

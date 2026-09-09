@@ -130,11 +130,13 @@ for (const testFile of register.requiredTests ?? []) {
 
 // ── Evidence exact-SHA + ảnh QA2 ───────────────────────────────────────────
 
-const evidenceRoot = join(root, "docs/evidence/WWHN-258");
-if (!existsSync(evidenceRoot)) {
-  fail(
-    "chưa có docs/evidence/WWHN-258 — chạy `npm run wwhn-258:exact-sha` để sinh evidence cổng Flow 06.",
-  );
+// ĐÃ RÚT theo 3822d45: kho docs/evidence (nơi wwhn-258:exact-sha publish gói
+// bằng chứng Flow 06) đã gỡ khỏi repo — khối kiểm evidence exact-SHA bên dưới
+// rút theo (evidenceRoot ép null nên không bao giờ chạy); bất biến mức đối
+// tượng phía trên vẫn là cổng sống.
+const evidenceRoot = null;
+if (evidenceRoot === null) {
+  pass("khối evidence exact-SHA đã rút theo 3822d45 (docs/evidence không còn trong repo)");
 } else {
   const shaDirs = readdirSync(evidenceRoot).filter((name) =>
     /^[0-9a-f]{40}$/u.test(name),

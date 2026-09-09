@@ -1,15 +1,26 @@
-import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+// ĐÃ RÚT theo 3822d45: docs/evidence/WWHN-211/fe-contract-lock.json (manifest
+// pin) và bước ghi evidence/wwhn-211/fe-contract-evidence.json không còn —
+// hợp đồng 6 endpoint được NHÚNG THẲNG vào script này (chép nguyên trạng từ
+// manifest lịch sử, git show 3822d45^) để các kiểm tra mã nguồn sống tiếp tục
+// hiệu lực mà không phụ thuộc kho tài liệu đã gỡ.
+const CONTRACT_ENDPOINTS = [
+  { constant: "INVENTORY_BALANCES", path: "/inventory/balances", function: "fetchInventoryBalances" },
+  { constant: "INVENTORY_BALANCE_SUBLEDGER", path: "/inventory/balances/:id/subledger", function: "fetchBalanceSubledger" },
+  { constant: "STOCK_MOVEMENTS", path: "/stock-movements", function: "fetchStockMovements" },
+  { constant: "STOCK_MOVEMENT", path: "/stock-movements/:id", function: "fetchStockMovement" },
+  { constant: "STOCK_MOVEMENT_TRACE_SOURCE", path: "/stock-movements/:id/trace-source", function: "traceStockMovementSource" },
+  { constant: "STOCK_MOVEMENT_TRACE_BY_CODE", path: "/stock-movements/trace-by-code", function: "traceByPhysicalCode" },
+];
 
 const root = resolve(import.meta.dirname, "..");
-const manifestPath = resolve(root, "docs/evidence/WWHN-211/fe-contract-lock.json");
 const servicePath = resolve(root, "src/modules/inventory/services/inventoryService.ts");
 const testPath = resolve(root, "src/modules/inventory/services/inventoryService.test.ts");
 const endpointsPath = resolve(root, "src/shared/api/endpoints.ts");
 const accessPath = resolve(root, "src/app/router/access.ts");
 const pagePath = resolve(root, "src/modules/inventory/pages/InventoryPage.tsx");
-const evidencePath = resolve(root, "evidence/wwhn-211/fe-contract-evidence.json");
 
 const fail = (message) => {
   console.error(`[WWHN-211] ${message}`);
@@ -17,25 +28,18 @@ const fail = (message) => {
 };
 
 const text = (path) => readFileSync(path, "utf8");
-const sha256 = (path) =>
-  createHash("sha256").update(readFileSync(path)).digest("hex");
 const escapeRegExp = (value) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-const manifest = JSON.parse(text(manifestPath));
 const service = text(servicePath);
 const tests = text(testPath);
 const endpoints = text(endpointsPath);
 const access = text(accessPath);
 const page = text(pagePath);
 
-if (!Array.isArray(manifest.endpoints) || manifest.endpoints.length !== 6) {
-  fail("FE contract must contain exactly six WWHN-211 endpoints.");
-}
-
-for (const endpoint of manifest.endpoints) {
+for (const endpoint of CONTRACT_ENDPOINTS) {
   const constantPattern = new RegExp(
-    `${endpoint.constant}\\s*:\\s*[\"']${escapeRegExp(endpoint.path)}[\"']`,
+    `${endpoint.constant}\\s*:\\s*["']${escapeRegExp(endpoint.path)}["']`,
   );
   if (!constantPattern.test(endpoints)) {
     fail(`Endpoint constant mismatch: ${endpoint.constant} -> ${endpoint.path}`);
@@ -85,35 +89,6 @@ if (!page.includes("ApiErrorAlert") || !page.includes("onRetry={() => balanceQue
   fail("Inventory page is missing standardized API error/retry behavior.");
 }
 
-mkdirSync(dirname(evidencePath), { recursive: true });
-const files = {
-  manifest: manifestPath,
-  inventory_service: servicePath,
-  inventory_service_test: testPath,
-  endpoint_catalog: endpointsPath,
-  route_access: accessPath,
-  inventory_page: pagePath,
-};
-const hashes = Object.fromEntries(
-  Object.entries(files).map(([name, path]) => [name, sha256(path)]),
-);
-const evidence = {
-  contract_id: manifest.contract_id,
-  contract_version: manifest.version,
-  generated_at: new Date().toISOString(),
-  git_sha: process.env.GITHUB_SHA ?? "LOCAL",
-  endpoint_count: manifest.endpoints.length,
-  endpoints: manifest.endpoints,
-  route: manifest.route,
-  route_permission: manifest.route_permission,
-  trace_permission: manifest.trace_permission,
-  code_scope: manifest.scope,
-  sha256: hashes,
-  p2_dead_inventory_service_scope: "REMOVED",
-  open_p0_p1_code_blockers: 0,
-  external_gates: manifest.external_gates,
-};
-writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
 console.log(
-  `WWHN-211 FE contract verified: endpoints=${manifest.endpoints.length} evidence=${evidencePath}`,
+  `WWHN-211 FE contract verified: endpoints=${CONTRACT_ENDPOINTS.length} (contract inlined; manifest/evidence files retired by 3822d45)`,
 );
