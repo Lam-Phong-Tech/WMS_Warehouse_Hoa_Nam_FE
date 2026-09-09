@@ -440,6 +440,12 @@ export async function fetchOutboundDocuments(
     status?: string;
     page?: number;
     per_page?: number;
+    /**
+     * "Sắp xếp theo" của OUT-01 — BE xếp theo thời điểm tạo/sửa gần nhất
+     * (COALESCE(updated_at, created_at)): "desc" = Mới nhất, "asc" = Cũ nhất.
+     * Bỏ trống = thứ tự mặc định cũ của BE.
+     */
+    sortOrder?: "desc" | "asc";
   } = {},
 ): Promise<OutboundListResult> {
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
@@ -450,6 +456,7 @@ export async function fetchOutboundDocuments(
         ...(params.status ? { status: params.status } : {}),
         page: params.page ?? 1,
         per_page: params.per_page ?? 10,
+        ...(params.sortOrder ? { sort_order: params.sortOrder } : {}),
       },
     },
   );

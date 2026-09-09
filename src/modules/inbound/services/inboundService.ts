@@ -40,6 +40,13 @@ type ListParams = {
    * thiếu dòng như cách lọc sau phân trang.
    */
   pendingProductInfo?: boolean;
+  /**
+   * "Sắp xếp theo" của IN-01 — BE xếp theo thời điểm tạo/sửa gần nhất
+   * (COALESCE(updated_at, created_at)): "desc" = Mới nhất, "asc" = Cũ nhất.
+   * Bỏ trống = thứ tự mặc định cũ của BE. Sắp chạy TRONG SQL, không sắp
+   * client-side sau phân trang (trang 1 sẽ sai).
+   */
+  sortOrder?: "desc" | "asc";
 };
 type RawRecord = Record<string, unknown>;
 type ScanOptions = {
@@ -334,6 +341,7 @@ export async function fetchInboundDocuments(
           params.pendingProductInfo === undefined
             ? undefined
             : params.pendingProductInfo,
+        sort_order: params.sortOrder,
       },
     },
   );

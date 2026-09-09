@@ -54,6 +54,50 @@ export const CHECK_LABELS: Readonly<Record<string, string>> = bilingual(
   },
 );
 
+/**
+ * Tra nhãn phép kiểm CHỊU ĐƯỢC khác biệt cách viết của BE.
+ *
+ * Khoá của `CHECK_LABELS` là chữ thường (`serial_subledger`) vì đó là dạng
+ * endpoint đối soát đang trả. Nhưng cùng khái niệm đó, bảng
+ * `reconciliation_incidents.divergence_type` lại lưu HOA kèm hậu tố
+ * (`SERIAL_SUBLEDGER_MISMATCH`). Trước đây nơi gọi rơi thẳng về `?? check` nên
+ * dạng nào lệch một chút là in nguyên mã máy ra chip "Lệch ở". Chuẩn hoá về
+ * chữ thường + bỏ hậu tố `_mismatch` để cả hai cách viết cùng ra một nhãn;
+ * mã thật sự lạ mới tách gạch dưới cho đọc được.
+ */
+export function checkLabelOf(code: string): string {
+  const raw = code.trim();
+  if (raw === "") return "";
+  const normalized = raw.toLowerCase().replace(/_mismatch$/, "");
+  return (
+    CHECK_LABELS[raw] ??
+    CHECK_LABELS[normalized] ??
+    normalized.split("_").filter(Boolean).join(" ")
+  );
+}
+
+/**
+ * `reconciliation_incidents.status` — trạng thái xử lý sự cố đối soát. Cột này
+ * hiện chưa có nguồn ở endpoint đối soát (adapter trả `null`), nhưng chỗ render
+ * ghép thẳng giá trị vào chuỗi, nên ngày BE map thật vào là mã máy ra thẳng
+ * màn hình. Khai nhãn TRƯỚC để cái ngày đó không phải là một lỗi nữa.
+ */
+export const INCIDENT_STATUS_LABELS: Readonly<Record<string, string>> =
+  bilingual(
+    {
+      INVESTIGATING: "Đang điều tra",
+      RESOLVED: "Đã xử lý",
+      WAIVED: "Đã bỏ qua",
+      OPEN: "Chờ xử lý",
+    },
+    {
+      INVESTIGATING: "Investigating",
+      RESOLVED: "Resolved",
+      WAIVED: "Waived",
+      OPEN: "Open",
+    },
+  );
+
 export type NormState = "LOW" | "OVER" | "NORMAL" | "UNSET";
 
 /**

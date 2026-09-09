@@ -92,3 +92,42 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
     );
   });
 });
+
+describe("IN-01 · Sắp xếp theo", () => {
+  beforeEach(() => {
+    vi.mocked(useInboundDocuments).mockReturnValue({
+      data: { data: ROWS, meta: { current_page: 1, last_page: 1, total: 2 } },
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useInboundDocuments>);
+  });
+
+  afterEach(() => {
+    cleanupTestState();
+    vi.clearAllMocks();
+  });
+
+  it("mặc định là Mới nhất: gửi sortOrder desc ngay lần tải đầu", () => {
+    renderWithProviders(<InboundPage />);
+
+    expect(useInboundDocuments).toHaveBeenCalledWith(
+      expect.objectContaining({ sortOrder: "desc" }),
+    );
+  });
+
+  it("chọn Cũ nhất: gửi sortOrder asc và quay về trang 1 (sắp ở BE)", async () => {
+    renderWithProviders(<InboundPage />);
+
+    fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách phiếu nhập"));
+    fireEvent.click(await screen.findByRole("option", { name: "Cũ nhất" }));
+
+    await waitFor(() => {
+      expect(useInboundDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({ sortOrder: "asc", page: 1 }),
+      );
+    });
+  });
+});

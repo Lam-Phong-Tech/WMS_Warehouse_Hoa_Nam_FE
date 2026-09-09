@@ -73,12 +73,14 @@ import {
 } from "./stock-reconcile-api";
 import { useT } from "@/shared/i18n/useT";
 import {
-  CHECK_LABELS,
+  INCIDENT_STATUS_LABELS,
   KIND_OPTIONS,
   LABELS,
   NORM_STATE_LABELS,
+  checkLabelOf,
   type NormState,
 } from "./stock-reconcile-labels";
+import { businessLabel } from "@/shared/constants/business-labels";
 import "./stock-reconcile-report.css";
 
 /**
@@ -126,7 +128,7 @@ function percentText(part: number, total: number): string {
 
 function checkLabel(checks: string[]): string {
   if (checks.length === 0) return EMPTY_TEXT;
-  return checks.map((check) => CHECK_LABELS[check] ?? check).join(" · ");
+  return checks.map(checkLabelOf).join(" · ");
 }
 
 /** Badge "Trạng thái đối soát" — demo chỉ có 2 nhánh, thêm nhánh NOT_APPLICABLE. */
@@ -434,7 +436,7 @@ export default function StockReconcileReport() {
               .sort((a, b) => a.localeCompare(b, "vi"))
               .map((code) => ({
                 value: code,
-                label: CHECK_LABELS[code] ?? code,
+                label: checkLabelOf(code),
               }));
           },
           match: (row, value) => row.checks.includes(value),
@@ -1285,7 +1287,14 @@ export default function StockReconcileReport() {
                           </td>
                           <td>
                             {source?.incident_id
-                              ? `${source.incident_id} · ${source.incident_status ?? EMPTY_TEXT}`
+                              ? `${source.incident_id} · ${
+                                  source.incident_status
+                                    ? businessLabel(
+                                        INCIDENT_STATUS_LABELS,
+                                        source.incident_status,
+                                      )
+                                    : EMPTY_TEXT
+                                }`
                               : EMPTY_TEXT}
                           </td>
                         </tr>

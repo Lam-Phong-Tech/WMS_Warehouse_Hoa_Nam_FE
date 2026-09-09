@@ -7,6 +7,7 @@ import {
 import { businessLabel } from "@/shared/constants/business-labels";
 import { fmt, fmtDateTime, text, n, type Raw } from "./report-format";
 import { MOVEMENT_LABELS, statusTone } from "./report-labels";
+import { movementSourceLabel } from "@/modules/reports/movement-trace/movement-trace-labels";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 /**
@@ -98,7 +99,11 @@ export function MovementTable({
       key: "source_type",
       header: t("reports.drilldown.colSource"),
       hideOnMobile: true,
-      render: (row) => text(row.source_type),
+      // `stock_movements.source_type` là cột kỹ thuật của sổ (STOCK_DOCUMENT,
+      // OPENING_ADJUSTMENT…). Cột movement_type ngay trên đã đi qua bảng nhãn
+      // từ lâu, riêng cột này in thô — dùng chung đúng bảng nhãn mà màn Truy
+      // vết biến động đang dùng cho CHÍNH cột đó.
+      render: (row) => movementSourceLabel(text(row.source_type, "")),
     },
   ];
 

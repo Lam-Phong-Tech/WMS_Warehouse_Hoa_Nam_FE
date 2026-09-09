@@ -200,4 +200,23 @@ describe("WarrantyPage (WAR-01 hub)", () => {
       );
     });
   });
+
+  it("Sắp xếp theo: mặc định Mới nhất (desc), chọn Cũ nhất gửi asc + về trang 1", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByText("BH-0001");
+
+    // Lần tải đầu đã sắp Mới nhất ở BE (sort_order=desc trong SQL).
+    expect(fetchWarrantyCases).toHaveBeenCalledWith(
+      expect.objectContaining({ sort_order: "desc" }),
+    );
+
+    fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách bảo hành"));
+    fireEvent.click(await screen.findByRole("option", { name: "Cũ nhất" }));
+
+    await waitFor(() => {
+      expect(fetchWarrantyCases).toHaveBeenCalledWith(
+        expect.objectContaining({ sort_order: "asc", page: 1 }),
+      );
+    });
+  });
 });

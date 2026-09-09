@@ -77,6 +77,9 @@ export default function AlignedMvpOutboundPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<OutboundStatus | "">("");
+  // "Sắp xếp theo" — desc = Mới nhất (phiếu tạo/sửa gần nhất lên đầu, mặc định),
+  // asc = Cũ nhất. BE sắp trong SQL nên đổi chiều phải quay về trang 1.
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [intakeOpen, setIntakeOpen] = useState(false);
@@ -93,13 +96,14 @@ export default function AlignedMvpOutboundPage() {
   const canScan = can("outbound.scan");
 
   const listQuery = useQuery({
-    queryKey: ["mvp-outbound", "list", search, status, page, perPage],
+    queryKey: ["mvp-outbound", "list", search, status, page, perPage, sortOrder],
     queryFn: () =>
       fetchOutboundDocuments({
         search: search || undefined,
         status: status || undefined,
         page,
         per_page: perPage,
+        sortOrder,
       }),
   });
 
@@ -331,6 +335,22 @@ export default function AlignedMvpOutboundPage() {
               setPage(1);
             }}
             minWidth={168}
+          />
+          {/* Khác các ô lọc (placeholder khi rỗng), ô sắp xếp LUÔN có giá trị
+              nên cần nhãn nổi "Sắp xếp theo" — thiếu nó ô chỉ hiện "Mới nhất"
+              trơ trọi, không ai hiểu là control gì. */}
+          <UiSelect
+            value={sortOrder}
+            label={t("outbound.list.sortLabel")}
+            aria-label={t("outbound.list.sortAria")}
+            options={[
+              { value: "desc", label: t("outbound.list.sortNewest") },
+              { value: "asc", label: t("outbound.list.sortOldest") },
+            ]}
+            onChange={(value) => {
+              setSortOrder(value === "asc" ? "asc" : "desc");
+              setPage(1);
+            }}
           />
           <UiSelect
             aria-label={t("outbound.list.pageSizeAria")}

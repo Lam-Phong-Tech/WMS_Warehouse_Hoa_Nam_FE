@@ -312,6 +312,7 @@ export async function fetchWarrantyCases(
     defect_id: params.defect_id,
     defect_ids: params.defect_ids,
     keyword: params.search ?? params.keyword,
+    sort_order: params.sort_order,
   };
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
     API_ENDPOINTS.WARRANTY_CASES,

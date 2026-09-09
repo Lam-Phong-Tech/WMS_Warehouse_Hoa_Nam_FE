@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.1.0",
+  "jira_key": "WWHN-237",
+  "disposition": "DISP-STK-237",
+  "controlling_requirement": "REQ-SRS-037",
+  "identity_source": "docs/evidence/WWHN-237/CANDIDATE_PAIR.json — KHÔNG dùng `git rev-parse HEAD`. Đó chính là lỗi DEV237-P1-02R2: HEAD trôi theo task khác trên m1 và hai repo chạy lệch giờ sinh ra hai cặp SHA khác nhau.",
+  "fe": {
+    "branch": "dev",
+    "commit_sha": null,
+    "head_at_run": "452f0ed40270c91cd533706addd9c177013dc237",
+    "working_tree_clean": false
+  },
+  "be": {
+    "branch": "m1",
+    "commit_sha": null,
+    "head_at_run": "64a8da9f8a3cb8f7d340e137f504692c60aaf0f5"
+  },
+  "baselines": {
+    "docs/HN_SRS_FRD_v1.12_FULL.md": "5ab1dd6c468e93f57a932741e823855806a9d37ac5dde9b118335ff8f84de086",
+    "docs/HoaNam_ERD_Moi_Nhat.md": "5209358cb0e9d91ced71b3b2ebaeb6e50d7f4304c03618a81a6a6a0adabf12e2",
+    "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html": null,
+    "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json": "fa3128b0840b979a924b1a113fa1c9cdc6271fa714e2e831a9c11341286a14f9"
+  },
+  "baseline_hash_rule": "Hash ghi tại thời điểm chạy gate, không phải hằng số dán tay: ERD còn đang được cập nhật ở task khác nên guard xác minh bằng anchor text §0.1, còn hash chỉ để QA1 tái lập đúng bản đã kiểm.",
+  "checks": [
+    {
+      "id": "FE-CONTRACT-FLOWS",
+      "status": "PASS",
+      "detail": "21 criticalFlow: zero bề mặt kiểm kê"
+    },
+    {
+      "id": "FE-CONTRACT-SCAN-CONTEXT",
+      "status": "PASS",
+      "detail": "SCAN_CLASSIFY.context = [INBOUND, OUTBOUND, INVENTORY, TRACE, WARRANTY_RECEIVE, WARRANTY_TEMP_ONLY]"
+    },
+    {
+      "id": "FE-CONTRACT-DISPOSITION",
+      "status": "PASS",
+      "detail": "removedFromMvp neo REQ-SRS-037 / WWHN-237"
+    },
+    {
+      "id": "GOVERNANCE-DISPOSITION",
+      "status": "PASS",
+      "detail": "scopeDisposition = WWHN-237 / OPTION_A_NO_CODE_REMOVAL_CLOSURE"
+    },
+    {
+      "id": "GOVERNANCE-NO-OVERCLAIM",
+      "status": "PASS",
+      "detail": "không tuyên bố approved standalone Decision ID khi WWHN-25 còn mở"
+    },
+    {
+      "id": "GOVERNANCE-REOPEN-GATE",
+      "status": "PASS",
+      "detail": "điều kiện tái mở neo vào CR/Later Phase hoặc WWHN-25"
+    },
+    {
+      "id": "FE-REPORT-CODES",
+      "status": "PASS",
+      "detail": "0 report code, tất cả nằm trong registry MVP"
+    },
+    {
+      "id": "FE-REPORT-SURFACE",
+      "status": "PASS",
+      "detail": "trang báo cáo không có tab/cột kiểm kê"
+    },
+    {
+      "id": "FE-SOURCE src/styles/hn-wms-page-normalize.css",
+      "status": "PASS",
+      "detail": "sạch"
+    },
+    {
+      "id": "FE-SOURCE src/shared/constants/wms-permissions.ts",
+      "status": "PASS",
+      "detail": "sạch"
+    },
+    {
+      "id": "FE-SOURCE src/shared/constants/routes.ts",
+      "status": "PASS",
+      "detail": "sạch"
+    },
+    {
+      "id": "FE-SOURCE src/shared/api/endpoints.ts",
+      "status": "PASS",
+      "detail": "sạch"
+    },
+    {
+      "id": "BASELINE-SRS",
+      "status": "PASS",
+      "detail": "REQ-SRS-037 còn hiệu lực trong SRS/FRD v1.12"
+    },
+    {
+      "id": "BASELINE-ERD",
+      "status": "PASS",
+      "detail": "ERD §0.1 vẫn loại Variance_Line khỏi baseline"
+    },
+    {
+      "id": "BASELINE-WIREFRAME",
+      "status": "PASS",
+      "detail": "đã rút theo 3822d45 — wireframe không còn trong repo, SRS/ERD giữ vai trò baseline"
+    },
+    {
+      "id": "BE-DISPOSITION",
+      "status": "PASS",
+      "detail": "DISP-STK-237 phía BE có mặt và neo REQ-SRS-037"
+    },
+    {
+      "id": "BE-GATE",
+      "status": "PASS",
+      "detail": "gate BE có mặt"
+    },
+    {
+      "id": "CANDIDATE-PAIR",
+      "status": "PASS",
+      "detail": "đã rút theo 3822d45 (docs/evidence removed) — định danh vòng m1 không còn được pin trong repo"
+    }
+  ],
+  "status": "PASS"
+}

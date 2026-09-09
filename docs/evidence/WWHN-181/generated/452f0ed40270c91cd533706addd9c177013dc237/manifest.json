@@ -1,0 +1,180 @@
+{
+  "schema_version": "2.2.0",
+  "task": "WWHN-181",
+  "disposition": "BLOCKED_FAIL_CLOSED",
+  "identity": {
+    "fe_sha": "452f0ed40270c91cd533706addd9c177013dc237",
+    "be_sha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+    "contract_version": "1.7.0",
+    "be_parent_sha": "04026757d679446b54e1e0c54ea18c3c0a0423ed",
+    "be_observed_fe_baseline_sha": "f6e137d01ed7afec5d30e8fecde6a2cc31bb7c8b",
+    "be_release_manifest_sha256": "ba8bc5841b5865095e51d21064ead90ad4c37129ee28142a3f507b497ddcc776",
+    "be_release_manifest_blob_sha": "a77557dcf5ccbd58d2f36a36bf6f660ee863e4f6",
+    "be_release_pack_sha256": "a20b0d8d8a9145bceb2e797c51befa20d7da9e6439be512b39f72f3d8010cdb9",
+    "be_repository_sha256sums_sha256": "0f4dcd23ceb84e39799fae5cb3f112932e6260a34ccff63b1ab7c623c839cb36"
+  },
+  "ci": {
+    "workflow": "WWHN-181 Exact SHA Sign-off",
+    "run_url": null,
+    "run_id": null,
+    "run_attempt": null,
+    "artifact_name": "wwhn-181-exact-sha-evidence-452f0ed40270c91cd533706addd9c177013dc237",
+    "source_sha": "452f0ed40270c91cd533706addd9c177013dc237"
+  },
+  "independent_be_source_review": {
+    "result": "CHANGES_REQUIRED",
+    "reviewed_be_sha": "fc534ed8c00dadd91ce60e7bac5a8660dda74d08",
+    "findings": [
+      {
+        "id": "BE-HANDOFF-SCAN-CONTEXT-DRIFT",
+        "focused_artifact": "docs/api-contract/WWHN-180-posting-openapi.yaml: Scan context WARRANTY",
+        "exact_runtime": "Modules/Warehouse/app/Http/Controllers/ScanController.php: WARRANTY_TEMP_ONLY",
+        "fe_disposition": "Keep exact runtime WARRANTY_TEMP_ONLY; WWHN-180 must reconcile and independently approve one source."
+      },
+      {
+        "id": "BE-HANDOFF-WARRANTY-BODY-DRIFT",
+        "focused_artifact": "WWHN-180 focused TEMP_ONLY path omits requestBody",
+        "exact_runtime": "WarrantyController requires temporary_item_code, missing_code_reason, condition_status and Idempotency-Key",
+        "fe_disposition": "No speculative FE contract rewrite; WWHN-180 remains blocked."
+      }
+    ]
+  },
+  "fe_runtime_remediations": {
+    "response_meta_request_id_preserved": true,
+    "inbound_scan_canonical_line_payload": true,
+    "outbound_scan_canonical_line_payload": true,
+    "inbound_atomic_post_body_removed": true,
+    "outbound_atomic_post_body_removed": true,
+    "posting_if_match_policy_preserved": true,
+    "stocktake_removed_from_mvp": true,
+    "reversal_only_correction_model": true,
+    "warranty_legacy_mutations_fail_closed": true,
+    "backend_authority_preserved": true
+  },
+  "external_gates": {
+    "WWHN_180": "PENDING_PASS_AND_HANDOFF_DRIFT_RESOLUTION",
+    "WWHN_182": "PENDING_QA2_PASS",
+    "WWHN_183": "PENDING_BA_DECISION",
+    "WWHN_337": "GITHUB_ACTIONS_RUNNER_PROVISIONING_BLOCKER"
+  },
+  "integrity": {
+    "checksum_file": "SHA256SUMS",
+    "sha256sums_digest": "c95f3501227a34b6a6087c52c36ef59f7d92cca2d7b4edbbd86a116a891e7175",
+    "source_file_count": 22,
+    "files": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "bytes": 16968,
+        "sha256": "132871682a1e2bdf22d30a67f598618e09f71294a90b07a0a50de5810c4cf0a1"
+      },
+      {
+        "path": ".github/workflows/wwhn-181-signoff.yml",
+        "bytes": 6704,
+        "sha256": "9b7df35eceabeccb5115745cb0d6d1e393f190171cdaf31ccfb1a980e7b796d9"
+      },
+      {
+        "path": "package.json",
+        "bytes": 10147,
+        "sha256": "f2dd73f31e23b9e9190a3541da162a47c2594086ff09008d3ac2724364f68dc6"
+      },
+      {
+        "path": "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json",
+        "bytes": 13743,
+        "sha256": "fa3128b0840b979a924b1a113fa1c9cdc6271fa714e2e831a9c11341286a14f9"
+      },
+      {
+        "path": "docs/api-evidence/M1_API_MAPPING.md",
+        "bytes": 12929,
+        "sha256": "648ed5133b76e488af5733052fb8b31bd3b4cd2b788a309bb9955c2da620f4e3"
+      },
+      {
+        "path": "scripts/run-wwhn-153-runtime-evidence.mjs",
+        "bytes": 18533,
+        "sha256": "9ede5d9e530c7448bb6e883a5386f1b0f3eab8197fa85b36ebe9490652f8829a"
+      },
+      {
+        "path": "scripts/run-wwhn-181-runtime-ui-evidence.mjs",
+        "bytes": 11893,
+        "sha256": "d6749a6b37606c3c5e513f6bebc843c0e6887430d31c934eb6305935e3b6e815"
+      },
+      {
+        "path": "scripts/verify-wms-contract-signoff.mjs",
+        "bytes": 11197,
+        "sha256": "ad33d8fbe7f86c25eaefb56fa9448a895690d544597f34d1cb24b36adb37936a"
+      },
+      {
+        "path": "scripts/verify-wwhn-181-exact-sha.mjs",
+        "bytes": 8461,
+        "sha256": "f1cfef3af6b6808beb85afa66cd471926b570eca9c53b439c5b412d3bd7c7a69"
+      },
+      {
+        "path": "scripts/verify-wwhn-181-final-gates.mjs",
+        "bytes": 6389,
+        "sha256": "d42780f27ab74e280a6501ee096e5477d220b2608ced89908c8db27b866569b1"
+      },
+      {
+        "path": "src/modules/receiving/services/receivingService.ts",
+        "bytes": 151,
+        "sha256": "b2a9ec88feaa8a428a17bed69ba28d4e35304a394d466173536b69f49fb8b164"
+      },
+      {
+        "path": "src/modules/receiving/types/index.ts",
+        "bytes": 120,
+        "sha256": "f23782356edceb019710e45f1a5151f85779c99cadea9cea6c63d287ef313d07"
+      },
+      {
+        "path": "src/modules/shipping/services/shippingService.ts",
+        "bytes": 14798,
+        "sha256": "8a744ef6836d469699cf55c50c289cd52581628b88144ec9d3d7648b29eabc9b"
+      },
+      {
+        "path": "src/modules/shipping/types/index.ts",
+        "bytes": 1861,
+        "sha256": "1145046382e70096786caab4c4e3107046090c84b84689935ac9f8411d92e52e"
+      },
+      {
+        "path": "src/modules/reverse/services/reversalService.ts",
+        "bytes": 11750,
+        "sha256": "351a8383ff3baf485f788e9b02ea850da22baabcef15886ead32049c3daf7b76"
+      },
+      {
+        "path": "src/modules/warranty/services/warrantyService.ts",
+        "bytes": 19851,
+        "sha256": "ca02aa74d492326c1eb39c364236d44efe185575a38684252877bca12958a5be"
+      },
+      {
+        "path": "src/shared/api/endpoints.ts",
+        "bytes": 14101,
+        "sha256": "75f905cc53817397ec6a3a68d090088d72659aed005cccabfa6ca0f6ccc949e3"
+      },
+      {
+        "path": "src/shared/api/http.ts",
+        "bytes": 6805,
+        "sha256": "c4236926e23cf4cd300473c37c319a07b881b3850dc1ba0b0cdc377a3063239c"
+      },
+      {
+        "path": "src/shared/api/wms-contract-signoff.ts",
+        "bytes": 7960,
+        "sha256": "7306bdfab37749e7de6421591744bbf24fb200ce17bd986937cc1449b6d0d97d"
+      },
+      {
+        "path": "src/shared/api/wms-contract.ts",
+        "bytes": 4124,
+        "sha256": "14d59d06378d5192d9612fb8aa6654e0be6b0f13cbc5b1bbb39f900ceb6fb3a2"
+      },
+      {
+        "path": "src/test/warranty-v17-fail-closed.test.ts",
+        "bytes": 1386,
+        "sha256": "ecddad3950fb814c8c6a510f0db2ae26c9b72c1acc7bc61b4b0617409bcba5d2"
+      },
+      {
+        "path": "src/test/wms-contract-signoff-guards.test.ts",
+        "bytes": 13029,
+        "sha256": "ca00723f16b0322579afed20f057b1b04e6628519323a014bb31883baae0e967"
+      }
+    ]
+  },
+  "final_allowed": false,
+  "canonical_payload_sha256": "ea77d35f66f46f34b27117f87dea6a43d167ab2c3666a095ad0e4b66f2a0a764",
+  "generated_at": "2026-09-09T09:47:16.764Z"
+}

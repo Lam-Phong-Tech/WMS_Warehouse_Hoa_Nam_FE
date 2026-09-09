@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -187,5 +187,25 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
         screen.getByText("Không tải được danh sách phiếu xuất"),
       ).toBeInTheDocument(),
     );
+  });
+
+  it("Sắp xếp theo: mặc định Mới nhất (desc), chọn Cũ nhất gửi asc + về trang 1", async () => {
+    grantOnly(["outbound.view"]);
+    renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+
+    // Lần tải đầu đã sắp Mới nhất ở BE (sort_order=desc trong SQL).
+    expect(serviceMocks.fetchOutboundDocuments).toHaveBeenCalledWith(
+      expect.objectContaining({ sortOrder: "desc" }),
+    );
+
+    fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách phiếu xuất"));
+    fireEvent.click(await screen.findByRole("option", { name: "Cũ nhất" }));
+
+    await waitFor(() => {
+      expect(serviceMocks.fetchOutboundDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({ sortOrder: "asc", page: 1 }),
+      );
+    });
   });
 });

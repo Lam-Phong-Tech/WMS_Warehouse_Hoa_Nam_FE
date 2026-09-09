@@ -681,6 +681,9 @@ export const WARRANTY_EVENT_TYPE_LABELS = bilingual(
     RETURN: "Trả khách",
     CANCEL: "Hủy",
     NOTE: "Ghi chú",
+    // `warranty_events.event_type` trong DB có cả UPDATE_STATUS (sự kiện đổi
+    // trạng thái hồ sơ); thiếu khoá này thì dòng thời gian hiện nguyên mã.
+    UPDATE_STATUS: "Đổi trạng thái",
   },
   {
     RECEIVE: "Intake",
@@ -690,6 +693,7 @@ export const WARRANTY_EVENT_TYPE_LABELS = bilingual(
     RETURN: "Returned to customer",
     CANCEL: "Cancelled",
     NOTE: "Note",
+    UPDATE_STATUS: "Status change",
   },
 );
 

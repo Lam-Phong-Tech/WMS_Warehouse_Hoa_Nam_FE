@@ -32,6 +32,8 @@ type InboundListParams = {
   per_page?: number;
   /** Lọc phiếu còn SKU chưa đủ thông tin; bỏ trống = không lọc. */
   pendingProductInfo?: boolean;
+  /** "Sắp xếp theo": desc = Mới nhất (tạo/sửa gần nhất), asc = Cũ nhất. */
+  sortOrder?: "desc" | "asc";
 };
 export const inboundKeys = {
   all: ["inbound"] as const,

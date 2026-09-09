@@ -42,6 +42,7 @@ import {
   SCAN_RESULT_LABELS,
   REVERSAL_REASON_LABELS,
   SOURCE_DOCUMENT_TYPE_LABELS,
+  WARRANTY_EVENT_TYPE_LABELS,
   businessLabel,
   enumLabelOrText,
 } from "@/shared/constants/business-labels";
@@ -901,7 +902,21 @@ export function TraceModal({ movementId, onClose }: Props) {
                                 {formatDateTime(
                                   text(event.event_at, "") || null,
                                 )}{" "}
-                                — {text(event.to_status ?? event.event_type)}
+                                {/* `to_status` (RECEIVED/CHECKING…) và
+                                    `event_type` (RECEIVE/UPDATE_STATUS…) đều là
+                                    enum của BE — mọi dòng khác trong modal này
+                                    đã đi qua bảng nhãn, riêng dòng thời gian
+                                    bảo hành in thô. */}
+                                —{" "}
+                                {event.to_status
+                                  ? businessLabel(
+                                      WARRANTY_STATUS_LABELS,
+                                      text(event.to_status, ""),
+                                    )
+                                  : businessLabel(
+                                      WARRANTY_EVENT_TYPE_LABELS,
+                                      text(event.event_type, ""),
+                                    )}
                                 {event.note ? ` (${text(event.note)})` : ""}
                               </UiText>
                             ))}

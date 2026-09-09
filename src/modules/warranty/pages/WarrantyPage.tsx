@@ -110,6 +110,9 @@ export default function WarrantyPage() {
     WarrantyIdentificationType | ""
   >("");
   const [defectId, setDefectId] = useState("");
+  // "Sắp xếp theo" — desc = Mới nhất (hồ sơ tạo/sửa gần nhất lên đầu, mặc định),
+  // asc = Cũ nhất. BE sắp trong SQL nên đổi chiều phải quay về trang 1.
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [intakeOpen, setIntakeOpen] = useState(false);
@@ -127,6 +130,7 @@ export default function WarrantyPage() {
     defect_id: defectId || undefined,
     page,
     per_page: perPage,
+    sort_order: sortOrder,
   });
   const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
 
@@ -277,7 +281,9 @@ export default function WarrantyPage() {
       render: (row) => (
         <UiStatusBadge
           tone={statusTone(WARRANTY_STATUS_COLORS[row.status])}
-          label={WARRANTY_STATUS_LABELS[row.status] ?? row.status}
+          // Trạng thái lạ (BE thêm enum mới) phải ra "Chưa xác định", KHÔNG
+          // được rơi về in nguyên mã máy giữa bảng tiếng Việt.
+          label={businessLabel(WARRANTY_STATUS_LABELS, row.status)}
         />
       ),
     },
@@ -383,6 +389,22 @@ export default function WarrantyPage() {
               .filter((option) => option.value !== "")}
             onChange={(value) => {
               setDefectId(value);
+              setPage(1);
+            }}
+          />
+          {/* Khác các ô lọc (placeholder khi rỗng), ô sắp xếp LUÔN có giá trị
+              nên cần nhãn nổi "Sắp xếp theo" — thiếu nó ô chỉ hiện "Mới nhất"
+              trơ trọi, không ai hiểu là control gì. */}
+          <UiSelect
+            value={sortOrder}
+            label={t("warranty.list.sortLabel")}
+            aria-label={t("warranty.list.sortAria")}
+            options={[
+              { value: "desc", label: t("warranty.list.sortNewest") },
+              { value: "asc", label: t("warranty.list.sortOldest") },
+            ]}
+            onChange={(value) => {
+              setSortOrder(value === "asc" ? "asc" : "desc");
               setPage(1);
             }}
           />

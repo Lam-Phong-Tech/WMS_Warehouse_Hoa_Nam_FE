@@ -1,6 +1,6 @@
 /**
  * THANH TOPBAR — dựng 1:1 theo demo UI/UX đã chốt
- * `10.WMS_Hoa_Nam_Trang_Tong_Quan.html`: ô tìm kiếm + phím tắt Ctrl K, và 5 điều
+ * `10.WMS_Hoa_Nam_Trang_Tong_Quan.html`: ô tìm kiếm, và 5 điều
  * khiển bên phải (Ngôn ngữ · Giao diện · Lối tắt nghiệp vụ · Thông báo · Tài khoản).
  *
  * KHÁC DEMO: demo chạy trên fixture cứng, ở đây mọi thứ nối vào dữ liệu THẬT —

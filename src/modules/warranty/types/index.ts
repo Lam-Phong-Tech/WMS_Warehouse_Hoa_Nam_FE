@@ -144,6 +144,12 @@ export interface WarrantyListParams {
   defect_ids?: string[];
   page?: number;
   per_page?: number;
+  /**
+   * "Sắp xếp theo" của WAR-01 — BE xếp theo thời điểm tạo/sửa gần nhất
+   * (COALESCE(updated_at, created_at)): "desc" = Mới nhất, "asc" = Cũ nhất.
+   * Bỏ trống = thứ tự mặc định cũ của BE.
+   */
+  sort_order?: "desc" | "asc";
 }
 
 export interface WarrantyCasePage {

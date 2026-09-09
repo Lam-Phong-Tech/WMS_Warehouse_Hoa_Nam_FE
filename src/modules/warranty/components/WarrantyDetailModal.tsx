@@ -932,7 +932,7 @@ export function WarrantyDetailModal({
       toast.success(
         t("warranty.detail.statusUpdated", {
           code: updated.case_code,
-          status: WARRANTY_STATUS_LABELS[updated.status] ?? updated.status,
+          status: businessLabel(WARRANTY_STATUS_LABELS, updated.status),
         }),
       );
       setStatusForm({
@@ -1254,7 +1254,7 @@ export function WarrantyDetailModal({
               {detail ? (
                 <UiStatusBadge
                   tone={tagTone(WARRANTY_STATUS_COLORS[detail.status])}
-                  label={WARRANTY_STATUS_LABELS[detail.status] ?? detail.status}
+                  label={businessLabel(WARRANTY_STATUS_LABELS, detail.status)}
                 />
               ) : null}
               {detail?.identification_type === "TEMP_ONLY" ? (
@@ -1394,7 +1394,7 @@ export function WarrantyDetailModal({
           {detail ? (
             <StatusProgressSteps
               labels={stepStatuses.map(
-                (status) => WARRANTY_STATUS_LABELS[status] ?? status,
+                (status) => businessLabel(WARRANTY_STATUS_LABELS, status),
               )}
               activeStep={stepIndex}
               errorIndex={isCancelled ? stepIndex : null}
@@ -1417,10 +1417,11 @@ export function WarrantyDetailModal({
           {detail && isCancelled ? (
             <UiAlert tone="error">
               {t("warranty.detail.cancelledAt", {
-                step:
-                  WARRANTY_STATUS_LABELS[progressStatus ?? "RECEIVED"] ??
-                  progressStatus ??
+                step: businessLabel(
+                  WARRANTY_STATUS_LABELS,
+                  progressStatus ?? "RECEIVED",
                   EMPTY_TEXT,
+                ),
                 reason: detail.cancel_reason ?? EMPTY_TEXT,
               })}
             </UiAlert>
@@ -1469,8 +1470,10 @@ export function WarrantyDetailModal({
                         <Box sx={{ typography: "body2", fontWeight: 700 }}>
                           {event.event_type === "NOTE"
                             ? t("warranty.detail.processingNote")
-                            : (WARRANTY_STATUS_LABELS[event.to_status] ??
-                              event.to_status)}
+                            : businessLabel(
+                                WARRANTY_STATUS_LABELS,
+                                event.to_status,
+                              )}
                         </Box>
                         <Box
                           sx={{
@@ -2483,7 +2486,7 @@ export function WarrantyDetailModal({
             >
               {nextStatuses.map((value) => (
                 <MenuItem key={value} value={value}>
-                  {WARRANTY_STATUS_LABELS[value] ?? value}
+                  {businessLabel(WARRANTY_STATUS_LABELS, value)}
                 </MenuItem>
               ))}
             </UiTextField>

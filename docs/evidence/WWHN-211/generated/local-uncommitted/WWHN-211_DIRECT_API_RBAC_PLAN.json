@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "WWHN-211",
+  "qaTask": "WWHN-212",
+  "blocker": "DEV211-P1-04",
+  "sourceSha": "local-uncommitted",
+  "environment": "QA",
+  "mode": "CONTRACT_ONLY",
+  "requiredSecrets": [
+    "WWHN_211_API_BASE_URL",
+    "WWHN_211_DENIED_TOKEN",
+    "WWHN_211_SCOPE_DENIED_TOKEN (optional; defaults to denied token)",
+    "WWHN_211_SCOPE_DENIED_PATH (optional; enables the data-scope probe)"
+  ],
+  "probes": [
+    {
+      "id": "inventory-balances-deny",
+      "method": "GET",
+      "path": "/inventory/balances",
+      "requiredPermission": "inventory.view",
+      "expectedStatus": 403
+    },
+    {
+      "id": "inventory-balance-subledger-deny",
+      "method": "GET",
+      "path": "/inventory/balances/1/subledger",
+      "requiredPermission": "inventory.view",
+      "expectedStatus": 403
+    },
+    {
+      "id": "stock-movements-deny",
+      "method": "GET",
+      "path": "/stock-movements",
+      "requiredPermission": "inventory.view",
+      "expectedStatus": 403
+    },
+    {
+      "id": "stock-movement-detail-deny",
+      "method": "GET",
+      "path": "/stock-movements/1",
+      "requiredPermission": "inventory.view",
+      "expectedStatus": 403
+    },
+    {
+      "id": "stock-movement-trace-source-deny",
+      "method": "GET",
+      "path": "/stock-movements/1/trace-source",
+      "requiredPermission": "inventory.trace",
+      "expectedStatus": 403
+    },
+    {
+      "id": "stock-movement-trace-by-code-deny",
+      "method": "GET",
+      "path": "/stock-movements/trace-by-code?code=WWHN-211-RBAC-PROBE",
+      "requiredPermission": "inventory.trace",
+      "expectedStatus": 403
+    }
+  ],
+  "dataScopeProbe": "NOT_CONFIGURED — BE/QA1 must supply WWHN_211_SCOPE_DENIED_PATH to close the data-scope half of DEV211-P1-04",
+  "controls": [
+    "No browser/UI path is used — UI hide/disable does not count as authorization evidence",
+    "Every one of the six FE-consumed read/trace endpoints is probed independently",
+    "Authorization headers are redacted",
+    "HTTP 403 is mandatory",
+    "Deny error code is checked when supplied by the backend",
+    "Request ID and response payload are retained"
+  ],
+  "evidenceBoundary": "FE publishes this executable plan only. The signed result must be produced by BE/QA1 against a named environment; FE cannot self-certify backend authorization."
+}
