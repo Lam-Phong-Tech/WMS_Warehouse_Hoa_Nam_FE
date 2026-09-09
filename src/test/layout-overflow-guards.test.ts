@@ -143,35 +143,68 @@ describe("bố cục thẻ báo cáo — chống chữ đè lên nhau", () => {
   });
 });
 /**
- * UAT TC_UI_04 — dashboard trên điện thoại (≤979px): khối ≤1279 khai span 6
- * cho cặp thẻ bằng :nth-child (độ đặc hiệu 0,3,0), nên rule xếp chồng của
- * khối ≤979 PHẢI cùng độ đặc hiệu trở lên (nth-child) — bản cũ dùng "> *"
- * (0,2,0) thua cascade dù đứng sau, hai thẻ đứng cạnh nhau chỉ rộng ~170px.
- * Guard đọc CSS nguồn: trong khối ≤979 phải còn selector :nth-child xếp chồng
- * cho cả analysis-grid lẫn insight-grid.
+ * UAT TC_UI_04 — mốc responsive của dashboard tính theo BỀ RỘNG VÙNG NỘI DUNG
+ * (container query 'hn-dash'), không theo viewport: shell chiếm 340px sidebar
+ * (76px khi thu gọn rail) nên media query theo viewport từng cho iPad Pro
+ * 1024px (nội dung ~640px) bố cục 2 cột của laptop — cặp thẻ chỉ còn ~300px,
+ * tiêu đề tiếng Việt vỡ từng từ một (ảnh bằng chứng TC_UI_04).
+ *
+ * Guard đọc CSS nguồn và khoá 3 điều: (1) .hn-dash khai container inline-size;
+ * (2) khối xếp chồng dùng :nth-child (độ đặc hiệu 0,3,0 — bản cũ dùng "> *"
+ * 0,2,0 thua cascade của khối span-6 dù đứng sau); (3) KHÔNG được quay lại
+ * media query theo kích thước trong file này (pointer/reduced-motion vẫn hợp
+ * lệ vì không phụ thuộc bề rộng).
  */
-describe("dashboard responsive · độ đặc hiệu khối xếp chồng (UAT TC_UI_04)", () => {
+describe("dashboard responsive · container query theo vùng nội dung (UAT TC_UI_04)", () => {
   const css = readFileSync(
     "src/modules/dashboard/dashboard-overview.css",
     "utf8",
   );
 
-  it("khối ≤979 xếp chồng bằng :nth-child cho analysis-grid và insight-grid", () => {
+  it(".hn-dash là container inline-size tên hn-dash", () => {
+    expect(css).toContain("container: hn-dash / inline-size");
+  });
+
+  it("khối xếp chồng ≤819.98px dùng :nth-child cho analysis-grid và insight-grid", () => {
     const block =
-      css.split("@media (max-width: 979px)")[1]?.split("@media")[0] ?? "";
+      css.split("@container hn-dash (max-width: 819.98px)")[1]?.split("@container")[0] ??
+      "";
     expect(block).toContain("analysis-grid > :nth-child(n)");
     expect(block).toContain("insight-grid > :nth-child(n)");
     expect(block).toContain("grid-column: 1 / -1");
-    // Thẻ lọc phải về MỘT cột — hai track minmax(380px)+minmax(260px) từng ép
-    // bề rộng tối thiểu 692px vào khung điện thoại 390px.
-    expect(block).not.toContain("minmax(380px");
-  });
-
-  it("khối ≤1279 có override cho thẻ lọc BẢN THƯỜNG (không chỉ biến thể Tùy chọn)", () => {
-    const block =
-      css.split("@media (max-width: 1279px)")[1]?.split("@media")[0] ?? "";
     expect(block).toContain(".hn-dash .filter-card {");
     expect(block).toContain("flex-wrap: wrap");
+    // Thẻ lọc không được khai sàn cột vượt đáy dải (~640px nội dung).
+    expect(block).not.toContain("minmax(380px");
+    expect(block).not.toContain("minmax(300px");
+  });
+
+  it("không còn media query theo kích thước — chỉ container query", () => {
+    // pointer: coarse / prefers-reduced-motion vẫn là @media hợp lệ; khối
+    // fallback cho trình duyệt cũ nằm TRONG @supports not (container-type)
+    // nên được cắt ra trước khi soát.
+    const supportsStart = css.indexOf(
+      "@supports not (container-type: inline-size)",
+    );
+    const supportsEnd = css.indexOf(
+      String.fromCharCode(10) + "}" + String.fromCharCode(10),
+      supportsStart,
+    );
+    const withoutFallback =
+      supportsStart < 0
+        ? css
+        : css.slice(0, supportsStart) + css.slice(supportsEnd + 3);
+    expect(withoutFallback).not.toMatch(/@media[^{]*(max-width|min-width)/);
+    // Khối fallback phải tồn tại — điện thoại WebView cũ vẫn cần lưới an toàn.
+    expect(css).toContain("@supports not (container-type: inline-size)");
+  });
+
+  it("khối điện thoại ≤639.98px vẫn xếp chồng bằng :nth-child", () => {
+    const block =
+      css.split("@container hn-dash (max-width: 639.98px)")[1]?.split("@container")[0] ??
+      "";
+    expect(block).toContain("analysis-grid > :nth-child(n)");
+    expect(block).toContain("insight-grid > :nth-child(n)");
   });
 });
 

@@ -404,6 +404,13 @@
   font-weight: 600;
 }
 
+/* Cột chữ trong cardhead-l là flex item lồng nhau: thiếu min-width 0 thì
+   .note (ellipsis một dòng) không bị ép bề ngang mà nở theo max-content,
+   tràn khỏi thẻ ở màn hẹp (TC_UI_04, 390px). */
+.hn-rpt-io .cardhead-l > div {
+  min-width: 0;
+}
+
 .hn-rpt-io .note {
   overflow: hidden;
   margin-top: 2px;

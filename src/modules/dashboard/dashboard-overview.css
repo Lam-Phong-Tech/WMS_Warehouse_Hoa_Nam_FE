@@ -18,6 +18,14 @@
  */
 
 .hn-dash {
+  /*
+   * UAT TC_UI_04: mốc responsive của màn này tính theo BỀ RỘNG VÙNG NỘI DUNG
+   * (container query), không theo viewport. Shell chiếm 340px sidebar (hoặc
+   * 76px khi thu gọn rail) nên cùng một viewport ứng với hai bề rộng nội dung
+   * khác hẳn nhau — media query theo viewport từng làm iPad Pro 1024px (nội
+   * dung ~640px) nhận bố cục 2 cột của laptop và chữ vỡ từng từ một.
+   */
+  container: hn-dash / inline-size;
   /* Bảng màu demo — phần đã có token */
   --ink: var(--wms-text-strong);
   --muted: var(--wms-text-medium);
@@ -2197,7 +2205,27 @@
 }
 
 /* ── responsive (giữ nguyên các mốc của demo) ───────────────────────────── */
-@media (min-width: 1280px) and (max-width: 1599px) {
+/* Nội dung 820–1139px (laptop có sidebar mở, iPad ngang…): thẻ lọc về
+   2 cột và khối Làm mới xuống hàng riêng — bố cục 3 cột nội tuyến của desktop
+   cần ~1048px (Kỳ KPI 390 + Loại hàng 280 + Làm mới ~298 + gap/padding) nên
+   từng tràn ngang ở chính dải này (ảnh iPad Pro của TC_UI_04). */
+@container hn-dash (min-width: 820px) and (max-width: 1139.98px) {
+  .hn-dash .filter-card {
+    grid-template-columns: minmax(320px, 1.2fr) minmax(280px, 1fr);
+  }
+  .hn-dash .filter-card:has(.custom-range) {
+    grid-template-columns: minmax(280px, 1fr) minmax(300px, 1fr);
+  }
+  .hn-dash .filter-card .refresh-block {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+/* Nội dung 1020–1275px: biến thể Tùy chọn đủ chỗ cho 3 cột (cần ~958px),
+   khối Làm mới vẫn hàng riêng. Đứng SAU khối 820–1139 để thắng cascade ở
+   vùng giao. Trên 1275px dùng thẳng 4 cột nội tuyến của bố cục nền. */
+@container hn-dash (min-width: 1020px) and (max-width: 1275.98px) {
   .hn-dash .filter-card:has(.custom-range) {
     grid-template-columns: minmax(390px, 1fr) minmax(278px, 0.72fr) minmax(
         210px,
@@ -2210,11 +2238,14 @@
   }
 }
 
-@media (max-width: 1279px) {
+@container hn-dash (max-width: 819.98px) {
   .hn-dash .page-wrap {
     padding-inline: 16px;
   }
+  /* Sàn 160px cho ra thẻ KPI ~163px ở dải này — nhãn 3 dòng. Nâng sàn để
+     tự xuống 2–3 cột thoáng hơn. */
   .hn-dash .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
   }
   .hn-dash .operations-grid {
@@ -2227,8 +2258,10 @@
   .hn-dash .filter-card {
     grid-template-columns: minmax(260px, 1.2fr) minmax(240px, 1fr);
   }
+  /* Sàn cột phải vừa đáy dải này (~640px nội dung): 280+300+gap+padding
+     từng nong thẻ lọc tràn ngang ở dải 640–680px. */
   .hn-dash .filter-card:has(.custom-range) {
-    grid-template-columns: minmax(280px, 1fr) minmax(300px, 1fr);
+    grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr);
   }
   .hn-dash .filter-card .segmented {
     flex-wrap: wrap;
@@ -2248,14 +2281,20 @@
   .hn-dash .insight-grid {
     gap: 16px;
   }
-  .hn-dash .analysis-grid > :nth-child(1),
-  .hn-dash .analysis-grid > :nth-child(2) {
-    grid-column: span 12;
+  /* Dưới 820px nội dung: mọi thẻ phân tích/theo dõi xếp CHỒNG. Cặp span-6
+     ở bề rộng này chỉ còn ~300px mỗi thẻ — tiêu đề tiếng Việt vỡ từng từ
+     (đúng ảnh bằng chứng TC_UI_04). Cặp thẻ theo dõi được mở lại ở khối
+     760–899px phía dưới. */
+  .hn-dash .analysis-grid > :nth-child(n),
+  .hn-dash .insight-grid > :nth-child(n) {
+    grid-column: 1 / -1;
   }
-  .hn-dash .analysis-grid > :nth-child(3),
-  .hn-dash .analysis-grid > :nth-child(4) {
-    grid-column: span 6;
-  }
+}
+
+/* Nội dung 760–899px: riêng cặp thẻ theo dõi (Bảo hành · Luân chuyển hàng)
+   đủ chỗ đứng cạnh nhau (≥352px mỗi thẻ); thẻ thứ ba vẫn trọn hàng. Đứng SAU
+   khối ≤819.98 để thắng cascade ở vùng giao 760–819.98. */
+@container hn-dash (min-width: 760px) and (max-width: 899.98px) {
   .hn-dash .insight-grid > :nth-child(1),
   .hn-dash .insight-grid > :nth-child(2) {
     grid-column: span 6;
@@ -2265,7 +2304,7 @@
   }
 }
 
-@media (max-width: 979px) {
+@container hn-dash (max-width: 639.98px) {
   .hn-dash button,
   .hn-dash select,
   .hn-dash input:not([type="checkbox"]) {
@@ -2294,9 +2333,13 @@
   .hn-dash .insight-grid > :nth-child(n) {
     grid-column: 1 / -1;
   }
+  .hn-dash .composition-overview,
+  .hn-dash .composition-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
-@media (max-width: 767px) {
+@container hn-dash (max-width: 559.98px) {
   .hn-dash .page-wrap {
     padding: 16px 16px 40px;
   }
@@ -2464,7 +2507,7 @@
   }
 }
 
-@media (max-width: 479px) {
+@container hn-dash (max-width: 455.98px) {
   .hn-dash .page-wrap {
     padding-inline: 16px;
   }
@@ -2543,6 +2586,38 @@
   }
   .hn-dash .section-heading {
     margin-top: 22px;
+  }
+}
+
+/* Trình duyệt chưa có container query (WebView Android cũ, Safari <16):
+   giữ lưới an toàn cho điện thoại bằng viewport — trên trình duyệt hiện đại
+   khối này không bao giờ chạy. */
+@supports not (container-type: inline-size) {
+  @media (max-width: 980px) {
+    .hn-dash .filter-card,
+    .hn-dash .filter-card:has(.custom-range) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .hn-dash .refresh-block {
+      grid-column: 1 / -1;
+    }
+    .hn-dash .kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .hn-dash .operations-grid > :first-child,
+    .hn-dash .operations-grid > :last-child {
+      grid-column: span 12;
+    }
+    .hn-dash .analysis-grid > :nth-child(n),
+    .hn-dash .insight-grid > :nth-child(n) {
+      grid-column: 1 / -1;
+    }
+    .hn-dash .equation-card {
+      grid-template-columns: 1fr;
+    }
+    .hn-dash .equation-note {
+      grid-column: 1 / -1;
+    }
   }
 }
 

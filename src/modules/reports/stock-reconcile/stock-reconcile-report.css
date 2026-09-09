@@ -1039,6 +1039,12 @@
   }
 }
 @media (max-width: 767.95px) {
+  /* TC_UI_04: đầu thẻ (tiêu đề + tab Dạng ngang/hộp) phải BỌC DÒNG ở màn hẹp
+     — không wrap thì tiêu đề bị bóp về min-content, chữ Việt vỡ mỗi âm một
+     dòng và dãy tab tràn phải bị cắt (card overflow hidden). */
+  .hn-rpt02 .card-head {
+    flex-wrap: wrap;
+  }
   .hn-rpt02 .report-filter-card {
     grid-template-columns: 1fr;
   }
