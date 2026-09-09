@@ -23,6 +23,7 @@
  */
 
 import provincesDoc from "./data/vn-provinces.json";
+import { tStatic } from "@/shared/i18n";
 
 export interface VnProvince {
   code: number;
@@ -96,7 +97,7 @@ function loadWardsDoc(): Promise<WardsDoc> {
       wardsDocPromise = null;
       throw error instanceof Error
         ? error
-        : new Error("vn-address: không nạp được danh mục phường/xã");
+        : new Error(tStatic("shared.address.wardsLoadError"));
     });
   return wardsDocPromise;
 }
@@ -114,7 +115,7 @@ function selectWards(doc: WardsDoc, provinceCode: number): VnWard[] {
   const rows = doc.wardsByProvince[String(provinceCode)];
   // Rỗng = dữ liệu hỏng, KHÔNG cache. Đây chính là bẫy của bản gọi API cũ.
   if (!Array.isArray(rows) || rows.length === 0) {
-    throw new Error(`vn-address: tỉnh ${provinceCode} không có phường/xã`);
+    throw new Error(tStatic("shared.address.provinceHasNoWards", { code: provinceCode }));
   }
   return sortByBareName(
     rows.map((row) => ({

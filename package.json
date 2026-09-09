@@ -18,7 +18,6 @@
     "test:e2e:warranty-live": "playwright test e2e/warranty-flow04-live-runtime.spec.ts --project=chromium",
     "test:e2e:wwhn-144": "playwright test e2e/auth-role-navigation-qa2.spec.ts --project=wwhn-144-chromium",
     "test:e2e:wwhn-175": "playwright test e2e/wwhn-175-foundation-evidence.spec.ts --project=chromium",
-    "test:e2e:wwhn-178": "playwright test e2e/wwhn-178-master-sku-qa2.spec.ts --project=chromium",
     "test:e2e:wwhn-292": "playwright test e2e/wwhn-292-ui-responsive-rbac.spec.ts --project=chromium",
     "test:e2e:responsive": "playwright test e2e/responsive-sweep.spec.ts --project=chromium",
     "test:e2e:wwhn-274": "playwright test e2e/wwhn-274-release-signoff.spec.ts --project=chromium",
@@ -104,7 +103,8 @@
     "vn-address:sync": "node scripts/gen-vn-address-data.mjs",
     "vn-address:check": "node scripts/gen-vn-address-data.mjs --check",
     "sec:headers": "node scripts/check-frontend-security-headers.mjs",
-    "sec:headers:self-test": "node scripts/check-frontend-security-headers.mjs --self-test"
+    "sec:headers:self-test": "node scripts/check-frontend-security-headers.mjs --self-test",
+    "sec:deps": "node scripts/audit-dependencies.mjs"
   },
   "resolutions": {
     "nanoid": "^3.3.18",

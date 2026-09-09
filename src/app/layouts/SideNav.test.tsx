@@ -224,7 +224,16 @@ describe("SideNav — hình dạng theo demo Vuexy", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByText("Nhập kho")).not.toBeInTheDocument();
+    /*
+     * Nhãn nhóm không được render ở rail. Không dùng "Nhập kho" làm mồi:
+     * menu Báo cáo có MỤC CON trùng tên "Nhập kho" nằm trong submenu
+     * display:none — vẫn thuộc DOM nên not.toBeInTheDocument sai đề; các
+     * bản đó chỉ cần "không nhìn thấy".
+     */
+    expect(screen.queryByText("Danh mục")).not.toBeInTheDocument();
+    for (const label of screen.queryAllByText("Nhập kho")) {
+      expect(label).not.toBeVisible();
+    }
     expect(
       screen.queryByRole("button", { name: "Thu gọn thanh điều hướng" }),
     ).not.toBeInTheDocument();

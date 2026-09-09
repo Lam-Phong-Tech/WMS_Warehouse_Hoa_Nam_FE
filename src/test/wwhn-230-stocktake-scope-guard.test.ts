@@ -144,12 +144,8 @@ describe("WWHN-230 — Stocktake stays out of the FE runtime surface", () => {
     const erd = read("docs/HoaNam_ERD_Moi_Nhat.md");
     expect(erd).toContain("Không tạo Stocktake_Session");
 
-    // The aligned wireframe is the UI half of the corroboration: no screen, menu
-    // entry or stock-edit action may appear there either.
-    const wireframe = read(
-      "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html",
-    ).toLowerCase();
-    expect(wireframe.includes("stocktake")).toBe(false);
-    expect(wireframe.includes("kiểm kê")).toBe(false);
+    // Wireframe HTML từng là nửa UI của phần đối chứng; 3822d45 đã rút nó
+    // khỏi repo có chủ đích ("remove stale docs archives") nên phần kiểm
+    // wireframe rút theo — SRS/ERD ở trên vẫn là baseline còn hiệu lực.
   });
 });

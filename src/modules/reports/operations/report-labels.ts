@@ -39,8 +39,8 @@ export const RECONCILE_LABELS: Readonly<Record<string, string>> = bilingual(
   {
     MATCH: "Matched",
     PASS: "Matched",
-    MISMATCH: "Discrepancy found",
-    FAIL: "Discrepancy found",
+    MISMATCH: "Mismatch found",
+    FAIL: "Mismatch found",
     NOT_APPLICABLE: "Not applicable",
   },
 );

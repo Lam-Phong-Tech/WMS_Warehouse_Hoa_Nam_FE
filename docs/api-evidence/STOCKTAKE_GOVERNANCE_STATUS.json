@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.1.0",
-  "updatedAt": "2026-08-19T06:50:00.000Z",
+  "updatedAt": "2026-09-09",
   "jira": "WWHN-237",
   "finding": "DEV237-P1-01..05",
   "scope": "Authority behind the FE/BE no-Stocktake guard in the current MVP runtime",
@@ -51,13 +51,6 @@
         "sha256": "5209358cb0e9d91ced71b3b2ebaeb6e50d7f4304c03618a81a6a6a0adabf12e2",
         "sha256Note": "WWHN-233 / DEV233-P1-03: digest cu c40ce8d6... da stale tu khi ERD doi o commit f4b8404. WWHN-296 chi ghi note cho corroborating drift nen no khong bao gio duoc refresh. Anchor §0.1 van nguyen ven, chi hash bi pin rot. Gate wwhn-233:verify assert digest nay khop thuc te.",
         "anchor": "Section 0.1 Entity/field bi loai khoi baseline: khong tao Stocktake_Session, Stocktake_Snapshot, Stocktake_Count, Variance_Line, Adjustment hoac report/permission tuong ung."
-      },
-      {
-        "artifact": "Wireframe MVP ALIGNED v3.20 / v1.12",
-        "repositoryPath": "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html",
-        "sha256": "22c69d4b96d6c4f797e77e8f87075cc89d67aa12ed6eac8bbc71ae78297b47d6",
-        "sha256Note": "WWHN-311 R2: digest cu 107a2b4d... duoc tinh tu ban checkout CRLF cua working tree cu, trong khi .gitattributes ep eol=lf nen moi checkout sach (worktree/clone) doc ra bytes LF. Digest nay la digest cua noi dung canonical LF - khop moi checkout sach va khop git blob. Noi dung wireframe khong doi.",
-        "anchor": "No Stocktake/Variance screen, menu entry or stock-edit action exists in the aligned wireframe."
       }
     ],
     "correctionAuthority": {
@@ -65,7 +58,15 @@
       "issue": "WWHN-26",
       "status": "In Progress",
       "rule": "Correction after Post is append-only Reversal only; there is no generic or direct stock-edit movement."
-    }
+    },
+    "baselineRetirements": [
+      {
+        "repositoryPath": "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html",
+        "retiredBy": "3822d45",
+        "reason": "Wireframe HTML rút khỏi repo trong đợt dọn docs archives; SRS v1.12 + ERD vẫn là baseline kiểm soát/đối chứng còn hiệu lực.",
+        "retiredAt": "2026-09-09"
+      }
+    ]
   },
   "decisionRecordGate": {
     "issue": "WWHN-25",
@@ -119,5 +120,7 @@
     }
   ],
   "closurePolicy": "Source/implementation consistency is machine-verified by npm run check:api-mapping, npm run wwhn-296:verify and npm run wwhn-237:verify (FE) plus tests/Feature/Wwhn237StocktakeRemovalClosureTest.php and scripts/verify-wwhn180-canonical-handoff.mjs (BE). Formal Decision Record closure stays external on WWHN-25 and is never marked VERIFIED from FE source.",
-  "supersededRegisters": ["WWHN-296 / FE296-P1-01"]
+  "supersededRegisters": [
+    "WWHN-296 / FE296-P1-01"
+  ]
 }

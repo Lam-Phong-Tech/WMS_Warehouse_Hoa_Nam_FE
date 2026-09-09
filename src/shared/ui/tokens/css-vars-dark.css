@@ -57,9 +57,9 @@
   /* Nav — mirror NAV_COLOR_DARK */
   --wms-nav-active-gradient-end: #8379ea;
   --wms-nav-hover: #3a3a55;
-  --wms-nav-border: rgba(231, 227, 252, 0.1);
+  --wms-nav-border: rgba(231, 227, 252, 0.10);
   --wms-nav-item-text: rgba(231, 227, 252, 0.78);
-  --wms-nav-muted: rgba(231, 227, 252, 0.6);
+  --wms-nav-muted: rgba(231, 227, 252, 0.60);
   --wms-nav-marker: rgba(231, 227, 252, 0.42);
   --wms-nav-focus: #a79eff;
   color-scheme: dark;

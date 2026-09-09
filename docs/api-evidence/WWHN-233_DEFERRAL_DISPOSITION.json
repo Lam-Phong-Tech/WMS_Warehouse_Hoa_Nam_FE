@@ -78,7 +78,7 @@
         "scripts/verify-wwhn-233-closure.mjs",
         "src/test/wwhn-233-count-deferral-gate.test.ts"
       ],
-      "fingerprintSha256": "48447959295d921ed9309a23e891301993f6f687a0db7dec434f4b71b914957a",
+      "fingerprintSha256": "a341de5b7f3c551a47b3f8f5eb412474001581848b04aa2b1317afa3039c8891",
       "fingerprintNote": "Verifier FE tinh lai moi lan chay va ghi lai khi chay `npm run wwhn-233:verify -- --emit`. Null nghia la chua phat hanh lan nao.",
       "feCommitSha": "2b94a79b6fb408c849ab59c0304ecc83fe2c535b",
       "beCandidateRef": "BE docs/evidence/WWHN-233/IMMUTABLE_CANDIDATE_PIN.json -> candidate.be_commit_sha"

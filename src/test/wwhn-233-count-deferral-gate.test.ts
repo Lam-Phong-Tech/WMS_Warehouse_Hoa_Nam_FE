@@ -206,11 +206,8 @@ describe("WWHN-233 — count/recount stays out of the FE runtime surface", () =>
     const erd = read("docs/HoaNam_ERD_Moi_Nhat.md");
     expect(erd).toContain("Không tạo Stocktake_Session");
 
-    const wireframe = read(
-      "docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html",
-    );
-    expect(wireframe.toLowerCase().includes("stocktake")).toBe(false);
-    expect(wireframe.toLowerCase().includes("kiểm kê")).toBe(false);
+    // Wireframe HTML: 3822d45 rút khỏi repo có chủ đích → phần kiểm wireframe
+    // rút theo (đồng bộ với register: entry corroborating tương ứng đã gỡ).
   });
 
   /**

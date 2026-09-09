@@ -4325,6 +4325,8 @@ export const MESSAGES_VI = {
         "Đang hiển thị {shown}/{total} — cuộn để xem thêm hoặc gõ để tìm nhanh.",
     },
     address: {
+      wardsLoadError: "Không nạp được danh mục phường / xã.",
+      provinceHasNoWards: "Tỉnh/thành {code} không có phường/xã trong danh mục.",
       legend: "Địa chỉ",
       province: "Tỉnh / Thành phố",
       ward: "Phường / Xã",
@@ -4618,6 +4620,9 @@ export const MESSAGES_VI = {
     },
   },
   pv: {
+    upload: {
+      missingUrl: "Máy chủ không trả về địa chỉ ảnh vừa tải lên.",
+    },
     common: {
       loading: "Đang tải…",
       save: "Lưu",

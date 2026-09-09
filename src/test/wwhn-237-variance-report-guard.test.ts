@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -183,81 +183,10 @@ describe("WWHN-237 — hợp đồng FE không khai capability variance/kiểm k
   });
 });
 
-/**
- * Vòng R2 — `DEV237-P1-02R2`. Lỗi thật: `FE_CLOSURE_IDENTITY.json` và BE
- * `SOURCE_REGISTER.json` đều ghi `git rev-parse HEAD` tại thời điểm chạy, hai repo chạy
- * lệch giờ nên khai **hai cặp SHA khác nhau** — bốn SHA cho một cặp. Nay định danh đọc
- * từ `CANDIDATE_PAIR.json`, và hai bản sao BE/FE phải byte-identical.
+/*
+ * 3822d45 (09/2026) chủ đích rút kho lưu trữ docs/evidence + Task_docs_Jira +
+ * e2e spec khỏi repo ("remove stale docs/evidence + Task_docs_Jira archives").
+ * Theo nguyên tắc của chính các gate này — guard không sống lâu hơn artefact
+ * nó khoá — các test ĐỌC những artefact đã rút được gỡ theo tại đây; phần khoá
+ * baseline/hợp đồng còn trong repo giữ nguyên hiệu lực.
  */
-describe("WWHN-237 — cặp SHA đóng băng (DEV237-P1-02R2)", () => {
-  const PAIR_PATH = "docs/evidence/WWHN-237/CANDIDATE_PAIR.json";
-
-  interface CandidatePair {
-    pair: {
-      backend: { commit_sha: string; artifact_scope: string[] };
-      frontend: { commit_sha: string; artifact_scope: string[] };
-    };
-    excluded_from_scope: string[];
-    branch_supersession: {
-      superseded_branch: string;
-      canonical_branch: string;
-      is_pure_ancestor: boolean;
-      m1_be_2_commits_ahead_of_m1: number;
-    };
-  }
-
-  it("khai đúng một cặp SHA đầy đủ, không phải HEAD trôi", () => {
-    const pin = readJson<CandidatePair>(PAIR_PATH);
-    expect(pin.pair.backend.commit_sha).toMatch(/^[0-9a-f]{40}$/u);
-    expect(pin.pair.frontend.commit_sha).toMatch(/^[0-9a-f]{40}$/u);
-  });
-
-  it("scope FE không bị co lại và không trỏ file không tồn tại", () => {
-    const pin = readJson<CandidatePair>(PAIR_PATH);
-    for (const mandatory of [
-      "scripts/verify-wwhn-237-closure.mjs",
-      "src/test/wwhn-237-variance-report-guard.test.ts",
-    ]) {
-      expect(pin.pair.frontend.artifact_scope).toContain(mandatory);
-    }
-    for (const rel of pin.pair.frontend.artifact_scope) {
-      expect(existsSync(join(process.cwd(), rel))).toBe(true);
-    }
-  });
-
-  it("file pin nằm ngoài tập nó pin — cắt vòng gà-trứng", () => {
-    const pin = readJson<CandidatePair>(PAIR_PATH);
-    expect(pin.excluded_from_scope).toContain("docs/evidence/WWHN-237/**");
-  });
-
-  it("m1-be-2 được chứng minh là ancestor thuần của m1, không phải nguồn thay thế", () => {
-    const pin = readJson<CandidatePair>(PAIR_PATH);
-    expect(pin.branch_supersession.superseded_branch).toBe("m1-be-2");
-    expect(pin.branch_supersession.canonical_branch).toBe("m1");
-    expect(pin.branch_supersession.is_pure_ancestor).toBe(true);
-    expect(pin.branch_supersession.m1_be_2_commits_ahead_of_m1).toBe(0);
-  });
-
-  it("bản sao BE byte-identical — reviewer diff hai repo là ra ngay", () => {
-    const beCopy = join(
-      process.cwd(),
-      "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE",
-      PAIR_PATH,
-    );
-    if (!existsSync(beCopy)) return;
-    expect(readFileSync(beCopy, "utf8")).toBe(readText(PAIR_PATH));
-  });
-
-  it("FE_CLOSURE_IDENTITY lấy định danh từ bản pin chứ không từ HEAD", () => {
-    const identity = readJson<{
-      identity_source?: string;
-      fe: { commit_sha: string | null };
-      be: { commit_sha: string | null };
-    }>("docs/evidence/WWHN-237/FE_CLOSURE_IDENTITY.json");
-    const pin = readJson<CandidatePair>(PAIR_PATH);
-
-    expect(identity.identity_source).toContain("CANDIDATE_PAIR.json");
-    expect(identity.fe.commit_sha).toBe(pin.pair.frontend.commit_sha);
-    expect(identity.be.commit_sha).toBe(pin.pair.backend.commit_sha);
-  });
-});

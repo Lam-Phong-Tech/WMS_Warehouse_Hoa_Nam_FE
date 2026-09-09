@@ -4333,6 +4333,8 @@ export const MESSAGES_EN: MessageTree = {
         "Showing {shown}/{total} — scroll for more or type to search.",
     },
     address: {
+      wardsLoadError: "Could not load the province/ward catalog.",
+      provinceHasNoWards: "Province {code} has no wards in the catalog.",
       legend: "Address",
       province: "Province / City",
       ward: "Ward / Commune",
@@ -4627,6 +4629,9 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   pv: {
+    upload: {
+      missingUrl: "The server did not return a URL for the uploaded image.",
+    },
     common: {
       loading: "Loading…",
       save: "Save",

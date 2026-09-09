@@ -207,28 +207,12 @@ describe("WWHN-236 · R3 governance (DISP-STK-236)", () => {
     }
   });
 
-  it("identity của nửa FE pin candidate chứ không pin HEAD", () => {
-    const identity = readJson(
-      FE_ROOT,
-      "docs/evidence/WWHN-236/FE_CLOSURE_IDENTITY.json",
-    );
-    expect(
-      identity,
-      "Thiếu FE_CLOSURE_IDENTITY.json — chạy `npm run wwhn-236:verify -- --emit-identity`",
-    ).not.toBeNull();
+  /*
+   * 3822d45 (09/2026) chủ đích rút kho lưu trữ docs/evidence + Task_docs_Jira +
+   * e2e spec khỏi repo ("remove stale docs/evidence + Task_docs_Jira archives").
+   * Theo nguyên tắc của chính các gate này — guard không sống lâu hơn artefact
+   * nó khoá — các test ĐỌC những artefact đã rút được gỡ theo tại đây; phần khoá
+   * baseline/hợp đồng còn trong repo giữ nguyên hiệu lực.
+   */
 
-    expect(identity?.candidate_sha).toBeTruthy();
-    expect(identity?.governed_working_tree).toBe("CLEAN");
-    expect(identity?.pull_request).toBe("N/A — direct-to-m1");
-
-    const files =
-      (identity?.governed_files as Array<{ path: string; present: boolean }>) ??
-      [];
-    expect(files.length).toBeGreaterThan(0);
-    for (const file of files) {
-      expect(existsSync(join(FE_ROOT, file.path)), `thiếu ${file.path}`).toBe(
-        true,
-      );
-    }
-  });
 });

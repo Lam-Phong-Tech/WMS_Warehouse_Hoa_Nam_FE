@@ -49,6 +49,11 @@ const VN =
  * Mỗi mục phải nêu được lý do; không thêm mục mới chỉ để test hết đỏ.
  */
 const VIETNAMESE_IS_DATA: ReadonlyMap<string, string> = new Map([
+  [
+    "src/shared/ui/icons/icon-font-health.ts",
+    "console.error chẩn đoán cho DEV khi font icon hỏng — không phải chuỗi UI; " +
+      "hướng dẫn chạy lệnh yarn nên giữ tiếng Việt thô, không đi qua bảng chuỗi",
+  ],
   // Bảng chuỗi và lớp phủ EN của nó.
   ["src/shared/i18n/messages.ts", "bảng chuỗi VI"],
   [

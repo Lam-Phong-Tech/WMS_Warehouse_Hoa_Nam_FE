@@ -14,6 +14,7 @@
  * đổi kho lưu trữ không đụng gì tới hợp đồng của hồ sơ sản phẩm.
  */
 import { http } from "@/shared/api/http";
+import { tStatic } from "@/shared/i18n";
 import { PV_API_ENDPOINTS } from "@/modules/pv/services/pv-endpoints";
 import { FILE_RULES, type FileRule } from "@/shared/validation/file-rules";
 
@@ -62,7 +63,7 @@ export async function uploadPvProductImage(
   if (!url) {
     // BE luôn trả `url`; rơi vào đây nghĩa là hợp đồng đã trôi. Nổ ngay còn hơn
     // ghi một chuỗi rỗng xuống hồ sơ rồi App PV vẽ ra ô ảnh trống.
-    throw new Error("Máy chủ không trả về địa chỉ ảnh vừa tải lên.");
+    throw new Error(tStatic("pv.upload.missingUrl"));
   }
 
   return {

@@ -421,8 +421,8 @@ export const RECONCILE_STATUS_LABELS = bilingual(
   {
     MATCH: "Matched",
     PASS: "Matched",
-    MISMATCH: "Discrepancy found",
-    FAIL: "Discrepancy found",
+    MISMATCH: "Mismatch found",
+    FAIL: "Mismatch found",
   },
 );
 

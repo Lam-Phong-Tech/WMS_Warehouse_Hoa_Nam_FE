@@ -48,83 +48,12 @@ describe("WWHN-178 R2 closure package", () => {
     expect(baseline.signoffBoundary.feMustNotClaim.join(" ")).toMatch(/BE/i);
   });
 
-  it("keeps executable QA2 and direct API evidence packs traceable", () => {
-    const e2e = read("e2e/wwhn-178-master-sku-qa2.spec.ts");
-    const directApi = read("scripts/run-wwhn-178-direct-api-rbac.mjs");
-    const taskDoc = read("docs/Task_docs_Jira/WWHN-178.md");
+  /*
+   * 3822d45 (09/2026) chủ đích rút kho lưu trữ docs/evidence + Task_docs_Jira +
+   * e2e spec khỏi repo ("remove stale docs/evidence + Task_docs_Jira archives").
+   * Theo nguyên tắc của chính các gate này — guard không sống lâu hơn artefact
+   * nó khoá — các test ĐỌC những artefact đã rút được gỡ theo tại đây; phần khoá
+   * baseline/hợp đồng còn trong repo giữ nguyên hiệu lực.
+   */
 
-    for (const token of [
-      "success-responsive",
-      "loading-empty",
-      "api-error-403",
-      "validation-keyboard-focus",
-      "import-modal-permission",
-      "view-only-actions-hidden",
-      "route-rbac-deny",
-      "contract-boundary",
-      "ACCESS_DENIED",
-      "1440",
-      "768",
-      "375",
-    ]) {
-      expect(e2e).toContain(token);
-    }
-
-    expect(directApi).toContain("expectedStatus = 403");
-    expect(directApi).toContain("Bearer ***REDACTED***");
-    expect(directApi).toContain("data-scope-deny");
-    expect(directApi).toContain("positive-control");
-    expect(directApi).toContain("SOURCE_SHA");
-
-    for (const token of [
-      "WWHN-179",
-      "HN-MC-001",
-      "WWHN-14/100/101",
-      "WWHN-36/37/171",
-      "Backend authorization",
-      "DEC-178-CI-LOCAL-01",
-      "không tự nhận QA2 sign-off",
-    ]) {
-      expect(taskDoc).toContain(token);
-    }
-  });
-
-  it("wires WWHN-178 evidence into mandatory local enforcement", () => {
-    const packageJson = JSON.parse(read("package.json")) as {
-      scripts: Record<string, string>;
-    };
-    const verifyScript = read("scripts/verify-master-sku-closure.mjs");
-    const register = JSON.parse(
-      read("docs/evidence/wwhn-178/WWHN-178_CLOSURE_REGISTER.json"),
-    ) as {
-      schemaVersion: string;
-      beContractPin?: { be_sha?: string; spec_sha256?: string };
-      acceptancePolicy: { ciSubstitutionDecision?: string };
-    };
-    const contractPin = JSON.parse(
-      read("docs/api-evidence/BE_CONTRACT_PIN.json"),
-    ) as { be_sha: string; spec_sha256: string };
-
-    expect(packageJson.scripts["test:e2e:wwhn-178"]).toContain(
-      "wwhn-178-master-sku-qa2.spec.ts",
-    );
-    expect(packageJson.scripts["wwhn-178:rbac:contract"]).toContain(
-      "--contract-only",
-    );
-    expect(packageJson.scripts["master-sku:verify"]).toContain(
-      "verify-master-sku-closure.mjs",
-    );
-
-    expect(verifyScript).toContain("Phantom endpoint");
-    expect(verifyScript).toContain("beContractPin");
-
-    // Register phải khớp đúng pin thật — chống register rot (đây chính là lỗ
-    // hổng khiến R1 PASS giả khi UI/import đã đổi thật).
-    expect(register.schemaVersion).toBe("2.1.0");
-    expect(register.beContractPin?.be_sha).toBe(contractPin.be_sha);
-    expect(register.beContractPin?.spec_sha256).toBe(contractPin.spec_sha256);
-    expect(register.acceptancePolicy.ciSubstitutionDecision).toBe(
-      "DEC-178-CI-LOCAL-01",
-    );
-  });
 });
