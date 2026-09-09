@@ -33,6 +33,29 @@ const NO_ANIMATION = { enabled: false } as const;
 export function LazyApexChart(props: ApexChartProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [near, setNear] = useState(false);
+  /**
+   * Bề rộng THẬT của ô chứa, đo bằng ResizeObserver — UAT 09/09: ApexCharts 7
+   * với width "100%" chỉ lấy kích thước MỘT LẦN lúc mount; đo thực nghiệm
+   * (1500px → 1100px và ngược lại) svg giữ nguyên width cũ, nên mở trang ở
+   * cửa sổ to rồi bo nhỏ là cột biểu đồ tràn ra ngoài card, đè cả card đứng
+   * cạnh (ảnh RPT-04). Truyền width BẰNG SỐ và cập nhật theo observer thì
+   * react-apexcharts mới thật sự vẽ lại đúng cỡ ở cả hai chiều co/giãn.
+   */
+  const [hostWidth, setHostWidth] = useState(0);
+
+  useEffect(() => {
+    const node = hostRef.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const next = Math.floor(entries[0]?.contentRect.width ?? 0);
+      // 0 = đang ẩn (keep-alive display:none) — giữ số đo cũ, tránh vẽ chart 0px.
+      if (next > 0) {
+        setHostWidth((prev) => (Math.abs(prev - next) > 1 ? next : prev));
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const node = hostRef.current;
@@ -63,11 +86,26 @@ export function LazyApexChart(props: ApexChartProps) {
     },
   };
 
+  // Chỉ ghi đè khi caller không tự khai width cụ thể (undefined/"100%").
+  const width =
+    (props.width === undefined || props.width === "100%") && hostWidth > 0
+      ? hostWidth
+      : props.width;
+
   return (
     <div ref={hostRef} style={height !== undefined ? { minHeight: height } : undefined}>
       {near ? (
         <Suspense fallback={<div style={height !== undefined ? { height } : undefined} aria-hidden="true" />}>
-          <ApexChart {...props} options={options} />
+          {/* key theo width: react-apexcharts không tin cậy khi update
+              width lúc runtime (đo 09/09: svg giữ nguyên cỡ cũ) — remount là
+              đường duy nhất chắc chắn ăn ở cả hai chiều co/giãn; animation đã
+              tắt nên remount không gây nháy. */}
+          <ApexChart
+            key={typeof width === "number" ? width : "auto"}
+            {...props}
+            width={width}
+            options={options}
+          />
         </Suspense>
       ) : (
         <div style={height !== undefined ? { height } : undefined} aria-hidden="true" />
