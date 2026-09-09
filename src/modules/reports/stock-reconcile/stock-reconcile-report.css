@@ -436,6 +436,11 @@
   font-size: 13px;
   font-weight: 500;
   line-height: 20px;
+  /* Nhãn KPI có token dài không dấu cách ("bán/xuất"): ở cột hẹp (iPad mở
+     sidebar → ô KPI còn ~48px) token đó không xuống dòng được nên chữ vẽ đè
+     ra ngoài thẻ. `anywhere` vừa cho ngắt trong token vừa hạ min-content của
+     ô, nên ô không còn bị chính chữ chống ra. */
+  overflow-wrap: anywhere;
 }
 .hn-rpt02 .kpi-value {
   margin: 10px 0 5px;
