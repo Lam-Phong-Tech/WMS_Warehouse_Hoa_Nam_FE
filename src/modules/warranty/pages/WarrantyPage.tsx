@@ -38,6 +38,7 @@ import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import {
   WARRANTY_BASELINE_STATUSES,
   WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS,
+  WARRANTY_IDENTIFICATION_TYPES,
   WARRANTY_STATUS_COLORS,
   WARRANTY_STATUS_LABELS,
   formatWarrantyDateTime,
@@ -360,13 +361,14 @@ export default function WarrantyPage() {
             aria-label={t("warranty.list.identificationFilterAria")}
             placeholder={t("warranty.list.identificationFilterPlaceholder")}
             minWidth={FILTER_WIDTH.select}
-            options={[
-              { value: "IDENTIFIED", label: t("warranty.list.identified") },
-              {
-                value: "TEMP_ONLY",
-                label: t("warranty.list.temporary"),
-              },
-            ]}
+            // UAT TC_FUNC_02: nhãn của ô lọc phải lấy từ ĐÚNG registry mà cột
+            // "Nhận diện" đang dùng. Bản trước gõ lại nhãn ở messages.ts nên ô
+            // lọc ghi "Đã xác định sản phẩm" còn cột ghi "Đã xác định" — người
+            // kiểm thử đối chiếu hai chữ khác nhau và kết luận lọc trả sai.
+            options={WARRANTY_IDENTIFICATION_TYPES.map((value) => ({
+              value,
+              label: WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS[value],
+            }))}
             onChange={(value) => {
               setIdentification(value as WarrantyIdentificationType | "");
               setPage(1);
@@ -379,7 +381,16 @@ export default function WarrantyPage() {
             // Nhãn lựa chọn là "DEF-013 · Chập điện / cháy mô-tơ" — ô hẹp làm
             // menu gãy dòng giữa tên bệnh/lỗi (phản hồi người dùng 07/09/2026).
             minWidth={FILTER_WIDTH.selectWide}
-            options={(defectsQuery.data?.data ?? [])
+            options={[...(defectsQuery.data?.data ?? [])]
+              // BE trả danh mục theo created_at nên menu ra DEF-006, DEF-013,
+              // DEF-014, DEF-008... — người dùng phải quét mắt cả 15 dòng mới
+              // tìm được mã mình cần. Xếp theo mã cho khớp thứ tự họ tra.
+              .sort((a, b) =>
+                String(a.defect_code ?? "").localeCompare(
+                  String(b.defect_code ?? ""),
+                  "vi",
+                ),
+              )
               .map((defect) => ({
                 value: String(
                   defect.defect_id ?? (defect as { id?: unknown }).id ?? "",

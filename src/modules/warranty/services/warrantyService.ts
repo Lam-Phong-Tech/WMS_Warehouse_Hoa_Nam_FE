@@ -125,7 +125,11 @@ function resolveWarrantyPii(row: RawRecord): {
   const address = text(row.customer_address).trim();
 
   return {
-    customer_name: (full ? name : maskWarrantyName(name)) || "-",
+    // Thiếu dữ liệu thì trả CHUỖI RỖNG, không phải "-": ô rỗng của WMS là
+    // "Chưa có" (EMPTY_TEXT) và chỉ tầng render mới biết ngôn ngữ đang bật.
+    // Sentinel "-" ở đây làm mọi `value || EMPTY_TEXT` phía dưới mất tác dụng
+    // (chuỗi "-" là truthy) nên người dùng thấy dấu gạch giữa bảng tiếng Việt.
+    customer_name: full ? name : maskWarrantyName(name),
     customer_phone: (full ? phone : maskWarrantyPhone(phone)) || undefined,
     customer_address:
       (full ? address : maskWarrantyAddress(address)) || undefined,
@@ -174,7 +178,7 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
         row.doc_no,
     ),
     sku: text(row.sku ?? row.sku_code ?? row.product_sku),
-    sku_name: text(row.sku_name ?? row.product_name, "-"),
+    sku_name: text(row.sku_name ?? row.product_name),
     item_code: text(row.item_code ?? row.serial_number) || undefined,
     item_id: text(row.item_id) || undefined,
     physical_code: text(row.physical_code) || undefined,
@@ -190,7 +194,7 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     masked_customer_name: text(row.masked_customer_name) || undefined,
     masked_customer_phone: text(row.masked_customer_phone) || undefined,
     agency_name: text(row.agency_name ?? row.agency) || undefined,
-    defect: text(row.defect_name ?? row.defect ?? row.defect_description, "-"),
+    defect: text(row.defect_name ?? row.defect ?? row.defect_description),
     defect_code: text(row.defect_code),
     defect_id: text(row.defect_id) || undefined,
     defect_ids: Array.isArray(row.defect_ids)

@@ -103,7 +103,10 @@ describe("WWHN-247 · §13.8 PII fail-closed ở tầng service", () => {
     expect(detail.customer_name).toBe("N*** V*** A***");
   });
 
-  it("case không có PII vẫn giữ placeholder, không sinh chuỗi mask giả", async () => {
+  // WWHN-340: ô rỗng trả CHUỖI RỖNG (trước là sentinel "-"). Ý của test không
+  // đổi — không được sinh chuỗi mask giả từ giá trị rỗng; chỉ khác là quyết
+  // định hiển thị "Chưa có" nay thuộc về tầng render, nơi biết ngôn ngữ.
+  it("case không có PII vẫn để trống, không sinh chuỗi mask giả", async () => {
     grant(["warranty.manage"]);
     vi.mocked(http.get).mockResolvedValue({
       warranty_case_id: "wc-empty",
@@ -113,7 +116,8 @@ describe("WWHN-247 · §13.8 PII fail-closed ở tầng service", () => {
 
     const detail = await fetchWarrantyCase("wc-empty");
 
-    expect(detail.customer_name).toBe("-");
+    expect(detail.customer_name).toBe("");
+    expect(detail.customer_name).not.toContain("*");
     expect(detail.customer_phone).toBeUndefined();
     expect(detail.customer_address).toBeUndefined();
   });

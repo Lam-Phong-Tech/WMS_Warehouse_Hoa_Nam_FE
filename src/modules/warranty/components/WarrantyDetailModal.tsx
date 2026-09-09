@@ -1658,7 +1658,9 @@ export function WarrantyDetailModal({
                             ) : detail.defect_code ? (
                               `${detail.defect_code} · ${detail.defect}`
                             ) : (
-                              (detail.defect ?? EMPTY_TEXT)
+                              // `||` chứ không `??`: hồ sơ chưa gắn bệnh/lỗi thì
+                              // service trả CHUỖI RỖNG, `??` sẽ để lọt ô trắng.
+                              (detail.defect || EMPTY_TEXT)
                             )
                           }
                         />

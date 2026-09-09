@@ -29,6 +29,27 @@ function createIdempotencyKey(): string {
 const REPORT_EXPORT_POLL_INTERVAL_MS = 1200;
 const REPORT_EXPORT_POLL_TIMEOUT_MS = 60000;
 
+/**
+ * Timeout riêng cho hai request của luồng export, thay cho `apiTimeoutMs` chung
+ * (10 giây — hợp lý cho một request đọc danh sách, KHÔNG hợp lý ở đây).
+ *
+ * Hai request này có thể chậm một cách hợp lệ:
+ *
+ *  1. GET /reports/export/{id} không phải lúc nào cũng chỉ đọc trạng thái. Khi
+ *     worker hàng đợi không nhặt job trong thời gian ân hạn, BE tự chạy export
+ *     NGAY TRONG request poll đó (đường cứu hộ WWHN-343) — đo 09/09/2026: một
+ *     bản PDF ~750 dòng mất ~20 giây. Với trần 10 giây, trình duyệt huỷ request
+ *     giữa chừng và người dùng nhận "xuất thất bại" cho một file mà máy chủ vừa
+ *     dựng xong — mất file, mất cả lý do.
+ *  2. GET .../download tải nguyên khối file XLSX/PDF; file 10.000 dòng cỡ vài MB
+ *     trên đường truyền chậm cũng vượt 10 giây.
+ *
+ * Chọn đúng bằng REPORT_EXPORT_POLL_TIMEOUT_MS: không request đơn lẻ nào được
+ * bỏ cuộc SỚM HƠN hạn chót của cả vòng poll, nếu không thông báo cho người dùng
+ * sẽ do trình duyệt quyết định thay vì do trạng thái job.
+ */
+const REPORT_EXPORT_REQUEST_TIMEOUT_MS = REPORT_EXPORT_POLL_TIMEOUT_MS;
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -53,6 +74,7 @@ async function pollReportExportJob(
   for (;;) {
     const status = await http.get<ReportExportJobStatus>(
       `/reports/export/${jobId}`,
+      { timeout: REPORT_EXPORT_REQUEST_TIMEOUT_MS },
     );
     if (status.status === "READY" || status.status === "FAILED") {
       return status;
@@ -126,6 +148,7 @@ export async function runReportExport(
   }
   const { blob, fileName } = await http.downloadFile(
     stripApiPrefix(downloadUrl),
+    { timeout: REPORT_EXPORT_REQUEST_TIMEOUT_MS },
   );
   handleBlobDownload(
     blob,

@@ -79,7 +79,11 @@ describe("UiSelect — ngưỡng tìm kiếm", () => {
     render(<Host options={LONG} initial="sku-3" />);
     expect(screen.getByTestId("value")).toHaveTextContent("sku-3");
 
-    await user.click(screen.getByTitle("Clear"));
+    // Nút xoá lựa chọn nay mang nhãn tiếng Việt — MUI mặc định là "Clear",
+    // chữ Anh nằm ngay trên ô lọc của màn tiếng Việt.
+    // getByTitle chứ không getByRole: MUI để nút này `visibility: hidden` tới
+    // khi hover/focus nên nó không nằm trong cây accessibility.
+    await user.click(screen.getByTitle("Bỏ chọn"));
     expect(screen.getByTestId("value")).toBeEmptyDOMElement();
   });
 

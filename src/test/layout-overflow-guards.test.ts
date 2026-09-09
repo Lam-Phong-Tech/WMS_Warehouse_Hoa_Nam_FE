@@ -37,6 +37,12 @@ const REPORT_CSS = [
 
 const read = (file: string) => readFileSync(join(process.cwd(), file), "utf8");
 
+/**
+ * Sàn CHUNG của vùng vẽ biểu đồ. `.chart-plot` (khung), `.chart-svg` (nội dung)
+ * và `.chart-empty` (ô trống) phải cùng đọc biến này — xem WWHN-341 bên dưới.
+ */
+const CHART_PLOT_MIN_VAR = "--hn-chart-plot-min";
+
 /** Tách file CSS thành từng khối `selector { thân }` (đủ dùng cho guard này). */
 function rulesOf(css: string): Array<{ selector: string; body: string }> {
   const out: Array<{ selector: string; body: string }> = [];
@@ -131,14 +137,136 @@ describe("bố cục thẻ báo cáo — chống chữ đè lên nhau", () => {
       const plot = rules.find((rule) => /\.chart-plot$/.test(rule.selector));
       if (!empty || !plot) continue;
 
-      const emptyMin = pxOf(declaration(empty.body, "min-height"));
-      const plotMin = pxOf(declaration(plot.body, "min-height"));
-      if (emptyMin === null || plotMin === null) continue;
+      const emptyRaw = declaration(empty.body, "min-height");
+      const plotRaw = declaration(plot.body, "min-height");
+      if (emptyRaw === null || plotRaw === null) continue;
 
+      /*
+       * Từ WWHN-341 cả hai đọc chung `--hn-chart-plot-min`; khai qua biến là
+       * ràng buộc CHẶT HƠN so sánh số, nên chấp nhận thẳng và không so px nữa.
+       */
+      if (emptyRaw === plotRaw && emptyRaw.includes(CHART_PLOT_MIN_VAR)) {
+        continue;
+      }
+
+      const emptyMin = pxOf(emptyRaw);
+      const plotMin = pxOf(plotRaw);
+      expect(
+        emptyMin,
+        `${file}: .chart-empty (${emptyRaw}) và .chart-plot (${plotRaw}) không cùng một sàn — ô trống sẽ tràn khỏi vùng vẽ. Cho cả hai đọc ${CHART_PLOT_MIN_VAR}.`,
+      ).not.toBeNull();
       expect(
         emptyMin,
         `${file}: .chart-empty (${emptyMin}px) cao hơn .chart-plot (${plotMin}px) nên ô trống sẽ tràn khỏi vùng vẽ`,
-      ).toBeLessThanOrEqual(plotMin);
+      ).toBeLessThanOrEqual(plotMin!);
+    }
+  });
+});
+
+/**
+ * WWHN-341 · UAT TC_UI_14 — "Xem bảng dữ liệu thay thế" làm biểu đồ đè lên bảng.
+ *
+ * HIỆN TƯỢNG (ảnh bằng chứng của tester, màn Báo cáo nhập kho): bấm mở bảng thì
+ * nét vẽ và nhãn trục của biểu đồ nằm ĐÈ lên các dòng của bảng vừa hiện ra.
+ *
+ * ĐO ĐƯỢC KHI TÁI HIỆN (viewport 1440×900, thẻ biểu đồ cao 370px):
+ *   · `.chart-wrap` co từ 217px xuống 32px — đúng bằng phần đệm, tức là hết chỗ;
+ *   · `.chart-plot` vẫn 180px và `.chart-svg` vẫn 220px vì có sàn riêng;
+ *   · SVG do đó thò 204px xuống dưới đáy khung chứa, phủ lên khối `<details>`.
+ *
+ * HAI NGUYÊN NHÂN GỐC, mỗi cái được một luật dưới đây khoá lại:
+ *
+ *   1. SÀN KHAI HAI CHỖ RỒI TRÔI KHỎI NHAU. `.chart-plot` (khung) và
+ *      `.chart-svg` (nội dung) là quan hệ chứa/bị chứa nên sàn phải là MỘT con
+ *      số. Bản lỗi khai 180px cho khung và 220px cho nội dung ở hai luật khác
+ *      nhau — chênh 40px đó chính là phần vẽ đè. Nay cả hai đọc
+ *      `--hn-chart-plot-min`, không thể lệch.
+ *
+ *   2. KHUNG CHỨA ĐƯỢC PHÉP CO DƯỚI THỨ NÓ CHỨA. `min-height: 0` trên
+ *      `.chart-wrap` (một `flex: 1`) cho phép nó nhường hết chỗ cho khối
+ *      `<details>` đang mở, trong khi vùng vẽ bên trong không co theo.
+ *
+ * Luật 3 khoá hành vi đã chốt: mở bảng là THAY biểu đồ (đúng nghĩa "bảng dữ
+ * liệu thay thế"), nên không còn hai khối tranh nhau một chỗ.
+ */
+describe("biểu đồ ↔ bảng dữ liệu thay thế · không được chồng lấn (WWHN-341)", () => {
+  /** Mọi file CSS có cặp `.chart-plot` / `.chart-svg` + bảng thay thế. */
+  const CHART_CSS = [
+    "src/modules/reports/inventory-flow/inventory-flow-report.css",
+    "src/modules/reports/stock-reconcile/stock-reconcile-report.css",
+    "src/modules/dashboard/dashboard-overview.css",
+  ] as const;
+
+  it("sàn vùng vẽ khai đúng một lần: .chart-plot và .chart-svg cùng đọc biến", () => {
+    for (const file of CHART_CSS) {
+      const rules = rulesOf(read(file));
+
+      // Biến phải được đặt ở chính thẻ, để mọi biến thể thẻ đều có giá trị.
+      const declaresVar = rules.some(
+        (rule) =>
+          /\.chart-card\b/.test(rule.selector) &&
+          declaration(rule.body, `\\${CHART_PLOT_MIN_VAR}`) !== null,
+      );
+      expect(
+        declaresVar,
+        `${file}: không thẻ nào khai ${CHART_PLOT_MIN_VAR} — sàn vùng vẽ phải đặt ở .chart-card`,
+      ).toBe(true);
+
+      // Và không luật nào được khai min-height bằng số cho ba lớp này nữa.
+      const offenders = rules
+        .filter((rule) =>
+          /\.chart-(plot|svg|empty)\s*$/.test(
+            rule.selector.split(",").at(-1)?.trim() ?? "",
+          ),
+        )
+        .filter((rule) => {
+          const value = declaration(rule.body, "min-height");
+          return value !== null && !value.includes(CHART_PLOT_MIN_VAR);
+        })
+        .map(
+          (rule) =>
+            `${file} :: ${rule.selector} (${declaration(rule.body, "min-height")})`,
+        );
+
+      expect(
+        offenders,
+        `Sàn vùng vẽ phải đi qua ${CHART_PLOT_MIN_VAR} — khai số rời ở đây là cách WWHN-341 tái diễn\n(khung và nội dung trôi khỏi nhau, phần dôi vẽ đè xuống bảng):\n${offenders.join("\n")}`,
+      ).toEqual([]);
+    }
+  });
+
+  it("khung vùng vẽ không được co dưới thứ nó chứa (.chart-wrap ≠ min-height 0)", () => {
+    const offenders: string[] = [];
+    for (const file of CHART_CSS) {
+      for (const rule of rulesOf(read(file))) {
+        if (
+          !/\.chart-wrap\s*$/.test(
+            rule.selector.split(",").at(-1)?.trim() ?? "",
+          )
+        ) {
+          continue;
+        }
+        const value = declaration(rule.body, "min-height");
+        if (value === null) continue;
+        if (/^0(px)?$/.test(value.trim())) {
+          offenders.push(`${file} :: ${rule.selector}`);
+        }
+      }
+    }
+    expect(
+      offenders,
+      `\`.chart-wrap\` là flex: 1 — cho nó min-height: 0 là cho phép co về 0 trong khi\n\`.chart-plot\` bên trong vẫn giữ sàn riêng; phần chênh đó tràn ra và vẽ đè lên\nbảng dữ liệu thay thế (WWHN-341). Đặt sàn theo calc(${CHART_PLOT_MIN_VAR} + đệm dọc):\n${offenders.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("mở bảng thay thế là THAY biểu đồ, không chèn thêm vào dưới nó", () => {
+    for (const file of CHART_CSS) {
+      const css = read(file);
+      expect(
+        css,
+        `${file}: thiếu luật chuyển sang chế độ bảng. Thẻ biểu đồ cao cố định không\nđủ chỗ cho cả biểu đồ lẫn bảng — thiếu luật này là hai khối lại tranh nhau một chỗ.`,
+      ).toContain(".chart-card:has(> .chart-table[open])");
+      expect(css).toContain(".chart-table[open]) > .chart-table");
     }
   });
 });
@@ -167,8 +295,9 @@ describe("dashboard responsive · container query theo vùng nội dung (UAT TC_
 
   it("khối xếp chồng ≤819.98px dùng :nth-child cho analysis-grid và insight-grid", () => {
     const block =
-      css.split("@container hn-dash (max-width: 819.98px)")[1]?.split("@container")[0] ??
-      "";
+      css
+        .split("@container hn-dash (max-width: 819.98px)")[1]
+        ?.split("@container")[0] ?? "";
     expect(block).toContain("analysis-grid > :nth-child(n)");
     expect(block).toContain("insight-grid > :nth-child(n)");
     expect(block).toContain("grid-column: 1 / -1");
@@ -201,8 +330,9 @@ describe("dashboard responsive · container query theo vùng nội dung (UAT TC_
 
   it("khối điện thoại ≤639.98px vẫn xếp chồng bằng :nth-child", () => {
     const block =
-      css.split("@container hn-dash (max-width: 639.98px)")[1]?.split("@container")[0] ??
-      "";
+      css
+        .split("@container hn-dash (max-width: 639.98px)")[1]
+        ?.split("@container")[0] ?? "";
     expect(block).toContain("analysis-grid > :nth-child(n)");
     expect(block).toContain("insight-grid > :nth-child(n)");
   });

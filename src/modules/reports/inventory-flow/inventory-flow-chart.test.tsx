@@ -8,12 +8,29 @@
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import dayjs from "dayjs";
-import { InventoryFlowChart, type ChartSeries } from "./inventory-flow-chart";
+import {
+  InventoryFlowChart,
+  TEXT_BOX_PER_FONT_UNIT,
+  type ChartSeries,
+} from "./inventory-flow-chart";
 
 /** Toạ độ y của hàng nhãn trục X trong viewBox (hằng `X_AXIS_LABEL_Y`). */
 const X_AXIS_LABEL_Y = "219";
 /** Cỡ chữ nhãn trục theo CSS bản port. */
 const AXIS_FONT_SIZE = 10;
+/**
+ * Chiều cao HỘP CHỮ (không phải cỡ chữ) của một nhãn, tính bằng đơn vị viewBox.
+ * jsdom không đo được chữ nên lấy hệ số đã đo thật bằng `getBBox()` trong
+ * Chrome — dùng chung hằng của component để hai bên không trôi khỏi nhau.
+ */
+const TEXT_BOX_HEIGHT = AXIS_FONT_SIZE * TEXT_BOX_PER_FONT_UNIT;
+/**
+ * "Không đè nhau" chưa đủ: WWHN-342 vào đúng trạng thái hở 0,73 đơn vị
+ * (≈0,5px) — hình học thì hợp lệ, mà ảnh chụp của tester vẫn thấy ba số dính
+ * liền thành một cụm. Nên phép đo đòi khoảng hở NHÌN THẤY ĐƯỢC, và chính mốc
+ * này mới phân biệt được bản 14 (đỏ) với bản 16 (xanh).
+ */
+const MIN_VISIBLE_CLEARANCE = 2;
 
 function makeLabels(days: number): string[] {
   const start = dayjs("2026-01-01");
@@ -113,6 +130,15 @@ describe("InventoryFlowChart · mật độ nhãn trục X", () => {
     ).toHaveLength(28);
   });
 
+  /*
+   * ĐO THEO HỘP CHỮ, KHÔNG THEO CỠ CHỮ.
+   *
+   * Bản trước của phép đo này đòi khoảng cách ≥ `AXIS_FONT_SIZE` (10) nên nó
+   * XANH cả khi hai nhãn thật sự chạm nhau: hộp chữ cỡ 10 cao 13,27 đơn vị
+   * viewBox (đo bằng `getBBox()` trong Chrome), không phải 10. jsdom không có
+   * bộ đo chữ nên phải tự mang hệ số đó vào — dùng CHUNG hằng của component
+   * để hai bên không thể trôi khỏi nhau.
+   */
   it("nhãn giá trị cuối kỳ của các chuỗi không chồng lên nhau", () => {
     // Bốn chuỗi cùng kết thúc ở giá trị gần nhau — đúng ca sinh ra lỗi "5" đè
     // lên "0" ở mép phải biểu đồ.
@@ -133,9 +159,64 @@ describe("InventoryFlowChart · mật độ nhãn trục X", () => {
       .map((node) => Number(node.getAttribute("y")))
       .sort((left, right) => left - right);
     expect(ys).toHaveLength(4);
+
     for (let i = 1; i < ys.length; i += 1) {
-      expect(ys[i] - ys[i - 1]).toBeGreaterThanOrEqual(AXIS_FONT_SIZE);
+      expect(ys[i] - ys[i - 1]).toBeGreaterThanOrEqual(
+        TEXT_BOX_HEIGHT + MIN_VISIBLE_CLEARANCE,
+      );
     }
+  });
+
+  /*
+   * Ca "9/1/0" trong ảnh bằng chứng WWHN-342 (UAT TC_UI_16): ba chuỗi của báo
+   * cáo XUẤT cùng tụt sát đáy ở ngày cuối kỳ. Đây là ca xấu nhất vì
+   * `spreadEndLabels` phải đẩy cả cụm xuống rồi kéo ngược lên cho khỏi vượt
+   * đáy khung — chính chỗ hai nhãn dễ dính lại nhất.
+   */
+  it("ba chuỗi cùng chạm đáy cuối kỳ vẫn còn khoảng hở thật (WWHN-342)", () => {
+    const days = 101;
+    const ending = [9, 1, 0];
+    const series: ChartSeries[] = ending.map((last, index) => ({
+      key: `s${index}`,
+      label: `Chuỗi ${index + 1}`,
+      color: "#000",
+      values: [
+        ...Array.from({ length: days - 1 }, (_, day) => (day * 13) % 140),
+        last,
+      ],
+    }));
+    const { container } = render(
+      <InventoryFlowChart
+        labels={makeLabels(days)}
+        series={series}
+        ariaLabel="test"
+      />,
+    );
+    const nodes = Array.from(
+      container.querySelectorAll("text.chart-point-label"),
+    );
+    expect(nodes).toHaveLength(3);
+
+    const ys = nodes
+      .map((node) => Number(node.getAttribute("y")))
+      .sort((left, right) => left - right);
+    for (let i = 1; i < ys.length; i += 1) {
+      expect(ys[i] - ys[i - 1]).toBeGreaterThanOrEqual(
+        TEXT_BOX_HEIGHT + MIN_VISIBLE_CLEARANCE,
+      );
+    }
+
+    // Neo `end` tại PLOT_RIGHT: nhãn mọc sang TRÁI nên không thể tràn mép phải
+    // — đúng cái "số bị cắt cụt ở mép" trong ảnh của tester.
+    for (const node of nodes) {
+      expect(node.getAttribute("text-anchor")).toBe("end");
+      expect(Number(node.getAttribute("x"))).toBeLessThanOrEqual(626);
+    }
+
+    // Cả cụm phải nằm trong vùng vẽ (đáy y=196), không rơi xuống hàng nhãn
+    // trục X ở y=219.
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(AXIS_FONT_SIZE);
+    expect(Math.max(...ys)).toBeLessThanOrEqual(196);
   });
 
   it("không vỡ khi không có mốc nào (kỳ rỗng)", () => {

@@ -47,13 +47,28 @@ const X_AXIS_LABEL_Y = 219;
 const POINT_RADIUS = 3.5;
 /** Cỡ chữ nhãn trục — khớp `.hn-rpt01 .chart-axis-label` trong CSS của bản port. */
 const AXIS_FONT_SIZE = 10;
-/** Khoảng cách dọc tối thiểu giữa hai nhãn giá trị cuối kỳ của hai chuỗi. */
 /**
- * UAT TC_UI_16: 11 đơn vị viewBox ≈ 10,6px hiển thị — bằng đúng cỡ chữ 10px
- * nên hai nhãn kề nhau chạm mép ("2/0/0" dính chồng ở mép phải). 14 đơn vị
- * cho ~3,5px không khí giữa hai nhãn.
+ * HỘP CHỮ CAO HƠN CỠ CHỮ — chỗ hai lần sửa trước đều hụt.
+ *
+ * `font-size: 10` KHÔNG phải chiều cao hộp chữ: hộp còn cõng phần trên đầu và
+ * phần dưới chân của font. Đo thật bằng `getBBox()` trên chính biểu đồ này
+ * (Chrome, màn Báo cáo xuất kho): nhãn cỡ 10 chiếm **13,27 đơn vị viewBox** —
+ * hệ số 1,327.
+ *
+ * Nên mốc 14 của bản trước chỉ chừa 0,73 đơn vị ≈ 0,5px hiển thị: về hình học
+ * là "không đè", nhưng mắt người lẫn ảnh chụp của tester đều thấy dính liền
+ * (cụm "9/1/0" ở mép phải — WWHN-342 / UAT TC_UI_16). Khoảng hở mỏng như vậy
+ * cũng mất hẳn khi font dự phòng có hộp chữ dày hơn một chút.
+ *
+ * Vì thế mốc này được TÍNH từ hệ số đo được chứ không gõ tay: làm tròn lên
+ * 1,35 để trừ hao font dự phòng, cộng 2 đơn vị không khí ⇒ 16, chừa ~2,7 đơn
+ * vị thật (~1,8px ở thẻ nửa trang).
+ * Hàng rào: `inventory-flow-chart.test.tsx` đo theo CÙNG hệ số này.
  */
-const END_LABEL_MIN_GAP = 14;
+export const TEXT_BOX_PER_FONT_UNIT = 1.35;
+/** Khoảng cách dọc tối thiểu giữa hai nhãn giá trị cuối kỳ của hai chuỗi. */
+const END_LABEL_MIN_GAP =
+  Math.ceil(AXIS_FONT_SIZE * TEXT_BOX_PER_FONT_UNIT) + 2;
 
 export type ChartSeries = {
   key: string;

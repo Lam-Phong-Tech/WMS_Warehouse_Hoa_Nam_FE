@@ -971,8 +971,9 @@ export const MESSAGES_VI = {
       statusFilterPlaceholder: "Trạng thái: Tất cả",
       identificationFilterAria: "Lọc loại nhận diện",
       identificationFilterPlaceholder: "Nhận diện: Tất cả",
-      identified: "Đã xác định sản phẩm",
-      temporary: "Tiếp nhận tạm, chưa xác định sản phẩm",
+      // Nhãn hai lựa chọn của ô lọc "Nhận diện" KHÔNG khai ở đây: chúng phải
+      // trùng từng chữ với cột cùng tên, nên cả hai đọc chung
+      // WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS (business-labels.ts).
       defectFilterAria: "Lọc bệnh/lỗi",
       defectFilterPlaceholder: "Bệnh/lỗi: Tất cả",
       sortLabel: "Sắp xếp theo",
@@ -4325,6 +4326,11 @@ export const MESSAGES_VI = {
     },
     form: {
       noOptions: "Không có lựa chọn",
+      // Tooltip/aria của nút × và ▾ trong ô gõ-để-tìm. Bỏ trống thì MUI tự điền
+      // "Clear"/"Open"/"Close" — chữ Anh nằm ngay trên ô lọc của màn tiếng Việt.
+      autocompleteClear: "Bỏ chọn",
+      autocompleteOpen: "Mở danh sách",
+      autocompleteClose: "Đóng danh sách",
       addNew: "+ Thêm mới",
       showPassword: "Hiện mật khẩu",
       hidePassword: "Ẩn mật khẩu",

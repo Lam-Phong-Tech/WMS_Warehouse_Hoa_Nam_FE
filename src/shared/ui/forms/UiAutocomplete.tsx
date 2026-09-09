@@ -211,6 +211,13 @@ export function UiAutocomplete({
         option.value === valueOption.value
       }
       noOptionsText={noOptionsText ?? t("shared.form.noOptions")}
+      // MUI mặc định "Clear"/"Open"/"Close" — đó là tooltip VÀ aria-label của
+      // nút × / ▾ ngay trên ô lọc, tức chữ tiếng Anh giữa màn tiếng Việt. Nút ×
+      // là lối "xoá bộ lọc" duy nhất của ô gõ-để-tìm nên nhãn của nó phải đọc
+      // được.
+      clearText={t("shared.form.autocompleteClear")}
+      openText={t("shared.form.autocompleteOpen")}
+      closeText={t("shared.form.autocompleteClose")}
       renderOption={(optionProps, option) => {
         const { key, ...rest } = optionProps;
         if (option.value === ADD_NEW_OPTION_VALUE) {

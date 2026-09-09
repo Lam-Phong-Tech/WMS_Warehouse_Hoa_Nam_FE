@@ -971,8 +971,6 @@ export const MESSAGES_EN: MessageTree = {
       statusFilterPlaceholder: "Status: All",
       identificationFilterAria: "Filter identification type",
       identificationFilterPlaceholder: "Identification: All",
-      identified: "Product identified",
-      temporary: "Received provisionally, product not identified",
       defectFilterAria: "Filter symptom/defect",
       defectFilterPlaceholder: "Symptom/defect: All",
       sortLabel: "Sort by",
@@ -4333,6 +4331,9 @@ export const MESSAGES_EN: MessageTree = {
     },
     form: {
       noOptions: "No options",
+      autocompleteClear: "Clear selection",
+      autocompleteOpen: "Open list",
+      autocompleteClose: "Close list",
       addNew: "+ Add new",
       showPassword: "Show password",
       hidePassword: "Hide password",

@@ -1283,7 +1283,15 @@
 .hn-dash .threshold-card {
   min-height: 360px;
 }
+/*
+ * SÀN VÙNG VẼ KHAI ĐÚNG MỘT LẦN (WWHN-341) — xem ghi chú đầy đủ ở
+ * inventory-flow-report.css. `.chart-plot` (khung) và `.chart-svg` (nội dung)
+ * PHẢI cùng một con số; khai rời hai chỗ là chúng trôi khỏi nhau và phần SVG
+ * dôi ra vẽ đè xuống khối ngay dưới (ở đây là bảng dữ liệu thay thế).
+ * Hàng rào: src/test/layout-overflow-guards.test.ts
+ */
 .hn-dash .chart-card {
+  --hn-chart-plot-min: 232px;
   display: flex;
   flex-direction: column;
   border-top: 3px solid var(--primary);
@@ -1430,14 +1438,14 @@
 .hn-dash .chart-plot {
   display: flex;
   flex: 1;
-  min-height: 232px;
+  min-height: var(--hn-chart-plot-min);
   align-items: stretch;
 }
 .hn-dash .chart-svg {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 232px;
+  min-height: var(--hn-chart-plot-min);
 }
 .hn-dash .chart-hover-zone {
   fill: transparent;
@@ -1546,7 +1554,12 @@
   stroke-width: 1;
 }
 .hn-dash .chart-table {
+  /* Nền đục + lớp trên: khối bảng phải TÁCH BẠCH khỏi vùng vẽ, không để nét vẽ
+     nào lọt qua nếu một ngày nào đó biểu đồ lại dôi ra (WWHN-341). */
+  position: relative;
+  z-index: 1;
   margin: 0 24px 24px;
+  background: var(--surface);
   font-size: 12.5px;
   line-height: 18px;
 }
@@ -1572,6 +1585,35 @@
 }
 .hn-dash .chart-card .chart-table {
   margin-top: auto;
+}
+/*
+ * CHẾ ĐỘ BẢNG — mở "Xem bảng dữ liệu thay thế" là THAY phần trực quan, không
+ * chèn thêm vào dưới nó. Cùng hợp đồng với RPT-01/RPT-02 (WWHN-341), xem ghi
+ * chú đầy đủ ở inventory-flow-report.css.
+ *
+ * Thân thẻ ở đây có hai dạng: `.chart-wrap` (biểu đồ SVG) và
+ * `.composition-layout` (dải cơ cấu của thẻ "Cơ cấu tồn"); cả hai đều là anh em
+ * của `<details>` nên cùng một luật.
+ */
+.hn-dash .chart-card:has(> .chart-table[open]) > .chart-wrap,
+.hn-dash .chart-card:has(> .chart-table[open]) > .composition-layout {
+  display: none;
+}
+.hn-dash .chart-card:has(> .chart-table[open]) > .chart-table {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0;
+  /* `auto` phủ cả hai chiều: bảng nhiều cột hơn bề rộng thẻ thì cuộn ngang,
+     thà cuộn còn hơn cắt mất số. */
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.hn-dash .chart-card:has(> .chart-table[open]) > .chart-table > summary {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-bottom: 6px;
+  background: var(--surface);
 }
 .hn-dash .chart-card > .state-box {
   flex: 1;
@@ -2502,8 +2544,10 @@
     margin-left: 16px;
     margin-right: 16px;
   }
-  .hn-dash .chart-svg {
-    min-height: 240px;
+  /* Khung hẹp letterbox mạnh nên nâng sàn vùng vẽ — nâng ở BIẾN để `.chart-plot`
+     lên theo, không nâng riêng `.chart-svg` (WWHN-341). */
+  .hn-dash .chart-card {
+    --hn-chart-plot-min: 240px;
   }
 }
 

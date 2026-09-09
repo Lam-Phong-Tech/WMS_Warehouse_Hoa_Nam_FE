@@ -220,7 +220,8 @@ describe("UiFormSelect — ngưỡng tìm kiếm", () => {
     await user.click(screen.getAllByRole("option")[0]);
     expect(screen.getByTestId("form-value")).toHaveTextContent('"kho-0"');
 
-    await user.click(screen.getByTitle("Clear"));
+    // Nhãn nút xoá lựa chọn đã Việt hoá (MUI mặc định là "Clear").
+    await user.click(screen.getByTitle("Bỏ chọn"));
     expect(screen.getByTestId("form-value")).toHaveTextContent('""');
   });
 

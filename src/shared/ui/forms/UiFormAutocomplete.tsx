@@ -162,6 +162,10 @@ export function UiFormAutocomplete<T extends FieldValues>({
               option.value === valueOption.value
             }
             noOptionsText={t("shared.form.noOptions")}
+            // Cùng lý do như UiAutocomplete: MUI mặc định "Clear"/"Open"/"Close".
+            clearText={t("shared.form.autocompleteClear")}
+            openText={t("shared.form.autocompleteOpen")}
+            closeText={t("shared.form.autocompleteClose")}
             renderOption={(optionProps, option) => {
               const { key, ...rest } = optionProps;
               if (option.value === ADD_NEW_OPTION_VALUE) {

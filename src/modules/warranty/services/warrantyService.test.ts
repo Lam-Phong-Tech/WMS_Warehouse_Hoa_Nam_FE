@@ -86,6 +86,73 @@ describe("warrantyService", () => {
       expect(page.meta).toEqual({ total: 1 });
     });
 
+    // WWHN-340 · UAT TC_FUNC_02 — service KHÔNG được tự đặt sentinel "-" cho ô
+    // thiếu dữ liệu. Chuỗi "-" là truthy nên nó vô hiệu hoá mọi
+    // `value || EMPTY_TEXT` ở tầng render, và người dùng thấy dấu gạch giữa
+    // bảng tiếng Việt thay vì "Chưa có" — đúng phần "một số nội dung hiển thị
+    // không đúng" trong phiếu lỗi. Tầng render mới biết ngôn ngữ đang bật, nên
+    // quyết định hiển thị phải nằm ở đó.
+    it("ô thiếu dữ liệu trả chuỗi rỗng, không phải dấu gạch", async () => {
+      vi.mocked(http.getPage).mockResolvedValue({
+        data: [
+          {
+            warranty_case_id: "wc-empty",
+            warranty_case_code: "BH-EMPTY",
+            identification_status: "IDENTIFIED",
+            status: "RECEIVED",
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      const row = (await fetchWarrantyCases()).data[0];
+
+      expect(row.sku_name).toBe("");
+      expect(row.defect).toBe("");
+      expect(row.customer_name).toBe("");
+    });
+
+    // Ngữ nghĩa lọc "Nhận diện": BE là nguồn sự thật. Bản trước tự suy TEMP_ONLY
+    // từ temporary_item_code kể cả khi BE đã nói IDENTIFIED — lọc đúng ở BE mà
+    // cột lại dán nhãn khác, người kiểm thử thấy như bộ lọc trả sai.
+    it("tin identification_status của BE thay vì tự suy từ mã tạm", async () => {
+      vi.mocked(http.getPage).mockResolvedValue({
+        data: [
+          {
+            warranty_case_id: "wc-2",
+            warranty_case_code: "BH-0002",
+            identification_status: "IDENTIFIED",
+            temporary_item_code: "TEMP-02",
+            missing_code_reason: "Mất tem mã",
+            status: "RECEIVED",
+          },
+        ],
+        meta: { total: 1 },
+      });
+
+      expect((await fetchWarrantyCases()).data[0].identification_type).toBe(
+        "IDENTIFIED",
+      );
+    });
+
+    it("gửi nguyên identification_status và defect_id lên API", async () => {
+      vi.mocked(http.getPage).mockResolvedValue({ data: [], meta: {} });
+
+      await fetchWarrantyCases({
+        identification_status: "TEMP_ONLY",
+        defect_id: "def-9",
+        page: 2,
+      });
+
+      expect(http.getPage).toHaveBeenCalledWith("/warranty-cases", {
+        params: expect.objectContaining({
+          identification_status: "TEMP_ONLY",
+          defect_id: "def-9",
+          page: 2,
+        }),
+      });
+    });
+
     it("fail-closed khi thiếu warranty.manage: không gọi HTTP", async () => {
       authMocks.getState.mockReturnValue({
         isSuperAdmin: false,

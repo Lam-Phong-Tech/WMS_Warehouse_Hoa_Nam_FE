@@ -1,4 +1,4 @@
-import type { WarrantyCaseStatus } from "./types";
+import type { WarrantyCaseStatus, WarrantyIdentificationType } from "./types";
 import type { ComponentIssueStatus } from "./services/componentIssueService";
 import type { UiStatusTone } from "@/shared/ui";
 import type { MessageKey } from "@/shared/i18n/messages";
@@ -40,6 +40,16 @@ export const WARRANTY_BASELINE_STATUSES: WarrantyCaseStatus[] = [
   "COMPLETED",
   "RETURNED",
   "CANCELLED",
+];
+
+/**
+ * Hai loại nhận diện của hồ sơ bảo hành, theo enum `identification_status` của
+ * BE. Khai ở đây để ô lọc "Nhận diện" (WAR-01) và cột cùng tên dựng lựa chọn từ
+ * MỘT nguồn — nhãn tra qua `WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS`.
+ */
+export const WARRANTY_IDENTIFICATION_TYPES: WarrantyIdentificationType[] = [
+  "IDENTIFIED",
+  "TEMP_ONLY",
 ];
 
 export const WARRANTY_TERMINAL_STATUSES: WarrantyCaseStatus[] = [

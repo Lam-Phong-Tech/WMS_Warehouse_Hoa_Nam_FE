@@ -796,12 +796,37 @@
 .hn-rpt01 .report-split-grid .report-chart-card {
   overflow-y: auto;
 }
-.hn-rpt01 .report-split-grid .chart-wrap {
-  min-height: 0;
+/*
+ * Thẻ trong cột nửa trang thấp hơn bản full-width nên vùng vẽ hạ sàn — đổi
+ * ĐÚNG MỘT biến, `.chart-plot` / `.chart-svg` / `.chart-empty` tự đi theo.
+ *
+ * VÌ SAO 152px: ngân sách chiều cao của thẻ là 370px. Bản XUẤT có hai dòng số
+ * ở đầu thẻ nên đầu thẻ cao 124px (bản NHẬP chỉ 100px); trừ tiếp dòng toggle
+ * 29px và lề dưới 24px thì `.chart-wrap` chỉ còn 193px, tức vùng vẽ 161px.
+ * Sàn phải NẰM DƯỚI con số đó, nếu không thẻ mọc thanh cuộn ngay ở trạng thái
+ * mặc định. Không mất gì về hình: viewBox 640×228 với `preserveAspectRatio`
+ * mặc định, ở bề rộng cột (~440px) nội dung chỉ vẽ cao ~157px — phần cao hơn
+ * chỉ là khoảng trống letterbox. `flex: 1` vẫn kéo vùng vẽ lấp hết chỗ thật có.
+ */
+.hn-rpt01 .report-split-grid .chart-card {
+  --hn-chart-plot-min: 152px;
 }
-.hn-rpt01 .report-split-grid .chart-plot,
-.hn-rpt01 .report-split-grid .chart-svg {
-  min-height: 180px;
+/*
+ * WWHN-341 — KHÔNG được quay lại `min-height: 0` ở đây.
+ *
+ * `.chart-wrap` là `flex: 1`, nên `min-height: 0` cho phép nó co về 0 khi khối
+ * `<details>` bên dưới mở ra. Nhưng `.chart-plot`/`.chart-svg` bên trong có sàn
+ * riêng và KHÔNG co theo: đo được lúc mở bảng thay thế là `.chart-wrap` chỉ còn
+ * 32px (đúng phần đệm) trong khi SVG vẫn giữ 220px — 204px biểu đồ tràn ra
+ * ngoài khung chứa và vẽ đè lên chính khối bảng vừa mở.
+ *
+ * Sàn ở đây = sàn vùng vẽ + đệm dọc của chính `.chart-wrap` (16 + 16), nên
+ * khung chứa luôn đủ chỗ cho thứ nó chứa. Phần dôi khi mở bảng do
+ * `.report-chart-card { overflow-y: auto }` ở trên gánh — đúng thiết kế "phần
+ * dôi của mỗi cột tự cuộn trong khung của nó".
+ */
+.hn-rpt01 .report-split-grid .chart-wrap {
+  min-height: calc(var(--hn-chart-plot-min) + 32px);
 }
 
 /* Trong cột nửa trang, thẻ chứng từ xếp 2 mỗi hàng thay vì 3. */
@@ -829,7 +854,19 @@
 .hn-rpt01 .report-split-grid .report-chart-card {
   min-height: 0;
 }
+/*
+ * SÀN VÙNG VẼ KHAI ĐÚNG MỘT LẦN (WWHN-341).
+ *
+ * `.chart-plot` (khung) và `.chart-svg` (nội dung) PHẢI cùng một con số. Bản
+ * trước khai rời hai chỗ và chúng trôi khỏi nhau — `.report-chart-card
+ * .chart-svg: 220px` nằm trong `.chart-plot: 180px` — nên SVG cao hơn khung
+ * chứa 40px và phần dôi vẽ đè xuống khối ngay dưới nó. Đi qua biến thì hai con
+ * số KHÔNG THỂ lệch nhau; muốn đổi sàn cho một biến thể thẻ thì đổi biến ở
+ * chính `.chart-card` của biến thể đó.
+ * Hàng rào: src/test/layout-overflow-guards.test.ts
+ */
 .hn-rpt01 .chart-card {
+  --hn-chart-plot-min: 232px;
   display: flex;
   min-height: 360px;
   flex-direction: column;
@@ -977,14 +1014,14 @@
 .hn-rpt01 .chart-plot {
   display: flex;
   flex: 1;
-  min-height: 232px;
+  min-height: var(--hn-chart-plot-min);
   align-items: stretch;
 }
 .hn-rpt01 .chart-svg {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 232px;
+  min-height: var(--hn-chart-plot-min);
 }
 /*
  * Nét vẽ của chuỗi: mockup đặt thẳng `fill`/`stroke` lên từng phần tử SVG. Ở
@@ -1003,13 +1040,13 @@
   stroke-width: 2.5;
 }
 /*
- * Sàn của ô trống PHẢI bằng sàn của .chart-plot (232px), không cao hơn.
- * Cao hơn thì trong thẻ biểu đồ nửa trang (khung cao cố định) ô trống dôi ra
- * khỏi vùng vẽ và đè xuống phần dưới thẻ. Ô trống là flex item được kéo giãn
- * nên vẫn luôn lấp đầy đúng chiều cao thật của vùng vẽ.
+ * Sàn của ô trống PHẢI bằng sàn của .chart-plot, không cao hơn — nên đọc chung
+ * `--hn-chart-plot-min`. Cao hơn thì trong thẻ biểu đồ nửa trang (khung cao cố
+ * định) ô trống dôi ra khỏi vùng vẽ và đè xuống phần dưới thẻ. Ô trống là flex
+ * item được kéo giãn nên vẫn luôn lấp đầy đúng chiều cao thật của vùng vẽ.
  */
 .hn-rpt01 .chart-empty {
-  min-height: 232px;
+  min-height: var(--hn-chart-plot-min);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -1056,6 +1093,41 @@
 }
 .hn-rpt01 .chart-card .chart-table {
   margin-top: auto;
+}
+/*
+ * CHẾ ĐỘ BẢNG — "Xem bảng dữ liệu THAY THẾ" nghĩa là thay, không phải chèn thêm
+ * (WWHN-341 / UAT TC_UI_14).
+ *
+ * Thẻ biểu đồ trong cột nửa trang cao cố định (~370px): đầu thẻ 100 + vùng vẽ
+ * 212 + dòng toggle 29 đã kín khung, nên KHÔNG có chỗ để vừa vẽ biểu đồ vừa
+ * đọc bảng. Bản trước ép `.chart-wrap` co lại lấy chỗ cho bảng, mà SVG bên
+ * trong không co theo — đó chính là hình ảnh biểu đồ đè lên bảng trong ảnh
+ * bằng chứng.
+ *
+ * Mở bảng ⇒ thân thẻ chuyển hẳn sang bảng: vùng vẽ ẨN đúng cách (không còn
+ * phần tử nào để tràn), khối `<details>` nhận trọn phần thân và tự cuộn trong
+ * khung của nó. Dòng toggle dính đỉnh nên đóng bảng luôn cách một cú bấm.
+ * Đóng lại là biểu đồ trở về nguyên trạng — SVG dựng bằng markup thuần nên
+ * không có bước đo/vẽ lại nào để lệch.
+ */
+.hn-rpt01 .chart-card:has(> .chart-table[open]) > .chart-wrap {
+  display: none;
+}
+.hn-rpt01 .chart-card:has(> .chart-table[open]) > .chart-table {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0;
+  /* `auto` phủ cả hai chiều: bảng nhiều cột hơn bề rộng thẻ thì cuộn ngang,
+     thà cuộn còn hơn cắt mất số. */
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.hn-rpt01 .chart-card:has(> .chart-table[open]) > .chart-table > summary {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-bottom: 6px;
+  background: var(--surface);
 }
 .hn-rpt01 .chart-card > .state-box {
   flex: 1;
@@ -1527,9 +1599,12 @@
   stroke-width: 3px;
   stroke-linejoin: round;
 }
-.hn-rpt01 .report-chart-card .chart-svg {
-  min-height: 220px;
-}
+/*
+ * KHÔNG khai lại `min-height` cho riêng `.chart-svg` ở đây (WWHN-341): con số
+ * 220px từng nằm trong `.chart-plot` sàn 180px của cột nửa trang, và 40px dôi
+ * ra đã vẽ đè lên bảng dữ liệu thay thế. Sàn của cả khung lẫn nội dung đi qua
+ * `--hn-chart-plot-min` khai ở `.chart-card`.
+ */
 .hn-rpt01 .report-document-card {
   min-height: 236px;
 }
@@ -1866,6 +1941,11 @@
   .hn-rpt01 .report-split-grid .report-chart-card {
     min-height: 382px;
   }
+  /* Hàng lưới hết cao cố định ⇒ thẻ cao tự do trở lại, nên sàn vùng vẽ về mức
+     đầy đủ của bản full-width (sàn hạ chỉ để vừa khung cột nửa trang). */
+  .hn-rpt01 .report-split-grid .chart-card {
+    --hn-chart-plot-min: 232px;
+  }
 }
 
 /*
@@ -2024,8 +2104,12 @@
     margin-left: 16px;
     margin-right: 16px;
   }
-  .hn-rpt01 .chart-svg {
-    min-height: 240px;
+  /* Khung hẹp letterbox mạnh nên nâng sàn vùng vẽ — nâng ở BIẾN để `.chart-plot`
+     lên theo, không nâng riêng `.chart-svg` (WWHN-341). Kèm luôn bộ chọn của
+     cột nửa trang vì nó đặc hiệu hơn và sẽ thắng nếu chỉ khai một dòng. */
+  .hn-rpt01 .chart-card,
+  .hn-rpt01 .report-split-grid .chart-card {
+    --hn-chart-plot-min: 240px;
   }
 }
 

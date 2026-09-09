@@ -15,14 +15,26 @@ vi.mock("@/modules/warranty/services/warrantyService", () => ({
   downloadWarrantyAttachment: vi.fn(),
   makeWarrantyIdempotencyKey: vi.fn(() => "fe:test:key"),
 }));
+// Cố ý trả danh mục KHÔNG theo thứ tự mã (BE xếp theo created_at) để khoá luôn
+// việc màn hình phải tự sắp lại — xem test "danh mục bệnh/lỗi xếp theo mã".
 vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useMvpDefects: vi.fn(() => ({
     data: {
       data: [
         {
+          defect_id: "defect-9",
+          defect_code: "DEF-009",
+          defect_name: "Kêu to bất thường",
+        },
+        {
           defect_id: "defect-1",
-          defect_code: "PWR",
+          defect_code: "DEF-001",
           defect_name: "Không lên nguồn",
+        },
+        {
+          defect_id: "defect-4",
+          defect_code: "DEF-004",
+          defect_name: "Chập điện",
         },
       ],
     },
@@ -72,11 +84,14 @@ const CASES = [
     id: "wc-2",
     case_code: "BH-0002",
     sku: "",
-    sku_name: "-",
+    // Thiếu dữ liệu = CHUỖI RỖNG, đúng thứ warrantyService trả về sau WWHN-340.
+    // Trước đó service đặt sentinel "-", làm mọi `value || EMPTY_TEXT` ở tầng
+    // render mất tác dụng và người dùng thấy dấu gạch giữa bảng tiếng Việt.
+    sku_name: "",
     temporary_item_code: "TEMP-0002",
     identification_type: "TEMP_ONLY" as const,
     customer_name: "Trần Thị B",
-    defect: "-",
+    defect: "",
     defect_code: "",
     reported_defect: "Kẹt cò",
     status: "CHECKING" as const,
@@ -199,6 +214,90 @@ describe("WarrantyPage (WAR-01 hub)", () => {
         expect.objectContaining({ status: "CHECKING", page: 1 }),
       );
     });
+  });
+
+  // ── WWHN-340 · UAT TC_FUNC_02 ────────────────────────────────────────────
+  // Bộ lọc "Nhận diện" và "Bệnh/lỗi" của WAR-01 phải gửi ĐÚNG tham số lên API
+  // và luôn quay về trang 1 — lọc xong mà còn đứng ở trang 5 thì người dùng
+  // nhìn thấy bảng rỗng và kết luận "lọc không ra kết quả".
+
+  it("lọc Nhận diện gửi identification_status và về trang 1", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByText("BH-0001");
+
+    fireEvent.mouseDown(screen.getByLabelText("Lọc loại nhận diện"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Tiếp nhận tạm" }),
+    );
+
+    await waitFor(() => {
+      expect(fetchWarrantyCases).toHaveBeenCalledWith(
+        expect.objectContaining({
+          identification_status: "TEMP_ONLY",
+          page: 1,
+        }),
+      );
+    });
+  });
+
+  // Nhãn của ô lọc phải TRÙNG TỪNG CHỮ với nhãn cột cùng tên: người kiểm thử
+  // đối chiếu hai chỗ này bằng mắt, lệch chữ là họ báo "lọc trả sai dữ liệu".
+  it("nhãn lựa chọn Nhận diện trùng với nhãn hiển thị ở cột", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByText("BH-0001");
+
+    fireEvent.mouseDown(screen.getByLabelText("Lọc loại nhận diện"));
+    const options = (await screen.findAllByRole("option")).map(
+      (option) => option.textContent,
+    );
+
+    expect(options).toContain("Đã xác định");
+    expect(options).toContain("Tiếp nhận tạm");
+    expect(options).not.toContain("Đã xác định sản phẩm");
+  });
+
+  it("lọc Bệnh/lỗi gửi defect_id của mục đã chọn và về trang 1", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByText("BH-0001");
+
+    fireEvent.mouseDown(screen.getByLabelText("Lọc bệnh/lỗi"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "DEF-004 · Chập điện" }),
+    );
+
+    await waitFor(() => {
+      expect(fetchWarrantyCases).toHaveBeenCalledWith(
+        expect.objectContaining({ defect_id: "defect-4", page: 1 }),
+      );
+    });
+  });
+
+  it("danh mục bệnh/lỗi xếp theo mã, không theo thứ tự API trả về", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByText("BH-0001");
+
+    fireEvent.mouseDown(screen.getByLabelText("Lọc bệnh/lỗi"));
+    const codes = (await screen.findAllByRole("option"))
+      .map((option) => option.textContent ?? "")
+      .filter((text) => text.startsWith("DEF-"));
+
+    expect(codes).toEqual([
+      "DEF-001 · Không lên nguồn",
+      "DEF-004 · Chập điện",
+      "DEF-009 · Kêu to bất thường",
+    ]);
+  });
+
+  // Ô rỗng của WMS là "Chưa có" (EMPTY_TEXT), tuyệt đối không phải dấu gạch —
+  // người dùng không phân biệt được "rỗng" với "lỗi".
+  it("ô Bệnh/lỗi và Sản phẩm rỗng hiện 'Chưa có', không phải dấu gạch", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByText("BH-0002");
+
+    const row = screen.getByText("BH-0002").closest("tr");
+    expect(row).not.toBeNull();
+    expect(row?.textContent).toContain("Chưa có");
+    expect(row?.textContent).not.toMatch(/[-–—]\s*$/);
   });
 
   it("Sắp xếp theo: mặc định Mới nhất (desc), chọn Cũ nhất gửi asc + về trang 1", async () => {
