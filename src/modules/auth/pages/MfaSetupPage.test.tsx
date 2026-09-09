@@ -106,4 +106,35 @@ describe("MfaSetupPage", () => {
       expect(dumped).not.toContain(code);
     }
   });
+
+  /**
+   * WWHN-SEC-13: `otpauth_uri` là chuỗi server trả về được gắn thẳng vào href.
+   * Chỉ scheme otpauth:// được phép thành liên kết — một BE bị chiếm (hoặc một
+   * proxy chèn giữa) trả `javascript:` không được phép biến thành nút bấm chạy
+   * script trong phiên người dùng.
+   */
+  it("chỉ render liên kết đăng ký khi otpauth_uri đúng scheme otpauth://", async () => {
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /bắt đầu đăng ký/i }),
+    );
+    await screen.findByText(SECRET);
+    expect(document.querySelector('a[href^="otpauth://"]')).not.toBeNull();
+
+    vi.mocked(authService.mfaEnroll).mockResolvedValue({
+      secret: SECRET,
+      // eslint-disable-next-line no-script-url
+      otpauth_uri: "javascript:alert(1)",
+      digits: 6,
+      period: 30,
+    });
+    renderPage();
+    const enrollButtons = await screen.findAllByRole("button", {
+      name: /bắt đầu đăng ký/i,
+    });
+    await userEvent.click(enrollButtons[enrollButtons.length - 1]);
+    await screen.findAllByText(SECRET);
+
+    expect(document.querySelector('a[href^="javascript:"]')).toBeNull();
+  });
 });

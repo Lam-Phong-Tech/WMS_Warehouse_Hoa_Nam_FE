@@ -52,6 +52,15 @@ jobs:
         shell: bash
         run: yarn install --frozen-lockfile --non-interactive
 
+      # WWHN-SEC-13: cổng advisory cho dependency production (yarn audit --groups
+      # dependencies, chặn High/Critical chưa xử lý; allowlist có lý do nằm trong
+      # scripts/audit-dependencies.mjs).
+      - name: Dependency security audit (production deps)
+        id: dep_audit
+        continue-on-error: true
+        shell: bash
+        run: node scripts/audit-dependencies.mjs
+
       - name: Check formatting without mutating source
         id: format
         continue-on-error: true
@@ -359,6 +368,7 @@ jobs:
           WWHN_177_HANDOFF_OUTCOME: ${{ steps.wwhn_177_handoff.outcome }}
           WWHN_230_OUTCOME: ${{ steps.wwhn_230.outcome }}
           WWHN_237_OUTCOME: ${{ steps.wwhn_237.outcome }}
+          DEP_AUDIT_OUTCOME: ${{ steps.dep_audit.outcome }}
         run: node scripts/assert-ci-gates.mjs
 
   dev-delivery:

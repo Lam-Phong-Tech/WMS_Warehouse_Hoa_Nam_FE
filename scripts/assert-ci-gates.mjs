@@ -34,6 +34,8 @@ const gateNames = [
   "WWHN_177_HANDOFF_OUTCOME",
   "WWHN_230_OUTCOME",
   "WWHN_237_OUTCOME",
+  // WWHN-SEC-13: cổng advisory dependency production (scripts/audit-dependencies.mjs).
+  "DEP_AUDIT_OUTCOME",
 ];
 
 const failures = gateNames
