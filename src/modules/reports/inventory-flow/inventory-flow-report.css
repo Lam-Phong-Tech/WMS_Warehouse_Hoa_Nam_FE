@@ -920,7 +920,9 @@
   min-height: 276px;
   flex-direction: column;
   gap: 12px;
-  padding: 16px 24px 8px;
+  /* 8px → 16px: nhãn trục ngày vẽ sát đáy SVG nên cần đệm dưới rộng hơn
+     trước khi tới khối bảng thay thế (UAT TC_UI_14/16). */
+  padding: 16px 24px 16px;
 }
 .hn-rpt01 .chart-legend {
   display: flex;
@@ -1017,7 +1019,15 @@
   text-align: center;
 }
 .hn-rpt01 .chart-table {
+  /* UAT TC_UI_14/16: khối bảng thay thế phải TÁCH BẠCH khỏi vùng vẽ — có vách
+     ngăn, nền đục và đệm riêng; bản trước dính sát mép dưới SVG (nhãn trục
+     nằm ở cạnh đáy viewBox) nên toggle/bảng trông như đè lên biểu đồ. */
+  position: relative;
+  z-index: 1;
   margin: 0 24px 24px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hnf-table-line);
+  background: var(--surface);
   font-size: 12.5px;
   line-height: 18px;
 }
@@ -1025,6 +1035,9 @@
   color: var(--primary-dark);
   cursor: pointer;
   font-weight: 500;
+}
+.hn-rpt01 .chart-table[open] summary {
+  margin-bottom: 4px;
 }
 .hn-rpt01 .chart-table table {
   width: 100%;
@@ -1507,6 +1520,12 @@
   fill: var(--ink);
   font-size: 10px;
   font-weight: 700;
+  /* Viền nền quanh chữ: nhãn nằm đè lên đường kẻ/nhãn trục vẫn đọc được
+     (UAT TC_UI_16 — cụm "2/0/0" ở mép phải). */
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 .hn-rpt01 .report-chart-card .chart-svg {
   min-height: 220px;

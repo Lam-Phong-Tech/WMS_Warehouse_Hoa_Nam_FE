@@ -19,7 +19,12 @@ const structure = {
 const overviewWith = (value: unknown) =>
   ({ stock_structure: value }) as unknown as DashboardOverview;
 
-const state = { loading: false, failed: false, forbidden: false };
+const state = {
+  loading: false,
+  failed: false,
+  failedCopy: "",
+  forbidden: false,
+};
 
 describe("buildStockMix", () => {
   it("cộng đủ bốn trạng thái của từng loại hàng và tính tỷ trọng", () => {

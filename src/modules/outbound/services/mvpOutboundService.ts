@@ -812,6 +812,71 @@ export async function fetchPrinterConfigs(): Promise<PrinterConfigRecord[]> {
 }
 
 /**
+ * UAT TC_UX_01 — ô chọn "SKU sản phẩm" của Phiếu Toa hàng chỉ được gợi ý SKU
+ * CÒN TỒN khả dụng, kèm số tồn, để người dùng khỏi phải chọn mò từng mã rồi
+ * mới biết "Thiếu tồn" ở bước Kiểm tra & xem trước.
+ *
+ * Nguồn: GET /inventory/balances (lọc sku_type=PRODUCT + stock_status=AVAILABLE
+ * + keyword) — một request cho cả danh sách, khác với fetchAvailableQtyBySku
+ * bên dưới (N request theo từng SKU, chỉ dành cho preview ít dòng). Bucket
+ * available có thể tách nhiều dòng (kho × khay) nên cộng dồn theo product_id.
+ * Số tồn chỉ mang tính tham khảo tại thời điểm gõ — BE vẫn kiểm lại lúc Post.
+ */
+export interface AvailableSkuOption {
+  sku_id: string;
+  sku_code: string;
+  sku_name: string;
+  available: number;
+}
+
+export async function searchAvailableProductSkus(
+  keyword: string,
+): Promise<AvailableSkuOption[]> {
+  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
+    API_ENDPOINTS.INVENTORY_BALANCES,
+    {
+      params: {
+        sku_type: "PRODUCT",
+        stock_status: "AVAILABLE",
+        ...(keyword ? { keyword } : null),
+        per_page: 100,
+      },
+    },
+  );
+  const bySku = new Map<string, AvailableSkuOption>();
+  for (const row of rowsOf(result.data as RawRecord[] | { data?: RawRecord[] })) {
+    const record = row as RawRecord;
+    const product =
+      record.product && typeof record.product === "object"
+        ? (record.product as RawRecord)
+        : undefined;
+    const skuId = text(record.product_id ?? record.sku_id ?? product?.sku_id);
+    if (!skuId) continue;
+    const available = num(
+      record.available_qty ?? record.quantity ?? record.on_hand_qty,
+    );
+    const current = bySku.get(skuId);
+    if (current) {
+      current.available += available;
+      continue;
+    }
+    bySku.set(skuId, {
+      sku_id: skuId,
+      sku_code: text(
+        record.sku ?? record.sku_code ?? product?.sku_code ?? product?.code,
+      ),
+      sku_name: text(
+        record.product_name ?? record.sku_name ?? product?.sku_name ?? product?.name,
+      ),
+      available,
+    });
+  }
+  return [...bySku.values()]
+    .filter((option) => option.available > 0)
+    .sort((a, b) => a.sku_code.localeCompare(b.sku_code, "vi"));
+}
+
+/**
  * Tổng available_qty theo từng SKU (OUT-REQ-01: cột "Khả dụng" trong preview).
  * Chỉ mang tính tham khảo tại thời điểm mở màn — availability thật được BE
  * kiểm tra lại lúc scan/Post (nguyên tắc 2.1 tài liệu tổng hợp).

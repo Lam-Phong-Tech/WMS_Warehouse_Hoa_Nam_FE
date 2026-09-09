@@ -91,6 +91,7 @@ import {
   useUiConfirm,
   FILTER_WIDTH,
   TOOLBAR_SEARCH_SX,
+  TOOLBAR_SEARCH_WIDE_SX,
 } from "@/shared/ui";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { validatePhone } from "@/shared/constants/validation.constants";
@@ -1870,7 +1871,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             slotProps={{
               htmlInput: { "aria-label": t("masterData.recipient.searchAria") },
             }}
-            sx={TOOLBAR_SEARCH_SX}
+            // UAT TC_UI_06: placeholder liệt kê 4 tiêu chí (~317px) — bản 240px
+            // cắt cụt chữ ngay khi ô còn trống.
+            sx={TOOLBAR_SEARCH_WIDE_SX}
           />
           <UiSelect
             aria-label={t("masterData.recipient.typeFilterAria")}

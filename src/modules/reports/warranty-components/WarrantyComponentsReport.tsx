@@ -2070,7 +2070,11 @@ export default function WarrantyComponentsReport() {
             >
               {canExportPii ? (
                 <UiTextField
-                  sx={{ width: { xs: "100%", sm: 300 } }}
+                  // UAT TC_UI_22: placeholder dài hơn ô 300px nên bị cắt — nới ô
+              // theo nấc searchWide, placeholder đã rút gọn (messages.ts) và
+              // câu giải thích đầy đủ nằm ở title khi rê chuột.
+              sx={{ width: { xs: "100%", sm: 360 } }}
+              title={t("reports.warranty.piiReasonTitle", { min: PII_REASON_MIN_LENGTH })}
                   error={piiReasonInvalid}
                   placeholder={t("reports.warranty.piiReasonPlaceholder", {
                     min: PII_REASON_MIN_LENGTH,

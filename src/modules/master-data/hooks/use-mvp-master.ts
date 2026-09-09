@@ -32,10 +32,14 @@ export const mvpMasterKeys = {
   productCatalogs: () => [...mvpMasterKeys.all, "product-catalogs"] as const,
 };
 
-export function useMvpSkus(params: MasterListParams) {
+export function useMvpSkus(
+  params: MasterListParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: mvpMasterKeys.skus(params),
     queryFn: () => getMvpSkus(params),
+    ...options,
   });
 }
 

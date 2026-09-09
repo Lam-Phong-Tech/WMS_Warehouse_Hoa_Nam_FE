@@ -116,14 +116,19 @@ describe("reportRangePresets", () => {
     expect(iso(today!.range()[0])).toBe("2026-09-05");
   });
 
-  it("nhãn nói rõ kỳ theo lịch là 'đến nay' — không để người đọc tưởng trọn kỳ", () => {
+  it("nhãn kỳ theo lịch NGẮN GỌN — không lặp '(đến nay)' (UAT TC_UI_15)", () => {
+    // Khoảng ngày thật của kỳ hiển thị ở footer "Đang xem: … · N ngày" của
+    // UiVuexyDateRangePicker (test riêng của picker khoá dòng đó), nên nhãn
+    // nút không cần tự chú thích "đến nay" nữa.
     const presets = reportRangePresets(t);
     const label = (key: string) =>
       presets.find((preset) => preset.key === key)?.label ?? "";
-    expect(label("this-month")).toContain("đến nay");
-    expect(label("this-quarter")).toContain("đến nay");
-    expect(label("this-year")).toContain("đến nay");
-    // Kỳ đã đóng thì KHÔNG được gắn "đến nay".
-    expect(label("last-month")).not.toContain("đến nay");
+    expect(label("this-month")).toBe("Tháng này");
+    expect(label("this-quarter")).toBe("Quý này");
+    expect(label("this-year")).toBe("Năm nay");
+    expect(label("last-month")).toBe("Tháng trước");
+    for (const preset of presets) {
+      expect(preset.label).not.toContain("đến nay");
+    }
   });
 });

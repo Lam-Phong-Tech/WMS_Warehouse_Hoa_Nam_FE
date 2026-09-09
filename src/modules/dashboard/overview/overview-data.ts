@@ -66,17 +66,16 @@ export function resolvePeriodRange(
 }
 
 /**
- * Cửa sổ của MỌI chuỗi thời gian trên màn: 7 ngày gần nhất, KHÔNG đổi theo kỳ
- * KPI đang chọn.
- *
- * Đây là thiết kế của demo (`app.js:706` luôn ghi "Biểu đồ: 7 ngày gần nhất",
- * thẻ luồng tên là "Luồng nhập – xuất 7 ngày"): nút chọn kỳ chỉ đổi CON SỐ của
- * thẻ KPI, còn đường biểu đồ giữ nguyên cửa sổ để còn nhìn ra xu hướng. Nối
- * biểu đồ vào kỳ KPI thì kỳ "Hôm nay" chỉ còn 1 điểm — một `<path>` chỉ có
- * lệnh M không vẽ ra nét nào, và sparkline dưới 2 điểm bị bỏ hẳn.
+ * Trần khoảng ngày mà BE nhận cho các nguồn của màn này
+ * (`OperationalReportController`: `diffInDays(from, to) > 366` → 422
+ * BUSINESS_RULE_ERROR). Tính theo HIỆU SỐ ngày to − from, không phải số ngày
+ * đếm cả hai đầu.
  */
-export function chartRangeOf(today: dayjs.Dayjs = dayjs()): DateRange {
-  return { from: today.subtract(6, "day").format(ISO), to: today.format(ISO) };
+export const MAX_RANGE_DAY_DIFF = 366;
+
+/** Hiệu số ngày to − from của một kỳ (0 = kỳ một ngày). */
+export function rangeDayDiff(range: DateRange): number {
+  return dayjs(range.to).diff(dayjs(range.from), "day");
 }
 
 /** Kỳ liền trước, cùng độ dài — dùng cho các delta "so với kỳ trước". */
@@ -201,23 +200,27 @@ export function reportQueryOptions(enabled: boolean, autoRefresh: boolean) {
 /**
  * Nguồn 1 — bản đọc riêng của màn này.
  *
- * Payload được NỚI để một request phủ cả ba nhu cầu: kỳ liền trước (delta "so
- * với kỳ trước" + tồn đầu kỳ), kỳ KPI đang chọn, và cửa sổ 7 ngày của biểu đồ.
- * Nhờ vậy tách cửa sổ biểu đồ khỏi kỳ KPI không tốn thêm lượt gọi nào.
+ * Payload được NỚI về phía trước để một request phủ cả kỳ liền trước (delta
+ * "so với kỳ trước") lẫn kỳ KPI đang chọn — biểu đồ vẽ đúng kỳ KPI nên không
+ * cần cửa sổ riêng (UAT TC_UI_01/02: thời gian biểu đồ phải theo kỳ đã chọn).
+ *
+ * Nới là NHÂN ĐÔI khoảng ngày: kỳ 200 ngày thành 400 ngày và BE từ chối ngay
+ * (trần 366, xem `MAX_RANGE_DAY_DIFF`). Khi vượt trần thì chỉ xin đúng kỳ đang
+ * xem và báo `hasPrevious = false` để thẻ KPI thôi so với kỳ trước — không để
+ * cả màn đổ chỉ vì một con số phụ. Bản thân kỳ đang xem dài quá trần thì BE
+ * vẫn trả 422 và màn nói thẳng "chọn khoảng thời gian ngắn hơn".
  */
 export function useOverviewSource(
   range: DateRange,
-  chartRange: DateRange,
   enabled: boolean,
   autoRefresh: boolean,
 ) {
-  const widened = useMemo(() => {
-    const previous = previousRange(range);
-    return {
-      from: previous.from < chartRange.from ? previous.from : chartRange.from,
-      to: range.to > chartRange.to ? range.to : chartRange.to,
-    };
-  }, [range, chartRange]);
+  const { widened, hasPrevious } = useMemo(() => {
+    const candidate = { from: previousRange(range).from, to: range.to };
+    if (rangeDayDiff(candidate) > MAX_RANGE_DAY_DIFF)
+      return { widened: range, hasPrevious: false };
+    return { widened: candidate, hasPrevious: true };
+  }, [range]);
 
   const overview = useQuery({
     queryKey: ["dashboard", "overview-vuexy", widened.from, widened.to],
@@ -237,17 +240,12 @@ export function useOverviewSource(
     ...reportQueryOptions(enabled, autoRefresh),
   });
 
-  // Chỉ phục vụ chiều "Hoàn tác" của biểu đồ luồng nên bám cửa sổ biểu đồ.
+  // Chỉ phục vụ chiều "Hoàn tác" của biểu đồ luồng — cùng kỳ với biểu đồ.
   const xntDaily = useQuery({
-    queryKey: [
-      "dashboard",
-      "overview-xnt-daily",
-      chartRange.from,
-      chartRange.to,
-    ],
+    queryKey: ["dashboard", "overview-xnt-daily", range.from, range.to],
     queryFn: () =>
       http.get<XntDailyReport>(OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY, {
-        params: { from_date: chartRange.from, to_date: chartRange.to },
+        params: { from_date: range.from, to_date: range.to },
       }),
     ...reportQueryOptions(enabled, autoRefresh),
   });
@@ -261,7 +259,7 @@ export function useOverviewSource(
     ...reportQueryOptions(enabled, autoRefresh),
   });
 
-  return { overview, xnt, xntDaily, quick };
+  return { overview, xnt, xntDaily, quick, hasPrevious };
 }
 
 export type OverviewSource = ReturnType<typeof useOverviewSource>;

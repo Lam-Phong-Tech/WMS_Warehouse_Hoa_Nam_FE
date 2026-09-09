@@ -35,6 +35,13 @@ export const FILTER_WIDTH = {
   /** Ô tìm kiếm trên thanh công cụ (cùng cỡ với thanh lọc trong thẻ báo cáo). */
   search: 240,
   /**
+   * Ô tìm kiếm có placeholder DÀI (liệt kê 3-4 tiêu chí, vd "Tìm mã / tên /
+   * thị trường / khu vực" ≈ 317px chữ + đệm): 240px cắt cụt placeholder ngay
+   * khi ô còn trống (UAT TC_UI_06). Màn nào placeholder ước lượng vượt ~240px
+   * thì dùng nấc này qua TOOLBAR_SEARCH_WIDE_SX.
+   */
+  searchWide: 340,
+  /**
    * Lịch chọn khoảng ngày (`UiVuexyDateRangePicker`) khi đứng trên thanh công
    * cụ `.toolbar` (flex) thay vì trong lưới ô lọc của thẻ báo cáo. Control là
    * hai ô cạnh nhau, mỗi ô chứa "Từ ngày · 07/09/2026" + icon lịch, nên hẹp
@@ -76,6 +83,12 @@ export function filterGridColumnSx(wide: boolean) {
  */
 export const TOOLBAR_SEARCH_SX = {
   width: FILTER_WIDTH.search,
+  maxWidth: "100%",
+} as const;
+
+/** Bản rộng của TOOLBAR_SEARCH_SX cho ô có placeholder dài (xem searchWide). */
+export const TOOLBAR_SEARCH_WIDE_SX = {
+  width: FILTER_WIDTH.searchWide,
   maxWidth: "100%",
 } as const;
 

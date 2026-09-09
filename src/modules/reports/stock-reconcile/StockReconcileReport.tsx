@@ -64,7 +64,6 @@ import { EvidenceModal, ModalCloseButton } from "./stock-reconcile-overlays";
 import {
   ALL_WAREHOUSES_LABEL,
   ISO_DATE,
-  STOCK_RECONCILE_TIMEZONE,
   STOCK_STATUSES,
   useSkuMovements,
   useStockReconcileSnapshot,
@@ -789,16 +788,16 @@ export default function StockReconcileReport() {
             </div>
           </div>
 
+          {/* UAT TC_UI_14 (Note): không phơi mã kỹ thuật (snapshot id, tên
+              múi giờ IANA) ra màn nghiệp vụ. */}
           <div className="report-snapshot">
             {t("reports.stockReconcileReport.sliceLabel")}{" "}
             <strong>
-              {snapshot.snapshot_id === "" ? EMPTY_TEXT : snapshot.snapshot_id}
+              {snapshot.warehouse_code === ""
+                ? ALL_WAREHOUSES_LABEL
+                : snapshot.warehouse_code}
             </strong>{" "}
-            ·{" "}
-            {snapshot.warehouse_code === ""
-              ? ALL_WAREHOUSES_LABEL
-              : snapshot.warehouse_code}{" "}
-            · {STOCK_RECONCILE_TIMEZONE}
+            · {t("reports.stockReconcileReport.timezoneNote")}
           </div>
         </section>
 

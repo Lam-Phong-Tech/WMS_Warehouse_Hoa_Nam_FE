@@ -195,4 +195,20 @@ describe("TraySelectionGrid", () => {
     renderGrid({ selectedTrayId: "tray-a2", pendingQuantity: 5 });
     expect(screen.getByText("Số lượng xếp vào: 5 PCS")).toBeInTheDocument();
   });
+
+  /**
+   * UAT TC_UI_08: trạng thái vật chứa ngoài EMPTY/PARTIAL (STORED, ACTIVE…)
+   * từng in THÔ mã enum lên chip "Khay đã chọn". Mọi trạng thái phải qua map
+   * nhãn tiếng Việt; mã lạ đi qua enumLabelOrText nên cũng không được lộ
+   * SCREAMING_SNAKE.
+   */
+  it("khay STORED: chip panel dich nhan tieng Viet, khong lo ma enum tho", () => {
+    const trays = TRAYS.map((tray) =>
+      tray.container_id === "tray-a2" ? { ...tray, status: "STORED" } : tray,
+    );
+    renderGrid({ trays, selectedTrayId: "tray-a2" });
+
+    expect(screen.getByText("Đang chứa hàng")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("STORED");
+  });
 });

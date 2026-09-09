@@ -210,7 +210,7 @@ export function LoginPage() {
             control={control}
             name="password"
             label={t("auth.fields.password")}
-            placeholder="············"
+            placeholder={t("auth.fields.passwordPlaceholder")}
             type="password"
             disabled={isSubmitting}
           />

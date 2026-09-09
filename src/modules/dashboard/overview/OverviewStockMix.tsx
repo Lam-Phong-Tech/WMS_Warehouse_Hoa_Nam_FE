@@ -62,11 +62,14 @@ export function OverviewStockMix({
   rows,
   loading,
   failed,
+  failedCopy,
   forbidden,
 }: {
   rows: StockMixRow[];
   loading: boolean;
   failed: boolean;
+  /** Câu giải thích khi `failed` — trang tính một lần theo nguyên nhân thật. */
+  failedCopy: string;
   forbidden: boolean;
 }) {
   const t = useT();
@@ -132,7 +135,7 @@ export function OverviewStockMix({
         <OverviewStateBox
           kind="unavailable"
           title={t("dashboard.stockMix.failedTitle")}
-          copy={t("dashboard.stockMix.failedCopy")}
+          copy={failedCopy}
         />
       </article>
     );

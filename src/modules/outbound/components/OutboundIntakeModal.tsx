@@ -41,6 +41,7 @@ import { createRowKey } from "@/shared/components/motion/row-key";
 import {
   consumeOutboundImport,
   fetchAvailableQtyBySku,
+  searchAvailableProductSkus,
   uploadOutboundRequestFile,
   validateOutboundRequestRows,
   type OutboundImportResult,
@@ -292,22 +293,41 @@ export function OutboundIntakeModal({
     label: `${sku.sku_code} · ${sku.sku_name}`,
   }));
 
-  // Ô "SKU sản phẩm" ở dòng nhập tay: catalog có thể lên tới hàng trăm/nghìn
-  // SKU nên KHÔNG được cắt cứng ở per_page như skuOptions phía trên (chỉ 100
-  // dòng đầu — nhiều SKU sẽ không bao giờ hiện). Gõ-để-lọc gọi BE theo keyword
-  // (ProductRepository::$searchable = sku_code/sku_name, LIKE cả 2 cột).
+  /**
+   * Ô "SKU sản phẩm" ở dòng nhập tay — gõ-để-lọc trên danh sách SKU CÒN TỒN
+   * khả dụng (UAT TC_UX_01): trước đây gợi ý toàn catalog nên người dùng phải
+   * chọn mò từng mã rồi bấm "Kiểm tra & xem trước" mới biết thiếu tồn. Nguồn
+   * là /inventory/balances (một request, kèm số tồn tham khảo hiển thị ngay
+   * trên option); catalog vẫn là fallback khi balances lỗi để ô không chết.
+   */
   const [skuKeyword, setSkuKeyword] = useState("");
-  const skuSearchQuery = useMvpSkus({
-    status: "ACTIVE",
-    sku_type: "PRODUCT",
-    keyword: skuKeyword.trim(),
-    per_page: 50,
+  const availableSkuQuery = useQuery({
+    queryKey: ["mvp-outbound", "available-skus", skuKeyword.trim()],
+    queryFn: () => searchAvailableProductSkus(skuKeyword.trim()),
+    staleTime: 15_000,
+    retry: false,
   });
-  const skuSearchRows = skuSearchQuery.data?.data ?? [];
-  const skuSearchOptions = skuSearchRows.map((sku) => ({
-    value: sku.sku_id,
-    label: `${sku.sku_code} · ${sku.sku_name}`,
-  }));
+  const skuSearchFallbackQuery = useMvpSkus(
+    {
+      status: "ACTIVE",
+      sku_type: "PRODUCT",
+      keyword: skuKeyword.trim(),
+      per_page: 50,
+    },
+    { enabled: availableSkuQuery.isError },
+  );
+  const skuSearchQuery = availableSkuQuery.isError
+    ? skuSearchFallbackQuery
+    : availableSkuQuery;
+  const skuSearchOptions = availableSkuQuery.isError
+    ? (skuSearchFallbackQuery.data?.data ?? []).map((sku) => ({
+        value: sku.sku_id,
+        label: `${sku.sku_code} · ${sku.sku_name}`,
+      }))
+    : (availableSkuQuery.data ?? []).map((sku) => ({
+        value: sku.sku_id,
+        label: `${sku.sku_code} · ${sku.sku_name} — ${t("outbound.intake.optionAvailable", { qty: sku.available })}`,
+      }));
 
   // Nhãn hiển thị của SKU ĐÃ CHỌN phải bền vững qua mọi lần gõ tìm — nếu chỉ
   // dựa vào skuSearchOptions (đổi theo keyword hiện tại), dòng đang không được
@@ -331,7 +351,7 @@ export function OutboundIntakeModal({
       return changed ? next : prev;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ cần re-run khi 2 danh sách nguồn đổi, không phải mọi lần skuOptions/skuSearchOptions tạo lại tham chiếu.
-  }, [skuRows, skuSearchRows]);
+  }, [skuRows, availableSkuQuery.data, skuSearchFallbackQuery.data]);
   // Ô "Đại lý / nơi nhận" cũng gõ-để-lọc trên toàn danh mục đại lý (giống SKU):
   // danh sách per_page 100 phía trên chỉ đủ cho gợi ý ban đầu, không thể chứa hết
   // đại lý — gõ keyword gọi BE (AgencyRepository::$searchable = agency_code/
@@ -581,13 +601,18 @@ export function OutboundIntakeModal({
     {
       key: "request",
       header: t("outbound.intake.colRequestNo"),
-      width: 170,
+      width: 150,
       render: (row) => text(row.normalized.request_no, "-"),
     },
+    /*
+     * UAT TC_UI_09 (Ảnh 2): tổng width khai cứng của 8 cột là 1440px — vượt xa
+     * lòng dialog (~1050px) nên bảng bật table-layout: fixed rồi tràn ngang,
+     * cột đầu bị đẩy khuất. Các cột CHỮ thả nổi (không khai width) để bảng về
+     * auto-layout: chữ dài tự xuống dòng, cả 8 cột nằm gọn trong khung.
+     */
     {
       key: "recipient",
       header: t("outbound.intake.colRecipient"),
-      width: 180,
       render: (row) =>
         text(
           row.normalized.recipient_name ?? row.normalized.customer_name,
@@ -597,7 +622,6 @@ export function OutboundIntakeModal({
     {
       key: "sku",
       header: "SKU",
-      width: 220,
       // Chỉ mã SKU đọc được (sku_code) mới in thẳng. Khi file nhập thiếu mã mà chỉ
       // có sku_id (UUID nội bộ), KHÔNG in nguyên chuỗi thô — dùng CopyableId (rút
       // gọn + nút sao chép) đúng quy ước không lộ UUID ở màn nghiệp vụ.
@@ -664,7 +688,6 @@ export function OutboundIntakeModal({
       key: "qty",
       header: t("outbound.intake.colRequiredQty"),
       width: 140,
-      align: "right",
       render: (row) => (
         <UiNumberField
           sx={{ width: 130 }}
@@ -716,8 +739,7 @@ export function OutboundIntakeModal({
     {
       key: "available",
       header: t("outbound.intake.colAvailable"),
-      width: 180,
-      align: "right",
+      width: 150,
       render: (row) => {
         const skuId = rowSkuId(row);
         const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
@@ -732,11 +754,7 @@ export function OutboundIntakeModal({
         }
         const required = rowRequiredQty(row);
         return (
-          <Stack
-            direction="row"
-            spacing={0.5}
-            sx={{ alignItems: "center", justifyContent: "flex-end" }}
-          >
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
             <span>{available}</span>
             {row.errors.length === 0 ? (
               <UiStatusBadge
@@ -755,7 +773,6 @@ export function OutboundIntakeModal({
     {
       key: "result",
       header: t("outbound.intake.colCheckResult"),
-      width: 220,
       render: (row) => {
         if (row.errors.length > 0) {
           return (

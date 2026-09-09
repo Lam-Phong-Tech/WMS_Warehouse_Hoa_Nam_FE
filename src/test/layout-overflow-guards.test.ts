@@ -142,3 +142,35 @@ describe("bố cục thẻ báo cáo — chống chữ đè lên nhau", () => {
     }
   });
 });
+/**
+ * UAT TC_UI_04 — dashboard trên điện thoại (≤979px): khối ≤1279 khai span 6
+ * cho cặp thẻ bằng :nth-child (độ đặc hiệu 0,3,0), nên rule xếp chồng của
+ * khối ≤979 PHẢI cùng độ đặc hiệu trở lên (nth-child) — bản cũ dùng "> *"
+ * (0,2,0) thua cascade dù đứng sau, hai thẻ đứng cạnh nhau chỉ rộng ~170px.
+ * Guard đọc CSS nguồn: trong khối ≤979 phải còn selector :nth-child xếp chồng
+ * cho cả analysis-grid lẫn insight-grid.
+ */
+describe("dashboard responsive · độ đặc hiệu khối xếp chồng (UAT TC_UI_04)", () => {
+  const css = readFileSync(
+    "src/modules/dashboard/dashboard-overview.css",
+    "utf8",
+  );
+
+  it("khối ≤979 xếp chồng bằng :nth-child cho analysis-grid và insight-grid", () => {
+    const block =
+      css.split("@media (max-width: 979px)")[1]?.split("@media")[0] ?? "";
+    expect(block).toContain("analysis-grid > :nth-child(n)");
+    expect(block).toContain("insight-grid > :nth-child(n)");
+    expect(block).toContain("grid-column: 1 / -1");
+    // Thẻ lọc phải về MỘT cột — hai track minmax(380px)+minmax(260px) từng ép
+    // bề rộng tối thiểu 692px vào khung điện thoại 390px.
+    expect(block).not.toContain("minmax(380px");
+  });
+
+  it("khối ≤1279 có override cho thẻ lọc BẢN THƯỜNG (không chỉ biến thể Tùy chọn)", () => {
+    const block =
+      css.split("@media (max-width: 1279px)")[1]?.split("@media")[0] ?? "";
+    expect(block).toContain(".hn-dash .filter-card {");
+    expect(block).toContain("flex-wrap: wrap");
+  });
+});

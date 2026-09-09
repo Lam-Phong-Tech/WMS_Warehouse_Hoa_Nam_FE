@@ -1777,11 +1777,6 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.hn-dash .composition-code {
-  color: var(--muted);
-  font-size: 10.5px;
-  font-weight: 400;
-}
 .hn-dash .composition-figure {
   display: grid;
   grid-template-columns: auto 34px;
@@ -2229,10 +2224,16 @@
   .hn-dash .operations-grid > :last-child {
     grid-column: span 12;
   }
+  .hn-dash .filter-card {
+    grid-template-columns: minmax(260px, 1.2fr) minmax(240px, 1fr);
+  }
   .hn-dash .filter-card:has(.custom-range) {
     grid-template-columns: minmax(280px, 1fr) minmax(300px, 1fr);
   }
-  .hn-dash .filter-card:has(.custom-range) .refresh-block {
+  .hn-dash .filter-card .segmented {
+    flex-wrap: wrap;
+  }
+  .hn-dash .filter-card .refresh-block {
     grid-column: 1 / -1;
     justify-self: stretch;
   }
@@ -2280,7 +2281,7 @@
   }
   .hn-dash .filter-card,
   .hn-dash .filter-card:has(.custom-range) {
-    grid-template-columns: minmax(380px, 1fr) minmax(260px, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
   .hn-dash .refresh-block {
     grid-column: 1 / -1;
@@ -2289,8 +2290,8 @@
   .hn-dash .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .hn-dash .analysis-grid > *,
-  .hn-dash .insight-grid > * {
+  .hn-dash .analysis-grid > :nth-child(n),
+  .hn-dash .insight-grid > :nth-child(n) {
     grid-column: 1 / -1;
   }
 }

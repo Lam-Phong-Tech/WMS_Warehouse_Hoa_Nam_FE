@@ -138,13 +138,23 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     text(row.temporary_item_code ?? row.temp_item_code) || undefined;
   const missingReason =
     text(row.missing_code_reason ?? row.temp_only_reason) || undefined;
+  /**
+   * UAT TC_FUNC_02: khi BE đã nói rõ identification_status thì TIN BE — bản
+   * trước còn tự suy TEMP_ONLY từ temporary_item_code/missing_code_reason kể
+   * cả khi BE trả IDENTIFIED, làm kết quả lọc "Nhận diện" trông như không ăn
+   * (BE lọc đúng nhưng FE dán nhãn khác). Chỉ suy diễn khi BE bỏ trống field.
+   */
+  const beIdentification = text(
+    row.identification_type ?? row.identification_status,
+  );
   const identificationType =
-    text(row.identification_type ?? row.identification_status) ===
-      "TEMP_ONLY" ||
-    Boolean(temporaryCode) ||
-    Boolean(missingReason)
+    beIdentification === "TEMP_ONLY"
       ? "TEMP_ONLY"
-      : "IDENTIFIED";
+      : beIdentification === "IDENTIFIED"
+        ? "IDENTIFIED"
+        : Boolean(temporaryCode) || Boolean(missingReason)
+          ? "TEMP_ONLY"
+          : "IDENTIFIED";
   const status = canonicalStatus(row.status);
   const caseDescription = text(row.description ?? row.notes) || undefined;
   const pii = resolveWarrantyPii(row);

@@ -21,9 +21,11 @@ import {
   ITEM_STATUS_LABELS,
   MOVEMENT_TYPE_LABELS,
   PUTAWAY_STATUS_LABELS,
+  RECONCILE_REASON_LABELS,
   RECONCILE_STATUS_LABELS,
   SOURCE_DOCUMENT_TYPE_LABELS,
   businessLabel,
+  enumLabelOrText,
 } from "@/shared/constants/business-labels";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
@@ -469,14 +471,22 @@ export function BalanceDetailModal({
                     )}
                   />
                   {balance.reconcileNote ? (
-                    <UiText variant="caption">{balance.reconcileNote}</UiText>
+                    // UAT TC_UI_11: mã máy (BALANCE_NOT_EQUAL_…) phải qua map
+                    // nhãn tiếng Việt, không in thô ra màn nghiệp vụ.
+                    <UiText variant="caption">
+                      {enumLabelOrText(
+                        RECONCILE_REASON_LABELS,
+                        balance.reconcileNote,
+                      )}
+                    </UiText>
                   ) : null}
                 </Stack>
               }
             />
             <DetailField
               label={t("inventory.detail.fieldUpdated")}
-              value={balance.dataAsOf || balance.updatedAt || EMPTY_TEXT}
+              // UAT TC_UI_11: từng in nguyên chuỗi ISO 2026-09-09T04:04:25+07:00.
+              value={formatDateTime(balance.dataAsOf || balance.updatedAt)}
             />
             {/* DR-LOC-001: 3 mảnh thông tin vị trí độc lập, tách riêng vì mỗi
               mảnh có thời điểm xuất hiện khác nhau — mã hộp có ngay sau nhập

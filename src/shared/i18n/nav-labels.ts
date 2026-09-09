@@ -131,7 +131,7 @@ export const SCREEN_META_EN: Record<string, ScreenMetaText> = {
   "WH-01": {
     title: "Warehouse settings",
     description:
-      "Details, contacts and status of the single central warehouse per REQ-SRS-001.",
+      "Details, contacts and status of the single central warehouse.",
   },
   "AGY-01": {
     title: "Agencies / recipients",

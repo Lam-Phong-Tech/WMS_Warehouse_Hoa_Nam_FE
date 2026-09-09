@@ -373,10 +373,14 @@ export default function WarrantyPage() {
             // Nhãn lựa chọn là "DEF-013 · Chập điện / cháy mô-tơ" — ô hẹp làm
             // menu gãy dòng giữa tên bệnh/lỗi (phản hồi người dùng 07/09/2026).
             minWidth={FILTER_WIDTH.selectWide}
-            options={(defectsQuery.data?.data ?? []).map((defect) => ({
-              value: defect.defect_id,
-              label: `${defect.defect_code} · ${defect.defect_name}`,
-            }))}
+            options={(defectsQuery.data?.data ?? [])
+              .map((defect) => ({
+                value: String(
+                  defect.defect_id ?? (defect as { id?: unknown }).id ?? "",
+                ).trim(),
+                label: `${defect.defect_code} · ${defect.defect_name}`,
+              }))
+              .filter((option) => option.value !== "")}
             onChange={(value) => {
               setDefectId(value);
               setPage(1);

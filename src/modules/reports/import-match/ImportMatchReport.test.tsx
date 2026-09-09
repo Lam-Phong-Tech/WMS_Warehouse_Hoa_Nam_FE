@@ -257,7 +257,11 @@ describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
     renderReport();
 
     await screen.findByRole("table");
-    await user.click(screen.getByRole("button", { name: "MODEL_REQUIRED" }));
+    // UAT TC_UI_19: nút trong "Top mã lỗi" giờ hiển thị NHÃN tiếng Việt
+    // (mã máy chỉ còn trong tooltip/title).
+    await user.click(
+      screen.getByRole("button", { name: /Thiếu mã model bắt buộc/ }),
+    );
 
     const dialog = await screen.findByRole("dialog");
     expect(

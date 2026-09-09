@@ -43,6 +43,15 @@ canvas {
   max-width: none;
 }
 
+/* Cùng một vòng co ấy với MỌI icon SVG đặt trong nút (VuexyDemoIcon của các
+   màn báo cáo port 1:1 không có width attribute, chỉ có viewBox): max-width
+   100% ở trên làm svg trong inline-flex button teo còn vài px — nút "Xem"
+   ở RPT-02 chỉ còn một chấm (UAT TC_UI_18). Nút luôn đặt cỡ icon qua CSS
+   (17–18px) nên gỡ trần ở đây là an toàn. */
+button svg {
+  max-width: none;
+}
+
 /* Code/SKU/serial/barcode dài không được nong layout. */
 .hn-value,
 .hn-mvp-source-screen .value,

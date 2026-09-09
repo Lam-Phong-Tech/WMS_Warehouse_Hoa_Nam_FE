@@ -43,6 +43,10 @@ import { http } from "@/shared/api/http";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { useT } from "@/shared/i18n/useT";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import {
+  IMPORT_MATCH_ERROR_LABELS,
+  enumLabelOrText,
+} from "@/shared/constants/business-labels";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import {
   API_DATE,
@@ -1660,7 +1664,11 @@ export default function ImportMatchReport() {
                     <Box component="span" aria-hidden="true">
                       {index + 1}.{" "}
                     </Box>
-                    {item.code}
+                    {/* UAT TC_UI_19: nhãn tiếng Việt; mã máy giữ ở tooltip
+                        cho người cần tra soát kỹ thuật. */}
+                    <Box component="span" title={item.code}>
+                      {enumLabelOrText(IMPORT_MATCH_ERROR_LABELS, item.code)}
+                    </Box>
                   </Box>
                   <Box
                     aria-hidden="true"
@@ -1797,7 +1805,11 @@ export default function ImportMatchReport() {
           </Box>
 
           {deferredView === "table" ? (
-            <ResponsiveDataTable<ImportMatchBatch>
+            /* UAT TC_UI_20: các khối anh em (tablist, ghi chú, bộ lọc) đều
+               inset mx 2/3 — riêng bảng từng dính sát mép thẻ bo góc
+               overflow:hidden, cột STT bị xén. */
+            <Box sx={{ px: { xs: 2, md: 3 } }}>
+              <ResponsiveDataTable<ImportMatchBatch>
               columns={[
                 {
                   key: "stt",
@@ -1909,10 +1921,11 @@ export default function ImportMatchReport() {
                   {t("reports.importMatchReport.detail")}
                 </ActionButton>
               )}
-              // Trang có thể đặt tới 100 dòng/trang: cuộn trong khung và ghim
-              // tiêu đề cột thay vì kéo trang thành một dải rất dài.
-              maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
-            />
+                // Trang có thể đặt tới 100 dòng/trang: cuộn trong khung và ghim
+                // tiêu đề cột thay vì kéo trang thành một dải rất dài.
+                maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
+              />
+            </Box>
           ) : (
             <Box sx={{ px: { xs: 2, md: 3 }, pb: 1 }}>
               {loading ? (
@@ -1958,13 +1971,17 @@ export default function ImportMatchReport() {
             </Box>
           )}
 
-          <ReportPaginationBar
-            page={pagination.page}
-            perPage={pagination.perPage}
-            total={pagination.total}
-            onPageChange={pagination.setPage}
-            onPageSizeChange={pagination.setPerPage}
-          />
+          {/* UAT TC_UI_20: footer cần inset + đệm đáy riêng, không dựa vào
+              mt 12px mặc định (đè lên thanh cuộn ngang của bảng). */}
+          <Box sx={{ px: { xs: 2, md: 3 }, pb: 2.5 }}>
+            <ReportPaginationBar
+              page={pagination.page}
+              perPage={pagination.perPage}
+              total={pagination.total}
+              onPageChange={pagination.setPage}
+              onPageSizeChange={pagination.setPerPage}
+            />
+          </Box>
         </Box>
       </Box>
 
@@ -2177,7 +2194,12 @@ export default function ImportMatchReport() {
               {
                 key: "code",
                 header: t("reports.importMatchReport.colErrorCode"),
-                render: (row) => <Box sx={{ fontWeight: 700 }}>{row.code}</Box>,
+                // UAT TC_UI_19: nhãn Việt + mã máy ở tooltip.
+                render: (row) => (
+                  <Box sx={{ fontWeight: 700 }} title={row.code}>
+                    {enumLabelOrText(IMPORT_MATCH_ERROR_LABELS, row.code)}
+                  </Box>
+                ),
               },
               {
                 key: "message",

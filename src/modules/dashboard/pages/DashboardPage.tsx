@@ -42,7 +42,6 @@ import { useLazyReveal } from "../overview/use-lazy-reveal";
 import {
   PERIOD_NAME_KEYS,
   buildComposition,
-  chartRangeOf,
   buildEquation,
   buildFlowRows,
   buildTopSkus,
@@ -119,8 +118,8 @@ export default function DashboardPage() {
    * không phát sinh phiếu xuất nào, khi đó "Top 5 SKU xuất" và các KPI xuất kho
    * rỗng ngay lần mở đầu tiên — người xem tưởng hỏng dữ liệu chứ không phải
    * "hôm nay chưa xuất hàng". Cửa sổ 7 ngày luôn bắt được nhịp vận hành thật của
-   * kho, lại khớp đúng cửa sổ cố định của biểu đồ luồng (chartRangeOf). Ai cần
-   * đúng số của hôm nay vẫn chọn được ở bộ lọc kỳ.
+   * kho và cho biểu đồ đủ điểm để thấy xu hướng. Ai cần đúng số của hôm nay vẫn
+   * chọn được ở bộ lọc kỳ.
    */
   const [period, setPeriod] = useState<OverviewPeriod>("last7");
   const [type, setType] = useState<SkuTypeFilter>("ALL");
@@ -145,23 +144,22 @@ export default function DashboardPage() {
     return "";
   }, [period, custom, today, t]);
 
+  /**
+   * Một kỳ cho CẢ số KPI lẫn biểu đồ. Bản trước ghim biểu đồ ở cửa sổ 7 ngày
+   * cố định theo demo, nên dòng "Biểu đồ 02/09 → 08/09" đứng cạnh kỳ Tùy chọn
+   * 01/02/2024 → 08/09/2026 và bị UAT (TC_UI_01, TC_UI_02) coi là hiển thị sai.
+   */
   const range = useMemo(
     () => resolvePeriodRange(period, custom),
     [period, custom],
   );
-  /**
-   * Cửa sổ biểu đồ cố định 7 ngày, tách khỏi kỳ KPI (xem `chartRangeOf`).
-   * `today` là chuỗi ISO nên memo chỉ tính lại khi sang ngày mới.
-   */
-  const chartRange = useMemo(() => chartRangeOf(dayjs(today)), [today]);
 
   const enabled = canViewReport && dateError === "";
   const [offline, setOffline] = useState(
     () => typeof navigator !== "undefined" && navigator.onLine === false,
   );
-  const { overview, xnt, xntDaily, quick } = useOverviewSource(
+  const { overview, xnt, xntDaily, quick, hasPrevious } = useOverviewSource(
     range,
-    chartRange,
     enabled,
     !offline,
   );
@@ -188,6 +186,17 @@ export default function DashboardPage() {
   const failed = overview.isError && !forbidden;
   const partial =
     !failed && !forbidden && (xnt.isError || xntDaily.isError || quick.isError);
+  /**
+   * MỘT câu giải thích cho mọi widget đang lỗi, chọn theo nguyên nhân thật:
+   * BE trả 422 khi khoảng ngày vượt trần (xem `MAX_RANGE_DAY_DIFF`) — đó là
+   * lỗi do BỘ LỌC, người dùng sửa được ngay bằng cách chọn kỳ ngắn hơn. Mọi
+   * lỗi khác chỉ còn cách bấm Làm mới. Câu chữ theo UAT TC_UI_01: nói ngay
+   * nguyên nhân và việc cần làm, không dùng từ kỹ thuật ("nguồn đọc", "widget").
+   */
+  const failedCopy =
+    status === 422
+      ? t("dashboard.alert.failedRange")
+      : t("dashboard.alert.failed");
 
   /**
    * "Đang bận" tính trên CẢ BỐN nguồn, không riêng nguồn chính.
@@ -216,27 +225,22 @@ export default function DashboardPage() {
   const overviewData = overview.data;
 
   /**
-   * HAI bộ chuỗi khác cửa sổ, cùng một payload đã nới — không thêm request:
-   *  · `kpiFlowRows` theo kỳ KPI, chỉ để cộng ra CON SỐ của thẻ KPI.
-   *  · `chartFlowRows` / `trendRows` theo cửa sổ 7 ngày, để VẼ.
-   * Gộp hai thứ này làm một chính là chỗ khiến kỳ "Hôm nay" ra biểu đồ trống.
+   * Chuỗi theo ngày của đúng kỳ KPI: vừa cộng ra CON SỐ thẻ KPI, vừa để VẼ
+   * biểu đồ luồng và sparkline. Kỳ một ngày thì biểu đồ chỉ có một điểm —
+   * `OverviewFlowChart` vẽ chấm thay vì đường, còn sparkline (cần ≥ 2 điểm) ẩn.
    */
-  const kpiFlowRows = useMemo(
+  const flowRows = useMemo(
     () => buildFlowRows(overviewData, xntDaily.data, range, type),
     [overviewData, xntDaily.data, range, type],
   );
-  const chartFlowRows = useMemo(
-    () => buildFlowRows(overviewData, xntDaily.data, chartRange, type),
-    [overviewData, xntDaily.data, chartRange, type],
-  );
-  const flowTotals = useMemo(() => sumFlow(kpiFlowRows), [kpiFlowRows]);
+  const flowTotals = useMemo(() => sumFlow(flowRows), [flowRows]);
   const previousTotals = useMemo(
     () => sumPreviousFlow(overviewData, range, type),
     [overviewData, range, type],
   );
   const trendRows = useMemo(
-    () => buildTrendRows(overviewData, chartRange),
-    [overviewData, chartRange],
+    () => buildTrendRows(overviewData, range),
+    [overviewData, range],
   );
   const equation = useMemo(() => buildEquation(xnt.data), [xnt.data]);
   const topSkus = useMemo(() => buildTopSkus(xnt.data), [xnt.data]);
@@ -254,15 +258,21 @@ export default function DashboardPage() {
     flowTotals.inbound - flowTotals.product - flowTotals.component;
 
   const kpiCards = useMemo<KpiCardModel[]>(() => {
-    const receiptDelta = periodDelta(
-      flowTotals.inbound,
-      previousTotals.inbound,
-    );
-    const productDelta = periodDelta(
-      flowTotals.product,
-      previousTotals.product,
-    );
-    const componentDelta = periodDelta(
+    /**
+     * Kỳ dài quá nửa trần BE thì payload không mang kỳ liền trước (xem
+     * `useOverviewSource`): delta "so với kỳ trước" để trống và ghi rõ lý do,
+     * thay vì so với 0 rồi in ra "+N" vô nghĩa.
+     */
+    const previousNote = hasPrevious
+      ? t("dashboard.kpi.notePreviousPeriod")
+      : t("dashboard.kpi.noteNoPrevious");
+    const deltaVs = (current: number, previous: number) =>
+      hasPrevious
+        ? periodDelta(current, previous)
+        : { text: null, trend: "neutral" as const };
+    const receiptDelta = deltaVs(flowTotals.inbound, previousTotals.inbound);
+    const productDelta = deltaVs(flowTotals.product, previousTotals.product);
+    const componentDelta = deltaVs(
       flowTotals.component,
       previousTotals.component,
     );
@@ -280,7 +290,7 @@ export default function DashboardPage() {
         spark:
           type === "ALL"
             ? trendRows.map((row) => row.closing)
-            : chartFlowRows.reduce<number[]>((series, row) => {
+            : flowRows.reduce<number[]>((series, row) => {
                 const previous = series.at(-1) ?? 0;
                 series.push(
                   previous + row.inbound - row.product - row.component,
@@ -306,9 +316,9 @@ export default function DashboardPage() {
         value: flowTotals.inbound,
         delta: receiptDelta.text,
         trend: receiptDelta.trend,
-        note: t("dashboard.kpi.notePreviousPeriod"),
+        note: previousNote,
         icon: "package-plus",
-        spark: chartFlowRows.map((row) => row.inbound),
+        spark: flowRows.map((row) => row.inbound),
         source: "reports/dashboard-overview",
       },
       {
@@ -317,9 +327,9 @@ export default function DashboardPage() {
         value: flowTotals.product,
         delta: productDelta.text,
         trend: productDelta.trend,
-        note: t("dashboard.kpi.notePreviousPeriod"),
+        note: previousNote,
         icon: "package-minus",
-        spark: chartFlowRows.map((row) => row.product),
+        spark: flowRows.map((row) => row.product),
         source: "reports/dashboard-overview",
       },
       {
@@ -328,9 +338,9 @@ export default function DashboardPage() {
         value: flowTotals.component,
         delta: componentDelta.text,
         trend: componentDelta.trend,
-        note: t("dashboard.kpi.notePreviousPeriod"),
+        note: previousNote,
         icon: "briefcase-medical",
-        spark: chartFlowRows.map((row) => row.component),
+        spark: flowRows.map((row) => row.component),
         source: "reports/dashboard-overview",
       },
     ];
@@ -344,7 +354,8 @@ export default function DashboardPage() {
   }, [
     flowTotals,
     previousTotals,
-    chartFlowRows,
+    hasPrevious,
+    flowRows,
     trendRows,
     onHand,
     onHandDelta,
@@ -488,7 +499,7 @@ export default function DashboardPage() {
       };
     if (failed)
       return {
-        copy: t("dashboard.alert.failed"),
+        copy: failedCopy,
         tone: "is-error",
         badge: t("dashboard.alert.failedBadge"),
         badgeTone: "chip-error",
@@ -525,6 +536,7 @@ export default function DashboardPage() {
   }, [
     forbidden,
     failed,
+    failedCopy,
     retrying,
     partial,
     offline,
@@ -580,10 +592,14 @@ export default function DashboardPage() {
   };
 
   const periodName = t(PERIOD_NAME_KEYS[period]);
+  /**
+   * Cùng định dạng DD/MM/YYYY với dòng "Đang xem: …" ngay dưới dải nút kỳ —
+   * bản trước ghi DD-MM-YYYY ở đây nên hai dòng cách nhau vài trăm px viết
+   * cùng một ngày theo hai kiểu.
+   */
   const formatRange = (value: DateRange) =>
-    `${dayjs(value.from).format("DD-MM-YYYY")} → ${dayjs(value.to).format("DD-MM-YYYY")}`;
+    `${dayjs(value.from).format("DD/MM/YYYY")} → ${dayjs(value.to).format("DD/MM/YYYY")}`;
   const cutoffLabel = formatRange(range);
-  const chartCutoffLabel = formatRange(chartRange);
   /**
    * Khoảng ngày thật của kỳ đang chọn + số ngày, hiện ngay dưới dải nút kỳ.
    * Nút chỉ nói luật ("Tháng này"), dòng này nói kết quả — mùng 4 bấm "Tháng
@@ -673,7 +689,7 @@ export default function DashboardPage() {
                 <span className="section-meta">
                   {t("dashboard.section.quickMeta", {
                     period: periodName,
-                    range: chartCutoffLabel,
+                    range: cutoffLabel,
                   })}
                 </span>
               </div>
@@ -682,6 +698,7 @@ export default function DashboardPage() {
                 periodName={periodName}
                 loading={loading}
                 failed={failed}
+                failedCopy={failedCopy}
                 forbidden={forbidden}
               />
             </section>
@@ -691,6 +708,7 @@ export default function DashboardPage() {
               alerts={alerts}
               loading={loading}
               failed={failed}
+              failedCopy={failedCopy}
               forbidden={forbidden}
               onNavigate={(route) => navigate(route)}
             />
@@ -737,21 +755,24 @@ export default function DashboardPage() {
               </div>
               <div className="analysis-grid">
                 <OverviewFlowChart
-                  rows={chartFlowRows}
+                  rows={flowRows}
                   loading={loading}
                   failed={failed}
+                  failedCopy={failedCopy}
                   forbidden={forbidden}
                 />
                 <OverviewStockMix
                   rows={stockMix}
                   loading={loading}
                   failed={failed}
+                  failedCopy={failedCopy}
                   forbidden={forbidden}
                 />
                 <OverviewComposition
                   rows={composition}
                   loading={loading}
                   failed={failed}
+                  failedCopy={failedCopy}
                   forbidden={forbidden}
                 />
                 <OverviewThreshold
@@ -795,6 +816,7 @@ export default function DashboardPage() {
                 periodLabel={periodName}
                 loading={loading}
                 failed={failed}
+                failedCopy={failedCopy}
                 forbidden={forbidden}
                 onNavigate={(route) => navigate(route)}
               />

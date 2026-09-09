@@ -238,6 +238,33 @@ export const CONTAINER_TYPE_LABELS = bilingual(
 );
 
 /**
+ * Trạng thái của VẬT CHỨA (khay/hộp) từ API container — trước đây không có
+ * map nào nên chip "Khay đã chọn" in thẳng STORED/ACTIVE ra màn nghiệp vụ
+ * (UAT TC_UI_08). Giá trị lạ đi qua enumLabelOrText để không bao giờ lộ
+ * SCREAMING_SNAKE.
+ */
+export const CONTAINER_STATUS_LABELS = bilingual(
+  {
+    EMPTY: "Trống",
+    PARTIAL: "Đang chứa",
+    STORED: "Đang chứa hàng",
+    ACTIVE: "Đang sử dụng",
+    FULL: "Đã đầy",
+    CLOSED: "Đã đóng",
+    ISSUED: "Đã xuất",
+  },
+  {
+    EMPTY: "Empty",
+    PARTIAL: "Partially filled",
+    STORED: "Holding stock",
+    ACTIVE: "In use",
+    FULL: "Full",
+    CLOSED: "Closed",
+    ISSUED: "Issued",
+  },
+);
+
+/**
  * Lý do điều chỉnh tồn — `reversal_documents.reason_code`. BE tự đặt
  * `CORRECTION` cho mọi phiếu tạo qua API, `MANUAL` đến từ dữ liệu dựng sẵn;
  * cột khai `nullable|string|max:80` nên vẫn phải chịu được giá trị lạ.
@@ -287,6 +314,85 @@ export const RETURN_CONDITION_LABELS = bilingual(
     SELLABLE: "Sellable / issuable again",
     DEFECTIVE: "Defective",
     NON_SELLABLE: "Not sellable / issuable",
+  },
+);
+
+/**
+ * Mã lỗi của luồng NHẬP DỮ LIỆU (import SKU) và ĐỐI SOÁT yêu cầu xuất —
+ * RPT-04 hiển thị ở "Mã lỗi nhiều nhất" và cột "Mã lỗi" của chi tiết lô
+ * (UAT TC_UI_19: từng in thẳng SKU_CODE_DUPLICATE, QTY_EXCEEDS_STOCK…).
+ * Nguồn mã: ImportErrorFileService (BE) + error_code của match lines; mã lạ
+ * đi qua enumLabelOrText nên không bao giờ lộ SCREAMING_SNAKE.
+ */
+export const IMPORT_MATCH_ERROR_LABELS = bilingual(
+  {
+    SKU_CODE_DUPLICATE: "Mã SKU đã tồn tại trong hệ thống",
+    DUPLICATE_CODE: "Mã SKU đã tồn tại trong hệ thống",
+    DUPLICATE_SKU_CODE_IN_FILE: "Trùng mã SKU ngay trong tệp",
+    MISSING_REQUIRED_FIELD: "Thiếu trường bắt buộc",
+    MODEL_REQUIRED: "Thiếu mã model bắt buộc",
+    INVALID_CODE_FORMAT: "Mã SKU sai định dạng",
+    INVALID_NAME: "Tên SKU không hợp lệ",
+    INVALID_CATEGORY: "Nhóm hàng không hợp lệ",
+    INVALID_BRAND: "Thương hiệu không hợp lệ",
+    INVALID_TRACKING_MODE: "Kiểu theo dõi không hợp lệ",
+    INVALID_UNIT: "Đơn vị tính không hợp lệ",
+    INVALID_ENUM: "Giá trị ngoài danh sách cho phép",
+    INVALID_BOOLEAN: "Giá trị đúng/sai không hợp lệ",
+    INVALID_VERSION_CODE: "Mã phiên bản quá dài",
+    INACTIVE_SKU_CONFLICT: "SKU đang ngừng sử dụng",
+    UNKNOWN_MASTER_CODE: "Mã danh mục không tồn tại",
+    SKU_NOT_FOUND: "Không tìm thấy SKU",
+    QTY_EXCEEDS_STOCK: "Số lượng vượt tồn khả dụng",
+    SKU_ALREADY_MATCHED: "SKU đã được đối soát trước đó",
+    DUPLICATE_REQUEST_NO: "Trùng số yêu cầu xuất",
+    ERROR: "Lỗi xử lý dòng",
+    UNKNOWN: "Lỗi chưa phân loại",
+  },
+  {
+    SKU_CODE_DUPLICATE: "SKU code already exists",
+    DUPLICATE_CODE: "SKU code already exists",
+    DUPLICATE_SKU_CODE_IN_FILE: "Duplicate SKU code within the file",
+    MISSING_REQUIRED_FIELD: "Missing required field",
+    MODEL_REQUIRED: "Model code is required",
+    INVALID_CODE_FORMAT: "Invalid SKU code format",
+    INVALID_NAME: "Invalid SKU name",
+    INVALID_CATEGORY: "Invalid category",
+    INVALID_BRAND: "Invalid brand",
+    INVALID_TRACKING_MODE: "Invalid tracking mode",
+    INVALID_UNIT: "Invalid unit",
+    INVALID_ENUM: "Value outside the allowed list",
+    INVALID_BOOLEAN: "Invalid true/false value",
+    INVALID_VERSION_CODE: "Version code too long",
+    INACTIVE_SKU_CONFLICT: "SKU is inactive",
+    UNKNOWN_MASTER_CODE: "Master data code not found",
+    SKU_NOT_FOUND: "SKU not found",
+    QTY_EXCEEDS_STOCK: "Quantity exceeds available stock",
+    SKU_ALREADY_MATCHED: "SKU already matched",
+    DUPLICATE_REQUEST_NO: "Duplicate request number",
+    ERROR: "Row processing error",
+    UNKNOWN: "Unclassified error",
+  },
+);
+
+/**
+ * Nguyên nhân lệch đối soát tồn (mismatch_reason của /inventory/balances và
+ * /reports/inventory-reconciliation). UAT TC_UI_11: mã máy
+ * BALANCE_NOT_EQUAL_SIGNED_LEDGER_SUM từng in thẳng cạnh chip "Có chênh lệch".
+ * Giá trị lạ đi qua enumLabelOrText để không bao giờ lộ SCREAMING_SNAKE.
+ */
+export const RECONCILE_REASON_LABELS = bilingual(
+  {
+    BALANCE_NOT_EQUAL_SIGNED_LEDGER_SUM: "Số dư không khớp tổng sổ cái",
+    BALANCE_MISSING_FOR_LEDGER: "Sổ cái có phát sinh nhưng thiếu số dư",
+    LEDGER_MISSING_FOR_BALANCE: "Có số dư nhưng sổ cái không có phát sinh",
+    QUANTITY_MISMATCH: "Số lượng không khớp giữa số dư và sổ cái",
+  },
+  {
+    BALANCE_NOT_EQUAL_SIGNED_LEDGER_SUM: "Balance differs from signed ledger sum",
+    BALANCE_MISSING_FOR_LEDGER: "Ledger has activity but balance is missing",
+    LEDGER_MISSING_FOR_BALANCE: "Balance exists but ledger has no activity",
+    QUANTITY_MISMATCH: "Quantity differs between balance and ledger",
   },
 );
 

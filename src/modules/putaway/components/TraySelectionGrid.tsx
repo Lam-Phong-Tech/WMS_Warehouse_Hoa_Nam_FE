@@ -2,7 +2,16 @@ import { useMemo, useState } from "react";
 import { LazyApexChart as Chart } from "@/shared/components/charts/LazyApexChart";
 import type { ApexOptions } from "apexcharts";
 import { Box, Stack, Tooltip, UiStatusBadge } from "@/shared/ui";
-import { PALETTE, TYPOGRAPHY, type ThemeModeName } from "@/shared/ui/tokens";
+import {
+  PALETTE,
+  SEMANTIC_LIGHT as S,
+  TYPOGRAPHY,
+  type ThemeModeName,
+} from "@/shared/ui/tokens";
+import {
+  CONTAINER_STATUS_LABELS,
+  enumLabelOrText,
+} from "@/shared/constants/business-labels";
 import { useThemeStore } from "@/shared/ui/theme/theme.store";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import type { TrayOption } from "@/modules/putaway/services/putawayService";
@@ -54,11 +63,14 @@ const CHART_HEIGHT_PADDING = 48;
 function trayStatusLabel(t: TranslateFn, status: string): string {
   if (status === "EMPTY") return t("putaway.trayStatus.empty");
   if (status === "PARTIAL") return t("putaway.trayStatus.partial");
-  return status;
+  // UAT TC_UI_08: STORED/ACTIVE… từng in thẳng mã enum ra chip "Khay đã chọn".
+  return enumLabelOrText(CONTAINER_STATUS_LABELS, status);
 }
 
+/** Khác EMPTY nghĩa là khay đang có hàng — kể cả STORED (từng bị coi là trống
+ * nên chip tô nhầm màu "chọn được"). */
 function isOccupied(status: string): boolean {
-  return status === "PARTIAL";
+  return status !== "" && status !== "EMPTY";
 }
 
 /** PTW-GRID-03: sort natural theo tray_code (A01, A02, ... A10) thay vì sort chuỗi thuần. */
@@ -560,18 +572,28 @@ export function TraySelectionGrid({
         </Stack>
       </Stack>
 
+      {/* UAT TC_UI_08: bản trước dùng success.light (MUI tự pha — xanh bão
+          hoà) + chữ mực 70% nên cả panel lẫn chip đều mờ. Chuyển sang cặp
+          token soft/text chuẩn của dự án: nền pastel, mã khay đậm màu xanh
+          chữ — nội dung nổi rõ như mẫu ở Note. */}
       <Box
         sx={{
           mt: 1.5,
           border: "1px solid",
           borderColor: selectedTray ? "success.main" : "divider",
-          bgcolor: selectedTray ? "success.light" : "background.default",
+          bgcolor: selectedTray ? S.successSoft : "background.default",
           borderRadius: 2,
           px: 1.5,
           py: 1.25,
         }}
       >
-        <Box sx={{ typography: "caption", color: "text.secondary" }}>
+        <Box
+          sx={{
+            typography: "caption",
+            fontWeight: 600,
+            color: selectedTray ? S.successText : "text.secondary",
+          }}
+        >
           {t("putaway.grid.selectedPanelTitle")}
         </Box>
         <Box
@@ -580,7 +602,7 @@ export function TraySelectionGrid({
             fontWeight: 700,
             lineHeight: 1.3,
             mb: selectedTray ? 1 : 0,
-            color: selectedTray ? "success.dark" : "text.disabled",
+            color: selectedTray ? S.successText : "text.disabled",
           }}
         >
           {selectedTray

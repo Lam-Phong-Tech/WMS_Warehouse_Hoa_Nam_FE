@@ -2518,22 +2518,24 @@ export default function RecipientAgencyReport() {
                 render: (row) =>
                   `${eventTypeLabel(row.event_type)} · ${formatDateTime(row.occurred_at)}`,
               },
+              /*
+               * UAT TC_UI_23: ba cột số từng căn phải — nội dung dạt về mép
+               * phải, lệch với các cột chữ căn trái của cùng bảng. Đồng bộ căn
+               * trái theo yêu cầu UAT.
+               */
               {
                 key: "gross",
                 header: t("reports.recipientAgency.kpiGross"),
-                align: "right",
                 render: (row) => quantity(row.gross_issue_posted_qty),
               },
               {
                 key: "reversed",
                 header: t("reports.recipientAgency.kpiReversed"),
-                align: "right",
                 render: (row) => quantity(row.reversed_issue_qty),
               },
               {
                 key: "net",
                 header: t("reports.recipientAgency.colNet"),
-                align: "right",
                 render: (row) => quantity(row.net_issued_qty),
               },
               {

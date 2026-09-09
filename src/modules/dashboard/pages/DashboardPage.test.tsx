@@ -295,7 +295,12 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("lỗi nguồn đọc chính thì không thay số liệu bằng 0", async () => {
+  /**
+   * UAT TC_UI_01 (09/2026): thông báo lỗi phải nói bằng lời thường — người
+   * dùng kho không hiểu "nguồn đọc", "widget" — và mọi widget dùng CÙNG một
+   * câu giải thích do trang chọn theo nguyên nhân thật.
+   */
+  it("nguồn chính lỗi thì báo bằng lời thường và không thay số liệu bằng 0", async () => {
     mockedGet.mockImplementation((url: string) =>
       url === API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW
         ? Promise.reject(new Error("boom"))
@@ -304,14 +309,53 @@ describe("DashboardPage — Tổng quan vận hành", () => {
 
     renderDashboard();
 
-    expect(await screen.findByText("Lỗi nguồn đọc")).toBeInTheDocument();
-    expect(
-      screen.getByText("Không thể tải Tổng tồn khả dụng"),
-    ).toBeInTheDocument();
-    // Lưới KPI không có con số nào — không thay dữ liệu lỗi bằng 0.
+    const copy = "Không thể tải dữ liệu. Vui lòng nhấn “Làm mới” để thử lại.";
+    // Banner + thẻ KPI + hàng việc + cảnh báo + biểu đồ + thẻ theo dõi.
+    expect((await screen.findAllByText(copy)).length).toBeGreaterThan(5);
+    const chip = document.querySelector(
+      '[data-kpi-id="DASH-KPI-21"]',
+    ) as HTMLElement;
+    expect(chip.textContent).toBe("Không thể tải dữ liệu");
+
+    // Thẻ KPI: tiêu đề chung, không ghép tên chỉ số thành câu dài.
     const grid = document.querySelector("#kpi-grid") as HTMLElement;
+    expect(within(grid).getAllByText("Không thể tải dữ liệu")).toHaveLength(5);
+    expect(
+      within(grid).queryByText(/Tổng tồn khả dụng/),
+    ).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/nguồn đọc|widget/i);
+
+    // Lưới KPI không có con số nào — không thay dữ liệu lỗi bằng 0.
     expect(within(grid).queryByText("1.234")).not.toBeInTheDocument();
     expect(within(grid).queryByText("0")).not.toBeInTheDocument();
+  });
+
+  /**
+   * BE từ chối khoảng ngày quá 366 ngày bằng 422 (OperationalReportController).
+   * Đây là lỗi do BỘ LỌC, người dùng sửa được ngay — câu chữ phải chỉ đúng
+   * việc cần làm (UAT TC_UI_01, ảnh 1–3).
+   */
+  it("BE từ chối khoảng ngày (422) thì nói thẳng: chọn khoảng thời gian ngắn hơn", async () => {
+    mockedGet.mockImplementation((url: string) =>
+      url === API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW
+        ? Promise.reject({ response: { status: 422 } })
+        : routeResponses(url),
+    );
+
+    renderDashboard();
+
+    const copy =
+      "Không thể tải dữ liệu trong khoảng thời gian đã chọn. Vui lòng chọn khoảng thời gian ngắn hơn hoặc nhấn “Làm mới” để thử lại.";
+    expect((await screen.findAllByText(copy)).length).toBeGreaterThan(5);
+    expect(
+      screen.queryByText(
+        "Không thể tải dữ liệu. Vui lòng nhấn “Làm mới” để thử lại.",
+      ),
+    ).not.toBeInTheDocument();
+    const chip = document.querySelector(
+      '[data-kpi-id="DASH-KPI-21"]',
+    ) as HTMLElement;
+    expect(chip.textContent).toBe("Không thể tải dữ liệu");
   });
 
   it("đổi kỳ KPI thì gọi lại các nguồn với khoảng ngày mới", async () => {
@@ -340,15 +384,15 @@ describe("DashboardPage — Tổng quan vận hành", () => {
 });
 
 /**
- * Cửa sổ biểu đồ phải TÁCH khỏi kỳ KPI.
+ * Biểu đồ đi THEO kỳ KPI (UAT TC_UI_01/02, 09/2026).
  *
- * Bản trước nối hai thứ làm một, nên kỳ mặc định "Hôm nay" chỉ còn 1 điểm dữ
- * liệu: `<path>` sinh ra đúng một lệnh `M` — SVG không vẽ nét nào — và
- * `sparkPoints()` bỏ hẳn sparkline vì dưới 2 giá trị. Màn hình vẫn đầy số
- * nhưng mọi đường biểu đồ đều trống. Demo ghim biểu đồ ở 7 ngày (`app.js:706`
- * luôn ghi "Biểu đồ: 7 ngày qua") chính vì vậy.
+ * Bản trước ghim biểu đồ ở cửa sổ 7 ngày cố định theo demo, nên dòng "Biểu đồ
+ * 02/09 → 08/09" đứng cạnh kỳ Tùy chọn 01/02/2024 → 08/09/2026 và bị người
+ * kiểm thử coi là hiển thị sai. Cái giá của việc nối lại là kỳ "Hôm nay" chỉ
+ * còn 1 điểm: `<path>` chỉ có lệnh `M` nên SVG không vẽ nét nào — vì vậy biểu
+ * đồ luồng phải vẽ CHẤM cho kỳ một ngày, còn sparkline (cần ≥ 2 điểm) ẩn.
  */
-describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
+describe("DashboardPage — biểu đồ theo kỳ KPI", () => {
   const days = Array.from({ length: 7 }, (_, index) =>
     dayjs()
       .subtract(6 - index, "day")
@@ -392,8 +436,7 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
 
   /**
    * Kỳ mặc định của màn là "7 ngày qua", nên các test dưới đây phải CHỦ
-   * ĐỘNG chuyển về "Hôm nay" — đó mới là kỳ hẹp nhất và là trường hợp cửa sổ
-   * biểu đồ phải chứng minh mình tách khỏi kỳ KPI.
+   * ĐỘNG chuyển về "Hôm nay" — đó là kỳ hẹp nhất, ca khó nhất của biểu đồ.
    */
   async function renderAtToday() {
     mockedGet.mockImplementation((url: string) => routeWeek(url));
@@ -403,8 +446,10 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
     await screen.findByText("Xuất sản phẩm đã ghi sổ");
   }
 
-  it("vẽ đường luồng nhiều điểm dù kỳ KPI là Hôm nay", async () => {
-    await renderAtToday();
+  it("kỳ 7 ngày qua: đường luồng nhiều điểm, sparkline có toạ độ", async () => {
+    mockedGet.mockImplementation((url: string) => routeWeek(url));
+    renderDashboard();
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
 
     const flow = document.querySelector("#flow-card") as HTMLElement;
     expect(flow).not.toBeNull();
@@ -413,14 +458,8 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
       (node.getAttribute("d") ?? "").includes("L"),
     );
     expect(drawn.length).toBeGreaterThan(0);
-
-    // Bảng dữ liệu thay thế phải liệt kê đủ 7 ngày, không phải 1.
     const table = flow.querySelector("tbody") as HTMLElement;
     expect(table.querySelectorAll("tr")).toHaveLength(7);
-  });
-
-  it("giữ sparkline trên thẻ KPI ở kỳ Hôm nay", async () => {
-    await renderAtToday();
 
     const sparks = [...document.querySelectorAll("#kpi-grid .kpi-spark")];
     expect(sparks.length).toBeGreaterThan(0);
@@ -430,38 +469,90 @@ describe("DashboardPage — cửa sổ biểu đồ 7 ngày", () => {
     }
   });
 
-  it("đọc chuỗi theo ngày ở cửa sổ 7 ngày, không theo kỳ KPI", async () => {
+  it("kỳ Hôm nay: biểu đồ luồng vẽ chấm cho điểm duy nhất thay vì trắng", async () => {
     await renderAtToday();
 
-    // Kỳ KPI là Hôm nay…
+    const flow = document.querySelector("#flow-card") as HTMLElement;
+    expect(flow).not.toBeNull();
+    // Bốn chuỗi → bốn chấm; không có đường nào vì chỉ có một mốc.
+    expect(flow.querySelectorAll("circle.flow-point")).toHaveLength(4);
+    expect(
+      [...flow.querySelectorAll("path")].filter((node) =>
+        (node.getAttribute("d") ?? "").includes("L"),
+      ),
+    ).toHaveLength(0);
+    // Bảng dữ liệu thay thế liệt kê đúng 1 ngày — đúng kỳ đang chọn.
+    const table = flow.querySelector("tbody") as HTMLElement;
+    expect(table.querySelectorAll("tr")).toHaveLength(1);
+  });
+
+  it("chuỗi theo ngày đi theo kỳ KPI; payload chính chỉ nới thêm kỳ liền trước", async () => {
+    await renderAtToday();
+
+    const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.REPORTS_XNT_ENHANCED,
       expect.objectContaining({ params: { from_date: today, to_date: today } }),
     );
-    // …nhưng chuỗi theo ngày vẫn lấy trọn 7 ngày.
     expect(mockedGet).toHaveBeenCalledWith(
       OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY,
-      expect.objectContaining({
-        params: { from_date: days[0], to_date: today },
-      }),
+      expect.objectContaining({ params: { from_date: today, to_date: today } }),
     );
-    // Và payload chính chỉ tốn 1 request cho cả hai cửa sổ.
+    // Kỳ liền trước của "Hôm nay" là hôm qua: 1 request phủ cả hai kỳ.
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW,
       expect.objectContaining({
-        params: { from_date: days[0], to_date: today },
+        params: { from_date: yesterday, to_date: today },
       }),
     );
   });
 
-  it("nói rõ cửa sổ biểu đồ trên section-meta", async () => {
+  it("section-meta ghi đúng kỳ đang chọn, cùng định dạng với dòng Đang xem", async () => {
     mockedGet.mockImplementation((url: string) => routeWeek(url));
     renderDashboard();
 
     await screen.findByText("Xuất sản phẩm đã ghi sổ");
 
-    const meta = document.querySelector(".section-meta") as HTMLElement;
-    expect(meta.textContent).toContain(dayjs(days[0]).format("DD-MM-YYYY"));
+    const fmt = (value: string) => dayjs(value).format("DD/MM/YYYY");
+    const meta = () =>
+      (document.querySelector(".section-meta") as HTMLElement).textContent;
+    expect(meta()).toContain(
+      `KPI 7 ngày qua · Biểu đồ ${fmt(days[0])} → ${fmt(today)}`,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hôm nay" }));
+    expect(meta()).toContain(
+      `KPI Hôm nay · Biểu đồ ${fmt(today)} → ${fmt(today)}`,
+    );
+  });
+
+  /**
+   * Payload chính nới thêm kỳ liền trước = nhân đôi khoảng ngày; BE từ chối
+   * quá 366 ngày. Kỳ dài thì thôi nới, chỉ xin đúng kỳ đang xem — và thẻ KPI
+   * phải nói rõ là không so với kỳ trước thay vì in "+N" so với 0.
+   */
+  it("kỳ Tùy chọn dài thì không nới kỳ liền trước và bỏ delta so với kỳ trước", async () => {
+    mockedGet.mockImplementation((url: string) => routeWeek(url));
+    renderDashboard();
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
+
+    fireEvent.click(screen.getByRole("button", { name: "Tùy chọn" }));
+    const from = dayjs().subtract(300, "day").format("YYYY-MM-DD");
+    fireEvent.change(
+      document.querySelector("#dashboard-date-from") as HTMLInputElement,
+      { target: { value: from } },
+    );
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
+
+    // 300 ngày + 300 ngày kỳ trước > 366 ⇒ from_date là đúng đầu kỳ đang xem.
+    expect(mockedGet).toHaveBeenCalledWith(
+      API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW,
+      expect.objectContaining({ params: { from_date: from, to_date: today } }),
+    );
+    expect(
+      screen.getAllByText("kỳ dài, không so với kỳ trước").length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText("so với kỳ trước")).not.toBeInTheDocument();
   });
 
   /** CSS `[data-lazy]` để khối ở opacity .78; thiếu observer là kẹt luôn ở đó. */

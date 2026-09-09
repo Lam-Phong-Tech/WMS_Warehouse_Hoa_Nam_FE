@@ -47,12 +47,15 @@ export function OverviewKpiGrid({
   periodName,
   loading,
   failed,
+  failedCopy,
   forbidden,
 }: {
   cards: KpiCardModel[];
   periodName: string;
   loading: boolean;
   failed: boolean;
+  /** Câu giải thích khi `failed` — trang tính một lần theo nguyên nhân thật. */
+  failedCopy: string;
   forbidden: boolean;
 }) {
   const t = useT();
@@ -110,8 +113,8 @@ export function OverviewKpiGrid({
           >
             <OverviewStateBox
               kind="unavailable"
-              title={t("dashboard.kpi.failedTitle", { label: card.label })}
-              copy={t("dashboard.kpi.failedCopy")}
+              title={t("dashboard.kpi.failedTitle")}
+              copy={failedCopy}
             />
           </article>
         ))}

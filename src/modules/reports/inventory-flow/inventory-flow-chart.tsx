@@ -48,7 +48,12 @@ const POINT_RADIUS = 3.5;
 /** Cỡ chữ nhãn trục — khớp `.hn-rpt01 .chart-axis-label` trong CSS của bản port. */
 const AXIS_FONT_SIZE = 10;
 /** Khoảng cách dọc tối thiểu giữa hai nhãn giá trị cuối kỳ của hai chuỗi. */
-const END_LABEL_MIN_GAP = 11;
+/**
+ * UAT TC_UI_16: 11 đơn vị viewBox ≈ 10,6px hiển thị — bằng đúng cỡ chữ 10px
+ * nên hai nhãn kề nhau chạm mép ("2/0/0" dính chồng ở mép phải). 14 đơn vị
+ * cho ~3,5px không khí giữa hai nhãn.
+ */
+const END_LABEL_MIN_GAP = 14;
 
 export type ChartSeries = {
   key: string;

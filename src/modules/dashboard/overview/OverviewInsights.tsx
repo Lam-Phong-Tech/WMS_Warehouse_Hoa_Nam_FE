@@ -41,6 +41,7 @@ export function OverviewInsights({
   periodLabel,
   loading,
   failed,
+  failedCopy,
   forbidden,
   onNavigate,
 }: {
@@ -57,6 +58,8 @@ export function OverviewInsights({
   periodLabel: string;
   loading: boolean;
   failed: boolean;
+  /** Câu giải thích khi `failed` — trang tính một lần theo nguyên nhân thật. */
+  failedCopy: string;
   forbidden: boolean;
   onNavigate: (route: string) => void;
 }) {
@@ -81,7 +84,7 @@ export function OverviewInsights({
     <OverviewStateBox
       kind="unavailable"
       title={t("dashboard.insight.failedTitle")}
-      copy={t("dashboard.insight.failedCopy")}
+      copy={failedCopy}
     />
   );
 

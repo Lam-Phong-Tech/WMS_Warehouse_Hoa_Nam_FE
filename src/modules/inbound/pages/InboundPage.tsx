@@ -253,10 +253,15 @@ function InboundListScreen() {
     },
   ];
 
+  /**
+   * IN-01 là màn duy nhất đặt HAI nút có nhãn trong cột Thao tác — xếp DỌC và
+   * căn phải để hai nhãn "Tiếp tục quét"/"Sửa thông tin" không tràn khỏi mép
+   * cột 96px mặc định (UAT TC_UI_07); bề rộng cột nới ở actionColumnWidth.
+   */
   const renderRowActions = (row: InboundDocument) => {
     const mutable = row.status === "DRAFT" || row.status === "SCANNING";
     return (
-      <Stack direction="row" sx={{ gap: 0.5, flexWrap: "wrap" }}>
+      <Stack sx={{ gap: 0.5, alignItems: "flex-end" }}>
         <ActionButton kind="scan" onClick={() => setScanDocumentId(row.id)}>
           {mutable && canScan
             ? row.status === "DRAFT"
@@ -376,6 +381,7 @@ function InboundListScreen() {
         rowKey={(row) => row.id}
         loading={query.isLoading || query.isFetching}
         renderRowActions={renderRowActions}
+        actionColumnWidth={168}
         emptyText={tableEmptyText(
           query.isError ? query.error : null,
           t("inbound.list.empty"),

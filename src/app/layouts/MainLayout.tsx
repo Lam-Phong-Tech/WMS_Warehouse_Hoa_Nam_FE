@@ -177,17 +177,14 @@ export function MainLayout() {
           />
         }
         footer={
+          /*
+           * Không còn dòng ghi công "Icons by Flaticon" ở đây: UAT TC_UI_01
+           * (09/2026) báo người dùng kho không hiểu dòng chữ tiếng Anh này là gì.
+           * Bộ icon vẫn là Flaticon Uicons (xem src/styles/hn-icon-font.css) —
+           * điều khoản ghi công của gói cần được xác nhận lại ở cấp dự án.
+           */
           <UiFooter>
             Hoa Nam ©{new Date().getFullYear()} — Phát triển bởi Lam Phong Tech
-            ·{" "}
-            <a
-              href="https://www.flaticon.com/uicons"
-              target="_blank"
-              rel="noreferrer"
-              style={{ color: "inherit" }}
-            >
-              Icons by Flaticon
-            </a>
           </UiFooter>
         }
       >

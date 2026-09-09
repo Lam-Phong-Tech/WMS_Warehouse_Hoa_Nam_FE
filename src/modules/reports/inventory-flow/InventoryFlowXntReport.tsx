@@ -75,7 +75,6 @@ import {
   ALL_WAREHOUSES_LABEL,
   closingOf,
   INVENTORY_FLOW_REPORT_CODE,
-  INVENTORY_FLOW_TIMEZONE,
   ISO_DATE,
   sumRows,
   useInventoryFlowSnapshot,
@@ -849,12 +848,11 @@ export default function InventoryFlowXntReport({
             </div>
           </div>
 
+          {/* UAT TC_UI_14 (Note): không phơi mã kỹ thuật (snapshot id, tên
+              múi giờ IANA) ra màn nghiệp vụ — chỉ giữ con số người dùng cần. */}
           <div className="report-snapshot">
-            Snapshot:{" "}
-            <strong>
-              {snapshot.snapshot_id === "" ? EMPTY_TEXT : snapshot.snapshot_id}
-            </strong>{" "}
-            · {fmt(rowsInScope.length)} SKU · {INVENTORY_FLOW_TIMEZONE}
+            <strong>{fmt(rowsInScope.length)} SKU</strong> ·{" "}
+            {t("reports.inventoryFlowReport.timezoneNote")}
           </div>
         </section>
 

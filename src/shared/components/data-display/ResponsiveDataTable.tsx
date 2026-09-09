@@ -64,6 +64,13 @@ export interface ResponsiveDataTableProps<T> {
   onRowClick?: (row: T) => void;
   /** Khối nút hành động cho từng dòng (Xem/Sửa/Xoá...) — hiển thị ở cả bảng lẫn card. */
   renderRowActions?: (row: T) => ReactNode;
+  /**
+   * Bề rộng cột Thao tác (px), mặc định 96 — đủ cho MỘT nút "Xem"/"Sửa".
+   * Màn đặt HAI nút có nhãn (vd IN-01: "Tiếp tục quét" + "Sửa thông tin")
+   * phải nới cột này, nếu không chữ tràn khỏi mép cột vì ô Thao tác cố ý
+   * không có lớp cắt "…" (UAT TC_UI_07).
+   */
+  actionColumnWidth?: number;
   /** Breakpoint chuyển sang card list, mặc định `md` (768px, khớp mui-theme.ts). */
   mobileBreakpoint?: "sm" | "md" | "lg";
   /**
@@ -112,6 +119,7 @@ export function ResponsiveDataTable<T>({
   emptyText,
   onRowClick,
   renderRowActions,
+  actionColumnWidth = 96,
   mobileBreakpoint = "md",
   sortState: controlledSortState,
   onSortChange: controlledOnSortChange,
@@ -397,7 +405,7 @@ export function ResponsiveDataTable<T>({
     declaredColumnsWidth > 0
       ? declaredColumnsWidth +
         (rowSelection ? 44 : 0) +
-        (renderRowActions ? 96 : 0)
+        (renderRowActions ? actionColumnWidth : 0)
       : undefined;
 
   /**
@@ -413,7 +421,7 @@ export function ResponsiveDataTable<T>({
   const columnWidths = [
     ...(rowSelection ? [44] : []),
     ...columns.map((column) => column.width),
-    ...(renderRowActions ? [96] : []),
+    ...(renderRowActions ? [actionColumnWidth] : []),
   ];
 
   /** Dòng đệm của cuộn ảo phải phủ đúng số ô của một dòng thật. */
@@ -536,6 +544,15 @@ export function ResponsiveDataTable<T>({
               { textAlign: "center" },
             "& > thead > tr > [data-align='right'], & > tbody > tr > [data-align='right']":
               { textAlign: "right" },
+            /**
+             * .hn-truncate là display:block có max-width — text-align của ô
+             * không dời được KHỐI đó khỏi mép trái, chỉ dời chữ bên trong nó.
+             * Cột căn phải/giữa phải dồn cả khối bằng margin (UAT TC_UI_09).
+             */
+            "& > tbody > tr > [data-align='right'] > .hn-truncate, & > tbody > tr > [data-align='right'] > .hn-truncate-2":
+              { marginLeft: "auto" },
+            "& > tbody > tr > [data-align='center'] > .hn-truncate, & > tbody > tr > [data-align='center'] > .hn-truncate-2":
+              { marginLeft: "auto", marginRight: "auto" },
             /**
              * WHITE-SPACE Ô DỮ LIỆU CŨNG KHAI Ở CẤP BẢNG — cùng lý do với
              * `text-align` phía trên. Trang bọc `.hn-mvp-source-screen` có sẵn

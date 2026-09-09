@@ -19,6 +19,7 @@ export {
   FILTER_GRID_COLUMNS_SX,
   FILTER_WIDTH,
   TOOLBAR_SEARCH_SX,
+  TOOLBAR_SEARCH_WIDE_SX,
   filterGridColumnSx,
   fitSelectMinWidth,
   measureTextWidth,

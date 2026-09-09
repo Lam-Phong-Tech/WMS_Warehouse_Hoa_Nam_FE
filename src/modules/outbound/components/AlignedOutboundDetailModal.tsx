@@ -568,18 +568,21 @@ export function AlignedOutboundDetailModal({
           short(row.productId)
         ),
     },
+    /*
+     * UAT TC_UI_09 (Ảnh 1): hai cột số này từng căn phải — tiêu đề dạt về mép
+     * phải trong khi mọi cột khác căn trái, người dùng đọc thành "lệch cột".
+     * Đồng bộ căn trái theo yêu cầu UAT.
+     */
     {
       key: "expected",
       header: t("outbound.detail.colExpected"),
       width: 100,
-      align: "right",
       render: (row) => row.expected,
     },
     {
       key: "scanned",
       header: t("outbound.detail.colScanned"),
       width: 100,
-      align: "right",
       render: (row) => row.scanned,
     },
   ];

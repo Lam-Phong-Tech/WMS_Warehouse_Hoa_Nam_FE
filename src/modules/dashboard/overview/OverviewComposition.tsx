@@ -21,11 +21,14 @@ export function OverviewComposition({
   rows,
   loading,
   failed,
+  failedCopy,
   forbidden,
 }: {
   rows: CompositionRow[];
   loading: boolean;
   failed: boolean;
+  /** Câu giải thích khi `failed` — trang tính một lần theo nguyên nhân thật. */
+  failedCopy: string;
   forbidden: boolean;
 }) {
   const t = useT();
@@ -76,7 +79,7 @@ export function OverviewComposition({
         <OverviewStateBox
           kind="unavailable"
           title={t("dashboard.composition.failedTitle")}
-          copy={t("dashboard.composition.failedCopy")}
+          copy={failedCopy}
         />
       </article>
     );

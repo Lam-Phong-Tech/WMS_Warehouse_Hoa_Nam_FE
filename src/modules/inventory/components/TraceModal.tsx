@@ -626,6 +626,24 @@ export function TraceModal({ movementId, onClose }: Props) {
           <UiAlert tone="warning">{scanResolveError}</UiAlert>
         ) : null}
 
+        {/* UAT TC_UI_11: lỗi tải phải nằm ĐẦU thân dialog (thân cuộn được) —
+            bản trước đặt cạnh khối dữ liệu tương ứng ở cuối, khuất khỏi màn
+            hình nên trông như không có phản hồi. */}
+        {movementQuery.isError ? (
+          <ApiErrorAlert
+            error={movementQuery.error}
+            title={t("inventory.trace.movementLoadError")}
+            onRetry={() => movementQuery.refetch()}
+          />
+        ) : null}
+        {traceQuery.isError ? (
+          <ApiErrorAlert
+            error={traceQuery.error}
+            title={t("inventory.trace.sourceLoadError")}
+            onRetry={() => traceQuery.refetch()}
+          />
+        ) : null}
+
         {!movementId && !submittedCode ? (
           <UiText variant="secondary">{t("inventory.trace.idle")}</UiText>
         ) : null}
@@ -898,14 +916,6 @@ export function TraceModal({ movementId, onClose }: Props) {
           </>
         ) : null}
 
-        {movementQuery.isError ? (
-          <ApiErrorAlert
-            error={movementQuery.error}
-            title={t("inventory.trace.movementLoadError")}
-            onRetry={() => movementQuery.refetch()}
-          />
-        ) : null}
-
         {movement ? (
           <DescriptionsBlock title={t("inventory.trace.movementDetailTitle")}>
             <DetailField
@@ -1006,14 +1016,6 @@ export function TraceModal({ movementId, onClose }: Props) {
               )}`}
             />
           </DescriptionsBlock>
-        ) : null}
-
-        {traceQuery.isError ? (
-          <ApiErrorAlert
-            error={traceQuery.error}
-            title={t("inventory.trace.sourceLoadError")}
-            onRetry={() => traceQuery.refetch()}
-          />
         ) : null}
 
         {traceQuery.isLoading ? (

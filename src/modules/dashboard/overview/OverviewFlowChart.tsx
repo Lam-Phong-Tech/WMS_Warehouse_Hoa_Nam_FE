@@ -7,9 +7,14 @@
  * có trần biết trước.
  *
  * Khác thứ hai, về TRÌNH BÀY: demo chỉ có 7 mốc cứng nên vẽ đủ 7 nhãn là vừa
- * khung. Ở đây người dùng chọn được kỳ dài (30 / 90 / 365 ngày) và nếu vẫn vẽ
- * một nhãn cho mỗi ngày thì trục X biến thành vệt chữ chồng nhau. Mật độ nhãn
- * do `fitAxisDensity` quyết theo bề rộng khung vẽ.
+ * khung. Ở đây biểu đồ vẽ đúng kỳ KPI đang chọn (UAT TC_UI_01/02) — người dùng
+ * chọn được kỳ dài (30 / 90 / 365 ngày) và nếu vẫn vẽ một nhãn cho mỗi ngày
+ * thì trục X biến thành vệt chữ chồng nhau. Mật độ nhãn do `fitAxisDensity`
+ * quyết theo bề rộng khung vẽ.
+ *
+ * Kỳ MỘT ngày ("Hôm nay") chỉ có một điểm: `<path>` chỉ có lệnh M nên SVG
+ * không vẽ nét nào — khi đó đặt điểm vào giữa khung và vẽ CHẤM cho từng chuỗi
+ * thay vì để biểu đồ trắng.
  */
 import { useState } from "react";
 import { DashIcon } from "../components/DashIcon";
@@ -84,11 +89,14 @@ export function OverviewFlowChart({
   rows,
   loading,
   failed,
+  failedCopy,
   forbidden,
 }: {
   rows: FlowRow[];
   loading: boolean;
   failed: boolean;
+  /** Câu giải thích khi `failed` — trang tính một lần theo nguyên nhân thật. */
+  failedCopy: string;
   forbidden: boolean;
 }) {
   const [visible, setVisible] = useState<Set<SeriesKey>>(
@@ -142,7 +150,7 @@ export function OverviewFlowChart({
         <OverviewStateBox
           kind="unavailable"
           title={t("dashboard.flow.failedTitle")}
-          copy={t("dashboard.flow.failedCopy")}
+          copy={failedCopy}
         />
       </article>
     );
@@ -166,8 +174,9 @@ export function OverviewFlowChart({
   ]);
   const max = niceMax(Math.max(...allValues, 1));
   const min = Math.min(0, ...allValues);
-  const step = rows.length > 1 ? (W - PAD * 2) / (rows.length - 1) : 0;
-  const xAt = (index: number) => PAD + index * step;
+  const single = rows.length === 1;
+  const step = single ? 0 : (W - PAD * 2) / (rows.length - 1);
+  const xAt = (index: number) => (single ? W / 2 : PAD + index * step);
   const yAt = (value: number) =>
     H - PAD - ((value - min) / Math.max(max - min, 1)) * (H - PAD * 2);
 
@@ -263,6 +272,18 @@ export function OverviewFlowChart({
             })}
             {SERIES.filter((series) => visible.has(series.key)).map(
               (series) => {
+                if (single)
+                  return (
+                    <circle
+                      key={series.key}
+                      className={`flow-point flow-point-${series.key}`}
+                      cx={xAt(0).toFixed(1)}
+                      cy={yAt(rows[0][series.key]).toFixed(1)}
+                      r="6"
+                      style={{ fill: series.line, stroke: "var(--surface)" }}
+                      strokeWidth="2"
+                    />
+                  );
                 const path = linePath(series.key);
                 return (
                   <g key={series.key}>

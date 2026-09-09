@@ -335,6 +335,20 @@ export function UiVuexyDateRangePicker({
                     onClick={() => applyPreset(preset)}
                     sx={presetButtonSx(activePresetKey === preset.key)}
                   >
+                    {/* UAT TC_UI_15: kỳ đang chọn phải nổi bật — thêm dấu ✓
+                        bên cạnh nền/viền primary, người dùng nhìn lướt vẫn
+                        thấy mình đang ở kỳ nào. */}
+                    <Box
+                      component="span"
+                      aria-hidden="true"
+                      sx={{
+                        display: "inline-block",
+                        width: 16,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {activePresetKey === preset.key ? "✓" : ""}
+                    </Box>
                     {preset.label}
                   </Box>
                 </Fragment>
@@ -628,10 +642,18 @@ const presetColumnSx = {
  * Tiêu đề nhóm trong dải kỳ nhanh. Ở khổ hẹp dải xếp NGANG và cuộn, lúc đó
  * tiêu đề nhóm chen giữa các nút chỉ làm rối — ẩn đi, thứ tự nút vẫn giữ
  * nguyên nhóm nên nghĩa không mất.
+ *
+ * UAT TC_UI_15: từ nhóm thứ hai trở đi có đường phân cách nhẹ phía trên để
+ * người dùng thấy ngay ranh giới GẦN ĐÂY / THEO KỲ.
  */
 const presetGroupLabelSx = {
   display: { xs: "none", sm: "block" },
   mt: 0.75,
+  "&:not(:first-of-type)": {
+    mt: 1.25,
+    pt: 1.25,
+    borderTop: `1px solid ${S.border}`,
+  },
   px: 1.25,
   color: S.textMedium,
   fontSize: 11,
@@ -651,7 +673,7 @@ const presetButtonSx = (active: boolean) => ({
   color: active ? S.primaryDark : S.textHigh,
   font: "inherit",
   fontSize: 13,
-  fontWeight: active ? 600 : 500,
+  fontWeight: active ? 700 : 500,
   textAlign: "left",
   whiteSpace: "nowrap",
   cursor: "pointer",

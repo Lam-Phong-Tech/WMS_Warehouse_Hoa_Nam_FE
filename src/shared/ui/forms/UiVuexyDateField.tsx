@@ -24,25 +24,20 @@ import { defaultDateBounds } from "@/shared/validation/date-rules";
  * riêng phía trên — range picker gộp hai ô trong một control nên không xếp được
  * vào lưới đó.
  *
- * Nhãn tháng/thứ giữ nguyên tiếng Anh theo bản demo đã duyệt (Base DatePicker
- * mặc định), không tự ý Việt hoá.
+ * Nhãn tháng/thứ đọc từ shared.datePicker.* — cùng bộ khoá với
+ * UiVuexyDateRangePicker để hai lịch không nói hai thứ tiếng (UAT TC_UI_17:
+ * lịch "Mốc đối soát" ở RPT-02 từng hiện "March 2023 · Sun Mon Tue…" giữa một
+ * màn toàn tiếng Việt).
  */
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+const WEEKDAY_KEYS = [
+  "shared.datePicker.weekdaySun",
+  "shared.datePicker.weekdayMon",
+  "shared.datePicker.weekdayTue",
+  "shared.datePicker.weekdayWed",
+  "shared.datePicker.weekdayThu",
+  "shared.datePicker.weekdayFri",
+  "shared.datePicker.weekdaySat",
 ] as const;
 
 export interface UiVuexyDateFieldProps {
@@ -207,12 +202,14 @@ export function UiVuexyDateField({
               fontWeight: 500,
             }}
           >
-            {`${MONTH_NAMES[panelMonth.month()]} ${panelMonth.format("YYYY")}`}
+            {t("shared.datePicker.monthLabel", {
+              month: panelMonth.format("M YYYY"),
+            })}
           </Box>
           <Box
             component="button"
             type="button"
-            aria-label="Previous month"
+            aria-label={t("shared.datePicker.prevMonth")}
             disabled={!canGoPrevMonth}
             onClick={() => setPanelMonth((m) => m.subtract(1, "month"))}
             sx={calendarNavButtonSx}
@@ -222,7 +219,7 @@ export function UiVuexyDateField({
           <Box
             component="button"
             type="button"
-            aria-label="Next month"
+            aria-label={t("shared.datePicker.nextMonth")}
             disabled={!canGoNextMonth}
             onClick={() => setPanelMonth((m) => m.add(1, "month"))}
             sx={calendarNavButtonSx}
@@ -239,9 +236,9 @@ export function UiVuexyDateField({
             gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
           }}
         >
-          {WEEKDAYS.map((weekday) => (
+          {WEEKDAY_KEYS.map((weekdayKey) => (
             <Box
-              key={weekday}
+              key={weekdayKey}
               sx={{
                 height: 30,
                 display: "grid",
@@ -250,14 +247,16 @@ export function UiVuexyDateField({
                 fontSize: 12,
               }}
             >
-              {weekday}
+              {t(weekdayKey)}
             </Box>
           ))}
         </Box>
 
         <Box
           role="grid"
-          aria-label={`${MONTH_NAMES[panelMonth.month()]} ${panelMonth.format("YYYY")}`}
+          aria-label={t("shared.datePicker.monthLabel", {
+            month: panelMonth.format("M YYYY"),
+          })}
           sx={{
             display: "grid",
             gridTemplateColumns: "repeat(7, minmax(0, 1fr))",

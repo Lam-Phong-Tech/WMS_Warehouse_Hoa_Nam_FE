@@ -141,6 +141,79 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     cleanupTestState();
   });
 
+  /**
+   * UAT TC_UI_10 + TC_FUNC_01 — nhánh CHECKING → COMPLETED:
+   *  · hồ sơ mang sẵn ngày dự kiến ĐÃ QUA không được chặn submit âm thầm
+   *    (ô ngày chỉ hiện ở REPAIRING nên lỗi của nó không có chỗ hiển thị);
+   *  · thiếu "Kết quả xử lý" phải ra CÂU TIẾNG VIỆT (không phải khoá thô
+   *    warranty.noteRequired.completed) và hiện ngay cạnh nút Cập nhật.
+   */
+  it("CHECKING → COMPLETED: ngày dự kiến quá khứ không chặn; lỗi thiếu Kết quả xử lý là tiếng Việt và nhìn thấy được", async () => {
+    vi.mocked(fetchWarrantyCase).mockResolvedValue({
+      ...DETAIL,
+      estimated_completion_date: "2026-08-20",
+    } as never);
+    vi.mocked(updateWarrantyCase).mockResolvedValue({
+      ...DETAIL,
+      status: "COMPLETED",
+      version: 3,
+    } as never);
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={() => {}}
+        onOpenComponentIssue={() => {}}
+      />,
+    );
+
+    // Chờ chi tiết nạp xong rồi mới bấm (nút bị disable khi đang tải).
+    expect(await screen.findByText("BH-0001")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Cập nhật trạng thái/ }),
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: "Cập nhật trạng thái bảo hành",
+    });
+    fireEvent.mouseDown(
+      within(dialog).getByRole("combobox", { name: /Trạng thái mới/ }),
+    );
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Đã hoàn tất xử lý" }),
+    );
+    fireEvent.change(within(dialog).getByLabelText(/Kết quả kiểm tra/), {
+      target: { value: "Đã kiểm tra xong" },
+    });
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+
+    // Không im lặng: câu lỗi tiếng Việt hiện ở CẢ helperText của ô lẫn dòng
+    // nhắc role="alert" cạnh nút; tuyệt đối không lộ khoá i18n thô.
+    const messages = await within(dialog).findAllByText(
+      "Kết quả xử lý (bắt buộc)",
+    );
+    expect(messages.length).toBeGreaterThanOrEqual(2);
+    const footerAlert = within(dialog)
+      .getAllByRole("alert")
+      .find((el) => el.textContent?.includes("Kết quả xử lý (bắt buộc)"));
+    expect(footerAlert).toBeTruthy();
+    expect(
+      screen.queryByText("warranty.noteRequired.completed"),
+    ).not.toBeInTheDocument();
+    expect(updateWarrantyCase).not.toHaveBeenCalled();
+
+    // Điền nốt "Kết quả xử lý" → submit phải đi: ngày dự kiến quá khứ KHÔNG
+    // chặn nhánh COMPLETED, và payload không mang ngày đó.
+    fireEvent.change(within(dialog).getByLabelText(/Kết quả xử lý/), {
+      target: { value: "Đã xử lý" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+    await waitFor(() => expect(updateWarrantyCase).toHaveBeenCalledTimes(1));
+    const request = vi.mocked(updateWarrantyCase).mock
+      .calls[0][1] as Record<string, unknown>;
+    expect(request.status).toBe("COMPLETED");
+    expect(request.estimated_completion_date).toBeUndefined();
+  });
+
   it("hiển thị đủ thông tin case TEMP_ONLY, PII mask note, đính kèm và phiếu linh kiện", async () => {
     renderWithProviders(
       <WarrantyDetailModal

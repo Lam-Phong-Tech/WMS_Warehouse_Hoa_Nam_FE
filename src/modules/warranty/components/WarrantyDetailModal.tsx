@@ -865,23 +865,40 @@ export function WarrantyDetailModal({
         errors.cancel_reason = t("warranty.detail.errCancelReasonShort");
       }
     }
-    if (estimatedDateRequired) {
-      errors.estimated_completion_date = t("warranty.detail.errEstimatedDate");
-    } else if (statusForm.estimated_completion_date) {
-      const estimatedCheck = checkDate(
-        statusForm.estimated_completion_date,
-        estimatedBounds,
-      );
-      if (!estimatedCheck.ok) {
-        errors.estimated_completion_date = estimatedCheck.message;
+    /*
+     * UAT TC_FUNC_01: chỉ validate ngày dự kiến khi ô này THỰC SỰ hiển thị
+     * (statusValue === "REPAIRING"). Bản trước validate cả khi chuyển sang
+     * Hoàn tất/Trả khách — hồ sơ mang sẵn ngày dự kiến đã qua khiến submit
+     * fail âm thầm trên một field không được render: không request, không
+     * toast, nút "Cập nhật" như chết.
+     */
+    if (statusValue === "REPAIRING") {
+      if (estimatedDateRequired) {
+        errors.estimated_completion_date = t(
+          "warranty.detail.errEstimatedDate",
+        );
+      } else if (statusForm.estimated_completion_date) {
+        const estimatedCheck = checkDate(
+          statusForm.estimated_completion_date,
+          estimatedBounds,
+        );
+        if (!estimatedCheck.ok) {
+          errors.estimated_completion_date = estimatedCheck.message;
+        }
       }
     }
     if (noteRequiredLabel && !statusForm.reason.trim()) {
-      errors.reason = noteRequiredLabel;
+      // UAT TC_UI_10: key này từng được gán THÔ (không qua t()) nên helperText
+      // in nguyên "warranty.noteRequired.completed" ra màn hình.
+      errors.reason = t(noteRequiredLabel);
     }
     setStatusFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
+
+  /** Lỗi đầu tiên đang chặn submit — hiển thị cạnh nút Cập nhật (TC_FUNC_01). */
+  const statusBlockingError =
+    Object.values(statusFieldErrors).find(Boolean) ?? "";
 
   const submitStatus = async () => {
     if (!detail) return;
@@ -905,7 +922,9 @@ export function WarrantyDetailModal({
           confirmed_defect: statusForm.confirmed_defect.trim() || undefined,
           cancel_reason: statusForm.cancel_reason.trim() || undefined,
           estimated_completion_date:
-            statusForm.estimated_completion_date || undefined,
+            statusValue === "REPAIRING"
+              ? statusForm.estimated_completion_date || undefined
+              : undefined,
           defect_ids: defectIds,
           ifMatch: detail.version,
         },
@@ -2401,6 +2420,22 @@ export function WarrantyDetailModal({
           title={t("warranty.detail.statusTitle")}
           actions={
             <>
+              {/* UAT TC_FUNC_01: thân dialog cuộn được nên lỗi field có thể
+                  nằm khuất phía trên — nhắc ngay cạnh nút để mọi cú bấm
+                  "Cập nhật" đều có phản hồi nhìn thấy. */}
+              {statusBlockingError ? (
+                <Box
+                  role="alert"
+                  sx={{
+                    mr: "auto",
+                    color: "error.main",
+                    typography: "caption",
+                    maxWidth: 320,
+                  }}
+                >
+                  {statusBlockingError}
+                </Box>
+              ) : null}
               <ActionButton
                 kind="cancel"
                 onClick={() => {
@@ -2527,7 +2562,7 @@ export function WarrantyDetailModal({
                 }}
                 error={Boolean(statusFieldErrors.confirmed_defect)}
                 helperText={
-                  statusFieldErrors.confirmed_defect ??
+                  statusFieldErrors.confirmed_defect ||
                   `${statusForm.confirmed_defect.length}/2000`
                 }
                 slotProps={{ htmlInput: { maxLength: 2000 } }}
@@ -2555,7 +2590,7 @@ export function WarrantyDetailModal({
                 }}
                 error={Boolean(statusFieldErrors.cancel_reason)}
                 helperText={
-                  statusFieldErrors.cancel_reason ??
+                  statusFieldErrors.cancel_reason ||
                   `${statusForm.cancel_reason.length}/1000`
                 }
                 slotProps={{ htmlInput: { maxLength: 1000 } }}
@@ -2586,7 +2621,7 @@ export function WarrantyDetailModal({
               }}
               error={Boolean(statusFieldErrors.reason)}
               helperText={
-                statusFieldErrors.reason ?? `${statusForm.reason.length}/2000`
+                statusFieldErrors.reason || `${statusForm.reason.length}/2000`
               }
               slotProps={{ htmlInput: { maxLength: 2000 } }}
             />

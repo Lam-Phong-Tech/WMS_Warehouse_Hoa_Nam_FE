@@ -39,6 +39,7 @@ export function OverviewOperations({
   alerts,
   loading,
   failed,
+  failedCopy,
   forbidden,
   onNavigate,
 }: {
@@ -46,6 +47,8 @@ export function OverviewOperations({
   alerts: AlertRow[];
   loading: boolean;
   failed: boolean;
+  /** Câu giải thích khi `failed` — trang tính một lần theo nguyên nhân thật. */
+  failedCopy: string;
   forbidden: boolean;
   onNavigate: (route: string) => void;
 }) {
@@ -83,7 +86,7 @@ export function OverviewOperations({
         <OverviewStateBox
           kind="unavailable"
           title={t("dashboard.operations.failedTitle")}
-          copy={t("dashboard.operations.failedCopy")}
+          copy={failedCopy}
         />
       );
     if (visible.length === 0)
@@ -158,7 +161,7 @@ export function OverviewOperations({
         <OverviewStateBox
           kind="unavailable"
           title={t("dashboard.operations.alertFailedTitle")}
-          copy={t("dashboard.operations.alertFailedCopy")}
+          copy={failedCopy}
         />
       );
     if (alerts.length === 0)

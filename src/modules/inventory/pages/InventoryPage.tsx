@@ -39,10 +39,12 @@ import {
   INVENTORY_STOCK_STATUS_LABELS,
   MOVEMENT_STATUS_LABELS,
   MOVEMENT_TYPE_LABELS,
+  RECONCILE_REASON_LABELS,
   RECONCILE_STATUS_LABELS,
   SKU_TYPE_LABELS,
   SOURCE_DOCUMENT_TYPE_LABELS,
   businessLabel,
+  enumLabelOrText,
 } from "@/shared/constants/business-labels";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
@@ -464,7 +466,8 @@ export default function InventoryPage() {
       render: (row) => (
         <Tooltip
           title={
-            row.reconcileNote ||
+            (row.reconcileNote &&
+              enumLabelOrText(RECONCILE_REASON_LABELS, row.reconcileNote)) ||
             (row.reconcile === "MATCH" || row.reconcile === "PASS"
               ? t("inventory.balance.reconcileMatch")
               : t("inventory.balance.reconcileMismatch"))

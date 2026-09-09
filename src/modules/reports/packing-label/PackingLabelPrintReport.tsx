@@ -1280,6 +1280,7 @@ export default function PackingLabelPrintReport() {
                     appearance="tonal"
                     size="small"
                     startIcon={<AuditOutlined />}
+                    sx={{ whiteSpace: "nowrap" }}
                     onClick={() => setOpenLabelId(row.labelId)}
                   >
                     {t("reports.packingLabel.viewAudit")}
@@ -1422,6 +1423,9 @@ export default function PackingLabelPrintReport() {
                           appearance="tonal"
                           size="small"
                           startIcon={<AuditOutlined />}
+                          // UAT TC_UI_21: nút cao cố định 38px — nhãn xuống
+                          // dòng là chữ tràn ra ngoài nút.
+                          sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
                           onClick={() => setOpenLabelId(row.labelId)}
                         >
                           {t("reports.packingLabel.viewAudit")}

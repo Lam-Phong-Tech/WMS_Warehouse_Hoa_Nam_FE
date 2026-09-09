@@ -682,7 +682,6 @@ export default function IoHistoryReport() {
               <h1>{t("reports.ioHistory.title")}</h1>
             </div>
             <div className="chips scope-block">
-              <span className="chip chip-info">{IO_HISTORY_REPORT_CODE}</span>
               <span className="chip chip-success">
                 {t("reports.ioHistory.postedOnly")}
               </span>
