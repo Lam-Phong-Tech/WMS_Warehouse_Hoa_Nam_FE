@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 import { AuditLogDetailDrawer } from "./AuditLogDetailDrawer";
@@ -59,7 +59,7 @@ describe("AuditLogDetailDrawer (Chi tiết nhật ký hệ thống)", () => {
     expect(screen.queryByText("stock_document")).not.toBeInTheDocument();
   });
 
-  it("dữ liệu trước/sau thay đổi hiện dạng 'tên trường – giá trị', JSON gốc nằm sau nút bung", () => {
+  it("dữ liệu trước/sau thay đổi hiện dạng 'tên trường – giá trị', tuyệt đối không còn JSON (UAT TC_UI_13)", () => {
     renderWithProviders(
       <AuditLogDetailDrawer open onClose={vi.fn()} auditLog={LOG} />,
     );
@@ -71,10 +71,11 @@ describe("AuditLogDetailDrawer (Chi tiết nhật ký hệ thống)", () => {
     expect(screen.getByText("Đã ghi sổ")).toBeInTheDocument();
     expect(screen.getByText("Số chứng từ")).toBeInTheDocument();
     expect(screen.getByText("Không đổi tồn")).toBeInTheDocument();
-    // Enum thô không còn xuất hiện khi chưa bung dữ liệu gốc.
+    // UAT TC_UI_13: JSON thô không được xuất hiện dưới BẤT KỲ dạng nào —
+    // nút "Xem dữ liệu gốc" đã bị gỡ hẳn.
     expect(screen.queryByText(/"status": "SCANNING"/)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getAllByRole("button", { name: /dữ liệu gốc/i })[0]);
-    expect(screen.getByText(/"status": "SCANNING"/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /dữ liệu gốc/i }),
+    ).not.toBeInTheDocument();
   });
 });

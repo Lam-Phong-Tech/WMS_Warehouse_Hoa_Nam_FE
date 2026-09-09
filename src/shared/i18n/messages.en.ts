@@ -3486,7 +3486,7 @@ export const MESSAGES_EN: MessageTree = {
       kpisAria: "Operations overview",
       movementEyebrow: "OPERATIONS ANALYSIS",
       movementTitle: "Daily inbound – outbound movement",
-      movementMeta: "By posting time · {timezone}",
+      movementMeta: "By posting time · Vietnam time (GMT+7)",
       chartTitle: "Posted volume by day",
       chartNote:
         "Quantity trend by posting time; only posted documents with a determined quantity are counted.",
@@ -4174,8 +4174,6 @@ export const MESSAGES_EN: MessageTree = {
     copyIpAria: "Copy the IP address",
     beforeData: "Data before the change",
     afterData: "Data after the change",
-    showRawData: "Show raw data",
-    hideRawData: "Hide raw data",
   },
   shared: {
     table: {

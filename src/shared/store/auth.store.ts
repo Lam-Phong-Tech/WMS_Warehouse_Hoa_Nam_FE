@@ -5,6 +5,7 @@ import { memoryStorage } from "@/shared/lib/memory-storage";
 import { queryClient } from "@/app/providers/query-client";
 import { useNotificationStore } from "@/shared/store/notification.store";
 import { clearPersistedQueryCache } from "@/shared/cache/query-persister";
+import { clearAllFormDrafts } from "@/shared/hooks/useFormDraft";
 import { disconnectEcho } from "@/shared/lib/echo";
 import type { User } from "@/shared/types/user";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
@@ -154,6 +155,11 @@ export const useAuthStore = create<AuthState>()(
         // các ca, nên phải xoá luôn bản sao trên IndexedDB — nếu không, ca sau
         // đăng nhập tài khoản khác vẫn còn danh mục/kho của ca trước nằm trên đĩa.
         void clearPersistedQueryCache();
+        // Cookie `erp-auth` (hồ sơ + contexts) và draft form trong localStorage
+        // cũng phải chết cùng phiên — trước đây chỉ nhánh 401 của axios dọn
+        // cookie này, còn bấm "Đăng xuất" thì để lại hồ sơ 7 ngày trên máy chung.
+        useAuthStore.persist.clearStorage();
+        clearAllFormDrafts();
         disconnectEcho();
         useNotificationStore.getState().reset();
       },

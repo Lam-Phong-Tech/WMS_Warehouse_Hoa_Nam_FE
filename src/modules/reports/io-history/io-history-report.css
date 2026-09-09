@@ -1002,6 +1002,17 @@
   font-size: 11px;
 }
 
+/* UAT TC_UI_25: nhãn giá trị cuối kỳ — đậm + viền nền để đọc được cả khi
+   nằm đè lên đường vẽ/nhãn trục (cùng kỹ thuật với RPT-01). */
+.hn-rpt-io .chartsvg text.chart-endvalue {
+  fill: var(--ink);
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
 .hn-rpt-io .chart-grid {
   stroke: var(--hnio-grid-line);
 }

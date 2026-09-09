@@ -2,7 +2,12 @@ import Cookies from "js-cookie";
 import type { StateStorage } from "zustand/middleware";
 
 const COOKIE_OPTIONS: Cookies.CookieAttributes = {
-  expires: 7, // số ngày cookie tồn tại
+  // 1 ngày, không phải 7: cookie này chứa hồ sơ người dùng (không phải token)
+  // và js-cookie không đặt được HttpOnly, nên rút ngắn cửa sổ lộ trên máy
+  // dùng chung nếu người dùng đóng trình duyệt mà không bấm Đăng xuất.
+  // Phiên đăng nhập thật vẫn dài hơn — refresh cookie HttpOnly của BE mới là
+  // nguồn khôi phục phiên; mất cookie này chỉ tốn một lượt /auth/me.
+  expires: 1,
   sameSite: "Lax",
   // Chỉ gửi qua HTTPS khi đang chạy production (https)
   secure:

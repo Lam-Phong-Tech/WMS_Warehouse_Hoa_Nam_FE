@@ -29,6 +29,24 @@ function draftKey(identifier: string): string {
 }
 
 /**
+ * Xoá toàn bộ draft của mọi form khỏi localStorage. Gọi khi logout: máy trong
+ * kho dùng chung giữa các ca, draft (có thể chứa SĐT/địa chỉ khách) không được
+ * sống sang phiên của người khác.
+ */
+export function clearAllFormDrafts(): void {
+  try {
+    const doomed: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key !== null && key.startsWith(`${DRAFT_PREFIX}:`)) doomed.push(key);
+    }
+    doomed.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // localStorage unavailable — silently ignore
+  }
+}
+
+/**
  * useFormDraft — persist & restore form values to localStorage.
  *
  * Designed for forms where the user may accidentally close the modal

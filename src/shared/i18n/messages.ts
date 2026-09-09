@@ -3486,7 +3486,7 @@ export const MESSAGES_VI = {
       kpisAria: "Tổng quan vận hành",
       movementEyebrow: "PHÂN TÍCH VẬN HÀNH",
       movementTitle: "Biến động nhập – xuất theo ngày",
-      movementMeta: "Theo thời điểm ghi sổ · {timezone}",
+      movementMeta: "Theo thời điểm ghi sổ · múi giờ Việt Nam (GMT+7)",
       chartTitle: "Khối lượng ghi nhận theo ngày",
       chartNote:
         "Xu hướng số lượng theo thời điểm ghi sổ; chỉ tính chứng từ đã ghi nhận có số lượng xác định.",
@@ -4168,8 +4168,6 @@ export const MESSAGES_VI = {
     copyIpAria: "Sao chép địa chỉ IP",
     beforeData: "Dữ liệu trước thay đổi",
     afterData: "Dữ liệu sau thay đổi",
-    showRawData: "Xem dữ liệu gốc",
-    hideRawData: "Ẩn dữ liệu gốc",
   },
   shared: {
     table: {

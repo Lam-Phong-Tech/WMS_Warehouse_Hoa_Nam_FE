@@ -66,7 +66,6 @@ import {
   IO_HISTORY_EXPORT_CODE,
   IO_HISTORY_REPORT_CODE,
   IO_HISTORY_STATUS,
-  IO_HISTORY_TIMEZONE,
   ISO_DATE,
   ioSnapshotId,
   useIoHistorySnapshot,
@@ -117,6 +116,29 @@ const CHART_EMPTY_Y = 120;
 const CHART_POINT_RADIUS = 4;
 /** Cỡ chữ mọi nhãn trong SVG — khớp `.hn-rpt-io .chartsvg text` trong CSS. */
 const CHART_FONT_SIZE = 11;
+/**
+ * UAT TC_UI_25 — khoảng cách dọc tối thiểu giữa nhãn giá trị CUỐI KỲ của các
+ * chuỗi (cùng thuật toán spread với inventory-flow-chart): 4 chuỗi cùng x,
+ * giá trị gần nhau là 4 con số in đè lên nhau thành một cụm không đọc được.
+ */
+const END_VALUE_MIN_GAP = 14;
+
+/** Đẩy các nhãn cuối cách nhau tối thiểu rồi kéo cả cụm lên nếu tràn đáy. */
+function spreadEndValues(rawY: ReadonlyArray<number>): number[] {
+  const order = rawY
+    .map((y, index) => ({ y, index }))
+    .sort((a, b) => a.y - b.y);
+  const resolved = new Array<number>(rawY.length);
+  let previous = -Infinity;
+  for (const item of order) {
+    const y = Math.max(item.y, previous + END_VALUE_MIN_GAP);
+    resolved[item.index] = y;
+    previous = y;
+  }
+  const overflow = Math.max(...resolved, CHART_BOTTOM) - CHART_BOTTOM;
+  if (overflow <= 0) return resolved;
+  return resolved.map((y) => Math.max(CHART_TOP + CHART_FONT_SIZE, y - overflow));
+}
 
 type ViewMode = "table" | "slice";
 
@@ -951,9 +973,9 @@ export default function IoHistoryReport() {
               </h2>
             </div>
             <span className="section-meta">
-              {t("reports.ioHistory.movementMeta", {
-                timezone: IO_HISTORY_TIMEZONE,
-              })}
+              {/* UAT TC_UI_14 (Note): không phơi tên múi giờ IANA ra màn
+                  nghiệp vụ. */}
+              {t("reports.ioHistory.movementMeta")}
             </span>
           </div>
           <section className="card chart">
@@ -1016,7 +1038,24 @@ export default function IoHistoryReport() {
                   </text>
                 ) : (
                   <>
-                    {CHART_SERIES.map((series, seriesIndex) => {
+                    {(() => {
+                      /*
+                       * UAT TC_UI_25: nhãn giá trị chỉ còn ở ĐIỂM CUỐI mỗi
+                       * chuỗi — bản trước in số trên mọi điểm của cả 4 chuỗi,
+                       * kỳ mặc định 9 ngày là ~36 con số giẫm lên nhau và lên
+                       * cả đường vẽ (đúng lời phàn nàn "biểu đồ không phù
+                       * hợp"). Nhãn cuối của 4 chuỗi cùng hoành độ nên phải
+                       * GIÃN DỌC (spreadEndValues) + viền nền (halo, CSS
+                       * .chart-endvalue) — đồng bộ đúng mẫu biểu đồ RPT-01 đã
+                       * qua UAT.
+                       */
+                      const lastIndex = chart.days.length - 1;
+                      const endValueY = spreadEndValues(
+                        chart.values.map((points) =>
+                          chart.yOf(points[lastIndex] ?? 0),
+                        ),
+                      );
+                      return CHART_SERIES.map((series, seriesIndex) => {
                       const points = chart.values[seriesIndex];
                       return (
                         <g key={series.type} className={series.className}>
@@ -1033,14 +1072,9 @@ export default function IoHistoryReport() {
                           {points.map((value, index) => {
                             const x = chart.xOf(index);
                             const y = chart.yOf(value);
-                            const last = index === chart.days.length - 1;
-                            // Kỳ dài: chấm dính thành dải đặc và số trên điểm
-                            // đè lên đường — chỉ giữ ở mốc cuối để mắt vẫn bắt
-                            // được điểm gần nhất.
+                            const last = index === lastIndex;
                             const showPoint = chart.density.showMarkers || last;
-                            const showValue =
-                              value !== 0 &&
-                              (chart.density.showPointValues || last);
+                            const showValue = last && value !== 0;
                             if (!showPoint && !showValue) return null;
                             return (
                               <g key={chart.days[index]}>
@@ -1058,9 +1092,10 @@ export default function IoHistoryReport() {
                                 ) : null}
                                 {showValue ? (
                                   <text
-                                    x={last ? x - 7 : x + 7}
-                                    y={y - 8}
-                                    textAnchor={last ? "end" : "start"}
+                                    className="chart-endvalue"
+                                    x={x - 7}
+                                    y={endValueY[seriesIndex]}
+                                    textAnchor="end"
                                   >
                                     {fmt(value)}
                                   </text>
@@ -1070,7 +1105,8 @@ export default function IoHistoryReport() {
                           })}
                         </g>
                       );
-                    })}
+                      });
+                    })()}
                     {chart.days.map((day, index) =>
                       chart.density.showLabel(index) ? (
                         <text

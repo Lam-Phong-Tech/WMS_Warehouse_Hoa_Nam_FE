@@ -1,8 +1,7 @@
 import { useT } from "@/shared/i18n/useT";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
   Box,
-  Collapse,
   Grid,
   Stack,
   UiDialog,
@@ -22,7 +21,7 @@ import {
   auditObjectTypeLabel,
   describeAuditLog,
 } from "../constants/audit-log-labels";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { ActionIconButton } from "@/shared/components/actions";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 
@@ -48,13 +47,12 @@ function DetailField({ label, value }: { label: string; value: ReactNode }) {
  * Khối "Dữ liệu trước/sau thay đổi".
  *
  * Trước đây in thẳng `JSON.stringify` — người dùng đọc được đúng dấu ngoặc và
- * `{"status": "SCANNING"}`. Nay dịch thành danh sách "tên trường – giá trị"
- * tiếng Việt (xem `auditDataEntries`), JSON gốc vẫn bung ra được cho quản trị
- * đối chiếu khi tra soát sự cố.
+ * `{"status": "SCANNING"}`. Nay CHỈ còn danh sách "tên trường – giá trị"
+ * tiếng Việt (xem `auditDataEntries`): UAT TC_UI_13 yêu cầu tuyệt đối không
+ * hiển thị JSON ở màn nghiệp vụ, nên nút "Xem dữ liệu gốc" đã bị gỡ hẳn —
+ * quản trị cần đối chiếu thô thì tra thẳng bản ghi audit_logs phía BE.
  */
 function AuditDataBlock({ title, data }: { title: string; data: unknown }) {
-  const t = useT();
-  const [showRaw, setShowRaw] = useState(false);
   const entries = auditDataEntries(data as Record<string, unknown> | null);
   if (entries.length === 0) return null;
 
@@ -98,29 +96,6 @@ function AuditDataBlock({ title, data }: { title: string; data: unknown }) {
             </Grid>
           ))}
         </Grid>
-        <Box sx={{ mt: 1.5 }}>
-          <ActionButton
-            kind="detail"
-            aria-expanded={showRaw}
-            onClick={() => setShowRaw((prev) => !prev)}
-          >
-            {showRaw ? t("audit.hideRawData") : t("audit.showRawData")}
-          </ActionButton>
-        </Box>
-        <Collapse in={showRaw} unmountOnExit>
-          <Box
-            component="pre"
-            sx={{
-              mt: 1.5,
-              mb: 0,
-              maxHeight: 240,
-              overflow: "auto",
-              fontSize: 12,
-            }}
-          >
-            {JSON.stringify(data, null, 2)}
-          </Box>
-        </Collapse>
       </Box>
     </Box>
   );

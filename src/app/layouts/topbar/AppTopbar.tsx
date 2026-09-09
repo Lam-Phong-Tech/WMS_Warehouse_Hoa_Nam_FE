@@ -390,7 +390,7 @@ export function AppTopbar({
               }
             }}
           />
-          <kbd>Ctrl K</kbd>
+         
         </label>
         {openMenu === "search" ? (
           <div

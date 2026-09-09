@@ -108,7 +108,10 @@
   },
   "resolutions": {
     "nanoid": "^3.3.18",
-    "brace-expansion": "^5.0.9"
+    "brace-expansion": "^5.0.9",
+    "browserslist": "^4.28.7",
+    "baseline-browser-mapping": "^2.11.0",
+    "undici": "^7.29.0"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -140,7 +143,7 @@
     "react-apexcharts": "^2.1.1",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.80.0",
-    "react-router-dom": "^7.18.0",
+    "react-router-dom": "^7.18.2",
     "react-transition-group": "^4.4.5",
     "sonner": "^2.0.7",
     "xlsx": "^0.18.5",

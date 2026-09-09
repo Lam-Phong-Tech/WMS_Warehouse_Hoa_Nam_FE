@@ -178,8 +178,13 @@ export function MfaSetupPage() {
           </Box>
 
           {/* Liên kết otpauth:// mở thẳng ứng dụng xác thực khi người dùng đang
-              đứng trên CHÍNH thiết bị đó. Không bao giờ gửi chuỗi này ra ngoài. */}
-          <a href={enrollment.otpauth_uri}>{t("auth.mfa.startEnroll")}</a>
+              đứng trên CHÍNH thiết bị đó. Không bao giờ gửi chuỗi này ra ngoài.
+              Chỉ chấp nhận đúng scheme otpauth: — đây là URL do server trả về
+              được gắn vào href, mọi scheme khác (javascript:, http:...) bị bỏ,
+              người dùng vẫn còn mã thủ công ở trên. */}
+          {enrollment.otpauth_uri.startsWith("otpauth://") ? (
+            <a href={enrollment.otpauth_uri}>{t("auth.mfa.startEnroll")}</a>
+          ) : null}
 
           <form onSubmit={onConfirm} noValidate>
             <Box sx={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>

@@ -335,19 +335,26 @@ export function UiVuexyDateRangePicker({
                     onClick={() => applyPreset(preset)}
                     sx={presetButtonSx(activePresetKey === preset.key)}
                   >
-                    {/* UAT TC_UI_15: kỳ đang chọn phải nổi bật — thêm dấu ✓
-                        bên cạnh nền/viền primary, người dùng nhìn lướt vẫn
-                        thấy mình đang ở kỳ nào. */}
+                    {/* UAT TC_UI_15: kỳ đang chọn phải nổi bật — thêm dấu
+                        check (glyph Flaticon, đúng quy ước ui:icons) bên cạnh
+                        nền/viền primary, người dùng nhìn lướt vẫn thấy mình
+                        đang ở kỳ nào. */}
                     <Box
                       component="span"
                       aria-hidden="true"
                       sx={{
-                        display: "inline-block",
+                        display: "inline-flex",
                         width: 16,
-                        fontWeight: 700,
+                        alignItems: "center",
                       }}
                     >
-                      {activePresetKey === preset.key ? "✓" : ""}
+                      {activePresetKey === preset.key ? (
+                        <Box
+                          component="i"
+                          className="fi fi-rr-check"
+                          sx={{ fontSize: 12, lineHeight: 1 }}
+                        />
+                      ) : null}
                     </Box>
                     {preset.label}
                   </Box>
