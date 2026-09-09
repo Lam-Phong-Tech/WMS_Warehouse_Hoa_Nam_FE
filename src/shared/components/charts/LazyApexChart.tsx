@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ComponentProps } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type CSSProperties,
+} from "react";
 
 /**
  * Lối vào DUY NHẤT tới `react-apexcharts` cho 8 chart wrapper dùng chung.
@@ -86,16 +94,48 @@ export function LazyApexChart(props: ApexChartProps) {
     },
   };
 
-  // Chỉ ghi đè khi caller không tự khai width cụ thể (undefined/"100%").
-  const width =
-    (props.width === undefined || props.width === "100%") && hostWidth > 0
-      ? hostWidth
-      : props.width;
+  // Không bao giờ vẽ rộng hơn ô chứa: caller khai width số (DonutChart 340)
+  // thì kẹp theo host; caller để trống/"100%" thì lấy đúng số đo host.
+  const width = (() => {
+    if (hostWidth <= 0) return props.width;
+    if (typeof props.width === "number")
+      return Math.min(props.width, hostWidth);
+    if (props.width === undefined || props.width === "100%") return hostWidth;
+    return props.width;
+  })();
+
+  /*
+   * `contain: inline-size` là mấu chốt của chiều CO (đo 09/09 bằng Chromium
+   * thật, RPT-04 1500→1100px): ApexCharts ghi `style.width=<px>` lên
+   * .apexcharts-canvas, còn ô chứa chart ở các màn báo cáo là grid/flex item
+   * với `min-width:auto` — min-content của item bị chính cái canvas cũ chống
+   * ra nên item KHÔNG co theo cột lưới; host này vì thế giữ nguyên bề rộng,
+   * observer không bắn, chart không bao giờ được vẽ lại: vòng tự khoá. Khai
+   * kích thước nội tại = 0 thì host chỉ còn đi theo ô chứa và observer bắn
+   * đúng cỡ mới. `width:100%` để host vẫn lấp đầy khi nó là flex item (nếu
+   * không, containment làm nó co về 0). Host là flex căn giữa để chart hẹp
+   * hơn ô (donut 340px) đứng giữa như trước; chart lấp đầy thì không đổi gì.
+   */
+  const hostStyle: CSSProperties = {
+    contain: "inline-size",
+    width: "100%",
+    minWidth: 0,
+    display: "flex",
+    justifyContent: "center",
+    ...(height !== undefined ? { minHeight: height } : null),
+  };
 
   return (
-    <div ref={hostRef} style={height !== undefined ? { minHeight: height } : undefined}>
+    <div ref={hostRef} style={hostStyle}>
       {near ? (
-        <Suspense fallback={<div style={height !== undefined ? { height } : undefined} aria-hidden="true" />}>
+        <Suspense
+          fallback={
+            <div
+              style={height !== undefined ? { height } : undefined}
+              aria-hidden="true"
+            />
+          }
+        >
           {/* key theo width: react-apexcharts không tin cậy khi update
               width lúc runtime (đo 09/09: svg giữ nguyên cỡ cũ) — remount là
               đường duy nhất chắc chắn ăn ở cả hai chiều co/giãn; animation đã
@@ -108,7 +148,10 @@ export function LazyApexChart(props: ApexChartProps) {
           />
         </Suspense>
       ) : (
-        <div style={height !== undefined ? { height } : undefined} aria-hidden="true" />
+        <div
+          style={height !== undefined ? { height } : undefined}
+          aria-hidden="true"
+        />
       )}
     </div>
   );

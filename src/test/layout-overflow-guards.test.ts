@@ -174,3 +174,22 @@ describe("dashboard responsive · độ đặc hiệu khối xếp chồng (UAT 
     expect(block).toContain("flex-wrap: wrap");
   });
 });
+
+describe("biểu đồ Apex không được chống/đè ô chứa (UAT 09/09 · RPT-04 bo nhỏ cửa sổ)", () => {
+  it("host LazyApexChart khai contain: inline-size + width 100% để grid/flex item co được", () => {
+    // Ô chứa chart là grid/flex item với min-width:auto; nếu host còn kích thước
+    // nội tại theo canvas cũ thì item không co theo cột lưới, observer không bắn.
+    const src = read("src/shared/components/charts/LazyApexChart.tsx");
+    expect(src).toContain('contain: "inline-size"');
+    expect(src).toContain('width: "100%"');
+    expect(src).toContain("Math.min(props.width, hostWidth)");
+  });
+
+  it("hn-responsive.css kẹp .apexcharts-canvas theo ô chứa (lưới an toàn)", () => {
+    const rule = rulesOf(read("src/styles/hn-responsive.css")).find(
+      (item) => item.selector === ".apexcharts-canvas",
+    );
+    expect(rule).toBeDefined();
+    expect(declaration(rule!.body, "max-width")).toBe("100%");
+  });
+});

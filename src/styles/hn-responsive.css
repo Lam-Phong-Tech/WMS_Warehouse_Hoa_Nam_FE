@@ -52,6 +52,15 @@ button svg {
   max-width: none;
 }
 
+/* ApexCharts ghi style.width=<px> thẳng lên .apexcharts-canvas, nên
+   svg{max-width:100%} ở trên tính theo chính px đó — vô hiệu khi số đo đã cũ
+   (mở cửa sổ to rồi bo nhỏ). Kẹp wrap theo ô chứa: trong nhịp trước khi
+   LazyApexChart vẽ lại, cột chỉ bị cắt ở mép chứ không đè card đứng cạnh
+   (UAT 09/09, RPT-04 "Diễn biến và điểm cần xử lý"). */
+.apexcharts-canvas {
+  max-width: 100%;
+}
+
 /* Code/SKU/serial/barcode dài không được nong layout. */
 .hn-value,
 .hn-mvp-source-screen .value,
