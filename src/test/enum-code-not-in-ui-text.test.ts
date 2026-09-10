@@ -48,13 +48,7 @@ const ALLOWED: ReadonlyMap<string, string> = new Map([
 ]);
 
 /** Viết tắt kỹ thuật đã quen mắt, hiện nguyên là đúng. */
-const ALLOWED_WORDS = new Set([
-  "HTTPS",
-  "WEBP",
-  "WEBM",
-  "JPEG",
-  "TRAY",
-]);
+const ALLOWED_WORDS = new Set(["HTTPS", "WEBP", "WEBM", "JPEG", "TRAY"]);
 
 type Entry = { path: string; text: string };
 
@@ -164,16 +158,16 @@ describe("Bảng nhãn không được lấy chính mã làm nhãn", () => {
       readFileSync(file, "utf8")
         .split("\n")
         .forEach((line, index) => {
-          const match = line.match(
-            /^\s*([A-Z][A-Z0-9_]{2,})\s*:\s*"([^"]+)"/,
-          );
+          const match = line.match(/^\s*([A-Z][A-Z0-9_]{2,})\s*:\s*"([^"]+)"/);
           if (!match) return;
           const value = match[2];
           const looksLikeCode =
             /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/.test(value) ||
             (/^[A-Z]{4,}$/.test(value) && !ALLOWED_WORDS.has(value));
           if (looksLikeCode) {
-            offenders.push(`${relativePath}:${index + 1} ${match[1]} → ${value}`);
+            offenders.push(
+              `${relativePath}:${index + 1} ${match[1]} → ${value}`,
+            );
           }
         });
     }

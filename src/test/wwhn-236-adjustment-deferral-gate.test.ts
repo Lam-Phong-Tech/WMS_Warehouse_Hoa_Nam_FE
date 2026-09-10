@@ -214,5 +214,4 @@ describe("WWHN-236 · R3 governance (DISP-STK-236)", () => {
    * nó khoá — các test ĐỌC những artefact đã rút được gỡ theo tại đây; phần khoá
    * baseline/hợp đồng còn trong repo giữ nguyên hiệu lực.
    */
-
 });

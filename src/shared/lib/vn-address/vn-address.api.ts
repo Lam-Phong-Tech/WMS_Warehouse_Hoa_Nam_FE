@@ -115,7 +115,9 @@ function selectWards(doc: WardsDoc, provinceCode: number): VnWard[] {
   const rows = doc.wardsByProvince[String(provinceCode)];
   // Rỗng = dữ liệu hỏng, KHÔNG cache. Đây chính là bẫy của bản gọi API cũ.
   if (!Array.isArray(rows) || rows.length === 0) {
-    throw new Error(tStatic("shared.address.provinceHasNoWards", { code: provinceCode }));
+    throw new Error(
+      tStatic("shared.address.provinceHasNoWards", { code: provinceCode }),
+    );
   }
   return sortByBareName(
     rows.map((row) => ({

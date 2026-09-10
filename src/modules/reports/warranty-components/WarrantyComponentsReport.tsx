@@ -844,7 +844,7 @@ export default function WarrantyComponentsReport() {
   const [ownerTerm, setOwnerTerm] = useState("");
   const [departmentTerm, setDepartmentTerm] = useState("");
   const [filtersHidden, setFiltersHidden] = useState(false);
-    /**
+  /**
    * Đổi tab KHÔNG khoá luồng chính: `shownViewMode` (tab đang sáng) cập nhật ở mức GẤP
    * nên người dùng thấy phản hồi ngay, còn `viewMode` — thứ quyết định panel nào
    * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
@@ -2071,10 +2071,12 @@ export default function WarrantyComponentsReport() {
               {canExportPii ? (
                 <UiTextField
                   // UAT TC_UI_22: placeholder dài hơn ô 300px nên bị cắt — nới ô
-              // theo nấc searchWide, placeholder đã rút gọn (messages.ts) và
-              // câu giải thích đầy đủ nằm ở title khi rê chuột.
-              sx={{ width: { xs: "100%", sm: 360 } }}
-              title={t("reports.warranty.piiReasonTitle", { min: PII_REASON_MIN_LENGTH })}
+                  // theo nấc searchWide, placeholder đã rút gọn (messages.ts) và
+                  // câu giải thích đầy đủ nằm ở title khi rê chuột.
+                  sx={{ width: { xs: "100%", sm: 360 } }}
+                  title={t("reports.warranty.piiReasonTitle", {
+                    min: PII_REASON_MIN_LENGTH,
+                  })}
                   error={piiReasonInvalid}
                   placeholder={t("reports.warranty.piiReasonPlaceholder", {
                     min: PII_REASON_MIN_LENGTH,

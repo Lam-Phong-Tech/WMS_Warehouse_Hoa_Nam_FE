@@ -465,7 +465,7 @@ export default function PackingLabelPrintReport() {
   const resultLabelMap = useMemo(() => resultLabels(t), [t]);
   const actionLabelMap = useMemo(() => actionLabels(t), [t]);
 
-    /**
+  /**
    * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
    * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
    * được dựng — cập nhật trong transition để React nhường luồng chính. Xem

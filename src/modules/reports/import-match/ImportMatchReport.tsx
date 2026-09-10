@@ -675,7 +675,7 @@ export default function ImportMatchReport() {
     [t],
   );
   const [context, setContext] = useState<ImportMatchContext>("IMPORT");
-    /**
+  /**
    * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
    * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
    * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
@@ -1810,117 +1810,118 @@ export default function ImportMatchReport() {
                overflow:hidden, cột STT bị xén. */
             <Box sx={{ px: { xs: 2, md: 3 } }}>
               <ResponsiveDataTable<ImportMatchBatch>
-              columns={[
-                {
-                  key: "stt",
-                  header: t("shared.table.rowNumber"),
-                  align: "center",
-                  width: 56,
-                  render: (row) =>
-                    mvpRowNumber(
-                      pagination.page,
-                      pagination.perPage,
-                      rowIndexOf(pagination.pageRows, row),
+                columns={[
+                  {
+                    key: "stt",
+                    header: t("shared.table.rowNumber"),
+                    align: "center",
+                    width: 56,
+                    render: (row) =>
+                      mvpRowNumber(
+                        pagination.page,
+                        pagination.perPage,
+                        rowIndexOf(pagination.pageRows, row),
+                      ),
+                  },
+                  {
+                    key: "batchNo",
+                    header: keyLabel,
+                    sortAccessor: (row) => row.batchNo,
+                    render: (row) => (
+                      <Box sx={{ minWidth: 0 }}>
+                        <Box sx={{ fontWeight: 700, overflowWrap: "anywhere" }}>
+                          {row.batchNo || EMPTY_TEXT}
+                        </Box>
+                        <Box sx={{ fontSize: 12, color: S.textMedium }}>
+                          {row.caption}
+                        </Box>
+                      </Box>
                     ),
-                },
-                {
-                  key: "batchNo",
-                  header: keyLabel,
-                  sortAccessor: (row) => row.batchNo,
-                  render: (row) => (
-                    <Box sx={{ minWidth: 0 }}>
-                      <Box sx={{ fontWeight: 700, overflowWrap: "anywhere" }}>
-                        {row.batchNo || EMPTY_TEXT}
-                      </Box>
-                      <Box sx={{ fontSize: 12, color: S.textMedium }}>
-                        {row.caption}
-                      </Box>
-                    </Box>
-                  ),
-                },
-                {
-                  key: "at",
-                  header: t("reports.importMatchReport.colTime"),
-                  width: 165,
-                  sortAccessor: (row) => row.at,
-                  render: (row) => (row.at ? fmtDateTime(row.at) : EMPTY_TEXT),
-                },
-                {
-                  key: "total",
-                  header: t("reports.importMatchReport.colTotalRows"),
-                  align: "right",
-                  width: 110,
-                  sortAccessor: (row) => row.total,
-                  render: (row) => fmt(row.total),
-                },
-                {
-                  key: "success",
-                  header: t("reports.importMatchReport.colValid"),
-                  align: "right",
-                  width: 100,
-                  sortAccessor: (row) => row.success,
-                  render: (row) => fmt(row.success),
-                },
-                {
-                  key: "failed",
-                  header: t("reports.importMatchReport.colFailed"),
-                  align: "right",
-                  width: 90,
-                  sortAccessor: (row) => row.failed,
-                  render: (row) => fmt(row.failed),
-                },
-                {
-                  key: "duplicate",
-                  header: t("reports.importMatchReport.colDuplicate"),
-                  align: "right",
-                  width: 95,
-                  sortAccessor: (row) => row.duplicate,
-                  render: (row) => fmt(row.duplicate),
-                },
-                {
-                  key: "rate",
-                  header: t("reports.importMatchReport.colValidRate"),
-                  align: "right",
-                  width: 125,
-                  sortAccessor: (row) =>
-                    row.total > 0 ? row.success / row.total : 0,
-                  render: (row) => pct(row.success, row.total),
-                },
-                {
-                  key: "actor",
-                  header: t("reports.importMatchReport.colActor"),
-                  hideOnMobile: true,
-                  render: (row) => row.actor || EMPTY_TEXT,
-                },
-                {
-                  key: "status",
-                  header: t("reports.importMatchReport.colStatus"),
-                  width: 150,
-                  render: (row) => (
-                    <ReportStatusBadge
-                      value={row.status}
-                      label={reportStatusLabel(row.status)}
-                    />
-                  ),
-                },
-              ]}
-              rows={pagination.pageRows}
-              rowKey={(row) => `${row.context}:${row.id}`}
-              loading={loading}
-              onRowClick={(row) => setOpenBatch(row)}
-              emptyText={t("reports.importMatchReport.logEmpty")}
-              renderRowActions={(row) => (
-                <ActionButton
-                  kind="detail"
-                  aria-label={t("reports.importMatchReport.rowDetailAria", {
-                    code: row.batchNo,
-                  })}
-                  sx={{ whiteSpace: "nowrap" }}
-                  onClick={() => setOpenBatch(row)}
-                >
-                  {t("reports.importMatchReport.detail")}
-                </ActionButton>
-              )}
+                  },
+                  {
+                    key: "at",
+                    header: t("reports.importMatchReport.colTime"),
+                    width: 165,
+                    sortAccessor: (row) => row.at,
+                    render: (row) =>
+                      row.at ? fmtDateTime(row.at) : EMPTY_TEXT,
+                  },
+                  {
+                    key: "total",
+                    header: t("reports.importMatchReport.colTotalRows"),
+                    align: "right",
+                    width: 110,
+                    sortAccessor: (row) => row.total,
+                    render: (row) => fmt(row.total),
+                  },
+                  {
+                    key: "success",
+                    header: t("reports.importMatchReport.colValid"),
+                    align: "right",
+                    width: 100,
+                    sortAccessor: (row) => row.success,
+                    render: (row) => fmt(row.success),
+                  },
+                  {
+                    key: "failed",
+                    header: t("reports.importMatchReport.colFailed"),
+                    align: "right",
+                    width: 90,
+                    sortAccessor: (row) => row.failed,
+                    render: (row) => fmt(row.failed),
+                  },
+                  {
+                    key: "duplicate",
+                    header: t("reports.importMatchReport.colDuplicate"),
+                    align: "right",
+                    width: 95,
+                    sortAccessor: (row) => row.duplicate,
+                    render: (row) => fmt(row.duplicate),
+                  },
+                  {
+                    key: "rate",
+                    header: t("reports.importMatchReport.colValidRate"),
+                    align: "right",
+                    width: 125,
+                    sortAccessor: (row) =>
+                      row.total > 0 ? row.success / row.total : 0,
+                    render: (row) => pct(row.success, row.total),
+                  },
+                  {
+                    key: "actor",
+                    header: t("reports.importMatchReport.colActor"),
+                    hideOnMobile: true,
+                    render: (row) => row.actor || EMPTY_TEXT,
+                  },
+                  {
+                    key: "status",
+                    header: t("reports.importMatchReport.colStatus"),
+                    width: 150,
+                    render: (row) => (
+                      <ReportStatusBadge
+                        value={row.status}
+                        label={reportStatusLabel(row.status)}
+                      />
+                    ),
+                  },
+                ]}
+                rows={pagination.pageRows}
+                rowKey={(row) => `${row.context}:${row.id}`}
+                loading={loading}
+                onRowClick={(row) => setOpenBatch(row)}
+                emptyText={t("reports.importMatchReport.logEmpty")}
+                renderRowActions={(row) => (
+                  <ActionButton
+                    kind="detail"
+                    aria-label={t("reports.importMatchReport.rowDetailAria", {
+                      code: row.batchNo,
+                    })}
+                    sx={{ whiteSpace: "nowrap" }}
+                    onClick={() => setOpenBatch(row)}
+                  >
+                    {t("reports.importMatchReport.detail")}
+                  </ActionButton>
+                )}
                 // Trang có thể đặt tới 100 dòng/trang: cuộn trong khung và ghim
                 // tiêu đề cột thay vì kéo trang thành một dải rất dài.
                 maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}

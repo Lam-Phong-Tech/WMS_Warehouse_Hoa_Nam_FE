@@ -208,8 +208,10 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     });
     fireEvent.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
     await waitFor(() => expect(updateWarrantyCase).toHaveBeenCalledTimes(1));
-    const request = vi.mocked(updateWarrantyCase).mock
-      .calls[0][1] as Record<string, unknown>;
+    const request = vi.mocked(updateWarrantyCase).mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
     expect(request.status).toBe("COMPLETED");
     expect(request.estimated_completion_date).toBeUndefined();
   });

@@ -28,7 +28,12 @@ async function clearSessionHint(): Promise<void> {
  * Đường dẫn KHÔNG cần đăng nhập. Vào thẳng một trong số này mà chưa từng đăng
  * nhập trên máy thì không có gì để làm mới — xem `shouldAttemptRefresh`.
  */
-const PUBLIC_PATH_PREFIXES = ["/login", "/forgot-password", "/reset-password", "/pv"];
+const PUBLIC_PATH_PREFIXES = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/pv",
+];
 
 /**
  * Có nên thử `POST /auth/refresh` lúc khởi động không?

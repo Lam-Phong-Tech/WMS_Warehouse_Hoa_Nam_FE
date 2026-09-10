@@ -347,11 +347,7 @@ export const authService = {
    * thu hồi đúng phiên rồi hết hạn cookie đó.
    */
   logout() {
-    return http.post<null>(
-      API_ENDPOINTS.LOGOUT,
-      {},
-      { withCredentials: true },
-    );
+    return http.post<null>(API_ENDPOINTS.LOGOUT, {}, { withCredentials: true });
   },
 
   async me() {

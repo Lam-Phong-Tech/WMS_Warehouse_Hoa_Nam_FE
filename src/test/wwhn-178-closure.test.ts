@@ -55,5 +55,4 @@ describe("WWHN-178 R2 closure package", () => {
    * nó khoá — các test ĐỌC những artefact đã rút được gỡ theo tại đây; phần khoá
    * baseline/hợp đồng còn trong repo giữ nguyên hiệu lực.
    */
-
 });

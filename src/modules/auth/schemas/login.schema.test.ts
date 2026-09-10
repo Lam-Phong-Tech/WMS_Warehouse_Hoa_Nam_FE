@@ -23,8 +23,10 @@ describe("loginSchema — BE m1 auth identifier contract", () => {
 
   it("rejects a bare username — email đầy đủ mới đăng nhập được", () => {
     expect(
-      loginSchema.safeParse({ identifier: "admin", password: TEST_ONLY_PASSWORD })
-        .success,
+      loginSchema.safeParse({
+        identifier: "admin",
+        password: TEST_ONLY_PASSWORD,
+      }).success,
     ).toBe(false);
     expect(
       loginSchema.safeParse({
@@ -61,8 +63,10 @@ describe("loginSchema — BE m1 auth identifier contract", () => {
   it("does not impose password-strength rules on login", () => {
     const shortPw = "x";
     expect(
-      loginSchema.safeParse({ identifier: "admin@gmail.com", password: shortPw })
-        .success,
+      loginSchema.safeParse({
+        identifier: "admin@gmail.com",
+        password: shortPw,
+      }).success,
     ).toBe(true);
   });
 
@@ -84,8 +88,10 @@ describe("loginSchema — BE m1 auth identifier contract", () => {
       }).success,
     ).toBe(false);
     expect(
-      loginSchema.safeParse({ identifier: "admin user@gmail.com", password: anyPw })
-        .success,
+      loginSchema.safeParse({
+        identifier: "admin user@gmail.com",
+        password: anyPw,
+      }).success,
     ).toBe(false);
   });
 });

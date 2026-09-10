@@ -1393,8 +1393,8 @@ export function WarrantyDetailModal({
         >
           {detail ? (
             <StatusProgressSteps
-              labels={stepStatuses.map(
-                (status) => businessLabel(WARRANTY_STATUS_LABELS, status),
+              labels={stepStatuses.map((status) =>
+                businessLabel(WARRANTY_STATUS_LABELS, status),
               )}
               activeStep={stepIndex}
               errorIndex={isCancelled ? stepIndex : null}
@@ -1660,7 +1660,7 @@ export function WarrantyDetailModal({
                             ) : (
                               // `||` chứ không `??`: hồ sơ chưa gắn bệnh/lỗi thì
                               // service trả CHUỖI RỖNG, `??` sẽ để lọt ô trắng.
-                              (detail.defect || EMPTY_TEXT)
+                              detail.defect || EMPTY_TEXT
                             )
                           }
                         />

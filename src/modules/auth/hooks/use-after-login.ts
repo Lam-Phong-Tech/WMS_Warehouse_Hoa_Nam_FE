@@ -36,7 +36,9 @@ export function useAfterLogin(): (data: AuthenticatedLogin) => void {
       // Nhánh interceptor (phiên hết hạn giữa chừng) truyền attempted URL qua
       // ?redirect= vì window.location.assign không mang được router state.
       // Chỉ nhận path nội bộ để tránh open-redirect; không quay lại /login.
-      const redirectParam = new URLSearchParams(location.search).get("redirect");
+      const redirectParam = new URLSearchParams(location.search).get(
+        "redirect",
+      );
       const safeRedirect =
         redirectParam &&
         redirectParam.startsWith("/") &&

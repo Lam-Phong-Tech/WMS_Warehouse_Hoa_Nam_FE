@@ -158,12 +158,13 @@ describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
   beforeEach(() => {
     vi.mocked(http.get).mockReset();
     vi.mocked(http.getPage).mockReset();
-    vi.mocked(http.get).mockImplementation(async (url: unknown) =>
-      // Danh mục SKU đi qua GET /skus/lookup (xem fetchAllSkus); mọi URL khác là
-      // chính báo cáo Import & Match.
-      (String(url) === "/skus/lookup"
-        ? PAGE_PAYLOAD["/products"]
-        : IMPORT_MATCH) as unknown as never,
+    vi.mocked(http.get).mockImplementation(
+      async (url: unknown) =>
+        // Danh mục SKU đi qua GET /skus/lookup (xem fetchAllSkus); mọi URL khác là
+        // chính báo cáo Import & Match.
+        (String(url) === "/skus/lookup"
+          ? PAGE_PAYLOAD["/products"]
+          : IMPORT_MATCH) as unknown as never,
     );
     vi.mocked(http.getPage).mockImplementation(async (url: unknown) => ({
       data: (PAGE_PAYLOAD[String(url)] ?? []) as never,

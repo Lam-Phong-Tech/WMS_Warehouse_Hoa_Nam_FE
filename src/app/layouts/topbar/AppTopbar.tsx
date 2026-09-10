@@ -390,7 +390,6 @@ export function AppTopbar({
               }
             }}
           />
-         
         </label>
         {openMenu === "search" ? (
           <div

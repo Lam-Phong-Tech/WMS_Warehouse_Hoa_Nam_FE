@@ -439,8 +439,7 @@ export const SCREEN_META: Record<
   },
   "WH-01": {
     title: "Cấu hình kho",
-    description:
-      "Thông tin, liên hệ và trạng thái của kho tổng duy nhất.",
+    description: "Thông tin, liên hệ và trạng thái của kho tổng duy nhất.",
   },
   "AGY-01": {
     title: "Danh mục đại lý / nơi nhận",

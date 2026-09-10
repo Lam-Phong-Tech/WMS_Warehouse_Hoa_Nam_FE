@@ -149,7 +149,10 @@ function observe(
  */
 export function initWebVitals(): () => void {
   const noop = () => {};
-  if (typeof window === "undefined" || typeof PerformanceObserver === "undefined") {
+  if (
+    typeof window === "undefined" ||
+    typeof PerformanceObserver === "undefined"
+  ) {
     return noop;
   }
 

@@ -163,7 +163,10 @@ describe("axios auth/session interceptor WWHN-165", () => {
     const first = rejectedHandler()(makeError(401, "/inventory-balances"));
     const second = rejectedHandler()(makeError(401, "/inbound-documents"));
     resolveRefresh({
-      data: { success: true, data: { access_token: "shared", token_type: "bearer", expires_in: 900 } },
+      data: {
+        success: true,
+        data: { access_token: "shared", token_type: "bearer", expires_in: 900 },
+      },
     });
     await Promise.all([first, second]);
 
@@ -173,12 +176,18 @@ describe("axios auth/session interceptor WWHN-165", () => {
 
   it("refresh xếp hàng liên tab qua navigator.locks khi có", async () => {
     const request = vi.fn(
-      (_name: string, _options: LockOptions, callback: () => Promise<unknown>) =>
-        callback(),
+      (
+        _name: string,
+        _options: LockOptions,
+        callback: () => Promise<unknown>,
+      ) => callback(),
     );
     vi.stubGlobal("navigator", { ...navigator, locks: { request } });
     vi.spyOn(api, "post").mockResolvedValue({
-      data: { success: true, data: { access_token: "locked", token_type: "bearer", expires_in: 900 } },
+      data: {
+        success: true,
+        data: { access_token: "locked", token_type: "bearer", expires_in: 900 },
+      },
     });
     vi.spyOn(api, "request").mockResolvedValue({ data: "ok" });
 

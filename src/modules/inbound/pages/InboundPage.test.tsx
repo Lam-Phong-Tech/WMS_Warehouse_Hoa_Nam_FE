@@ -66,7 +66,9 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
       await screen.findByText("Chờ bổ sung thông tin (2 SKU)"),
     ).toBeInTheDocument();
     // Phiếu đủ thông tin không bị gắn nhãn oan.
-    expect(screen.getAllByText("Chờ bổ sung thông tin (2 SKU)")).toHaveLength(1);
+    expect(screen.getAllByText("Chờ bổ sung thông tin (2 SKU)")).toHaveLength(
+      1,
+    );
   });
 
   it("lọc ở BE chứ không lọc sau khi phân trang", async () => {

@@ -795,7 +795,10 @@ export function PvProductCatalogPage() {
                   data-testid={`pv-catalog-view-${tab.value}`}
                   onClick={() => setView(tab.value)}
                   onKeyDown={(event) => {
-                    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+                    if (
+                      event.key !== "ArrowLeft" &&
+                      event.key !== "ArrowRight"
+                    ) {
                       return;
                     }
                     event.preventDefault();

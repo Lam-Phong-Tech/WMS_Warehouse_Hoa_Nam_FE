@@ -137,7 +137,9 @@ function spreadEndValues(rawY: ReadonlyArray<number>): number[] {
   }
   const overflow = Math.max(...resolved, CHART_BOTTOM) - CHART_BOTTOM;
   if (overflow <= 0) return resolved;
-  return resolved.map((y) => Math.max(CHART_TOP + CHART_FONT_SIZE, y - overflow));
+  return resolved.map((y) =>
+    Math.max(CHART_TOP + CHART_FONT_SIZE, y - overflow),
+  );
 }
 
 type ViewMode = "table" | "slice";
@@ -280,7 +282,7 @@ export default function IoHistoryReport() {
   });
   const [type, setType] = useState<IoTypeFilter>("");
   const [query, setQuery] = useState("");
-    /**
+  /**
    * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
    * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
    * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
@@ -1056,55 +1058,56 @@ export default function IoHistoryReport() {
                         ),
                       );
                       return CHART_SERIES.map((series, seriesIndex) => {
-                      const points = chart.values[seriesIndex];
-                      return (
-                        <g key={series.type} className={series.className}>
-                          <polyline
-                            className="chart-line"
-                            data-series={series.type}
-                            points={points
-                              .map(
-                                (value, index) =>
-                                  `${chart.xOf(index)},${chart.yOf(value)}`,
-                              )
-                              .join(" ")}
-                          />
-                          {points.map((value, index) => {
-                            const x = chart.xOf(index);
-                            const y = chart.yOf(value);
-                            const last = index === lastIndex;
-                            const showPoint = chart.density.showMarkers || last;
-                            const showValue = last && value !== 0;
-                            if (!showPoint && !showValue) return null;
-                            return (
-                              <g key={chart.days[index]}>
-                                {showPoint ? (
-                                  <circle
-                                    className="chart-point"
-                                    cx={x}
-                                    cy={y}
-                                    r={
-                                      chart.density.showMarkers
-                                        ? chart.density.markerRadius
-                                        : CHART_POINT_RADIUS
-                                    }
-                                  />
-                                ) : null}
-                                {showValue ? (
-                                  <text
-                                    className="chart-endvalue"
-                                    x={x - 7}
-                                    y={endValueY[seriesIndex]}
-                                    textAnchor="end"
-                                  >
-                                    {fmt(value)}
-                                  </text>
-                                ) : null}
-                              </g>
-                            );
-                          })}
-                        </g>
-                      );
+                        const points = chart.values[seriesIndex];
+                        return (
+                          <g key={series.type} className={series.className}>
+                            <polyline
+                              className="chart-line"
+                              data-series={series.type}
+                              points={points
+                                .map(
+                                  (value, index) =>
+                                    `${chart.xOf(index)},${chart.yOf(value)}`,
+                                )
+                                .join(" ")}
+                            />
+                            {points.map((value, index) => {
+                              const x = chart.xOf(index);
+                              const y = chart.yOf(value);
+                              const last = index === lastIndex;
+                              const showPoint =
+                                chart.density.showMarkers || last;
+                              const showValue = last && value !== 0;
+                              if (!showPoint && !showValue) return null;
+                              return (
+                                <g key={chart.days[index]}>
+                                  {showPoint ? (
+                                    <circle
+                                      className="chart-point"
+                                      cx={x}
+                                      cy={y}
+                                      r={
+                                        chart.density.showMarkers
+                                          ? chart.density.markerRadius
+                                          : CHART_POINT_RADIUS
+                                      }
+                                    />
+                                  ) : null}
+                                  {showValue ? (
+                                    <text
+                                      className="chart-endvalue"
+                                      x={x - 7}
+                                      y={endValueY[seriesIndex]}
+                                      textAnchor="end"
+                                    >
+                                      {fmt(value)}
+                                    </text>
+                                  ) : null}
+                                </g>
+                              );
+                            })}
+                          </g>
+                        );
                       });
                     })()}
                     {chart.days.map((day, index) =>

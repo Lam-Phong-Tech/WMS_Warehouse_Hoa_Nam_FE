@@ -29,9 +29,15 @@ const SRC_ROOT = join(process.cwd(), "src");
 const LEAK = "LEAK-refresh-token-must-never-reach-javascript";
 
 const FORBIDDEN: Array<{ label: string; pattern: RegExp }> = [
-  { label: "hàm lưu/đọc refresh token", pattern: /\b(?:set|get|remove|clear)RefreshToken\b/ },
+  {
+    label: "hàm lưu/đọc refresh token",
+    pattern: /\b(?:set|get|remove|clear)RefreshToken\b/,
+  },
   { label: "biến refreshToken", pattern: /\brefreshToken\b/ },
-  { label: "trường refresh_token trong object/kiểu", pattern: /\brefresh_token\b\s*\??\s*:/ },
+  {
+    label: "trường refresh_token trong object/kiểu",
+    pattern: /\brefresh_token\b\s*\??\s*:/,
+  },
   { label: "gửi refresh_token trong body", pattern: /\{\s*refresh_token\b/ },
 ];
 
@@ -40,16 +46,21 @@ const FORBIDDEN: Array<{ label: string; pattern: RegExp }> = [
  * chữ tiếng Việt/Anh, không phải giá trị token.
  */
 const ALLOWED: Record<string, RegExp[]> = {
-  "src/modules/audit-logs/constants/audit-log-labels.ts": [/\brefresh_token\b\s*\??\s*:/],
+  "src/modules/audit-logs/constants/audit-log-labels.ts": [
+    /\brefresh_token\b\s*\??\s*:/,
+  ],
 };
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
-      return entry === "test" || entry === "__preview__" ? [] : sourceFiles(full);
+      return entry === "test" || entry === "__preview__"
+        ? []
+        : sourceFiles(full);
     }
-    const isSource = /\.(ts|tsx)$/.test(entry) && !/\.test\.(ts|tsx)$/.test(entry);
+    const isSource =
+      /\.(ts|tsx)$/.test(entry) && !/\.test\.(ts|tsx)$/.test(entry);
     return isSource ? [full] : [];
   });
 }
@@ -75,7 +86,9 @@ describe("P1 — refresh token không tồn tại trong JavaScript", () => {
 
         for (const { label, pattern } of FORBIDDEN) {
           if (!pattern.test(content)) continue;
-          const allowed = (ALLOWED[rel] ?? []).some((allow) => allow.source === pattern.source);
+          const allowed = (ALLOWED[rel] ?? []).some(
+            (allow) => allow.source === pattern.source,
+          );
           if (!allowed) offenders.push(`${rel}: ${label}`);
         }
       }
@@ -128,8 +141,12 @@ describe("P1 — refresh token không tồn tại trong JavaScript", () => {
         },
       });
 
-      const result = await authService.login({ email: "p1@example.com", password: "<irrelevant>" });
-      if (result.kind !== "authenticated") throw new Error("expected authenticated login");
+      const result = await authService.login({
+        email: "p1@example.com",
+        password: "<irrelevant>",
+      });
+      if (result.kind !== "authenticated")
+        throw new Error("expected authenticated login");
 
       useAuthStore.getState().setAuth({
         token: result.access_token,
@@ -167,7 +184,12 @@ describe("P1 — refresh token không tồn tại trong JavaScript", () => {
           200,
           {
             success: true,
-            data: { access_token: "access-next", refresh_token: LEAK, token_type: "bearer", expires_in: 3600 },
+            data: {
+              access_token: "access-next",
+              refresh_token: LEAK,
+              token_type: "bearer",
+              expires_in: 3600,
+            },
           },
         ];
       });
@@ -185,9 +207,23 @@ describe("P1 — refresh token không tồn tại trong JavaScript", () => {
       const refreshBodies: string[] = [];
       mock.onPost(API_ENDPOINTS.REFRESH).reply((config) => {
         refreshBodies.push(String(config.data ?? ""));
-        return [200, { success: true, data: { access_token: "access-retry", token_type: "bearer", expires_in: 900 } }];
+        return [
+          200,
+          {
+            success: true,
+            data: {
+              access_token: "access-retry",
+              token_type: "bearer",
+              expires_in: 900,
+            },
+          },
+        ];
       });
-      mock.onGet("/p1-protected").replyOnce(401).onGet("/p1-protected").reply(200, { success: true, data: "ok" });
+      mock
+        .onGet("/p1-protected")
+        .replyOnce(401)
+        .onGet("/p1-protected")
+        .reply(200, { success: true, data: "ok" });
 
       const response = await api.get("/p1-protected");
 
@@ -211,15 +247,26 @@ describe("P1 — refresh token không tồn tại trong JavaScript", () => {
     });
 
     it("refresh xếp hàng giữa các tab bằng Web Locks khi trình duyệt hỗ trợ", async () => {
-      const request = vi.fn((_name: string, _options: LockOptions, callback: () => Promise<unknown>) =>
-        callback(),
+      const request = vi.fn(
+        (
+          _name: string,
+          _options: LockOptions,
+          callback: () => Promise<unknown>,
+        ) => callback(),
       );
       // Gắn `locks` lên navigator THẬT của jsdom. Thay cả object bằng bản spread sẽ làm mất
       // các getter nằm trên prototype (như `onLine`), và axios.ts coi như đang ngoại tuyến.
-      Object.defineProperty(navigator, "locks", { configurable: true, value: { request } });
+      Object.defineProperty(navigator, "locks", {
+        configurable: true,
+        value: { request },
+      });
       mock.onPost(API_ENDPOINTS.REFRESH).reply(200, {
         success: true,
-        data: { access_token: "access-locked", token_type: "bearer", expires_in: 900 },
+        data: {
+          access_token: "access-locked",
+          token_type: "bearer",
+          expires_in: 900,
+        },
       });
 
       try {

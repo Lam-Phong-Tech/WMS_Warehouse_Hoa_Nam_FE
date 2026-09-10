@@ -74,7 +74,9 @@ function stubLayout() {
             target,
             contentRect: rect,
             borderBoxSize: [{ inlineSize: rect.width, blockSize: rect.height }],
-            contentBoxSize: [{ inlineSize: rect.width, blockSize: rect.height }],
+            contentBoxSize: [
+              { inlineSize: rect.width, blockSize: rect.height },
+            ],
             devicePixelContentBoxSize: [],
           } as unknown as ResizeObserverEntry,
         ],
@@ -95,8 +97,15 @@ function stubLayout() {
   proto.getBoundingClientRect = function stubbed(this: HTMLElement) {
     const height = this.tagName === "TR" ? ROW_HEIGHT : SCROLLER_HEIGHT;
     return {
-      x: 0, y: 0, top: 0, left: 0, right: 900, bottom: height,
-      width: 900, height, toJSON: () => ({}),
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 900,
+      bottom: height,
+      width: 900,
+      height,
+      toJSON: () => ({}),
     } as DOMRect;
   };
   return () => {
@@ -147,14 +156,22 @@ describe("ResponsiveDataTable — cuộn ảo", () => {
   });
 
   it("bảng lớn CÓ khung cuộn riêng bật cuộn ảo và bỏ nút Hiện thêm", () => {
-    const { container } = renderTable(makeRows(VIRTUAL_ROW_THRESHOLD + 50), 400);
-    expect(container.querySelectorAll("tbody tr[data-index]").length).toBeGreaterThan(0);
+    const { container } = renderTable(
+      makeRows(VIRTUAL_ROW_THRESHOLD + 50),
+      400,
+    );
+    expect(
+      container.querySelectorAll("tbody tr[data-index]").length,
+    ).toBeGreaterThan(0);
     // Nút "Hiện thêm" chính là chỗ hỏng — cuộn ảo phải thay thế nó hẳn.
     expect(screen.queryByRole("button", { name: /hiện thêm/i })).toBeNull();
   });
 
   it("dòng đệm không lọt vào cây trợ năng và phủ đủ số cột", () => {
-    const { container } = renderTable(makeRows(VIRTUAL_ROW_THRESHOLD + 50), 400);
+    const { container } = renderTable(
+      makeRows(VIRTUAL_ROW_THRESHOLD + 50),
+      400,
+    );
     const spacers = container.querySelectorAll("tbody tr[data-virtual-spacer]");
     expect(spacers.length).toBeGreaterThan(0);
     for (const spacer of spacers) {
@@ -172,7 +189,10 @@ describe("ResponsiveDataTable — cuộn ảo", () => {
   });
 
   it("giữ nguyên tiêu đề ghim khi bật cuộn ảo", () => {
-    const { container } = renderTable(makeRows(VIRTUAL_ROW_THRESHOLD + 50), 400);
+    const { container } = renderTable(
+      makeRows(VIRTUAL_ROW_THRESHOLD + 50),
+      400,
+    );
     const header = container.querySelector("thead th");
     expect(header).not.toBeNull();
     // `maxBodyHeight` là điều kiện của CẢ tiêu đề ghim lẫn cuộn ảo — nếu đường
@@ -205,7 +225,9 @@ describe("ResponsiveDataTable — cuộn ảo", () => {
     expect(firstDataRow).not.toBeNull();
     // Sắp xếp tăng dần: dòng đầu phải là SKU-0. Nếu sort chỉ chạy trên cửa sổ
     // đang vẽ thì thứ tự sẽ phụ thuộc vị trí cuộn — đúng lớp lỗi cần chặn.
-    expect(within(firstDataRow as HTMLElement).getByText("SKU-0")).toBeVisible();
+    expect(
+      within(firstDataRow as HTMLElement).getByText("SKU-0"),
+    ).toBeVisible();
   });
 
   it("trạng thái rỗng/đang tải không đổi khi bật cuộn ảo", () => {

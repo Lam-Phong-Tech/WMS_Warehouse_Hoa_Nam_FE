@@ -389,7 +389,8 @@ export const RECONCILE_REASON_LABELS = bilingual(
     QUANTITY_MISMATCH: "Số lượng không khớp giữa số dư và sổ cái",
   },
   {
-    BALANCE_NOT_EQUAL_SIGNED_LEDGER_SUM: "Balance differs from signed ledger sum",
+    BALANCE_NOT_EQUAL_SIGNED_LEDGER_SUM:
+      "Balance differs from signed ledger sum",
     BALANCE_MISSING_FOR_LEDGER: "Ledger has activity but balance is missing",
     LEDGER_MISSING_FOR_BALANCE: "Balance exists but ledger has no activity",
     QUANTITY_MISMATCH: "Quantity differs between balance and ledger",

@@ -8,7 +8,10 @@ import {
 } from "react";
 import { useLocation, useOutlet } from "react-router-dom";
 import Box from "@mui/material/Box";
-import { PageVisibilityContext, isKeepAlivePath } from "@/app/layouts/keep-alive";
+import {
+  PageVisibilityContext,
+  isKeepAlivePath,
+} from "@/app/layouts/keep-alive";
 
 /**
  * GIỮ SỐNG các màn báo cáo đã mở — quay lại là hiện ngay, không dựng lại.
@@ -110,7 +113,12 @@ function KeptPage({ className, children }: PageProps) {
   }, []);
 
   return (
-    <Box ref={ref} component="section" className={className} sx={{ minWidth: 0 }}>
+    <Box
+      ref={ref}
+      component="section"
+      className={className}
+      sx={{ minWidth: 0 }}
+    >
       {children}
     </Box>
   );
@@ -128,7 +136,12 @@ function FreshPage({ className, children }: PageProps) {
   }, []);
 
   return (
-    <Box ref={ref} component="section" className={className} sx={{ minWidth: 0 }}>
+    <Box
+      ref={ref}
+      component="section"
+      className={className}
+      sx={{ minWidth: 0 }}
+    >
       {children}
     </Box>
   );

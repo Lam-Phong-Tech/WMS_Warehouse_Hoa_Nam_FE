@@ -20,9 +20,13 @@ describe("auth.store logout — vệ sinh máy dùng chung", () => {
   });
 
   it("logout xoá cookie erp-auth và toàn bộ draft form trong localStorage", () => {
-    Cookies.set("erp-auth", JSON.stringify({ state: { user: { name: "Ca sáng" } } }), {
-      path: "/",
-    });
+    Cookies.set(
+      "erp-auth",
+      JSON.stringify({ state: { user: { name: "Ca sáng" } } }),
+      {
+        path: "/",
+      },
+    );
     window.localStorage.setItem(
       "erp_form_draft:org-unit-create",
       JSON.stringify({ customer_phone: "0912345678" }),
@@ -37,8 +41,12 @@ describe("auth.store logout — vệ sinh máy dùng chung", () => {
     useAuthStore.getState().logout();
 
     expect(Cookies.get("erp-auth")).toBeUndefined();
-    expect(window.localStorage.getItem("erp_form_draft:org-unit-create")).toBeNull();
-    expect(window.localStorage.getItem("erp_form_draft:warranty-intake")).toBeNull();
+    expect(
+      window.localStorage.getItem("erp_form_draft:org-unit-create"),
+    ).toBeNull();
+    expect(
+      window.localStorage.getItem("erp_form_draft:warranty-intake"),
+    ).toBeNull();
     expect(window.localStorage.getItem("erp-language")).toBe("vi");
   });
 });

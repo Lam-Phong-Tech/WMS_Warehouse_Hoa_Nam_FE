@@ -27,7 +27,10 @@ const SRC_ROOT = path.resolve(__dirname, "..");
 const FORBIDDEN_SINKS: Array<{ label: string; pattern: RegExp }> = [
   { label: "dangerouslySetInnerHTML", pattern: /dangerouslySetInnerHTML/ },
   // Chỉ bắt GÁN (một dấu =), không bắt ĐỌC innerHTML hay so sánh ==.
-  { label: "innerHTML/outerHTML assignment", pattern: /\.(?:inner|outer)HTML\s*=(?!=)/ },
+  {
+    label: "innerHTML/outerHTML assignment",
+    pattern: /\.(?:inner|outer)HTML\s*=(?!=)/,
+  },
   { label: "insertAdjacentHTML", pattern: /\.insertAdjacentHTML\s*\(/ },
   { label: "document.write", pattern: /document\.write(?:ln)?\s*\(/ },
   { label: "eval()", pattern: /(?<![\w.])eval\s*\(/ },

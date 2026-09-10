@@ -52,7 +52,10 @@ function collectSourceFiles(dir: string, acc: string[] = []): string[] {
       collectSourceFiles(full, acc);
       continue;
     }
-    if (/\.(ts|tsx)$/.test(entry) && !full.endsWith(path.basename(__filename))) {
+    if (
+      /\.(ts|tsx)$/.test(entry) &&
+      !full.endsWith(path.basename(__filename))
+    ) {
       acc.push(full);
     }
   }
@@ -89,8 +92,8 @@ describe("WWHN-SEC-07 — hàng rào chuỗi cung ứng", () => {
       return /from ["']xlsx["']/.test(content);
     });
 
-    expect(importers.map((f) => path.relative(SRC_ROOT, f).replace(/\\/g, "/"))).toEqual([
-      "shared/utils/export-xlsx.ts",
-    ]);
+    expect(
+      importers.map((f) => path.relative(SRC_ROOT, f).replace(/\\/g, "/")),
+    ).toEqual(["shared/utils/export-xlsx.ts"]);
   });
 });

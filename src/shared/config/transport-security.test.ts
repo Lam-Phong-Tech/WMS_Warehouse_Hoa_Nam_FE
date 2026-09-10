@@ -76,9 +76,9 @@ describe("transportViolation — chặn http tới host thật", () => {
   });
 
   it("nêu đích danh biến môi trường sai trong câu lỗi", () => {
-    expect(violation("http://cdn.example.com", "prod", "VITE_STORAGE_URL")).toContain(
-      "VITE_STORAGE_URL",
-    );
+    expect(
+      violation("http://cdn.example.com", "prod", "VITE_STORAGE_URL"),
+    ).toContain("VITE_STORAGE_URL");
   });
 });
 
@@ -105,7 +105,9 @@ describe("transportViolation — môi trường uat/prod không được trỏ v
 describe("resolveRealtimeScheme — không cho phép mixed content", () => {
   it("nâng ws lên wss khi host là thật", () => {
     expect(resolveRealtimeScheme("http", "realtime.bigk.click")).toBe("https");
-    expect(resolveRealtimeScheme(undefined, "realtime.bigk.click")).toBe("https");
+    expect(resolveRealtimeScheme(undefined, "realtime.bigk.click")).toBe(
+      "https",
+    );
   });
 
   it("giữ nguyên http trên localhost", () => {

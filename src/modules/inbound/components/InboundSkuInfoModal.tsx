@@ -203,9 +203,7 @@ export function InboundSkuInfoModal({
             onClick={() => void handleSave()}
             disabled={saving}
           >
-            {saving
-              ? t("inbound.skuInfo.saving")
-              : t("inbound.skuInfo.submit")}
+            {saving ? t("inbound.skuInfo.saving") : t("inbound.skuInfo.submit")}
           </ActionButton>
         </>
       }

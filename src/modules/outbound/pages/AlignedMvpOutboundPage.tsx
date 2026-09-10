@@ -96,7 +96,15 @@ export default function AlignedMvpOutboundPage() {
   const canScan = can("outbound.scan");
 
   const listQuery = useQuery({
-    queryKey: ["mvp-outbound", "list", search, status, page, perPage, sortOrder],
+    queryKey: [
+      "mvp-outbound",
+      "list",
+      search,
+      status,
+      page,
+      perPage,
+      sortOrder,
+    ],
     queryFn: () =>
       fetchOutboundDocuments({
         search: search || undefined,

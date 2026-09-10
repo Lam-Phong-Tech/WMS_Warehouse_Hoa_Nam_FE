@@ -735,7 +735,9 @@ describe("IN-03 · chặn Ghi nhận khi SKU mới chưa đủ thông tin", () =
     expect(
       await screen.findByText("Còn 1 SKU mới chưa đủ thông tin"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ghi nhận nhập" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Ghi nhận nhập" }),
+    ).toBeDisabled();
     expect(screen.getByText("Thiếu thông tin")).toBeInTheDocument();
   });
 
@@ -750,9 +752,7 @@ describe("IN-03 · chặn Ghi nhận khi SKU mới chưa đủ thông tin", () =
       await screen.findByRole("button", { name: "Ghi nhận nhập" }),
     ).toBeEnabled();
     // Banner cảnh báo chỉ xuất hiện khi thật sự còn dòng thiếu thông tin.
-    expect(
-      screen.queryByText(/chưa đủ thông tin/),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/chưa đủ thông tin/)).not.toBeInTheDocument();
   });
 
   it("gửi tên và đơn vị tính của SKU mới lên đúng dòng phiếu", async () => {

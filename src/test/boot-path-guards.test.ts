@@ -43,8 +43,9 @@ describe("đường tới hạn F5 — hàng rào tĩnh", () => {
     expect(preload).toContain('from "@/app/router/route-components"');
 
     const components = read("src/app/router/route-components.ts");
-    const declared = [...components.matchAll(/^export const (\w+) = lazyRoute/gm)]
-      .map((m) => m[1]);
+    const declared = [
+      ...components.matchAll(/^export const (\w+) = lazyRoute/gm),
+    ].map((m) => m[1]);
     // Ngưỡng thấp có chủ đích: chỉ để bắt trường hợp file bị rút ruột, không
     // phải để đếm chính xác số màn (số đó còn tăng).
     expect(declared.length).toBeGreaterThan(30);
@@ -99,7 +100,9 @@ describe("đường tới hạn F5 — hàng rào tĩnh", () => {
   it("IndexedDB được mở song song với vòng mạng xác thực, không nối tiếp sau nó", () => {
     const main = read("src/main.tsx");
     expect(main).toContain("warmIdb()");
-    expect(read("src/shared/cache/idb.ts")).toContain("export function warmIdb");
+    expect(read("src/shared/cache/idb.ts")).toContain(
+      "export function warmIdb",
+    );
   });
 
   it("persisted cache được ghi khi rời trang, không chỉ theo debounce", () => {

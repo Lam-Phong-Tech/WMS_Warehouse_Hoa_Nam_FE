@@ -37,8 +37,15 @@ function stubLayout() {
   proto.getBoundingClientRect = function stubbed(this: HTMLElement) {
     const height = this.tagName === "LI" ? ROW_HEIGHT : SCROLLER_HEIGHT;
     return {
-      x: 0, y: 0, top: 0, left: 0, right: 900, bottom: height,
-      width: 900, height, toJSON: () => ({}),
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 900,
+      bottom: height,
+      width: 900,
+      height,
+      toJSON: () => ({}),
     } as DOMRect;
   };
   class ImmediateResizeObserver {
@@ -54,7 +61,9 @@ function stubLayout() {
             target,
             contentRect: rect,
             borderBoxSize: [{ inlineSize: rect.width, blockSize: rect.height }],
-            contentBoxSize: [{ inlineSize: rect.width, blockSize: rect.height }],
+            contentBoxSize: [
+              { inlineSize: rect.width, blockSize: rect.height },
+            ],
             devicePixelContentBoxSize: [],
           } as unknown as ResizeObserverEntry,
         ],
@@ -121,9 +130,9 @@ describe("VirtualList", () => {
 
   it("có khung cuộn + vượt ngưỡng ⇒ cuộn ảo, bỏ nút Hiện thêm", () => {
     const { container } = renderList(makeRows(VIRTUAL_ROW_THRESHOLD + 50), 400);
-    expect(
-      container.querySelectorAll("li[data-index]").length,
-    ).toBeGreaterThan(0);
+    expect(container.querySelectorAll("li[data-index]").length).toBeGreaterThan(
+      0,
+    );
     // Chỉ vẽ một phần: cuộn ảo mà vẫn dựng đủ 200 mục là hỏng mất mục đích.
     expect(container.querySelectorAll("li[data-index]").length).toBeLessThan(
       VIRTUAL_ROW_THRESHOLD,

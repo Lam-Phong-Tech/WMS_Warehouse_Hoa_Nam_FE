@@ -779,7 +779,7 @@ export default function RecipientAgencyReport() {
   } | null>(null);
   const [exporting, setExporting] = useState<"XLSX" | "CSV" | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-    /**
+  /**
    * Đổi tab KHÔNG khoá luồng chính: `shownViewMode` (tab đang sáng) cập nhật ở mức GẤP
    * nên người dùng thấy phản hồi ngay, còn `viewMode` — thứ quyết định panel nào
    * được dựng — cập nhật trong transition để React nhường luồng chính. Xem

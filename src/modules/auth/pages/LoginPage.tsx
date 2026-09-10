@@ -9,7 +9,13 @@ import {
   toLoginRequest,
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
-import { Box, UiAlert, UiButton, UiFormCheckbox, UiTextField } from "@/shared/ui";
+import {
+  Box,
+  UiAlert,
+  UiButton,
+  UiFormCheckbox,
+  UiTextField,
+} from "@/shared/ui";
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
@@ -133,7 +139,9 @@ export function LoginPage() {
         titleId="login-mfa-title"
         title={<>{t("auth.mfa.challengeTitle")}</>}
         subtitle={t("auth.mfa.challengeSubtitle")}
-        loadingText={mfaVerify.isPending ? t("auth.login.authenticating") : null}
+        loadingText={
+          mfaVerify.isPending ? t("auth.login.authenticating") : null
+        }
       >
         {mfaErrorMessage && (
           <Box sx={{ marginBottom: "14px" }}>

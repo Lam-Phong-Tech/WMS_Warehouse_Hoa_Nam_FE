@@ -4344,7 +4344,8 @@ export const MESSAGES_VI = {
     },
     address: {
       wardsLoadError: "Không nạp được danh mục phường / xã.",
-      provinceHasNoWards: "Tỉnh/thành {code} không có phường/xã trong danh mục.",
+      provinceHasNoWards:
+        "Tỉnh/thành {code} không có phường/xã trong danh mục.",
       legend: "Địa chỉ",
       province: "Tỉnh / Thành phố",
       ward: "Phường / Xã",

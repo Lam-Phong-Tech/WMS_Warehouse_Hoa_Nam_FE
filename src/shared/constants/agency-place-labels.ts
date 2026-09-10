@@ -1,7 +1,4 @@
-import {
-  bilingual,
-  enumLabelOrText,
-} from "@/shared/constants/business-labels";
+import { bilingual, enumLabelOrText } from "@/shared/constants/business-labels";
 import { peekProvinces, stripDivisionPrefix } from "@/shared/lib/vn-address";
 
 /**
@@ -98,7 +95,6 @@ const PROVINCE_LABEL_BY_CODE: ReadonlyMap<string, string> = new Map<
       ],
   ),
 ]);
-
 
 /**
  * Nhãn hiển thị cho MỘT giá trị thị trường hoặc khu vực. Chuỗi rỗng vào thì

@@ -3,10 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { authService } from "@/modules/auth/services/auth.service";
-import type {
-  MfaEnrollment,
-  MfaStatus,
-} from "@/modules/auth/types/mfa.types";
+import type { MfaEnrollment, MfaStatus } from "@/modules/auth/types/mfa.types";
 import { Box, UiAlert, UiButton, UiTextField } from "@/shared/ui";
 import { useT } from "@/shared/i18n/useT";
 
@@ -93,7 +90,14 @@ export function MfaSetupPage() {
       : null;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: 640 }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "16px",
+        maxWidth: 640,
+      }}
+    >
       <Box>
         <h1 style={{ margin: 0 }}>{t("auth.mfa.setupTitle")}</h1>
         <p style={{ marginTop: 8 }}>{t("auth.mfa.setupSubtitle")}</p>

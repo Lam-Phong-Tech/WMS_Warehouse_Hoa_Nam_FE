@@ -861,7 +861,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <th className="stt-col">STT</th>
                 {/* Cột ảnh: nhận diện hàng bằng hình nhanh hơn đọc mã — nhiều mã
                     DongCheng chỉ khác nhau ở cỡ/đuôi mã máy. */}
-                <th className="thumb-col" aria-label={t("masterData.sku.colImage")} />
+                <th
+                  className="thumb-col"
+                  aria-label={t("masterData.sku.colImage")}
+                />
                 <SortableTh
                   label="SKU"
                   sortKey="skuCode"

@@ -38,7 +38,9 @@ describe("MovementTable · cột Nguồn", () => {
   it("hiện nhãn tiếng Việt thay vì mã enum của sổ biến động", async () => {
     renderWithProviders(<MovementTable rows={ROWS} />);
 
-    expect(await screen.findByText("Phiếu nhập / xuất kho")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Phiếu nhập / xuất kho"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Điều chỉnh tồn đầu kỳ")).toBeInTheDocument();
     expect(screen.queryByText("STOCK_DOCUMENT")).not.toBeInTheDocument();
     expect(screen.queryByText("OPENING_ADJUSTMENT")).not.toBeInTheDocument();

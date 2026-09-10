@@ -851,7 +851,9 @@ export async function searchAvailableProductSkus(
     },
   );
   const bySku = new Map<string, AvailableSkuOption>();
-  for (const row of rowsOf(result.data as RawRecord[] | { data?: RawRecord[] })) {
+  for (const row of rowsOf(
+    result.data as RawRecord[] | { data?: RawRecord[] },
+  )) {
     const record = row as RawRecord;
     const product =
       record.product && typeof record.product === "object"
@@ -873,7 +875,10 @@ export async function searchAvailableProductSkus(
         record.sku ?? record.sku_code ?? product?.sku_code ?? product?.code,
       ),
       sku_name: text(
-        record.product_name ?? record.sku_name ?? product?.sku_name ?? product?.name,
+        record.product_name ??
+          record.sku_name ??
+          product?.sku_name ??
+          product?.name,
       ),
       available,
     });
