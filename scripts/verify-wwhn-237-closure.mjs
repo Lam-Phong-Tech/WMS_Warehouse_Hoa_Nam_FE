@@ -14,16 +14,32 @@
  *
  *   npm run wwhn-237:verify
  *   npm run wwhn-237:verify -- --with-tests
+ *   WMS_BE_ROOT=<checkout BE> npm run wwhn-237:verify           # đối chiếu nửa BE ở chỗ khác
+ *   npm run wwhn-237:verify -- --evidence-dir=docs/evidence/WWHN-237   # CỐ Ý cập nhật bản tracked
  */
 
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const beRoot = resolve(root, "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE");
+/**
+ * Repo BE giữ nửa kia của DISP-STK-237. Mặc định là checkout cạnh bên (bố cục C:\LAM_PHONG_TECH);
+ * ai checkout BE chỗ khác thì truyền WMS_BE_ROOT.
+ *  - WMS_BE_ROOT trỏ tới thư mục không tồn tại ⇒ FAIL: cấu hình sai không được nuốt thành "vắng BE".
+ *  - Không đặt WMS_BE_ROOT và không có checkout cạnh bên (PR CI chỉ checkout FE) ⇒ hai check BE
+ *    ghi PENDING, uỷ quyền tường minh cho BE_DELEGATED_GATE chạy trong repo BE — giống gate 230.
+ *  - Có repo BE mà thiếu tệp ⇒ FAIL như trước.
+ */
+const BE_ROOT_FROM_ENV = (process.env.WMS_BE_ROOT ?? "").trim();
+const beRoot = BE_ROOT_FROM_ENV
+  ? resolve(BE_ROOT_FROM_ENV)
+  : resolve(root, "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE");
+const beReachable = existsSync(beRoot);
+const BE_DELEGATED_GATE =
+  "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE .github/workflows/wwhn-237-variance-report-deferral-gate.yml";
 const argv = new Set(process.argv.slice(2));
 const withTests = argv.has("--with-tests");
 
@@ -56,6 +72,11 @@ const checks = [];
 const record = (id, ok, detail) => {
   checks.push({ id, status: ok ? "PASS" : "FAIL", detail });
   if (!ok) failures.push(`${id}: ${detail}`);
+};
+
+/** PENDING không phải PASS: nó ghi rõ ai chịu trách nhiệm kiểm phần không chạy được ở đây. */
+const pending = (id, detail) => {
+  checks.push({ id, status: "PENDING", detail });
 };
 
 const readText = (relativePath, base = root) => {
@@ -249,7 +270,17 @@ const FE_SCOPE_MANDATORY = ["scripts/verify-wwhn-237-closure.mjs", "src/test/wwh
 }
 
 // ── 6. Đối chiếu nửa BE ──────────────────────────────────────────────────────
-{
+if (!beReachable && BE_ROOT_FROM_ENV) {
+  record(
+    "BE-ROOT",
+    false,
+    `WMS_BE_ROOT=${BE_ROOT_FROM_ENV} không tồn tại — cấu hình sai, không được coi là "không có checkout BE".`,
+  );
+} else if (!beReachable) {
+  const why = `lượt chạy này không có checkout BE (${beRoot}); nửa BE do ${BE_DELEGATED_GATE} kiểm — đặt WMS_BE_ROOT để đối chiếu tại chỗ`;
+  pending("BE-DISPOSITION", `DISP-STK-237 phía BE chưa đối chiếu: ${why}`);
+  pending("BE-GATE", `gate BE verify-wwhn237-variance-report-disposition.mjs chưa đối chiếu: ${why}`);
+} else {
   const beDisposition = readText("docs/decision-records/DISP-STK-237-VARIANCE-REPORT-DEFERRED.md", beRoot);
   record(
     "BE-DISPOSITION",
@@ -295,7 +326,10 @@ const identity = {
   be: {
     branch: pinnedPair?.pair?.backend?.branch ?? "m1",
     commit_sha: pinnedPair?.pair?.backend?.commit_sha ?? null,
-    head_at_run: git(["rev-parse", "HEAD"], beRoot),
+    root_source: BE_ROOT_FROM_ENV ? "WMS_BE_ROOT" : "sibling-default",
+    reachable: beReachable,
+    head_at_run: beReachable ? git(["rev-parse", "HEAD"], beRoot) : null,
+    delegated_gate: beReachable ? null : BE_DELEGATED_GATE,
   },
   baselines: {
     "docs/HN_SRS_FRD_v1.12_FULL.md": sha256("docs/HN_SRS_FRD_v1.12_FULL.md"),
@@ -308,7 +342,12 @@ const identity = {
   baseline_hash_rule:
     "Hash ghi tại thời điểm chạy gate, không phải hằng số dán tay: ERD còn đang được cập nhật ở task khác nên guard xác minh bằng anchor text §0.1, còn hash chỉ để QA1 tái lập đúng bản đã kiểm.",
   checks,
-  status: failures.length === 0 ? "PASS" : "FAIL",
+  status:
+    failures.length > 0
+      ? "FAIL"
+      : checks.some((check) => check.status === "PENDING")
+        ? "PASS_FE_HALF_BE_PENDING"
+        : "PASS",
 };
 
 if (withTests) {
@@ -326,17 +365,32 @@ if (withTests) {
   }
 }
 
-const outDir = join(root, "docs/evidence/WWHN-237");
+/**
+ * Evidence KHÔNG ghi đè tệp tracked theo mặc định. Trước đây mỗi lượt chạy viết lại
+ * docs/evidence/WWHN-237/FE_CLOSURE_IDENTITY.json ⇒ checkout CI bẩn (và `working_tree_clean`
+ * ghi sai), clone dùng chung sinh diff giả cho phiên khác. Nay mặc định ghi vào test-results/
+ * (gitignored); cập nhật bản đã commit phải chỉ định rõ --evidence-dir hoặc WWHN_237_EVIDENCE_DIR.
+ */
+const outDir = resolve(
+  root,
+  argValue("--evidence-dir") ?? process.env.WWHN_237_EVIDENCE_DIR ?? "test-results/wwhn-237",
+);
+const identityPath = join(outDir, "FE_CLOSURE_IDENTITY.json");
 mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, "FE_CLOSURE_IDENTITY.json"), `${JSON.stringify(identity, null, 2)}\n`);
+writeFileSync(identityPath, `${JSON.stringify(identity, null, 2)}\n`);
 
 console.log("WWHN-237 / DISP-STK-237 — FE closure gate\n");
 for (const c of checks) console.log(`  ${c.status} [${c.id}] ${c.detail}`);
-console.log(`\n  identity → docs/evidence/WWHN-237/FE_CLOSURE_IDENTITY.json`);
+console.log(`\n  identity → ${relative(root, identityPath).split("\\").join("/")}`);
 
 if (failures.length > 0) {
   console.error(`\nFAIL (${failures.length}):`);
   for (const f of failures) console.error(`  ${f}`);
   process.exit(1);
 }
-console.log(`\nOK — ${checks.length} check pass.`);
+const pendingCount = checks.filter((check) => check.status === "PENDING").length;
+console.log(
+  pendingCount > 0
+    ? `\nOK (nửa FE) — ${checks.length - pendingCount} check pass, ${pendingCount} PENDING uỷ quyền cho ${BE_DELEGATED_GATE}.`
+    : `\nOK — ${checks.length} check pass.`,
+);

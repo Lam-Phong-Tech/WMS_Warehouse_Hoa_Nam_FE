@@ -11,6 +11,8 @@
  *   npm run wwhn-230:verify
  *   npm run wwhn-230:verify -- --require-signoff
  *   npm run wwhn-230:verify -- --with-tests
+ *   WMS_BE_ROOT=<BE checkout> npm run wwhn-230:verify            # cross-check a BE checkout elsewhere
+ *   npm run wwhn-230:verify -- --evidence-dir=docs/evidence/WWHN-230   # deliberately refresh tracked evidence
  */
 
 import { createHash } from "node:crypto";
@@ -27,7 +29,16 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const beRoot = resolve(root, "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE");
+// BE root: WMS_BE_ROOT when given (a missing explicit root is a FAILURE, never "BE absent");
+// otherwise the sibling checkout. Without either (PR CI checks out FE only) the BE half is
+// reported PENDING and delegated to BE_DELEGATED_GATE in the BE repository.
+const BE_ROOT_FROM_ENV = (process.env.WMS_BE_ROOT ?? "").trim();
+const beRoot = BE_ROOT_FROM_ENV
+  ? resolve(BE_ROOT_FROM_ENV)
+  : resolve(root, "../../HoaNam_BE/WMS_Warehouse_Hoa_Nam_BE");
+const beReachable = existsSync(beRoot);
+const BE_DELEGATED_GATE =
+  "Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE .github/workflows/wwhn-230-scope-disposition.yml";
 const argv = new Set(process.argv.slice(2));
 const requireSignoff = argv.has("--require-signoff");
 const withTests = argv.has("--with-tests");
@@ -199,15 +210,20 @@ record("SURFACE-MODULES", offendingFiles.length === 0, `Stocktake source files f
 // 4. Cross-repo consistency with the BE disposition record
 // ---------------------------------------------------------------------------
 
-const beReachable = existsSync(beRoot);
 const APPROVAL = "docs/decision-records/DISP-STK-230-APPROVAL.json";
 let approval = null;
 
-if (!beReachable) {
+if (!beReachable && BE_ROOT_FROM_ENV) {
+  record(
+    "BE-ROOT",
+    false,
+    `WMS_BE_ROOT=${BE_ROOT_FROM_ENV} does not exist — a misconfigured BE root is a failure, not an absent checkout.`,
+  );
+} else if (!beReachable) {
   checks.push({
     id: "BE-RECORD",
     status: "PENDING",
-    detail: "BE checkout is not reachable from this path; run the BE gate separately.",
+    detail: `No BE checkout in this run (${beRoot}); the BE half is enforced by ${BE_DELEGATED_GATE}. Set WMS_BE_ROOT to cross-check here.`,
   });
 } else {
   const record230 = readText("docs/decision-records/DISP-STK-230-scope-disposition.md", beRoot);
@@ -299,7 +315,11 @@ const evidence = {
           commitSha: git(["rev-parse", "HEAD"], beRoot),
           workingTreeClean: git(["status", "--porcelain"], beRoot) === "",
         }
-      : { note: "BE checkout not reachable from this path." },
+      : {
+          note: "BE checkout not reachable in this run.",
+          rootSource: BE_ROOT_FROM_ENV ? "WMS_BE_ROOT" : "sibling-default",
+          delegatedGate: BE_DELEGATED_GATE,
+        },
   },
   baselineDigests: {
     "docs/HN_SRS_FRD_v1.12_FULL.md": sha256("docs/HN_SRS_FRD_v1.12_FULL.md"),
@@ -316,7 +336,19 @@ const evidence = {
   failures,
 };
 
-const evidenceDir = join(root, "docs/evidence/WWHN-230");
+// Evidence never overwrites tracked files by default: every run used to rewrite
+// docs/evidence/WWHN-230/{FE_CLOSURE_EVIDENCE.json,SHA256SUMS}, dirtying CI checkouts (and
+// falsifying workingTreeClean for the gates that ran afterwards) and the shared clone. The
+// default is now test-results/wwhn-230 (gitignored); refreshing the committed copy requires
+// an explicit --evidence-dir=<dir> or WWHN_230_EVIDENCE_DIR.
+const evidenceDirArg = process.argv
+  .slice(2)
+  .find((arg) => arg.startsWith("--evidence-dir="))
+  ?.slice("--evidence-dir=".length);
+const evidenceDir = resolve(
+  root,
+  evidenceDirArg ?? process.env.WWHN_230_EVIDENCE_DIR ?? "test-results/wwhn-230",
+);
 mkdirSync(evidenceDir, { recursive: true });
 writeFileSync(join(evidenceDir, "FE_CLOSURE_EVIDENCE.json"), `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
 
@@ -331,7 +363,9 @@ for (const check of checks) {
   const mark = check.status === "PASS" ? "PASS" : check.status === "PENDING" ? "PEND" : "FAIL";
   console.log(`[${mark}] ${check.id}${check.status === "PASS" ? "" : ` — ${check.detail}`}`);
 }
-console.log(`\nEvidence: docs/evidence/WWHN-230/FE_CLOSURE_EVIDENCE.json`);
+console.log(
+  `\nEvidence: ${relative(root, join(evidenceDir, "FE_CLOSURE_EVIDENCE.json")).split("\\").join("/")}`,
+);
 
 if (failures.length > 0) {
   console.error(`\nWWHN-230 FE closure gate FAILED (${failures.length}).`);
