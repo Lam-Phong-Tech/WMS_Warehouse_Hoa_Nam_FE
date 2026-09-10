@@ -1,3 +1,11 @@
+// Ghim múi giờ TRƯỚC mọi thứ khác. Ngày nghiệp vụ (kỳ báo cáo "Hôm nay", giờ chốt
+// "HH:mm DD-MM") tính theo giờ địa phương của máy, còn test viết theo giờ Việt Nam
+// (+07:00). Runner CI ubuntu chạy UTC nên report-period-presets và MovementTraceReport
+// đỏ trên CI nhưng xanh trên máy dev. Đặt ở đây để process chính lẫn mọi worker (kế thừa
+// env) chạy Asia/Ho_Chi_Minh bất kể TZ của máy; các import bên dưới được hoist nhưng
+// không đọc đồng hồ.
+process.env.TZ = "Asia/Ho_Chi_Minh";
+
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
