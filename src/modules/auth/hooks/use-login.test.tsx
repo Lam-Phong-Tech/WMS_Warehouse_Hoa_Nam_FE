@@ -72,7 +72,6 @@ const LOGIN_OK = {
   // WWHN-SEC-08: login tra ve union co discriminant.
   kind: "authenticated" as const,
   access_token: "access-token",
-  refresh_token: "refresh-token",
   token_type: "bearer" as const,
   expires_in: 3600,
   available_contexts: [CONTEXT],
@@ -86,12 +85,13 @@ describe("useLogin WWHN-165", () => {
     useAuthStore.setState({ isBootstrapped: true });
   });
 
-  it("khôi phục protected URL sau login và commit access/refresh token", async () => {
+  // P1 bảo mật 10/09/2026: chỉ access token vào bộ nhớ JS; refresh token nằm trong
+  // cookie HttpOnly nên FE không có gì để commit ngoài access token.
+  it("khôi phục protected URL sau login và chỉ commit access token", async () => {
     vi.mocked(authService.login).mockResolvedValue({
       // WWHN-SEC-08: login tra ve union co discriminant.
       kind: "authenticated" as const,
       access_token: "access-token",
-      refresh_token: "refresh-token",
       token_type: "bearer",
       expires_in: 3600,
       available_contexts: [CONTEXT],
@@ -123,7 +123,6 @@ describe("useLogin WWHN-165", () => {
       // WWHN-SEC-08: login tra ve union co discriminant.
       kind: "authenticated" as const,
       access_token: "access-token",
-      refresh_token: "refresh-token",
       token_type: "bearer",
       expires_in: 3600,
       available_contexts: [CONTEXT, secondContext],

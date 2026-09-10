@@ -30,9 +30,12 @@ interface AuthState {
   isSuperAdmin: boolean;
   isProfileLoaded: boolean;
 
+  /**
+   * P1 bảo mật 10/09/2026: chỉ nhận ACCESS token. Refresh token nằm trong cookie
+   * HttpOnly do BE đặt — store không có trường nào để giữ nó.
+   */
   setAuth: (data: {
     token: string;
-    refreshToken?: string;
     user: User;
     contexts?: AuthContext[];
   }) => void;
@@ -65,9 +68,8 @@ export const useAuthStore = create<AuthState>()(
       isSuperAdmin: false,
       isProfileLoaded: false,
 
-      setAuth: ({ token, refreshToken, user, contexts = [] }) => {
+      setAuth: ({ token, user, contexts = [] }) => {
         memoryStorage.setItem(token);
-        if (refreshToken) memoryStorage.setRefreshToken(refreshToken);
         set({
           token,
           user,

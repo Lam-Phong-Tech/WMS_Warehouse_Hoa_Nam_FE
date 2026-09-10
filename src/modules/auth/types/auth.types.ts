@@ -28,9 +28,12 @@ export interface AuthContext {
   scope_ref?: string | null;
 }
 
+/**
+ * P1 bảo mật 10/09/2026: không có trường refresh token. Trình duyệt chỉ nhận refresh
+ * token trong cookie HttpOnly do BE đặt; JavaScript không đọc, không lưu được nó.
+ */
 export interface LoginResponse {
   access_token: string;
-  refresh_token: string;
   token_type: string;
   expires_in: number;
   user: User;
@@ -109,15 +112,12 @@ export interface SwitchContextResponse {
 }
 
 /**
- * POST /auth/refresh rotates the refresh token on every success. Browser clients
- * may omit the JSON refresh_token after F5 because BE reads the long-lived token
- * from its HttpOnly cookie. Swagger/Postman/non-browser clients may continue to
- * send refresh_token in the JSON body. The rotated token remains in the response
- * for backward compatibility and same-tab memory refresh.
+ * POST /auth/refresh (P1 bảo mật 10/09/2026): trình duyệt gửi body rỗng, cookie
+ * HttpOnly mang refresh token; BE xoay vòng token trong Set-Cookie và chỉ trả access
+ * token + hồ sơ trong JSON. Kiểu này cố ý không có trường refresh token.
  */
 export interface RefreshResponse {
   access_token: string;
-  refresh_token: string;
   token_type: string;
   expires_in: number;
   user?: User;

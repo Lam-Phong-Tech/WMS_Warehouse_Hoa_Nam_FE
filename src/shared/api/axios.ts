@@ -46,46 +46,95 @@ function responseStatus(error: unknown): number | undefined {
   return response?.status;
 }
 
-function callRefresh() {
-  const refreshToken = memoryStorage.getRefreshToken();
-  return api.post<{
-    success: boolean;
-    data: {
-      access_token: string;
-      refresh_token?: string;
-      token_type: string;
-      expires_in: number;
-    };
-  }>(
-    API_ENDPOINTS.REFRESH,
-    refreshToken ? { refresh_token: refreshToken } : undefined,
-  );
+/** Payload của POST /auth/refresh mà FE được phép giữ — không có refresh token. */
+export interface RefreshSessionPayload {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  user?: unknown;
 }
 
-let refreshPromise: Promise<string> | null = null;
+const REFRESH_LOCK_NAME = "wms-auth-refresh";
 
-function refreshAccessToken(): Promise<string> {
+/**
+ * Hai tab cùng hết hạn access token sẽ cùng gọi /auth/refresh với CÙNG một cookie.
+ * BE xoay vòng token ở lần đầu và coi lần thứ hai là replay → thu hồi TOÀN BỘ phiên
+ * → mọi tab văng ra màn đăng nhập. Web Locks xếp hàng các lần refresh giữa mọi tab
+ * cùng origin: tab sau chờ tab trước xoay vòng xong mới gửi, lúc đó cookie đã là
+ * token mới. Trình duyệt không có Web Locks vẫn còn single-flight trong từng tab.
+ */
+function withCrossTabRefreshLock<T>(task: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator === "undefined" ? undefined : navigator.locks;
+  if (!locks || typeof locks.request !== "function") return task();
+
+  return new Promise<T>((resolve, reject) => {
+    locks
+      .request(REFRESH_LOCK_NAME, { mode: "exclusive" }, () =>
+        task().then(resolve, reject),
+      )
+      .catch(reject);
+  });
+}
+
+let refreshPromise: Promise<RefreshSessionPayload> | null = null;
+
+/**
+ * P1 bảo mật 10/09/2026 — làm mới phiên CHỈ bằng cookie HttpOnly.
+ *
+ * Body rỗng: refresh token nằm trong cookie `wms_refresh_token` mà JavaScript không
+ * đọc được, và BE từ chối (422) nếu body mang `refresh_token`. Trước đây FE giữ
+ * refresh token trong bộ nhớ JS và gửi lại ở đây — một lỗi XSS là đủ để lấy
+ * credential 14 ngày mang đi. Single-flight dùng chung cho interceptor lẫn
+ * bootstrap (`authService.refresh`).
+ */
+export function refreshSession(): Promise<RefreshSessionPayload> {
   if (!refreshPromise) {
-    refreshPromise = callRefresh()
+    refreshPromise = withCrossTabRefreshLock(() =>
+      api.post<{ success: boolean; data?: Partial<RefreshSessionPayload> }>(
+        API_ENDPOINTS.REFRESH,
+        {},
+        { withCredentials: true },
+      ),
+    )
       .then((res) => {
-        const token = res.data?.data?.access_token;
+        const data = res.data?.data;
+        const token = data?.access_token;
         if (typeof token !== "string" || token.trim() === "") {
           throw new Error(
             "AUTH_REFRESH_CONTRACT_INVALID: missing access_token",
           );
         }
-        const refreshToken = res.data.data.refresh_token;
-        memoryStorage.setItem(token);
-        if (refreshToken) memoryStorage.setRefreshToken(refreshToken);
-        // setToken revokes stale permission/profile before retrying the request.
-        useAuthStore.getState().setToken(token);
-        return token;
+        // Dựng object tường minh: BE cũ còn kèm refresh_token cũng không lọt vào state.
+        return {
+          access_token: token,
+          token_type: data?.token_type ?? "bearer",
+          expires_in: Number(data?.expires_in),
+          user: data?.user,
+        };
       })
       .finally(() => {
         refreshPromise = null;
       });
   }
   return refreshPromise;
+}
+
+let accessTokenRefresh: Promise<string> | null = null;
+
+function refreshAccessToken(): Promise<string> {
+  if (!accessTokenRefresh) {
+    accessTokenRefresh = refreshSession()
+      .then(({ access_token }) => {
+        memoryStorage.setItem(access_token);
+        // setToken revokes stale permission/profile before retrying the request.
+        useAuthStore.getState().setToken(access_token);
+        return access_token;
+      })
+      .finally(() => {
+        accessTokenRefresh = null;
+      });
+  }
+  return accessTokenRefresh;
 }
 
 function redirectToLogin() {

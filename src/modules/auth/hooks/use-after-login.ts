@@ -24,9 +24,10 @@ export function useAfterLogin(): (data: AuthenticatedLogin) => void {
 
   return useCallback(
     (data: AuthenticatedLogin) => {
+      // P1 bảo mật 10/09/2026: chỉ access token vào bộ nhớ JS; refresh token nằm
+      // trong cookie HttpOnly do BE đặt và FE không bao giờ chạm tới.
       setAuth({
         token: data.access_token,
-        refreshToken: data.refresh_token,
         user: data.user,
         contexts: data.available_contexts,
       });

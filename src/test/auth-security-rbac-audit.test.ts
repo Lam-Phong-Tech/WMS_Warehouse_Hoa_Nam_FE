@@ -25,10 +25,10 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 
-// Mock token values — dùng env var nếu có, fallback về placeholder ngắn (< 16 ký tự)
-// để tránh pre-commit hook pattern A5 (phát hiện access_token/refresh_token value >= 16 ký tự)
+// Mock token value — dùng env var nếu có, fallback về placeholder ngắn (< 16 ký tự)
+// để tránh pre-commit hook pattern A5 (phát hiện giá trị access token >= 16 ký tự).
+// P1 bảo mật 10/09/2026: không còn mock refresh token — FE không bao giờ giữ nó.
 const MOCK_TOKEN = process.env.TEST_MOCK_TOKEN ?? "<MOCK_TOKEN>";
-const MOCK_REFRESH = process.env.TEST_MOCK_REFRESH ?? "<MOCK_REFRESH>";
 
 // ============================================================================
 // Helper: get response interceptor rejected handler
@@ -154,7 +154,6 @@ describe("QA1.1: 401 Unauthenticated — Token Expired / Missing", () => {
     // Bài test: Token hết hạn nhưng refresh cookie còn hợp lệ.
     // Interceptor phải gọi /auth/refresh, lấy token mới, retry request gốc.
     const { memoryStorage } = await import("@/shared/lib/memory-storage");
-    vi.spyOn(memoryStorage, "getRefreshToken").mockReturnValue(MOCK_REFRESH);
     vi.spyOn(memoryStorage, "setItem").mockImplementation(() => {});
 
     const postSpy = vi.spyOn(api, "post").mockResolvedValue({
@@ -177,9 +176,13 @@ describe("QA1.1: 401 Unauthenticated — Token Expired / Missing", () => {
 
     const result = await rejected(error);
 
-    expect(postSpy).toHaveBeenCalledWith(API_ENDPOINTS.REFRESH, {
-      refresh_token: MOCK_REFRESH,
-    });
+    // P1 bảo mật 10/09/2026: refresh token chỉ đi trong cookie HttpOnly — body rỗng,
+    // gửi kèm credentials; JavaScript không có token nào để gửi.
+    expect(postSpy).toHaveBeenCalledWith(
+      API_ENDPOINTS.REFRESH,
+      {},
+      { withCredentials: true },
+    );
     expect(memoryStorage.setItem).toHaveBeenCalledWith(MOCK_TOKEN);
     expect(requestSpy).toHaveBeenCalled();
     expect(result).toEqual({ data: "ok" });
@@ -355,7 +358,6 @@ describe("QA1.3: Token Refresh — Concurrent / Race / Edge Cases", () => {
     // Bài test: 2 request cùng bị 401 cùng lúc. Chỉ 1 lần gọi refresh,
     // cả 2 đều retry với token mới.
     const { memoryStorage } = await import("@/shared/lib/memory-storage");
-    vi.spyOn(memoryStorage, "getRefreshToken").mockReturnValue(MOCK_REFRESH);
     vi.spyOn(memoryStorage, "setItem").mockImplementation(() => {});
 
     let resolvePost: (v: unknown) => void;

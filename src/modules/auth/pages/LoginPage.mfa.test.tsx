@@ -77,7 +77,7 @@ describe("LoginPage · xác thực hai bước", () => {
       screen.getByLabelText("Email"),
       "admin@example.com",
     );
-    await userEvent.type(screen.getByLabelText("Mật khẩu"), "Cntt@1234");
+    await userEvent.type(screen.getByLabelText("Mật khẩu"), "Test#Password-2026");
     await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
 
     expect(await screen.findByLabelText("Mã xác thực")).toBeInTheDocument();
@@ -96,7 +96,6 @@ describe("LoginPage · xác thực hai bước", () => {
     vi.mocked(authService.verifyMfa).mockResolvedValue({
       kind: "authenticated",
       access_token: "access-token",
-      refresh_token: "refresh-token",
       token_type: "bearer",
       expires_in: 3600,
       available_contexts: [CONTEXT],
@@ -106,7 +105,7 @@ describe("LoginPage · xác thực hai bước", () => {
     renderLogin();
 
     await userEvent.type(screen.getByLabelText("Email"), "admin@example.com");
-    await userEvent.type(screen.getByLabelText("Mật khẩu"), "Cntt@1234");
+    await userEvent.type(screen.getByLabelText("Mật khẩu"), "Test#Password-2026");
     await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
 
     const codeField = await screen.findByLabelText("Mã xác thực");

@@ -1,49 +1,47 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getMock, postMock } = vi.hoisted(() => ({
+const { getMock, postMock, refreshSessionMock } = vi.hoisted(() => ({
   getMock: vi.fn(),
   postMock: vi.fn(),
+  refreshSessionMock: vi.fn(),
 }));
 
 vi.mock("@/shared/api/http", () => ({
   http: { get: getMock, post: postMock },
 }));
 
-vi.mock("@/shared/lib/memory-storage", () => ({
-  memoryStorage: {
-    getRefreshToken: vi.fn(() => "refresh-current"),
-    setRefreshToken: vi.fn(),
-    removeRefreshToken: vi.fn(),
-  },
+vi.mock("@/shared/api/axios", () => ({
+  refreshSession: refreshSessionMock,
 }));
 
 import {
   AuthContractError,
   authService,
 } from "@/modules/auth/services/auth.service";
-import { memoryStorage } from "@/shared/lib/memory-storage";
+
+const USER = {
+  user_id: "user-1",
+  username: "warehouse01",
+  email: "qa@example.com",
+  display_name: "QA",
+  roles: [],
+  permissions: [],
+  warehouse_scope_ids: [],
+};
 
 describe("authService contract — BE m1 /api/v1/auth/*", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(memoryStorage.getRefreshToken).mockReturnValue("refresh-current");
   });
 
-  it("POST /auth/login gửi đúng email + password và lưu refresh token", async () => {
+  it("POST /auth/login gửi đúng email + password và KHÔNG giữ refresh token (P1)", async () => {
     postMock.mockResolvedValue({
       access_token: "access-token",
-      refresh_token: "refresh-token",
+      // BE cũ còn trả trường này: FE phải bỏ qua, không mang vào kết quả.
+      refresh_token: "<must-not-be-kept>",
       token_type: "bearer",
       expires_in: 3600,
-      user: {
-        user_id: "user-1",
-        username: "warehouse01",
-        email: "qa@example.com",
-        display_name: "QA",
-        roles: [],
-        permissions: [],
-        warehouse_scope_ids: [],
-      },
+      user: USER,
     });
 
     const result = await authService.login({
@@ -61,12 +59,12 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
     expect(result.kind).toBe("authenticated");
     if (result.kind !== "authenticated") throw new Error("unreachable");
     expect(result.access_token).toBe("access-token");
-    expect(memoryStorage.setRefreshToken).toHaveBeenCalledWith("refresh-token");
+    expect(result).not.toHaveProperty("refresh_token");
+    expect(JSON.stringify(result)).not.toContain("must-not-be-kept");
   });
 
   it("login fail-closed khi thiếu access_token", async () => {
     postMock.mockResolvedValue({
-      refresh_token: "refresh-token",
       expires_in: 3600,
       user: { id: 1, email: "qa@example.com", code: "QA" },
     });
@@ -79,7 +77,6 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
   it("login fail-closed khi user không có stable identifier", async () => {
     postMock.mockResolvedValue({
       access_token: "token",
-      refresh_token: "refresh-token",
       expires_in: 3600,
       user: { email: "qa@example.com" },
     });
@@ -89,10 +86,29 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
     ).rejects.toMatchObject({ field: "user.id" });
   });
 
-  it("POST /auth/refresh gửi memory refresh_token trong body và fail-closed với response sai", async () => {
+  it("POST /auth/mfa/verify dựng phiên từ user trả kèm, không giữ refresh token", async () => {
     postMock.mockResolvedValue({
+      access_token: "access-mfa",
+      refresh_token: "<must-not-be-kept>",
+      token_type: "bearer",
+      expires_in: 3600,
+      second_factor: "totp",
+      user: USER,
+    });
+
+    const result = await authService.verifyMfa("challenge-token", "123456");
+
+    expect(postMock).toHaveBeenCalledWith("/auth/mfa/verify", {
+      mfa_token: "challenge-token",
+      code: "123456",
+    });
+    expect(result.access_token).toBe("access-mfa");
+    expect(result).not.toHaveProperty("refresh_token");
+  });
+
+  it("POST /auth/refresh đi qua refreshSession (chỉ cookie) và fail-closed với response sai", async () => {
+    refreshSessionMock.mockResolvedValue({
       access_token: "",
-      refresh_token: "refresh-next",
       token_type: "bearer",
       expires_in: 0,
     });
@@ -100,62 +116,35 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
     await expect(authService.refresh()).rejects.toBeInstanceOf(
       AuthContractError,
     );
-    expect(postMock).toHaveBeenCalledWith("/auth/refresh", {
-      refresh_token: "refresh-current",
-    });
+    expect(refreshSessionMock).toHaveBeenCalledTimes(1);
+    expect(postMock).not.toHaveBeenCalled();
   });
 
-  it("POST /auth/refresh không có memory token vẫn gọi API để browser gửi HttpOnly cookie", async () => {
-    vi.mocked(memoryStorage.getRefreshToken).mockReturnValue(null);
-    postMock.mockResolvedValue({
+  it("POST /auth/refresh trả access token + hồ sơ, không có refresh token", async () => {
+    refreshSessionMock.mockResolvedValue({
       access_token: "<access-from-cookie>",
-      refresh_token: "<refresh-rotated-from-cookie>",
       token_type: "bearer",
       expires_in: 3600,
+      user: USER,
     });
 
     const result = await authService.refresh();
 
-    expect(postMock).toHaveBeenCalledWith("/auth/refresh", {});
     expect(result.access_token).toBe("<access-from-cookie>");
-    expect(memoryStorage.setRefreshToken).toHaveBeenCalledWith(
-      "<refresh-rotated-from-cookie>",
+    expect(result.user).toMatchObject({ user_id: "user-1" });
+    expect(result).not.toHaveProperty("refresh_token");
+  });
+
+  it("POST /auth/logout gửi body rỗng kèm credentials để BE thu hồi đúng phiên theo cookie", async () => {
+    postMock.mockResolvedValue(null);
+
+    await authService.logout();
+
+    expect(postMock).toHaveBeenCalledWith(
+      "/auth/logout",
+      {},
+      { withCredentials: true },
     );
-  });
-
-  it("POST /auth/refresh lưu refresh token mới sau rotation", async () => {
-    postMock.mockResolvedValue({
-      access_token: "access-next",
-      refresh_token: "refresh-next",
-      token_type: "bearer",
-      expires_in: 3600,
-    });
-
-    const result = await authService.refresh();
-
-    expect(result.access_token).toBe("access-next");
-    expect(memoryStorage.setRefreshToken).toHaveBeenCalledWith("refresh-next");
-  });
-
-  it("POST /auth/logout gửi refresh token hiện tại để BE revoke đúng phiên", async () => {
-    postMock.mockResolvedValue(null);
-
-    await authService.logout();
-
-    expect(postMock).toHaveBeenCalledWith("/auth/logout", {
-      refresh_token: "refresh-current",
-    });
-    expect(memoryStorage.removeRefreshToken).toHaveBeenCalledTimes(1);
-  });
-
-  it("POST /auth/logout không có memory token vẫn gọi API để BE dùng cookie", async () => {
-    vi.mocked(memoryStorage.getRefreshToken).mockReturnValue(null);
-    postMock.mockResolvedValue(null);
-
-    await authService.logout();
-
-    expect(postMock).toHaveBeenCalledWith("/auth/logout", {});
-    expect(memoryStorage.removeRefreshToken).toHaveBeenCalledTimes(1);
   });
 
   it("GET /auth/me dựng context kho từ warehouse_scope_ids và permission top-level", async () => {

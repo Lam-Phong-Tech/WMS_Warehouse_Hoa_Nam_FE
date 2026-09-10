@@ -20,25 +20,17 @@ export { useLogout } from "@/modules/auth/hooks/use-logout";
 
 /**
  * ═══════════════════════════════════════════════════════
- *  TOKEN STORAGE — MEMORY-ONLY (Phase 1 implemented)
+ *  TOKEN STORAGE
  * ═══════════════════════════════════════════════════════
  *
- * ✅ Đã implement Phase 1 - Hybrid Token Storage (2026-07-09):
- * - Access token: Lưu trong memory (không persist) → mất khi F5/đóng tab
- * - Cookie: Chỉ lưu user/contexts (non-sensitive data)
- * - Token không còn trong JS-readable cookie → giảm thiểu XSS risk
+ * - Access token: chỉ trong bộ nhớ JS của tab (`memoryStorage`) → mất khi F5/đóng tab.
+ * - Refresh token (P1 bảo mật 10/09/2026): CHỈ nằm trong cookie HttpOnly
+ *   `wms_refresh_token` (Path=/api/v1/auth) do BE đặt. JSON của login/refresh/MFA
+ *   verify không chứa nó; FE không lưu, không đọc, không gửi nó. Sau F5,
+ *   `bootstrapAuth` gọi POST /auth/refresh với body rỗng — trình duyệt tự gửi cookie.
+ * - Cookie `erp-auth` (JS đọc được): chỉ hồ sơ/contexts không nhạy cảm, xoá khi logout.
  *
- * ╔══════════════════════════════════════════════════════════════╗
- * ║  Hướng xử lý PHASE SAU (Phase 2 - P0):                     ║
- * ║  1. Backend thêm `POST /auth/refresh` endpoint               ║
- * ║  2. Backend set HttpOnly cookie cho refresh_token            ║
- * ║  3. FE tự động refresh khi access token hết hạn              ║
- * ║  4. User không phải login lại sau mỗi F5                     ║
- * ╚══════════════════════════════════════════════════════════════╝
- *
- * Giới hạn hiện tại:
- * - User phải login lại sau mỗi F5 (token mất khi refresh page)
- * - Vẫn có rủi ro XSS trong session (token trong memory)
- *
- * Ref: docs/TOKEN_STORAGE_HARDENING.md, docs/tickets/BE_REFRESH_ENDPOINT_TICKET.md
+ * Refresh chạy single-flight trong tab và xếp hàng giữa các tab bằng Web Locks
+ * (`refreshSession` ở shared/api/axios.ts) để hai tab cùng F5 không bị BE coi là
+ * replay token. `src/test/sec-p1-refresh-token-out-of-js.test.ts` khoá các bất biến này.
  */

@@ -1,12 +1,17 @@
 /**
- * Memory-only storage cho token - không persist vào cookie/localStorage.
+ * Memory-only storage cho ACCESS token - không persist vào cookie/localStorage.
  * Token chỉ tồn tại trong memory của browser session, mất khi F5/đóng tab.
- * Giảm thiểu rủi ro XSS so với cookie storage.
+ *
+ * P1 bảo mật 10/09/2026: module này KHÔNG giữ refresh token. Trước đây nó có các
+ * hàm lưu/đọc refresh token và FE gửi lại token 14 ngày đó trong body
+ * `/auth/refresh` — một lỗi XSS là đủ để lấy nó mang đi dùng từ máy khác. Refresh
+ * token nay chỉ nằm trong cookie HttpOnly do BE đặt: JavaScript không đọc, không
+ * ghi, không gửi được nó. `src/test/sec-p1-refresh-token-out-of-js.test.ts` chặn
+ * việc thêm lại.
  */
 
-// Lưu token trong biến toàn cục (memory-only)
+// Lưu access token trong biến toàn cục (memory-only)
 let accessToken: string | null = null;
-let refreshToken: string | null = null;
 
 export const memoryStorage = {
   getItem: (): string | null => {
@@ -26,7 +31,6 @@ export const memoryStorage = {
    */
   clear: (): void => {
     accessToken = null;
-    refreshToken = null;
   },
 
   /**
@@ -34,17 +38,5 @@ export const memoryStorage = {
    */
   getToken: (): string | null => {
     return accessToken;
-  },
-
-  getRefreshToken: (): string | null => {
-    return refreshToken;
-  },
-
-  setRefreshToken: (value: string): void => {
-    refreshToken = value;
-  },
-
-  removeRefreshToken: (): void => {
-    refreshToken = null;
   },
 };

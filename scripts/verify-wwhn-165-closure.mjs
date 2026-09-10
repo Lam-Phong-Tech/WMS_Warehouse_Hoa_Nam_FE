@@ -19,6 +19,13 @@ const requirePatterns = (path, patterns) => {
   }
   return content;
 };
+const forbidPatterns = (path, patterns) => {
+  const content = read(path);
+  for (const pattern of patterns) {
+    if (pattern.test(content)) failures.push(`${path} must not contain ${pattern}`);
+  }
+  return content;
+};
 
 // ── Tài liệu canonical + evidence index — ĐÃ RÚT theo 3822d45 ──────────────
 // docs/Task_docs_Jira/WWHN-165.md và docs/evidence/wwhn-165/* đã được gỡ khỏi
@@ -41,19 +48,29 @@ requirePatterns("src/shared/store/auth.store.ts", [
   /isProfileLoaded:\s*false/,
   /permissionCodes:\s*me\.permissions/,
 ]);
-// Bootstrap chuyển sang refresh bằng HttpOnly cookie (authService.refresh) —
-// không còn đọc refresh token từ JS memory khi khởi động.
+// Bootstrap refresh bằng HttpOnly cookie (authService.refresh) — không đọc refresh
+// token từ JS memory khi khởi động.
 requirePatterns("src/app/bootstrap-auth.ts", [/activeBootstrap/, /isInvalidSession/, /bootstrapError:\s*error/, /persist\.clearStorage/, /authService\.refresh\(\)/]);
 // Chuỗi lỗi đã chuyển sang i18n key (shared.states.*) — pin theo key thay vì text cứng.
 requirePatterns("src/app/router/ProtectedRoute.tsx", [/shared\.states\.sessionRestoreError/, /bootstrapAuth\(\)/, /shared\.states\.profileLoadError/]);
 requirePatterns("src/modules/auth/hooks/use-me.ts", [/queryKey:\s*\["auth",\s*"me",\s*token\]/, /status === 401 \|\| status === 403/]);
-// WWHN-SEC-08 tách bước MFA: setAuth/refresh_token/available_contexts dời sang use-after-login.
+// WWHN-SEC-08 tách bước MFA: setAuth/available_contexts dời sang use-after-login.
+//
+// P1 bảo mật 10/09/2026: refresh token KHÔNG còn tồn tại trong JavaScript — chỉ nằm
+// trong cookie HttpOnly do BE đặt. Bản trước của script này GHIM đúng lỗ hổng đó
+// (`refreshToken: data.refresh_token`, `refresh_token: string`, body
+// `refresh_token: refreshToken`); nay ghim điều ngược lại.
 requirePatterns("src/modules/auth/hooks/use-login.ts", [/authService\.login/, /mfa_required/, /afterLogin\(data\)/]);
-requirePatterns("src/modules/auth/hooks/use-after-login.ts", [/setAuth\(/, /refreshToken:\s*data\.refresh_token/, /available_contexts/]);
-requirePatterns("src/modules/auth/types/auth.types.ts", [/context_type/, /context_id/, /scope_ref/, /refresh_token:\s*string/]);
-requirePatterns("src/modules/auth/services/auth.service.ts", [/class AuthContractError/, /AUTH_CONTRACT_INVALID/, /requireNonEmptyString\(data\.access_token/, /normalizeTokenResponse/, /warehouse_scope_ids/, /refresh_token:\s*refreshToken/]);
+requirePatterns("src/modules/auth/hooks/use-after-login.ts", [/setAuth\(/, /available_contexts/]);
+forbidPatterns("src/modules/auth/hooks/use-after-login.ts", [/refresh_?token\s*:/i]);
+requirePatterns("src/modules/auth/types/auth.types.ts", [/context_type/, /context_id/, /scope_ref/]);
+forbidPatterns("src/modules/auth/types/auth.types.ts", [/refresh_token\s*\??\s*:/]);
+requirePatterns("src/modules/auth/services/auth.service.ts", [/class AuthContractError/, /AUTH_CONTRACT_INVALID/, /requireNonEmptyString\(data\.access_token/, /normalizeTokenResponse/, /warehouse_scope_ids/, /refreshSession\(\)/]);
+forbidPatterns("src/modules/auth/services/auth.service.ts", [/\b(?:set|get|remove)RefreshToken\b/, /refresh_token\s*:/]);
+forbidPatterns("src/shared/lib/memory-storage.ts", [/\brefreshToken\b/, /\b(?:set|get|remove)RefreshToken\b/]);
 requirePatterns("src/modules/auth/components/ContextSwitcher.tsx", [/context_type:/, /context_id:/, /scope_ref:/]);
-requirePatterns("src/shared/api/axios.ts", [/isAuthEndpoint/, /refreshStatus === 401 \|\| refreshStatus === 403/, /setToken\(token\)/, /Network\/5xx/]);
+requirePatterns("src/shared/api/axios.ts", [/isAuthEndpoint/, /refreshStatus === 401 \|\| refreshStatus === 403/, /setToken\(access_token\)/, /Network\/5xx/, /withCredentials:\s*true/, /navigator\.locks/]);
+forbidPatterns("src/shared/api/axios.ts", [/\b(?:set|get|remove)RefreshToken\b/, /\{\s*refresh_token\s*:/]);
 // e2e/wwhn-165-auth-session.spec.ts — ĐÃ RÚT theo 3822d45 (bộ e2e đã gỡ).
 
 for (const path of ["vite.config.ts", "vitest.config.ts"]) {
@@ -76,4 +93,4 @@ if (failures.length) {
   failures.forEach((failure) => console.error(`[wwhn-165] ERROR: ${failure}`));
   process.exit(1);
 }
-console.log("[wwhn-165] PASS: auth/session live-source controls and contract mapping are enforced (doc/evidence/e2e checks retired by 3822d45).");
+console.log("[wwhn-165] PASS: auth/session live-source controls, cookie-only refresh token and contract mapping are enforced (doc/evidence/e2e checks retired by 3822d45).");

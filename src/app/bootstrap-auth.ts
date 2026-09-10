@@ -35,7 +35,7 @@ const PUBLIC_PATH_PREFIXES = ["/login", "/forgot-password", "/reset-password", "
  *
  * TRƯỚC: luôn thử. Hệ quả đo được: mở trang /login trên máy sạch luôn tốn một
  * request CHẮC CHẮN HỎNG — BE trả 422 vì không có refresh token ở body lẫn
- * cookie (AuthController validate 'refresh_token' => required). Request đó nằm
+ * cookie HttpOnly nào để làm mới (P1: refresh token chỉ đi qua cookie). Request đó nằm
  * trên đường tới nội dung đầu tiên của trang đăng nhập, và mỗi lần F5 của khách
  * vãng lai đều tạo một dòng lỗi trong log BE.
  *
@@ -69,10 +69,11 @@ async function runBootstrap(): Promise<void> {
     return;
   }
 
-  // Always attempt one refresh. After F5 the access/refresh tokens held in JS
-  // memory are intentionally gone, while the server-issued HttpOnly refresh cookie
-  // can still represent a valid session. JavaScript cannot inspect that cookie, so
-  // "no memory token" must never be used as proof that the user is logged out.
+  // Always attempt one refresh. After F5 the access token held in JS memory is
+  // intentionally gone (the refresh token never lives in JS at all), while the
+  // server-issued HttpOnly refresh cookie can still represent a valid session.
+  // JavaScript cannot inspect that cookie, so "no memory token" must never be used
+  // as proof that the user is logged out.
   try {
     mark("refresh:start");
     const refreshed = await authService.refresh();

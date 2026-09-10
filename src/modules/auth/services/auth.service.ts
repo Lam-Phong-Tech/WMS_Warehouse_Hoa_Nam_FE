@@ -1,5 +1,6 @@
 import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { refreshSession } from "@/shared/api/axios";
 import type {
   ChangePasswordRequest,
   ForgotPasswordRequest,
@@ -21,7 +22,6 @@ import type {
   MfaStatus,
 } from "@/modules/auth/types/mfa.types";
 import type { User, UserRoleAssignment } from "@/shared/types/user";
-import { memoryStorage } from "@/shared/lib/memory-storage";
 import { tStatic } from "@/shared/i18n/useT";
 
 export class AuthContractError extends Error {
@@ -48,7 +48,6 @@ type BackendLoginResponse = {
   mfa_required?: boolean;
   mfa_token?: string;
   access_token?: string;
-  refresh_token?: string;
   token_type?: string;
   expires_in?: number;
   user?: BackendUser;
@@ -200,11 +199,16 @@ function deriveContexts(
   ];
 }
 
+/**
+ * P1 bảo mật 10/09/2026: object kết quả được dựng TƯỜNG MINH, không spread payload
+ * của BE — nên kể cả một BE cũ còn trả refresh token trong JSON, giá trị đó không đi
+ * vào kết quả, store hay storage nào của FE. Trình duyệt chỉ giữ refresh token trong
+ * cookie HttpOnly do BE đặt.
+ */
 function normalizeLoginResponse(data: BackendLoginResponse): LoginResponse {
   const user = normalizeUser(data.user);
   return {
     access_token: requireNonEmptyString(data.access_token, "access_token"),
-    refresh_token: requireNonEmptyString(data.refresh_token, "refresh_token"),
     token_type: data.token_type ?? "bearer",
     expires_in: requirePositiveNumber(data.expires_in, "expires_in"),
     user,
@@ -308,9 +312,7 @@ export const authService = {
       };
     }
 
-    const normalized = normalizeLoginResponse(response);
-    memoryStorage.setRefreshToken(normalized.refresh_token);
-    return { kind: "authenticated", ...normalized };
+    return { kind: "authenticated", ...normalizeLoginResponse(response) };
   },
 
   /**
@@ -321,9 +323,7 @@ export const authService = {
       API_ENDPOINTS.MFA_VERIFY,
       { mfa_token: mfaToken, code },
     );
-    const normalized = normalizeLoginResponse(response);
-    memoryStorage.setRefreshToken(normalized.refresh_token);
-    return { kind: "authenticated", ...normalized };
+    return { kind: "authenticated", ...normalizeLoginResponse(response) };
   },
 
   mfaStatus() {
@@ -342,12 +342,15 @@ export const authService = {
     return http.post<null>(API_ENDPOINTS.MFA_DISABLE, { password, code });
   },
 
+  /**
+   * Refresh token của phiên nằm trong cookie HttpOnly: body rỗng, BE tự đọc cookie để
+   * thu hồi đúng phiên rồi hết hạn cookie đó.
+   */
   logout() {
-    const refreshToken = memoryStorage.getRefreshToken();
-    memoryStorage.removeRefreshToken();
     return http.post<null>(
       API_ENDPOINTS.LOGOUT,
-      refreshToken ? { refresh_token: refreshToken } : {},
+      {},
+      { withCredentials: true },
     );
   },
 
@@ -365,24 +368,22 @@ export const authService = {
   },
 
   /**
-   * Refresh supports two transports:
-   * - memory token in JSON for same-tab/backward-compatible clients;
-   * - HttpOnly cookie when JavaScript memory was lost by F5/new page load.
+   * P1 bảo mật 10/09/2026 — làm mới phiên CHỈ bằng cookie HttpOnly.
    *
-   * The browser cannot inspect the HttpOnly cookie, therefore missing memory state
-   * must never be treated as an unauthenticated session before this request runs.
+   * Request không mang refresh token nào (body rỗng); trình duyệt tự gửi cookie
+   * `wms_refresh_token`, BE trả access token mới trong JSON và token xoay vòng trong
+   * Set-Cookie. JavaScript không đọc được cookie đó, nên "không có token trong bộ nhớ"
+   * không bao giờ được coi là chưa đăng nhập trước khi request này chạy. Dùng chung
+   * single-flight và khoá liên tab với interceptor axios (`refreshSession`).
    */
-  async refresh(refreshToken?: string) {
-    const token = refreshToken ?? memoryStorage.getRefreshToken();
-    const response = await http.post<RefreshResponse>(
-      API_ENDPOINTS.REFRESH,
-      token ? { refresh_token: token } : {},
-    );
-    const normalized = normalizeTokenResponse(response);
-    memoryStorage.setRefreshToken(
-      requireNonEmptyString(normalized.refresh_token, "refresh_token"),
-    );
-    return normalized;
+  async refresh(): Promise<RefreshResponse> {
+    const payload = await refreshSession();
+    return {
+      access_token: requireNonEmptyString(payload.access_token, "access_token"),
+      token_type: payload.token_type ?? "bearer",
+      expires_in: requirePositiveNumber(payload.expires_in, "expires_in"),
+      user: payload.user as RefreshResponse["user"],
+    };
   },
 
   changePassword(data: ChangePasswordRequest) {

@@ -16,9 +16,7 @@ vi.mock("@/shared/store/auth.store", () => ({
 const { memoryStorageMock } = vi.hoisted(() => ({
   memoryStorageMock: {
     getToken: vi.fn(() => null),
-    getRefreshToken: vi.fn<() => string | null>(() => null),
     setItem: vi.fn(),
-    setRefreshToken: vi.fn(),
   },
 }));
 
@@ -84,7 +82,10 @@ describe("axios auth/session interceptor WWHN-165", () => {
     });
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
 
   it("login/refresh 401 để caller quyết định, không redirect side-effect", async () => {
     const rejected = rejectedHandler();
@@ -97,8 +98,7 @@ describe("axios auth/session interceptor WWHN-165", () => {
     expect(window.location.assign).not.toHaveBeenCalled();
   });
 
-  it("401 resource -> refresh, revoke stale profile via setToken, retry once", async () => {
-    memoryStorageMock.getRefreshToken.mockReturnValue("refresh-token");
+  it("401 resource -> refresh bằng cookie (body rỗng), revoke stale profile via setToken, retry once", async () => {
     const postSpy = vi.spyOn(api, "post").mockResolvedValue({
       data: {
         success: true,
@@ -116,10 +116,79 @@ describe("axios auth/session interceptor WWHN-165", () => {
 
     await rejectedHandler()(error);
 
+    // P1 bảo mật 10/09/2026: không bao giờ gửi refresh token từ JavaScript.
     expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(postSpy).toHaveBeenCalledWith(
+      API_ENDPOINTS.REFRESH,
+      {},
+      { withCredentials: true },
+    );
     expect(setTokenMock).toHaveBeenCalledWith("new-token");
     expect(error.config.headers.Authorization).toBe("Bearer new-token");
     expect(requestSpy).toHaveBeenCalledWith(error.config);
+  });
+
+  it("BE cũ còn trả refresh_token: interceptor chỉ lưu access token", async () => {
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          access_token: "access-only",
+          refresh_token: "<must-not-be-stored>",
+          token_type: "bearer",
+          expires_in: 900,
+        },
+      },
+    });
+    vi.spyOn(api, "request").mockResolvedValue({ data: "ok" });
+
+    await rejectedHandler()(makeError(401, "/inventory-balances"));
+
+    expect(memoryStorageMock.setItem).toHaveBeenCalledTimes(1);
+    expect(memoryStorageMock.setItem).toHaveBeenCalledWith("access-only");
+    expect(JSON.stringify(memoryStorageMock.setItem.mock.calls)).not.toContain(
+      "must-not-be-stored",
+    );
+  });
+
+  it("nhiều request 401 cùng lúc chỉ tạo MỘT refresh (single-flight)", async () => {
+    let resolveRefresh!: (value: unknown) => void;
+    const postSpy = vi.spyOn(api, "post").mockReturnValue(
+      new Promise((resolve) => {
+        resolveRefresh = resolve;
+      }) as never,
+    );
+    vi.spyOn(api, "request").mockResolvedValue({ data: "ok" });
+
+    const first = rejectedHandler()(makeError(401, "/inventory-balances"));
+    const second = rejectedHandler()(makeError(401, "/inbound-documents"));
+    resolveRefresh({
+      data: { success: true, data: { access_token: "shared", token_type: "bearer", expires_in: 900 } },
+    });
+    await Promise.all([first, second]);
+
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(setTokenMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("refresh xếp hàng liên tab qua navigator.locks khi có", async () => {
+    const request = vi.fn(
+      (_name: string, _options: LockOptions, callback: () => Promise<unknown>) =>
+        callback(),
+    );
+    vi.stubGlobal("navigator", { ...navigator, locks: { request } });
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: { success: true, data: { access_token: "locked", token_type: "bearer", expires_in: 900 } },
+    });
+    vi.spyOn(api, "request").mockResolvedValue({ data: "ok" });
+
+    await rejectedHandler()(makeError(401, "/inventory-balances"));
+
+    expect(request).toHaveBeenCalledWith(
+      "wms-auth-refresh",
+      { mode: "exclusive" },
+      expect.any(Function),
+    );
   });
 
   it("refresh network/5xx không phá phiên và trả đúng lỗi hạ tầng", async () => {
