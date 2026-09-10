@@ -75,8 +75,10 @@ const workflow = requirePatterns(".github/workflows/ci.yml", [
   /npm run wwhn-175:verify/,
   /Create WWHN-177 immutable DEV handoff/,
   /npm run wwhn-177:handoff/,
-  /WWHN_175_OUTCOME/,
-  /WWHN_177_HANDOFF_OUTCOME/,
+  // Biến WWHN_175_OUTCOME / WWHN_177_HANDOFF_OUTCOME không còn (10/09/2026: CI tách thành job
+  // cổng cứng, cổng tổng đọc kết quả job) — pin chuyển sang id bước.
+  /id:\s*wwhn_175\b/,
+  /id:\s*wwhn_177_handoff\b/,
   /name: DEV delivery evidence/,
   /environment:\s*\n\s*name: DEV/,
   /wwhn-177-dev-environment-evidence-/,

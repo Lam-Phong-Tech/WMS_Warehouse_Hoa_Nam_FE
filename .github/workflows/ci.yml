@@ -29,13 +29,32 @@ env:
   VITE_ENABLE_DEBUG: "false"
   VITE_ENABLE_PERF_MONITOR: "false"
 
+# MÔ HÌNH CỔNG CỨNG (10/09/2026)
+#
+# Trước đây: một job, mọi bước được phép lỗi mềm, rồi một script đọc 34 biến outcome. 12
+# outcome đỏ vĩnh viễn (E2E không còn spec, format crash, TZ, spec gitignored) nên một test
+# bảo mật mới đỏ không phân biệt được với nhiễu.
+#
+# Nay:
+#  - security / static / unit / contracts / build chạy SONG SONG và mỗi job tự FAIL cứng:
+#    không bước nào được lỗi mềm, không nuốt exit code (src/test/ci-hard-gates.test.ts khoá).
+#  - Trong một job, bước sau vẫn chạy khi bước trước đỏ (`!cancelled()`) để một lượt chạy
+#    phơi ra MỌI lỗi; job vẫn đỏ vì bước đỏ không bị bỏ qua.
+#  - "Enforce all quality gate outcomes" chạy `if: always()` và đòi mọi job cổng `success`.
+#    Đặt check này làm required trong branch protection: GitHub tính check bị skip là đạt,
+#    nên cổng tổng không bao giờ được phép bị skip khi job con đỏ.
+#  - Manifest bằng chứng chỉ ghi nhận; nó không quyết định pass/fail của bất kỳ cổng nào.
+
 jobs:
-  quality-gates:
-    name: Quality gates
+  security:
+    name: Security gates
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -44,75 +63,199 @@ jobs:
           cache: yarn
           cache-dependency-path: yarn.lock
 
-      - name: Install dependencies
+      # P0 bảo mật 10/09/2026: mật khẩu đã lộ và khoá bí mật không được quay lại bất kỳ tệp
+      # tracked nào. Không cần node_modules nên chạy trước bước cài đặt.
+      - name: Leaked credential and secret scan (all tracked files)
+        id: credentials
+        run: node scripts/check-known-credentials.mjs
+
+      - name: Credential scanner self-test
+        id: credentials_self_test
+        if: ${{ !cancelled() }}
+        run: node scripts/check-known-credentials.mjs --self-test
+
+      - name: Frontend security header checker self-test
+        id: headers_self_test
+        if: ${{ !cancelled() }}
+        run: node scripts/check-frontend-security-headers.mjs --self-test
+
+      - name: Install dependencies (frozen lockfile)
         id: install
-        shell: bash
+        if: ${{ !cancelled() }}
         run: yarn install --frozen-lockfile --non-interactive
 
-      # WWHN-SEC-13: cổng advisory cho dependency production (yarn audit --groups
-      # dependencies, chặn High/Critical chưa xử lý; allowlist có lý do nằm trong
-      # scripts/audit-dependencies.mjs).
+      # WWHN-SEC-13: chặn advisory High/Critical chưa xử lý trong nhóm dependencies
+      # (allowlist có lý do + hàng rào đi kèm nằm trong scripts/audit-dependencies.mjs).
       - name: Dependency security audit (production deps)
         id: dep_audit
-        continue-on-error: true
-        shell: bash
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: node scripts/audit-dependencies.mjs
+
+      # Hàng rào đi kèm allowlist xlsx (sec07), DOM XSS (sec13), refresh token ngoài JS, MFA và
+      # phiên đăng nhập, vệ sinh đăng xuất, transport, RBAC/scope, PII báo cáo, và tính nguyên
+      # vẹn của chính CI. Tệp vắng mặt là FAIL: vitest bỏ qua im lặng một filter không khớp.
+      - name: Security guard tests
+        id: security_tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        shell: bash
+        run: |
+          files=(
+            src/test/sec07-supply-chain-guards.test.ts
+            src/test/sec13-dom-xss-guards.test.ts
+            src/test/sec-p1-refresh-token-out-of-js.test.ts
+            src/test/auth-security-rbac-audit.test.ts
+            src/test/wwhn-258-report-pii-rbac.test.tsx
+            src/test/ci-hard-gates.test.ts
+            src/shared/api/axios.test.ts
+            src/shared/config/transport-security.test.ts
+            src/shared/store/auth.store.logout-hygiene.test.ts
+            src/modules/auth/services/auth.service.test.ts
+            src/modules/auth/hooks/use-login.test.tsx
+            src/modules/auth/pages/LoginPage.mfa.test.tsx
+            src/modules/auth/pages/MfaSetupPage.test.tsx
+            src/app/router/RequirePermission.test.tsx
+            src/shared/components/permission/PermissionGuard.test.tsx
+            src/shared/components/permission/__tests__/PermissionGuard.test.tsx
+            src/shared/types/permission.test.ts
+            src/shared/types/permission.scope.test.ts
+          )
+          for file in "${files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "::error file=$file::Security guard test is missing; the security gate must not shrink silently."
+              exit 1
+            fi
+          done
+          npm run test -- "${files[@]}"
+
+  static:
+    name: Static gates (format, lint, typecheck, UI guards)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install dependencies (frozen lockfile)
+        id: install
+        run: yarn install --frozen-lockfile --non-interactive
 
       - name: Check formatting without mutating source
         id: format
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run format:check
 
       - name: Lint
         id: lint
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run lint
 
       - name: Type check
         id: typecheck
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run typecheck
 
-      # Part 5 Vuexy-sync prevention: 4 guard tĩnh (architecture/tokens/styles/
-      # dependencies) + self-test fixture vi phạm của từng guard.
-      - name: UI design-system guards (architecture/tokens/styles/dependencies)
+      # Part 5 Vuexy-sync prevention: architecture/tokens/styles/icons/dependencies và
+      # self-test của từng guard; runner chạy đủ mọi bước rồi mới kết luận.
+      - name: UI design-system guards (every guard and self-test)
         id: ui_guards
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run ui:guards
 
+  unit:
+    name: Unit and integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install dependencies (frozen lockfile)
+        id: install
+        run: yarn install --frozen-lockfile --non-interactive
+
+      # vitest.config.ts ghim TZ Asia/Ho_Chi_Minh: runner UTC cho cùng kết quả với máy +07:00.
       - name: Unit and integration tests
         id: unit_tests
-        continue-on-error: true
         run: npm run test
+
+      - name: Upload unit test reports
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-reports-${{ env.SOURCE_SHA }}
+          path: |
+            test-results/vitest-junit.xml
+            test-results/vitest-results.json
+          if-no-files-found: error
+          retention-days: 30
+
+  contracts:
+    name: Contract and closure gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install dependencies (frozen lockfile)
+        id: install
+        run: yarn install --frozen-lockfile --non-interactive
 
       - name: Verify env and versioned health contract
         id: env_contract
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run env:verify
 
       - name: Verify UAT P0/P1 readiness contract
         id: uat_contract
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run uat:p0p1:verify
 
       - name: Verify WWHN-175 foundation closure controls
         id: wwhn_175
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run wwhn-175:verify
 
       - name: Verify WWHN-165 auth session closure controls
         id: wwhn_165
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run wwhn-165:verify
 
       - name: Verify WWHN-156 closure controls
         id: wwhn_156
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run wwhn-156:verify
 
       - name: Validate QA1 smoke contract without runtime secrets
         id: smoke_contract
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: >-
           npm run smoke:wwhn-156 --
           --contract-only
@@ -121,14 +264,26 @@ jobs:
           --api-base-url "$VITE_API_BASE_URL"
           --health-path "$VITE_API_HEALTH_PATH"
 
+      # WWHN-309 R2: nguồn hợp đồng BE KÍN — chỉ mục path+method đã commit và niêm trong
+      # docs/api-evidence/BE_CONTRACT_PIN.json; không đọc swagger-api.json (gitignored).
+      - name: Pinned OpenAPI contract index self-test
+        id: pinned_contract_self_test
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: node scripts/pinned-openapi-contract.mjs --self-test
+
       - name: Verify Master/SKU closure contract
         id: master_sku
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run master-sku:verify
+
+      - name: Check API mapping against the pinned BE contract
+        id: api_mapping
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run check:api-mapping
 
       - name: Validate WWHN-178 direct API authorization evidence contract
         id: wwhn_178_rbac_contract
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         env:
           WWHN_178_ENV: CI
           WWHN_178_EVIDENCE_DIR: docs/evidence/wwhn-178/generated/${{ env.SOURCE_SHA }}
@@ -136,7 +291,7 @@ jobs:
 
       - name: Verify WMS P0/P1/P2 contract guards
         id: wms_contract
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         env:
           WMS_SOURCE_SHA: ${{ env.SOURCE_SHA }}
           WMS_EXECUTION_SHA: ${{ env.EXECUTION_SHA }}
@@ -144,166 +299,173 @@ jobs:
 
       - name: Verify WWHN-148 FE closure
         id: wwhn_148
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run wwhn-148:verify
 
       - name: Verify WWHN-144 closure contract
         id: wwhn_144
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run wwhn-144:verify
 
       - name: Verify WWHN-211 inventory read/trace closure contract
         id: wwhn_211
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run wwhn-211:verify
 
       - name: Publish WWHN-211 direct API authorization probe plan
         id: wwhn_211_rbac_contract
-        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         env:
           WWHN_211_ENV: CI
           WWHN_211_EVIDENCE_DIR: docs/evidence/WWHN-211/generated/${{ env.SOURCE_SHA }}
         run: npm run wwhn-211:rbac:contract
 
+      - name: Verify WWHN-296 build/runtime closure
+        id: wwhn_296
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run wwhn-296:verify
+
+      # Nửa BE của WWHN-230/237 nằm ở repo BE. PR CI chỉ checkout FE nên hai gate ghi PENDING,
+      # uỷ quyền tường minh cho workflow BE (wwhn-230-scope-disposition.yml,
+      # wwhn-237-variance-report-deferral-gate.yml). Có repo BE (WMS_BE_ROOT) mà thiếu tệp,
+      # hoặc WMS_BE_ROOT trỏ sai, vẫn FAIL.
+      - name: Verify WWHN-230 Stocktake scope disposition (FE half)
+        id: wwhn_230
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run wwhn-230:verify
+
+      # DISP-STK-237 — nửa FE: criticalFlow APPLY_ADJUSTMENT, enum scan context STOCKTAKE và
+      # bề mặt báo cáo nằm trong hợp đồng, không trong source runtime.
+      - name: Verify WWHN-237 variance query/report disposition (FE half)
+        id: wwhn_237
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run wwhn-237:verify
+
+      # Không cổng nào được ghi đè tệp đã commit: bằng chứng sinh ra phải nằm ở thư mục
+      # generated/test-results, nếu không `working_tree_clean` của evidence là giả.
+      - name: Gates must not rewrite tracked files
+        id: tracked_files_unchanged
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: git diff --exit-code --stat
+
+      - name: Upload contract evidence
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: wms-fe-contract-evidence-${{ env.SOURCE_SHA }}
+          path: |
+            docs/evidence/wwhn-178/generated/${{ env.SOURCE_SHA }}
+            docs/evidence/WWHN-211/generated/${{ env.SOURCE_SHA }}
+            docs/evidence/wms-contract-signoff/generated
+            test-results/wwhn-230
+            test-results/wwhn-237
+          if-no-files-found: error
+          retention-days: 90
+
+  build:
+    name: Build and delivery artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install dependencies (frozen lockfile)
+        id: install
+        run: yarn install --frozen-lockfile --non-interactive
+
       - name: Build production bundle and immutable manifest
         id: build
-        continue-on-error: true
         run: npm run build
 
       - name: Check frontend health artifact
         id: health
-        continue-on-error: true
         run: npm run health:check
 
-      - name: Check API mapping
-        id: api_mapping
-        continue-on-error: true
-        run: npm run check:api-mapping
-
-      - name: Verify WWHN-296 build/runtime closure
-        id: wwhn_296
-        continue-on-error: true
-        run: npm run wwhn-296:verify
-
-      - name: Verify WWHN-230 Stocktake scope disposition
-        id: wwhn_230
-        continue-on-error: true
-        run: npm run wwhn-230:verify
-
-      # DISP-STK-237 — nửa FE. Bắt được thứ guard route/permission bỏ lọt, vì bề mặt
-      # nằm trong docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json chứ không trong
-      # source runtime: criticalFlow APPLY_ADJUSTMENT và enum scan context STOCKTAKE.
-      - name: Verify WWHN-237 variance query/report disposition
-        id: wwhn_237
-        continue-on-error: true
-        run: npm run wwhn-237:verify
-
-      # E2E (ui:visual / ui:a11y / ui:responsive + bằng chứng 144/175/178) ĐÃ GỠ 10/09/2026:
-      # e2e/ bị xoá ở 3822d45 nên các bước đó chạy 0 test ("No tests found"), còn
-      # test:e2e:wwhn-178 gọi script không tồn tại. Mất cổng trình duyệt là rủi ro tồn dư
-      # có ghi nhận; khôi phục = spec mới + golden Linux, không giả lập lại cổng.
       - name: Create WWHN-177 immutable DEV handoff
         id: wwhn_177_handoff
-        if: always()
-        continue-on-error: true
         env:
           # Optional repo/environment variable; empty means artifact-only delivery.
           DEV_APP_URL: ${{ vars.DEV_APP_URL }}
         run: npm run wwhn-177:handoff
 
-      - name: Collect immutable CI/build/runtime manifest
-        if: always()
-        id: collect_evidence
-        env:
-          WMS_SOURCE_SHA: ${{ env.SOURCE_SHA }}
-          WMS_EXECUTION_SHA: ${{ env.EXECUTION_SHA }}
-          FORMAT_OUTCOME: ${{ steps.format.outcome }}
-          LINT_OUTCOME: ${{ steps.lint.outcome }}
-          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
-          UI_GUARDS_OUTCOME: ${{ steps.ui_guards.outcome }}
-          UNIT_TEST_OUTCOME: ${{ steps.unit_tests.outcome }}
-          ENV_CONTRACT_OUTCOME: ${{ steps.env_contract.outcome }}
-          UAT_CONTRACT_OUTCOME: ${{ steps.uat_contract.outcome }}
-          WWHN_175_OUTCOME: ${{ steps.wwhn_175.outcome }}
-          WWHN_165_OUTCOME: ${{ steps.wwhn_165.outcome }}
-          WWHN_156_OUTCOME: ${{ steps.wwhn_156.outcome }}
-          SMOKE_CONTRACT_OUTCOME: ${{ steps.smoke_contract.outcome }}
-          MASTER_SKU_OUTCOME: ${{ steps.master_sku.outcome }}
-          WWHN_178_RBAC_CONTRACT_OUTCOME: ${{ steps.wwhn_178_rbac_contract.outcome }}
-          WMS_CONTRACT_OUTCOME: ${{ steps.wms_contract.outcome }}
-          WWHN_148_OUTCOME: ${{ steps.wwhn_148.outcome }}
-          WWHN_144_OUTCOME: ${{ steps.wwhn_144.outcome }}
-          WWHN_211_OUTCOME: ${{ steps.wwhn_211.outcome }}
-          WWHN_211_RBAC_CONTRACT_OUTCOME: ${{ steps.wwhn_211_rbac_contract.outcome }}
-          BUILD_OUTCOME: ${{ steps.build.outcome }}
-          HEALTH_OUTCOME: ${{ steps.health.outcome }}
-          API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
-          WWHN_296_OUTCOME: ${{ steps.wwhn_296.outcome }}
-          WWHN_177_HANDOFF_OUTCOME: ${{ steps.wwhn_177_handoff.outcome }}
-        run: npm run wms-evidence:collect
-
-      - name: Upload WMS closure evidence
+      # Chỉ upload khi build + health + handoff đều xanh: build đỏ không bao giờ sinh gói giao.
+      - name: Upload WMS closure evidence (delivery artifact)
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: wms-fe-closure-evidence-${{ env.SOURCE_SHA }}
           path: |
-            docs/Task_docs_Jira/WWHN-144.md
-            docs/Task_docs_Jira/WWHN-165.md
-            docs/Task_docs_Jira/WWHN-175.md
-            docs/Task_docs_Jira/WWHN-178.md
-            docs/api-evidence/WWHN-165_AUTH_CONTRACT_EXPECTATION.md
-            docs/api-evidence/WWHN-178_MASTER_SKU_CONTRACT_BASELINE.json
-            docs/evidence/wwhn-144
-            docs/evidence/wwhn-165
-            docs/evidence/wwhn-175
-            docs/evidence/wwhn-178
-            docs/evidence/WWHN-211
-            docs/evidence/wms-contract-signoff/generated
-            docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json
-            docs/evidence/wwhn-156/generated
-            test-results
             dist/health.json
             dist/build-manifest.json
             dist/index.html
-          if-no-files-found: warn
+            docs/evidence/wwhn-175/generated
+          if-no-files-found: error
           retention-days: 90
 
-      - name: Enforce all quality gate outcomes
-        if: always()
+  gates:
+    name: Enforce all quality gate outcomes
+    if: ${{ always() }}
+    needs: [security, static, unit, contracts, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Gate aggregator self-test
+        run: node scripts/assert-ci-gates.mjs --self-test
+
+      - name: Require every gate job to succeed
         env:
-          FORMAT_OUTCOME: ${{ steps.format.outcome }}
-          LINT_OUTCOME: ${{ steps.lint.outcome }}
-          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
-          UI_GUARDS_OUTCOME: ${{ steps.ui_guards.outcome }}
-          UNIT_TEST_OUTCOME: ${{ steps.unit_tests.outcome }}
-          ENV_CONTRACT_OUTCOME: ${{ steps.env_contract.outcome }}
-          UAT_CONTRACT_OUTCOME: ${{ steps.uat_contract.outcome }}
-          WWHN_175_OUTCOME: ${{ steps.wwhn_175.outcome }}
-          WWHN_165_OUTCOME: ${{ steps.wwhn_165.outcome }}
-          WWHN_156_OUTCOME: ${{ steps.wwhn_156.outcome }}
-          SMOKE_CONTRACT_OUTCOME: ${{ steps.smoke_contract.outcome }}
-          MASTER_SKU_OUTCOME: ${{ steps.master_sku.outcome }}
-          WWHN_178_RBAC_CONTRACT_OUTCOME: ${{ steps.wwhn_178_rbac_contract.outcome }}
-          WMS_CONTRACT_OUTCOME: ${{ steps.wms_contract.outcome }}
-          WWHN_148_OUTCOME: ${{ steps.wwhn_148.outcome }}
-          WWHN_144_OUTCOME: ${{ steps.wwhn_144.outcome }}
-          WWHN_211_OUTCOME: ${{ steps.wwhn_211.outcome }}
-          WWHN_211_RBAC_CONTRACT_OUTCOME: ${{ steps.wwhn_211_rbac_contract.outcome }}
-          BUILD_OUTCOME: ${{ steps.build.outcome }}
-          HEALTH_OUTCOME: ${{ steps.health.outcome }}
-          API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
-          WWHN_296_OUTCOME: ${{ steps.wwhn_296.outcome }}
-          WWHN_177_HANDOFF_OUTCOME: ${{ steps.wwhn_177_handoff.outcome }}
-          WWHN_230_OUTCOME: ${{ steps.wwhn_230.outcome }}
-          WWHN_237_OUTCOME: ${{ steps.wwhn_237.outcome }}
-          DEP_AUDIT_OUTCOME: ${{ steps.dep_audit.outcome }}
+          CI_NEEDS_JSON: ${{ toJSON(needs) }}
         run: node scripts/assert-ci-gates.mjs
+
+      - name: Download delivery artifact for the evidence manifest
+        if: ${{ !cancelled() && needs.build.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: wms-fe-closure-evidence-${{ env.SOURCE_SHA }}
+          path: .
+
+      # Chỉ ghi nhận: chạy SAU khi cổng tổng đã quyết định, không job nào phụ thuộc nó.
+      - name: Collect CI evidence manifest (reporting only)
+        id: collect_evidence
+        if: ${{ !cancelled() }}
+        env:
+          WMS_SOURCE_SHA: ${{ env.SOURCE_SHA }}
+          WMS_EXECUTION_SHA: ${{ env.EXECUTION_SHA }}
+          CI_NEEDS_JSON: ${{ toJSON(needs) }}
+        run: npm run wms-evidence:collect
+
+      - name: Upload CI evidence manifest
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: wms-fe-ci-evidence-${{ env.SOURCE_SHA }}
+          path: docs/evidence/wms-contract-signoff/generated
+          if-no-files-found: error
+          retention-days: 90
 
   dev-delivery:
     name: DEV delivery evidence
     if: github.event_name == 'push' && github.ref == 'refs/heads/m1'
-    needs: quality-gates
+    needs: [security, static, unit, contracts, build, gates]
     runs-on: ubuntu-latest
     environment:
       name: DEV

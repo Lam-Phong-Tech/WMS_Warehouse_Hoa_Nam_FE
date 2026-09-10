@@ -59,11 +59,12 @@ for (const navigationContract of [
   requireText(sideNav, navigationContract, "SideNav.tsx");
 }
 
+// 10/09/2026: CI tách thành job cổng cứng — biến WWHN_144_OUTCOME không còn (cổng tổng đọc
+// kết quả job), còn docs/evidence/wwhn-144 và docs/Task_docs_Jira/WWHN-144.md (gỡ ở 3822d45)
+// không còn nằm trong artifact. Pin chuyển sang tên bước, lệnh chạy và cổng tổng.
 for (const contract of [
   "Verify WWHN-144 closure contract",
-  "WWHN_144_OUTCOME",
-  "docs/evidence/wwhn-144",
-  "docs/Task_docs_Jira/WWHN-144.md",
+  "npm run wwhn-144:verify",
   "Enforce all quality gate outcomes",
 ]) {
   requireText(ci, contract, ".github/workflows/ci.yml");

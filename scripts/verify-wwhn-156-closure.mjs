@@ -58,8 +58,8 @@ for (const pattern of [
   /npm run wwhn-156:verify/u,
   /id:\s*smoke_contract/u,
   /npm run smoke:wwhn-156[\s\S]*--contract-only/u,
-  /WWHN_156_OUTCOME/u,
-  /SMOKE_CONTRACT_OUTCOME/u,
+  // WWHN_156_OUTCOME / SMOKE_CONTRACT_OUTCOME: rút 10/09/2026 — CI không còn biến outcome
+  // từng bước; hai bước trên là cổng cứng trong job contracts, cổng tổng đọc kết quả job.
   /dist\/build-manifest\.json/u,
   /wms-fe-closure-evidence-/u,
 ]) {

@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { dirname, extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { REQUIRED_GATE_JOBS } from "./assert-ci-gates.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outputDir = join(
@@ -38,31 +39,24 @@ function relativeFiles(paths) {
   return paths.map((path) => relative(root, path).replaceAll("\\", "/"));
 }
 
-const outcomes = {
-  format: process.env.FORMAT_OUTCOME ?? "not_run",
-  lint: process.env.LINT_OUTCOME ?? "not_run",
-  typecheck: process.env.TYPECHECK_OUTCOME ?? "not_run",
-  unitTests: process.env.UNIT_TEST_OUTCOME ?? "not_run",
-  envContract: process.env.ENV_CONTRACT_OUTCOME ?? "not_run",
-  uatContract: process.env.UAT_CONTRACT_OUTCOME ?? "not_run",
-  wwhn175Closure: process.env.WWHN_175_OUTCOME ?? "not_run",
-  wwhn165Closure: process.env.WWHN_165_OUTCOME ?? "not_run",
-  wwhn156Closure: process.env.WWHN_156_OUTCOME ?? "not_run",
-  smokeContract: process.env.SMOKE_CONTRACT_OUTCOME ?? "not_run",
-  masterSku: process.env.MASTER_SKU_OUTCOME ?? "not_run",
-  wwhn178RbacContract:
-    process.env.WWHN_178_RBAC_CONTRACT_OUTCOME ?? "not_run",
-  wmsContract: process.env.WMS_CONTRACT_OUTCOME ?? "not_run",
-  wwhn148Closure: process.env.WWHN_148_OUTCOME ?? "not_run",
-  wwhn144Closure: process.env.WWHN_144_OUTCOME ?? "not_run",
-  wwhn211Closure: process.env.WWHN_211_OUTCOME ?? "not_run",
-  wwhn211RbacContract:
-    process.env.WWHN_211_RBAC_CONTRACT_OUTCOME ?? "not_run",
-  build: process.env.BUILD_OUTCOME ?? "not_run",
-  health: process.env.HEALTH_OUTCOME ?? "not_run",
-  apiMapping: process.env.API_MAPPING_OUTCOME ?? "not_run",
-  wwhn177Handoff: process.env.WWHN_177_HANDOFF_OUTCOME ?? "not_run",
-};
+/**
+ * Kết quả cổng CI theo JOB (security/static/unit/contracts/build), đọc từ `toJSON(needs)` do
+ * job "Enforce all quality gate outcomes" truyền vào (10/09/2026: CI tách thành job cổng
+ * cứng, không còn biến *_OUTCOME từng bước). Manifest này CHỈ GHI NHẬN: chạy sau khi cổng
+ * tổng đã quyết định, luôn thoát 0 và không job nào phụ thuộc nó — không thể làm cổng đỏ
+ * thành xanh.
+ */
+function readNeeds() {
+  try {
+    return process.env.CI_NEEDS_JSON ? JSON.parse(process.env.CI_NEEDS_JSON) : null;
+  } catch {
+    return null;
+  }
+}
+const needs = readNeeds();
+const outcomes = Object.fromEntries(
+  REQUIRED_GATE_JOBS.map((job) => [job, needs?.[job]?.result ?? "not_run"]),
+);
 
 const sourceSha =
   process.env.WMS_SOURCE_SHA ??
@@ -89,7 +83,10 @@ const traces = relativeFiles(
 );
 
 const manifest = {
-  schemaVersion: "3.1.0",
+  schemaVersion: "4.0.0",
+  gateModel:
+    "Mỗi job cổng CI tự FAIL cứng; outcomes dưới đây là kết quả job do cổng tổng truyền vào, chỉ để ghi nhận.",
+  allRequiredGatesSucceeded: REQUIRED_GATE_JOBS.every((job) => outcomes[job] === "success"),
   tasks: [
     "WWHN-144",
     "WWHN-148",
@@ -229,7 +226,7 @@ const manifest = {
   },
   evidenceBoundary: {
     feOwned:
-      "Exact FE source/build, foundation and WWHN-178 closure controls, controlled responsive/accessibility/UI-state/RBAC/API-error evidence and immutable CI/DEV handoff trace.",
+      "Exact FE source/build, security/static/unit/contract gate job results, foundation and WWHN-178 closure controls and immutable CI/DEV handoff trace. Browser (visual/a11y/responsive) evidence is NOT produced: the e2e suite was removed in 3822d45 and has not been restored.",
     independent:
       "QA2 browser/UAT sign-off, BE/QA live direct API authorization and data-scope proof, DevOps live target/deployment acceptance, BA/BAS baseline, Tech Lead disposition and Lead final gate remain independent and are never self-signed by FE.",
   },
@@ -251,7 +248,7 @@ const markdown = `# WWHN FE CI Evidence Manifest
 - Runner: \`${manifest.environment.runnerOs}/${manifest.environment.runnerArch}\`, Node \`${manifest.environment.node}\`
 - Screenshots: ${screenshots.length}; videos: ${videos.length}; traces: ${traces.length}
 
-## Gate outcomes
+## Gate job results (reporting only)
 
 ${Object.entries(outcomes)
   .map(([name, outcome]) => `- ${name}: **${outcome}**`)
