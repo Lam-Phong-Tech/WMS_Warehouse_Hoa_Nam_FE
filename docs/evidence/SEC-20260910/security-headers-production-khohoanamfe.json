@@ -1,0 +1,124 @@
+{
+  "target": "https://khohoanamfe.bigk.click",
+  "api": "https://khohoanamfe.bigk.click/api/v1/health",
+  "checked_at": "2026-09-10T08:13:45.718Z",
+  "overall": "fail",
+  "network_error": null,
+  "results": [
+    {
+      "label": "/",
+      "url": "https://khohoanamfe.bigk.click/",
+      "status": 200,
+      "profile": "document",
+      "failures": [
+        "HSTS: THIẾU — Không có HSTS thì lần truy cập bằng http vẫn đi qua mạng ở dạng rõ, kèm cookie phiên.",
+        "CSP: THIẾU — Lớp duy nhất chặn được script lạ chạy trên chính trang giữ phiên đăng nhập.",
+        "nosniff: THIẾU — Không có nosniff thì trình duyệt có thể đoán kiểu nội dung và chạy một file như script.",
+        "X-Frame-Options: THIẾU — Dự phòng chống clickjacking cho trình duyệt không hiểu frame-ancestors.",
+        "Referrer-Policy: THIẾU — Đường dẫn của WMS mang mã chứng từ và id nghiệp vụ; không được rò sang origin khác.",
+        "Permissions-Policy: THIẾU — FE chỉ cần camera=(self) cho máy quét; mọi quyền khác phải đóng."
+      ],
+      "warnings": [
+        "COOP: thiếu — Chặn cửa sổ do trang khác mở giữ tham chiếu tới window của ứng dụng."
+      ]
+    },
+    {
+      "label": "/index.html",
+      "url": "https://khohoanamfe.bigk.click/index.html",
+      "status": 200,
+      "profile": "document",
+      "failures": [
+        "HSTS: THIẾU — Không có HSTS thì lần truy cập bằng http vẫn đi qua mạng ở dạng rõ, kèm cookie phiên.",
+        "CSP: THIẾU — Lớp duy nhất chặn được script lạ chạy trên chính trang giữ phiên đăng nhập.",
+        "nosniff: THIẾU — Không có nosniff thì trình duyệt có thể đoán kiểu nội dung và chạy một file như script.",
+        "X-Frame-Options: THIẾU — Dự phòng chống clickjacking cho trình duyệt không hiểu frame-ancestors.",
+        "Referrer-Policy: THIẾU — Đường dẫn của WMS mang mã chứng từ và id nghiệp vụ; không được rò sang origin khác.",
+        "Permissions-Policy: THIẾU — FE chỉ cần camera=(self) cho máy quét; mọi quyền khác phải đóng."
+      ],
+      "warnings": [
+        "COOP: thiếu — Chặn cửa sổ do trang khác mở giữ tham chiếu tới window của ứng dụng."
+      ]
+    },
+    {
+      "label": "/assets/index-DeUyjEQU.js",
+      "url": "https://khohoanamfe.bigk.click/assets/index-DeUyjEQU.js",
+      "status": 200,
+      "profile": "asset",
+      "failures": [
+        "HSTS: THIẾU — Không có HSTS thì lần truy cập bằng http vẫn đi qua mạng ở dạng rõ, kèm cookie phiên.",
+        "nosniff: THIẾU — Không có nosniff thì trình duyệt có thể đoán kiểu nội dung và chạy một file như script.",
+        "Referrer-Policy: THIẾU — Đường dẫn của WMS mang mã chứng từ và id nghiệp vụ; không được rò sang origin khác."
+      ],
+      "warnings": [
+        "CSP: thiếu — Lớp duy nhất chặn được script lạ chạy trên chính trang giữ phiên đăng nhập.",
+        "X-Frame-Options: thiếu — Dự phòng chống clickjacking cho trình duyệt không hiểu frame-ancestors.",
+        "Permissions-Policy: thiếu — FE chỉ cần camera=(self) cho máy quét; mọi quyền khác phải đóng."
+      ]
+    },
+    {
+      "label": "/assets/index-MlGUkuqS.css",
+      "url": "https://khohoanamfe.bigk.click/assets/index-MlGUkuqS.css",
+      "status": 200,
+      "profile": "asset",
+      "failures": [
+        "HSTS: THIẾU — Không có HSTS thì lần truy cập bằng http vẫn đi qua mạng ở dạng rõ, kèm cookie phiên.",
+        "nosniff: THIẾU — Không có nosniff thì trình duyệt có thể đoán kiểu nội dung và chạy một file như script.",
+        "Referrer-Policy: THIẾU — Đường dẫn của WMS mang mã chứng từ và id nghiệp vụ; không được rò sang origin khác."
+      ],
+      "warnings": [
+        "CSP: thiếu — Lớp duy nhất chặn được script lạ chạy trên chính trang giữ phiên đăng nhập.",
+        "X-Frame-Options: thiếu — Dự phòng chống clickjacking cho trình duyệt không hiểu frame-ancestors.",
+        "Permissions-Policy: thiếu — FE chỉ cần camera=(self) cho máy quét; mọi quyền khác phải đóng."
+      ]
+    },
+    {
+      "label": "/service-worker.js",
+      "url": "https://khohoanamfe.bigk.click/service-worker.js",
+      "status": 200,
+      "profile": "document",
+      "failures": [
+        "HSTS: THIẾU — Không có HSTS thì lần truy cập bằng http vẫn đi qua mạng ở dạng rõ, kèm cookie phiên.",
+        "CSP: THIẾU — Lớp duy nhất chặn được script lạ chạy trên chính trang giữ phiên đăng nhập.",
+        "nosniff: THIẾU — Không có nosniff thì trình duyệt có thể đoán kiểu nội dung và chạy một file như script.",
+        "X-Frame-Options: THIẾU — Dự phòng chống clickjacking cho trình duyệt không hiểu frame-ancestors.",
+        "Referrer-Policy: THIẾU — Đường dẫn của WMS mang mã chứng từ và id nghiệp vụ; không được rò sang origin khác.",
+        "Permissions-Policy: THIẾU — FE chỉ cần camera=(self) cho máy quét; mọi quyền khác phải đóng."
+      ],
+      "warnings": [
+        "COOP: thiếu — Chặn cửa sổ do trang khác mở giữ tham chiếu tới window của ứng dụng."
+      ]
+    },
+    {
+      "label": "/manifest.webmanifest",
+      "url": "https://khohoanamfe.bigk.click/manifest.webmanifest",
+      "status": 200,
+      "profile": "asset",
+      "failures": [
+        "HSTS: THIẾU — Không có HSTS thì lần truy cập bằng http vẫn đi qua mạng ở dạng rõ, kèm cookie phiên.",
+        "nosniff: THIẾU — Không có nosniff thì trình duyệt có thể đoán kiểu nội dung và chạy một file như script.",
+        "Referrer-Policy: THIẾU — Đường dẫn của WMS mang mã chứng từ và id nghiệp vụ; không được rò sang origin khác."
+      ],
+      "warnings": [
+        "CSP: thiếu — Lớp duy nhất chặn được script lạ chạy trên chính trang giữ phiên đăng nhập.",
+        "X-Frame-Options: thiếu — Dự phòng chống clickjacking cho trình duyệt không hiểu frame-ancestors.",
+        "Permissions-Policy: thiếu — FE chỉ cần camera=(self) cho máy quét; mọi quyền khác phải đóng."
+      ]
+    },
+    {
+      "label": "API /api/v1/health",
+      "url": "https://khohoanamfe.bigk.click/api/v1/health",
+      "status": 200,
+      "profile": "api",
+      "failures": [
+        "nosniff: THIẾU — Không có nosniff thì trình duyệt có thể đoán kiểu nội dung và chạy một file như script.",
+        "X-Frame-Options: THIẾU — Dự phòng chống clickjacking cho trình duyệt không hiểu frame-ancestors.",
+        "Referrer-Policy: THIẾU — Đường dẫn của WMS mang mã chứng từ và id nghiệp vụ; không được rò sang origin khác.",
+        "HSTS: THIẾU — Không có HSTS thì lần truy cập bằng http vẫn đi qua mạng ở dạng rõ, kèm cookie phiên.",
+        "X-Powered-By: lộ phiên bản nền tảng ('PHP/8.3.33') cho bước dò lỗ hổng"
+      ],
+      "warnings": [
+        "CSP (JSON): thiếu — Response JSON không được nạp tài nguyên nào."
+      ]
+    }
+  ]
+}

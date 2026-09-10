@@ -1,0 +1,57 @@
+{
+  "target": "http://localhost:18081",
+  "api": null,
+  "checked_at": "2026-09-10T08:25:04.153Z",
+  "overall": "pass",
+  "network_error": null,
+  "results": [
+    {
+      "label": "/",
+      "url": "http://localhost:18081/",
+      "status": 200,
+      "profile": "document",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "label": "/index.html",
+      "url": "http://localhost:18081/index.html",
+      "status": 200,
+      "profile": "document",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "label": "/assets/index-CExh1Eqq.js",
+      "url": "http://localhost:18081/assets/index-CExh1Eqq.js",
+      "status": 200,
+      "profile": "asset",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "label": "/assets/index-CQDg4-gz.css",
+      "url": "http://localhost:18081/assets/index-CQDg4-gz.css",
+      "status": 200,
+      "profile": "asset",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "label": "/service-worker.js",
+      "url": "http://localhost:18081/service-worker.js",
+      "status": 200,
+      "profile": "document",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "label": "/manifest.webmanifest",
+      "url": "http://localhost:18081/manifest.webmanifest",
+      "status": 200,
+      "profile": "asset",
+      "failures": [],
+      "warnings": []
+    }
+  ]
+}
