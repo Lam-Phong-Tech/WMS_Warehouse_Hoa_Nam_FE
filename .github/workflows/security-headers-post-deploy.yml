@@ -1,0 +1,77 @@
+name: Security headers (post-deploy)
+
+# WWHN-SEC-07 — cổng header bảo mật đo trên ORIGIN THẬT sau khi deploy.
+#
+# Frontend là file tĩnh: header do máy chủ/CDN quyết định, nên cách duy nhất để biết là đo
+# chính origin người dùng tải (HTML, bundle JS/CSS có hash, service worker, manifest) và
+# response JSON của API. scripts/check-frontend-security-headers.mjs chỉ dùng built-in của
+# Node 22 (fetch, node:fs, node:path) nên job không cài dependency nào.
+#
+# Job FAIL khi thiếu/sai header bắt buộc ở bất kỳ tài nguyên nào (script thoát 1) hoặc không
+# gọi được origin (thoát 2). Không bước nào được lỗi mềm, không nuốt exit code; JSON kết quả
+# luôn được upload để truy vết.
+#
+# Đo 10/09/2026: production KHÔNG phát HSTS/CSP/nosniff/X-Frame-Options/Referrer-Policy/
+# Permissions-Policy trên mọi tài nguyên và API lộ X-Powered-By. Job này sẽ ĐỎ cho tới khi hạ
+# tầng áp deploy/nginx/frontend.conf.example (hoặc rule CDN tương đương) — đó là blocker hạ
+# tầng, không được che bằng cách nới cổng.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Origin frontend cần đo"
+        required: true
+        default: https://khohoanamfe.bigk.click
+        type: string
+      api_url:
+        description: "URL JSON của API đo cùng lượt (--api)"
+        required: true
+        default: https://khohoanamfe.bigk.click/api/v1/health
+        type: string
+  schedule:
+    # 01:17 UTC = 08:17 giờ Việt Nam, hằng ngày.
+    - cron: "17 1 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-headers-post-deploy
+  cancel-in-progress: false
+
+jobs:
+  security-headers:
+    name: Security headers on the deployed origin
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Lượt schedule không có inputs ⇒ rơi về mặc định. URL đi qua env và được trích dẫn
+      # "$VAR" trong shell, không nội suy thẳng vào lệnh (chặn script injection từ input).
+      TARGET: ${{ inputs.target_url || 'https://khohoanamfe.bigk.click' }}
+      API: ${{ inputs.api_url || 'https://khohoanamfe.bigk.click/api/v1/health' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Header checker self-test
+        run: node scripts/check-frontend-security-headers.mjs --self-test
+
+      - name: Check security headers on the deployed origin
+        run: node scripts/check-frontend-security-headers.mjs "$TARGET" --api "$API" --json build/security-headers/result.json
+
+      - name: Upload header evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-headers-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/security-headers/result.json
+          if-no-files-found: error
+          retention-days: 90
