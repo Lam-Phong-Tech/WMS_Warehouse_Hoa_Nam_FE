@@ -1,10 +1,9 @@
-import { Box } from "@mui/material";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { hasAnyWmsPermission } from "@/shared/constants/wms-permissions";
 import { useT } from "@/shared/i18n/useT";
-import { UiAlert } from "@/shared/ui";
+import { Box, UiAlert } from "@/shared/ui";
 
 /**
  * Dải cảnh báo "kho đang tạm dừng", hiện ở MỌI màn trong shell.

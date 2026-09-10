@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useLocation, useOutlet } from "react-router-dom";
-import Box from "@mui/material/Box";
+import { Box } from "@/shared/ui";
 import {
   PageVisibilityContext,
   isKeepAlivePath,

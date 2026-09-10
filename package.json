@@ -82,7 +82,7 @@
     "ui:icons:sync": "node scripts/check-ui-icons.mjs --sync-font",
     "ui:chart-sweep": "node scripts/chart-overflow-sweep.mjs",
     "ui:foundation": "vitest run src/test/ui-foundation",
-    "ui:guards": "node scripts/check-ui-architecture.mjs && node scripts/check-ui-tokens.mjs && node scripts/check-ui-styles.mjs && node scripts/check-ui-icons.mjs && node scripts/check-ui-architecture.mjs --self-test && node scripts/check-ui-tokens.mjs --self-test && node scripts/check-ui-styles.mjs --self-test && node scripts/check-ui-icons.mjs --self-test && node scripts/check-ui-dependencies.mjs && node scripts/check-ui-dependencies.mjs --self-test",
+    "ui:guards": "node scripts/run-ui-guards.mjs",
     "prepare": "husky",
     "postinstall": "patch-package",
     "verify:wwhn-242": "node scripts/verify-wwhn-242-closure.mjs",

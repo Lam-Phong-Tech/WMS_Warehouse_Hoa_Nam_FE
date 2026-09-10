@@ -61,9 +61,17 @@ export function hasConfigProviderJsx(content) {
   return /<ConfigProvider\b/.test(content);
 }
 
-/** Hex literal (#abc/#aabbcc/#aabbccdd). */
+/**
+ * Hex literal (#abc/#aabbcc/#aabbccdd).
+ *
+ * Sau literal phải là ranh giới THẬT: không chữ/số/`_` và không `-`. `\b` cũ coi `-` là
+ * ranh giới, nên mảnh đầu của UUID trong comment (`#ecd447d4-aae2-…`) bị đếm như một màu
+ * RGBA — false positive làm đỏ ui:tokens ở audit-log-labels.ts (09/2026). Màu thật luôn kết
+ * thúc bằng `;`, `)`, `"`, `,`, khoảng trắng… nên không vi phạm thật nào bị bỏ lọt.
+ * `looksLikeTokenSource` bên dưới dùng đúng biểu thức này.
+ */
 export function findHexLiterals(content) {
-  return content.match(/#[0-9a-fA-F]{3,8}\b/g) ?? [];
+  return content.match(/#[0-9a-fA-F]{3,8}(?![\w-])/g) ?? [];
 }
 
 /** Font drift: stack cũ bị cấm sau DEC-UI-BASELINE-01. */
@@ -97,7 +105,7 @@ export function looksLikeTokenSource(content) {
   const re = /export\s+const\s+[A-Z][A-Z0-9_]+\s*[:=][\s\S]{0,2000}?;/g;
   let m;
   while ((m = re.exec(content))) {
-    if ((m[0].match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).length >= 3) return true;
+    if ((m[0].match(/#[0-9a-fA-F]{3,8}(?![\w-])/g) ?? []).length >= 3) return true;
   }
   return false;
 }

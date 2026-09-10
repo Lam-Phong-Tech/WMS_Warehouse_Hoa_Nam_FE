@@ -85,12 +85,34 @@ export function checkTokens(files, contents, baseline) {
 }
 
 function selfTest() {
+  const problems = [];
+
+  // 1. Matcher: màu thật (#abc, #aabbccdd…) phải bị bắt; mảnh UUID trong comment thì không
+  //    — false positive đã làm đỏ oan audit-log-labels.ts (09/2026).
+  const UUID_COMMENT =
+    "/** POST_ISSUE stock_document #ecd447d4-aae2-4f61-9c1e-0b7d52a3f9e8 */";
+  for (const [input, expected] of [
+    ['const a = "#abc"; const b = "#aabbccdd";', ["#abc", "#aabbccdd"]],
+    ["color: #2563eb; background: #fff;", ["#2563eb", "#fff"]],
+    [UUID_COMMENT, []],
+  ]) {
+    const actual = findHexLiterals(input);
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      problems.push(
+        `findHexLiterals(${JSON.stringify(input)}) = ${JSON.stringify(actual)}, mong đợi ${JSON.stringify(expected)}`,
+      );
+    }
+  }
+
+  // 2. Vi phạm tổng hợp: từng fixture bẩn phải bị bắt, fixture chỉ có UUID thì không.
   const baseline = { files: {} };
   const fixtures = {
     "src/modules/foo/Bad.tsx": 'const c = "#2563eb";',
+    "src/modules/foo/BadRgba.tsx": 'const overlay = "#aabbccdd";',
     "src/shared/ui/theme/bad-adapter.ts": 'const x = "#123456";',
     "src/modules/foo/BadFont.css": 'body { font-family: "Inter", sans-serif; }',
     "src/modules/foo/BadImport.ts": 'import { RADIUS } from "@/shared/design-tokens";',
+    "src/modules/foo/UuidInComment.ts": `${UUID_COMMENT}\nexport const label = "POST_ISSUE";`,
     "index.html": '<link href="https://fonts.googleapis.com/css2?family=Inter">',
   };
   const violations = checkTokens(
@@ -98,12 +120,30 @@ function selfTest() {
     (f) => fixtures[f] ?? "",
     baseline,
   );
-  if (violations.length >= 5) {
-    console.log(`[ui:tokens --self-test] PASS (${violations.length} vi phạm tổng hợp được bắt)`);
+  for (const dirty of [
+    "src/modules/foo/Bad.tsx",
+    "src/modules/foo/BadRgba.tsx",
+    "src/shared/ui/theme/bad-adapter.ts",
+    "src/modules/foo/BadFont.css",
+    "src/modules/foo/BadImport.ts",
+    "index.html",
+  ]) {
+    if (!violations.some((v) => v.startsWith(`${dirty}:`))) {
+      problems.push(`không bắt được vi phạm của fixture ${dirty}`);
+    }
+  }
+  if (violations.some((v) => v.startsWith("src/modules/foo/UuidInComment.ts:"))) {
+    problems.push("UUID trong comment bị tính là hex literal (false positive)");
+  }
+
+  if (problems.length === 0) {
+    console.log(
+      `[ui:tokens --self-test] PASS (${violations.length} vi phạm tổng hợp được bắt, UUID trong comment không bị tính là màu)`,
+    );
     return 0;
   }
-  console.error(`[ui:tokens --self-test] FAIL — chỉ bắt ${violations.length}:`);
-  violations.forEach((v) => console.error("  - " + v));
+  console.error(`[ui:tokens --self-test] FAIL — ${problems.length} vấn đề:`);
+  problems.forEach((p) => console.error("  - " + p));
   return 1;
 }
 

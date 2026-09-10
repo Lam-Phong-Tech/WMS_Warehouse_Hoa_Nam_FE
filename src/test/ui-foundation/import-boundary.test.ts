@@ -44,6 +44,10 @@ describe("negative — vi phạm phải bị bắt", () => {
       "#2563eb",
       "#fff",
     ]);
+    expect(findHexLiterals('a: "#abc"; b: "#aabbccdd"')).toEqual([
+      "#abc",
+      "#aabbccdd",
+    ]);
     expect(findForbiddenFonts('font-family: "Inter", sans-serif')).toContain(
       "Inter",
     );
@@ -95,5 +99,18 @@ describe("positive — code hợp lệ không bị bắt oan", () => {
 
   it("var(--wms-*) không phải hex literal", () => {
     expect(findHexLiterals("color: var(--wms-primary);")).toEqual([]);
+  });
+
+  it("mảnh UUID trong comment không phải hex literal", () => {
+    expect(
+      findHexLiterals(
+        "/** POST_ISSUE stock_document #ecd447d4-aae2-4f61-9c1e-0b7d52a3f9e8 */",
+      ),
+    ).toEqual([]);
+    expect(
+      looksLikeTokenSource(
+        'export const NOTE = "#ecd447d4-a #ecd447d5-b #ecd447d6-c";',
+      ),
+    ).toBe(false);
   });
 });
