@@ -206,9 +206,9 @@ export const NAV_COLOR = {
 export const NAV_COLOR_DARK = {
   activeGradientEnd: "#8379EA",
   hover: "#3A3A55",
-  border: "rgba(231, 227, 252, 0.10)",
+  border: "rgba(231, 227, 252, 0.1)",
   itemText: "rgba(231, 227, 252, 0.78)",
-  muted: "rgba(231, 227, 252, 0.60)",
+  muted: "rgba(231, 227, 252, 0.6)",
   marker: "rgba(231, 227, 252, 0.42)",
   focus: "#A79EFF",
 } as const;
