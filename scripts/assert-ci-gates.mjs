@@ -23,14 +23,8 @@ const gateNames = [
   "HEALTH_OUTCOME",
   "API_MAPPING_OUTCOME",
   "WWHN_296_OUTCOME",
-  "PLAYWRIGHT_INSTALL_OUTCOME",
-  "UI_VISUAL_OUTCOME",
-  "UI_A11Y_OUTCOME",
-  "UI_RESPONSIVE_OUTCOME",
-  "RUNTIME_EVIDENCE_OUTCOME",
-  "WWHN_144_E2E_OUTCOME",
-  "WWHN_175_E2E_OUTCOME",
-  "WWHN_178_E2E_OUTCOME",
+  // 8 outcome E2E (Playwright install, ui:visual/a11y/responsive, evidence 144/175/178)
+  // đã rút 10/09/2026 cùng các bước chết trong ci.yml (e2e/ bị gỡ ở 3822d45).
   "WWHN_177_HANDOFF_OUTCOME",
   "WWHN_230_OUTCOME",
   "WWHN_237_OUTCOME",

@@ -22,6 +22,9 @@ on:
     branches: [m1]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   fe-defect-closure:
     runs-on: ubuntu-latest
@@ -72,25 +75,7 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Cài trình duyệt Playwright
-        run: npx playwright install --with-deps chromium
-
-      - name: Retest bằng chứng theo từng defect
-        env:
-          SOURCE_SHA: ${{ github.sha }}
-          VITE_APP_ENV: ci
-          VITE_APP_VERSION: ${{ github.run_id }}
-        run: yarn test:e2e:wwhn-268
-
-      - name: Upload bằng chứng WWHN-268
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: wwhn-268-evidence-${{ github.sha }}
-          path: |
-            test-results/wwhn-268/**
-            test-results/playwright-results.json
-            test-results/playwright-junit.xml
-            playwright-report/**
-          if-no-files-found: error
-          retention-days: 30
+      # Bước retest Playwright (yarn test:e2e:wwhn-268) và upload bằng chứng e2e ĐÃ GỠ
+      # 10/09/2026: e2e/wwhn-268-defect-retest.spec.ts bị xoá ở 3822d45 nên bước retest chạy
+      # 0 test, còn upload với if-no-files-found: error thì luôn đỏ. Bằng chứng trình duyệt
+      # cho Beta sign-off hiện KHÔNG còn nguồn tự động — rủi ro tồn dư, không giả lập lại.

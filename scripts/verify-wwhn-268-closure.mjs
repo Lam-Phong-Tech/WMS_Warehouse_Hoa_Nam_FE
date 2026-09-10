@@ -79,14 +79,16 @@ readRequired("src/shared/constants/ui-state.test.tsx");
 const workflow = readRequired(
   ".github/workflows/wwhn-268-fe-defect-closure.yml",
 );
-for (const needle of ["wwhn-268:verify", "test:e2e:wwhn-268", "GITHUB_SHA"]) {
+// ĐÃ RÚT 10/09/2026: bước retest `yarn test:e2e:wwhn-268` (spec gỡ ở 3822d45, chạy 0 test)
+// bị gỡ khỏi workflow và script khỏi package.json — needle/pin tương ứng rút theo.
+for (const needle of ["wwhn-268:verify", "GITHUB_SHA"]) {
   if (!workflow.includes(needle)) {
     fail(`workflow WWHN-268 phải chạy/truyền ${needle}`);
   }
 }
 
 const packageJson = JSON.parse(readRequired("package.json"));
-for (const script of ["wwhn-268:verify", "test:e2e:wwhn-268"]) {
+for (const script of ["wwhn-268:verify"]) {
   if (!packageJson.scripts?.[script]) {
     fail(`package.json thiếu script ${script}`);
   }

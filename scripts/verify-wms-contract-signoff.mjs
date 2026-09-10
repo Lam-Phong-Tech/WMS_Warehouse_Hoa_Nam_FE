@@ -197,8 +197,9 @@ requireValue(
   packageJson.scripts.typecheck === "tsc -b --pretty false",
   "typecheck script is required",
 );
+// ĐÃ RÚT 10/09/2026: test:e2e:evidence (4 spec e2e gỡ ở 3822d45) bị xoá khỏi package.json
+// và khỏi ci.yml — pin script + pin "CI Playwright evidence gate" bên dưới rút theo.
 for (const script of [
-  "test:e2e:evidence",
   "wms-evidence:collect",
   "wwhn-181:verify",
   "wwhn-181:final",
@@ -212,11 +213,6 @@ requirePattern(ciWorkflow, /npm run typecheck/u, "CI typecheck gate");
 requirePattern(ciWorkflow, /npm run test/u, "CI test gate");
 requirePattern(ciWorkflow, /npm run build/u, "CI build gate");
 requirePattern(ciWorkflow, /npm run check:api-mapping/u, "CI API mapping gate");
-requirePattern(
-  ciWorkflow,
-  /npm run test:e2e:evidence/u,
-  "CI Playwright evidence gate",
-);
 requirePattern(
   wwhn181Workflow,
   /sha256sum -c/u,

@@ -18,9 +18,6 @@ env:
   SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   EXECUTION_SHA: ${{ github.sha }}
   WMS_EVIDENCE_DIR: docs/evidence/wms-contract-signoff/generated
-  WWHN_144_EVIDENCE_DIR: test-results/wwhn-144/${{ github.event.pull_request.head.sha || github.sha }}
-  WWHN_175_EVIDENCE_DIR: test-results/wwhn-175/${{ github.event.pull_request.head.sha || github.sha }}
-  WWHN_178_EVIDENCE_DIR: test-results/wwhn-178/${{ github.event.pull_request.head.sha || github.sha }}
   VITE_APP_ENV: test
   VITE_APP_VERSION: 1.0.0-ci.${{ github.run_number }}.${{ github.run_attempt }}
   VITE_API_BASE_URL: http://127.0.0.1:5173/api/v1
@@ -201,61 +198,10 @@ jobs:
         continue-on-error: true
         run: npm run wwhn-237:verify
 
-      - name: Install Playwright Chromium
-        id: playwright_install
-        continue-on-error: true
-        run: npx playwright install --with-deps chromium
-
-      # Part 5 Vuexy-sync prevention: golden visual + computed-style contract
-      # của Foundation Catalog, ma trận a11y 3 engine và sweep responsive.
-      - name: UI visual goldens (Foundation Catalog)
-        id: ui_visual
-        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
-        continue-on-error: true
-        run: npm run ui:visual
-
-      - name: UI a11y browser/device matrix
-        id: ui_a11y
-        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
-        continue-on-error: true
-        run: npm run ui:a11y
-
-      - name: UI responsive sweep (all routes x viewports)
-        id: ui_responsive
-        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
-        continue-on-error: true
-        run: npm run ui:responsive
-
-      - name: Capture responsive auth/RBAC/API-error evidence
-        id: runtime_evidence
-        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
-        continue-on-error: true
-        run: npm run test:e2e:evidence
-
-      - name: Capture WWHN-144 QA2 evidence
-        id: wwhn_144_e2e
-        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
-        continue-on-error: true
-        env:
-          WWHN_144_EVIDENCE_DIR: ${{ env.WWHN_144_EVIDENCE_DIR }}
-        run: npm run test:e2e:wwhn-144
-
-      - name: Capture WWHN-175 responsive accessibility smoke evidence
-        id: wwhn_175_e2e
-        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
-        continue-on-error: true
-        env:
-          WWHN_175_EVIDENCE_DIR: ${{ env.WWHN_175_EVIDENCE_DIR }}
-        run: npm run test:e2e:wwhn-175
-
-      - name: Capture WWHN-178 Master/SKU QA2 evidence
-        id: wwhn_178_e2e
-        if: ${{ always() && steps.playwright_install.outcome == 'success' }}
-        continue-on-error: true
-        env:
-          WWHN_178_EVIDENCE_DIR: ${{ env.WWHN_178_EVIDENCE_DIR }}
-        run: npm run test:e2e:wwhn-178
-
+      # E2E (ui:visual / ui:a11y / ui:responsive + bằng chứng 144/175/178) ĐÃ GỠ 10/09/2026:
+      # e2e/ bị xoá ở 3822d45 nên các bước đó chạy 0 test ("No tests found"), còn
+      # test:e2e:wwhn-178 gọi script không tồn tại. Mất cổng trình duyệt là rủi ro tồn dư
+      # có ghi nhận; khôi phục = spec mới + golden Linux, không giả lập lại cổng.
       - name: Create WWHN-177 immutable DEV handoff
         id: wwhn_177_handoff
         if: always()
@@ -293,14 +239,6 @@ jobs:
           HEALTH_OUTCOME: ${{ steps.health.outcome }}
           API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
           WWHN_296_OUTCOME: ${{ steps.wwhn_296.outcome }}
-          PLAYWRIGHT_INSTALL_OUTCOME: ${{ steps.playwright_install.outcome }}
-          UI_VISUAL_OUTCOME: ${{ steps.ui_visual.outcome }}
-          UI_A11Y_OUTCOME: ${{ steps.ui_a11y.outcome }}
-          UI_RESPONSIVE_OUTCOME: ${{ steps.ui_responsive.outcome }}
-          RUNTIME_EVIDENCE_OUTCOME: ${{ steps.runtime_evidence.outcome }}
-          WWHN_144_E2E_OUTCOME: ${{ steps.wwhn_144_e2e.outcome }}
-          WWHN_175_E2E_OUTCOME: ${{ steps.wwhn_175_e2e.outcome }}
-          WWHN_178_E2E_OUTCOME: ${{ steps.wwhn_178_e2e.outcome }}
           WWHN_177_HANDOFF_OUTCOME: ${{ steps.wwhn_177_handoff.outcome }}
         run: npm run wms-evidence:collect
 
@@ -325,7 +263,6 @@ jobs:
             docs/evidence/wwhn-156/WWHN-156_CLOSURE_REGISTER.json
             docs/evidence/wwhn-156/generated
             test-results
-            playwright-report
             dist/health.json
             dist/build-manifest.json
             dist/index.html
@@ -357,14 +294,6 @@ jobs:
           HEALTH_OUTCOME: ${{ steps.health.outcome }}
           API_MAPPING_OUTCOME: ${{ steps.api_mapping.outcome }}
           WWHN_296_OUTCOME: ${{ steps.wwhn_296.outcome }}
-          PLAYWRIGHT_INSTALL_OUTCOME: ${{ steps.playwright_install.outcome }}
-          UI_VISUAL_OUTCOME: ${{ steps.ui_visual.outcome }}
-          UI_A11Y_OUTCOME: ${{ steps.ui_a11y.outcome }}
-          UI_RESPONSIVE_OUTCOME: ${{ steps.ui_responsive.outcome }}
-          RUNTIME_EVIDENCE_OUTCOME: ${{ steps.runtime_evidence.outcome }}
-          WWHN_144_E2E_OUTCOME: ${{ steps.wwhn_144_e2e.outcome }}
-          WWHN_175_E2E_OUTCOME: ${{ steps.wwhn_175_e2e.outcome }}
-          WWHN_178_E2E_OUTCOME: ${{ steps.wwhn_178_e2e.outcome }}
           WWHN_177_HANDOFF_OUTCOME: ${{ steps.wwhn_177_handoff.outcome }}
           WWHN_230_OUTCOME: ${{ steps.wwhn_230.outcome }}
           WWHN_237_OUTCOME: ${{ steps.wwhn_237.outcome }}

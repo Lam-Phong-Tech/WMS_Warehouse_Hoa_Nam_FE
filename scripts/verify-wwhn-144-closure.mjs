@@ -30,7 +30,9 @@ const ci = read(".github/workflows/ci.yml");
 const mainLayout = read("src/app/layouts/MainLayout.tsx");
 const sideNav = read("src/app/layouts/SideNav.tsx");
 
-for (const script of ["wwhn-144:verify", "test:e2e:wwhn-144"]) {
+// ĐÃ RÚT 10/09/2026: script test:e2e:wwhn-144 trỏ spec đã gỡ ở 3822d45 nên bị xoá khỏi
+// package.json (và bước "Capture WWHN-144 QA2 evidence" khỏi ci.yml) — pin rút theo.
+for (const script of ["wwhn-144:verify"]) {
   if (!packageJson.scripts?.[script]) {
     failures.push(`package.json is missing script ${script}`);
   }
@@ -59,7 +61,6 @@ for (const navigationContract of [
 
 for (const contract of [
   "Verify WWHN-144 closure contract",
-  "Capture WWHN-144 QA2 evidence",
   "WWHN_144_OUTCOME",
   "docs/evidence/wwhn-144",
   "docs/Task_docs_Jira/WWHN-144.md",

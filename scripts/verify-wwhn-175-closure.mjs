@@ -61,12 +61,8 @@ if (
 ) {
   fail("package.json must expose exact wwhn-175:verify script");
 }
-if (
-  packageJson.scripts?.["test:e2e:wwhn-175"] !==
-  "playwright test e2e/wwhn-175-foundation-evidence.spec.ts --project=chromium"
-) {
-  fail("package.json must expose exact test:e2e:wwhn-175 script");
-}
+// ĐÃ RÚT 10/09/2026: script test:e2e:wwhn-175 trỏ e2e/wwhn-175-foundation-evidence.spec.ts
+// (gỡ ở 3822d45) nên bị xoá khỏi package.json, cùng bước capture tương ứng trong ci.yml.
 if (
   packageJson.scripts?.["wwhn-177:handoff"] !==
   "node scripts/create-wwhn-177-dev-handoff.mjs"
@@ -77,12 +73,9 @@ if (
 const workflow = requirePatterns(".github/workflows/ci.yml", [
   /Verify WWHN-175 foundation closure controls/,
   /npm run wwhn-175:verify/,
-  /Capture WWHN-175 responsive accessibility smoke evidence/,
-  /npm run test:e2e:wwhn-175/,
   /Create WWHN-177 immutable DEV handoff/,
   /npm run wwhn-177:handoff/,
   /WWHN_175_OUTCOME/,
-  /WWHN_175_E2E_OUTCOME/,
   /WWHN_177_HANDOFF_OUTCOME/,
   /name: DEV delivery evidence/,
   /environment:\s*\n\s*name: DEV/,

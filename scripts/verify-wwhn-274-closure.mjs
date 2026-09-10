@@ -114,7 +114,7 @@ for (const gate of [
   "npm run health:check",
   "VITE_API_HEALTH_PATH: /health",
   "npm run wwhn-274:verify",
-  "npm run test:e2e:wwhn-274",
+  // "npm run test:e2e:wwhn-274" — ĐÃ RÚT 10/09/2026 (script trỏ spec gỡ ở 3822d45, đã xoá).
   "actions/upload-artifact@v4",
 ]) {
   requireText(workflow, gate, `workflow gate ${gate}`);
@@ -163,11 +163,12 @@ try {
 } catch (error) {
   failures.push(`Unreadable package.json: ${error.message}`);
 }
+// ĐÃ RÚT 10/09/2026: test:e2e:wwhn-274{,:a11y,:real-env} trỏ ba spec đã gỡ ở 3822d45 (chạy
+// ra "No tests found") nên bị xoá khỏi package.json; pin của chúng rút theo. Workflow m1
+// wwhn-274-fe-release-signoff.yml và runner exact-SHA vẫn gọi ba lệnh đó — chúng sẽ đỏ
+// "Missing script" thay vì "No tests found"; gỡ hay khôi phục thuộc chủ luồng release.
 for (const [scriptName, mustContain] of [
   ["wwhn-274:verify", "scripts/verify-wwhn-274-closure.mjs"],
-  ["test:e2e:wwhn-274", "e2e/wwhn-274-release-signoff.spec.ts"],
-  ["test:e2e:wwhn-274:a11y", "e2e/wwhn-274-a11y-browser-matrix.spec.ts"],
-  ["test:e2e:wwhn-274:real-env", "e2e/wwhn-274-real-env-smoke.spec.ts"],
   ["wwhn-274:exact-sha", "scripts/run-wwhn-274-exact-sha-evidence.mjs"],
 ]) {
   const command = pkgScripts[scriptName];
@@ -273,16 +274,8 @@ rejectText(
   "ref: ${{ inputs.source_sha",
   "checkout theo input SHA (hỏng với SHA rút gọn) thay vì tự resolve",
 );
-requireText(
-  workflow,
-  "npm run test:e2e:wwhn-274:a11y",
-  "workflow gate a11y/browser matrix",
-);
-requireText(
-  workflow,
-  "npm run test:e2e:wwhn-274:real-env",
-  "workflow gate real-env FE<->BE smoke",
-);
+// ĐÃ RÚT 10/09/2026: pin "npm run test:e2e:wwhn-274:a11y" và "...:real-env" trong workflow —
+// hai script đó đã xoá cùng spec (3822d45); giữ pin là cưỡng chế một lời gọi chết.
 requireText(
   workflow,
   "WWHN_274_REQUIRE_REAL_ENV",

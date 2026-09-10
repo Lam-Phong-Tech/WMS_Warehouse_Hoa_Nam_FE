@@ -51,7 +51,6 @@ jobs:
             src/modules/outbound/services/alignedOutboundService.ts \
             src/modules/outbound/components/AlignedOutboundDetailModal.tsx \
             src/modules/outbound/pages/AlignedMvpOutboundPage.tsx \
-            src/modules/reports/pages/AlignedReportsPage.tsx \
             src/test/flow06-packing-label-alignment.test.ts \
             src/test/flow06-report-pagination-export.test.ts
       - name: Current-baseline documentation semantics

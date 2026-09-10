@@ -61,11 +61,6 @@ const outcomes = {
   build: process.env.BUILD_OUTCOME ?? "not_run",
   health: process.env.HEALTH_OUTCOME ?? "not_run",
   apiMapping: process.env.API_MAPPING_OUTCOME ?? "not_run",
-  playwrightInstall: process.env.PLAYWRIGHT_INSTALL_OUTCOME ?? "not_run",
-  runtimeEvidence: process.env.RUNTIME_EVIDENCE_OUTCOME ?? "not_run",
-  wwhn144E2E: process.env.WWHN_144_E2E_OUTCOME ?? "not_run",
-  wwhn175E2E: process.env.WWHN_175_E2E_OUTCOME ?? "not_run",
-  wwhn178E2E: process.env.WWHN_178_E2E_OUTCOME ?? "not_run",
   wwhn177Handoff: process.env.WWHN_177_HANDOFF_OUTCOME ?? "not_run",
 };
 
