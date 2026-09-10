@@ -56,6 +56,7 @@ const MOVEMENT_TRACE = {
       source_id: "rev-1",
       source_no: "REV-2026-00007",
       original_movement_id: "22222222-2222-4222-8222-222222222222",
+      original_movement_no: "MV-20260829-0002",
       correction_chain_id: "chain-2",
     },
     {
@@ -236,5 +237,26 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     expect(
       within(drawer).getByText(/Chi tiết chứng từ là read-only/),
     ).toBeInTheDocument();
+    // Chuỗi bút toán đảo đọc bằng MÃ biến động, không phải correction_chain_id;
+    // "Mã yêu cầu" (meta.request_id của lần gọi báo cáo) không còn hiện
+    // (phản ánh 10/09/2026).
+    expect(
+      within(drawer).getByText("bị đảo bởi MV-20260829-0003"),
+    ).toBeInTheDocument();
+    expect(drawer).not.toHaveTextContent("chain-2");
+    expect(drawer).not.toHaveTextContent("req-abc");
+    expect(within(drawer).queryByText("Mã yêu cầu")).not.toBeInTheDocument();
+  });
+
+  it("cột chuỗi phiếu đảo hiện mã biến động thay cho định danh chuỗi nội bộ", async () => {
+    renderReport();
+
+    const table = await screen.findByRole("table");
+    await screen.findByText("REV-2026-00007");
+    expect(within(table).getByText("đảo MV-20260829-0002")).toBeInTheDocument();
+    expect(
+      within(table).getByText("bị đảo bởi MV-20260829-0003"),
+    ).toBeInTheDocument();
+    expect(table).not.toHaveTextContent("chain-");
   });
 });

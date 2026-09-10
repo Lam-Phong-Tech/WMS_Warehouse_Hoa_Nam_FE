@@ -271,9 +271,12 @@ describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
     expect(
       within(dialog).getByText("Thiếu mã model bắt buộc."),
     ).toBeInTheDocument();
+    // Mã băm SHA-256 của tệp không phải thứ người dùng kho tra cứu được — không
+    // hiện ra hộp thoại (phản ánh 10/09/2026).
+    expect(dialog).not.toHaveTextContent("af48c84a9bf01569");
     expect(
-      within(dialog).getByText("sha256:af48c84a9bf01569"),
-    ).toBeInTheDocument();
+      within(dialog).queryByText("Mã kiểm tra tệp"),
+    ).not.toBeInTheDocument();
   });
 
   it("chuyển sang Lát cắt thì tự thu gọn bộ lọc và vẫn hiện đúng batch", async () => {

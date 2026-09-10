@@ -83,6 +83,10 @@ describe("TraceModal (TRACE-01)", () => {
 
     expect(await screen.findByText("MV-0001")).toBeInTheDocument();
     expect(screen.getByText("IN-001")).toBeInTheDocument();
+    // request_id là mã đối chiếu log, không phải thông tin nghiệp vụ — không
+    // hiện ra màn (phản ánh 10/09/2026).
+    expect(screen.queryByText("req-1")).not.toBeInTheDocument();
+    expect(screen.queryByText("Mã yêu cầu kỹ thuật")).not.toBeInTheDocument();
     // i18n: status POSTED render qua statusLabel thành "Đã nhập kho".
     expect(screen.getByText("Đã nhập kho")).toBeInTheDocument();
     expect(screen.getByText(/Nháp → Đã nhập kho/)).toBeInTheDocument();

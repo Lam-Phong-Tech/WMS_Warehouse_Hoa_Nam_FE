@@ -29,7 +29,6 @@ import {
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
-import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { EMPTY_TEXT, orEmpty } from "@/shared/constants/display";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
@@ -403,7 +402,7 @@ function AuditBadge({ event }: { event: PackingLabelEvent }) {
 }
 
 /** Hai dòng chữ chồng nhau trong một ô bảng (tiêu đề + chú thích mờ). */
-function CellStack({ title, note }: { title: string; note: ReactNode }) {
+function CellStack({ title, note }: { title: string; note?: ReactNode }) {
   return (
     <Box sx={{ minWidth: 0 }}>
       <Box
@@ -415,7 +414,11 @@ function CellStack({ title, note }: { title: string; note: ReactNode }) {
       >
         {title}
       </Box>
-      <Box sx={{ mt: 0.375, fontSize: 11.5, color: S.textMedium }}>{note}</Box>
+      {note !== undefined ? (
+        <Box sx={{ mt: 0.375, fontSize: 11.5, color: S.textMedium }}>
+          {note}
+        </Box>
+      ) : null}
     </Box>
   );
 }
@@ -543,7 +546,6 @@ export default function PackingLabelPrintReport() {
         return [
           event.outboundNo,
           event.labelCode,
-          event.labelId,
           event.recipient,
           event.printerName,
           event.actorName,
@@ -699,10 +701,9 @@ export default function PackingLabelPrintReport() {
       width: 200,
       sortAccessor: (row: PackingLabelEvent) => row.labelCode,
       render: (row: PackingLabelEvent) => (
-        <CellStack
-          title={orEmpty(row.labelCode)}
-          note={<CopyableId value={row.labelId} />}
-        />
+        // Chỉ mã nhãn: định danh bản lưu (UUID) không phải thứ người dùng tra
+        // được — xem ghi chú ở hộp thoại kiểm chứng.
+        <CellStack title={orEmpty(row.labelCode)} />
       ),
     },
     {
@@ -1537,10 +1538,10 @@ export default function PackingLabelPrintReport() {
                     label={t("reports.packingLabel.colOutbound")}
                     value={orEmpty(snapshot.detail.outboundNo)}
                   />
-                  <DetailCell
-                    label={t("reports.packingLabel.fieldSnapshotId")}
-                    value={<CopyableId value={snapshot.detail.labelId} />}
-                  />
+                  {/* Không có ô "Mã bản lưu": bản lưu nhãn KHÔNG có mã nghiệp vụ
+                    (bảng label_snapshots chỉ có UUID). Danh tính người dùng tra
+                    được là Mã nhãn + Phiên bản ngay trong khối này; in định danh
+                    nội bộ ra đây chỉ gây khó hiểu (phản ánh 10/09/2026). */}
                   <DetailCell
                     label={t("reports.packingLabel.fieldVersion")}
                     value={orEmpty(snapshot.detail.version)}

@@ -86,7 +86,6 @@ export type MovementTraceData = {
   period: { from: string; to: string };
   /** Thời điểm máy chủ chốt phản hồi (meta.timestamp) — mốc "Chốt" trên màn. */
   dataAsOf: string;
-  requestId: string;
 };
 
 export type MovementTraceQuery = {
@@ -155,7 +154,6 @@ function toData(payload: Raw, meta: ApiMeta): MovementTraceData {
       to: text(period.to_date, ""),
     },
     dataAsOf: text(meta.timestamp, ""),
-    requestId: text(meta.request_id, ""),
   };
 }
 
@@ -163,7 +161,9 @@ function toData(payload: Raw, meta: ApiMeta): MovementTraceData {
  * Sổ biến động của lát cắt đang tra cứu.
  *
  * Dùng `http.getPage` (không phải `http.get`) vì màn hình cần `meta.timestamp`
- * làm mốc "Chốt" và `meta.request_id` cho khối bằng chứng — `http.get` bỏ meta.
+ * làm mốc "Chốt" — `http.get` bỏ meta. `meta.request_id` CỐ Ý không đọc: đó là mã
+ * đối chiếu log của chính lần gọi báo cáo, giống nhau cho mọi dòng, không phải
+ * bằng chứng của biến động nào (phản ánh 10/09/2026).
  */
 export function useMovementTraceReport(query: MovementTraceQuery) {
   const params = cleanParams({

@@ -36,7 +36,6 @@ import {
 } from "@/shared/components/icons";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
-import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   hasPermission,
@@ -451,6 +450,41 @@ export default function MovementTraceReport() {
     );
   }, [report.data]);
 
+  /**
+   * "Chuỗi phiếu đảo" đọc bằng MÃ biến động (MV-…) thay cho `correction_chain_id`
+   * — UUID nội bộ đó không tra cứu được gì (phản ánh 10/09/2026). Dòng đảo đọc
+   * "đảo MV-gốc"; dòng gốc đọc "bị đảo bởi MV-…" khi phiếu đảo nằm trong kỳ.
+   * Tính trên TOÀN bộ dòng của kỳ (không phải tập đang lọc) để bộ lọc phụ không
+   * làm mất quan hệ gốc ↔ đảo.
+   */
+  const reversedByOf = useMemo(() => {
+    const byOriginal = new Map<string, string[]>();
+    for (const row of report.data?.rows ?? []) {
+      if (row.originalMovementId === "" || row.movementNo === "") continue;
+      const codes = byOriginal.get(row.originalMovementId) ?? [];
+      codes.push(row.movementNo);
+      byOriginal.set(row.originalMovementId, codes);
+    }
+    return byOriginal;
+  }, [report.data]);
+
+  const reversalChainText = useCallback(
+    (row: MovementTraceRow): string => {
+      if (row.originalMovementId !== "") {
+        return row.originalMovementNo !== ""
+          ? t("reports.movementTrace.reversalOf", {
+              code: row.originalMovementNo,
+            })
+          : EMPTY_TEXT;
+      }
+      const codes = reversedByOf.get(row.id) ?? [];
+      return codes.length > 0
+        ? t("reports.movementTrace.reversedBy", { codes: codes.join(", ") })
+        : EMPTY_TEXT;
+    },
+    [reversedByOf, t],
+  );
+
   const rows = useMemo(() => {
     const source = applied.source.trim().toLowerCase();
     const actor = applied.actor.trim().toLowerCase();
@@ -543,7 +577,7 @@ export default function MovementTraceReport() {
         row.sourceType,
         movementSourceLabel(row.sourceType),
         row.actor,
-        row.correctionChainId,
+        row.originalMovementNo,
         row.movementNo,
         MOVEMENT_KIND_LABELS[movementKindOf(row)],
       ],
@@ -1336,12 +1370,7 @@ export default function MovementTraceReport() {
                 key: "chain",
                 header: t("reports.movementTrace.colChain"),
                 width: 150,
-                render: (row) =>
-                  row.correctionChainId !== "" ? (
-                    <CopyableId value={row.correctionChainId} />
-                  ) : (
-                    EMPTY_TEXT
-                  ),
+                render: (row) => reversalChainText(row),
               },
               {
                 key: "status",
@@ -1471,24 +1500,11 @@ export default function MovementTraceReport() {
                   />
                   <EvidenceField
                     label={t("reports.movementTrace.fieldReversalChain")}
-                    value={
-                      selected.correctionChainId !== "" ? (
-                        <CopyableId value={selected.correctionChainId} />
-                      ) : (
-                        EMPTY_TEXT
-                      )
-                    }
+                    value={reversalChainText(selected)}
                   />
-                  <EvidenceField
-                    label={t("reports.movementTrace.fieldRequestId")}
-                    value={
-                      report.data?.requestId ? (
-                        <CopyableId value={report.data.requestId} />
-                      ) : (
-                        EMPTY_TEXT
-                      )
-                    }
-                  />
+                  {/* Không có ô "Mã yêu cầu": giá trị cũ là meta.request_id của
+                    CHÍNH lần gọi báo cáo — giống nhau cho mọi dòng, chỉ là mã
+                    đối chiếu log, không phải bằng chứng của biến động này. */}
                 </Box>
                 <Box
                   sx={{

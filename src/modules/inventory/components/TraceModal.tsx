@@ -1085,15 +1085,10 @@ export function TraceModal({ movementId, onClose }: Props) {
                 label={t("inventory.trace.fieldOperator")}
                 value={trace.actor || EMPTY_TEXT}
               />
-              {/* request_id là UUID đối chiếu log (không có mã nghiệp vụ) — màn
-                truy vết vẫn cần nó để báo kỹ thuật, nhưng hiển thị rút gọn +
-                nút sao chép giá trị đầy đủ thay vì in nguyên chuỗi thô. */}
-              <DetailField
-                label={t("inventory.trace.fieldRequestId")}
-                value={
-                  trace.requestId ? <CopyableId value={trace.requestId} /> : "-"
-                }
-              />
+              {/* Không hiện request_id: đó là mã đối chiếu log kỹ thuật, không
+                mang nghĩa nghiệp vụ — người dùng kho coi mọi chuỗi mã máy là lỗi
+                hiển thị (phản ánh 10/09/2026). Mã chứng từ nguồn ở trên đã đủ
+                để tra. */}
             </DescriptionsBlock>
 
             {trace.lines.length > 0 ? (

@@ -2129,10 +2129,9 @@ export default function ImportMatchReport() {
                       t("reports.importMatchReport.fieldSourceFile"),
                       openBatch.sourceFile || EMPTY_TEXT,
                     ],
-                    [
-                      t("reports.importMatchReport.fieldChecksum"),
-                      openBatch.checksum || EMPTY_TEXT,
-                    ],
+                    // Không hiện mã băm SHA-256 của tệp: chuỗi hex 64 ký tự không
+                    // tra cứu được gì với người dùng kho (phản ánh 10/09/2026). Giá
+                    // trị vẫn nằm ở import_reports để quản trị đối soát trùng tệp.
                     [
                       t("reports.importMatchReport.fieldSourceVersion"),
                       openBatch.sourceVersion || EMPTY_TEXT,

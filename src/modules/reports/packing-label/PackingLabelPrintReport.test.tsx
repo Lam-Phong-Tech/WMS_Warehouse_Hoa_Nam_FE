@@ -230,6 +230,10 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(within(table).getAllByText("PL-PX-0002")).toHaveLength(2);
     expect(within(table).getAllByText("Đại lý An Phát")).toHaveLength(2);
     expect(within(table).getAllByText("Nguyễn Kho Vận")).toHaveLength(4);
+    // Định danh bản lưu (label_snapshot_id) không có mã nghiệp vụ — bảng chỉ
+    // hiện mã nhãn, không in định danh nội bộ (phản ánh 10/09/2026).
+    expect(table).not.toHaveTextContent(LABEL_1);
+    expect(table).not.toHaveTextContent(LABEL_2);
     expect(within(table).getAllByText(/Zebra ZD421/)).toHaveLength(2);
 
     // `FAILED` của trigger đọc ra đúng nhãn nghiệp vụ, kèm lý do đã Việt hoá.
@@ -262,7 +266,7 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     await screen.findByRole("table");
     await user.type(
       screen.getByRole("textbox", {
-        name: "Tìm phiếu xuất, mã nhãn hoặc mã bản lưu",
+        name: "Tìm phiếu xuất hoặc mã nhãn",
       }),
       "PX-0002",
     );
@@ -312,6 +316,9 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Bản lưu bất biến")).toBeInTheDocument();
     expect(within(dialog).getByText("v2")).toBeInTheDocument();
+    // Không còn ô "Mã bản lưu" in định danh nội bộ của bản lưu.
+    expect(within(dialog).queryByText("Mã bản lưu")).not.toBeInTheDocument();
+    expect(dialog).not.toHaveTextContent(LABEL_1);
     expect(within(dialog).getByText("SKU-A x2, SKU-B x1")).toBeInTheDocument();
     expect(within(dialog).getByText("Đại lý An Phát")).toBeInTheDocument();
     // Lịch sử attempt chỉ của ĐÚNG nhãn đã mở (LS-1 có 2 lần in).
