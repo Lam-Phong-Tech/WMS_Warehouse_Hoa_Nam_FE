@@ -354,6 +354,7 @@ jobs:
         with:
           name: wms-fe-contract-evidence-${{ env.SOURCE_SHA }}
           path: |
+            docs/evidence/wwhn-156/generated
             docs/evidence/wwhn-178/generated/${{ env.SOURCE_SHA }}
             docs/evidence/WWHN-211/generated/${{ env.SOURCE_SHA }}
             docs/evidence/wms-contract-signoff/generated
