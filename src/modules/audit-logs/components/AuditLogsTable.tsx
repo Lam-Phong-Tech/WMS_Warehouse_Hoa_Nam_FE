@@ -27,6 +27,7 @@ import { AUDIT_MODULE_LABELS } from "@/shared/constants/business-labels";
 import {
   auditActionLabel,
   auditActionTone,
+  auditObjectCode,
   auditObjectTypeLabel,
   describeAuditLog,
 } from "../constants/audit-log-labels";
@@ -177,43 +178,60 @@ export function AuditLogsTable({
       width: 180,
       hideOnMobile: true,
       sortable: true,
-      render: (row) => (
-        <Stack spacing={0} sx={{ minWidth: 0 }}>
-          {/* `object_type` là TÊN BẢNG/slug route của BE (`stock_document`,
-            `label-print-events`) — phải qua map nhãn, giá trị gốc giữ ở
-            tooltip cho quản trị tra soát. */}
-          <Box
-            title={row.object_type || undefined}
-            sx={{
-              ...CELL_TEXT_SX,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {row.object_type
-              ? auditObjectTypeLabel(row.object_type)
-              : EMPTY_TEXT}
-          </Box>
-          {/* title giữ UUID đầy đủ CÓ CHỦ ĐÍCH: đây là màn nhật ký kỹ thuật cho
-            quản trị, phần hiển thị đã rút gọn để không vỡ cột và bản đầy đủ chỉ
-            hiện khi rê chuột — quyết định cũ, khoá bởi AuditLogsPage.test.tsx. */}
-          {row.object_id ? (
+      render: (row) => {
+        const objectCode = auditObjectCode(row);
+        return (
+          <Stack spacing={0} sx={{ minWidth: 0 }}>
+            {/* `object_type` là TÊN BẢNG/slug route của BE (`stock_document`,
+              `label-print-events`) — phải qua map nhãn, giá trị gốc giữ ở
+              tooltip cho quản trị tra soát. */}
             <Box
-              title={row.object_id}
+              title={row.object_type || undefined}
               sx={{
-                fontSize: 11,
-                color: S.textMedium,
+                ...CELL_TEXT_SX,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
               }}
             >
-              {`#${shortAuditId(row.object_id)}`}
+              {row.object_type
+                ? auditObjectTypeLabel(row.object_type)
+                : EMPTY_TEXT}
             </Box>
-          ) : null}
-        </Stack>
-      ),
+            {/* Dòng thứ hai là MÃ NGHIỆP VỤ (số phiếu, mã hồ sơ, serial...) do BE
+              tra ngược. Chỉ loại đối tượng không có mã mới rơi về UUID rút gọn —
+              khi đó title giữ UUID đầy đủ CÓ CHỦ ĐÍCH cho quản trị tra soát
+              (khoá bởi AuditLogsPage.test.tsx). */}
+            {objectCode ? (
+              <Box
+                title={objectCode}
+                sx={{
+                  fontSize: 11,
+                  color: S.textMedium,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {objectCode}
+              </Box>
+            ) : row.object_id ? (
+              <Box
+                title={row.object_id}
+                sx={{
+                  fontSize: 11,
+                  color: S.textMedium,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {`#${shortAuditId(row.object_id)}`}
+              </Box>
+            ) : null}
+          </Stack>
+        );
+      },
     },
     {
       key: "actor_email",

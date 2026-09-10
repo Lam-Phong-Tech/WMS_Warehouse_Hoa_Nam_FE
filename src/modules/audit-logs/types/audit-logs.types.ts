@@ -59,6 +59,12 @@ export interface AuditLog {
   action: AuditAction;
   object_type: string;
   object_id: string | null;
+  /**
+   * Mã nghiệp vụ của đối tượng do BE tra ngược từ bảng gốc (số phiếu, mã hồ sơ,
+   * serial, email tài khoản...) — `null` khi loại đối tượng không có mã hoặc bản
+   * ghi gốc không còn. Xem AuditObjectReferenceResolver phía BE.
+   */
+  object_code?: string | null;
   module: AuditModule;
   reason: string | null;
   /** Accessor phía BE: `reason` nếu có, ngược lại tự tổng hợp "{action} {object_type} #{object_id}". */

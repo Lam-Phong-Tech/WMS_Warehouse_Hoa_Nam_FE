@@ -37,6 +37,7 @@ import {
 } from "@/shared/constants/business-labels";
 import {
   auditActionLabel,
+  auditObjectCode,
   auditObjectTypeLabel,
   auditResultLabel,
   describeAuditLog,
@@ -156,7 +157,10 @@ export function AuditLogsPage() {
         auditActionLabel(log.action),
         AUDIT_MODULE_LABELS[log.module] || log.module,
         auditObjectTypeLabel(log.object_type),
-        log.object_id ?? "",
+        // Cột "Mã đối tượng": số phiếu / mã hồ sơ / serial do BE tra ngược. Chỉ
+        // loại đối tượng không có mã mới giữ định danh nội bộ để quản trị còn
+        // tra soát được trong file.
+        auditObjectCode(log) ?? log.object_id ?? "",
         log.actor?.email || log.actor?.display_name || t("audit.system"),
         log.ip_address ?? "",
         auditResultLabel(log.result),

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   auditActionLabel,
   auditDataEntries,
+  auditObjectCode,
   auditObjectTypeLabel,
   auditReasonText,
   describeAuditLog,
@@ -54,10 +55,29 @@ describe("nhãn Nhật ký hệ thống", () => {
     expect(
       describeAuditLog(log({ after_data: { doc_no: "PX-COV-00038" } })),
     ).toBe("Ghi nhận xuất kho — Phiếu nhập/xuất kho PX-COV-00038");
-    // Không có số chứng từ thì rút gọn UUID, không nối nguyên 36 ký tự.
+    // BE tra ngược được số phiếu từ bảng gốc: dùng mã đó dù after_data không có.
+    expect(
+      describeAuditLog(
+        log({ object_code: "PN-COV-00012", after_data: { status: "POSTED" } }),
+      ),
+    ).toBe("Ghi nhận xuất kho — Phiếu nhập/xuất kho PN-COV-00012");
+    // Loại đối tượng không có mã thì rút gọn UUID, không nối nguyên 36 ký tự.
     expect(describeAuditLog(log({}))).toBe(
       "Ghi nhận xuất kho — Phiếu nhập/xuất kho ecd447…951de1",
     );
+  });
+
+  it("mã đối tượng: ưu tiên mã BE tra ngược, rồi mã trong after_data, không bao giờ trả UUID", () => {
+    expect(
+      auditObjectCode(
+        log({ object_code: "PX-COV-00038", after_data: { doc_no: "PX-CU" } }),
+      ),
+    ).toBe("PX-COV-00038");
+    expect(
+      auditObjectCode(log({ after_data: { doc_no: "PN-COV-00001" } })),
+    ).toBe("PN-COV-00001");
+    expect(auditObjectCode(log({ object_code: "   " }))).toBeNull();
+    expect(auditObjectCode(log({ object_code: null }))).toBeNull();
   });
 
   it("lý do tiếng Anh/kỹ thuật của BE được dịch, lý do người nhập giữ nguyên", () => {

@@ -254,17 +254,35 @@ export function auditReasonText(
 }
 
 /**
- * Mã nghiệp vụ của đối tượng nếu BE có ghi kèm trong `after_data` (số chứng
- * từ là thứ nhân viên kho tra cứu được, khác hẳn UUID). Không có thì rút gọn
- * `object_id` — không bao giờ nối nguyên 36 ký tự UUID vào câu.
+ * Mã nghiệp vụ của đối tượng — số phiếu, mã hồ sơ, serial... là thứ nhân viên kho
+ * tra cứu được, khác hẳn UUID.
+ *
+ * Ưu tiên `object_code` do BE tra ngược từ bảng gốc: trước 10/09/2026 chỉ có mã
+ * ghi kèm trong `after_data`, mà nhiều nơi ghi nhật ký không ghi (Ghi sổ, Huỷ...)
+ * — đo DB dev: 553/1089 nhật ký phiếu nhập/xuất kho có số phiếu, nên màn chi tiết
+ * hiện UUID cho gần nửa số phiếu. `after_data` còn giữ làm đường dự phòng cho BE
+ * cũ. Không có mã thì trả `null` — tuyệt đối không trả UUID thay mã.
  */
-function auditObjectRef(log: AuditLog): string | null {
+export function auditObjectCode(log: AuditLog): string | null {
+  const resolved =
+    typeof log.object_code === "string" ? log.object_code.trim() : "";
+  if (resolved) return resolved;
   const after = log.after_data ?? {};
   for (const key of ["doc_no", "code", "sku_code", "serial"]) {
     const value = after[key];
     if (typeof value === "string" && value.trim()) return value.trim();
   }
-  return log.object_id ? shortId(log.object_id) : null;
+  return null;
+}
+
+/**
+ * Phần "đối tượng" trong câu mô tả: mã nghiệp vụ nếu có; chỉ loại đối tượng
+ * không có mã mới rút gọn `object_id` — không bao giờ nối nguyên 36 ký tự UUID.
+ */
+function auditObjectRef(log: AuditLog): string | null {
+  return (
+    auditObjectCode(log) ?? (log.object_id ? shortId(log.object_id) : null)
+  );
 }
 
 /**

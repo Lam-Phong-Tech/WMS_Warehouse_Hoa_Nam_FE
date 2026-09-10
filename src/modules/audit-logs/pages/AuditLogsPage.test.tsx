@@ -118,6 +118,31 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     expect(screen.getByTitle(LOG_ID)).toBeInTheDocument();
   });
 
+  it("đối tượng có mã nghiệp vụ (BE tra ngược) hiện MÃ thay cho định danh rút gọn", async () => {
+    const objectId = "48a72bc5-5577-4681-b5f9-f4258e37b747";
+    vi.mocked(auditLogService.getAuditLogs).mockResolvedValue({
+      data: [
+        {
+          ...LOGS[0],
+          id: "log-3",
+          action: "POST",
+          object_type: "stock_document",
+          object_id: objectId,
+          object_code: "PN-COV-00012",
+          module: "INBOUND" as const,
+          description: `POST stock_document #${objectId}`,
+        },
+      ],
+      meta: { current_page: 1, per_page: 10, total: 1, last_page: 1 },
+    } as never);
+
+    renderWithProviders(<AuditLogsPage />);
+
+    expect(await screen.findByText("PN-COV-00012")).toBeInTheDocument();
+    expect(screen.queryByText(/#48a72bc5/)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(objectId)).not.toBeInTheDocument();
+  });
+
   it("cột Đối tượng và Mô tả là tiếng Việt, không in enum/tên bảng thô của BE", async () => {
     renderWithProviders(<AuditLogsPage />);
     await screen.findByText("Tài khoản người dùng");

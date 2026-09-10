@@ -59,6 +59,26 @@ describe("AuditLogDetailDrawer (Chi tiết nhật ký hệ thống)", () => {
     expect(screen.queryByText("stock_document")).not.toBeInTheDocument();
   });
 
+  it("Đối tượng hiện SỐ PHIẾU do BE tra ngược, không còn UUID dù after_data không có số phiếu (phản ánh 10/09/2026)", () => {
+    const posted: AuditLog = {
+      ...LOG,
+      action: "POST",
+      object_id: "48a72bc5-5577-4681-b5f9-f4258e37b747",
+      object_code: "PN-COV-00012",
+      description: "POST stock_document #48a72bc5-5577-4681-b5f9-f4258e37b747",
+      before_data: { status: "SCANNING" },
+      after_data: { status: "POSTED" },
+    };
+
+    renderWithProviders(
+      <AuditLogDetailDrawer open onClose={vi.fn()} auditLog={posted} />,
+    );
+
+    expect(screen.getByText("PN-COV-00012")).toBeInTheDocument();
+    // Không một mẩu nào của UUID đối tượng — kể cả dạng rút gọn — còn trên màn.
+    expect(document.body.textContent).not.toMatch(/48a72b|37b747/);
+  });
+
   it("dữ liệu trước/sau thay đổi hiện dạng 'tên trường – giá trị', tuyệt đối không còn JSON (UAT TC_UI_13)", () => {
     renderWithProviders(
       <AuditLogDetailDrawer open onClose={vi.fn()} auditLog={LOG} />,

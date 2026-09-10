@@ -18,6 +18,7 @@ import {
   auditActionLabel,
   auditActionTone,
   auditDataEntries,
+  auditObjectCode,
   auditObjectTypeLabel,
   describeAuditLog,
 } from "../constants/audit-log-labels";
@@ -118,6 +119,8 @@ export function AuditLogDetailDrawer({
   // trả null khi chưa có bản ghi thì `open` cũng đang false, không mất hiệu ứng.
   if (!auditLog) return null;
 
+  const objectCode = auditObjectCode(auditLog);
+
   // Thay Typography.Text copyable của antd: nút copy tường minh + toast.
   const copyIp = () => {
     if (!auditLog.ip_address) return;
@@ -177,9 +180,10 @@ export function AuditLogDetailDrawer({
               }
             />
             {/* `object_type` là tên bảng/slug route của BE — hiện nhãn tiếng
-              Việt của loại đối tượng, kèm định danh rút gọn (BE chưa trả mã
-              nghiệp vụ; khi có object_code thì hiện mã đó). Giá trị kỹ thuật
-              gốc giữ ở tooltip cho quản trị tra soát. */}
+              Việt của loại đối tượng kèm MÃ NGHIỆP VỤ (số phiếu, mã hồ sơ,
+              serial...) do BE tra ngược. Chỉ loại đối tượng không có mã, hoặc
+              bản ghi gốc không còn, mới rơi về định danh rút gọn có nút sao
+              chép. Giá trị kỹ thuật của loại đối tượng giữ ở tooltip. */}
             <DetailField
               label={t("audit.colObject")}
               value={
@@ -196,7 +200,11 @@ export function AuditLogDetailDrawer({
                       ? auditObjectTypeLabel(auditLog.object_type)
                       : EMPTY_TEXT}
                   </Box>
-                  {auditLog.object_id ? (
+                  {objectCode ? (
+                    <Box component="span" sx={{ fontWeight: 600 }}>
+                      {objectCode}
+                    </Box>
+                  ) : auditLog.object_id ? (
                     <CopyableId value={auditLog.object_id} />
                   ) : null}
                 </Stack>
