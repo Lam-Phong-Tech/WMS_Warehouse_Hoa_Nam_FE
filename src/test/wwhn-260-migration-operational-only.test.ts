@@ -6,6 +6,8 @@ import { describe, expect, it } from "vitest";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { ROUTES } from "@/shared/constants/routes";
 
+import { loadPinnedContract } from "../../scripts/pinned-openapi-contract.mjs";
+
 /**
  * WWHN-260 — migration/tồn đầu kỳ là **operational-only** (`DEC-MIG-API-001`,
  * `REQ-SRS-021`, SRS §13.12).
@@ -51,11 +53,13 @@ describe("WWHN-260 — migration là operational-only trên FE", () => {
   });
 
   it("hợp đồng OpenAPI mà FE dùng không có operation migration", () => {
-    const swagger = JSON.parse(readRepoFile("swagger-api.json")) as {
-      paths?: Record<string, unknown>;
-    };
+    // Nguồn kín: chỉ mục path+method đã commit trong BE_CONTRACT_PIN.json, tự xác minh
+    // niêm sha256 + số đếm. Pin thiếu/hỏng/lệch là THROW ⇒ test đỏ. Không đọc
+    // swagger-api.json (gitignored ⇒ CI không có, máy dev có thể lệch pin).
+    const contract = loadPinnedContract(repoRoot);
+    expect(contract.paths.size).toBe(contract.pin.openapi_paths);
 
-    const migrationPaths = Object.keys(swagger.paths ?? {}).filter((apiPath) =>
+    const migrationPaths = [...contract.paths].filter((apiPath) =>
       /migration|cutover|opening-balance/.test(apiPath.toLowerCase()),
     );
     expect(migrationPaths).toEqual([]);

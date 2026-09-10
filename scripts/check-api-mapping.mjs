@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadPinnedContract } from "./pinned-openapi-contract.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const swaggerPath = join(root, "swagger-api.json");
 const endpointsPath = join(root, "src/shared/api/endpoints.ts");
 const permissionPath = join(root, "src/shared/constants/wms-permissions.ts");
 const mappingFiles = [
@@ -71,20 +70,27 @@ function loadEndpointPaths() {
   return paths;
 }
 
-function loadSwaggerRoutes() {
-  if (!existsSync(swaggerPath)) return null;
-  const swagger = JSON.parse(readFileSync(swaggerPath, "utf8"));
-  const routes = new Set();
-  for (const [path, operations] of Object.entries(swagger.paths ?? {})) {
-    const normalized = normalizePath(path);
-    if (!normalized) continue;
-    for (const method of Object.keys(operations ?? {})) {
-      if (methods.has(method.toUpperCase())) {
-        routes.add(`${method.toUpperCase()} ${normalized}`);
-      }
+/**
+ * WWHN-309 R2 (10/09/2026) — nguồn hợp đồng DUY NHẤT là chỉ mục path+method đã commit trong
+ * docs/api-evidence/BE_CONTRACT_PIN.json (loadPinnedContract tự xác minh niêm sha256 và số
+ * đếm). Không đọc swagger-api.json nữa: tệp đó bị .gitignore nên CI không có — cổng từng tụt
+ * xuống "chỉ kiểm hằng số FE" mà vẫn PASS — còn máy dev có thể giữ bản lệch pin. Pin thiếu,
+ * hỏng hay lệch niêm đều FAIL; không có chế độ cảnh báo.
+ */
+function loadPinnedRoutes() {
+  try {
+    const contract = loadPinnedContract(root);
+    const routes = new Set();
+    for (const operation of contract.operations) {
+      const space = operation.indexOf(" ");
+      const normalized = normalizePath(operation.slice(space + 1));
+      if (normalized) routes.add(`${operation.slice(0, space)} ${normalized}`);
     }
+    return { contract, routes };
+  } catch (error) {
+    console.error(`[api-mapping] ERROR: ${error.message}`);
+    process.exit(1);
   }
-  return routes;
 }
 
 for (const [path, label] of [
@@ -101,39 +107,16 @@ if (failures.length) {
   process.exit(1);
 }
 
-const swaggerRoutes = loadSwaggerRoutes();
+// WWHN-309 / DEV309-P1-02: phải đối chiếu với ĐÚNG revision BE đã pin — trước đây FE và QA
+// có thể đọc hai bản OpenAPI khác nhau mà cả hai cùng PASS.
+const { contract: pinnedContract, routes: pinnedRoutes } = loadPinnedRoutes();
+const pinnedBeSha = pinnedContract.pin.be_sha.slice(0, 12);
+console.log(
+  `[api-mapping] OK: hợp đồng pin BE ${pinnedBeSha} — ${pinnedContract.operations.length} operation / ${pinnedContract.paths.size} path, niêm ${pinnedContract.pin.operation_index.sha256.slice(0, 12)}… hợp lệ`,
+);
 const endpointPaths = loadEndpointPaths();
 const endpointSource = readFileSync(endpointsPath, "utf8");
 const permissionSource = readFileSync(permissionPath, "utf8");
-
-if (!swaggerRoutes) {
-  warnings.push(
-    "swagger-api.json is unavailable: validating FE constants/registers only; this is not BE OpenAPI sign-off.",
-  );
-} else {
-  // WWHN-309 / DEV309-P1-02: có spec chưa đủ - phải là ĐÚNG spec của revision BE
-  // đã pin. Trước đây FE và QA có thể đang đọc hai bản OpenAPI khác nhau mà cả hai
-  // đều báo PASS, nên "FE đã đối chiếu contract" không nói lên được điều gì.
-  const pinPath = join(root, "docs/api-evidence/BE_CONTRACT_PIN.json");
-  if (!existsSync(pinPath)) {
-    failures.push(
-      "docs/api-evidence/BE_CONTRACT_PIN.json không tồn tại: không xác định được swagger-api.json thuộc revision BE nào.",
-    );
-  } else {
-    const pin = JSON.parse(readFileSync(pinPath, "utf8"));
-    const actual = createHash("sha256").update(readFileSync(swaggerPath)).digest("hex");
-    if (actual !== pin.spec_sha256) {
-      failures.push(
-        `swagger-api.json không khớp BE_CONTRACT_PIN.json (BE ${String(pin.be_sha).slice(0, 12)}):\n` +
-          `    pinned  ${pin.spec_sha256}\n` +
-          `    current ${actual}\n` +
-          `    Chạy: npm run contract:sync -- ${pin.be_sha}  (hoặc re-pin nếu BE đã đổi contract có chủ đích)`,
-      );
-    } else {
-      console.log(`[api-mapping] OK: swagger-api.json khớp BE pin ${String(pin.be_sha).slice(0, 12)}`);
-    }
-  }
-}
 
 let totalRows = 0;
 let failClosedRows = 0;
@@ -160,14 +143,14 @@ for (const file of mappingFiles) {
       );
     }
 
-    if (swaggerRoutes) {
-      const key = `${row.method} ${normalized}`;
-      if (!swaggerRoutes.has(key)) {
-        if (row.failClosed) {
-          warnings.push(`${rel}:${row.line} ${key} is explicitly fail-closed/pending.`);
-        } else {
-          failures.push(`${rel}:${row.line} ${key} not found in swagger-api.json`);
-        }
+    const key = `${row.method} ${normalized}`;
+    if (!pinnedRoutes.has(key)) {
+      if (row.failClosed) {
+        warnings.push(`${rel}:${row.line} ${key} is explicitly fail-closed/pending.`);
+      } else {
+        failures.push(
+          `${rel}:${row.line} ${key} not found in the pinned BE OpenAPI (BE_CONTRACT_PIN.json operation_index)`,
+        );
       }
     }
   }
@@ -297,5 +280,5 @@ if (failures.length) {
 }
 
 console.log(
-  `[api-mapping] PASS: ${totalRows} documented rows checked (${failClosedRows} explicitly fail-closed); current MVP paths and permissions are internally consistent.`,
+  `[api-mapping] PASS: ${totalRows} documented rows checked against pinned BE ${pinnedBeSha} (${failClosedRows} explicitly fail-closed); current MVP paths and permissions are internally consistent.`,
 );

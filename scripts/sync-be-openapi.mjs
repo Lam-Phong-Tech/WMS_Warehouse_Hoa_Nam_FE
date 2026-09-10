@@ -18,11 +18,25 @@
  *   node scripts/sync-be-openapi.mjs --from <đường dẫn repo BE cục bộ>
  *
  * Sau khi tải: npm run check:api-mapping
+ *
+ * CẬP NHẬT 10/09/2026 (WWHN-309 R2): các cổng CI (check:api-mapping, master-sku:verify, test
+ * wwhn-260) KHÔNG đọc `swagger-api.json` nữa mà đọc `operation_index` — chỉ mục path+method
+ * suy từ đúng spec đã pin, commit ngay trong BE_CONTRACT_PIN.json (scripts/pinned-openapi-
+ * contract.mjs). `--repin` ghi luôn chỉ mục đó; lần sync thường kiểm chỉ mục trong pin còn
+ * khớp spec vừa tải. `swagger-api.json` chỉ còn là bản tra cứu cục bộ (schema/ví dụ) cho
+ * người phát triển — lưu ý spec tại revision 7da26cb1cc13 chứa example của một credential
+ * đã lộ (đã thu hồi), tệp gitignored và không bao giờ được commit.
  */
 import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  buildOperationIndex,
+  deriveOperationIndex,
+  operationIndexDigest,
+  validatePin,
+} from "./pinned-openapi-contract.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const target = join(root, "swagger-api.json");
@@ -71,7 +85,14 @@ function reconcilePin(specText, resolvedRef) {
       openapi_version: spec.info?.version ?? null,
       openapi_paths: Object.keys(spec.paths ?? {}).length,
       openapi_operations: operations,
+      operation_index: buildOperationIndex(actual, deriveOperationIndex(spec)),
     };
+    try {
+      validatePin(pin);
+    } catch (error) {
+      console.error(`[sync-be-openapi] FAIL: pin mới không tự nhất quán, không ghi.\n${error.message}`);
+      process.exit(1);
+    }
     writeFileSync(pinPath, JSON.stringify(pin, null, 2) + "\n", "utf8");
     console.log(
       "[sync-be-openapi] Đã ghi pin BE " + resolvedRef.slice(0, 12) + " -> docs/api-evidence/BE_CONTRACT_PIN.json",
@@ -94,7 +115,15 @@ function reconcilePin(specText, resolvedRef) {
     console.error("[sync-be-openapi] Nếu BE đổi contract có chủ đích: npm run contract:sync -- <BE_SHA_MOI> --repin");
     process.exit(1);
   }
-  console.log("[sync-be-openapi] OK: spec khớp pin BE " + String(pin.be_sha).slice(0, 12));
+  const derivedDigest = operationIndexDigest(deriveOperationIndex(JSON.parse(specText)));
+  if (pin.operation_index?.sha256 !== derivedDigest) {
+    console.error("[sync-be-openapi] FAIL: operation_index trong pin không khớp chỉ mục suy từ spec đã pin.");
+    console.error("[sync-be-openapi]   pin   " + (pin.operation_index?.sha256 ?? "(thiếu)"));
+    console.error("[sync-be-openapi]   spec  " + derivedDigest);
+    console.error("[sync-be-openapi] Sinh lại: node scripts/pinned-openapi-contract.mjs --write-index swagger-api.json");
+    process.exit(1);
+  }
+  console.log("[sync-be-openapi] OK: spec khớp pin BE " + String(pin.be_sha).slice(0, 12) + " (kể cả operation_index)");
 }
 
 function summarize(specText, source) {

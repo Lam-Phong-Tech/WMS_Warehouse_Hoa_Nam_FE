@@ -6,13 +6,18 @@
  * (`/http\.post\([^\n]*SKU_IMPORT_EXCEL/`). Prettier xuống dòng sau `(` nên
  * regex không bao giờ match — guard PASS trong khi /skus/import-excel đã được
  * gọi thật (WWHN-331). R2 đổi cơ chế: một capability master/SKU chỉ hợp lệ khi
- * path của nó TỒN TẠI trong OpenAPI đã pin (swagger-api.json ↔
- * docs/api-evidence/BE_CONTRACT_PIN.json — hash được check:api-mapping xác
- * minh). Không còn dựa vào hình dạng call-site, nên refactor/format không thể
- * làm guard câm lặng.
+ * path của nó TỒN TẠI trong OpenAPI đã pin. Không còn dựa vào hình dạng call-site,
+ * nên refactor/format không thể làm guard câm lặng.
+ *
+ * R3 (10/09/2026): nguồn là chỉ mục path+method đã commit trong
+ * docs/api-evidence/BE_CONTRACT_PIN.json, và gate TỰ xác minh niêm sha256 + số đếm của
+ * nó (loadPinnedContract). R2 đọc swagger-api.json — tệp gitignored — và phó mặc việc
+ * kiểm hash cho check:api-mapping: trên CI việc đó không bao giờ xảy ra (tệp vắng mặt),
+ * còn trên máy dev một bản spec lệch pin vẫn cho PASS.
  */
 import { existsSync, globSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { loadPinnedContract } from "./pinned-openapi-contract.mjs";
 
 const root = process.cwd();
 const failures = [];
@@ -24,17 +29,6 @@ function read(path) {
     return "";
   }
   return readFileSync(fullPath, "utf8");
-}
-
-function readJson(path) {
-  const raw = read(path);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    failures.push(`${path}: invalid JSON (${error.message})`);
-    return null;
-  }
 }
 
 function readSurface(patterns, label) {
@@ -64,15 +58,17 @@ function forbidPattern(content, pattern, label) {
 // ---------------------------------------------------------------------------
 // 1. Contract-pin gate: bề mặt master/SKU FE dùng phải nằm trong spec đã pin.
 // ---------------------------------------------------------------------------
-const contractPin = readJson("docs/api-evidence/BE_CONTRACT_PIN.json");
-const spec = readJson("swagger-api.json");
-const specPaths = new Set(Object.keys(spec?.paths ?? {}));
-
-if (contractPin) {
-  for (const field of ["be_sha", "spec_sha256", "openapi_version"]) {
-    if (!contractPin[field])
-      failures.push(`BE_CONTRACT_PIN.json missing field ${field}`);
-  }
+// Pin thiếu/hỏng/lệch niêm ⇒ ghi lỗi VÀ specPaths rỗng ⇒ cả 16 capability bên dưới cũng
+// FAIL: không có nhánh nào cho qua khi nguồn hợp đồng không kiểm chứng được.
+let specPaths = new Set();
+try {
+  const contract = loadPinnedContract(root);
+  specPaths = contract.paths;
+  console.log(
+    `[master-sku-closure] pinned contract BE ${contract.pin.be_sha.slice(0, 12)}: ${contract.paths.size} path / ${contract.operations.length} operation (niêm ${contract.pin.operation_index.sha256.slice(0, 12)}…)`,
+  );
+} catch (error) {
+  failures.push(error.message);
 }
 
 /**
@@ -175,5 +171,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(
-  "[master-sku-closure] PASS: pinned-contract surface, phantom-endpoint ban, RBAC/UI states enforced (task-doc/closure-register checks retired by 3822d45).",
+  "[master-sku-closure] PASS: 16 capability có trong hợp đồng pin (chỉ mục đã niêm), phantom-endpoint ban, RBAC/UI states enforced (task-doc/closure-register checks retired by 3822d45).",
 );
