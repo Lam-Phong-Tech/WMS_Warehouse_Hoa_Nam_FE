@@ -19,6 +19,7 @@ import {
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
+import { transportDiagnosticOf } from "@/shared/api/transport-monitor";
 import { ROUTES } from "@/shared/constants/routes";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
@@ -88,6 +89,34 @@ function getLoginErrorMessage(error: unknown, t: TranslateFn): string {
     : t("auth.login.failed");
 }
 
+/**
+ * Dòng "mã chẩn đoán" cho lỗi KHÔNG có HTTP response (mất mạng, bị huỷ, hết thời
+ * gian). Câu thông báo chung không phân biệt được các nguyên nhân đó; dòng mã này
+ * nằm ngay trong ảnh chụp màn hình người dùng gửi lên nên đủ để khoanh vùng mà
+ * không cần tái hiện. Chỉ gồm mã kỹ thuật — không email, token hay dữ liệu cá
+ * nhân (xem shared/api/transport-monitor.ts).
+ */
+function TransportDiagnosticLine({ error }: { error: unknown }) {
+  const t = useT();
+  const diagnostic = transportDiagnosticOf(error);
+  if (!diagnostic) return null;
+  return (
+    <Box
+      component="span"
+      data-testid="login-transport-diagnostic"
+      sx={{
+        display: "block",
+        marginTop: "6px",
+        fontSize: "12px",
+        opacity: 0.8,
+        overflowWrap: "anywhere",
+      }}
+    >
+      {t("auth.login.diagnosticCode", { code: diagnostic.summary })}
+    </Box>
+  );
+}
+
 export function LoginPage() {
   const t = useT();
   const login = useLogin();
@@ -147,6 +176,7 @@ export function LoginPage() {
           <Box sx={{ marginBottom: "14px" }}>
             <UiAlert tone="error" title={t("auth.login.errorTitle")}>
               {mfaErrorMessage}
+              <TransportDiagnosticLine error={mfaVerify.error} />
             </UiAlert>
           </Box>
         )}
@@ -199,6 +229,7 @@ export function LoginPage() {
         <Box sx={{ marginBottom: "14px" }}>
           <UiAlert tone="error" title={t("auth.login.errorTitle")}>
             {errorMessage}
+            <TransportDiagnosticLine error={login.error} />
           </UiAlert>
         </Box>
       )}

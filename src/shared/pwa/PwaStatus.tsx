@@ -51,7 +51,10 @@ export function PwaStatus() {
   return (
     <div className="wms-pwa-status wms-pwa-status--update" role="status">
       <span>{t("shared.pwa.updateReady")}</span>
-      <button type="button" onClick={activateWaitingServiceWorker}>
+      <button
+        type="button"
+        onClick={() => activateWaitingServiceWorker({ userInitiated: true })}
+      >
         {t("shared.pwa.updateNow")}
       </button>
     </div>

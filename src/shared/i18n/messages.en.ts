@@ -4514,6 +4514,7 @@ export const MESSAGES_EN: MessageTree = {
         "The server took too long to respond. Please try again; if the problem persists, contact your administrator.",
       errorNetwork:
         "Unable to reach the system. Check your network connection and try again; if the problem persists, contact your administrator.",
+      diagnosticCode: "Diagnostic code: {code}",
       errorInvalidCredentials:
         "Incorrect email or password. Please check and try again.",
       errorTooManyAttempts:

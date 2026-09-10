@@ -4511,6 +4511,7 @@ export const MESSAGES_VI = {
         "Máy chủ phản hồi quá thời gian. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
       errorNetwork:
         "Không kết nối được hệ thống. Kiểm tra kết nối mạng rồi thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
+      diagnosticCode: "Mã chẩn đoán: {code}",
       errorInvalidCredentials:
         "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.",
       errorTooManyAttempts:

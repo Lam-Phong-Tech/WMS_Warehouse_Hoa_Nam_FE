@@ -36,6 +36,9 @@ Hiện mỗi đường dẫn API mới trong một phiên tốn một preflight 
 ## Kiểm chứng sau khi triển khai
 
 ```bash
+# 0) Máy chủ đang phục vụ ĐÚNG commit vừa deploy
+curl -s https://<domain>/build-manifest.json | grep -i sourceSha
+
 # 1) File có hash phải immutable và được nén
 curl -sI -H 'Accept-Encoding: gzip' https://<domain>/assets/<file>.js \
   | grep -iE 'cache-control|content-encoding'
@@ -56,3 +59,30 @@ curl -sI https://<domain>/service-worker.js | grep -i cache-control
 ```bash
 BASE_URL=https://<domain> RELOADS=5 node scripts/perf/measure-reload.mjs
 ```
+
+## Đăng nhập báo "Không kết nối được hệ thống"
+
+Câu này chỉ hiện khi request đăng nhập KHÔNG nhận được HTTP response nào (sai mật
+khẩu là 401, bị khoá tạm là 429 — đều có thông báo riêng). Từ 10/09/2026 ngay dưới
+câu đó có một dòng `Mã chẩn đoán`, ví dụ:
+
+```
+ERR_NETWORK/network | 812ms | +1.4s | online | h2 | sw
+```
+
+| Phần | Nghĩa |
+|---|---|
+| `ERR_NETWORK/network` | lỗi mạng, kết nối bị cắt hoặc CORS; `ECONNABORTED/timeout` = quá `VITE_API_TIMEOUT_MS`; `ECONNABORTED/aborted` = trình duyệt huỷ request (thường vì trang điều hướng) |
+| `812ms` | từ lúc gửi tới lúc hỏng — gần 0 ms là bị chặn ngay (DNS, chứng chỉ, proxy, CORS) |
+| `+1.4s` | tuổi của trang lúc hỏng — nhỏ nghĩa là đăng nhập ngay sau khi mở trang |
+| `online` / `offline` | `navigator.onLine` |
+| `http/1.1`, `h2`, `h3` | giao thức của trang — chỉ hỏng trên `h3` thì nghi QUIC/proxy |
+| `sw`, `cross-origin`, `page-leaving`, `hidden` | có service worker điều khiển; API khác origin; trang đang rời đi/reload; tab bị ẩn |
+
+20 lỗi gần nhất của tab (sống qua reload) nằm ở DevTools → Application → Session
+Storage → `wms:transport-log`. Bản ghi không chứa email, mật khẩu, token, body hay
+query.
+
+Race lúc khởi động (service worker, bootstrap refresh, chế độ máy quét tự áp bản cập
+nhật) có bộ kiểm riêng chạy trên bản build production với API giả lập cùng origin:
+`scripts/perf/_check-login-cold-start.mjs` (cách build ghi ở đầu file).

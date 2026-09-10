@@ -3,6 +3,7 @@ import {
   meResponseFromRefreshUser,
 } from "@/modules/auth/services/auth.service";
 import { queryClient } from "@/app/providers/query-client";
+import { trackAuthBootstrap } from "@/shared/lib/auth-bootstrap-gate";
 import { mark } from "@/shared/perf/marks";
 import { useAuthStore } from "@/shared/store/auth.store";
 
@@ -63,8 +64,15 @@ function shouldAttemptRefresh(): boolean {
 }
 
 async function runBootstrap(): Promise<void> {
-  useAuthStore.setState({ isBootstrapped: false, bootstrapError: null });
+  // ĐỌC dấu vết phiên TRƯỚC mọi setState. Middleware `persist` của zustand ghi
+  // `partialize(state)` xuống cookie ở MỌI lần setState và không chờ hydrate: gọi
+  // setState trước thì cookie `erp-auth` bị ghi đè bằng `user: null` trong bộ nhớ
+  // ngay trước khi được đọc — dấu vết phiên luôn mất và nhánh (a) của
+  // `shouldAttemptRefresh` không bao giờ đúng. Đo 10/09/2026
+  // (`scripts/perf/_check-login-cold-start.mjs`, kịch bản hint): mở /login khi
+  // còn phiên thì bootstrap không hề refresh, dù cookie vẫn đọc được lúc tải trang.
   await Promise.resolve(useAuthStore.persist.rehydrate());
+  useAuthStore.setState({ isBootstrapped: false, bootstrapError: null });
 
   if (!shouldAttemptRefresh()) {
     // Không có phiên để khôi phục: đánh dấu đã khởi động xong và dừng. KHÔNG gọi
@@ -117,6 +125,9 @@ export function bootstrapAuth(): Promise<void> {
     activeBootstrap = runBootstrap().finally(() => {
       activeBootstrap = null;
     });
+    // Đăng nhập tay chờ lượt này xong hẳn rồi mới gửi mật khẩu: refresh trả về SAU
+    // lúc đăng nhập sẽ xoá hoặc ghi đè phiên vừa tạo — xem auth-bootstrap-gate.
+    trackAuthBootstrap(activeBootstrap);
   }
   return activeBootstrap;
 }

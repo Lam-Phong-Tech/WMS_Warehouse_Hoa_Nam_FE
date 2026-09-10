@@ -5,6 +5,8 @@ import { AppProviders } from "./app/providers/AppProviders";
 import { bootstrapAuth } from "./app/bootstrap-auth";
 import { preloadRoute } from "./app/router/route-preload";
 import { MainLayout } from "./app/router/route-components";
+import { api } from "./shared/api/axios";
+import { installTransportMonitor } from "./shared/api/transport-monitor";
 import { warmIdb } from "./shared/cache/idb";
 import { mark } from "./shared/perf/marks";
 import { initWebVitals } from "./shared/perf/rum";
@@ -43,6 +45,10 @@ import "./styles/hn-motion.css";
 // `isBootstrapped` chỉ bật sau khi rehydrate + thử refresh xong (kể cả lỗi) —
 // ProtectedRoute chờ cờ này trước khi quyết định redirect /login.
 mark("boot");
+// Gắn TRƯỚC bootstrapAuth để cả request đầu tiên (refresh) cũng được đếm và chẩn
+// đoán: register-pwa cần biết request ghi nào còn đang bay trước khi reload, và
+// lỗi không có HTTP response phải để lại mã chẩn đoán — xem transport-monitor.ts.
+installTransportMonitor(api);
 // RUM: đo Web Vitals THẬT trên máy người dùng (lấy mẫu; xem shared/perf/rum.ts).
 // Đặt ngay sau mark("boot") để observer "largest-contentful-paint" có mặt trước
 // khi trình duyệt vẽ khung hình đầu tiên — cài muộn hơn sẽ bỏ lỡ chính LCP.

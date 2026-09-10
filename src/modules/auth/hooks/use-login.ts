@@ -4,12 +4,20 @@ import { authService } from "@/modules/auth/services/auth.service";
 import { useAfterLogin } from "@/modules/auth/hooks/use-after-login";
 import type { LoginRequest } from "@/modules/auth/types/auth.types";
 import { tStatic } from "@/shared/i18n/useT";
+import { waitForAuthBootstrap } from "@/shared/lib/auth-bootstrap-gate";
 
 export function useLogin() {
   const afterLogin = useAfterLogin();
 
   return useMutation({
-    mutationFn: (credentials: LoginRequest) => authService.login(credentials),
+    // Không gửi mật khẩu khi bootstrap còn đang làm mới phiên cũ: hai thao tác cùng
+    // đổi phiên mà chạy song song thì refresh trả về SAU sẽ xoá/ghi đè phiên vừa
+    // đăng nhập (xem auth-bootstrap-gate). Máy sạch không phải chờ gì. Trong lúc
+    // chờ, mutation đã ở trạng thái pending nên nút đăng nhập hiện loading.
+    mutationFn: async (credentials: LoginRequest) => {
+      await waitForAuthBootstrap();
+      return authService.login(credentials);
+    },
 
     onSuccess: (data) => {
       // WWHN-SEC-08: mật khẩu đúng KHÔNG còn đồng nghĩa với "đã đăng nhập".
@@ -45,8 +53,16 @@ export function useMfaVerify() {
   const afterLogin = useAfterLogin();
 
   return useMutation({
-    mutationFn: ({ mfaToken, code }: { mfaToken: string; code: string }) =>
-      authService.verifyMfa(mfaToken, code),
+    mutationFn: async ({
+      mfaToken,
+      code,
+    }: {
+      mfaToken: string;
+      code: string;
+    }) => {
+      await waitForAuthBootstrap();
+      return authService.verifyMfa(mfaToken, code);
+    },
     onSuccess: (data) => {
       toast.success(tStatic("auth.login.success"));
       afterLogin(data);
