@@ -20,7 +20,7 @@ import fs from 'node:fs';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5199';
 const EMAIL = process.env.BENCH_EMAIL ?? 'admin-01@gmail.com';
-const PASSWORD = process.env.BENCH_PASSWORD ?? 'Cntt@1234';
+const PASSWORD = (process.env.BENCH_PASSWORD || (() => { throw new Error("BENCH_PASSWORD chưa được đặt: script đo không còn mật khẩu mặc định."); })());
 const CPU = Number(process.env.CPU ?? 1);
 const TAG = process.env.TAG ?? 'run';
 const OUT = process.env.OUT_DIR ?? 'build/perf';

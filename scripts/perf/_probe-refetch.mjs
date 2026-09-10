@@ -5,7 +5,7 @@ const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
 const p = await ctx.newPage();
 await p.goto(`${BASE}/login`, { waitUntil: "networkidle" });
 await p.getByPlaceholder("your@gmail.com").fill("admin-01@gmail.com");
-await p.locator('input[type="password"]').fill("Cntt@1234");
+await p.locator('input[type="password"]').fill((process.env.BENCH_PASSWORD || (() => { throw new Error("BENCH_PASSWORD chưa được đặt: script đo không còn mật khẩu mặc định."); })()));
 await p.getByRole("button", { name: "Đăng nhập" }).click();
 await p.waitForURL(/\/dashboard/, { timeout: 60000 });
 await p.goto(`${BASE}/master-data/skus`, { waitUntil: "networkidle" });

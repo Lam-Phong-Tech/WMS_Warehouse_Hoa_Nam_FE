@@ -24,7 +24,7 @@ if (CPU > 1) {
 
 await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
 await page.getByPlaceholder('your@gmail.com').fill('admin-01@gmail.com');
-await page.locator('input[type="password"]').fill('Cntt@1234');
+await page.locator('input[type="password"]').fill((process.env.BENCH_PASSWORD || (() => { throw new Error("BENCH_PASSWORD chưa được đặt: script đo không còn mật khẩu mặc định."); })()));
 await page.getByRole('button', { name: 'Đăng nhập' }).click();
 await page.waitForURL(/\/dashboard/);
 await page.waitForLoadState('networkidle');

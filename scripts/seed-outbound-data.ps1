@@ -7,9 +7,14 @@
 param(
     [string]$BaseUrl = "http://localhost:8080/api/v1",
     [string]$Email = "admin@gmail.com",
-    [string]$Password = "Cntt@1234",
+    # No default password: the value that used to live here is a leaked credential.
+    [string]$Password = $env:WMS_SEED_PASSWORD,
     [int]$Count = 5
 )
+
+if ([string]::IsNullOrWhiteSpace($Password)) {
+    throw "Pass -Password or set the WMS_SEED_PASSWORD environment variable (no default password)."
+}
 
 function Write-Status {
     param([string]$Message, [ValidateSet("Info", "Success", "Error", "Warning")]$Level = "Info")
