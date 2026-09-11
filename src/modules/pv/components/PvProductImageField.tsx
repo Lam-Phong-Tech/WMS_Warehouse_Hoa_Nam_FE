@@ -121,9 +121,12 @@ export function PvProductImageField({
         });
         uploaded.push({
           url: result.url,
-          // alt mặc định lấy tên tệp (bỏ đuôi): trống hoàn toàn thì App PV mất
-          // văn bản thay thế, còn tên tệp ít nhất mô tả được ảnh nào.
-          alt_text: file.name.replace(/\.[^.]+$/, "").slice(0, 255) || null,
+          // KHÔNG lấy tên tệp làm mô tả ảnh: tên tệp gần như luôn vô nghĩa với
+          // người xem ("Untitled", "image", "IMG_20260910_0930", "Screenshot…")
+          // mà vẫn điền sẵn vào ô rồi lên App PV. Để trống cho người nhập tự mô
+          // tả; trống thì thẻ sản phẩm dùng tên sản phẩm làm văn bản thay thế
+          // (PvProductCard, PvProductCatalogPage).
+          alt_text: null,
           is_primary: false,
         });
       } catch (uploadError) {
