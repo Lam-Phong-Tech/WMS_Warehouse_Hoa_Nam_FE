@@ -811,9 +811,6 @@ export default function IoHistoryReport() {
                     onClick={() => setTypeMenuOpen((open) => !open)}
                   >
                     {typeLabel}
-                    <i className="down" aria-hidden="true">
-                      ⌄
-                    </i>
                   </button>
                   {typeMenuOpen ? (
                     <div

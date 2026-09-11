@@ -543,11 +543,6 @@
   border-color: var(--primary);
 }
 
-.hn-rpt-io .down {
-  margin-left: auto;
-  color: var(--muted);
-}
-
 .hn-rpt-io .rangewrap,
 .hn-rpt-io .selectwrap {
   position: relative;
