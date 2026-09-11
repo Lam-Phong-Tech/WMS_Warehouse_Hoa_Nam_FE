@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { authService } from "@/modules/auth/services/auth.service";
 import { useAfterLogin } from "@/modules/auth/hooks/use-after-login";
 import type { LoginRequest } from "@/modules/auth/types/auth.types";
+import { withBackendRecovery } from "@/shared/api/backend-availability";
 import { tStatic } from "@/shared/i18n/useT";
 import { waitForAuthBootstrap } from "@/shared/lib/auth-bootstrap-gate";
 
@@ -14,10 +15,15 @@ export function useLogin() {
     // đổi phiên mà chạy song song thì refresh trả về SAU sẽ xoá/ghi đè phiên vừa
     // đăng nhập (xem auth-bootstrap-gate). Máy sạch không phải chờ gì. Trong lúc
     // chờ, mutation đã ở trạng thái pending nên nút đăng nhập hiện loading.
-    mutationFn: async (credentials: LoginRequest) => {
-      await waitForAuthBootstrap();
-      return authService.login(credentials);
-    },
+    //
+    // Máy chủ đang khởi động lại (gateway 502/503, preflight bị chặn) thì tự chờ
+    // /health rồi gửi lại một lần — xem shared/api/backend-availability.ts. Cổng
+    // chờ bootstrap nằm TRONG thao tác để lần gửi lại cũng đi qua cổng.
+    mutationFn: (credentials: LoginRequest) =>
+      withBackendRecovery(async () => {
+        await waitForAuthBootstrap();
+        return authService.login(credentials);
+      }),
 
     onSuccess: (data) => {
       // WWHN-SEC-08: mật khẩu đúng KHÔNG còn đồng nghĩa với "đã đăng nhập".
@@ -53,16 +59,11 @@ export function useMfaVerify() {
   const afterLogin = useAfterLogin();
 
   return useMutation({
-    mutationFn: async ({
-      mfaToken,
-      code,
-    }: {
-      mfaToken: string;
-      code: string;
-    }) => {
-      await waitForAuthBootstrap();
-      return authService.verifyMfa(mfaToken, code);
-    },
+    mutationFn: ({ mfaToken, code }: { mfaToken: string; code: string }) =>
+      withBackendRecovery(async () => {
+        await waitForAuthBootstrap();
+        return authService.verifyMfa(mfaToken, code);
+      }),
     onSuccess: (data) => {
       toast.success(tStatic("auth.login.success"));
       afterLogin(data);

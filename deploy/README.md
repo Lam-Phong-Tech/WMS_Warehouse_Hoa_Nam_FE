@@ -63,11 +63,30 @@ BASE_URL=https://<domain> RELOADS=5 node scripts/perf/measure-reload.mjs
 ## Đăng nhập báo "Không kết nối được hệ thống"
 
 Câu này chỉ hiện khi request đăng nhập KHÔNG nhận được HTTP response nào (sai mật
-khẩu là 401, bị khoá tạm là 429 — đều có thông báo riêng). Từ 10/09/2026 ngay dưới
-câu đó có một dòng `Mã chẩn đoán`, ví dụ:
+khẩu là 401, bị khoá tạm là 429 — đều có thông báo riêng).
+
+Từ 10/09/2026 màn đăng nhập **tự chờ máy chủ** trước khi báo lỗi: request hỏng kiểu
+"máy chủ chưa sẵn sàng" (gateway 502/503, hoặc `ERR_NETWORK` không response) thì nó
+dò `GET /health` — tối đa 45 s nếu gateway còn trả lời, 15 s nếu chưa tới được máy
+chủ — rồi gửi lại ĐÚNG MỘT LẦN. Trong lúc chờ màn hình ghi "Máy chủ chưa sẵn sàng (có
+thể đang khởi động lại)…". Hết thời gian mới báo lỗi, câu chữ theo điều dò được: "đang
+khởi động lại hoặc tạm gián đoạn" (gateway trả lời), "máy chủ chưa phản hồi" (không
+tới được), "kiểm tra kết nối mạng" (trình duyệt báo offline). Mã nguồn:
+`src/shared/api/backend-availability.ts`.
+
+**Ca hay gặp nhất — backend vừa khởi động lại** (ticket 10/09/2026, mã
+`ERR_NETWORK/network | 13ms | … | cross-origin`): nhật ký nginx của BE có
+`OPTIONS /api/v1/auth/login … 502` kèm `backend could not be resolved` / `connect()
+failed (111: Connection refused)` đúng lúc container `backend` đang tạo lại (entrypoint
+chạy migrate + config:cache, ~10–25 s). Trang 502 do nginx tự sinh không có header
+CORS nên trình duyệt chặn preflight, POST không hề được gửi. Repo BE nay trả JSON 503
+có CORS (`docker/nginx/default.conf.template`, cần `docker compose up -d nginx`).
+
+Dưới câu lỗi có một dòng `Mã chẩn đoán`, ví dụ:
 
 ```
-ERR_NETWORK/network | 812ms | +1.4s | online | h2 | sw
+ERR_NETWORK/network | 812ms | +1.4s | online | h2 | sw | probe:unreachable
+HTTP 503 BACKEND_UNAVAILABLE | probe:unavailable
 ```
 
 | Phần | Nghĩa |

@@ -4515,6 +4515,12 @@ export const MESSAGES_EN: MessageTree = {
       errorNetwork:
         "Unable to reach the system. Check your network connection and try again; if the problem persists, contact your administrator.",
       diagnosticCode: "Diagnostic code: {code}",
+      waitingForServer:
+        "The server is not ready yet (it may be restarting). Retrying automatically, please wait...",
+      errorServerUnavailable:
+        "The server is restarting or temporarily unavailable, so sign-in could not complete. Please try again in a few minutes; if the problem persists, contact your administrator.",
+      errorServerUnreachable:
+        "Unable to reach the system: the server is not responding. Please try again in a few minutes; if the problem persists, check your network or contact your administrator.",
       errorInvalidCredentials:
         "Incorrect email or password. Please check and try again.",
       errorTooManyAttempts:

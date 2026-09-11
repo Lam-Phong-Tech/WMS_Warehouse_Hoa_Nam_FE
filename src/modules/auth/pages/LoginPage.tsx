@@ -19,7 +19,9 @@ import {
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
+import { backendProbeOf } from "@/shared/api/backend-availability";
 import { transportDiagnosticOf } from "@/shared/api/transport-monitor";
+import { useBackendWait } from "@/shared/hooks/useBackendWait";
 import { ROUTES } from "@/shared/constants/routes";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 
@@ -51,6 +53,19 @@ function persistRememberedIdentifier(identifier: string | null): void {
 
 function getLoginErrorMessage(error: unknown, t: TranslateFn): string {
   if (isAxiosError(error)) {
+    const status = error.response?.status;
+
+    // Gateway báo ứng dụng chưa phục vụ được (đang khởi động lại, bảo trì) — kể cả
+    // sau khi đã tự chờ (shared/api/backend-availability). Dùng câu theo ngôn ngữ
+    // giao diện thay vì body của gateway (nginx: tiếng Việt cố định; Laravel bảo
+    // trì: "Service Unavailable").
+    if (status === 502 || status === 503) {
+      return t("auth.login.errorServerUnavailable");
+    }
+    if (status === 504) {
+      return t("auth.login.errorTimeout");
+    }
+
     const responseData = error.response?.data;
     if (
       responseData &&
@@ -72,6 +87,15 @@ function getLoginErrorMessage(error: unknown, t: TranslateFn): string {
       if (error.code === "ECONNABORTED") {
         return t("auth.login.errorTimeout");
       }
+      // Đã dò /health mà vẫn không được: nói đúng điều dò thấy thay vì mặc định đổ
+      // cho mạng của người dùng (ticket 10/09: mạng không lỗi, backend đang dựng lại).
+      const probe = backendProbeOf(error);
+      if (probe === "unavailable") {
+        return t("auth.login.errorServerUnavailable");
+      }
+      if (probe === "unreachable" || probe === "ready") {
+        return t("auth.login.errorServerUnreachable");
+      }
       return t("auth.login.errorNetwork");
     }
 
@@ -89,17 +113,45 @@ function getLoginErrorMessage(error: unknown, t: TranslateFn): string {
     : t("auth.login.failed");
 }
 
+/** `error_code` của envelope API — chỉ nhận SCREAMING_SNAKE_CASE để dòng mã gọn, sạch. */
+function envelopeErrorCode(data: unknown): string | null {
+  if (!data || typeof data !== "object" || !("error_code" in data)) return null;
+  const code = (data as { error_code?: unknown }).error_code;
+  return typeof code === "string" && /^[A-Z0-9_]{1,64}$/.test(code)
+    ? code
+    : null;
+}
+
+/**
+ * Nội dung dòng "mã chẩn đoán": lỗi tầng vận chuyển (không có HTTP response) hoặc
+ * lỗi gateway 502–504, kèm kết quả lần dò /health cuối nếu đã tự chờ máy chủ.
+ */
+function loginDiagnosticSummary(error: unknown): string | null {
+  const probe = backendProbeOf(error);
+  const probePart = probe ? ` | probe:${probe}` : "";
+  const transport = transportDiagnosticOf(error);
+  if (transport) return `${transport.summary}${probePart}`;
+  if (isAxiosError(error)) {
+    const status = error.response?.status;
+    if (status !== undefined && status >= 502 && status <= 504) {
+      const code = envelopeErrorCode(error.response?.data);
+      return `HTTP ${status}${code ? ` ${code}` : ""}${probePart}`;
+    }
+  }
+  return null;
+}
+
 /**
  * Dòng "mã chẩn đoán" cho lỗi KHÔNG có HTTP response (mất mạng, bị huỷ, hết thời
- * gian). Câu thông báo chung không phân biệt được các nguyên nhân đó; dòng mã này
- * nằm ngay trong ảnh chụp màn hình người dùng gửi lên nên đủ để khoanh vùng mà
- * không cần tái hiện. Chỉ gồm mã kỹ thuật — không email, token hay dữ liệu cá
- * nhân (xem shared/api/transport-monitor.ts).
+ * gian) hoặc gateway báo máy chủ chưa sẵn sàng. Câu thông báo chung không phân biệt
+ * được các nguyên nhân đó; dòng mã này nằm ngay trong ảnh chụp màn hình người dùng
+ * gửi lên nên đủ để khoanh vùng mà không cần tái hiện. Chỉ gồm mã kỹ thuật — không
+ * email, token hay dữ liệu cá nhân (xem shared/api/transport-monitor.ts).
  */
 function TransportDiagnosticLine({ error }: { error: unknown }) {
   const t = useT();
-  const diagnostic = transportDiagnosticOf(error);
-  if (!diagnostic) return null;
+  const summary = loginDiagnosticSummary(error);
+  if (!summary) return null;
   return (
     <Box
       component="span"
@@ -112,7 +164,7 @@ function TransportDiagnosticLine({ error }: { error: unknown }) {
         overflowWrap: "anywhere",
       }}
     >
-      {t("auth.login.diagnosticCode", { code: diagnostic.summary })}
+      {t("auth.login.diagnosticCode", { code: summary })}
     </Box>
   );
 }
@@ -132,6 +184,12 @@ export function LoginPage() {
       remember: rememberedIdentifier !== "",
     },
   });
+
+  // Đang tự chờ máy chủ khởi động lại (backend-availability): nói rõ thay vì để
+  // vòng xoay "đang xác thực" kéo dài vài chục giây không lời giải thích.
+  const serverWaitText = useBackendWait()
+    ? t("auth.login.waitingForServer")
+    : null;
 
   const onSubmit = handleSubmit((values) => {
     persistRememberedIdentifier(values.remember ? values.identifier : null);
@@ -169,7 +227,9 @@ export function LoginPage() {
         title={<>{t("auth.mfa.challengeTitle")}</>}
         subtitle={t("auth.mfa.challengeSubtitle")}
         loadingText={
-          mfaVerify.isPending ? t("auth.login.authenticating") : null
+          mfaVerify.isPending
+            ? (serverWaitText ?? t("auth.login.authenticating"))
+            : null
         }
       >
         {mfaErrorMessage && (
@@ -220,7 +280,7 @@ export function LoginPage() {
       loadingText={
         isSubmitting
           ? login.isPending
-            ? t("auth.login.authenticating")
+            ? (serverWaitText ?? t("auth.login.authenticating"))
             : t("auth.login.loadingAccess")
           : null
       }
