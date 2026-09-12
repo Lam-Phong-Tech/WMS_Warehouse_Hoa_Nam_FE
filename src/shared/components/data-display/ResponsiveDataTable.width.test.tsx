@@ -103,6 +103,48 @@ describe("ResponsiveDataTable · bề rộng cột", () => {
     expect(colWidths()).toEqual(["23%", "10%"]);
   });
 
+  it("cột khai % ⇒ khối cắt trong ô KHÔNG nhận lại % đó (không bóp cột hai lần)", () => {
+    // `%` của `column.width` là phần trăm của BẢNG (đi vào <col>). Chép nguyên
+    // sang `max-width` của khối cắt bên trong ô thì phần trăm lại tính trên
+    // chính ô đã hẹp: cột "Xuất thuần" 10% của RPT-07 chỉ còn ló một mẩu chip.
+    render(
+      <ResponsiveDataTable<Row>
+        columns={[
+          {
+            key: "name",
+            header: "Người nhận",
+            width: "23%",
+            render: (r) => r.name,
+          },
+          {
+            key: "net",
+            header: "Xuất thuần",
+            width: "10%",
+            align: "right",
+            render: (r) => <span>{r.qty}</span>,
+          },
+          {
+            key: "qty",
+            header: "Tổng xuất",
+            width: 80,
+            render: (r) => String(r.qty),
+          },
+        ]}
+        rows={ROWS}
+        rowKey={(r) => r.id}
+      />,
+    );
+    const cells = Array.from(
+      screen.getByRole("table").querySelectorAll("tbody tr:first-of-type td"),
+    );
+    const clampOf = (cell: Element) =>
+      (cell.querySelector(".hn-truncate") as HTMLElement).style.maxWidth;
+    expect(clampOf(cells[0])).toBe("100%");
+    expect(clampOf(cells[1])).toBe("100%");
+    // Bề rộng px vẫn là trần tuyệt đối như cũ.
+    expect(clampOf(cells[2])).toBe("80px");
+  });
+
   it("còn cột chưa khai bề rộng ⇒ KHÔNG khoá bố cục, cột đó vẫn co giãn theo nội dung", () => {
     // Khoá bố cục khi bản thiết kế còn thiếu sẽ chia đều phần dư một cách máy
     // móc và bóp mất cột chữ dài — tệ hơn hiện trạng.

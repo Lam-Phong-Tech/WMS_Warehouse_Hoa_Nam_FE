@@ -205,13 +205,21 @@ export function ResponsiveDataTable<T>({
     // Trần bề ngang phải nằm trên khối BÊN TRONG ô: `max-width` đặt lên <td>
     // bị bỏ qua ở table-layout auto (CSS 2.1 §17.5.2), nên "…" sẽ không bao
     // giờ xuất hiện nếu chỉ chặn ở ô.
+    //
+    // Nhưng `width` khai bằng `%` thì KHÔNG được chép sang khối đó: phần trăm
+    // ấy là của BẢNG (đã vào `<col>`), còn `max-width` của khối con lại tính
+    // trên chính ô — cột bị bóp hai lần. Đo ở RPT-07 (11/09/2026): cột "Xuất
+    // thuần" 10% rộng 127px mà khối cắt chỉ còn 10px (chip số lượng ló ra một
+    // mẩu), cột người nhận 23% rộng 291px còn 61px. Ô đã bị `<col>` chặn bề
+    // ngang rồi, nên khối cắt chỉ cần lấp đầy ô.
+    const clampWidth =
+      typeof column.width === "string" && column.width.includes("%")
+        ? "100%"
+        : // Cột không khai `width` vẫn phải có trần, nếu không ô cứ nở theo
+          // chuỗi dài nhất và đẩy bảng ra ngoài khung thay vì cắt bằng "…".
+          (column.width ?? DEFAULT_CELL_MAX_WIDTH);
     return (
-      <TruncatedText
-        lines={lines}
-        // Cột không khai `width` vẫn phải có trần, nếu không ô cứ nở theo chuỗi
-        // dài nhất và đẩy bảng ra ngoài khung thay vì cắt bằng "…".
-        maxWidth={column.width ?? DEFAULT_CELL_MAX_WIDTH}
-      >
+      <TruncatedText lines={lines} maxWidth={clampWidth}>
         {content}
       </TruncatedText>
     );
