@@ -4525,6 +4525,21 @@ export const MESSAGES_VI = {
       errorGeneric:
         "Đăng nhập chưa thực hiện được. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
     },
+    session: {
+      title: "Xác nhận phiên làm việc",
+      subtitle: "Kiểm tra thông tin phiên trước khi bắt đầu ca làm việc.",
+      account: "Tài khoản",
+      role: "Vai trò",
+      scope: "Phạm vi làm việc",
+      systemScope: "Toàn hệ thống",
+      confirm: "Bắt đầu ca",
+      starting: "Đang bắt đầu ca...",
+      expiredTitle: "Phiên đăng nhập đã hết hạn",
+      expiredSubtitle: "Phiên xác thực không còn hiệu lực.",
+      expiredDescription:
+        "Vui lòng đăng nhập lại để tạo phiên làm việc mới trước khi tiếp tục.",
+      signInAgain: "Đăng nhập lại",
+    },
     // WWHN-SEC-08 — xác thực hai bước.
     mfa: {
       challengeTitle: "Xác thực hai bước",

@@ -4528,6 +4528,21 @@ export const MESSAGES_EN: MessageTree = {
       errorGeneric:
         "Sign-in could not be completed. Please try again; if the problem persists, contact your administrator.",
     },
+    session: {
+      title: "Confirm work session",
+      subtitle: "Review the session details before starting your work shift.",
+      account: "Account",
+      role: "Role",
+      scope: "Work scope",
+      systemScope: "System-wide",
+      confirm: "Start shift",
+      starting: "Starting shift...",
+      expiredTitle: "Sign-in session expired",
+      expiredSubtitle: "The authentication session is no longer valid.",
+      expiredDescription:
+        "Sign in again to create a new work session before continuing.",
+      signInAgain: "Sign in again",
+    },
     mfa: {
       challengeTitle: "Two-factor authentication",
       challengeSubtitle:

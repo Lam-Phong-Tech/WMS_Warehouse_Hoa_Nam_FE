@@ -3,6 +3,7 @@
  * Import: `import { SEMANTIC_LIGHT, COMPONENT_TOKENS } from "@/shared/ui/tokens"`.
  */
 export {
+  AUTH_BASELINE,
   BREAKPOINTS,
   COLOR,
   CONTROL,

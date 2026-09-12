@@ -17,6 +17,35 @@
 /** Kênh RGB của màu mực Vuexy #2F2B3D — dùng cho mọi alpha-variant. [ĐO] */
 export const INK_RGB = "47, 43, 61";
 
+/**
+ * SystemHNWeb AUTH baseline — exact palette published in
+ * Duc-Nguyen98/SystemHNWeb (AUTH UI handoff, 2026-09-12).
+ *
+ * Separate from COLOR because this skin is scoped to the approved AUTH screens;
+ * operational WMS screens must not be recolored as a side effect.
+ */
+export const AUTH_BASELINE = {
+  navy: "#003B63",
+  cta: "#004E74",
+  ctaHover: "#003B63",
+  link: "#086590",
+  pale: "#EAF5F8",
+  line: "#D9E8EF",
+  ink: "#12344B",
+  muted: "#627C8E",
+  surface: "#F5FAFC",
+  success: "#16865B",
+  warning: "#B97809",
+  danger: "#C2413A",
+  white: "#FFFFFF",
+  heroMid: "#005E82",
+  heroEnd: "#0B7898",
+  heroText: "#D9EFF7",
+  focusRing: "rgba(8, 101, 144, 0.2)",
+  cardShadow: "0 18px 44px rgba(0, 59, 99, 0.12)",
+  loadingMask: "rgba(255, 255, 255, 0.88)",
+} as const;
+
 export const COLOR = {
   /** [ĐO] */
   white: "#FFFFFF",

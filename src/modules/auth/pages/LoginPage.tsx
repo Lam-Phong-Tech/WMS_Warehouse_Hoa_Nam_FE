@@ -1,9 +1,14 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useCallback, useMemo, useState, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
 import { Link } from "react-router-dom";
-import { useLogin, useMfaVerify } from "@/modules/auth/hooks/use-login";
+import {
+  useLogin,
+  useMfaVerify,
+  type AuthenticatedLoginHandler,
+} from "@/modules/auth/hooks/use-login";
+import { AuthSessionConfirmation } from "@/modules/auth/components/AuthSessionConfirmation";
 import {
   buildLoginSchema,
   toLoginRequest,
@@ -171,8 +176,27 @@ function TransportDiagnosticLine({ error }: { error: unknown }) {
 
 export function LoginPage() {
   const t = useT();
-  const login = useLogin();
-  const mfaVerify = useMfaVerify();
+  const [pendingSession, setPendingSession] = useState<{
+    login: Parameters<AuthenticatedLoginHandler>[0];
+    continueLogin: () => void;
+    authenticatedAt: number;
+  } | null>(null);
+  const [isStartingSession, setIsStartingSession] = useState(false);
+
+  const handleAuthenticated = useCallback<AuthenticatedLoginHandler>(
+    (authenticatedLogin, continueLogin) => {
+      setPendingSession({
+        login: authenticatedLogin,
+        continueLogin,
+        authenticatedAt: Date.now(),
+      });
+      setIsStartingSession(false);
+    },
+    [],
+  );
+
+  const login = useLogin(handleAuthenticated);
+  const mfaVerify = useMfaVerify(handleAuthenticated);
   const [mfaCode, setMfaCode] = useState("");
   const rememberedIdentifier = readRememberedIdentifier();
   const loginSchema = useMemo(() => buildLoginSchema(t), [t]);
@@ -217,12 +241,35 @@ export function LoginPage() {
 
   const isSubmitting = login.isPending || login.isSuccess;
 
+  if (pendingSession !== null) {
+    return (
+      <AuthSessionConfirmation
+        login={pendingSession.login}
+        authenticatedAt={pendingSession.authenticatedAt}
+        starting={isStartingSession}
+        onConfirm={() => {
+          if (isStartingSession) return;
+          setIsStartingSession(true);
+          pendingSession.continueLogin();
+        }}
+        onExpired={() => {
+          setPendingSession(null);
+          setIsStartingSession(false);
+          setMfaCode("");
+          login.reset();
+          mfaVerify.reset();
+        }}
+      />
+    );
+  }
+
   // WWHN-SEC-08 — màn nhập mã. Trả về sớm, KHÔNG render kèm form mật khẩu:
   // để hai form cùng tồn tại thì người dùng có thể submit lại mật khẩu và sinh
   // một phiên chờ thứ hai, còn phiên đang hiển thị thì im lặng chết.
   if (challenge !== null) {
     return (
       <AuthShell
+        baselineScreen="login"
         titleId="login-mfa-title"
         title={<>{t("auth.mfa.challengeTitle")}</>}
         subtitle={t("auth.mfa.challengeSubtitle")}
@@ -274,6 +321,7 @@ export function LoginPage() {
 
   return (
     <AuthShell
+      baselineScreen="login"
       titleId="login-title"
       title={<>{t("auth.login.title")}</>}
       subtitle={t("auth.login.subtitle")}

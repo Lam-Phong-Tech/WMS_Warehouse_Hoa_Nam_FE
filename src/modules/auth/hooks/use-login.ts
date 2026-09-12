@@ -2,12 +2,20 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authService } from "@/modules/auth/services/auth.service";
 import { useAfterLogin } from "@/modules/auth/hooks/use-after-login";
-import type { LoginRequest } from "@/modules/auth/types/auth.types";
+import type {
+  AuthenticatedLogin,
+  LoginRequest,
+} from "@/modules/auth/types/auth.types";
 import { withBackendRecovery } from "@/shared/api/backend-availability";
 import { tStatic } from "@/shared/i18n/useT";
 import { waitForAuthBootstrap } from "@/shared/lib/auth-bootstrap-gate";
 
-export function useLogin() {
+export type AuthenticatedLoginHandler = (
+  data: AuthenticatedLogin,
+  continueLogin: () => void,
+) => void;
+
+export function useLogin(onAuthenticated?: AuthenticatedLoginHandler) {
   const afterLogin = useAfterLogin();
 
   return useMutation({
@@ -36,11 +44,19 @@ export function useLogin() {
         return;
       }
 
-      toast.success(tStatic("auth.login.success"));
+      const continueLogin = () => {
+        toast.success(tStatic("auth.login.success"));
 
-      // BE m1 trả JWT dùng được ngay sau login. Warehouse context chỉ được đổi
-      // khi người dùng chủ động gọi /auth/switch-context từ ContextSwitcher.
-      afterLogin(data);
+        // BE m1 trả JWT dùng được ngay sau login. Warehouse context chỉ được đổi
+        // khi người dùng chủ động gọi /auth/switch-context từ ContextSwitcher.
+        afterLogin(data);
+      };
+
+      if (onAuthenticated) {
+        onAuthenticated(data, continueLogin);
+        return;
+      }
+      continueLogin();
     },
     // Cố ý là no-op: LoginPage đã hiển thị nguyên nhân cụ thể (sai mật khẩu /
     // tài khoản bị khóa / mất mạng...) bằng UiAlert ngay trong form qua
@@ -55,7 +71,7 @@ export function useLogin() {
  * hai bước có input, lỗi và trạng thái loading khác nhau, gộp lại thì màn hình
  * không phân biệt được "sai mật khẩu" với "sai mã xác thực".
  */
-export function useMfaVerify() {
+export function useMfaVerify(onAuthenticated?: AuthenticatedLoginHandler) {
   const afterLogin = useAfterLogin();
 
   return useMutation({
@@ -65,8 +81,15 @@ export function useMfaVerify() {
         return authService.verifyMfa(mfaToken, code);
       }),
     onSuccess: (data) => {
-      toast.success(tStatic("auth.login.success"));
-      afterLogin(data);
+      const continueLogin = () => {
+        toast.success(tStatic("auth.login.success"));
+        afterLogin(data);
+      };
+      if (onAuthenticated) {
+        onAuthenticated(data, continueLogin);
+        return;
+      }
+      continueLogin();
     },
     onError: () => {},
   });
