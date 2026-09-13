@@ -347,6 +347,16 @@ export default function InventoryFlowXntReport({
     row: XntRow;
     trigger: HTMLElement;
   } | null>(null);
+  /**
+   * Drill-down của lịch sử chứng từ phải giữ đúng chứng từ đã bấm. Trước đây
+   * handler tái sử dụng openDrill(skuCode), khiến nút "Đối chiếu dòng chứng từ"
+   * mở nhầm modal SKU đầu tiên của phiếu.
+   */
+  const [documentDrill, setDocumentDrill] = useState<{
+    document: FlowDocument;
+    row: XntRow | null;
+    trigger: HTMLElement;
+  } | null>(null);
 
   const { snapshot, loading, fetching, error, refetch } =
     useInventoryFlowSnapshot({
@@ -571,16 +581,43 @@ export default function InventoryFlowXntReport({
         : snapshot.ledger.filter((row) => row.sku_code === drillRow.sku_code),
     [snapshot.ledger, drillRow],
   );
+  const documentDrillMovements = useMemo(() => {
+    if (documentDrill === null) return [];
+    const byDocument = snapshot.ledger.filter(
+      (movement) =>
+        movement.source_document_no === documentDrill.document.document_no,
+    );
+    if (byDocument.length > 0) return byDocument;
+    return documentDrill.row === null
+      ? []
+      : snapshot.ledger.filter(
+          (movement) => movement.sku_code === documentDrill.row?.sku_code,
+        );
+  }, [snapshot.ledger, documentDrill]);
 
   const closeDrill = () => {
     drill?.trigger.focus({ preventScroll: true });
     setDrill(null);
   };
 
+  const closeDocumentDrill = () => {
+    documentDrill?.trigger.focus({ preventScroll: true });
+    setDocumentDrill(null);
+  };
+
   const openDrill = (skuCode: string, trigger: HTMLElement) => {
     const row = snapshot.rows.find((item) => item.sku_code === skuCode);
     if (row === undefined) return;
     setDrill({ row, trigger });
+  };
+
+  const openDocumentDrill = (
+    document: FlowDocument,
+    trigger: HTMLElement,
+  ) => {
+    const row =
+      snapshot.rows.find((item) => item.sku_code === document.drillKey) ?? null;
+    setDocumentDrill({ document, row, trigger });
   };
 
   /**
@@ -830,6 +867,17 @@ export default function InventoryFlowXntReport({
               {refreshing
                 ? t("reports.inventoryFlowReport.refreshing")
                 : t("reports.inventoryFlowReport.refresh")}
+            </button>
+            <button
+              className="button button-ghost report-clear-button"
+              type="button"
+              disabled={query.trim() === "" && kind === "all"}
+              onClick={() => {
+                setQuery("");
+                setKind("all");
+              }}
+            >
+              {t("reports.filters.clearFilters")}
             </button>
             <div className="refresh-meta">
               <span>
@@ -1478,7 +1526,7 @@ export default function InventoryFlowXntReport({
                               : undefined
                           }
                           onClick={(event) =>
-                            openDrill(document.drillKey, event.currentTarget)
+                            openDocumentDrill(document, event.currentTarget)
                           }
                         >
                           {t("reports.inventoryFlowReport.drillDocument")}
@@ -1538,11 +1586,36 @@ export default function InventoryFlowXntReport({
               <div className="meta-value">{fmt(drillRow.closing)}</div>
             </div>
           </div>
-          <div className="formula">
-            {fmt(drillRow.opening)} + {fmt(drillRow.receipt_net)} {MINUS}{" "}
-            {fmt(drillRow.issue_net)} {MINUS}{" "}
-            {fmt(drillRow.component_issue_net)} +{" "}
-            {fmt(drillRow.reversal_unlinked_net)} = {fmt(closingOf(drillRow))}
+          <div className="formula formula-labeled" aria-label={t("reports.inventoryFlowReport.modalEyebrow")}>
+            <span>
+              <small>{t("reports.inventoryFlowReport.cardOpening")}</small>
+              <strong>{fmt(drillRow.opening)}</strong>
+            </span>
+            <span className="formula-op" aria-hidden="true">+</span>
+            <span>
+              <small>{t("reports.inventoryFlowReport.colReceiptNet")}</small>
+              <strong>{fmt(drillRow.receipt_net)}</strong>
+            </span>
+            <span className="formula-op" aria-hidden="true">{MINUS}</span>
+            <span>
+              <small>{t("reports.inventoryFlowReport.colIssueNet")}</small>
+              <strong>{fmt(drillRow.issue_net)}</strong>
+            </span>
+            <span className="formula-op" aria-hidden="true">{MINUS}</span>
+            <span>
+              <small>{t("reports.inventoryFlowReport.colComponentNet")}</small>
+              <strong>{fmt(drillRow.component_issue_net)}</strong>
+            </span>
+            <span className="formula-op" aria-hidden="true">+</span>
+            <span>
+              <small>{t("reports.inventoryFlowReport.colReversal")}</small>
+              <strong>{fmt(drillRow.reversal_unlinked_net)}</strong>
+            </span>
+            <span className="formula-op" aria-hidden="true">=</span>
+            <span className="formula-result">
+              <small>{t("reports.inventoryFlowReport.cardClosing")}</small>
+              <strong>{fmt(closingOf(drillRow))}</strong>
+            </span>
           </div>
           <h3>{t("reports.inventoryFlowReport.movementsTitle")}</h3>
           <div className="modal-events">
@@ -1571,6 +1644,102 @@ export default function InventoryFlowXntReport({
                 </div>
               ))
             )}
+          </div>
+        </DrillDownModal>
+      ) : null}
+
+      {documentDrill !== null ? (
+        <DrillDownModal
+          titleId="rpt01-document-detail-title"
+          onClose={closeDocumentDrill}
+        >
+          <div className="modal-head">
+            <div>
+              <div className="eyebrow">
+                {t("reports.inventoryFlowReport.drillDocument")}
+              </div>
+              <h2 id="rpt01-document-detail-title">
+                {documentDrill.document.document_no}
+              </h2>
+              <span className="chip chip-primary">
+                {documentTitles[documentDrill.document.doc_type]} ·{" "}
+                {reportStatusLabel(documentDrill.document.status)}
+              </span>
+            </div>
+            <ModalCloseButton onClose={closeDocumentDrill} />
+          </div>
+          <div className="modal-grid document-modal-grid">
+            <div>
+              <div className="meta-label">
+                {t("reports.inventoryFlowReport.fieldKind")}
+              </div>
+              <div className="meta-value document-meta-value">
+                {documentTitles[documentDrill.document.doc_type]}
+              </div>
+            </div>
+            <div>
+              <div className="meta-label">
+                {t("reports.inventoryFlowReport.documentsTitle")}
+              </div>
+              <div className="meta-value document-meta-value">
+                {documentDrill.document.counterpart || EMPTY_TEXT}
+              </div>
+            </div>
+            <div>
+              <div className="meta-label">
+                {t("reports.inventoryFlowReport.fieldPeriod")}
+              </div>
+              <div className="meta-value document-meta-value">
+                {formatDateTime(
+                  documentDrill.document.posted_at ||
+                    documentDrill.document.document_date,
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="document-drill-body">
+            <h3>{t("reports.inventoryFlowReport.movementsTitle")}</h3>
+            {documentDrill.row !== null ? (
+              <div className="document-linked-sku">
+                <div>
+                  <span className="meta-label">
+                    {t("reports.inventoryFlowReport.colSku")}
+                  </span>
+                  <strong>
+                    {documentDrill.row.sku_code} ·{" "}
+                    {documentDrill.row.sku_name || EMPTY_TEXT}
+                  </strong>
+                </div>
+                <span className="chip chip-neutral">
+                  {documentDrill.row.unit || EMPTY_TEXT}
+                </span>
+              </div>
+            ) : null}
+            <div className="modal-events">
+              {documentDrillMovements.length === 0 ? (
+                <div>
+                  <span>{t("reports.inventoryFlowReport.movementsEmpty")}</span>
+                </div>
+              ) : (
+                documentDrillMovements.map((movement, index) => (
+                  <div key={movement.movement_id}>
+                    <strong>
+                      {index + 1}.{" "}
+                      {MOVEMENT_LABELS[movement.movement_type] ??
+                        movement.movement_type}
+                    </strong>
+                    <span>
+                      {movement.source_document_no || EMPTY_TEXT} ·{" "}
+                      {formatDateTime(movement.posted_at)}
+                    </span>
+                    <b>
+                      {movement.qty_delta > 0 ? "+" : ""}
+                      {fmt(movement.qty_delta)}
+                    </b>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </DrillDownModal>
       ) : null}
