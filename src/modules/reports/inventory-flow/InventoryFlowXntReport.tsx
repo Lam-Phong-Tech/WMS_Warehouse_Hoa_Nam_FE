@@ -611,10 +611,7 @@ export default function InventoryFlowXntReport({
     setDrill({ row, trigger });
   };
 
-  const openDocumentDrill = (
-    document: FlowDocument,
-    trigger: HTMLElement,
-  ) => {
+  const openDocumentDrill = (document: FlowDocument, trigger: HTMLElement) => {
     const row =
       snapshot.rows.find((item) => item.sku_code === document.drillKey) ?? null;
     setDocumentDrill({ document, row, trigger });
@@ -1586,32 +1583,45 @@ export default function InventoryFlowXntReport({
               <div className="meta-value">{fmt(drillRow.closing)}</div>
             </div>
           </div>
-          <div className="formula formula-labeled" aria-label={t("reports.inventoryFlowReport.modalEyebrow")}>
+          <div
+            className="formula formula-labeled"
+            aria-label={t("reports.inventoryFlowReport.modalEyebrow")}
+          >
             <span>
               <small>{t("reports.inventoryFlowReport.cardOpening")}</small>
               <strong>{fmt(drillRow.opening)}</strong>
             </span>
-            <span className="formula-op" aria-hidden="true">+</span>
+            <span className="formula-op" aria-hidden="true">
+              +
+            </span>
             <span>
               <small>{t("reports.inventoryFlowReport.colReceiptNet")}</small>
               <strong>{fmt(drillRow.receipt_net)}</strong>
             </span>
-            <span className="formula-op" aria-hidden="true">{MINUS}</span>
+            <span className="formula-op" aria-hidden="true">
+              {MINUS}
+            </span>
             <span>
               <small>{t("reports.inventoryFlowReport.colIssueNet")}</small>
               <strong>{fmt(drillRow.issue_net)}</strong>
             </span>
-            <span className="formula-op" aria-hidden="true">{MINUS}</span>
+            <span className="formula-op" aria-hidden="true">
+              {MINUS}
+            </span>
             <span>
               <small>{t("reports.inventoryFlowReport.colComponentNet")}</small>
               <strong>{fmt(drillRow.component_issue_net)}</strong>
             </span>
-            <span className="formula-op" aria-hidden="true">+</span>
+            <span className="formula-op" aria-hidden="true">
+              +
+            </span>
             <span>
               <small>{t("reports.inventoryFlowReport.colReversal")}</small>
               <strong>{fmt(drillRow.reversal_unlinked_net)}</strong>
             </span>
-            <span className="formula-op" aria-hidden="true">=</span>
+            <span className="formula-op" aria-hidden="true">
+              =
+            </span>
             <span className="formula-result">
               <small>{t("reports.inventoryFlowReport.cardClosing")}</small>
               <strong>{fmt(closingOf(drillRow))}</strong>
