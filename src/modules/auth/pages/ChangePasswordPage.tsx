@@ -60,6 +60,8 @@ export function ChangePasswordPage() {
   return (
     <AuthShell
       titleId="change-password-title"
+      baselineScreen="login"
+      showBaselineHeading
       title={t("auth.changePassword.title")}
       subtitle={t("auth.changePassword.subtitle")}
       loadingText={
@@ -75,13 +77,20 @@ export function ChangePasswordPage() {
       )}
 
       <form onSubmit={onSubmit} noValidate>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: { xs: "20px", sm: "22px" },
+          }}
+        >
           <AuthField
             control={control}
             name="currentPassword"
             label={t("auth.changePassword.currentPassword")}
             placeholder={t("auth.changePassword.currentPasswordPlaceholder")}
             type="password"
+            startIcon="lock"
             autoFocus
             disabled={changePassword.isPending}
           />
@@ -92,6 +101,7 @@ export function ChangePasswordPage() {
             label={t("auth.fields.newPassword")}
             placeholder={t("auth.fields.newPasswordPlaceholder")}
             type="password"
+            startIcon="lock"
             disabled={changePassword.isPending}
           />
 
@@ -101,10 +111,12 @@ export function ChangePasswordPage() {
             label={t("auth.fields.confirmNewPassword")}
             placeholder={t("auth.fields.confirmNewPasswordPlaceholder")}
             type="password"
+            startIcon="lock"
             disabled={changePassword.isPending}
           />
 
           <UiButton
+            className="hn-auth-primary-cta"
             loading={changePassword.isPending}
             disabled={changePassword.isPending}
             type="submit"

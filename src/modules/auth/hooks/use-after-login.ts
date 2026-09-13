@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
+import { startWorkSession } from "@/shared/lib/session-idle";
 import type { AuthenticatedLogin } from "@/modules/auth/types/auth.types";
 
 interface LoginLocationState {
@@ -31,6 +32,7 @@ export function useAfterLogin(): (data: AuthenticatedLogin) => void {
         user: data.user,
         contexts: data.available_contexts,
       });
+      startWorkSession();
 
       const from = (location.state as LoginLocationState | null)?.from;
       // Nhánh interceptor (phiên hết hạn giữa chừng) truyền attempted URL qua

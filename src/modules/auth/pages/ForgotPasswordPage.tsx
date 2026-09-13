@@ -148,6 +148,8 @@ export function ForgotPasswordPage() {
     <AuthShell
       titleId="forgot-password-title"
       illustration="forgot"
+      baselineScreen="login"
+      showBaselineHeading
       title={t("auth.forgotPassword.title")}
       subtitle={
         <>
@@ -160,17 +162,25 @@ export function ForgotPasswordPage() {
     >
       {step === "email" && (
         <form onSubmit={onSubmitEmail} noValidate>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: { xs: "20px", sm: "22px" },
+            }}
+          >
             <AuthField
               control={emailForm.control}
               name="email"
               label={t("auth.fields.email")}
               placeholder="your@gmail.com"
+              startIcon="envelope"
               autoFocus
               disabled={forgotPassword.isPending}
             />
 
             <UiButton
+              className="hn-auth-primary-cta"
               loading={forgotPassword.isPending}
               disabled={forgotPassword.isPending}
               type="submit"
@@ -186,7 +196,13 @@ export function ForgotPasswordPage() {
 
       {step === "otp" && (
         <form onSubmit={onSubmitOtp} noValidate>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: { xs: "20px", sm: "22px" },
+            }}
+          >
             {verifyOtp.isError && (
               <UiAlert tone="error">
                 {getApiErrorMessage(
@@ -203,6 +219,7 @@ export function ForgotPasswordPage() {
               placeholder={t("auth.forgotPassword.otpPlaceholder")}
               numericOnly
               maxLength={6}
+              startIcon="key"
               autoFocus
               disabled={verifyOtp.isPending || isExpired}
             />
@@ -217,6 +234,7 @@ export function ForgotPasswordPage() {
 
             {isExpired ? (
               <UiButton
+                className="hn-auth-primary-cta"
                 loading={forgotPassword.isPending}
                 onClick={onResendOtp}
                 fullWidth
@@ -225,6 +243,7 @@ export function ForgotPasswordPage() {
               </UiButton>
             ) : (
               <UiButton
+                className="hn-auth-primary-cta"
                 loading={verifyOtp.isPending}
                 disabled={verifyOtp.isPending}
                 type="submit"
@@ -241,7 +260,13 @@ export function ForgotPasswordPage() {
 
       {step === "password" && (
         <form onSubmit={onSubmitPassword} noValidate>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: { xs: "20px", sm: "22px" },
+            }}
+          >
             {resetPassword.isError && (
               <UiAlert tone="error">
                 {getApiErrorMessage(
@@ -257,6 +282,7 @@ export function ForgotPasswordPage() {
               label={t("auth.fields.newPassword")}
               placeholder={t("auth.fields.newPasswordPlaceholder")}
               type="password"
+              startIcon="lock"
               autoFocus
               disabled={resetPassword.isPending}
             />
@@ -267,10 +293,12 @@ export function ForgotPasswordPage() {
               label={t("auth.fields.confirmNewPassword")}
               placeholder={t("auth.fields.confirmNewPasswordPlaceholder")}
               type="password"
+              startIcon="lock"
               disabled={resetPassword.isPending}
             />
 
             <UiButton
+              className="hn-auth-primary-cta"
               loading={resetPassword.isPending}
               disabled={resetPassword.isPending}
               type="submit"

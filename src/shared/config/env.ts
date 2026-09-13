@@ -34,6 +34,13 @@ export interface RuntimeConfig {
    * HOÀN TÁC khi đợt quét kết thúc: đặt lại VITE_SCANNER_KIOSK_MODE=false.
    */
   readonly scannerKioskMode: boolean;
+  /**
+   * TẠM THỜI cho việc quét/nghiệm thu local: tự đăng nhập bằng tài khoản
+   * SUPER_ADMIN được cấu hình qua env. Cờ này chỉ có tác dụng ở local/dev.
+   */
+  readonly temporaryAutoLogin: boolean;
+  readonly temporaryAutoLoginEmail?: string;
+  readonly temporaryAutoLoginPassword?: string;
   readonly reverb: {
     readonly appKey: string | undefined;
     readonly host: string;
@@ -210,6 +217,12 @@ export const runtimeConfig: RuntimeConfig = {
     readEnv("VITE_SCANNER_KIOSK_MODE"),
     "VITE_SCANNER_KIOSK_MODE",
   ),
+  temporaryAutoLogin:
+    boolEnv(readEnv("VITE_TEMP_AUTO_LOGIN"), "VITE_TEMP_AUTO_LOGIN") &&
+    !import.meta.env.MODE.includes("test") &&
+    ["local", "dev"].includes(ENV_NAME),
+  temporaryAutoLoginEmail: readEnv("VITE_TEMP_AUTO_LOGIN_EMAIL"),
+  temporaryAutoLoginPassword: readEnv("VITE_TEMP_AUTO_LOGIN_PASSWORD"),
   // Không throw khi thiếu: bảng chuông thông báo tắt gracefully (không realtime,
   // FE vẫn chạy được) thay vì làm sập toàn bộ SPA vì thiếu 1 biến optional.
   reverb: (() => {

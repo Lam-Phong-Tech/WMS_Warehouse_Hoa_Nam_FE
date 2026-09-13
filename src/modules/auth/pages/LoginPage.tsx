@@ -1,26 +1,17 @@
-import { useCallback, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
-import { Link } from "react-router-dom";
-import {
-  useLogin,
-  useMfaVerify,
-  type AuthenticatedLoginHandler,
-} from "@/modules/auth/hooks/use-login";
-import { AuthSessionConfirmation } from "@/modules/auth/components/AuthSessionConfirmation";
+import { Link, useNavigate } from "react-router-dom";
+import { useLogin, useMfaVerify } from "@/modules/auth/hooks/use-login";
 import {
   buildLoginSchema,
   toLoginRequest,
   type LoginFormValues,
 } from "@/modules/auth/schemas/login.schema";
-import {
-  Box,
-  UiAlert,
-  UiButton,
-  UiFormCheckbox,
-  UiTextField,
-} from "@/shared/ui";
+import { Box, UiAlert, UiButton, UiTextField } from "@/shared/ui";
+import { flatIconClass } from "@/shared/ui/icons";
+import { AUTH_BASELINE } from "@/shared/ui/tokens";
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
@@ -29,6 +20,8 @@ import { transportDiagnosticOf } from "@/shared/api/transport-monitor";
 import { useBackendWait } from "@/shared/hooks/useBackendWait";
 import { ROUTES } from "@/shared/constants/routes";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { runtimeConfig } from "@/shared/config/env";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 /**
  * "Ghi nhớ đăng nhập": chỉ lưu identifier (KHÔNG BAO GIỜ lưu mật khẩu) để
@@ -176,27 +169,17 @@ function TransportDiagnosticLine({ error }: { error: unknown }) {
 
 export function LoginPage() {
   const t = useT();
-  const [pendingSession, setPendingSession] = useState<{
-    login: Parameters<AuthenticatedLoginHandler>[0];
-    continueLogin: () => void;
-    authenticatedAt: number;
-  } | null>(null);
-  const [isStartingSession, setIsStartingSession] = useState(false);
-
-  const handleAuthenticated = useCallback<AuthenticatedLoginHandler>(
-    (authenticatedLogin, continueLogin) => {
-      setPendingSession({
-        login: authenticatedLogin,
-        continueLogin,
-        authenticatedAt: Date.now(),
-      });
-      setIsStartingSession(false);
-    },
-    [],
-  );
-
-  const login = useLogin(handleAuthenticated);
-  const mfaVerify = useMfaVerify(handleAuthenticated);
+  const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  useEffect(() => {
+    if (runtimeConfig.temporaryAutoLogin && isAuthenticated) {
+      navigate(ROUTES.DASHBOARD, { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+  // Đăng nhập hợp lệ phải đi thẳng vào ứng dụng. Màn xác nhận phiên chỉ xuất
+  // hiện sau 60 phút không thao tác, tại SessionConfirmationGate.
+  const login = useLogin();
+  const mfaVerify = useMfaVerify();
   const [mfaCode, setMfaCode] = useState("");
   const rememberedIdentifier = readRememberedIdentifier();
   const loginSchema = useMemo(() => buildLoginSchema(t), [t]);
@@ -240,28 +223,6 @@ export function LoginPage() {
     : null;
 
   const isSubmitting = login.isPending || login.isSuccess;
-
-  if (pendingSession !== null) {
-    return (
-      <AuthSessionConfirmation
-        login={pendingSession.login}
-        authenticatedAt={pendingSession.authenticatedAt}
-        starting={isStartingSession}
-        onConfirm={() => {
-          if (isStartingSession) return;
-          setIsStartingSession(true);
-          pendingSession.continueLogin();
-        }}
-        onExpired={() => {
-          setPendingSession(null);
-          setIsStartingSession(false);
-          setMfaCode("");
-          login.reset();
-          mfaVerify.reset();
-        }}
-      />
-    );
-  }
 
   // WWHN-SEC-08 — màn nhập mã. Trả về sớm, KHÔNG render kèm form mật khẩu:
   // để hai form cùng tồn tại thì người dùng có thể submit lại mật khẩu và sinh
@@ -333,22 +294,20 @@ export function LoginPage() {
           : null
       }
     >
-      {errorMessage && (
-        <Box sx={{ marginBottom: "14px" }}>
-          <UiAlert tone="error" title={t("auth.login.errorTitle")}>
-            {errorMessage}
-            <TransportDiagnosticLine error={login.error} />
-          </UiAlert>
-        </Box>
-      )}
-
       <form onSubmit={onSubmit} noValidate>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: { xs: "20px", sm: "22px" },
+          }}
+        >
           <AuthField
             control={control}
             name="identifier"
-            label={t("auth.fields.email")}
-            placeholder="your@gmail.com"
+            label={t("auth.login.identifierLabel")}
+            placeholder={t("auth.login.identifierPlaceholder")}
+            startIcon="user"
             autoFocus
             disabled={isSubmitting}
           />
@@ -359,27 +318,35 @@ export function LoginPage() {
             label={t("auth.fields.password")}
             placeholder={t("auth.fields.passwordPlaceholder")}
             type="password"
+            startIcon="lock"
             disabled={isSubmitting}
           />
+
+          {errorMessage ? (
+            <Box
+              role="alert"
+              sx={{
+                marginTop: { xs: "-14px", sm: "-16px" },
+                color: AUTH_BASELINE.danger,
+                fontSize: { xs: 13, sm: 15 },
+                fontWeight: 600,
+                lineHeight: 1.4,
+              }}
+            >
+              {errorMessage}
+              <TransportDiagnosticLine error={login.error} />
+            </Box>
+          ) : null}
 
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "4px",
-              // Kéo lề checkbox của MUI về thẳng cột với ô nhập.
-              marginTop: "-6px",
-              "& .MuiFormControlLabel-root": { marginLeft: "-9px" },
+              justifyContent: "flex-end",
+              marginTop: { xs: "-12px", sm: "-14px" },
+              fontSize: { xs: 15, sm: 17 },
             }}
           >
-            <UiFormCheckbox
-              control={control}
-              name="remember"
-              label={t("auth.login.remember")}
-              disabled={isSubmitting}
-            />
             <Link to={ROUTES.FORGOT_PASSWORD}>
               {t("auth.login.forgotPassword")}
             </Link>
@@ -390,9 +357,52 @@ export function LoginPage() {
             fullWidth
             loading={login.isPending}
             disabled={isSubmitting}
+            sx={{
+              position: "relative",
+              "& .hn-login-submit-arrow": {
+                position: "absolute",
+                right: { xs: 20, sm: 28 },
+                fontSize: { xs: 21, sm: 26 },
+                lineHeight: 1,
+              },
+              "&.Mui-disabled .hn-login-submit-arrow": { opacity: 0.6 },
+            }}
           >
             {t("auth.login.submit")}
+            <i
+              className={`${flatIconClass("arrow-right")} hn-login-submit-arrow`}
+              aria-hidden
+            />
           </UiButton>
+
+          <Box
+            role="note"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: { xs: "12px", sm: "16px" },
+              marginTop: { xs: "0", sm: "4px" },
+              padding: { xs: "16px", sm: "20px 24px" },
+              borderRadius: "12px",
+              backgroundColor: AUTH_BASELINE.pale,
+              color: AUTH_BASELINE.ink,
+              "& > i": {
+                color: "#008CFF",
+                fontSize: { xs: 27, sm: 34 },
+                flex: "0 0 auto",
+              },
+            }}
+          >
+            <i className={flatIconClass("shield-check")} aria-hidden />
+            <Box sx={{ fontSize: { xs: 14, sm: 16 }, lineHeight: 1.45 }}>
+              <Box sx={{ fontWeight: 700 }}>
+                {t("auth.login.accessNoticeTitle")}
+              </Box>
+              <Box sx={{ color: AUTH_BASELINE.muted }}>
+                {t("auth.login.accessNoticeBody")}
+              </Box>
+            </Box>
+          </Box>
         </Box>
       </form>
     </AuthShell>

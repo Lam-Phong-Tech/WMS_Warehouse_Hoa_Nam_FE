@@ -4500,6 +4500,11 @@ export const MESSAGES_EN: MessageTree = {
       confirmNewPasswordPlaceholder: "Re-enter the new password",
     },
     login: {
+      identifierLabel: "Username",
+      identifierPlaceholder: "Enter your username",
+      accessNoticeTitle:
+        "Access is granted according to your assigned account.",
+      accessNoticeBody: "For authorized employees only.",
       title: "Welcome to Hoa Nam",
       subtitle: "Please sign in to your account",
       authenticating: "Verifying your account...",

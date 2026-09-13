@@ -17,9 +17,7 @@ import {
 } from "./AuthIllustration";
 import authMaskLight from "../assets/auth-v2-mask-light.png";
 import authLoginDesktop from "../assets/systemhn-auth01-desktop.jpg";
-import authLoginTablet from "../assets/systemhn-auth01-tablet.jpg";
 import authSessionDesktop from "../assets/systemhn-auth02-desktop.jpg";
-import authSessionTablet from "../assets/systemhn-auth02-tablet.jpg";
 
 export interface AuthShellProps {
   /** id của h1 — section aria-labelledby trỏ về đây (giữ hợp đồng a11y cũ). */
@@ -32,6 +30,7 @@ export interface AuthShellProps {
   illustration?: AuthIllustrationVariant;
   /** Baseline chính thức chỉ tồn tại cho AUTH-01/AUTH-02 trong SystemHNWeb. */
   baselineScreen?: "login" | "session";
+  showBaselineHeading?: boolean;
   children: ReactNode;
 }
 
@@ -95,14 +94,13 @@ function BaselineAuthShell({
   subtitle,
   loadingText,
   screen,
+  showBaselineHeading = false,
   children,
 }: Omit<AuthShellProps, "illustration" | "baselineScreen"> & {
   screen: "login" | "session";
 }) {
   const desktopAsset =
     screen === "session" ? authSessionDesktop : authLoginDesktop;
-  const tabletAsset =
-    screen === "session" ? authSessionTablet : authLoginTablet;
 
   return (
     <Box
@@ -122,19 +120,36 @@ function BaselineAuthShell({
           transition: "color var(--wms-motion-fast) var(--wms-ease-standard)",
         },
         "& a:hover": { color: AUTH_BASELINE.cta, textDecoration: "underline" },
+        "& .hn-auth-sr-only": {
+          position: "absolute",
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: "hidden",
+          clip: "rect(0, 0, 0, 0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        },
         "& .MuiInputLabel-root": {
           color: AUTH_BASELINE.ink,
           fontSize: 14,
           fontWeight: 600,
         },
+        "& label": {
+          fontSize: { xs: 15, sm: 17 },
+          fontWeight: 700,
+        },
         "& .MuiOutlinedInput-root": {
-          minHeight: 48,
+          minHeight: { xs: 58, sm: 70 },
           borderRadius: "10px",
-          backgroundColor: AUTH_BASELINE.white,
+          backgroundColor: "#F8FCFE",
           color: AUTH_BASELINE.ink,
           transition:
             "box-shadow var(--wms-motion-fast) var(--wms-ease-standard), border-color var(--wms-motion-fast) var(--wms-ease-standard)",
-          "& .MuiOutlinedInput-notchedOutline": { borderColor: AUTH_BASELINE.line },
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: AUTH_BASELINE.line,
+          },
           "&:hover .MuiOutlinedInput-notchedOutline": {
             borderColor: AUTH_BASELINE.link,
           },
@@ -151,7 +166,7 @@ function BaselineAuthShell({
         },
         "& .MuiInputBase-input": {
           color: AUTH_BASELINE.ink,
-          fontSize: 15,
+          fontSize: { xs: 16, sm: 18 },
           paddingTop: "12px",
           paddingBottom: "12px",
         },
@@ -163,13 +178,13 @@ function BaselineAuthShell({
         "& .MuiFormHelperText-root.Mui-error": { color: AUTH_BASELINE.danger },
         "& .MuiCheckbox-root": { color: AUTH_BASELINE.muted },
         "& .MuiCheckbox-root.Mui-checked": { color: AUTH_BASELINE.cta },
-        "& .MuiButton-containedPrimary": {
-          minHeight: 48,
+        "& .MuiButton-contained": {
+          minHeight: { xs: 58, sm: 76 },
           borderRadius: "10px",
           backgroundColor: AUTH_BASELINE.cta,
           color: AUTH_BASELINE.white,
           boxShadow: "none",
-          fontSize: 15,
+          fontSize: { xs: 17, sm: 20 },
           fontWeight: 700,
           letterSpacing: 0,
           textTransform: "none",
@@ -196,6 +211,26 @@ function BaselineAuthShell({
           backgroundColor: AUTH_BASELINE.surface,
           borderColor: AUTH_BASELINE.danger,
         },
+        "& .hn-auth-back-link a": { color: AUTH_BASELINE.link },
+        "& .hn-auth-note": {
+          border: "none",
+          borderRadius: "12px",
+          backgroundColor: AUTH_BASELINE.pale,
+          color: AUTH_BASELINE.muted,
+          padding: { xs: "14px 16px", sm: "16px 18px" },
+          fontSize: { xs: 13, sm: 15 },
+        },
+        "& .hn-auth-primary-cta": {
+          position: "relative",
+          "&::after": {
+            content: '"→"',
+            position: "absolute",
+            right: { xs: 18, sm: 26 },
+            fontSize: { xs: 22, sm: 28 },
+            fontWeight: 400,
+            lineHeight: 1,
+          },
+        },
       }}
     >
       <Box
@@ -203,7 +238,7 @@ function BaselineAuthShell({
         sx={{
           position: "relative",
           minWidth: 0,
-          height: { xs: 260, sm: 360, lg: "100vh" },
+          height: { xs: "clamp(350px, 50.5vw, 728px)", lg: "100vh" },
           minHeight: { lg: 640 },
           overflow: "hidden",
           background: `linear-gradient(135deg, ${AUTH_BASELINE.navy} 0%, ${AUTH_BASELINE.heroMid} 65%, ${AUTH_BASELINE.heroEnd} 100%)`,
@@ -228,14 +263,17 @@ function BaselineAuthShell({
         />
         <Box
           component="img"
-          src={tabletAsset}
+          src={desktopAsset}
           alt=""
           sx={{
             display: { xs: "block", lg: "none" },
             position: "absolute",
             top: 0,
             left: 0,
-            width: "100%",
+            // The tablet reference is a full composed screen (including a static
+            // form). Crop the desktop source to its left hero so the real,
+            // interactive card below is never duplicated on narrow screens.
+            width: "200%",
             maxWidth: "none",
             height: "auto",
             userSelect: "none",
@@ -246,16 +284,17 @@ function BaselineAuthShell({
 
       <Box
         sx={{
+          position: "relative",
           minWidth: 0,
           minHeight: {
-            xs: "calc(100vh - 260px)",
-            sm: "calc(100vh - 360px)",
+            xs: "auto",
+            sm: "auto",
             lg: "100vh",
           },
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: { xs: "28px 16px 48px", sm: "44px 40px 72px", lg: "48px" },
+          padding: { xs: "0 16px 48px", sm: "0 40px 72px", lg: "48px" },
           backgroundColor: AUTH_BASELINE.surface,
         }}
       >
@@ -266,12 +305,14 @@ function BaselineAuthShell({
           sx={{
             position: "relative",
             width: "100%",
-            maxWidth: 688,
-            minHeight: { sm: 590, lg: 620 },
+            maxWidth: 690,
+            marginTop: { xs: "-56px", lg: 0 },
+            minHeight: { lg: 614 },
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
-            padding: { xs: "30px 22px", sm: "42px 44px", lg: "46px 48px" },
+            justifyContent: "flex-start",
+            transform: { lg: "translateY(-18px)" },
+            padding: { xs: "34px 24px", sm: "46px 44px", lg: "46px 44px" },
             overflow: "hidden",
             backgroundColor: AUTH_BASELINE.white,
             border: `1px solid ${AUTH_BASELINE.line}`,
@@ -297,46 +338,100 @@ function BaselineAuthShell({
             >
               <Box>
                 <UiSpinner size={32} />
-                <Box sx={{ marginTop: "12px", color: AUTH_BASELINE.ink, fontSize: 15, fontWeight: 700 }}>
+                <Box
+                  sx={{
+                    marginTop: "12px",
+                    color: AUTH_BASELINE.ink,
+                    fontSize: 15,
+                    fontWeight: 700,
+                  }}
+                >
                   {loadingText}
                 </Box>
-                <Box sx={{ marginTop: "4px", color: AUTH_BASELINE.muted, fontSize: 13 }}>
+                <Box
+                  sx={{
+                    marginTop: "4px",
+                    color: AUTH_BASELINE.muted,
+                    fontSize: 13,
+                  }}
+                >
                   Hoa Nam WMS
                 </Box>
               </Box>
             </Box>
           ) : null}
 
+          {showBaselineHeading ? (
+            <>
+              <Box
+                component="h1"
+                id={titleId}
+                sx={{
+                  margin: 0,
+                  color: AUTH_BASELINE.ink,
+                  fontSize: { xs: 24, sm: 30 },
+                  fontWeight: 800,
+                  lineHeight: 1.2,
+                }}
+              >
+                {title}
+              </Box>
+              <Box
+                sx={{
+                  marginTop: "8px",
+                  marginBottom: { xs: "24px", sm: "28px" },
+                  color: AUTH_BASELINE.muted,
+                  fontSize: { xs: 14, sm: 16 },
+                  lineHeight: 1.5,
+                }}
+              >
+                {subtitle}
+              </Box>
+            </>
+          ) : (
+            <>
+              <Box component="h1" id={titleId} className="hn-auth-sr-only">
+                {title}
+              </Box>
+              <Box className="hn-auth-sr-only">{subtitle}</Box>
+            </>
+          )}
+          {children}
+        </Box>
+        <Box
+          aria-hidden
+          sx={{
+            position: "absolute",
+            right: { xs: 16, sm: 40, lg: 48 },
+            bottom: { xs: 22, sm: 32, lg: 64 },
+            left: { xs: 16, sm: 40, lg: 48 },
+            display: "flex",
+            alignItems: "center",
+            gap: { xs: "12px", sm: "18px" },
+            color: AUTH_BASELINE.muted,
+            "&::before, &::after": {
+              content: '""',
+              height: "1px",
+              flex: 1,
+              backgroundColor: AUTH_BASELINE.line,
+            },
+          }}
+        >
           <Box
             sx={{
-              marginBottom: "24px",
-              color: AUTH_BASELINE.link,
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
+              flex: "0 0 auto",
+              textAlign: "center",
+              fontSize: { xs: 9, sm: 12 },
+              fontWeight: 700,
+              letterSpacing: "0.02em",
+              lineHeight: 1.5,
             }}
           >
-            Hoa Nam · WMS
+            <Box>HOA NAM SCANNER</Box>
+            <Box sx={{ fontWeight: 500 }}>
+              KẾT NỐI CON NGƯỜI - VẬN HÀNH HIỆU QUẢ
+            </Box>
           </Box>
-          <Box
-            component="h1"
-            id={titleId}
-            sx={{
-              margin: 0,
-              color: AUTH_BASELINE.ink,
-              fontSize: { xs: 27, sm: 32 },
-              fontWeight: 750,
-              lineHeight: 1.2,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {title}
-          </Box>
-          <Box sx={{ marginTop: "8px", color: AUTH_BASELINE.muted, fontSize: 15, lineHeight: 1.55 }}>
-            {subtitle}
-          </Box>
-          <Box sx={{ marginTop: "28px" }}>{children}</Box>
         </Box>
       </Box>
     </Box>
@@ -350,6 +445,7 @@ export function AuthShell({
   loadingText,
   illustration = "login",
   baselineScreen,
+  showBaselineHeading,
   children,
 }: AuthShellProps) {
   if (baselineScreen) {
@@ -360,6 +456,7 @@ export function AuthShell({
         subtitle={subtitle}
         loadingText={loadingText}
         screen={baselineScreen}
+        showBaselineHeading={showBaselineHeading}
       >
         {children}
       </BaselineAuthShell>
@@ -516,6 +613,7 @@ export function AuthShell({
 export function AuthBackLink({ children }: { children: ReactNode }) {
   return (
     <Box
+      className="hn-auth-back-link"
       sx={{
         display: "flex",
         alignItems: "center",
@@ -549,6 +647,7 @@ export function AuthNote({
 }) {
   return (
     <Box
+      className="hn-auth-note"
       sx={[
         {
           marginTop: "14px",

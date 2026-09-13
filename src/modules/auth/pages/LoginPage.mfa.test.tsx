@@ -122,15 +122,6 @@ describe("LoginPage · xác thực hai bước", () => {
       );
     });
 
-    expect(
-      await screen.findByRole("heading", { name: /xác nhận phiên làm việc/i }),
-    ).toBeInTheDocument();
-    expect(useAuthStore.getState().token).toBeNull();
-
-    await userEvent.click(
-      screen.getByRole("button", { name: /bắt đầu ca/i }),
-    );
-
     expect(await screen.findByText("Dashboard home")).toBeInTheDocument();
     expect(useAuthStore.getState().token).toBe("access-token");
   });

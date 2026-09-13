@@ -7,6 +7,7 @@ import { useNotificationStore } from "@/shared/store/notification.store";
 import { clearPersistedQueryCache } from "@/shared/cache/query-persister";
 import { clearAllFormDrafts } from "@/shared/hooks/useFormDraft";
 import { disconnectEcho } from "@/shared/lib/echo";
+import { clearWorkSession } from "@/shared/lib/session-idle";
 import type { User } from "@/shared/types/user";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import type { MeContext, MeResponse } from "@/modules/auth/types/me.types";
@@ -139,6 +140,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         memoryStorage.clear();
+        clearWorkSession();
         lastAppliedMe = null;
         set({
           token: null,

@@ -15,6 +15,7 @@ import {
 } from "@/shared/types/api-response";
 import { useT } from "@/shared/i18n/useT";
 import { runtimeConfig } from "@/shared/config/env";
+import { SessionConfirmationGate } from "@/modules/auth/components/SessionConfirmationGate";
 
 /** Nhịp tự thử lại khi ở chế độ máy quét (ms). */
 const KIOSK_RETRY_MS = 5000;
@@ -47,6 +48,8 @@ export function ProtectedRoute() {
   const isBootstrapped = useAuthStore((s) => s.isBootstrapped);
   const bootstrapError = useAuthStore((s) => s.bootstrapError);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const contexts = useAuthStore((s) => s.contexts);
   const isProfileLoaded = useAuthStore((s) => s.isProfileLoaded);
   const meQuery = useMe();
   const isCacheReady = usePersistedQueryCache();
@@ -116,5 +119,11 @@ export function ProtectedRoute() {
 
   // Mốc "cổng mở": từ đây trang đích mới được render và mới bắt đầu gọi API.
   mark("gate:open");
-  return <Outlet />;
+  // isAuthenticated chỉ đúng khi user đã có; nếu state storage bị lệch thì vẫn
+  // fail-closed thay vì mở nội dung bảo vệ.
+  if (user === null) return <Navigate to={ROUTES.LOGIN} replace />;
+  // TẠM THỜI cho máy quét: không hiển thị màn xác nhận sau thời gian idle.
+  // SessionConfirmationGate vẫn giữ nguyên để bật lại ngay khi tắt cờ env.
+  if (runtimeConfig.temporaryAutoLogin) return <Outlet />;
+  return <SessionConfirmationGate user={user} contexts={contexts} />;
 }

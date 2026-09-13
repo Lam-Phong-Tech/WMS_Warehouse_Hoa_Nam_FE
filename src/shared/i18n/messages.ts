@@ -4497,6 +4497,10 @@ export const MESSAGES_VI = {
       confirmNewPasswordPlaceholder: "Nhập lại mật khẩu mới",
     },
     login: {
+      identifierLabel: "Tên đăng nhập",
+      identifierPlaceholder: "Nhập tên đăng nhập",
+      accessNoticeTitle: "Quyền truy cập theo tài khoản được cấp.",
+      accessNoticeBody: "Chỉ dành cho nhân viên được ủy quyền.",
       title: "Chào mừng đến với Hoa Nam",
       subtitle: "Vui lòng đăng nhập vào tài khoản của bạn",
       authenticating: "Đang xác thực tài khoản...",

@@ -6,6 +6,8 @@ import { queryClient } from "@/app/providers/query-client";
 import { trackAuthBootstrap } from "@/shared/lib/auth-bootstrap-gate";
 import { mark } from "@/shared/perf/marks";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { runtimeConfig } from "@/shared/config/env";
+import { startWorkSession } from "@/shared/lib/session-idle";
 
 let activeBootstrap: Promise<void> | null = null;
 
@@ -73,6 +75,55 @@ async function runBootstrap(): Promise<void> {
   // còn phiên thì bootstrap không hề refresh, dù cookie vẫn đọc được lúc tải trang.
   await Promise.resolve(useAuthStore.persist.rehydrate());
   useAuthStore.setState({ isBootstrapped: false, bootstrapError: null });
+
+  // TẠM THỜI cho máy quét/nghiệm thu local: đi qua endpoint login thật để
+  // backend cấp JWT + HttpOnly refresh cookie cho tài khoản SUPER_ADMIN. Không
+  // giả mạo token hay nền quyền ở FE. Chỉ chạy khi chưa có dấu vết phiên;
+  // phiên đã có vẫn đi qua refresh như luồng bình thường.
+  const persistedUser = useAuthStore.getState().user;
+  const persistedUserIsSuperAdmin = Boolean(
+    persistedUser?.roles?.some((role) => role.role_code === "SUPER_ADMIN"),
+  );
+  if (runtimeConfig.temporaryAutoLogin && !persistedUserIsSuperAdmin) {
+    const email = runtimeConfig.temporaryAutoLoginEmail;
+    const password = runtimeConfig.temporaryAutoLoginPassword;
+
+    if (email && password) {
+      try {
+        mark("auto-login:start");
+        const result = await authService.login({ email, password });
+        if (result.kind !== "authenticated") {
+          throw new Error(
+            "Temporary auto-login requires an account without MFA enrollment.",
+          );
+        }
+
+        useAuthStore.getState().setAuth({
+          token: result.access_token,
+          user: result.user,
+          contexts: result.available_contexts,
+        });
+        startWorkSession();
+
+        const profile = meResponseFromRefreshUser(result.user);
+        if (profile) {
+          queryClient.setQueryData(
+            ["auth", "me", result.access_token],
+            profile,
+          );
+          useAuthStore.getState().setProfile(profile);
+        }
+        mark("auto-login:done");
+        useAuthStore.setState({ isBootstrapped: true });
+        return;
+      } catch (error) {
+        // Không nuốt lỗi: hiển thị đúng cửa sổ khôi phục phiên và cho phép retry.
+        useAuthStore.setState({ bootstrapError: error });
+        useAuthStore.setState({ isBootstrapped: true });
+        return;
+      }
+    }
+  }
 
   if (!shouldAttemptRefresh()) {
     // Không có phiên để khôi phục: đánh dấu đã khởi động xong và dừng. KHÔNG gọi

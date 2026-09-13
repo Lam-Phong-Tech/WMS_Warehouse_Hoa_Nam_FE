@@ -10,9 +10,11 @@ import { UiFormText, type UiFormTextProps } from "@/shared/ui";
 
 export type AuthFieldProps<T extends FieldValues> = Omit<
   UiFormTextProps<T>,
-  "labelPlacement" | "startIcon" | "multiline" | "rows" | "type"
+  "labelPlacement" | "multiline" | "rows" | "type"
 > & {
-  /** Vuexy auth field chỉ dùng text/password — không icon, không multiline. */
+  /** Biểu tượng ở đầu ô nhập của các màn AUTH. */
+  startIcon?: string;
+  /** Vuexy auth field chỉ dùng text/password — không multiline. */
   type?: "text" | "password";
 };
 
