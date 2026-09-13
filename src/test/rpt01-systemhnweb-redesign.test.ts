@@ -23,7 +23,7 @@ describe("RPT-01 SystemHNWeb redesign", () => {
     const css = read(
       "src/modules/reports/inventory-flow/inventory-flow-report.css",
     );
-    expect(css).toContain("--primary: #0b63ce");
+    expect(css).toContain("--primary: rgb(11, 99, 206)");
     expect(css).toContain(".report-clear-button");
     expect(css).toContain("@media (pointer: coarse)");
     expect(css).toContain("min-height: 48px");
