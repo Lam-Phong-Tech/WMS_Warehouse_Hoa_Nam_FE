@@ -2387,25 +2387,25 @@
 
 /* ═════════════════════════════════════════════════════════════════════════
    SYSTEMHNWEB SKIN · RPT-01
-   Handoff chuẩn dùng xanh #0B63CE, bề mặt phẳng rõ thứ bậc và hai composition:
+   Handoff chuẩn dùng xanh rgb(11, 99, 206), bề mặt phẳng rõ thứ bậc và hai composition:
    Desktop ngang (1920×1080) / Tablet dọc (800×1280 CSS). Các token này chỉ
    áp dụng cho RPT-01 để không làm lệch các màn Vuexy chưa migrate.
    ═════════════════════════════════════════════════════════════════════════ */
 .hn-rpt01 {
-  --primary: #0b63ce;
-  --primary-dark: #084eaa;
+  --primary: rgb(11, 99, 206);
+  --primary-dark: rgb(8, 78, 170);
   --primary-soft: rgba(11, 99, 206, 0.12);
-  --blue: #0b63ce;
+  --blue: rgb(11, 99, 206);
   --blue-soft: rgba(11, 99, 206, 0.12);
-  --line: #d7e3ef;
-  --surface-muted: #f5f9fd;
+  --line: rgb(215, 227, 239);
+  --surface-muted: rgb(245, 249, 253);
   --shadow: 0 4px 16px rgba(16, 62, 107, 0.08);
   --floating-shadow: 0 16px 36px rgba(16, 62, 107, 0.18);
-  --hnf-ghost-border: #b9cde1;
-  --hnf-chip-info-fg: #084eaa;
-  --hnf-alert-info-fg: #084eaa;
-  --hnf-axis: #49657d;
-  --hnf-grid-line: #e5edf5;
+  --hnf-ghost-border: rgb(185, 205, 225);
+  --hnf-chip-info-fg: rgb(8, 78, 170);
+  --hnf-alert-info-fg: rgb(8, 78, 170);
+  --hnf-axis: rgb(73, 101, 125);
+  --hnf-grid-line: rgb(229, 237, 245);
 }
 .hn-rpt01 .page-wrap {
   max-width: 1440px;
@@ -2420,7 +2420,7 @@
 }
 .hn-rpt01 .page-header h1,
 .hn-rpt01 .section-heading h2 {
-  color: #12344b;
+  color: rgb(18, 52, 75);
   letter-spacing: -0.015em;
 }
 .hn-rpt01 .scope-block {
@@ -2431,7 +2431,7 @@
 .hn-rpt01 .button-primary,
 .hn-rpt01 .legend-button[aria-pressed="true"] {
   background: var(--primary);
-  color: #fff;
+  color: rgb(255, 255, 255);
 }
 .hn-rpt01 .button-primary:hover,
 .hn-rpt01 .button-primary:focus-visible {
@@ -2447,11 +2447,11 @@
 .hn-rpt01 .report-filter-card {
   gap: 18px;
   padding: 20px;
-  border-color: #cbdceb;
+  border-color: rgb(203, 220, 235);
   box-shadow: 0 3px 14px rgba(16, 62, 107, 0.06);
 }
 .hn-rpt01 .report-filter-card .filter-label {
-  color: #49657d;
+  color: rgb(73, 101, 125);
   font-weight: 600;
 }
 .hn-rpt01 .report-filter-actions {
@@ -2463,23 +2463,23 @@
 }
 .hn-rpt01 .report-clear-button {
   border-color: var(--hnf-ghost-border);
-  color: #12344b;
+  color: rgb(18, 52, 75);
 }
 .hn-rpt01 .report-clear-button:disabled {
   opacity: 0.45;
 }
 .hn-rpt01 .report-kpi-card {
   min-height: 148px;
-  border-color: #d5e2ee;
+  border-color: rgb(213, 226, 238);
   box-shadow: 0 3px 12px rgba(16, 62, 107, 0.07);
 }
 .hn-rpt01 .report-kpi-card[data-tone="inbound"],
 .hn-rpt01 .report-kpi-card[data-tone="closing"] {
-  --report-accent: #0b63ce;
+  --report-accent: rgb(11, 99, 206);
   --report-accent-soft: rgba(11, 99, 206, 0.12);
 }
 .hn-rpt01 .card {
-  border-color: #d5e2ee;
+  border-color: rgb(213, 226, 238);
   box-shadow: var(--shadow);
 }
 .hn-rpt01 .card-head {
@@ -2500,16 +2500,16 @@
   padding-inline: 22px;
 }
 .hn-rpt01 .report-table th {
-  background: #eef5fb;
-  color: #49657d;
+  background: rgb(238, 245, 251);
+  color: rgb(73, 101, 125);
 }
 .hn-rpt01 .report-table tbody tr:hover {
-  background: #f4f9fe;
+  background: rgb(244, 249, 254);
 }
 .hn-rpt01 .mini-action {
   min-width: 48px;
   min-height: 40px;
-  border-color: #a9c4dd;
+  border-color: rgb(169, 196, 221);
   color: var(--primary-dark);
 }
 .hn-rpt01 .mini-action:hover {
@@ -2518,12 +2518,12 @@
 }
 .hn-rpt01 .insight-action {
   min-height: 44px;
-  border-color: #a9c4dd;
-  background: #fff;
+  border-color: rgb(169, 196, 221);
+  background: rgb(255, 255, 255);
   color: var(--primary-dark);
 }
 .hn-rpt01 .insight-action:hover {
-  background: #eaf3ff;
+  background: rgb(234, 243, 255);
 }
 .hn-rpt01 .chart-icon,
 .hn-rpt01 .insight-icon,
@@ -2535,44 +2535,44 @@
 }
 .hn-rpt01 .legend-button {
   min-height: 40px;
-  border-color: #c2d4e5;
-  color: #34556f;
+  border-color: rgb(194, 212, 229);
+  color: rgb(52, 85, 111);
 }
 .hn-rpt01 .legend-button[aria-pressed="true"] {
   border-color: var(--primary);
 }
 .hn-rpt01 .modal {
   width: min(760px, calc(100vw - 32px));
-  border-color: #c7d9e8;
+  border-color: rgb(199, 217, 232);
   box-shadow: var(--floating-shadow);
 }
 .hn-rpt01 .modal-close {
   width: 44px;
   height: 44px;
   min-height: 44px;
-  color: #34556f;
+  color: rgb(52, 85, 111);
 }
 .hn-rpt01 .modal-head h2 {
-  color: #12344b;
+  color: rgb(18, 52, 75);
 }
 .hn-rpt01 .formula-labeled {
   display: flex;
   align-items: stretch;
   flex-wrap: wrap;
   gap: 8px;
-  color: #12344b;
+  color: rgb(18, 52, 75);
 }
 .hn-rpt01 .formula-labeled > span:not(.formula-op) {
   display: grid;
   gap: 3px;
   min-width: 86px;
   padding: 8px 10px;
-  border: 1px solid #c5d9eb;
+  border: 1px solid rgb(197, 217, 235);
   border-radius: 6px;
-  background: #fff;
+  background: rgb(255, 255, 255);
 }
 .hn-rpt01 .formula-labeled small {
-  color: #49657d;
+  color: rgb(73, 101, 125);
   font-size: 10px;
   font-weight: 600;
 }
@@ -2589,7 +2589,7 @@
 }
 .hn-rpt01 .formula-labeled .formula-result {
   border-color: var(--primary);
-  background: #eaf3ff;
+  background: rgb(234, 243, 255);
 }
 .hn-rpt01 .document-modal-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2613,9 +2613,9 @@
   gap: 12px;
   margin-bottom: 8px;
   padding: 12px;
-  border: 1px solid #c5d9eb;
+  border: 1px solid rgb(197, 217, 235);
   border-radius: 6px;
-  background: #f5f9fd;
+  background: rgb(245, 249, 253);
 }
 .hn-rpt01 .document-linked-sku > div {
   display: grid;
@@ -2624,29 +2624,29 @@
 }
 .hn-rpt01 .document-linked-sku strong {
   overflow: hidden;
-  color: #12344b;
+  color: rgb(18, 52, 75);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .hn-rpt01 .report-snapshot-grid,
 .hn-rpt01 .insight-grid {
-  scrollbar-color: #9db9d3 transparent;
+  scrollbar-color: rgb(157, 185, 211) transparent;
 }
 .hn-rpt01 .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline,
 .hn-rpt01 .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
-  border-color: var(--primary) !important;
+  border-color: var(--primary);
   border-width: 2px;
 }
 .hn-rpt01 .MuiInputLabel-root.Mui-focused {
-  color: var(--primary) !important;
+  color: var(--primary);
 }
 .hn-vuexy-date-popup .ant-picker-cell-selected .ant-picker-cell-inner,
 .hn-vuexy-date-popup .ant-btn-primary {
-  background: #0b63ce !important;
-  border-color: #0b63ce !important;
+  background: rgb(11, 99, 206);
+  border-color: rgb(11, 99, 206);
 }
 .hn-vuexy-date-popup .ant-picker-cell-today .ant-picker-cell-inner::before {
-  border-color: #0b63ce !important;
+  border-color: rgb(11, 99, 206);
 }
 
 @media (max-width: 900px) {
@@ -2724,12 +2724,12 @@
   }
 }
 :root[data-theme="dark"] .hn-rpt01 {
-  --primary: #3d8ef0;
-  --primary-dark: #6aa9ff;
+  --primary: rgb(61, 142, 240);
+  --primary-dark: rgb(106, 169, 255);
   --primary-soft: rgba(61, 142, 240, 0.2);
-  --blue: #3d8ef0;
+  --blue: rgb(61, 142, 240);
   --blue-soft: rgba(61, 142, 240, 0.2);
   --line: rgba(231, 240, 250, 0.16);
-  --surface-muted: #273b52;
+  --surface-muted: rgb(39, 59, 82);
   --shadow: 0 4px 16px rgba(4, 17, 31, 0.3);
 }
