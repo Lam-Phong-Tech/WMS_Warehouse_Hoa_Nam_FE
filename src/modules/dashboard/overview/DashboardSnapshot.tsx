@@ -9,13 +9,24 @@ import type {
   DateRange,
   OverviewPeriod,
 } from "./overview-data";
-import { fmt } from "./overview-data";
+import { dashboardNow, fmt } from "./overview-data";
 import type { CompositionRow } from "./OverviewComposition";
 import type { IssueRow } from "./OverviewOperations";
 
-type ChartState = "ready" | "loading" | "empty" | "failed" | "forbidden";
+export type ChartState = "ready" | "loading" | "empty" | "failed" | "forbidden";
+export type OverviewReferenceState =
+  | "loading"
+  | "empty"
+  | "error"
+  | "permission-denied"
+  | "pending-approval"
+  | "processing"
+  | "completed"
+  | "overdue"
+  | "urgent";
 
 const ISO = "YYYY-MM-DD";
+const MAP_FILTER_MAX_DAYS = 90;
 
 const KPI_TONES: Array<{ icon: DashboardIconName; tone: string }> = [
   { icon: "package-search", tone: "stock" },
@@ -43,6 +54,34 @@ function ChartPlaceholder({
   onRetry: () => void;
   onChangeFilter: () => void;
 }) {
+  if (state === "loading") {
+    return (
+      <div
+        className="snapshot-chart-skeleton"
+        role="status"
+        aria-label="Đang tải biểu đồ"
+      >
+        <div className="snapshot-chart-skeleton-legend" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="snapshot-chart-skeleton-grid" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="snapshot-chart-skeleton-bars" aria-hidden="true">
+          {Array.from({ length: 14 }, (_, index) => (
+            <i key={index} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const content = {
     loading: [
       "loader-circle" as DashboardIconName,
@@ -293,22 +332,31 @@ function SnapshotChart({
 }
 
 function MonthGrid({
-  value,
+  range,
+  invalid,
   onPick,
 }: {
-  value: string;
+  range: DateRange;
+  invalid: boolean;
   onPick: (value: string) => void;
 }) {
+  const cursorValue = range.from || range.to;
   const [cursor, setCursor] = useState(() =>
-    dayjs(value || undefined).startOf("month"),
+    dayjs(cursorValue || dashboardNow()).startOf("month"),
   );
-  const today = dayjs().startOf("day");
+  const today = dashboardNow().startOf("day");
   const start = cursor.startOf("month").startOf("week");
   const cells = Array.from({ length: 42 }, (_, index) =>
     start.add(index, "day"),
   );
+  const hasRange = Boolean(range.from && range.to);
+  const rangeStart =
+    hasRange && range.from <= range.to ? range.from : hasRange ? range.to : "";
+  const rangeEnd =
+    hasRange && range.from <= range.to ? range.to : hasRange ? range.from : "";
+
   return (
-    <div className="snapshot-calendar">
+    <div className={`snapshot-calendar ${invalid ? "is-invalid" : ""}`}>
       <header>
         <strong>
           Tháng {cursor.month() + 1} {cursor.year()}
@@ -337,18 +385,35 @@ function MonthGrid({
         ))}
       </div>
       <div className="snapshot-calendar-days">
-        {cells.map((date) => (
-          <button
-            key={date.format(ISO)}
-            type="button"
-            className={`${date.month() !== cursor.month() ? "is-other" : ""} ${date.format(ISO) === value ? "is-selected" : ""}`}
-            aria-pressed={date.format(ISO) === value}
-            disabled={date.isAfter(today, "day")}
-            onClick={() => onPick(date.format(ISO))}
-          >
-            {date.date()}
-          </button>
-        ))}
+        {cells.map((date) => {
+          const iso = date.format(ISO);
+          const isStart = hasRange && iso === range.from;
+          const isEnd = hasRange && iso === range.to;
+          const inRange =
+            hasRange && iso >= rangeStart && iso <= rangeEnd && !isStart && !isEnd;
+          const classes = [
+            date.month() !== cursor.month() ? "is-other" : "",
+            isStart ? "is-range-start" : "",
+            isEnd ? "is-range-end" : "",
+            inRange ? "is-in-range" : "",
+            invalid && (isStart || isEnd || inRange) ? "is-invalid-range" : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+          return (
+            <button
+              key={iso}
+              type="button"
+              className={classes}
+              aria-pressed={isStart || isEnd}
+              disabled={date.isAfter(today, "day")}
+              onClick={() => onPick(iso)}
+            >
+              {date.date()}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -370,6 +435,8 @@ export function DashboardSnapshot({
   loading,
   failed,
   forbidden,
+  chartStateOverride,
+  referenceState,
   showWarranty,
   onRetry,
   onNavigate,
@@ -389,6 +456,8 @@ export function DashboardSnapshot({
   loading: boolean;
   failed: boolean;
   forbidden: boolean;
+  chartStateOverride?: ChartState;
+  referenceState?: OverviewReferenceState;
   showWarranty: boolean;
   onRetry: () => void;
   onNavigate: (route: string) => void;
@@ -396,17 +465,27 @@ export function DashboardSnapshot({
   const [filterOpen, setFilterOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const [draft, setDraft] = useState(custom);
+  const [rangePickMode, setRangePickMode] = useState<"from" | "to">("from");
   const [activeIssue, setActiveIssue] = useState<string | null>(null);
   const filterRef = useRef<HTMLDivElement | null>(null);
   const filterButtonRef = useRef<HTMLButtonElement | null>(null);
   const customDialogRef = useRef<HTMLElement | null>(null);
-  const todayIso = dayjs().format(ISO);
-  const invalid =
-    !draft.from ||
-    !draft.to ||
-    draft.from > draft.to ||
-    draft.from > todayIso ||
-    draft.to > todayIso;
+  const todayIso = dashboardNow().format(ISO);
+  const draftDays =
+    draft.from && draft.to
+      ? dayjs(draft.to).diff(dayjs(draft.from), "day") + 1
+      : 0;
+  const invalidReason =
+    !draft.from || !draft.to
+      ? "Chọn đầy đủ ngày bắt đầu và ngày kết thúc."
+      : draft.from > draft.to
+        ? "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc."
+        : draft.from > todayIso || draft.to > todayIso
+          ? "Không thể chọn ngày trong tương lai."
+          : draftDays > MAP_FILTER_MAX_DAYS
+            ? `Khoảng thời gian tối đa ${MAP_FILTER_MAX_DAYS} ngày.`
+            : "";
+  const invalid = invalidReason !== "";
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -474,21 +553,33 @@ export function DashboardSnapshot({
     },
     [] as Array<CompositionRow & { from: number; to: number; index: number }>,
   );
-  const chartState: ChartState = forbidden
-    ? "forbidden"
-    : loading
-      ? "loading"
-      : failed
-        ? "failed"
-        : rows.length === 0
-          ? "empty"
-          : "ready";
+  const referenceLoading = referenceState === "loading";
+  const referenceEmpty = referenceState === "empty";
+  const referenceFailed = referenceState === "error";
+  const referenceForbidden = referenceState === "permission-denied";
+  const effectiveLoading = loading || referenceLoading;
+  const effectiveFailed = failed || referenceFailed;
+  const effectiveForbidden = forbidden || referenceForbidden;
+  const effectiveRows = referenceEmpty ? [] : rows;
+  const chartState: ChartState =
+    chartStateOverride ??
+    (effectiveForbidden
+      ? "forbidden"
+      : effectiveLoading
+        ? "loading"
+        : effectiveFailed
+          ? "failed"
+          : effectiveRows.length === 0
+            ? "empty"
+            : "ready");
+  const filterDisabled = chartState === "loading" || chartState === "forbidden";
+
   const selectDays = (days: 7 | 14 | 30) => {
     setFilterOpen(false);
     setCustomOpen(false);
     if (days === 7) return onPeriodChange("last7");
     const next = {
-      from: dayjs()
+      from: dashboardNow()
         .subtract(days - 1, "day")
         .format(ISO),
       to: todayIso,
@@ -501,11 +592,30 @@ export function DashboardSnapshot({
       onCustomChange(draft);
       onPeriodChange("custom");
       setCustomOpen(false);
+      setRangePickMode("from");
     }
+  };
+  const pickRangeDate = (value: string) => {
+    if (rangePickMode === "from" || !draft.from) {
+      setDraft({ from: value, to: value });
+      setRangePickMode("to");
+      return;
+    }
+    if (value < draft.from) {
+      setDraft({ from: value, to: draft.from });
+    } else {
+      setDraft({ ...draft, to: value });
+    }
+    setRangePickMode("from");
   };
   const tasks = issues.slice(0, 5);
   return (
-    <div className="hn-dashboard-snapshot" data-ui="dashboard-reference">
+    <div
+      className="hn-dashboard-snapshot"
+      data-ui="dashboard-reference"
+      data-reference-state={referenceState ?? "live"}
+      data-chart-state={chartState}
+    >
       <header className="snapshot-heading">
         <span className="snapshot-heading-icon">
           <DashIcon name="layout-dashboard" />
@@ -543,7 +653,7 @@ export function DashboardSnapshot({
         </button>
       </header>
 
-      {forbidden ? (
+      {effectiveForbidden ? (
         <section className="snapshot-page-state">
           <span>
             <DashIcon name="lock" />
@@ -571,7 +681,7 @@ export function DashboardSnapshot({
               return (
                 <article
                   key={card.id}
-                  className={`snapshot-kpi ${loading ? "is-loading" : ""}`}
+                  className={`snapshot-kpi ${effectiveLoading ? "is-loading" : ""}`}
                   data-kpi-id={card.id}
                 >
                   <span className={`snapshot-kpi-icon is-${appearance.tone}`}>
@@ -580,14 +690,14 @@ export function DashboardSnapshot({
                   <div>
                     <span>{card.label}</span>
                     <strong>
-                      {loading
+                      {effectiveLoading
                         ? ""
                         : card.value === null
                           ? "—"
                           : fmt(card.value)}
                     </strong>
-                    <small>{loading ? "" : card.note}</small>
-                    {!loading && card.delta ? (
+                    <small>{effectiveLoading ? "" : card.note}</small>
+                    {!effectiveLoading && card.delta ? (
                       <em className={`is-${card.trend}`}>{card.delta}</em>
                     ) : null}
                   </div>
@@ -596,7 +706,7 @@ export function DashboardSnapshot({
             })}
           </section>
 
-          {failed ? (
+          {effectiveFailed && !chartStateOverride ? (
             <section className="snapshot-page-state is-error">
               <span>
                 <DashIcon name="triangle-alert" />
@@ -617,14 +727,17 @@ export function DashboardSnapshot({
                       <button
                         ref={filterButtonRef}
                         type="button"
-                        aria-expanded={filterOpen}
+                        aria-expanded={filterOpen && !filterDisabled}
                         aria-haspopup="menu"
-                        onClick={() => setFilterOpen((value) => !value)}
+                        disabled={filterDisabled}
+                        onClick={() => {
+                          if (!filterDisabled) setFilterOpen((value) => !value);
+                        }}
                       >
                         {periodText(period, range)}
                         <DashIcon name="chevron-down" />
                       </button>
-                      {filterOpen ? (
+                      {filterOpen && !filterDisabled ? (
                         <div className="snapshot-filter-menu" role="menu">
                           <span>Chọn khoảng thời gian</span>
                           <button
@@ -661,6 +774,7 @@ export function DashboardSnapshot({
                             className={customSelected ? "is-selected" : ""}
                             onClick={() => {
                               setDraft(custom);
+                              setRangePickMode("from");
                               setCustomOpen(true);
                               setFilterOpen(false);
                             }}
@@ -672,7 +786,7 @@ export function DashboardSnapshot({
                     </div>
                   </header>
                   <SnapshotChart
-                    rows={rows}
+                    rows={effectiveRows}
                     trend={trend}
                     state={chartState}
                     onRetry={onRetry}
@@ -689,7 +803,7 @@ export function DashboardSnapshot({
                       Xem tất cả <DashIcon name="arrow-right" />
                     </button>
                   </header>
-                  {loading ? (
+                  {effectiveLoading ? (
                     <div className="snapshot-list-loading" />
                   ) : tasks.length ? (
                     <div>
@@ -761,7 +875,7 @@ export function DashboardSnapshot({
                       Xem chi tiết <DashIcon name="arrow-right" />
                     </button>
                   </header>
-                  {loading ? (
+                  {effectiveLoading ? (
                     <div className="snapshot-donut-loading" />
                   ) : total > 0 ? (
                     <div className="snapshot-stock-body">
@@ -910,7 +1024,10 @@ export function DashboardSnapshot({
               <button
                 type="button"
                 aria-label="Đóng"
-                onClick={() => setCustomOpen(false)}
+                onClick={() => {
+                  setCustomOpen(false);
+                  setRangePickMode("from");
+                }}
               >
                 ×
               </button>
@@ -936,9 +1053,11 @@ export function DashboardSnapshot({
                   type="date"
                   value={draft.from}
                   max={todayIso}
-                  onChange={(event) =>
-                    setDraft({ ...draft, from: event.target.value })
-                  }
+                  onFocus={() => setRangePickMode("from")}
+                  onChange={(event) => {
+                    setRangePickMode("to");
+                    setDraft({ ...draft, from: event.target.value });
+                  }}
                 />
               </label>
               <label>
@@ -947,32 +1066,32 @@ export function DashboardSnapshot({
                   type="date"
                   value={draft.to}
                   max={todayIso}
-                  onChange={(event) =>
-                    setDraft({ ...draft, to: event.target.value })
-                  }
+                  onFocus={() => setRangePickMode("to")}
+                  onChange={(event) => {
+                    setRangePickMode("from");
+                    setDraft({ ...draft, to: event.target.value });
+                  }}
                 />
               </label>
             </div>
             {invalid ? (
-              <p className="snapshot-date-error">
-                Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.
-              </p>
+              <p className="snapshot-date-error">{invalidReason}</p>
             ) : (
               <p className="snapshot-date-summary">
                 Đang chọn: {dateLabel(draft.from)} → {dateLabel(draft.to)} ·{" "}
                 {dayjs(draft.to).diff(dayjs(draft.from), "day") + 1} ngày
               </p>
             )}
-            <MonthGrid
-              value={draft.from}
-              onPick={(value) => setDraft({ ...draft, from: value })}
-            />
+            <MonthGrid range={draft} invalid={invalid} onPick={pickRangeDate} />
             <footer>
               <span>
                 {dateLabel(draft.from)} → {dateLabel(draft.to)}
               </span>
               <div>
-                <button type="button" onClick={() => setCustomOpen(false)}>
+                <button type="button" onClick={() => {
+                  setCustomOpen(false);
+                  setRangePickMode("from");
+                }}>
                   Hủy
                 </button>
                 <button type="button" disabled={invalid} onClick={applyCustom}>
