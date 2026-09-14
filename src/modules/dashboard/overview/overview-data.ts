@@ -287,6 +287,41 @@ export function useOverviewSource(
 
 export type OverviewSource = ReturnType<typeof useOverviewSource>;
 
+/**
+ * Nguồn riêng của chart MAP-01.
+ *
+ * Contract SystemHNWeb v2 quy định bộ lọc 7/14/30/custom CHỈ thay đổi card
+ * Nhập – Xuất – Tồn; KPI "Hôm nay" và các card Dashboard khác phải giữ nguyên.
+ * Vì vậy chart chỉ tải đúng hai nguồn nó thực sự cần, tránh gọi lại XNT/quick.
+ */
+export function useOverviewChartSource(
+  range: DateRange,
+  enabled: boolean,
+  autoRefresh: boolean,
+) {
+  const overview = useQuery({
+    queryKey: ["dashboard", "overview-chart", range.from, range.to],
+    queryFn: () =>
+      http.get<DashboardOverview>(API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW, {
+        params: { from_date: range.from, to_date: range.to },
+      }),
+    ...reportQueryOptions(enabled, autoRefresh),
+  });
+
+  const xntDaily = useQuery({
+    queryKey: ["dashboard", "overview-chart-daily", range.from, range.to],
+    queryFn: () =>
+      http.get<XntDailyReport>(OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY, {
+        params: { from_date: range.from, to_date: range.to },
+      }),
+    ...reportQueryOptions(enabled, autoRefresh),
+  });
+
+  return { overview, xntDaily };
+}
+
+export type OverviewChartSource = ReturnType<typeof useOverviewChartSource>;
+
 // ── Dẫn xuất ─────────────────────────────────────────────────────────────
 
 export interface FlowRow {
