@@ -56,6 +56,7 @@ import {
   countSkusInStock,
   dashboardNow,
   fmtDelta,
+  MAP_OVERVIEW_MAX_RANGE_DAYS,
   oldestOverdueDays,
   overviewTypeKey,
   resolvePeriodRange,
@@ -145,6 +146,11 @@ export default function DashboardPage() {
     if (!custom.from || !custom.to) return t("dashboard.dateError.required");
     if (custom.from > custom.to) return t("dashboard.dateError.order");
     if (custom.to > today) return t("dashboard.dateError.future");
+    const selectedDays =
+      dayjs(custom.to).diff(dayjs(custom.from), "day") + 1;
+    if (selectedDays > MAP_OVERVIEW_MAX_RANGE_DAYS) {
+      return `Khoảng thời gian tối đa ${MAP_OVERVIEW_MAX_RANGE_DAYS} ngày.`;
+    }
     // Chốt chặn chung (2000 → hôm nay, chuỗi ISO sai như "2026-22-01"): so
     // chuỗi ở trên không bắt được các trường hợp này.
     // Truyền CHUỖI để checkDate parse nghiêm ngặt (dayjs() tự cuộn 31/02 → 03/03).
