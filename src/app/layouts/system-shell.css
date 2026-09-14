@@ -15,7 +15,8 @@
 .hn-system-drawer {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   border-right: 1px solid
     color-mix(in srgb, var(--map-white) 12%, transparent);
   background: linear-gradient(
@@ -29,10 +30,9 @@
 }
 
 /*
- * SystemHNWeb publishes the complete preview, not a separate warehouse photo.
- * Reuse the exact published pixels as a muted sidebar layer. At >=1080px image
- * height, the first 268px remain entirely inside the reference sidebar, so the
- * reference page body cannot bleed into the live shell.
+ * Local warehouse/worker layer reconstructed from the approved SystemHNWeb
+ * reference. Keeping it in /public removes the CSP/offline/cross-origin failure
+ * of the previous remote URL, so the same sidebar survives every route change.
  */
 .hn-system-shell > [data-testid="app-sidebar"]::before,
 .hn-system-drawer::before {
@@ -41,14 +41,14 @@
   z-index: 0;
   inset: -2px;
   pointer-events: none;
-  background-image: url("https://duc-nguyen98.github.io/SystemHNWeb/previews/overview-jpg/desktop/overview-state-01-loading-desktop-1920x1080.jpg");
+  background-image: url("/assets/systemhn/sidebar-warehouse.svg");
   background-repeat: no-repeat;
-  background-position: left top;
-  background-size: auto max(100%, 1080px);
-  opacity: 0.42;
-  filter: saturate(0.82) contrast(1.04) blur(0.35px);
-  transform: scale(1.006);
-  transform-origin: left top;
+  background-position: center top;
+  background-size: cover;
+  opacity: 0.92;
+  filter: saturate(0.94) contrast(1.04);
+  transform: scale(1.004);
+  transform-origin: center top;
 }
 
 .hn-system-shell > [data-testid="app-sidebar"]::after,
@@ -60,9 +60,9 @@
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--map-navy) 72%, transparent) 0%,
-    color-mix(in srgb, var(--map-cta) 58%, transparent) 52%,
-    color-mix(in srgb, var(--map-navy) 76%, transparent) 100%
+    color-mix(in srgb, var(--map-navy) 42%, transparent) 0%,
+    color-mix(in srgb, var(--map-cta) 24%, transparent) 52%,
+    color-mix(in srgb, var(--map-navy) 48%, transparent) 100%
   );
 }
 
