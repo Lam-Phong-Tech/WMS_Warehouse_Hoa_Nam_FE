@@ -36,7 +36,6 @@ import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { ROUTES } from "@/shared/constants/routes";
 import { useNavigate } from "react-router-dom";
 import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
-import "./system-shell.css";
 
 /**
  * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
