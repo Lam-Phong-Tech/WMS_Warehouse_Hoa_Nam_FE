@@ -613,6 +613,12 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
       screen.getByRole("button", { name: "14 ngày gần nhất" }),
     );
 
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /14 ngày gần nhất/i }),
+      ).toBeInTheDocument();
+    });
+
     const chartFrom = dayjs().subtract(13, "day").format("YYYY-MM-DD");
     await waitFor(() => {
       expect(mockedGet).toHaveBeenCalledWith(
