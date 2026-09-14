@@ -4046,3 +4046,423 @@
     min-width: 44px;
   }
 }
+
+
+/* ── SystemHNWeb MAP-01 fidelity lock (2026-09-14) ─────────────────────────
+   Exact published SystemHNWeb palette comes from AUTH_BASELINE and is injected
+   as --map-* by MainLayout. This layer is intentionally scoped to ?screen=MAP-01
+   so no other WMS route is recolored. */
+.hn-map-shell,
+.hn-map-drawer {
+  color-scheme: light;
+}
+.hn-map-shell {
+  background: var(--map-surface);
+}
+.hn-map-shell > [data-testid="app-sidebar"],
+.hn-map-drawer {
+  border-right: 1px solid color-mix(in srgb, var(--map-white) 12%, transparent);
+  background: linear-gradient(
+    180deg,
+    var(--map-navy) 0%,
+    var(--map-cta) 100%
+  );
+  color: var(--map-white);
+  box-shadow: 4px 0 18px color-mix(in srgb, var(--map-navy) 18%, transparent);
+}
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-brand {
+  min-height: 72px;
+  border-bottom-color: color-mix(
+    in srgb,
+    var(--map-white) 14%,
+    transparent
+  );
+}
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-brand .hn-mvp-logo {
+  border-color: color-mix(in srgb, var(--map-white) 70%, transparent);
+  background: transparent;
+  color: var(--map-white);
+}
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-brand h1,
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-brand .hn-mvp-aside-toggle,
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-group,
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-nav-btn {
+  color: color-mix(in srgb, var(--map-white) 94%, var(--map-pale));
+}
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-brand h1::after {
+  content: none;
+}
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-brand .hn-mvp-aside-toggle:hover,
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-group:hover,
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-nav-btn:hover,
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-group[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--map-white) 11%, transparent);
+  color: var(--map-white);
+}
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-nav-btn.active {
+  background: var(--map-link);
+  box-shadow: 0 4px 13px color-mix(in srgb, var(--map-navy) 28%, transparent);
+  color: var(--map-white);
+}
+:is(.hn-map-shell, .hn-map-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn::before {
+  border-color: color-mix(in srgb, var(--map-white) 64%, transparent);
+}
+:is(.hn-map-shell, .hn-map-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn.active::before {
+  border-color: var(--map-white);
+}
+:is(.hn-map-shell, .hn-map-drawer)
+  :is(.hn-mvp-nav-btn, .hn-mvp-group, .hn-mvp-aside-toggle):focus-visible {
+  outline: 2px solid var(--map-white);
+  outline-offset: 2px;
+}
+
+.hn-map-shell .hn-topbar {
+  --ink: var(--map-ink);
+  --muted: var(--map-muted);
+  --line: var(--map-line);
+  --primary: var(--map-cta);
+  --primary-dark: var(--map-navy);
+  --primary-soft: var(--map-pale);
+  --green: var(--map-success);
+  --green-soft: color-mix(in srgb, var(--map-success) 14%, var(--map-white));
+  --amber: var(--map-warning);
+  --amber-soft: color-mix(in srgb, var(--map-warning) 14%, var(--map-white));
+  --red: var(--map-danger);
+  --red-soft: color-mix(in srgb, var(--map-danger) 14%, var(--map-white));
+  --blue-soft: var(--map-pale);
+  --surface: var(--map-white);
+  --hnt-white: var(--map-white);
+  --hnt-surface-muted: var(--map-surface);
+  --hnt-surface-hover: var(--map-pale);
+  --hnt-teal-fg: var(--map-link);
+  top: 0;
+  min-height: 64px;
+  margin: 0;
+  padding: 8px 22px;
+  border: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--map-white) 10%, transparent);
+  border-radius: 0;
+  background: var(--map-navy);
+  box-shadow: none;
+  color: var(--map-white);
+  backdrop-filter: none;
+}
+.hn-map-shell .hn-topbar .topbar-search {
+  min-height: 40px;
+  border-color: var(--map-line);
+  background: var(--map-white);
+  color: var(--map-navy);
+  transition:
+    border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hn-map-shell .hn-topbar .topbar-search:focus-within {
+  border-color: var(--map-link);
+  box-shadow: 0 0 0 3px var(--map-focus-ring);
+}
+.hn-map-shell .hn-topbar .topbar-search input {
+  color: var(--map-ink);
+}
+.hn-map-shell .hn-topbar .topbar-search kbd {
+  background: var(--map-pale);
+  color: var(--map-link);
+}
+.hn-map-shell .hn-topbar .icon-button,
+.hn-map-shell .hn-topbar .avatar-button {
+  color: var(--map-white);
+}
+.hn-map-shell .hn-topbar .icon-button:hover,
+.hn-map-shell .hn-topbar .avatar-button:hover,
+.hn-map-shell .hn-topbar .avatar-button[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--map-white) 13%, transparent);
+}
+.hn-map-shell .hn-topbar .avatar {
+  background: var(--map-pale);
+  color: var(--map-navy);
+}
+.hn-map-shell .hn-topbar .topbar-profile-summary strong {
+  color: var(--map-white);
+}
+.hn-map-shell .hn-topbar .topbar-profile-summary small {
+  color: color-mix(in srgb, var(--map-white) 72%, var(--map-pale));
+}
+.hn-map-shell .hn-topbar :is(button, input):focus-visible {
+  outline: 2px solid var(--map-white);
+  outline-offset: 2px;
+}
+.hn-map-shell .hn-topbar .header-menu :is(button, input):focus-visible {
+  outline-color: var(--map-link);
+}
+.hn-map-shell .hn-map-main {
+  background: var(--map-surface);
+}
+
+/* Snapshot palette aliases: all original geometry can keep its existing var
+   names while rendering the exact SystemHNWeb navy/ocean/teal family. */
+.hn-dashboard-snapshot {
+  --snapshot-ink: var(--map-ink);
+  --snapshot-blue: var(--map-cta);
+  --snapshot-line: var(--map-line);
+  --snapshot-bg: var(--map-surface);
+  --snapshot-orange: var(--map-warning);
+  --snapshot-green: var(--map-success);
+  --snapshot-red: var(--map-danger);
+  --snapshot-purple: var(--wms-primary);
+  --snapshot-donut-0: var(--map-navy);
+  --snapshot-donut-1: var(--map-cta);
+  --snapshot-donut-2: var(--map-warning);
+  --snapshot-donut-3: var(--map-danger);
+  --primary-dark: var(--map-navy);
+  --blue: var(--map-cta);
+  --hnd-info-fg: var(--map-link);
+  --blue-soft: var(--map-pale);
+  --line: var(--map-line);
+  --muted: var(--map-muted);
+  --hnd-white: var(--map-white);
+  --primary-soft: var(--map-pale);
+  --green: var(--map-success);
+  --green-soft: color-mix(in srgb, var(--map-success) 14%, var(--map-white));
+  --amber: var(--map-warning);
+  --amber-soft: color-mix(in srgb, var(--map-warning) 14%, var(--map-white));
+  --red: var(--map-danger);
+  --red-soft: color-mix(in srgb, var(--map-danger) 14%, var(--map-white));
+  min-height: 100%;
+  background: var(--map-surface);
+  color: var(--map-ink);
+}
+.hn-dashboard-snapshot :is(button, input):focus-visible,
+.hn-dashboard-snapshot .snapshot-hover-target:focus-visible {
+  outline: 2px solid var(--map-link);
+  outline-offset: 2px;
+}
+.snapshot-filter > button {
+  min-height: 44px;
+  border-color: var(--map-cta);
+  color: var(--map-cta);
+  transition:
+    border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.snapshot-filter > button:hover,
+.snapshot-filter > button:focus-visible,
+.snapshot-filter > button[aria-expanded="true"] {
+  border-color: var(--map-link);
+  background: var(--map-pale);
+  box-shadow: 0 0 0 3px var(--map-focus-ring);
+}
+.snapshot-filter > button svg {
+  transition: transform 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.snapshot-filter > button[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.snapshot-filter-menu {
+  border-color: var(--map-line);
+  background: var(--map-white);
+  box-shadow: var(--map-card-shadow);
+  animation: snapshot-popover-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.snapshot-filter-menu button,
+.snapshot-preset-row button {
+  min-height: 44px;
+  border-color: var(--map-line);
+  background: var(--map-pale);
+  color: var(--map-link);
+  transition:
+    border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.snapshot-filter-menu button:hover,
+.snapshot-filter-menu button:focus-visible,
+.snapshot-filter-menu button.is-selected,
+.snapshot-preset-row button.is-selected {
+  border-color: var(--map-cta);
+  background: var(--map-cta);
+  color: var(--map-white);
+}
+.snapshot-filter-menu button:active,
+.snapshot-preset-row button:active {
+  transform: translateY(1px);
+}
+@keyframes snapshot-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.snapshot-chart-canvas {
+  position: relative;
+}
+.snapshot-hover-target {
+  fill: transparent;
+  cursor: crosshair;
+  outline: none;
+}
+.snapshot-hover-target:hover,
+.snapshot-hover-target:focus {
+  fill: color-mix(in srgb, var(--map-pale) 38%, transparent);
+}
+.snapshot-chart-tooltip {
+  position: absolute;
+  z-index: 8;
+  display: grid;
+  gap: 5px;
+  min-width: 156px;
+  padding: 10px 12px;
+  border: 1px solid var(--map-line);
+  border-radius: 8px;
+  background: var(--map-white);
+  box-shadow: var(--map-card-shadow);
+  color: var(--map-ink);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+  animation: snapshot-tooltip-in 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.snapshot-chart-tooltip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid var(--map-line);
+  border-bottom: 1px solid var(--map-line);
+  background: var(--map-white);
+  transform: translateX(-50%) rotate(45deg);
+}
+.snapshot-chart-tooltip strong {
+  color: var(--map-navy);
+  font-size: 12px;
+}
+.snapshot-chart-tooltip span {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  align-items: center;
+  gap: 7px;
+  color: var(--map-muted);
+  font-size: 11.5px;
+}
+.snapshot-chart-tooltip span i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--map-navy);
+}
+.snapshot-chart-tooltip span i.is-out {
+  background: var(--map-warning);
+}
+.snapshot-chart-tooltip span i.is-stock {
+  height: 3px;
+  border-radius: 0;
+  background: var(--wms-primary);
+}
+.snapshot-chart-tooltip b {
+  color: var(--map-ink);
+  font-variant-numeric: tabular-nums;
+}
+@keyframes snapshot-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 8px)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 12px)) scale(1);
+  }
+}
+
+.snapshot-warehouse {
+  min-height: 58px;
+  transition:
+    border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.snapshot-warehouse:hover {
+  border-color: var(--map-link);
+  background: var(--map-pale);
+  box-shadow: 0 0 0 3px var(--map-focus-ring);
+}
+.snapshot-calendar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.34;
+}
+.snapshot-modal-backdrop {
+  animation: snapshot-backdrop-in 140ms ease-out;
+}
+.snapshot-custom-dialog {
+  animation: snapshot-dialog-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes snapshot-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes snapshot-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+@container hn-dash (max-width: 900px) {
+  .hn-dashboard-snapshot {
+    padding: 12px 16px 24px;
+  }
+  .snapshot-heading {
+    grid-template-columns: 50px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .snapshot-kpis {
+    gap: 12px;
+  }
+  .snapshot-card,
+  .snapshot-kpi,
+  .snapshot-link-cards > button {
+    border-color: var(--map-line);
+  }
+}
+@container hn-dash (max-width: 540px) {
+  .hn-dashboard-snapshot {
+    padding-inline: 12px;
+  }
+  .snapshot-filter-menu {
+    width: min(330px, calc(100vw - 32px));
+  }
+  .snapshot-chart-tooltip {
+    min-width: 140px;
+    padding: 8px 10px;
+  }
+}
+@media (max-width: 979.98px) {
+  .hn-map-shell .hn-topbar {
+    padding-inline: 12px;
+  }
+  .hn-map-shell .hn-topbar .topbar-search-wrap {
+    max-width: none;
+  }
+  .hn-map-drawer {
+    width: min(268px, 85vw);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hn-dashboard-snapshot .snapshot-filter-menu,
+  .hn-dashboard-snapshot .snapshot-chart-tooltip,
+  .hn-dashboard-snapshot .snapshot-modal-backdrop,
+  .hn-dashboard-snapshot .snapshot-custom-dialog {
+    animation: none;
+  }
+}

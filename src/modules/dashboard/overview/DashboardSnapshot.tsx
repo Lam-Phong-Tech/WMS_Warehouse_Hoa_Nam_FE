@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { DashIcon } from "../components/DashIcon";
 import type { DashboardIconName } from "../components/DashIcon";
@@ -105,6 +105,8 @@ function SnapshotChart({
   onRetry: () => void;
   onChangeFilter: () => void;
 }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   if (state !== "ready")
     return (
       <ChartPlaceholder
@@ -138,6 +140,14 @@ function SnapshotChart({
     )
     .join(" ");
   const ticks = [0, 0.25, 0.5, 0.75, 1];
+  const hoveredRow =
+    hoveredIndex === null ? null : (rows[hoveredIndex] ?? null);
+  const hoveredPoint =
+    hoveredIndex === null ? null : (trendPoints[hoveredIndex] ?? null);
+  const hoveredStock = hoveredRow
+    ? (trend.find((item) => item.date === hoveredRow.date)?.closing ?? 0)
+    : 0;
+
   return (
     <div className="snapshot-chart-canvas">
       <div className="snapshot-legend" aria-label="Chú giải biểu đồ">
@@ -207,6 +217,33 @@ function SnapshotChart({
               >
                 {dateLabel(row.date)}
               </text>
+              <rect
+                className="snapshot-hover-target"
+                x={pad.left + step * index}
+                y={pad.top}
+                width={step}
+                height={plotH}
+                rx="2"
+                tabIndex={0}
+                role="button"
+                aria-label={`${dateLabel(row.date)}: Nhập ${fmt(row.inbound)}, Xuất ${fmt(
+                  row.product + row.component,
+                )}, Tồn ${fmt(
+                  trend.find((item) => item.date === row.date)?.closing ?? 0,
+                )}`}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                onFocus={() => setHoveredIndex(index)}
+                onBlur={() => setHoveredIndex(null)}
+                onPointerDown={() => setHoveredIndex(index)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setHoveredIndex(null);
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setHoveredIndex(index);
+                  }
+                }}
+              />
             </g>
           );
         })}
@@ -224,6 +261,30 @@ function SnapshotChart({
           Tồn cuối ngày
         </text>
       </svg>
+      {hoveredRow && hoveredPoint ? (
+        <div
+          className="snapshot-chart-tooltip"
+          role="status"
+          style={{
+            left: `${(hoveredPoint.x / W) * 100}%`,
+            top: `${(Math.max(52, hoveredPoint.y) / H) * 100}%`,
+          }}
+        >
+          <strong>{dayjs(hoveredRow.date).format("DD/MM/YYYY")}</strong>
+          <span>
+            <i className="is-in" />
+            Nhập <b>{fmt(hoveredRow.inbound)}</b>
+          </span>
+          <span>
+            <i className="is-out" />
+            Xuất <b>{fmt(hoveredRow.product + hoveredRow.component)}</b>
+          </span>
+          <span>
+            <i className="is-stock" />
+            Tồn <b>{fmt(hoveredStock)}</b>
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -238,6 +299,7 @@ function MonthGrid({
   const [cursor, setCursor] = useState(() =>
     dayjs(value || undefined).startOf("month"),
   );
+  const today = dayjs().startOf("day");
   const start = cursor.startOf("month").startOf("week");
   const cells = Array.from({ length: 42 }, (_, index) =>
     start.add(index, "day"),
@@ -259,6 +321,7 @@ function MonthGrid({
           <button
             type="button"
             aria-label="Tháng sau"
+            disabled={!cursor.startOf("month").isBefore(today.startOf("month"))}
             onClick={() => setCursor(cursor.add(1, "month"))}
           >
             <DashIcon name="chevron-right" />
@@ -276,6 +339,8 @@ function MonthGrid({
             key={date.format(ISO)}
             type="button"
             className={`${date.month() !== cursor.month() ? "is-other" : ""} ${date.format(ISO) === value ? "is-selected" : ""}`}
+            aria-pressed={date.format(ISO) === value}
+            disabled={date.isAfter(today, "day")}
             onClick={() => onPick(date.format(ISO))}
           >
             {date.date()}
@@ -329,10 +394,67 @@ export function DashboardSnapshot({
   const [customOpen, setCustomOpen] = useState(false);
   const [draft, setDraft] = useState(custom);
   const [activeIssue, setActiveIssue] = useState<string | null>(null);
+  const filterRef = useRef<HTMLDivElement | null>(null);
+  const filterButtonRef = useRef<HTMLButtonElement | null>(null);
+  const customDialogRef = useRef<HTMLElement | null>(null);
+  const todayIso = todayIso;
   const invalid =
+    !draft.from ||
+    !draft.to ||
     draft.from > draft.to ||
-    draft.from > dayjs().format(ISO) ||
-    draft.to > dayjs().format(ISO);
+    draft.from > todayIso ||
+    draft.to > todayIso;
+
+  useEffect(() => {
+    if (!filterOpen) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && !filterRef.current?.contains(target)) {
+        setFilterOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setFilterOpen(false);
+      filterButtonRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [filterOpen]);
+
+  useEffect(() => {
+    if (!customOpen) return;
+    const focusTimer = window.setTimeout(
+      () => customDialogRef.current?.focus(),
+      0,
+    );
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setCustomOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [customOpen]);
+
+  const selectedRangeDays =
+    period === "last7"
+      ? 7
+      : period === "custom" && range.to === todayIso
+        ? dayjs(range.to).diff(dayjs(range.from), "day") + 1
+        : null;
+  const selectedPreset =
+    selectedRangeDays === 7 ||
+    selectedRangeDays === 14 ||
+    selectedRangeDays === 30
+      ? selectedRangeDays
+      : null;
+  const customSelected = period === "custom" && selectedPreset === null;
   const total = composition.reduce((sum, row) => sum + row.value, 0);
   const donut = composition.reduce(
     (parts, row, index) => {
@@ -366,7 +488,7 @@ export function DashboardSnapshot({
       from: dayjs()
         .subtract(days - 1, "day")
         .format(ISO),
-      to: dayjs().format(ISO),
+      to: todayIso,
     };
     onCustomChange(next);
     onPeriodChange("custom");
@@ -400,7 +522,12 @@ export function DashboardSnapshot({
             {dayjs().format("HH:mm")}
           </span>
         </div>
-        <div className="snapshot-warehouse" aria-label="Kho đang xem">
+        <button
+          type="button"
+          className="snapshot-warehouse"
+          aria-label="Mở thông tin kho đang xem"
+          onClick={() => onNavigate("/master-data/warehouse")}
+        >
           <DashIcon name="warehouse" />
           <span>
             <strong>{warehouseLabel}</strong>
@@ -410,7 +537,7 @@ export function DashboardSnapshot({
             </small>
           </span>
           <DashIcon name="chevron-down" />
-        </div>
+        </button>
       </header>
 
       {forbidden ? (
@@ -483,29 +610,52 @@ export function DashboardSnapshot({
                 <article className="snapshot-card snapshot-chart-card">
                   <header>
                     <h2>Biểu đồ nhập - xuất - tồn kho</h2>
-                    <div className="snapshot-filter">
+                    <div className="snapshot-filter" ref={filterRef}>
                       <button
+                        ref={filterButtonRef}
                         type="button"
                         aria-expanded={filterOpen}
+                        aria-haspopup="menu"
                         onClick={() => setFilterOpen((value) => !value)}
                       >
                         {periodText(period, range)}
                         <DashIcon name="chevron-down" />
                       </button>
                       {filterOpen ? (
-                        <div className="snapshot-filter-menu">
+                        <div className="snapshot-filter-menu" role="menu">
                           <span>Chọn khoảng thời gian</span>
-                          <button type="button" onClick={() => selectDays(7)}>
+                          <button
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={selectedPreset === 7}
+                            className={selectedPreset === 7 ? "is-selected" : ""}
+                            onClick={() => selectDays(7)}
+                          >
                             7 ngày gần nhất
                           </button>
-                          <button type="button" onClick={() => selectDays(14)}>
+                          <button
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={selectedPreset === 14}
+                            className={selectedPreset === 14 ? "is-selected" : ""}
+                            onClick={() => selectDays(14)}
+                          >
                             14 ngày gần nhất
                           </button>
-                          <button type="button" onClick={() => selectDays(30)}>
+                          <button
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={selectedPreset === 30}
+                            className={selectedPreset === 30 ? "is-selected" : ""}
+                            onClick={() => selectDays(30)}
+                          >
                             30 ngày gần nhất
                           </button>
                           <button
                             type="button"
+                            role="menuitemradio"
+                            aria-checked={customSelected}
+                            className={customSelected ? "is-selected" : ""}
                             onClick={() => {
                               setDraft(custom);
                               setCustomOpen(true);
@@ -734,12 +884,20 @@ export function DashboardSnapshot({
         </>
       )}
       {customOpen ? (
-        <div className="snapshot-modal-backdrop" role="presentation">
+        <div
+          className="snapshot-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setCustomOpen(false);
+          }}
+        >
           <section
+            ref={customDialogRef}
             className="snapshot-custom-dialog"
             role="dialog"
             aria-modal="true"
             aria-label="Chọn khoảng thời gian"
+            tabIndex={-1}
           >
             <header>
               <div>
@@ -774,7 +932,7 @@ export function DashboardSnapshot({
                 <input
                   type="date"
                   value={draft.from}
-                  max={dayjs().format(ISO)}
+                  max={todayIso}
                   onChange={(event) =>
                     setDraft({ ...draft, from: event.target.value })
                   }
@@ -785,7 +943,7 @@ export function DashboardSnapshot({
                 <input
                   type="date"
                   value={draft.to}
-                  max={dayjs().format(ISO)}
+                  max={todayIso}
                   onChange={(event) =>
                     setDraft({ ...draft, to: event.target.value })
                   }

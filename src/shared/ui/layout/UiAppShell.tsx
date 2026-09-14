@@ -15,6 +15,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import {
   useRef,
   type ReactNode,
+  type CSSProperties,
   type FocusEvent as ReactFocusEvent,
 } from "react";
 import {
@@ -65,6 +66,8 @@ export interface UiAppShellProps {
   onPeekChange?: (peek: boolean) => void;
   /** Class marker cho vỏ ngoài (test-hook legacy `.hn-mvp-app` — không style). */
   className?: string;
+  /** Inline CSS variables/style dành cho skin scoped của một màn cụ thể. */
+  style?: CSSProperties;
   /** Class marker cho aside (test-hook legacy `.hn-mvp-aside`). */
   sidebarClassName?: string;
   /** Class marker cho main (test-hook legacy `.hn-mvp-main`). */
@@ -83,6 +86,7 @@ export function UiAppShell({
   peek = false,
   onPeekChange,
   className,
+  style,
   sidebarClassName,
   mainClassName,
 }: UiAppShellProps) {
@@ -129,6 +133,7 @@ export function UiAppShell({
   return (
     <Box
       className={className}
+      style={style}
       sx={{
         // KHÔNG dùng CSS Grid: phần tử position:absolute nằm trong grid bị
         // giới hạn containing-block vào Ô LƯỚI của nó (cột 76px) nên `width`

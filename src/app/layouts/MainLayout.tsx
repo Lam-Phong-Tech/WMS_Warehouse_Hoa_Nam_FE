@@ -10,7 +10,7 @@
  * Các class `hn-mvp-app/aside/main/screen` giữ làm test-hook (E2E wwhn-144) —
  * style nằm hoàn toàn trong UiAppShell/sx token.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
 import { KeepAliveOutlet } from "@/app/layouts/KeepAliveOutlet";
 import { SideNav } from "@/app/layouts/SideNav";
@@ -22,6 +22,7 @@ import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
 import { Loading } from "@/shared/components";
 import {
+  AUTH_BASELINE,
   Box,
   Drawer,
   LAYOUT,
@@ -150,6 +151,26 @@ export function MainLayout() {
   const requestedScreen = new URLSearchParams(location.search).get("screen");
   const isMapReferenceScreen =
     location.pathname === ROUTES.DASHBOARD && requestedScreen === "MAP-01";
+  const mapSkinStyle = isMapReferenceScreen
+    ? ({
+        "--map-navy": AUTH_BASELINE.navy,
+        "--map-cta": AUTH_BASELINE.cta,
+        "--map-link": AUTH_BASELINE.link,
+        "--map-pale": AUTH_BASELINE.pale,
+        "--map-line": AUTH_BASELINE.line,
+        "--map-ink": AUTH_BASELINE.ink,
+        "--map-muted": AUTH_BASELINE.muted,
+        "--map-surface": AUTH_BASELINE.surface,
+        "--map-success": AUTH_BASELINE.success,
+        "--map-warning": AUTH_BASELINE.warning,
+        "--map-danger": AUTH_BASELINE.danger,
+        "--map-white": AUTH_BASELINE.white,
+        "--map-hero-mid": AUTH_BASELINE.heroMid,
+        "--map-hero-end": AUTH_BASELINE.heroEnd,
+        "--map-focus-ring": AUTH_BASELINE.focusRing,
+        "--map-card-shadow": AUTH_BASELINE.cardShadow,
+      } as CSSProperties)
+    : undefined;
   const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
   const trail = getBreadcrumbTrail(location.pathname);
@@ -161,6 +182,7 @@ export function MainLayout() {
     <>
       <UiAppShell
         className={isMapReferenceScreen ? "hn-map-shell" : undefined}
+        style={mapSkinStyle}
         sidebarClassName={isMapReferenceScreen ? "hn-map-sidebar" : undefined}
         mainClassName={isMapReferenceScreen ? "hn-map-main" : undefined}
         collapsed={sidebarCollapsed}
@@ -238,6 +260,8 @@ export function MainLayout() {
           onClose={() => setMobileNavOpen(false)}
           slotProps={{
             paper: {
+              className: isMapReferenceScreen ? "hn-map-drawer" : undefined,
+              style: mapSkinStyle,
               sx: {
                 width: isMapReferenceScreen ? 268 : LAYOUT.sidebarWidth,
                 maxWidth: "85vw",
