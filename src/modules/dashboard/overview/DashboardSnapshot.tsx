@@ -35,6 +35,15 @@ export type OverviewReferenceState =
   | "urgent";
 
 const ISO = "YYYY-MM-DD";
+const WEEKDAY_VI = [
+  "Chủ nhật",
+  "Thứ Hai",
+  "Thứ Ba",
+  "Thứ Tư",
+  "Thứ Năm",
+  "Thứ Sáu",
+  "Thứ Bảy",
+] as const;
 
 const KPI_TONES: Array<{ icon: DashboardIconName; tone: string }> = [
   { icon: "package-search", tone: "stock" },
@@ -672,7 +681,8 @@ export function DashboardSnapshot({
         <div className="snapshot-time">
           <span>
             <DashIcon name="calendar-days" />
-            {businessNow.format("dddd, DD [tháng] M, YYYY")}
+            {WEEKDAY_VI[businessNow.day()]},{" "}
+            {businessNow.format("DD [tháng] M, YYYY")}
           </span>
           <i />
           <span>
