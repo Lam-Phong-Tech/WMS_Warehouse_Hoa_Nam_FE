@@ -4610,7 +4610,37 @@
 }
 
 @container hn-dash (max-width: 900px) {
-  /* Tablet dọc chuẩn 800 × 1280 CSS px: quick presets reflow 2 × 2. */
+  /*
+   * Tablet dọc chuẩn 800 × 1280 CSS px: KPI phải co theo cột mà không chồng
+   * label/value, còn quick presets reflow 2 × 2.
+   */
+  .snapshot-kpi {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 8px;
+    min-width: 0;
+    min-height: 126px;
+  }
+  .snapshot-kpi-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .snapshot-kpi > div {
+    min-width: 0;
+  }
+  .snapshot-kpi > div > span,
+  .snapshot-kpi small,
+  .snapshot-kpi em {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .snapshot-kpi strong {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: clamp(24px, 4vw, 28px);
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .snapshot-preset-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
