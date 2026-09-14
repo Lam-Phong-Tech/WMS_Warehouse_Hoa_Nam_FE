@@ -59,6 +59,13 @@ function periodText(period: OverviewPeriod, range: DateRange) {
   if (period === "last7") return "7 ngày gần nhất";
   if (period === "today") return "Hôm nay";
   if (period === "month") return "30 ngày gần nhất";
+
+  const inclusiveDays =
+    dayjs(range.to).diff(dayjs(range.from), "day") + 1;
+  const endsToday = range.to === dashboardNow().format(ISO);
+  if (endsToday && inclusiveDays === 14) return "14 ngày gần nhất";
+  if (endsToday && inclusiveDays === 30) return "30 ngày gần nhất";
+
   return `Tùy chỉnh · ${dateLabel(range.from)}–${dateLabel(range.to)}`;
 }
 
