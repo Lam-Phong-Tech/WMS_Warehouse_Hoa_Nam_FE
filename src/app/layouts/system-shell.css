@@ -44,11 +44,13 @@
 }
 
 /* Tắt lớp pseudo cũ để không còn stacking/cascade cạnh tranh với artwork. */
+.hn-system-shell.hn-map-shell > [data-testid="app-sidebar"]::before,
+.hn-system-shell.hn-map-shell > [data-testid="app-sidebar"]::after,
 .hn-system-shell > [data-testid="app-sidebar"]::before,
 .hn-system-shell > [data-testid="app-sidebar"]::after,
 .hn-system-drawer::before,
 .hn-system-drawer::after {
-  content: none !important;
+  content: none;
 }
 
 .hn-system-shell > [data-testid="app-sidebar"] > *,
@@ -235,7 +237,6 @@
   }
 }
 
-
 /* ── Sidebar fidelity lock — reference ảnh 1 ───────────────────────────── */
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-content {
   position: relative;
@@ -246,15 +247,15 @@
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand {
   position: relative;
-  min-height: 64px !important;
-  padding-left: 14px !important;
-  padding-right: 12px !important;
+  min-height: 64px;
+  padding-left: 14px;
+  padding-right: 12px;
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-logo {
-  flex-basis: 38px !important;
-  width: 38px !important;
-  height: 38px !important;
+  flex-basis: 38px;
+  width: 38px;
+  height: 38px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -282,27 +283,27 @@
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-aside-toggle {
-  position: absolute !important;
+  position: absolute;
   right: 9px;
   top: 50%;
   transform: translateY(-50%);
 }
 
 :is(.hn-system-shell, .hn-system-drawer) nav[data-testid="primary-navigation"] {
-  padding: 7px 8px 4px !important;
+  padding: 7px 8px 4px;
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
   :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item) {
-  min-height: 36px !important;
-  padding: 6px 10px !important;
-  border-radius: 5px !important;
-  font-size: 14px !important;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 14px;
   line-height: 19px;
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn.active {
-  background: linear-gradient(90deg, #0798cc 0%, #0aa8dd 100%);
+  background: linear-gradient(90deg, var(--map-link) 0%, var(--map-cta) 100%);
   box-shadow: 0 3px 10px color-mix(in srgb, var(--map-navy) 28%, transparent);
 }
 
@@ -333,7 +334,7 @@
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-worker {
-  display: none !important;
+  display: none;
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-bottom {
@@ -389,7 +390,7 @@
   width: 34px;
   height: 34px;
   border-radius: 4px;
-  background: linear-gradient(135deg, #0aa8dd, #11b6e8);
+  background: linear-gradient(135deg, var(--map-cta), var(--map-link));
   color: var(--map-white);
 }
 
@@ -416,7 +417,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #40e59e;
+  color: var(--map-success);
   font-size: 9px;
   line-height: 11px;
   font-weight: 600;
@@ -427,8 +428,8 @@
   height: 6px;
   flex: 0 0 6px;
   border-radius: 50%;
-  background: #20e596;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #20e596 18%, transparent);
+  background: var(--map-success);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--map-success) 18%, transparent);
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-version {
@@ -449,7 +450,6 @@
   }
 }
 
-
 /* ── Sidebar control contrast lock ─────────────────────────────────────────
  * SideNav vẫn dùng token của light theme trong MUI sx (C.itemText/C.hover/
  * S.textStrong). Khi đặt SideNav lên artwork tối, Emotion có thể nạp sau CSS
@@ -464,23 +464,23 @@
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group,
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn,
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system-item {
-  color: color-mix(in srgb, var(--map-white) 96%, var(--map-pale)) !important;
+  color: color-mix(in srgb, var(--map-white) 96%, var(--map-pale));
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-subtitle {
-  color: color-mix(in srgb, var(--map-white) 76%, var(--map-pale)) !important;
+  color: color-mix(in srgb, var(--map-white) 76%, var(--map-pale));
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
   :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item):not(.active) {
-  background: transparent !important;
+  background: transparent;
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
   :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item):not(.active):hover,
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--map-white) 11%, transparent) !important;
-  color: var(--map-white) !important;
+  background: color-mix(in srgb, var(--map-white) 11%, transparent);
+  color: var(--map-white);
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group[aria-expanded="true"] {
@@ -490,43 +490,42 @@
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn.active,
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system-item.active {
-  background: linear-gradient(90deg, #0798cc 0%, #0aa8dd 100%) !important;
-  color: var(--map-white) !important;
+  background: linear-gradient(90deg, var(--map-link) 0%, var(--map-cta) 100%);
+  color: var(--map-white);
   box-shadow: 0 3px 10px
-    color-mix(in srgb, var(--map-navy) 28%, transparent) !important;
+    color-mix(in srgb, var(--map-navy) 28%, transparent);
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
   .hn-mvp-submenu
   .hn-mvp-nav-btn:not(.active) {
-  color: color-mix(in srgb, var(--map-white) 92%, var(--map-pale)) !important;
+  color: color-mix(in srgb, var(--map-white) 92%, var(--map-pale));
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
   .hn-mvp-submenu
   .hn-mvp-nav-btn:not(.active)::before {
-  border-color: color-mix(in srgb, var(--map-white) 66%, transparent) !important;
+  border-color: color-mix(in srgb, var(--map-white) 66%, transparent);
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
   .hn-mvp-submenu
   .hn-mvp-nav-btn.active::before {
-  border-color: var(--map-white) !important;
+  border-color: var(--map-white);
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
   :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item, .hn-mvp-aside-toggle):focus-visible {
-  outline: 2px solid var(--map-white) !important;
-  outline-offset: 2px !important;
+  outline: 2px solid var(--map-white);
+  outline-offset: 2px;
 }
 
 /* Không để style hover của light theme biến nút active thành nền trắng. */
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn.active:hover,
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system-item.active:hover {
-  background: linear-gradient(90deg, #0798cc 0%, #0aa8dd 100%) !important;
-  color: var(--map-white) !important;
+  background: linear-gradient(90deg, var(--map-link) 0%, var(--map-cta) 100%);
+  color: var(--map-white);
 }
-
 
 /* ── Submenu geometry lock ────────────────────────────────────────────────
  * Rule compact phía trên áp padding 6px 10px cho mọi .hn-mvp-nav-btn, kể cả
@@ -537,18 +536,18 @@
 :is(.hn-system-shell, .hn-system-drawer)
   .hn-mvp-submenu
   .hn-mvp-nav-btn {
-  min-height: 38px !important;
-  padding: 7px 12px 7px 42px !important;
-  font-size: 14px !important;
-  line-height: 19px !important;
+  min-height: 38px;
+  padding: 7px 12px 7px 42px;
+  font-size: 14px;
+  line-height: 19px;
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
   .hn-mvp-submenu
   .hn-mvp-nav-btn::before {
-  left: 18px !important;
-  width: 7px !important;
-  height: 7px !important;
+  left: 18px;
+  width: 7px;
+  height: 7px;
   box-sizing: border-box;
 }
 
@@ -557,5 +556,5 @@
 :is(.hn-system-shell, .hn-system-drawer)
   .hn-mvp-submenu
   .hn-mvp-nav-btn:is(.active, :hover, :focus-visible) {
-  padding-left: 42px !important;
+  padding-left: 42px;
 }
