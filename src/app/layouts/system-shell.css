@@ -297,8 +297,8 @@
   min-height: 36px !important;
   padding: 6px 10px !important;
   border-radius: 5px !important;
-  font-size: 13px !important;
-  line-height: 18px;
+  font-size: 14px !important;
+  line-height: 19px;
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn.active {
@@ -525,4 +525,37 @@
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system-item.active:hover {
   background: linear-gradient(90deg, #0798cc 0%, #0aa8dd 100%) !important;
   color: var(--map-white) !important;
+}
+
+
+/* ── Submenu geometry lock ────────────────────────────────────────────────
+ * Rule compact phía trên áp padding 6px 10px cho mọi .hn-mvp-nav-btn, kể cả
+ * mục con. Nó vô tình xoá childPaddingLeft=43px của SideNav trong MUI sx,
+ * trong khi marker ::before vẫn ở left≈20px => marker chồng lên ký tự đầu.
+ * Khoá hình học riêng cho submenu để marker và label luôn có hai vùng độc lập.
+ */
+:is(.hn-system-shell, .hn-system-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn {
+  min-height: 38px !important;
+  padding: 7px 12px 7px 42px !important;
+  font-size: 14px !important;
+  line-height: 19px !important;
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn::before {
+  left: 18px !important;
+  width: 7px !important;
+  height: 7px !important;
+  box-sizing: border-box;
+}
+
+/* Giữ khoảng trống marker cả khi item active/hover/focus, không cho rule khác
+ * nén padding-left lại khi Emotion hoặc CSS màn nghiệp vụ được lazy-load sau. */
+:is(.hn-system-shell, .hn-system-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn:is(.active, :hover, :focus-visible) {
+  padding-left: 42px !important;
 }
