@@ -38,9 +38,8 @@
 }
 
 /*
- * Reference sidebar: ảnh kho chạy xuyên toàn thanh bên, phủ navy để chữ luôn
- * đạt tương phản. Nhân viên được tách thành lớp riêng ở cuối SideNav để giữ
- * đúng tỷ lệ nhỏ như ảnh duyệt, không còn crop phóng to cả thân người.
+ * Ảnh sidebar đã chỉnh theo reference được gộp sẵn cả kho + nhân viên.
+ * Dùng một asset xuyên suốt để không còn sai tỉ lệ/crop giữa hai lớp ảnh.
  */
 .hn-system-shell > [data-testid="app-sidebar"]::before,
 .hn-system-drawer::before {
@@ -49,20 +48,12 @@
   z-index: 0;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--map-navy) 93%, transparent) 0%,
-      color-mix(in srgb, var(--map-navy) 86%, transparent) 38%,
-      color-mix(in srgb, var(--map-cta) 72%, transparent) 68%,
-      color-mix(in srgb, var(--map-navy) 78%, transparent) 100%
-    ),
-    url("/assets/systemhn/sidebar-warehouse-aisle.webp");
+  background-image: url("/assets/systemhn/sidebar-warehouse-generated.webp");
   background-repeat: no-repeat;
-  background-position: center;
+  background-position: center top;
   background-size: cover;
-  opacity: 0.98;
-  filter: saturate(0.92) contrast(1.02);
+  opacity: 1;
+  filter: saturate(0.95) contrast(1.02) brightness(0.88);
 }
 .hn-system-shell > [data-testid="app-sidebar"]::after,
 .hn-system-drawer::after {
@@ -440,21 +431,7 @@
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-worker {
-  position: absolute !important;
-  z-index: 1 !important;
-  right: -7px;
-  bottom: 64px;
-  width: 178px;
-  height: 242px;
-  pointer-events: none;
-  background-image: url("/assets/systemhn/sidebar-warehouse-worker.webp");
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  background-size: 100% auto;
-  opacity: 0.94;
-  filter: saturate(0.88) contrast(1.03) brightness(0.78);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 100%);
+  display: none !important;
 }
 
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-bottom {
