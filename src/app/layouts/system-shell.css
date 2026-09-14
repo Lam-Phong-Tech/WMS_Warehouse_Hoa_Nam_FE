@@ -18,141 +18,43 @@
   overflow-y: auto;
   border-right: 1px solid
     color-mix(in srgb, var(--map-white) 12%, transparent);
-  background: linear-gradient(
-    180deg,
-    var(--map-navy) 0%,
-    var(--map-cta) 100%
-  );
+  /*
+   * Đặt artwork trực tiếp lên aside/drawer thay vì pseudo-element.
+   * Cách này tránh lỗi layer bị che/mất khi CSS trang Dashboard nạp sau.
+   */
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--map-navy) 74%, transparent) 0%,
+      color-mix(in srgb, var(--map-navy) 62%, transparent) 48%,
+      color-mix(in srgb, var(--map-navy) 56%, transparent) 100%
+    ),
+    url("/assets/systemhn/sidebar-warehouse-generated-fixed.webp");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
   color: var(--map-white);
   box-shadow: 4px 0 18px
     color-mix(in srgb, var(--map-navy) 22%, transparent);
 }
 
-/* The desktop sidebar is positioned by UiAppShell.  Do not override it to
-   `relative`: that puts the aside back in document flow and pushes topbar and
-   page content down by the sidebar's intrinsic height.  The drawer has no
-   shell positioning rule, so it keeps its own containing block for the
-   decorative pseudo-elements below. */
+/* Drawer cần containing block riêng; desktop aside đã absolute trong UiAppShell. */
 .hn-system-drawer {
   position: relative;
 }
 
-/*
- * Ảnh sidebar đã chỉnh theo reference được gộp sẵn cả kho + nhân viên.
- * Dùng một asset xuyên suốt để không còn sai tỉ lệ/crop giữa hai lớp ảnh.
- */
+/* Tắt lớp pseudo cũ để không còn stacking/cascade cạnh tranh với artwork. */
 .hn-system-shell > [data-testid="app-sidebar"]::before,
-.hn-system-drawer::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  pointer-events: none;
-  background-image: url("/assets/systemhn/sidebar-warehouse-generated.webp");
-  background-repeat: no-repeat;
-  background-position: center top;
-  background-size: cover;
-  opacity: 1;
-  filter: saturate(0.95) contrast(1.02) brightness(0.88);
-}
 .hn-system-shell > [data-testid="app-sidebar"]::after,
+.hn-system-drawer::before,
 .hn-system-drawer::after {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--map-navy) 42%, transparent) 0%,
-    color-mix(in srgb, var(--map-cta) 24%, transparent) 52%,
-    color-mix(in srgb, var(--map-navy) 48%, transparent) 100%
-  );
+  content: none !important;
 }
 
 .hn-system-shell > [data-testid="app-sidebar"] > *,
 .hn-system-drawer > * {
   position: relative;
-  z-index: 2;
-}
-
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand {
-  min-height: 72px;
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--map-white) 14%, transparent);
-}
-
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-logo {
-  border: 1px solid
-    color-mix(in srgb, var(--map-white) 72%, transparent);
-  background: color-mix(in srgb, var(--map-white) 7%, transparent);
-  color: var(--map-white);
-}
-
-:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-title {
-  display: grid;
-  align-content: center;
-  gap: 2px;
-  color: var(--map-white);
-  font-size: 16px;
-  line-height: 18px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-subtitle {
-  display: block;
-  overflow: hidden;
-  color: color-mix(in srgb, var(--map-white) 74%, var(--map-pale));
-  font-size: 10px;
-  line-height: 14px;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-aside-toggle,
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group,
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn {
-  color: color-mix(in srgb, var(--map-white) 94%, var(--map-pale));
-}
-
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-aside-toggle:hover,
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group:hover,
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn:hover,
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--map-white) 11%, transparent);
-  color: var(--map-white);
-}
-
-:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn.active {
-  background: linear-gradient(
-    90deg,
-    var(--map-link) 0%,
-    color-mix(in srgb, var(--map-link) 62%, var(--map-cta)) 100%
-  );
-  box-shadow: 0 4px 14px
-    color-mix(in srgb, var(--map-navy) 34%, transparent);
-  color: var(--map-white);
-}
-
-:is(.hn-system-shell, .hn-system-drawer)
-  .hn-mvp-submenu
-  .hn-mvp-nav-btn::before {
-  border-color: color-mix(in srgb, var(--map-white) 66%, transparent);
-}
-
-:is(.hn-system-shell, .hn-system-drawer)
-  .hn-mvp-submenu
-  .hn-mvp-nav-btn.active::before {
-  border-color: var(--map-white);
-}
-
-:is(.hn-system-shell, .hn-system-drawer)
-  :is(.hn-mvp-nav-btn, .hn-mvp-group, .hn-mvp-aside-toggle):focus-visible {
-  outline: 2px solid var(--map-white);
-  outline-offset: 2px;
+  z-index: 1;
 }
 
 /* ── Topbar ─────────────────────────────────────────────────────────────── */

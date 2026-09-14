@@ -75,6 +75,7 @@ const ROUTES_FULL_BLEED: string[] = [
 ];
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "hn-wms-sidebar-collapsed";
+const SYSTEM_SIDEBAR_WIDTH = 300;
 
 function readStoredSidebarCollapsed() {
   try {
@@ -189,7 +190,7 @@ export function MainLayout() {
         sidebarClassName="hn-system-sidebar"
         mainClassName={isMapReferenceScreen ? "hn-map-main" : undefined}
         collapsed={sidebarCollapsed}
-        sidebarWidth={268}
+        sidebarWidth={SYSTEM_SIDEBAR_WIDTH}
         sidebarHidden={!isDesktop}
         peek={sidebarPeek}
         onPeekChange={setSidebarPeek}
@@ -266,7 +267,7 @@ export function MainLayout() {
               className: "hn-system-drawer",
               style: systemShellStyle,
               sx: {
-                width: 268,
+                width: SYSTEM_SIDEBAR_WIDTH,
                 maxWidth: "85vw",
               },
             },

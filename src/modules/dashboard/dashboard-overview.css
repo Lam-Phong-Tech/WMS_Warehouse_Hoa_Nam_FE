@@ -3997,11 +3997,6 @@
 .hn-map-shell > [data-testid="app-sidebar"],
 .hn-map-drawer {
   border-right: 1px solid color-mix(in srgb, var(--map-white) 12%, transparent);
-  background: linear-gradient(
-    180deg,
-    var(--map-navy) 0%,
-    var(--map-cta) 100%
-  );
   color: var(--map-white);
   box-shadow: 4px 0 18px color-mix(in srgb, var(--map-navy) 18%, transparent);
 }
