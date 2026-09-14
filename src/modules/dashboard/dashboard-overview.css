@@ -3861,71 +3861,7 @@
     var(--wms-bg-surface)
   );
 }
-.hn-map-shell > [data-testid="app-sidebar"] {
-  border-right: 0;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--wms-info-dark) 62%, var(--wms-text-strong)),
-    color-mix(in srgb, var(--wms-info-dark) 74%, var(--wms-text-strong))
-  );
-  color: var(--wms-on-primary);
-  box-shadow: 4px 0 16px
-    color-mix(in srgb, var(--wms-text-strong) 28%, transparent);
-}
-.hn-map-shell .hn-mvp-brand {
-  min-height: 72px;
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--wms-on-primary) 14%, transparent);
-}
-.hn-map-shell .hn-mvp-brand .hn-mvp-logo {
-  border: 1px solid color-mix(in srgb, var(--wms-on-primary) 68%, transparent);
-  background: transparent;
-  color: var(--wms-on-primary);
-  font-size: 13px;
-}
-.hn-map-shell .hn-mvp-brand h1,
-.hn-map-shell .hn-mvp-brand .hn-mvp-aside-toggle,
-.hn-map-shell .hn-mvp-group,
-.hn-map-shell .hn-mvp-nav-btn {
-  color: color-mix(in srgb, var(--wms-on-primary) 94%, var(--wms-info-soft));
-}
-.hn-map-shell .hn-mvp-brand h1 {
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-.hn-map-shell .hn-mvp-brand h1::after {
-  content: "SCANNER";
-  display: block;
-  margin-top: 2px;
-  color: color-mix(in srgb, var(--wms-on-primary) 74%, var(--wms-info-soft));
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-.hn-map-shell .hn-mvp-brand .hn-mvp-aside-toggle:hover,
-.hn-map-shell .hn-mvp-group:hover,
-.hn-map-shell .hn-mvp-nav-btn:hover,
-.hn-map-shell .hn-mvp-group[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--wms-on-primary) 11%, transparent);
-  color: var(--wms-on-primary);
-}
-.hn-map-shell .hn-mvp-nav-btn.active {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--wms-info) 70%, var(--wms-info-dark)),
-    var(--wms-info-dark)
-  );
-  box-shadow: 0 4px 13px
-    color-mix(in srgb, var(--wms-text-strong) 26%, transparent);
-  color: var(--wms-on-primary);
-}
-.hn-map-shell .hn-mvp-submenu .hn-mvp-nav-btn::before {
-  border-color: color-mix(in srgb, var(--wms-on-primary) 64%, transparent);
-}
-.hn-map-shell .hn-mvp-submenu .hn-mvp-nav-btn.active::before {
-  border-color: var(--wms-on-primary);
-}
+/* Sidebar do system-shell.css sở hữu để mọi route dùng cùng một skin. */
 .hn-map-shell .hn-topbar {
   position: sticky;
   top: 0;

@@ -22,7 +22,7 @@
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { preloadRoute } from "@/app/router/route-preload";
-import { Box, Tooltip, VuexyNavIcon } from "@/shared/ui";
+import { Box, Tooltip, UiIcon, VuexyNavIcon } from "@/shared/ui";
 import { COMPONENT_TOKENS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import {
   DEFAULT_SCREEN_BY_PATH,
@@ -209,6 +209,9 @@ export function SideNav({
     DEFAULT_SCREEN_BY_PATH[location.pathname];
 
   const visibleGroups = getVisibleNavGroups(permissionCodes, isSuperAdmin);
+  const systemGroup = visibleGroups.find((group) => group.name === "Hệ thống");
+  const primaryGroups = visibleGroups.filter((group) => group.name !== "Hệ thống");
+  const warehouseItem = systemGroup?.items.find((item) => item.screen === "WH-01");
   /**
    * Nhãn menu đi qua i18n: khoá là screen-id (mục) và tên icon (nhóm) — nhãn
    * tiếng Việt trong nav-data vẫn là bản gốc và là fallback.
@@ -317,6 +320,53 @@ export function SideNav({
           ) : null}
         </Box>
       </NavRowTooltip>
+    );
+  };
+
+  const systemItemLabel = (item: NavItemData) => {
+    if (item.screen === "IAM-01") return "Người dùng & phân quyền";
+    if (item.screen === "WH-01") return "Cài đặt";
+    if (item.screen === "AUDIT-01") return "Nhật ký hoạt động";
+    return navLabel(item.screen, item.label);
+  };
+
+  const renderSystemItem = (item: NavItemData) => {
+    const active = isItemActive(item);
+    return (
+      <Box
+        key={item.screen}
+        component="button"
+        type="button"
+        className={`hn-sidebar-system-item hn-mvp-nav-btn${active ? " active" : ""}`}
+        aria-current={active ? "page" : undefined}
+        data-nav-path={item.path}
+        onClick={() => goTo(item)}
+        onPointerEnter={() => preloadRoute(item.path)}
+        onFocus={() => preloadRoute(item.path)}
+        sx={{
+          ...rowResetSx,
+          width: "100%",
+          minHeight: NAV.itemMinHeight,
+          gap: `${NAV.itemGap}px`,
+          padding: `${NAV.itemPaddingY}px ${NAV.itemPaddingX}px`,
+          borderRadius: `${NAV.radius}px`,
+          background: active ? ACTIVE_GRADIENT : "transparent",
+          color: active ? S.onPrimary : C.itemText,
+          fontSize: NAV.itemFontSize,
+          fontWeight: NAV.itemFontWeight,
+          "&:hover": active
+            ? { background: ACTIVE_GRADIENT }
+            : { backgroundColor: C.hover },
+          "&:focus-visible": focusRingSx,
+        }}
+      >
+        <Box component="span" sx={{ display: "inline-flex", flexShrink: 0 }}>
+          <UiIcon name={item.icon} size="md" />
+        </Box>
+        <Box component="span" sx={labelSx}>
+          {systemItemLabel(item)}
+        </Box>
+      </Box>
     );
   };
 
@@ -444,6 +494,7 @@ export function SideNav({
 
   return (
     <Box
+      className="hn-sidebar-content"
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -500,7 +551,17 @@ export function SideNav({
               "&:focus-visible": focusRingSx,
             }}
           >
-            HN
+            <svg
+              className="hn-sidebar-brand-mark"
+              viewBox="0 0 32 32"
+              width="30"
+              height="30"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path d="M11 4H7a3 3 0 0 0-3 3v4M21 4h4a3 3 0 0 1 3 3v4M11 28H7a3 3 0 0 1-3-3v-4M21 28h4a3 3 0 0 0 3-3v-4" />
+              <path d="M10 13.5 16 10l6 3.5v7L16 24l-6-3.5zM10 13.5l6 3.5 6-3.5M16 17v7" />
+            </svg>
           </Box>
         </Tooltip>
 
@@ -579,12 +640,66 @@ export function SideNav({
           padding: `0 ${collapsed ? NAV.railPaddingX : NAV.paddingX}px ${NAV.paddingBottom}px`,
         }}
       >
-        {visibleGroups.map((group, index) =>
+        {primaryGroups.map((group, index) =>
           group.direct && group.items.length === 1
             ? renderDirect(group)
             : renderGroup(group, index),
         )}
       </Box>
+
+      {systemGroup ? (
+        collapsed ? (
+          renderGroup(systemGroup, primaryGroups.length)
+        ) : (
+          <Box
+            component="section"
+            className="hn-sidebar-system"
+            aria-label="Hệ thống"
+          >
+            <Box className="hn-sidebar-system-title">HỆ THỐNG</Box>
+            <Box className="hn-sidebar-system-list">
+              {systemGroup.items.map(renderSystemItem)}
+            </Box>
+          </Box>
+        )
+      ) : null}
+
+      {!collapsed ? (
+        <>
+          <Box className="hn-sidebar-worker" aria-hidden="true" />
+          <Box className="hn-sidebar-bottom">
+            <Box className="hn-sidebar-slogan" aria-hidden="true">
+              <span>CHÍNH XÁC</span>
+              <span>HIỆU QUẢ</span>
+              <span>VẬN HÀNH BỀN VỮNG</span>
+            </Box>
+            {warehouseItem ? (
+              <Box
+                component="button"
+                type="button"
+                className="hn-sidebar-warehouse-card"
+                onClick={() => goTo(warehouseItem)}
+                onPointerEnter={() => preloadRoute(warehouseItem.path)}
+                onFocus={() => preloadRoute(warehouseItem.path)}
+                aria-label="Mở cấu hình Kho Hoa Nam"
+              >
+                <Box className="hn-sidebar-warehouse-icon">
+                  <UiIcon name="home" size="md" />
+                </Box>
+                <Box className="hn-sidebar-warehouse-copy">
+                  <strong>Kho Hoa Nam</strong>
+                  <small>
+                    <span className="hn-sidebar-status-dot" aria-hidden="true" />
+                    Đang hoạt động
+                  </small>
+                </Box>
+                <UiIcon name="angle-small-right" size="sm" />
+              </Box>
+            ) : null}
+            <Box className="hn-sidebar-version">Phiên bản 1.0.0</Box>
+          </Box>
+        </>
+      ) : null}
 
       {/* Thông báo cho trình đọc màn hình (demo: .hnw-live) */}
       <Box component="p" aria-live="polite" sx={liveRegionSx}>
