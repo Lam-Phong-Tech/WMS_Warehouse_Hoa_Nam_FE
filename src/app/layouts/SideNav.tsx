@@ -586,7 +586,7 @@ export function SideNav({
               className="hn-sidebar-brand-subtitle"
               aria-hidden="true"
             >
-              WMS - Vận hành chuyên nghiệp
+            
             </Box>
           </Box>
         ) : null}
