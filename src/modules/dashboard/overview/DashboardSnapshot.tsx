@@ -147,6 +147,9 @@ function SnapshotChart({
   const hoveredStock = hoveredRow
     ? (trend.find((item) => item.date === hoveredRow.date)?.closing ?? 0)
     : 0;
+  // Tooltip cao gần bằng nửa vùng plot. Với điểm tồn ở sát cạnh trên, hiển thị
+  // nó phía trên sẽ che tiêu đề và chú giải của biểu đồ.
+  const showTooltipBelow = hoveredPoint !== null && hoveredPoint.y < 140;
 
   return (
     <div className="snapshot-chart-canvas">
@@ -263,7 +266,7 @@ function SnapshotChart({
       </svg>
       {hoveredRow && hoveredPoint ? (
         <div
-          className="snapshot-chart-tooltip"
+          className={`snapshot-chart-tooltip ${showTooltipBelow ? "is-below" : ""}`}
           role="status"
           style={{
             left: `${(hoveredPoint.x / W) * 100}%`,

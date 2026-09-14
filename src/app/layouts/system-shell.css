@@ -13,7 +13,6 @@
 /* ── Sidebar ────────────────────────────────────────────────────────────── */
 .hn-system-shell > [data-testid="app-sidebar"],
 .hn-system-drawer {
-  position: relative;
   isolation: isolate;
   overflow-x: hidden;
   overflow-y: auto;
@@ -27,6 +26,15 @@
   color: var(--map-white);
   box-shadow: 4px 0 18px
     color-mix(in srgb, var(--map-navy) 22%, transparent);
+}
+
+/* The desktop sidebar is positioned by UiAppShell.  Do not override it to
+   `relative`: that puts the aside back in document flow and pushes topbar and
+   page content down by the sidebar's intrinsic height.  The drawer has no
+   shell positioning rule, so it keeps its own containing block for the
+   decorative pseudo-elements below. */
+.hn-system-drawer {
+  position: relative;
 }
 
 /*
