@@ -25,7 +25,6 @@ import {
   AUTH_BASELINE,
   Box,
   Drawer,
-  LAYOUT,
   SPACING,
   UiAppShell,
   useMediaQuery,
@@ -37,6 +36,7 @@ import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { ROUTES } from "@/shared/constants/routes";
 import { useNavigate } from "react-router-dom";
 import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
+import "./system-shell.css";
 
 /**
  * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
@@ -149,30 +149,27 @@ export function MainLayout() {
   const expandSidebar = () => setCollapsed(false);
 
   const requestedScreen = new URLSearchParams(location.search).get("screen");
-  // SystemHNWeb MAP-01 là baseline giao diện của chính route Tổng quan. Áp skin
-  // cho toàn bộ /dashboard, không phụ thuộc query ?screen=MAP-01; query chỉ là
-  // deep-link/test hook và không được làm người dùng bình thường nhận giao diện khác.
+  // MAP-01 vẫn là marker riêng cho phần BODY của Tổng quan; riêng shell
+  // (sidebar + topbar) dùng SystemHNWeb trên MỌI route để điều hướng không đổi skin.
   const isMapReferenceScreen = location.pathname === ROUTES.DASHBOARD;
-  const mapSkinStyle = isMapReferenceScreen
-    ? ({
-        "--map-navy": AUTH_BASELINE.navy,
-        "--map-cta": AUTH_BASELINE.cta,
-        "--map-link": AUTH_BASELINE.link,
-        "--map-pale": AUTH_BASELINE.pale,
-        "--map-line": AUTH_BASELINE.line,
-        "--map-ink": AUTH_BASELINE.ink,
-        "--map-muted": AUTH_BASELINE.muted,
-        "--map-surface": AUTH_BASELINE.surface,
-        "--map-success": AUTH_BASELINE.success,
-        "--map-warning": AUTH_BASELINE.warning,
-        "--map-danger": AUTH_BASELINE.danger,
-        "--map-white": AUTH_BASELINE.white,
-        "--map-hero-mid": AUTH_BASELINE.heroMid,
-        "--map-hero-end": AUTH_BASELINE.heroEnd,
-        "--map-focus-ring": AUTH_BASELINE.focusRing,
-        "--map-card-shadow": AUTH_BASELINE.cardShadow,
-      } as CSSProperties)
-    : undefined;
+  const systemShellStyle = {
+    "--map-navy": AUTH_BASELINE.navy,
+    "--map-cta": AUTH_BASELINE.cta,
+    "--map-link": AUTH_BASELINE.link,
+    "--map-pale": AUTH_BASELINE.pale,
+    "--map-line": AUTH_BASELINE.line,
+    "--map-ink": AUTH_BASELINE.ink,
+    "--map-muted": AUTH_BASELINE.muted,
+    "--map-surface": AUTH_BASELINE.surface,
+    "--map-success": AUTH_BASELINE.success,
+    "--map-warning": AUTH_BASELINE.warning,
+    "--map-danger": AUTH_BASELINE.danger,
+    "--map-white": AUTH_BASELINE.white,
+    "--map-hero-mid": AUTH_BASELINE.heroMid,
+    "--map-hero-end": AUTH_BASELINE.heroEnd,
+    "--map-focus-ring": AUTH_BASELINE.focusRing,
+    "--map-card-shadow": AUTH_BASELINE.cardShadow,
+  } as CSSProperties;
   const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
   const trail = getBreadcrumbTrail(location.pathname);
@@ -183,12 +180,16 @@ export function MainLayout() {
   return (
     <>
       <UiAppShell
-        className={isMapReferenceScreen ? "hn-map-shell" : undefined}
-        style={mapSkinStyle}
-        sidebarClassName={isMapReferenceScreen ? "hn-map-sidebar" : undefined}
+        className={
+          isMapReferenceScreen
+            ? "hn-system-shell hn-map-shell"
+            : "hn-system-shell"
+        }
+        style={systemShellStyle}
+        sidebarClassName="hn-system-sidebar"
         mainClassName={isMapReferenceScreen ? "hn-map-main" : undefined}
         collapsed={sidebarCollapsed}
-        sidebarWidth={isMapReferenceScreen ? 268 : undefined}
+        sidebarWidth={268}
         sidebarHidden={!isDesktop}
         peek={sidebarPeek}
         onPeekChange={setSidebarPeek}
@@ -262,10 +263,10 @@ export function MainLayout() {
           onClose={() => setMobileNavOpen(false)}
           slotProps={{
             paper: {
-              className: isMapReferenceScreen ? "hn-map-drawer" : undefined,
-              style: mapSkinStyle,
+              className: "hn-system-drawer",
+              style: systemShellStyle,
               sx: {
-                width: isMapReferenceScreen ? 268 : LAYOUT.sidebarWidth,
+                width: 268,
                 maxWidth: "85vw",
               },
             },
