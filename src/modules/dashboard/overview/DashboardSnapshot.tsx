@@ -13,7 +13,12 @@ import { dashboardNow, fmt } from "./overview-data";
 import type { CompositionRow } from "./OverviewComposition";
 import type { IssueRow } from "./OverviewOperations";
 
-export type ChartState = "ready" | "loading" | "empty" | "failed" | "forbidden";
+export type ChartState =
+  | "ready"
+  | "loading"
+  | "empty"
+  | "failed"
+  | "forbidden";
 export type OverviewReferenceState =
   | "loading"
   | "empty"
@@ -390,7 +395,11 @@ function MonthGrid({
           const isStart = hasRange && iso === range.from;
           const isEnd = hasRange && iso === range.to;
           const inRange =
-            hasRange && iso >= rangeStart && iso <= rangeEnd && !isStart && !isEnd;
+            hasRange &&
+            iso >= rangeStart &&
+            iso <= rangeEnd &&
+            !isStart &&
+            !isEnd;
           const classes = [
             date.month() !== cursor.month() ? "is-other" : "",
             isStart ? "is-range-start" : "",
@@ -612,15 +621,35 @@ export function DashboardSnapshot({
   const tasks = referenceEmpty ? [] : issues.slice(0, 5);
   const referenceOperationState =
     referenceState === "pending-approval"
-      ? { label: "Chờ duyệt", icon: "file-clock" as DashboardIconName, tone: "warning" }
+      ? {
+          label: "Chờ duyệt",
+          icon: "file-clock" as DashboardIconName,
+          tone: "warning",
+        }
       : referenceState === "processing"
-        ? { label: "Đang xử lý", icon: "loader-circle" as DashboardIconName, tone: "info" }
+        ? {
+            label: "Đang xử lý",
+            icon: "loader-circle" as DashboardIconName,
+            tone: "info",
+          }
         : referenceState === "completed"
-          ? { label: "Hoàn thành", icon: "circle-dot" as DashboardIconName, tone: "success" }
+          ? {
+              label: "Hoàn thành",
+              icon: "circle-dot" as DashboardIconName,
+              tone: "success",
+            }
           : referenceState === "overdue"
-            ? { label: "Quá hạn", icon: "file-clock" as DashboardIconName, tone: "danger" }
+            ? {
+                label: "Quá hạn",
+                icon: "file-clock" as DashboardIconName,
+                tone: "danger",
+              }
             : referenceState === "urgent"
-              ? { label: "Khẩn cấp", icon: "triangle-alert" as DashboardIconName, tone: "danger" }
+              ? {
+                  label: "Khẩn cấp",
+                  icon: "triangle-alert" as DashboardIconName,
+                  tone: "danger",
+                }
               : null;
   return (
     <div
@@ -707,7 +736,9 @@ export function DashboardSnapshot({
               return (
                 <article
                   key={card.id}
-                  className={`snapshot-kpi ${effectiveLoading ? "is-loading" : ""}`}
+                  className={`snapshot-kpi ${
+                    effectiveLoading ? "is-loading" : ""
+                  }`}
                   data-kpi-id={card.id}
                 >
                   <span className={`snapshot-kpi-icon is-${appearance.tone}`}>
@@ -1125,10 +1156,13 @@ export function DashboardSnapshot({
                 {dateLabel(draft.from)} → {dateLabel(draft.to)}
               </span>
               <div>
-                <button type="button" onClick={() => {
-                  setCustomOpen(false);
-                  setRangePickMode("from");
-                }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomOpen(false);
+                    setRangePickMode("from");
+                  }}
+                >
                   Hủy
                 </button>
                 <button type="button" disabled={invalid} onClick={applyCustom}>
