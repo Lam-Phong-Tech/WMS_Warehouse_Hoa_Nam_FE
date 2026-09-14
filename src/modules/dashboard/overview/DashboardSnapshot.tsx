@@ -397,7 +397,7 @@ export function DashboardSnapshot({
   const filterRef = useRef<HTMLDivElement | null>(null);
   const filterButtonRef = useRef<HTMLButtonElement | null>(null);
   const customDialogRef = useRef<HTMLElement | null>(null);
-  const todayIso = todayIso;
+  const todayIso = dayjs().format(ISO);
   const invalid =
     !draft.from ||
     !draft.to ||
