@@ -63,6 +63,7 @@ import {
   sumFlow,
   sumPreviousFlow,
   trendOf,
+  useOverviewChartSource,
   useOverviewSource,
   type DateRange,
   type OverviewPeriod,
@@ -162,13 +163,20 @@ export default function DashboardPage() {
   }, [period, custom, today, t]);
 
   /**
-   * Một kỳ cho CẢ số KPI lẫn biểu đồ. Bản trước ghim biểu đồ ở cửa sổ 7 ngày
-   * cố định theo demo, nên dòng "Biểu đồ 02/09 → 08/09" đứng cạnh kỳ Tùy chọn
-   * 01/02/2024 → 08/09/2026 và bị UAT (TC_UI_01, TC_UI_02) coi là hiển thị sai.
+   * `range` là khoảng của RIÊNG card Nhập – Xuất – Tồn theo SystemHNWeb v2.
+   * Trên MAP-01, KPI/việc cần xử lý giữ dữ liệu "Hôm nay"; ở màn legacy, hành
+   * vi kỳ dùng chung vẫn giữ nguyên để không phá luồng cũ.
    */
   const range = useMemo(
     () => resolvePeriodRange(period, custom),
     [period, custom],
+  );
+  const dashboardRange = useMemo<DateRange>(
+    () =>
+      isMapReferenceScreen
+        ? { from: today, to: today }
+        : range,
+    [isMapReferenceScreen, range, today],
   );
 
   const enabled = canViewReport && dateError === "";
@@ -176,8 +184,13 @@ export default function DashboardPage() {
     () => typeof navigator !== "undefined" && navigator.onLine === false,
   );
   const { overview, xnt, xntDaily, quick, hasPrevious } = useOverviewSource(
-    range,
+    dashboardRange,
     enabled,
+    !offline,
+  );
+  const chartSource = useOverviewChartSource(
+    range,
+    enabled && isMapReferenceScreen,
     !offline,
   );
 
@@ -247,17 +260,17 @@ export default function DashboardPage() {
    * `OverviewFlowChart` vẽ chấm thay vì đường, còn sparkline (cần ≥ 2 điểm) ẩn.
    */
   const flowRows = useMemo(
-    () => buildFlowRows(overviewData, xntDaily.data, range, type),
-    [overviewData, xntDaily.data, range, type],
+    () => buildFlowRows(overviewData, xntDaily.data, dashboardRange, type),
+    [overviewData, xntDaily.data, dashboardRange, type],
   );
   const flowTotals = useMemo(() => sumFlow(flowRows), [flowRows]);
   const previousTotals = useMemo(
-    () => sumPreviousFlow(overviewData, range, type),
-    [overviewData, range, type],
+    () => sumPreviousFlow(overviewData, dashboardRange, type),
+    [overviewData, dashboardRange, type],
   );
   const trendRows = useMemo(
-    () => buildTrendRows(overviewData, range),
-    [overviewData, range],
+    () => buildTrendRows(overviewData, dashboardRange),
+    [overviewData, dashboardRange],
   );
   const equation = useMemo(() => buildEquation(xnt.data), [xnt.data]);
   const topSkus = useMemo(() => buildTopSkus(xnt.data), [xnt.data]);
