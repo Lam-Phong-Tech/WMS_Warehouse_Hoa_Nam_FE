@@ -149,8 +149,10 @@ export function MainLayout() {
   const expandSidebar = () => setCollapsed(false);
 
   const requestedScreen = new URLSearchParams(location.search).get("screen");
-  const isMapReferenceScreen =
-    location.pathname === ROUTES.DASHBOARD && requestedScreen === "MAP-01";
+  // SystemHNWeb MAP-01 là baseline giao diện của chính route Tổng quan. Áp skin
+  // cho toàn bộ /dashboard, không phụ thuộc query ?screen=MAP-01; query chỉ là
+  // deep-link/test hook và không được làm người dùng bình thường nhận giao diện khác.
+  const isMapReferenceScreen = location.pathname === ROUTES.DASHBOARD;
   const mapSkinStyle = isMapReferenceScreen
     ? ({
         "--map-navy": AUTH_BASELINE.navy,
