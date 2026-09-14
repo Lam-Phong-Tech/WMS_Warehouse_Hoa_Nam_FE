@@ -1,9 +1,5 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DashboardSnapshot } from "./DashboardSnapshot";
 import { dashboardNow } from "./overview-data";
@@ -57,7 +53,7 @@ const baseProps = {
 };
 
 function renderSnapshot(
-  overrides: Partial<React.ComponentProps<typeof DashboardSnapshot>> = {},
+  overrides: Partial<ComponentProps<typeof DashboardSnapshot>> = {},
 ) {
   return render(<DashboardSnapshot {...baseProps} {...overrides} />);
 }
