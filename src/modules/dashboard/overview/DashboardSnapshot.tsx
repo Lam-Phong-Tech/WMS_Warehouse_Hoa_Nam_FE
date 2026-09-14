@@ -583,7 +583,17 @@ export function DashboardSnapshot({
   const effectiveFailed = failed || referenceFailed;
   const effectiveForbidden = forbidden || referenceForbidden;
   const effectiveRows = referenceEmpty ? [] : rows;
+  const referenceChartState: ChartState | undefined = referenceForbidden
+    ? "forbidden"
+    : referenceLoading
+      ? "loading"
+      : referenceFailed
+        ? "failed"
+        : referenceEmpty
+          ? "empty"
+          : undefined;
   const chartState: ChartState =
+    referenceChartState ??
     chartStateOverride ??
     (effectiveForbidden
       ? "forbidden"
@@ -743,8 +753,9 @@ export function DashboardSnapshot({
         </section>
       ) : (
         <>
-          <section className="snapshot-kpis" aria-label="Chỉ số tổng quan">
-            {cards.map((card, index) => {
+          {!referenceEmpty && !referenceFailed ? (
+            <section className="snapshot-kpis" aria-label="Chỉ số tổng quan">
+              {cards.map((card, index) => {
               const appearance = KPI_TONES[index] ?? KPI_TONES[0];
               return (
                 <article
@@ -773,8 +784,9 @@ export function DashboardSnapshot({
                   </div>
                 </article>
               );
-            })}
-          </section>
+              })}
+            </section>
+          ) : null}
 
           {referenceEmpty ? (
             <section className="snapshot-page-state is-empty">
@@ -784,7 +796,7 @@ export function DashboardSnapshot({
               <h2>Chưa có dữ liệu tổng quan</h2>
               <p>Chưa có dữ liệu phù hợp để hiển thị trong phạm vi hiện tại.</p>
             </section>
-          ) : effectiveFailed && !chartStateOverride ? (
+          ) : effectiveFailed ? (
             <section className="snapshot-page-state is-error">
               <span>
                 <DashIcon name="triangle-alert" />
