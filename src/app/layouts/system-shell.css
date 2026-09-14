@@ -448,3 +448,81 @@
     height: 204px;
   }
 }
+
+
+/* ── Sidebar control contrast lock ─────────────────────────────────────────
+ * SideNav vẫn dùng token của light theme trong MUI sx (C.itemText/C.hover/
+ * S.textStrong). Khi đặt SideNav lên artwork tối, Emotion có thể nạp sau CSS
+ * shell và thắng cascade → chữ/icon tối + nền hover trắng như lỗi UAT.
+ * Khoá toàn bộ state ở đây theo skin sidebar tối để desktop, peek và drawer
+ * luôn đồng nhất, bất kể thứ tự lazy CSS của từng trang.
+ */
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-logo,
+:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-title,
+:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-subtitle,
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-aside-toggle,
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group,
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn,
+:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system-item {
+  color: color-mix(in srgb, var(--map-white) 96%, var(--map-pale)) !important;
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-subtitle {
+  color: color-mix(in srgb, var(--map-white) 76%, var(--map-pale)) !important;
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item):not(.active) {
+  background: transparent !important;
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item):not(.active):hover,
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--map-white) 11%, transparent) !important;
+  color: var(--map-white) !important;
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--map-white) 8%, transparent);
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn.active,
+:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system-item.active {
+  background: linear-gradient(90deg, #0798cc 0%, #0aa8dd 100%) !important;
+  color: var(--map-white) !important;
+  box-shadow: 0 3px 10px
+    color-mix(in srgb, var(--map-navy) 28%, transparent) !important;
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn:not(.active) {
+  color: color-mix(in srgb, var(--map-white) 92%, var(--map-pale)) !important;
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn:not(.active)::before {
+  border-color: color-mix(in srgb, var(--map-white) 66%, transparent) !important;
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn.active::before {
+  border-color: var(--map-white) !important;
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item, .hn-mvp-aside-toggle):focus-visible {
+  outline: 2px solid var(--map-white) !important;
+  outline-offset: 2px !important;
+}
+
+/* Không để style hover của light theme biến nút active thành nền trắng. */
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn.active:hover,
+:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system-item.active:hover {
+  background: linear-gradient(90deg, #0798cc 0%, #0aa8dd 100%) !important;
+  color: var(--map-white) !important;
+}
