@@ -38,7 +38,11 @@ import { OverviewStockMix } from "../overview/OverviewStockMix";
 import { OverviewComposition } from "../overview/OverviewComposition";
 import { OverviewThreshold } from "../overview/OverviewThreshold";
 import { OverviewInsights, type SignalRow } from "../overview/OverviewInsights";
-import { DashboardSnapshot } from "../overview/DashboardSnapshot";
+import {
+  DashboardSnapshot,
+  type ChartState,
+  type OverviewReferenceState,
+} from "../overview/DashboardSnapshot";
 import { useLazyReveal } from "../overview/use-lazy-reveal";
 import {
   PERIOD_NAME_KEYS,
@@ -50,6 +54,7 @@ import {
   buildTrendRows,
   countActiveWarranty,
   countSkusInStock,
+  dashboardNow,
   fmtDelta,
   oldestOverdueDays,
   overviewTypeKey,
@@ -126,12 +131,15 @@ export default function DashboardPage() {
    */
   const [period, setPeriod] = useState<OverviewPeriod>("last7");
   const [type, setType] = useState<SkuTypeFilter>("ALL");
-  const [custom, setCustom] = useState<DateRange>(() => ({
-    from: dayjs().subtract(7, "day").format(ISO),
-    to: dayjs().format(ISO),
-  }));
+  const [custom, setCustom] = useState<DateRange>(() => {
+    const now = dashboardNow();
+    return {
+      from: now.subtract(6, "day").format(ISO),
+      to: now.format(ISO),
+    };
+  });
 
-  const today = dayjs().format(ISO);
+  const today = dashboardNow().format(ISO);
   const dateError = useMemo(() => {
     if (period !== "custom") return "";
     if (!custom.from || !custom.to) return t("dashboard.dateError.required");
@@ -620,9 +628,36 @@ export default function DashboardPage() {
    * này chỉ nhận view-model đã được tính ở đây, không tạo thêm endpoint hay
    * thay đổi nghiệp vụ.
    */
-  const isMapReferenceScreen =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("screen") === "MAP-01";
+  const mapSearchParams =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : null;
+  const isMapReferenceScreen = mapSearchParams?.get("screen") === "MAP-01";
+  const mapState = mapSearchParams?.get("state") ?? "";
+
+  const chartStateOverride: ChartState | undefined =
+    mapState === "filter-loading"
+      ? "loading"
+      : mapState === "filter-empty"
+        ? "empty"
+        : mapState === "filter-error"
+          ? "failed"
+          : mapState === "filter-permission-denied"
+            ? "forbidden"
+            : undefined;
+
+  const overviewStateMap: Record<string, OverviewReferenceState> = {
+    "overview-loading": "loading",
+    "overview-empty": "empty",
+    "overview-error": "error",
+    "overview-permission-denied": "permission-denied",
+    "overview-pending-approval": "pending-approval",
+    "overview-processing": "processing",
+    "overview-completed": "completed",
+    "overview-overdue": "overdue",
+    "overview-urgent": "urgent",
+  };
+  const referenceState = overviewStateMap[mapState];
 
   if (isMapReferenceScreen)
     return (
@@ -643,6 +678,8 @@ export default function DashboardPage() {
           loading={loading}
           failed={failed}
           forbidden={forbidden}
+          chartStateOverride={chartStateOverride}
+          referenceState={referenceState}
           showWarranty={canViewWarranty}
           onRetry={refreshAll}
           onNavigate={navigate}
