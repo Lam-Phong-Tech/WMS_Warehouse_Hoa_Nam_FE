@@ -259,21 +259,6 @@ export function SideNav({
     }
   }, [collapsed]);
 
-  const handleGroupHeaderClick = (name: string) => {
-    if (collapsed) {
-      // Ở rail: bấm icon nhóm vừa bung sidebar vừa sổ đúng nhóm đó.
-      onExpand?.();
-      setOpenGroup(name);
-      lastOpenGroupRef.current = name;
-      return;
-    }
-    setOpenGroup((previous) => {
-      const next = previous === name ? null : name;
-      if (next) lastOpenGroupRef.current = next;
-      return next;
-    });
-  };
-
   const goTo = (item: NavItemData) =>
     navigate(`${item.path}?screen=${item.screen}`);
 
@@ -408,7 +393,20 @@ export function SideNav({
             component="button"
             type="button"
             className="hn-mvp-group"
-            onClick={() => handleGroupHeaderClick(group.name)}
+            onClick={() => {
+              if (collapsed) {
+                // Ở rail: bấm icon nhóm vừa bung sidebar vừa sổ đúng nhóm đó.
+                onExpand?.();
+                setOpenGroup(group.name);
+                lastOpenGroupRef.current = group.name;
+                return;
+              }
+              setOpenGroup((previous) => {
+                const next = previous === group.name ? null : group.name;
+                if (next) lastOpenGroupRef.current = next;
+                return next;
+              });
+            }}
             aria-expanded={open}
             aria-controls={submenuId}
             sx={topRowSx(collapsed, open || hasActive)}
