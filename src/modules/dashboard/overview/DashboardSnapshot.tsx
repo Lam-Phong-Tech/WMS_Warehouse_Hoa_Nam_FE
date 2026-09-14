@@ -9,7 +9,11 @@ import type {
   DateRange,
   OverviewPeriod,
 } from "./overview-data";
-import { dashboardNow, fmt } from "./overview-data";
+import {
+  dashboardNow,
+  fmt,
+  MAP_OVERVIEW_MAX_RANGE_DAYS,
+} from "./overview-data";
 import type { CompositionRow } from "./OverviewComposition";
 import type { IssueRow } from "./OverviewOperations";
 
@@ -31,7 +35,6 @@ export type OverviewReferenceState =
   | "urgent";
 
 const ISO = "YYYY-MM-DD";
-const MAP_FILTER_MAX_DAYS = 90;
 
 const KPI_TONES: Array<{ icon: DashboardIconName; tone: string }> = [
   { icon: "package-search", tone: "stock" },
@@ -492,8 +495,8 @@ export function DashboardSnapshot({
         ? "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc."
         : draft.from > todayIso || draft.to > todayIso
           ? "Không thể chọn ngày trong tương lai."
-          : draftDays > MAP_FILTER_MAX_DAYS
-            ? `Khoảng thời gian tối đa ${MAP_FILTER_MAX_DAYS} ngày.`
+          : draftDays > MAP_OVERVIEW_MAX_RANGE_DAYS
+            ? `Khoảng thời gian tối đa ${MAP_OVERVIEW_MAX_RANGE_DAYS} ngày.`
             : "";
   const invalid = invalidReason !== "";
 
