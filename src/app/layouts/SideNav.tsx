@@ -507,6 +507,7 @@ export function SideNav({
         {!collapsed ? (
           <Box
             component="h1"
+            className="hn-sidebar-brand-title"
             sx={{
               margin: 0,
               minWidth: 0,
@@ -518,7 +519,14 @@ export function SideNav({
               whiteSpace: "nowrap",
             }}
           >
-            Hoa Nam WMS
+            HOA NAM SCANNER
+            <Box
+              component="span"
+              className="hn-sidebar-brand-subtitle"
+              aria-hidden="true"
+            >
+              WMS - Vận hành chuyên nghiệp
+            </Box>
           </Box>
         ) : null}
 
