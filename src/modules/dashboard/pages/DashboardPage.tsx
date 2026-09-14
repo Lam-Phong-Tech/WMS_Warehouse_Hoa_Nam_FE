@@ -141,6 +141,13 @@ export default function DashboardPage() {
     };
   });
 
+  const mapSearchParams =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : null;
+  const isMapReferenceScreen = mapSearchParams?.get("screen") === "MAP-01";
+  const mapState = mapSearchParams?.get("state") ?? "";
+
   const today = dashboardNow().format(ISO);
   const dateError = useMemo(() => {
     if (period !== "custom") return "";
@@ -271,6 +278,32 @@ export default function DashboardPage() {
   const trendRows = useMemo(
     () => buildTrendRows(overviewData, dashboardRange),
     [overviewData, dashboardRange],
+  );
+  const mapChartRows = useMemo(
+    () =>
+      isMapReferenceScreen
+        ? buildFlowRows(
+            chartSource.overview.data,
+            chartSource.xntDaily.data,
+            range,
+            type,
+          )
+        : flowRows,
+    [
+      isMapReferenceScreen,
+      chartSource.overview.data,
+      chartSource.xntDaily.data,
+      range,
+      type,
+      flowRows,
+    ],
+  );
+  const mapChartTrendRows = useMemo(
+    () =>
+      isMapReferenceScreen
+        ? buildTrendRows(chartSource.overview.data, range)
+        : trendRows,
+    [isMapReferenceScreen, chartSource.overview.data, range, trendRows],
   );
   const equation = useMemo(() => buildEquation(xnt.data), [xnt.data]);
   const topSkus = useMemo(() => buildTopSkus(xnt.data), [xnt.data]);
@@ -591,11 +624,15 @@ export default function DashboardPage() {
     // effect sẽ đặt state đồng bộ trong lúc render (cascading render), còn bám
     // `busy` thì thua cuộc đua — lần render ngay sau cú bấm có thể chưa kịp
     // thấy nguồn nào đang bay và xoá cờ mất.
+    const chartRefresh = isMapReferenceScreen
+      ? [chartSource.overview.refetch(), chartSource.xntDaily.refetch()]
+      : [];
     void Promise.allSettled([
       overview.refetch(),
       xnt.refetch(),
       xntDaily.refetch(),
       quick.refetch(),
+      ...chartRefresh,
     ]).finally(() => setManualRefresh(false));
     setAnnouncement(t("dashboard.live.refreshed"));
   };
@@ -642,19 +679,11 @@ export default function DashboardPage() {
   });
 
   /*
-   * MAP-01 là lớp trình bày bám bộ tham chiếu mới. Tất cả dữ liệu, RBAC,
-   * refresh và điều hướng phía trên vẫn là cùng một luồng có sẵn; component
-   * này chỉ nhận view-model đã được tính ở đây, không tạo thêm endpoint hay
-   * thay đổi nghiệp vụ.
+   * MAP-01 là lớp trình bày bám bộ tham chiếu mới. KPI/việc cần xử lý đọc kỳ
+   * "Hôm nay", còn bộ lọc 7/14/30/custom chỉ đổi nguồn chart theo contract v2.
+   * RBAC, điều hướng và endpoint vẫn dùng các service canonical của dự án.
    */
-  const mapSearchParams =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search)
-      : null;
-  const isMapReferenceScreen = mapSearchParams?.get("screen") === "MAP-01";
-  const mapState = mapSearchParams?.get("state") ?? "";
-
-  const chartStateOverride: ChartState | undefined =
+  const qaChartState: ChartState | undefined =
     mapState === "filter-loading"
       ? "loading"
       : mapState === "filter-empty"
@@ -664,6 +693,21 @@ export default function DashboardPage() {
           : mapState === "filter-permission-denied"
             ? "forbidden"
             : undefined;
+  const chartHttpStatus =
+    httpStatus(chartSource.overview.error) ??
+    httpStatus(chartSource.xntDaily.error);
+  const liveChartState: ChartState | undefined = !isMapReferenceScreen
+    ? undefined
+    : chartHttpStatus === 403
+      ? "forbidden"
+      : chartSource.overview.isLoading || chartSource.xntDaily.isLoading
+        ? "loading"
+        : chartSource.overview.isError || chartSource.xntDaily.isError
+          ? "failed"
+          : mapChartRows.length === 0
+            ? "empty"
+            : "ready";
+  const chartStateOverride = qaChartState ?? liveChartState;
 
   const overviewStateMap: Record<string, OverviewReferenceState> = {
     "overview-loading": "loading",
@@ -685,8 +729,8 @@ export default function DashboardPage() {
           name={profile?.name ?? user?.name ?? "bạn"}
           warehouseLabel={scopeLabel}
           cards={kpiCards}
-          rows={flowRows}
-          trend={trendRows}
+          rows={mapChartRows}
+          trend={mapChartTrendRows}
           composition={composition}
           issues={issues}
           range={range}
