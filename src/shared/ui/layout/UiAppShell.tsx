@@ -43,6 +43,10 @@ export interface UiAppShellProps {
   footer?: ReactNode;
   /** Thu gọn sidebar → cột trái đổi sang bề rộng collapsed. */
   collapsed?: boolean;
+  /** Biến thể trình bày có thể dùng bề rộng sidebar khác, không sửa token toàn app. */
+  sidebarWidth?: number;
+  /** Bề rộng rail ứng với `sidebarWidth` của biến thể trình bày. */
+  sidebarCollapsedWidth?: number;
   /**
    * Ẩn hẳn cột sidebar (mobile/tablet <lg): grid còn 1 cột, sidebar do caller
    * render trong Drawer overlay + nút hamburger ở topbar.
@@ -73,6 +77,8 @@ export function UiAppShell({
   children,
   footer,
   collapsed = false,
+  sidebarWidth = LAYOUT.sidebarWidth,
+  sidebarCollapsedWidth = LAYOUT.sidebarCollapsedWidth,
   sidebarHidden = false,
   peek = false,
   onPeekChange,
@@ -87,9 +93,7 @@ export function UiAppShell({
 
   // BỀ RỘNG DẢI GIỮ CHỖ cho sidebar — quyết định lề trái của NỘI DUNG. Lúc
   // peek vẫn giữ 76px để nội dung KHÔNG xô ngang (sidebar nở ra bằng lớp phủ).
-  const trackWidth = collapsed
-    ? LAYOUT.sidebarCollapsedWidth
-    : LAYOUT.sidebarWidth;
+  const trackWidth = collapsed ? sidebarCollapsedWidth : sidebarWidth;
 
   // BỀ RỘNG SIDEBAR (lớp phủ) — nở 260px khi mở rộng HOẶC đang peek, còn lại
   // 76px. Cả hai đều là px nên `width` nội suy MƯỢT (76↔260); mấu chốt để hết
@@ -97,7 +101,7 @@ export function UiAppShell({
   // chừng) — trước đây đổi position + đổi 100%↔260px cùng lúc khiến trình
   // duyệt không nội suy được, sidebar "nhảy phát sang phải" rồi mới co lại.
   const asideWidth =
-    !collapsed || peeking ? LAYOUT.sidebarWidth : LAYOUT.sidebarCollapsedWidth;
+    !collapsed || peeking ? sidebarWidth : sidebarCollapsedWidth;
 
   const enterPeek = () => {
     if (!collapsed || sidebarHidden || peek) return;

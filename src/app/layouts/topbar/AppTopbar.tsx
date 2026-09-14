@@ -651,6 +651,10 @@ export function AppTopbar({
             onClick={() => toggleMenu("account")}
           >
             <span className="avatar">{initials}</span>
+            <span className="topbar-profile-summary" aria-hidden="true">
+              <strong>{displayName}</strong>
+              <small>{roleLabel}</small>
+            </span>
             <span className="presence-dot" aria-hidden="true" />
           </button>
           {openMenu === "account" ? (

@@ -1,11 +1,9 @@
 import { useState, type ReactNode } from "react";
-import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import {
   Box,
   Grid,
   SEMANTIC_LIGHT,
   Stack,
-  UiAlert,
   UiDialog,
   UiStatusBadge,
   UiText,
@@ -17,13 +15,10 @@ import {
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
-import { getApiErrorMessage } from "@/shared/api/api-error";
-import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components";
-import { classifyScanCodes } from "@/modules/scan/services/scanService";
 import {
   WARRANTY_STATUS_COLORS,
   WARRANTY_STATUS_LABELS,
@@ -511,11 +506,6 @@ export function TraceModal({ movementId, onClose }: Props) {
   const dialog = useDialogExit(onClose);
   const [lookupCode, setLookupCode] = useState("");
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [scanResolveError, setScanResolveError] = useState<string | null>(null);
-
-  const warehousesQuery = useActiveWarehouses();
-  const warehouse = warehousesQuery.data?.[0];
 
   const movementQuery = useStockMovement(movementId);
   const traceQuery = useStockMovementTrace(movementId);
@@ -528,35 +518,7 @@ export function TraceModal({ movementId, onClose }: Props) {
   const handleLookup = () => {
     const trimmed = lookupCode.trim();
     if (!trimmed) return;
-    setScanResolveError(null);
     setSubmittedCode(trimmed);
-  };
-
-  const handleCameraDetected = async (code: string) => {
-    const trimmed = code.trim();
-    setCameraOpen(false);
-    setScanResolveError(null);
-    if (!trimmed) return;
-    setLookupCode(trimmed);
-
-    if (!warehouse?.id) {
-      setSubmittedCode(trimmed);
-      return;
-    }
-
-    try {
-      const classified = await classifyScanCodes({
-        raw_code: trimmed,
-        context: "TRACE",
-        warehouse_id: String(warehouse.id),
-      });
-      setSubmittedCode(classified.normalized_code_value || trimmed);
-    } catch (error) {
-      setSubmittedCode(null);
-      setScanResolveError(
-        getApiErrorMessage(error, t("inventory.trace.scanError")),
-      );
-    }
   };
 
   const resolvedObject = codeTrace?.resolved_object as
@@ -601,13 +563,6 @@ export function TraceModal({ movementId, onClose }: Props) {
             sx={{ flex: 1, minWidth: 280 }}
           />
           <ActionButton
-            kind="camera"
-            aria-label={t("inventory.trace.cameraAria")}
-            onClick={() => setCameraOpen(true)}
-          >
-            {t("inventory.trace.camera")}
-          </ActionButton>
-          <ActionButton
             kind="search"
             disabled={!lookupCode.trim()}
             onClick={handleLookup}
@@ -615,17 +570,6 @@ export function TraceModal({ movementId, onClose }: Props) {
             {t("inventory.trace.lookup")}
           </ActionButton>
         </Stack>
-
-        <CameraScanModal
-          open={cameraOpen}
-          title={t("inventory.trace.scanTitle")}
-          onDetected={(code) => void handleCameraDetected(code)}
-          onClose={() => setCameraOpen(false)}
-        />
-
-        {scanResolveError ? (
-          <UiAlert tone="warning">{scanResolveError}</UiAlert>
-        ) : null}
 
         {/* UAT TC_UI_11: lỗi tải phải nằm ĐẦU thân dialog (thân cuộn được) —
             bản trước đặt cạnh khối dữ liệu tương ứng ở cuối, khuất khỏi màn

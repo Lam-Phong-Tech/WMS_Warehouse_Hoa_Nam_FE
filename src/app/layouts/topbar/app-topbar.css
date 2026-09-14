@@ -270,6 +270,9 @@
   color: inherit;
   cursor: pointer;
 }
+.hn-topbar .topbar-profile-summary {
+  display: none;
+}
 .hn-topbar .avatar-button:hover,
 .hn-topbar .avatar-button[aria-expanded="true"] {
   background: var(--hnt-surface-hover);

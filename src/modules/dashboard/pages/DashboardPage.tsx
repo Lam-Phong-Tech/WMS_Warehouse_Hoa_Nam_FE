@@ -38,6 +38,7 @@ import { OverviewStockMix } from "../overview/OverviewStockMix";
 import { OverviewComposition } from "../overview/OverviewComposition";
 import { OverviewThreshold } from "../overview/OverviewThreshold";
 import { OverviewInsights, type SignalRow } from "../overview/OverviewInsights";
+import { DashboardSnapshot } from "../overview/DashboardSnapshot";
 import { useLazyReveal } from "../overview/use-lazy-reveal";
 import {
   PERIOD_NAME_KEYS,
@@ -93,6 +94,8 @@ export default function DashboardPage() {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
+  const profile = useAuthStore((state) => state.profile);
+  const user = useAuthStore((state) => state.user);
   const t = useT();
 
   const canViewReport =
@@ -611,6 +614,42 @@ export default function DashboardPage() {
     days: dayjs(range.to).diff(dayjs(range.from), "day") + 1,
   });
 
+  /*
+   * MAP-01 là lớp trình bày bám bộ tham chiếu mới. Tất cả dữ liệu, RBAC,
+   * refresh và điều hướng phía trên vẫn là cùng một luồng có sẵn; component
+   * này chỉ nhận view-model đã được tính ở đây, không tạo thêm endpoint hay
+   * thay đổi nghiệp vụ.
+   */
+  const isMapReferenceScreen =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("screen") === "MAP-01";
+
+  if (isMapReferenceScreen)
+    return (
+      <div className="hn-dash" data-mvp-screen="MAP-01">
+        <DashboardSnapshot
+          name={profile?.name ?? user?.name ?? "bạn"}
+          warehouseLabel={scopeLabel}
+          cards={kpiCards}
+          rows={flowRows}
+          trend={trendRows}
+          composition={composition}
+          issues={issues}
+          range={range}
+          period={period}
+          custom={custom}
+          onPeriodChange={changePeriod}
+          onCustomChange={changeCustom}
+          loading={loading}
+          failed={failed}
+          forbidden={forbidden}
+          showWarranty={canViewWarranty}
+          onRetry={refreshAll}
+          onNavigate={navigate}
+        />
+      </div>
+    );
+
   return (
     <div className="hn-dash" data-mvp-screen="MAP-01">
       <div className="page-wrap">
@@ -670,11 +709,11 @@ export default function DashboardPage() {
 
             {pageAlert ? (
               <div
-                className={`page-alert ${pageAlert.tone}`}
+                className={`page-alert ${pageAlert?.tone ?? ""}`}
                 role="status"
                 aria-live="polite"
               >
-                {pageAlert.copy}
+                {pageAlert?.copy}
               </div>
             ) : null}
 

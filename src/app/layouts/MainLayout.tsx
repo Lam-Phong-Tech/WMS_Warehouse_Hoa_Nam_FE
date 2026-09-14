@@ -148,6 +148,8 @@ export function MainLayout() {
   const expandSidebar = () => setCollapsed(false);
 
   const requestedScreen = new URLSearchParams(location.search).get("screen");
+  const isMapReferenceScreen =
+    location.pathname === ROUTES.DASHBOARD && requestedScreen === "MAP-01";
   const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
   const trail = getBreadcrumbTrail(location.pathname);
@@ -158,7 +160,11 @@ export function MainLayout() {
   return (
     <>
       <UiAppShell
+        className={isMapReferenceScreen ? "hn-map-shell" : undefined}
+        sidebarClassName={isMapReferenceScreen ? "hn-map-sidebar" : undefined}
+        mainClassName={isMapReferenceScreen ? "hn-map-main" : undefined}
         collapsed={sidebarCollapsed}
+        sidebarWidth={isMapReferenceScreen ? 268 : undefined}
         sidebarHidden={!isDesktop}
         peek={sidebarPeek}
         onPeekChange={setSidebarPeek}
@@ -231,7 +237,12 @@ export function MainLayout() {
           open={mobileNavOpen}
           onClose={() => setMobileNavOpen(false)}
           slotProps={{
-            paper: { sx: { width: LAYOUT.sidebarWidth, maxWidth: "85vw" } },
+            paper: {
+              sx: {
+                width: isMapReferenceScreen ? 268 : LAYOUT.sidebarWidth,
+                maxWidth: "85vw",
+              },
+            },
           }}
         >
           <SideNav collapsed={false} />
