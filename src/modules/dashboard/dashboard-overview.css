@@ -3985,9 +3985,8 @@
 .hn-map-shell .hn-topbar .topbar-actions {
   gap: 14px;
 }
-.hn-map-shell .hn-topbar .header-control:nth-child(-n + 3) {
-  display: none;
-}
+/* Ngôn ngữ · Giao diện · Lối tắt nghiệp vụ thuộc AppTopbar dùng chung.
+   Không ẩn ở MAP-01: cả ba control có handler thật và phải nhất quán mọi route. */
 .hn-map-shell .hn-topbar .avatar-button {
   display: flex;
   align-items: center;
