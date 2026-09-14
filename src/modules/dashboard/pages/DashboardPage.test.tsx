@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -162,6 +163,7 @@ afterEach(() => {
     isSuperAdmin: false,
     isProfileLoaded: false,
   });
+  window.history.pushState({}, "", "/");
 });
 
 describe("DashboardPage — Tổng quan vận hành", () => {
@@ -586,6 +588,66 @@ describe("DashboardPage — biểu đồ theo kỳ KPI", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Linh kiện" }));
     expect(live.textContent).toBe("Đã lọc loại hàng Linh kiện");
+  });
+});
+
+describe("DashboardPage MAP-01 — filter chart độc lập", () => {
+  it("đổi 14 ngày chỉ tải lại chart, KPI Hôm nay và nguồn KPI không đổi", async () => {
+    window.history.pushState({}, "", "/dashboard?screen=MAP-01");
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard();
+
+    const kpi = await waitFor(
+      () =>
+        document.querySelector(
+          '[data-kpi-id="DASH-KPI-03"] strong',
+        ) as HTMLElement,
+    );
+    expect(kpi).not.toBeNull();
+    const kpiBefore = kpi.textContent;
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /7 ngày gần nhất/i }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "14 ngày gần nhất" }),
+    );
+
+    const chartFrom = dayjs().subtract(13, "day").format("YYYY-MM-DD");
+    await waitFor(() => {
+      expect(mockedGet).toHaveBeenCalledWith(
+        API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW,
+        expect.objectContaining({
+          params: { from_date: chartFrom, to_date: today },
+        }),
+      );
+    });
+    expect(mockedGet).toHaveBeenCalledWith(
+      OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY,
+      expect.objectContaining({
+        params: { from_date: chartFrom, to_date: today },
+      }),
+    );
+
+    const xntCalls = mockedGet.mock.calls.filter(
+      ([url]) => url === API_ENDPOINTS.REPORTS_XNT_ENHANCED,
+    );
+    expect(xntCalls.length).toBeGreaterThan(0);
+    for (const [, config] of xntCalls) {
+      expect(config).toEqual(
+        expect.objectContaining({
+          params: { from_date: today, to_date: today },
+        }),
+      );
+    }
+
+    expect(
+      (
+        document.querySelector(
+          '[data-kpi-id="DASH-KPI-03"] strong',
+        ) as HTMLElement
+      ).textContent,
+    ).toBe(kpiBefore);
   });
 });
 
