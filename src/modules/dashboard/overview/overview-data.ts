@@ -59,6 +59,13 @@ dayjs.extend(timezone);
  */
 export const DASHBOARD_TIMEZONE = "Asia/Ho_Chi_Minh";
 
+/**
+ * Hợp đồng UI MAP-01: bộ lọc Tổng quan chỉ cho phép tối đa 90 ngày tính cả
+ * hai đầu mút. BE có thể hỗ trợ cửa sổ lớn hơn cho báo cáo khác, nhưng màn
+ * Tổng quan giữ trần riêng để khớp SystemHNWeb/QA contract.
+ */
+export const MAP_OVERVIEW_MAX_RANGE_DAYS = 90;
+
 export function dashboardNow() {
   return dayjs().tz(DASHBOARD_TIMEZONE);
 }
