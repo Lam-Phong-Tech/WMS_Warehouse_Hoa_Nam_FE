@@ -722,7 +722,7 @@ export const MESSAGES_VI = {
     intake: {
       title: "Phiếu Toa hàng (Phiếu yêu cầu xuất)",
       rowLabel: "dòng {row}",
-      genericError: "Lỗi",
+      genericError: "Dòng dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại.",
       statusUploaded: "Đã tải lên",
       statusValidated: "Dữ liệu hợp lệ",
       statusRejected: "Có lỗi dữ liệu",
@@ -732,6 +732,15 @@ export const MESSAGES_VI = {
       errRecipient: "Nhập người / nơi nhận.",
       errPhone: "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
       errSku: "Chọn SKU sản phẩm.",
+      errSkuUnavailable:
+        "SKU {sku} không còn tồn tại, đã ngừng hoạt động hoặc không được phép xuất. Vui lòng chọn lại SKU.",
+      errSkuReferenceMismatch:
+        "Thông tin SKU đã thay đổi. Vui lòng chọn lại SKU trước khi xác nhận.",
+      errComponentSku:
+        "SKU linh kiện chỉ được xuất qua phiếu xuất linh kiện bảo hành.",
+      errQuantity: "Số lượng phải là số nguyên dương.",
+      errRequestDate: "Ngày tạo toa không hợp lệ hoặc nằm trong tương lai.",
+      errRequiredField: "Vui lòng nhập {field}.",
       errQty: "Nhập số lượng ≥ 1.",
       errFileType: "Chỉ nhận tệp Excel (.xlsx/.xls).",
       errFileSize: "Tệp vượt quá {max} MB.",

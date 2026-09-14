@@ -721,7 +721,7 @@ export const MESSAGES_EN: MessageTree = {
     intake: {
       title: "Goods manifest (issue request)",
       rowLabel: "row {row}",
-      genericError: "Error",
+      genericError: "This row is invalid. Please review it and try again.",
       statusUploaded: "Uploaded",
       statusValidated: "Data valid",
       statusRejected: "Data has errors",
@@ -731,6 +731,15 @@ export const MESSAGES_EN: MessageTree = {
       errRecipient: "Enter the recipient / destination.",
       errPhone: "The phone number must be exactly 10 digits starting with 0.",
       errSku: "Choose a product SKU.",
+      errSkuUnavailable:
+        "SKU {sku} no longer exists, is inactive, or cannot be issued. Select the SKU again.",
+      errSkuReferenceMismatch:
+        "The SKU information has changed. Select the SKU again before confirming.",
+      errComponentSku:
+        "Component SKUs can only be issued through a warranty component issue.",
+      errQuantity: "Quantity must be a positive integer.",
+      errRequestDate: "The request date is invalid or in the future.",
+      errRequiredField: "Enter {field}.",
       errQty: "Enter a quantity ≥ 1.",
       errFileType: "Only Excel files (.xlsx/.xls) are accepted.",
       errFileSize: "The file exceeds {max} MB.",

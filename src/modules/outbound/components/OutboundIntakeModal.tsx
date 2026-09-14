@@ -78,6 +78,8 @@ interface LineInput {
   /** Khóa ổn định cho hiệu ứng thêm/xóa dòng — không gửi lên API. */
   key: string;
   product_id: string;
+  /** Mã SKU tại thời điểm chọn. Gửi cùng ID để BE xác thực chéo/fallback khi danh mục vừa đồng bộ lại. */
+  sku_code: string;
   /** Giữ CHUỖI đang gõ để báo lỗi thay vì ép về 1 im lặng; parse bằng checkNumber. */
   required_qty: string;
 }
@@ -86,6 +88,7 @@ function createEmptyLine(): LineInput {
   return {
     key: createRowKey("outbound-line"),
     product_id: "",
+    sku_code: "",
     required_qty: "1",
   };
 }
@@ -113,10 +116,41 @@ type ImportRow = OutboundImportResult["rows"][number];
 
 function rowErrorText(row: ImportRow, t: TranslateFn): string {
   return row.errors
-    .map(
-      (error) =>
-        `${error.field ?? t("outbound.intake.rowLabel", { row: error.row ?? row.rowNo })}: ${error.message ?? error.error_code ?? t("outbound.intake.genericError")}`,
-    )
+    .map((error) => {
+      const fieldLabels: Record<string, MessageKey> = {
+        request_no: "outbound.intake.fieldRequestNo",
+        recipient_name: "outbound.intake.fieldRecipient",
+        recipient_contact_phone: "outbound.intake.fieldPhone",
+        request_date: "outbound.intake.fieldRequestDate",
+        required_qty: "outbound.intake.fieldQty",
+        sku_code: "outbound.intake.fieldSku",
+      };
+      const field = error.field ? fieldLabels[error.field] : undefined;
+      const sku = text(row.normalized.sku_code).trim();
+
+      switch (error.error_code) {
+        case "SKU_NOT_ACTIVE":
+          return t("outbound.intake.errSkuUnavailable", { sku });
+        case "SKU_REFERENCE_MISMATCH":
+          return t("outbound.intake.errSkuReferenceMismatch");
+        case "COMPONENT_OUTBOUND_FORBIDDEN":
+          return t("outbound.intake.errComponentSku");
+        case "INVALID_QUANTITY":
+          return t("outbound.intake.errQuantity");
+        case "INVALID_PHONE":
+          return t("outbound.intake.errPhone");
+        case "INVALID_REQUEST_DATE":
+          return t("outbound.intake.errRequestDate");
+        case "REQUIRED":
+          return t("outbound.intake.errRequiredField", {
+            field: field
+              ? t(field)
+              : t("outbound.intake.rowLabel", { row: error.row ?? row.rowNo }),
+          });
+        default:
+          return t("outbound.intake.genericError");
+      }
+    })
     .join(" · ");
 }
 
@@ -329,6 +363,18 @@ export function OutboundIntakeModal({
         label: `${sku.sku_code} · ${sku.sku_name} — ${t("outbound.intake.optionAvailable", { qty: sku.available })}`,
       }));
 
+  // Giữ mã đi cùng ID tại đúng thời điểm người dùng chọn. Không suy diễn từ
+  // label vì label là nội dung hiển thị, có thể đổi theo ngôn ngữ/thiết kế.
+  const skuCodeById = new Map<string, string>([
+    ...skuRows.map((sku) => [sku.sku_id, sku.sku_code] as const),
+    ...(availableSkuQuery.data ?? []).map(
+      (sku) => [sku.sku_id, sku.sku_code] as const,
+    ),
+    ...(skuSearchFallbackQuery.data?.data ?? []).map(
+      (sku) => [sku.sku_id, sku.sku_code] as const,
+    ),
+  ]);
+
   // Nhãn hiển thị của SKU ĐÃ CHỌN phải bền vững qua mọi lần gõ tìm — nếu chỉ
   // dựa vào skuSearchOptions (đổi theo keyword hiện tại), dòng đang không được
   // gõ sẽ mất nhãn ngay khi kết quả tìm kiếm của dòng khác không còn chứa SKU
@@ -461,6 +507,7 @@ export function OutboundIntakeModal({
         customer_address: recipientAddress.trim(),
         recipient_contact_phone: recipientPhone.trim() || undefined,
         sku_id: line.product_id,
+        sku_code: line.sku_code || undefined,
         required_qty: parseRequiredQty(line.required_qty),
         agency_id: agencyId || null,
       }));
@@ -1058,8 +1105,12 @@ export function OutboundIntakeModal({
                           }
                           value={line.product_id || null}
                           onChange={(next) => {
+                            const productId = next === null ? "" : String(next);
                             updateLine(index, {
-                              product_id: next === null ? "" : String(next),
+                              product_id: productId,
+                              sku_code: productId
+                                ? (skuCodeById.get(productId) ?? "")
+                                : "",
                             });
                             clearLineError(index);
                           }}
