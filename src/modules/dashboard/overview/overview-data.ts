@@ -20,6 +20,8 @@ import { useMemo } from "react";
 import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { OPERATIONS_REPORT_ENDPOINTS } from "@/modules/reports/operations/report-data";
@@ -47,12 +49,26 @@ export interface DateRange {
 
 const ISO = "YYYY-MM-DD";
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+/**
+ * Múi giờ nghiệp vụ cố định của WMS. Dashboard không được phụ thuộc timezone
+ * của máy người dùng vì preset "Hôm nay" / "7 ngày gần nhất" và giới hạn ngày
+ * phải giống nhau ở mọi thiết bị.
+ */
+export const DASHBOARD_TIMEZONE = "Asia/Ho_Chi_Minh";
+
+export function dashboardNow() {
+  return dayjs().tz(DASHBOARD_TIMEZONE);
+}
+
 /** Kỳ đang xem theo lựa chọn bộ lọc; `custom` dùng nguyên 2 ngày người dùng chọn. */
 export function resolvePeriodRange(
   period: OverviewPeriod,
   custom: DateRange,
 ): DateRange {
-  const today = dayjs();
+  const today = dashboardNow();
   if (period === "today")
     return { from: today.format(ISO), to: today.format(ISO) };
   if (period === "last7")
