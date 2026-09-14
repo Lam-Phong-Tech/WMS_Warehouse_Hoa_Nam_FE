@@ -38,25 +38,40 @@
 }
 
 /*
- * Local warehouse/worker layer reconstructed from the approved SystemHNWeb
- * reference. Keeping it in /public removes the CSP/offline/cross-origin failure
- * of the previous remote URL, so the same sidebar survives every route change.
+ * Ảnh nhân viên kho Hoa Nam lấy từ asset được duyệt cho sidebar.
+ * Chỉ đặt ở phần dưới giống reference: không kéo giãn ảnh lên toàn chiều cao,
+ * giữ nhân vật rõ nét và fade dần lên nền navy để menu vẫn dễ đọc.
  */
 .hn-system-shell > [data-testid="app-sidebar"]::before,
 .hn-system-drawer::before {
   content: "";
   position: absolute;
   z-index: 0;
-  inset: -2px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 46%;
   pointer-events: none;
-  background-image: url("/assets/systemhn/sidebar-warehouse.svg");
+  background-image: url("/assets/systemhn/sidebar-warehouse-worker.webp");
   background-repeat: no-repeat;
-  background-position: center top;
+  background-position: center bottom;
   background-size: cover;
-  opacity: 0.92;
-  filter: saturate(0.94) contrast(1.04);
-  transform: scale(1.004);
-  transform-origin: center top;
+  opacity: 0.76;
+  filter: saturate(0.9) contrast(1.04) brightness(0.82);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.18) 10%,
+    #000 30%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.18) 10%,
+    #000 30%,
+    #000 100%
+  );
 }
 
 .hn-system-shell > [data-testid="app-sidebar"]::after,
