@@ -470,7 +470,8 @@ export function DashboardSnapshot({
   const filterRef = useRef<HTMLDivElement | null>(null);
   const filterButtonRef = useRef<HTMLButtonElement | null>(null);
   const customDialogRef = useRef<HTMLElement | null>(null);
-  const todayIso = dashboardNow().format(ISO);
+  const businessNow = dashboardNow();
+  const todayIso = businessNow.format(ISO);
   const draftDays =
     draft.from && draft.to
       ? dayjs(draft.to).diff(dayjs(draft.from), "day") + 1
@@ -608,7 +609,19 @@ export function DashboardSnapshot({
     }
     setRangePickMode("from");
   };
-  const tasks = issues.slice(0, 5);
+  const tasks = referenceEmpty ? [] : issues.slice(0, 5);
+  const referenceOperationState =
+    referenceState === "pending-approval"
+      ? { label: "Chờ duyệt", icon: "file-clock" as DashboardIconName, tone: "warning" }
+      : referenceState === "processing"
+        ? { label: "Đang xử lý", icon: "loader-circle" as DashboardIconName, tone: "info" }
+        : referenceState === "completed"
+          ? { label: "Hoàn thành", icon: "circle-dot" as DashboardIconName, tone: "success" }
+          : referenceState === "overdue"
+            ? { label: "Quá hạn", icon: "file-clock" as DashboardIconName, tone: "danger" }
+            : referenceState === "urgent"
+              ? { label: "Khẩn cấp", icon: "triangle-alert" as DashboardIconName, tone: "danger" }
+              : null;
   return (
     <div
       className="hn-dashboard-snapshot"
@@ -627,12 +640,12 @@ export function DashboardSnapshot({
         <div className="snapshot-time">
           <span>
             <DashIcon name="calendar-days" />
-            {dayjs().format("dddd, DD [tháng] M, YYYY")}
+            {businessNow.format("dddd, DD [tháng] M, YYYY")}
           </span>
           <i />
           <span>
             <DashIcon name="circle-dot" />
-            {dayjs().format("HH:mm")}
+            {businessNow.format("HH:mm")}
           </span>
         </div>
         <button
@@ -652,6 +665,19 @@ export function DashboardSnapshot({
           <DashIcon name="chevron-down" />
         </button>
       </header>
+
+      {referenceOperationState ? (
+        <section
+          className={`snapshot-reference-state is-${referenceOperationState.tone}`}
+          role="status"
+          aria-label={`Trạng thái tổng quan: ${referenceOperationState.label}`}
+        >
+          <span>
+            <DashIcon name={referenceOperationState.icon} />
+          </span>
+          <strong>{referenceOperationState.label}</strong>
+        </section>
+      ) : null}
 
       {effectiveForbidden ? (
         <section className="snapshot-page-state">
@@ -706,7 +732,15 @@ export function DashboardSnapshot({
             })}
           </section>
 
-          {effectiveFailed && !chartStateOverride ? (
+          {referenceEmpty ? (
+            <section className="snapshot-page-state is-empty">
+              <span>
+                <DashIcon name="inbox" />
+              </span>
+              <h2>Chưa có dữ liệu tổng quan</h2>
+              <p>Chưa có dữ liệu phù hợp để hiển thị trong phạm vi hiện tại.</p>
+            </section>
+          ) : effectiveFailed && !chartStateOverride ? (
             <section className="snapshot-page-state is-error">
               <span>
                 <DashIcon name="triangle-alert" />
@@ -1005,7 +1039,10 @@ export function DashboardSnapshot({
           className="snapshot-modal-backdrop"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setCustomOpen(false);
+            if (event.target === event.currentTarget) {
+              setCustomOpen(false);
+              setRangePickMode("from");
+            }
           }}
         >
           <section
