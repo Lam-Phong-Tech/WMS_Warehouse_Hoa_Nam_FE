@@ -1,0 +1,330 @@
+/**
+ * Shared SystemHNWeb shell skin — presentation only.
+ *
+ * The existing SideNav/AppTopbar keep all RBAC, routing, search, theme,
+ * language, notification and shortcut handlers. This file only makes that
+ * canonical shell visually identical across protected routes.
+ */
+
+.hn-system-shell {
+  background: var(--map-surface);
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
+.hn-system-shell > [data-testid="app-sidebar"],
+.hn-system-drawer {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-right: 1px solid
+    color-mix(in srgb, var(--map-white) 12%, transparent);
+  background: linear-gradient(
+    180deg,
+    var(--map-navy) 0%,
+    var(--map-cta) 100%
+  );
+  color: var(--map-white);
+  box-shadow: 4px 0 18px
+    color-mix(in srgb, var(--map-navy) 22%, transparent);
+}
+
+/*
+ * SystemHNWeb publishes the complete preview, not a separate warehouse photo.
+ * Reuse the exact published pixels as a muted sidebar layer. At >=1080px image
+ * height, the first 268px remain entirely inside the reference sidebar, so the
+ * reference page body cannot bleed into the live shell.
+ */
+.hn-system-shell > [data-testid="app-sidebar"]::before,
+.hn-system-drawer::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: -2px;
+  pointer-events: none;
+  background-image: url("https://duc-nguyen98.github.io/SystemHNWeb/previews/overview-jpg/desktop/overview-state-01-loading-desktop-1920x1080.jpg");
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: auto max(100%, 1080px);
+  opacity: 0.42;
+  filter: saturate(0.82) contrast(1.04) blur(0.35px);
+  transform: scale(1.006);
+  transform-origin: left top;
+}
+
+.hn-system-shell > [data-testid="app-sidebar"]::after,
+.hn-system-drawer::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--map-navy) 72%, transparent) 0%,
+    color-mix(in srgb, var(--map-cta) 58%, transparent) 52%,
+    color-mix(in srgb, var(--map-navy) 76%, transparent) 100%
+  );
+}
+
+.hn-system-shell > [data-testid="app-sidebar"] > *,
+.hn-system-drawer > * {
+  position: relative;
+  z-index: 2;
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand {
+  min-height: 72px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--map-white) 14%, transparent);
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-logo {
+  border: 1px solid
+    color-mix(in srgb, var(--map-white) 72%, transparent);
+  background: color-mix(in srgb, var(--map-white) 7%, transparent);
+  color: var(--map-white);
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-title {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  color: var(--map-white);
+  font-size: 16px;
+  line-height: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-subtitle {
+  display: block;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--map-white) 74%, var(--map-pale));
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-aside-toggle,
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group,
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn {
+  color: color-mix(in srgb, var(--map-white) 94%, var(--map-pale));
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand .hn-mvp-aside-toggle:hover,
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group:hover,
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn:hover,
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--map-white) 11%, transparent);
+  color: var(--map-white);
+}
+
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-nav-btn.active {
+  background: linear-gradient(
+    90deg,
+    var(--map-link) 0%,
+    color-mix(in srgb, var(--map-link) 62%, var(--map-cta)) 100%
+  );
+  box-shadow: 0 4px 14px
+    color-mix(in srgb, var(--map-navy) 34%, transparent);
+  color: var(--map-white);
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn::before {
+  border-color: color-mix(in srgb, var(--map-white) 66%, transparent);
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  .hn-mvp-submenu
+  .hn-mvp-nav-btn.active::before {
+  border-color: var(--map-white);
+}
+
+:is(.hn-system-shell, .hn-system-drawer)
+  :is(.hn-mvp-nav-btn, .hn-mvp-group, .hn-mvp-aside-toggle):focus-visible {
+  outline: 2px solid var(--map-white);
+  outline-offset: 2px;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────────────────── */
+.hn-system-shell .hn-topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--wms-z-header);
+  min-height: 64px;
+  margin: 0;
+  padding: 8px 22px;
+  border: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--map-white) 10%, transparent);
+  border-radius: 0;
+  background: linear-gradient(90deg, var(--map-navy), var(--map-cta));
+  box-shadow: none;
+  color: var(--map-white);
+  backdrop-filter: none;
+}
+
+.hn-system-shell .hn-topbar .topbar-search-wrap {
+  max-width: min(70%, 1040px);
+}
+
+.hn-system-shell .hn-topbar .topbar-search {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--map-line);
+  border-radius: 6px;
+  background: var(--map-white);
+  color: var(--map-navy);
+  transition:
+    border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hn-system-shell .hn-topbar .topbar-search:focus-within {
+  border-color: var(--map-link);
+  box-shadow: 0 0 0 3px var(--map-focus-ring);
+}
+
+.hn-system-shell .hn-topbar .topbar-search input {
+  color: var(--map-ink);
+}
+
+.hn-system-shell .hn-topbar .topbar-search kbd {
+  background: var(--map-pale);
+  color: var(--map-link);
+}
+
+/*
+ * 1 = Ngôn ngữ, 2 = sáng/tối/system, 3 = Lối tắt nghiệp vụ.
+ * AppTopbar đã có handler thật cho cả ba; MAP-01 cũ chỉ ẩn chúng bằng CSS.
+ */
+.hn-system-shell .hn-topbar .header-control:nth-child(-n + 3),
+.hn-system-shell.hn-map-shell
+  .hn-topbar
+  .header-control:nth-child(-n + 3) {
+  display: block;
+}
+
+.hn-system-shell .hn-topbar .icon-button,
+.hn-system-shell .hn-topbar .avatar-button {
+  color: var(--map-white);
+}
+
+.hn-system-shell .hn-topbar .icon-button:hover,
+.hn-system-shell .hn-topbar .avatar-button:hover,
+.hn-system-shell .hn-topbar .avatar-button[aria-expanded="true"],
+.hn-system-shell .hn-topbar .header-menu-toggle[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--map-white) 13%, transparent);
+  color: var(--map-white);
+}
+
+.hn-system-shell .hn-topbar .avatar {
+  background: var(--map-pale);
+  color: var(--map-navy);
+}
+
+.hn-system-shell .hn-topbar .topbar-actions {
+  gap: 6px;
+}
+
+.hn-system-shell .hn-topbar .avatar-button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: auto;
+  min-width: 148px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.hn-system-shell .hn-topbar .topbar-profile-summary {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hn-system-shell .hn-topbar .topbar-profile-summary strong,
+.hn-system-shell .hn-topbar .topbar-profile-summary small {
+  overflow: hidden;
+  max-width: 130px;
+  color: var(--map-white);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hn-system-shell .hn-topbar .topbar-profile-summary strong {
+  font-size: 13px;
+}
+
+.hn-system-shell .hn-topbar .topbar-profile-summary small {
+  color: color-mix(in srgb, var(--map-white) 72%, var(--map-pale));
+  font-size: 11px;
+}
+
+.hn-system-shell .hn-topbar .header-menu {
+  color: var(--wms-text-strong);
+  background: var(--wms-bg-surface);
+}
+
+.hn-system-shell .hn-topbar :is(button, input):focus-visible {
+  outline: 2px solid var(--map-white);
+  outline-offset: 2px;
+}
+
+.hn-system-shell .hn-topbar .header-menu :is(button, input):focus-visible {
+  outline-color: var(--map-link);
+}
+
+/* MAP-01's lazy CSS loads later. Extra specificity keeps this shell canonical. */
+.hn-system-shell.hn-map-shell .hn-topbar .topbar-actions {
+  gap: 6px;
+}
+
+@media (max-width: 1279px) {
+  .hn-system-shell .hn-topbar {
+    padding-inline: 14px;
+  }
+
+  .hn-system-shell .hn-topbar .topbar-search-wrap {
+    max-width: none;
+  }
+
+  .hn-system-shell .hn-topbar .topbar-profile-summary {
+    display: none;
+  }
+
+  .hn-system-shell .hn-topbar .avatar-button {
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 979px) {
+  .hn-system-shell .hn-topbar {
+    top: 0;
+    margin: 0;
+    padding-inline: 12px;
+  }
+}
+
+@media (max-width: 767px) {
+  .hn-system-shell .hn-topbar {
+    gap: 7px;
+    min-height: 64px;
+  }
+
+  .hn-system-shell .hn-topbar .topbar-actions {
+    gap: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hn-system-shell .hn-topbar .topbar-search {
+    transition: none;
+  }
+}
