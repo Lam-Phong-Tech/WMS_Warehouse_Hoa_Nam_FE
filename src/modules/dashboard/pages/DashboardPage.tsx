@@ -156,7 +156,10 @@ export default function DashboardPage() {
     if (custom.to > today) return t("dashboard.dateError.future");
     const selectedDays =
       dayjs(custom.to).diff(dayjs(custom.from), "day") + 1;
-    if (selectedDays > MAP_OVERVIEW_MAX_RANGE_DAYS) {
+    if (
+      isMapReferenceScreen &&
+      selectedDays > MAP_OVERVIEW_MAX_RANGE_DAYS
+    ) {
       return `Khoảng thời gian tối đa ${MAP_OVERVIEW_MAX_RANGE_DAYS} ngày.`;
     }
     // Chốt chặn chung (2000 → hôm nay, chuỗi ISO sai như "2026-22-01"): so
@@ -167,7 +170,7 @@ export default function DashboardPage() {
       if (!check.ok) return check.message;
     }
     return "";
-  }, [period, custom, today, t]);
+  }, [period, custom, today, t, isMapReferenceScreen]);
 
   /**
    * `range` là khoảng của RIÊNG card Nhập – Xuất – Tồn theo SystemHNWeb v2.
