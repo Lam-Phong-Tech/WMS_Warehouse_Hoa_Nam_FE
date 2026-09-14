@@ -4419,7 +4419,6 @@
   }
 }
 
-
 /* ── MAP-01 Tablet dọc · parity với SystemHNWeb overview/filter v2 ─────── */
 .snapshot-filter > button:disabled,
 .snapshot-filter > button:disabled:hover,
@@ -4492,12 +4491,22 @@
   border-radius: 3px 3px 0 0;
   background: color-mix(in srgb, var(--map-cta) 24%, var(--map-pale));
 }
-.snapshot-chart-skeleton-bars i:nth-child(4n + 1) { height: 34%; }
-.snapshot-chart-skeleton-bars i:nth-child(4n + 2) { height: 58%; }
-.snapshot-chart-skeleton-bars i:nth-child(4n + 3) { height: 76%; }
-.snapshot-chart-skeleton-bars i:nth-child(4n) { height: 46%; }
+.snapshot-chart-skeleton-bars i:nth-child(4n + 1) {
+  height: 34%;
+}
+.snapshot-chart-skeleton-bars i:nth-child(4n + 2) {
+  height: 58%;
+}
+.snapshot-chart-skeleton-bars i:nth-child(4n + 3) {
+  height: 76%;
+}
+.snapshot-chart-skeleton-bars i:nth-child(4n) {
+  height: 46%;
+}
 @keyframes snapshot-chart-skeleton-sweep {
-  to { transform: translateX(100%); }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .snapshot-calendar-days button {
@@ -4529,7 +4538,8 @@
 }
 .snapshot-calendar.is-invalid {
   border-radius: 8px;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--map-danger) 34%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--map-danger) 34%, transparent);
 }
 .snapshot-date-error {
   border: 1px solid color-mix(in srgb, var(--map-danger) 36%, var(--map-line));
@@ -4538,6 +4548,65 @@
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.snapshot-reference-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  margin: 0 0 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--map-line);
+  border-radius: 8px;
+  background: var(--map-white);
+  color: var(--map-navy);
+  box-shadow: var(--map-card-shadow);
+}
+.snapshot-reference-state > span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--map-pale);
+}
+.snapshot-reference-state svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.snapshot-reference-state.is-warning {
+  border-color: color-mix(in srgb, var(--map-warning) 34%, var(--map-line));
+  color: var(--map-warning);
+}
+.snapshot-reference-state.is-info {
+  border-color: color-mix(in srgb, var(--map-link) 30%, var(--map-line));
+  color: var(--map-link);
+}
+.snapshot-reference-state.is-success {
+  border-color: color-mix(in srgb, var(--map-success) 30%, var(--map-line));
+  color: var(--map-success);
+}
+.snapshot-reference-state.is-danger {
+  border-color: color-mix(in srgb, var(--map-danger) 30%, var(--map-line));
+  color: var(--map-danger);
+}
+.snapshot-page-state.is-empty {
+  min-height: 280px;
+  border: 1px solid var(--map-line);
+  border-radius: 8px;
+  background: var(--map-white);
+}
+.snapshot-page-state.is-empty > span {
+  width: 74px;
+  height: 74px;
+}
+.snapshot-page-state.is-empty > span svg {
+  width: 42px;
+  height: 42px;
 }
 
 @container hn-dash (max-width: 900px) {
