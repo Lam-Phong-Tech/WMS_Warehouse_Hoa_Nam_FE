@@ -234,30 +234,13 @@ export function SideNav({
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   // Chốt activeGroupName lúc mount làm mốc so sánh — miễn nhiễm StrictMode.
   const previousActiveGroupRef = useRef(activeGroupName);
-  // Nhóm mở gần nhất — thu gọn thì đóng hết, bung ra thì mở lại đúng nhóm đó
-  // (demo: lastOpen + restoreOpenSection/closeAllSections).
-  const lastOpenGroupRef = useRef<string | null>(null);
-
   // Điều hướng SANG route khác → tự mở nhóm active mới.
   useEffect(() => {
     const previousActiveGroup = previousActiveGroupRef.current;
     previousActiveGroupRef.current = activeGroupName;
     if (!activeGroupName || previousActiveGroup === activeGroupName) return;
     setOpenGroup(activeGroupName);
-    lastOpenGroupRef.current = activeGroupName;
   }, [activeGroupName]);
-
-  // Thu gọn ⇄ bung (kể cả lúc "he mở" khi rê chuột vào rail).
-  useEffect(() => {
-    if (collapsed) {
-      setOpenGroup((previous) => {
-        if (previous) lastOpenGroupRef.current = previous;
-        return null;
-      });
-    } else {
-      setOpenGroup(lastOpenGroupRef.current);
-    }
-  }, [collapsed]);
 
   const goTo = (item: NavItemData) =>
     navigate(`${item.path}?screen=${item.screen}`);
@@ -265,7 +248,6 @@ export function SideNav({
   /** Hàng phẳng: bấm là đi thẳng + đóng mọi nhóm đang sổ (đúng demo). */
   const handleDirectClick = (item: NavItemData) => {
     setOpenGroup(null);
-    lastOpenGroupRef.current = null;
     goTo(item);
   };
 
@@ -398,14 +380,11 @@ export function SideNav({
                 // Ở rail: bấm icon nhóm vừa bung sidebar vừa sổ đúng nhóm đó.
                 onExpand?.();
                 setOpenGroup(group.name);
-                lastOpenGroupRef.current = group.name;
                 return;
               }
-              setOpenGroup((previous) => {
-                const next = previous === group.name ? null : group.name;
-                if (next) lastOpenGroupRef.current = next;
-                return next;
-              });
+              setOpenGroup((previous) =>
+                previous === group.name ? null : group.name,
+              );
             }}
             aria-expanded={open}
             aria-controls={submenuId}
