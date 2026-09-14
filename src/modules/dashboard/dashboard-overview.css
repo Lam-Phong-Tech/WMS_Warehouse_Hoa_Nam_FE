@@ -4644,8 +4644,17 @@
   .snapshot-preset-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .snapshot-calendar-days button {
+  .snapshot-calendar-days button,
+  .snapshot-date-fields input,
+  .snapshot-custom-dialog footer button {
     min-height: 44px;
+  }
+  .snapshot-calendar-days button {
+    height: 44px;
+  }
+  .snapshot-calendar header button,
+  .snapshot-custom-dialog > header button {
+    width: 44px;
     height: 44px;
   }
   .snapshot-custom-dialog {
