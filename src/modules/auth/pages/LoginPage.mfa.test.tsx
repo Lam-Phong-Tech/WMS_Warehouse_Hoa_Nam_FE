@@ -80,7 +80,10 @@ describe("LoginPage · xác thực hai bước", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
 
-    expect(await screen.findByLabelText("Mã xác thực")).toBeInTheDocument();
+    const otpFields = await screen.findAllByRole("textbox", {
+      name: /^Mã xác thực [1-6]$/,
+    });
+    expect(otpFields).toHaveLength(6);
 
     // Điểm cốt lõi: chưa có token nào trong store.
     expect(useAuthStore.getState().token).toBeNull();
@@ -111,8 +114,12 @@ describe("LoginPage · xác thực hai bước", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
 
-    const codeField = await screen.findByLabelText("Mã xác thực");
-    await userEvent.type(codeField, "123456");
+    const codeFields = await screen.findAllByRole("textbox", {
+      name: /^Mã xác thực [1-6]$/,
+    });
+    for (const [index, digit] of "123456".split("").entries()) {
+      await userEvent.type(codeFields[index], digit);
+    }
     await userEvent.click(screen.getByRole("button", { name: /xác nhận/i }));
 
     await waitFor(() => {
