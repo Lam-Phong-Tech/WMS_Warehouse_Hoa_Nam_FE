@@ -27,7 +27,7 @@ import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
 import { backendProbeOf } from "@/shared/api/backend-availability";
 import { transportDiagnosticOf } from "@/shared/api/transport-monitor";
 import { useBackendWait } from "@/shared/hooks/useBackendWait";
-import { ROUTES } from "@/shared/constants/routes";
+import { DASHBOARD_CANONICAL, ROUTES } from "@/shared/constants/routes";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { runtimeConfig } from "@/shared/config/env";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -337,7 +337,7 @@ export function LoginPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   useEffect(() => {
     if (runtimeConfig.temporaryAutoLogin && isAuthenticated) {
-      navigate(ROUTES.DASHBOARD, { replace: true });
+      navigate(DASHBOARD_CANONICAL, { replace: true });
     }
   }, [isAuthenticated, navigate]);
   // Đăng nhập hợp lệ phải đi thẳng vào ứng dụng. Màn xác nhận phiên chỉ xuất
