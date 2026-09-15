@@ -89,3 +89,6 @@ export const ROUTES = {
   AUDIT_LOGS: "/audit-logs",
   NO_PERMISSION: "/errors/403",
 } as const;
+
+/** URL chuẩn duy nhất của màn Tổng quan MAP-01. */
+export const DASHBOARD_CANONICAL = `${ROUTES.DASHBOARD}?screen=MAP-01` as const;
