@@ -43,6 +43,29 @@
   position: relative;
 }
 
+/*
+ * MUI Drawer render phần trượt bằng Paper. Paper inject background-color và
+ * background-image sau global CSS; trên viewport hẹp nó từng thắng shorthand
+ * background phía trên, làm drawer thành một tấm TRẮNG trong khi toàn bộ chữ/icon
+ * sidebar vẫn là màu trắng. Selector 2 class này có specificity cao hơn Paper,
+ * không cần !important và vẫn giữ được ảnh + fallback navy nếu ảnh chưa tải/404.
+ */
+.MuiDrawer-paper.hn-system-drawer {
+  background-color: var(--map-navy);
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--map-navy) 74%, transparent) 0%,
+      color-mix(in srgb, var(--map-navy) 62%, transparent) 48%,
+      color-mix(in srgb, var(--map-navy) 56%, transparent) 100%
+    ),
+    url("/assets/systemhn/sidebar-warehouse-generated-fixed.webp");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  color: var(--map-white);
+}
+
 /* Tắt lớp pseudo cũ để không còn stacking/cascade cạnh tranh với artwork. */
 .hn-system-shell.hn-map-shell > [data-testid="app-sidebar"]::before,
 .hn-system-shell.hn-map-shell > [data-testid="app-sidebar"]::after,
@@ -437,6 +460,37 @@
   color: color-mix(in srgb, var(--map-white) 54%, transparent);
   font-size: 8px;
   line-height: 10px;
+}
+
+/*
+ * Mobile/tablet Drawer: brand + Hệ thống + thẻ kho đứng yên, chỉ cây menu chính
+ * cuộn. Trước đây .hn-sidebar-content dùng min-height:100dvh + overflow:hidden,
+ * nên màn thấp/zoom lớn có thể cắt menu hoặc đẩy footer ra ngoài viewport.
+ */
+.hn-system-drawer .hn-sidebar-content {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hn-system-drawer nav[data-testid="primary-navigation"] {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.hn-system-drawer .hn-mvp-brand,
+.hn-system-drawer .hn-sidebar-system,
+.hn-system-drawer .hn-sidebar-bottom {
+  flex: 0 0 auto;
+}
+
+.hn-system-drawer .hn-sidebar-bottom {
+  padding-bottom: max(7px, env(safe-area-inset-bottom));
 }
 
 @media (max-height: 760px) {
