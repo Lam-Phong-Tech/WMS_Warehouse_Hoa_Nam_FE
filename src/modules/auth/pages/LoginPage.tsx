@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ClipboardEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
@@ -146,6 +155,161 @@ function loginDiagnosticSummary(error: unknown): string | null {
  * gửi lên nên đủ để khoanh vùng mà không cần tái hiện. Chỉ gồm mã kỹ thuật — không
  * email, token hay dữ liệu cá nhân (xem shared/api/transport-monitor.ts).
  */
+
+const MFA_OTP_LENGTH = 6;
+
+function MfaOtpInput({
+  digits,
+  onChange,
+  disabled,
+  label,
+}: {
+  digits: string[];
+  onChange: (next: string[]) => void;
+  disabled: boolean;
+  label: string;
+}) {
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const writeDigits = (startIndex: number, rawValue: string) => {
+    const numeric = rawValue.replace(/\D/g, "");
+    const next = [...digits];
+
+    if (numeric === "") {
+      next[startIndex] = "";
+      onChange(next);
+      return;
+    }
+
+    const chunk = numeric.slice(0, MFA_OTP_LENGTH - startIndex);
+    chunk.split("").forEach((digit, offset) => {
+      next[startIndex + offset] = digit;
+    });
+    onChange(next);
+
+    const nextFocusIndex = Math.min(
+      startIndex + chunk.length,
+      MFA_OTP_LENGTH - 1,
+    );
+    inputRefs.current[nextFocusIndex]?.focus();
+  };
+
+  const handleChange = (
+    index: number,
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    writeDigits(index, event.target.value);
+  };
+
+  const handlePaste = (
+    index: number,
+    event: ClipboardEvent<HTMLDivElement>,
+  ) => {
+    const pasted = event.clipboardData.getData("text");
+    if (!/\d/.test(pasted)) return;
+    event.preventDefault();
+    writeDigits(index, pasted);
+  };
+
+  const handleKeyDown = (
+    index: number,
+    event: KeyboardEvent<HTMLDivElement>,
+  ) => {
+    if (event.key === "Backspace" && digits[index] === "" && index > 0) {
+      event.preventDefault();
+      const next = [...digits];
+      next[index - 1] = "";
+      onChange(next);
+      inputRefs.current[index - 1]?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowLeft" && index > 0) {
+      event.preventDefault();
+      inputRefs.current[index - 1]?.focus();
+    }
+
+    if (event.key === "ArrowRight" && index < MFA_OTP_LENGTH - 1) {
+      event.preventDefault();
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  return (
+    <Box
+      component="fieldset"
+      sx={{
+        minWidth: 0,
+        margin: 0,
+        padding: 0,
+        border: 0,
+      }}
+    >
+      <Box
+        component="legend"
+        sx={{
+          marginBottom: "8px",
+          padding: 0,
+          color: AUTH_BASELINE.ink,
+          fontSize: { xs: 14, sm: 15 },
+          fontWeight: 700,
+        }}
+      >
+        {label}
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: { xs: "6px", sm: "8px" },
+        }}
+      >
+        {digits.map((digit, index) => (
+          <UiTextField
+            key={index}
+            value={digit}
+            inputRef={(node) => {
+              inputRefs.current[index] = node;
+            }}
+            onChange={(event) => handleChange(index, event)}
+            onPaste={(event) => handlePaste(index, event)}
+            onKeyDown={(event) => handleKeyDown(index, event)}
+            autoFocus={index === 0}
+            inputMode="numeric"
+            autoComplete={index === 0 ? "one-time-code" : "off"}
+            disabled={disabled}
+            slotProps={{
+              htmlInput: {
+                maxLength: 1,
+                pattern: "[0-9]*",
+                "aria-label": `${label} ${index + 1}`,
+              },
+            }}
+            sx={{
+              width: { xs: 40, sm: 48 },
+              flex: "0 0 auto",
+              "& .MuiOutlinedInput-root": {
+                minHeight: { xs: 44, sm: 48 },
+                borderRadius: "8px",
+              },
+              "& .MuiInputBase-input": {
+                boxSizing: "border-box",
+                height: { xs: 44, sm: 48 },
+                padding: "0 !important",
+                textAlign: "center",
+                fontSize: { xs: 18, sm: 20 },
+                fontWeight: 800,
+                fontVariantNumeric: "tabular-nums",
+              },
+            }}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
 function TransportDiagnosticLine({ error }: { error: unknown }) {
   const t = useT();
   const summary = loginDiagnosticSummary(error);
@@ -180,7 +344,10 @@ export function LoginPage() {
   // hiện sau 60 phút không thao tác, tại SessionConfirmationGate.
   const login = useLogin();
   const mfaVerify = useMfaVerify();
-  const [mfaCode, setMfaCode] = useState("");
+  const [mfaDigits, setMfaDigits] = useState<string[]>(() =>
+    Array.from({ length: MFA_OTP_LENGTH }, () => ""),
+  );
+  const [mfaRecoveryCode, setMfaRecoveryCode] = useState("");
   const rememberedIdentifier = readRememberedIdentifier();
   const loginSchema = useMemo(() => buildLoginSchema(t), [t]);
   const { control, handleSubmit } = useForm<LoginFormValues>({
@@ -212,10 +379,19 @@ export function LoginPage() {
     ? getLoginErrorMessage(mfaVerify.error, t)
     : null;
 
+  const otpCode = mfaDigits.join("");
+  const trimmedRecoveryCode = mfaRecoveryCode.trim();
+  const submittedMfaCode = trimmedRecoveryCode || otpCode;
+  const isMfaCodeReady =
+    trimmedRecoveryCode !== "" || otpCode.length === MFA_OTP_LENGTH;
+
   const onSubmitMfa = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (challenge === null || mfaCode.trim() === "") return;
-    mfaVerify.mutate({ mfaToken: challenge.mfa_token, code: mfaCode.trim() });
+    if (challenge === null || !isMfaCodeReady) return;
+    mfaVerify.mutate({
+      mfaToken: challenge.mfa_token,
+      code: submittedMfaCode,
+    });
   };
 
   const errorMessage = login.isError
@@ -239,6 +415,7 @@ export function LoginPage() {
             ? (serverWaitText ?? t("auth.login.authenticating"))
             : null
         }
+        showBaselineHeading
       >
         {mfaErrorMessage && (
           <Box sx={{ marginBottom: "14px" }}>
@@ -250,27 +427,44 @@ export function LoginPage() {
         )}
 
         <form onSubmit={onSubmitMfa} noValidate>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <UiTextField
-              label={t("auth.mfa.codeLabel")}
-              value={mfaCode}
-              onChange={(event) => setMfaCode(event.target.value)}
-              placeholder="123456"
-              autoFocus
-              // inputMode numeric bật bàn phím số trên điện thoại, nhưng KHÔNG
-              // dùng type="number": mã bắt đầu bằng 0 sẽ bị trình duyệt cắt mất,
-              // và mã khôi phục có cả chữ lẫn dấu gạch.
-              inputMode="numeric"
-              autoComplete="one-time-code"
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <MfaOtpInput
+              digits={mfaDigits}
+              onChange={setMfaDigits}
               disabled={mfaVerify.isPending}
-              helperText={t("auth.mfa.codeHelp")}
+              label={t("auth.mfa.codeLabel")}
             />
+
+            <Box
+              component="details"
+              sx={{
+                color: AUTH_BASELINE.muted,
+                fontSize: { xs: 12, sm: 13 },
+                "& summary": {
+                  cursor: "pointer",
+                  color: AUTH_BASELINE.link,
+                  fontWeight: 600,
+                },
+              }}
+            >
+              <Box component="summary">{t("auth.mfa.codeHelp")}</Box>
+              <Box sx={{ marginTop: "10px" }}>
+                <UiTextField
+                  fullWidth
+                  label={t("auth.mfa.recoveryTitle")}
+                  value={mfaRecoveryCode}
+                  onChange={(event) => setMfaRecoveryCode(event.target.value)}
+                  autoComplete="off"
+                  disabled={mfaVerify.isPending}
+                />
+              </Box>
+            </Box>
 
             <UiButton
               type="submit"
               fullWidth
               loading={mfaVerify.isPending}
-              disabled={mfaVerify.isPending || mfaCode.trim() === ""}
+              disabled={mfaVerify.isPending || !isMfaCodeReady}
             >
               {t("auth.mfa.verifySubmit")}
             </UiButton>
@@ -299,7 +493,7 @@ export function LoginPage() {
           sx={{
             display: "flex",
             flexDirection: "column",
-            gap: { xs: "20px", sm: "22px" },
+            gap: { xs: "16px", sm: "18px" },
           }}
         >
           <AuthField
@@ -326,7 +520,7 @@ export function LoginPage() {
             <Box
               role="alert"
               sx={{
-                marginTop: { xs: "-14px", sm: "-16px" },
+                marginTop: { xs: "-10px", sm: "-12px" },
                 color: AUTH_BASELINE.danger,
                 fontSize: { xs: 13, sm: 15 },
                 fontWeight: 600,
@@ -343,8 +537,8 @@ export function LoginPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "flex-end",
-              marginTop: { xs: "-12px", sm: "-14px" },
-              fontSize: { xs: 15, sm: 17 },
+              marginTop: { xs: "-9px", sm: "-10px" },
+              fontSize: { xs: 14, sm: 15 },
             }}
           >
             <Link to={ROUTES.FORGOT_PASSWORD}>
@@ -361,8 +555,8 @@ export function LoginPage() {
               position: "relative",
               "& .hn-login-submit-arrow": {
                 position: "absolute",
-                right: { xs: 20, sm: 28 },
-                fontSize: { xs: 21, sm: 26 },
+                right: { xs: 18, sm: 22 },
+                fontSize: { xs: 19, sm: 22 },
                 lineHeight: 1,
               },
               "&.Mui-disabled .hn-login-submit-arrow": { opacity: 0.6 },
@@ -380,21 +574,21 @@ export function LoginPage() {
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: { xs: "12px", sm: "16px" },
-              marginTop: { xs: "0", sm: "4px" },
-              padding: { xs: "16px", sm: "20px 24px" },
+              gap: { xs: "10px", sm: "12px" },
+              marginTop: 0,
+              padding: { xs: "13px 14px", sm: "14px 16px" },
               borderRadius: "12px",
               backgroundColor: AUTH_BASELINE.pale,
               color: AUTH_BASELINE.ink,
               "& > i": {
                 color: "#008CFF",
-                fontSize: { xs: 27, sm: 34 },
+                fontSize: { xs: 24, sm: 28 },
                 flex: "0 0 auto",
               },
             }}
           >
             <i className={flatIconClass("shield-check")} aria-hidden />
-            <Box sx={{ fontSize: { xs: 14, sm: 16 }, lineHeight: 1.45 }}>
+            <Box sx={{ fontSize: { xs: 13, sm: 14 }, lineHeight: 1.4 }}>
               <Box sx={{ fontWeight: 700 }}>
                 {t("auth.login.accessNoticeTitle")}
               </Box>
