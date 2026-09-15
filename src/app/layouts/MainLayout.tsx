@@ -271,8 +271,19 @@ export function MainLayout() {
               className: "hn-system-drawer",
               style: systemShellStyle,
               sx: {
-                width: SYSTEM_SIDEBAR_WIDTH,
-                maxWidth: "85vw",
+                width: `min(${SYSTEM_SIDEBAR_WIDTH}px, calc(100vw - 40px))`,
+                maxWidth: "88vw",
+                height: "100dvh",
+                overflow: "hidden",
+                color: "var(--map-white)",
+                backgroundColor: "var(--map-navy)",
+                backgroundImage:
+                  'linear-gradient(180deg, color-mix(in srgb, var(--map-navy) 74%, transparent) 0%, color-mix(in srgb, var(--map-navy) 62%, transparent) 48%, color-mix(in srgb, var(--map-navy) 56%, transparent) 100%), url("/assets/systemhn/sidebar-warehouse-generated-fixed.webp")',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center top",
+                backgroundSize: "cover",
+                boxShadow:
+                  "4px 0 18px color-mix(in srgb, var(--map-navy) 22%, transparent)",
               },
             },
           }}
