@@ -729,7 +729,7 @@ export default function DashboardPage() {
     return (
       <div className="hn-dash" data-mvp-screen="MAP-01">
         <DashboardSnapshot
-          name={profile?.name ?? user?.name ?? "bạn"}
+          name={profile?.name ?? user?.name ?? t("dashboard.snapshot.userFallback")}
           warehouseLabel={scopeLabel}
           cards={kpiCards}
           rows={mapChartRows}
