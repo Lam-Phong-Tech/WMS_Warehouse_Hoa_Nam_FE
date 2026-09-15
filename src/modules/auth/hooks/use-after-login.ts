@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { ROUTES } from "@/shared/constants/routes";
+import { DASHBOARD_CANONICAL, ROUTES } from "@/shared/constants/routes";
 import { startWorkSession } from "@/shared/lib/session-idle";
 import type { AuthenticatedLogin } from "@/modules/auth/types/auth.types";
 
@@ -50,7 +50,7 @@ export function useAfterLogin(): (data: AuthenticatedLogin) => void {
           : null;
       const nextPath = from?.pathname
         ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}`
-        : (safeRedirect ?? ROUTES.DASHBOARD);
+        : (safeRedirect ?? DASHBOARD_CANONICAL);
 
       navigate(nextPath, { replace: true });
     },
