@@ -5,7 +5,7 @@
  */
 import { useNavigate } from "react-router-dom";
 import { Box, UiButton, UiStateSurface } from "@/shared/ui";
-import { ROUTES } from "@/shared/constants/routes";
+import { DASHBOARD_CANONICAL } from "@/shared/constants/routes";
 import { useT } from "@/shared/i18n/useT";
 
 export function NotFoundPage() {
@@ -27,7 +27,7 @@ export function NotFoundPage() {
         title={t("errors.notFound.title")}
         description={t("errors.notFound.description")}
         action={
-          <UiButton onClick={() => navigate(ROUTES.DASHBOARD)}>
+          <UiButton onClick={() => navigate(DASHBOARD_CANONICAL)}>
             {t("errors.notFound.goHome")}
           </UiButton>
         }
