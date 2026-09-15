@@ -20,6 +20,8 @@ import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { OPERATIONS_REPORT_ENDPOINTS } from "@/modules/reports/operations/report-data";
 import { reportQueryOptions } from "../overview/overview-data";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import DashboardPage from "./DashboardPage";
 
 /**
@@ -163,6 +165,7 @@ afterEach(() => {
     isSuperAdmin: false,
     isProfileLoaded: false,
   });
+  useLanguageStore.getState().setLanguage("vi");
   window.history.pushState({}, "", "/");
 });
 
@@ -592,6 +595,23 @@ describe("DashboardPage — biểu đồ theo kỳ KPI", () => {
 });
 
 describe("DashboardPage MAP-01 — filter chart độc lập", () => {
+  it("đổi ngôn ngữ sang English thì dịch phần snapshot MAP-01", async () => {
+    window.history.pushState({}, "", "/dashboard?screen=MAP-01");
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    useLanguageStore.getState().setLanguage("en");
+    await ensureEnglishMessages();
+
+    renderDashboard();
+
+    expect(await screen.findByText(/Good morning,/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Inbound - outbound - stock chart"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Priority work")).toBeInTheDocument();
+    expect(screen.getByText("Recent documents")).toBeInTheDocument();
+    expect(screen.getByText("Stock status composition")).toBeInTheDocument();
+  });
+
   it("đổi 14 ngày chỉ tải lại chart, KPI Hôm nay và nguồn KPI không đổi", async () => {
     window.history.pushState({}, "", "/dashboard?screen=MAP-01");
     mockedGet.mockImplementation((url: string) => routeResponses(url));

@@ -2901,7 +2901,7 @@
   padding: 8px 11px;
   border: 1px solid var(--snapshot-line);
   border-radius: 8px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   color: var(--primary-dark);
   text-align: left;
 }
@@ -2953,7 +2953,7 @@
   overflow: hidden;
   border: 1px solid var(--snapshot-line);
   border-radius: 7px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   box-shadow: 0 1px 3px rgba(17, 93, 140, 0.05);
 }
 .snapshot-kpi-icon {
@@ -3040,7 +3040,7 @@
   overflow: visible;
   border: 1px solid var(--snapshot-line);
   border-radius: 7px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   box-shadow: 0 1px 3px rgba(17, 93, 140, 0.04);
 }
 .snapshot-card > header {
@@ -3090,7 +3090,7 @@
   padding: 8px 10px;
   border: 1px solid var(--blue);
   border-radius: 7px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   color: var(--hnd-info-fg);
   font-size: 12px;
   font-weight: 700;
@@ -3113,7 +3113,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   box-shadow: 0 10px 28px rgba(1, 65, 109, 0.18);
 }
 .snapshot-filter-menu > span {
@@ -3216,7 +3216,7 @@
   min-height: 46px;
   padding: 3px 10px;
   border-top: 1px solid var(--line);
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   color: inherit;
   text-align: left;
   transition:
@@ -3332,7 +3332,7 @@
   width: 89px;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   text-align: center;
 }
 .snapshot-donut strong {
@@ -3392,7 +3392,7 @@
   padding: 9px 14px;
   border: 1px solid var(--snapshot-line);
   border-radius: 7px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   color: var(--primary-dark);
   text-align: left;
   transition:
@@ -3457,7 +3457,7 @@
   padding: 9px 6px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   color: var(--primary-dark);
   text-align: center;
   transition:
@@ -3568,14 +3568,14 @@
 }
 .snapshot-page-state button.is-outline {
   border: 1px solid var(--blue);
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   color: var(--blue);
 }
 .snapshot-page-state.is-error {
   min-height: 218px;
   border: 1px solid var(--snapshot-line);
   border-radius: 7px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
 }
 .snapshot-page-state.is-error > span {
   width: 44px;
@@ -3603,7 +3603,7 @@
   width: min(650px, 100%);
   overflow: hidden;
   border-radius: 11px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   box-shadow: 0 18px 45px rgba(0, 41, 71, 0.25);
 }
 .snapshot-custom-dialog > header {
@@ -3747,7 +3747,7 @@
   min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: var(--hnd-white);
+  background: var(--hnd-surface-bg);
   color: var(--hnd-info-fg);
   font-weight: 700;
 }
@@ -3989,7 +3989,8 @@
    so no other WMS route is recolored. */
 .hn-map-shell,
 .hn-map-drawer {
-  color-scheme: light;
+  /* Kế thừa light/dark từ <html>; MAP-01 không được tự khoá về light. */
+  color-scheme: inherit;
 }
 .hn-map-shell {
   background: var(--map-surface);
@@ -4054,17 +4055,17 @@
   --ink: var(--map-ink);
   --muted: var(--map-muted);
   --line: var(--map-line);
-  --primary: var(--map-cta);
-  --primary-dark: var(--map-navy);
+  --primary: var(--map-link);
+  --primary-dark: var(--map-link);
   --primary-soft: var(--map-pale);
   --green: var(--map-success);
-  --green-soft: color-mix(in srgb, var(--map-success) 14%, var(--map-white));
+  --green-soft: color-mix(in srgb, var(--map-success) 14%, var(--map-card));
   --amber: var(--map-warning);
-  --amber-soft: color-mix(in srgb, var(--map-warning) 14%, var(--map-white));
+  --amber-soft: color-mix(in srgb, var(--map-warning) 14%, var(--map-card));
   --red: var(--map-danger);
-  --red-soft: color-mix(in srgb, var(--map-danger) 14%, var(--map-white));
+  --red-soft: color-mix(in srgb, var(--map-danger) 14%, var(--map-card));
   --blue-soft: var(--map-pale);
-  --surface: var(--map-white);
+  --surface: var(--map-card);
   --hnt-white: var(--map-white);
   --hnt-surface-muted: var(--map-surface);
   --hnt-surface-hover: var(--map-pale);
@@ -4085,8 +4086,8 @@
 .hn-map-shell .hn-topbar .topbar-search {
   min-height: 40px;
   border-color: var(--map-line);
-  background: var(--map-white);
-  color: var(--map-navy);
+  background: var(--map-card);
+  color: var(--map-link);
   transition:
     border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -4113,7 +4114,7 @@
 }
 .hn-map-shell .hn-topbar .avatar {
   background: var(--map-pale);
-  color: var(--map-navy);
+  color: var(--map-link);
 }
 .hn-map-shell .hn-topbar .topbar-profile-summary strong {
   color: var(--map-white);
@@ -4136,31 +4137,32 @@
    names while rendering the exact SystemHNWeb navy/ocean/teal family. */
 .hn-dashboard-snapshot {
   --snapshot-ink: var(--map-ink);
-  --snapshot-blue: var(--map-cta);
+  --snapshot-blue: var(--map-link);
   --snapshot-line: var(--map-line);
   --snapshot-bg: var(--map-surface);
   --snapshot-orange: var(--map-warning);
   --snapshot-green: var(--map-success);
   --snapshot-red: var(--map-danger);
   --snapshot-purple: var(--wms-primary);
-  --snapshot-donut-0: var(--map-navy);
+  --snapshot-donut-0: var(--map-link);
   --snapshot-donut-1: var(--map-cta);
   --snapshot-donut-2: var(--map-warning);
   --snapshot-donut-3: var(--map-danger);
-  --primary-dark: var(--map-navy);
-  --blue: var(--map-cta);
+  --primary-dark: var(--map-link);
+  --blue: var(--map-link);
   --hnd-info-fg: var(--map-link);
   --blue-soft: var(--map-pale);
   --line: var(--map-line);
   --muted: var(--map-muted);
   --hnd-white: var(--map-white);
+  --hnd-surface-bg: var(--map-card);
   --primary-soft: var(--map-pale);
   --green: var(--map-success);
-  --green-soft: color-mix(in srgb, var(--map-success) 14%, var(--map-white));
+  --green-soft: color-mix(in srgb, var(--map-success) 14%, var(--map-card));
   --amber: var(--map-warning);
-  --amber-soft: color-mix(in srgb, var(--map-warning) 14%, var(--map-white));
+  --amber-soft: color-mix(in srgb, var(--map-warning) 14%, var(--map-card));
   --red: var(--map-danger);
-  --red-soft: color-mix(in srgb, var(--map-danger) 14%, var(--map-white));
+  --red-soft: color-mix(in srgb, var(--map-danger) 14%, var(--map-card));
   min-height: 100%;
   background: var(--map-surface);
   color: var(--map-ink);
@@ -4194,7 +4196,7 @@
 }
 .snapshot-filter-menu {
   border-color: var(--map-line);
-  background: var(--map-white);
+  background: var(--map-card);
   box-shadow: var(--map-card-shadow);
   animation: snapshot-popover-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -4254,7 +4256,7 @@
   padding: 10px 12px;
   border: 1px solid var(--map-line);
   border-radius: 8px;
-  background: var(--map-white);
+  background: var(--map-card);
   box-shadow: var(--map-card-shadow);
   color: var(--map-ink);
   pointer-events: none;
@@ -4274,7 +4276,7 @@
   height: 10px;
   border-right: 1px solid var(--map-line);
   border-bottom: 1px solid var(--map-line);
-  background: var(--map-white);
+  background: var(--map-card);
   transform: translateX(-50%) rotate(45deg);
 }
 .snapshot-chart-tooltip.is-below::after {
@@ -4286,7 +4288,7 @@
   border-left: 1px solid var(--map-line);
 }
 .snapshot-chart-tooltip strong {
-  color: var(--map-navy);
+  color: var(--map-link);
   font-size: 12px;
 }
 .snapshot-chart-tooltip span {
@@ -4301,7 +4303,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--map-navy);
+  background: var(--map-link);
 }
 .snapshot-chart-tooltip span i.is-out {
   background: var(--map-warning);
@@ -4425,7 +4427,7 @@
 .snapshot-filter > button:disabled:focus-visible {
   cursor: not-allowed;
   border-color: var(--map-line);
-  background: color-mix(in srgb, var(--map-pale) 62%, var(--map-white));
+  background: color-mix(in srgb, var(--map-pale) 62%, var(--map-card));
   color: var(--map-muted);
   box-shadow: none;
   opacity: 0.72;
@@ -4440,7 +4442,7 @@
   overflow: hidden;
   padding: 18px 20px 22px;
   border-radius: 0 0 8px 8px;
-  background: var(--map-white);
+  background: var(--map-card);
 }
 .snapshot-chart-skeleton::after {
   content: "";
@@ -4516,7 +4518,7 @@
 }
 .snapshot-calendar-days button.is-in-range {
   background: var(--map-pale);
-  color: var(--map-navy);
+  color: var(--map-link);
   font-weight: 700;
 }
 .snapshot-calendar-days button.is-range-start,
@@ -4528,7 +4530,7 @@
   font-weight: 800;
 }
 .snapshot-calendar-days button.is-invalid-range {
-  background: color-mix(in srgb, var(--map-danger) 15%, var(--map-white));
+  background: color-mix(in srgb, var(--map-danger) 15%, var(--map-card));
   color: var(--map-danger);
 }
 .snapshot-calendar-days button.is-range-start.is-invalid-range,
@@ -4559,8 +4561,8 @@
   padding: 9px 12px;
   border: 1px solid var(--map-line);
   border-radius: 8px;
-  background: var(--map-white);
-  color: var(--map-navy);
+  background: var(--map-card);
+  color: var(--map-link);
   box-shadow: var(--map-card-shadow);
 }
 .snapshot-reference-state > span {
@@ -4598,7 +4600,7 @@
   min-height: 280px;
   border: 1px solid var(--map-line);
   border-radius: 8px;
-  background: var(--map-white);
+  background: var(--map-card);
 }
 .snapshot-page-state.is-empty > span {
   width: 74px;
