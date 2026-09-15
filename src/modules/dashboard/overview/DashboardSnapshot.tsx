@@ -193,6 +193,17 @@ function SnapshotChart({
   const plotW = W - pad.left - pad.right;
   const plotH = H - pad.top - pad.bottom;
   const step = plotW / Math.max(rows.length, 1);
+
+  // Không render nhãn ngày cho mọi điểm khi range dài: với 14/30 ngày các
+  // chuỗi DD/MM sẽ chồng lên nhau như lỗi UI người dùng báo. Dữ liệu/hover vẫn
+  // giữ đủ từng ngày, chỉ giảm mật độ nhãn trục X. Luôn giữ ngày đầu + cuối.
+  const xLabelStride = Math.max(1, Math.ceil(rows.length / 8));
+  const lastRowIndex = rows.length - 1;
+  const shouldShowXAxisLabel = (index: number) =>
+    index === 0 ||
+    index === lastRowIndex ||
+    (index % xLabelStride === 0 && lastRowIndex - index >= xLabelStride);
+
   const pointFor = (index: number, value: number) => ({
     x: pad.left + step * index + step / 2,
     y: pad.top + plotH - (value / maxTrend) * plotH,
@@ -279,14 +290,16 @@ function SnapshotChart({
                 height={outboundH}
                 rx="2"
               />
-              <text
-                className="snapshot-axis snapshot-x"
-                x={pad.left + step * index + step / 2}
-                y={H - 8}
-                textAnchor="middle"
-              >
-                {dateLabel(row.date)}
-              </text>
+              {shouldShowXAxisLabel(index) ? (
+                <text
+                  className="snapshot-axis snapshot-x"
+                  x={pad.left + step * index + step / 2}
+                  y={H - 8}
+                  textAnchor="middle"
+                >
+                  {dateLabel(row.date)}
+                </text>
+              ) : null}
               <rect
                 className="snapshot-hover-target"
                 x={pad.left + step * index}
