@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import dayjs from "dayjs";
 import { DashIcon } from "../components/DashIcon";
 import type { DashboardIconName } from "../components/DashIcon";
@@ -10,6 +11,7 @@ import type {
   OverviewPeriod,
 } from "./overview-data";
 import {
+  activeLocale,
   dashboardNow,
   fmt,
   MAP_OVERVIEW_MAX_RANGE_DAYS,
@@ -35,16 +37,6 @@ export type OverviewReferenceState =
   | "urgent";
 
 const ISO = "YYYY-MM-DD";
-const WEEKDAY_VI = [
-  "Chủ nhật",
-  "Thứ Hai",
-  "Thứ Ba",
-  "Thứ Tư",
-  "Thứ Năm",
-  "Thứ Sáu",
-  "Thứ Bảy",
-] as const;
-
 const KPI_TONES: Array<{ icon: DashboardIconName; tone: string }> = [
   { icon: "package-search", tone: "stock" },
   { icon: "settings-2", tone: "value" },
@@ -55,18 +47,27 @@ const KPI_TONES: Array<{ icon: DashboardIconName; tone: string }> = [
 
 const dateLabel = (value: string) => dayjs(value).format("DD/MM");
 
-function periodText(period: OverviewPeriod, range: DateRange) {
-  if (period === "last7") return "7 ngày gần nhất";
-  if (period === "today") return "Hôm nay";
-  if (period === "month") return "30 ngày gần nhất";
+function periodText(
+  period: OverviewPeriod,
+  range: DateRange,
+  t: TranslateFn,
+) {
+  if (period === "last7") return t("dashboard.snapshot.periodLast7");
+  if (period === "today") return t("dashboard.snapshot.periodToday");
+  if (period === "month") return t("dashboard.snapshot.periodLast30");
 
   const inclusiveDays =
     dayjs(range.to).diff(dayjs(range.from), "day") + 1;
   const endsToday = range.to === dashboardNow().format(ISO);
-  if (endsToday && inclusiveDays === 14) return "14 ngày gần nhất";
-  if (endsToday && inclusiveDays === 30) return "30 ngày gần nhất";
+  if (endsToday && inclusiveDays === 14)
+    return t("dashboard.snapshot.periodLast14");
+  if (endsToday && inclusiveDays === 30)
+    return t("dashboard.snapshot.periodLast30");
 
-  return `Tùy chỉnh · ${dateLabel(range.from)}–${dateLabel(range.to)}`;
+  return t("dashboard.snapshot.periodCustom", {
+    from: dateLabel(range.from),
+    to: dateLabel(range.to),
+  });
 }
 
 function ChartPlaceholder({
@@ -78,12 +79,14 @@ function ChartPlaceholder({
   onRetry: () => void;
   onChangeFilter: () => void;
 }) {
+  const t = useT();
+
   if (state === "loading") {
     return (
       <div
         className="snapshot-chart-skeleton"
         role="status"
-        aria-label="Đang tải biểu đồ"
+        aria-label={t("dashboard.snapshot.chartLoadingAria")}
       >
         <div className="snapshot-chart-skeleton-legend" aria-hidden="true">
           <i />
@@ -109,23 +112,23 @@ function ChartPlaceholder({
   const content = {
     loading: [
       "loader-circle" as DashboardIconName,
-      "Đang tải biểu đồ",
-      "Dữ liệu xu hướng đang được cập nhật.",
+      t("dashboard.snapshot.chartLoadingTitle"),
+      t("dashboard.snapshot.chartLoadingCopy"),
     ],
     empty: [
       "inbox" as DashboardIconName,
-      "Chưa có dữ liệu trong khoảng đã chọn",
-      "Chọn khoảng thời gian khác để xem xu hướng nhập – xuất – tồn kho.",
+      t("dashboard.snapshot.chartEmptyTitle"),
+      t("dashboard.snapshot.chartEmptyCopy"),
     ],
     failed: [
       "triangle-alert" as DashboardIconName,
-      "Không tải được dữ liệu biểu đồ",
-      "Đã xảy ra lỗi khi tải dữ liệu trong khoảng đã chọn.",
+      t("dashboard.snapshot.chartFailedTitle"),
+      t("dashboard.snapshot.chartFailedCopy"),
     ],
     forbidden: [
       "lock" as DashboardIconName,
-      "Bạn không có quyền xem biểu đồ",
-      "Liên hệ quản trị viên để được cấp quyền xem xu hướng kho.",
+      t("dashboard.snapshot.chartForbiddenTitle"),
+      t("dashboard.snapshot.chartForbiddenCopy"),
     ],
   } as const;
   const [icon, title, copy] = content[state === "ready" ? "empty" : state];
@@ -138,17 +141,17 @@ function ChartPlaceholder({
       <p>{copy}</p>
       {state === "empty" ? (
         <button type="button" onClick={onChangeFilter}>
-          Đổi bộ lọc
+          {t("dashboard.snapshot.changeFilter")}
         </button>
       ) : null}
       {state === "failed" ? (
         <button type="button" onClick={onRetry}>
-          Thử lại
+          {t("dashboard.snapshot.retry")}
         </button>
       ) : null}
       {state === "forbidden" ? (
         <button type="button" onClick={() => window.history.back()}>
-          Quay lại Tổng quan
+          {t("dashboard.snapshot.backOverview")}
         </button>
       ) : null}
     </div>
@@ -168,6 +171,7 @@ function SnapshotChart({
   onRetry: () => void;
   onChangeFilter: () => void;
 }) {
+  const t = useT();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   if (state !== "ready")
@@ -216,24 +220,24 @@ function SnapshotChart({
 
   return (
     <div className="snapshot-chart-canvas">
-      <div className="snapshot-legend" aria-label="Chú giải biểu đồ">
+      <div className="snapshot-legend" aria-label={t("dashboard.snapshot.chartLegendAria")}>
         <span className="is-in">
           <i />
-          Nhập kho
+          {t("dashboard.snapshot.inbound")}
         </span>
         <span className="is-out">
           <i />
-          Xuất kho
+          {t("dashboard.snapshot.outbound")}
         </span>
         <span className="is-stock">
           <i />
-          Tồn kho
+          {t("dashboard.snapshot.stock")}
         </span>
       </div>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label="Biểu đồ nhập xuất tồn kho"
+        aria-label={t("dashboard.snapshot.chartAria")}
         preserveAspectRatio="none"
       >
         {ticks.map((tick) => {
@@ -292,11 +296,14 @@ function SnapshotChart({
                 rx="2"
                 tabIndex={0}
                 role="button"
-                aria-label={`${dateLabel(row.date)}: Nhập ${fmt(row.inbound)}, Xuất ${fmt(
-                  row.product + row.component,
-                )}, Tồn ${fmt(
-                  trend.find((item) => item.date === row.date)?.closing ?? 0,
-                )}`}
+                aria-label={t("dashboard.snapshot.chartPointAria", {
+                  date: dateLabel(row.date),
+                  inbound: fmt(row.inbound),
+                  outbound: fmt(row.product + row.component),
+                  stock: fmt(
+                    trend.find((item) => item.date === row.date)?.closing ?? 0,
+                  ),
+                })}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
                 onFocus={() => setHoveredIndex(index)}
@@ -324,7 +331,7 @@ function SnapshotChart({
           />
         ))}
         <text className="snapshot-stock-axis" x={W - 2} y={17} textAnchor="end">
-          Tồn cuối ngày
+          {t("dashboard.snapshot.closingStock")}
         </text>
       </svg>
       {hoveredRow && hoveredPoint ? (
@@ -339,15 +346,15 @@ function SnapshotChart({
           <strong>{dayjs(hoveredRow.date).format("DD/MM/YYYY")}</strong>
           <span>
             <i className="is-in" />
-            Nhập <b>{fmt(hoveredRow.inbound)}</b>
+            {t("dashboard.snapshot.tooltipInbound")} <b>{fmt(hoveredRow.inbound)}</b>
           </span>
           <span>
             <i className="is-out" />
-            Xuất <b>{fmt(hoveredRow.product + hoveredRow.component)}</b>
+            {t("dashboard.snapshot.tooltipOutbound")}{" "}<b>{fmt(hoveredRow.product + hoveredRow.component)}</b>
           </span>
           <span>
             <i className="is-stock" />
-            Tồn <b>{fmt(hoveredStock)}</b>
+            {t("dashboard.snapshot.tooltipStock")} <b>{fmt(hoveredStock)}</b>
           </span>
         </div>
       ) : null}
@@ -364,6 +371,7 @@ function MonthGrid({
   invalid: boolean;
   onPick: (value: string) => void;
 }) {
+  const t = useT();
   const cursorValue = range.from || range.to;
   const [cursor, setCursor] = useState(() =>
     dayjs(cursorValue || dashboardNow()).startOf("month"),
@@ -383,19 +391,22 @@ function MonthGrid({
     <div className={`snapshot-calendar ${invalid ? "is-invalid" : ""}`}>
       <header>
         <strong>
-          Tháng {cursor.month() + 1} {cursor.year()}
+          {t("dashboard.snapshot.monthLabel", {
+            month: cursor.month() + 1,
+            year: cursor.year(),
+          })}
         </strong>
         <span>
           <button
             type="button"
-            aria-label="Tháng trước"
+            aria-label={t("dashboard.snapshot.prevMonth")}
             onClick={() => setCursor(cursor.subtract(1, "month"))}
           >
             <DashIcon name="chevron-left" />
           </button>
           <button
             type="button"
-            aria-label="Tháng sau"
+            aria-label={t("dashboard.snapshot.nextMonth")}
             disabled={!cursor.startOf("month").isBefore(today.startOf("month"))}
             onClick={() => setCursor(cursor.add(1, "month"))}
           >
@@ -404,7 +415,15 @@ function MonthGrid({
         </span>
       </header>
       <div className="snapshot-calendar-week">
-        {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day) => (
+        {[
+          t("dashboard.weekday.sun"),
+          t("dashboard.weekday.mon"),
+          t("dashboard.weekday.tue"),
+          t("dashboard.weekday.wed"),
+          t("dashboard.weekday.thu"),
+          t("dashboard.weekday.fri"),
+          t("dashboard.weekday.sat"),
+        ].map((day) => (
           <span key={day}>{day}</span>
         ))}
       </div>
@@ -490,6 +509,7 @@ export function DashboardSnapshot({
   onRetry: () => void;
   onNavigate: (route: string) => void;
 }) {
+  const t = useT();
   const [filterOpen, setFilterOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const [draft, setDraft] = useState(custom);
@@ -506,13 +526,15 @@ export function DashboardSnapshot({
       : 0;
   const invalidReason =
     !draft.from || !draft.to
-      ? "Chọn đầy đủ ngày bắt đầu và ngày kết thúc."
+      ? t("dashboard.snapshot.invalidRequired")
       : draft.from > draft.to
-        ? "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc."
+        ? t("dashboard.snapshot.invalidOrder")
         : draft.from > todayIso || draft.to > todayIso
-          ? "Không thể chọn ngày trong tương lai."
+          ? t("dashboard.snapshot.invalidFuture")
           : draftDays > MAP_OVERVIEW_MAX_RANGE_DAYS
-            ? `Khoảng thời gian tối đa ${MAP_OVERVIEW_MAX_RANGE_DAYS} ngày.`
+            ? t("dashboard.snapshot.invalidMaxDays", {
+                days: MAP_OVERVIEW_MAX_RANGE_DAYS,
+              })
             : "";
   const invalid = invalidReason !== "";
 
@@ -651,31 +673,31 @@ export function DashboardSnapshot({
   const referenceOperationState =
     referenceState === "pending-approval"
       ? {
-          label: "Chờ duyệt",
+          label: t("dashboard.snapshot.statePending"),
           icon: "file-clock" as DashboardIconName,
           tone: "warning",
         }
       : referenceState === "processing"
         ? {
-            label: "Đang xử lý",
+            label: t("dashboard.snapshot.stateProcessing"),
             icon: "loader-circle" as DashboardIconName,
             tone: "info",
           }
         : referenceState === "completed"
           ? {
-              label: "Hoàn thành",
+              label: t("dashboard.snapshot.stateCompleted"),
               icon: "circle-dot" as DashboardIconName,
               tone: "success",
             }
           : referenceState === "overdue"
             ? {
-                label: "Quá hạn",
+                label: t("dashboard.snapshot.stateOverdue"),
                 icon: "file-clock" as DashboardIconName,
                 tone: "danger",
               }
             : referenceState === "urgent"
               ? {
-                  label: "Khẩn cấp",
+                  label: t("dashboard.snapshot.stateUrgent"),
                   icon: "triangle-alert" as DashboardIconName,
                   tone: "danger",
                 }
@@ -692,14 +714,18 @@ export function DashboardSnapshot({
           <DashIcon name="layout-dashboard" />
         </span>
         <div>
-          <h1>Chào buổi sáng, {name}!</h1>
-          <p>Cùng quản lý kho hiệu quả hơn mỗi ngày.</p>
+          <h1>{t("dashboard.snapshot.greeting", { name })}</h1>
+          <p>{t("dashboard.snapshot.greetingSub")}</p>
         </div>
         <div className="snapshot-time">
           <span>
             <DashIcon name="calendar-days" />
-            {WEEKDAY_VI[businessNow.day()]},{" "}
-            {businessNow.format("DD [tháng] M, YYYY")}
+            {businessNow.toDate().toLocaleDateString(activeLocale(), {
+              weekday: "long",
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}
           </span>
           <i />
           <span>
@@ -710,7 +736,7 @@ export function DashboardSnapshot({
         <button
           type="button"
           className="snapshot-warehouse"
-          aria-label="Mở thông tin kho đang xem"
+          aria-label={t("dashboard.snapshot.warehouseOpenAria")}
           onClick={() => onNavigate("/master-data/warehouse")}
         >
           <DashIcon name="warehouse" />
@@ -718,7 +744,7 @@ export function DashboardSnapshot({
             <strong>{warehouseLabel}</strong>
             <small>
               <i />
-              Đang hoạt động
+              {t("dashboard.snapshot.warehouseActive")}
             </small>
           </span>
           <DashIcon name="chevron-down" />
@@ -729,7 +755,7 @@ export function DashboardSnapshot({
         <section
           className={`snapshot-reference-state is-${referenceOperationState.tone}`}
           role="status"
-          aria-label={`Trạng thái tổng quan: ${referenceOperationState.label}`}
+          aria-label={t("dashboard.snapshot.referenceStateAria", { state: referenceOperationState.label })}
         >
           <span>
             <DashIcon name={referenceOperationState.icon} />
@@ -743,25 +769,25 @@ export function DashboardSnapshot({
           <span>
             <DashIcon name="lock" />
           </span>
-          <h2>Bạn chưa có quyền xem Tổng quan</h2>
-          <p>Tài khoản của bạn chưa được cấp quyền truy cập màn hình này.</p>
+          <h2>{t("dashboard.snapshot.forbiddenTitle")}</h2>
+          <p>{t("dashboard.snapshot.forbiddenCopy")}</p>
           <div>
             <button type="button" onClick={() => window.history.back()}>
-              Quay lại
+              {t("dashboard.snapshot.back")}
             </button>
             <button
               type="button"
               className="is-outline"
               onClick={() => onNavigate("/login")}
             >
-              Đăng xuất
+              {t("dashboard.snapshot.logout")}
             </button>
           </div>
         </section>
       ) : (
         <>
           {!referenceEmpty && !referenceFailed ? (
-            <section className="snapshot-kpis" aria-label="Chỉ số tổng quan">
+            <section className="snapshot-kpis" aria-label={t("dashboard.snapshot.kpiAria")}>
               {cards.map((card, index) => {
               const appearance = KPI_TONES[index] ?? KPI_TONES[0];
               return (
@@ -800,18 +826,18 @@ export function DashboardSnapshot({
               <span>
                 <DashIcon name="inbox" />
               </span>
-              <h2>Chưa có dữ liệu tổng quan</h2>
-              <p>Chưa có dữ liệu phù hợp để hiển thị trong phạm vi hiện tại.</p>
+              <h2>{t("dashboard.snapshot.emptyTitle")}</h2>
+              <p>{t("dashboard.snapshot.emptyCopy")}</p>
             </section>
           ) : effectiveFailed ? (
             <section className="snapshot-page-state is-error">
               <span>
                 <DashIcon name="triangle-alert" />
               </span>
-              <h2>Không thể tải dữ liệu tổng quan</h2>
-              <p>Đã xảy ra lỗi khi kết nối dữ liệu. Vui lòng thử lại.</p>
+              <h2>{t("dashboard.snapshot.errorTitle")}</h2>
+              <p>{t("dashboard.snapshot.errorCopy")}</p>
               <button type="button" onClick={onRetry}>
-                Thử lại
+                {t("dashboard.snapshot.retry")}
               </button>
             </section>
           ) : (
@@ -819,7 +845,7 @@ export function DashboardSnapshot({
               <section className="snapshot-main-grid">
                 <article className="snapshot-card snapshot-chart-card">
                   <header>
-                    <h2>Biểu đồ nhập - xuất - tồn kho</h2>
+                    <h2>{t("dashboard.snapshot.chartTitle")}</h2>
                     <div className="snapshot-filter" ref={filterRef}>
                       <button
                         ref={filterButtonRef}
@@ -831,12 +857,12 @@ export function DashboardSnapshot({
                           if (!filterDisabled) setFilterOpen((value) => !value);
                         }}
                       >
-                        {periodText(period, range)}
+                        {periodText(period, range, t)}
                         <DashIcon name="chevron-down" />
                       </button>
                       {filterOpen && !filterDisabled ? (
                         <div className="snapshot-filter-menu" role="menu">
-                          <span>Chọn khoảng thời gian</span>
+                          <span>{t("dashboard.snapshot.selectRange")}</span>
                           <button
                             type="button"
                             role="menuitemradio"
@@ -844,7 +870,7 @@ export function DashboardSnapshot({
                             className={selectedPreset === 7 ? "is-selected" : ""}
                             onClick={() => selectDays(7)}
                           >
-                            7 ngày gần nhất
+                            {t("dashboard.snapshot.periodLast7")}
                           </button>
                           <button
                             type="button"
@@ -853,7 +879,7 @@ export function DashboardSnapshot({
                             className={selectedPreset === 14 ? "is-selected" : ""}
                             onClick={() => selectDays(14)}
                           >
-                            14 ngày gần nhất
+                            {t("dashboard.snapshot.periodLast14")}
                           </button>
                           <button
                             type="button"
@@ -862,7 +888,7 @@ export function DashboardSnapshot({
                             className={selectedPreset === 30 ? "is-selected" : ""}
                             onClick={() => selectDays(30)}
                           >
-                            30 ngày gần nhất
+                            {t("dashboard.snapshot.periodLast30")}
                           </button>
                           <button
                             type="button"
@@ -876,7 +902,7 @@ export function DashboardSnapshot({
                               setFilterOpen(false);
                             }}
                           >
-                            Tùy chỉnh
+                            {t("dashboard.snapshot.custom")}
                           </button>
                         </div>
                       ) : null}
@@ -892,12 +918,12 @@ export function DashboardSnapshot({
                 </article>
                 <article className="snapshot-card snapshot-priority">
                   <header>
-                    <h2>Công việc cần ưu tiên</h2>
+                    <h2>{t("dashboard.snapshot.priorityTitle")}</h2>
                     <button
                       type="button"
                       onClick={() => onNavigate("/reports/import-quality")}
                     >
-                      Xem tất cả <DashIcon name="arrow-right" />
+                      {t("dashboard.snapshot.viewAll")} <DashIcon name="arrow-right" />
                     </button>
                   </header>
                   {effectiveLoading ? (
@@ -946,30 +972,30 @@ export function DashboardSnapshot({
                 </article>
                 <article className="snapshot-card snapshot-recent">
                   <header>
-                    <h2>Phiếu gần đây</h2>
+                    <h2>{t("dashboard.snapshot.recentDocsTitle")}</h2>
                     <button
                       type="button"
                       onClick={() => onNavigate("/inbound")}
                     >
-                      Xem tất cả <DashIcon name="arrow-right" />
+                      {t("dashboard.snapshot.viewAll")} <DashIcon name="arrow-right" />
                     </button>
                   </header>
                   <div className="snapshot-empty-table">
                     <DashIcon name="inbox" />
-                    <strong>Chưa có phiếu gần đây</strong>
+                    <strong>{t("dashboard.snapshot.recentDocsEmpty")}</strong>
                     <span>
-                      Dữ liệu phiếu sẽ hiển thị khi nguồn được kết nối.
+                      {t("dashboard.snapshot.recentDocsCopy")}
                     </span>
                   </div>
                 </article>
                 <article className="snapshot-card snapshot-stock">
                   <header>
-                    <h2>Cơ cấu trạng thái tồn kho</h2>
+                    <h2>{t("dashboard.snapshot.stockCompositionTitle")}</h2>
                     <button
                       type="button"
                       onClick={() => onNavigate("/inventory")}
                     >
-                      Xem chi tiết <DashIcon name="arrow-right" />
+                      {t("dashboard.snapshot.viewDetail")} <DashIcon name="arrow-right" />
                     </button>
                   </header>
                   {effectiveLoading ? (
@@ -984,7 +1010,7 @@ export function DashboardSnapshot({
                       >
                         <div>
                           <strong>{fmt(total)}</strong>
-                          <span>Tổng tồn</span>
+                          <span>{t("dashboard.snapshot.totalStock")}</span>
                         </div>
                       </div>
                       <div className="snapshot-stock-list">
@@ -1021,8 +1047,8 @@ export function DashboardSnapshot({
                     <DashIcon name="package-search" />
                   </span>
                   <div>
-                    <strong>Thông tin kho</strong>
-                    <small>Phạm vi kho đang được cấp quyền</small>
+                    <strong>{t("dashboard.snapshot.warehouseInfoTitle")}</strong>
+                    <small>{t("dashboard.snapshot.warehouseInfoCopy")}</small>
                   </div>
                   <DashIcon name="arrow-right" />
                 </button>
@@ -1034,8 +1060,8 @@ export function DashboardSnapshot({
                     <DashIcon name="chart-column-big" />
                   </span>
                   <div>
-                    <strong>Tiến độ xử lý hôm nay</strong>
-                    <small>Dữ liệu nhập – xuất theo ngày</small>
+                    <strong>{t("dashboard.snapshot.todayProgressTitle")}</strong>
+                    <small>{t("dashboard.snapshot.todayProgressCopy")}</small>
                   </div>
                   <DashIcon name="arrow-right" />
                 </button>
@@ -1044,24 +1070,24 @@ export function DashboardSnapshot({
                     <DashIcon name="calendar-days" />
                   </span>
                   <div>
-                    <strong>Lịch nhập/xuất trong ngày</strong>
-                    <small>Theo dõi phiếu phát sinh</small>
+                    <strong>{t("dashboard.snapshot.dailyScheduleTitle")}</strong>
+                    <small>{t("dashboard.snapshot.dailyScheduleCopy")}</small>
                   </div>
                   <DashIcon name="arrow-right" />
                 </button>
               </section>
               <section className="snapshot-bottom">
                 <article className="snapshot-card snapshot-actions">
-                  <h2>Tác vụ kho</h2>
+                  <h2>{t("dashboard.snapshot.warehouseTasksTitle")}</h2>
                   <div>
                     {[
-                      ["package-plus", "Nhập kho", "/inbound"],
-                      ["package-minus", "Xuất kho", "/outbound"],
+                      ["package-plus", t("dashboard.snapshot.actionInbound"), "/inbound"],
+                      ["package-minus", t("dashboard.snapshot.actionOutbound"), "/outbound"],
                       ...(showWarranty
-                        ? [["briefcase-medical", "Bảo hành", "/warranty"]]
+                        ? [["briefcase-medical", t("dashboard.snapshot.actionWarranty"), "/warranty"]]
                         : []),
-                      ["search", "Quét hoặc nhập mã sản phẩm", "/scan"],
-                      ["chart-column-big", "Kiểm tra mã", "/inventory"],
+                      ["search", t("dashboard.snapshot.actionScan"), "/scan"],
+                      ["chart-column-big", t("dashboard.snapshot.actionCheck"), "/inventory"],
                     ].map(([icon, label, route]) => (
                       <button
                         type="button"
@@ -1076,19 +1102,19 @@ export function DashboardSnapshot({
                 </article>
                 <article className="snapshot-card snapshot-activity">
                   <header>
-                    <h2>Nhật ký hoạt động gần đây</h2>
+                    <h2>{t("dashboard.snapshot.recentActivityTitle")}</h2>
                     <button
                       type="button"
                       onClick={() => onNavigate("/audit-logs")}
                     >
-                      Xem tất cả <DashIcon name="arrow-right" />
+                      {t("dashboard.snapshot.viewAll")} <DashIcon name="arrow-right" />
                     </button>
                   </header>
                   <div className="snapshot-empty-table">
                     <DashIcon name="inbox" />
-                    <strong>Chưa có hoạt động</strong>
+                    <strong>{t("dashboard.snapshot.recentActivityEmpty")}</strong>
                     <span>
-                      Hoạt động gần đây sẽ được hiển thị khi nguồn được kết nối.
+                      {t("dashboard.snapshot.recentActivityCopy")}
                     </span>
                   </div>
                 </article>
@@ -1113,17 +1139,17 @@ export function DashboardSnapshot({
             className="snapshot-custom-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="Chọn khoảng thời gian"
+            aria-label={t("dashboard.snapshot.rangeDialogAria")}
             tabIndex={-1}
           >
             <header>
               <div>
-                <h2>Chọn khoảng thời gian</h2>
-                <p>Chỉ áp dụng cho biểu đồ nhập – xuất – tồn kho.</p>
+                <h2>{t("dashboard.snapshot.rangeDialogTitle")}</h2>
+                <p>{t("dashboard.snapshot.rangeDialogCopy")}</p>
               </div>
               <button
                 type="button"
-                aria-label="Đóng"
+                aria-label={t("dashboard.snapshot.close")}
                 onClick={() => {
                   setCustomOpen(false);
                   setRangePickMode("from");
@@ -1134,21 +1160,21 @@ export function DashboardSnapshot({
             </header>
             <div className="snapshot-preset-row">
               <button type="button" onClick={() => selectDays(7)}>
-                7 ngày gần nhất
+                {t("dashboard.snapshot.periodLast7")}
               </button>
               <button type="button" onClick={() => selectDays(14)}>
-                14 ngày gần nhất
+                {t("dashboard.snapshot.periodLast14")}
               </button>
               <button type="button" onClick={() => selectDays(30)}>
-                30 ngày gần nhất
+                {t("dashboard.snapshot.periodLast30")}
               </button>
               <button type="button" className="is-selected">
-                Tùy chỉnh
+                {t("dashboard.snapshot.custom")}
               </button>
             </div>
             <div className="snapshot-date-fields">
               <label>
-                Từ ngày
+                {t("dashboard.snapshot.fromDate")}
                 <input
                   type="date"
                   value={draft.from}
@@ -1161,7 +1187,7 @@ export function DashboardSnapshot({
                 />
               </label>
               <label>
-                Đến ngày
+                {t("dashboard.snapshot.toDate")}
                 <input
                   type="date"
                   value={draft.to}
@@ -1178,8 +1204,11 @@ export function DashboardSnapshot({
               <p className="snapshot-date-error">{invalidReason}</p>
             ) : (
               <p className="snapshot-date-summary">
-                Đang chọn: {dateLabel(draft.from)} → {dateLabel(draft.to)} ·{" "}
-                {dayjs(draft.to).diff(dayjs(draft.from), "day") + 1} ngày
+                {t("dashboard.snapshot.selectedRange", {
+                  from: dateLabel(draft.from),
+                  to: dateLabel(draft.to),
+                  days: dayjs(draft.to).diff(dayjs(draft.from), "day") + 1,
+                })}
               </p>
             )}
             <MonthGrid range={draft} invalid={invalid} onPick={pickRangeDate} />
@@ -1195,10 +1224,10 @@ export function DashboardSnapshot({
                     setRangePickMode("from");
                   }}
                 >
-                  Hủy
+                  {t("dashboard.snapshot.cancel")}
                 </button>
                 <button type="button" disabled={invalid} onClick={applyCustom}>
-                  Áp dụng
+                  {t("dashboard.snapshot.apply")}
                 </button>
               </div>
             </footer>
