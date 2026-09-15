@@ -153,22 +153,28 @@ export function MainLayout() {
   // (sidebar + topbar) dùng SystemHNWeb trên MỌI route để điều hướng không đổi skin.
   const isMapReferenceScreen = location.pathname === ROUTES.DASHBOARD;
   const systemShellStyle = {
+    // Brand shell (sidebar/topbar) giữ navy SystemHNWeb cố định; phần surface,
+    // chữ, viền và semantic đi qua --wms-* để Sáng/Tối/Theo hệ thống tác động
+    // thật lên MAP-01 thay vì bị khoá vào AUTH_BASELINE sáng.
     "--map-navy": AUTH_BASELINE.navy,
     "--map-cta": AUTH_BASELINE.cta,
-    "--map-link": AUTH_BASELINE.link,
-    "--map-pale": AUTH_BASELINE.pale,
-    "--map-line": AUTH_BASELINE.line,
-    "--map-ink": AUTH_BASELINE.ink,
-    "--map-muted": AUTH_BASELINE.muted,
-    "--map-surface": AUTH_BASELINE.surface,
-    "--map-success": AUTH_BASELINE.success,
-    "--map-warning": AUTH_BASELINE.warning,
-    "--map-danger": AUTH_BASELINE.danger,
-    "--map-white": AUTH_BASELINE.white,
+    "--map-link": "var(--wms-info-text)",
+    "--map-card": "var(--wms-bg-surface)",
+    "--map-pale":
+      "color-mix(in srgb, var(--map-link) 14%, var(--map-card))",
+    "--map-line": "var(--wms-border)",
+    "--map-ink": "var(--wms-text-strong)",
+    "--map-muted": "var(--wms-text-medium)",
+    "--map-surface": "var(--wms-bg-canvas)",
+    "--map-success": "var(--wms-success)",
+    "--map-warning": "var(--wms-warning)",
+    "--map-danger": "var(--wms-error)",
+    "--map-white": "var(--wms-on-primary)",
     "--map-hero-mid": AUTH_BASELINE.heroMid,
     "--map-hero-end": AUTH_BASELINE.heroEnd,
-    "--map-focus-ring": AUTH_BASELINE.focusRing,
-    "--map-card-shadow": AUTH_BASELINE.cardShadow,
+    "--map-focus-ring":
+      "color-mix(in srgb, var(--map-link) 28%, transparent)",
+    "--map-card-shadow": "var(--wms-shadow-card)",
   } as CSSProperties;
   const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
