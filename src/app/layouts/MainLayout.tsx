@@ -157,6 +157,8 @@ export function MainLayout() {
     // Dark/System vẫn đổi thật nhờ light-dark() + color-scheme trên <html>.
     "--map-navy": AUTH_BASELINE.navy,
     "--map-cta": AUTH_BASELINE.cta,
+    "--map-accent": `light-dark(${AUTH_BASELINE.cta}, var(--wms-info-text))`,
+    "--map-heading": `light-dark(${AUTH_BASELINE.navy}, var(--wms-info-text))`,
     "--map-link": `light-dark(${AUTH_BASELINE.link}, var(--wms-info-text))`,
     "--map-card": `light-dark(${AUTH_BASELINE.white}, var(--wms-bg-surface))`,
     "--map-pale": `light-dark(${AUTH_BASELINE.pale}, color-mix(in srgb, var(--wms-info-text) 14%, var(--wms-bg-surface)))`,
