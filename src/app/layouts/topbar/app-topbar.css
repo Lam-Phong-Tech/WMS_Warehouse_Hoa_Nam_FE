@@ -277,20 +277,30 @@
 .hn-topbar .avatar-button[aria-expanded="true"] {
   background: var(--hnt-surface-hover);
 }
+.hn-topbar .avatar-status {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+}
 .hn-topbar .avatar-button .avatar {
   width: 36px;
   height: 36px;
   border: 2px solid var(--primary);
 }
-.hn-topbar .presence-dot {
+.hn-topbar .avatar-status .presence-dot {
   position: absolute;
-  right: 3px;
-  bottom: 3px;
-  width: 9px;
-  height: 9px;
+  right: -1px;
+  bottom: -1px;
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
   border: 2px solid var(--surface);
   border-radius: 50%;
   background: var(--green);
+  pointer-events: none;
 }
 .hn-topbar .notification-dot {
   position: absolute;
