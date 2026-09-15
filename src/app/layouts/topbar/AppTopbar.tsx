@@ -650,12 +650,14 @@ export function AppTopbar({
             aria-label={`${t("topbar.accountLabel")} ${displayName}`}
             onClick={() => toggleMenu("account")}
           >
-            <span className="avatar">{initials}</span>
+            <span className="avatar-status" aria-hidden="true">
+              <span className="avatar">{initials}</span>
+              <span className="presence-dot" />
+            </span>
             <span className="topbar-profile-summary" aria-hidden="true">
               <strong>{displayName}</strong>
               <small>{roleLabel}</small>
             </span>
-            <span className="presence-dot" aria-hidden="true" />
           </button>
           {openMenu === "account" ? (
             <div
