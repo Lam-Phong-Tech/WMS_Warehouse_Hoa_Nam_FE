@@ -1,11 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { Suspense, type ReactNode } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { resolveRouteEntryPermission } from "@/app/router/access";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
-import { ROUTES } from "@/shared/constants/routes";
+import { DASHBOARD_CANONICAL, ROUTES } from "@/shared/constants/routes";
 // Mọi màn khai báo MỘT LẦN ở route-components.ts (router và route-preload dùng
 // chung). Chúng là `lazyRoute`: vẫn tách chunk như `React.lazy`, nhưng khi chunk
 // ĐÃ được nạp trước thì render THẲNG, không treo Suspense — xem lazy-route.tsx
@@ -65,6 +65,25 @@ function routeEl(path: string, node: ReactNode) {
   );
 }
 
+function DashboardCanonicalRoute() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+
+  // /dashboard legacy không còn là một màn hợp lệ. Mọi lối vào Tổng quan đều
+  // canonical về MAP-01, đồng thời giữ các query khác (ví dụ state=... cho QA).
+  if (params.get("screen") !== "MAP-01") {
+    params.set("screen", "MAP-01");
+    return (
+      <Navigate
+        to={`${ROUTES.DASHBOARD}?${params.toString()}`}
+        replace
+      />
+    );
+  }
+
+  return routeEl(ROUTES.DASHBOARD, <DashboardPage />);
+}
+
 export const router = createBrowserRouter([
   { path: ROUTES.LOGIN, element: withPageLoader(<LoginPage />) },
   { path: ROUTES.PV_CATALOG, element: withPageLoader(<PvCatalogPage />) },
@@ -83,7 +102,7 @@ export const router = createBrowserRouter([
         path: ROUTES.HOME,
         element: withPageLoader(<MainLayout />),
         children: [
-          { index: true, element: <Navigate to={ROUTES.DASHBOARD} replace /> },
+          { index: true, element: <Navigate to={DASHBOARD_CANONICAL} replace /> },
           {
             path: ROUTES.AUDIT_LOGS,
             element: routeEl(ROUTES.AUDIT_LOGS, <AuditLogsPage />),
@@ -94,7 +113,7 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.DASHBOARD,
-            element: routeEl(ROUTES.DASHBOARD, <DashboardPage />),
+            element: <DashboardCanonicalRoute />,
           },
           {
             path: ROUTES.IAM_USERS,
