@@ -74,6 +74,21 @@ describe("AppTopbar", () => {
     ).toBeInTheDocument();
   });
 
+  it("neo chấm trạng thái vào avatar, không vào toàn bộ nút tài khoản", () => {
+    const { container } = renderTopbar();
+    const accountButton = screen.getByRole("button", {
+      name: /Tài khoản Super Admin/,
+    });
+    const avatarStatus = accountButton.querySelector(".avatar-status");
+    const presenceDot = accountButton.querySelector(".presence-dot");
+
+    expect(avatarStatus).not.toBeNull();
+    expect(avatarStatus?.querySelector(".avatar")).not.toBeNull();
+    expect(presenceDot).not.toBeNull();
+    expect(presenceDot?.parentElement).toBe(avatarStatus);
+    expect(container.querySelector(".topbar-profile-summary .presence-dot")).toBeNull();
+  });
+
   it("tìm kiếm chỉ gợi ý màn mà người dùng có quyền", () => {
     // Không quyền nào: Tổng quan không đòi quyền nên còn, còn màn quản trị
     // người dùng phải biến mất — gợi ý một màn sẽ ăn 403 là gợi ý sai.
