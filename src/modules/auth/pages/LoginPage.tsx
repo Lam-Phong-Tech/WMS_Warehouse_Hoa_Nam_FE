@@ -381,9 +381,9 @@ export function LoginPage() {
 
   const otpCode = mfaDigits.join("");
   const trimmedRecoveryCode = mfaRecoveryCode.trim();
-  const submittedMfaCode = trimmedRecoveryCode || otpCode;
-  const isMfaCodeReady =
-    trimmedRecoveryCode !== "" || otpCode.length === MFA_OTP_LENGTH;
+  const isOtpCodeReady = otpCode.length === MFA_OTP_LENGTH;
+  const submittedMfaCode = isOtpCodeReady ? otpCode : trimmedRecoveryCode;
+  const isMfaCodeReady = isOtpCodeReady || trimmedRecoveryCode !== "";
 
   const onSubmitMfa = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
