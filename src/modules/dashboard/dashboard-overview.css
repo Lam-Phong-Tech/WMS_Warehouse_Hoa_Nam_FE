@@ -4055,8 +4055,8 @@
   --ink: var(--map-ink);
   --muted: var(--map-muted);
   --line: var(--map-line);
-  --primary: var(--map-link);
-  --primary-dark: var(--map-link);
+  --primary: var(--map-accent);
+  --primary-dark: var(--map-heading);
   --primary-soft: var(--map-pale);
   --green: var(--map-success);
   --green-soft: color-mix(in srgb, var(--map-success) 14%, var(--map-card));
@@ -4087,7 +4087,7 @@
   min-height: 40px;
   border-color: var(--map-line);
   background: var(--map-card);
-  color: var(--map-link);
+  color: var(--map-heading);
   transition:
     border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -4114,7 +4114,7 @@
 }
 .hn-map-shell .hn-topbar .avatar {
   background: var(--map-pale);
-  color: var(--map-link);
+  color: var(--map-heading);
 }
 .hn-map-shell .hn-topbar .topbar-profile-summary strong {
   color: var(--map-white);
@@ -4137,19 +4137,19 @@
    names while rendering the exact SystemHNWeb navy/ocean/teal family. */
 .hn-dashboard-snapshot {
   --snapshot-ink: var(--map-ink);
-  --snapshot-blue: var(--map-link);
+  --snapshot-blue: var(--map-accent);
   --snapshot-line: var(--map-line);
   --snapshot-bg: var(--map-surface);
   --snapshot-orange: var(--map-warning);
   --snapshot-green: var(--map-success);
   --snapshot-red: var(--map-danger);
   --snapshot-purple: var(--wms-primary);
-  --snapshot-donut-0: var(--map-link);
-  --snapshot-donut-1: var(--map-cta);
+  --snapshot-donut-0: var(--map-heading);
+  --snapshot-donut-1: var(--map-accent);
   --snapshot-donut-2: var(--map-warning);
   --snapshot-donut-3: var(--map-danger);
-  --primary-dark: var(--map-link);
-  --blue: var(--map-link);
+  --primary-dark: var(--map-heading);
+  --blue: var(--map-accent);
   --hnd-info-fg: var(--map-link);
   --blue-soft: var(--map-pale);
   --line: var(--map-line);
@@ -4174,8 +4174,8 @@
 }
 .snapshot-filter > button {
   min-height: 44px;
-  border-color: var(--map-cta);
-  color: var(--map-cta);
+  border-color: var(--map-accent);
+  color: var(--map-accent);
   transition:
     border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
     background 140ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -4216,8 +4216,8 @@
 .snapshot-filter-menu button:focus-visible,
 .snapshot-filter-menu button.is-selected,
 .snapshot-preset-row button.is-selected {
-  border-color: var(--map-cta);
-  background: var(--map-cta);
+  border-color: var(--map-accent);
+  background: var(--map-accent);
   color: var(--map-white);
 }
 .snapshot-filter-menu button:active,
@@ -4288,7 +4288,7 @@
   border-left: 1px solid var(--map-line);
 }
 .snapshot-chart-tooltip strong {
-  color: var(--map-link);
+  color: var(--map-heading);
   font-size: 12px;
 }
 .snapshot-chart-tooltip span {
@@ -4303,7 +4303,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--map-link);
+  background: var(--map-heading);
 }
 .snapshot-chart-tooltip span i.is-out {
   background: var(--map-warning);
@@ -4491,7 +4491,7 @@
   flex: 1 1 0;
   min-width: 5px;
   border-radius: 3px 3px 0 0;
-  background: color-mix(in srgb, var(--map-cta) 24%, var(--map-pale));
+  background: color-mix(in srgb, var(--map-accent) 24%, var(--map-pale));
 }
 .snapshot-chart-skeleton-bars i:nth-child(4n + 1) {
   height: 34%;
@@ -4518,14 +4518,14 @@
 }
 .snapshot-calendar-days button.is-in-range {
   background: var(--map-pale);
-  color: var(--map-link);
+  color: var(--map-heading);
   font-weight: 700;
 }
 .snapshot-calendar-days button.is-range-start,
 .snapshot-calendar-days button.is-range-end {
   z-index: 2;
   border-radius: 999px;
-  background: var(--map-cta);
+  background: var(--map-accent);
   color: var(--map-white);
   font-weight: 800;
 }
@@ -4562,7 +4562,7 @@
   border: 1px solid var(--map-line);
   border-radius: 8px;
   background: var(--map-card);
-  color: var(--map-link);
+  color: var(--map-heading);
   box-shadow: var(--map-card-shadow);
 }
 .snapshot-reference-state > span {
