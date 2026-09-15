@@ -153,28 +153,25 @@ export function MainLayout() {
   // (sidebar + topbar) dùng SystemHNWeb trên MỌI route để điều hướng không đổi skin.
   const isMapReferenceScreen = location.pathname === ROUTES.DASHBOARD;
   const systemShellStyle = {
-    // Brand shell (sidebar/topbar) giữ navy SystemHNWeb cố định; phần surface,
-    // chữ, viền và semantic đi qua --wms-* để Sáng/Tối/Theo hệ thống tác động
-    // thật lên MAP-01 thay vì bị khoá vào AUTH_BASELINE sáng.
+    // Light mode phải giữ đúng palette SystemHNWeb đã chốt (ảnh/reference MAP-01).
+    // Dark/System vẫn đổi thật nhờ light-dark() + color-scheme trên <html>.
     "--map-navy": AUTH_BASELINE.navy,
     "--map-cta": AUTH_BASELINE.cta,
-    "--map-link": "var(--wms-info-text)",
-    "--map-card": "var(--wms-bg-surface)",
-    "--map-pale":
-      "color-mix(in srgb, var(--map-link) 14%, var(--map-card))",
-    "--map-line": "var(--wms-border)",
-    "--map-ink": "var(--wms-text-strong)",
-    "--map-muted": "var(--wms-text-medium)",
-    "--map-surface": "var(--wms-bg-canvas)",
-    "--map-success": "var(--wms-success)",
-    "--map-warning": "var(--wms-warning)",
-    "--map-danger": "var(--wms-error)",
-    "--map-white": "var(--wms-on-primary)",
+    "--map-link": `light-dark(${AUTH_BASELINE.link}, var(--wms-info-text))`,
+    "--map-card": `light-dark(${AUTH_BASELINE.white}, var(--wms-bg-surface))`,
+    "--map-pale": `light-dark(${AUTH_BASELINE.pale}, color-mix(in srgb, var(--wms-info-text) 14%, var(--wms-bg-surface)))`,
+    "--map-line": `light-dark(${AUTH_BASELINE.line}, var(--wms-border))`,
+    "--map-ink": `light-dark(${AUTH_BASELINE.ink}, var(--wms-text-strong))`,
+    "--map-muted": `light-dark(${AUTH_BASELINE.muted}, var(--wms-text-medium))`,
+    "--map-surface": `light-dark(${AUTH_BASELINE.surface}, var(--wms-bg-canvas))`,
+    "--map-success": `light-dark(${AUTH_BASELINE.success}, var(--wms-success))`,
+    "--map-warning": `light-dark(${AUTH_BASELINE.warning}, var(--wms-warning))`,
+    "--map-danger": `light-dark(${AUTH_BASELINE.danger}, var(--wms-error))`,
+    "--map-white": AUTH_BASELINE.white,
     "--map-hero-mid": AUTH_BASELINE.heroMid,
     "--map-hero-end": AUTH_BASELINE.heroEnd,
-    "--map-focus-ring":
-      "color-mix(in srgb, var(--map-link) 28%, transparent)",
-    "--map-card-shadow": "var(--wms-shadow-card)",
+    "--map-focus-ring": `light-dark(${AUTH_BASELINE.focusRing}, color-mix(in srgb, var(--wms-info-text) 28%, transparent))`,
+    "--map-card-shadow": `light-dark(${AUTH_BASELINE.cardShadow}, var(--wms-shadow-card))`,
   } as CSSProperties;
   const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
