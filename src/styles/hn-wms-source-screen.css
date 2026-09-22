@@ -524,3 +524,141 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
     scroll-behavior: auto;
   }
 }
+
+
+/* RPT-04 — button + pagination parity with Báo cáo Truy vết hàng hóa (RPT-03).
+ * Use direct RPT-03 values here instead of the app-wide primary token so the
+ * screen cannot fall back to Vuexy purple when MUI portal/theme CSS loads later.
+ */
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-containedPrimary:not(.Mui-disabled) {
+  border-color: #075d96;
+  background: #075d96;
+  color: #fff;
+  box-shadow: 0 4px 9px rgb(6 86 143 / 15%);
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-containedPrimary:not(.Mui-disabled):hover {
+  border-color: #064f80;
+  background: #064f80;
+  color: #fff;
+  box-shadow: 0 4px 9px rgb(6 86 143 / 18%);
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-outlinedPrimary:not(.Mui-disabled) {
+  border-color: #bcdced;
+  background: #f3fbff;
+  color: #0e5191;
+  box-shadow: none;
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-outlinedPrimary:not(.Mui-disabled):hover {
+  border-color: #079de7;
+  background: #eefaff;
+  color: #07549a;
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-textPrimary:not(.Mui-disabled) {
+  background: transparent;
+  color: #07549a;
+  box-shadow: none;
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-textPrimary:not(.Mui-disabled):hover {
+  background: #eefaff;
+  color: #07549a;
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root:focus-visible {
+  outline: 3px solid rgb(4 151 224 / 24%);
+  outline-offset: 2px;
+}
+
+/* Header action matches RPT-03 .trace-head-actions > .MuiButton-root:nth-child(2). */
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > .MuiStack-root:first-child > .MuiStack-root:last-child > .MuiButton-root {
+  min-width: 162px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Filter actions match RPT-03 apply/reset geometry and palette. */
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-root {
+  min-height: 43px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-containedPrimary {
+  border-color: #075e96;
+  background: #075e96;
+  color: #fff;
+  font-weight: 750;
+  box-shadow: none;
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-outlinedPrimary {
+  border-color: #bcdced;
+  background: #f3fbff;
+  color: #0e5191;
+  font-weight: 700;
+}
+
+/* Pagination mirrors RPT-03 .trace-pagination exactly: 34px controls,
+ * ocean active page, pale cyan inactive pages, same hover/disabled treatment.
+ */
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-root {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 1px solid #c6dfed;
+  border-radius: 6px;
+  background: #f8fcff;
+  color: #07549a;
+  box-shadow: none;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-root:hover:not(.Mui-disabled) {
+  border-color: #079de7;
+  background: #eefaff;
+  color: #07549a;
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-containedPrimary:not(.Mui-disabled),
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-containedPrimary:not(.Mui-disabled):hover {
+  border-color: #075d96;
+  background: #075d96;
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(6 84 142 / 18%);
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-root.Mui-disabled {
+  border-color: #c6dfed;
+  background: #f8fcff;
+  color: #07549a;
+  opacity: 0.42;
+}
+
+/* Table row chevron is a compact text action, not a purple CTA. */
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results table td:last-child .MuiButton-textPrimary {
+  min-width: 34px;
+  width: 34px;
+  min-height: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #07549a;
+}
