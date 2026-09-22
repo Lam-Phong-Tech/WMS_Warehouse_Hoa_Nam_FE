@@ -5,6 +5,7 @@ import {
   Stack,
   UiAlert,
   UiButton,
+  UiSelect,
   UiSpinner,
   UiVuexyDateRangePicker,
 } from "@/shared/ui";
@@ -33,9 +34,9 @@ import { useT } from "@/shared/i18n/useT";
 const C = {
   navy: "#073b7d",
   navyDark: "#004e74",
-  ocean: "#006ca8",
-  oceanDark: "#005980",
-  cyan: "#0c9ed5",
+  ocean: "#075d96",
+  oceanDark: "#064f80",
+  cyan: "#079de7",
   cyanSoft: "#edf9ff",
   border: "#c9e7f4",
   borderStrong: "#9bd2e8",
@@ -138,7 +139,7 @@ function pct(value: number, total: number): string {
 
 function FilterLabel({ children }: { children: ReactNode }) {
   return (
-    <Box sx={{ mb: .45, color: C.text, fontSize: 12.5, fontWeight: 700, lineHeight: "18px" }}>
+    <Box sx={{ mb: .4, color: C.text, fontSize: 12, fontWeight: 700, lineHeight: "17px" }}>
       {children}
     </Box>
   );
@@ -187,11 +188,11 @@ function MetricCard({
     <Box
       sx={{
         ...surface,
-        minHeight: { xs: 118, md: 122 },
-        px: { xs: 1.4, md: 1.6 },
-        py: 1.25,
+        minHeight: { xs: 106, md: 108 },
+        px: { xs: 1.35, md: 1.5 },
+        py: 1.1,
         display: "grid",
-        gridTemplateColumns: "62px minmax(0,1fr)",
+        gridTemplateColumns: "52px minmax(0,1fr)",
         gap: 1.25,
         alignItems: "center",
       }}
@@ -199,20 +200,20 @@ function MetricCard({
       <Box
         aria-hidden="true"
         sx={{
-          width: 58,
-          height: 58,
-          borderRadius: "9px",
+          width: 50,
+          height: 50,
+          borderRadius: "8px",
           display: "grid",
           placeItems: "center",
           bgcolor: palette.bg,
           color: palette.fg,
-          fontSize: 29,
+          fontSize: 25,
         }}
       >
         {icon}
       </Box>
       <Box sx={{ minWidth: 0 }}>
-        <Box sx={{ color: C.text, fontSize: 13.5, fontWeight: 700, lineHeight: 1.2 }}>
+        <Box sx={{ color: C.text, fontSize: 12.5, fontWeight: 700, lineHeight: 1.2 }}>
           {label}
         </Box>
         {loading ? (
@@ -226,7 +227,7 @@ function MetricCard({
               sx={{
                 mt: .18,
                 color: C.navy,
-                fontSize: "clamp(31px,2.4vw,39px)",
+                fontSize: "clamp(28px,2vw,34px)",
                 fontWeight: 800,
                 lineHeight: 1.05,
                 letterSpacing: "-.025em",
@@ -234,7 +235,7 @@ function MetricCard({
             >
               {value}
             </Box>
-            <Box sx={{ mt: .35, color: palette.fg, fontSize: 12.5, lineHeight: 1.2 }}>
+            <Box sx={{ mt: .3, color: palette.fg, fontSize: 11.75, lineHeight: 1.2 }}>
               {hint}
             </Box>
           </>
@@ -490,9 +491,9 @@ export default function WarrantyComponentsReport() {
         minWidth: 0,
         color: C.text,
         display: "grid",
-        gap: { xs: 1.2, md: 1.25 },
+        gap: { xs: 1, md: 1.1 },
         pb: 2.5,
-        fontSize: { xs: 13, md: 14 },
+        fontSize: { xs: 12.5, md: 13 },
         "& *": { boxSizing: "border-box" },
         "@keyframes hnWarrantySkeleton": {
           "0%": { backgroundPosition: "100% 0" },
@@ -539,7 +540,7 @@ export default function WarrantyComponentsReport() {
               m: 0,
               mt: .25,
               color: C.navy,
-              fontSize: { xs: 25, sm: 29, md: 31 },
+              fontSize: { xs: 23, sm: 25, md: 27 },
               lineHeight: 1.08,
               letterSpacing: "-.028em",
               fontWeight: 800,
@@ -547,7 +548,7 @@ export default function WarrantyComponentsReport() {
           >
             Báo cáo Bảo hành linh kiện
           </Box>
-          <Box sx={{ mt: .2, color: "#086ec4", fontSize: { xs: 13.5, md: 15 }, lineHeight: 1.3 }}>
+          <Box sx={{ mt: .15, color: "#086ec4", fontSize: { xs: 12.75, md: 13.5 }, lineHeight: 1.3 }}>
             Theo dõi tiến độ bảo hành, linh kiện thay thế và tình trạng xử lý
           </Box>
         </Box>
@@ -555,15 +556,15 @@ export default function WarrantyComponentsReport() {
           <Box
             role="note"
             sx={{
-              minHeight: 40,
-              px: 1.4,
+              minHeight: 38,
+              px: 1.25,
               display: "flex",
               alignItems: "center",
               gap: .65,
               borderRadius: "7px",
               bgcolor: C.cyanSoft,
               color: C.navy,
-              fontSize: 12.5,
+              fontSize: 12,
               fontWeight: 650,
             }}
           >
@@ -643,29 +644,20 @@ export default function WarrantyComponentsReport() {
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <FilterLabel>Trạng thái</FilterLabel>
-            <Box
-              component="select"
+            <UiSelect
+              fullWidth
               aria-label="Trạng thái"
               value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              sx={{
-                width: "100%",
-                minHeight: 42,
-                px: 1.25,
-                border: "1px solid " + C.borderStrong,
-                borderRadius: "6px",
-                bgcolor: "#fff",
-                color: C.text,
-                font: "inherit",
-                outline: "none",
-                "&:focus": { borderColor: C.ocean, boxShadow: "0 0 0 2px rgba(0,108,168,.10)" },
-              }}
-            >
-              <option value="">Tất cả</option>
-              <option value="complete">Hoàn tất</option>
-              <option value="processing">Đang xử lý</option>
-              <option value="waiting">Chờ tiếp nhận</option>
-            </Box>
+              placeholder="Tất cả"
+              menuClassName="rpt06-select-menu"
+              searchable={false}
+              onChange={setStatus}
+              options={[
+                { value: "complete", label: "Hoàn tất" },
+                { value: "processing", label: "Đang xử lý" },
+                { value: "waiting", label: "Chờ tiếp nhận" },
+              ]}
+            />
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <FilterLabel>Tìm kiếm</FilterLabel>
@@ -933,7 +925,7 @@ export default function WarrantyComponentsReport() {
                     "& th": {
                       bgcolor: "#eef9fd",
                       color: "#0870be",
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontWeight: 700,
                       textAlign: "left",
                       px: 1.15,
@@ -944,7 +936,8 @@ export default function WarrantyComponentsReport() {
                     "& td": {
                       px: 1.15,
                       py: .62,
-                      fontSize: 11.5,
+                      fontSize: 12,
+                      lineHeight: 1.25,
                       verticalAlign: "middle",
                       borderRight: "1px solid " + C.border,
                       borderBottom: "1px solid " + C.border,
@@ -996,7 +989,22 @@ export default function WarrantyComponentsReport() {
                           <Box sx={{ color: C.navy, fontWeight: 800 }}>{row.skuCode}</Box>
                           <Box sx={{ mt: .08, color: C.muted, fontSize: 10.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.skuName}</Box>
                         </td>
-                        <td>{row.component}</td>
+                        <td>
+                          <Box
+                            className="warranty-component-cell"
+                            title={row.component}
+                            sx={{
+                              display: "block",
+                              width: "100%",
+                              maxWidth: "100%",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {row.component}
+                          </Box>
+                        </td>
                         <td className="warranty-desktop-only">{row.receivedAt ? fmtDate(row.receivedAt) : "—"}</td>
                         <td className="warranty-desktop-only">{row.dueDate ? fmtDate(row.dueDate) : "—"}</td>
                         <td className="warranty-tablet-only">
@@ -1028,7 +1036,7 @@ export default function WarrantyComponentsReport() {
                 Hiển thị {pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.perPage + 1}–
                 {Math.min(pagination.page * pagination.perPage, pagination.total)} / {fmt(pagination.total)} phiếu
               </Box>
-              <Stack direction="row" sx={{ gap: .45, alignItems: "center", justifyContent: { xs: "flex-end", sm: "center" }, flexWrap: "wrap" }}>
+              <Stack className="rpt06-pagination" direction="row" sx={{ gap: .45, alignItems: "center", justifyContent: { xs: "flex-end", sm: "center" }, flexWrap: "wrap" }}>
                 <UiButton appearance="outlined" disabled={pagination.page <= 1 || pagination.total === 0} onClick={() => pagination.setPage(Math.max(1, pagination.page - 1))}>‹</UiButton>
                 {pageNumbers.map((page) => (
                   <UiButton key={page} appearance={page === pagination.page ? "filled" : "outlined"} onClick={() => pagination.setPage(page)}>

@@ -662,3 +662,348 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   background: transparent;
   color: #07549a;
 }
+
+
+/* RPT-06 — Warranty report local polish. */
+[data-report-screen="RPT-06"][data-testid="report-07-warranty-components"] {
+  --rpt06-ocean: #075d96;
+  --rpt06-ocean-dark: #064f80;
+  --rpt06-cyan: #079de7;
+  --rpt06-pale: #eefaff;
+  --rpt06-pale-2: #f8fcff;
+  --rpt06-line: #c6dfed;
+  --rpt06-text: #073b7d;
+  --rpt06-muted: #5275a5;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  container: hn-rpt06 / inline-size;
+  font-family: var(--wms-font-family);
+}
+
+[data-report-screen="RPT-06"][data-testid="report-07-warranty-components"] > *,
+[data-report-screen="RPT-06"][data-testid="report-07-warranty-components"] > section > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-report-screen="RPT-06"] h1 {
+  margin: 0;
+  font-size: clamp(22px, 1.45rem, 27px);
+  line-height: 1.22;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--rpt06-text);
+}
+
+[data-report-screen="RPT-06"] h2 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+  color: var(--rpt06-text);
+}
+
+/* Controls: same 40px rhythm and ocean palette as RPT-03. */
+[data-report-screen="RPT-06"] :is(.MuiFormControl-root, .MuiTextField-root) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-report-screen="RPT-06"] :is(.MuiOutlinedInput-root, .MuiSelect-select, .MuiInputBase-input) {
+  font-size: 13px;
+}
+
+[data-report-screen="RPT-06"] .MuiOutlinedInput-root {
+  min-height: 40px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+[data-report-screen="RPT-06"] .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
+  border-color: var(--rpt06-line);
+}
+
+[data-report-screen="RPT-06"] .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--rpt06-cyan);
+}
+
+[data-report-screen="RPT-06"] .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--rpt06-ocean);
+  border-width: 1px;
+  box-shadow: 0 0 0 2px rgb(7 93 150 / 10%);
+}
+
+[data-report-screen="RPT-06"] .MuiSelect-icon {
+  color: var(--rpt06-ocean);
+}
+
+[data-report-screen="RPT-06"] .MuiSelect-select > span[style] {
+  color: var(--rpt06-text) !important;
+}
+
+[data-report-screen="RPT-06"] .hn-vuexy-date-field {
+  min-height: 40px;
+  padding: 0 10px;
+  border-color: var(--rpt06-line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--rpt06-text);
+  font-size: 12.5px;
+  box-shadow: none;
+}
+
+[data-report-screen="RPT-06"] .hn-vuexy-date-field:is(:hover, :focus-visible, [aria-expanded="true"]):not(:disabled) {
+  border-color: var(--rpt06-cyan);
+  box-shadow: 0 0 0 2px rgb(7 157 231 / 11%);
+  outline: 0;
+}
+
+[data-report-screen="RPT-06"] .hn-vuexy-date-field [data-date-value] {
+  color: var(--rpt06-text);
+  font-weight: 600;
+}
+
+[data-report-screen="RPT-06"] .hn-vuexy-date-field :is(svg, i) {
+  color: var(--rpt06-ocean) !important;
+}
+
+/* Shared button primitive is purple by default; this screen follows the report ocean palette. */
+[data-report-screen="RPT-06"] .MuiButton-root {
+  min-height: 38px;
+  height: auto;
+  padding-inline: 14px;
+  border-radius: 6px;
+  text-transform: none;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 650;
+  letter-spacing: 0;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled) {
+  border-color: var(--rpt06-ocean);
+  background: var(--rpt06-ocean);
+  color: #fff;
+  box-shadow: 0 4px 9px rgb(6 86 143 / 14%);
+}
+
+[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+  border-color: var(--rpt06-ocean-dark);
+  background: var(--rpt06-ocean-dark);
+  color: #fff;
+}
+
+[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled) {
+  border-color: var(--rpt06-line);
+  background: var(--rpt06-pale-2);
+  color: #07549a;
+}
+
+[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+  border-color: var(--rpt06-cyan);
+  background: var(--rpt06-pale);
+  color: #07549a;
+}
+
+[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled) {
+  background: transparent;
+  color: #07549a;
+}
+
+[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+  background: var(--rpt06-pale);
+  color: #07549a;
+}
+
+[data-report-screen="RPT-06"] .MuiButton-root:focus-visible {
+  outline: 3px solid rgb(4 151 224 / 22%);
+  outline-offset: 2px;
+}
+
+[data-report-screen="RPT-06"] input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--rpt06-ocean);
+}
+
+/* Select menu is portalled to body, so it needs its own screen-specific class. */
+.rpt06-select-menu.MuiPaper-root {
+  margin-top: 4px;
+  border: 1px solid #c6dfed;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(4 70 116 / 13%);
+}
+
+.rpt06-select-menu .MuiMenuItem-root {
+  min-height: 36px;
+  padding: 7px 12px;
+  color: #073b7d;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.rpt06-select-menu .MuiMenuItem-root:hover {
+  background: #f2f9fc;
+}
+
+.rpt06-select-menu .MuiMenuItem-root.Mui-selected,
+.rpt06-select-menu .MuiMenuItem-root.Mui-selected:hover {
+  background: #eaf5f8;
+  color: #004e74;
+  font-weight: 650;
+}
+
+.rpt06-select-menu .MuiMenuItem-root:focus-visible {
+  outline: 2px solid #079de7;
+  outline-offset: -2px;
+}
+
+/* Date range popup: same colors as the visible fields, including selected days/presets. */
+body:has([data-report-screen="RPT-06"]) .MuiPopover-paper.hn-vuexy-date-popup {
+  --wms-primary: #075d96;
+  --wms-primary-dark: #064f80;
+  --wms-primary-soft: #eefaff;
+  --wms-on-primary: #fff;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border-color: #c6dfed;
+  border-radius: 8px;
+  color: #073b7d;
+  font-family: var(--wms-font-family);
+  font-size: 13px;
+  box-shadow: 0 10px 30px rgb(4 70 116 / 15%);
+}
+
+body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button[aria-pressed="true"] {
+  border-color: #079de7;
+  background: #eefaff;
+  color: #07549a;
+}
+
+body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup [data-in-range="true"] {
+  background: #eefaff;
+}
+
+body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button[aria-selected="true"],
+body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup [data-date-action="apply"] {
+  border-color: #075d96;
+  background: #075d96;
+  color: #fff;
+}
+
+body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:enabled:hover {
+  background: #eefaff;
+  color: #07549a;
+}
+
+body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button[aria-selected="true"]:enabled:hover,
+body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup [data-date-action="apply"]:enabled:hover {
+  background: #064f80;
+  color: #fff;
+}
+
+body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visible {
+  outline: 2px solid #079de7;
+  outline-offset: 1px;
+}
+
+/* Warranty-component content must never paint into the received-date column. */
+[data-report-screen="RPT-06"] .warranty-component-cell {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pagination mirrors Traceability: compact 34px boxes, ocean active, pale inactive. */
+[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 1px solid var(--rpt06-line);
+  border-radius: 6px;
+  background: var(--rpt06-pale-2);
+  color: #07549a;
+  box-shadow: none;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 550;
+}
+
+[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root:hover:not(.Mui-disabled) {
+  border-color: var(--rpt06-cyan);
+  background: var(--rpt06-pale);
+  color: #07549a;
+}
+
+[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled),
+[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+  border-color: var(--rpt06-ocean);
+  background: var(--rpt06-ocean);
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(6 84 142 / 17%);
+}
+
+[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root.Mui-disabled {
+  border-color: var(--rpt06-line);
+  background: var(--rpt06-pale-2);
+  color: #07549a;
+  opacity: .42;
+}
+
+/* The detail action is link-like ocean text, never a purple CTA. */
+[data-report-screen="RPT-06"] table td:last-child .MuiButton-text.MuiButton-colorPrimary {
+  min-width: 34px;
+  min-height: 32px;
+  padding: 0 6px;
+  background: transparent;
+  color: #07549a;
+}
+
+/* Compact tablet/mobile fallback without changing the data or interaction flow. */
+@container hn-rpt06 (max-width: 760px) {
+  [data-report-screen="RPT-06"] h1 {
+    font-size: 22px;
+  }
+
+  [data-report-screen="RPT-06"] .hn-vuexy-date-range {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-report-screen="RPT-06"] .MuiButton-root {
+    white-space: normal;
+  }
+
+  [data-report-screen="RPT-06"] .rpt06-pagination {
+    justify-content: flex-start;
+  }
+}
+
+@media (pointer: coarse) {
+  [data-report-screen="RPT-06"] :is(.MuiButton-root, .hn-vuexy-date-field) {
+    min-height: 44px;
+  }
+
+  [data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-report-screen="RPT-06"] *,
+  body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup * {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
