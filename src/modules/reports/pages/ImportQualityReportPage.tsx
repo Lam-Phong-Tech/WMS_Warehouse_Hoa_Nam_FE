@@ -1,6 +1,6 @@
-import ImportMatchReport from "@/modules/reports/import-match/ImportMatchReport";
+import ImportQualityBaseline from "@/modules/reports/import-match/ImportQualityBaseline";
 
-/** RPT-04 — route /reports/import-quality (trang riêng, không còn tab). */
+/** RPT-04 — Báo cáo Nhập liệu, đối chiếu & lỗi. */
 export default function ImportQualityReportPage() {
   return (
     <div
@@ -8,7 +8,7 @@ export default function ImportQualityReportPage() {
       data-mvp-screen="RPT-04"
       data-testid="wwhn-258-report-screen"
     >
-      <ImportMatchReport />
+      <ImportQualityBaseline />
     </div>
   );
 }
