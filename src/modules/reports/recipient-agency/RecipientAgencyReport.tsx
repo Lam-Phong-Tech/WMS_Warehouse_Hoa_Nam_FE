@@ -521,12 +521,9 @@ export default function RecipientAgencyReport() {
     for (const event of baseEvents) {
       unique.set(dealerKey(event), dealerName(event));
     }
-    return [
-      { value: "", label: "Tất cả đại lý" },
-      ...[...unique.entries()]
-        .sort((left, right) => left[1].localeCompare(right[1], "vi"))
-        .map(([value, label]) => ({ value, label })),
-    ];
+    return [...unique.entries()]
+      .sort((left, right) => left[1].localeCompare(right[1], "vi"))
+      .map(([value, label]) => ({ value, label }));
   }, [baseEvents]);
 
   const tableRows = useMemo(() => {
@@ -765,6 +762,7 @@ export default function RecipientAgencyReport() {
               value={draftAgency}
               onChange={setDraftAgency}
               options={agencyOptions}
+              placeholder="Tất cả đại lý"
               aria-label="Đại lý"
               menuClassName="rpt07-select-menu"
             />
@@ -1214,6 +1212,7 @@ export default function RecipientAgencyReport() {
       {detailRow ? (
         <DrillDownDialog
           title={"Chi tiết nhận hàng · " + detailRow.name}
+          maxWidth="md"
           onClose={() => setDetailRow(null)}
         >
           <div className="rpt07-detail-dialog">
@@ -1221,7 +1220,11 @@ export default function RecipientAgencyReport() {
               <ShopOutlined />
               <div>
                 <strong>{detailRow.name}</strong>
-                <span>{detailRow.receiver}</span>
+                <span>
+                  {detailRow.receiver === "—"
+                    ? "Tổng hợp phiếu xuất trong kỳ"
+                    : "Người nhận: " + detailRow.receiver}
+                </span>
               </div>
             </div>
             <div className="rpt07-detail-dialog__table-wrap">

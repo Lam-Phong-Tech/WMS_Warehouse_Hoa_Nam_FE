@@ -140,6 +140,10 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole("combobox", { name: "Đại lý" })).toHaveTextContent(
+      "Tất cả đại lý",
+    );
+
     const overview = screen.getByLabelText("Tổng quan vận hành");
     expect(within(screen.getByLabelText("Tổng phiếu xuất")).getByText("1")).toBeInTheDocument();
     expect(within(screen.getByLabelText("Đại lý nhận")).getByText("1")).toBeInTheDocument();
@@ -164,6 +168,10 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     const dialog = await screen.findByRole("dialog");
     expect(
       within(dialog).getByText(/Chi tiết nhận hàng · Đại lý An Phát/),
+    ).toBeInTheDocument();
+    expect(dialog.querySelector(".rpt07-detail-dialog")).not.toBeNull();
+    expect(
+      within(dialog).getByText("Người nhận: Nguyễn Văn Minh"),
     ).toBeInTheDocument();
     expect(within(dialog).getByText("PX-0001")).toBeInTheDocument();
     expect(within(dialog).getByText("Chưa hoàn tất")).toBeInTheDocument();
