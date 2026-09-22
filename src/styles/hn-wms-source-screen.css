@@ -124,14 +124,16 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   margin: 0;
   font-size: clamp(20px, 1.5rem, 24px);
   line-height: 1.3;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--rpt04-heading);
   overflow-wrap: anywhere;
 }
 
 [data-report-screen="RPT-04"] h2 {
-  font-size: 16px;
-  line-height: 1.4;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
   letter-spacing: normal;
   color: var(--rpt04-heading);
   overflow-wrap: anywhere;
@@ -174,7 +176,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   flex-wrap: wrap;
 }
 
-[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > div:first-child {
+[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .rpt04-search-field {
   flex: 1 1 260px;
 }
 
@@ -182,6 +184,36 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   min-width: 0;
   max-width: 100%;
 }
+
+[data-report-screen="RPT-04"] :is(.MuiOutlinedInput-root, .MuiSelect-select, .MuiInputBase-input) {
+  font-size: 14px;
+}
+
+[data-report-screen="RPT-04"] .rpt04-demo-chip {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--wms-primary) 18%, transparent);
+  border-radius: 6px;
+  background: var(--wms-primary-soft);
+  color: var(--wms-primary-dark);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+[data-report-screen="RPT-04"] .rpt04-demo-chip svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+}
+
 
 [data-report-screen="RPT-04"] .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
   border-color: var(--wms-primary);
@@ -191,12 +223,39 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   color: var(--wms-primary);
 }
 
+.rpt04-select-menu .MuiMenuItem-root {
+  min-height: 38px;
+  color: #003b63;
+  font-size: 14px;
+}
+
+.rpt04-select-menu .MuiMenuItem-root:hover {
+  background-color: #f2f9fc;
+}
+
+.rpt04-select-menu .MuiMenuItem-root.Mui-selected,
+.rpt04-select-menu .MuiMenuItem-root.Mui-selected:hover {
+  background-color: #eaf5f8;
+  color: #004e74;
+}
+
+.rpt04-select-menu .MuiMenuItem-root:focus-visible {
+  outline: 2px solid #086590;
+  outline-offset: -2px;
+}
+
+
 [data-report-screen="RPT-04"] .MuiButton-root {
   min-height: 40px;
   height: auto;
-  font-size: 13px;
-  line-height: 1.4;
+  border-radius: 6px;
+  text-transform: none;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: 0;
   white-space: normal;
+  box-shadow: none;
 }
 
 [data-report-screen="RPT-04"] .MuiButton-containedPrimary:not(.Mui-disabled) {

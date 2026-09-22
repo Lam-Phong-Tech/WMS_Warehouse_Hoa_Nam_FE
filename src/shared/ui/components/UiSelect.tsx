@@ -44,6 +44,8 @@ export interface UiSelectProps {
   fullWidth?: boolean;
   /** Bề rộng tối thiểu cho toolbar (px). */
   minWidth?: number;
+  /** Optional class for the non-searchable dropdown paper (useful for screen-scoped portal styling). */
+  menuClassName?: string;
   /**
    * Ép có/không ô tìm kiếm. Bỏ trống = tự quyết theo số option (xem
    * resolveSearchable) — mặc định nên để tự.
@@ -76,6 +78,7 @@ export function UiSelect({
   disabled = false,
   fullWidth = false,
   minWidth,
+  menuClassName,
   searchable,
   required = false,
   error = false,
@@ -163,6 +166,7 @@ export function UiSelect({
         MenuProps={{
           slotProps: {
             paper: {
+              className: menuClassName,
               sx: { maxWidth: 520, maxHeight: OPTION_LIST_MAX_HEIGHT + 16 },
             },
           },

@@ -13,11 +13,12 @@ import {
 import {
   BarChartOutlined,
   CheckCircleOutlined,
-  CopyOutlined,
-  ReloadOutlined,
+  DownloadOutlined,
+  FileTextOutlined,
   WarningOutlined,
 } from "@/shared/components/icons";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
+import { VuexyDemoIcon } from "@/shared/ui/icons/VuexyDemoIcon";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarChart";
@@ -250,7 +251,7 @@ export default function ImportQualityBaseline() {
   const orangeShare = totals.total > 0 ? (totals.duplicate / totals.total) * 100 : 0;
   const orangeStop = Math.max(greenStop, Math.min(100, greenStop + orangeShare));
 
-  const { refreshing, refresh } = useReportRefresh({
+  const { refresh } = useReportRefresh({
     refetch: () => source.refetch(),
     readError: () => source.error,
   });
@@ -344,9 +345,13 @@ export default function ImportQualityBaseline() {
         </Box>
 
         <Stack direction="row" sx={{ gap: 1, flexWrap: "wrap", justifyContent: { xs: "flex-start", md: "flex-end" } }}>
-          <UiStatusBadge tone="info" label="Dữ liệu minh họa" />
+          <Box className="rpt04-demo-chip" role="note">
+            <VuexyDemoIcon name="info" />
+            <Box component="span">Dữ liệu minh họa</Box>
+          </Box>
           <UiButton
             appearance="filled"
+            startIcon={<DownloadOutlined />}
             loading={exporter.exporting === "xlsx"}
             disabled={invalid || source.isLoading}
             onClick={() => void exportXlsx()}
@@ -420,6 +425,7 @@ export default function ImportQualityBaseline() {
                 pagination.reset();
               }}
               options={dataTypeOptions}
+              menuClassName="rpt04-select-menu"
             />
           </Box>
 
@@ -436,6 +442,7 @@ export default function ImportQualityBaseline() {
                 pagination.reset();
               }}
               options={resultOptions.filter((item) => item.value !== "")}
+              menuClassName="rpt04-select-menu"
             />
           </Box>
         </Box>
@@ -444,7 +451,21 @@ export default function ImportQualityBaseline() {
           direction={{ xs: "column", sm: "row" }}
           sx={{ mt: 1.15, gap: 1, alignItems: "stretch" }}
         >
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box
+            className="rpt04-search-label"
+            sx={{
+              display: { xs: "none", lg: "flex" },
+              minHeight: 40,
+              alignItems: "center",
+              flex: "0 0 auto",
+              color: C.text,
+              fontSize: 13,
+              fontWeight: 650,
+            }}
+          >
+            Tìm kiếm
+          </Box>
+          <Box className="rpt04-search-field" sx={{ flex: 1, minWidth: 0 }}>
             <SearchInput
               width="100%"
               value={keyword}
@@ -461,15 +482,6 @@ export default function ImportQualityBaseline() {
           </UiButton>
           <UiButton appearance="outlined" onClick={reset}>
             Đặt lại
-          </UiButton>
-          <UiButton
-            appearance="text"
-            startIcon={<ReloadOutlined />}
-            loading={refreshing}
-            onClick={refresh}
-            disabled={invalid || source.isFetching}
-          >
-            Làm mới
           </UiButton>
         </Stack>
       </Box>
@@ -493,7 +505,7 @@ export default function ImportQualityBaseline() {
           value={fmt(totals.total)}
           hint="Trong kỳ báo cáo"
           tone="primary"
-          icon={<BarChartOutlined />}
+          icon={<FileTextOutlined />}
         />
         <MetricCard
           label="Khớp"
@@ -512,7 +524,7 @@ export default function ImportQualityBaseline() {
           value={fmt(totals.duplicate)}
           hint="Cần kiểm tra"
           tone="warning"
-          icon={<CopyOutlined />}
+          icon={<WarningOutlined />}
           onClick={() => {
             setResult("DUPLICATE");
             setIssuesOnly(false);
@@ -551,9 +563,9 @@ export default function ImportQualityBaseline() {
             </Box>
           </Stack>
           {source.isLoading ? (
-            <Box sx={{ height: 270, display: "grid", placeItems: "center" }}><UiSpinner /></Box>
+            <Box sx={{ height: 190, display: "grid", placeItems: "center" }}><UiSpinner /></Box>
           ) : trend.length === 0 ? (
-            <Box sx={{ height: 270, display: "grid", placeItems: "center", color: C.muted }}>Chưa có dữ liệu trong khoảng thời gian đã chọn.</Box>
+            <Box sx={{ height: 190, display: "grid", placeItems: "center", color: C.muted }}>Chưa có dữ liệu trong khoảng thời gian đã chọn.</Box>
           ) : (
             <MultiSeriesBarChart
               categories={trend.map((point) => axisDayLabel(point.day))}
@@ -564,7 +576,7 @@ export default function ImportQualityBaseline() {
               ]}
               stacked
               showValues
-              height={270}
+              height={190}
               valueFormatter={fmt}
             />
           )}
