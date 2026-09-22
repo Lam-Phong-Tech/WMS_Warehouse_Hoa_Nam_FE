@@ -1,11 +1,3 @@
-/**
- * RPT-07 "Xuất theo người nhận / đại lý" — màn được port 1:1 từ baseline
- * Report 08 nhưng chạy trên endpoint THẬT của dự án qua `recipient-agency-api`.
- *
- * File này khóa những gì typecheck không bắt được: KPI/bảng dựng đúng từ payload
- * BE, lượng hoàn tác được phân bổ về đúng dòng, tab Dạng ngang/Dạng hộp đổi vùng đối
- * soát, nút "Đối soát" mở modal đúng dòng, và hai nút xuất phản ánh đúng quyền.
- */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -21,36 +13,22 @@ vi.mock("@/shared/api/http", () => ({
   },
 }));
 
-// jsdom không đo được SVG nên ApexCharts render rỗng; stub tối thiểu để cây
-// component vẫn mount đúng như trên trình duyệt thật.
-vi.mock("react-apexcharts", () => ({
-  default: ({ type }: { type?: string }) => (
-    <div data-testid={`chart-${type ?? "unknown"}`} />
-  ),
-}));
-
 import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import RecipientAgencyReport from "./RecipientAgencyReport";
 
-/**
- * Một phiếu xuất 2 dòng (10 + 5) đã bị hoàn tác 3 ở mức CHỨNG TỪ. Phân bổ theo
- * tỉ trọng gross ⇒ dòng A nhận 2, dòng B nhận 1; tổng vẫn đúng 3.
- */
 const OUTBOUND_ROWS = [
   {
     document_id: "doc-1",
     outbound_no: "PX-0001",
-    document_date: "2026-08-10",
-    recipient_id: "ag-1",
+    document_date: "2026-09-10",
+    recipient_id: "receiver-1",
     agency_id: "ag-1",
     agency_code: "AG01",
     agency_name: "Đại lý An Phát",
-    recipient_name: "Đại lý An Phát",
+    recipient_name: "Nguyễn Văn Minh",
     recipient_type: "AGENCY",
-    address: "Quận 1, TP. Hồ Chí Minh",
-    contact_masked: "090*****67",
     sku_id: "sku-a",
     product_code: "SKU-A",
     product_name: "Máy A",
@@ -60,15 +38,13 @@ const OUTBOUND_ROWS = [
   {
     document_id: "doc-1",
     outbound_no: "PX-0001",
-    document_date: "2026-08-10",
-    recipient_id: "ag-1",
+    document_date: "2026-09-10",
+    recipient_id: "receiver-1",
     agency_id: "ag-1",
     agency_code: "AG01",
     agency_name: "Đại lý An Phát",
-    recipient_name: "Đại lý An Phát",
+    recipient_name: "Nguyễn Văn Minh",
     recipient_type: "AGENCY",
-    address: "Quận 1, TP. Hồ Chí Minh",
-    contact_masked: "090*****67",
     sku_id: "sku-b",
     product_code: "SKU-B",
     product_name: "Bo mạch B",
@@ -91,19 +67,7 @@ const PAYLOAD: Record<string, unknown> = {
       },
     ],
   },
-};
-
-const PAGE_PAYLOAD: Record<string, unknown[]> = {
-  "/reversal-documents": [
-    {
-      status: "POSTED",
-      reference_document_code: "PX-0001",
-      reference_document_id: "doc-1",
-      reversed_at: "2026-08-12T09:00:00+07:00",
-      total_qty: 3,
-    },
-  ],
-  "/products": [
+  "/skus/lookup": [
     {
       sku_id: "sku-a",
       sku_code: "SKU-A",
@@ -117,12 +81,16 @@ const PAGE_PAYLOAD: Record<string, unknown[]> = {
       sku_type: "COMPONENT",
     },
   ],
-  "/agencies": [
+};
+
+const PAGE_PAYLOAD: Record<string, unknown[]> = {
+  "/reversal-documents": [
     {
-      agency_id: "ag-1",
-      agency_code: "AG01",
-      agency_name: "Đại lý An Phát",
-      recipient_type: "AGENCY",
+      status: "POSTED",
+      reference_document_code: "PX-0001",
+      reference_document_id: "doc-1",
+      reversed_at: "2026-09-10T09:00:00+07:00",
+      total_qty: 3,
     },
   ],
   "/users": [
@@ -133,10 +101,6 @@ const PAGE_PAYLOAD: Record<string, unknown[]> = {
     },
   ],
 };
-
-// Danh mục SKU của màn báo cáo giờ đi qua GET /skus/lookup (một request, không
-// phân trang — xem fetchAllSkus); cùng dòng dữ liệu với "/products" ở trên.
-PAYLOAD["/skus/lookup"] = PAGE_PAYLOAD["/products"];
 
 function renderReport() {
   renderWithProviders(<RecipientAgencyReport />, [ROUTES.REPORTS_RECIPIENT]);
@@ -157,7 +121,7 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     });
     useAuthStore.setState({
       isSuperAdmin: false,
-      permissionCodes: ["report.view", "report.export", "REPORT_EXPORT"],
+      permissionCodes: ["report.view", "report.export"],
     });
   });
 
@@ -165,72 +129,71 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     cleanupTestState();
   });
 
-  it("dựng KPI xuất thuần từ payload thật và phân bổ hoàn tác về từng dòng", async () => {
+  it("dựng đúng cấu trúc baseline, cộng số lượng thuần và tiến độ chứng từ", async () => {
     renderReport();
 
+    const root = await screen.findByTestId("report-08-recipient-agency");
+    expect(root).toBeInTheDocument();
     expect(
-      await screen.findByTestId("report-08-recipient-agency"),
+      screen.getByRole("heading", {
+        name: "Báo cáo Xuất theo người nhận đại lý",
+      }),
     ).toBeInTheDocument();
 
-    // Tổng xuất 15, hoàn tác 3, xuất thuần 12, 1 chứng từ đã ghi nhận.
-    const kpis = await screen.findByLabelText("Tổng quan vận hành", {
-      selector: "section",
-    });
-    expect(within(kpis).getByText("15")).toBeInTheDocument();
-    expect(within(kpis).getByText("3")).toBeInTheDocument();
-    expect(within(kpis).getByText("12")).toBeInTheDocument();
+    const overview = screen.getByLabelText("Tổng quan vận hành");
+    expect(within(screen.getByLabelText("Tổng phiếu xuất")).getByText("1")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("Đại lý nhận")).getByText("1")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("Đã hoàn tất")).getByText("0")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("Chưa hoàn tất")).getByText("1")).toBeInTheDocument();
+    expect(overview).toBeInTheDocument();
 
-    // Bảng là chế độ mặc định và có đủ hai nhóm người nhận × mã hàng.
     const table = await screen.findByRole("table");
-    // Mỗi dòng in tên người nhận ở cả dòng chính lẫn dòng phụ "Tuyến đại lý".
-    expect(within(table).getAllByText(/AG01 · Đại lý An Phát/)).toHaveLength(4);
-    expect(within(table).getByText(/SKU-A · Máy A/)).toBeInTheDocument();
-    expect(within(table).getByText(/SKU-B · Bo mạch B/)).toBeInTheDocument();
+    expect(within(table).getByText("Đại lý An Phát")).toBeInTheDocument();
+    expect(within(table).getByText("Nguyễn Văn Minh")).toBeInTheDocument();
+    expect(within(table).getByText("12")).toBeInTheDocument();
+    expect(within(table).getByText("0/1")).toBeInTheDocument();
   });
 
-  it("mở modal đối soát đúng dòng, kèm chứng từ nguồn và cảnh báo PII đã che", async () => {
+  it("nút Xem mở chi tiết thật của đại lý, không còn action chết", async () => {
     const user = userEvent.setup();
     renderReport();
 
-    const buttons = await screen.findAllByRole("button", { name: /Đối soát/ });
-    await user.click(buttons[0]);
+    const table = await screen.findByRole("table");
+    await user.click(within(table).getByRole("button", { name: /Xem/ }));
 
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText(/Đối soát:/)).toBeInTheDocument();
-    expect(within(dialog).getAllByText("PX-0001").length).toBeGreaterThan(0);
-    expect(within(dialog).getByText(/Ghi nhận xuất/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/Đảo phiếu xuất/)).toBeInTheDocument();
     expect(
-      within(dialog).getByText(
-        /Thông tin liên hệ đã được máy chủ che theo quyền của tài khoản./,
-      ),
+      within(dialog).getByText(/Chi tiết nhận hàng · Đại lý An Phát/),
     ).toBeInTheDocument();
+    expect(within(dialog).getByText("PX-0001")).toBeInTheDocument();
+    expect(within(dialog).getByText("Chưa hoàn tất")).toBeInTheDocument();
   });
 
-  it("chuyển giữa Dạng ngang và Dạng hộp, tự thu gọn bộ lọc khi sang Dạng hộp", async () => {
+  it("tìm kiếm chỉ lọc bảng và có thể đặt lại ngay trong empty state", async () => {
     const user = userEvent.setup();
     renderReport();
 
-    const tableTab = await screen.findByRole("tab", { name: /Dạng ngang/ });
-    const sliceTab = screen.getByRole("tab", { name: /Dạng hộp/ });
-    expect(tableTab).toHaveAttribute("aria-selected", "true");
+    const searchBox = await screen.findByPlaceholderText(
+      "Tên đại lý, người nhận, mã phiếu...",
+    );
+    await user.clear(searchBox);
+    await user.type(searchBox, "khong-co-dai-ly");
 
-    await user.click(sliceTab);
-    expect(sliceTab).toHaveAttribute("aria-selected", "true");
     expect(
-      await screen.findByRole("button", { name: "Hiện bộ lọc" }),
+      await screen.findByText("Không tìm thấy kết quả phù hợp"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Dữ liệu báo cáo")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /Đặt lại tìm kiếm/ }),
+    );
+    expect(screen.getByText("Đại lý An Phát")).toBeInTheDocument();
   });
 
-  it("bật xuất XLSX theo quyền report.export và khóa xuất CSV kèm PII", async () => {
+  it("quyền report.export điều khiển đúng nút Xuất báo cáo", async () => {
     renderReport();
-
-    // Chờ lát cắt về: trước khi có snapshot_id thì cả hai nút đều khóa.
-    await screen.findByRole("table");
-    expect(screen.getByRole("button", { name: /Xuất XLSX/ })).toBeEnabled();
+    await screen.findByText("Đại lý An Phát");
     expect(
-      screen.getByRole("button", { name: /Xuất CSV có thông tin cá nhân/ }),
-    ).toBeDisabled();
+      screen.getByRole("button", { name: "Xuất báo cáo" }),
+    ).toBeEnabled();
   });
 });
