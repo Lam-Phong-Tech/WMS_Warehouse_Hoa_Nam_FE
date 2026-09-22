@@ -218,7 +218,7 @@ export const NAV_GROUPS: NavGroupData[] = [
       {
         screen: "RPT-04",
         path: ROUTES.REPORTS_IMPORT_QUALITY,
-        label: "Nhập dữ liệu / đối chiếu & lỗi dữ liệu",
+        label: "Nhập dữ liệu / đối chiếu & lỗi ",
         icon: "clipboard-list-check",
       },
       {
