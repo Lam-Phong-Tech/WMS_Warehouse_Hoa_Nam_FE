@@ -783,8 +783,8 @@ export default function IoHistoryReport() {
                     allowClear={false}
                     presets={periodPresets}
                     maxDate={dayjs().startOf("day")}
-                    className="hn-vuexy-date-range"
-                    popupClassName="hn-vuexy-date-popup"
+                    className="hn-vuexy-date-range hn-rpt-io-date-range"
+                    popupClassName="hn-vuexy-date-popup hn-rpt-io-date-popup"
                     onChange={(value) => {
                       if (!value?.[0] || !value[1]) return;
                       setRange({

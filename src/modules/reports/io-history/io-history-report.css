@@ -36,9 +36,9 @@
   --ink: var(--wms-text-strong);
   --muted: var(--wms-text-medium);
   --line: var(--wms-border);
-  --primary: var(--wms-primary);
-  --primary-dark: var(--wms-primary-dark);
-  --primary-soft: var(--wms-primary-soft);
+  --primary: var(--wms-auth-cta);
+  --primary-dark: var(--wms-auth-navy);
+  --primary-soft: var(--wms-auth-pale);
   --green: var(--wms-success);
   --green-soft: var(--wms-success-soft);
   --amber: var(--wms-warning);
@@ -53,19 +53,19 @@
 
   /* Sắc riêng của mockup, chưa có token tương ứng */
   --hnio-surface-muted: #faf9fc;
-  --hnio-chip-info-fg: #155faf;
+  --hnio-chip-info-fg: var(--wms-auth-link);
   --hnio-ok-fg: #168c4c;
   --hnio-warn-fg: #c46d16;
   --hnio-info-fg: #007b8c;
   --hnio-pdf-fg: #d7373c;
-  --hnio-focus: #2168d4;
+  --hnio-focus: var(--wms-auth-link);
   --hnio-card-line: rgba(47, 43, 61, 0.06);
   --hnio-segment-bg: rgba(47, 43, 61, 0.06);
   --hnio-segment-shadow: 0 2px 6px rgba(47, 43, 61, 0.11);
   --hnio-control-line: rgba(47, 43, 61, 0.22);
   --hnio-grid-line: rgba(47, 43, 61, 0.09);
   --hnio-row-stripe: rgba(47, 43, 61, 0.014);
-  --hnio-row-hover: rgba(115, 103, 240, 0.05);
+  --hnio-row-hover: rgba(0, 78, 116, 0.055);
   --hnio-kpi-hover-shadow: 0 8px 24px rgba(47, 43, 61, 0.16);
   --hnio-floating-shadow: 0 12px 30px rgba(47, 43, 61, 0.18);
   --hnio-menu-shadow: 0 14px 36px rgba(47, 43, 61, 0.18);
@@ -77,13 +77,13 @@
   --hnio-info-soft: rgba(0, 186, 209, 0.13);
   --hnio-excel-soft: rgba(40, 199, 111, 0.12);
   --hnio-pdf-soft: rgba(255, 76, 81, 0.11);
-  --hnio-option-hover: rgba(115, 103, 240, 0.1);
-  --hnio-day-hover: rgba(115, 103, 240, 0.12);
-  --hnio-detail-line: rgba(115, 103, 240, 0.2);
-  --hnio-detail-border: rgba(115, 103, 240, 0.22);
+  --hnio-option-hover: rgba(0, 78, 116, 0.09);
+  --hnio-day-hover: rgba(0, 78, 116, 0.11);
+  --hnio-detail-line: rgba(0, 78, 116, 0.18);
+  --hnio-detail-border: rgba(0, 78, 116, 0.2);
   --hnio-detail-bg: linear-gradient(
     135deg,
-    rgba(115, 103, 240, 0.1),
+    rgba(0, 78, 116, 0.09),
     rgba(0, 186, 209, 0.06)
   );
   --hnio-detail-fact-line: rgba(47, 43, 61, 0.08);
@@ -878,7 +878,7 @@
 
 .hn-rpt-io .kpi[data-tone="outbound"] {
   --kpi-tone: var(--primary);
-  --kpi-soft: rgba(115, 103, 240, 0.12);
+  --kpi-soft: rgba(0, 78, 116, 0.11);
 }
 
 .hn-rpt-io .kpi[data-tone="reversal"] {
@@ -1727,4 +1727,204 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   RPT-08 · HOA NAM OCEAN ALIGNMENT
+   -------------------------------------------------------------------------
+   Chỉ áp dụng cho màn Lịch sử nhập – xuất kho. Giữ nguyên logic/report data,
+   nhưng đồng bộ màu, tỷ lệ control và responsive với Tổng quan vận hành.
+   Popup lịch render qua portal nên có class riêng để không làm đổi 7 report
+   còn lại đang dùng cùng UiVuexyDateRangePicker.
+   ═════════════════════════════════════════════════════════════════════════ */
+.hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field {
+  min-height: 40px;
+  border-color: var(--hnio-control-line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field:hover,
+.hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field[aria-expanded="true"] {
+  border-color: var(--primary);
+}
+
+.hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field:focus-visible {
+  outline: 0;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--wms-auth-focus-ring);
+}
+
+.hn-rpt-io .hn-rpt-io-date-range [data-date-value] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hn-rpt-io-date-popup {
+  font-family: var(--wms-font-family);
+}
+
+.hn-rpt-io-date-popup [data-date-tab][data-active="true"],
+.hn-rpt-io-date-popup [role="group"] button[aria-pressed="true"] {
+  border-color: var(--wms-auth-cta);
+  color: var(--wms-auth-navy);
+  background: var(--wms-auth-pale);
+}
+
+.hn-rpt-io-date-popup [role="group"] button:hover,
+.hn-rpt-io-date-popup [data-date-tab]:hover {
+  border-color: var(--wms-auth-cta);
+  color: var(--wms-auth-navy);
+  background: var(--wms-auth-pale);
+}
+
+.hn-rpt-io-date-popup [data-in-range="true"] {
+  background: rgba(0, 78, 116, 0.1);
+}
+
+.hn-rpt-io-date-popup button[aria-selected="true"] {
+  color: var(--wms-on-primary);
+  background: var(--wms-auth-cta);
+}
+
+.hn-rpt-io-date-popup button[aria-selected="true"]:hover {
+  color: var(--wms-on-primary);
+  background: var(--wms-auth-navy);
+}
+
+.hn-rpt-io-date-popup button[aria-selected="false"]:hover {
+  color: var(--wms-auth-navy);
+  background: var(--wms-auth-pale);
+}
+
+.hn-rpt-io-date-popup [data-date-action="apply"] {
+  color: var(--wms-on-primary);
+  background: var(--wms-auth-cta);
+}
+
+.hn-rpt-io-date-popup [data-date-action="apply"]:hover {
+  background: var(--wms-auth-navy);
+}
+
+.hn-rpt-io-date-popup [data-date-action="clear"],
+.hn-rpt-io-date-popup [data-date-action="cancel"] {
+  color: var(--wms-auth-cta);
+}
+
+.hn-rpt-io-date-popup button:focus-visible {
+  outline-color: var(--wms-auth-link);
+}
+
+.hn-rpt-io tbody tr:focus-within {
+  background: var(--wms-auth-pale);
+  box-shadow: inset 3px 0 0 var(--wms-auth-cta);
+}
+
+/* Ưu tiên đủ bề ngang cho hai mốc ngày, tránh cắt "DD/MM/YYYY" ở Tablet. */
+.hn-rpt-io .filtergrid > .field:nth-child(1) {
+  flex-basis: 420px;
+  max-width: 520px;
+}
+
+@media (max-width: 1199px) {
+  .hn-rpt-io .page-wrap {
+    padding-inline: 20px;
+  }
+
+  .hn-rpt-io .filtergrid > .field:nth-child(1) {
+    flex-basis: 380px;
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 991px) {
+  .hn-rpt-io .filters {
+    gap: 12px 14px;
+    padding: 14px 16px;
+  }
+
+  .hn-rpt-io .cardhead {
+    padding-inline: 16px;
+  }
+
+  .hn-rpt-io .slices {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 767px) {
+  .hn-rpt-io .reporthead h1 {
+    font-size: 22px;
+    line-height: 32px;
+  }
+
+  .hn-rpt-io .section-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .hn-rpt-io .section-meta {
+    text-align: left;
+  }
+
+  .hn-rpt-io .kpi {
+    min-height: 144px;
+    padding: 16px;
+  }
+
+  .hn-rpt-io .kpivalue {
+    font-size: 28px;
+    line-height: 34px;
+  }
+
+  .hn-rpt-io .cardhead {
+    min-height: 58px;
+  }
+}
+
+@media (max-width: 560px) {
+  .hn-rpt-io .reporthead h1 {
+    font-size: 21px;
+    line-height: 30px;
+  }
+
+  .hn-rpt-io .filters {
+    padding: 14px;
+  }
+
+  .hn-rpt-io .modal {
+    width: min(780px, calc(100% - 16px));
+  }
+}
+
+@media (pointer: coarse) {
+  .hn-rpt-io .btn,
+  .hn-rpt-io .control,
+  .hn-rpt-io .tab,
+  .hn-rpt-io .period,
+  .hn-rpt-io .opt,
+  .hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hn-rpt-io .btn,
+  .hn-rpt-io .kpi,
+  .hn-rpt-io .refresh-icon {
+    animation: none;
+    transition: none;
+  }
+
+  .hn-rpt-io .btn:hover:not(:disabled),
+  .hn-rpt-io .kpi:hover {
+    transform: none;
+  }
 }
