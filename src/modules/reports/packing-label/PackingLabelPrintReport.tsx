@@ -1,463 +1,70 @@
-import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
-import { useTabView } from "@/shared/ui/use-tab-view";
-import dayjs from "dayjs";
+import { useEffect, useMemo, useState } from "react";
+import dayjs, { type Dayjs } from "dayjs";
 import {
-  Box,
-  Stack,
-  UiAlert,
   UiButton,
-  UiSelect,
-  UiSpinner,
-  UiStatusBadge,
   UiVuexyDateRangePicker,
-  RADIUS,
-  SEMANTIC_LIGHT as S,
-  FILTER_GRID_COLUMNS_SX,
-  filterGridColumnSx,
 } from "@/shared/ui";
 import {
-  AppstoreOutlined,
-  AuditOutlined,
   CheckCircleOutlined,
-  FilterOutlined,
   PrinterOutlined,
   ReloadOutlined,
   UndoOutlined,
-  UnorderedListOutlined,
   WarningOutlined,
 } from "@/shared/components/icons";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
-import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
-import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
-import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
-import { EMPTY_TEXT, orEmpty } from "@/shared/constants/display";
-import { formatDate, formatDateTime } from "@/shared/utils/format-date";
+import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { usePeriodFilter } from "../operations/report-period";
 import { reportRangePresets } from "../operations/report-range-presets";
-import { RPT_SCROLL_MAX_HEIGHT } from "../operations/report-tokens";
-import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
-import { useReportRangeAdvice } from "../operations/report-coverage";
-import { LABEL_LOG_COVERAGE_PROBE } from "../operations/report-probes";
-import { ReportRangeAdviceBanner } from "../operations/ReportRangeAdviceBanner";
-import { ExportButtons } from "../operations/report-filters";
 import { useReportExport } from "../operations/report-export";
-import { useClientPagination } from "../operations/report-columns";
-import { ReportPaginationBar } from "../operations/report-table";
-import { SectionFilterBar } from "../operations/SectionFilterBar";
+import { useT } from "@/shared/i18n/useT";
 import {
-  optionsFromRows,
-  useSectionFilter,
-  type SectionFilterConfig,
-} from "../operations/report-section-filter";
-import { DrillDownDialog } from "../operations/report-ui";
-import { useT, type TranslateFn } from "@/shared/i18n/useT";
-import {
-  LABEL_EVENT_LIMIT,
-  PACKING_LABEL_ACTIONS,
-  PACKING_LABEL_RESULTS,
   usePackingLabelReport,
-  usePackingLabelSnapshot,
-  type PackingLabelAction,
   type PackingLabelEvent,
   type PackingLabelResult,
 } from "./packing-label-api";
 import {
-  LABEL_SNAPSHOT_STATUS_LABELS,
-  packingLabelFailureText,
-} from "./packing-label-labels";
-import { businessLabel } from "@/shared/constants/business-labels";
-import { rowIndexOf } from "@/shared/components/data-display/row-index";
+  fetchLabelSnapshots,
+  printLabelSnapshot,
+  reprintLabelSnapshot,
+} from "@/modules/outbound/services/mvpOutboundService";
+import "./packing-label-report.css";
 
-/**
- * RPT-05 — Nhãn đóng gói · Print / Reprint (bản port 1:1 mockup 8.6).
- *
- * Chuỗi hiển thị đã chuyển về `messages.ts` (nhánh `reports.packingLabel.*`)
- * theo yêu cầu i18n 100% (2026-09-03); bản VI giữ nguyên từng ký tự so với
- * mockup nên vẫn đối chiếu được từng dòng chữ khi nghiệm thu.
- *
- * Toàn bộ số liệu đến từ `usePackingLabelReport()` — không có ô nào cứng, không
- * có nút nào không dẫn tới hành động thật.
- */
+type ActionPhase = "idle" | "submitting" | "uncertain";
 
-const resultLabels = (
-  t: TranslateFn,
-): Readonly<Record<PackingLabelResult, string>> => ({
-  PRINTED: t("reports.packingLabel.resultPrinted"),
-  PRINT_FAILED: t("reports.packingLabel.outcomeFailed"),
-  PENDING_PRINT: t("reports.packingLabel.resultPending"),
-});
+type Notice =
+  | { tone: "success"; text: string }
+  | { tone: "warning"; text: string }
+  | { tone: "error"; text: string }
+  | null;
 
-const RESULT_TONES: Readonly<
-  Record<PackingLabelResult, "success" | "error" | "warning">
-> = {
-  PRINTED: "success",
-  PRINT_FAILED: "error",
-  PENDING_PRINT: "warning",
-};
+const PAGE_SIZE = 5;
 
-const actionLabels = (
-  t: TranslateFn,
-): Readonly<Record<PackingLabelAction, string>> => ({
-  PRINT: t("reports.packingLabel.actionPrint"),
-  REPRINT: t("reports.packingLabel.outcomeReprint"),
-});
-
-/**
- * Ba mẩu dữ liệu của một lần in — mã lỗi máy, lý do, câu mô tả của BE — sau
- * khi Việt hoá và bỏ trùng; mẩu đầu là NGUYÊN NHÂN.
- *
- * Bỏ trùng vì bộ dữ liệu ghi cả mã lỗi lẫn mã lý do cho cùng một sự việc
- * (PRINTER_JAMMED + PAPER_JAM); dịch xong hai mã đó về đúng một câu, in cả hai
- * thì ô nào cũng lặp lại chính nó. Gộp ở một chỗ để bảng, thẻ Dạng hộp, hộp
- * thoại kiểm chứng và ô tìm kiếm luôn đọc CÙNG một chuỗi.
- */
-function failureParts(row: PackingLabelEvent, t: TranslateFn): string[] {
-  const parts = [row.errorCode, row.reasonCode, row.reasonNote]
-    .map((value) => packingLabelFailureText(value, t))
-    .filter((value) => value !== "");
-  return [...new Set(parts)];
+function makeIdempotencyKey(prefix: string) {
+  const suffix =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
+  return prefix + "-" + suffix;
 }
 
-const SURFACE_SX = {
-  minWidth: 0,
-  border: `1px solid ${S.border}`,
-  borderRadius: `${RADIUS.card}px`,
-  bgcolor: S.bgSurface,
-  boxShadow: S.shadowCard,
-} as const;
-
-type MetricTone = "primary" | "success" | "error" | "warning";
-
-const METRIC_TONES: Readonly<
-  Record<MetricTone, { accent: string; soft: string; text: string }>
-> = {
-  primary: { accent: S.primary, soft: S.primarySoft, text: S.primaryDark },
-  success: { accent: S.success, soft: S.successSoft, text: S.successText },
-  error: { accent: S.error, soft: S.errorSoft, text: S.errorText },
-  warning: { accent: S.warning, soft: S.warningSoft, text: S.warningText },
-};
-
-function ratio(part: number, total: number): number {
-  if (total <= 0) return 0;
-  return Math.max(0, Math.min(100, Math.round((part / total) * 100)));
+function resultLabel(value: PackingLabelResult) {
+  if (value === "PRINTED") return "In thành công";
+  if (value === "PRINT_FAILED") return "Lỗi in";
+  return "Đang xử lý";
 }
 
-/** Thẻ số liệu của mockup: viền trên theo tông, nền chuyển sắc, thanh tỷ trọng. */
-function MetricCard({
-  label,
-  value,
-  hint,
-  metaLabel,
-  metaValue,
-  progress,
-  tone,
-  icon,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  metaLabel: string;
-  metaValue: string;
-  progress: number;
-  tone: MetricTone;
-  icon: ReactNode;
-}) {
-  const style = METRIC_TONES[tone];
-  return (
-    <Box
-      component="article"
-      sx={{
-        minHeight: 166,
-        px: 2.5,
-        py: 2.25,
-        border: `1px solid ${S.border}`,
-        borderTop: `2px solid ${style.accent}`,
-        borderRadius: `${RADIUS.card}px`,
-        backgroundImage: `linear-gradient(145deg, ${S.bgSurface} 30%, ${style.soft})`,
-        boxShadow: S.shadowCard,
-        minWidth: 0,
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 1.25,
-        }}
-      >
-        <Box
-          component="span"
-          sx={{
-            color: S.textHigh,
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: "0.025em",
-            textTransform: "uppercase",
-          }}
-        >
-          {label}
-        </Box>
-        <Box
-          aria-hidden="true"
-          sx={{
-            width: 36,
-            height: 36,
-            flex: "none",
-            display: "grid",
-            placeItems: "center",
-            borderRadius: `${RADIUS.control}px`,
-            bgcolor: style.soft,
-            color: style.text,
-            fontSize: 18,
-          }}
-        >
-          {icon}
-        </Box>
-      </Box>
-      <Box
-        component="strong"
-        sx={{
-          display: "block",
-          mt: 2.25,
-          fontSize: 30,
-          lineHeight: 1,
-          letterSpacing: "-0.025em",
-          color: S.textStrong,
-        }}
-      >
-        {value}
-      </Box>
-      <Box sx={{ minHeight: 18, mt: 1.5, fontSize: 12, color: S.textMedium }}>
-        {hint}
-      </Box>
-      <Box
-        sx={{
-          mt: 1.75,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 1.25,
-          fontSize: 11.5,
-          color: S.textMedium,
-        }}
-      >
-        <Box component="span">{metaLabel}</Box>
-        <Box component="strong" sx={{ color: style.text }}>
-          {metaValue}
-        </Box>
-      </Box>
-      <Box
-        sx={{
-          height: 4,
-          mt: 0.875,
-          overflow: "hidden",
-          borderRadius: 99,
-          bgcolor: style.soft,
-        }}
-      >
-        <Box
-          sx={{
-            height: "100%",
-            width: `${progress}%`,
-            borderRadius: "inherit",
-            bgcolor: style.accent,
-          }}
-        />
-      </Box>
-    </Box>
-  );
+function resultClass(value: PackingLabelResult) {
+  if (value === "PRINTED") return "is-success";
+  if (value === "PRINT_FAILED") return "is-error";
+  return "is-pending";
 }
 
-/** Ô nhãn + control của lưới bộ lọc 12 cột trong mockup. */
-function FilterField({
-  label,
-  htmlFor,
-  span = 2,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  span?: number;
-  children: ReactNode;
-}) {
-  return (
-    <Box
-      sx={{
-        minWidth: 0,
-        // Ô rộng của mockup (tìm 5/12, khoảng ngày 7/12) chiếm 2 cột lưới.
-        gridColumn: filterGridColumnSx(span >= 4),
-      }}
-    >
-      <Box
-        component="label"
-        htmlFor={htmlFor}
-        sx={{
-          display: "block",
-          mb: 0.75,
-          color: S.textMedium,
-          fontSize: 12,
-          fontWeight: 700,
-          lineHeight: "18px",
-        }}
-      >
-        {label}
-      </Box>
-      {children}
-    </Box>
-  );
-}
-
-function SectionHead({
-  id,
-  title,
-  description,
-  actions,
-  sx,
-}: {
-  id: string;
-  title: string;
-  description: string;
-  actions?: ReactNode;
-  sx?: Record<string, unknown>;
-}) {
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: { xs: "stretch", md: "flex-start" },
-        justifyContent: "space-between",
-        flexDirection: { xs: "column", md: "row" },
-        gap: 2,
-        ...sx,
-      }}
-    >
-      <Box sx={{ minWidth: 0 }}>
-        <Box
-          component="h2"
-          id={id}
-          sx={{
-            m: 0,
-            fontSize: 18,
-            lineHeight: 1.33,
-            fontWeight: 700,
-            color: S.textStrong,
-          }}
-        >
-          {title}
-        </Box>
-        <Box sx={{ mt: 0.5, fontSize: 12, color: S.textMedium }}>
-          {description}
-        </Box>
-      </Box>
-      {actions ? (
-        <Stack
-          direction="row"
-          sx={{
-            flexWrap: "wrap",
-            justifyContent: { xs: "flex-start", md: "flex-end" },
-            gap: 1,
-            alignItems: "center",
-          }}
-        >
-          {actions}
-        </Stack>
-      ) : null}
-    </Box>
-  );
-}
-
-function ResultBadge({ value }: { value: PackingLabelResult }) {
-  const t = useT();
-  return (
-    <UiStatusBadge
-      size="small"
-      tone={RESULT_TONES[value]}
-      label={resultLabels(t)[value]}
-    />
-  );
-}
-
-function AuditBadge({ event }: { event: PackingLabelEvent }) {
-  const t = useT();
-  return (
-    <UiStatusBadge
-      size="small"
-      tone={event.auditComplete ? "success" : "warning"}
-      label={
-        event.auditComplete
-          ? t("reports.packingLabel.auditOk")
-          : t("reports.packingLabel.auditIncomplete")
-      }
-      title={
-        event.auditComplete
-          ? t("reports.packingLabel.auditOkTitle")
-          : t("reports.packingLabel.auditMissingTitle", {
-              list: event.auditMissing.join(", "),
-            })
-      }
-    />
-  );
-}
-
-/** Hai dòng chữ chồng nhau trong một ô bảng (tiêu đề + chú thích mờ). */
-function CellStack({ title, note }: { title: string; note?: ReactNode }) {
-  return (
-    <Box sx={{ minWidth: 0 }}>
-      <Box
-        sx={{
-          fontWeight: 700,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-      >
-        {title}
-      </Box>
-      {note !== undefined ? (
-        <Box sx={{ mt: 0.375, fontSize: 11.5, color: S.textMedium }}>
-          {note}
-        </Box>
-      ) : null}
-    </Box>
-  );
-}
-
-function DetailCell({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <Box
-      sx={{
-        minWidth: 0,
-        p: 1.375,
-        border: `1px solid ${S.border}`,
-        borderRadius: `${RADIUS.control}px`,
-        bgcolor: S.bgCanvas,
-      }}
-    >
-      <Box
-        sx={{
-          color: S.textMedium,
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.03em",
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
-      </Box>
-      <Box
-        sx={{
-          mt: 0.5,
-          fontSize: 13,
-          fontWeight: 600,
-          color: S.textStrong,
-          overflowWrap: "anywhere",
-        }}
-      >
-        {value}
-      </Box>
-    </Box>
-  );
+function actionLabel(row: PackingLabelEvent, busy: boolean) {
+  if (busy) return "Đang xử lý…";
+  if (row.result === "PRINTED") return "In lại";
+  if (row.result === "PRINT_FAILED") return "Thử lại";
+  return "In nhãn";
 }
 
 export default function PackingLabelPrintReport() {
@@ -465,1202 +72,505 @@ export default function PackingLabelPrintReport() {
   const period = usePeriodFilter("this-month");
   const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const exporter = useReportExport();
-  const resultLabelMap = useMemo(() => resultLabels(t), [t]);
-  const actionLabelMap = useMemo(() => actionLabels(t), [t]);
 
-  /**
-   * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
-   * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
-   * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
-   * @/shared/ui/use-tab-view.
-   */
-  const viewTab = useTabView<"table" | "snapshot">("table");
-  const view = viewTab.view;
-  const shownView = viewTab.shown;
-  const setView = viewTab.select;
-  /**
-   * Tab đổi view: nút bấm đọc `view` (cập nhật GẤP → tô sáng tức thì), còn các
-   * PANEL nặng đọc `deferredView` (bản trễ, React vẽ ở lượt ngắt được). Đo trước khi
-   * sửa (Playwright, CPU x4): một cú bấm "Dạng hộp" khoá luồng chính tới ~930 ms
-   * vì panel mới (bảng hàng trăm dòng / lưới thẻ) phải layout + paint trọn một
-   * lượt cùng lúc với việc tô sáng tab. Tách hai lượt thì tab phản hồi ngay,
-   * panel theo sau.
-   */
-  const deferredView = useDeferredValue(view);
-
-  const [advanced, setAdvanced] = useState(false);
-  const [sliceFilters, setSliceFilters] = useState(false);
+  const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>([
+    period.range[0],
+    period.range[1],
+  ]);
+  const [statusFilter, setStatusFilter] = useState("");
   const [keyword, setKeyword] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
-  const [resultFilter, setResultFilter] = useState("");
-  const [printerFilter, setPrinterFilter] = useState("");
-  const [openLabelId, setOpenLabelId] = useState<string | null>(null);
+  const [tableKeyword, setTableKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [actionEventId, setActionEventId] = useState<string | null>(null);
+  const [actionPhase, setActionPhase] = useState<ActionPhase>("idle");
+  const [notice, setNotice] = useState<Notice>(null);
+  const [online, setOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+
+  useEffect(() => {
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   const report = usePackingLabelReport({
     from: period.from,
     to: period.to,
-    enabled: !period.invalid,
+    enabled: online,
   });
 
-  const printerNames = useMemo(
-    () =>
-      new Map(report.printerOptions.map((item) => [item.value, item.label])),
-    [report.printerOptions],
-  );
-  const actorNames = useMemo(
-    () => new Map(report.actorOptions.map((item) => [item.value, item.label])),
-    [report.actorOptions],
-  );
+  const draftInvalid = draftRange[0].isAfter(draftRange[1], "day");
 
-  const snapshot = usePackingLabelSnapshot(openLabelId, {
-    labels: report.labels,
-    printerNames,
-    actorNames,
-  });
-
-  /**
-   * Gợi ý bộ lọc kỳ, tính trên `report.events` — tức TRƯỚC bộ lọc hành động /
-   * kết quả / máy in / từ khoá của màn: lọc phụ ra rỗng là lựa chọn của người
-   * dùng, không phải dấu hiệu chọn sai kỳ.
-   */
-  const rangeAdviceDays = useMemo(
-    () => report.events.map((event) => event.attemptedAt.slice(0, 10)),
-    [report.events],
-  );
-  const rangeAdvice = useReportRangeAdvice({
-    from: period.from,
-    to: period.to,
-    dataDays: rangeAdviceDays,
-    loading: report.loading,
-    probe: LABEL_LOG_COVERAGE_PROBE,
-  });
-
-  const rows = useMemo(() => {
-    const needle = keyword.trim().toLocaleLowerCase("vi");
-    return report.events
-      .filter((event) => !actionFilter || event.action === actionFilter)
-      .filter((event) => !resultFilter || event.result === resultFilter)
-      .filter((event) => !printerFilter || event.printerId === printerFilter)
-      .filter((event) => {
-        if (needle === "") return true;
-        return [
-          event.outboundNo,
-          event.labelCode,
-          event.recipient,
-          event.printerName,
-          event.actorName,
-          // Tìm được bằng CHỮ đang hiện trên màn ("kẹt giấy") chứ không chỉ
-          // bằng mã thô, nhưng vẫn giữ mã để người quen tra mã không mất đường.
-          ...failureParts(event, t),
-          event.errorCode,
-          event.reasonCode,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLocaleLowerCase("vi")
-          .includes(needle);
-      });
-  }, [report.events, actionFilter, resultFilter, printerFilter, keyword, t]);
-
-  /**
-   * Bộ lọc RIÊNG của khối nhật ký. Nằm SAU khi 4 thẻ KPI đã tính trên rows:
-   * soi một máy in hay một nhãn không được kéo tụt luôn tỉ lệ in lại của kỳ.
-   */
-  const historyFilterConfig = useMemo<SectionFilterConfig<PackingLabelEvent>>(
-    () => ({
-      searchPlaceholder: t("reports.packingLabel.historySearchPlaceholder"),
-      searchText: (row) => [
+  const filteredRows = useMemo(() => {
+    const topNeedle = keyword.trim().toLocaleLowerCase("vi");
+    const tableNeedle = tableKeyword.trim().toLocaleLowerCase("vi");
+    return report.events.filter((row) => {
+      if (statusFilter && row.result !== statusFilter) return false;
+      const sku = report.labels.get(row.labelId)?.skuSummary ?? "";
+      const haystack = [
         row.labelCode,
         row.outboundNo,
         row.recipient,
-        row.actorName,
         row.printerName,
-        ...failureParts(row, t),
-        row.errorCode,
-      ],
-      selects: [
-        {
-          key: "action",
-          placeholder: t("reports.packingLabel.anyAction"),
-          options: (list) =>
-            optionsFromRows(
-              list,
-              (row) => row.action,
-              (value) => actionLabelMap[value as PackingLabelAction] ?? value,
-            ),
-          match: (row, value) => row.action === value,
-          minWidth: 160,
-        },
-        {
-          key: "result",
-          placeholder: t("reports.packingLabel.anyResult"),
-          options: (list) =>
-            optionsFromRows(
-              list,
-              (row) => row.result,
-              (value) => resultLabelMap[value as PackingLabelResult] ?? value,
-            ),
-          match: (row, value) => row.result === value,
-          minWidth: 175,
-        },
-        {
-          key: "printer",
-          placeholder: t("reports.packingLabel.anyPrinter"),
-          options: (list) => optionsFromRows(list, (row) => row.printerName),
-          match: (row, value) => row.printerName === value,
-          minWidth: 165,
-        },
-      ],
-    }),
-    [t, actionLabelMap, resultLabelMap],
-  );
-  const historyFilter = useSectionFilter(rows, historyFilterConfig);
-  const pagination = useClientPagination(historyFilter.rows, 15);
+        row.actorName,
+        sku,
+      ]
+        .join(" ")
+        .toLocaleLowerCase("vi");
+      if (topNeedle && !haystack.includes(topNeedle)) return false;
+      if (tableNeedle && !haystack.includes(tableNeedle)) return false;
+      return true;
+    });
+  }, [report.events, report.labels, statusFilter, keyword, tableKeyword]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, keyword, tableKeyword, period.from, period.to]);
 
   const metrics = useMemo(() => {
-    const total = rows.length;
-    const printed = rows.filter((row) => row.result === "PRINTED").length;
-    const failed = total - printed;
-    const reprinted = rows.filter((row) => row.action === "REPRINT").length;
+    const total = report.events.length;
+    const printed = report.events.filter((row) => row.result === "PRINTED").length;
+    const failed = report.events.filter((row) => row.result === "PRINT_FAILED").length;
+    const reprinted = report.events.filter((row) => row.action === "REPRINT").length;
     return { total, printed, failed, reprinted };
-  }, [rows]);
+  }, [report.events]);
 
-  const activeFilterCount =
-    (keyword.trim() === "" ? 0 : 1) +
-    (actionFilter === "" ? 0 : 1) +
-    (resultFilter === "" ? 0 : 1) +
-    (printerFilter === "" ? 0 : 1);
+  const printedRate =
+    metrics.total > 0 ? Math.round((metrics.printed / metrics.total) * 1000) / 10 : 0;
 
-  // Bộ lọc hiện khi đang xem Bảng, hoặc khi người dùng chủ động bung ở Lát cắt.
-  const filtersVisible = view === "table" || sliceFilters;
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = filteredRows.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+
+  const selectedRow =
+    filteredRows.find((row) => row.eventId === selectedEventId) ??
+    pageRows[0] ??
+    null;
+
+  const applyFilters = () => {
+    if (draftInvalid) return;
+    period.setRange(draftRange);
+    setPage(1);
+  };
 
   const resetFilters = () => {
-    period.setPreset("this-month");
+    const next: [Dayjs, Dayjs] = [dayjs().startOf("month"), dayjs().endOf("day")];
+    setDraftRange(next);
+    period.setRange(next);
+    setStatusFilter("");
     setKeyword("");
-    setActionFilter("");
-    setResultFilter("");
-    setPrinterFilter("");
-    pagination.reset();
+    setTableKeyword("");
+    setPage(1);
   };
 
-  const switchView = (next: "table" | "snapshot") => {
-    setView(next);
-    if (next === "snapshot") setSliceFilters(false);
+  const refresh = () => {
+    setNotice(null);
+    report.refetch();
   };
 
-  const { refreshing, refresh } = useReportRefresh({
-    refetch: () => report.refetch(),
-    readError: () => report.error,
-  });
+  const handlePrint = async (row: PackingLabelEvent) => {
+    if (actionPhase !== "idle" || !online) return;
 
-  const exportFilters = {
-    from_date: period.from,
-    to_date: period.to,
-    ...(resultFilter ? { status: resultFilter } : {}),
-    ...(printerFilter ? { printer_id: printerFilter } : {}),
-    ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
+    if (row.result === "PRINTED") {
+      const reason = window.prompt("Lý do in lại nhãn");
+      if (!reason?.trim()) return;
+      setActionEventId(row.eventId);
+      setActionPhase("submitting");
+      setNotice(null);
+      try {
+        const snapshots = await fetchLabelSnapshots();
+        const snapshot = snapshots.find((item) => item.id === row.labelId);
+        const printerConfigId = row.printerId || report.printerOptions[0]?.value;
+        if (!snapshot?.documentId || snapshot.version === undefined || !printerConfigId) {
+          throw new Error("Thiếu thông tin phiên bản hoặc máy in.");
+        }
+        await reprintLabelSnapshot({
+          documentId: snapshot.documentId,
+          labelId: snapshot.id,
+          printerConfigId,
+          ifMatch: snapshot.version,
+          idempotencyKey: makeIdempotencyKey("rpt05-reprint"),
+          reason: reason.trim(),
+        });
+        setNotice({ tone: "success", text: "In lại nhãn thành công." });
+        report.refetch();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const uncertain =
+          !navigator.onLine ||
+          /network|fetch|timeout|timed out|connection/i.test(message);
+        setActionPhase(uncertain ? "uncertain" : "idle");
+        setNotice({
+          tone: uncertain ? "warning" : "error",
+          text: uncertain
+            ? "Chưa xác định kết quả in. Yêu cầu đã gửi; tạm khóa gửi lại để tránh in trùng."
+            : message || "Không thể in lại nhãn.",
+        });
+        if (uncertain) return;
+      } finally {
+        setActionEventId(null);
+        setActionPhase((current) => (current === "submitting" ? "idle" : current));
+      }
+      return;
+    }
+
+    setActionEventId(row.eventId);
+    setActionPhase("submitting");
+    setNotice(null);
+    try {
+      const snapshots = await fetchLabelSnapshots();
+      const snapshot = snapshots.find((item) => item.id === row.labelId);
+      const printerConfigId = row.printerId || report.printerOptions[0]?.value;
+      if (!snapshot?.documentId || snapshot.version === undefined || !printerConfigId) {
+        throw new Error("Thiếu thông tin phiên bản hoặc máy in.");
+      }
+      await printLabelSnapshot({
+        documentId: snapshot.documentId,
+        labelId: snapshot.id,
+        printerConfigId,
+        ifMatch: snapshot.version,
+        idempotencyKey: makeIdempotencyKey("rpt05-print"),
+      });
+      setNotice({ tone: "success", text: "Đã gửi yêu cầu in nhãn thành công." });
+      report.refetch();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const uncertain =
+        !navigator.onLine ||
+        /network|fetch|timeout|timed out|connection/i.test(message);
+      setActionPhase(uncertain ? "uncertain" : "idle");
+      setNotice({
+        tone: uncertain ? "warning" : "error",
+        text: uncertain
+          ? "Chưa xác định kết quả in. Yêu cầu đã gửi; tạm khóa gửi lại để tránh in trùng."
+          : message || "Không thể gửi yêu cầu in nhãn.",
+      });
+      if (uncertain) return;
+    } finally {
+      setActionEventId(null);
+      setActionPhase((current) => (current === "submitting" ? "idle" : current));
+    }
   };
 
-  const columns = [
-    {
-      key: "stt",
-      header: t("shared.table.rowNumber"),
-      align: "center" as const,
-      width: 56,
-      render: (row: PackingLabelEvent) =>
-        mvpRowNumber(
-          pagination.page,
-          pagination.perPage,
-          rowIndexOf(pagination.pageRows, row),
-        ),
-    },
-    {
-      key: "attemptedAt",
-      header: t("reports.packingLabel.colMoment"),
-      width: 158,
-      sortAccessor: (row: PackingLabelEvent) => row.attemptedAt,
-      render: (row: PackingLabelEvent) =>
-        row.attemptedAt ? formatDateTime(row.attemptedAt) : EMPTY_TEXT,
-    },
-    {
-      key: "action",
-      header: t("reports.packingLabel.colAction"),
-      width: 104,
-      sortAccessor: (row: PackingLabelEvent) => row.action,
-      render: (row: PackingLabelEvent) => actionLabelMap[row.action],
-    },
-    {
-      key: "result",
-      header: t("reports.packingLabel.colResult"),
-      width: 150,
-      render: (row: PackingLabelEvent) => <ResultBadge value={row.result} />,
-    },
-    {
-      key: "label",
-      header: t("reports.packingLabel.colLabelSnapshot"),
-      width: 200,
-      sortAccessor: (row: PackingLabelEvent) => row.labelCode,
-      render: (row: PackingLabelEvent) => (
-        // Chỉ mã nhãn: định danh bản lưu (UUID) không phải thứ người dùng tra
-        // được — xem ghi chú ở hộp thoại kiểm chứng.
-        <CellStack title={orEmpty(row.labelCode)} />
-      ),
-    },
-    {
-      key: "outbound",
-      header: t("reports.packingLabel.colOutbound"),
-      width: 190,
-      sortAccessor: (row: PackingLabelEvent) => row.outboundNo,
-      render: (row: PackingLabelEvent) => (
-        <CellStack
-          title={orEmpty(row.outboundNo)}
-          note={orEmpty(row.recipient)}
-        />
-      ),
-    },
-    {
-      key: "printer",
-      header: t("reports.packingLabel.colPrinter"),
-      hideOnMobile: true,
-      render: (row: PackingLabelEvent) => orEmpty(row.printerName),
-    },
-    {
-      key: "actor",
-      header: t("reports.packingLabel.colActor"),
-      hideOnMobile: true,
-      render: (row: PackingLabelEvent) => orEmpty(row.actorName),
-    },
-    {
-      key: "reason",
-      header: t("reports.packingLabel.colErrorReason"),
-      hideOnMobile: true,
-      render: (row: PackingLabelEvent) => {
-        const [cause, ...detail] = failureParts(row, t);
-        return (
-          <CellStack
-            title={orEmpty(cause)}
-            note={orEmpty(detail.join(" · "))}
-          />
-        );
+  const exportXlsx = () => {
+    void exporter.exportReport("xlsx", {
+      reportCode: "label-log",
+      fileStem: "packing-label-log",
+      fileSuffix: "-" + period.from + "-" + period.to,
+      filters: {
+        from_date: period.from,
+        to_date: period.to,
+        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
       },
-    },
-    {
-      key: "audit",
-      header: t("reports.packingLabel.colAudit"),
-      width: 140,
-      render: (row: PackingLabelEvent) => <AuditBadge event={row} />,
-    },
-  ];
+    });
+  };
+
+  const partial = Boolean(report.eventsError) && !report.error;
+  const noResult =
+    !report.loading &&
+    !report.error &&
+    filteredRows.length === 0 &&
+    (keyword.trim() !== "" || tableKeyword.trim() !== "" || statusFilter !== "");
+
+  const showFullFailure = !online || Boolean(report.error);
 
   return (
-    <Box
-      data-testid="rpt-tab-packing-label"
-      sx={{
-        width: "100%",
-        minWidth: 0,
-        display: "grid",
-        gap: { xs: 1.75, md: 2.25 },
-        "& > *": { minWidth: 0 },
-      }}
-    >
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <Box component="section" aria-labelledby="rpt-05-title">
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: { xs: "flex-start", md: "center" },
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 3,
-          }}
-        >
-          <Box sx={{ minWidth: 0 }}>
-            <Box
-              sx={{
-                mb: 0.5,
-                color: S.primaryDark,
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
-              {t("reports.packingLabel.heroKicker")}
-            </Box>
-            <Box
-              component="h1"
-              id="rpt-05-title"
-              sx={{
-                m: 0,
-                fontSize: { xs: 21, md: 24 },
-                lineHeight: 1.2,
-                letterSpacing: "-0.025em",
-                fontWeight: 700,
-                color: S.textStrong,
-              }}
-            >
-              {t("reports.packingLabel.heroTitle")}
-            </Box>
-            <Box
-              sx={{
-                maxWidth: 720,
-                mt: 0.875,
-                color: S.textMedium,
-                fontSize: 13,
-              }}
-            >
-              {t("reports.packingLabel.heroDescription")}
-            </Box>
-          </Box>
-          <Box
-            sx={{
-              display: { xs: "none", md: "block" },
-              textAlign: "right",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <UiStatusBadge
-              size="small"
-              tone="info"
-              label={t("reports.packingLabel.badgeReadOnly")}
-            />
-            <Box sx={{ mt: 0.875, color: S.textMedium, fontSize: 12 }}>
-              {t("reports.period.viewing", { label: period.label })}
-            </Box>
-          </Box>
-        </Box>
-        <Stack
-          direction="row"
-          spacing={1.125}
-          sx={{
-            ...SURFACE_SX,
-            alignItems: { xs: "flex-start", md: "center" },
-            mt: 2,
-            px: 2,
-            py: 1.25,
-            color: S.textMedium,
-            fontSize: 12,
-          }}
-        >
-          <UiStatusBadge
-            size="small"
-            tone="info"
-            label={t("reports.packingLabel.badgeNoPrintCommand")}
-          />
-          <Box>{t("reports.packingLabel.readOnlyNote")}</Box>
-        </Stack>
-      </Box>
+    <div className="hn-pkg-label" data-testid="rpt-tab-packing-label">
+      <div className="hn-pkg-label__crumb">⌂&nbsp;&nbsp; Báo cáo &nbsp;/&nbsp; Nhãn đóng gói</div>
 
-      {/* ── Bộ lọc ────────────────────────────────────────────────────── */}
-      <Box
-        component="section"
-        aria-labelledby="rpt-05-filter-heading"
-        sx={{ ...SURFACE_SX, px: { xs: 2.25, md: 3 }, py: 2.5 }}
-      >
-        <SectionHead
-          id="rpt-05-filter-heading"
-          title={t("reports.packingLabel.filterTitle")}
-          description={t("reports.packingLabel.filterDescription")}
-          sx={{ mb: 2.25 }}
-          actions={
-            <>
-              {activeFilterCount > 0 ? (
-                <UiStatusBadge
-                  size="small"
-                  tone="primary"
-                  label={t("reports.packingLabel.filteringCount", {
-                    count: activeFilterCount,
-                  })}
-                />
-              ) : null}
-              <UiButton
-                appearance={advanced ? "tonal" : "outlined"}
-                startIcon={<FilterOutlined />}
-                aria-expanded={advanced}
-                aria-controls="rpt-05-advanced-filters"
-                onClick={() => setAdvanced((current) => !current)}
-              >
-                {advanced
-                  ? t("reports.packingLabel.collapseFilters")
-                  : t("reports.packingLabel.expandFilters")}
-              </UiButton>
-              <UiButton
-                appearance="outlined"
-                startIcon={<ReloadOutlined />}
-                onClick={resetFilters}
-              >
-                {t("reports.packingLabel.reset")}
-              </UiButton>
-              <UiButton
-                appearance="tonal"
-                startIcon={<ReloadOutlined />}
-                loading={refreshing}
-                disabled={report.fetching}
-                onClick={refresh}
-              >
-                {t("reports.packingLabel.refresh")}
-              </UiButton>
-            </>
-          }
-        />
-
-        <Box
-          id="rpt-05-filter-fields"
-          hidden={!filtersVisible}
-          sx={{
-            display: filtersVisible ? "grid" : "none",
-            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
-            columnGap: 1.5,
-            rowGap: 1.75,
-            alignItems: "end",
-          }}
-        >
-          <FilterField
-            label={t("reports.packingLabel.searchLabel")}
-            htmlFor="rpt-05-q"
-            span={5}
-          >
-            <SearchInput
-              id="rpt-05-q"
-              width="100%"
-              value={keyword}
-              placeholder={t("reports.packingLabel.qPlaceholder")}
-              aria-label={t("reports.packingLabel.qAria")}
-              onChange={(value) => {
-                setKeyword(value);
-                pagination.reset();
-              }}
-            />
-          </FilterField>
-          {/*
-           * Ô "Kỳ báo cáo" rời đã bỏ: kỳ nhanh nằm trong panel lịch. Hai
-           * control cùng ghi một khoảng ngày là chỗ người dùng không biết cái
-           * nào thắng — chọn kỳ thì ô ngày bị ghi đè, sửa ô ngày thì ô kỳ lặng
-           * lẽ nhảy về "Tùy chọn". Ô ngày nay chiếm luôn phần lưới của cả hai.
-           */}
-          <FilterField
-            label={t("reports.packingLabel.dateRangeLabel")}
-            span={7}
-          >
-            <UiVuexyDateRangePicker
-              aria-label={t("reports.filters.dateRangeAria")}
-              value={period.range}
-              format="DD/MM/YYYY"
-              placeholder={[
-                t("reports.packingLabel.dateFrom"),
-                t("reports.packingLabel.dateTo"),
-              ]}
-              allowClear={false}
-              // Dữ liệu chỉ có trong quá khứ: khoá ngày tương lai (mốc dưới giữ mặc định 2000).
-              maxDate={dayjs().endOf("day")}
-              presets={periodPresets}
-              className="hn-vuexy-date-range"
-              popupClassName="hn-vuexy-date-popup"
-              onChange={(value) => {
-                if (value?.[0] && value?.[1])
-                  period.setRange([value[0], value[1]]);
-              }}
-            />
-          </FilterField>
-        </Box>
-
-        <Box
-          id="rpt-05-advanced-filters"
-          hidden={!advanced || !filtersVisible}
-          sx={{
-            display: advanced && filtersVisible ? "grid" : "none",
-            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
-            columnGap: 1.5,
-            rowGap: 1.75,
-            mt: 2,
-            pt: 2,
-            borderTop: `1px dashed ${S.border}`,
-          }}
-        >
-          <FilterField label={t("reports.packingLabel.colAction")}>
-            <UiSelect
-              aria-label={t("reports.packingLabel.actionFilterAria")}
-              fullWidth
-              placeholder={t("reports.packingLabel.allActions")}
-              value={actionFilter}
-              onChange={(value) => {
-                setActionFilter(value);
-                pagination.reset();
-              }}
-              options={PACKING_LABEL_ACTIONS.map((value) => ({
-                value,
-                label: actionLabelMap[value],
-              }))}
-            />
-          </FilterField>
-          <FilterField label={t("reports.packingLabel.colResult")}>
-            <UiSelect
-              aria-label={t("reports.packingLabel.resultFilterAria")}
-              fullWidth
-              placeholder={t("reports.packingLabel.allResults")}
-              value={resultFilter}
-              onChange={(value) => {
-                setResultFilter(value);
-                pagination.reset();
-              }}
-              options={PACKING_LABEL_RESULTS.map((value) => ({
-                value,
-                label: resultLabelMap[value],
-              }))}
-            />
-          </FilterField>
-          <FilterField label={t("reports.packingLabel.colPrinter")}>
-            <UiSelect
-              aria-label={t("reports.packingLabel.printerFilterAria")}
-              fullWidth
-              placeholder={t("reports.packingLabel.printerAll")}
-              value={printerFilter}
-              onChange={(value) => {
-                setPrinterFilter(value);
-                pagination.reset();
-              }}
-              options={report.printerOptions}
-            />
-          </FilterField>
-        </Box>
-
-        <Box
-          hidden={filtersVisible}
-          sx={{
-            display: filtersVisible ? "none" : "flex",
-            alignItems: { xs: "flex-start", md: "center" },
-            justifyContent: "space-between",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 1.5,
-            px: 1.5,
-            py: 1.25,
-            border: `1px dashed ${S.border}`,
-            borderRadius: `${RADIUS.control}px`,
-            bgcolor: S.bgCanvas,
-            color: S.textMedium,
-            fontSize: 12,
-          }}
-        >
-          <Box component="span">
-            {t("reports.packingLabel.filtersApplied", { label: period.label })}
-          </Box>
+      <header className="hn-pkg-label__header">
+        <div>
+          <h1>{t("reports.packingLabel.title")}</h1>
+          <p>{t("reports.packingLabel.description")}</p>
+        </div>
+        <div className="hn-pkg-label__header-actions">
+          <span className="hn-pkg-label__demo-chip">ⓘ&nbsp; Dữ liệu minh họa</span>
           <UiButton
             appearance="outlined"
-            aria-controls="rpt-05-filter-fields"
-            onClick={() => setSliceFilters(true)}
+            disabled={exporter.exporting || showFullFailure || draftInvalid}
+            onClick={exportXlsx}
           >
-            {t("reports.packingLabel.showFilters")}
+            {exporter.exporting ? "Đang xuất…" : "Xuất báo cáo"}
           </UiButton>
-        </Box>
-      </Box>
-
-      {period.invalid ? (
-        <UiAlert tone="error">
-          {t("reports.packingLabel.dateOrderError")}
-        </UiAlert>
-      ) : null}
-
-      <ReportRangeAdviceBanner
-        advice={rangeAdvice}
-        onApply={(next) => period.setRange([dayjs(next.from), dayjs(next.to)])}
-      />
-
-      {report.error ? (
-        <ApiErrorAlert
-          error={report.error}
-          title={t("reports.packingLabel.logLoadError")}
-          onRetry={report.refetch}
-        />
-      ) : null}
-
-      {report.eventsError ? (
-        <UiAlert
-          tone="warning"
-          title={t("reports.packingLabel.eventsErrorTitle")}
-        >
-          {t("reports.packingLabel.eventsErrorBody", { label: period.label })}
-        </UiAlert>
-      ) : null}
-
-      {report.capped ? (
-        <UiAlert tone="info">
-          {t("reports.packingLabel.cappedNote", {
-            limit: formatQuantity(LABEL_EVENT_LIMIT),
-          })}
-        </UiAlert>
-      ) : null}
-
-      {exporter.exportDenied ? (
-        <Box role="alert">
-          <UiAlert
-            tone="error"
-            title={t("reports.packingLabel.exportDeniedTitle")}
-            onClose={exporter.clearExportDenied}
+          <UiButton
+            appearance="tonal"
+            startIcon={<PrinterOutlined />}
+            disabled={!selectedRow || showFullFailure || actionPhase !== "idle"}
+            onClick={() => selectedRow && void handlePrint(selectedRow)}
           >
-            {exporter.exportDenied}
-          </UiAlert>
-        </Box>
+            {actionPhase === "submitting" ? "Đang gửi yêu cầu…" : "In nhãn"}
+          </UiButton>
+        </div>
+      </header>
+
+      {!online ? (
+        <div className="hn-pkg-label__banner is-warning">
+          <WarningOutlined /> Bạn đang ngoại tuyến. Không thể tải dữ liệu mới.
+        </div>
       ) : null}
 
-      {/* ── Tổng quan ─────────────────────────────────────────────────── */}
-      <Box
-        component="section"
-        aria-label={t("reports.packingLabel.kpiAria")}
-        sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, minmax(0, 1fr))",
-            lg: "repeat(4, minmax(0, 1fr))",
-          },
-          gap: 1.75,
-        }}
-      >
-        <MetricCard
-          label={t("reports.packingLabel.kpiTotal")}
-          value={formatQuantity(metrics.total)}
-          hint={t("reports.packingLabel.kpiTotalHint")}
-          metaLabel={t("reports.packingLabel.kpiTotalMeta")}
-          metaValue="100%"
-          progress={100}
-          tone="primary"
-          icon={<PrinterOutlined />}
-        />
-        <MetricCard
-          label={t("reports.packingLabel.resultPrinted")}
-          value={formatQuantity(metrics.printed)}
-          hint={t("reports.packingLabel.kpiPrintedHint")}
-          metaLabel={t("reports.packingLabel.kpiPrintedMeta")}
-          metaValue={`${ratio(metrics.printed, metrics.total)}%`}
-          progress={ratio(metrics.printed, metrics.total)}
-          tone="success"
-          icon={<CheckCircleOutlined />}
-        />
-        <MetricCard
-          label={t("reports.packingLabel.outcomeFailed")}
-          value={formatQuantity(metrics.failed)}
-          hint={t("reports.packingLabel.kpiFailedHint")}
-          metaLabel={t("reports.packingLabel.kpiFailedMeta")}
-          metaValue={`${ratio(metrics.failed, metrics.total)}%`}
-          progress={ratio(metrics.failed, metrics.total)}
-          tone="error"
-          icon={<WarningOutlined />}
-        />
-        <MetricCard
-          label={t("reports.packingLabel.kpiReprint")}
-          value={formatQuantity(metrics.reprinted)}
-          hint={t("reports.packingLabel.kpiReprintHint")}
-          metaLabel={t("reports.packingLabel.kpiReprintMeta")}
-          metaValue={`${ratio(metrics.reprinted, metrics.total)}%`}
-          progress={ratio(metrics.reprinted, metrics.total)}
-          tone="warning"
-          icon={<UndoOutlined />}
-        />
-      </Box>
+      {actionPhase === "submitting" ? (
+        <div className="hn-pkg-label__banner is-info">
+          <PrinterOutlined /> Đang gửi yêu cầu in nhãn
+        </div>
+      ) : null}
 
-      {/* ── Lịch sử Print / Reprint ───────────────────────────────────── */}
-      <Box
-        component="section"
-        aria-labelledby="rpt-05-history-heading"
-        sx={{ ...SURFACE_SX, overflow: "hidden" }}
-      >
-        <SectionHead
-          id="rpt-05-history-heading"
-          title={t("reports.packingLabel.sectionHistoryTitle")}
-          description={
-            report.asOf
-              ? t("reports.packingLabel.historyAsOf", {
-                  time: formatDateTime(report.asOf),
-                })
-              : t("reports.packingLabel.historyDescription")
-          }
-          sx={{ px: { xs: 2.25, md: 3 }, pt: 2.75, pb: 2 }}
-          actions={
-            <>
-              <UiStatusBadge
-                size="small"
-                tone="info"
-                label={t("reports.packingLabel.eventCount", {
-                  count: formatQuantity(rows.length),
-                })}
-              />
-              <ExportButtons
-                exporting={exporter.exporting}
-                disabled={period.invalid || report.loading}
-                onExport={(format) =>
-                  void exporter.exportReport(format, {
-                    reportCode: "label-log",
-                    fileStem: "packing-label-log",
-                    fileSuffix: `-${period.from}-${period.to}`,
-                    filters: exportFilters,
-                  })
-                }
-              />
-            </>
-          }
-        />
+      {notice ? (
+        <div className={"hn-pkg-label__banner is-" + notice.tone} role="status">
+          {notice.tone === "success" ? <CheckCircleOutlined /> : <WarningOutlined />}
+          <span>{notice.text}</span>
+          <button type="button" aria-label="Đóng thông báo" onClick={() => setNotice(null)}>
+            ×
+          </button>
+        </div>
+      ) : null}
 
-        <Stack
-          direction="row"
-          spacing={1}
-          role="tablist"
-          aria-label={t("reports.packingLabel.viewTablistAria")}
-          sx={{
-            px: { xs: 2.25, md: 3 },
-            pb: 1.75,
-            borderBottom: `1px solid ${S.border}`,
-          }}
-        >
-          {(
-            [
-              {
-                value: "table",
-                label: t("reports.packingLabel.viewTable"),
-                icon: <UnorderedListOutlined />,
-              },
-              {
-                value: "snapshot",
-                label: t("reports.packingLabel.viewSnapshot"),
-                icon: <AppstoreOutlined />,
-              },
-            ] as const
-          ).map((tab) => {
-            const active = shownView === tab.value;
-            return (
-              <UiButton
-                key={tab.value}
-                id={`rpt-05-${tab.value}-tab`}
-                role="tab"
-                appearance={active ? "tonal" : "text"}
-                startIcon={tab.icon}
-                aria-selected={active}
-                aria-controls={`rpt-05-${tab.value}-panel`}
-                tabIndex={active ? 0 : -1}
-                sx={{ color: active ? undefined : S.textMedium }}
-                onClick={() => switchView(tab.value)}
-                onKeyDown={(event) => {
-                  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
-                    return;
-                  }
-                  event.preventDefault();
-                  switchView(view === "table" ? "snapshot" : "table");
-                }}
-              >
-                {tab.label}
-              </UiButton>
-            );
-          })}
-        </Stack>
-
-        <Box sx={{ px: { xs: 1.75, md: 2.5 }, pt: 2.25 }}>
-          <SectionFilterBar
-            state={historyFilter}
-            label={t("reports.packingLabel.sectionHistoryTitle")}
-            unit={t("reports.packingLabel.historyUnit")}
-            data-testid="rpt-05-history-section-filter"
+      <section className="hn-pkg-label__filter" aria-label="Bộ lọc báo cáo">
+        <div className={"hn-pkg-label__field " + (draftInvalid ? "has-error" : "")}>
+          <label>Khoảng thời gian</label>
+          <UiVuexyDateRangePicker
+            value={draftRange}
+            format="DD/MM/YYYY"
+            allowClear={false}
+            presets={periodPresets}
+            maxDate={dayjs().endOf("day")}
+            className="hn-vuexy-date-range"
+            popupClassName="hn-packing-label-date-popup"
+            onChange={(value) => {
+              if (value?.[0] && value?.[1]) setDraftRange([value[0], value[1]]);
+            }}
           />
-          <Box
-            id="rpt-05-table-panel"
-            role="tabpanel"
-            aria-labelledby="rpt-05-table-tab"
-            hidden={deferredView !== "table"}
-          >
-            {deferredView === "table" ? (
-              <ResponsiveDataTable<PackingLabelEvent>
-                columns={columns}
-                rows={pagination.pageRows}
-                rowKey={(row) => row.eventId}
-                loading={report.loading}
-                onRowClick={(row) => setOpenLabelId(row.labelId)}
-                emptyText={t("reports.packingLabel.tableEmpty")}
-                // Nhật ký in một kỳ có thể rất dài: cuộn trong khung và ghim
-                // tiêu đề cột thay vì kéo trang thành một dải rất dài.
-                maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
-                renderRowActions={(row) => (
-                  <UiButton
-                    appearance="tonal"
-                    size="small"
-                    startIcon={<AuditOutlined />}
-                    sx={{ whiteSpace: "nowrap" }}
-                    onClick={() => setOpenLabelId(row.labelId)}
-                  >
-                    {t("reports.packingLabel.viewAudit")}
-                  </UiButton>
-                )}
-              />
-            ) : null}
-          </Box>
+          {draftInvalid ? (
+            <small>ⓘ Ngày bắt đầu không được sau ngày kết thúc.</small>
+          ) : null}
+        </div>
 
-          <Box
-            id="rpt-05-snapshot-panel"
-            role="tabpanel"
-            aria-labelledby="rpt-05-snapshot-tab"
-            hidden={deferredView !== "snapshot"}
+        <div className="hn-pkg-label__field">
+          <label>Kho</label>
+          <div className="hn-pkg-label__readonly">◇&nbsp;&nbsp;Kho Hoa Nam</div>
+        </div>
+
+        <div className="hn-pkg-label__field">
+          <label>Trạng thái</label>
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            aria-label="Trạng thái"
           >
-            {deferredView === "snapshot" ? (
-              report.loading ? (
-                <Box sx={{ py: 6, display: "grid", placeItems: "center" }}>
-                  <UiSpinner
-                    label={t("reports.packingLabel.snapshotLoading")}
-                  />
-                </Box>
-              ) : pagination.pageRows.length === 0 ? (
-                <Box sx={{ py: 6, textAlign: "center", color: S.textMedium }}>
-                  {t("reports.packingLabel.snapshotEmpty")}
-                </Box>
-              ) : (
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(2, minmax(0, 1fr))",
-                      lg: "repeat(3, minmax(0, 1fr))",
-                    },
-                    gap: 1.75,
-                  }}
-                >
-                  {pagination.pageRows.map((row, index) => (
-                    <Box
-                      key={row.eventId}
-                      component="article"
-                      sx={{
-                        ...SURFACE_SX,
-                        p: 2,
-                        display: "grid",
-                        gap: 1.75,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          justifyContent: "space-between",
-                          gap: 1.5,
-                        }}
-                      >
-                        <Box sx={{ minWidth: 0 }}>
-                          <Box
-                            sx={{
-                              fontWeight: 700,
-                              color: S.textStrong,
-                              overflowWrap: "anywhere",
-                            }}
-                          >
-                            {mvpRowNumber(
-                              pagination.page,
-                              pagination.perPage,
-                              index,
-                            )}
-                            . {orEmpty(row.labelCode)}
-                          </Box>
-                          <Box
-                            sx={{
-                              mt: 0.5,
-                              color: S.textMedium,
-                              fontSize: 11.5,
-                            }}
-                          >
-                            {`${orEmpty(row.outboundNo)} · ${row.attemptedAt ? formatDateTime(row.attemptedAt) : EMPTY_TEXT}`}
-                          </Box>
-                        </Box>
-                        <ResultBadge value={row.result} />
-                      </Box>
-                      <Box
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                          gap: 1.5,
-                          pt: 1.75,
-                          borderTop: `1px solid ${S.border}`,
-                        }}
-                      >
-                        {[
-                          {
-                            label: t("reports.packingLabel.colAction"),
-                            value: actionLabelMap[row.action],
-                          },
-                          {
-                            label: t("reports.packingLabel.colPrinter"),
-                            value: orEmpty(row.printerName),
-                          },
-                          {
-                            label: t("reports.packingLabel.colActor"),
-                            value: orEmpty(row.actorName),
-                          },
-                          {
-                            label: t("reports.packingLabel.colErrorReason"),
-                            value: orEmpty(failureParts(row, t)[0]),
-                          },
-                        ].map((item) => (
-                          <Box key={item.label} sx={{ minWidth: 0 }}>
-                            <Box sx={{ color: S.textMedium, fontSize: 11 }}>
-                              {item.label}
-                            </Box>
-                            <Box
-                              sx={{
-                                mt: 0.375,
-                                fontSize: 12.5,
-                                fontWeight: 600,
-                                color: S.textStrong,
-                                overflowWrap: "anywhere",
+            <option value="">▤&nbsp;&nbsp;Tất cả</option>
+            <option value="PRINTED">In thành công</option>
+            <option value="PRINT_FAILED">Lỗi in</option>
+            <option value="PENDING_PRINT">Đang xử lý</option>
+          </select>
+        </div>
+
+        <div className="hn-pkg-label__field">
+          <label>Tìm kiếm báo cáo</label>
+          <SearchInput
+            id="rpt-05-q"
+            width="100%"
+            value={keyword}
+            placeholder="Mã nhãn, SKU, mã phiếu..."
+            aria-label="Tìm kiếm báo cáo"
+            onChange={setKeyword}
+          />
+        </div>
+
+        <div className="hn-pkg-label__filter-meta">
+          <span>Kỳ báo cáo: {period.from.split("-").reverse().join("/")}–{period.to.split("-").reverse().join("/")}</span>
+          <span>Múi giờ Việt Nam</span>
+        </div>
+        <div className="hn-pkg-label__filter-actions">
+          <UiButton appearance="tonal" disabled={draftInvalid || !online} onClick={applyFilters}>
+            Áp dụng
+          </UiButton>
+          <UiButton appearance="text" onClick={resetFilters}>Đặt lại</UiButton>
+        </div>
+      </section>
+
+      {!showFullFailure ? (
+        <>
+          <section className="hn-pkg-label__kpis" aria-label="Tổng quan in nhãn">
+            <article className="hn-pkg-label__kpi">
+              <span className="hn-pkg-label__kpi-icon is-blue"><PrinterOutlined /></span>
+              <div><span>Tổng nhãn</span><strong>{formatQuantity(metrics.total)}</strong><small>Nhãn duy nhất trong kỳ</small></div>
+            </article>
+            <article className="hn-pkg-label__kpi">
+              <span className="hn-pkg-label__kpi-icon is-green"><CheckCircleOutlined /></span>
+              <div><span>In thành công</span><strong>{formatQuantity(metrics.printed)}</strong><small className="is-green-text">{printedRate.toLocaleString("vi-VN")}% tổng nhãn</small></div>
+            </article>
+            <article className="hn-pkg-label__kpi">
+              <span className="hn-pkg-label__kpi-icon is-red"><WarningOutlined /></span>
+              <div><span>Nhãn lỗi</span><strong>{formatQuantity(metrics.failed)}</strong><small className="is-red-text">Cần kiểm tra</small></div>
+            </article>
+            <article className="hn-pkg-label__kpi">
+              <span className="hn-pkg-label__kpi-icon is-blue"><UndoOutlined /></span>
+              <div><span>Lượt in lại</span><strong>{formatQuantity(metrics.reprinted)}</strong><small>Lượt độc lập · Không cộng tổng nhãn</small></div>
+            </article>
+          </section>
+
+          <section className="hn-pkg-label__health">
+            <h2>Tình trạng in nhãn</h2>
+            <div className="hn-pkg-label__health-body">
+              <div className="hn-pkg-label__bar-wrap">
+                <div className="hn-pkg-label__bar">
+                  <span style={{ width: String(printedRate) + "%" }} />
+                  <i style={{ width: String(Math.max(0, 100 - printedRate)) + "%" }} />
+                </div>
+                <div className="hn-pkg-label__legend">
+                  <span><b className="is-green-dot" /> <strong>{formatQuantity(metrics.printed)}</strong> thành công</span>
+                  <span><b className="is-red-dot" /> <strong>{formatQuantity(metrics.failed)}</strong> lỗi</span>
+                </div>
+              </div>
+              <div className="hn-pkg-label__health-number"><strong>{printedRate.toLocaleString("vi-VN")}%</strong><span>Tỷ lệ in thành công</span></div>
+              <div className="hn-pkg-label__health-number"><strong>{formatQuantity(metrics.reprinted)}</strong><span>lượt in lại</span></div>
+            </div>
+          </section>
+        </>
+      ) : null}
+
+      <section className={"hn-pkg-label__list " + (showFullFailure ? "is-full-state" : "")}>
+        {showFullFailure ? (
+          <div className="hn-pkg-label__full-state">
+            <span className="hn-pkg-label__state-icon"><WarningOutlined /></span>
+            <h2>{online ? "Không thể tải dữ liệu" : "Không có kết nối mạng"}</h2>
+            <p>{online ? "Đã xảy ra lỗi khi tải báo cáo. Vui lòng thử lại." : "Kiểm tra kết nối và thử lại."}</p>
+            <UiButton
+              appearance="tonal"
+              startIcon={<ReloadOutlined />}
+              disabled={!online}
+              onClick={refresh}
+            >
+              Thử lại
+            </UiButton>
+          </div>
+        ) : (
+          <>
+            <div className="hn-pkg-label__list-head">
+              <div className="hn-pkg-label__list-title">
+                <h2>Danh sách nhãn</h2>
+                <span className="hn-pkg-label__count">
+                  {partial ? "Chưa cập nhật" : formatQuantity(filteredRows.length)}
+                </span>
+                {partial ? (
+                  <span className="hn-pkg-label__partial">⚠ Dữ liệu có thể chưa đầy đủ</span>
+                ) : null}
+              </div>
+              <SearchInput
+                id="rpt-05-table-q"
+                width="100%"
+                value={tableKeyword}
+                placeholder="Tìm trong danh sách nhãn..."
+                aria-label="Tìm trong danh sách nhãn"
+                onChange={setTableKeyword}
+              />
+            </div>
+
+            <div className="hn-pkg-label__table-wrap">
+              <table className="hn-pkg-label__table">
+                <thead>
+                  <tr>
+                    <th>Mã nhãn /<br />Mã phiếu</th>
+                    <th>SKU /<br />Sản phẩm</th>
+                    <th>Thời gian in</th>
+                    <th>Trạng thái</th>
+                    <th>Số lần<br />in</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.loading ? (
+                    <tr><td colSpan={6}><div className="hn-pkg-label__empty"><span className="hn-pkg-label__spinner" />Đang tải dữ liệu…</div></td></tr>
+                  ) : partial ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <div className="hn-pkg-label__empty">
+                          <span className="hn-pkg-label__state-icon is-small"><WarningOutlined /></span>
+                          <h3>Chưa tải được danh sách nhãn</h3>
+                          <p>Tải lại để cập nhật danh sách nhãn.</p>
+                          <small>Xuất báo cáo tạm khóa: danh sách chưa đầy đủ.</small>
+                          <UiButton appearance="outlined" startIcon={<ReloadOutlined />} onClick={refresh}>Tải lại</UiButton>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : noResult ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <div className="hn-pkg-label__empty">
+                          <h3>Không tìm thấy nhãn phù hợp</h3>
+                          <p>Thử thay đổi từ khóa hoặc bộ lọc.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    pageRows.map((row) => {
+                      const skuSummary = report.labels.get(row.labelId)?.skuSummary || "—";
+                      const busy = actionEventId === row.eventId && actionPhase === "submitting";
+                      return (
+                        <tr
+                          key={row.eventId}
+                          className={selectedRow?.eventId === row.eventId ? "is-selected" : ""}
+                          onClick={() => setSelectedEventId(row.eventId)}
+                        >
+                          <td><strong>{row.labelCode || "—"}</strong><span>{row.outboundNo || "—"}</span></td>
+                          <td><strong>{skuSummary.split(",")[0] || "—"}</strong><span>{row.recipient || "—"}</span></td>
+                          <td>{row.attemptedAt ? formatDateTime(row.attemptedAt) : "—"}</td>
+                          <td><span className={"hn-pkg-label__status " + resultClass(row.result)}><b />{resultLabel(row.result)}</span></td>
+                          <td className="is-center">{Math.max(1, row.attemptNo || 1)}</td>
+                          <td>
+                            <UiButton
+                              appearance="outlined"
+                              size="small"
+                              startIcon={busy ? <ReloadOutlined /> : <UndoOutlined />}
+                              disabled={actionPhase !== "idle" || !online}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void handlePrint(row);
                               }}
                             >
-                              {item.value}
-                            </Box>
-                          </Box>
-                        ))}
-                      </Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 1.5,
-                        }}
-                      >
-                        <AuditBadge event={row} />
-                        <UiButton
-                          appearance="tonal"
-                          size="small"
-                          startIcon={<AuditOutlined />}
-                          // UAT TC_UI_21: nút cao cố định 38px — nhãn xuống
-                          // dòng là chữ tràn ra ngoài nút.
-                          sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
-                          onClick={() => setOpenLabelId(row.labelId)}
-                        >
-                          {t("reports.packingLabel.viewAudit")}
-                        </UiButton>
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              )
-            ) : null}
-          </Box>
-
-          <ReportPaginationBar
-            page={pagination.page}
-            perPage={pagination.perPage}
-            total={pagination.total}
-            onPageChange={pagination.setPage}
-            onPageSizeChange={pagination.setPerPage}
-          />
-
-          <Stack
-            direction="row"
-            spacing={1.125}
-            sx={{
-              alignItems: "flex-start",
-              px: 0.5,
-              pt: 1.75,
-              pb: 2,
-              color: S.textMedium,
-              fontSize: 12,
-            }}
-          >
-            <Box component="span" sx={{ color: S.info, mt: "1px" }}>
-              <AuditOutlined />
-            </Box>
-            <Box>
-              <Box component="b" sx={{ color: S.textStrong }}>
-                {t("reports.packingLabel.howToReadLabel")}{" "}
-              </Box>
-              {t("reports.packingLabel.howToReadBody")}
-            </Box>
-          </Stack>
-        </Box>
-      </Box>
-
-      {openLabelId ? (
-        <DrillDownDialog
-          title={t("reports.packingLabel.dialogTitle")}
-          subtitle={t("reports.packingLabel.dialogSubtitle")}
-          onClose={() => setOpenLabelId(null)}
-        >
-          {snapshot.loading ? (
-            <Box sx={{ py: 5, display: "grid", placeItems: "center" }}>
-              <UiSpinner
-                label={t("reports.packingLabel.snapshotDetailLoading")}
-              />
-            </Box>
-          ) : snapshot.error ? (
-            <ApiErrorAlert
-              error={snapshot.error}
-              title={t("reports.packingLabel.snapshotError")}
-              onRetry={snapshot.refetch}
-            />
-          ) : snapshot.detail ? (
-            <Box sx={{ display: "grid", gap: 2 }}>
-              {snapshot.detail.attempts.some(
-                (attempt) => !attempt.auditComplete,
-              ) ? (
-                <UiAlert tone="warning">
-                  {t("reports.packingLabel.attemptsAuditWarning")}
-                </UiAlert>
-              ) : null}
-
-              <Box
-                component="section"
-                sx={{
-                  p: 2,
-                  border: `1px solid ${S.border}`,
-                  borderRadius: `${RADIUS.card}px`,
-                }}
-              >
-                <Box
-                  component="h3"
-                  sx={{
-                    m: 0,
-                    mb: 1.5,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: S.textStrong,
-                  }}
-                >
-                  {t("reports.packingLabel.immutableTitle")}
-                </Box>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(2, minmax(0, 1fr))",
-                    },
-                    gap: 1.25,
-                  }}
-                >
-                  <DetailCell
-                    label={t("reports.packingLabel.fieldLabelCode")}
-                    value={orEmpty(snapshot.detail.labelCode)}
-                  />
-                  <DetailCell
-                    label={t("reports.packingLabel.colOutbound")}
-                    value={orEmpty(snapshot.detail.outboundNo)}
-                  />
-                  {/* Không có ô "Mã bản lưu": bản lưu nhãn KHÔNG có mã nghiệp vụ
-                    (bảng label_snapshots chỉ có UUID). Danh tính người dùng tra
-                    được là Mã nhãn + Phiên bản ngay trong khối này; in định danh
-                    nội bộ ra đây chỉ gây khó hiểu (phản ánh 10/09/2026). */}
-                  <DetailCell
-                    label={t("reports.packingLabel.fieldVersion")}
-                    value={orEmpty(snapshot.detail.version)}
-                  />
-                  <DetailCell
-                    label={t("reports.packingLabel.fieldRecipient")}
-                    value={orEmpty(snapshot.detail.recipient)}
-                  />
-                  <DetailCell
-                    label={t("reports.packingLabel.fieldAppliedAt")}
-                    value={
-                      snapshot.detail.appliedAt
-                        ? formatDateTime(snapshot.detail.appliedAt)
-                        : EMPTY_TEXT
-                    }
-                  />
-                  <DetailCell
-                    label={t("reports.packingLabel.fieldSnapshotStatus")}
-                    value={
-                      snapshot.detail.status
-                        ? businessLabel(
-                            LABEL_SNAPSHOT_STATUS_LABELS,
-                            snapshot.detail.status,
-                          )
-                        : EMPTY_TEXT
-                    }
-                  />
-                  <DetailCell
-                    label={t("reports.packingLabel.fieldContent")}
-                    value={orEmpty(snapshot.detail.content)}
-                  />
-                </Box>
-              </Box>
-
-              <Box
-                component="section"
-                sx={{
-                  p: 2,
-                  border: `1px solid ${S.border}`,
-                  borderRadius: `${RADIUS.card}px`,
-                }}
-              >
-                <Box
-                  component="h3"
-                  sx={{
-                    m: 0,
-                    mb: 1.5,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: S.textStrong,
-                  }}
-                >
-                  {t("reports.packingLabel.attemptsTitle")}
-                </Box>
-                <ResponsiveDataTable<PackingLabelEvent>
-                  columns={[
-                    {
-                      key: "stt",
-                      header: t("shared.table.rowNumber"),
-                      align: "center",
-                      width: 56,
-                      render: (row) =>
-                        rowIndexOf(snapshot.detail!.attempts, row) + 1,
-                    },
-                    {
-                      key: "attemptedAt",
-                      header: t("reports.packingLabel.colMoment"),
-                      render: (row) =>
-                        row.attemptedAt
-                          ? formatDateTime(row.attemptedAt)
-                          : EMPTY_TEXT,
-                    },
-                    {
-                      key: "action",
-                      header: t("reports.packingLabel.colAction"),
-                      render: (row) => actionLabelMap[row.action],
-                    },
-                    {
-                      key: "result",
-                      header: t("reports.packingLabel.colResult"),
-                      render: (row) => <ResultBadge value={row.result} />,
-                    },
-                    {
-                      key: "printer",
-                      header: t("reports.packingLabel.colPrinter"),
-                      render: (row) => orEmpty(row.printerName),
-                    },
-                    {
-                      key: "reason",
-                      header: t("reports.packingLabel.colErrorReason"),
-                      render: (row) => orEmpty(failureParts(row, t)[0]),
-                    },
-                  ]}
-                  rows={snapshot.detail.attempts}
-                  rowKey={(row) => row.eventId}
-                  emptyText={t("reports.packingLabel.attemptsEmpty")}
-                />
-              </Box>
-
-              <Box sx={{ fontSize: 12, color: S.textMedium }}>
-                {snapshot.detail.outboundDate
-                  ? t("reports.packingLabel.outboundDateLine", {
-                      date: formatDate(snapshot.detail.outboundDate),
+                              {actionLabel(row, busy)}
+                            </UiButton>
+                          </td>
+                        </tr>
+                      );
                     })
-                  : null}{" "}
-                {t("reports.packingLabel.createdAtLine", {
-                  time: snapshot.detail.createdAt
-                    ? formatDateTime(snapshot.detail.createdAt)
-                    : EMPTY_TEXT,
-                })}
-              </Box>
-            </Box>
-          ) : (
-            <UiAlert tone="info">
-              {t("reports.packingLabel.snapshotMissing")}
-            </UiAlert>
-          )}
-        </DrillDownDialog>
-      ) : null}
-    </Box>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="hn-pkg-label__list-footer">
+              <div>
+                <strong>
+                  Hiển thị {filteredRows.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–
+                  {Math.min(safePage * PAGE_SIZE, filteredRows.length)} / {formatQuantity(filteredRows.length)} nhãn
+                </strong>
+                <span>Dữ liệu theo kỳ đã áp dụng</span>
+              </div>
+              <nav className="hn-pkg-label__pagination" aria-label="Phân trang">
+                <button type="button" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>‹</button>
+                {Array.from({ length: Math.min(totalPages, 3) }, (_, index) => index + 1).map((value) => (
+                  <button key={value} type="button" className={safePage === value ? "is-active" : ""} onClick={() => setPage(value)}>{value}</button>
+                ))}
+                {totalPages > 4 ? <span>…</span> : null}
+                {totalPages > 3 ? <button type="button" className={safePage === totalPages ? "is-active" : ""} onClick={() => setPage(totalPages)}>{totalPages}</button> : null}
+                <button type="button" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>›</button>
+              </nav>
+            </div>
+          </>
+        )}
+      </section>
+    </div>
   );
 }
