@@ -911,7 +911,20 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
   outline-offset: 1px;
 }
 
-/* Warranty-component content must never paint into the received-date column. */
+/* SKU/product and warranty-component text must never paint into neighboring columns. */
+[data-report-screen="RPT-06"] table td.warranty-sku-cell,
+[data-report-screen="RPT-06"] table td:has(> .warranty-component-cell) {
+  min-width: 0;
+  max-width: 0;
+  overflow: hidden;
+}
+
+[data-report-screen="RPT-06"] .warranty-sku-cell > *,
+[data-report-screen="RPT-06"] .warranty-component-cell {
+  min-width: 0;
+  max-width: 100%;
+}
+
 [data-report-screen="RPT-06"] .warranty-component-cell {
   min-width: 0;
   max-width: 100%;
@@ -1006,4 +1019,21 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
     animation-duration: 0s !important;
     scroll-behavior: auto !important;
   }
+}
+
+
+/* RPT-06 row detail action: real interactive target, same compact treatment as reference. */
+[data-report-screen="RPT-06"] table td:last-child .MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled) {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+[data-report-screen="RPT-06"] table td:last-child .MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+  background: #eefaff;
+  color: #064f80;
+}
+
+[data-report-screen="RPT-06"] table td:last-child .MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):focus-visible {
+  outline: 2px solid #079de7;
+  outline-offset: 1px;
 }

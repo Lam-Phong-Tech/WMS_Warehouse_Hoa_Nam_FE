@@ -19,6 +19,8 @@ import {
   WarningOutlined,
 } from "@/shared/components/icons";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { WarrantyDetailModal } from "@/modules/warranty/components/WarrantyDetailModal";
+import { ComponentIssueModal } from "@/modules/warranty/components/ComponentIssueModal";
 import { useWarrantyReport } from "@/modules/reports/operations/report-data";
 import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import { useReportExport } from "@/modules/reports/operations/report-export";
@@ -377,6 +379,13 @@ export default function WarrantyComponentsReport() {
   const [online, setOnline] = useState(() => navigator.onLine);
   const [detailBusyId, setDetailBusyId] = useState<string | null>(null);
   const [detailErrorId, setDetailErrorId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [componentTarget, setComponentTarget] = useState<{
+    caseId: string;
+    caseCode?: string;
+    caseActive: boolean;
+    documentId?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     const up = () => setOnline(true);
@@ -463,11 +472,7 @@ export default function WarrantyComponentsReport() {
   const openDetail = (row: UiRow) => {
     setDetailErrorId(null);
     setDetailBusyId(row.id);
-    window.setTimeout(() => {
-      setDetailBusyId(null);
-      const element = document.getElementById("warranty-row-" + row.id);
-      element?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 450);
+    setDetailId(row.id);
   };
 
   const effectiveBusyId =
@@ -985,9 +990,38 @@ export default function WarrantyComponentsReport() {
                           <Box sx={{ color: C.navy, fontWeight: 800 }}>{row.caseNo}</Box>
                           <Box sx={{ mt: .08, color: "#3b74bd", fontSize: 10.5 }}>{row.serial}</Box>
                         </td>
-                        <td>
-                          <Box sx={{ color: C.navy, fontWeight: 800 }}>{row.skuCode}</Box>
-                          <Box sx={{ mt: .08, color: C.muted, fontSize: 10.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.skuName}</Box>
+                        <td className="warranty-sku-cell">
+                          <Box
+                            title={row.skuCode}
+                            sx={{
+                              display: "block",
+                              width: "100%",
+                              maxWidth: "100%",
+                              overflow: "hidden",
+                              color: C.navy,
+                              fontWeight: 800,
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {row.skuCode}
+                          </Box>
+                          <Box
+                            title={row.skuName}
+                            sx={{
+                              display: "block",
+                              width: "100%",
+                              maxWidth: "100%",
+                              mt: .08,
+                              overflow: "hidden",
+                              color: C.muted,
+                              fontSize: 10.5,
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {row.skuName}
+                          </Box>
                         </td>
                         <td>
                           <Box
@@ -1056,6 +1090,28 @@ export default function WarrantyComponentsReport() {
           </Box>
         </>
       )}
+
+      {detailId ? (
+        <WarrantyDetailModal
+          caseId={detailId}
+          onClose={() => {
+            setDetailId(null);
+            setDetailBusyId(null);
+          }}
+          onOpenComponentIssue={(target) => setComponentTarget(target)}
+        />
+      ) : null}
+
+      {componentTarget ? (
+        <ComponentIssueModal
+          caseId={componentTarget.caseId}
+          caseCode={componentTarget.caseCode}
+          caseActive={componentTarget.caseActive}
+          documentId={componentTarget.documentId}
+          onClose={() => setComponentTarget(null)}
+          onChanged={() => void source.refetch()}
+        />
+      ) : null}
     </Box>
   );
 }
