@@ -82,6 +82,8 @@ import {
   type XntRow,
 } from "./inventory-flow-api";
 import { useT } from "@/shared/i18n/useT";
+import InboundFlowReport from "./InboundFlowReport";
+import OutboundFlowReport from "./OutboundFlowReport";
 import "./inventory-flow-report.css";
 
 /** Thứ tự lựa chọn "Loại hàng"; nhãn đọc qua t() trong component. */
@@ -228,11 +230,7 @@ const DOCUMENT_STYLE: Readonly<
   },
 };
 
-export default function InventoryFlowXntReport({
-  variant,
-}: {
-  variant: FlowVariant;
-}) {
+function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
   const t = useT();
   const seriesKeys = VARIANT_SERIES[variant];
   const docTypes = VARIANT_DOC_TYPES[variant];
@@ -1576,4 +1574,14 @@ export default function InventoryFlowXntReport({
       ) : null}
     </div>
   );
+}
+
+export default function InventoryFlowXntReport({
+  variant,
+}: {
+  variant: FlowVariant;
+}) {
+  if (variant === "inbound") return <InboundFlowReport />;
+  if (variant === "outbound") return <OutboundFlowReport />;
+  return <LegacyInventoryFlowXntReport variant={variant} />;
 }

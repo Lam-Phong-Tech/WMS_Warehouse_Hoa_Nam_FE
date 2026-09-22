@@ -1,1766 +1,1370 @@
-/**
- * MÀN "BÁO CÁO TỒN KHO & ĐỐI SOÁT" (RPT-02) — port 1:1 demo UI/UX đã chốt
- * `8.2.WMS_Hoa_Nam_Bao_Cao_Ton_Kho__Doi_Soat.html`: cùng cấu trúc khối, cùng
- * class, cùng số đo (CSS port ở `./stock-reconcile-report.css`), cùng công thức
- * tính (`Other/Report02_HTML_Export/report-02-offline.js`).
- *
- * KHÁC DEMO Ở ĐÂU (và vì sao):
- *  · Demo chạy trên một khối JSON cứng nhúng trong trang. Ở đây MỌI con số đến
- *    từ endpoint thật (xem `./stock-reconcile-api.ts`); không KPI nào được suy
- *    diễn, nguồn nào chưa trả thì ô hiện "Chưa có" theo `EMPTY_TEXT`.
- *  · Demo có hai nút chết: chú giải MATCH / MISMATCH của vòng tròn. Bản này
- *    gắn hành vi thật (bật/tắt chuỗi) thay vì để nút bấm không phản hồi.
- *  · BỘ LỌC DÙNG CONTROL CHUNG, KHÔNG PHẢI CONTROL TỰ DỰNG CỦA DEMO: "Mốc đối
- *    soát" là `UiVuexyDateField`, "Tìm SKU" là `SearchInput`, "Loại hàng" là
- *    `UiSelect` — cùng bộ với màn "Nhập liệu, đối chiếu & lỗi" (RPT-04). Yêu cầu
- *    người dùng 2026-09-03: thao tác trên 8 màn Báo cáo phải đồng bộ, nên lịch
- *    và listbox tự dựng của demo (kèm chuyển động riêng của chúng) bị thay.
- *    Bố cục lưới của thanh lọc giữ NGUYÊN theo demo.
- *  · `.kpi-spark` bị `report-02-offline.css` đặt `display:none`, và các điểm
- *    polyline trong demo là hình trang trí cứng — không dựng lại một đường xu
- *    hướng bịa cho phần tử vốn không hiển thị.
- *  · Nhãn `movement_type` trong hộp thoại: demo in thẳng mã enum
- *    (`OPENING`/`RECEIPT`…), ở đây dùng nhãn tiếng Việt dùng chung của module
- *    báo cáo — mọi drill-down khác của dự án đọc cùng bảng nhãn đó.
- *  · Trạng thái đối soát có thêm `NOT_APPLICABLE` (BE trả khi chốt tại một mốc
- *    quá khứ). Demo không có nhánh này; hiển thị "Không áp dụng" thay vì gán
- *    bừa thành "Lệch".
- */
-import {
-  useDeferredValue,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
-} from "react";
-import { useRenderWindow } from "@/shared/components/data-display/useRenderWindow";
-import { useTabView } from "@/shared/ui/use-tab-view";
-import { WindowedRowsFooter } from "@/shared/components/data-display/WindowedRowsFooter";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import {
-  UiButton,
-  UiSelect,
-  UiVuexyDateField,
-  VuexyDemoIcon,
-} from "@/shared/ui";
+import { useLocation, useNavigate } from "react-router-dom";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
-import { SkuLink } from "@/shared/components/data-display/SkuLink";
-import { EMPTY_TEXT } from "@/shared/constants/display";
+import {
+  hasAnyWmsPermission,
+  WMS_ACTION_PERMISSIONS,
+} from "@/shared/constants/wms-permissions";
+import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { getApiErrorMessage } from "@/shared/api/api-error";
-import { fmt } from "@/modules/reports/operations/report-format";
-import { MOVEMENT_LABELS } from "@/modules/reports/operations/report-labels";
-import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
+import { UiSelect, UiVuexyDateRangePicker, VuexyDemoIcon } from "@/shared/ui";
+import { exportXlsx } from "@/shared/utils/export-xlsx";
 import {
-  optionsFromRows,
-  useSectionFilter,
-  type SectionFilterConfig,
-} from "@/modules/reports/operations/report-section-filter";
-import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
-import { EvidenceModal, ModalCloseButton } from "./stock-reconcile-overlays";
-import {
-  ALL_WAREHOUSES_LABEL,
   ISO_DATE,
-  STOCK_STATUSES,
-  useSkuMovements,
-  useStockReconcileSnapshot,
-  type ItemKindCode,
-  type StockReconcileRow,
-  type StockStatusCode,
-} from "./stock-reconcile-api";
-import { useT } from "@/shared/i18n/useT";
+  sumRows,
+  useInventoryFlowSnapshot,
+  type FlowDailyPoint,
+  type XntRow,
+} from "@/modules/reports/inventory-flow/inventory-flow-api";
+import { checkLabelOf } from "./stock-reconcile-labels";
 import {
-  INCIDENT_STATUS_LABELS,
-  KIND_OPTIONS,
-  LABELS,
-  NORM_STATE_LABELS,
-  checkLabelOf,
-  type NormState,
-} from "./stock-reconcile-labels";
-import { businessLabel } from "@/shared/constants/business-labels";
+  useStockReconcileSnapshot,
+  type StockReconcileRow,
+} from "./stock-reconcile-api";
 import "./stock-reconcile-report.css";
 
-/**
- * Nhãn hiển thị — chép nguyên `labels` của demo.
- *
- * Nhãn theo mã nghiệp vụ (`LABELS`, `CHECK_LABELS`, `NORM_STATE_LABELS`) nằm ở
- * `./stock-reconcile-labels.ts` — bảng song ngữ đọc theo ngôn ngữ lúc truy cập.
- */
-
-/** Màu từng trạng thái tồn trong thanh cơ cấu — đúng bảng màu Vuexy của demo. */
-const STATUS_COLORS: Readonly<Record<StockStatusCode, string>> = {
-  AVAILABLE: "var(--wms-success)",
-  NON_SELLABLE: "var(--wms-warning)",
-  DEFECTIVE: "var(--wms-error)",
-  QUARANTINE: "var(--wms-info)",
+type DateRange = { from: string; to: string };
+type Filters = DateRange & {
+  warehouse: string;
+  kind: string;
+  reconcile: string;
 };
 
-/** Chu vi vòng tròn r=66 mà demo dùng để cắt cung (2πr ≈ 415). */
-const DONUT_CIRCUMFERENCE = 415;
-
-type ViewMode = "table" | "snapshot";
-
-type SkuAggregate = {
-  code: string;
-  name: string;
-  kind: ItemKindCode | "";
-  balance: number;
-  ledger: number;
-  available: number;
+type DetailRow = {
+  key: string;
+  warehouse: string;
+  skuCode: string;
+  skuName: string;
+  kind: string;
+  opening: number;
+  inbound: number;
+  productOutbound: number;
+  componentOutbound: number;
+  reversal: number;
+  closing: number;
+  actual: number;
+  delta: number;
   mismatch: boolean;
   checks: string[];
 };
 
-/** `(v>0?"+":v<0?"−":"") + |v|` — đúng hàm `signed` của demo (dấu trừ U+2212). */
+const PAGE_SIZE = 4;
+
+function defaultRange(): DateRange {
+  return {
+    from: dayjs().subtract(6, "day").format(ISO_DATE),
+    to: dayjs().format(ISO_DATE),
+  };
+}
+
+function defaultFilters(): Filters {
+  return { ...defaultRange(), warehouse: "", kind: "", reconcile: "" };
+}
+
+function scrollOwnerOf(element: HTMLElement | null): HTMLElement | null {
+  let current = element?.parentElement ?? null;
+
+  while (current) {
+    const overflowY = window.getComputedStyle(current).overflowY;
+    if (overflowY === "auto" || overflowY === "scroll") return current;
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
+function scrollReportToTop(element: HTMLElement | null) {
+  const owner = scrollOwnerOf(element);
+  if (owner) owner.scrollTop = 0;
+}
+
+function datePickerValue(range: DateRange): [Dayjs | null, Dayjs | null] {
+  return [
+    range.from ? dayjs(range.from, ISO_DATE) : null,
+    range.to ? dayjs(range.to, ISO_DATE) : null,
+  ];
+}
+
 function signed(value: number): string {
-  const prefix = value > 0 ? "+" : value < 0 ? "−" : "";
-  return prefix + fmt(Math.abs(value));
+  if (value === 0) return "0";
+  return `${value > 0 ? "+" : "−"}${Math.abs(value).toLocaleString("vi-VN")}`;
 }
 
-/** "95,2" — demo làm tròn 1 chữ số rồi đổi dấu chấm thành dấu phẩy. */
-function percentText(part: number, total: number): string {
-  const ratio = total ? (part / total) * 100 : 0;
-  return ratio.toFixed(1).replace(".", ",");
+function quantity(value: number): string {
+  return value.toLocaleString("vi-VN", { maximumFractionDigits: 2 });
 }
 
-function checkLabel(checks: string[]): string {
-  if (checks.length === 0) return EMPTY_TEXT;
-  return checks.map(checkLabelOf).join(" · ");
+function normalized(text: string): string {
+  return text.trim().toLocaleLowerCase("vi-VN");
 }
 
-/** Badge "Trạng thái đối soát" — demo chỉ có 2 nhánh, thêm nhánh NOT_APPLICABLE. */
-function ReconcileChip({ status }: { status: string }) {
-  const t = useT();
-  if (status === "MATCH") {
-    return (
-      <span className="match-chip">
-        {t("reports.stockReconcileReport.matched")}
-      </span>
-    );
+function errorStatus(error: unknown): number | null {
+  if (typeof error !== "object" || error === null) return null;
+  const candidate = error as {
+    status?: unknown;
+    response?: { status?: unknown };
+  };
+  const value = candidate.response?.status ?? candidate.status;
+  return typeof value === "number" ? value : null;
+}
+
+function aggregateReconciliation(rows: StockReconcileRow[]) {
+  const bySku = new Map<
+    string,
+    {
+      warehouse: string;
+      skuName: string;
+      kind: string;
+      balance: number;
+      ledger: number;
+      mismatch: boolean;
+      checks: Set<string>;
+    }
+  >();
+
+  for (const row of rows) {
+    const current = bySku.get(row.sku_code) ?? {
+      warehouse: row.warehouse_code,
+      skuName: row.sku_name,
+      kind: row.item_kind,
+      balance: 0,
+      ledger: 0,
+      mismatch: false,
+      checks: new Set<string>(),
+    };
+    current.balance += row.balance_qty;
+    current.ledger += row.ledger_qty;
+    current.mismatch ||= row.reconciliation_status === "MISMATCH";
+    row.mismatch_checks.forEach((check) => current.checks.add(check));
+    bySku.set(row.sku_code, current);
   }
-  if (status === "NOT_APPLICABLE") {
-    return (
-      <span className="chip chip-neutral">
-        {t("reports.stockReconcileReport.notApplicable")}
-      </span>
-    );
+  return bySku;
+}
+
+function mergeRows(
+  flowRows: XntRow[],
+  reconciliationRows: StockReconcileRow[],
+): DetailRow[] {
+  const reconciliation = aggregateReconciliation(reconciliationRows);
+  const seen = new Set<string>();
+  const result: DetailRow[] = flowRows.map((row) => {
+    seen.add(row.sku_code);
+    const check = reconciliation.get(row.sku_code);
+    const actual = check?.balance ?? row.closing;
+    const system = check?.ledger ?? row.closing;
+    return {
+      key: `${row.warehouse_code}:${row.sku_code}`,
+      warehouse: row.warehouse_code,
+      skuCode: row.sku_code,
+      skuName: row.sku_name,
+      kind: row.sku_type,
+      opening: row.opening,
+      inbound: row.receipt_net,
+      productOutbound: row.issue_net,
+      componentOutbound: row.component_issue_net,
+      reversal: row.reversal_unlinked_net,
+      closing: row.closing,
+      actual,
+      delta: actual - system,
+      mismatch: check?.mismatch ?? !row.matched,
+      checks: [...(check?.checks ?? [])],
+    };
+  });
+
+  for (const [skuCode, check] of reconciliation) {
+    if (seen.has(skuCode)) continue;
+    result.push({
+      key: `${check.warehouse}:${skuCode}`,
+      warehouse: check.warehouse,
+      skuCode,
+      skuName: check.skuName,
+      kind: check.kind,
+      opening: 0,
+      inbound: 0,
+      productOutbound: 0,
+      componentOutbound: 0,
+      reversal: 0,
+      closing: check.ledger,
+      actual: check.balance,
+      delta: check.balance - check.ledger,
+      mismatch: check.mismatch,
+      checks: [...check.checks],
+    });
   }
-  return (
-    <span className="chip chip-error">
-      {t("reports.stockReconcileReport.mismatch")}
-    </span>
+  return result.sort((left, right) =>
+    left.skuCode.localeCompare(right.skuCode),
   );
 }
 
-function stockStatusChipClass(status: string): string {
-  if (status === "AVAILABLE") return "chip chip-success";
-  if (status === "NON_SELLABLE") return "chip chip-warning";
-  return "chip chip-error";
+function Icon({ name }: { name: Parameters<typeof VuexyDemoIcon>[0]["name"] }) {
+  return <VuexyDemoIcon name={name} />;
 }
 
-/** Số âm dùng lớp `.is-negative` thay cho style màu đỏ inline của demo. */
-function DeltaCell({ value }: { value: number }) {
+type KpiGlyphName = "box" | "down" | "up" | "wrench" | "undo" | "boxes";
+
+function KpiGlyph({ name }: { name: KpiGlyphName }) {
+  if (name === "down" || name === "up") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d={
+            name === "down" ? "M12 3v18M5 14l7 7 7-7" : "M12 21V3M5 10l7-7 7 7"
+          }
+        />
+      </svg>
+    );
+  }
+  if (name === "wrench") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M14.7 6.3a4 4 0 0 0-5-5L7.8 3.2l3 3 1.9-1.9a4 4 0 0 0 2 5L6 18l-3 3 3-3 8.7-8.7Z" />
+        <circle cx="5" cy="19" r="1" />
+      </svg>
+    );
+  }
+  if (name === "undo") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 7H4V2M4 7l4-4M4.5 7.5A8 8 0 1 1 4 16" />
+      </svg>
+    );
+  }
+  if (name === "boxes") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m12 2 4 2.3v4.5L12 11 8 8.8V4.3L12 2ZM6 10l4 2.3v4.5L6 19l-4-2.2v-4.5L6 10Zm12 0 4 2.3v4.5L18 19l-4-2.2v-4.5L18 10ZM6 19v3m12-3v3m-6-11v11M2 16.8 6 19l4-2.2m4 0 4 2.2 4-2.2" />
+      </svg>
+    );
+  }
   return (
-    <td className="num">
-      <strong className={value === 0 ? undefined : "is-negative"}>
-        {signed(value)}
-      </strong>
-    </td>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m12 2 9 5-9 5-9-5 9-5Z" />
+      <path d="m3 7 9 5 9-5v10l-9 5-9-5V7Zm9 5v10" />
+    </svg>
   );
 }
 
-/**
- * Câu chữ trạng thái định mức — NGUỒN DUY NHẤT cho cả dropdown lọc lẫn chip
- * trong bảng (trước đây hai nơi tự viết lại chuỗi nên dễ nói hai kiểu).
- */
-
-type NormRow = {
-  code: string;
-  name: string;
-  kind: ItemKindCode | "";
-  available: number;
-  min: number | null;
-  max: number | null;
-  gap: number | null;
-  state: NormState;
-};
-
-function normStateOf(
-  available: number,
-  min: number | null,
-  max: number | null,
-): { state: NormState; gap: number | null } {
-  if (min === null && max === null) return { state: "UNSET", gap: null };
-  if (min !== null && available < min) {
-    return { state: "LOW", gap: available - min };
-  }
-  if (max !== null && available > max) {
-    return { state: "OVER", gap: available - max };
-  }
-  return { state: "NORMAL", gap: min !== null ? available - min : null };
+function KpiCard({
+  label,
+  value,
+  note,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: string;
+  note: string;
+  icon: KpiGlyphName;
+  tone: "blue" | "green" | "orange" | "red";
+}) {
+  return (
+    <article className={`rpt02-kpi rpt02-kpi--${tone}`}>
+      <span className="rpt02-kpi__icon" aria-hidden="true">
+        <KpiGlyph name={icon} />
+      </span>
+      <span className="rpt02-kpi__copy">
+        <small>{label}</small>
+        <strong>{value}</strong>
+        <span>{note}</span>
+      </span>
+    </article>
+  );
 }
 
-/** Tông màu của từng trạng thái; câu chữ luôn lấy từ `NORM_STATE_LABELS`. */
-const NORM_STATE_CHIP_CLASS: Readonly<Record<NormState, string>> = {
-  LOW: "chip chip-error",
-  OVER: "chip chip-warning",
-  UNSET: "chip chip-neutral",
-  NORMAL: "match-chip",
+function SkeletonReport() {
+  return (
+    <div className="rpt02-loading" role="status" aria-live="polite">
+      <span className="rpt02-sr-only">Đang tải báo cáo...</span>
+      <div className="rpt02-kpi-grid" aria-hidden="true">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div className="rpt02-kpi rpt02-skeleton-card" key={index}>
+            <i className="rpt02-skeleton rpt02-skeleton--icon" />
+            <span>
+              <i className="rpt02-skeleton rpt02-skeleton--label" />
+              <i className="rpt02-skeleton rpt02-skeleton--value" />
+              <i className="rpt02-skeleton rpt02-skeleton--note" />
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="rpt02-dashboard" aria-hidden="true">
+        <div className="rpt02-panel rpt02-loading-panel">
+          <i className="rpt02-skeleton rpt02-skeleton--title" />
+          <i className="rpt02-skeleton rpt02-skeleton--chart" />
+        </div>
+        <div className="rpt02-panel rpt02-loading-panel">
+          <i className="rpt02-skeleton rpt02-skeleton--title" />
+          <i className="rpt02-skeleton rpt02-skeleton--summary" />
+          <i className="rpt02-skeleton rpt02-skeleton--summary" />
+          <i className="rpt02-skeleton rpt02-skeleton--summary" />
+        </div>
+      </div>
+      <div className="rpt02-panel rpt02-loading-table" aria-hidden="true">
+        <i className="rpt02-skeleton rpt02-skeleton--title" />
+        {Array.from({ length: 4 }, (_, index) => (
+          <i className="rpt02-skeleton rpt02-skeleton--row" key={index} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type EmptyStateProps = {
+  icon: Parameters<typeof VuexyDemoIcon>[0]["name"];
+  title: string;
+  copy: string;
+  code?: string;
+  primaryLabel: string;
+  onPrimary: () => void;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
+  tone?: "default" | "warning" | "danger";
 };
 
-function NormStatusChip({ state }: { state: NormState }) {
+function EmptyState({
+  icon,
+  title,
+  copy,
+  code,
+  primaryLabel,
+  onPrimary,
+  secondaryLabel,
+  onSecondary,
+  tone = "default",
+}: EmptyStateProps) {
   return (
-    <span className={NORM_STATE_CHIP_CLASS[state]}>
-      {NORM_STATE_LABELS[state]}
-    </span>
+    <section className={`rpt02-state rpt02-state--${tone}`} role="status">
+      <span className="rpt02-state__icon" aria-hidden="true">
+        <Icon name={icon} />
+      </span>
+      <h2>{title}</h2>
+      <p>{copy}</p>
+      {code ? <small>{code}</small> : null}
+      <div className="rpt02-state__actions">
+        <button
+          className="rpt02-button rpt02-button--primary"
+          type="button"
+          onClick={onPrimary}
+        >
+          {primaryLabel}
+        </button>
+        {secondaryLabel && onSecondary ? (
+          <button
+            className="rpt02-button rpt02-button--ghost"
+            type="button"
+            onClick={onSecondary}
+          >
+            {secondaryLabel}
+          </button>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function MovementChart({ points }: { points: FlowDailyPoint[] }) {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [measuredWidth, setMeasuredWidth] = useState(760);
+
+  useLayoutEffect(() => {
+    const node = chartRef.current;
+    if (node === null || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver((entries) => {
+      const nextWidth = entries[0]?.contentRect.width ?? 0;
+      if (nextWidth > 0) setMeasuredWidth(nextWidth);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [points.length]);
+
+  if (points.length === 0) {
+    return (
+      <div ref={chartRef} className="chart-empty rpt02-chart-empty">
+        <span className="rpt02-state__icon" aria-hidden="true">
+          <Icon name="chart-column-big" />
+        </span>
+        <p>Chưa có biến động trong khoảng thời gian này</p>
+      </div>
+    );
+  }
+
+  const chartWidth = Math.max(260, Math.round(measuredWidth));
+  const compact = chartWidth < 560;
+  const chartHeight = compact ? 250 : 224;
+  const left = compact ? 38 : 48;
+  const right = compact ? 10 : 20;
+  const top = 24;
+  const bottom = 38;
+  const innerWidth = chartWidth - left - right;
+  const innerHeight = chartHeight - top - bottom;
+  const baseline = top + innerHeight;
+  const barPlotTop = top + innerHeight * 0.36;
+  const barPlotHeight = baseline - barPlotTop;
+  const rawBarMax = Math.max(
+    1,
+    ...points.flatMap((point) => [
+      Math.abs(point.inbound),
+      Math.abs(point.product),
+    ]),
+  );
+  const magnitude = 10 ** Math.floor(Math.log10(rawBarMax));
+  const barMax = Math.ceil(rawBarMax / magnitude) * magnitude;
+  const lineValues = points.map((point) => point.closing);
+  const lineMin = Math.min(...lineValues);
+  const lineMax = Math.max(...lineValues);
+  const lineSpan = Math.max(1, lineMax - lineMin);
+  const step = innerWidth / Math.max(points.length, 1);
+  const barY = (value: number) =>
+    baseline - (Math.max(0, value) / barMax) * barPlotHeight;
+  const lineY = (value: number) =>
+    lineMax === lineMin
+      ? top + innerHeight * 0.2
+      : top +
+        innerHeight * 0.32 -
+        ((value - lineMin) / lineSpan) * innerHeight * 0.2;
+  const linePoints = points
+    .map(
+      (point, index) =>
+        `${left + step * index + step / 2},${lineY(point.closing)}`,
+    )
+    .join(" ");
+  const dateLabelStride = Math.max(
+    1,
+    Math.ceil(
+      points.length / Math.max(2, Math.floor(innerWidth / (compact ? 54 : 62))),
+    ),
+  );
+  const valueLabelStride = Math.max(
+    1,
+    Math.ceil(
+      points.length / Math.max(2, Math.floor(innerWidth / (compact ? 76 : 68))),
+    ),
+  );
+  const showLabel = (index: number, stride: number) =>
+    index === 0 || index === points.length - 1 || index % stride === 0;
+
+  return (
+    <>
+      <div className="chart-wrap rpt02-chart-wrap">
+        <div ref={chartRef} className="chart-plot rpt02-chart-plot">
+          <svg
+            className="chart-svg rpt02-chart-svg"
+            role="img"
+            aria-label="Biểu đồ biến động tồn kho theo ngày"
+            width={chartWidth}
+            height={chartHeight}
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            preserveAspectRatio="xMidYMid meet"
+            style={{ height: chartHeight }}
+          >
+            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+              const gridY = barPlotTop + barPlotHeight * ratio;
+              return (
+                <g key={ratio}>
+                  <line
+                    className="rpt02-chart-grid"
+                    x1={left}
+                    x2={chartWidth - right}
+                    y1={gridY}
+                    y2={gridY}
+                  />
+                  <text
+                    className="rpt02-chart-axis"
+                    x={left - 8}
+                    y={gridY + 4}
+                    textAnchor="end"
+                  >
+                    {quantity(barMax * (1 - ratio))}
+                  </text>
+                </g>
+              );
+            })}
+            {points.map((point, index) => {
+              const center = left + step * index + step / 2;
+              const width = Math.min(16, step * 0.2);
+              return (
+                <g key={point.date}>
+                  <rect
+                    className="rpt02-chart-bar rpt02-chart-bar--in"
+                    x={center - width - 2}
+                    y={barY(point.inbound)}
+                    width={width}
+                    height={Math.max(0, baseline - barY(point.inbound))}
+                    rx="2"
+                  />
+                  <rect
+                    className="rpt02-chart-bar rpt02-chart-bar--out"
+                    x={center + 2}
+                    y={barY(point.product)}
+                    width={width}
+                    height={Math.max(0, baseline - barY(point.product))}
+                    rx="2"
+                  />
+                  {showLabel(index, dateLabelStride) ? (
+                    <text
+                      className="rpt02-chart-axis rpt02-chart-axis--date"
+                      x={center}
+                      y={chartHeight - 11}
+                      textAnchor="middle"
+                    >
+                      {dayjs(point.date).format("DD/MM")}
+                    </text>
+                  ) : null}
+                </g>
+              );
+            })}
+            <polyline
+              className="rpt02-chart-line"
+              points={linePoints}
+              fill="none"
+            />
+            {points.map((point, index) => {
+              const center = left + step * index + step / 2;
+              const pointY = lineY(point.closing);
+              const label = quantity(point.closing);
+              const labelWidth = Math.max(42, label.length * 7 + 10);
+              const labelY = Math.max(top, pointY - 20);
+              return (
+                <g key={`${point.date}-dot`}>
+                  {showLabel(index, valueLabelStride) ? (
+                    <>
+                      <rect
+                        className="rpt02-chart-value-bg"
+                        x={center - labelWidth / 2}
+                        y={labelY}
+                        width={labelWidth}
+                        height="16"
+                        rx="5"
+                      />
+                      <text
+                        className="rpt02-chart-value"
+                        x={center}
+                        y={labelY + 12}
+                        textAnchor="middle"
+                      >
+                        {label}
+                      </text>
+                    </>
+                  ) : null}
+                  <circle
+                    className="rpt02-chart-dot"
+                    cx={center}
+                    cy={pointY}
+                    r="3"
+                  >
+                    <title>{`${dayjs(point.date).format("DD/MM/YYYY")}: tồn ${quantity(point.closing)}`}</title>
+                  </circle>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      </div>
+      <details className="chart-table rpt02-chart-table">
+        <summary>Xem bảng dữ liệu</summary>
+        <div className="chart-table__body">
+          <table>
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th>Nhập</th>
+                <th>Xuất</th>
+                <th>Tồn cuối ngày</th>
+              </tr>
+            </thead>
+            <tbody>
+              {points.map((point) => (
+                <tr key={`${point.date}-table`}>
+                  <td>{dayjs(point.date).format("DD/MM/YYYY")}</td>
+                  <td>{quantity(point.inbound)}</td>
+                  <td>{quantity(point.product)}</td>
+                  <td>{quantity(point.closing)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </>
   );
 }
 
 export default function StockReconcileReport() {
-  const t = useT();
-  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
-
-  // ── Bộ lọc (state của demo: kind / query / view + mốc đối soát) ─────────
-  const [asOf, setAsOf] = useState<Dayjs>(() => dayjs().startOf("day"));
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [draft, setDraft] = useState<Filters>(defaultFilters);
+  const [applied, setApplied] = useState<Filters>(defaultFilters);
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState("all");
-  /**
-   * Đổi tab KHÔNG khoá luồng chính: `shownView` (tab đang sáng) cập nhật ở mức GẤP
-   * nên người dùng thấy phản hồi ngay, còn `view` — thứ quyết định panel nào
-   * được dựng — cập nhật trong transition để React nhường luồng chính. Xem
-   * @/shared/ui/use-tab-view.
-   */
-  const viewTab = useTabView<ViewMode>("table");
-  const view = viewTab.view;
-  const shownView = viewTab.shown;
-  const setView = viewTab.select;
-  /**
-   * Tab đổi view: nút bấm đọc `view` (cập nhật GẤP → tô sáng tức thì), còn các
-   * PANEL nặng đọc `deferredView` (bản trễ, React vẽ ở lượt ngắt được). Đo trước khi
-   * sửa (Playwright, CPU x4): một cú bấm "Dạng hộp" khoá luồng chính tới ~930 ms
-   * vì panel mới (bảng hàng trăm dòng / lưới thẻ) phải layout + paint trọn một
-   * lượt cùng lúc với việc tô sáng tab. Tách hai lượt thì tab phản hồi ngay,
-   * panel theo sau.
-   */
-  const deferredView = useDeferredValue(view);
+  const [page, setPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const pageRef = useRef<HTMLElement | null>(null);
+  const tableRef = useRef<HTMLElement | null>(null);
 
-  /** Chú giải MATCH / MISMATCH của vòng tròn — demo để nút chết, đây bật/tắt thật. */
-  const [series, setSeries] = useState({ match: true, mismatch: true });
+  const flow = useInventoryFlowSnapshot({ from: applied.from, to: applied.to });
+  const reconciliation = useStockReconcileSnapshot({ asOf: applied.to });
+  const permissionCodes = useAuthStore((state) => state.permissionCodes);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const canExport = hasAnyWmsPermission(
+    permissionCodes,
+    WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
+    isSuperAdmin,
+  );
 
-  /**
-   * Dòng đang mở hộp thoại được CHỤP tại thời điểm bấm (demo cũng vậy:
-   * `data.rows.find(...)` chạy trong handler), nên đổi bộ lọc phía sau không
-   * làm nội dung hộp thoại nhảy số.
-   */
-  const [drill, setDrill] = useState<{
-    row: StockReconcileRow;
-    trigger: HTMLElement;
-  } | null>(null);
+  const invalidRange =
+    draft.from === "" || draft.to === "" || draft.from > draft.to;
+  const loading = flow.loading || reconciliation.loading;
+  const fetching = flow.fetching || reconciliation.fetching;
+  const updating = loading || fetching;
+  const error = flow.error ?? reconciliation.error;
+  const status = errorStatus(error);
 
-  const { snapshot, thresholds, loading, fetching, error, refetch } =
-    useStockReconcileSnapshot({ asOf: asOf.format(ISO_DATE) });
+  useEffect(() => {
+    if (!showSuccess) return;
+    const timer = window.setTimeout(() => setShowSuccess(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, [showSuccess]);
 
-  // ── Tập dòng trong phạm vi bộ lọc (hàm `rowsInScope` của demo) ──────────
-  const rowsInScope = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return snapshot.rows.filter((row) => {
-      const byKind = kind === "all" || row.item_kind === kind;
-      const haystack = `${row.sku_code} ${row.sku_name}`.toLowerCase();
-      return byKind && haystack.includes(needle);
-    });
-  }, [snapshot.rows, kind, query]);
+  useLayoutEffect(() => {
+    scrollReportToTop(pageRef.current);
+  }, [location.key]);
 
-  // ── Gộp theo SKU (hàm `aggregateSku` của demo) ──────────────────────────
-  const aggregates = useMemo<SkuAggregate[]>(() => {
-    const map = new Map<string, SkuAggregate>();
-    for (const row of rowsInScope) {
-      const entry = map.get(row.sku_code) ?? {
-        code: row.sku_code,
-        name: row.sku_name,
-        kind: row.item_kind,
-        balance: 0,
-        ledger: 0,
-        available: 0,
-        mismatch: false,
-        checks: [] as string[],
-      };
-      entry.balance += row.balance_qty;
-      entry.ledger += row.ledger_qty;
-      entry.available += row.available_qty;
-      entry.mismatch =
-        entry.mismatch || row.reconciliation_status === "MISMATCH";
-      for (const check of row.mismatch_checks) {
-        if (!entry.checks.includes(check)) entry.checks.push(check);
-      }
-      map.set(row.sku_code, entry);
-    }
-    return [...map.values()];
-  }, [rowsInScope]);
+  const warehouseOptions = useMemo(() => {
+    const values = new Set<string>();
+    flow.snapshot.rows.forEach(
+      (row) => row.warehouse_code && values.add(row.warehouse_code),
+    );
+    reconciliation.snapshot.rows.forEach(
+      (row) => row.warehouse_code && values.add(row.warehouse_code),
+    );
+    return [...values].sort((left, right) => left.localeCompare(right, "vi"));
+  }, [flow.snapshot.rows, reconciliation.snapshot.rows]);
 
-  // ── Bốn thẻ KPI (hàm `updateSummary` của demo) ──────────────────────────
-  const summary = useMemo(() => {
-    const sum = (
-      predicate: (row: StockReconcileRow) => boolean,
-      field: (row: StockReconcileRow) => number,
-    ) =>
-      rowsInScope.reduce(
-        (total, row) => (predicate(row) ? total + field(row) : total),
-        0,
-      );
-    return {
-      balance: sum(
-        () => true,
-        (row) => row.balance_qty,
-      ),
-      available: sum(
-        () => true,
-        (row) => row.available_qty,
-      ),
-      nonSellable: sum(
-        (row) => row.stock_status === "NON_SELLABLE",
-        (row) => row.balance_qty,
-      ),
-      risk: sum(
+  const scopedFlowRows = useMemo(
+    () =>
+      flow.snapshot.rows.filter(
         (row) =>
-          row.stock_status === "DEFECTIVE" || row.stock_status === "QUARANTINE",
-        (row) => row.balance_qty,
+          (applied.warehouse === "" ||
+            row.warehouse_code === applied.warehouse) &&
+          (applied.kind === "" || row.sku_type === applied.kind),
       ),
-    };
-  }, [rowsInScope]);
+    [applied.kind, applied.warehouse, flow.snapshot.rows],
+  );
 
-  // ── 1. Cơ cấu tồn kho hiện tại (hàm `renderStructure`) ──────────────────
-  const structure = useMemo(
+  const scopedReconciliationRows = useMemo(
     () =>
-      STOCK_STATUSES.map((status) => {
-        const value = rowsInScope
-          .filter((row) => row.stock_status === status)
-          .reduce((total, row) => total + row.balance_qty, 0);
-        return { status, value };
-      }),
-    [rowsInScope],
-  );
-  const structureAria = structure
-    .map((item) =>
-      t("reports.stockReconcileReport.structureAriaItem", {
-        label: LABELS[item.status],
-        value: fmt(item.value),
-        percent: percentText(item.value, summary.balance),
-      }),
-    )
-    .join("; ");
-
-  // ── 2. Tỷ lệ đối soát (hàm `renderReconcile`) ───────────────────────────
-  const matchedCount = aggregates.filter((entry) => !entry.mismatch).length;
-  const mismatchedCount = aggregates.length - matchedCount;
-  const shownMatched = series.match ? matchedCount : 0;
-  const shownMismatched = series.mismatch ? mismatchedCount : 0;
-  const donutTotal = shownMatched + shownMismatched;
-  const matchArc = donutTotal
-    ? (shownMatched / donutTotal) * DONUT_CIRCUMFERENCE
-    : 0;
-  const mismatchArc = donutTotal
-    ? (shownMismatched / donutTotal) * DONUT_CIRCUMFERENCE
-    : 0;
-
-  // ── 3. Top SKU chênh lệch (hàm `renderVariance`) ────────────────────────
-  const varianceRows = useMemo(
-    () =>
-      aggregates
-        .filter((entry) => entry.mismatch)
-        .sort(
-          (a, b) =>
-            Math.abs(b.balance - b.ledger) - Math.abs(a.balance - a.ledger),
-        ),
-    [aggregates],
-  );
-
-  // ── 4. Kiểm soát lượng khả dụng (bảng định mức) ─────────────────────────
-  const normRows = useMemo<NormRow[]>(
-    () =>
-      aggregates.map((entry) => {
-        const threshold = thresholds.get(entry.code);
-        const min = threshold?.min_qty ?? null;
-        const max = threshold?.max_qty ?? null;
-        const { state, gap } = normStateOf(entry.available, min, max);
-        return {
-          code: entry.code,
-          name: entry.name,
-          kind: entry.kind,
-          available: entry.available,
-          min,
-          max,
-          gap,
-          state,
-        };
-      }),
-    [aggregates, thresholds],
-  );
-  const belowMinCount = normRows.filter((row) => row.state === "LOW").length;
-
-  /**
-   * Ba bộ lọc RIÊNG cho ba khối danh sách dài của màn này.
-   *
-   * Bộ lọc đầu trang đổi cả KPI, donut cơ cấu tồn và cả ba khối cùng lúc; khi
-   * người đọc chỉ muốn "tìm SKU này trong đúng bảng đang soi" thì đó là công
-   * cụ quá thô. Ba bộ lọc dưới đây chỉ thu hẹp TẦM NHÌN của chính khối chứa
-   * nó, không gọi lại API và không đụng tới số liệu tổng.
-   */
-  const varianceFilterConfig = useMemo<SectionFilterConfig<SkuAggregate>>(
-    () => ({
-      searchPlaceholder: t("reports.stockReconcileReport.skuSearchPlaceholder"),
-      searchText: (row) => [row.code, row.name],
-      selects: [
-        {
-          key: "kind",
-          placeholder: t("reports.stockReconcileReport.anyKind"),
-          options: (list) =>
-            optionsFromRows(
-              list,
-              (row) => row.kind,
-              (value) => LABELS[value] ?? value,
-            ),
-          match: (row, value) => row.kind === value,
-        },
-        {
-          key: "check",
-          placeholder: t("reports.stockReconcileReport.anyCheck"),
-          options: (list) => {
-            const codes = new Set<string>();
-            for (const row of list) {
-              for (const code of row.checks) codes.add(code);
-            }
-            return [...codes]
-              .sort((a, b) => a.localeCompare(b, "vi"))
-              .map((code) => ({
-                value: code,
-                label: checkLabelOf(code),
-              }));
-          },
-          match: (row, value) => row.checks.includes(value),
-          minWidth: 210,
-        },
-      ],
-    }),
-    [t],
-  );
-  const varianceFilter = useSectionFilter(varianceRows, varianceFilterConfig);
-
-  const normFilterConfig = useMemo<SectionFilterConfig<NormRow>>(
-    () => ({
-      searchPlaceholder: t("reports.stockReconcileReport.skuSearchPlaceholder"),
-      searchText: (row) => [row.code, row.name],
-      selects: [
-        {
-          key: "kind",
-          placeholder: t("reports.stockReconcileReport.anyKind"),
-          options: (list) =>
-            optionsFromRows(
-              list,
-              (row) => row.kind,
-              (value) => LABELS[value] ?? value,
-            ),
-          match: (row, value) => row.kind === value,
-        },
-        {
-          key: "state",
-          placeholder: t("reports.stockReconcileReport.anyNormState"),
-          options: (list) =>
-            optionsFromRows(
-              list,
-              (row) => row.state,
-              (value) => NORM_STATE_LABELS[value as NormState] ?? value,
-            ),
-          match: (row, value) => row.state === value,
-          minWidth: 210,
-        },
-      ],
-    }),
-    [t],
-  );
-  const normFilter = useSectionFilter(normRows, normFilterConfig);
-
-  const detailFilterConfig = useMemo<SectionFilterConfig<StockReconcileRow>>(
-    () => ({
-      searchPlaceholder: t(
-        "reports.stockReconcileReport.skuWarehouseSearchPlaceholder",
+      reconciliation.snapshot.rows.filter(
+        (row) =>
+          (applied.warehouse === "" ||
+            row.warehouse_code === applied.warehouse) &&
+          (applied.kind === "" || row.item_kind === applied.kind),
       ),
-      searchText: (row) => [row.sku_code, row.sku_name, row.warehouse_code],
-      selects: [
-        {
-          key: "warehouse",
-          placeholder: t("reports.stockReconcileReport.anyWarehouse"),
-          options: (list) => optionsFromRows(list, (row) => row.warehouse_code),
-          match: (row, value) => row.warehouse_code === value,
-          minWidth: 150,
-        },
-        {
-          key: "status",
-          placeholder: t("reports.stockReconcileReport.anyStockStatus"),
-          options: (list) =>
-            optionsFromRows(
-              list,
-              (row) => row.stock_status,
-              (value) => LABELS[value] ?? value,
-            ),
-          match: (row, value) => row.stock_status === value,
-          minWidth: 190,
-        },
-        {
-          key: "reconcile",
-          placeholder: t("reports.stockReconcileReport.anyReconcileResult"),
-          options: [
-            {
-              value: "MISMATCH",
-              label: t("reports.stockReconcileReport.mismatch"),
-            },
-            {
-              value: "MATCH",
-              label: t("reports.stockReconcileReport.matched"),
-            },
-          ],
-          match: (row, value) =>
-            value === "MISMATCH"
-              ? row.reconciliation_status === "MISMATCH"
-              : row.reconciliation_status !== "MISMATCH",
-          minWidth: 200,
-        },
-      ],
-    }),
-    [],
-  );
-  const detailFilter = useSectionFilter(rowsInScope, detailFilterConfig);
-
-  /**
-   * Cửa sổ vẽ cho ba bảng dài của màn này. Ba bảng dựng tay (không qua
-   * ResponsiveDataTable) nên phải tự nới dần — xem useRenderWindow. Số liệu ở KPI
-   * và biểu đồ vẫn tính trên TOÀN BỘ tập đã lọc, chỉ số dòng được vẽ ra là bị cắt.
-   */
-  const varianceWindow = useRenderWindow(varianceFilter.rows);
-  const normWindow = useRenderWindow(normFilter.rows);
-  const detailWindow = useRenderWindow(detailFilter.rows);
-
-  // ── 5. Chi tiết + hộp thoại bằng chứng ──────────────────────────────────
-  const drillRow = drill?.row ?? null;
-  const { events: movementEvents, loading: movementsLoading } = useSkuMovements(
-    drillRow?.sku_code ?? null,
+    [applied.kind, applied.warehouse, reconciliation.snapshot.rows],
   );
 
-  const closeDrill = () => {
-    drill?.trigger.focus({ preventScroll: true });
-    setDrill(null);
+  const allRows = useMemo(
+    () => mergeRows(scopedFlowRows, scopedReconciliationRows),
+    [scopedFlowRows, scopedReconciliationRows],
+  );
+  const filteredRows = useMemo(() => {
+    const needle = normalized(query);
+    return allRows.filter((row) => {
+      if (applied.reconcile === "MATCH" && row.mismatch) return false;
+      if (applied.reconcile === "MISMATCH" && !row.mismatch) return false;
+      if (needle === "") return true;
+      return normalized(`${row.skuCode} ${row.skuName}`).includes(needle);
+    });
+  }, [allRows, applied.reconcile, query]);
+
+  const summary = useMemo(() => sumRows(scopedFlowRows), [scopedFlowRows]);
+  const mismatches = useMemo(
+    () => allRows.filter((row) => row.mismatch),
+    [allRows],
+  );
+  const systemTotal = allRows.reduce((sum, row) => sum + row.closing, 0);
+  const actualTotal = allRows.reduce((sum, row) => sum + row.actual, 0);
+  const deltaTotal = actualTotal - systemTotal;
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const visibleRows = filteredRows.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  const applyFilters = () => {
+    if (invalidRange) return;
+    setApplied({ ...draft });
+    setPage(1);
+    setShowSuccess(true);
   };
 
-  const openDrill = (row: StockReconcileRow, trigger: HTMLElement) => {
-    setDrill({ row, trigger });
-  };
-
-  /**
-   * Nút "Làm mới" của demo (`offline-reset`) đưa MỌI bộ lọc về mặc định rồi vẽ
-   * lại; ở đây thêm một lượt gọi lại số liệu vì dữ liệu là thật.
-   */
-  const resetFilters = useCallback(() => {
-    setKind("all");
+  const resetFilters = () => {
+    const next = defaultFilters();
+    setDraft(next);
+    setApplied(next);
     setQuery("");
-    setAsOf(dayjs().startOf("day"));
-    setView("table");
-    setSeries({ match: true, mismatch: true });
-  }, []);
-
-  const { refreshing, refresh } = useReportRefresh({
-    refetch,
-    readError: () => error,
-    beforeRefetch: resetFilters,
-  });
-
-  // Đổi tab bằng bàn phím thì focus phải đi theo tab đang chọn (như demo).
-  const tableTabRef = useRef<HTMLButtonElement>(null);
-  const snapshotTabRef = useRef<HTMLButtonElement>(null);
-
-  /** Điều hướng bàn phím giữa hai tab, đúng bộ phím demo bắt. */
-  const onTabKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    event.preventDefault();
-    const next: ViewMode =
-      event.key === "Home"
-        ? "table"
-        : event.key === "End"
-          ? "snapshot"
-          : view === "table"
-            ? "snapshot"
-            : "table";
-    setView(next);
-    const target = next === "table" ? tableTabRef : snapshotTabRef;
-    target.current?.focus();
+    setPage(1);
+    setShowSuccess(true);
+    window.requestAnimationFrame(() => scrollReportToTop(pageRef.current));
   };
 
-  const snapshotMoment = snapshot.as_of === "" ? null : dayjs(snapshot.as_of);
-  const watermark =
-    snapshot.source_watermark === ""
-      ? null
-      : dayjs(snapshot.source_watermark.replace(" ", "T"));
+  const refresh = () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    void Promise.all([flow.refetch(), reconciliation.refetch()]).finally(() => {
+      setRefreshing(false);
+      setShowSuccess(true);
+    });
+  };
 
-  const pageAlert: { tone: string; body: ReactNode } | null = (() => {
-    if (error !== null && error !== undefined) {
-      return {
-        tone: "page-alert is-error",
-        body: <>{getApiErrorMessage(error)}</>,
-      };
-    }
-    if (loading) {
-      return {
-        tone: "page-alert is-info",
-        body: <>{t("reports.stockReconcileReport.loadingData")}</>,
-      };
-    }
-    if (snapshot.as_of_snapshot) {
-      return {
-        tone: "page-alert is-info",
-        body: (
-          <>
-            {t("reports.stockReconcileReport.asOfNoticeA")}{" "}
-            <strong>{asOf.format("DD-MM-YYYY")}</strong>
-            {t("reports.stockReconcileReport.asOfNoticeB")}
-          </>
-        ),
-      };
-    }
-    // return {
-    //   tone: "page-alert",
-    //   body: (
-    //     <>
-    //       Đang xem ảnh chụp tại{" "}
-    //       <strong>
-    //         {snapshotMoment
-    //           ? snapshotMoment.format("DD-MM-YYYY HH:mm")
-    //           : EMPTY_TEXT}
-    //       </strong>
-    //       . Balance và ledger được đối soát theo cùng mốc chốt; đây không phải
-    //       số dư thời gian thực.
-    //     </>
-    //   ),
-    // };
-    // Nhánh mặc định (dải "đang xem ảnh chụp" bên trên đã được gỡ): không có gì
-    // phải báo thì KHÔNG hiện cảnh báo nào. Phải trả `null` tường minh — rơi
-    // khỏi hàm là trả `undefined`, lệch kiểu đã khai của `pageAlert`.
-    return null;
-  })();
+  const exportReport = () => {
+    if (!canExport || allRows.length === 0) return;
+    exportXlsx(
+      [
+        "Mã SKU",
+        "Tên hàng",
+        "Tồn đầu kỳ",
+        "Tổng nhập",
+        "Xuất sản phẩm",
+        "Xuất linh kiện BH",
+        "Hoàn tác",
+        "Tồn cuối kỳ",
+        "Tồn thực tế",
+        "Chênh lệch",
+        "Trạng thái",
+      ],
+      allRows.map((row) => [
+        row.skuCode,
+        row.skuName,
+        row.opening,
+        row.inbound,
+        row.productOutbound,
+        row.componentOutbound,
+        row.reversal,
+        row.closing,
+        row.actual,
+        row.delta,
+        row.mismatch ? "Cần kiểm tra" : "Khớp",
+      ]),
+      `bao-cao-ton-kho-doi-soat-${applied.from}-${applied.to}`,
+    );
+  };
+
+  const goToMismatches = () => {
+    setDraft((current) => ({ ...current, reconcile: "MISMATCH" }));
+    setApplied((current) => ({ ...current, reconcile: "MISMATCH" }));
+    setQuery("");
+    setPage(1);
+    window.requestAnimationFrame(() => {
+      tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const home = () => navigate(ROUTES.DASHBOARD);
+  const fatal = status === 403 || status === 404 || status === 503;
 
   return (
-    <div className="hn-rpt02" data-mvp-screen="RPT-02">
-      <div className="page-wrap">
-        <div
-          className="breadcrumb"
-          aria-label={t("reports.stockReconcileReport.breadcrumbAria")}
+    <main className="hn-rpt02" ref={pageRef}>
+      <nav className="rpt02-breadcrumb" aria-label="Breadcrumb">
+        <button
+          type="button"
+          onClick={() => navigate(ROUTES.REPORTS_INVENTORY_FLOW)}
         >
-          <span>{t("reports.stockReconcileReport.breadcrumbHome")}</span>
-          <span aria-hidden="true">/</span>
-          <span>{t("reports.stockReconcileReport.breadcrumbReports")}</span>
-          <span aria-hidden="true">/</span>
-          <strong>{t("reports.stockReconcileReport.breadcrumbCurrent")}</strong>
-        </div>
+          Báo cáo
+        </button>
+        <span>/</span>
+        <strong>
+          {status === 404 ? "Không tìm thấy" : "Tồn kho & đối soát"}
+        </strong>
+      </nav>
 
-        <section className="page-header" aria-labelledby="rpt02-page-title">
-          <div>
-            <span className="eyebrow">
-              {t("reports.stockReconcileReport.eyebrow")}
-            </span>
-            <h1 id="rpt02-page-title">
-              {t("reports.stockReconcileReport.title")}
-            </h1>
-            <p>{t("reports.stockReconcileReport.subtitle")}</p>
-          </div>
-          <div className="scope-block">
-            <span className="chip chip-primary">
-              {snapshot.warehouse_code === ""
-                ? ALL_WAREHOUSES_LABEL
-                : snapshot.warehouse_code}
-            </span>
-            <span className="chip chip-neutral">
-              {isSuperAdmin
-                ? "Super Admin"
-                : t("reports.stockReconcileReport.roleOperator")}
-            </span>
-            {mismatchedCount > 0 ? (
-              <span className="chip chip-warning">
-                {t("reports.stockReconcileReport.needsAction")}
+      {fatal ? (
+        <EmptyState
+          icon={
+            status === 403
+              ? "lock"
+              : status === 404
+                ? "package-search"
+                : "settings-2"
+          }
+          title={
+            status === 403
+              ? "Bạn không có quyền xem báo cáo này"
+              : status === 404
+                ? "Không tìm thấy báo cáo"
+                : "Báo cáo đang được bảo trì"
+          }
+          copy={
+            status === 403
+              ? "Vui lòng liên hệ quản trị viên để được cấp quyền truy cập phù hợp."
+              : status === 404
+                ? "Báo cáo bạn đang tìm không tồn tại hoặc đã được di chuyển."
+                : "Hệ thống đang nâng cấp báo cáo. Vui lòng quay lại sau ít phút."
+          }
+          code={status === 404 ? "Mã lỗi 404" : undefined}
+          primaryLabel={status === 503 ? "Kiểm tra lại" : "Về Tổng quan"}
+          onPrimary={status === 503 ? refresh : home}
+          secondaryLabel={status === 503 ? "Về Tổng quan" : undefined}
+          onSecondary={status === 503 ? home : undefined}
+          tone={
+            status === 503 ? "warning" : status === 403 ? "danger" : "default"
+          }
+        />
+      ) : (
+        <>
+          <header className="rpt02-heading">
+            <div className="rpt02-heading__copy">
+              <h1>Báo cáo Tồn kho &amp; đối soát</h1>
+              <p>Theo dõi biến động tồn kho và kiểm tra chênh lệch theo kỳ</p>
+            </div>
+            <div className="rpt02-heading__actions">
+              <span className="rpt02-demo-pill">
+                <i /> Dữ liệu minh họa
               </span>
-            ) : (
-              <span className="chip chip-success">
-                {t("reports.stockReconcileReport.allMatched")}
-              </span>
-            )}
-          </div>
-        </section>
-
-        <section
-          className="filter-card report-filter-card"
-          aria-label={t("reports.stockReconcileReport.filterAria")}
-        >
-          <div className="filter-group">
-            <span className="filter-label">
-              {t("reports.stockReconcileReport.fieldAsOf")}
-            </span>
-            {/*
-             * `maxDate` là hôm nay: mốc đối soát phải là ngày ĐÃ ghi sổ, chốt ở
-             * tương lai thì không có số dư nào để đối chiếu.
-             */}
-            <UiVuexyDateField
-              id="rpt02-as-of-date"
-              field="as-of"
-              aria-label={t("reports.stockReconcileReport.fieldAsOf")}
-              value={asOf}
-              maxDate={dayjs().startOf("day")}
-              onChange={(value) => {
-                if (value === null) return;
-                setAsOf(value.startOf("day"));
-              }}
-            />
-          </div>
-
-          <div className="filter-group">
-            <span className="filter-label">
-              {t("reports.stockReconcileReport.fieldSkuSearch")}
-            </span>
-            <SearchInput
-              width="100%"
-              value={query}
-              aria-label={t("reports.stockReconcileReport.fieldSkuSearch")}
-              placeholder={t("reports.stockReconcileReport.skuSearchInput")}
-              onChange={setQuery}
-            />
-          </div>
-
-          <div className="filter-group">
-            <span className="filter-label">
-              {t("reports.stockReconcileReport.fieldKind")}
-            </span>
-            <UiSelect
-              fullWidth
-              aria-label={t("reports.stockReconcileReport.fieldKind")}
-              value={kind}
-              options={KIND_OPTIONS.map((option) => ({ ...option }))}
-              onChange={setKind}
-            />
-          </div>
-
-          <div className="refresh-block report-filter-actions">
-            {/*
-             * Đang làm mới thì nút hiện spinner + đổi chữ, xong thì có toast —
-             * lượt gọi lại xong trong ~50ms nên nếu chỉ `disabled` thì người
-             * dùng không thấy gì (xem `useReportRefresh`).
-             */}
-            <button
-              className="button button-primary"
-              type="button"
-              onClick={refresh}
-              disabled={refreshing || fetching}
-              aria-busy={refreshing || undefined}
-            >
               <span
-                className={
-                  refreshing ? "refresh-icon is-spinning" : "refresh-icon"
+                className="rpt02-tooltip"
+                data-tooltip={
+                  !canExport
+                    ? "Tài khoản chưa được cấp quyền xuất Excel"
+                    : undefined
                 }
-                aria-hidden="true"
-              >
-                <VuexyDemoIcon name="refresh-cw" />
-              </span>
-              {refreshing
-                ? t("reports.stockReconcileReport.refreshing")
-                : t("reports.stockReconcileReport.refresh")}
-            </button>
-            <div className="refresh-meta">
-              <span>
-                {t("reports.stockReconcileReport.dataAt", {
-                  time: snapshotMoment
-                    ? snapshotMoment.format("HH:mm")
-                    : EMPTY_TEXT,
-                })}
-              </span>
-              <small>
-                {t("reports.stockReconcileReport.postedUntil", {
-                  date:
-                    watermark && watermark.isValid()
-                      ? watermark.format("DD-MM-YYYY")
-                      : EMPTY_TEXT,
-                })}
-              </small>
-            </div>
-          </div>
-
-          {/* UAT TC_UI_14 (Note): không phơi mã kỹ thuật (snapshot id, tên
-              múi giờ IANA) ra màn nghiệp vụ. */}
-          <div className="report-snapshot">
-            {t("reports.stockReconcileReport.sliceLabel")}{" "}
-            <strong>
-              {snapshot.warehouse_code === ""
-                ? ALL_WAREHOUSES_LABEL
-                : snapshot.warehouse_code}
-            </strong>{" "}
-            · {t("reports.stockReconcileReport.timezoneNote")}
-          </div>
-        </section>
-
-        {pageAlert ? (
-          <div className={pageAlert.tone} role="note">
-            {pageAlert.body}
-          </div>
-        ) : null}
-
-        {/* ── Tổng quan tồn và đối soát ─────────────────────────────────── */}
-        <section aria-labelledby="rpt02-overview-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("reports.stockReconcileReport.overviewEyebrow")}
-              </span>
-              <h2 id="rpt02-overview-title">
-                {t("reports.stockReconcileReport.overviewTitle")}
-              </h2>
-            </div>
-            <span className="section-meta">
-              {snapshot.warehouse_code === ""
-                ? ALL_WAREHOUSES_LABEL
-                : snapshot.warehouse_code}{" "}
-              · {t("reports.stockReconcileReport.unitPcs")}
-            </span>
-          </div>
-          <div className="kpi-grid report-kpi-grid">
-            <article
-              className="card kpi-card report-kpi-card"
-              data-tone="opening"
-            >
-              <div className="kpi-top">
-                <span className="kpi-label">
-                  {t("reports.stockReconcileReport.kpiTotal")}
-                </span>
-                <span className="kpi-icon" aria-hidden="true">
-                  <VuexyDemoIcon name="warehouse" />
-                </span>
-              </div>
-              <div className="kpi-value">{fmt(summary.balance)}</div>
-              <div className="kpi-bottom">
-                <span className="kpi-foot">
-                  {t("reports.stockReconcileReport.kpiTotalFoot")}
-                </span>
-              </div>
-            </article>
-            <article
-              className="card kpi-card report-kpi-card"
-              data-tone="inbound"
-            >
-              <div className="kpi-top">
-                <span className="kpi-label">
-                  {t("reports.stockReconcileReport.kpiAvailable")}
-                </span>
-                <span className="kpi-icon" aria-hidden="true">
-                  <VuexyDemoIcon name="package-plus" />
-                </span>
-              </div>
-              <div className="kpi-value">{fmt(summary.available)}</div>
-              <div className="kpi-bottom">
-                <span className="kpi-foot">
-                  {t("reports.stockReconcileReport.kpiAvailableFoot")}
-                </span>
-              </div>
-            </article>
-            <article
-              className="card kpi-card report-kpi-card"
-              data-tone="component"
-            >
-              <div className="kpi-top">
-                <span className="kpi-label">
-                  {t("reports.stockReconcileReport.kpiNonSellable")}
-                </span>
-                <span className="kpi-icon" aria-hidden="true">
-                  <VuexyDemoIcon name="briefcase-medical" />
-                </span>
-              </div>
-              <div className="kpi-value">{fmt(summary.nonSellable)}</div>
-              <div className="kpi-bottom">
-                <span className="kpi-foot">
-                  {t("reports.stockReconcileReport.kpiNonSellableFoot")}
-                </span>
-              </div>
-            </article>
-            <article
-              className="card kpi-card report-kpi-card"
-              data-tone="product"
-            >
-              <div className="kpi-top">
-                <span className="kpi-label">
-                  {t("reports.stockReconcileReport.kpiRisk")}
-                </span>
-                <span className="kpi-icon" aria-hidden="true">
-                  <VuexyDemoIcon name="triangle-alert" />
-                </span>
-              </div>
-              <div className="kpi-value">{fmt(summary.risk)}</div>
-              <div className="kpi-bottom">
-                <span className="kpi-foot">
-                  {t("reports.stockReconcileReport.kpiRiskFoot")}
-                </span>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        {/* ── Cơ cấu và mức độ khớp ─────────────────────────────────────── */}
-        <section aria-labelledby="rpt02-status-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("reports.stockReconcileReport.statusEyebrow")}
-              </span>
-              <h2 id="rpt02-status-title">
-                {t("reports.stockReconcileReport.statusTitle")}
-              </h2>
-            </div>
-            <span className="section-meta">
-              {t("reports.stockReconcileReport.statusMeta")}
-            </span>
-          </div>
-          <div className="analysis-grid">
-            <article
-              className="card chart-card report-chart-card"
-              data-chart-series="structure"
-            >
-              <header className="card-head chart-card-head">
-                <div className="chart-heading">
-                  <span className="chart-icon" aria-hidden="true">
-                    <VuexyDemoIcon name="warehouse" />
-                  </span>
-                  <div>
-                    <h3>{t("reports.stockReconcileReport.structureTitle")}</h3>
-                    <span className="card-subtitle">
-                      {t("reports.stockReconcileReport.structureSubtitle")}
-                    </span>
-                  </div>
-                </div>
-                <div className="chart-head-meta">
-                  <span className="chart-unit">
-                    {t("reports.stockReconcileReport.unitPcs")}
-                  </span>
-                  <span className="chart-current">
-                    <small>
-                      {t("reports.stockReconcileReport.totalStock")}
-                    </small>
-                    <strong>{fmt(summary.balance)}</strong>
-                  </span>
-                </div>
-              </header>
-              <div className="chart-wrap">
-                <div className="chart-plot structure-plot">
-                  <div
-                    className="structure-chart"
-                    role="img"
-                    aria-label={t(
-                      "reports.stockReconcileReport.structureAria",
-                      {
-                        detail: structureAria,
-                      },
-                    )}
-                  >
-                    {structure.map((item) => (
-                      <div
-                        key={item.status}
-                        className="structure-row"
-                        style={
-                          {
-                            "--structure-color": STATUS_COLORS[item.status],
-                            "--structure-width": `${summary.balance ? ((item.value / summary.balance) * 100).toFixed(2) : "0.00"}%`,
-                          } as CSSProperties
-                        }
-                      >
-                        <div className="structure-row-head">
-                          <span className="structure-name">
-                            <i aria-hidden="true" />
-                            {LABELS[item.status]}
-                          </span>
-                          <strong>
-                            {fmt(item.value)}{" "}
-                            {t("reports.stockReconcileReport.pcsSuffix")}{" "}
-                            <small>
-                              {percentText(item.value, summary.balance)}%
-                            </small>
-                          </strong>
-                        </div>
-                        <span className="structure-track" aria-hidden="true">
-                          <i />
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <details className="chart-table">
-                <summary>{t("reports.stockReconcileReport.altTable")}</summary>
-                <table>
-                  <thead>
-                    <tr>
-                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
-                      <th>{t("reports.stockReconcileReport.colStatus")}</th>
-                      <th>{t("reports.stockReconcileReport.colQuantity")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {structure.map((item, index) => (
-                      <tr key={item.status}>
-                        <td className="stt-col">{index + 1}</td>
-                        <td>{LABELS[item.status]}</td>
-                        <td>{fmt(item.value)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </details>
-            </article>
-
-            <article
-              className="card chart-card report-chart-card"
-              data-chart-series="reconcile"
-            >
-              <header className="card-head chart-card-head">
-                <div className="chart-heading">
-                  <span
-                    className="chart-icon chart-icon-warning"
-                    aria-hidden="true"
-                  >
-                    <VuexyDemoIcon name="triangle-alert" />
-                  </span>
-                  <div>
-                    <h3>
-                      {t("reports.stockReconcileReport.reconcileRateTitle")}
-                    </h3>
-                    <span className="card-subtitle">
-                      {t("reports.stockReconcileReport.reconcileRateSubtitle")}
-                    </span>
-                  </div>
-                </div>
-                <div className="chart-head-meta">
-                  {mismatchedCount > 0 ? (
-                    <span className="chip chip-warning">
-                      {t("reports.stockReconcileReport.needsAction")}
-                    </span>
-                  ) : (
-                    <span className="chip chip-success">
-                      {t("reports.stockReconcileReport.allMatched")}
-                    </span>
-                  )}
-                  <span className="chart-current">
-                    <small>{t("reports.stockReconcileReport.totalSku")}</small>
-                    <strong>{fmt(aggregates.length)}</strong>
-                  </span>
-                </div>
-              </header>
-              <div className="chart-wrap">
-                <div className="chart-legend">
-                  <button
-                    className="legend-button"
-                    type="button"
-                    aria-pressed={series.match}
-                    onClick={() =>
-                      setSeries((current) => ({
-                        ...current,
-                        match: !current.match,
-                      }))
-                    }
-                  >
-                    <span
-                      className="legend-dot"
-                      style={
-                        { "--legend": "var(--wms-success)" } as CSSProperties
-                      }
-                      aria-hidden="true"
-                    />
-                    {t("reports.stockReconcileReport.legendMatched", {
-                      count: fmt(matchedCount),
-                    })}
-                  </button>
-                  <button
-                    className="legend-button"
-                    type="button"
-                    aria-pressed={series.mismatch}
-                    onClick={() =>
-                      setSeries((current) => ({
-                        ...current,
-                        mismatch: !current.mismatch,
-                      }))
-                    }
-                  >
-                    <span
-                      className="legend-dot"
-                      style={
-                        { "--legend": "var(--wms-error)" } as CSSProperties
-                      }
-                      aria-hidden="true"
-                    />
-                    {t("reports.stockReconcileReport.legendMismatch", {
-                      count: fmt(mismatchedCount),
-                    })}
-                  </button>
-                </div>
-                <div className="chart-plot">
-                  <svg
-                    className="chart-svg"
-                    viewBox="0 0 360 228"
-                    role="img"
-                    aria-label={t("reports.stockReconcileReport.donutAria", {
-                      matched: fmt(shownMatched),
-                      mismatched: fmt(shownMismatched),
-                    })}
-                  >
-                    <circle
-                      className="chart-donut-track"
-                      cx="180"
-                      cy="112"
-                      r="66"
-                      fill="none"
-                      strokeWidth="22"
-                    />
-                    <circle
-                      className="chart-donut-match"
-                      cx="180"
-                      cy="112"
-                      r="66"
-                      fill="none"
-                      strokeWidth="22"
-                      strokeDasharray={`${matchArc} ${DONUT_CIRCUMFERENCE}`}
-                      strokeLinecap="butt"
-                      transform="rotate(-90 180 112)"
-                    />
-                    <circle
-                      className="chart-donut-mismatch"
-                      cx="180"
-                      cy="112"
-                      r="66"
-                      fill="none"
-                      strokeWidth="22"
-                      strokeDasharray={`${mismatchArc} ${DONUT_CIRCUMFERENCE}`}
-                      strokeDashoffset={`-${matchArc}`}
-                      strokeLinecap="butt"
-                      transform="rotate(-90 180 112)"
-                    />
-                    <text
-                      className="chart-donut-total"
-                      x="180"
-                      y="106"
-                      textAnchor="middle"
-                    >
-                      {fmt(donutTotal)}
-                    </text>
-                    <text
-                      x="180"
-                      y="128"
-                      textAnchor="middle"
-                      className="chart-axis-label"
-                    >
-                      {t("reports.stockReconcileReport.skuChecked")}
-                    </text>
-                  </svg>
-                </div>
-              </div>
-              <details className="chart-table">
-                <summary>{t("reports.stockReconcileReport.altTable")}</summary>
-                <table>
-                  <thead>
-                    <tr>
-                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
-                      <th>{t("reports.stockReconcileReport.colStatus")}</th>
-                      <th>{t("reports.stockReconcileReport.colSkuCount")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="stt-col">1</td>
-                      <td>{t("reports.stockReconcileReport.matched")}</td>
-                      <td>{fmt(matchedCount)}</td>
-                    </tr>
-                    <tr>
-                      <td className="stt-col">2</td>
-                      <td>{t("reports.stockReconcileReport.mismatch")}</td>
-                      <td>{fmt(mismatchedCount)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </details>
-            </article>
-          </div>
-        </section>
-
-        {/* ── Top SKU chênh lệch đối soát ───────────────────────────────── */}
-        <section aria-labelledby="rpt02-variance-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("reports.stockReconcileReport.varianceEyebrow")}
-              </span>
-              <h2 id="rpt02-variance-title">
-                {t("reports.stockReconcileReport.varianceTitle")}
-              </h2>
-            </div>
-            <span className="section-meta">
-              {t("reports.stockReconcileReport.varianceMeta")}
-            </span>
-          </div>
-          <article className="card report-table-card">
-            <header className="card-head">
-              <div>
-                <h3>{t("reports.stockReconcileReport.varianceCardTitle")}</h3>
-                <span className="card-subtitle">
-                  {t("reports.stockReconcileReport.varianceCardSubtitle")}
-                </span>
-              </div>
-              {varianceRows.length > 0 ? (
-                <span className="chip chip-error">
-                  {t("reports.stockReconcileReport.mismatchCount", {
-                    count: fmt(varianceRows.length),
-                  })}
-                </span>
-              ) : (
-                <span className="chip chip-success">
-                  {t("reports.stockReconcileReport.noMismatch")}
-                </span>
-              )}
-            </header>
-            <SectionFilterBar
-              state={varianceFilter}
-              label={t("reports.stockReconcileReport.varianceCardTitle")}
-              unit="SKU"
-              data-testid="rpt02-variance-section-filter"
-            />
-            <div className="table-wrap">
-              <table className="report-table">
-                <thead>
-                  <tr>
-                    <th className="stt-col">{t("shared.table.rowNumber")}</th>
-                    <th>{t("reports.stockReconcileReport.colSkuName")}</th>
-                    <th className="num">
-                      {t("reports.stockReconcileReport.colBalance")}
-                    </th>
-                    <th className="num">
-                      {t("reports.stockReconcileReport.colLedgerMovement")}
-                    </th>
-                    <th className="num">
-                      {t("reports.stockReconcileReport.colVariance")}
-                    </th>
-                    <th>{t("reports.stockReconcileReport.colMismatchAt")}</th>
-                    <th>{t("reports.stockReconcileReport.colIncident")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {varianceFilter.rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={7}>
-                        {varianceFilter.active
-                          ? t("reports.stockReconcileReport.emptyFiltered")
-                          : t("reports.stockReconcileReport.varianceEmpty")}
-                      </td>
-                    </tr>
-                  ) : (
-                    varianceWindow.visible.map((item, index) => {
-                      const source = snapshot.rows.find(
-                        (row) =>
-                          row.sku_code === item.code &&
-                          row.reconciliation_status === "MISMATCH",
-                      );
-                      return (
-                        <tr key={item.code}>
-                          <td className="stt-col">{index + 1}</td>
-                          <td>
-                            <span className="sku">
-                              <SkuLink code={item.code} />
-                            </span>
-                            <div className="truncate" title={item.name}>
-                              {item.name === "" ? EMPTY_TEXT : item.name}
-                            </div>
-                          </td>
-                          <td className="num">{fmt(item.balance)}</td>
-                          <td className="num">{fmt(item.ledger)}</td>
-                          <DeltaCell value={item.balance - item.ledger} />
-                          <td>
-                            <span className="chip chip-error">
-                              {checkLabel(item.checks)}
-                            </span>
-                          </td>
-                          <td>
-                            {source?.incident_id
-                              ? `${source.incident_id} · ${
-                                  source.incident_status
-                                    ? businessLabel(
-                                        INCIDENT_STATUS_LABELS,
-                                        source.incident_status,
-                                      )
-                                    : EMPTY_TEXT
-                                }`
-                              : EMPTY_TEXT}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                  <WindowedRowsFooter window={varianceWindow} colSpan={7} />
-                </tbody>
-              </table>
-            </div>
-          </article>
-        </section>
-
-        {/* ── Kiểm soát lượng khả dụng ──────────────────────────────────── */}
-        <section aria-labelledby="rpt02-norm-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("reports.stockReconcileReport.normEyebrow")}
-              </span>
-              <h2 id="rpt02-norm-title">
-                {t("reports.stockReconcileReport.normTitle")}
-              </h2>
-            </div>
-            <span className="section-meta">
-              {t("reports.stockReconcileReport.normMeta")}
-            </span>
-          </div>
-          <article className="card report-table-card">
-            <header className="card-head">
-              <div>
-                <h3>{t("reports.stockReconcileReport.normCardTitle")}</h3>
-                <span className="card-subtitle">
-                  {t("reports.stockReconcileReport.normCardSubtitle")}
-                </span>
-              </div>
-              {belowMinCount > 0 ? (
-                <span className="chip chip-warning">
-                  {t("reports.stockReconcileReport.belowMinCount", {
-                    count: fmt(belowMinCount),
-                  })}
-                </span>
-              ) : (
-                <span className="chip chip-success">
-                  {t("reports.stockReconcileReport.noBelowMin")}
-                </span>
-              )}
-            </header>
-            <SectionFilterBar
-              state={normFilter}
-              label={t("reports.stockReconcileReport.normCardTitle")}
-              unit="SKU"
-              data-testid="rpt02-norm-section-filter"
-            />
-            <div className="table-wrap">
-              <table className="report-table">
-                <thead>
-                  <tr>
-                    <th className="stt-col">{t("shared.table.rowNumber")}</th>
-                    <th>{t("reports.stockReconcileReport.colSkuName")}</th>
-                    <th>{t("reports.stockReconcileReport.colKind")}</th>
-                    <th className="num">
-                      {t("reports.stockReconcileReport.colAvailableQty")}
-                    </th>
-                    <th className="num">
-                      {t("reports.stockReconcileReport.colMin")}
-                    </th>
-                    <th className="num">
-                      {t("reports.stockReconcileReport.colMax")}
-                    </th>
-                    <th className="num">
-                      {t("reports.stockReconcileReport.colVariance")}
-                    </th>
-                    <th>{t("reports.stockReconcileReport.colStatus")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {normFilter.rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={8}>
-                        {normFilter.active
-                          ? t("reports.stockReconcileReport.emptyFiltered")
-                          : t("reports.stockReconcileReport.normEmpty")}
-                      </td>
-                    </tr>
-                  ) : (
-                    normWindow.visible.map((row, index) => (
-                      <tr key={row.code}>
-                        <td className="stt-col">{index + 1}</td>
-                        <td>
-                          <span className="sku">{row.code}</span>
-                          <div className="truncate" title={row.name}>
-                            {row.name === "" ? EMPTY_TEXT : row.name}
-                          </div>
-                        </td>
-                        <td>
-                          {row.kind === "" ? EMPTY_TEXT : LABELS[row.kind]}
-                        </td>
-                        <td className="num">{fmt(row.available)}</td>
-                        <td className="num">
-                          {row.min === null ? EMPTY_TEXT : fmt(row.min)}
-                        </td>
-                        <td className="num">
-                          {row.max === null ? EMPTY_TEXT : fmt(row.max)}
-                        </td>
-                        {row.gap === null ? (
-                          <td className="num">{EMPTY_TEXT}</td>
-                        ) : (
-                          <DeltaCell value={row.gap} />
-                        )}
-                        <td>
-                          <NormStatusChip state={row.state} />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                  <WindowedRowsFooter window={normWindow} colSpan={8} />
-                </tbody>
-              </table>
-            </div>
-          </article>
-        </section>
-
-        {/* ── Chi tiết tồn kho & đối soát ───────────────────────────────── */}
-        <section aria-labelledby="rpt02-detail-title">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t("reports.stockReconcileReport.detailEyebrow")}
-              </span>
-              <h2 id="rpt02-detail-title">
-                {t("reports.stockReconcileReport.detailTitle")}
-              </h2>
-            </div>
-            <span className="section-meta">
-              {t("reports.stockReconcileReport.detailMeta", {
-                count: fmt(rowsInScope.length),
-              })}
-            </span>
-          </div>
-          <article className="card report-table-card">
-            <header className="card-head">
-              <div>
-                <h3>{t("reports.stockReconcileReport.detailCardTitle")}</h3>
-                <span className="card-subtitle">
-                  {t("reports.stockReconcileReport.detailCardSubtitle")}
-                </span>
-              </div>
-              <div
-                className="report-view-tabs"
-                role="tablist"
-                aria-label={t("reports.stockReconcileReport.viewAria")}
               >
                 <button
-                  ref={tableTabRef}
-                  id="rpt02-tab-table"
-                  className={`button ${shownView === "table" ? "button-primary" : "button-ghost"}`}
                   type="button"
-                  role="tab"
-                  aria-selected={shownView === "table"}
-                  aria-controls="rpt02-panel-table"
-                  tabIndex={shownView === "table" ? 0 : -1}
-                  onClick={() => setView("table")}
-                  onKeyDown={onTabKeyDown}
+                  className="rpt02-export"
+                  onClick={exportReport}
+                  disabled={!canExport || allRows.length === 0 || updating}
                 >
-                  <VuexyDemoIcon name="chart-column-big" />
-                  {t("reports.stockReconcileReport.viewTable")}
+                  <Icon name="arrow-right" /> Xuất Excel
                 </button>
-                <button
-                  ref={snapshotTabRef}
-                  id="rpt02-tab-snapshot"
-                  className={`button ${shownView === "snapshot" ? "button-primary" : "button-ghost"}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={shownView === "snapshot"}
-                  aria-controls="rpt02-panel-snapshot"
-                  tabIndex={shownView === "snapshot" ? 0 : -1}
-                  onClick={() => setView("snapshot")}
-                  onKeyDown={onTabKeyDown}
-                >
-                  <VuexyDemoIcon name="grid-2x2-plus" />
-                  {t("reports.stockReconcileReport.viewSnapshot")}
-                </button>
-              </div>
-            </header>
-
-            <SectionFilterBar
-              state={detailFilter}
-              label={t("reports.stockReconcileReport.detailCardTitle")}
-              data-testid="rpt02-detail-section-filter"
-            />
-
-            <div
-              id="rpt02-panel-table"
-              role="tabpanel"
-              aria-labelledby="rpt02-tab-table"
-              hidden={deferredView !== "table"}
-            >
-              <div className="table-wrap">
-                <table className="report-table">
-                  <thead>
-                    <tr>
-                      <th className="stt-col">{t("shared.table.rowNumber")}</th>
-                      <th>{t("reports.stockReconcileReport.colSkuKind")}</th>
-                      <th>
-                        {t("reports.stockReconcileReport.colStockStatus")}
-                      </th>
-                      <th className="num">
-                        {t("reports.stockReconcileReport.colBalanceQty")}
-                      </th>
-                      <th className="num">
-                        {t("reports.stockReconcileReport.colLedgerQty")}
-                      </th>
-                      <th className="num">
-                        {t("reports.stockReconcileReport.colVariance")}
-                      </th>
-                      <th className="num">
-                        {t("reports.stockReconcileReport.colAvailableQty")}
-                      </th>
-                      <th>
-                        {t("reports.stockReconcileReport.colReconcileStatus")}
-                      </th>
-                      <th>{t("reports.stockReconcileReport.colActions")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detailFilter.rows.length === 0 ? (
-                      <tr>
-                        <td colSpan={9}>
-                          {detailFilter.active
-                            ? t(
-                                "reports.stockReconcileReport.detailEmptyFiltered",
-                              )
-                            : t("reports.stockReconcileReport.detailEmpty")}
-                        </td>
-                      </tr>
-                    ) : (
-                      detailWindow.visible.map((row, index) => (
-                        <tr key={row.drillKey}>
-                          <td className="stt-col">{index + 1}</td>
-                          <td>
-                            <span className="sku">
-                              <SkuLink code={row.sku_code} />
-                            </span>
-                            <div className="truncate" title={row.sku_name}>
-                              {row.sku_name === "" ? EMPTY_TEXT : row.sku_name}{" "}
-                              ·{" "}
-                              {row.item_kind === ""
-                                ? EMPTY_TEXT
-                                : LABELS[row.item_kind]}
-                            </div>
-                          </td>
-                          <td>
-                            <span
-                              className={stockStatusChipClass(row.stock_status)}
-                            >
-                              {LABELS[row.stock_status] ?? row.stock_status}
-                            </span>
-                          </td>
-                          <td className="num">{fmt(row.balance_qty)}</td>
-                          <td className="num">{fmt(row.ledger_qty)}</td>
-                          <DeltaCell value={row.delta_qty} />
-                          <td className="num">{fmt(row.available_qty)}</td>
-                          <td>
-                            <ReconcileChip status={row.reconciliation_status} />
-                          </td>
-                          <td>
-                            <button
-                              className="button action-button"
-                              type="button"
-                              aria-label={t(
-                                "reports.stockReconcileReport.viewEvidenceAria",
-                                {
-                                  sku: row.sku_code,
-                                },
-                              )}
-                              onClick={(event) =>
-                                openDrill(row, event.currentTarget)
-                              }
-                            >
-                              <VuexyDemoIcon name="eye" />
-                              <span>Xem</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                    <WindowedRowsFooter window={detailWindow} colSpan={9} />
-                  </tbody>
-                </table>
+              </span>
+              <div className="rpt02-warehouse">
+                <span aria-hidden="true">
+                  <Icon name="warehouse" />
+                </span>
+                <div>
+                  <strong>Kho Hoa Nam</strong>
+                  <small>
+                    <i /> Đang hoạt động
+                  </small>
+                </div>
               </div>
             </div>
+          </header>
 
-            <div
-              id="rpt02-panel-snapshot"
-              role="tabpanel"
-              aria-labelledby="rpt02-tab-snapshot"
-              hidden={deferredView !== "snapshot"}
-            >
-              <div className="report-snapshot-grid">
-                {detailWindow.visible.map((row, index) => (
-                  <article className="report-slice" key={row.drillKey}>
-                    <div className="report-slice-head">
-                      <div>
-                        <span className="stt-badge">
-                          {t("shared.table.rowNumber")} {index + 1}
-                        </span>
-                        <strong>
-                          {row.sku_code} ·{" "}
-                          {row.sku_name === "" ? EMPTY_TEXT : row.sku_name}
-                        </strong>
-                        <span>
-                          {row.item_kind === ""
-                            ? EMPTY_TEXT
-                            : LABELS[row.item_kind]}{" "}
-                          · {LABELS[row.stock_status] ?? row.stock_status}
-                        </span>
-                      </div>
-                      <ReconcileChip status={row.reconciliation_status} />
-                    </div>
-                    <dl className="report-slice-values">
-                      <div>
-                        <dt>{t("reports.stockReconcileReport.colBalance")}</dt>
-                        <dd>{fmt(row.balance_qty)}</dd>
-                      </div>
-                      <div>
-                        <dt>{t("reports.stockReconcileReport.cardLedger")}</dt>
-                        <dd>{fmt(row.ledger_qty)}</dd>
-                      </div>
-                      <div>
-                        <dt>{t("reports.stockReconcileReport.cardDelta")}</dt>
-                        <dd>{signed(row.delta_qty)}</dd>
-                      </div>
-                      <div>
-                        <dt>
-                          {t("reports.stockReconcileReport.cardAvailable")}
-                        </dt>
-                        <dd>{fmt(row.available_qty)}</dd>
-                      </div>
-                    </dl>
-                    <button
-                      className="button action-button"
-                      type="button"
-                      aria-label={t(
-                        "reports.stockReconcileReport.viewEvidenceAria",
-                        {
-                          sku: row.sku_code,
-                        },
-                      )}
-                      onClick={(event) => openDrill(row, event.currentTarget)}
-                    >
-                      <VuexyDemoIcon name="eye" />
-                      <span>Xem</span>
-                    </button>
-                  </article>
-                ))}
+          {showSuccess ? (
+            <aside className="rpt02-notice rpt02-notice--success" role="status">
+              <span className="rpt02-notice__check" aria-hidden="true" />
+              <div>
+                <strong>Đã cập nhật báo cáo</strong>
+                <p>Dữ liệu đã được làm mới.</p>
               </div>
-              {detailWindow.hasMore ? (
-                <div style={{ textAlign: "center", padding: 12 }}>
-                  <span style={{ marginRight: 12 }}>
-                    {t("shared.table.showingSome", {
-                      shown: detailWindow.shown,
-                      total: detailWindow.total,
-                    })}
-                  </span>
-                  <UiButton
-                    size="small"
-                    appearance="outlined"
-                    onClick={detailWindow.showMore}
-                  >
-                    {t("shared.table.showMore")}
-                  </UiButton>
-                </div>
+              <button
+                type="button"
+                aria-label="Đóng thông báo"
+                onClick={() => setShowSuccess(false)}
+              >
+                <Icon name="x" />
+              </button>
+            </aside>
+          ) : null}
+
+          {!canExport ? (
+            <aside className="rpt02-notice rpt02-notice--info" role="status">
+              <span aria-hidden="true">
+                <Icon name="lock" />
+              </span>
+              <div>
+                <strong>Chế độ chỉ xem</strong>
+                <p>
+                  Bạn có quyền xem và tra cứu báo cáo. Tài khoản chưa được cấp
+                  quyền xuất Excel.
+                </p>
+              </div>
+            </aside>
+          ) : null}
+
+          <section className="rpt02-filter" aria-label="Bộ lọc báo cáo">
+            <label
+              className={`rpt02-field rpt02-field--date${invalidRange ? " is-invalid" : ""}`}
+            >
+              <span>Khoảng thời gian</span>
+              <UiVuexyDateRangePicker
+                className="rpt02-date-range"
+                popupClassName="rpt02-date-popup"
+                value={datePickerValue(draft)}
+                onChange={(value) =>
+                  setDraft((current) => ({
+                    ...current,
+                    from: value?.[0]?.format(ISO_DATE) ?? "",
+                    to: value?.[1]?.format(ISO_DATE) ?? "",
+                  }))
+                }
+                maxDate={dayjs().startOf("day")}
+                aria-label="Khoảng thời gian báo cáo tồn kho"
+                disabled={updating || refreshing}
+              />
+              {invalidRange ? (
+                <small>Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.</small>
               ) : null}
-            </div>
-          </article>
-        </section>
-      </div>
+            </label>
 
-      {drillRow ? (
-        <EvidenceModal titleId="rpt02-detail-modal-title" onClose={closeDrill}>
-          <div className="modal-head">
-            <div>
-              <div className="eyebrow modal-eyebrow">
-                {t("reports.stockReconcileReport.modalEyebrow")}
-              </div>
-              <h2 id="rpt02-detail-modal-title">
-                {drillRow.sku_code} ·{" "}
-                {drillRow.sku_name === "" ? EMPTY_TEXT : drillRow.sku_name}
-              </h2>
-              <ReconcileChip status={drillRow.reconciliation_status} />
+            <div className="rpt02-field">
+              <span>Kho</span>
+              <UiSelect
+                fullWidth
+                aria-label="Kho"
+                value={draft.warehouse}
+                placeholder="Tất cả kho"
+                options={warehouseOptions.map((warehouse) => ({
+                  value: warehouse,
+                  label: warehouse,
+                }))}
+                onChange={(warehouse) =>
+                  setDraft((current) => ({ ...current, warehouse }))
+                }
+                disabled={updating || refreshing}
+              />
             </div>
-            <ModalCloseButton onClose={closeDrill} />
-          </div>
-          <div className="modal-grid">
-            <div>
-              <div className="meta-label">
-                {t("reports.stockReconcileReport.colBalanceQty")}
-              </div>
-              <div className="meta-value">{fmt(drillRow.balance_qty)}</div>
+
+            <div className="rpt02-field">
+              <span>Nhóm hàng / SKU</span>
+              <UiSelect
+                fullWidth
+                aria-label="Nhóm hàng / SKU"
+                value={draft.kind}
+                placeholder="Tất cả nhóm hàng"
+                options={[
+                  { value: "PRODUCT", label: "Sản phẩm" },
+                  { value: "COMPONENT", label: "Linh kiện" },
+                ]}
+                onChange={(kind) =>
+                  setDraft((current) => ({ ...current, kind }))
+                }
+                disabled={updating || refreshing}
+              />
             </div>
-            <div>
-              <div className="meta-label">
-                {t("reports.stockReconcileReport.colLedgerQty")}
-              </div>
-              <div className="meta-value">{fmt(drillRow.ledger_qty)}</div>
+
+            <div className="rpt02-field">
+              <span>Trạng thái đối soát</span>
+              <UiSelect
+                fullWidth
+                aria-label="Trạng thái đối soát"
+                value={draft.reconcile}
+                placeholder="Tất cả trạng thái"
+                options={[
+                  { value: "MATCH", label: "Khớp" },
+                  { value: "MISMATCH", label: "Cần kiểm tra" },
+                ]}
+                onChange={(reconcile) =>
+                  setDraft((current) => ({ ...current, reconcile }))
+                }
+                disabled={updating || refreshing}
+              />
             </div>
-            <div>
-              <div className="meta-label">
-                {t("reports.stockReconcileReport.colAvailableQty")}
-              </div>
-              <div className="meta-value">{fmt(drillRow.available_qty)}</div>
+
+            <div className="rpt02-filter__actions">
+              <button
+                className="rpt02-button rpt02-button--primary"
+                type="button"
+                onClick={applyFilters}
+                disabled={invalidRange || updating || refreshing}
+              >
+                <Icon name={refreshing ? "loader-circle" : "search"} />
+                Áp dụng
+              </button>
+              <button
+                className="rpt02-button rpt02-button--ghost"
+                type="button"
+                onClick={resetFilters}
+                disabled={updating || refreshing}
+              >
+                Đặt lại
+              </button>
             </div>
-          </div>
-          <div className="formula">
-            {t("reports.stockReconcileReport.formulaLine", {
-              balance: fmt(drillRow.balance_qty),
-              ledger: fmt(drillRow.ledger_qty),
-              delta: signed(drillRow.delta_qty),
-            })}
-            <br />
-            <small>
-              {t("reports.stockReconcileReport.checkLine", {
-                checks: checkLabel(drillRow.mismatch_checks),
-                incident: drillRow.incident_id ?? EMPTY_TEXT,
-              })}
-            </small>
-          </div>
-          <h3>{t("reports.stockReconcileReport.movementsTitle")}</h3>
-          <div className="modal-events">
-            {movementsLoading ? (
-              <div>
-                <span>
-                  {t("reports.stockReconcileReport.movementsLoading")}
-                </span>
-              </div>
-            ) : movementEvents.length === 0 ? (
-              <div>
-                <span>{t("reports.stockReconcileReport.movementsEmpty")}</span>
-              </div>
-            ) : (
-              movementEvents.map((event, index) => (
-                <div key={event.id}>
-                  <strong>
-                    {index + 1}.{" "}
-                    {MOVEMENT_LABELS[event.movement_type] ??
-                      event.movement_type}
-                  </strong>
-                  <span>
-                    {event.occurred_at === ""
-                      ? EMPTY_TEXT
-                      : dayjs(event.occurred_at.replace(" ", "T")).format(
-                          "DD-MM-YYYY HH:mm",
-                        )}{" "}
-                    ·{" "}
-                    {event.warehouse_code === ""
-                      ? EMPTY_TEXT
-                      : event.warehouse_code}
-                  </span>
-                  <b>{signed(event.qty_delta)}</b>
-                </div>
-              ))
-            )}
-          </div>
-        </EvidenceModal>
-      ) : null}
-    </div>
+            <p className="rpt02-filter__note">
+              <Icon name="file-clock" />
+              {Math.max(
+                1,
+                dayjs(applied.to).diff(dayjs(applied.from), "day") + 1,
+              )}{" "}
+              ngày gần nhất · Múi giờ Việt Nam
+            </p>
+          </section>
+
+          {loading ? (
+            <SkeletonReport />
+          ) : error ? (
+            <EmptyState
+              icon={status === 500 ? "triangle-alert" : "package-search"}
+              title={
+                status === 500
+                  ? "Không thể xử lý yêu cầu báo cáo"
+                  : "Không thể tải báo cáo"
+              }
+              copy={
+                status === 500
+                  ? "Máy chủ gặp sự cố khi xử lý dữ liệu. Vui lòng thử lại sau."
+                  : "Đã xảy ra lỗi khi tải dữ liệu. Kiểm tra kết nối và thử lại."
+              }
+              code={
+                status === 500
+                  ? "Mã lỗi 500"
+                  : `Kỳ yêu cầu: ${dayjs(applied.from).format("DD/MM/YYYY")} – ${dayjs(applied.to).format("DD/MM/YYYY")}`
+              }
+              primaryLabel="Thử lại"
+              onPrimary={refresh}
+              secondaryLabel="Về Tổng quan"
+              onSecondary={home}
+              tone="danger"
+            />
+          ) : allRows.length === 0 ? (
+            <EmptyState
+              icon="inbox"
+              title="Chưa có dữ liệu trong khoảng thời gian này"
+              copy="Chưa phát sinh giao dịch tồn kho phù hợp với bộ lọc đã chọn."
+              code={`${dayjs(applied.from).format("DD/MM/YYYY")} – ${dayjs(applied.to).format("DD/MM/YYYY")}`}
+              primaryLabel="Đổi khoảng thời gian"
+              onPrimary={() => {
+                const input = document.querySelector<HTMLElement>(
+                  ".rpt02-date-range button, .rpt02-date-range input",
+                );
+                input?.focus();
+                input?.click();
+              }}
+              secondaryLabel="Đặt lại bộ lọc"
+              onSecondary={resetFilters}
+            />
+          ) : (
+            <>
+              <h2 className="rpt02-sr-only">Kiểm soát lượng khả dụng</h2>
+              <section
+                className="rpt02-kpi-grid"
+                aria-label="Tổng quan tồn kho"
+              >
+                <KpiCard
+                  label="Tồn đầu kỳ"
+                  value={quantity(summary.opening)}
+                  note="Sản phẩm"
+                  icon="box"
+                  tone="blue"
+                />
+                <KpiCard
+                  label="Tổng nhập"
+                  value={signed(summary.receiptNet)}
+                  note="Sản phẩm"
+                  icon="down"
+                  tone="green"
+                />
+                <KpiCard
+                  label="Xuất sản phẩm"
+                  value={signed(-summary.issueNet)}
+                  note="Sản phẩm"
+                  icon="up"
+                  tone="red"
+                />
+                <KpiCard
+                  label="Xuất linh kiện BH"
+                  value={signed(-summary.componentNet)}
+                  note="Sản phẩm"
+                  icon="wrench"
+                  tone="orange"
+                />
+                <KpiCard
+                  label="Hoàn tác"
+                  value={signed(summary.reversalUnlinked)}
+                  note="Sản phẩm"
+                  icon="undo"
+                  tone="green"
+                />
+                <KpiCard
+                  label="Tồn cuối kỳ"
+                  value={quantity(summary.closing)}
+                  note="Sản phẩm"
+                  icon="boxes"
+                  tone="blue"
+                />
+              </section>
+
+              <section className="rpt02-dashboard">
+                <article className="rpt02-panel chart-card rpt02-chart-card">
+                  <header className="rpt02-panel__head">
+                    <div>
+                      <h2>Biến động tồn kho</h2>
+                      <p>
+                        {dayjs(applied.from).format("DD/MM")} –{" "}
+                        {dayjs(applied.to).format("DD/MM/YYYY")} · Đơn vị tồn
+                      </p>
+                    </div>
+                    <div className="rpt02-legend" aria-label="Chú giải biểu đồ">
+                      <span>
+                        <i className="is-green" />
+                        Nhập
+                      </span>
+                      <span>
+                        <i className="is-orange" />
+                        Xuất SP
+                      </span>
+                      <span>
+                        <i className="is-blue" />
+                        Tồn cuối ngày
+                      </span>
+                    </div>
+                  </header>
+                  <MovementChart points={flow.snapshot.daily} />
+                </article>
+
+                <article className="rpt02-panel rpt02-reconcile">
+                  <header className="rpt02-panel__head">
+                    <div>
+                      <h2>Đối soát cuối kỳ</h2>
+                      <p>{dayjs(applied.to).format("DD/MM/YYYY")}</p>
+                    </div>
+                  </header>
+                  <dl className="rpt02-reconcile__totals">
+                    <div>
+                      <dt>Tồn hệ thống</dt>
+                      <dd>{quantity(systemTotal)}</dd>
+                    </div>
+                    <div>
+                      <dt>Tồn thực tế</dt>
+                      <dd>{quantity(actualTotal)}</dd>
+                    </div>
+                    <div className={deltaTotal === 0 ? "is-ok" : "is-warning"}>
+                      <dt>Chênh lệch</dt>
+                      <dd>{signed(deltaTotal)}</dd>
+                    </div>
+                    <div
+                      className={
+                        mismatches.length === 0 ? "is-ok" : "is-warning"
+                      }
+                    >
+                      <dt>{mismatches.length} SKU cần kiểm tra</dt>
+                      <dd className="rpt02-reconcile__formula">
+                        Thực tế − Hệ thống
+                      </dd>
+                    </div>
+                  </dl>
+
+                  {mismatches.length > 0 ? (
+                    <div className="rpt02-contract-table" aria-hidden="true">
+                      <table aria-label="SKU cần làm rõ">
+                        <thead>
+                          <tr>
+                            <th>SKU</th>
+                            <th>Lệch ở</th>
+                            <th>Chênh lệch</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mismatches.map((row) => (
+                            <tr key={`${row.key}-reason`}>
+                              <td>{row.skuCode}</td>
+                              <td>{row.checks.map(checkLabelOf).join(", ")}</td>
+                              <td>{quantity(row.delta)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
+
+                  <div className="rpt02-reconcile__list">
+                    <strong>Chi tiết biến động</strong>
+                    <span>
+                      <i>Tồn đầu</i>
+                      <b>{quantity(summary.opening)}</b>
+                    </span>
+                    <span>
+                      <i>Nhập</i>
+                      <b className="is-positive">
+                        {signed(summary.receiptNet)}
+                      </b>
+                    </span>
+                    <span>
+                      <i>Xuất SP</i>
+                      <b className="is-negative">{signed(-summary.issueNet)}</b>
+                    </span>
+                    <span>
+                      <i>Xuất BH</i>
+                      <b className="is-negative">
+                        {signed(-summary.componentNet)}
+                      </b>
+                    </span>
+                    <span>
+                      <i>Hoàn tác</i>
+                      <b className="is-positive">
+                        {signed(summary.reversalUnlinked)}
+                      </b>
+                    </span>
+                    <span>
+                      <i>Tồn cuối</i>
+                      <b>{quantity(summary.closing)}</b>
+                    </span>
+                  </div>
+                  <button
+                    className="rpt02-reconcile__link"
+                    type="button"
+                    onClick={goToMismatches}
+                  >
+                    Xem SKU cần kiểm tra <Icon name="arrow-right" />
+                  </button>
+                </article>
+
+                <section
+                  className="rpt02-panel rpt02-table-card"
+                  ref={tableRef}
+                >
+                  <header className="rpt02-table-card__head">
+                    <div>
+                      <h2>Chi tiết tồn kho &amp; đối soát</h2>
+                      <p>
+                        {allRows.length} SKU trong kỳ ·{" "}
+                        <span>{mismatches.length} SKU lệch</span>
+                      </p>
+                    </div>
+                    <SearchInput
+                      value={query}
+                      onChange={(value) => {
+                        setQuery(value);
+                        setPage(1);
+                      }}
+                      width="100%"
+                      aria-label="Tìm theo mã hoặc tên SKU"
+                      placeholder="Tìm mã hoặc tên SKU..."
+                    />
+                  </header>
+
+                  {filteredRows.length === 0 ? (
+                    <div className="rpt02-no-result" role="status">
+                      <span className="rpt02-state__icon" aria-hidden="true">
+                        <Icon name="search" />
+                      </span>
+                      <h3>Không tìm thấy SKU phù hợp</h3>
+                      <p>Thử từ khóa khác hoặc xóa nội dung tìm kiếm.</p>
+                      <button
+                        className="rpt02-button rpt02-button--ghost"
+                        type="button"
+                        onClick={() => setQuery("")}
+                      >
+                        Xóa tìm kiếm
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="rpt02-table-scroll">
+                        <table className="report-table">
+                          <thead>
+                            <tr>
+                              <th>SKU</th>
+                              <th>Tên hàng</th>
+                              <th className="num">Tồn đầu</th>
+                              <th className="num">Nhập</th>
+                              <th className="num">Xuất SP</th>
+                              <th className="num">Xuất LK BH</th>
+                              <th className="num">Hoàn tác</th>
+                              <th className="num">Tồn cuối</th>
+                              <th className="num">Thực tế</th>
+                              <th className="num">Chênh lệch</th>
+                              <th>Đối soát</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {visibleRows.map((row) => (
+                              <tr key={row.key}>
+                                <td>
+                                  <strong>{row.skuCode}</strong>
+                                  <small>
+                                    {row.kind === "COMPONENT"
+                                      ? "Linh kiện"
+                                      : "Sản phẩm"}
+                                  </small>
+                                </td>
+                                <td>{row.skuName || "Chưa có tên hàng"}</td>
+                                <td className="num">{quantity(row.opening)}</td>
+                                <td className="num is-positive">
+                                  {signed(row.inbound)}
+                                </td>
+                                <td className="num is-negative">
+                                  {signed(-row.productOutbound)}
+                                </td>
+                                <td className="num is-negative">
+                                  {signed(-row.componentOutbound)}
+                                </td>
+                                <td className="num">{signed(row.reversal)}</td>
+                                <td className="num">
+                                  <strong>{quantity(row.closing)}</strong>
+                                </td>
+                                <td className="num">{quantity(row.actual)}</td>
+                                <td
+                                  className={`num${row.delta === 0 ? "" : " is-alert"}`}
+                                >
+                                  {signed(row.delta)}
+                                </td>
+                                <td>
+                                  <span
+                                    className={`rpt02-row-status${row.mismatch ? " is-warning" : ""}`}
+                                  >
+                                    {row.mismatch ? "Cần kiểm tra" : "Khớp"}
+                                  </span>
+                                  {row.checks.length > 0 ? (
+                                    <span className="rpt02-checks">
+                                      {row.checks.map(checkLabelOf).join(", ")}
+                                    </span>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <footer className="rpt02-pagination">
+                        <span>
+                          Hiển thị {(currentPage - 1) * PAGE_SIZE + 1}–
+                          {Math.min(
+                            currentPage * PAGE_SIZE,
+                            filteredRows.length,
+                          )}{" "}
+                          trong {filteredRows.length} SKU
+                        </span>
+                        <div>
+                          <button
+                            type="button"
+                            aria-label="Trang trước"
+                            onClick={() =>
+                              setPage((value) => Math.max(1, value - 1))
+                            }
+                            disabled={currentPage === 1}
+                          >
+                            <Icon name="chevron-left" />
+                          </button>
+                          <span>
+                            Trang {currentPage} / {totalPages}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label="Trang sau"
+                            onClick={() =>
+                              setPage((value) =>
+                                Math.min(totalPages, value + 1),
+                              )
+                            }
+                            disabled={currentPage === totalPages}
+                          >
+                            <Icon name="chevron-right" />
+                          </button>
+                        </div>
+                      </footer>
+                    </>
+                  )}
+                </section>
+              </section>
+            </>
+          )}
+        </>
+      )}
+    </main>
   );
 }

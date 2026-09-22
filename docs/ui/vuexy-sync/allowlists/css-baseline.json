@@ -18,6 +18,9 @@
     "src/modules/reports/stock-reconcile/StockReconcileReport.tsx": [
       "./stock-reconcile-report.css"
     ],
+    "src/modules/reports/movement-trace/MovementTraceReport.tsx": [
+      "./traceability-report.css"
+    ],
     "src/modules/reports/inventory-flow/InventoryFlowXntReport.tsx": [
       "./inventory-flow-report.css"
     ],

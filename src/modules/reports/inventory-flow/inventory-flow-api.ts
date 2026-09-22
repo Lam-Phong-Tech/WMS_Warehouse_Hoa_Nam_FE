@@ -127,6 +127,8 @@ export type FlowDocument = {
   warehouse_code: string;
   /** Đối tác/nguồn của chứng từ; với phiếu hoàn tác là mã chứng từ gốc. */
   counterpart: string;
+  /** Tên người tạo do API join sẵn; không dùng UUID làm nhãn hiển thị. */
+  created_by_name: string;
   /** Mốc ghi sổ; rỗng với chứng từ chưa Post (nháp / đang quét). */
   posted_at: string;
   /** Ngày chứng từ — mốc để cắt kỳ khi chứng từ chưa có `posted_at`. */
@@ -522,6 +524,7 @@ export function useInventoryFlowSnapshot({
         status: text(row.status, ""),
         warehouse_code: text(row.warehouse_code, ""),
         counterpart: text(row.counterpart, ""),
+        created_by_name: text(row.created_by_name ?? row.creator_name, ""),
         posted_at: text(row.posted_at, ""),
         document_date: text(row.document_date, ""),
         drillKey: text(lines[0]?.product_code, ""),
@@ -549,6 +552,10 @@ export function useInventoryFlowSnapshot({
         warehouse_code: text(row.warehouse_code, ""),
         // Mockup in mã chứng từ GỐC ở dòng đối tác của thẻ hoàn tác.
         counterpart: text(row.reference_document_code, ""),
+        created_by_name: text(
+          row.created_by_name ?? row.creator_name ?? row.posted_by_name,
+          "",
+        ),
         posted_at: postedAt,
         document_date: text(row.created_at, ""),
         drillKey: skuOfDocumentId.get(documentNo) ?? "",

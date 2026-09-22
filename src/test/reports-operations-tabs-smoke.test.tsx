@@ -52,7 +52,12 @@ import WarrantyReportPage from "@/modules/reports/pages/WarrantyReportPage";
 import RecipientReportPage from "@/modules/reports/pages/RecipientReportPage";
 import PendingEvidenceReportPage from "@/modules/reports/pages/PendingEvidenceReportPage";
 
-const TODAY = "2026-08-20";
+const runtimeToday = new Date();
+const TODAY = [
+  runtimeToday.getFullYear(),
+  String(runtimeToday.getMonth() + 1).padStart(2, "0"),
+  String(runtimeToday.getDate()).padStart(2, "0"),
+].join("-");
 
 /** Payload theo đúng shape của từng endpoint báo cáo BE đang phục vụ. */
 const PAYLOAD: Record<string, unknown> = {
@@ -449,6 +454,16 @@ describe("Báo cáo vận hành · 9 trang render được với payload thật"
       expect(await screen.findByText(heading)).toBeInTheDocument();
     },
   );
+
+  it("RPT-01 hiển thị người tạo từ lịch sử chứng từ", async () => {
+    renderWithProviders(<InventoryFlowReportPage />, [
+      ROUTES.REPORTS_INVENTORY_FLOW,
+    ]);
+
+    const creator = await screen.findByText("Nguyễn Kho");
+    expect(creator).toBeInTheDocument();
+    expect(creator.closest("td")).toHaveAttribute("data-label", "Người tạo");
+  });
 });
 
 /**

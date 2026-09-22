@@ -374,6 +374,8 @@ export function UiVuexyDateRangePicker({
               <Box
                 component="button"
                 type="button"
+                data-date-tab="start"
+                data-active={activeField === "start"}
                 onClick={() => {
                   setActiveField("start");
                   setPanelMonth((draftStart ?? dayjs()).startOf("month"));
@@ -389,6 +391,8 @@ export function UiVuexyDateRangePicker({
               <Box
                 component="button"
                 type="button"
+                data-date-tab="end"
+                data-active={activeField === "end"}
                 onClick={() => {
                   setActiveField("end");
                   setPanelMonth(
@@ -507,6 +511,10 @@ export function UiVuexyDateRangePicker({
                   <Box
                     key={day.format("YYYY-MM-DD")}
                     role="gridcell"
+                    data-in-range={inRange || undefined}
+                    data-range-edge={
+                      selectedStart ? "start" : selectedEnd ? "end" : undefined
+                    }
                     sx={{
                       py: 0.25,
                       bgcolor: inRange ? S.primarySoft : "transparent",
@@ -599,6 +607,7 @@ export function UiVuexyDateRangePicker({
               <Box
                 component="button"
                 type="button"
+                data-date-action="clear"
                 onClick={clearRange}
                 sx={footerButtonSx}
               >
@@ -608,6 +617,7 @@ export function UiVuexyDateRangePicker({
             <Box
               component="button"
               type="button"
+              data-date-action="cancel"
               onClick={closePicker}
               sx={footerButtonSx}
             >
@@ -616,6 +626,7 @@ export function UiVuexyDateRangePicker({
             <Box
               component="button"
               type="button"
+              data-date-action="apply"
               disabled={!draftStart || !draftEnd}
               onClick={applyRange}
               sx={primaryFooterButtonSx}

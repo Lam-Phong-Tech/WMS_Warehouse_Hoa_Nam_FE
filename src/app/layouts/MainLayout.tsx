@@ -70,6 +70,7 @@ const ROUTES_FULL_BLEED: string[] = [
   ROUTES.REPORTS_STOCK_RECONCILE,
   ROUTES.REPORTS_INVENTORY_FLOW,
   ROUTES.REPORTS_OUTBOUND_FLOW,
+  ROUTES.REPORTS_TRACEABILITY,
   ROUTES.REPORTS_PENDING_EVIDENCE,
 ];
 
@@ -90,6 +91,9 @@ export function MainLayout() {
   // <lg (980): sidebar chuyển sang Drawer overlay + hamburger ở topbar
   // (hợp đồng responsive 360/768/1280 của SRS — không bóp 2 cột trên mobile).
   const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("lg"));
+  const isReferenceTablet = useMediaQuery(
+    "(min-width: 980px) and (max-width: 1365px)",
+  );
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
   const { isLoading: isLoadingProfile } = useMe();
@@ -100,6 +104,13 @@ export function MainLayout() {
   // PEEK: đang thu gọn mà rê chuột/focus vào rail thì sidebar bung TẠM (không
   // ghi nhớ, không xô nội dung). Trạng thái "ghim" vẫn là sidebarCollapsed.
   const [sidebarPeek, setSidebarPeek] = useState(false);
+  const isReferenceFlowReport =
+    location.pathname === ROUTES.REPORTS_INVENTORY_FLOW ||
+    location.pathname === ROUTES.REPORTS_OUTBOUND_FLOW ||
+    location.pathname === ROUTES.REPORTS_STOCK_RECONCILE ||
+    location.pathname === ROUTES.REPORTS_TRACEABILITY;
+  const effectiveSidebarCollapsed =
+    sidebarCollapsed || (isReferenceFlowReport && isReferenceTablet);
 
   // Đổi trang trên mobile → tự đóng drawer điều hướng.
   useEffect(() => {
@@ -193,15 +204,16 @@ export function MainLayout() {
         style={systemShellStyle}
         sidebarClassName="hn-system-sidebar"
         mainClassName={isMapReferenceScreen ? "hn-map-main" : undefined}
-        collapsed={sidebarCollapsed}
-        sidebarWidth={SYSTEM_SIDEBAR_WIDTH}
+        collapsed={effectiveSidebarCollapsed}
+        sidebarWidth={isReferenceFlowReport ? 276 : SYSTEM_SIDEBAR_WIDTH}
+        sidebarCollapsedWidth={isReferenceFlowReport ? 86 : undefined}
         sidebarHidden={!isDesktop}
         peek={sidebarPeek}
         onPeekChange={setSidebarPeek}
         sidebar={
           <SideNav
             // Lúc "he mở", nội dung sidebar hiển thị y như khi đang mở rộng.
-            collapsed={sidebarCollapsed && !sidebarPeek}
+            collapsed={effectiveSidebarCollapsed && !sidebarPeek}
             onExpand={expandSidebar}
             onToggle={toggleSidebar}
           />
