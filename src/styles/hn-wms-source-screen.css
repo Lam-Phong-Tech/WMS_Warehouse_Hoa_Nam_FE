@@ -258,19 +258,19 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   box-shadow: none;
 }
 
-[data-report-screen="RPT-04"] .MuiButton-containedPrimary:not(.Mui-disabled) {
+[data-report-screen="RPT-04"] .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled) {
   background-color: var(--wms-primary);
 }
 
-[data-report-screen="RPT-04"] .MuiButton-containedPrimary:not(.Mui-disabled):hover {
+[data-report-screen="RPT-04"] .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
   background-color: var(--wms-primary-dark);
 }
 
-[data-report-screen="RPT-04"] :is(.MuiButton-outlinedPrimary, .MuiButton-textPrimary):not(.Mui-disabled) {
+[data-report-screen="RPT-04"] :is(.MuiButton-outlined.MuiButton-colorPrimary, .MuiButton-text.MuiButton-colorPrimary):not(.Mui-disabled) {
   color: var(--wms-primary);
 }
 
-[data-report-screen="RPT-04"] .MuiButton-outlinedPrimary:not(.Mui-disabled) {
+[data-report-screen="RPT-04"] .MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled) {
   border-color: var(--wms-primary);
 }
 
@@ -530,40 +530,40 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
  * Use direct RPT-03 values here instead of the app-wide primary token so the
  * screen cannot fall back to Vuexy purple when MUI portal/theme CSS loads later.
  */
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-containedPrimary:not(.Mui-disabled) {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled) {
   border-color: #075d96;
   background: #075d96;
   color: #fff;
   box-shadow: 0 4px 9px rgb(6 86 143 / 15%);
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-containedPrimary:not(.Mui-disabled):hover {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
   border-color: #064f80;
   background: #064f80;
   color: #fff;
   box-shadow: 0 4px 9px rgb(6 86 143 / 18%);
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-outlinedPrimary:not(.Mui-disabled) {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled) {
   border-color: #bcdced;
   background: #f3fbff;
   color: #0e5191;
   box-shadow: none;
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-outlinedPrimary:not(.Mui-disabled):hover {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled):hover {
   border-color: #079de7;
   background: #eefaff;
   color: #07549a;
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-textPrimary:not(.Mui-disabled) {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled) {
   background: transparent;
   color: #07549a;
   box-shadow: none;
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-textPrimary:not(.Mui-disabled):hover {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):hover {
   background: #eefaff;
   color: #07549a;
 }
@@ -596,7 +596,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   white-space: nowrap;
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-containedPrimary {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-contained.MuiButton-colorPrimary {
   border-color: #075e96;
   background: #075e96;
   color: #fff;
@@ -604,7 +604,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   box-shadow: none;
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-outlinedPrimary {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-outlined.MuiButton-colorPrimary {
   border-color: #bcdced;
   background: #f3fbff;
   color: #0e5191;
@@ -636,8 +636,8 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   color: #07549a;
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-containedPrimary:not(.Mui-disabled),
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-containedPrimary:not(.Mui-disabled):hover {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled),
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
   border-color: #075d96;
   background: #075d96;
   color: #fff;
@@ -652,7 +652,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
 }
 
 /* Table row chevron is a compact text action, not a purple CTA. */
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results table td:last-child .MuiButton-textPrimary {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results table td:last-child .MuiButton-text.MuiButton-colorPrimary {
   min-width: 34px;
   width: 34px;
   min-height: 34px;
