@@ -82,3 +82,386 @@
   padding-right: 8px;
   text-align: center;
 }
+
+/* RPT-04 presentation for ImportQualityBaseline (c79aa487).
+ * Data, labels, filters, API calls and handlers stay owned by the report.
+ * Scope every rule to this screen; do not change shell or other reports.
+ * The date picker is MUI, not AntD. Its body portal needs immutable brand
+ * aliases because it cannot inherit MainLayout's --map-* properties.
+ * Activity keeps inactive pages mounted with inline display:none: the popup
+ * gate below requires a visible kept page and remains active while the popup
+ * animates closed, avoiding a flash back to the default theme on dismissal.
+ */
+[data-report-screen="RPT-04"],
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .MuiPopover-paper.hn-vuexy-date-popup {
+  --wms-primary: var(--map-cta, var(--wms-auth-cta));
+  --wms-primary-dark: var(--map-navy, var(--wms-auth-navy));
+  --wms-primary-light: var(--map-link, var(--wms-auth-link));
+  --wms-primary-soft: var(--map-pale, light-dark(var(--wms-auth-pale), color-mix(in srgb, var(--wms-info-text) 14%, var(--wms-bg-surface))));
+  --wms-focus-ring: 0 0 0 3px var(--map-focus-ring, light-dark(var(--wms-auth-focus-ring), color-mix(in srgb, var(--wms-info-text) 28%, transparent)));
+  --rpt04-heading: var(--map-heading, light-dark(var(--wms-auth-navy), var(--wms-text-high)));
+  --rpt04-line: var(--map-line, light-dark(var(--wms-auth-line), var(--wms-border)));
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] {
+  container: hn-rpt04 / inline-size;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  gap: 12px;
+}
+
+[data-report-screen="RPT-04"] > *,
+[data-report-screen="RPT-04"] > section > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-report-screen="RPT-04"] h1 {
+  margin: 0;
+  font-size: clamp(20px, 1.5rem, 24px);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--rpt04-heading);
+  overflow-wrap: anywhere;
+}
+
+[data-report-screen="RPT-04"] h2 {
+  font-size: 16px;
+  line-height: 1.4;
+  letter-spacing: normal;
+  color: var(--rpt04-heading);
+  overflow-wrap: anywhere;
+}
+
+[data-report-screen="RPT-04"] > .MuiStack-root:first-child {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+[data-report-screen="RPT-04"] > .MuiStack-root:first-child > div:first-child {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+/* Fit fields to the report container, not the full monitor plus sidebar. */
+[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] {
+  padding: 14px;
+  border-color: var(--rpt04-line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child > div {
+  min-width: 0;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child > div > div:first-child {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child {
+  flex-wrap: wrap;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > div:first-child {
+  flex: 1 1 260px;
+}
+
+[data-report-screen="RPT-04"] :is(.MuiFormControl-root, .MuiTextField-root) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-report-screen="RPT-04"] .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--wms-primary);
+}
+
+[data-report-screen="RPT-04"] .MuiInputLabel-root.Mui-focused {
+  color: var(--wms-primary);
+}
+
+[data-report-screen="RPT-04"] .MuiButton-root {
+  min-height: 40px;
+  height: auto;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+[data-report-screen="RPT-04"] .MuiButton-containedPrimary:not(.Mui-disabled) {
+  background-color: var(--wms-primary);
+}
+
+[data-report-screen="RPT-04"] .MuiButton-containedPrimary:not(.Mui-disabled):hover {
+  background-color: var(--wms-primary-dark);
+}
+
+[data-report-screen="RPT-04"] :is(.MuiButton-outlinedPrimary, .MuiButton-textPrimary):not(.Mui-disabled) {
+  color: var(--wms-primary);
+}
+
+[data-report-screen="RPT-04"] .MuiButton-outlinedPrimary:not(.Mui-disabled) {
+  border-color: var(--wms-primary);
+}
+
+[data-report-screen="RPT-04"] :is(button, a, [role="button"]):focus-visible {
+  outline: 2px solid var(--wms-primary);
+  outline-offset: 2px;
+}
+
+/* Preserve metric meanings and click handlers; only adjust their geometry. */
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] > div {
+  min-height: 112px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border-color: var(--rpt04-line);
+  border-radius: 8px;
+  box-shadow: none;
+  overflow-wrap: anywhere;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] > div > [aria-hidden="true"] {
+  width: 48px;
+  height: 48px;
+  font-size: 26px;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] > div > div:last-child > div:first-child {
+  color: var(--rpt04-heading);
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] > div > div:last-child > div:nth-child(2) {
+  margin-top: 4px;
+  color: var(--rpt04-heading);
+  font-size: 32px;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] > div > div:last-child > div:last-child {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] [role="button"]:is(:hover, :focus-visible) {
+  transform: none;
+  border-color: var(--wms-primary);
+}
+
+/* Chart renderers keep their own height and data. Never scale their SVGs. */
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] + section {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] + section > div {
+  min-width: 0;
+  padding: 14px;
+  border-color: var(--rpt04-line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] + section > div:last-child > div:has(> [role="img"]) {
+  grid-template-columns: minmax(120px, 0.85fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+[data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] + section [role="img"] {
+  width: min(100%, 168px);
+  aspect-ratio: 1;
+  flex-shrink: 0;
+}
+
+[data-report-screen="RPT-04"] :is(.apexcharts-canvas, .MuiAlert-root, [data-ui-state]) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-report-screen="RPT-04"] .MuiAlert-message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Keep the existing table/card breakpoint, data and row actions. */
+[data-report-screen="RPT-04"] #rpt04-results {
+  border-color: var(--rpt04-line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+[data-report-screen="RPT-04"] #rpt04-results > .MuiStack-root:first-child {
+  flex-wrap: wrap;
+}
+
+[data-report-screen="RPT-04"] #rpt04-results > .MuiStack-root:first-child > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-report-screen="RPT-04"] #rpt04-results table {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-report-screen="RPT-04"] #rpt04-results table thead th {
+  background-color: var(--wms-bg-surface);
+  background-image: linear-gradient(var(--wms-primary-soft), var(--wms-primary-soft));
+}
+
+[data-report-screen="RPT-04"] #rpt04-results .MuiCardContent-root > div > .MuiTypography-caption {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 45%;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+[data-report-screen="RPT-04"] #rpt04-results .MuiCardContent-root > div > .MuiBox-root {
+  overflow-wrap: anywhere;
+}
+
+[data-report-screen="RPT-04"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root {
+  margin-left: auto;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+[data-report-screen="RPT-04"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-root,
+[data-report-screen="RPT-04"] #rpt04-results table td:last-child .MuiButton-root {
+  min-width: 40px;
+  padding-inline: 8px;
+}
+
+/* Actual start/end fields of UiVuexyDateRangePicker. */
+[data-report-screen="RPT-04"] .hn-vuexy-date-field {
+  min-height: 40px;
+  height: auto;
+  padding-block: 8px;
+  border-color: var(--rpt04-line);
+}
+
+[data-report-screen="RPT-04"] .hn-vuexy-date-field:is(:hover, :focus-visible, [aria-expanded="true"]):not(:disabled) {
+  border-color: var(--wms-primary);
+  box-shadow: var(--wms-focus-ring);
+}
+
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .MuiPopover-paper.hn-vuexy-date-popup {
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border-color: var(--rpt04-line);
+  border-radius: 8px;
+}
+
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup [data-date-tab][data-active="true"],
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup button[aria-pressed="true"] {
+  color: var(--wms-primary-dark);
+  background-color: var(--wms-primary-soft);
+  border-color: var(--wms-primary);
+}
+
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup [data-in-range="true"] {
+  background-color: var(--wms-primary-soft);
+}
+
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup button[aria-selected="true"],
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup [data-date-action="apply"] {
+  background-color: var(--wms-primary);
+  color: var(--wms-on-primary);
+}
+
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup button:enabled:hover {
+  background-color: var(--wms-primary-soft);
+  color: var(--wms-primary-dark);
+}
+
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup button[aria-selected="true"]:enabled:hover,
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup [data-date-action="apply"]:enabled:hover {
+  background-color: var(--wms-primary-dark);
+  color: var(--wms-on-primary);
+}
+
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup button:focus-visible {
+  outline: 2px solid var(--wms-primary);
+  outline-offset: 1px;
+}
+
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup > div:last-child {
+  flex-wrap: wrap;
+}
+
+body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup > div:last-child > div:last-child {
+  margin-left: auto;
+}
+
+@container hn-rpt04 (min-width: 1040px) {
+  [data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child {
+    grid-template-columns: minmax(300px, 1.5fr) minmax(140px, 0.8fr) repeat(2, minmax(140px, 1fr));
+  }
+
+  [data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  [data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] + section {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+}
+
+@container hn-rpt04 (max-width: 559px) {
+  [data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child,
+  [data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"],
+  [data-report-screen="RPT-04"] .hn-vuexy-date-range,
+  [data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] + section > div:last-child > div:has(> [role="img"]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-report-screen="RPT-04"] > .MuiStack-root:first-child > div:first-child,
+  [data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > div:first-child {
+    flex-basis: auto;
+  }
+
+  [data-report-screen="RPT-04"] .MuiButton-root,
+  [data-report-screen="RPT-04"] .hn-vuexy-date-field {
+    min-height: 44px;
+  }
+}
+
+@media (pointer: coarse) {
+  [data-report-screen="RPT-04"] .MuiButton-root,
+  [data-report-screen="RPT-04"] .hn-vuexy-date-field,
+  body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup button:not([aria-selected]) {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-report-screen="RPT-04"] *,
+  body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup * {
+    transition-duration: 0s;
+    animation-duration: 0s;
+    scroll-behavior: auto;
+  }
+}

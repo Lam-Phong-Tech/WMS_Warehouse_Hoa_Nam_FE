@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import {
+  AUTH_BASELINE,
   CONTROL,
   MOTION,
   NAV_COLOR,
@@ -84,6 +85,13 @@ describe("css-vars.css ↔ TS tokens parity", () => {
     "--wms-z-pwa": Z_INDEX.pwaBanner,
     "--wms-z-loading": Z_INDEX.blockingLoading,
     ...navVars(NAV_COLOR),
+    // Immutable brand aliases must match the same source as MainLayout.
+    "--wms-auth-navy": AUTH_BASELINE.navy,
+    "--wms-auth-cta": AUTH_BASELINE.cta,
+    "--wms-auth-link": AUTH_BASELINE.link,
+    "--wms-auth-pale": AUTH_BASELINE.pale,
+    "--wms-auth-line": AUTH_BASELINE.line,
+    "--wms-auth-focus-ring": AUTH_BASELINE.focusRing,
   };
 
   it("mọi biến kỳ vọng tồn tại và đúng giá trị", () => {

@@ -102,4 +102,14 @@
   --wms-nav-muted: #6d6a7b;
   --wms-nav-marker: #8f8b99;
   --wms-nav-focus: #8f85f3;
+
+  /* Immutable AUTH_BASELINE mirror, also used by the Operations Overview.
+     These do not override the default theme. Portals outside MainLayout may
+     opt into the same brand without copying color literals into screen CSS. */
+  --wms-auth-navy: #003b63;
+  --wms-auth-cta: #004e74;
+  --wms-auth-link: #086590;
+  --wms-auth-pale: #eaf5f8;
+  --wms-auth-line: #d9e8ef;
+  --wms-auth-focus-ring: rgba(8, 101, 144, 0.2);
 }
