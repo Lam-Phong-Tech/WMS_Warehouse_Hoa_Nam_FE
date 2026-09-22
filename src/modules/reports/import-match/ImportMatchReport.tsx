@@ -113,8 +113,8 @@ const DISPLAY_DATE = "DD-MM-YYYY";
 const REPORT_SURFACE_SX = {
   bgcolor: S.bgSurface,
   border: `1px solid ${S.border}`,
-  borderRadius: `${RADIUS.card}px`,
-  boxShadow: S.shadowCard,
+  borderRadius: 10,
+  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
 } as const;
 
 const KPI_TONES = {
@@ -240,7 +240,6 @@ function MetricCard({
   onActivate?: () => void;
 }) {
   const style = KPI_TONES[tone];
-  const safeShare = Math.max(0, Math.min(100, share));
   const actionable = Boolean(onActivate);
   return (
     <Box
@@ -261,12 +260,11 @@ function MetricCard({
         ...REPORT_SURFACE_SX,
         position: "relative",
         overflow: "hidden",
-        p: { xs: 1.75, md: 2 },
-        minHeight: 160,
+        p: { xs: 1.5, sm: 1.75, md: 2 },
+        minHeight: { xs: 118, md: 126 },
         display: "flex",
         flexDirection: "column",
-        backgroundImage: `linear-gradient(145deg, ${S.bgSurface} 30%, ${style.surface})`,
-        borderTop: `2px solid ${style.accent}`,
+        bgcolor: S.bgSurface,
         cursor: actionable ? "pointer" : "default",
         transition: "transform 140ms ease, box-shadow 140ms ease",
         ...(actionable
@@ -298,8 +296,8 @@ function MetricCard({
         <Box
           aria-hidden="true"
           sx={{
-            width: 36,
-            height: 36,
+            width: 34,
+            height: 34,
             flex: "none",
             display: "grid",
             placeItems: "center",
@@ -314,8 +312,8 @@ function MetricCard({
       </Stack>
       <Box
         sx={{
-          mt: 1.25,
-          fontSize: "clamp(24px, 2.15vw, 30px)",
+          mt: 1,
+          fontSize: "clamp(24px, 2vw, 30px)",
           fontWeight: 700,
           lineHeight: 1,
           letterSpacing: "-0.025em",
@@ -340,23 +338,13 @@ function MetricCard({
         <Box
           aria-hidden="true"
           sx={{
-            width: 46,
-            height: 6,
+            width: 8,
+            height: 8,
             flex: "none",
-            overflow: "hidden",
-            borderRadius: 999,
-            bgcolor: style.surface,
+            borderRadius: "50%",
+            bgcolor: style.accent,
           }}
-        >
-          <Box
-            sx={{
-              width: `${safeShare}%`,
-              height: "100%",
-              borderRadius: "inherit",
-              bgcolor: style.accent,
-            }}
-          />
-        </Box>
+        />
       </Stack>
     </Box>
   );
@@ -398,7 +386,7 @@ function PanelCard({
       sx={{
         ...REPORT_SURFACE_SX,
         p: { xs: 2, md: 2.5 },
-        minHeight: { md: 410 },
+        minHeight: { md: 360 },
         display: "flex",
         flexDirection: "column",
         minWidth: 0,
@@ -989,8 +977,23 @@ export default function ImportMatchReport() {
         width: "100%",
         minWidth: 0,
         display: "grid",
-        gap: { xs: 1.5, md: 2.25 },
+        gap: { xs: 1.5, sm: 1.75, md: 2 },
+        fontSize: { xs: 13, md: 14 },
         "& > *": { minWidth: 0 },
+        "& .hn-vuexy-date-range.ant-picker": {
+          borderColor: S.border,
+          boxShadow: "none",
+        },
+        "& .hn-vuexy-date-range.ant-picker:hover": {
+          borderColor: S.primary,
+        },
+        "& .hn-vuexy-date-range.ant-picker-focused": {
+          borderColor: S.primary,
+          boxShadow: `0 0 0 2px ${S.primarySoft}`,
+        },
+        "& .hn-vuexy-date-range .ant-picker-active-bar": {
+          background: S.primary,
+        },
       }}
     >
       {/* ── Tiêu đề trang ────────────────────────────────────────────── */}
@@ -1042,7 +1045,7 @@ export default function ImportMatchReport() {
               sx={{
                 m: 0,
                 mt: 0.25,
-                fontSize: { xs: 22, md: 25 },
+                fontSize: { xs: 20, sm: 22, md: 24 },
                 fontWeight: 700,
                 lineHeight: 1.2,
                 letterSpacing: "-0.025em",
@@ -1096,10 +1099,10 @@ export default function ImportMatchReport() {
           role="tablist"
           aria-label={t("reports.importMatchReport.contextAria")}
           sx={{
-            width: { xs: "100%", md: "min(100%, 500px)" },
+            width: { xs: "100%", sm: "min(100%, 460px)" },
             p: 0.5,
             display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
+            flexDirection: "row",
             gap: 0.5,
             border: `1px solid ${S.border}`,
             borderRadius: `${RADIUS.card}px`,
@@ -1146,12 +1149,12 @@ export default function ImportMatchReport() {
           justifyContent: "space-between",
           flexDirection: { xs: "column", md: "row" },
           gap: 2,
-          minHeight: 76,
-          px: { xs: 2, md: 2.5 },
-          py: 2,
-          bgcolor: S.primary,
-          backgroundImage: `linear-gradient(118deg, ${S.primaryDark}, ${S.primary})`,
-          color: S.onPrimary,
+          minHeight: 64,
+          px: { xs: 1.75, md: 2 },
+          py: 1.5,
+          bgcolor: S.bgSurface,
+          backgroundImage: "none",
+          color: S.textHigh,
         }}
       >
         <Box
@@ -1162,9 +1165,9 @@ export default function ImportMatchReport() {
             height: 190,
             right: -64,
             top: -98,
-            border: `32px solid ${S.primaryLight}`,
+            border: `24px solid ${S.primarySoft}`,
             borderRadius: "50%",
-            opacity: 0.2,
+            opacity: 0.45,
           }}
         />
         <Box sx={{ position: "relative", display: "grid", gap: 0.5 }}>
@@ -1173,7 +1176,7 @@ export default function ImportMatchReport() {
               fontSize: 11,
               fontWeight: 700,
               letterSpacing: "0.08em",
-              opacity: 0.76,
+              color: S.textMedium,
             }}
           >
             {t("reports.importMatchReport.sliceEyebrow")}
@@ -1207,7 +1210,7 @@ export default function ImportMatchReport() {
       <Box
         component="section"
         aria-labelledby="rpt-04-filters"
-        sx={{ ...REPORT_SURFACE_SX, p: 2.5, overflow: "visible" }}
+        sx={{ ...REPORT_SURFACE_SX, p: { xs: 1.75, sm: 2, md: 2.25 }, overflow: "visible" }}
       >
         <Stack
           direction="row"
@@ -1289,7 +1292,8 @@ export default function ImportMatchReport() {
           sx={{
             display: showFilters ? "grid" : "none",
             gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
-            gap: "16px 12px",
+            gap: { xs: "12px", sm: "14px 12px", md: "16px 12px" },
+            alignItems: "end",
           }}
         >
           <FilterField label={t("reports.importMatchReport.fieldResult")}>
@@ -1444,7 +1448,7 @@ export default function ImportMatchReport() {
             gridTemplateColumns: {
               xs: "1fr",
               sm: "repeat(2, minmax(0, 1fr))",
-              xl: "repeat(4, minmax(0, 1fr))",
+              lg: "repeat(4, minmax(0, 1fr))",
             },
             gap: { xs: 1.5, md: 2 },
           }}
@@ -1587,7 +1591,9 @@ export default function ImportMatchReport() {
             <MultiSeriesBarChart
               categories={trend.map((point) => axisDayLabel(point.day))}
               series={series}
-              height={300}
+              stacked
+              showValues
+              height={290}
               valueFormatter={fmt}
               onSelect={(payload) =>
                 setDayDrill({
@@ -1724,7 +1730,7 @@ export default function ImportMatchReport() {
         />
         <Box
           component="article"
-          sx={{ ...REPORT_SURFACE_SX, pt: 2.5, overflow: "hidden" }}
+          sx={{ ...REPORT_SURFACE_SX, pt: { xs: 1.75, md: 2 }, overflow: "hidden" }}
         >
           <Box
             role="tablist"
@@ -1808,7 +1814,7 @@ export default function ImportMatchReport() {
             /* UAT TC_UI_20: các khối anh em (tablist, ghi chú, bộ lọc) đều
                inset mx 2/3 — riêng bảng từng dính sát mép thẻ bo góc
                overflow:hidden, cột STT bị xén. */
-            <Box sx={{ px: { xs: 2, md: 3 } }}>
+            <Box sx={{ px: { xs: 1.5, sm: 2, md: 2.5 } }}>
               <ResponsiveDataTable<ImportMatchBatch>
                 columns={[
                   {
@@ -1928,7 +1934,7 @@ export default function ImportMatchReport() {
               />
             </Box>
           ) : (
-            <Box sx={{ px: { xs: 2, md: 3 }, pb: 1 }}>
+            <Box sx={{ px: { xs: 1.5, sm: 2, md: 2.5 }, pb: 1 }}>
               {loading ? (
                 <Box
                   sx={{ minHeight: 220, display: "grid", placeItems: "center" }}
@@ -1974,7 +1980,7 @@ export default function ImportMatchReport() {
 
           {/* UAT TC_UI_20: footer cần inset + đệm đáy riêng, không dựa vào
               mt 12px mặc định (đè lên thanh cuộn ngang của bảng). */}
-          <Box sx={{ px: { xs: 2, md: 3 }, pb: 2.5 }}>
+          <Box sx={{ px: { xs: 1.5, sm: 2, md: 2.5 }, pb: 2.5 }}>
             <ReportPaginationBar
               page={pagination.page}
               perPage={pagination.perPage}
