@@ -6,7 +6,7 @@ import { defineConfig, loadEnv } from "vite";
 import {
   transportViolation,
   type TransportEnvName,
-} from "./src/shared/config/transport-security";
+} from "./src/shared/config/transport-security.ts";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 

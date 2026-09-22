@@ -36,7 +36,8 @@ import {
   presetRange,
   type ItemKind,
 } from "@/modules/reports/operations/report-format";
-import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";\nimport { useT } from "@/shared/i18n/useT";
+import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
+import { useT } from "@/shared/i18n/useT";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
 import { useReportExport } from "@/modules/reports/operations/report-export";
 import { useClientPagination } from "@/modules/reports/operations/report-columns";
@@ -102,7 +103,7 @@ function MetricCard({
   value: string;
   hint: string;
   tone: "primary" | "success" | "warning" | "error";
-  icon: React.ReactNode;
+  icon: ReactNode;
   onClick?: () => void;
 }) {
   const tones = {
@@ -180,7 +181,7 @@ function MetricCard({
   );
 }
 
-function FilterLabel({ children }: { children: React.ReactNode }) {
+function FilterLabel({ children }: { children: ReactNode }) {
   return (
     <Box sx={{ mb: 0.55, fontSize: 12.5, fontWeight: 700, color: C.text, lineHeight: "18px" }}>
       {children}

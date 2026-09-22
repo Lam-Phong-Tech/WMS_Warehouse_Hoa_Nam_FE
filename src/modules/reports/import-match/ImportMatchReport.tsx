@@ -218,9 +218,8 @@ function SectionHeading({
 }
 
 /**
- * Thẻ KPI của baseline 8.5: nhãn + icon, số lớn, dòng chú thích và một thanh
- * tỷ trọng. Bản HTML vẽ sparkline TĨNH ở góc phải; ở đây thay bằng thanh tỷ
- * trọng tính từ chính số liệu đang lọc để không có pixel nào là số giả.
+ * Thẻ KPI của baseline 8.5: nhãn + icon, số lớn, dòng chú thích và dấu màu
+ * nhận diện trạng thái.
  */
 function MetricCard({
   label,
@@ -228,7 +227,6 @@ function MetricCard({
   hint,
   icon,
   tone,
-  share,
   onActivate,
 }: {
   label: string;
@@ -236,7 +234,6 @@ function MetricCard({
   hint: string;
   icon: ReactElement;
   tone: MetricTone;
-  share: number;
   onActivate?: () => void;
 }) {
   const style = KPI_TONES[tone];
@@ -1463,7 +1460,6 @@ export default function ImportMatchReport() {
                 })}
                 icon={<BarChartOutlined />}
                 tone="primary"
-                share={totals.total > 0 ? 100 : 0}
               />
               <MetricCard
                 label={t("reports.importMatchReport.mcValid")}
@@ -1473,9 +1469,6 @@ export default function ImportMatchReport() {
                 })}
                 icon={<CheckCircleOutlined />}
                 tone="success"
-                share={
-                  totals.total > 0 ? (totals.success / totals.total) * 100 : 0
-                }
               />
               <MetricCard
                 label={t("reports.importMatchReport.mcInvalid")}
@@ -1485,9 +1478,6 @@ export default function ImportMatchReport() {
                 })}
                 icon={<WarningOutlined />}
                 tone="error"
-                share={
-                  totals.total > 0 ? (totals.failed / totals.total) * 100 : 0
-                }
                 onActivate={() => applyResultFilter("FAILED")}
               />
               <MetricCard
@@ -1498,9 +1488,6 @@ export default function ImportMatchReport() {
                 })}
                 icon={<CopyOutlined />}
                 tone="warning"
-                share={
-                  totals.total > 0 ? (totals.duplicate / totals.total) * 100 : 0
-                }
                 onActivate={() => applyResultFilter("DUPLICATE")}
               />
             </>
@@ -1514,7 +1501,6 @@ export default function ImportMatchReport() {
                 })}
                 icon={<BarChartOutlined />}
                 tone="primary"
-                share={totals.total > 0 ? 100 : 0}
               />
               <MetricCard
                 label={t("reports.importMatchReport.mcRequiredQty")}
@@ -1524,7 +1510,6 @@ export default function ImportMatchReport() {
                 })}
                 icon={<StockOutlined />}
                 tone="primary"
-                share={totals.required > 0 ? 100 : 0}
               />
               <MetricCard
                 label={t("reports.importMatchReport.mcMatchedQty")}
@@ -1534,11 +1519,6 @@ export default function ImportMatchReport() {
                 })}
                 icon={<CheckCircleOutlined />}
                 tone="success"
-                share={
-                  totals.required > 0
-                    ? (totals.matched / totals.required) * 100
-                    : 0
-                }
               />
               <MetricCard
                 label={t("reports.importMatchReport.mcUnmatchedQty")}
@@ -1548,11 +1528,6 @@ export default function ImportMatchReport() {
                 })}
                 icon={<WarningOutlined />}
                 tone="warning"
-                share={
-                  totals.required > 0
-                    ? (matchRemaining / totals.required) * 100
-                    : 0
-                }
               />
             </>
           )}
