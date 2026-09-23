@@ -49,7 +49,7 @@ describe("RPT-08 shared report presentation", () => {
     expect(onPageChange).not.toHaveBeenCalled();
     fireEvent.click(container.querySelector('[data-page-direction="next"]')!);
     expect(onPageChange).toHaveBeenLastCalledWith(2);
-    fireEvent.click(screen.getByRole("button", {name:"3", exact:true}));
+    fireEvent.click(screen.getByRole("button", {name:"3"}));
     expect(onPageChange).toHaveBeenLastCalledWith(3);
   });
   it("disables next on the last page and permits returning to the previous page", () => {

@@ -4,6 +4,8 @@ on:
     branches: [dev]
     paths:
       - .github/workflows/align-rpt08-once.yml
+      - scripts/check-rpt08-layout.mjs
+      - scripts/apply-rpt08-layout.py
 permissions:
   contents: write
 concurrency:
