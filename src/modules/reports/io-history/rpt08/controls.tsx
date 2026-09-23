@@ -170,14 +170,12 @@ function DateRangeControl({
 
 export function HeaderActions({
   warehouse,
-  demo,
   readonly,
   exportState,
   exportDisabled,
   onExport,
 }: {
   warehouse: string;
-  demo: boolean;
   readonly: boolean;
   exportState: ExportState;
   exportDisabled: boolean;
@@ -187,9 +185,7 @@ export function HeaderActions({
     <div className="rpt08-header-actions">
       <span className="rpt08-demo-chip" role="note">
         <span aria-hidden="true">ⓘ</span>
-        {demo
-          ? tUi("updatedUi.text_0ce3732c6c81")
-          : tUi("updatedUi.text_098cc1b3c5b9")}
+        {tUi("updatedUi.text_098cc1b3c5b9")}
       </span>
 
       <details className="rpt08-warehouse-menu">
