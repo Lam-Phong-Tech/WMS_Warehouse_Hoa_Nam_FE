@@ -141,3 +141,24 @@ html[data-theme="dark"] #root [data-report-warehouse].hn-report-warehouse {
     max-width: calc(100% - 242px);
   }
 }
+
+
+/* RPT-01B keeps two header actions at desktop-tablet widths.
+ * Preserve the report's original stacked toolbar so the fixed 230px warehouse
+ * reference card never overlaps a long translated title. The card itself is
+ * intentionally untouched: only its surrounding layout is constrained. */
+@media (min-width: 980px) and (max-width: 1365px) {
+  #root
+    .hn-outbound-report
+    .outbound-heading-actions.hn-report-warehouse-actions {
+    flex-flow: column-reverse nowrap;
+    align-items: flex-end;
+  }
+
+  #root .hn-outbound-report .outbound-page-heading > div:first-child {
+    box-sizing: border-box;
+    width: calc(100% - 254px);
+    max-width: calc(100% - 254px);
+    min-width: 0;
+  }
+}
