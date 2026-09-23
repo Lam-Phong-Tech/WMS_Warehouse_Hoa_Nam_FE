@@ -58,10 +58,12 @@ export default function IoHistoryReport() {
   const warehouseName =
     useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() || "—";
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
-  const initialRange = useMemo<[Dayjs, Dayjs]>(() => currentSevenDayRange(), []);
+  const initialRange = useMemo<[Dayjs, Dayjs]>(
+    () => currentSevenDayRange(),
+    [],
+  );
 
-  const [draftRange, setDraftRange] =
-    useState<[Dayjs, Dayjs]>(initialRange);
+  const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>(initialRange);
   const [draftType, setDraftType] = useState<TransactionFilter>("ALL");
   const [draftActor, setDraftActor] = useState("");
   const [applied, setApplied] = useState<AppliedFilters>({
