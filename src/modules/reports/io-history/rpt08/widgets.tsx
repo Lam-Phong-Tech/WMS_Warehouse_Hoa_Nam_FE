@@ -441,7 +441,6 @@ export function HistoryTable({
   page,
   empty,
   noResult,
-  demo,
   range,
   onSearch,
   onPageChange,
@@ -454,7 +453,6 @@ export function HistoryTable({
   page: number;
   empty: boolean;
   noResult: boolean;
-  demo: boolean;
   range: AppliedFilters;
   onSearch: (value: string) => void;
   onPageChange: (page: number) => void;
@@ -588,10 +586,8 @@ export function HistoryTable({
             onChange={onPageChange}
           />
           <span>
-            {demo
-              ? tUi("updatedUi.text_0ce3732c6c81")
-              : tUi("updatedUi.text_098cc1b3c5b9")}{" "}
-            · {compactRange(range.from, range.to)}
+            {tUi("updatedUi.text_098cc1b3c5b9")} ·{" "}
+            {compactRange(range.from, range.to)}
           </span>
         </footer>
       ) : null}
