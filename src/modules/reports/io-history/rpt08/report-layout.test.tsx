@@ -4,9 +4,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import { HistoryTable } from "./widgets";
-import { makeDemoRows, PAGE_SIZE } from "./model";
+import { PAGE_SIZE, type HistoryRow } from "./model";
 
-const rows = makeDemoRows();
+const rows: HistoryRow[] = Array.from({ length: PAGE_SIZE }, (_, index) => ({
+  id: `fixture-${index + 1}`,
+  timestamp: `2026-09-23T${String(9 + index).padStart(2, "0")}:00:00+07:00`,
+  documentNo: `DOC-${String(index + 1).padStart(4, "0")}`,
+  type: index % 2 === 0 ? "INBOUND" : "OUTBOUND",
+  objectPrimary: `SKU-${String(index + 1).padStart(3, "0")}`,
+  objectSecondary: "Test fixture",
+  quantity: index + 1,
+  actor: "Test User",
+}));
 function mountTable(page = 1, total = 42, extra = {}) {
   const onPageChange = vi.fn();
   const onOpenRow = vi.fn();
@@ -19,8 +28,7 @@ function mountTable(page = 1, total = 42, extra = {}) {
       search=""
       empty={false}
       noResult={false}
-      demo={true}
-      range={{ from: "2026-09-04", to: "2026-09-10", type: "ALL", actor: "" }}
+      range={{ from: "2026-09-17", to: "2026-09-23", type: "ALL", actor: "" }}
       onSearch={onSearch}
       onPageChange={onPageChange}
       onOpenRow={onOpenRow}
