@@ -1,0 +1,129 @@
+/* Extracted from the final density rules of inbound-flow-report.css.
+ * Deliberately independent of per-report warehouse selectors and inherited type. */
+#root .hn-mvp-screen .hn-report-warehouse-actions {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+#root [data-report-warehouse].hn-report-warehouse {
+  --report-warehouse-active: #409153;
+  --report-warehouse-dot: #31b255;
+  --report-warehouse-dot-soft: #e8f7eb;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  align-self: center;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+  order: 99;
+  gap: 10px;
+  width: 230px;
+  max-width: 100%;
+  min-width: 0;
+  height: 60px;
+  min-height: 60px;
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+  box-shadow: 0 2px 7px rgb(30 57 82 / 5%);
+  color: var(--ops-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  cursor: default;
+}
+#root [data-report-warehouse] .hn-report-warehouse__icon {
+  box-sizing: border-box;
+  display: grid;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  font-size: 24px;
+  line-height: 20px;
+}
+#root [data-report-warehouse] .hn-report-warehouse__copy {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+#root [data-report-warehouse] .hn-report-warehouse__name {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  color: var(--ops-heading);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: normal;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#root [data-report-warehouse] .hn-report-warehouse__status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  color: var(--ops-muted);
+  font-family: var(--wms-font-family);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: normal;
+}
+#root [data-report-warehouse] .hn-report-warehouse__status > span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#root [data-report-warehouse] .hn-report-warehouse__dot {
+  display: block;
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ops-inactive);
+  box-shadow: 0 0 0 3px var(--ops-pale);
+}
+#root [data-report-warehouse][data-state="active"] .hn-report-warehouse__status {
+  color: var(--report-warehouse-active);
+}
+#root [data-report-warehouse][data-state="active"] .hn-report-warehouse__dot {
+  background: var(--report-warehouse-dot);
+  box-shadow: 0 0 0 3px var(--report-warehouse-dot-soft);
+}
+html[data-theme="dark"] #root [data-report-warehouse].hn-report-warehouse {
+  --report-warehouse-active: var(--ops-success);
+  --report-warehouse-dot: var(--ops-success);
+  --report-warehouse-dot-soft: var(--ops-success-soft);
+  box-shadow: var(--ops-shadow-card);
+}
