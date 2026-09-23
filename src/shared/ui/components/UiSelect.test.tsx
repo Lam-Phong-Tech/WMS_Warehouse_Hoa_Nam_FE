@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { muiTheme } from "@/shared/ui/theme/mui-adapter";
@@ -162,4 +162,31 @@ describe("UiSelect — scoped portal presentation", () => {
       );
     },
   );
+});
+
+describe("UiSelect — opt-in menu motion", () => {
+  it("keeps fade options selectable and returns focus to the combobox after Escape", async () => {
+    const user = userEvent.setup();
+    render(
+      <Host options={SHORT} menuMotion="fade" menuClassName="hn-defect-menu" />,
+    );
+    const control = screen.getByRole("combobox", { name: "Lọc hàng hoá" });
+    await user.click(control);
+    const option = screen.getByRole("option", { name: "Kho B" });
+    expect(option.closest(".hn-defect-menu")).not.toBeNull();
+    await user.click(option);
+    expect(screen.getByTestId("value")).toHaveTextContent("b");
+    await waitFor(() =>
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument(),
+    );
+
+    await user.click(control);
+    expect(screen.getByRole("option", { name: "Kho B" })).toHaveFocus();
+    await user.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument(),
+    );
+    expect(control).toHaveFocus();
+    expect(screen.getByTestId("value")).toHaveTextContent("b");
+  });
 });

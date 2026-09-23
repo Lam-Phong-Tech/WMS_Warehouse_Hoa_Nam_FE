@@ -8,11 +8,13 @@
  * giờ rơi vào cảnh cuộn tay hết menu, còn enum ngắn (trạng thái, số dòng/
  * trang) giữ nguyên dropdown thường. Ép tay bằng prop `searchable`.
  */
+import Fade from "@mui/material/Fade";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormHelperText from "@mui/material/FormHelperText";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { useId } from "react";
 import type { ReactNode } from "react";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
@@ -50,6 +52,8 @@ export interface UiSelectProps {
   minWidth?: number;
   /** Optional class for the non-searchable dropdown paper (useful for screen-scoped portal styling). */
   menuClassName?: string;
+  /** Opt in to a short opacity transition for non-searchable dropdowns. */
+  menuMotion?: "fade";
   /**
    * Ép có/không ô tìm kiếm. Bỏ trống = tự quyết theo số option (xem
    * resolveSearchable) — mặc định nên để tự.
@@ -92,6 +96,9 @@ export function UiSelect({
   "data-testid": dataTestId,
 }: UiSelectProps) {
   const labelId = useId();
+  const prefersReducedMotion = useMediaQuery(
+    "(prefers-reduced-motion: reduce)",
+  );
   const helperId = `${labelId}-helper`;
   const searchableMode = resolveSearchable(options, searchable);
   /**
