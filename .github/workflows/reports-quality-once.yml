@@ -53,13 +53,22 @@ jobs:
           cp scripts/reports-quality-staging/reports-api-only.test.ts.txt src/modules/reports/reports-api-only.test.ts
           python3 - <<'PY'
           from pathlib import Path
+          import hashlib
+          p=Path('src/modules/reports/stock-reconcile/stock-reconcile-report.css')
+          b=p.read_bytes()
+          assert hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()=='986522c8a5b1e9b4648c3193a9ec9b20670a96ba'
+          s=b.decode()
+          old='  .hn-rpt02 {\n    margin-inline: 6px;\n  }'
+          assert s.count(old)==1
+          s=s.replace(old,'  .hn-rpt02 {\n    margin-inline: 0;\n  }')
+          p.write_text(s)
           p=Path('src/modules/reports/io-history/io-history-api.ts')
           s=p.read_text()
           marker='  /** `source_id` → movement'
           assert s.count(marker)==1
           s=s.replace(marker,'''  // Preserve successfully loaded documents on a settled reversal-source error.
-            // The error remains exposed to the report's existing partial/stale banner;
-            // exports stay blocked. A missing ledger is never a usable quantity source.
+            // The error remains exposed to the report's existing partial/stale banner.
+            // A missing ledger is never a usable quantity source.
             const hasUsableSources =
               (!wantsStockDocuments || documents.data != null) &&
               (!wantsReversals || reversals.data != null || Boolean(reversals.error)) &&
@@ -116,6 +125,7 @@ jobs:
           marker="  for(const language of ['vi','en']){"
           assert s.count(marker)==1
           s=s.replace(marker,"  assert.equal(await root.locator('.rpt08-overview-card__total .rpt08-big-number').innerText(),'6');\n  assert.equal(await root.locator('.rpt08-product-total strong').innerText(),'21');\n"+marker)
+          s=s.replace('failures.push({route,width,...result})','failures.push({route,viewportWidth:width,...result})')
           p.write_text(s)
           PY
           git diff --name-only -- src/modules/reports | grep -E '\.(ts|tsx|css)$' > /tmp/report-changed-files
@@ -127,6 +137,8 @@ jobs:
         run: npm run typecheck
       - name: Dropdown, API-source, quantity and existing history regressions must pass
         run: npm run test -- src/modules/reports/io-history src/modules/reports/reports-api-only.test.ts src/modules/reports/operations/report-reversal-source.test.ts --maxWorkers=2
+      - name: Read-only API responses, report geometry and smooth control interactions
+        run: node scripts/check-reports-live-controls.mjs
       - name: Compare every report, shell and language test against baseline
         run: |
           npm run test -- src/modules/reports src/app/layouts src/shared/i18n --maxWorkers=2 > /tmp/reports-after.log 2>&1 || true
@@ -147,8 +159,6 @@ jobs:
           assert.deepEqual(newFailures,[],'New report regressions');
           assert.equal(after.numRuntimeErrorTestSuites||0,0,'Test suite runtime errors');
           JS
-      - name: Read-only API responses, report geometry and smooth control interactions
-        run: node scripts/check-reports-live-controls.mjs
       - name: Preserve global language, appearance and shortcut controls
         run: node scripts/check-report-topbar.mjs
       - name: Production build
@@ -160,11 +170,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           git diff --check
-          git add -- src/modules/reports/io-history/io-history-report.css src/modules/reports/io-history/rpt08/SelectControl.tsx src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/rpt08/controls.tsx src/modules/reports/io-history/rpt08/controls.css src/modules/reports/io-history/rpt08/base.css src/modules/reports/io-history/rpt08/table-states.css src/modules/reports/io-history/io-history-api.ts src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/io-history/rpt08/report-layout.test.tsx src/modules/reports/warranty-components/WarrantyComponentsReport.tsx src/modules/reports/reports-api-only.test.ts src/modules/reports/operations/report-data.ts src/modules/reports/operations/report-reversal-source.ts src/modules/reports/operations/report-reversal-source.test.ts scripts/check-reports-live-controls.mjs
+          git add -- src/modules/reports/stock-reconcile/stock-reconcile-report.css src/modules/reports/io-history/io-history-report.css src/modules/reports/io-history/rpt08/SelectControl.tsx src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/rpt08/controls.tsx src/modules/reports/io-history/rpt08/controls.css src/modules/reports/io-history/rpt08/base.css src/modules/reports/io-history/rpt08/table-states.css src/modules/reports/io-history/io-history-api.ts src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/io-history/rpt08/report-layout.test.tsx src/modules/reports/warranty-components/WarrantyComponentsReport.tsx src/modules/reports/reports-api-only.test.ts src/modules/reports/operations/report-data.ts src/modules/reports/operations/report-reversal-source.ts src/modules/reports/operations/report-reversal-source.test.ts scripts/check-reports-live-controls.mjs
           git rm -r -- scripts/reports-quality-staging .github/workflows/reports-quality-once.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'fix(reports): align history controls and enforce API-derived report data' -m 'Use shared operations colors, smooth non-reflowing dropdown transitions and keyboard navigation. Remove Warranty URL-forced fake states and fixed mockup dates. Preserve API null quantities and explicit partial-source errors; exclude cached sources outside the requested scope and wait for pending sources. Read all reversal pages or expose a source error without partial reversal totals. Validate real report components with intercepted API responses and compare all report tests to baseline; no live warehouse records modified.'
+          git commit -m 'fix(reports): align history controls and enforce API-derived report data' -m 'Use shared operations colors, smooth non-reflowing dropdown transitions and keyboard navigation. Remove Warranty URL-forced fake states and fixed mockup dates. Preserve API null quantities and explicit partial-source errors; exclude cached sources outside the requested scope and wait for pending sources. Read all reversal pages or expose a source error without partial reversal totals. Remove narrow-screen stock report margin overflow. Validate real report components with intercepted API responses and compare all report tests to baseline; no live warehouse records modified.'
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin HEAD:refs/heads/dev
           git rev-parse HEAD
