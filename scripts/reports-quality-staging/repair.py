@@ -1,9 +1,7 @@
 from pathlib import Path
-import re, hashlib
+import re, hashlib, runpy
 root=Path('src/modules/reports')
 stage=Path('scripts/reports-quality-staging')
-def replace_once(path,old,new):
-    s=path.read_text(); assert s.count(old)==1,(str(path),old[:100],s.count(old));path.write_text(s.replace(old,new))
 def guard(path,sha):
     b=path.read_bytes();assert hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()==sha, f'Concurrent edit: {path}'
 p=root/'io-history/rpt08/controls.tsx';guard(p,'b5db5553d0455e85d4296cfd619d98f90b6f4f61')
@@ -16,17 +14,12 @@ for name in ['SelectControl.tsx','SelectControl.test.tsx','controls.css']:
     (root/'io-history/rpt08'/name).write_text((stage/(name+'.txt')).read_text())
 p=root/'io-history/io-history-report.css'
 assert 'controls.css' not in p.read_text();p.write_text(p.read_text()+'@import "./rpt08/controls.css";\n')
-# Date-picker proxy must match its visible 40px/44px trigger, not an invisible 46px hitbox.
 p=root/'io-history/rpt08/base.css';s=p.read_text();s=s.replace('height: 46px !important;', 'height: 100% !important;');p.write_text(s)
-# The portal has old !important declarations; change their values rather than stacking overrides.
 p=root/'io-history/rpt08/table-states.css';s=p.read_text();a=s.index('.rpt08-date-popup');head,tail=s[:a],s[a:]
-for old,new in {'#0788c9':'var(--ops-primary)','#004e74':'var(--ops-primary)','#eaf7fc':'var(--ops-pale)','rgba(7,136,201,0.11)':'var(--ops-pale)','#fff':'var(--ops-on-primary)'}.items():tail=tail.replace(old,new)
+for old,new in {'#0788c9':'var(--ops-primary)','#004e74':'var(--ops-primary)','#eaf7fc':'var(--ops-pale)','rgba(7,136,201,0.11)':'var(--ops-pale)'}.items():tail=tail.replace(old,new)
+tail=re.sub(r'#fff(?![0-9a-fA-F])','var(--ops-on-primary)',tail)
 p.write_text(head+tail)
-# Remove the last reviewed hard-coded mockup reporting period, not any API records.
-p=root/'warranty-components/WarrantyComponentsReport.tsx';s=p.read_text()
-assert s.count('dayjs("2026-09-04")')==2 and s.count('dayjs("2026-09-10")')==2
-s=s.replace('dayjs("2026-09-04")','dayjs().subtract(6, "day").startOf("day")').replace('dayjs("2026-09-10")','dayjs().startOf("day")');p.write_text(s)
-# API-derived history: prevent disabled source caches and incomplete sources from entering totals.
+runpy.run_path(str(stage/'repair-warranty.py'),run_name='__main__')
 p=root/'io-history/io-history-api.ts';guard(p,'f36f43f42046afee8cd2c2fc7ba8df6e15db2915')
 s=p.read_text().replace('  n,\n','')
 s=s.replace('type MovementGroup = { count: number; firstNo: string; netQty: number };','''type MovementGroup = { count: number; firstNo: string; netQty: number | null };
@@ -68,9 +61,8 @@ assert not re.search(r'\bn\(',s)
 p.write_text(s)
 p=root/'io-history/rpt08/Rpt08HistoryReport.tsx'
 s=p.read_text();s=s.replace('    exportState === "exporting";','    invalidRange ||\n    Boolean(source.error) ||\n    exportState === "unknown" ||\n    exportState === "exporting";');p.write_text(s)
-# Verify no actual sample datasets are used by report source code; tests remain separate.
 for p in root.rglob('*'):
     if p.suffix not in ['.ts','.tsx'] or re.search(r'\.(test|spec)\.|__tests__|fixtures',str(p)):continue
     s=re.sub(r'/\*.*?\*/|//[^\n]*','',p.read_text(),flags=re.S)
     assert not re.search(r'\b(makeDemoRows|DEMO_ROWS|DEMO_FROM|DEMO_TO|demoMode|forcedState|readPreviewState)\b',s),str(p)
-print('Reviewed report controls, API completeness, null quantities and reporting dates applied.')
+print('Reviewed report controls, API completeness, null quantities, dates and forced-state removal applied.')

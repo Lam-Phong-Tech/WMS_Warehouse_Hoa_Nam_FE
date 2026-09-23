@@ -45,17 +45,30 @@ jobs:
           test -f test-results/vitest-results.json
           cp test-results/vitest-results.json /tmp/reports-baseline.json
           tail -14 /tmp/reports-baseline.log
-      - name: Apply only reviewed control and API-integrity changes
+      - name: Apply reviewed controls, real API states and complete source paging
         run: |
           python3 scripts/reports-quality-staging/repair.py
+          python3 scripts/reports-quality-staging/repair-reversal.py
           cp scripts/reports-quality-staging/io-history-api.integrity.test.tsx.txt src/modules/reports/io-history/io-history-api.integrity.test.tsx
           cp scripts/reports-quality-staging/reports-api-only.test.ts.txt src/modules/reports/reports-api-only.test.ts
-          node_modules/.bin/prettier --write src/modules/reports/io-history/rpt08/SelectControl.tsx src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/rpt08/controls.tsx src/modules/reports/io-history/rpt08/controls.css src/modules/reports/io-history/rpt08/base.css src/modules/reports/io-history/rpt08/table-states.css src/modules/reports/io-history/io-history-api.ts src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/warranty-components/WarrantyComponentsReport.tsx src/modules/reports/reports-api-only.test.ts scripts/check-reports-live-controls.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/check-reports-live-controls.mjs')
+          s=p.read_text().replace("/reports-live-controls-tmp/index.html');","/reports-live-controls-tmp/index.html?state=error&demo=true');")
+          marker="  for(const language of ['vi','en']){"
+          assert s.count(marker)==1
+          s=s.replace(marker,"  assert.equal(await root.locator('.rpt08-overview-card__total .rpt08-big-number').innerText(),'6');\n  assert.equal(await root.locator('.rpt08-product-total strong').innerText(),'21');\n"+marker)
+          p.write_text(s)
+          PY
+          git diff --name-only -- src/modules/reports | grep -E '\.(ts|tsx|css)$' > /tmp/report-changed-files
+          git ls-files --others --exclude-standard src/modules/reports | grep -E '\.(ts|tsx|css)$' >> /tmp/report-changed-files
+          sort -u /tmp/report-changed-files | xargs node_modules/.bin/prettier --write
+          node_modules/.bin/prettier --write scripts/check-reports-live-controls.mjs
           git diff --check
       - name: TypeScript validation
         run: npm run typecheck
       - name: New dropdown, API-source and quantity-integrity tests must pass
-        run: npm run test -- src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/reports-api-only.test.ts --maxWorkers=2
+        run: npm run test -- src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/reports-api-only.test.ts src/modules/reports/operations/report-reversal-source.test.ts --maxWorkers=2
       - name: Compare every report, shell and language test against baseline
         run: |
           npm run test -- src/modules/reports src/app/layouts src/shared/i18n --maxWorkers=2 > /tmp/reports-after.log 2>&1 || true
@@ -72,7 +85,7 @@ jobs:
           fs.writeFileSync('test-results/reports-quality-tests.json',JSON.stringify(summary,null,2));
           assert.equal(before.numTotalTests,245,'Unexpected baseline; inspect before publishing');
           assert.equal(before.numFailedTests,26,'Unexpected baseline failures');
-          assert(after.numTotalTests>=before.numTotalTests+18,'Missing regression tests');
+          assert(after.numTotalTests>=before.numTotalTests+23,'Missing regression tests');
           assert.deepEqual(newFailures,[],'New report regressions');
           assert.equal(after.numRuntimeErrorTestSuites||0,0,'Test suite runtime errors');
           JS
@@ -89,11 +102,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           git diff --check
-          git add -- src/modules/reports/io-history/io-history-report.css src/modules/reports/io-history/rpt08/SelectControl.tsx src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/rpt08/controls.tsx src/modules/reports/io-history/rpt08/controls.css src/modules/reports/io-history/rpt08/base.css src/modules/reports/io-history/rpt08/table-states.css src/modules/reports/io-history/io-history-api.ts src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/warranty-components/WarrantyComponentsReport.tsx src/modules/reports/reports-api-only.test.ts scripts/check-reports-live-controls.mjs
+          git add -- src/modules/reports/io-history/io-history-report.css src/modules/reports/io-history/rpt08/SelectControl.tsx src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/rpt08/controls.tsx src/modules/reports/io-history/rpt08/controls.css src/modules/reports/io-history/rpt08/base.css src/modules/reports/io-history/rpt08/table-states.css src/modules/reports/io-history/io-history-api.ts src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/warranty-components/WarrantyComponentsReport.tsx src/modules/reports/reports-api-only.test.ts src/modules/reports/operations/report-data.ts src/modules/reports/operations/report-reversal-source.ts src/modules/reports/operations/report-reversal-source.test.ts scripts/check-reports-live-controls.mjs
           git rm -r -- scripts/reports-quality-staging .github/workflows/reports-quality-once.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'fix(reports): align history controls and enforce API-derived report data' -m 'Use shared operations colors, smooth non-reflowing dropdown transitions and keyboard navigation. Preserve API null quantities; exclude cached sources outside the requested scope and wait for required report sources. Remove the remaining fixed sample reporting period. Validate real report components with intercepted API responses and compare all report tests to baseline; no live warehouse records modified.'
+          git commit -m 'fix(reports): align history controls and enforce API-derived report data' -m 'Use shared operations colors, smooth non-reflowing dropdown transitions and keyboard navigation. Remove Warranty URL-forced fake states and fixed mockup dates. Preserve API null quantities; exclude cached sources outside the requested scope and wait for required report sources. Read all reversal pages or fail without partial totals. Validate real report components with intercepted API responses and compare all report tests to baseline; no live warehouse records modified.'
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin HEAD:refs/heads/dev
           git rev-parse HEAD
