@@ -48,17 +48,17 @@ jobs:
             if r['kind'] in ['audit-totals','literal-array']: print('AUDIT_BEFORE',json.dumps(r,ensure_ascii=False))
           print('AUDIT_MODULES',json.dumps({m:{'files':len(v),'overlays':overlays[m],'queries':queries[m]} for m,v in files.items()},ensure_ascii=False))
           PY
-      - name: Capture existing non-report test baseline
+      - name: Capture all non-report module test baselines
         run: |
-          npm run test -- src/modules/auth src/modules/dashboard src/modules/inbound src/modules/inventory src/modules/master-data src/modules/outbound src/modules/putaway src/modules/reversal src/modules/warranty src/shared/api src/shared/ui/catalog --maxWorkers=2 > /tmp/nonreport-baseline.log 2>&1 || true
-          test -f test-results/vitest-results.json
+          npm run test -- src/modules src/shared/api src/shared/ui/catalog --exclude 'src/modules/reports/**' --maxWorkers=2 > /tmp/nonreport-baseline.log 2>&1 || true
+          test -f test-results/vitest-results.json || { tail -60 /tmp/nonreport-baseline.log; exit 1; }
           cp test-results/vitest-results.json /tmp/nonreport-baseline.json
       - name: Apply SHA-guarded candidate in the runner only
         id: patch
         run: |
           node scripts/nonreport-api-audit/patch.mjs
           node scripts/nonreport-api-audit/patch-extra.mjs
-          if test -f scripts/nonreport-api-audit/patch-flows.mjs; then node scripts/nonreport-api-audit/patch-flows.mjs; fi
+          node scripts/nonreport-api-audit/patch-flows.mjs
           node --input-type=module <<'JS'
           import fs from 'node:fs';import cp from 'node:child_process';
           const files=JSON.parse(fs.readFileSync('/tmp/nonreport-changed.json','utf8'));
@@ -68,10 +68,12 @@ jobs:
           test -z "$(git diff --name-only -- src/modules/reports)"
       - name: Typecheck candidate and every consumer
         run: npm run typecheck
-      - name: Compare affected regression results with baseline
+      - name: Compare all non-report regression results with baseline
         if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
         run: |
-          npm run test -- src/modules/auth src/modules/dashboard src/modules/inbound src/modules/inventory src/modules/master-data src/modules/outbound src/modules/putaway src/modules/reversal src/modules/warranty src/shared/api src/shared/ui/catalog --maxWorkers=2 > /tmp/nonreport-candidate.log 2>&1 || true
+          rm -f test-results/vitest-results.json
+          npm run test -- src/modules src/shared/api src/shared/ui/catalog --exclude 'src/modules/reports/**' --maxWorkers=2 > /tmp/nonreport-candidate.log 2>&1 || true
+          test -f test-results/vitest-results.json || { tail -60 /tmp/nonreport-candidate.log; exit 1; }
           python3 - <<'PY'
           import json
           before=json.load(open('/tmp/nonreport-baseline.json')); after=json.load(open('test-results/vitest-results.json'))
@@ -79,8 +81,8 @@ jobs:
             return {(s['name'],t['fullName']):t for s in r['testResults'] for t in s.get('assertionResults',[]) if t['status']=='failed'}
           bf=failed(before); af=failed(after); new=set(af)-set(bf)
           for name,result in [('BASELINE',before),('CANDIDATE',after)]: print(name,json.dumps({k:result.get(k) for k in ['numTotalTests','numPassedTests','numFailedTests','numRuntimeErrorTestSuites']}))
-          for key,t in af.items(): print('NEW_FAILURE' if key in new else 'EXISTING_FAILURE',key,str(t.get('failureMessages',[]))[:1800])
-          if after.get('numRuntimeErrorTestSuites',0)>before.get('numRuntimeErrorTestSuites',0) or new: raise SystemExit(1)
+          for key,t in af.items(): print('NEW_FAILURE' if key in new else 'EXISTING_FAILURE',key,str(t.get('failureMessages',[]))[:2400])
+          if (after.get('numRuntimeErrorTestSuites') or 0)>(before.get('numRuntimeErrorTestSuites') or 0) or new: raise SystemExit(1)
           PY
       - name: Inspect remaining read-model defaults
         if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
