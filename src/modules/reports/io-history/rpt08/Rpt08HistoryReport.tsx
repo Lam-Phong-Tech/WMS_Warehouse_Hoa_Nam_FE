@@ -56,7 +56,8 @@ function currentSevenDayRange(): [Dayjs, Dayjs] {
 
 export default function IoHistoryReport() {
   const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() || "—";
+    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() ||
+    "—";
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const initialRange = useMemo<[Dayjs, Dayjs]>(
     () => currentSevenDayRange(),
@@ -185,16 +186,14 @@ export default function IoHistoryReport() {
     .isAfter(draftRange[1].startOf("day"));
   const initialLoading = source.loading && liveRows.length === 0;
   const hardError = Boolean(source.error) && liveRows.length === 0;
-  const refreshing =
-    manualRefreshing || (!initialLoading && source.fetching);
+  const refreshing = manualRefreshing || (!initialLoading && source.fetching);
   const readonly = !canExportPermission;
   const reportEmpty = !initialLoading && !hardError && totalTransactions === 0;
   const noSearchResult =
     !reportEmpty &&
     deferredSearch.trim().length > 0 &&
     searchedRows.length === 0;
-  const stale =
-    !staleDismissed && Boolean(source.error) && liveRows.length > 0;
+  const stale = !staleDismissed && Boolean(source.error) && liveRows.length > 0;
   const controlsBusy = initialLoading || refreshing;
   const exportDisabled =
     initialLoading ||
@@ -202,6 +201,9 @@ export default function IoHistoryReport() {
     hardError ||
     reportEmpty ||
     readonly ||
+    invalidRange ||
+    Boolean(source.error) ||
+    exportState === "unknown" ||
     exportState === "exporting";
   const defaultDraftRange =
     draftRange[0].isSame(initialRange[0], "day") &&

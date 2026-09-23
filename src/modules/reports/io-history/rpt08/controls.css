@@ -13,7 +13,10 @@
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
 }
 #rpt08-history-report .rpt08-apply-button {
   background: var(--ops-primary);
@@ -54,13 +57,18 @@
   color: var(--ops-text);
   font-size: 14px;
   font-weight: 400;
-  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease;
 }
 #rpt08-history-report .rpt08-select__button:hover:not(:disabled) {
   border-color: var(--ops-link);
   box-shadow: none;
 }
-#rpt08-history-report .rpt08-date-control:focus-within .rpt08-date-control__visual,
+#rpt08-history-report
+  .rpt08-date-control:focus-within
+  .rpt08-date-control__visual,
 #rpt08-history-report .rpt08-select.is-open .rpt08-select__button,
 #rpt08-history-report .rpt08-select__button:focus-visible {
   border-color: var(--ops-primary);
@@ -83,7 +91,9 @@
 #rpt08-history-report .rpt08-select__chevron {
   transition: transform 140ms ease;
 }
-#rpt08-history-report .rpt08-select.is-open .rpt08-select__chevron { transform: rotate(180deg); }
+#rpt08-history-report .rpt08-select.is-open .rpt08-select__chevron {
+  transform: rotate(180deg);
+}
 #rpt08-history-report .rpt08-select__menu {
   position: absolute;
   max-height: min(280px, 45vh);
@@ -101,7 +111,10 @@
   pointer-events: none;
   transform: translateY(-4px);
   transform-origin: top center;
-  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 0s linear 140ms;
 }
 #rpt08-history-report .rpt08-select.is-open .rpt08-select__menu {
   opacity: 1;
@@ -117,7 +130,9 @@
   font-weight: 400;
   line-height: 20px;
   min-height: 38px;
-  transition: background-color 100ms ease, color 100ms ease;
+  transition:
+    background-color 100ms ease,
+    color 100ms ease;
 }
 #rpt08-history-report .rpt08-select__menu button:hover,
 #rpt08-history-report .rpt08-select__menu button.is-highlighted {
@@ -133,7 +148,9 @@
   outline: 1px solid var(--ops-line);
   outline-offset: -1px;
 }
-#rpt08-history-report .rpt08-date-control.is-invalid .rpt08-date-control__visual {
+#rpt08-history-report
+  .rpt08-date-control.is-invalid
+  .rpt08-date-control__visual {
   border-color: var(--ops-danger);
   box-shadow: 0 0 0 2px var(--ops-danger-soft);
 }
@@ -161,7 +178,10 @@
   #rpt08-history-report .rpt08-date-control__visual,
   #rpt08-history-report .rpt08-apply-button,
   #rpt08-history-report .rpt08-reset-button,
-  #rpt08-history-report .rpt08-export-button { min-height: 44px; height: 44px; }
+  #rpt08-history-report .rpt08-export-button {
+    min-height: 44px;
+    height: 44px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   #rpt08-history-report .rpt08-select__menu,
@@ -170,5 +190,7 @@
   #rpt08-history-report .rpt08-select__chevron,
   #rpt08-history-report .rpt08-apply-button,
   #rpt08-history-report .rpt08-reset-button,
-  #rpt08-history-report .rpt08-export-button { transition: none; }
+  #rpt08-history-report .rpt08-export-button {
+    transition: none;
+  }
 }

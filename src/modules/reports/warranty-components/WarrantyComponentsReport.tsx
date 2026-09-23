@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/shared/store/auth.store";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -77,23 +78,6 @@ type UiRow = {
   statusLabel: string;
   overdueDays: number;
 };
-
-type ForcedState =
-  | "loading"
-  | "refreshing"
-  | "empty"
-  | "no-result"
-  | "error"
-  | "offline"
-  | "partial"
-  | "invalid-date"
-  | "export-failed"
-  | "exporting"
-  | "export-success"
-  | "export-unknown"
-  | "detail-processing"
-  | "detail-error"
-  | null;
 
 function mapStatus(value: string): UiStatus {
   const normalized = value.toUpperCase();
@@ -419,36 +403,16 @@ function FailurePanel({
 
 export default function WarrantyComponentsReport() {
   const t = useT();
+  const warehouseName =
+    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() ||
+    "—";
   const presets = useMemo(() => reportRangePresets(t), [t]);
-  const forcedState = useMemo<ForcedState>(() => {
-    const value = new URLSearchParams(window.location.search).get("state");
-    const supported = new Set([
-      "loading",
-      "refreshing",
-      "empty",
-      "no-result",
-      "error",
-      "offline",
-      "partial",
-      "invalid-date",
-      "export-failed",
-      "exporting",
-      "export-success",
-      "export-unknown",
-      "detail-processing",
-      "detail-error",
-    ]);
-    return supported.has(value ?? "") ? (value as ForcedState) : null;
-  }, []);
-
   const [range, setRange] = useState<[Dayjs, Dayjs]>([
-    dayjs("2026-09-04"),
-    dayjs("2026-09-10"),
+    dayjs().subtract(6, "day").startOf("day"),
+    dayjs().startOf("day"),
   ]);
   const [status, setStatus] = useState("");
-  const [keyword, setKeyword] = useState(
-    forcedState === "no-result" ? "abcxyz" : "",
-  );
+  const [keyword, setKeyword] = useState("");
   const [online, setOnline] = useState(() => navigator.onLine);
   const [detailBusyId, setDetailBusyId] = useState<string | null>(null);
   const [detailErrorId, setDetailErrorId] = useState<string | null>(null);
@@ -473,30 +437,17 @@ export default function WarrantyComponentsReport() {
 
   const from = range[0].format("YYYY-MM-DD");
   const to = range[1].format("YYYY-MM-DD");
-  const invalid =
-    range[0].isAfter(range[1], "day") || forcedState === "invalid-date";
-  const source = useWarrantyReport({
-    from,
-    to,
-    enabled:
-      !invalid &&
-      online &&
-      forcedState !== "offline" &&
-      forcedState !== "error",
-  });
+  const invalid = range[0].isAfter(range[1], "day");
+  const source = useWarrantyReport({ from, to, enabled: !invalid && online });
   const exporter = useReportExport();
 
   const apiRows = useMemo(() => normalizeRows(source.data), [source.data]);
-  const rows = forcedState === "empty" ? [] : apiRows;
-  const loading = source.isLoading || forcedState === "loading";
-  const refreshing =
-    (!loading && source.isFetching) || forcedState === "refreshing";
-  const offline = !online || forcedState === "offline";
-  const hardError =
-    forcedState === "error" ||
-    (source.isError && rows.length === 0 && !offline);
-  const partial =
-    forcedState === "partial" || (source.isError && rows.length > 0);
+  const rows = apiRows;
+  const loading = source.isLoading;
+  const refreshing = !loading && source.isFetching;
+  const offline = !online;
+  const hardError = source.isError && rows.length === 0 && !offline;
+  const partial = source.isError && rows.length > 0;
 
   const filteredRows = useMemo(() => {
     const q = keyword.trim().toLocaleLowerCase("vi");
@@ -529,7 +480,10 @@ export default function WarrantyComponentsReport() {
   }, [status, keyword]);
 
   const resetFilters = () => {
-    setRange([dayjs("2026-09-04"), dayjs("2026-09-10")]);
+    setRange([
+      dayjs().subtract(6, "day").startOf("day"),
+      dayjs().startOf("day"),
+    ]);
     setStatus("");
     setKeyword("");
     pagination.reset();
@@ -549,11 +503,7 @@ export default function WarrantyComponentsReport() {
     });
   };
 
-  const exporting =
-    exporter.exporting === "xlsx" || forcedState === "exporting";
-  const exportFailed = forcedState === "export-failed";
-  const exportSuccess = forcedState === "export-success";
-  const exportUnknown = forcedState === "export-unknown";
+  const exporting = exporter.exporting === "xlsx";
 
   const openDetail = (row: UiRow) => {
     setDetailErrorId(null);
@@ -561,14 +511,8 @@ export default function WarrantyComponentsReport() {
     setDetailId(row.id);
   };
 
-  const effectiveBusyId =
-    forcedState === "detail-processing" && filteredRows[0]
-      ? filteredRows[0].id
-      : detailBusyId;
-  const effectiveDetailError =
-    forcedState === "detail-error" && filteredRows[0]
-      ? filteredRows[0].caseNo
-      : detailErrorId;
+  const effectiveBusyId = detailBusyId;
+  const effectiveDetailError = detailErrorId;
 
   const pageNumbers = useMemo(() => {
     if (lastPage <= 3)
@@ -738,7 +682,7 @@ export default function WarrantyComponentsReport() {
           <Box sx={{ minWidth: 0 }}>
             <FilterLabel>{tUi("updatedUi.text_19c608bfa103")}</FilterLabel>
             <Box
-              aria-label="Kho Hoa Nam"
+              aria-label={warehouseName}
               sx={{
                 minHeight: "var(--ops-control-height)",
                 px: 1.35,
@@ -752,7 +696,7 @@ export default function WarrantyComponentsReport() {
                 fontWeight: 650,
               }}
             >
-              ◇ <Box component="span">Kho Hoa Nam</Box>
+              ◇ <Box component="span">{warehouseName}</Box>
             </Box>
           </Box>
           <Box sx={{ minWidth: 0 }}>
@@ -800,22 +744,6 @@ export default function WarrantyComponentsReport() {
         {exporting ? (
           <Box sx={{ mt: 0.75 }}>
             <UiAlert tone="info">{tUi("updatedUi.text_c4136b7b0b71")}</UiAlert>
-          </Box>
-        ) : exportFailed ? (
-          <Box sx={{ mt: 0.75 }}>
-            <UiAlert tone="error">{tUi("updatedUi.text_f2af03f694e3")}</UiAlert>
-          </Box>
-        ) : exportSuccess ? (
-          <Box sx={{ mt: 0.75 }}>
-            <UiAlert tone="success">
-              {tUi("updatedUi.text_a808b9e33648")}
-            </UiAlert>
-          </Box>
-        ) : exportUnknown ? (
-          <Box sx={{ mt: 0.75 }}>
-            <UiAlert tone="warning">
-              {tUi("updatedUi.text_4d900e9a46cd")}
-            </UiAlert>
           </Box>
         ) : null}
       </Box>
@@ -1184,7 +1112,7 @@ export default function WarrantyComponentsReport() {
                     fontWeight: 800,
                   }}
                 >
-                  {forcedState === "no-result"
+                  {rows.length > 0 && filteredRows.length === 0
                     ? tUi("updatedUi.text_f3674c04b5e8") +
                       " " +
                       fmt(rows.length) +

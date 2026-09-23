@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { SelectControl } from "./SelectControl";
 import type { Dayjs } from "dayjs";
 import { Link } from "react-router-dom";
 import { UiVuexyDateRangePicker } from "@/shared/ui";
@@ -27,100 +27,6 @@ function Skeleton({
       aria-hidden="true"
       style={{ width, height }}
     />
-  );
-}
-
-function SelectControl<T extends string>({
-  ariaLabel,
-  value,
-  options,
-  icon,
-  disabled,
-  readonly,
-  onChange,
-}: {
-  ariaLabel: string;
-  value: T;
-  options: ReadonlyArray<{ value: T; label: string }>;
-  icon: ReactNode;
-  disabled?: boolean;
-  readonly?: boolean;
-  onChange: (value: T) => void;
-}) {
-  const id = useId();
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  const current =
-    options.find((option) => option.value === value) ?? options[0];
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  return (
-    <div
-      ref={rootRef}
-      className={
-        "rpt08-select" +
-        (open ? " is-open" : "") +
-        (readonly ? " is-readonly" : "")
-      }
-    >
-      <button
-        type="button"
-        className="rpt08-select__button"
-        role="combobox"
-        aria-label={ariaLabel}
-        aria-controls={`${id}-listbox`}
-        aria-expanded={open}
-        disabled={disabled}
-        onClick={() => {
-          if (!readonly) setOpen((valueOpen) => !valueOpen);
-        }}
-      >
-        <span className="rpt08-select__icon" aria-hidden="true">
-          {icon}
-        </span>
-        <span className="rpt08-select__value">{current?.label ?? "—"}</span>
-        <DownOutlined className="rpt08-select__chevron" />
-      </button>
-      {open ? (
-        <div
-          id={`${id}-listbox`}
-          className="rpt08-select__menu"
-          role="listbox"
-          aria-label={ariaLabel}
-        >
-          {options.map((option) => (
-            <button
-              key={option.value || "all"}
-              type="button"
-              role="option"
-              aria-selected={option.value === value}
-              className={option.value === value ? "is-selected" : ""}
-              onClick={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
   );
 }
 
@@ -193,10 +99,7 @@ export function HeaderActions({
           <StockOutlined />
           <span>
             <strong>{warehouse}</strong>
-            <small>
-              <i />
-              {" " + tUi("dashboard.snapshot.warehouseActive")}
-            </small>
+            <small>{tUi("updatedUi.text_23d058563849")}</small>
           </span>
           <DownOutlined />
         </summary>
@@ -430,7 +333,7 @@ export function FilterCard({
         <div className="rpt08-filter-field">
           <label>{tUi("updatedUi.text_19c608bfa103")}</label>
           <SelectControl
-            ariaLabel="Kho"
+            ariaLabel={tUi("updatedUi.text_19c608bfa103")}
             value="warehouse"
             options={[{ value: "warehouse", label: warehouse }]}
             icon={<span className="rpt08-diamond">◇</span>}
@@ -443,7 +346,7 @@ export function FilterCard({
         <div className="rpt08-filter-field">
           <label>{tUi("updatedUi.text_94c1cbc6d405")}</label>
           <SelectControl
-            ariaLabel="Loại giao dịch"
+            ariaLabel={tUi("updatedUi.text_94c1cbc6d405")}
             value={type}
             options={[
               { value: "ALL", label: tUi("dashboard.operations.filterAll") },
@@ -459,7 +362,7 @@ export function FilterCard({
         <div className="rpt08-filter-field">
           <label>{tUi("inventory.trace.colPerformedBy")}</label>
           <SelectControl
-            ariaLabel="Người thực hiện"
+            ariaLabel={tUi("inventory.trace.colPerformedBy")}
             value={actor}
             options={actorOptions}
             icon={<UserOutlined />}

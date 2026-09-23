@@ -51,8 +51,15 @@ describe("RPT-08 shared report presentation", () => {
     const entry = readFileSync(root + "io-history-report.css", "utf8");
     const css = readFileSync(root + "rpt08/alignment.css", "utf8");
     expect(page).toContain('className="hn-report-page-title"');
-    expect(entry.trim().endsWith('@import "./rpt08/alignment.css";')).toBe(
-      true,
+    const imports = entry.trim().split(/\r?\n/);
+    const responsive = imports.indexOf('@import "./rpt08/responsive.css";');
+    const alignment = imports.indexOf('@import "./rpt08/alignment.css";');
+    const controls = imports.indexOf('@import "./rpt08/controls.css";');
+    expect(responsive).toBeGreaterThanOrEqual(0);
+    expect(alignment).toBeGreaterThan(responsive);
+    expect(controls).toBeGreaterThan(alignment);
+    expect(readFileSync(root + "rpt08/controls.css", "utf8")).not.toMatch(
+      /\.hn-topbar|\.header-control|!important/,
     );
     expect(css).not.toMatch(/\.hn-topbar|\.header-control|!important/);
     const { container } = mountTable();

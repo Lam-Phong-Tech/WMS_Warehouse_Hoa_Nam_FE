@@ -1,3 +1,4 @@
+import { fetchReversalReportSource } from "./report-reversal-source";
 import { useMemo } from "react";
 import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { useQuery } from "@tanstack/react-query";
@@ -465,10 +466,7 @@ export function useDocumentHistory({
 export function useReversalDocuments({ from, to, enabled = true }: PeriodArgs) {
   return useQuery({
     queryKey: ["rpt-ops", "reversal-documents", from, to],
-    queryFn: () =>
-      http.getPage<Raw[]>(API_ENDPOINTS.REVERSAL_DOCUMENTS, {
-        params: { from_date: from, to_date: to, per_page: 200 },
-      }),
+    queryFn: () => fetchReversalReportSource(from, to),
     enabled,
     staleTime: STALE_MS,
     placeholderData: (previous) => previous,

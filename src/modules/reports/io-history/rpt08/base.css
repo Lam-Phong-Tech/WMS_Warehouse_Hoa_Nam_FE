@@ -169,7 +169,10 @@
   color: var(--rpt08-text);
   cursor: pointer;
   list-style: none;
-  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
 }
 
 #rpt08-history-report .rpt08-warehouse-menu > summary::-webkit-details-marker {
@@ -294,7 +297,10 @@
   font-size: 12.5px;
   font-weight: 800;
   cursor: pointer;
-  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 #rpt08-history-report .rpt08-export-button:hover:not(:disabled) {
@@ -423,14 +429,18 @@
   font-size: 10px;
 }
 
-#rpt08-history-report .rpt08-date-control:focus-within .rpt08-date-control__visual,
+#rpt08-history-report
+  .rpt08-date-control:focus-within
+  .rpt08-date-control__visual,
 #rpt08-history-report .rpt08-select.is-open .rpt08-select__button,
 #rpt08-history-report .rpt08-select__button:hover:not(:disabled) {
   border-color: var(--rpt08-ocean);
   box-shadow: 0 0 0 2px rgba(7, 136, 201, 0.1);
 }
 
-#rpt08-history-report .rpt08-date-control.is-invalid .rpt08-date-control__visual {
+#rpt08-history-report
+  .rpt08-date-control.is-invalid
+  .rpt08-date-control__visual {
   border: 2px solid #bd3f3a;
   box-shadow: 0 0 0 2px rgba(189, 63, 58, 0.12);
 }
@@ -440,14 +450,14 @@
   inset: 0;
   z-index: 2;
   width: 100% !important;
-  height: 46px !important;
+  height: 100% !important;
   opacity: 0.01;
   overflow: hidden;
 }
 
 #rpt08-history-report .rpt08-date-proxy .hn-vuexy-date-field {
   width: 100% !important;
-  height: 46px !important;
+  height: 100% !important;
 }
 
 #rpt08-history-report .rpt08-select__button {
@@ -609,8 +619,12 @@
 }
 
 @keyframes rpt08-progress {
-  0% { left: -25%; }
-  100% { left: 105%; }
+  0% {
+    left: -25%;
+  }
+  100% {
+    left: 105%;
+  }
 }
 
 #rpt08-history-report .rpt08-spinner {
@@ -625,7 +639,9 @@
 }
 
 @keyframes rpt08-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 #rpt08-history-report .rpt08-status-banner {
@@ -691,7 +707,10 @@
   cursor: pointer;
 }
 
-#rpt08-history-report .rpt08-status-banner.is-error .rpt08-status-banner__actions > button:first-child {
+#rpt08-history-report
+  .rpt08-status-banner.is-error
+  .rpt08-status-banner__actions
+  > button:first-child {
   border-color: var(--rpt08-navy-deep);
   background: var(--rpt08-navy-deep);
   color: #fff;

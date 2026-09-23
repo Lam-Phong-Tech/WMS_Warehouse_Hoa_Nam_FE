@@ -51,7 +51,6 @@ import {
 import {
   dayKey,
   listOf,
-  n,
   text,
   type Raw,
 } from "@/modules/reports/operations/report-format";
@@ -204,7 +203,14 @@ function useInventoryLedger({
 }
 
 /** Movement của MỘT chứng từ, gom theo `source_id`. */
-type MovementGroup = { count: number; firstNo: string; netQty: number };
+type MovementGroup = { count: number; firstNo: string; netQty: number | null };
+
+function finiteQuantity(value: unknown): number | null {
+  if (typeof value !== "number" && typeof value !== "string") return null;
+  if (typeof value === "string" && value.trim() === "") return null;
+  const result = Number(value);
+  return Number.isFinite(result) ? result : null;
+}
 
 /**
  * Lát cắt RPT-IO-01 của một kỳ báo cáo.
@@ -242,9 +248,22 @@ export function useIoHistorySnapshot({
   const ledger = useInventoryLedger({ from, to, enabled: valid });
   const users = useUserDirectory();
   const resolvingSnapshot =
-    documents.isPlaceholderData ||
+    (wantsStockDocuments && documents.isPlaceholderData) ||
     ledger.isPlaceholderData ||
     (wantsReversals && reversals.isPlaceholderData);
+
+  const hasCompleteSources =
+    (!wantsStockDocuments || documents.data != null) &&
+    (!wantsReversals || reversals.data != null) &&
+    ledger.data != null;
+
+  // Preserve successfully loaded documents on a settled reversal-source error.
+  // The error remains exposed to the report's existing partial/stale banner.
+  // A missing ledger is never a usable quantity source.
+  const hasUsableSources =
+    (!wantsStockDocuments || documents.data != null) &&
+    (!wantsReversals || reversals.data != null || Boolean(reversals.error)) &&
+    ledger.data != null;
 
   /** `source_id` → movement của chứng từ đó (số lượng, id, tổng qty có dấu). */
   const movementsByDocument = useMemo(() => {
@@ -257,31 +276,39 @@ export function useIoHistorySnapshot({
         map.set(sourceId, {
           count: 1,
           firstNo: text(row.movement_no, ""),
-          netQty: n(row.qty_delta),
+          netQty: finiteQuantity(row.qty_delta),
         });
         continue;
       }
       current.count += 1;
-      current.netQty += n(row.qty_delta);
+      const delta = finiteQuantity(row.qty_delta);
+      current.netQty =
+        current.netQty === null || delta === null
+          ? null
+          : current.netQty + delta;
     }
     return map;
   }, [ledger.data]);
 
   const rows = useMemo<IoHistoryRow[]>(() => {
-    if (resolvingSnapshot) return [];
+    if (!hasUsableSources || resolvingSnapshot) return [];
     const result: IoHistoryRow[] = [];
 
     // ── Phiếu nhập / xuất ────────────────────────────────────────────────
-    for (const row of listOf((documents.data?.data as Raw | undefined)?.rows)) {
+    for (const row of listOf(
+      wantsStockDocuments
+        ? (documents.data?.data as Raw | undefined)?.rows
+        : undefined,
+    )) {
       const id = text(row.id, "");
       const docType: IoDocType =
         text(row.doc_type, "") === "OUTBOUND" ? "OUTBOUND" : "INBOUND";
       const lines = listOf(row.lines);
       const movements = movementsByDocument.get(id);
-      const postedFromLines = lines.reduce(
-        (total, line) => total + n(line.posted_qty),
-        0,
-      );
+      const postedFromLines = lines.reduce<number | null>((total, line) => {
+        const quantity = finiteQuantity(line.posted_qty);
+        return total === null || quantity === null ? null : total + quantity;
+      }, 0);
       const actor = text(row.created_by_name ?? row.posted_by_name, "");
       result.push({
         id,
@@ -295,7 +322,7 @@ export function useIoHistorySnapshot({
         qty:
           movements !== undefined
             ? movements.netQty
-            : lines.length === 0
+            : lines.length === 0 || postedFromLines === null
               ? null
               : docType === "INBOUND"
                 ? postedFromLines
@@ -317,7 +344,9 @@ export function useIoHistorySnapshot({
     }
 
     // ── Phiếu hoàn tác ───────────────────────────────────────────────────
-    for (const row of listOf((reversals.data as { data?: unknown })?.data)) {
+    for (const row of listOf(
+      wantsReversals ? (reversals.data as { data?: unknown })?.data : undefined,
+    )) {
       const id = text(row.id, "");
       const status = text(row.status, "");
       if (status !== IO_HISTORY_STATUS) continue;
@@ -328,7 +357,7 @@ export function useIoHistorySnapshot({
       if (date === "" || date < from || date > to) continue;
       const movements = movementsByDocument.get(id);
       const originalType = text(row.reference_document_type, "");
-      const totalQty = n(row.total_qty);
+      const totalQty = finiteQuantity(row.total_qty);
       // `posted_by`/`created_by` là UUID: ưu tiên tên BE đã join, rồi tra danh
       // bạ; vẫn không ra tên thì để rỗng — không in UUID.
       const actor =
@@ -346,11 +375,13 @@ export function useIoHistorySnapshot({
         qty:
           movements !== undefined
             ? movements.netQty
-            : originalType === "INBOUND"
-              ? -totalQty
-              : originalType === "OUTBOUND"
-                ? totalQty
-                : null,
+            : totalQty === null
+              ? null
+              : originalType === "INBOUND"
+                ? -totalQty
+                : originalType === "OUTBOUND"
+                  ? totalQty
+                  : null,
         actor,
         department: users.departmentNameOfActor(actor),
         party: text(row.warehouse_name, ""),
@@ -371,16 +402,26 @@ export function useIoHistorySnapshot({
     from,
     to,
     resolvingSnapshot,
+    hasUsableSources,
+    wantsStockDocuments,
+    wantsReversals,
   ]);
 
   const snapshot = useMemo<IoHistorySnapshot>(
     () => ({
       rows,
-      dataAsOf: resolvingSnapshot
-        ? ""
-        : text(documents.data?.meta?.timestamp, ""),
+      dataAsOf:
+        resolvingSnapshot || !hasCompleteSources || !wantsStockDocuments
+          ? ""
+          : text(documents.data?.meta?.timestamp, ""),
     }),
-    [rows, documents.data, resolvingSnapshot],
+    [
+      rows,
+      documents.data,
+      resolvingSnapshot,
+      hasCompleteSources,
+      wantsStockDocuments,
+    ],
   );
 
   return {
@@ -390,8 +431,14 @@ export function useIoHistorySnapshot({
       (wantsStockDocuments && documents.isLoading) ||
       (wantsReversals && reversals.isLoading) ||
       ledger.isLoading,
-    fetching: documents.isFetching || reversals.isFetching || ledger.isFetching,
-    error: documents.error ?? reversals.error ?? ledger.error,
+    fetching:
+      (wantsStockDocuments && documents.isFetching) ||
+      (wantsReversals && reversals.isFetching) ||
+      ledger.isFetching,
+    error:
+      (wantsStockDocuments ? documents.error : null) ??
+      (wantsReversals ? reversals.error : null) ??
+      ledger.error,
     refetch: async () => {
       const tasks: Promise<unknown>[] = [ledger.refetch()];
       if (wantsStockDocuments) tasks.push(documents.refetch());
