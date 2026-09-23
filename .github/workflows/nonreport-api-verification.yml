@@ -1,0 +1,69 @@
+name: Non-report API verification
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/nonreport-api-verification.yml'
+      - 'scripts/nonreport-api-audit/**'
+      - 'src/**'
+permissions:
+  contents: read
+concurrency:
+  group: nonreport-api-verification
+  cancel-in-progress: true
+env:
+  VITE_APP_ENV: test
+  VITE_APP_VERSION: 1.0.0-nonreport-audit
+  VITE_API_BASE_URL: http://127.0.0.1:5197/api/v1
+  VITE_API_HEALTH_PATH: /health
+  VITE_API_TIMEOUT_MS: '10000'
+  VITE_API_WITH_CREDENTIALS: 'true'
+  VITE_STORAGE_URL: ''
+  VITE_ENABLE_ANALYTICS: 'false'
+  VITE_ENABLE_DEBUG: 'false'
+  VITE_ENABLE_PERF_MONITOR: 'false'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Capture tracked source for the audit (no credentials or environment files)
+        run: |
+          mkdir -p /tmp/nonreport-audit
+          git rev-parse HEAD > /tmp/nonreport-audit/revision.txt
+          git archive --format=tar HEAD src scripts package.json yarn.lock | gzip > /tmp/nonreport-audit/source.tgz
+          git ls-files 'src/*' > /tmp/nonreport-audit/source-files.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nonreport-api-source-${{ github.sha }}
+          path: /tmp/nonreport-audit/
+          retention-days: 3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - name: Install locked dependencies
+        run: yarn install --frozen-lockfile --non-interactive
+      - name: Inspect runtime data sources without modifying them
+        run: node scripts/nonreport-api-audit/inspect.mjs > /tmp/nonreport-audit/inspection.jsonl
+      - name: Typecheck current committed source
+        run: npm run typecheck
+      - name: Run existing non-report regression tests
+        if: ${{ !cancelled() }}
+        run: npm run test -- src/modules/auth src/modules/dashboard src/modules/inbound src/modules/inventory src/modules/master-data src/modules/outbound src/modules/putaway src/modules/reversal src/modules/warranty src/shared/api src/shared/ui/catalog --maxWorkers=2
+      - name: Build current committed source
+        if: ${{ !cancelled() }}
+        run: npm run build
+      - name: Publish verification evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nonreport-api-evidence-${{ github.sha }}
+          path: |
+            /tmp/nonreport-audit/inspection.jsonl
+            /tmp/nonreport-audit/revision.txt
+            test-results/vitest-results.json
+          retention-days: 7
