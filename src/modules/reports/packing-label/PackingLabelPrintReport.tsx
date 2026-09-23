@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -353,7 +354,7 @@ export default function PackingLabelPrintReport() {
           </h1>
           <p>{t("reports.packingLabel.description")}</p>
         </div>
-        <div className="hn-pkg-label__header-actions">
+        <div className="hn-pkg-label__header-actions hn-report-warehouse-actions">
           <UiButton
             appearance="outlined"
             disabled={
@@ -375,6 +376,8 @@ export default function PackingLabelPrintReport() {
               ? tUi("updatedUi.text_8b96ca57d2f4")
               : tUi("outbound.detail.print")}
           </UiButton>
+
+          <ReportWarehouseCard />
         </div>
       </header>
 

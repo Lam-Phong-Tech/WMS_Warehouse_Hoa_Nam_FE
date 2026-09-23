@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
@@ -759,7 +760,7 @@ export default function InboundFlowReport() {
           </h1>
           <p>{tUi("updatedUi.text_3929c435dfd2")}</p>
         </div>
-        <div className="inbound-heading-actions">
+        <div className="inbound-heading-actions hn-report-warehouse-actions">
           <span
             className="inbound-tooltip"
             data-tooltip={exportReason || undefined}
@@ -776,18 +777,7 @@ export default function InboundFlowReport() {
                 : tUi("updatedUi.text_869645273267")}
             </button>
           </span>
-          <div className="inbound-warehouse-card">
-            <span className="inbound-warehouse-card__icon">
-              <Icon name="warehouse" />
-            </span>
-            <span>
-              <strong>Kho Hoa Nam</strong>
-              <small>
-                <i />
-                {" " + tUi("dashboard.snapshot.warehouseActive")}
-              </small>
-            </span>
-          </div>
+          <ReportWarehouseCard />
         </div>
       </header>
 

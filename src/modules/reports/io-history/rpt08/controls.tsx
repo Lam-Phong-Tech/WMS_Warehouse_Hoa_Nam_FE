@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { SelectControl } from "./SelectControl";
 import type { Dayjs } from "dayjs";
 import { Link } from "react-router-dom";
@@ -7,7 +8,6 @@ import {
   DownOutlined,
   DownloadOutlined,
   HistoryOutlined,
-  StockOutlined,
   SwapOutlined,
   UserOutlined,
   WarningOutlined,
@@ -75,7 +75,6 @@ function DateRangeControl({
 }
 
 export function HeaderActions({
-  warehouse,
   readonly,
   exportState,
   exportDisabled,
@@ -88,37 +87,13 @@ export function HeaderActions({
   onExport: () => void;
 }) {
   return (
-    <div className="rpt08-header-actions">
+    <div className="rpt08-header-actions hn-report-warehouse-actions">
       <span className="rpt08-demo-chip" role="note">
         <span aria-hidden="true">ⓘ</span>
         {tUi("updatedUi.text_098cc1b3c5b9")}
       </span>
 
-      <details className="rpt08-warehouse-menu">
-        <summary>
-          <StockOutlined />
-          <span>
-            <strong>{warehouse}</strong>
-            <small>{tUi("updatedUi.text_23d058563849")}</small>
-          </span>
-          <DownOutlined />
-        </summary>
-        <div className="rpt08-warehouse-menu__popover" role="menu">
-          <button
-            type="button"
-            role="menuitem"
-            onClick={(event) => {
-              event.currentTarget.closest("details")?.removeAttribute("open");
-            }}
-          >
-            <StockOutlined />
-            <span>
-              <strong>{warehouse}</strong>
-              <small>{tUi("updatedUi.text_23d058563849")}</small>
-            </span>
-          </button>
-        </div>
-      </details>
+      <ReportWarehouseCard />
 
       {readonly ? (
         <span className="rpt08-readonly-pill">

@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -606,6 +607,7 @@ export default function WarrantyComponentsReport() {
           </Box>
         </Box>
         <Stack
+          className="hn-report-warehouse-actions"
           direction="row"
           sx={{
             gap: 1,
@@ -624,6 +626,8 @@ export default function WarrantyComponentsReport() {
               ? tUi("outbound.detail.preparing")
               : tUi("reports.traceability.exportReport")}
           </UiButton>
+
+          <ReportWarehouseCard />
         </Stack>
       </Stack>
 

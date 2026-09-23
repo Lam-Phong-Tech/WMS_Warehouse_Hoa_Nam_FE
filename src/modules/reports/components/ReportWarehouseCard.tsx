@@ -8,22 +8,38 @@ import "./report-warehouse-card.css";
 type WarehouseState = "active" | "inactive" | "unknown";
 type WarehouseRow = Record<string, unknown>;
 const text = (value: unknown): string =>
-  typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+  typeof value === "string" || typeof value === "number"
+    ? String(value).trim()
+    : "";
 
 /** Match the current warehouse by identity, never by array order or display name. */
 export function resolveReportWarehouse(
   rows: readonly WarehouseRow[],
-  context: { warehouse_id?: number | string | null; warehouse_name?: string | null } | null,
+  context: {
+    warehouse_id?: number | string | null;
+    warehouse_name?: string | null;
+  } | null,
   verified: boolean,
 ) {
   const id = text(context?.warehouse_id);
-  const matches = rows.filter((row) => id
-    ? text(row.warehouse_id ?? row.id) === id
-    : text(row.warehouse_code ?? row.code).toUpperCase() === CANONICAL_WAREHOUSE_CODE);
+  const matches = rows.filter((row) =>
+    id
+      ? text(row.warehouse_id ?? row.id) === id
+      : text(row.warehouse_code ?? row.code).toUpperCase() ===
+        CANONICAL_WAREHOUSE_CODE,
+  );
   const row = matches.length === 1 ? matches[0] : undefined;
-  const name = text(row?.warehouse_name ?? row?.name) || text(context?.warehouse_name) || "—";
+  const name =
+    text(row?.warehouse_name ?? row?.name) ||
+    text(context?.warehouse_name) ||
+    "—";
   const status = verified && row ? text(row.status).toUpperCase() : "";
-  const state: WarehouseState = status === "ACTIVE" ? "active" : status === "INACTIVE" ? "inactive" : "unknown";
+  const state: WarehouseState =
+    status === "ACTIVE"
+      ? "active"
+      : status === "INACTIVE"
+        ? "inactive"
+        : "unknown";
   return { name, state };
 }
 
@@ -39,16 +55,28 @@ export function ReportWarehouseCard() {
     context,
     authenticated && !directory.isError && !directory.isPlaceholderData,
   );
-  const label = t(state === "active" ? "dashboard.snapshot.warehouseActive"
-    : state === "inactive" ? "putaway.queue.warehouseInactive" : "inbound.list.statusUnknown");
+  const label = t(
+    state === "active"
+      ? "dashboard.snapshot.warehouseActive"
+      : state === "inactive"
+        ? "putaway.queue.warehouseInactive"
+        : "inbound.list.statusUnknown",
+  );
   return (
-    <div className="hn-report-warehouse" data-report-warehouse data-state={state}
-      role="group" aria-label={t("updatedUi.text_19c608bfa103")}>
+    <div
+      className="hn-report-warehouse"
+      data-report-warehouse
+      data-state={state}
+      role="group"
+      aria-label={t("updatedUi.text_19c608bfa103")}
+    >
       <span className="hn-report-warehouse__icon" aria-hidden="true">
         <VuexyDemoIcon name="warehouse" />
       </span>
       <span className="hn-report-warehouse__copy">
-        <strong className="hn-report-warehouse__name" title={name}>{name}</strong>
+        <strong className="hn-report-warehouse__name" title={name}>
+          {name}
+        </strong>
         <small className="hn-report-warehouse__status" title={label}>
           <i className="hn-report-warehouse__dot" aria-hidden="true" />
           <span>{label}</span>

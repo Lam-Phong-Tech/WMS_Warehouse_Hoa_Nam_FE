@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   useCallback,
@@ -276,7 +277,10 @@ function StatCard({
         {icon}
       </Box>
       <Box sx={{ minWidth: 0 }}>
-        <Box className="trace-kpi__label" sx={{ fontSize: 13, color: S.textMedium }}>
+        <Box
+          className="trace-kpi__label"
+          sx={{ fontSize: 13, color: S.textMedium }}
+        >
           {label}
         </Box>
         <Box
@@ -290,7 +294,10 @@ function StatCard({
         >
           {value}
         </Box>
-        <Box className="trace-kpi__hint" sx={{ fontSize: 12, color: S.textDisabled }}>
+        <Box
+          className="trace-kpi__hint"
+          sx={{ fontSize: 12, color: S.textDisabled }}
+        >
           {hint}
         </Box>
       </Box>
@@ -346,7 +353,10 @@ function traceStatusOf(row: MovementTraceRow): {
     row.stockStatus === "DEFECTIVE" ||
     row.stockStatus === "QUARANTINE"
   ) {
-    return { tone: "warning", labelKey: "reports.traceability.needsReviewState" };
+    return {
+      tone: "warning",
+      labelKey: "reports.traceability.needsReviewState",
+    };
   }
   if (row.movementType === "ISSUE") {
     return { tone: "info", labelKey: "reports.traceability.issued" };
@@ -387,9 +397,14 @@ function TraceAnalytics({ rows }: { rows: MovementTraceRow[] }) {
 
   return (
     <div className="trace-analysis-grid">
-      <section className="trace-panel trace-chart-panel" aria-labelledby="trace-events-title">
+      <section
+        className="trace-panel trace-chart-panel"
+        aria-labelledby="trace-events-title"
+      >
         <header className="trace-panel__header">
-          <h2 id="trace-events-title">{t("reports.traceability.eventsByDay")}</h2>
+          <h2 id="trace-events-title">
+            {t("reports.traceability.eventsByDay")}
+          </h2>
           <span>
             {t("reports.traceability.totalEvents", {
               count: formatQuantity(chart.total),
@@ -397,7 +412,11 @@ function TraceAnalytics({ rows }: { rows: MovementTraceRow[] }) {
           </span>
         </header>
         {chart.points.length > 0 ? (
-          <div className="trace-bars" role="img" aria-label={t("reports.traceability.eventsByDay")}>
+          <div
+            className="trace-bars"
+            role="img"
+            aria-label={t("reports.traceability.eventsByDay")}
+          >
             <div className="trace-bars__axis" aria-hidden="true">
               <span>80</span>
               <span>60</span>
@@ -410,8 +429,12 @@ function TraceAnalytics({ rows }: { rows: MovementTraceRow[] }) {
                 <div className="trace-bar" key={point.day}>
                   <strong>{formatQuantity(point.count)}</strong>
                   <i
-                    className={index === chart.points.length - 1 ? "is-latest" : ""}
-                    style={{ height: `${Math.max(8, (point.count / chart.max) * 100)}%` }}
+                    className={
+                      index === chart.points.length - 1 ? "is-latest" : ""
+                    }
+                    style={{
+                      height: `${Math.max(8, (point.count / chart.max) * 100)}%`,
+                    }}
                   />
                   <span>{dayjs(point.day).format("DD/MM")}</span>
                 </div>
@@ -426,9 +449,14 @@ function TraceAnalytics({ rows }: { rows: MovementTraceRow[] }) {
         )}
       </section>
 
-      <section className="trace-panel trace-quality-panel" aria-labelledby="trace-quality-title">
+      <section
+        className="trace-panel trace-quality-panel"
+        aria-labelledby="trace-quality-title"
+      >
         <header className="trace-panel__header">
-          <h2 id="trace-quality-title">{t("reports.traceability.qualityTitle")}</h2>
+          <h2 id="trace-quality-title">
+            {t("reports.traceability.qualityTitle")}
+          </h2>
         </header>
         <div className="trace-quality-body">
           <div
@@ -816,7 +844,10 @@ export default function MovementTraceReport() {
     ledgerFilter.keyword,
     ledgerFilter.values,
   ]);
-  const [ledgerPagination, setLedgerPagination] = useState({ key: "", page: 1 });
+  const [ledgerPagination, setLedgerPagination] = useState({
+    key: "",
+    page: 1,
+  });
   const ledgerPage =
     ledgerPagination.key === ledgerPageKey ? ledgerPagination.page : 1;
   const setLedgerPage = (next: number | ((page: number) => number)) => {
@@ -947,7 +978,10 @@ export default function MovementTraceReport() {
         }}
       >
         <Box className="trace-page-heading" sx={{ minWidth: 0 }}>
-          <Box className="trace-breadcrumb" sx={{ mb: "3.2px", ...SECTION_EYEBROW_SX }}>
+          <Box
+            className="trace-breadcrumb"
+            sx={{ mb: "3.2px", ...SECTION_EYEBROW_SX }}
+          >
             <HomeOutlined aria-hidden="true" />
             <span>{t("reports.traceability.breadcrumbReports")}</span>
             <span aria-hidden="true">/</span>
@@ -974,7 +1008,7 @@ export default function MovementTraceReport() {
           </Box>
         </Box>
         <Stack
-          className="trace-head-actions"
+          className="trace-head-actions hn-report-warehouse-actions"
           direction="row"
           spacing={0.75}
           sx={{ alignItems: "center", flexWrap: "wrap", rowGap: "6px" }}
@@ -996,19 +1030,14 @@ export default function MovementTraceReport() {
             startIcon={<DownloadOutlined />}
             loading={exporting}
             disabled={!canExport}
-            title={canExport ? undefined : t("reports.movementTrace.exportDenied")}
+            title={
+              canExport ? undefined : t("reports.movementTrace.exportDenied")
+            }
             onClick={() => void exportXlsx()}
           >
             {t("reports.traceability.exportReport")}
           </UiButton>
-          <Box className="trace-warehouse-card">
-            <span className="trace-warehouse-card__icon"><HomeOutlined /></span>
-            <span>
-              <strong>{t("reports.traceability.warehouseName")}</strong>
-              <small><i />{t("reports.traceability.warehouseActive")}</small>
-            </span>
-            <RightOutlined className="trace-warehouse-card__arrow" />
-          </Box>
+          <ReportWarehouseCard />
         </Stack>
       </Box>
 
@@ -1084,7 +1113,10 @@ export default function MovementTraceReport() {
             gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
           }}
         >
-          <Box className="trace-field trace-field--code-type" sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
+          <Box
+            className="trace-field trace-field--code-type"
+            sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}
+          >
             <Box sx={FIELD_LABEL_SX}>{t("reports.traceability.codeType")}</Box>
             <UiSelect
               fullWidth
@@ -1098,7 +1130,10 @@ export default function MovementTraceReport() {
           </Box>
 
           {/* Ô tìm 1 cột (~280px đủ cho placeholder) để nút "Tra cứu" còn chỗ cùng hàng ở 1920. */}
-          <Box className="trace-field trace-field--search" sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
+          <Box
+            className="trace-field trace-field--search"
+            sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}
+          >
             <Box sx={FIELD_LABEL_SX}>
               {t("reports.traceability.searchLabel")}
             </Box>
@@ -1106,9 +1141,7 @@ export default function MovementTraceReport() {
               width="100%"
               id="movement-trace-code"
               value={draft.code}
-              placeholder={
-                t("reports.traceability.mainSearchPlaceholder")
-              }
+              placeholder={t("reports.traceability.mainSearchPlaceholder")}
               aria-label={
                 draft.traceBy === "physical"
                   ? t("reports.movementTrace.physicalCode")
@@ -1125,10 +1158,11 @@ export default function MovementTraceReport() {
            * cáo khác. Khoảng vẫn là DRAFT: chỉ vào bộ lọc khi bấm "Tra cứu",
            * đúng như bản hai ô.
            */}
-          <Box className={`trace-field trace-field--date${dateError ? " is-invalid" : ""}`} sx={fieldCellSx({ xs: 1, sm: 2, xl: 4 })}>
-            <Box sx={FIELD_LABEL_SX}>
-              {t("reports.traceability.dateRange")}
-            </Box>
+          <Box
+            className={`trace-field trace-field--date${dateError ? " is-invalid" : ""}`}
+            sx={fieldCellSx({ xs: 1, sm: 2, xl: 4 })}
+          >
+            <Box sx={FIELD_LABEL_SX}>{t("reports.traceability.dateRange")}</Box>
             <UiVuexyDateRangePicker
               aria-label={t("reports.movementTrace.fieldDateRange")}
               value={[draft.fromDate, draft.toDate]}
@@ -1162,18 +1196,29 @@ export default function MovementTraceReport() {
             ) : null}
           </Box>
 
-          <Box className="trace-field trace-field--warehouse" sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
+          <Box
+            className="trace-field trace-field--warehouse"
+            sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}
+          >
             <Box sx={FIELD_LABEL_SX}>{t("reports.traceability.warehouse")}</Box>
             <UiSelect
               fullWidth
               aria-label={t("reports.traceability.warehouse")}
               value="hoa-nam"
               onChange={() => undefined}
-              options={[{ value: "hoa-nam", label: t("reports.traceability.warehouseName") }]}
+              options={[
+                {
+                  value: "hoa-nam",
+                  label: t("reports.traceability.warehouseName"),
+                },
+              ]}
             />
           </Box>
 
-          <Box className="trace-field trace-field--status" sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
+          <Box
+            className="trace-field trace-field--status"
+            sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}
+          >
             <Box sx={FIELD_LABEL_SX}>{t("reports.traceability.status")}</Box>
             <UiSelect
               fullWidth
@@ -1183,11 +1228,16 @@ export default function MovementTraceReport() {
               onChange={(value) =>
                 setDraft((prev) => ({ ...prev, movementType: value }))
               }
-              options={MOVEMENT_TYPE_FILTER_OPTIONS.map((option) => ({ ...option }))}
+              options={MOVEMENT_TYPE_FILTER_OPTIONS.map((option) => ({
+                ...option,
+              }))}
             />
           </Box>
 
-          <Box className="trace-field trace-field--apply" sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
+          <Box
+            className="trace-field trace-field--apply"
+            sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}
+          >
             <UiButton
               type="submit"
               size="small"
@@ -1198,7 +1248,10 @@ export default function MovementTraceReport() {
             </UiButton>
           </Box>
 
-          <Box className="trace-field trace-field--reset" sx={fieldCellSx({ xs: 1, sm: 1, xl: 1 })}>
+          <Box
+            className="trace-field trace-field--reset"
+            sx={fieldCellSx({ xs: 1, sm: 1, xl: 1 })}
+          >
             <UiButton
               type="button"
               size="small"
@@ -1213,58 +1266,59 @@ export default function MovementTraceReport() {
 
         <details className="trace-advanced-filters">
           <summary>{t("reports.traceability.advancedFilters")}</summary>
-        <Box
-          sx={{
-            display: "grid",
-            columnGap: 1.5,
-            rowGap: 1.5,
-            alignItems: "end",
-            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
-          }}
-        >
-          <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
-            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.source")}</Box>
-            <SearchInput
-              width="100%"
-              value={draft.source}
-              placeholder={t("reports.movementTrace.sourcePlaceholder")}
-              aria-label={t("reports.movementTrace.source")}
-              onChange={(value) =>
-                setDraft((prev) => ({ ...prev, source: value }))
-              }
-            />
-          </Box>
+          <Box
+            sx={{
+              display: "grid",
+              columnGap: 1.5,
+              rowGap: 1.5,
+              alignItems: "end",
+              gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
+            }}
+          >
+            <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
+              <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.source")}</Box>
+              <SearchInput
+                width="100%"
+                value={draft.source}
+                placeholder={t("reports.movementTrace.sourcePlaceholder")}
+                aria-label={t("reports.movementTrace.source")}
+                onChange={(value) =>
+                  setDraft((prev) => ({ ...prev, source: value }))
+                }
+              />
+            </Box>
 
-          <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
-            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.actor")}</Box>
-            <SearchInput
-              width="100%"
-              value={draft.actor}
-              placeholder={t("reports.movementTrace.actorPlaceholder")}
-              aria-label={t("reports.movementTrace.actor")}
-              onChange={(value) =>
-                setDraft((prev) => ({ ...prev, actor: value }))
-              }
-            />
-          </Box>
+            <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
+              <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.actor")}</Box>
+              <SearchInput
+                width="100%"
+                value={draft.actor}
+                placeholder={t("reports.movementTrace.actorPlaceholder")}
+                aria-label={t("reports.movementTrace.actor")}
+                onChange={(value) =>
+                  setDraft((prev) => ({ ...prev, actor: value }))
+                }
+              />
+            </Box>
 
-          <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
-            <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.relation")}</Box>
-            <UiSelect
-              fullWidth
-              aria-label={t("reports.movementTrace.relation")}
-              value={draft.relation}
-              onChange={(value) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  relation: value as RelationFilter,
-                }))
-              }
-              options={RELATION_OPTIONS.map((option) => ({ ...option }))}
-            />
+            <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
+              <Box sx={FIELD_LABEL_SX}>
+                {t("reports.movementTrace.relation")}
+              </Box>
+              <UiSelect
+                fullWidth
+                aria-label={t("reports.movementTrace.relation")}
+                value={draft.relation}
+                onChange={(value) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    relation: value as RelationFilter,
+                  }))
+                }
+                options={RELATION_OPTIONS.map((option) => ({ ...option }))}
+              />
+            </Box>
           </Box>
-
-        </Box>
         </details>
 
         <Box
@@ -1367,14 +1421,30 @@ export default function MovementTraceReport() {
             total: formatQuantity(quality.total),
           })}
         />
-        <span className="trace-sr-only">{t("reports.movementTrace.statTotal")}</span>
-        <span className="trace-sr-only">{formatQuantity(summary?.totalMovements ?? 0)}</span>
-        <span className="trace-sr-only">{t("reports.movementTrace.statReceipt")}</span>
-        <span className="trace-sr-only">{formatQuantity(countByType.RECEIPT ?? 0)}</span>
-        <span className="trace-sr-only">{t("reports.movementTrace.statIssue")}</span>
-        <span className="trace-sr-only">{formatQuantity(countByType.ISSUE ?? 0)}</span>
-        <span className="trace-sr-only">{t("reports.movementTrace.statReversal")}</span>
-        <span className="trace-sr-only">{formatQuantity(summary?.reversalCount ?? 0)}</span>
+        <span className="trace-sr-only">
+          {t("reports.movementTrace.statTotal")}
+        </span>
+        <span className="trace-sr-only">
+          {formatQuantity(summary?.totalMovements ?? 0)}
+        </span>
+        <span className="trace-sr-only">
+          {t("reports.movementTrace.statReceipt")}
+        </span>
+        <span className="trace-sr-only">
+          {formatQuantity(countByType.RECEIPT ?? 0)}
+        </span>
+        <span className="trace-sr-only">
+          {t("reports.movementTrace.statIssue")}
+        </span>
+        <span className="trace-sr-only">
+          {formatQuantity(countByType.ISSUE ?? 0)}
+        </span>
+        <span className="trace-sr-only">
+          {t("reports.movementTrace.statReversal")}
+        </span>
+        <span className="trace-sr-only">
+          {formatQuantity(summary?.reversalCount ?? 0)}
+        </span>
       </Box>
 
       <TraceAnalytics rows={rows} />
@@ -1601,7 +1671,10 @@ export default function MovementTraceReport() {
                 width: 270,
                 render: (row) => (
                   <span className="trace-code-cell">
-                    {row.physicalCode || row.containerId || row.itemId || EMPTY_TEXT}
+                    {row.physicalCode ||
+                      row.containerId ||
+                      row.itemId ||
+                      EMPTY_TEXT}
                     <small>{documentCodeOf(row) || EMPTY_TEXT}</small>
                   </span>
                 ),
@@ -1615,8 +1688,13 @@ export default function MovementTraceReport() {
                   const status = traceStatusOf(row);
                   return (
                     <>
-                      <UiStatusBadge tone={status.tone} label={t(status.labelKey)} />
-                      <span className="trace-sr-only">{MOVEMENT_KIND_LABELS[kind]}</span>
+                      <UiStatusBadge
+                        tone={status.tone}
+                        label={t(status.labelKey)}
+                      />
+                      <span className="trace-sr-only">
+                        {MOVEMENT_KIND_LABELS[kind]}
+                      </span>
                     </>
                   );
                 },
@@ -1625,7 +1703,8 @@ export default function MovementTraceReport() {
                 key: "location",
                 header: t("reports.traceability.colLocation"),
                 width: 175,
-                render: (row) => row.warehouseCode || t("reports.traceability.warehouseName"),
+                render: (row) =>
+                  row.warehouseCode || t("reports.traceability.warehouseName"),
               },
               {
                 key: "latest_event",
@@ -1633,7 +1712,8 @@ export default function MovementTraceReport() {
                 width: 165,
                 render: (row) => (
                   <span className="trace-event-cell">
-                    {movementSourceLabel(row.sourceType) || MOVEMENT_KIND_LABELS[movementKindOf(row)]}
+                    {movementSourceLabel(row.sourceType) ||
+                      MOVEMENT_KIND_LABELS[movementKindOf(row)]}
                     <small>Δ {row.qtyDelta}</small>
                   </span>
                 ),
@@ -1654,7 +1734,9 @@ export default function MovementTraceReport() {
                 render: (row) => {
                   const status = traceStatusOf(row);
                   return (
-                    <span className={`trace-completeness trace-completeness--${status.tone}`}>
+                    <span
+                      className={`trace-completeness trace-completeness--${status.tone}`}
+                    >
                       {status.tone === "warning" ? "85%" : "100%"}
                     </span>
                   );
@@ -1676,9 +1758,15 @@ export default function MovementTraceReport() {
                         }}
                       />
                     </RowActionGroup>
-                    <span className="trace-sr-only">{reversalChainText(row)}</span>
-                    <span className="trace-sr-only">{LEDGER_ROW_STATUS_LABEL}</span>
-                    <span className="trace-sr-only">#{rowIndexOf(ledgerFilter.rows, row) + 1}</span>
+                    <span className="trace-sr-only">
+                      {reversalChainText(row)}
+                    </span>
+                    <span className="trace-sr-only">
+                      {LEDGER_ROW_STATUS_LABEL}
+                    </span>
+                    <span className="trace-sr-only">
+                      #{rowIndexOf(ledgerFilter.rows, row) + 1}
+                    </span>
                   </>
                 ),
               },
@@ -1696,16 +1784,23 @@ export default function MovementTraceReport() {
         <Box className="trace-pagination hn-report-pagination-footer">
           <span>
             {t("reports.traceability.showingItems", {
-              from: ledgerFilter.rows.length === 0
-                ? "0"
-                : formatQuantity((safeLedgerPage - 1) * ledgerPageSize + 1),
+              from:
+                ledgerFilter.rows.length === 0
+                  ? "0"
+                  : formatQuantity((safeLedgerPage - 1) * ledgerPageSize + 1),
               to: formatQuantity(
-                Math.min(safeLedgerPage * ledgerPageSize, ledgerFilter.rows.length),
+                Math.min(
+                  safeLedgerPage * ledgerPageSize,
+                  ledgerFilter.rows.length,
+                ),
               ),
               total: formatQuantity(ledgerFilter.rows.length),
             })}
           </span>
-          <nav className="hn-report-pagination" aria-label={t("reports.traceability.paginationAria")}>
+          <nav
+            className="hn-report-pagination"
+            aria-label={t("reports.traceability.paginationAria")}
+          >
             <button
               type="button"
               aria-label={t("reports.traceability.previousPage")}
@@ -1714,7 +1809,10 @@ export default function MovementTraceReport() {
             >
               ‹
             </button>
-            {Array.from({ length: Math.min(3, ledgerPageCount) }, (_, index) => index + 1).map((page) => (
+            {Array.from(
+              { length: Math.min(3, ledgerPageCount) },
+              (_, index) => index + 1,
+            ).map((page) => (
               <button
                 type="button"
                 className={safeLedgerPage === page ? "is-active" : undefined}
@@ -1729,8 +1827,12 @@ export default function MovementTraceReport() {
             {ledgerPageCount > 3 ? (
               <button
                 type="button"
-                className={safeLedgerPage === ledgerPageCount ? "is-active" : undefined}
-                aria-current={safeLedgerPage === ledgerPageCount ? "page" : undefined}
+                className={
+                  safeLedgerPage === ledgerPageCount ? "is-active" : undefined
+                }
+                aria-current={
+                  safeLedgerPage === ledgerPageCount ? "page" : undefined
+                }
                 onClick={() => setLedgerPage(ledgerPageCount)}
               >
                 {ledgerPageCount}
@@ -1740,7 +1842,9 @@ export default function MovementTraceReport() {
               type="button"
               aria-label={t("reports.traceability.nextPage")}
               disabled={safeLedgerPage === ledgerPageCount}
-              onClick={() => setLedgerPage((page) => Math.min(ledgerPageCount, page + 1))}
+              onClick={() =>
+                setLedgerPage((page) => Math.min(ledgerPageCount, page + 1))
+              }
             >
               ›
             </button>

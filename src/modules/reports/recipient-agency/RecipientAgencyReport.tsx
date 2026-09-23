@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -326,7 +327,8 @@ function DateRangeControl({
 export default function RecipientAgencyReport() {
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() || "—";
+    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() ||
+    "—";
   const initialRange = useMemo<[Dayjs, Dayjs]>(
     () => currentSevenDayRange(),
     [],
@@ -505,9 +507,7 @@ export default function RecipientAgencyReport() {
   }, [dealers, search]);
 
   const noSearchResult =
-    search.trim().length > 0 &&
-    tableRows.length === 0 &&
-    dealers.length > 0;
+    search.trim().length > 0 && tableRows.length === 0 && dealers.length > 0;
   const reportEmpty =
     !initialLoading &&
     !hardError &&
@@ -670,20 +670,8 @@ export default function RecipientAgencyReport() {
           </h1>
           <p>{tUi("updatedUi.text_6440ff9ad26f")}</p>
         </div>
-        <div className="rpt07-head-actions">
-          <div
-            className="rpt07-warehouse-card"
-            aria-label={"Kho " + warehouseName}
-          >
-            <StockOutlined />
-            <span>
-              <strong>{warehouseName}</strong>
-              <small>
-                <i />
-                {tUi("dashboard.snapshot.warehouseActive")}
-              </small>
-            </span>
-          </div>
+        <div className="rpt07-head-actions hn-report-warehouse-actions">
+          <ReportWarehouseCard />
           <div className="rpt07-export-wrap">
             {readonly ? (
               <div className="rpt07-readonly-note">

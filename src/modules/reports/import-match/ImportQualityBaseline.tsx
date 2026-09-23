@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useMemo, useState, type ReactNode } from "react";
@@ -402,6 +403,7 @@ export default function ImportQualityBaseline() {
         </Box>
 
         <Stack
+          className="hn-report-warehouse-actions"
           direction="row"
           sx={{
             gap: 1,
@@ -418,6 +420,8 @@ export default function ImportQualityBaseline() {
           >
             {tUi("reports.traceability.exportReport")}
           </UiButton>
+
+          <ReportWarehouseCard />
         </Stack>
       </Stack>
 

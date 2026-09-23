@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -839,7 +840,7 @@ export default function StockReconcileReport() {
               </h1>
               <p>{tUi("updatedUi.text_cf3ca15cba35")}</p>
             </div>
-            <div className="rpt02-heading__actions">
+            <div className="rpt02-heading__actions hn-report-warehouse-actions">
               <span
                 className="rpt02-tooltip"
                 data-tooltip={
@@ -856,18 +857,7 @@ export default function StockReconcileReport() {
                   {" " + tUi("updatedUi.text_869645273267")}
                 </button>
               </span>
-              <div className="rpt02-warehouse">
-                <span aria-hidden="true">
-                  <Icon name="warehouse" />
-                </span>
-                <div>
-                  <strong>Kho Hoa Nam</strong>
-                  <small>
-                    <i />
-                    {" " + tUi("dashboard.snapshot.warehouseActive")}
-                  </small>
-                </div>
-              </div>
+              <ReportWarehouseCard />
             </div>
           </header>
 

@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 /** RPT-08: SystemHNWeb presentation over the existing document-history snapshot. */
 import {
@@ -512,7 +513,7 @@ export default function IoHistoryReport() {
               </h1>
               <p>{tUi("updatedUi.text_5c09481fb555")}</p>
             </div>
-            <div className="io-heading-actions">
+            <div className="io-heading-actions hn-report-warehouse-actions">
               <span
                 className="io-source"
                 title={t("reports.ioHistory.metaAsOf", {
@@ -522,24 +523,7 @@ export default function IoHistoryReport() {
                 <IoIcon name="info" />
                 {tUi("updatedUi.text_098cc1b3c5b9")}
               </span>
-              <details className="io-warehouse-info">
-                <summary>
-                  <IoIcon name="warehouse" />
-                  <span>
-                    <b>{warehouseName}</b>
-                    <small>{tUi("updatedUi.text_41cb6f85fb3a")}</small>
-                  </span>
-                  <IoIcon name="chevron" />
-                </summary>
-                <div className="io-warehouse-popover">
-                  <b>{warehouseName}</b>
-                  <p>
-                    {currentContext?.role_name ||
-                      t("reports.ioHistory.postedOnly")}
-                  </p>
-                  <small>{tUi("updatedUi.text_88e88d358418")}</small>
-                </div>
-              </details>
+              <ReportWarehouseCard />
               <div className="io-export" ref={exportRef}>
                 {canExport ? (
                   <button

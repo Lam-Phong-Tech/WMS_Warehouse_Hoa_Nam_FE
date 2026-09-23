@@ -1,3 +1,4 @@
+import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
@@ -831,20 +832,8 @@ export default function OutboundFlowReport() {
           </h1>
           <p>{tUi("updatedUi.text_a7149a55bd87")}</p>
         </div>
-        <div className="outbound-heading-actions">
-          <div className="outbound-warehouse-card">
-            <span className="outbound-warehouse-card__icon">
-              <Icon name="warehouse" />
-            </span>
-            <span>
-              <strong>Kho Hoa Nam</strong>
-              <small>
-                <i />
-                {" " + tUi("dashboard.snapshot.warehouseActive")}
-              </small>
-            </span>
-            <Icon name="chevron-down" />
-          </div>
+        <div className="outbound-heading-actions hn-report-warehouse-actions">
+          <ReportWarehouseCard />
           {canImport ? (
             <button
               type="button"
