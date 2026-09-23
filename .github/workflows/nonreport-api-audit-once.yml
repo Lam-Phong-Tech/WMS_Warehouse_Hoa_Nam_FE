@@ -20,9 +20,9 @@ env:
   VITE_ENABLE_DEBUG: 'false'
   VITE_ENABLE_PERF_MONITOR: 'false'
 jobs:
-  inventory:
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,43 +33,39 @@ jobs:
           cache: yarn
       - name: Install frozen dependencies
         run: yarn install --frozen-lockfile --non-interactive > /tmp/audit-install.log 2>&1 || { tail -40 /tmp/audit-install.log; exit 1; }
-      - name: AST inventory of all runtime source files outside reports
+      - name: Apply guarded changes only in the validation workspace
+        id: patch
         run: |
-          node scripts/nonreport-api-audit/inspect.mjs > /tmp/nonreport-audit.jsonl
-          python3 - <<'PY'
-          import json,collections,re
-          rows=[json.loads(x) for x in open('/tmp/nonreport-audit.jsonl')]
-          print('COUNTS',json.dumps(dict(collections.Counter(x['kind'] for x in rows))))
-          for r in rows:
-           if r['kind'] in ['audit-totals','literal-array','jsx-fixed-value','jsx-literal-text'] or r['kind']=='domain-literal' and '/services/' in r['path']:
-            print(json.dumps(r,ensure_ascii=False))
-          print('FALLBACK_REVIEW')
-          for r in rows:
-           if r['kind']=='fallback-review' and not re.search(r'per_page|pageSize|page_size|last_page|pagination|params.page|sortOrder|sort_order|sortDir|thumbnail|printCount|thresholdSeconds|offset|pageLimit',r['text']):print(json.dumps(r,ensure_ascii=False))
-          print('MODAL_SITES',json.dumps([{'path':r['path'],'line':r['line'],'node':r['text'].split()[0]} for r in rows if r['kind']=='overlay']))
-          print('SERVICE_FILES',json.dumps(sorted(set(r['path'] for r in rows if r['kind']=='api-query'))))
-          PY
-  baseline:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: yarn
-      - name: Install frozen dependencies
-        run: yarn install --frozen-lockfile --non-interactive > /tmp/audit-install.log 2>&1 || { tail -40 /tmp/audit-install.log; exit 1; }
-      - name: Run existing tests without mutating application data
+          node scripts/nonreport-api-audit/patch.mjs
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import cp from 'node:child_process';
+          const files=JSON.parse(fs.readFileSync('/tmp/nonreport-changed.json','utf8'));
+          cp.execFileSync('node_modules/.bin/prettier',['--write',...files],{stdio:'inherit'});
+          JS
+          git diff --check
+          test -z "$(git diff --name-only -- src/modules/reports)"
+      - name: Type check
+        if: steps.patch.outcome == 'success'
+        run: npm run typecheck
+      - name: Capture affected regression results for review
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
         run: |
-          npm run test -- src/modules/auth src/modules/dashboard src/modules/iam src/modules/inbound src/modules/inventory src/modules/master-data src/modules/notifications src/modules/outbound src/modules/putaway src/modules/pv src/modules/reverse src/modules/scan src/modules/warranty src/shared/api src/shared/cache src/shared/store src/app/router --maxWorkers=2 > /tmp/audit-baseline.log 2>&1 || true
+          npm run test -- src/modules/dashboard src/modules/inventory src/modules/master-data src/modules/outbound src/shared/api --maxWorkers=2 > /tmp/audit-updated.log 2>&1 || true
           python3 - <<'PY'
           import json
           p=json.load(open('test-results/vitest-results.json'))
-          print('BASELINE',json.dumps({k:p.get(k) for k in ['numTotalTests','numPassedTests','numFailedTests','numRuntimeErrorTestSuites']}))
+          print('UPDATED_TESTS',json.dumps({k:p.get(k) for k in ['numTotalTests','numPassedTests','numFailedTests','numRuntimeErrorTestSuites']}))
           for s in p['testResults']:
            for t in s.get('assertionResults',[]):
-            if t['status']=='failed':print('BASELINE_FAIL',s['name'],t['fullName'],str(t.get('failureMessages',[]))[:800])
+            if t['status']=='failed':print('UPDATED_FAIL',s['name'],t['fullName'],str(t.get('failureMessages',[]))[:1700])
+          PY
+      - name: Inspect remaining read-model defaults
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: |
+          node scripts/nonreport-api-audit/inspect.mjs > /tmp/nonreport-after.jsonl
+          python3 - <<'PY'
+          import json
+          rows=[json.loads(x) for x in open('/tmp/nonreport-after.jsonl')]
+          for r in rows:
+           if r['kind']=='audit-totals':print(json.dumps(r))
           PY
