@@ -30,12 +30,6 @@
   border: 0;
 }
 
-.hn-system-shell:has(.hn-inbound-report)
-  .hn-topbar
-  .header-control:nth-child(-n + 3) {
-  display: none;
-}
-
 .hn-system-shell:has(.hn-inbound-report) > div > footer.MuiBox-root {
   display: none;
 }
