@@ -9,23 +9,21 @@ const variable=(s,name,value)=>edit(s,n=>ts.isVariableDeclaration(n)&&n.name.get
 {
  const p='src/shared/ui/catalog/FoundationCatalogPage.tsx';let s=load(p,'9992ef4a98c028021579dbe1c103986a6e83b964');
  s=rep(s,'import { useEffect, useMemo, useState } from "react";','import { useMemo, useState } from "react";');
- s=rep(s,'import { useT, type TranslateFn } from "@/shared/i18n/useT";','import { useT } from "@/shared/i18n/useT";\nimport { useAuthStore } from "@/shared/store/auth.store";');
+ s=rep(s,'import { useT, type TranslateFn } from "@/shared/i18n/useT";','import { useT } from "@/shared/i18n/useT";');
  s=edit(s,n=>ts.isFunctionDeclaration(n)&&n.name?.text==='catalogRows','','remove runtime business fixtures');
  s=variable(s,'rows','useMemo<CatalogRow[]>(() => [], [])');
  s=variable(s,'options','useMemo<Array<{value: string; label: string; disabled?: boolean}>>(() => [], [])');
  s=rep(s,'const { control, setError } = useForm<CatalogFormValues>','const { control } = useForm<CatalogFormValues>');
  s=edit(s,(n,t)=>ts.isExpressionStatement(n)&&ts.isCallExpression(n.expression)&&n.expression.expression.getText(t)==='useEffect'&&n.getText(t).includes('setError('),'','remove forced form outcome');
+ s=rep(s,'note: t("catalog.longText"),','note: "",');
  s=s.replaceAll('t("catalog.longText")','EMPTY_TEXT');
  s=edit(s,(n,t)=>ts.isJsxAttribute(n)&&n.name.getText(t)==='options'&&n.initializer&&ts.isJsxExpression(n.initializer)&&n.initializer.expression&&ts.isArrayLiteralExpression(n.initializer.expression)&&n.getText(t).includes('catalog.data.brand'),'options={[]}','remove fictional brands');
  s=edit(s,(n,t)=>ts.isJsxAttribute(n)&&n.name.getText(t)==='value'&&n.parent.parent.tagName?.getText(t)==='UiKpiCard','value={EMPTY_TEXT}','remove catalogue KPI numbers',true);
  s=rep(s,'total={137}','total={rows.length}');
  s=rep(s,'useState(3)','useState(1)');
  s=edit(s,(n,t)=>ts.isJsxAttribute(n)&&n.name.getText(t)==='items'&&n.parent.parent.tagName?.getText(t)==='UiTimeline','items={[]}','remove fabricated event history');
- s=edit(s,(n,t)=>ts.isPropertyAssignment(n)&&n.name.getText(t)==='value'&&n.parent.parent.parent?.name?.getText(t)==='items',n=>n.getText().startsWith('value:')?'value: EMPTY_TEXT':n.getText(),'clear descriptive business values',true);
+ s=edit(s,(n,t)=>ts.isJsxAttribute(n)&&n.name.getText(t)==='items'&&n.parent.parent.tagName?.getText(t)==='UiDescriptions','items={[]}','remove fabricated descriptions',true);
  s=s.replaceAll('"REV-20260818-0001"','EMPTY_TEXT');
- // The developer catalogue is not a business data source. No fake people or master options.
- s=s.replaceAll('t("catalog.data.userLam")','useAuthStore.getState().user?.name || EMPTY_TEXT');
- s=s.replaceAll('t("catalog.data.userAn")','EMPTY_TEXT');s=s.replaceAll('t("catalog.data.warehouseShort")','EMPTY_TEXT');
  s=s.replace(/t\("catalog\.data\.[^"]+"\)/g,'EMPTY_TEXT');
  s=s.replace(' * - Dữ liệu cố định, tiếng Việt dài, có case dense/empty — không phụ thuộc\n *   API/locale/timezone runtime (deterministic cho visual golden).',' * - Không chứa chứng từ, người dùng, KPI hoặc danh mục giả. Các bề mặt dữ liệu\n *   chưa nối API hiển thị rỗng/chưa có; fixture kiểm thử không nằm trong runtime.');
  s=s.replace('/** Form showcase — có field lỗi cưỡng bức để soi state validation (fixture). */','/** Developer-only form anatomy; no persisted business data or forced API outcome. */');
