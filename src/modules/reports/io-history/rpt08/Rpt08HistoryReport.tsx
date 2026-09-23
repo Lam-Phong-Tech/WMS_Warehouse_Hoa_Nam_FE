@@ -58,7 +58,7 @@ export default function IoHistoryReport() {
   const warehouseName =
     useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() || "—";
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
-  const initialRange = useMemo<[Dayjs, Dayjs]>(currentSevenDayRange, []);
+  const initialRange = useMemo<[Dayjs, Dayjs]>(() => currentSevenDayRange(), []);
 
   const [draftRange, setDraftRange] =
     useState<[Dayjs, Dayjs]>(initialRange);
@@ -444,7 +444,11 @@ export default function IoHistoryReport() {
               </div>
               <div>
                 <dt>{tUi("dashboard.stockMix.colQuantity")}</dt>
-                <dd>{detailRow.quantity === null ? "—" : number(detailRow.quantity)}</dd>
+                <dd>
+                  {detailRow.quantity === null
+                    ? "—"
+                    : number(detailRow.quantity)}
+                </dd>
               </div>
               <div>
                 <dt>{tUi("inventory.trace.colPerformedBy")}</dt>
