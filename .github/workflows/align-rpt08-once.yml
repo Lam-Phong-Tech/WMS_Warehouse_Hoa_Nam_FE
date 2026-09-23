@@ -36,7 +36,7 @@ jobs:
         run: |
           yarn install --frozen-lockfile --non-interactive > /tmp/rpt08-install.log 2>&1 || { tail -40 /tmp/rpt08-install.log; exit 1; }
           npx playwright install --with-deps chromium > /tmp/rpt08-browser-install.log 2>&1 || { tail -40 /tmp/rpt08-browser-install.log; exit 1; }
-      - name: Preserve contrast within the newly themed cards and capture previews
+      - name: Preserve contrast within the newly themed cards and capture local previews
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -83,27 +83,22 @@ jobs:
           tail -14 /tmp/rpt08-tests.log
       - name: Real report geometry and interaction checks in Chromium
         run: node scripts/check-rpt08-layout.mjs
-      - name: Upload local-fixture screenshots for visual review
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rpt08-layout-review
-          path: test-results/rpt08-layout
-          if-no-files-found: warn
-          retention-days: 7
+      # Artifact storage quota is exhausted. Screenshots remain an optional local
+      # output; no test or build gate depends on uploading binary artifacts.
       - name: Production build including TypeScript
         run: |
           npm run build > /tmp/rpt08-build.log 2>&1 || { tail -80 /tmp/rpt08-build.log; exit 1; }
           tail -5 /tmp/rpt08-build.log
-      - name: Publish validated scoped polish directly to dev
+      - name: Publish validated polish and remove completed one-time tooling
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git diff --check
           git add -- src/modules/reports/io-history/rpt08/alignment.css scripts/check-rpt08-layout.mjs
+          git rm -- scripts/apply-rpt08-layout.py .github/workflows/align-rpt08-once.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'fix(reports): preserve history card contrast across light and dark themes' -m 'Keep inset surfaces consistent with the shared report palette; retain real-component geometry and interaction checks with screenshot evidence.'
+          git commit -m 'fix(reports): finalize aligned history layout and themed card contrast' -m 'Retain common title and right-aligned pagination, scoped responsive layout and all business handlers. Verified 123 focused tests and 48 Chromium geometry cases across seven widths, VI/EN and light/dark themes; production build passed. Remove only completed temporary migration tooling.'
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin HEAD:refs/heads/dev
           git rev-parse HEAD
