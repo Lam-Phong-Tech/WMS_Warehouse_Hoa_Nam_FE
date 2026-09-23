@@ -6,7 +6,6 @@ import {
   useState,
 } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import { useSearchParams } from "react-router-dom";
 import { HomeOutlined } from "@/shared/components/icons";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
@@ -20,18 +19,12 @@ import {
   type IoTypeFilter,
 } from "../io-history-api";
 import {
-  DEMO_FROM,
-  DEMO_TO,
-  EMPTY_FROM,
-  EMPTY_TO,
   PAGE_SIZE,
   buildDaily,
   displayAsOf,
   displayStamp,
-  makeDemoRows,
   mapLiveRow,
   number,
-  readPreviewState,
   type AppliedFilters,
   type DailyMovement,
   type ExportState,
@@ -56,55 +49,34 @@ import {
 } from "./widgets";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
-export default function IoHistoryReport() {
-  const [searchParams] = useSearchParams();
-  const forcedState = readPreviewState(searchParams);
-  const demoScreen = searchParams.get("screen")?.toUpperCase() === "RPT-08";
-  const demoMode = demoScreen || forcedState !== null;
-  const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name) ||
-    "Kho Hoa Nam";
-  const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
+function currentSevenDayRange(): [Dayjs, Dayjs] {
+  const end = dayjs().startOf("day");
+  return [end.subtract(6, "day"), end];
+}
 
-  const initialDraftRange: [Dayjs, Dayjs] =
-    forcedState === "empty"
-      ? [EMPTY_FROM, EMPTY_TO]
-      : forcedState === "invalid"
-        ? [DEMO_TO, DEMO_FROM]
-        : demoMode
-          ? [DEMO_FROM, DEMO_TO]
-          : [dayjs().subtract(6, "day").startOf("day"), dayjs().startOf("day")];
-  const initialAppliedRange: [Dayjs, Dayjs] =
-    forcedState === "empty"
-      ? [EMPTY_FROM, EMPTY_TO]
-      : demoMode
-        ? [DEMO_FROM, DEMO_TO]
-        : initialDraftRange;
+export default function IoHistoryReport() {
+  const warehouseName =
+    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() || "—";
+  const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
+  const initialRange = useMemo<[Dayjs, Dayjs]>(currentSevenDayRange, []);
 
   const [draftRange, setDraftRange] =
-    useState<[Dayjs, Dayjs]>(initialDraftRange);
+    useState<[Dayjs, Dayjs]>(initialRange);
   const [draftType, setDraftType] = useState<TransactionFilter>("ALL");
   const [draftActor, setDraftActor] = useState("");
   const [applied, setApplied] = useState<AppliedFilters>({
-    from: initialAppliedRange[0].format(ISO_DATE),
-    to: initialAppliedRange[1].format(ISO_DATE),
+    from: initialRange[0].format(ISO_DATE),
+    to: initialRange[1].format(ISO_DATE),
     type: "ALL",
     actor: "",
   });
-  const [search, setSearch] = useState(
-    forcedState === "no-result" ? "SN-KHONG-TON-TAI" : "",
-  );
+  const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [page, setPage] = useState(1);
   const [detailRow, setDetailRow] = useState<HistoryRow | null>(null);
   const [manualRefreshing, setManualRefreshing] = useState(false);
   const [staleDismissed, setStaleDismissed] = useState(false);
-  const [exportState, setExportState] = useState<ExportState>(() => {
-    if (forcedState === "exporting") return "exporting";
-    if (forcedState === "export-failed") return "failed";
-    if (forcedState === "export-unknown") return "unknown";
-    return "idle";
-  });
+  const [exportState, setExportState] = useState<ExportState>("idle");
 
   const sourceType: IoTypeFilter = applied.type === "ALL" ? "" : applied.type;
   const source = useIoHistorySnapshot({
@@ -113,7 +85,6 @@ export default function IoHistoryReport() {
     type: sourceType,
   });
 
-  const demoRows = useMemo(makeDemoRows, []);
   const liveRows = useMemo(
     () =>
       source.snapshot.rows
@@ -121,7 +92,7 @@ export default function IoHistoryReport() {
         .filter((row): row is HistoryRow => row !== null),
     [source.snapshot.rows],
   );
-  const allRows = demoMode ? demoRows : liveRows;
+  const allRows = liveRows;
 
   const actorOptions = useMemo(() => {
     const actors = [
@@ -138,7 +109,6 @@ export default function IoHistoryReport() {
   }, [allRows]);
 
   const reportRows = useMemo(() => {
-    if (forcedState === "empty") return [];
     return allRows.filter((row) => {
       const day = dayjs(row.timestamp).format(ISO_DATE);
       if (day < applied.from || day > applied.to) return false;
@@ -146,7 +116,7 @@ export default function IoHistoryReport() {
       if (applied.actor && row.actor !== applied.actor) return false;
       return true;
     });
-  }, [allRows, applied, forcedState]);
+  }, [allRows, applied]);
 
   const searchedRows = useMemo(() => {
     const needle = deferredSearch.trim().toLocaleLowerCase("vi");
@@ -174,16 +144,6 @@ export default function IoHistoryReport() {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  useEffect(() => {
-    if (forcedState === "no-result") setSearch("SN-KHONG-TON-TAI");
-  }, [forcedState]);
-
-  useEffect(() => {
-    if (forcedState === "exporting") setExportState("exporting");
-    else if (forcedState === "export-failed") setExportState("failed");
-    else if (forcedState === "export-unknown") setExportState("unknown");
-  }, [forcedState]);
-
   const inboundCount = reportRows.filter(
     (row) => row.type === "INBOUND",
   ).length;
@@ -192,28 +152,12 @@ export default function IoHistoryReport() {
   ).length;
   const totalTransactions = inboundCount + outboundCount;
 
-  const canonicalDemoRange =
-    demoMode &&
-    applied.from === DEMO_FROM.format(ISO_DATE) &&
-    applied.to === DEMO_TO.format(ISO_DATE) &&
-    applied.actor === "";
-
-  const liveInboundProducts = reportRows
+  const inboundProducts = reportRows
     .filter((row) => row.type === "INBOUND")
     .reduce((sum, row) => sum + row.quantity, 0);
-  const liveOutboundProducts = reportRows
+  const outboundProducts = reportRows
     .filter((row) => row.type === "OUTBOUND")
     .reduce((sum, row) => sum + row.quantity, 0);
-  const inboundProducts = canonicalDemoRange
-    ? applied.type === "OUTBOUND"
-      ? 0
-      : 6480
-    : liveInboundProducts;
-  const outboundProducts = canonicalDemoRange
-    ? applied.type === "INBOUND"
-      ? 0
-      : 5980
-    : liveOutboundProducts;
   const totalProducts = inboundProducts + outboundProducts;
 
   const daily = useMemo(
@@ -230,30 +174,21 @@ export default function IoHistoryReport() {
     }, null);
   }, [daily, totalTransactions]);
 
-  const invalidRange =
-    forcedState === "invalid" ||
-    draftRange[0].startOf("day").isAfter(draftRange[1].startOf("day"));
-  const initialLoading =
-    forcedState === "loading" ||
-    (!demoMode && source.loading && liveRows.length === 0);
-  const hardError =
-    forcedState === "error" ||
-    (!demoMode && Boolean(source.error) && liveRows.length === 0);
+  const invalidRange = draftRange[0]
+    .startOf("day")
+    .isAfter(draftRange[1].startOf("day"));
+  const initialLoading = source.loading && liveRows.length === 0;
+  const hardError = Boolean(source.error) && liveRows.length === 0;
   const refreshing =
-    forcedState === "refreshing" ||
-    manualRefreshing ||
-    (!demoMode && !initialLoading && source.fetching);
-  const readonly =
-    forcedState === "readonly" || (!demoMode && !canExportPermission);
+    manualRefreshing || (!initialLoading && source.fetching);
+  const readonly = !canExportPermission;
   const reportEmpty = !initialLoading && !hardError && totalTransactions === 0;
   const noSearchResult =
     !reportEmpty &&
-    (forcedState === "no-result" ||
-      (deferredSearch.trim().length > 0 && searchedRows.length === 0));
+    deferredSearch.trim().length > 0 &&
+    searchedRows.length === 0;
   const stale =
-    !staleDismissed &&
-    (forcedState === "stale" ||
-      (!demoMode && Boolean(source.error) && liveRows.length > 0));
+    !staleDismissed && Boolean(source.error) && liveRows.length > 0;
   const controlsBusy = initialLoading || refreshing;
   const exportDisabled =
     initialLoading ||
@@ -263,8 +198,8 @@ export default function IoHistoryReport() {
     readonly ||
     exportState === "exporting";
   const defaultDraftRange =
-    draftRange[0].isSame(DEMO_FROM, "day") &&
-    draftRange[1].isSame(DEMO_TO, "day");
+    draftRange[0].isSame(initialRange[0], "day") &&
+    draftRange[1].isSame(initialRange[1], "day");
 
   const applyFilters = useCallback(() => {
     if (invalidRange) return;
@@ -278,9 +213,7 @@ export default function IoHistoryReport() {
   }, [draftActor, draftRange, draftType, invalidRange]);
 
   const resetFilters = useCallback(() => {
-    const nextRange: [Dayjs, Dayjs] = demoMode
-      ? [DEMO_FROM, DEMO_TO]
-      : [dayjs().subtract(6, "day").startOf("day"), dayjs().startOf("day")];
+    const nextRange = currentSevenDayRange();
     setDraftRange(nextRange);
     setDraftType("ALL");
     setDraftActor("");
@@ -292,13 +225,16 @@ export default function IoHistoryReport() {
     });
     setSearch("");
     setPage(1);
-  }, [demoMode]);
+  }, []);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback(async () => {
     setStaleDismissed(true);
     setManualRefreshing(true);
-    source.refetch();
-    window.setTimeout(() => setManualRefreshing(false), 800);
+    try {
+      await source.refetch();
+    } finally {
+      setManualRefreshing(false);
+    }
   }, [source]);
 
   const exportReport = useCallback(async () => {
@@ -363,7 +299,6 @@ export default function IoHistoryReport() {
         </div>
         <HeaderActions
           warehouse={warehouseName}
-          demo={demoMode}
           readonly={readonly}
           exportState={exportState}
           exportDisabled={exportDisabled}
@@ -400,7 +335,7 @@ export default function IoHistoryReport() {
               tone="warning"
               title={tUi("updatedUi.text_278fb7e1cb78")}
               message={tUi("updatedUi.text_0d15f428b113", {
-                value0: String(displayAsOf(source.snapshot.dataAsOf, demoMode)),
+                value0: String(displayAsOf(source.snapshot.dataAsOf)),
               })}
               primaryLabel="Thử cập nhật"
               onPrimary={refresh}
@@ -460,13 +395,12 @@ export default function IoHistoryReport() {
             page={visiblePage}
             empty={reportEmpty}
             noResult={noSearchResult}
-            demo={demoMode}
             range={applied}
             onSearch={setSearch}
             onPageChange={setPage}
             onOpenRow={setDetailRow}
             onAdjustRange={() => {
-              setDraftRange([DEMO_FROM, DEMO_TO]);
+              setDraftRange(currentSevenDayRange());
               window.requestAnimationFrame(() => {
                 document
                   .querySelector<HTMLElement>(".rpt08-date-control")
