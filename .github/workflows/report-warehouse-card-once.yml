@@ -7,7 +7,7 @@ permissions:
   contents: write
 concurrency:
   group: report-warehouse-card-once
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   unify:
     runs-on: ubuntu-latest
