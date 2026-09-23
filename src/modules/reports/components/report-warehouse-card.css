@@ -59,6 +59,21 @@
   font-size: 24px;
   line-height: 20px;
 }
+/* VuexyDemoIcon provides geometry only. Own its paint and size here so
+ * reports without an SVG reset cannot render a black, filled silhouette. */
+#root [data-report-warehouse] .hn-report-warehouse__icon > svg {
+  display: block;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  max-width: none;
+  color: inherit;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 #root [data-report-warehouse] .hn-report-warehouse__copy {
   display: grid;
   gap: 2px;
