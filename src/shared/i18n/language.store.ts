@@ -1,24 +1,11 @@
-/**
- * NGÔN NGỮ GIAO DIỆN — nguồn duy nhất cho toàn app.
- *
- * Tiếng Việt là mặc định và luôn là bản ĐẦY ĐỦ: mọi khoá đều có bản vi, còn en
- * là bản phủ dần. Thiếu khoá en thì `t()` rơi về vi chứ KHÔNG hiện khoá thô —
- * người dùng không bao giờ thấy chuỗi kiểu `topbar.searchTitle` trên màn hình.
- *
- * Lưu bằng `persist` (cùng lối `auth.store.ts`) để chọn một lần là giữ qua các
- * phiên. Không component nào được tự giữ state ngôn ngữ riêng.
- *
- * `<html lang>` đồng bộ theo lựa chọn: đặt lúc bootstrap qua `initializeLanguage()`
- * và mỗi lần `setLanguage`, để screen-reader cùng các quy tắc CSS `:lang()` đọc
- * đúng ngay từ lần render đầu.
- */
+/** One persisted interface language for messages, component locales and dates. */
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
 import { ensureEnglishMessages } from "./english-messages";
 
 export type Language = "vi" | "en";
-
-/** Tên dùng ở thanh topbar — alias để không phải sửa call site. */
 export type AppLanguage = Language;
 
 export const LANGUAGES: ReadonlyArray<{ value: Language; label: string }> = [
@@ -27,6 +14,7 @@ export const LANGUAGES: ReadonlyArray<{ value: Language; label: string }> = [
 ];
 
 function applyDocumentLanguage(language: Language) {
+  dayjs.locale(language);
   if (typeof document !== "undefined") {
     document.documentElement.lang = language;
   }
@@ -43,30 +31,25 @@ export const useLanguageStore = create<LanguageState>()(
       language: "vi",
       setLanguage: (language) => {
         applyDocumentLanguage(language);
-        // Từ điển EN nạp động — bắt đầu tải ngay khi người dùng chọn, để bản
-        // dịch về sớm nhất có thể. Trong lúc chờ, t() vẫn trả tiếng Việt.
-        if (language === "en") ensureEnglishMessages();
+        if (language === "en") void ensureEnglishMessages();
         set({ language });
       },
     }),
     {
       name: "erp-language",
       storage: createJSONStorage(() => localStorage),
-      // persist khôi phục state SAU khi store dựng xong, nên `<html lang>` phải
-      // đặt lại ở đây — `initializeLanguage()` ở main.tsx chỉ lo trường hợp
-      // rehydrate hoàn tất trước lần render đầu.
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         applyDocumentLanguage(state.language);
-        if (state.language === "en") ensureEnglishMessages();
+        if (state.language === "en") void ensureEnglishMessages();
       },
     },
   ),
 );
 
-/** Gọi một lần lúc bootstrap để `<html lang>` khớp lựa chọn đã lưu. */
+/** Apply the persisted selection before the first screen is rendered. */
 export function initializeLanguage() {
   const { language } = useLanguageStore.getState();
   applyDocumentLanguage(language);
-  if (language === "en") ensureEnglishMessages();
+  if (language === "en") void ensureEnglishMessages();
 }
