@@ -1,0 +1,70 @@
+name: Validate RPT08 report alignment
+on:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/align-rpt08-once.yml
+permissions:
+  contents: write
+concurrency:
+  group: align-rpt08-once
+  cancel-in-progress: false
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VITE_APP_ENV: test
+      VITE_APP_TITLE: WMS Hoa Nam
+      VITE_APP_VERSION: 1.0.0-rpt08-align
+      VITE_API_BASE_URL: http://127.0.0.1:5198/api/v1
+      VITE_API_HEALTH_PATH: /health
+      VITE_API_TIMEOUT_MS: '10000'
+      VITE_API_WITH_CREDENTIALS: 'true'
+      VITE_STORAGE_URL: ''
+      VITE_ENABLE_ANALYTICS: 'false'
+      VITE_ENABLE_DEBUG: 'false'
+      VITE_ENABLE_PERF_MONITOR: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - name: Install frozen dependencies and Chromium
+        run: |
+          yarn install --frozen-lockfile --non-interactive > /tmp/rpt08-install.log 2>&1 || { tail -40 /tmp/rpt08-install.log; exit 1; }
+          npx playwright install --with-deps chromium > /tmp/rpt08-browser-install.log 2>&1 || { tail -40 /tmp/rpt08-browser-install.log; exit 1; }
+      - name: Apply only reviewed RPT08 presentation changes
+        run: |
+          python3 scripts/apply-rpt08-layout.py
+          node_modules/.bin/prettier --write src/modules/reports/io-history/rpt08/alignment.css src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/io-history/rpt08/widgets.tsx src/modules/reports/io-history/rpt08/report-layout.test.tsx
+          git diff --check
+      - name: TypeScript check
+        run: npm run typecheck
+      - name: History, shell and language regression tests
+        run: |
+          npm run test -- src/modules/reports/io-history src/app/layouts src/shared/i18n --maxWorkers=2 > /tmp/rpt08-tests.log 2>&1 || { tail -160 /tmp/rpt08-tests.log; exit 1; }
+          tail -14 /tmp/rpt08-tests.log
+      - name: Real report layout and interaction checks in Chromium
+        run: node scripts/check-rpt08-layout.mjs
+      - name: Preserve shared topbar visibility
+        run: node scripts/check-report-topbar.mjs
+      - name: Production build
+        run: |
+          npm run build > /tmp/rpt08-build.log 2>&1 || { tail -80 /tmp/rpt08-build.log; exit 1; }
+          tail -5 /tmp/rpt08-build.log
+      - name: Publish validated RPT08 changes directly to dev
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git diff --check
+          git add -- src/modules/reports/io-history/io-history-report.css src/modules/reports/io-history/rpt08/alignment.css src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/io-history/rpt08/widgets.tsx src/modules/reports/io-history/rpt08/report-layout.test.tsx
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix(reports): align history title, layout and pagination with shared reports' -m 'Use existing shared title and pager contracts. Scope responsive spacing to RPT08 and retain both operational and preview routes. Preserve data, filtering, export and row-detail handlers. Validate with focused tests and real-component Chromium checks before publishing.'
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin HEAD:refs/heads/dev
+          git rev-parse HEAD
