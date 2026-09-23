@@ -1,0 +1,77 @@
+WMS - Vận hành chuyên nghiệp	WMS - Professional operations
+Thao tác theo quyền được cấp cho tài khoản của bạn.	Perform actions within your account permissions.
+Bắt đầu ca làm việc	Start your shift
+hoặc	or
+KẾT NỐI CON NGƯỜI - VẬN HÀNH HIỆU QUẢ	CONNECTING PEOPLE - EFFICIENT OPERATIONS
+Khoảng thời gian tối đa {value0} ngày.	The maximum date range is {value0} days.
+Đã thêm SKU thành công	SKU added successfully
+{value0} đã được thêm vào danh mục.	{value0} has been added to the catalog.
+Mã SKU đã tồn tại	SKU code already exists
+{value0} đã có trong danh mục. Vui lòng kiểm tra trước khi tạo mới.	{value0} is already in the catalog. Please check before creating another entry.
+Không thể thêm SKU	Unable to add the SKU
+Thông tin chưa được lưu. Vui lòng thử lại.	The information has not been saved. Please try again.
+Chưa xác định kết quả thêm SKU	The outcome of adding the SKU is unknown
+Không nhận được xác nhận từ hệ thống. Hãy tìm mã SKU trong danh sách trước khi thử lại để tránh tạo trùng.	No confirmation was received from the system. Search for the SKU code in the list before trying again to avoid creating a duplicate.
+Kiểm tra danh sách	Check the list
+Chọn hồ sơ bảo hành	Select a warranty case
+Chọn hồ sơ đang hoạt động để tạo phiếu xuất linh kiện.	Select an active case to create a component issue document.
+Đang quét/nhập	Scanning / entry in progress
+Tổng quan ghi sổ	Posting overview
+Lọc phiếu đã ghi sổ	Filter posted documents
+Tỷ lệ phiếu đã ghi sổ	Percentage of posted documents
+phiếu đã ghi sổ	posted documents
+Lọc phiếu {value0}	Filter {value0} documents
+Chưa tải được đầy đủ số liệu.	Complete statistics could not be loaded.
+Sắp xếp khác cho danh sách bảo hành	Other sort options for the warranty list
+Sắp xếp khác	Other sort options
+Danh sách hồ sơ bảo hành	Warranty case list
+Hồ sơ	Case
+Thiết bị / Sản phẩm	Device / Product
+Tuổi hồ sơ	Case age
+Bệnh/lỗi:	Defects:
+{value0} ngày	{value0} days
+Thao tác hồ sơ {value0}	Actions for case {value0}
+Sắp xếp theo {value0}	Sort by {value0}
+Xem chi tiết hồ sơ	View case details
+Chưa tải được linh kiện	Unable to load components
+linh kiện	components
+Điều hướng phiếu xuất linh kiện	Component issue navigation
+Bảo hành & sửa chữa	Warranty & repairs
+Phiếu xuất linh kiện bảo hành	Warranty component issues
+Cấp linh kiện cho hồ sơ bảo hành đang hoạt động	Issue components for active warranty cases
+Bạn không có quyền xuất linh kiện	You do not have permission to issue components
+Cần kết nối mạng để tạo phiếu	A network connection is required to create a document
+Tạo phiếu xuất linh kiện	Create a component issue
+Thông tin kho xuất linh kiện	Component warehouse information
+Chưa tải được thông tin kho	Unable to load warehouse information
+Chưa có kho hoạt động	No active warehouse available
+Chỉ dùng cho bảo hành · Kho Hoa Nam chỉ đọc	For warranty use only · Hoa Nam warehouse is read-only
+Chỉ phiếu Đã ghi sổ mới làm giảm tồn kho.	Only posted documents reduce stock levels.
+Nháp, Đang quét/nhập và Đã hủy không làm thay đổi tồn.	Draft, scanning / entry in progress and cancelled documents do not change stock levels.
+Mất kết nối mạng. Dữ liệu đang hiển thị có thể chưa cập nhật.	Network connection lost. The displayed data may be out of date.
+Danh sách phiếu	Document list
+Chưa có tổng số phiếu	Document total is not available yet
+Tải lại danh sách phiếu	Reload the document list
+Đang cập nhật…	Updating…
+Lọc theo dõi linh kiện	Filter component tracking
+Một số thông tin hồ sơ hoặc linh kiện chưa tải được.	Some case or component information could not be loaded.
+Đang tải danh sách phiếu…	Loading the document list…
+Danh sách phiếu xuất linh kiện	Component issue list
+Chưa tải được hồ sơ	Unable to load the case
+Ngày lập phiếu	Document date
+Thao tác khác {value0}	More actions for {value0}
+Không tìm thấy phiếu phù hợp với bộ lọc.	No documents match the selected filters.
+Xóa bộ lọc	Clear filters
+{value0} phiếu trên trang · {value1} kết quả	{value0} documents on this page · {value1} results
+Hiển thị {value0}–{value1} / {value2} phiếu	Showing {value0}–{value1} / {value2} documents
+Mục đích phiếu: WARRANTY	Document purpose: WARRANTY
+Mở phiếu xuất linh kiện	Open the component issue
+Kho xuất linh kiện được xác định theo hồ sơ và phiếu hiện có.	The component warehouse is determined by the existing case and document.
+Trả máy	Return device
+Tiếp nhận, theo dõi xử lý và trả máy cho khách	Receive devices, track repairs and return devices to customers
+Danh sách hồ sơ	Case list
+Nhận dạng	Identification
+Chưa tải được đầy đủ dữ liệu theo dõi linh kiện. Vui lòng thử lại.	Complete component tracking data could not be loaded. Please try again.
+Kho	Warehouse
+In	Print
+Toa	Request
