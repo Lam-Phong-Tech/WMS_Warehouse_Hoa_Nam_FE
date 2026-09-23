@@ -37,6 +37,8 @@ jobs:
         id: patch
         run: |
           node scripts/nonreport-api-audit/patch.mjs
+          node scripts/nonreport-api-audit/patch-extra.mjs
+          if test -f scripts/nonreport-api-audit/patch-flows.mjs; then node scripts/nonreport-api-audit/patch-flows.mjs; fi
           node --input-type=module <<'JS'
           import fs from 'node:fs';import cp from 'node:child_process';
           const files=JSON.parse(fs.readFileSync('/tmp/nonreport-changed.json','utf8'));
@@ -50,7 +52,7 @@ jobs:
       - name: Capture affected regression results for review
         if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
         run: |
-          npm run test -- src/modules/dashboard src/modules/inventory src/modules/master-data src/modules/outbound src/shared/api --maxWorkers=2 > /tmp/audit-updated.log 2>&1 || true
+          npm run test -- src/modules/dashboard src/modules/inventory src/modules/master-data src/modules/outbound src/shared/api src/shared/ui/catalog --maxWorkers=2 > /tmp/audit-updated.log 2>&1 || true
           python3 - <<'PY'
           import json
           p=json.load(open('test-results/vitest-results.json'))
@@ -67,5 +69,5 @@ jobs:
           import json
           rows=[json.loads(x) for x in open('/tmp/nonreport-after.jsonl')]
           for r in rows:
-           if r['kind']=='audit-totals':print(json.dumps(r))
+           if r['kind']=='audit-totals' or r['kind']=='literal-array' and '/modules/' in r['path']:print(json.dumps(r,ensure_ascii=False))
           PY
