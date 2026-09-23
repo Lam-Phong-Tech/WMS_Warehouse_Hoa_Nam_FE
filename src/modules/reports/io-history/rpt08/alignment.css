@@ -368,3 +368,28 @@
     min-height: 44px;
   }
 }
+
+/* The card palette follows the current theme; its inset surfaces must too. */
+#rpt08-history-report .rpt08-donut::before {
+  background: var(--ops-surface);
+}
+#rpt08-history-report .rpt08-product-breakdown > span,
+#rpt08-history-report .rpt08-unit-row small,
+#rpt08-history-report .rpt08-table-heading h2 > span {
+  background: var(--ops-pale);
+  color: var(--ops-link);
+}
+#rpt08-history-report .rpt08-chart-legend,
+#rpt08-history-report .rpt08-y-axis,
+#rpt08-history-report .rpt08-bar-group > small,
+#rpt08-history-report .rpt08-panel-heading > div:first-child > span,
+#rpt08-history-report .rpt08-donut-side,
+#rpt08-history-report .rpt08-overview-breakdown > div,
+#rpt08-history-report .rpt08-overview-breakdown small,
+#rpt08-history-report .rpt08-unit-row,
+#rpt08-history-report .rpt08-product-total span {
+  color: var(--ops-muted);
+}
+#rpt08-history-report .rpt08-code-cell strong {
+  color: var(--ops-heading);
+}
