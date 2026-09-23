@@ -53,6 +53,7 @@ import { useTabView } from "@/shared/ui/use-tab-view";
 import { useT } from "@/shared/i18n/useT";
 import { useReducedMotion } from "@/shared/components/motion/useReducedMotion";
 import "./io-history-report.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 type ViewMode = "table" | "slice";
 const PAGE_SIZE = 5;
@@ -111,7 +112,7 @@ export default function IoHistoryReport() {
   const permissionCodes = useAuthStore((s) => s.permissionCodes);
   const currentContext = useAuthStore((s) => s.currentContext);
   const warehouseName =
-    currentContext?.warehouse_name || "Kho theo quyền truy cập";
+    currentContext?.warehouse_name || tUi("updatedUi.text_48d0d4a0911f");
   const canExport = hasAnyWmsPermission(
     permissionCodes,
     WMS_ACTION_PERMISSIONS.EXPORT_REPORT,
@@ -504,14 +505,12 @@ export default function IoHistoryReport() {
               >
                 <span>⌂ {t("reports.ioHistory.breadcrumbReports")}</span>
                 <span aria-hidden="true">/</span>
-                <span>Lịch sử nhập - xuất kho</span>
+                <span>{tUi("updatedUi.text_8814615e6de0")}</span>
               </nav>
               <h1 className="hn-report-page-title">
-                Báo cáo Lịch sử nhập - xuất kho
+                {tUi("updatedUi.text_cedbc7cfb228")}
               </h1>
-              <p>
-                Theo dõi toàn bộ giao dịch nhập, xuất và luân chuyển hàng hóa
-              </p>
+              <p>{tUi("updatedUi.text_5c09481fb555")}</p>
             </div>
             <div className="io-heading-actions">
               <span
@@ -521,14 +520,14 @@ export default function IoHistoryReport() {
                 })}
               >
                 <IoIcon name="info" />
-                Dữ liệu hệ thống
+                {tUi("updatedUi.text_098cc1b3c5b9")}
               </span>
               <details className="io-warehouse-info">
                 <summary>
                   <IoIcon name="warehouse" />
                   <span>
                     <b>{warehouseName}</b>
-                    <small>Phạm vi hiện tại</small>
+                    <small>{tUi("updatedUi.text_41cb6f85fb3a")}</small>
                   </span>
                   <IoIcon name="chevron" />
                 </summary>
@@ -538,9 +537,7 @@ export default function IoHistoryReport() {
                     {currentContext?.role_name ||
                       t("reports.ioHistory.postedOnly")}
                   </p>
-                  <small>
-                    Dữ liệu được giới hạn theo quyền truy cập của tài khoản.
-                  </small>
+                  <small>{tUi("updatedUi.text_88e88d358418")}</small>
                 </div>
               </details>
               <div className="io-export" ref={exportRef}>
@@ -565,7 +562,9 @@ export default function IoHistoryReport() {
                     >
                       <IoIcon name={exporting ? "refresh" : "download"} />
                     </span>
-                    {exporting ? "Đang xuất..." : "Xuất báo cáo"}
+                    {exporting
+                      ? tUi("updatedUi.text_f218a6c991e2")
+                      : tUi("reports.traceability.exportReport")}
                   </button>
                 ) : (
                   <span
@@ -573,7 +572,7 @@ export default function IoHistoryReport() {
                     title={t("reports.ioHistory.exportDenied")}
                   >
                     <IoIcon name="lock" />
-                    Chỉ xem
+                    {tUi("masterData.common.viewOnly")}
                   </span>
                 )}
                 {exportMenu && (
@@ -617,12 +616,11 @@ export default function IoHistoryReport() {
                               items.length;
                       items[next]?.focus();
                     }}
-                    aria-label="Xuất báo cáo"
+                    aria-label={tUi("reports.traceability.exportReport")}
                   >
                     {documentFilter.active && (
                       <p className="io-export-scope">
-                        Tệp xuất dùng bộ lọc toàn báo cáo. Bộ lọc danh sách chỉ
-                        áp dụng cho bảng bên dưới.
+                        {tUi("updatedUi.text_e47a1498d48d")}
                       </p>
                     )}
                     <button
@@ -674,7 +672,9 @@ export default function IoHistoryReport() {
                             : "field io-range-field"
                         }
                       >
-                        <label>Khoảng thời gian</label>
+                        <label>
+                          {tUi("reports.packingLabel.dateRangeLabel")}
+                        </label>
                         <UiVuexyDateRangePicker
                           aria-label={t("reports.ioHistory.fieldDateRange")}
                           value={[dayjs(range.from), dayjs(range.to)]}
@@ -702,24 +702,28 @@ export default function IoHistoryReport() {
                         />
                         {dateError && (
                           <small className="io-field-error" role="alert">
-                            Ngày bắt đầu không được sau ngày kết thúc.
+                            {tUi("dashboard.dateError.order")}
                           </small>
                         )}
                       </div>
                       <div className="field">
-                        <label htmlFor="rptio-warehouse">Kho</label>
+                        <label htmlFor="rptio-warehouse">
+                          {tUi("updatedUi.text_19c608bfa103")}
+                        </label>
                         <div className="io-select-wrap io-warehouse-field">
                           <IoIcon name="warehouse" />
                           <input
                             id="rptio-warehouse"
                             readOnly
                             value={warehouseName}
-                            title="Phạm vi kho theo phiên đăng nhập"
+                            title={tUi("updatedUi.text_021e3ee2db52")}
                           />
                         </div>
                       </div>
                       <div className="field">
-                        <label htmlFor="rptio-type">Loại giao dịch</label>
+                        <label htmlFor="rptio-type">
+                          {tUi("updatedUi.text_94c1cbc6d405")}
+                        </label>
                         <div className="io-combobox">
                           <IoIcon name="swap" />
                           <UiSelect
@@ -728,7 +732,10 @@ export default function IoHistoryReport() {
                             value={type}
                             onChange={(value) => setType(value as IoTypeFilter)}
                             options={[
-                              { value: "", label: "Tất cả" },
+                              {
+                                value: "",
+                                label: tUi("dashboard.operations.filterAll"),
+                              },
                               ...(
                                 ["INBOUND", "OUTBOUND", "REVERSAL"] as const
                               ).map((value) => ({
@@ -744,18 +751,23 @@ export default function IoHistoryReport() {
                         </div>
                       </div>
                       <div className="field">
-                        <label htmlFor="rptio-actor">Người thực hiện</label>
+                        <label htmlFor="rptio-actor">
+                          {tUi("inventory.trace.colPerformedBy")}
+                        </label>
                         <div className="io-combobox">
                           <IoIcon name="user" />
                           <UiSelect
                             id="rptio-actor"
-                            aria-label="Người thực hiện"
+                            aria-label={tUi("inventory.trace.colPerformedBy")}
                             value={documentFilter.values.actor ?? ""}
                             onChange={(value) =>
                               documentFilter.setValue("actor", value)
                             }
                             options={[
-                              { value: "", label: "Tất cả" },
+                              {
+                                value: "",
+                                label: tUi("dashboard.operations.filterAll"),
+                              },
                               ...actorOptions,
                             ]}
                             fullWidth
@@ -773,12 +785,12 @@ export default function IoHistoryReport() {
                           a.format(ISO_DATE) === range.from &&
                           b.format(ISO_DATE) === range.to
                         );
-                      })?.label || "Khoảng tùy chọn"}{" "}
-                      · Múi giờ Việt Nam
+                      })?.label || tUi("updatedUi.text_08cf5b3c1847")}{" "}
+                      {tUi("updatedUi.text_b8076e3b0c7b")}
                       {documentFilter.values.actor && (
                         <span className="io-actor-scope">
                           {" "}
-                          · Người thực hiện: chỉ lọc danh sách
+                          {tUi("updatedUi.text_82869b6aa7ff")}
                         </span>
                       )}
                     </p>
@@ -794,7 +806,7 @@ export default function IoHistoryReport() {
                             <IoIcon name="refresh" />
                           </span>
                         )}
-                        Áp dụng
+                        {tUi("dashboard.snapshot.apply")}
                       </button>
                       <button
                         className="btn io-reset"
@@ -819,7 +831,9 @@ export default function IoHistoryReport() {
                       <b>{t("reports.ioHistory.collapsedTitle")}</b>
                       <span>
                         {fmtDay(range.from)} – {fmtDay(range.to)} ·{" "}
-                        {type ? typeLabels[type] : "Tất cả"}
+                        {type
+                          ? typeLabels[type]
+                          : tUi("dashboard.operations.filterAll")}
                       </span>
                     </div>
                     <button
@@ -836,9 +850,7 @@ export default function IoHistoryReport() {
                     state="stale"
                     updatedAt={fmtStamp(snapshot.dataAsOf)}
                     message={
-                      !online
-                        ? "Không có kết nối mạng. Đang hiển thị dữ liệu đã tải gần nhất."
-                        : undefined
+                      !online ? tUi("updatedUi.text_f152a05815cc") : undefined
                     }
                     onRetry={retryReport}
                     onDismiss={() => setDismissedStale(staleKey)}
@@ -871,14 +883,16 @@ export default function IoHistoryReport() {
                 />
                 <section
                   className="card io-history-card"
-                  aria-label="Lịch sử nhập - xuất kho"
+                  aria-label={tUi("updatedUi.text_8814615e6de0")}
                 >
                   <div className="io-table-heading">
                     <h2>
-                      Lịch sử nhập - xuất kho{" "}
+                      {tUi("updatedUi.text_8814615e6de0")}{" "}
                       <span className="io-count">
                         {fmt(documentFilter.rows.length)}
-                        {documentFilter.active ? " kết quả" : ""}
+                        {documentFilter.active
+                          ? " " + tUi("updatedUi.text_e48337fc9b4f")
+                          : ""}
                       </span>
                     </h2>
                     <div className="io-table-search">
@@ -887,7 +901,7 @@ export default function IoHistoryReport() {
                         aria-label={t("reports.filters.sectionSearchAria", {
                           label: t("reports.ioHistory.detailTitle"),
                         })}
-                        placeholder="Mã phiếu, SKU, người thực hiện, nơi nhận..."
+                        placeholder={tUi("updatedUi.text_886568aaba24")}
                         value={documentFilter.keyword}
                         onChange={(e) =>
                           documentFilter.setKeyword(e.target.value)
@@ -895,7 +909,7 @@ export default function IoHistoryReport() {
                       />
                       {documentFilter.keyword && (
                         <button
-                          aria-label="Xóa tìm kiếm"
+                          aria-label={tUi("updatedUi.text_816c89e8e46b")}
                           onClick={() => documentFilter.setKeyword("")}
                         >
                           ×
@@ -906,9 +920,11 @@ export default function IoHistoryReport() {
                   <details className="io-additional-controls">
                     <summary>
                       <IoIcon name="list" />
-                      Chế độ xem & bộ lọc chi tiết
+                      {tUi("updatedUi.text_b9d7167dd282")}
                       {documentFilter.active && (
-                        <span className="io-count">Đang lọc</span>
+                        <span className="io-count">
+                          {tUi("updatedUi.text_e9b3b4cc12ad")}
+                        </span>
                       )}
                     </summary>
                     <div className="io-additional-body">
@@ -982,18 +998,22 @@ export default function IoHistoryReport() {
                             <tr>
                               <th>
                                 <span className="io-desktop-label">
-                                  Thời gian
+                                  {tUi("inventory.movement.colTime")}
                                 </span>
                                 <span className="io-tablet-label">
-                                  Thời gian / Mã phiếu
+                                  {tUi("updatedUi.text_5a3a1b69c2b3")}
                                 </span>
                               </th>
-                              <th>Loại</th>
-                              <th className="io-document-column">Mã phiếu</th>
-                              <th>Đối tượng</th>
-                              <th className="qty">Số lượng</th>
-                              <th>Người thực hiện</th>
-                              <th>Chi tiết</th>
+                              <th>{tUi("inventory.detail.colType")}</th>
+                              <th className="io-document-column">
+                                {tUi("warranty.componentList.colCode")}
+                              </th>
+                              <th>{tUi("audit.colObject")}</th>
+                              <th className="qty">
+                                {tUi("dashboard.stockMix.colQuantity")}
+                              </th>
+                              <th>{tUi("inventory.trace.colPerformedBy")}</th>
+                              <th>{tUi("reports.importMatchReport.detail")}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1071,20 +1091,23 @@ export default function IoHistoryReport() {
                       )}
                       <footer className="tfoot hn-report-pagination-footer">
                         <span>
-                          Hiển thị{" "}
+                          {tUi("putaway.queue.showing")}{" "}
                           {documentFilter.rows.length ? firstRow + 1 : 0}–
                           {Math.min(
                             firstRow + PAGE_SIZE,
                             documentFilter.rows.length,
                           )}{" "}
-                          / {fmt(documentFilter.rows.length)} giao dịch
+                          / {fmt(documentFilter.rows.length)}
+                          {" " + tUi("updatedUi.text_74e542e35044")}
                         </span>
                         <nav
                           className="io-pagination hn-report-pagination"
-                          aria-label="Phân trang lịch sử"
+                          aria-label={tUi("updatedUi.text_d66bbe96b8ac")}
                         >
                           <button
-                            aria-label="Trang trước"
+                            aria-label={tUi(
+                              "reports.traceability.previousPage",
+                            )}
                             disabled={currentPage === 1}
                             onClick={() => setPage(currentPage - 1)}
                           >
@@ -1107,7 +1130,7 @@ export default function IoHistoryReport() {
                             </span>
                           ))}
                           <button
-                            aria-label="Trang tiếp"
+                            aria-label={tUi("updatedUi.text_8cac33aab67d")}
                             disabled={currentPage === pageCount}
                             onClick={() => setPage(currentPage + 1)}
                           >

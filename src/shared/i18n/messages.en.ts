@@ -1,3 +1,4 @@
+import { MESSAGES_UPDATED_EN } from "./messages.updated.en";
 import type { MessageTree } from "./messages";
 
 /**
@@ -11,6 +12,7 @@ import type { MessageTree } from "./messages";
  * KHOÁ vẫn đỏ typecheck; thiếu khoá vẫn hợp lệ và t() rơi về tiếng Việt.
  */
 export const MESSAGES_EN: MessageTree = {
+  updatedUi: MESSAGES_UPDATED_EN,
   common: {
     loadingData: "Loading data…",
     retry: "Retry",
@@ -94,8 +96,7 @@ export const MESSAGES_EN: MessageTree = {
       stateOverdue: "Overdue",
       stateUrgent: "Urgent",
       forbiddenTitle: "You do not have access to the Overview",
-      forbiddenCopy:
-        "Your account has not been granted access to this screen.",
+      forbiddenCopy: "Your account has not been granted access to this screen.",
       back: "Go back",
       logout: "Sign out",
       kpiAria: "Overview KPIs",

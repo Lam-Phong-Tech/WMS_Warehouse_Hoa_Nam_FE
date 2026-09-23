@@ -1,8 +1,10 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import {
   fetchOutboundDocuments,
   type OutboundDocumentRecord,
   type OutboundListResult,
 } from "@/modules/outbound/services/alignedOutboundService";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 type OutboundListParams = NonNullable<
   Parameters<typeof fetchOutboundDocuments>[0]
@@ -14,11 +16,12 @@ export interface OutboundRecipientListParams extends OutboundListParams {
 
 const INDEX_PAGE_SIZE = 100;
 const MAX_INDEX_PAGES = 1000;
-const INCOMPLETE_LIST_MESSAGE =
-  "Không thể tải đầy đủ danh sách phiếu xuất. Vui lòng thử lại.";
+const getINCOMPLETE_LIST_MESSAGE = localizedUiValue(() =>
+  tUi("updatedUi.text_16a239d0e413"),
+);
 
 function paginationError(): Error {
-  return new Error(INCOMPLETE_LIST_MESSAGE);
+  return new Error(getINCOMPLETE_LIST_MESSAGE());
 }
 
 function isIntegerAtLeast(value: unknown, minimum: number): value is number {

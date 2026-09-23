@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { Dayjs } from "dayjs";
 import { Link } from "react-router-dom";
 import { UiVuexyDateRangePicker } from "@/shared/ui";
@@ -19,9 +13,14 @@ import {
   WarningOutlined,
 } from "@/shared/components/icons";
 import type { ExportState, TransactionFilter } from "./model";
-import { VI_TIMEZONE_LABEL } from "./model";
-
-function Skeleton({ width = "70%", height = 12 }: { width?: string; height?: number }) {
+import { tStatic as tUi } from "@/shared/i18n/useT";
+function Skeleton({
+  width = "70%",
+  height = 12,
+}: {
+  width?: string;
+  height?: number;
+}) {
   return (
     <span
       className="rpt08-skeleton"
@@ -51,7 +50,8 @@ function SelectControl<T extends string>({
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const current = options.find((option) => option.value === value) ?? options[0];
+  const current =
+    options.find((option) => option.value === value) ?? options[0];
 
   useEffect(() => {
     if (!open) return;
@@ -159,7 +159,7 @@ function DateRangeControl({
         format="DD/MM/YYYY"
         className="rpt08-date-proxy"
         popupClassName="rpt08-date-popup"
-        aria-label="Khoảng thời gian"
+        aria-label={tUi("reports.packingLabel.dateRangeLabel")}
         onChange={(next) => {
           if (next?.[0] && next?.[1]) onChange([next[0], next[1]]);
         }}
@@ -187,7 +187,9 @@ export function HeaderActions({
     <div className="rpt08-header-actions">
       <span className="rpt08-demo-chip" role="note">
         <span aria-hidden="true">ⓘ</span>
-        {demo ? "Dữ liệu minh họa" : "Dữ liệu hệ thống"}
+        {demo
+          ? tUi("updatedUi.text_0ce3732c6c81")
+          : tUi("updatedUi.text_098cc1b3c5b9")}
       </span>
 
       <details className="rpt08-warehouse-menu">
@@ -196,7 +198,8 @@ export function HeaderActions({
           <span>
             <strong>{warehouse}</strong>
             <small>
-              <i /> Đang hoạt động
+              <i />
+              {" " + tUi("dashboard.snapshot.warehouseActive")}
             </small>
           </span>
           <DownOutlined />
@@ -212,14 +215,16 @@ export function HeaderActions({
             <StockOutlined />
             <span>
               <strong>{warehouse}</strong>
-              <small>Kho đang xem</small>
+              <small>{tUi("updatedUi.text_23d058563849")}</small>
             </span>
           </button>
         </div>
       </details>
 
       {readonly ? (
-        <span className="rpt08-readonly-pill">Chỉ xem</span>
+        <span className="rpt08-readonly-pill">
+          {tUi("masterData.common.viewOnly")}
+        </span>
       ) : (
         <button
           type="button"
@@ -233,7 +238,9 @@ export function HeaderActions({
           ) : (
             <DownloadOutlined />
           )}
-          {exportState === "exporting" ? "Đang xuất..." : "Xuất báo cáo"}
+          {exportState === "exporting"
+            ? tUi("updatedUi.text_f218a6c991e2")
+            : tUi("reports.traceability.exportReport")}
         </button>
       )}
     </div>
@@ -243,7 +250,9 @@ export function HeaderActions({
 export function InitialLoadingBody() {
   return (
     <div className="rpt08-loading-body" role="status" aria-live="polite">
-      <span className="rpt08-sr-only">Đang tải báo cáo</span>
+      <span className="rpt08-sr-only">
+        {tUi("updatedUi.text_fd676da72cbc")}
+      </span>
 
       <section className="rpt08-card rpt08-loading-filter" aria-hidden="true">
         <div className="rpt08-loading-filter__grid">
@@ -264,7 +273,10 @@ export function InitialLoadingBody() {
       </section>
 
       <div className="rpt08-summary-grid">
-        <section className="rpt08-card rpt08-loading-summary" aria-hidden="true">
+        <section
+          className="rpt08-card rpt08-loading-summary"
+          aria-hidden="true"
+        >
           <span className="rpt08-loading-round" />
           <div className="rpt08-loading-summary__body">
             <Skeleton width="180px" height={14} />
@@ -279,7 +291,10 @@ export function InitialLoadingBody() {
             </div>
           </div>
         </section>
-        <section className="rpt08-card rpt08-loading-product" aria-hidden="true">
+        <section
+          className="rpt08-card rpt08-loading-product"
+          aria-hidden="true"
+        >
           <span className="rpt08-loading-round" />
           <div>
             <Skeleton width="180px" height={14} />
@@ -401,10 +416,13 @@ export function FilterCard({
   onReset: () => void;
 }) {
   return (
-    <section className="rpt08-card rpt08-filter-card" aria-label="Bộ lọc báo cáo">
+    <section
+      className="rpt08-card rpt08-filter-card"
+      aria-label={tUi("reports.recipientAgency.filterTitle")}
+    >
       <div className="rpt08-filter-grid">
         <div className="rpt08-filter-field rpt08-filter-field--date">
-          <label>Khoảng thời gian</label>
+          <label>{tUi("reports.packingLabel.dateRangeLabel")}</label>
           <DateRangeControl
             value={range}
             invalid={invalid}
@@ -414,7 +432,7 @@ export function FilterCard({
         </div>
 
         <div className="rpt08-filter-field">
-          <label>Kho</label>
+          <label>{tUi("updatedUi.text_19c608bfa103")}</label>
           <SelectControl
             ariaLabel="Kho"
             value="warehouse"
@@ -427,14 +445,14 @@ export function FilterCard({
         </div>
 
         <div className="rpt08-filter-field">
-          <label>Loại giao dịch</label>
+          <label>{tUi("updatedUi.text_94c1cbc6d405")}</label>
           <SelectControl
             ariaLabel="Loại giao dịch"
             value={type}
             options={[
-              { value: "ALL", label: "Tất cả" },
-              { value: "INBOUND", label: "Nhập kho" },
-              { value: "OUTBOUND", label: "Xuất kho" },
+              { value: "ALL", label: tUi("dashboard.operations.filterAll") },
+              { value: "INBOUND", label: tUi("dashboard.snapshot.inbound") },
+              { value: "OUTBOUND", label: tUi("dashboard.snapshot.outbound") },
             ]}
             icon={<SwapOutlined />}
             disabled={busy}
@@ -443,7 +461,7 @@ export function FilterCard({
         </div>
 
         <div className="rpt08-filter-field">
-          <label>Người thực hiện</label>
+          <label>{tUi("inventory.trace.colPerformedBy")}</label>
           <SelectControl
             ariaLabel="Người thực hiện"
             value={actor}
@@ -461,7 +479,7 @@ export function FilterCard({
             disabled={busy || invalid}
             onClick={onApply}
           >
-            Áp dụng
+            {tUi("dashboard.snapshot.apply")}
           </button>
           <button
             type="button"
@@ -469,7 +487,7 @@ export function FilterCard({
             disabled={busy}
             onClick={onReset}
           >
-            Đặt lại
+            {tUi("reports.packingLabel.reset")}
           </button>
         </div>
 
@@ -479,8 +497,8 @@ export function FilterCard({
           aria-live={invalid ? "polite" : undefined}
         >
           {invalid
-            ? "Ngày bắt đầu không được sau ngày kết thúc."
-            : `${isDefaultRange ? "7 ngày gần nhất" : "7 ngày"} · ${VI_TIMEZONE_LABEL}`}
+            ? tUi("dashboard.dateError.order")
+            : `${isDefaultRange ? tUi("dashboard.snapshot.periodLast7") : tUi("updatedUi.text_fc11ccee30a8")} · ${tUi("updatedUi.text_bebd46bc068a")}`}
         </div>
       </div>
     </section>
@@ -491,7 +509,7 @@ export function RefreshStrip() {
   return (
     <div className="rpt08-refresh-strip" role="status" aria-live="polite">
       <span className="rpt08-spinner" aria-hidden="true" />
-      <span>Đang cập nhật dữ liệu...</span>
+      <span>{tUi("updatedUi.text_0c576314af49")}</span>
       <i aria-hidden="true" />
     </div>
   );
@@ -533,10 +551,14 @@ export function StatusBanner({
           <button
             type="button"
             className="rpt08-banner-close"
-            aria-label="Đóng thông báo"
+            aria-label={tUi("updatedUi.text_8af6ba927e1f")}
             onClick={onClose}
           >
-            {primaryLabel && tone === "error" ? "Đóng" : <CloseOutlined />}
+            {primaryLabel && tone === "error" ? (
+              tUi("common.close")
+            ) : (
+              <CloseOutlined />
+            )}
           </button>
         ) : null}
       </div>
@@ -544,16 +566,19 @@ export function StatusBanner({
   );
 }
 
-
 export function LoadError({ onRetry }: { onRetry: () => void }) {
   return (
     <section className="rpt08-card rpt08-load-error" role="alert">
-      <div className="rpt08-load-error__icon"><WarningOutlined /></div>
-      <h2>Không thể tải báo cáo</h2>
-      <p>Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.</p>
+      <div className="rpt08-load-error__icon">
+        <WarningOutlined />
+      </div>
+      <h2>{tUi("updatedUi.text_c1e574adfa82")}</h2>
+      <p>{tUi("updatedUi.text_1ec35f35e954")}</p>
       <div>
-        <button type="button" onClick={onRetry}>Thử lại</button>
-        <Link to="/dashboard">Quay lại Tổng quan</Link>
+        <button type="button" onClick={onRetry}>
+          {tUi("common.retry")}
+        </button>
+        <Link to="/dashboard">{tUi("dashboard.snapshot.backOverview")}</Link>
       </div>
     </section>
   );

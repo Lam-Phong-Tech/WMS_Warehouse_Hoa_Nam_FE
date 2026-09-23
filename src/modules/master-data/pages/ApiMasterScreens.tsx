@@ -1,6 +1,13 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { DefectOverview } from "@/modules/master-data/components/DefectOverview";
-import { DefectEmptyState, DefectNotice } from "@/modules/master-data/components/DefectFeedback";
-import { DefectMutationNotice, type DefectMutationNoticeValue } from "@/modules/master-data/components/DefectMutationNotice";
+import {
+  DefectEmptyState,
+  DefectNotice,
+} from "@/modules/master-data/components/DefectFeedback";
+import {
+  DefectMutationNotice,
+  type DefectMutationNoticeValue,
+} from "@/modules/master-data/components/DefectMutationNotice";
 import { DefectSymbol } from "@/modules/master-data/components/DefectSymbol";
 import "@/modules/master-data/components/agency-list.css";
 import {
@@ -88,7 +95,12 @@ import { SkuThumbnail } from "@/shared/components/data-display/SkuThumbnail";
 import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
-import { ActionButton, ActionIconButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+  RowActionGroup,
+} from "@/shared/components/actions";
 import {
   Box,
   Checkbox,
@@ -116,6 +128,7 @@ import { formatAddress } from "@/shared/lib/vn-address";
 import { useSearchParams } from "react-router-dom";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { agencyPlaceLabel } from "@/shared/constants/agency-place-labels";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 /**
  * BE chưa có tham số lọc "SKU chờ điền thông tin" riêng (không đáng để thêm 1
@@ -226,23 +239,25 @@ type SkuFormState = {
   maxStock: string;
 };
 
-const EMPTY_SKU_FORM: SkuFormState = {
-  code: "",
-  name: "",
-  type: "PRODUCT",
-  unit: "cái", // giá trị mặc định gửi BE, không phải nhãn hiển thị
-  brandId: "",
-  categoryId: "",
-  modelId: "",
-  powerSourceId: "",
-  packageVariantId: "",
-  versionCode: "V1",
-  serialTracked: true,
-  status: "ACTIVE",
-  publishedToApp: false,
-  minStock: "",
-  maxStock: "",
-};
+const getEMPTY_SKU_FORM = localizedUiValue(
+  (): SkuFormState => ({
+    code: "",
+    name: "",
+    type: "PRODUCT",
+    unit: tUi("dashboard.stockMix.totalUnit"), // giá trị mặc định gửi BE, không phải nhãn hiển thị
+    brandId: "",
+    categoryId: "",
+    modelId: "",
+    powerSourceId: "",
+    packageVariantId: "",
+    versionCode: "V1",
+    serialTracked: true,
+    status: "ACTIVE",
+    publishedToApp: false,
+    minStock: "",
+    maxStock: "",
+  }),
+);
 
 /**
  * Trần độ dài ô chữ của SKU — khớp BE StoreProductRequest/UpdateProductRequest
@@ -401,7 +416,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SkuRecord | null>(null);
   const [viewing, setViewing] = useState<SkuRecord | null>(null);
-  const [form, setForm] = useState<SkuFormState>(EMPTY_SKU_FORM);
+  const [form, setForm] = useState<SkuFormState>(getEMPTY_SKU_FORM());
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -530,7 +545,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const openCreate = () => {
     if (!canManage) return;
     setEditing(null);
-    setForm({ ...EMPTY_SKU_FORM });
+    setForm({ ...getEMPTY_SKU_FORM() });
     setFormError("");
     setFieldErrors({});
     setModalOpen(true);
@@ -2150,8 +2165,8 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         {confirmDialog}
         <header className="agy-heading">
           <div>
-            <h1>Đại lý &amp; Nơi nhận</h1>
-            <p>Quản lý hồ sơ đối tượng nhận hàng phục vụ nghiệp vụ xuất kho</p>
+            <h1>{tUi("updatedUi.text_7ebd6aabc34b")}</h1>
+            <p>{tUi("updatedUi.text_c1caac816fec")}</p>
           </div>
           {canManage ? (
             <ActionButton kind="create" onClick={openCreate}>
@@ -2161,17 +2176,17 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         </header>
         <section
           className="agy-list-card"
-          aria-label="Danh sách đại lý và nơi nhận"
+          aria-label={tUi("updatedUi.text_93ff84be91ec")}
         >
           <div className="agy-list-heading">
-            <h2>Danh sách đại lý &amp; nơi nhận</h2>
+            <h2>{tUi("updatedUi.text_9a8fa273e862")}</h2>
             <span className="agy-total">
               {query.isLoading ? "—" : pagination.total.toLocaleString("vi-VN")}
             </span>
           </div>
           <div className="agy-toolbar">
             <div className="agy-filter">
-              <span>Tìm kiếm</span>
+              <span>{tUi("reports.packingLabel.searchLabel")}</span>
               <div className="agy-search">
                 <SearchOutlined aria-hidden="true" />
                 <UiTextField
@@ -2191,7 +2206,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               </div>
             </div>
             <div className="agy-filter">
-              <span>Loại nơi nhận</span>
+              <span>{tUi("updatedUi.text_000a7ce014e9")}</span>
               <UiSelect
                 aria-label={t("masterData.recipient.typeFilterAria")}
                 value={recipientType}
@@ -2209,7 +2224,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               />
             </div>
             <div className="agy-filter">
-              <span>Trạng thái</span>
+              <span>{tUi("dashboard.composition.colStatus")}</span>
               <UiSelect
                 aria-label={t("masterData.status.filterAria")}
                 value={status}
@@ -2292,7 +2307,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     sortType="value"
                   />
                   <th aria-label={t("masterData.common.actionsAria")}>
-                    Thao tác
+                    {tUi("outbound.detail.colAction")}
                   </th>
                 </tr>
               </thead>
@@ -2382,7 +2397,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               onChange={setPage}
             />
             <div className="agy-filter agy-page-size">
-              <span>Số dòng mỗi trang</span>
+              <span>{tUi("inbound.list.pageSizeAria")}</span>
               <UiSelect
                 aria-label={t("masterData.common.pageSizeAria")}
                 value={perPage}
@@ -3147,7 +3162,11 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       </header>
       {!blockingError && (
         <>
-          <DefectOverview refreshKey={refreshKey} loading={busy} stale={stale} />
+          <DefectOverview
+            refreshKey={refreshKey}
+            loading={busy}
+            stale={stale}
+          />
           <form
             className="hn-defect-filters"
             onSubmit={(event) => {

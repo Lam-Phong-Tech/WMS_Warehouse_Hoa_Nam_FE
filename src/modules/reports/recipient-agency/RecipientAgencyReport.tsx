@@ -28,6 +28,7 @@ import {
   type RecipientAgencyLedgerEvent,
 } from "./recipient-agency-api";
 import "./recipient-agency-report.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const DEMO_RANGE: [Dayjs, Dayjs] = [dayjs("2026-09-04"), dayjs("2026-09-10")];
 
@@ -122,7 +123,11 @@ function dealerKey(event: RecipientAgencyLedgerEvent): string {
 }
 
 function dealerName(event: RecipientAgencyLedgerEvent): string {
-  return event.agency?.name || event.recipient.name || "Chưa xác định";
+  return (
+    event.agency?.name ||
+    event.recipient.name ||
+    tUi("inbound.list.statusUnknown")
+  );
 }
 
 function receiverName(event: RecipientAgencyLedgerEvent): string {
@@ -211,7 +216,7 @@ function MetricCard({
           <>
             <div className="rpt07-kpi__value">{unknown ? "—" : value}</div>
             <div className="rpt07-kpi__hint">
-              {unknown ? "Chưa có dữ liệu" : hint}
+              {unknown ? tUi("dashboard.lastUpdated.none") : hint}
             </div>
           </>
         )}
@@ -233,12 +238,14 @@ function PanelEmpty({
         {partial ? "—" : <InboxOutlined />}
       </div>
       <strong>
-        {partial ? "Chưa có dữ liệu" : "Chưa có dữ liệu trong kỳ"}
+        {partial
+          ? tUi("dashboard.lastUpdated.none")
+          : tUi("updatedUi.text_58818ad0e4a0")}
       </strong>
       <span>
         {partial
-          ? "Chưa đủ dữ liệu để xác nhận báo cáo."
-          : "Hãy chọn khoảng thời gian khác để xem báo cáo."}
+          ? tUi("updatedUi.text_1e55f6da18ef")
+          : tUi("updatedUi.text_6bd5ce3b1254")}
       </span>
     </div>
   );
@@ -259,7 +266,7 @@ function Pagination({
     return (
       <div
         className="rpt07-pagination hn-report-pagination"
-        aria-label="Phân trang"
+        aria-label={tUi("shared.table.pagination")}
       >
         <button type="button" className="is-active" disabled={disabled}>
           1
@@ -309,7 +316,7 @@ function Pagination({
   return (
     <div
       className="rpt07-pagination hn-report-pagination"
-      aria-label="Phân trang"
+      aria-label={tUi("shared.table.pagination")}
     >
       {nodes}
     </div>
@@ -341,7 +348,7 @@ function DateRangeControl({
         format="DD/MM/YYYY"
         className="rpt07-date-proxy"
         popupClassName="rpt07-date-popup"
-        aria-label="Khoảng thời gian"
+        aria-label={tUi("reports.packingLabel.dateRangeLabel")}
         onChange={(value) => {
           if (value?.[0] && value?.[1]) {
             onChange([value[0], value[1]]);
@@ -698,14 +705,16 @@ export default function RecipientAgencyReport() {
       data-testid="report-08-recipient-agency"
       data-report-screen="RPT-07"
     >
-      <span className="rpt07-sr-only">Bảng đối soát xuất thuần</span>
+      <span className="rpt07-sr-only">
+        {tUi("reports.recipientAgency.tableTitle")}
+      </span>
 
       <header className="rpt07-header">
         <div className="rpt07-heading">
           <h1 className="hn-report-page-title">
-            Báo cáo Xuất theo người nhận đại lý
+            {tUi("updatedUi.text_08f22bdc2cc0")}
           </h1>
-          <p>Theo dõi sản lượng xuất và tình trạng giao nhận theo đại lý</p>
+          <p>{tUi("updatedUi.text_6440ff9ad26f")}</p>
         </div>
         <div className="rpt07-head-actions">
           <div
@@ -717,7 +726,7 @@ export default function RecipientAgencyReport() {
               <strong>{warehouseName}</strong>
               <small>
                 <i />
-                Đang hoạt động
+                {tUi("dashboard.snapshot.warehouseActive")}
               </small>
             </span>
           </div>
@@ -725,7 +734,7 @@ export default function RecipientAgencyReport() {
             {readonly ? (
               <div className="rpt07-readonly-note">
                 <LockOutlined />
-                Bạn không có quyền xuất báo cáo.
+                {tUi("updatedUi.text_5fea0a9ca57b")}
               </div>
             ) : null}
             <button
@@ -739,36 +748,48 @@ export default function RecipientAgencyReport() {
               ) : (
                 <DownloadOutlined />
               )}
-              {exporting ? "Đang xuất..." : "Xuất báo cáo"}
+              {exporting
+                ? tUi("updatedUi.text_f218a6c991e2")
+                : tUi("reports.traceability.exportReport")}
             </button>
           </div>
         </div>
       </header>
 
-      <section className="rpt07-filter-card" aria-label="Bộ lọc báo cáo">
+      <section
+        className="rpt07-filter-card"
+        aria-label={tUi("reports.recipientAgency.filterTitle")}
+      >
         <div className="rpt07-filter-grid">
           <div className="rpt07-filter-field rpt07-filter-field--date">
-            <FilterLabel>Khoảng thời gian</FilterLabel>
+            <FilterLabel>
+              {tUi("reports.packingLabel.dateRangeLabel")}
+            </FilterLabel>
             <DateRangeControl
               range={draftRange}
               disabled={controlsBusy}
               onChange={setDraftRange}
             />
             <div className="rpt07-filter-helper">
-              7 ngày gần nhất · Múi giờ Việt Nam
+              {tUi("updatedUi.text_e0958e093414")}
             </div>
           </div>
 
           <div className="rpt07-filter-field">
-            <FilterLabel>Kho</FilterLabel>
-            <div className="rpt07-readonly-field" aria-label="Kho">
+            <FilterLabel>{tUi("updatedUi.text_19c608bfa103")}</FilterLabel>
+            <div
+              className="rpt07-readonly-field"
+              aria-label={tUi("updatedUi.text_19c608bfa103")}
+            >
               <StockOutlined />
               <span>{warehouseName}</span>
             </div>
           </div>
 
           <div className="rpt07-filter-field rpt07-select">
-            <FilterLabel>Đại lý</FilterLabel>
+            <FilterLabel>
+              {tUi("reports.recipientAgency.typeAgency")}
+            </FilterLabel>
             <UiSelect
               fullWidth
               searchable={false}
@@ -776,14 +797,14 @@ export default function RecipientAgencyReport() {
               value={draftAgency}
               onChange={setDraftAgency}
               options={agencyOptions}
-              placeholder="Tất cả đại lý"
-              aria-label="Đại lý"
+              placeholder={tUi("reports.recipientAgency.agencyAll")}
+              aria-label={tUi("reports.recipientAgency.typeAgency")}
               menuClassName="rpt07-select-menu"
             />
           </div>
 
           <div className="rpt07-filter-field rpt07-select">
-            <FilterLabel>Trạng thái</FilterLabel>
+            <FilterLabel>{tUi("dashboard.composition.colStatus")}</FilterLabel>
             <UiSelect
               fullWidth
               searchable={false}
@@ -791,11 +812,17 @@ export default function RecipientAgencyReport() {
               value={draftStatus}
               onChange={(value) => setDraftStatus(value as StatusFilter)}
               options={[
-                { value: "ALL", label: "Tất cả" },
-                { value: "COMPLETE", label: "Đã hoàn tất" },
-                { value: "INCOMPLETE", label: "Chưa hoàn tất" },
+                { value: "ALL", label: tUi("dashboard.operations.filterAll") },
+                {
+                  value: "COMPLETE",
+                  label: tUi("reports.warrantyReport.statDone"),
+                },
+                {
+                  value: "INCOMPLETE",
+                  label: tUi("updatedUi.text_0e27d3ce9670"),
+                },
               ]}
-              aria-label="Trạng thái"
+              aria-label={tUi("dashboard.composition.colStatus")}
               menuClassName="rpt07-select-menu"
             />
           </div>
@@ -808,7 +835,9 @@ export default function RecipientAgencyReport() {
               onClick={applyFilters}
             >
               {controlsBusy ? <span className="rpt07-spinner" /> : null}
-              {initialLoading ? "Đang tải dữ liệu" : "Áp dụng"}
+              {initialLoading
+                ? tUi("dashboard.insight.loadingTitle")
+                : tUi("dashboard.snapshot.apply")}
             </button>
           </div>
           <div className="rpt07-filter-reset">
@@ -817,16 +846,14 @@ export default function RecipientAgencyReport() {
               onClick={resetFilters}
               disabled={initialLoading}
             >
-              Đặt lại
+              {tUi("reports.packingLabel.reset")}
             </button>
           </div>
 
           {refreshing ? (
             <div className="rpt07-refresh-note" aria-live="polite">
-              <strong>Đang cập nhật dữ liệu...</strong>
-              <span>
-                Kết quả gần nhất, chưa phải dữ liệu của bộ lọc vừa áp dụng.
-              </span>
+              <strong>{tUi("updatedUi.text_0c576314af49")}</strong>
+              <span>{tUi("updatedUi.text_a84e8e7a2a07")}</span>
             </div>
           ) : null}
         </div>
@@ -840,16 +867,13 @@ export default function RecipientAgencyReport() {
         >
           <WarningOutlined />
           <div>
-            <strong>Dữ liệu chưa đầy đủ</strong>
-            <span>
-              Một số nguồn chưa đồng bộ. Số liệu có thể thay đổi sau khi tải
-              lại.
-            </span>
-            <small>Cập nhật gần nhất: —</small>
+            <strong>{tUi("updatedUi.text_353db8f23007")}</strong>
+            <span>{tUi("updatedUi.text_ac090f26974c")}</span>
+            <small>{tUi("updatedUi.text_a37595da4216")}</small>
           </div>
           <button type="button" onClick={() => void source.refetch()}>
             <ReloadOutlined />
-            Tải lại dữ liệu
+            {tUi("updatedUi.text_b91e5cc7eece")}
           </button>
         </section>
       ) : null}
@@ -860,8 +884,8 @@ export default function RecipientAgencyReport() {
             <FileTextOutlined />
             <WarningOutlined />
           </div>
-          <h2>Không tải được báo cáo</h2>
-          <p>Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.</p>
+          <h2>{tUi("updatedUi.text_fd4197d181df")}</h2>
+          <p>{tUi("updatedUi.text_1ec35f35e954")}</p>
           <div className="rpt07-failure-panel__actions">
             <button
               type="button"
@@ -869,22 +893,25 @@ export default function RecipientAgencyReport() {
               onClick={() => void source.refetch()}
             >
               <ReloadOutlined />
-              Thử lại
+              {tUi("common.retry")}
             </button>
             <button
               type="button"
               className="rpt07-secondary-button"
               onClick={resetFilters}
             >
-              Đặt lại bộ lọc
+              {tUi("updatedUi.text_49ced19e7f1d")}
             </button>
           </div>
         </section>
       ) : (
         <>
-          <section className="rpt07-kpi-grid" aria-label="Tổng quan vận hành">
+          <section
+            className="rpt07-kpi-grid"
+            aria-label={tUi("dashboard.title")}
+          >
             <MetricCard
-              label="Tổng phiếu xuất"
+              label={tUi("updatedUi.text_b825b57a8a53")}
               value={formatNumber(documentTotals.total)}
               hint="Tất cả phiếu trong kỳ"
               icon={<FileTextOutlined />}
@@ -893,7 +920,7 @@ export default function RecipientAgencyReport() {
               unknown={partial}
             />
             <MetricCard
-              label="Đại lý nhận"
+              label={tUi("updatedUi.text_623dac20f796")}
               value={formatNumber(dealers.length)}
               hint="Có phát sinh xuất trong kỳ"
               icon={<TeamOutlined />}
@@ -902,7 +929,7 @@ export default function RecipientAgencyReport() {
               unknown={partial}
             />
             <MetricCard
-              label="Đã hoàn tất"
+              label={tUi("reports.warrantyReport.statDone")}
               value={formatNumber(documentTotals.complete)}
               hint={completionLabel}
               icon={<CheckCircleOutlined />}
@@ -911,7 +938,7 @@ export default function RecipientAgencyReport() {
               unknown={partial}
             />
             <MetricCard
-              label="Chưa hoàn tất"
+              label={tUi("updatedUi.text_0e27d3ce9670")}
               value={formatNumber(documentTotals.incomplete)}
               hint={incompleteLabel}
               icon={<HistoryOutlined />}
@@ -924,13 +951,13 @@ export default function RecipientAgencyReport() {
 
           <section
             className="rpt07-analysis-grid"
-            aria-label="Phân tích theo đại lý"
+            aria-label={tUi("updatedUi.text_9fdeddd24671")}
           >
             <div className="rpt07-panel rpt07-bar-panel">
               <div className="rpt07-panel__header">
                 <div>
-                  <h2>Top đại lý theo số phiếu xuất</h2>
-                  <p>Số phiếu xuất trong kỳ</p>
+                  <h2>{tUi("updatedUi.text_b696a811369d")}</h2>
+                  <p>{tUi("updatedUi.text_14857b14851b")}</p>
                 </div>
               </div>
               {initialLoading ? (
@@ -951,7 +978,7 @@ export default function RecipientAgencyReport() {
                 <div
                   className="rpt07-bars"
                   role="img"
-                  aria-label="Top đại lý theo số phiếu xuất"
+                  aria-label={tUi("updatedUi.text_b696a811369d")}
                 >
                   <div className="rpt07-bars__rows">
                     {topRows.map((row) => (
@@ -990,8 +1017,8 @@ export default function RecipientAgencyReport() {
             >
               <div className="rpt07-panel__header">
                 <div>
-                  <h2>Tỷ lệ hoàn tất</h2>
-                  <p>Tình trạng giao nhận trong kỳ</p>
+                  <h2>{tUi("reports.packingLabel.kpiPrintedMeta")}</h2>
+                  <p>{tUi("updatedUi.text_bf9b957f0425")}</p>
                 </div>
               </div>
               {initialLoading ? (
@@ -1012,7 +1039,11 @@ export default function RecipientAgencyReport() {
                   <div
                     className="rpt07-donut"
                     role="img"
-                    aria-label={"Tỷ lệ hoàn tất " + completionLabel}
+                    aria-label={
+                      tUi("reports.packingLabel.kpiPrintedMeta") +
+                      " " +
+                      completionLabel
+                    }
                     style={{
                       background:
                         "conic-gradient(" +
@@ -1028,14 +1059,16 @@ export default function RecipientAgencyReport() {
                   >
                     <span>
                       <strong>{completionLabel}</strong>
-                      <small>Tỷ lệ hoàn tất</small>
+                      <small>
+                        {tUi("reports.packingLabel.kpiPrintedMeta")}
+                      </small>
                     </span>
                   </div>
                   <div className="rpt07-ratio-copy">
                     <div className="rpt07-legend-row is-success">
                       <i />
                       <strong>{formatNumber(documentTotals.complete)}</strong>
-                      <span>Hoàn tất</span>
+                      <span>{tUi("iam.permissionAction.post")}</span>
                     </div>
                     <div
                       className={
@@ -1046,16 +1079,27 @@ export default function RecipientAgencyReport() {
                       <i />
                       <strong>{formatNumber(documentTotals.incomplete)}</strong>
                       <span>
-                        {warning ? "phiếu chưa hoàn tất" : "Chưa hoàn tất"}
+                        {warning
+                          ? tUi("updatedUi.text_6703ab94972c")
+                          : tUi("updatedUi.text_0e27d3ce9670")}
                       </span>
                       {warning ? (
-                        <small>{incompleteLabel} tổng phiếu</small>
+                        <small>
+                          {incompleteLabel}
+                          {" " + tUi("updatedUi.text_9871199f609c")}
+                        </small>
                       ) : null}
                     </div>
                     <div className="rpt07-top-five">
-                      <span>Top 5 đại lý</span>
-                      <strong>{formatNumber(topFiveDocuments)} phiếu</strong>
-                      <small>{topFiveLabel} tổng phiếu</small>
+                      <span>{tUi("updatedUi.text_344afda43e7e")}</span>
+                      <strong>
+                        {formatNumber(topFiveDocuments)}
+                        {" " + tUi("updatedUi.text_20d8a6e7893b")}
+                      </strong>
+                      <small>
+                        {topFiveLabel}
+                        {" " + tUi("updatedUi.text_9871199f609c")}
+                      </small>
                     </div>
                   </div>
                 </div>
@@ -1069,7 +1113,9 @@ export default function RecipientAgencyReport() {
           >
             <div className="rpt07-table-toolbar">
               <div className="rpt07-table-title">
-                <h2 id="rpt07-table-title">Danh sách đại lý nhận hàng</h2>
+                <h2 id="rpt07-table-title">
+                  {tUi("updatedUi.text_3a0b9ba89a40")}
+                </h2>
                 {initialLoading ? (
                   <LoadingBar width="42px" height={22} />
                 ) : (
@@ -1077,7 +1123,11 @@ export default function RecipientAgencyReport() {
                     {partial
                       ? "—"
                       : noSearchResult
-                        ? "0 kết quả / " + dealers.length + " đại lý"
+                        ? tUi("updatedUi.text_f3674c04b5e8") +
+                          " " +
+                          dealers.length +
+                          " " +
+                          tUi("updatedUi.text_9fe632fd6866")
                         : dealers.length}
                   </span>
                 )}
@@ -1089,8 +1139,8 @@ export default function RecipientAgencyReport() {
                   disabled={initialLoading || partial}
                   value={search}
                   onChange={setSearch}
-                  aria-label="Tìm trong danh sách đại lý"
-                  placeholder="Tên đại lý, người nhận, mã phiếu..."
+                  aria-label={tUi("updatedUi.text_4d0f6cce1add")}
+                  placeholder={tUi("updatedUi.text_a54b781eab7e")}
                 />
               </div>
             </div>
@@ -1099,12 +1149,16 @@ export default function RecipientAgencyReport() {
               <table className="rpt07-table">
                 <thead>
                   <tr>
-                    <th>Đại lý / Người nhận</th>
-                    <th className="is-number">Số phiếu</th>
-                    <th className="is-number">Số sản phẩm</th>
-                    <th>Tiến độ</th>
-                    <th>Lần xuất gần nhất</th>
-                    <th>Chi tiết</th>
+                    <th>{tUi("updatedUi.text_61d6c9f042ea")}</th>
+                    <th className="is-number">
+                      {tUi("reports.pendingEvidence.colDocNo")}
+                    </th>
+                    <th className="is-number">
+                      {tUi("outbound.detail.fieldItemCount")}
+                    </th>
+                    <th>{tUi("updatedUi.text_e59478450504")}</th>
+                    <th>{tUi("updatedUi.text_4c5b6a1284da")}</th>
+                    <th>{tUi("reports.importMatchReport.detail")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1145,17 +1199,15 @@ export default function RecipientAgencyReport() {
                           <div className="rpt07-search-empty__icon">
                             <SearchOutlined />
                           </div>
-                          <strong>Không tìm thấy kết quả phù hợp</strong>
-                          <span>
-                            Hãy kiểm tra tên đại lý, người nhận hoặc mã phiếu.
-                          </span>
+                          <strong>{tUi("updatedUi.text_e6b29ea29c8e")}</strong>
+                          <span>{tUi("updatedUi.text_c760704470b3")}</span>
                           <button
                             type="button"
                             className="rpt07-primary-button"
                             onClick={() => setSearch("")}
                           >
                             <ReloadOutlined />
-                            Đặt lại tìm kiếm
+                            {tUi("updatedUi.text_a6630c450335")}
                           </button>
                         </div>
                       </td>
@@ -1167,17 +1219,15 @@ export default function RecipientAgencyReport() {
                           <div className="rpt07-panel-empty__icon">
                             <InboxOutlined />
                           </div>
-                          <strong>Chưa có dữ liệu trong kỳ</strong>
-                          <span>
-                            Hãy chọn khoảng thời gian khác để xem báo cáo.
-                          </span>
+                          <strong>{tUi("updatedUi.text_58818ad0e4a0")}</strong>
+                          <span>{tUi("updatedUi.text_6bd5ce3b1254")}</span>
                           <button
                             type="button"
                             className="rpt07-primary-button"
                             onClick={resetFilters}
                           >
                             <HistoryOutlined />
-                            Chọn lại thời gian
+                            {tUi("updatedUi.text_2612a3bf2e9a")}
                           </button>
                         </div>
                       </td>
@@ -1190,7 +1240,7 @@ export default function RecipientAgencyReport() {
                           : 0;
                       return (
                         <tr key={row.key}>
-                          <td data-label="Đại lý / Người nhận">
+                          <td data-label={tUi("updatedUi.text_61d6c9f042ea")}>
                             <strong
                               className="rpt07-dealer-name"
                               title={row.name}
@@ -1204,13 +1254,19 @@ export default function RecipientAgencyReport() {
                               {row.receiver}
                             </span>
                           </td>
-                          <td data-label="Số phiếu" className="is-number">
+                          <td
+                            data-label={tUi("reports.pendingEvidence.colDocNo")}
+                            className="is-number"
+                          >
                             {formatNumber(row.totalDocuments)}
                           </td>
-                          <td data-label="Số sản phẩm" className="is-number">
+                          <td
+                            data-label={tUi("outbound.detail.fieldItemCount")}
+                            className="is-number"
+                          >
                             {formatNumber(row.productQuantity)}
                           </td>
-                          <td data-label="Tiến độ">
+                          <td data-label={tUi("updatedUi.text_e59478450504")}>
                             <div className="rpt07-progress">
                               <span className="rpt07-progress__track">
                                 <i
@@ -1227,10 +1283,12 @@ export default function RecipientAgencyReport() {
                               </strong>
                             </div>
                           </td>
-                          <td data-label="Lần xuất gần nhất">
+                          <td data-label={tUi("updatedUi.text_4c5b6a1284da")}>
                             {formatDate(row.latestAt)}
                           </td>
-                          <td data-label="Chi tiết">
+                          <td
+                            data-label={tUi("reports.importMatchReport.detail")}
+                          >
                             <RowActionGroup>
                               <RowActionButton
                                 kind="view"
@@ -1255,13 +1313,17 @@ export default function RecipientAgencyReport() {
                   <LoadingBar width="135px" />
                 ) : noSearchResult || partial || reportEmpty ? (
                   <span>
-                    Hiển thị 0–0 / {partial ? "—" : tableRows.length} đại lý
+                    {tUi("updatedUi.text_2ba40e3017eb") + " "}
+                    {partial ? "—" : tableRows.length}
+                    {" " + tUi("updatedUi.text_9fe632fd6866")}
                   </span>
                 ) : (
                   <span>
-                    Hiển thị {(visiblePage - 1) * 5 + 1}–
+                    {tUi("putaway.queue.showing") + " "}
+                    {(visiblePage - 1) * 5 + 1}–
                     {Math.min(visiblePage * 5, tableRows.length)} /{" "}
-                    {tableRows.length} đại lý
+                    {tableRows.length}
+                    {" " + tUi("updatedUi.text_9fe632fd6866")}
                   </span>
                 )}
               </div>
@@ -1283,7 +1345,7 @@ export default function RecipientAgencyReport() {
 
       {detailRow ? (
         <DrillDownDialog
-          title={"Chi tiết nhận hàng · " + detailRow.name}
+          title={tUi("updatedUi.text_264600c191dc") + " " + detailRow.name}
           maxWidth="md"
           onClose={() => setDetailRow(null)}
         >
@@ -1294,8 +1356,10 @@ export default function RecipientAgencyReport() {
                 <strong>{detailRow.name}</strong>
                 <span>
                   {detailRow.receiver === "—"
-                    ? "Tổng hợp phiếu xuất trong kỳ"
-                    : "Người nhận: " + detailRow.receiver}
+                    ? tUi("updatedUi.text_7e49f04ad717")
+                    : tUi("updatedUi.text_1339766f6a53") +
+                      " " +
+                      detailRow.receiver}
                 </span>
               </div>
             </div>
@@ -1303,10 +1367,10 @@ export default function RecipientAgencyReport() {
               <table>
                 <thead>
                   <tr>
-                    <th>Mã phiếu</th>
-                    <th>Ngày xuất</th>
-                    <th>Số sản phẩm</th>
-                    <th>Trạng thái</th>
+                    <th>{tUi("warranty.componentList.colCode")}</th>
+                    <th>{tUi("reports.warranty.colIssueDate")}</th>
+                    <th>{tUi("outbound.detail.fieldItemCount")}</th>
+                    <th>{tUi("dashboard.composition.colStatus")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1321,7 +1385,9 @@ export default function RecipientAgencyReport() {
                             document.incomplete ? "is-pending" : "is-complete"
                           }
                         >
-                          {document.incomplete ? "Chưa hoàn tất" : "Hoàn tất"}
+                          {document.incomplete
+                            ? tUi("updatedUi.text_0e27d3ce9670")
+                            : tUi("iam.permissionAction.post")}
                         </span>
                       </td>
                     </tr>

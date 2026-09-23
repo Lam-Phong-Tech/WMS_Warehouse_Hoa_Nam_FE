@@ -580,22 +580,22 @@
     white-space: normal;
   }
   .hn-agency-screen .agy-table td:nth-child(4)::before {
-    content: "Loại nơi nhận";
+    content: var(--hn-translated-content-1, "Loại nơi nhận");
   }
   .hn-agency-screen .agy-table td:nth-child(5)::before {
-    content: "Thị trường";
+    content: var(--hn-translated-content-2, "Thị trường");
   }
   .hn-agency-screen .agy-table td:nth-child(6)::before {
-    content: "Khu vực";
+    content: var(--hn-translated-content-3, "Khu vực");
   }
   .hn-agency-screen .agy-table td:nth-child(7)::before {
-    content: "Người liên hệ";
+    content: var(--hn-translated-content-4, "Người liên hệ");
   }
   .hn-agency-screen .agy-table td:nth-child(8)::before {
-    content: "Điện thoại";
+    content: var(--hn-translated-content-5, "Điện thoại");
   }
   .hn-agency-screen .agy-table td:nth-child(9)::before {
-    content: "Địa chỉ";
+    content: var(--hn-translated-content-6, "Địa chỉ");
   }
   .hn-agency-screen .agy-table td:nth-child(10) {
     align-self: center;
@@ -702,4 +702,13 @@
   .hn-agency-screen .agy-table td[colspan]::before {
     content: none;
   }
+}
+
+:root:lang(en) {
+  --hn-translated-content-1: "Recipient type";
+  --hn-translated-content-2: "Market";
+  --hn-translated-content-3: "Area";
+  --hn-translated-content-4: "Contact person";
+  --hn-translated-content-5: "Phone";
+  --hn-translated-content-6: "Address";
 }

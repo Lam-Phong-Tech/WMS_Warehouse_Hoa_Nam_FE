@@ -1,8 +1,10 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { useId, useMemo, useState, type CSSProperties } from "react";
 import dayjs from "dayjs";
 import { fmt } from "@/modules/reports/operations/report-format";
 import type { IoDocType, IoHistoryRow } from "./io-history-api";
 import "./io-history-overview.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 type OverviewProps = {
   rows: IoHistoryRow[];
@@ -17,11 +19,18 @@ type DayCount = {
   OUTBOUND: number;
   REVERSAL: number;
 };
-const SERIES = [
-  { type: "INBOUND", label: "Nhập kho", tone: "in" },
-  { type: "OUTBOUND", label: "Xuất kho", tone: "out" },
-  { type: "REVERSAL", label: "Hoàn tác", tone: "reversal" },
-] as const;
+const getSERIES = localizedUiValue(
+  () =>
+    [
+      { type: "INBOUND", label: tUi("dashboard.snapshot.inbound"), tone: "in" },
+      {
+        type: "OUTBOUND",
+        label: tUi("dashboard.snapshot.outbound"),
+        tone: "out",
+      },
+      { type: "REVERSAL", label: tUi("iam.role.undo"), tone: "reversal" },
+    ] as const,
+);
 
 function OverviewIcon({
   name,
@@ -64,7 +73,7 @@ function DayChart({
 }) {
   const [activeDay, setActiveDay] = useState<string | null>(null);
   const tooltipId = useId();
-  const series = hasReversals ? SERIES : SERIES.slice(0, 2);
+  const series = hasReversals ? getSERIES() : getSERIES().slice(0, 2);
   const highest = days.reduce(
     (max, day) => Math.max(max, ...series.map(({ type }) => day[type])),
     0,
@@ -81,7 +90,10 @@ function DayChart({
     (fmt(highest).length * 6 + 4) * series.length + 12,
   );
   return (
-    <div className="io-daily-chart" aria-label="Số giao dịch theo ngày">
+    <div
+      className="io-daily-chart"
+      aria-label={tUi("updatedUi.text_36cef5453a55")}
+    >
       <div
         className="io-chart-axis"
         aria-hidden="true"
@@ -94,9 +106,7 @@ function DayChart({
       <div
         className="io-chart-scroll"
         tabIndex={compact ? 0 : undefined}
-        aria-label={
-          compact ? "Biểu đồ có thể cuộn ngang để xem các ngày" : undefined
-        }
+        aria-label={compact ? tUi("updatedUi.text_2ecbe380156e") : undefined}
       >
         <div
           className="io-chart-plot"
@@ -173,7 +183,7 @@ function DayChart({
           {total === 0 && (
             <div className="io-chart-empty">
               <OverviewIcon name="empty" />
-              <span>Chưa có giao dịch</span>
+              <span>{tUi("dashboard.flow.emptyTitle")}</span>
             </div>
           )}
         </div>
@@ -187,7 +197,7 @@ function OverviewSkeleton() {
     <div
       className="io-overview is-loading"
       role="status"
-      aria-label="Đang tải tổng quan nhập - xuất kho"
+      aria-label={tUi("updatedUi.text_64940843819f")}
       aria-busy="true"
     >
       <div className="io-summary-grid" aria-hidden="true">
@@ -320,7 +330,7 @@ export function IoHistoryOverview({
   const donutNumberSize =
     totalLabel.length > 4 ? Math.max(10, 105 / totalLabel.length) : undefined;
   const hasReversals = data.counts.REVERSAL > 0;
-  const activeSeries = hasReversals ? SERIES : SERIES.slice(0, 2);
+  const activeSeries = hasReversals ? getSERIES() : getSERIES().slice(0, 2);
   const inPercent = total ? (data.counts.INBOUND / total) * 100 : 0;
   const outEnd = total
     ? ((data.counts.INBOUND + data.counts.OUTBOUND) / total) * 100
@@ -332,20 +342,20 @@ export function IoHistoryOverview({
   };
   return (
     <div className="io-overview">
-      <section className="io-summary-grid" aria-label="Tổng quan vận hành">
+      <section className="io-summary-grid" aria-label={tUi("dashboard.title")}>
         <article className="io-overview-card io-transfer-card">
           <span className="io-summary-icon">
             <OverviewIcon name="transfer" />
           </span>
           <div className="io-summary-heading">
-            <h2>Tổng quan luân chuyển</h2>
+            <h2>{tUi("updatedUi.text_97b7bfe0ab46")}</h2>
             <div className="io-summary-number">
               <strong>{fmt(total)}</strong>
               <div className="io-summary-unit">
-                <span>giao dịch</span>
+                <span>{tUi("updatedUi.text_74e542e35044")}</span>
                 {stale && (
                   <span className="io-stale-pill" role="status">
-                    Dữ liệu gần nhất
+                    {tUi("updatedUi.text_5dfbcfbff4e7")}
                   </span>
                 )}
               </div>
@@ -401,45 +411,55 @@ export function IoHistoryOverview({
             <OverviewIcon name="box" />
           </span>
           <div className="io-product-content">
-            <h2>Sản phẩm luân chuyển</h2>
+            <h2>{tUi("updatedUi.text_87e5b1b15d2e")}</h2>
             <div className="io-summary-number">
               <strong>
                 {fmt(data.quantities.INBOUND + data.quantities.OUTBOUND)}
               </strong>
-              <span>sản phẩm</span>
+              <span>{tUi("updatedUi.text_9bfcaa70b19e")}</span>
             </div>
             <div className="io-product-breakdown">
               <div className="is-in">
                 <i className="io-dot is-in" />
                 <strong>{fmt(data.quantities.INBOUND)}</strong>
-                <span>Sản phẩm nhập</span>
+                <span>{tUi("updatedUi.text_25db5f984fd0")}</span>
               </div>
               <div className="is-out">
                 <i className="io-dot is-out" />
                 <strong>{fmt(data.quantities.OUTBOUND)}</strong>
-                <span>Sản phẩm xuất</span>
+                <span>{tUi("updatedUi.text_b18ef190f880")}</span>
               </div>
             </div>
           </div>
         </article>
         <div className="io-quantity-note">
-          <span>{fmt(data.quantities.INBOUND)} đơn vị tăng</span>
-          <span>{fmt(data.quantities.OUTBOUND)} đơn vị giảm</span>
+          <span>
+            {fmt(data.quantities.INBOUND)}
+            {" " + tUi("updatedUi.text_c72370fb32ff")}
+          </span>
+          <span>
+            {fmt(data.quantities.OUTBOUND)}
+            {" " + tUi("updatedUi.text_20270a883e63")}
+          </span>
           {hasReversals && (
             <span>
-              Hoàn tác: {fmt(data.counts.REVERSAL)} phiếu ·{" "}
+              {tUi("updatedUi.text_bf3a83ef8117") + " "}
+              {fmt(data.counts.REVERSAL)}
+              {" " + tUi("updatedUi.text_cf3bb0b1eb76")}{" "}
               <span>
-                {fmt(data.quantities.REVERSAL)} đơn vị đã xác định dấu
+                {fmt(data.quantities.REVERSAL)}
+                {" " + tUi("updatedUi.text_a7d97a7b57de")}
               </span>
             </span>
           )}
           <span>
-            Ảnh hưởng ròng: <strong>{signed(data.net)}</strong>
+            {tUi("updatedUi.text_1123f48cf777") + " "}
+            <strong>{signed(data.net)}</strong>
           </span>
           {data.unknown > 0 && (
             <span className="io-unknown-qty">
-              {fmt(data.unknown)} giao dịch chưa xác định số lượng; chưa cộng
-              vào tổng.
+              {fmt(data.unknown)}
+              {" " + tUi("updatedUi.text_2c06e2747b83")}
             </span>
           )}
         </div>
@@ -447,12 +467,12 @@ export function IoHistoryOverview({
       <div className="io-charts-grid">
         <section
           className="io-overview-card io-daily-card"
-          aria-label="Nhập - xuất theo ngày"
+          aria-label={tUi("updatedUi.text_ffd2bf345883")}
         >
           <div className="io-chart-heading">
             <div>
-              <h2>Nhập - xuất theo ngày</h2>
-              <p>Số giao dịch</p>
+              <h2>{tUi("updatedUi.text_ffd2bf345883")}</h2>
+              <p>{tUi("updatedUi.text_9616f6954659")}</p>
             </div>
             <div className="io-chart-legend">
               {activeSeries.map(({ type, label, tone }) => (
@@ -463,7 +483,8 @@ export function IoHistoryOverview({
               ))}
             </div>
             <div className="io-chart-total">
-              Tổng <strong>{fmt(total)}</strong>
+              {tUi("reports.agencyComparison.colTotal") + " "}
+              <strong>{fmt(total)}</strong>
             </div>
           </div>
           <DayChart
@@ -474,25 +495,34 @@ export function IoHistoryOverview({
         </section>
         <section
           className="io-overview-card io-rhythm-card"
-          aria-label="Cơ cấu và nhịp hoạt động"
+          aria-label={tUi("updatedUi.text_9e761d69adf4")}
         >
           <div className="io-chart-heading">
             <div>
-              <h2>Cơ cấu &amp; nhịp hoạt động</h2>
-              <p>Tỷ lệ giao dịch</p>
+              <h2>{tUi("updatedUi.text_826a83f5533c")}</h2>
+              <p>{tUi("updatedUi.text_f26323da8601")}</p>
             </div>
           </div>
           <div className="io-donut-row">
             <div className="io-donut-label is-in">
               <strong>{percentage(data.counts.INBOUND, total)}</strong>
-              <span>Nhập kho</span>
+              <span>{tUi("dashboard.snapshot.inbound")}</span>
               <b>{fmt(data.counts.INBOUND)}</b>
             </div>
             <div
               className="io-donut"
               style={donutStyle}
               role="img"
-              aria-label={`${fmt(total)} giao dịch. ${activeSeries.map(({ type, label }) => `${label} ${fmt(data.counts[type])}`).join(", ")}`}
+              aria-label={tUi("updatedUi.text_d14b53b16ada", {
+                value0: String(fmt(total)),
+                value1: String(
+                  activeSeries
+                    .map(
+                      ({ type, label }) => `${label} ${fmt(data.counts[type])}`,
+                    )
+                    .join(", "),
+                ),
+              })}
             >
               <div className="io-donut-hole">
                 <strong
@@ -501,19 +531,20 @@ export function IoHistoryOverview({
                 >
                   {totalLabel}
                 </strong>
-                <span>giao dịch</span>
+                <span>{tUi("updatedUi.text_74e542e35044")}</span>
               </div>
             </div>
             <div className="io-donut-label is-out">
               <strong>{percentage(data.counts.OUTBOUND, total)}</strong>
-              <span>Xuất kho</span>
+              <span>{tUi("dashboard.snapshot.outbound")}</span>
               <b>{fmt(data.counts.OUTBOUND)}</b>
             </div>
           </div>
           {hasReversals && (
             <div className="io-donut-reversal">
               <i className="io-dot is-reversal" />
-              Hoàn tác <b>{fmt(data.counts.REVERSAL)}</b> ·{" "}
+              {tUi("iam.role.undo") + " "}
+              <b>{fmt(data.counts.REVERSAL)}</b> ·{" "}
               {percentage(data.counts.REVERSAL, total)}
             </div>
           )}
@@ -522,11 +553,11 @@ export function IoHistoryOverview({
               <OverviewIcon name="calendar" />
             </span>
             <div className="io-busiest-date">
-              <span>Ngày hoạt động cao nhất</span>
+              <span>{tUi("updatedUi.text_887c1d5bc90f")}</span>
               <strong>
                 {data.busiest
                   ? dayjs(data.busiest.day).format("DD/MM/YYYY")
-                  : "Chưa có dữ liệu"}
+                  : tUi("dashboard.lastUpdated.none")}
               </strong>
             </div>
             {data.busiest && (
@@ -537,13 +568,18 @@ export function IoHistoryOverview({
                       data.busiest.OUTBOUND +
                       data.busiest.REVERSAL,
                   )}{" "}
-                  giao dịch
+                  {tUi("updatedUi.text_74e542e35044")}
                 </strong>
                 <span>
-                  {fmt(data.busiest.INBOUND)} nhập ·{" "}
-                  {fmt(data.busiest.OUTBOUND)} xuất
+                  {fmt(data.busiest.INBOUND)}
+                  {" " + tUi("updatedUi.text_9b7b237db59a")}{" "}
+                  {fmt(data.busiest.OUTBOUND)}
+                  {" " + tUi("updatedUi.text_3b16ad526464")}
                   {data.busiest.REVERSAL > 0
-                    ? ` · ${fmt(data.busiest.REVERSAL)} hoàn tác`
+                    ? " " +
+                      tUi("updatedUi.text_8318b7b404da", {
+                        value0: String(fmt(data.busiest.REVERSAL)),
+                      })
                     : ""}
                 </span>
               </div>

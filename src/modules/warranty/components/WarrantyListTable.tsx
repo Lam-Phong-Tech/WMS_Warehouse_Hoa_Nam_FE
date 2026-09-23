@@ -7,6 +7,7 @@ import type { ResponsiveDataTableProps } from "@/shared/components/data-display/
 import type { WarrantyCase } from "@/modules/warranty/types";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDate } from "@/shared/utils/format-date";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const formatListDate = (value?: string) =>
   formatDate(value).replaceAll("-", "/");
@@ -54,16 +55,19 @@ export function WarrantyListTable({
         <button
           type="button"
           className="hn-war-extra-sort"
-          aria-label="Sắp xếp khác cho danh sách bảo hành"
+          aria-label={tUi("updatedUi.text_0076c0b72a9b")}
           aria-haspopup="menu"
           aria-expanded={Boolean(sortAnchor)}
           onClick={(event) => setSortAnchor(event.currentTarget)}
         >
-          Sắp xếp khác
+          {tUi("updatedUi.text_4c530471a69e")}
         </button>
       </div>
       <div className="hn-war-table-wrap" aria-busy={loading}>
-        <table className="hn-war-table" aria-label="Danh sách hồ sơ bảo hành">
+        <table
+          className="hn-war-table"
+          aria-label={tUi("updatedUi.text_158cb245bd0c")}
+        >
           <colgroup>
             <col className="hn-war-case-col" />
             <col className="hn-war-product-col" />
@@ -75,13 +79,19 @@ export function WarrantyListTable({
           </colgroup>
           <thead>
             <tr>
-              {header("case_code", "Hồ sơ")}
-              {header("sku", "Thiết bị / Sản phẩm")}
-              {header("customer", "Khách hàng", "hn-war-customer-col")}
-              {header("received_at", "Tiếp nhận / Hạn xử lý")}
-              {header("status", "Trạng thái")}
-              <th className="hn-war-age-col">Tuổi hồ sơ</th>
-              <th>Thao tác</th>
+              {header("case_code", tUi("updatedUi.text_7f401d2e3891"))}
+              {header("sku", tUi("updatedUi.text_82730807e057"))}
+              {header(
+                "customer",
+                tUi("warranty.list.colCustomer"),
+                "hn-war-customer-col",
+              )}
+              {header("received_at", tUi("updatedUi.text_2a2f8a4381c7"))}
+              {header("status", tUi("dashboard.composition.colStatus"))}
+              <th className="hn-war-age-col">
+                {tUi("updatedUi.text_9966263bb43d")}
+              </th>
+              <th>{tUi("outbound.detail.colAction")}</th>
             </tr>
           </thead>
           <tbody>
@@ -117,7 +127,10 @@ export function WarrantyListTable({
                     }
                     onClick={() => onRowClick?.(row)}
                   >
-                    <td className="hn-war-case-cell" data-label="Hồ sơ">
+                    <td
+                      className="hn-war-case-cell"
+                      data-label={tUi("updatedUi.text_7f401d2e3891")}
+                    >
                       <button
                         type="button"
                         className="hn-war-code"
@@ -141,7 +154,7 @@ export function WarrantyListTable({
                         {cell("identification_type", row)}
                       </span>
                     </td>
-                    <td data-label="Thiết bị / Sản phẩm">
+                    <td data-label={tUi("updatedUi.text_82730807e057")}>
                       <div className="hn-war-product">
                         <span className="hn-war-product-icon">
                           <UiIcon name="cube" />
@@ -155,23 +168,28 @@ export function WarrantyListTable({
                             {cell("customer", row)}
                           </span>
                           <span className="hn-war-defect">
-                            <span>Bệnh/lỗi: </span>
+                            <span>
+                              {tUi("updatedUi.text_d0500dd9ad98") + " "}
+                            </span>
                             {cell("defect", row)}
                           </span>
                         </div>
                       </div>
                     </td>
-                    <td className="hn-war-customer-col" data-label="Khách hàng">
+                    <td
+                      className="hn-war-customer-col"
+                      data-label={tUi("warranty.list.colCustomer")}
+                    >
                       {cell("customer", row)}
                     </td>
                     <td
                       className="hn-war-dates"
-                      data-label="Tiếp nhận / Hạn xử lý"
+                      data-label={tUi("updatedUi.text_2a2f8a4381c7")}
                     >
                       <span title={String(cell("received_at", row) || "")}>
                         {formatListDate(row.received_at)}
                       </span>
-                      <small title="Hạn xử lý">
+                      <small title={tUi("updatedUi.text_61151ea4d85c")}>
                         {formatListDate(
                           row.expected_completion_date ||
                             row.estimated_completion_date ||
@@ -179,21 +197,29 @@ export function WarrantyListTable({
                         )}
                       </small>
                     </td>
-                    <td data-label="Trạng thái">
+                    <td data-label={tUi("dashboard.composition.colStatus")}>
                       <span
                         className={`hn-war-status hn-war-status--${row.status.toLowerCase()}`}
                       >
                         {cell("status", row)}
                       </span>
                     </td>
-                    <td className="hn-war-age-col" data-label="Tuổi hồ sơ">
+                    <td
+                      className="hn-war-age-col"
+                      data-label={tUi("updatedUi.text_9966263bb43d")}
+                    >
                       {typeof row.case_age_days === "number"
                         ? row.case_age_days === 0
-                          ? "Hôm nay"
-                          : `${row.case_age_days} ngày`
+                          ? tUi("dashboard.snapshot.periodToday")
+                          : tUi("updatedUi.text_62f408a12e00", {
+                              value0: String(row.case_age_days),
+                            })
                         : EMPTY_TEXT}
                     </td>
-                    <td className="hn-war-action-cell" data-label="Thao tác">
+                    <td
+                      className="hn-war-action-cell"
+                      data-label={tUi("outbound.detail.colAction")}
+                    >
                       <RowActionGroup
                         className="hn-war-row-actions"
                         onClick={(event) => event.stopPropagation()}
@@ -201,7 +227,9 @@ export function WarrantyListTable({
                         {renderRowActions?.(row)}
                         <RowActionButton
                           kind="more"
-                          aria-label={`Thao tác hồ sơ ${row.case_code || EMPTY_TEXT}`}
+                          aria-label={tUi("updatedUi.text_0f5f5be4cde4", {
+                            value0: String(row.case_code || EMPTY_TEXT),
+                          })}
                           aria-haspopup="menu"
                           aria-expanded={menu?.row.id === row.id}
                           onClick={(event) =>
@@ -227,12 +255,17 @@ export function WarrantyListTable({
         slotProps={{ paper: { className: "hn-war-menu" } }}
       >
         {[
-          { key: "defect", label: "Bệnh/lỗi" },
-          { key: "identification_type", label: "Nhận diện" },
+          { key: "defect", label: tUi("warranty.list.colDefect") },
+          {
+            key: "identification_type",
+            label: tUi("warranty.list.colIdentification"),
+          },
         ].map(({ key, label }) => (
           <MenuItem
             key={key}
-            aria-label={`Sắp xếp theo ${label.toLowerCase()}`}
+            aria-label={tUi("updatedUi.text_41572ca3ec9a", {
+              value0: String(label.toLowerCase()),
+            })}
             selected={sortState.key === key}
             onClick={() => {
               requestSort(key);
@@ -260,7 +293,7 @@ export function WarrantyListTable({
             setMenu(null);
           }}
         >
-          Xem chi tiết hồ sơ
+          {tUi("updatedUi.text_aeda5f69ff81")}
         </MenuItem>
       </Menu>
     </>

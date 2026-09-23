@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useComponentIssues } from "@/modules/warranty/hooks/use-warranty";
 import type { ComponentIssueStatus } from "@/modules/warranty/services/componentIssueService";
 import { formatQuantity } from "@/shared/utils/format-number";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 type CountQuery = ReturnType<typeof useComponentIssues>;
 
@@ -89,9 +90,21 @@ export function ComponentIssueOverview({
       ? "—"
       : `${formatQuantity(Math.round(ratio * 10) / 10)}%`;
   const stats = [
-    { status: "DRAFT", label: "Nháp", count: totalFrom(drafts) },
-    { status: "SCANNING", label: "Đang quét/nhập", count: totalFrom(scanning) },
-    { status: "CANCELLED", label: "Đã hủy", count: totalFrom(cancelled) },
+    {
+      status: "DRAFT",
+      label: tUi("outbound.detail.labelStatusDraft"),
+      count: totalFrom(drafts),
+    },
+    {
+      status: "SCANNING",
+      label: tUi("updatedUi.text_097ecdcddc79"),
+      count: totalFrom(scanning),
+    },
+    {
+      status: "CANCELLED",
+      label: tUi("warranty.status.cancelled"),
+      count: totalFrom(cancelled),
+    },
   ] as const;
 
   const retry = () => {
@@ -101,14 +114,14 @@ export function ComponentIssueOverview({
   return (
     <section
       className="hn-war04-overview"
-      aria-label="Tổng quan ghi sổ"
+      aria-label={tUi("updatedUi.text_80df50920cc8")}
       aria-busy={busy}
     >
-      <h2>Tổng quan ghi sổ</h2>
+      <h2>{tUi("updatedUi.text_80df50920cc8")}</h2>
       <div className="hn-war04-overview-grid" aria-live="polite">
         <Metric
           className="hn-war04-overview-posted"
-          label="Lọc phiếu đã ghi sổ"
+          label={tUi("updatedUi.text_1c653e050dc1")}
           onClick={onStatusSelect ? () => onStatusSelect("POSTED") : undefined}
         >
           <strong className="hn-war04-overview-value">
@@ -118,23 +131,27 @@ export function ComponentIssueOverview({
           <div
             className="hn-war04-progress"
             role="progressbar"
-            aria-label="Tỷ lệ phiếu đã ghi sổ"
+            aria-label={tUi("updatedUi.text_4c70d526b32f")}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={ratio}
             aria-valuetext={
-              ratio === undefined ? "Chưa có dữ liệu tổng hợp" : ratioLabel
+              ratio === undefined
+                ? tUi("updatedUi.text_63530aef77b4")
+                : ratioLabel
             }
           >
             <span style={{ width: `${ratio ?? 0}%` }} />
           </div>
-          <span>phiếu đã ghi sổ</span>
+          <span>{tUi("updatedUi.text_a32e77f6dd7f")}</span>
         </Metric>
         {stats.map(({ status, label, count }) => (
           <Metric
             key={status}
             className="hn-war04-overview-stat"
-            label={`Lọc phiếu ${label.toLocaleLowerCase("vi-VN")}`}
+            label={tUi("updatedUi.text_1d70ceae213e", {
+              value0: String(label.toLocaleLowerCase("vi-VN")),
+            })}
             onClick={onStatusSelect ? () => onStatusSelect(status) : undefined}
           >
             <strong className="hn-war04-overview-value">
@@ -146,9 +163,9 @@ export function ComponentIssueOverview({
       </div>
       {hasError ? (
         <p className="hn-war04-overview-retry" role="alert">
-          Chưa tải được đầy đủ số liệu.{" "}
+          {tUi("updatedUi.text_e4689673a956")}{" "}
           <button type="button" onClick={retry} disabled={busy}>
-            {busy ? "Đang tải…" : "Thử lại"}
+            {busy ? tUi("warranty.detail.uploading") : tUi("common.retry")}
           </button>
         </p>
       ) : null}

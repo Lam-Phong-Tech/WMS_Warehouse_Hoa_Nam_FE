@@ -1,5 +1,7 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import type { ReactNode } from "react";
 import "./io-history-feedback.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 export type IoHistoryFeedbackState =
   | "refreshing"
@@ -121,90 +123,85 @@ type FeedbackCopy = {
   code?: string;
 };
 
-const COPY: Record<
-  Exclude<IoHistoryFeedbackState, "refreshing">,
-  FeedbackCopy
-> = {
-  stale: {
-    title: "Dữ liệu có thể chưa mới nhất",
-    description: "Đang hiển thị bản cập nhật gần nhất.",
-    icon: "warning",
-    tone: "warning",
-  },
-  "export-success": {
-    title: "Đã xuất báo cáo thành công",
-    description: "Tệp báo cáo đã được tạo.",
-    icon: "success",
-    tone: "success",
-  },
-  "export-partial": {
-    title: "Báo cáo đã được xuất nhưng chưa đầy đủ",
-    description:
-      "Một phần dữ liệu chưa thể đưa vào báo cáo. Hãy kiểm tra trước khi sử dụng.",
-    icon: "warning",
-    tone: "warning",
-  },
-  "export-error": {
-    title: "Không thể xuất báo cáo",
-    description: "Báo cáo chưa được tạo. Vui lòng thử lại.",
-    icon: "error",
-    tone: "error",
-  },
-  "export-unknown": {
-    title: "Chưa xác định kết quả xuất báo cáo",
-    description:
-      "Không nhận được xác nhận từ hệ thống. Hãy kiểm tra các tệp đã tải trước khi xuất lại để tránh trùng lặp.",
-    icon: "warning",
-    tone: "warning",
-  },
-  "load-error": {
-    title: "Không thể tải báo cáo",
-    description: "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.",
-    icon: "warning",
-    tone: "error",
-  },
-  offline: {
-    title: "Không có kết nối mạng",
-    description: "Kiểm tra kết nối Internet rồi thử lại.",
-    icon: "offline",
-    tone: "neutral",
-  },
-  "session-expired": {
-    title: "Xác nhận phiên đăng nhập",
-    description: "Vui lòng đăng nhập lại để tiếp tục.",
-    icon: "warning",
-    tone: "warning",
-  },
-  forbidden: {
-    title: "Bạn không có quyền truy cập",
-    description: "Tài khoản hiện tại không được phép xem báo cáo này.",
-    icon: "lock",
-    tone: "neutral",
-    code: "403",
-  },
-  "not-found": {
-    title: "Không tìm thấy trang",
-    description:
-      "Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.",
-    icon: "file-search",
-    tone: "neutral",
-    code: "404",
-  },
-  "server-error": {
-    title: "Hệ thống đang gặp sự cố",
-    description: "Không thể xử lý yêu cầu lúc này. Vui lòng thử lại sau.",
-    icon: "server",
-    tone: "error",
-    code: "500",
-  },
-  maintenance: {
-    title: "Hệ thống đang bảo trì",
-    description:
-      "Một số chức năng tạm thời chưa khả dụng. Vui lòng quay lại sau.",
-    icon: "tool",
-    tone: "neutral",
-  },
-};
+const getCOPY = localizedUiValue(
+  (): Record<Exclude<IoHistoryFeedbackState, "refreshing">, FeedbackCopy> => ({
+    stale: {
+      title: tUi("updatedUi.text_278fb7e1cb78"),
+      description: tUi("updatedUi.text_fdac0d12971a"),
+      icon: "warning",
+      tone: "warning",
+    },
+    "export-success": {
+      title: tUi("updatedUi.text_ad88641bcca7"),
+      description: tUi("updatedUi.text_127e5847f668"),
+      icon: "success",
+      tone: "success",
+    },
+    "export-partial": {
+      title: tUi("updatedUi.text_41871dce4b17"),
+      description: tUi("updatedUi.text_a5ac4f7f8180"),
+      icon: "warning",
+      tone: "warning",
+    },
+    "export-error": {
+      title: tUi("updatedUi.text_43dc1de9c0f5"),
+      description: tUi("updatedUi.text_420c6ee4be7e"),
+      icon: "error",
+      tone: "error",
+    },
+    "export-unknown": {
+      title: tUi("updatedUi.text_59cf4eaf5714"),
+      description: tUi("updatedUi.text_b2fc9bf6624e"),
+      icon: "warning",
+      tone: "warning",
+    },
+    "load-error": {
+      title: tUi("updatedUi.text_c1e574adfa82"),
+      description: tUi("updatedUi.text_1ec35f35e954"),
+      icon: "warning",
+      tone: "error",
+    },
+    offline: {
+      title: tUi("updatedUi.text_ce0ba8d55ff5"),
+      description: tUi("updatedUi.text_f0c405587837"),
+      icon: "offline",
+      tone: "neutral",
+    },
+    "session-expired": {
+      title: tUi("updatedUi.text_39bd406400f9"),
+      description: tUi("updatedUi.text_c67f4ecb5989"),
+      icon: "warning",
+      tone: "warning",
+    },
+    forbidden: {
+      title: tUi("shared.states.noPermissionTitle"),
+      description: tUi("updatedUi.text_a663c7e685cc"),
+      icon: "lock",
+      tone: "neutral",
+      code: "403",
+    },
+    "not-found": {
+      title: tUi("updatedUi.text_9bfeb38074b1"),
+      description: tUi("updatedUi.text_320fe1486c97"),
+      icon: "file-search",
+      tone: "neutral",
+      code: "404",
+    },
+    "server-error": {
+      title: tUi("updatedUi.text_3a1df70a9fd1"),
+      description: tUi("updatedUi.text_93fe7d219960"),
+      icon: "server",
+      tone: "error",
+      code: "500",
+    },
+    maintenance: {
+      title: tUi("updatedUi.text_a2cf2c63a2d2"),
+      description: tUi("updatedUi.text_90340cfd10b7"),
+      icon: "tool",
+      tone: "neutral",
+    },
+  }),
+);
 
 const INLINE_STATES: ReadonlySet<IoHistoryFeedbackState> = new Set([
   "stale",
@@ -235,7 +232,7 @@ export function IoHistoryFeedback({
       >
         <div className="io-feedback-refresh-label">
           <span className="io-feedback-spinner" aria-hidden="true" />
-          Đang cập nhật dữ liệu...
+          {tUi("updatedUi.text_0c576314af49")}
         </div>
         <div className="io-feedback-progress" aria-hidden="true">
           <span />
@@ -244,11 +241,14 @@ export function IoHistoryFeedback({
     );
   }
 
-  const copy = COPY[state];
+  const copy = getCOPY()[state];
   const description =
     message ??
     (state === "stale" && updatedAt
-      ? `${copy.description} Cập nhật lần cuối: ${updatedAt}.`
+      ? tUi("updatedUi.text_e6100fcb8e0e", {
+          value0: String(copy.description),
+          value1: String(updatedAt),
+        })
       : copy.description);
   const inline = INLINE_STATES.has(state);
   const reportFailure = state === "load-error" || state === "offline";
@@ -283,7 +283,7 @@ export function IoHistoryFeedback({
         <div className="io-feedback io-feedback--warning">
           <FeedbackIcon name="warning" />
           <div className="io-feedback-copy">
-            <strong>Phiên đăng nhập đã hết hạn</strong>
+            <strong>{tUi("auth.session.expiredTitle")}</strong>
             <p>{description}</p>
           </div>
         </div>
@@ -294,7 +294,7 @@ export function IoHistoryFeedback({
             onClick={onLogin}
             disabled={busy}
           >
-            Đăng nhập lại
+            {tUi("auth.session.signInAgain")}
           </button>
         ) : null}
       </section>
@@ -339,7 +339,9 @@ export function IoHistoryFeedback({
               {busy ? (
                 <span className="io-feedback-spinner" aria-hidden="true" />
               ) : null}
-              {state === "stale" ? "Thử cập nhật" : "Thử lại"}
+              {state === "stale"
+                ? tUi("updatedUi.text_34472c3056e5")
+                : tUi("common.retry")}
             </button>
           ) : null}
           {homeVisible ? (
@@ -348,7 +350,7 @@ export function IoHistoryFeedback({
               className={`io-feedback-button${state === "forbidden" || state === "not-found" ? " io-feedback-button--primary" : ""}`}
               onClick={onHome}
             >
-              Quay lại Tổng quan
+              {tUi("dashboard.snapshot.backOverview")}
             </button>
           ) : null}
           {inline && onDismiss ? (
@@ -357,14 +359,14 @@ export function IoHistoryFeedback({
               className={
                 dismissAsText ? "io-feedback-button" : "io-feedback-dismiss"
               }
-              aria-label="Đóng"
+              aria-label={tUi("common.close")}
               onClick={onDismiss}
             >
               {dismissAsText ? (
                 state === "export-unknown" ? (
-                  "Đã hiểu"
+                  tUi("updatedUi.text_9bb829684063")
                 ) : (
-                  "Đóng"
+                  tUi("common.close")
                 )
               ) : (
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -396,7 +398,7 @@ export function IoHistoryTableState({
       <div
         className="io-feedback-table-skeleton"
         role="status"
-        aria-label="Đang tải lịch sử nhập - xuất kho"
+        aria-label={tUi("updatedUi.text_d5c196483d1c")}
         aria-busy="true"
       >
         {Array.from({ length: 5 }, (_, row) => (
@@ -418,12 +420,14 @@ export function IoHistoryTableState({
     >
       {empty ? <FeedbackIcon name="box" /> : null}
       <h3>
-        {empty ? "Chưa có giao dịch nhập - xuất" : "Không tìm thấy kết quả"}
+        {empty
+          ? tUi("updatedUi.text_1a2145e7a31f")
+          : tUi("updatedUi.text_8a4f82f9ad45")}
       </h3>
       <p>
         {empty
-          ? "Hãy chọn khoảng thời gian khác để xem dữ liệu."
-          : "Không có giao dịch nào khớp với từ khóa đã nhập."}
+          ? tUi("updatedUi.text_0e0faea6497b")
+          : tUi("updatedUi.text_f2f5565d0c2b")}
       </p>
       {onReset ? (
         <button
@@ -432,7 +436,9 @@ export function IoHistoryTableState({
           onClick={onReset}
           disabled={busy}
         >
-          {empty ? "Điều chỉnh khoảng thời gian" : "Xóa tìm kiếm"}
+          {empty
+            ? tUi("updatedUi.text_02810d9b92b9")
+            : tUi("updatedUi.text_816c89e8e46b")}
         </button>
       ) : null}
     </div>
@@ -450,7 +456,7 @@ export function IoHistorySkeleton({
     <div
       className="io-feedback-skeleton"
       role="status"
-      aria-label="Đang tải báo cáo"
+      aria-label={tUi("updatedUi.text_fd676da72cbc")}
       aria-busy="true"
     >
       {includeFilters ? (

@@ -1,3 +1,4 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./outbound-dialog.css";
 import {
@@ -67,6 +68,7 @@ import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
 import { validatePhone } from "@/shared/constants/validation.constants";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 /** Lý do hủy phải đủ ý cho tra soát; trần khớp BE cancel `reason` max:1000. */
 const CANCEL_REASON_MIN = 5;
@@ -82,18 +84,23 @@ const REPRINT_NOTE_MAX = 500;
  * ngôn ngữ người thao tác đang chọn. Chỉ phần HIỂN THỊ được dịch, qua
  * `REPRINT_REASON_LABELS` bên dưới.
  */
-const REPRINT_REASONS = [
-  "Máy in hết mực",
-  "Lỗi máy in",
-  "Nhãn bị hỏng / rách",
-  "In lại chứng từ",
-  "Khác",
-] as const;
+const getREPRINT_REASONS = localizedUiValue(
+  () =>
+    [
+      tUi("outbound.reprint.tonerEmpty"),
+      tUi("outbound.reprint.printerError"),
+      tUi("outbound.reprint.damagedLabel"),
+      tUi("outbound.reprint.reprintDocument"),
+      tUi("outbound.reprint.other"),
+    ] as const,
+);
 
-const OTHER_REPRINT_REASON = "Khác";
+const getOTHER_REPRINT_REASON = localizedUiValue(() =>
+  tUi("outbound.reprint.other"),
+);
 
 const REPRINT_REASON_LABELS: Record<
-  (typeof REPRINT_REASONS)[number],
+  ReturnType<typeof getREPRINT_REASONS>[number],
   MessageKey
 > = {
   "Máy in hết mực": "outbound.reprint.tonerEmpty",
@@ -1168,12 +1175,12 @@ export function AlignedOutboundDetailModal({
                 disabled={
                   printMutation.isPending ||
                   !reprintReasonKey ||
-                  (reprintReasonKey === OTHER_REPRINT_REASON &&
+                  (reprintReasonKey === getOTHER_REPRINT_REASON() &&
                     !reprintReasonNote.trim())
                 }
                 onClick={() => {
                   const reason =
-                    reprintReasonKey === OTHER_REPRINT_REASON
+                    reprintReasonKey === getOTHER_REPRINT_REASON()
                       ? reprintReasonNote.trim()
                       : reprintReasonKey;
                   printMutation.mutate(reason);
@@ -1198,13 +1205,13 @@ export function AlignedOutboundDetailModal({
               <MenuItem value="" disabled>
                 {t("outbound.reprint.choose")}
               </MenuItem>
-              {REPRINT_REASONS.map((reason) => (
+              {getREPRINT_REASONS().map((reason) => (
                 <MenuItem key={reason} value={reason}>
                   {t(REPRINT_REASON_LABELS[reason])}
                 </MenuItem>
               ))}
             </UiTextField>
-            {reprintReasonKey === OTHER_REPRINT_REASON ? (
+            {reprintReasonKey === getOTHER_REPRINT_REASON() ? (
               <UiTextField
                 fullWidth
                 multiline

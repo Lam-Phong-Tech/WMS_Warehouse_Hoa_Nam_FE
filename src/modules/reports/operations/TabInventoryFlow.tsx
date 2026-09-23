@@ -92,6 +92,7 @@ import {
   ReportStatusBadge,
 } from "./report-drilldown";
 import { useReportExport } from "./report-export";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 /** Mỗi bậc waterfall ứng với đúng một movement_type để bấm vào là ra nguồn số. */
 type WaterfallKey =
@@ -265,7 +266,7 @@ export default function TabInventoryFlow() {
     () => [
       sttColumn(xntPagination.page, xntPagination.perPage),
       {
-        title: "Kho",
+        title: tUi("updatedUi.text_19c608bfa103"),
         dataIndex: "warehouse_code",
         width: 140,
         sorter: (a, b) =>
@@ -843,7 +844,7 @@ export default function TabInventoryFlow() {
         render: (_value, row) => text((row as DocumentRow).__department),
       },
       {
-        title: "Kho",
+        title: tUi("updatedUi.text_19c608bfa103"),
         dataIndex: "warehouse_code",
         width: 120,
         detailOnly: true,

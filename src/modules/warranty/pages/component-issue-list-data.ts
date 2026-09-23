@@ -1,3 +1,4 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import type { QueryClient } from "@tanstack/react-query";
 import { mvpMasterKeys } from "@/modules/master-data/hooks/use-mvp-master";
 import { getMvpSkus } from "@/modules/master-data/services/mvp-master.service";
@@ -9,13 +10,15 @@ import {
   type ComponentIssueDocument,
   type ComponentIssueListParams,
 } from "@/modules/warranty/services/componentIssueService";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 export type ComponentIssueTracking = "SERIAL" | "QUANTITY" | "MIXED";
 
 const PAGE_SIZE = 50;
 const CONCURRENCY = 5;
-const INCOMPLETE_SOURCE_MESSAGE =
-  "Chưa tải được đầy đủ dữ liệu theo dõi linh kiện. Vui lòng thử lại.";
+const getINCOMPLETE_SOURCE_MESSAGE = localizedUiValue(() =>
+  tUi("updatedUi.text_08eb97c3cb94"),
+);
 
 let activeReads = 0;
 const readWaiters: Array<() => void> = [];
@@ -40,7 +43,7 @@ export async function withComponentIssueReadSlot<T>(
 }
 
 function incompleteSource(): Error {
-  return new Error(INCOMPLETE_SOURCE_MESSAGE);
+  return new Error(getINCOMPLETE_SOURCE_MESSAGE());
 }
 
 /** Missing lines or SKU metadata do not prove quantity-based tracking. */

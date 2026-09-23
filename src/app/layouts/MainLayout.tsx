@@ -37,6 +37,7 @@ import { ROUTES } from "@/shared/constants/routes";
 import { useNavigate } from "react-router-dom";
 import { queryClient } from "@/app/providers/query-client";
 import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 /**
  * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
@@ -224,7 +225,8 @@ export function MainLayout() {
            * điều khoản ghi công của gói cần được xác nhận lại ở cấp dự án.
            */
           <UiFooter>
-            Hoa Nam ©{new Date().getFullYear()} — Phát triển bởi Lam Phong Tech
+            Hoa Nam ©{new Date().getFullYear()}
+            {" " + tUi("updatedUi.text_f23d4edc7b6e")}
           </UiFooter>
         }
       >
@@ -238,9 +240,7 @@ export function MainLayout() {
           {isFullBleed ? null : (
             <UiBreadcrumb
               items={trail.map((entry) => ({
-                label: entry.i18nKey
-                  ? navLabel(entry.i18nKey, entry.label)
-                  : entry.label,
+                label: navLabel(entry.i18nKey, entry.label),
                 onClick: entry.path ? () => navigate(entry.path!) : undefined,
               }))}
             />

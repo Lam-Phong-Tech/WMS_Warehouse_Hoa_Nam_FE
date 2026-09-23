@@ -24,6 +24,7 @@ import {
   type FlowDocument,
 } from "./inventory-flow-api";
 import "./inbound-flow-report.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const PAGE_SIZE = 5;
 const COMPLETE_STATUSES = new Set(["POSTED", "COMPLETED", "VALIDATED"]);
@@ -59,10 +60,10 @@ function statusTone(status: string): ProgressTone | "cancelled" {
 
 function inboundStatusLabel(status: string) {
   const tone = statusTone(status);
-  if (tone === "complete") return "Hoàn tất";
-  if (tone === "processing") return "Đang nhập";
-  if (tone === "pending") return "Chờ duyệt";
-  if (tone === "cancelled") return "Đã hủy";
+  if (tone === "complete") return tUi("iam.permissionAction.post");
+  if (tone === "processing") return tUi("updatedUi.text_df8c5f744740");
+  if (tone === "pending") return tUi("dashboard.snapshot.statePending");
+  if (tone === "cancelled") return tUi("warranty.status.cancelled");
   return reportStatusLabel(status);
 }
 
@@ -237,7 +238,7 @@ function FilterCombobox({
           {search ? (
             <button
               type="button"
-              aria-label="Xóa từ khóa tìm kiếm"
+              aria-label={tUi("updatedUi.text_431466c48cf0")}
               onClick={() => {
                 setSearch("");
                 searchRef.current?.focus();
@@ -285,7 +286,7 @@ function FilterCombobox({
             ))
           ) : (
             <span className="inbound-filter-combobox__empty">
-              Không tìm thấy kết quả
+              {tUi("updatedUi.text_8a4f82f9ad45")}
             </span>
           )}
         </span>
@@ -320,7 +321,7 @@ function KpiCard({
               ? formatNumber(value)
               : value}
         </strong>
-        <small>{empty ? "Chưa có dữ liệu" : note}</small>
+        <small>{empty ? tUi("dashboard.lastUpdated.none") : note}</small>
       </div>
       <span className="inbound-kpi__icon" aria-hidden="true">
         <Icon name={icon} />
@@ -420,7 +421,7 @@ export default function InboundFlowReport() {
 
   const supplierFilterOptions = useMemo<FilterOption[]>(
     () => [
-      { value: "", label: "Tất cả nhà cung cấp" },
+      { value: "", label: tUi("updatedUi.text_e28dc4bb66b6") },
       ...supplierOptions.map((supplier) => ({
         value: supplier,
         label: supplier,
@@ -431,7 +432,7 @@ export default function InboundFlowReport() {
 
   const statusFilterOptions = useMemo<FilterOption[]>(
     () => [
-      { value: "", label: "Tất cả trạng thái" },
+      { value: "", label: tUi("reports.inventoryFlow.statusAll") },
       ...statusOptions.map((status) => ({
         value: status,
         label: inboundStatusLabel(status),
@@ -602,12 +603,13 @@ export default function InboundFlowReport() {
   } as CSSProperties;
 
   const exportReason = (() => {
-    if (exporter.exporting) return "Đang chuẩn bị tệp Excel";
-    if (updating) return "Đang cập nhật dữ liệu";
-    if (error != null) return "Không thể xuất khi báo cáo lỗi";
-    if (invalidRange) return "Khoảng ngày không hợp lệ";
-    if (!canExport) return "Bạn không có quyền xuất báo cáo";
-    if (filteredDocuments.length === 0) return "Không có dữ liệu để xuất";
+    if (exporter.exporting) return tUi("updatedUi.text_d7a37805fe18");
+    if (updating) return tUi("updatedUi.text_786346f99661");
+    if (error != null) return tUi("updatedUi.text_5b5f331545d6");
+    if (invalidRange) return tUi("updatedUi.text_fc36c0eb5a3f");
+    if (!canExport) return tUi("updatedUi.text_a3c72d7db277");
+    if (filteredDocuments.length === 0)
+      return tUi("updatedUi.text_9fb8f71968d2");
     return "";
   })();
 
@@ -693,8 +695,8 @@ export default function InboundFlowReport() {
     setSelectedDocument(firstPending?.id ?? null);
     setActionNotice(
       firstPending
-        ? `Đã lọc ${pendingCount} phiếu đang chờ duyệt.`
-        : "Hiện không có phiếu nhập nào đang chờ duyệt.",
+        ? tUi("updatedUi.text_02cd7d835950", { value0: String(pendingCount) })
+        : tUi("updatedUi.text_3d6599d17ea5"),
     );
     window.requestAnimationFrame(() => {
       tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -708,9 +710,12 @@ export default function InboundFlowReport() {
   };
 
   const toastCopy = actionNotice
-    ? { title: "Danh sách phiếu nhập", detail: actionNotice }
+    ? { title: tUi("updatedUi.text_b7f7bae4ff19"), detail: actionNotice }
     : showSuccess
-      ? { title: "Đã cập nhật báo cáo", detail: "Dữ liệu đã được làm mới." }
+      ? {
+          title: tUi("updatedUi.text_5d0cd3a93731"),
+          detail: tUi("updatedUi.text_d6c349552506"),
+        }
       : null;
 
   return (
@@ -726,7 +731,7 @@ export default function InboundFlowReport() {
           </span>
           <button
             type="button"
-            aria-label="Đóng thông báo"
+            aria-label={tUi("updatedUi.text_8af6ba927e1f")}
             onClick={() => {
               setShowSuccess(false);
               setActionNotice(null);
@@ -737,17 +742,22 @@ export default function InboundFlowReport() {
         </div>
       ) : null}
 
-      <nav className="inbound-breadcrumb" aria-label="Đường dẫn">
+      <nav
+        className="inbound-breadcrumb"
+        aria-label={tUi("dashboard.breadcrumb.nav")}
+      >
         <Icon name="layout-dashboard" />
-        <span>Báo cáo</span>
+        <span>{tUi("reports.traceability.breadcrumbReports")}</span>
         <b>/</b>
-        <strong>Nhập kho</strong>
+        <strong>{tUi("dashboard.snapshot.inbound")}</strong>
       </nav>
 
       <header className="inbound-page-heading">
         <div>
-          <h1 className="hn-report-page-title">Báo cáo Nhập kho</h1>
-          <p>Theo dõi sản lượng, tiến độ và chứng từ nhập kho</p>
+          <h1 className="hn-report-page-title">
+            {tUi("updatedUi.text_19a0d713e43a")}
+          </h1>
+          <p>{tUi("updatedUi.text_3929c435dfd2")}</p>
         </div>
         <div className="inbound-heading-actions">
           <span
@@ -761,7 +771,9 @@ export default function InboundFlowReport() {
               onClick={runExport}
             >
               <Icon name="arrow-right" />
-              {exporter.exporting ? "Đang xuất..." : "Xuất Excel"}
+              {exporter.exporting
+                ? tUi("updatedUi.text_f218a6c991e2")
+                : tUi("updatedUi.text_869645273267")}
             </button>
           </span>
           <div className="inbound-warehouse-card">
@@ -771,7 +783,8 @@ export default function InboundFlowReport() {
             <span>
               <strong>Kho Hoa Nam</strong>
               <small>
-                <i /> Đang hoạt động
+                <i />
+                {" " + tUi("dashboard.snapshot.warehouseActive")}
               </small>
             </span>
           </div>
@@ -784,20 +797,21 @@ export default function InboundFlowReport() {
             <Icon name="lock" />
           </span>
           <div>
-            <strong>Chế độ chỉ xem</strong>
-            <p>
-              Bạn có thể xem và lọc báo cáo nhưng không có quyền xuất dữ liệu.
-            </p>
+            <strong>{tUi("updatedUi.text_4ce6445597cc")}</strong>
+            <p>{tUi("updatedUi.text_0dcd3d96bd0a")}</p>
           </div>
         </aside>
       ) : null}
 
-      <section className="inbound-filter-card" aria-label="Bộ lọc báo cáo">
+      <section
+        className="inbound-filter-card"
+        aria-label={tUi("reports.recipientAgency.filterTitle")}
+      >
         <div className="inbound-filter-grid">
           <label
             className={`inbound-filter-field inbound-filter-field--date${invalidRange ? " is-invalid" : ""}`}
           >
-            <span>Khoảng thời gian</span>
+            <span>{tUi("reports.packingLabel.dateRangeLabel")}</span>
             <UiVuexyDateRangePicker
               className="inbound-date-range"
               popupClassName="inbound-date-popup"
@@ -808,18 +822,18 @@ export default function InboundFlowReport() {
                   to: value?.[1]?.format(ISO_DATE) ?? "",
                 })
               }
-              aria-label="Khoảng thời gian báo cáo nhập kho"
+              aria-label={tUi("updatedUi.text_1c35b567e862")}
               disabled={updating}
             />
             {invalidRange ? (
-              <small>Ngày bắt đầu phải trước hoặc bằng ngày kết thúc</small>
+              <small>{tUi("updatedUi.text_c88aba88c1c8")}</small>
             ) : null}
           </label>
           <p className="inbound-filter-note">
             <Icon name="file-clock" />
             {dayjs(appliedRange.to).diff(dayjs(appliedRange.from), "day") +
               1}{" "}
-            ngày gần nhất · Múi giờ Việt Nam
+            {tUi("updatedUi.text_a0b12849189a")}
           </p>
           <div
             className="inbound-filter-field"
@@ -827,7 +841,9 @@ export default function InboundFlowReport() {
             role="group"
             aria-labelledby="rpt01-supplier-label"
           >
-            <span id="rpt01-supplier-label">Nhà cung cấp</span>
+            <span id="rpt01-supplier-label">
+              {tUi("updatedUi.text_039d667495cd")}
+            </span>
             <FilterCombobox
               id="rpt01-supplier"
               value={draftSupplier}
@@ -845,7 +861,9 @@ export default function InboundFlowReport() {
             role="group"
             aria-labelledby="rpt01-status-label"
           >
-            <span id="rpt01-status-label">Trạng thái</span>
+            <span id="rpt01-status-label">
+              {tUi("dashboard.composition.colStatus")}
+            </span>
             <FilterCombobox
               id="rpt01-status"
               value={draftStatus}
@@ -864,7 +882,7 @@ export default function InboundFlowReport() {
               onClick={() => void applyFilters()}
               disabled={invalidRange || updating}
             >
-              Áp dụng
+              {tUi("dashboard.snapshot.apply")}
             </button>
             <button
               type="button"
@@ -872,7 +890,7 @@ export default function InboundFlowReport() {
               onClick={() => void resetFilters()}
               disabled={updating}
             >
-              Đặt lại
+              {tUi("reports.packingLabel.reset")}
             </button>
           </div>
         </div>
@@ -884,8 +902,8 @@ export default function InboundFlowReport() {
             <Icon name="triangle-alert" />
           </span>
           <div>
-            <strong>Khoảng thời gian chưa hợp lệ</strong>
-            <p>Dữ liệu bên dưới vẫn là kết quả của kỳ đã áp dụng gần nhất.</p>
+            <strong>{tUi("updatedUi.text_b6d11c8358a9")}</strong>
+            <p>{tUi("updatedUi.text_4a7df2bdbb44")}</p>
           </div>
         </aside>
       ) : null}
@@ -895,23 +913,24 @@ export default function InboundFlowReport() {
           <span className="inbound-error-card__icon">
             <Icon name="triangle-alert" />
           </span>
-          <small>BÁO CÁO NHẬP KHO</small>
-          <h2>Không thể tải báo cáo</h2>
-          <p>
-            {getApiErrorMessage(
-              error,
-              "Đã xảy ra lỗi khi tải dữ liệu báo cáo.",
-            )}
-          </p>
+          <small>{tUi("updatedUi.text_038f338b715d")}</small>
+          <h2>{tUi("updatedUi.text_c1e574adfa82")}</h2>
+          <p>{getApiErrorMessage(error, tUi("updatedUi.text_8bee0482cc4c"))}</p>
           <button type="button" onClick={() => void refetch()}>
-            <Icon name="refresh-cw" /> Thử lại
+            <Icon name="refresh-cw" />
+            {" " + tUi("common.retry")}
           </button>
-          <em>Bộ lọc hiện tại vẫn được giữ nguyên · Mã tham chiếu RPT-01</em>
+          <em>{tUi("updatedUi.text_07ef3e01e03b")}</em>
         </section>
       ) : (
         <>
-          <section className="inbound-kpi-grid" aria-label="Tổng quan nhập kho">
-            <span className="inbound-sr-only">Tổng quan nhập kho</span>
+          <section
+            className="inbound-kpi-grid"
+            aria-label={tUi("reports.inventoryFlowReport.inboundQuickTitle")}
+          >
+            <span className="inbound-sr-only">
+              {tUi("reports.inventoryFlowReport.inboundQuickTitle")}
+            </span>
             {updating ? (
               Array.from({ length: 4 }, (_, index) => (
                 <KpiSkeleton key={index} />
@@ -921,7 +940,7 @@ export default function InboundFlowReport() {
                 <KpiCard
                   tone="cyan"
                   icon="package-plus"
-                  title="Sản phẩm đã nhập"
+                  title={tUi("updatedUi.text_df2300943e94")}
                   value={receivedQuantity}
                   note="Trong kỳ đã chọn"
                   empty={reportEmpty}
@@ -929,19 +948,25 @@ export default function InboundFlowReport() {
                 <KpiCard
                   tone="green"
                   icon="file-clock"
-                  title="Phiếu hoàn tất"
+                  title={tUi("updatedUi.text_4ec714e78d21")}
                   value={`${completedCount} / ${filteredDocuments.length}`}
                   note={
                     filteredDocuments.length
-                      ? `${formatNumber((completedCount / filteredDocuments.length) * 100)}% tổng phiếu`
-                      : "Chưa có dữ liệu"
+                      ? tUi("updatedUi.text_c49d03028966", {
+                          value0: String(
+                            formatNumber(
+                              (completedCount / filteredDocuments.length) * 100,
+                            ),
+                          ),
+                        })
+                      : tUi("dashboard.lastUpdated.none")
                   }
                   empty={reportEmpty}
                 />
                 <KpiCard
                   tone="violet"
                   icon="warehouse"
-                  title="Nhà cung cấp"
+                  title={tUi("updatedUi.text_039d667495cd")}
                   value={supplierCount}
                   note="Có phát sinh nhập"
                   empty={reportEmpty}
@@ -949,9 +974,12 @@ export default function InboundFlowReport() {
                 <KpiCard
                   tone="amber"
                   icon="triangle-alert"
-                  title="Phiếu cần xử lý"
+                  title={tUi("updatedUi.text_90bb168358f1")}
                   value={pendingCount + progress.processing}
-                  note={`${pendingCount} chờ duyệt · ${progress.processing} đang nhập`}
+                  note={tUi("updatedUi.text_655c26553606", {
+                    value0: String(pendingCount),
+                    value1: String(progress.processing),
+                  })}
                   empty={reportEmpty}
                 />
               </>
@@ -962,12 +990,15 @@ export default function InboundFlowReport() {
             <article className="inbound-panel inbound-chart-panel">
               <div className="inbound-panel-heading">
                 <div>
-                  <h2>Sản lượng nhập theo ngày</h2>
-                  <p>Số lượng sản phẩm thực nhập</p>
+                  <h2>{tUi("updatedUi.text_3a13e460ab96")}</h2>
+                  <p>{tUi("updatedUi.text_fdae0abff74d")}</p>
                 </div>
                 <span className="inbound-panel-total">
-                  <strong>Tổng: {formatNumber(receivedQuantity)}</strong> sản
-                  phẩm
+                  <strong>
+                    {tUi("updatedUi.text_09caee89904d") + " "}
+                    {formatNumber(receivedQuantity)}
+                  </strong>
+                  {" " + tUi("updatedUi.text_9bfcaa70b19e")}
                 </span>
               </div>
               {updating ? (
@@ -981,16 +1012,14 @@ export default function InboundFlowReport() {
                   <span>
                     <Icon name="chart-column-big" />
                   </span>
-                  <strong>Chưa có sản lượng nhập kho</strong>
-                  <small>
-                    Dữ liệu biểu đồ sẽ xuất hiện khi có phiếu nhập trong kỳ.
-                  </small>
+                  <strong>{tUi("updatedUi.text_9a5ad8b93cd8")}</strong>
+                  <small>{tUi("updatedUi.text_9a04c28680cd")}</small>
                 </div>
               ) : (
                 <div
                   className="inbound-bar-chart"
                   role="img"
-                  aria-label="Biểu đồ sản lượng nhập theo ngày"
+                  aria-label={tUi("updatedUi.text_d69a33a8c875")}
                 >
                   <div className="inbound-chart-y-axis" aria-hidden="true">
                     <span>{formatNumber(chartCeiling)}</span>
@@ -1039,8 +1068,8 @@ export default function InboundFlowReport() {
             <article className="inbound-panel inbound-progress-panel">
               <div className="inbound-panel-heading">
                 <div>
-                  <h2>Tiến độ phiếu nhập</h2>
-                  <p>Tình trạng xử lý trong kỳ</p>
+                  <h2>{tUi("updatedUi.text_12ee9c4508a9")}</h2>
+                  <p>{tUi("updatedUi.text_410ce7ff86bb")}</p>
                 </div>
               </div>
               {updating ? (
@@ -1057,32 +1086,32 @@ export default function InboundFlowReport() {
                   <span>
                     <Icon name="file-clock" />
                   </span>
-                  <strong>Chưa có phiếu nhập</strong>
-                  <small>Tiến độ sẽ được tổng hợp khi có dữ liệu.</small>
+                  <strong>{tUi("updatedUi.text_e4b42943fae3")}</strong>
+                  <small>{tUi("updatedUi.text_c0a62bb8d645")}</small>
                 </div>
               ) : (
                 <div className="inbound-progress-content">
                   <div className="inbound-donut" style={donutStyle}>
                     <span>
                       <strong>{formatNumber(totalProgress)}</strong>
-                      <small>Tổng phiếu</small>
+                      <small>{tUi("updatedUi.text_2d173f0e4679")}</small>
                     </span>
                   </div>
                   <ul className="inbound-progress-legend">
                     <li data-tone="complete">
-                      <span>Hoàn tất</span>
+                      <span>{tUi("iam.permissionAction.post")}</span>
                       <strong>{progress.complete}</strong>
                     </li>
                     <li data-tone="processing">
-                      <span>Đang nhập</span>
+                      <span>{tUi("updatedUi.text_df8c5f744740")}</span>
                       <strong>{progress.processing}</strong>
                     </li>
                     <li data-tone="pending">
-                      <span>Chờ duyệt</span>
+                      <span>{tUi("dashboard.snapshot.statePending")}</span>
                       <strong>{progress.pending}</strong>
                     </li>
                     <li data-tone="cancelled">
-                      <span>Đã hủy</span>
+                      <span>{tUi("warranty.status.cancelled")}</span>
                       <strong>{progress.cancelled}</strong>
                     </li>
                   </ul>
@@ -1093,15 +1122,19 @@ export default function InboundFlowReport() {
                   <Icon name="file-clock" />
                 </span>
                 <div>
-                  <strong>{pendingCount} phiếu chờ duyệt</strong>
-                  <small>Cần xử lý để hoàn tất nhập kho</small>
+                  <strong>
+                    {pendingCount}
+                    {" " + tUi("updatedUi.text_e62d651d4a57")}
+                  </strong>
+                  <small>{tUi("updatedUi.text_0d4d0114ad32")}</small>
                 </div>
                 <button
                   type="button"
                   onClick={scrollToPending}
                   disabled={reportEmpty || updating}
                 >
-                  Xem phiếu <Icon name="arrow-right" />
+                  {tUi("updatedUi.text_e07402d0ac93") + " "}
+                  <Icon name="arrow-right" />
                 </button>
               </div>
             </article>
@@ -1115,7 +1148,7 @@ export default function InboundFlowReport() {
             <div className="inbound-table-heading">
               <div>
                 <span className="inbound-table-title-row">
-                  <h2>Danh sách phiếu nhập</h2>
+                  <h2>{tUi("updatedUi.text_b7f7bae4ff19")}</h2>
                   <b>{filteredDocuments.length}</b>
                 </span>
               </div>
@@ -1128,15 +1161,15 @@ export default function InboundFlowReport() {
                     setQuery(event.target.value);
                     setPage(1);
                   }}
-                  placeholder="Tìm mã phiếu, nhà cung cấp..."
-                  aria-label="Tìm phiếu nhập"
+                  placeholder={tUi("updatedUi.text_5a3793c82147")}
+                  aria-label={tUi("inbound.list.searchAria")}
                   disabled={updating || reportEmpty}
                 />
                 {query ? (
                   <button
                     type="button"
                     onClick={() => setQuery("")}
-                    aria-label="Xóa từ khóa"
+                    aria-label={tUi("updatedUi.text_323a278e441f")}
                   >
                     ×
                   </button>
@@ -1159,10 +1192,11 @@ export default function InboundFlowReport() {
                 <span>
                   <Icon name="inbox" />
                 </span>
-                <h3>Chưa có dữ liệu nhập kho</h3>
-                <p>Không tìm thấy phiếu nhập trong khoảng thời gian đã chọn.</p>
+                <h3>{tUi("updatedUi.text_e5e3c3be463c")}</h3>
+                <p>{tUi("updatedUi.text_4b3751b5dba0")}</p>
                 <button type="button" onClick={widenRange}>
-                  <Icon name="calendar-days" /> Mở rộng khoảng thời gian
+                  <Icon name="calendar-days" />
+                  {" " + tUi("updatedUi.text_879c05bb679d")}
                 </button>
               </div>
             ) : searchEmpty ? (
@@ -1170,12 +1204,14 @@ export default function InboundFlowReport() {
                 <span>
                   <Icon name="search" />
                 </span>
-                <h3>Không tìm thấy phiếu nhập</h3>
+                <h3>{tUi("updatedUi.text_3f9b64561f4b")}</h3>
                 <p>
-                  Không có kết quả phù hợp với “{query}”. Hãy thử từ khóa khác.
+                  {tUi("updatedUi.text_5a5ffc21ba7d")}
+                  {query}
+                  {tUi("updatedUi.text_6c2aff5a26af")}
                 </p>
                 <button type="button" onClick={() => setQuery("")}>
-                  Xóa tìm kiếm
+                  {tUi("updatedUi.text_816c89e8e46b")}
                 </button>
               </div>
             ) : (
@@ -1184,16 +1220,26 @@ export default function InboundFlowReport() {
                   <thead>
                     <tr>
                       <th>
-                        Mã phiếu{" "}
-                        <span className="inbound-tablet-only">/ Ngày</span>
+                        {tUi("warranty.componentList.colCode")}{" "}
+                        <span className="inbound-tablet-only">
+                          {tUi("updatedUi.text_aaf42c905ec0")}
+                        </span>
                       </th>
-                      <th className="inbound-desktop-date">Ngày nhập</th>
-                      <th>Nhà cung cấp</th>
-                      <th className="is-number">SL thực nhập</th>
-                      <th>Trạng thái</th>
-                      <th className="inbound-created-by">Người tạo</th>
+                      <th className="inbound-desktop-date">
+                        {tUi("reports.traceability.colInboundDate")}
+                      </th>
+                      <th>{tUi("updatedUi.text_039d667495cd")}</th>
+                      <th className="is-number">
+                        {tUi("updatedUi.text_1320fb99c374")}
+                      </th>
+                      <th>{tUi("dashboard.composition.colStatus")}</th>
+                      <th className="inbound-created-by">
+                        {tUi("reverse.detail.fieldCreatedBy")}
+                      </th>
                       <th>
-                        <span className="sr-only">Thao tác</span>
+                        <span className="sr-only">
+                          {tUi("outbound.detail.colAction")}
+                        </span>
                       </th>
                     </tr>
                   </thead>
@@ -1215,7 +1261,9 @@ export default function InboundFlowReport() {
                             }
                           }}
                         >
-                          <td data-label="Mã phiếu">
+                          <td
+                            data-label={tUi("warranty.componentList.colCode")}
+                          >
                             <strong>{document.document_no || "—"}</strong>
                             <small className="inbound-tablet-only">
                               {formatDay(documentDay(document))}
@@ -1223,16 +1271,21 @@ export default function InboundFlowReport() {
                           </td>
                           <td
                             className="inbound-desktop-date"
-                            data-label="Ngày nhập"
+                            data-label={tUi(
+                              "reports.traceability.colInboundDate",
+                            )}
                           >
                             {formatDay(documentDay(document))}
                           </td>
-                          <td data-label="Nhà cung cấp">
+                          <td data-label={tUi("updatedUi.text_039d667495cd")}>
                             <span className="inbound-supplier-name">
                               {document.counterpart || "—"}
                             </span>
                           </td>
-                          <td className="is-number" data-label="SL thực nhập">
+                          <td
+                            className="is-number"
+                            data-label={tUi("updatedUi.text_1320fb99c374")}
+                          >
                             <strong>
                               {formatNumber(
                                 quantityByDocument.get(document.document_no) ??
@@ -1240,24 +1293,30 @@ export default function InboundFlowReport() {
                               )}
                             </strong>
                           </td>
-                          <td data-label="Trạng thái">
+                          <td
+                            data-label={tUi("dashboard.composition.colStatus")}
+                          >
                             <span className="inbound-status" data-tone={tone}>
                               {inboundStatusLabel(document.status)}
                             </span>
                           </td>
                           <td
                             className="inbound-created-by"
-                            data-label="Người tạo"
+                            data-label={tUi("reverse.detail.fieldCreatedBy")}
                           >
                             {document.created_by_name || "—"}
                           </td>
-                          <td data-label="Thao tác">
+                          <td data-label={tUi("outbound.detail.colAction")}>
                             <RowActionGroup>
                               <RowActionButton
                                 kind="view"
                                 type="button"
-                                aria-label={`Xem phiếu ${document.document_no}`}
-                                title={`Xem phiếu ${document.document_no}`}
+                                aria-label={tUi("updatedUi.text_f530867d0676", {
+                                  value0: String(document.document_no),
+                                })}
+                                title={tUi("updatedUi.text_f530867d0676", {
+                                  value0: String(document.document_no),
+                                })}
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   openDocument(document);
@@ -1278,13 +1337,24 @@ export default function InboundFlowReport() {
             <footer className="inbound-table-footer hn-report-pagination-footer">
               <span>
                 {searchedDocuments.length === 0
-                  ? `0 kết quả / ${filteredDocuments.length} phiếu`
-                  : `Hiển thị ${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, searchedDocuments.length)} trong ${searchedDocuments.length} phiếu`}
+                  ? tUi("updatedUi.text_8f31a3be9ea1", {
+                      value0: String(filteredDocuments.length),
+                    })
+                  : tUi("updatedUi.text_c9bbf7bb2223", {
+                      value0: String((safePage - 1) * PAGE_SIZE + 1),
+                      value1: String(
+                        Math.min(
+                          safePage * PAGE_SIZE,
+                          searchedDocuments.length,
+                        ),
+                      ),
+                      value2: String(searchedDocuments.length),
+                    })}
               </span>
               <div className="inbound-pagination hn-report-pagination">
                 <button
                   type="button"
-                  aria-label="Trang trước"
+                  aria-label={tUi("reports.traceability.previousPage")}
                   disabled={safePage <= 1 || searchedDocuments.length === 0}
                   onClick={() => setPage((value) => Math.max(1, value - 1))}
                 >
@@ -1339,8 +1409,8 @@ export default function InboundFlowReport() {
               <Icon name="warehouse" />
             </span>
             <i className="inbound-spinner" />
-            <strong>Đang cập nhật báo cáo</strong>
-            <small>Vui lòng chờ trong giây lát...</small>
+            <strong>{tUi("updatedUi.text_434c42929257")}</strong>
+            <small>{tUi("updatedUi.text_b271581f3ca5")}</small>
           </div>
         </div>
       ) : null}

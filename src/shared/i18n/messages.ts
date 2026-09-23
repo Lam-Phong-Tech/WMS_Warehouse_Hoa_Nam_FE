@@ -1,3 +1,4 @@
+import { MESSAGES_UPDATED_VI } from "./messages.updated.vi";
 /**
  * BẢNG CHUỖI GIAO DIỆN — nguồn duy nhất cho mọi text người dùng nhìn thấy.
  *
@@ -13,6 +14,7 @@
  */
 
 export const MESSAGES_VI = {
+  updatedUi: MESSAGES_UPDATED_VI,
   common: {
     loadingData: "Đang tải số liệu…",
     retry: "Thử lại",
@@ -102,8 +104,7 @@ export const MESSAGES_VI = {
       logout: "Đăng xuất",
       kpiAria: "Chỉ số tổng quan",
       emptyTitle: "Chưa có dữ liệu tổng quan",
-      emptyCopy:
-        "Chưa có dữ liệu phù hợp để hiển thị trong phạm vi hiện tại.",
+      emptyCopy: "Chưa có dữ liệu phù hợp để hiển thị trong phạm vi hiện tại.",
       errorTitle: "Không thể tải dữ liệu tổng quan",
       errorCopy: "Đã xảy ra lỗi khi kết nối dữ liệu. Vui lòng thử lại.",
       retry: "Thử lại",
@@ -121,8 +122,7 @@ export const MESSAGES_VI = {
       chartEmptyCopy:
         "Chọn khoảng thời gian khác để xem xu hướng nhập – xuất – tồn kho.",
       chartFailedTitle: "Không tải được dữ liệu biểu đồ",
-      chartFailedCopy:
-        "Đã xảy ra lỗi khi tải dữ liệu trong khoảng đã chọn.",
+      chartFailedCopy: "Đã xảy ra lỗi khi tải dữ liệu trong khoảng đã chọn.",
       chartForbiddenTitle: "Bạn không có quyền xem biểu đồ",
       chartForbiddenCopy:
         "Liên hệ quản trị viên để được cấp quyền xem xu hướng kho.",
@@ -133,8 +133,7 @@ export const MESSAGES_VI = {
       outbound: "Xuất kho",
       stock: "Tồn kho",
       chartAria: "Biểu đồ nhập xuất tồn kho",
-      chartPointAria:
-        "{date}: Nhập {inbound}, Xuất {outbound}, Tồn {stock}",
+      chartPointAria: "{date}: Nhập {inbound}, Xuất {outbound}, Tồn {stock}",
       closingStock: "Tồn cuối ngày",
       tooltipInbound: "Nhập",
       tooltipOutbound: "Xuất",

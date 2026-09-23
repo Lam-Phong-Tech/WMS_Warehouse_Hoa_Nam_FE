@@ -55,6 +55,7 @@ import { formatQuantity } from "@/shared/utils/format-number";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import "./inventory-dialog.css";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 interface Props {
   movementId: string | null;
@@ -955,7 +956,7 @@ export function TraceModal({ movementId, onClose }: Props) {
               }
             />
             <DetailField
-              label="Kho"
+              label={tUi("updatedUi.text_19c608bfa103")}
               value={text(
                 movement.warehouse_name ??
                   movement.warehouse_code ??

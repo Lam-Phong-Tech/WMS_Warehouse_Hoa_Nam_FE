@@ -1,3 +1,4 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -51,6 +52,7 @@ import {
   type ImportMatchBatch,
   type ImportMatchResultFilter,
 } from "./import-match-model";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const C = {
   navy: "var(--ops-heading)",
@@ -78,18 +80,18 @@ const surface = {
   boxShadow: "0 1px 2px rgba(4, 70, 116, 0.03)",
 } as const;
 
-const dataTypeOptions = [
-  { value: "all", label: "Tất cả" },
-  { value: "PRODUCT", label: "Sản phẩm" },
-  { value: "COMPONENT", label: "Linh kiện" },
-];
+const getdataTypeOptions = localizedUiValue(() => [
+  { value: "all", label: tUi("dashboard.operations.filterAll") },
+  { value: "PRODUCT", label: tUi("dashboard.skuType.product") },
+  { value: "COMPONENT", label: tUi("dashboard.skuType.component") },
+]);
 
-const resultOptions = [
-  { value: "", label: "Tất cả" },
-  { value: "SUCCESS", label: "Khớp" },
-  { value: "DUPLICATE", label: "Chênh lệch" },
-  { value: "FAILED", label: "Lỗi dữ liệu" },
-];
+const getresultOptions = localizedUiValue(() => [
+  { value: "", label: tUi("dashboard.operations.filterAll") },
+  { value: "SUCCESS", label: tUi("reports.inventoryFlowReport.matched") },
+  { value: "DUPLICATE", label: tUi("inventory.balance.colVariance") },
+  { value: "FAILED", label: tUi("updatedUi.text_e557e75b43a7") },
+]);
 
 function MetricCard({
   label,
@@ -219,9 +221,9 @@ function resultTone(row: ImportMatchBatch): "success" | "warning" | "error" {
 }
 
 function resultLabel(row: ImportMatchBatch): string {
-  if (row.failed > 0) return "Lỗi dữ liệu";
-  if (row.duplicate > 0) return "Chênh lệch";
-  return "Khớp";
+  if (row.failed > 0) return tUi("updatedUi.text_e557e75b43a7");
+  if (row.duplicate > 0) return tUi("inventory.balance.colVariance");
+  return tUi("reports.inventoryFlowReport.matched");
 }
 
 export default function ImportQualityBaseline() {
@@ -370,7 +372,7 @@ export default function ImportQualityBaseline() {
       >
         <Box sx={{ minWidth: 0 }}>
           <Box sx={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>
-            Báo cáo&nbsp;&nbsp;/&nbsp;&nbsp;Nhập liệu, đối chiếu & lỗi
+            {tUi("updatedUi.text_55f997722908")}
           </Box>
           <Box
             component="h1"
@@ -385,7 +387,7 @@ export default function ImportQualityBaseline() {
               fontWeight: 700,
             }}
           >
-            Báo cáo Nhập liệu, đối chiếu & lỗi
+            {tUi("updatedUi.text_1beab79ddbe5")}
           </Box>
           <Box
             sx={{
@@ -395,7 +397,7 @@ export default function ImportQualityBaseline() {
               lineHeight: 1.3,
             }}
           >
-            Theo dõi chất lượng dữ liệu, kết quả đối chiếu và lỗi phát sinh
+            {tUi("updatedUi.text_1522bfe664ca")}
           </Box>
         </Box>
 
@@ -414,14 +416,14 @@ export default function ImportQualityBaseline() {
             disabled={invalid || source.isLoading}
             onClick={() => void exportXlsx()}
           >
-            Xuất báo cáo
+            {tUi("reports.traceability.exportReport")}
           </UiButton>
         </Stack>
       </Stack>
 
       <Box
         component="section"
-        aria-label="Bộ lọc báo cáo"
+        aria-label={tUi("reports.recipientAgency.filterTitle")}
         sx={{ ...surface, p: { xs: 1.25, sm: 1.5 } }}
       >
         <Box
@@ -437,9 +439,11 @@ export default function ImportQualityBaseline() {
           }}
         >
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>Khoảng thời gian</FilterLabel>
+            <FilterLabel>
+              {tUi("reports.packingLabel.dateRangeLabel")}
+            </FilterLabel>
             <UiVuexyDateRangePicker
-              aria-label="Khoảng thời gian"
+              aria-label={tUi("reports.packingLabel.dateRangeLabel")}
               value={range}
               format="DD/MM/YYYY"
               allowClear={false}
@@ -457,7 +461,7 @@ export default function ImportQualityBaseline() {
           </Box>
 
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>Kho</FilterLabel>
+            <FilterLabel>{tUi("updatedUi.text_19c608bfa103")}</FilterLabel>
             <Box
               aria-label="Kho Hoa Nam"
               sx={{
@@ -477,33 +481,33 @@ export default function ImportQualityBaseline() {
           </Box>
 
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>Loại dữ liệu</FilterLabel>
+            <FilterLabel>{tUi("updatedUi.text_cf769803384e")}</FilterLabel>
             <UiSelect
               fullWidth
-              aria-label="Loại dữ liệu"
+              aria-label={tUi("updatedUi.text_cf769803384e")}
               value={kind}
               onChange={(value) => {
                 setKind(value as ItemKind);
                 pagination.reset();
               }}
-              options={dataTypeOptions}
+              options={getdataTypeOptions()}
               menuClassName="rpt04-select-menu"
             />
           </Box>
 
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>Kết quả</FilterLabel>
+            <FilterLabel>{tUi("inbound.detail.colResult")}</FilterLabel>
             <UiSelect
               fullWidth
-              aria-label="Kết quả"
+              aria-label={tUi("inbound.detail.colResult")}
               value={result}
-              placeholder="Tất cả"
+              placeholder={tUi("dashboard.operations.filterAll")}
               onChange={(value) => {
                 setResult(value as ImportMatchResultFilter);
                 setIssuesOnly(false);
                 pagination.reset();
               }}
-              options={resultOptions.filter((item) => item.value !== "")}
+              options={getresultOptions().filter((item) => item.value !== "")}
               menuClassName="rpt04-select-menu"
             />
           </Box>
@@ -529,14 +533,14 @@ export default function ImportQualityBaseline() {
               fontWeight: 650,
             }}
           >
-            Tìm kiếm
+            {tUi("reports.packingLabel.searchLabel")}
           </Box>
           <Box className="rpt04-search-field" sx={{ flex: 1, minWidth: 0 }}>
             <SearchInput
               width="100%"
               value={keyword}
-              aria-label="Tìm kiếm mã phiếu, SKU, serial, lô hoặc pallet"
-              placeholder="Mã phiếu / SKU / Serial / Lô / Pallet"
+              aria-label={tUi("updatedUi.text_e1a79d9e5b67")}
+              placeholder={tUi("updatedUi.text_35f2275a1d2b")}
               onChange={(value) => {
                 setKeyword(value);
                 pagination.reset();
@@ -544,30 +548,28 @@ export default function ImportQualityBaseline() {
             />
           </Box>
           <UiButton appearance="filled" onClick={apply} disabled={invalid}>
-            Áp dụng
+            {tUi("dashboard.snapshot.apply")}
           </UiButton>
           <UiButton appearance="outlined" onClick={reset}>
-            Đặt lại
+            {tUi("reports.packingLabel.reset")}
           </UiButton>
         </Stack>
       </Box>
 
       {invalid ? (
-        <UiAlert tone="error">
-          Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.
-        </UiAlert>
+        <UiAlert tone="error">{tUi("dashboard.snapshot.invalidOrder")}</UiAlert>
       ) : null}
       {source.error ? (
         <ApiErrorAlert
           error={source.error}
-          title="Không thể tải báo cáo"
+          title={tUi("updatedUi.text_c1e574adfa82")}
           onRetry={refresh}
         />
       ) : null}
 
       <Box
         component="section"
-        aria-label="Tổng quan chất lượng dữ liệu"
+        aria-label={tUi("updatedUi.text_ca1f8a7c5025")}
         sx={{
           display: "grid",
           gridTemplateColumns: {
@@ -579,16 +581,18 @@ export default function ImportQualityBaseline() {
         }}
       >
         <MetricCard
-          label="Tổng bản ghi"
+          label={tUi("updatedUi.text_fe86ff7f56fe")}
           value={fmt(totals.total)}
           hint="Trong kỳ báo cáo"
           tone="primary"
           icon={<FileTextOutlined />}
         />
         <MetricCard
-          label="Khớp"
+          label={tUi("reports.inventoryFlowReport.matched")}
           value={fmt(totals.success)}
-          hint={`${pct(totals.success, totals.total)} tổng bản ghi`}
+          hint={tUi("updatedUi.text_0f576ef1ed56", {
+            value0: String(pct(totals.success, totals.total)),
+          })}
           tone="success"
           icon={<CheckCircleOutlined />}
           onClick={() => {
@@ -598,7 +602,7 @@ export default function ImportQualityBaseline() {
           }}
         />
         <MetricCard
-          label="Chênh lệch"
+          label={tUi("inventory.balance.colVariance")}
           value={fmt(totals.duplicate)}
           hint="Cần kiểm tra"
           tone="warning"
@@ -610,7 +614,7 @@ export default function ImportQualityBaseline() {
           }}
         />
         <MetricCard
-          label="Lỗi dữ liệu"
+          label={tUi("updatedUi.text_e557e75b43a7")}
           value={fmt(totals.failed)}
           hint="Không thể đối chiếu"
           tone="error"
@@ -649,12 +653,13 @@ export default function ImportQualityBaseline() {
                 fontWeight: 600,
               }}
             >
-              Kết quả đối chiếu theo ngày
+              {tUi("updatedUi.text_9c5271fe15dc")}
             </Box>
             <Box sx={{ fontWeight: 700, color: C.navy, fontSize: 13 }}>
-              Tổng: {fmt(totals.total)}{" "}
+              {tUi("updatedUi.text_09caee89904d") + " "}
+              {fmt(totals.total)}{" "}
               <Box component="span" sx={{ fontWeight: 500 }}>
-                bản ghi
+                {tUi("updatedUi.text_3c28fe9f81e1")}
               </Box>
             </Box>
           </Stack>
@@ -671,24 +676,24 @@ export default function ImportQualityBaseline() {
                 color: C.muted,
               }}
             >
-              Chưa có dữ liệu trong khoảng thời gian đã chọn.
+              {tUi("updatedUi.text_47bca3969590")}
             </Box>
           ) : (
             <MultiSeriesBarChart
               categories={trend.map((point) => axisDayLabel(point.day))}
               series={[
                 {
-                  name: "Khớp",
+                  name: tUi("reports.inventoryFlowReport.matched"),
                   data: trend.map((point) => point.success),
                   color: CHART_COLORS.success,
                 },
                 {
-                  name: "Chênh lệch",
+                  name: tUi("inventory.balance.colVariance"),
                   data: trend.map((point) => point.duplicate),
                   color: CHART_COLORS.warning,
                 },
                 {
-                  name: "Lỗi dữ liệu",
+                  name: tUi("updatedUi.text_e557e75b43a7"),
                   data: trend.map((point) => point.failed),
                   color: CHART_COLORS.danger,
                 },
@@ -720,7 +725,7 @@ export default function ImportQualityBaseline() {
               fontWeight: 600,
             }}
           >
-            Chất lượng dữ liệu
+            {tUi("dashboard.insight.qualityTitle")}
           </Box>
           <Box
             sx={{
@@ -738,7 +743,9 @@ export default function ImportQualityBaseline() {
           >
             <Box
               role="img"
-              aria-label={`Tỷ lệ khớp ${qualityPct.toFixed(1)} phần trăm`}
+              aria-label={tUi("updatedUi.text_4cf91aedba2d", {
+                value0: String(qualityPct.toFixed(1)),
+              })}
               sx={{
                 width: { xs: 145, sm: 168 },
                 aspectRatio: "1",
@@ -768,15 +775,25 @@ export default function ImportQualityBaseline() {
                 >
                   {qualityPct.toFixed(1).replace(".", ",")}%
                 </Box>
-                <Box sx={{ mt: 0.35, fontSize: 11.5 }}>Khớp</Box>
+                <Box sx={{ mt: 0.35, fontSize: 11.5 }}>
+                  {tUi("reports.inventoryFlowReport.matched")}
+                </Box>
               </Box>
             </Box>
 
             <Box sx={{ display: "grid", gap: 0.85 }}>
               {[
-                ["Khớp", fmt(totals.success), C.green],
-                ["Chênh lệch", fmt(totals.duplicate), C.orange],
-                ["Lỗi dữ liệu", fmt(totals.failed), C.red],
+                [
+                  tUi("reports.inventoryFlowReport.matched"),
+                  fmt(totals.success),
+                  C.green,
+                ],
+                [
+                  tUi("inventory.balance.colVariance"),
+                  fmt(totals.duplicate),
+                  C.orange,
+                ],
+                [tUi("updatedUi.text_e557e75b43a7"), fmt(totals.failed), C.red],
               ].map(([label, value, color]) => (
                 <Stack
                   key={label}
@@ -816,7 +833,8 @@ export default function ImportQualityBaseline() {
             }}
           >
             <Box sx={{ fontWeight: 700, fontSize: 12.5 }}>
-              {fmt(issueCount)} bản ghi cần kiểm tra
+              {fmt(issueCount)}
+              {" " + tUi("updatedUi.text_e88f44e08fbd")}
             </Box>
             <UiButton
               appearance="outlined"
@@ -829,7 +847,8 @@ export default function ImportQualityBaseline() {
                   ?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
-              Xem {fmt(issueCount)} bản ghi
+              Xem {fmt(issueCount)}
+              {" " + tUi("updatedUi.text_3c28fe9f81e1")}
             </UiButton>
           </Stack>
         </Box>
@@ -859,7 +878,7 @@ export default function ImportQualityBaseline() {
               component="h2"
               sx={{ m: 0, color: C.navy, fontSize: 18, fontWeight: 600 }}
             >
-              Danh sách đối chiếu & lỗi
+              {tUi("updatedUi.text_ff603e37b9df")}
             </Box>
             <Box
               sx={{
@@ -879,8 +898,8 @@ export default function ImportQualityBaseline() {
             <SearchInput
               width="100%"
               value={keyword}
-              aria-label="Tìm trong danh sách đối chiếu và lỗi"
-              placeholder="Tìm mã phiếu, SKU, serial..."
+              aria-label={tUi("updatedUi.text_bddbe4bba7b5")}
+              placeholder={tUi("updatedUi.text_b4e6c9c5842a")}
               onChange={(value) => {
                 setKeyword(value);
                 pagination.reset();
@@ -894,7 +913,7 @@ export default function ImportQualityBaseline() {
             columns={[
               {
                 key: "reference",
-                header: "Mã tham chiếu / Đối tượng",
+                header: tUi("updatedUi.text_cbd08c7c8080"),
                 render: (row) => (
                   <Box sx={{ minWidth: 0 }}>
                     <Box
@@ -921,16 +940,19 @@ export default function ImportQualityBaseline() {
               },
               {
                 key: "comparison",
-                header: "So sánh dữ liệu",
+                header: tUi("updatedUi.text_d8451df71267"),
                 render: (row) => (
                   <Box sx={{ fontSize: 12.5, whiteSpace: "normal" }}>
-                    {fmt(row.total)} bản ghi → {fmt(row.success)} hợp lệ
+                    {fmt(row.total)}
+                    {" " + tUi("updatedUi.text_da71bc75ab04") + " "}
+                    {fmt(row.success)}
+                    {" " + tUi("updatedUi.text_271749576b70")}
                   </Box>
                 ),
               },
               {
                 key: "result",
-                header: "Kết quả",
+                header: tUi("inbound.detail.colResult"),
                 width: 135,
                 render: (row) => (
                   <UiStatusBadge
@@ -941,7 +963,7 @@ export default function ImportQualityBaseline() {
               },
               {
                 key: "updated",
-                header: "Cập nhật",
+                header: tUi("updatedUi.text_5293d03c5908"),
                 width: 170,
                 render: (row) => (row.at ? fmtDateTime(row.at) : "—"),
               },
@@ -952,14 +974,16 @@ export default function ImportQualityBaseline() {
             onRowClick={(row) => setOpenBatch(row)}
             emptyText={
               keyword.trim() || result || issuesOnly
-                ? "Không tìm thấy bản ghi phù hợp."
-                : "Chưa có dữ liệu đối chiếu trong khoảng thời gian đã chọn."
+                ? tUi("updatedUi.text_68e8bdb5a388")
+                : tUi("updatedUi.text_193f83e1a797")
             }
             renderRowActions={(row) => (
               <RowActionGroup>
                 <RowActionButton
                   kind="view"
-                  aria-label={`Xem chi tiết ${row.batchNo}`}
+                  aria-label={tUi("updatedUi.text_5f302da6778a", {
+                    value0: String(row.batchNo),
+                  })}
                   onClick={() => setOpenBatch(row)}
                 >
                   Xem
@@ -981,12 +1005,13 @@ export default function ImportQualityBaseline() {
           }}
         >
           <Box sx={{ fontSize: 12.5, color: C.text }}>
-            Hiển thị{" "}
+            {tUi("putaway.queue.showing")}{" "}
             {pagination.total === 0
               ? 0
               : (pagination.page - 1) * pagination.perPage + 1}
             –{Math.min(pagination.page * pagination.perPage, pagination.total)}{" "}
-            / {fmt(pagination.total)} bản ghi
+            / {fmt(pagination.total)}
+            {" " + tUi("updatedUi.text_3c28fe9f81e1")}
           </Box>
           <Stack
             className="hn-report-pagination"
@@ -1042,8 +1067,12 @@ export default function ImportQualityBaseline() {
 
       {openBatch ? (
         <DrillDownDialog
-          title={`Chi tiết ${openBatch.batchNo || "bản ghi"}`}
-          subtitle="Thông tin đối chiếu lấy từ dữ liệu hiện tại của hệ thống."
+          title={tUi("updatedUi.text_ecd76b3f0e22", {
+            value0: String(
+              openBatch.batchNo || tUi("updatedUi.text_3c28fe9f81e1"),
+            ),
+          })}
+          subtitle={tUi("updatedUi.text_8227ce3f3753")}
           onClose={() => setOpenBatch(null)}
         >
           <Box
@@ -1057,14 +1086,26 @@ export default function ImportQualityBaseline() {
             }}
           >
             {[
-              ["Mã tham chiếu", openBatch.batchNo || "—"],
-              ["Đối tượng", openBatch.caption || openBatch.sourceFile || "—"],
-              ["Tổng bản ghi", fmt(openBatch.total)],
-              ["Khớp", fmt(openBatch.success)],
-              ["Chênh lệch", fmt(openBatch.duplicate)],
-              ["Lỗi dữ liệu", fmt(openBatch.failed)],
-              ["Tỷ lệ khớp", pct(openBatch.success, openBatch.total)],
-              ["Cập nhật", openBatch.at ? fmtDateTime(openBatch.at) : "—"],
+              [tUi("updatedUi.text_f235d93f10dd"), openBatch.batchNo || "—"],
+              [
+                tUi("audit.colObject"),
+                openBatch.caption || openBatch.sourceFile || "—",
+              ],
+              [tUi("updatedUi.text_fe86ff7f56fe"), fmt(openBatch.total)],
+              [
+                tUi("reports.inventoryFlowReport.matched"),
+                fmt(openBatch.success),
+              ],
+              [tUi("inventory.balance.colVariance"), fmt(openBatch.duplicate)],
+              [tUi("updatedUi.text_e557e75b43a7"), fmt(openBatch.failed)],
+              [
+                tUi("updatedUi.text_0a3f7deb0656"),
+                pct(openBatch.success, openBatch.total),
+              ],
+              [
+                tUi("updatedUi.text_5293d03c5908"),
+                openBatch.at ? fmtDateTime(openBatch.at) : "—",
+              ],
             ].map(([label, value]) => (
               <Box
                 key={label}

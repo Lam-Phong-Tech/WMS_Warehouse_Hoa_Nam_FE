@@ -7,6 +7,7 @@ import { Box, UiButton } from "@/shared/ui";
 import { flatIconClass } from "@/shared/ui/icons";
 import { AUTH_BASELINE } from "@/shared/ui/tokens";
 import { useT } from "@/shared/i18n/useT";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 export interface AuthSessionConfirmationProps {
   user: User;
@@ -164,7 +165,7 @@ export function AuthSessionConfirmation({
                 fontSize: { xs: 13, sm: 16 },
               }}
             >
-              WMS - Vận hành chuyên nghiệp
+              {tUi("updatedUi.text_48274e1d4946")}
             </Box>
           </Box>
           <Box
@@ -188,7 +189,7 @@ export function AuthSessionConfirmation({
               },
             }}
           >
-            Đang hoạt động
+            {tUi("dashboard.snapshot.warehouseActive")}
           </Box>
         </Box>
 
@@ -211,7 +212,7 @@ export function AuthSessionConfirmation({
             aria-hidden
             style={{ color: "#008CFF", fontSize: 27, flex: "0 0 auto" }}
           />
-          Thao tác theo quyền được cấp cho tài khoản của bạn.
+          {tUi("updatedUi.text_7482cf731e9d")}
         </Box>
 
         <UiButton
@@ -229,7 +230,9 @@ export function AuthSessionConfirmation({
             },
           }}
         >
-          {isStarting ? t("auth.session.starting") : "Bắt đầu ca làm việc"}
+          {isStarting
+            ? t("auth.session.starting")
+            : tUi("updatedUi.text_16504c2c989f")}
           <i
             className={`${flatIconClass("angle-small-right")} hn-session-arrow`}
             aria-hidden
@@ -251,7 +254,7 @@ export function AuthSessionConfirmation({
             },
           }}
         >
-          hoặc
+          {tUi("updatedUi.text_30432b996137")}
         </Box>
 
         <UiButton
@@ -277,7 +280,7 @@ export function AuthSessionConfirmation({
             <i className={flatIconClass("sign-out-alt")} aria-hidden />
           }
         >
-          Đăng xuất
+          {tUi("topbar.accountLogout")}
         </UiButton>
       </Box>
     </AuthShell>

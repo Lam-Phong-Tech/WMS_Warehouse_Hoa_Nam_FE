@@ -1,3 +1,4 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
@@ -46,10 +47,14 @@ import {
   fetchOutboundRowsForRecipient,
 } from "./outbound-list-data";
 import "./outbound-list.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const SEARCH_DEBOUNCE_MS = 250;
-const STATUS_OPTIONS = Object.entries(OUTBOUND_STATUS_LABELS).map(
-  ([value, label]) => ({ value, label }),
+const getSTATUS_OPTIONS = localizedUiValue(() =>
+  Object.entries(OUTBOUND_STATUS_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  })),
 );
 const DETAIL_SCREENS = new Set(["OUT-03", "OUT-02", "LBL-01", "RFID-01"]);
 const SORT_ACCESSORS = {
@@ -72,13 +77,15 @@ function WarehouseContext() {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const warehouse = query.data?.[0];
   const name =
-    warehouse?.name == null ? "Kho xuất hàng" : String(warehouse.name);
+    warehouse?.name == null
+      ? tUi("updatedUi.text_b64ca6d15828")
+      : String(warehouse.name);
   return (
     <>
       <button
         type="button"
         className="hn-outbound-warehouse"
-        aria-label="Thông tin kho xuất hàng"
+        aria-label={tUi("updatedUi.text_35c4166cfbd1")}
         aria-haspopup="menu"
         aria-expanded={Boolean(anchor)}
         onClick={(event) => setAnchor(event.currentTarget)}
@@ -88,16 +95,16 @@ function WarehouseContext() {
           <strong>{name}</strong>
           <small>
             {query.isError ? (
-              "Không tải được thông tin kho"
+              tUi("updatedUi.text_02ed7af0bfa9")
             ) : query.isLoading ? (
-              "Đang tải…"
+              tUi("warranty.detail.uploading")
             ) : warehouse ? (
               <>
                 <i />
-                Đang hoạt động
+                {tUi("dashboard.snapshot.warehouseActive")}
               </>
             ) : (
-              "Chưa có kho khả dụng"
+              tUi("updatedUi.text_0dd0fb192a87")
             )}
           </small>
         </span>
@@ -114,8 +121,8 @@ function WarehouseContext() {
           <span>{warehouse?.code == null ? "" : String(warehouse.code)}</span>
           <span>
             {warehouse
-              ? "Kho đang hoạt động trong phạm vi được cấp quyền."
-              : "Thông tin kho chưa khả dụng."}
+              ? tUi("updatedUi.text_739b544fcdfe")
+              : tUi("updatedUi.text_d75562257216")}
           </span>
         </li>
         {query.isError ? (
@@ -125,7 +132,7 @@ function WarehouseContext() {
               setAnchor(null);
             }}
           >
-            Thử lại
+            {tUi("common.retry")}
           </MenuItem>
         ) : null}
       </Menu>
@@ -276,7 +283,11 @@ export default function AlignedMvpOutboundPage() {
     );
   const progress = (row: OutboundDocumentRecord) => {
     if (row.status === "CANCELLED")
-      return <span aria-label="Phiếu đã hủy">{EMPTY_TEXT}</span>;
+      return (
+        <span aria-label={tUi("updatedUi.text_0a1c02f926e9")}>
+          {EMPTY_TEXT}
+        </span>
+      );
     const percent =
       row.expected > 0
         ? Math.max(
@@ -289,7 +300,9 @@ export default function AlignedMvpOutboundPage() {
         <span
           className="hn-outbound-progress-track"
           role="progressbar"
-          aria-label={`Đối chiếu ${row.code || t("outbound.list.colDocument")}`}
+          aria-label={tUi("updatedUi.text_dc7b03b9635d", {
+            value0: String(row.code || t("outbound.list.colDocument")),
+          })}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={percent}
@@ -323,7 +336,9 @@ export default function AlignedMvpOutboundPage() {
           <>
             <span className="hn-outbound-desktop-label">{label}</span>
             <span className="hn-outbound-compact-label">
-              {key === "code" ? "Phiếu / Toa" : "Người nhận / Ngày"}
+              {key === "code"
+                ? tUi("updatedUi.text_86e6f9d0c5e3")
+                : tUi("updatedUi.text_d10b557b4c80")}
             </span>
           </>
         ) : (
@@ -345,8 +360,8 @@ export default function AlignedMvpOutboundPage() {
     <div className="outbound-page hn-mvp-source-screen hn-outbound-list">
       <header className="hn-outbound-header">
         <div>
-          <h1>Phiếu xuất kho</h1>
-          <p>Tiếp nhận, quản lý và theo dõi tiến độ xuất kho từ Scanner App</p>
+          <h1>{tUi("updatedUi.text_d3eb457df55e")}</h1>
+          <p>{tUi("updatedUi.text_a7149a55bd87")}</p>
         </div>
         <div className="hn-outbound-header-actions">
           <WarehouseContext />
@@ -372,7 +387,7 @@ export default function AlignedMvpOutboundPage() {
       >
         <div className="hn-outbound-list-heading">
           <h2 id="hn-outbound-list-title">
-            Danh sách phiếu xuất{" "}
+            {tUi("updatedUi.text_b6f8caf7b7cc")}{" "}
             <span>
               {listQuery.data ? formatQuantity(pagination.total) : EMPTY_TEXT}
             </span>
@@ -383,7 +398,7 @@ export default function AlignedMvpOutboundPage() {
               aria-label={t("outbound.list.sortAria")}
               menuClassName="hn-outbound-menu"
               options={[
-                { value: "desc", label: "Cập nhật mới nhất" },
+                { value: "desc", label: tUi("updatedUi.text_83ddf4187c12") },
                 { value: "asc", label: t("outbound.list.sortOldest") },
               ]}
               onChange={(value) => {
@@ -401,13 +416,15 @@ export default function AlignedMvpOutboundPage() {
           }}
         >
           <div className="hn-outbound-filter hn-outbound-search">
-            <label htmlFor="hn-outbound-search">Tìm kiếm</label>
+            <label htmlFor="hn-outbound-search">
+              {tUi("reports.packingLabel.searchLabel")}
+            </label>
             <div className="hn-outbound-search-field">
               <UiIcon name="search" />
               <UiTextField
                 id="hn-outbound-search"
                 value={searchInput}
-                placeholder="Mã phiếu hoặc ghi chú…"
+                placeholder={tUi("updatedUi.text_b87f26abcd90")}
                 fullWidth
                 slotProps={{
                   htmlInput: { "aria-label": t("outbound.list.searchAria") },
@@ -418,7 +435,7 @@ export default function AlignedMvpOutboundPage() {
                 <button
                   type="button"
                   className="hn-outbound-search-clear"
-                  aria-label="Xóa từ khóa tìm kiếm"
+                  aria-label={tUi("updatedUi.text_431466c48cf0")}
                   onClick={() => setSearchInput("")}
                 >
                   <UiIcon name="cross-small" size="sm" />
@@ -427,7 +444,9 @@ export default function AlignedMvpOutboundPage() {
             </div>
           </div>
           <div className="hn-outbound-filter">
-            <label htmlFor="hn-outbound-status">Trạng thái</label>
+            <label htmlFor="hn-outbound-status">
+              {tUi("dashboard.composition.colStatus")}
+            </label>
             <UiSelect
               id="hn-outbound-status"
               value={status}
@@ -436,7 +455,10 @@ export default function AlignedMvpOutboundPage() {
               searchable={false}
               aria-label={t("outbound.list.statusFilterAria")}
               menuClassName="hn-outbound-menu"
-              options={[{ value: "", label: "Tất cả" }, ...STATUS_OPTIONS]}
+              options={[
+                { value: "", label: tUi("dashboard.operations.filterAll") },
+                ...getSTATUS_OPTIONS(),
+              ]}
               onChange={(value) => {
                 setStatus(value as OutboundStatus | "");
                 setPage(1);
@@ -448,17 +470,19 @@ export default function AlignedMvpOutboundPage() {
             onFocusCapture={() => setRecipientOptionsOpen(true)}
             onPointerDown={() => setRecipientOptionsOpen(true)}
           >
-            <label id="hn-outbound-recipient-label">Người nhận</label>
+            <label id="hn-outbound-recipient-label">
+              {tUi("outbound.list.colRecipient")}
+            </label>
             <UiAutocomplete
-              aria-label="Lọc người nhận"
+              aria-label={tUi("reports.recipientAgency.recipientAria")}
               value={recipient || null}
-              placeholder="Tất cả"
+              placeholder={tUi("dashboard.operations.filterAll")}
               options={recipientOptions}
               loading={recipientQuery.isFetching}
               noOptionsText={
                 recipientQuery.isError
-                  ? "Không tải được người nhận"
-                  : "Không tìm thấy người nhận"
+                  ? tUi("updatedUi.text_db79a7eae981")
+                  : tUi("updatedUi.text_c8299787a419")
               }
               onChange={(value) => {
                 setRecipient(value == null ? "" : String(value));
@@ -473,7 +497,7 @@ export default function AlignedMvpOutboundPage() {
                   void recipientQuery.refetch();
                 }}
               >
-                Thử lại danh sách người nhận
+                {tUi("updatedUi.text_aaf4e361fb1b")}
               </button>
             ) : null}
           </div>
@@ -484,7 +508,7 @@ export default function AlignedMvpOutboundPage() {
             icon={<></>}
             disabled={loading}
           >
-            Áp dụng
+            {tUi("dashboard.snapshot.apply")}
           </ActionButton>
           <ActionButton
             kind="reset"
@@ -493,7 +517,7 @@ export default function AlignedMvpOutboundPage() {
             icon={<></>}
             onClick={resetFilters}
           >
-            Đặt lại
+            {tUi("reports.packingLabel.reset")}
           </ActionButton>
         </form>
         {listQuery.isError ? (
@@ -516,8 +540,8 @@ export default function AlignedMvpOutboundPage() {
               {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-table")}
             >
               {rows.length
-                ? "Đang cập nhật danh sách…"
-                : "Đang tải danh sách phiếu xuất…"}
+                ? tUi("updatedUi.text_10db055811ab")
+                : tUi("updatedUi.text_811584ce5c49")}
             </div>
           ) : null}
           <table className="hn-outbound-table">
@@ -558,7 +582,9 @@ export default function AlignedMvpOutboundPage() {
                   "status",
                   "hn-outbound-col-status",
                 )}
-                <th className="hn-outbound-col-actions">Thao tác</th>
+                <th className="hn-outbound-col-actions">
+                  {tUi("outbound.detail.colAction")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -607,21 +633,21 @@ export default function AlignedMvpOutboundPage() {
               />
               <strong>
                 {listQuery.isError
-                  ? "Chưa tải được danh sách phiếu xuất"
+                  ? tUi("updatedUi.text_1761f054f161")
                   : hasFilters
-                    ? "Không tìm thấy phiếu xuất phù hợp"
+                    ? tUi("updatedUi.text_d0a12f6ddeb3")
                     : t("outbound.list.empty")}
               </strong>
               <span>
                 {listQuery.isError
-                  ? "Sử dụng nút Thử lại để tải lại dữ liệu."
+                  ? tUi("updatedUi.text_a8c4ecd17312")
                   : hasFilters
-                    ? "Thử từ khóa khác hoặc đặt lại bộ lọc."
-                    : "Phiếu xuất sẽ xuất hiện tại đây sau khi tiếp nhận yêu cầu."}
+                    ? tUi("updatedUi.text_369f96fc8284")
+                    : tUi("updatedUi.text_d543bd203651")}
               </span>
               {hasFilters && !listQuery.isError ? (
                 <ActionButton kind="reset" onClick={resetFilters}>
-                  Đặt lại bộ lọc
+                  {tUi("updatedUi.text_49ced19e7f1d")}
                 </ActionButton>
               ) : null}
             </div>
@@ -643,10 +669,14 @@ export default function AlignedMvpOutboundPage() {
         <footer className="hn-outbound-pagination">
           <span aria-live="polite">
             {listQuery.data
-              ? `Hiển thị ${first} – ${last} / ${formatQuantity(pagination.total)} phiếu`
+              ? tUi("updatedUi.text_ed9314f2e7c6", {
+                  value0: String(first),
+                  value1: String(last),
+                  value2: String(formatQuantity(pagination.total)),
+                })
               : loading
-                ? "Đang tải số lượng phiếu…"
-                : "Chưa có số liệu danh sách"}
+                ? tUi("updatedUi.text_5412ced1c478")
+                : tUi("updatedUi.text_324e2c9b114d")}
           </span>
           <div className="hn-outbound-pagination-controls">
             <UiSelect

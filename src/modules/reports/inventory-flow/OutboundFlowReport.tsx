@@ -33,6 +33,7 @@ import {
   type FlowDocument,
 } from "./inventory-flow-api";
 import "./outbound-flow-report.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const PAGE_SIZE = 5;
 const METADATA_PAGE_SIZE = 100;
@@ -72,10 +73,10 @@ function outboundStatusLabel(status: string) {
   const outboundLabel = businessLabel(OUTBOUND_STATUS_LABELS, status);
   if (outboundLabel) return outboundLabel;
   const tone = statusTone(status);
-  if (tone === "complete") return "Đã xuất kho";
-  if (tone === "processing") return "Đang xuất";
-  if (tone === "pending") return "Chờ duyệt";
-  if (tone === "cancelled") return "Đã hủy";
+  if (tone === "complete") return tUi("reports.traceability.issued");
+  if (tone === "processing") return tUi("updatedUi.text_989a7c2159f4");
+  if (tone === "pending") return tUi("dashboard.snapshot.statePending");
+  if (tone === "cancelled") return tUi("warranty.status.cancelled");
   return reportStatusLabel(status);
 }
 
@@ -282,7 +283,7 @@ function FilterCombobox({
           {search ? (
             <button
               type="button"
-              aria-label="Xóa từ khóa tìm kiếm"
+              aria-label={tUi("updatedUi.text_431466c48cf0")}
               onClick={() => {
                 setSearch("");
                 searchRef.current?.focus();
@@ -330,7 +331,7 @@ function FilterCombobox({
             ))
           ) : (
             <span className="outbound-filter-combobox__empty">
-              Không tìm thấy kết quả
+              {tUi("updatedUi.text_8a4f82f9ad45")}
             </span>
           )}
         </span>
@@ -365,7 +366,7 @@ function KpiCard({
               ? formatNumber(value)
               : value}
         </strong>
-        <small>{empty ? "Chưa có dữ liệu" : note}</small>
+        <small>{empty ? tUi("dashboard.lastUpdated.none") : note}</small>
       </div>
       <span className="outbound-kpi__icon" aria-hidden="true">
         <Icon name={icon} />
@@ -499,7 +500,7 @@ export default function OutboundFlowReport() {
 
   const recipientFilterOptions = useMemo<FilterOption[]>(
     () => [
-      { value: "", label: "Tất cả người nhận" },
+      { value: "", label: tUi("reports.recipientAgency.recipientAll") },
       ...recipientOptions.map((recipient) => ({
         value: recipient,
         label: recipient,
@@ -510,7 +511,7 @@ export default function OutboundFlowReport() {
 
   const statusFilterOptions = useMemo<FilterOption[]>(
     () => [
-      { value: "", label: "Tất cả trạng thái" },
+      { value: "", label: tUi("reports.inventoryFlow.statusAll") },
       ...statusOptions.map((status) => ({
         value: status,
         label: outboundStatusLabel(status),
@@ -767,8 +768,8 @@ export default function OutboundFlowReport() {
     setSelectedDocument(firstPending?.id ?? null);
     setActionNotice(
       firstPending
-        ? `Đã lọc ${pendingCount} phiếu đang chờ duyệt.`
-        : "Hiện không có phiếu xuất nào đang chờ duyệt.",
+        ? tUi("updatedUi.text_02cd7d835950", { value0: String(pendingCount) })
+        : tUi("updatedUi.text_9e6751b449e6"),
     );
     window.requestAnimationFrame(() => {
       tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -782,9 +783,12 @@ export default function OutboundFlowReport() {
   };
 
   const toastCopy = actionNotice
-    ? { title: "Danh sách phiếu xuất", detail: actionNotice }
+    ? { title: tUi("updatedUi.text_b6f8caf7b7cc"), detail: actionNotice }
     : showSuccess
-      ? { title: "Đã cập nhật báo cáo", detail: "Dữ liệu đã được làm mới." }
+      ? {
+          title: tUi("updatedUi.text_5d0cd3a93731"),
+          detail: tUi("updatedUi.text_d6c349552506"),
+        }
       : null;
 
   return (
@@ -800,7 +804,7 @@ export default function OutboundFlowReport() {
           </span>
           <button
             type="button"
-            aria-label="Đóng thông báo"
+            aria-label={tUi("updatedUi.text_8af6ba927e1f")}
             onClick={() => {
               setShowSuccess(false);
               setActionNotice(null);
@@ -811,16 +815,21 @@ export default function OutboundFlowReport() {
         </div>
       ) : null}
 
-      <nav className="outbound-breadcrumb" aria-label="Đường dẫn">
-        <span>Xuất kho</span>
+      <nav
+        className="outbound-breadcrumb"
+        aria-label={tUi("dashboard.breadcrumb.nav")}
+      >
+        <span>{tUi("dashboard.snapshot.outbound")}</span>
         <Icon name="chevron-right" />
-        <strong>Phiếu xuất kho</strong>
+        <strong>{tUi("updatedUi.text_d3eb457df55e")}</strong>
       </nav>
 
       <header className="outbound-page-heading">
         <div>
-          <h1 className="hn-report-page-title">Phiếu xuất kho</h1>
-          <p>Tiếp nhận, quản lý và theo dõi tiến độ xuất kho từ Scanner App</p>
+          <h1 className="hn-report-page-title">
+            {tUi("updatedUi.text_d3eb457df55e")}
+          </h1>
+          <p>{tUi("updatedUi.text_a7149a55bd87")}</p>
         </div>
         <div className="outbound-heading-actions">
           <div className="outbound-warehouse-card">
@@ -830,7 +839,8 @@ export default function OutboundFlowReport() {
             <span>
               <strong>Kho Hoa Nam</strong>
               <small>
-                <i /> Đang hoạt động
+                <i />
+                {" " + tUi("dashboard.snapshot.warehouseActive")}
               </small>
             </span>
             <Icon name="chevron-down" />
@@ -842,7 +852,7 @@ export default function OutboundFlowReport() {
               onClick={() => setIntakeOpen(true)}
             >
               <Icon name="package-plus" />
-              Tiếp nhận yêu cầu xuất
+              {tUi("outbound.list.intake")}
             </button>
           ) : null}
         </div>
@@ -854,8 +864,8 @@ export default function OutboundFlowReport() {
             <Icon name="triangle-alert" />
           </span>
           <div>
-            <strong>Khoảng thời gian chưa hợp lệ</strong>
-            <p>Dữ liệu bên dưới vẫn là kết quả của kỳ đã áp dụng gần nhất.</p>
+            <strong>{tUi("updatedUi.text_b6d11c8358a9")}</strong>
+            <p>{tUi("updatedUi.text_4a7df2bdbb44")}</p>
           </div>
         </aside>
       ) : null}
@@ -865,26 +875,22 @@ export default function OutboundFlowReport() {
           <span className="outbound-error-card__icon">
             <Icon name="triangle-alert" />
           </span>
-          <small>BÁO CÁO XUẤT KHO</small>
-          <h2>Không thể tải báo cáo</h2>
-          <p>
-            {getApiErrorMessage(
-              error,
-              "Đã xảy ra lỗi khi tải dữ liệu báo cáo.",
-            )}
-          </p>
+          <small>{tUi("updatedUi.text_251995a970f7")}</small>
+          <h2>{tUi("updatedUi.text_c1e574adfa82")}</h2>
+          <p>{getApiErrorMessage(error, tUi("updatedUi.text_8bee0482cc4c"))}</p>
           <button type="button" onClick={() => void refetchReport()}>
-            <Icon name="refresh-cw" /> Thử lại
+            <Icon name="refresh-cw" />
+            {" " + tUi("common.retry")}
           </button>
-          <em>Bộ lọc hiện tại vẫn được giữ nguyên · Mã tham chiếu RPT-01B</em>
+          <em>{tUi("updatedUi.text_a633b0be40c4")}</em>
         </section>
       ) : (
         <>
           <section
             className="outbound-reference-summary"
-            aria-label="Tình trạng xử lý phiếu"
+            aria-label={tUi("updatedUi.text_b11b59304497")}
           >
-            <h2>Tình trạng xử lý phiếu</h2>
+            <h2>{tUi("updatedUi.text_b11b59304497")}</h2>
             {updating ? (
               <div
                 className="outbound-reference-summary__loading"
@@ -900,47 +906,45 @@ export default function OutboundFlowReport() {
               <div className="outbound-reference-summary__grid">
                 <div className="outbound-reference-total">
                   <strong>{formatNumber(filteredDocuments.length)}</strong>
-                  <span>Tổng phiếu xuất</span>
+                  <span>{tUi("updatedUi.text_b825b57a8a53")}</span>
                 </div>
                 <div className="outbound-reference-summary__stats">
                   <div data-tone="draft">
                     <i />
                     <strong>{progress.pending}</strong>
-                    <span>Nháp</span>
+                    <span>{tUi("outbound.detail.labelStatusDraft")}</span>
                   </div>
                   <div data-tone="scanning">
                     <i />
                     <strong>{progress.processing}</strong>
-                    <span>Đang quét xuất hàng</span>
+                    <span>{tUi("updatedUi.text_71e1f4001cc2")}</span>
                   </div>
                   <div data-tone="posted">
                     <i />
                     <strong>{progress.complete}</strong>
-                    <span>Đã xuất kho</span>
+                    <span>{tUi("reports.traceability.issued")}</span>
                   </div>
                   <div data-tone="cancelled">
                     <i />
                     <strong>{progress.cancelled}</strong>
-                    <span>Đã hủy</span>
+                    <span>{tUi("warranty.status.cancelled")}</span>
                   </div>
                 </div>
               </div>
             )}
             <aside className="outbound-scanner-banner" role="status">
               <Icon name="info" />
-              <span>
-                Quét và đối chiếu thực hiện trên Scanner App. Chỉ Post Issue
-                thành công mới làm giảm tồn kho; in hoặc in lại nhãn không làm
-                thay đổi tồn.
-              </span>
+              <span>{tUi("updatedUi.text_ef700a3a2f41")}</span>
             </aside>
           </section>
 
           <section
             className="outbound-kpi-grid"
-            aria-label="Tổng quan xuất kho"
+            aria-label={tUi("reports.inventoryFlowReport.outboundQuickTitle")}
           >
-            <span className="outbound-sr-only">Tổng quan xuất kho</span>
+            <span className="outbound-sr-only">
+              {tUi("reports.inventoryFlowReport.outboundQuickTitle")}
+            </span>
             {updating ? (
               Array.from({ length: 4 }, (_, index) => (
                 <KpiSkeleton key={index} />
@@ -950,7 +954,7 @@ export default function OutboundFlowReport() {
                 <KpiCard
                   tone="cyan"
                   icon="package-plus"
-                  title="Sản phẩm đã xuất"
+                  title={tUi("updatedUi.text_71beef8c0375")}
                   value={issuedQuantity}
                   note="Trong kỳ đã chọn"
                   empty={reportEmpty}
@@ -958,19 +962,25 @@ export default function OutboundFlowReport() {
                 <KpiCard
                   tone="green"
                   icon="file-clock"
-                  title="Phiếu hoàn tất"
+                  title={tUi("updatedUi.text_4ec714e78d21")}
                   value={`${completedCount} / ${filteredDocuments.length}`}
                   note={
                     filteredDocuments.length
-                      ? `${formatNumber((completedCount / filteredDocuments.length) * 100)}% tổng phiếu`
-                      : "Chưa có dữ liệu"
+                      ? tUi("updatedUi.text_c49d03028966", {
+                          value0: String(
+                            formatNumber(
+                              (completedCount / filteredDocuments.length) * 100,
+                            ),
+                          ),
+                        })
+                      : tUi("dashboard.lastUpdated.none")
                   }
                   empty={reportEmpty}
                 />
                 <KpiCard
                   tone="violet"
                   icon="warehouse"
-                  title="Người nhận"
+                  title={tUi("outbound.list.colRecipient")}
                   value={recipientCount}
                   note="Có phát sinh xuất"
                   empty={reportEmpty}
@@ -978,9 +988,12 @@ export default function OutboundFlowReport() {
                 <KpiCard
                   tone="amber"
                   icon="triangle-alert"
-                  title="Phiếu cần xử lý"
+                  title={tUi("updatedUi.text_90bb168358f1")}
                   value={pendingCount + progress.processing}
-                  note={`${pendingCount} chờ duyệt · ${progress.processing} đang xuất`}
+                  note={tUi("updatedUi.text_20a9363803ba", {
+                    value0: String(pendingCount),
+                    value1: String(progress.processing),
+                  })}
                   empty={reportEmpty}
                 />
               </>
@@ -991,11 +1004,15 @@ export default function OutboundFlowReport() {
             <article className="outbound-panel outbound-chart-panel">
               <div className="outbound-panel-heading">
                 <div>
-                  <h2>Sản lượng xuất theo ngày</h2>
-                  <p>Số lượng sản phẩm thực xuất</p>
+                  <h2>{tUi("updatedUi.text_25b7ff634d6b")}</h2>
+                  <p>{tUi("updatedUi.text_aa4934a59d93")}</p>
                 </div>
                 <span className="outbound-panel-total">
-                  <strong>Tổng: {formatNumber(issuedQuantity)}</strong> sản phẩm
+                  <strong>
+                    {tUi("updatedUi.text_09caee89904d") + " "}
+                    {formatNumber(issuedQuantity)}
+                  </strong>
+                  {" " + tUi("updatedUi.text_9bfcaa70b19e")}
                 </span>
               </div>
               {updating ? (
@@ -1009,16 +1026,14 @@ export default function OutboundFlowReport() {
                   <span>
                     <Icon name="chart-column-big" />
                   </span>
-                  <strong>Chưa có sản lượng xuất kho</strong>
-                  <small>
-                    Dữ liệu biểu đồ sẽ xuất hiện khi có phiếu xuất trong kỳ.
-                  </small>
+                  <strong>{tUi("updatedUi.text_3c74df9b8416")}</strong>
+                  <small>{tUi("updatedUi.text_f6125c738589")}</small>
                 </div>
               ) : (
                 <div
                   className="outbound-bar-chart"
                   role="img"
-                  aria-label="Biểu đồ sản lượng xuất theo ngày"
+                  aria-label={tUi("updatedUi.text_518e399f02c3")}
                 >
                   <div className="outbound-chart-y-axis" aria-hidden="true">
                     <span>{formatNumber(chartCeiling)}</span>
@@ -1067,8 +1082,8 @@ export default function OutboundFlowReport() {
             <article className="outbound-panel outbound-progress-panel">
               <div className="outbound-panel-heading">
                 <div>
-                  <h2>Tiến độ phiếu xuất</h2>
-                  <p>Tình trạng xử lý trong kỳ</p>
+                  <h2>{tUi("updatedUi.text_eb1594670cb4")}</h2>
+                  <p>{tUi("updatedUi.text_410ce7ff86bb")}</p>
                 </div>
               </div>
               {updating ? (
@@ -1085,32 +1100,32 @@ export default function OutboundFlowReport() {
                   <span>
                     <Icon name="file-clock" />
                   </span>
-                  <strong>Chưa có phiếu xuất</strong>
-                  <small>Tiến độ sẽ được tổng hợp khi có dữ liệu.</small>
+                  <strong>{tUi("updatedUi.text_fea159fea064")}</strong>
+                  <small>{tUi("updatedUi.text_c0a62bb8d645")}</small>
                 </div>
               ) : (
                 <div className="outbound-progress-content">
                   <div className="outbound-donut" style={donutStyle}>
                     <span>
                       <strong>{formatNumber(totalProgress)}</strong>
-                      <small>Tổng phiếu</small>
+                      <small>{tUi("updatedUi.text_2d173f0e4679")}</small>
                     </span>
                   </div>
                   <ul className="outbound-progress-legend">
                     <li data-tone="complete">
-                      <span>Hoàn tất</span>
+                      <span>{tUi("iam.permissionAction.post")}</span>
                       <strong>{progress.complete}</strong>
                     </li>
                     <li data-tone="processing">
-                      <span>Đang xuất</span>
+                      <span>{tUi("updatedUi.text_989a7c2159f4")}</span>
                       <strong>{progress.processing}</strong>
                     </li>
                     <li data-tone="pending">
-                      <span>Chờ duyệt</span>
+                      <span>{tUi("dashboard.snapshot.statePending")}</span>
                       <strong>{progress.pending}</strong>
                     </li>
                     <li data-tone="cancelled">
-                      <span>Đã hủy</span>
+                      <span>{tUi("warranty.status.cancelled")}</span>
                       <strong>{progress.cancelled}</strong>
                     </li>
                   </ul>
@@ -1121,15 +1136,19 @@ export default function OutboundFlowReport() {
                   <Icon name="file-clock" />
                 </span>
                 <div>
-                  <strong>{pendingCount} phiếu chờ duyệt</strong>
-                  <small>Cần xử lý để hoàn tất xuất kho</small>
+                  <strong>
+                    {pendingCount}
+                    {" " + tUi("updatedUi.text_e62d651d4a57")}
+                  </strong>
+                  <small>{tUi("updatedUi.text_7f30733ab451")}</small>
                 </div>
                 <button
                   type="button"
                   onClick={scrollToPending}
                   disabled={reportEmpty || updating}
                 >
-                  Xem phiếu <Icon name="arrow-right" />
+                  {tUi("updatedUi.text_e07402d0ac93") + " "}
+                  <Icon name="arrow-right" />
                 </button>
               </div>
             </article>
@@ -1143,7 +1162,7 @@ export default function OutboundFlowReport() {
             <div className="outbound-table-heading">
               <div>
                 <span className="outbound-table-title-row">
-                  <h2>Danh sách phiếu xuất</h2>
+                  <h2>{tUi("updatedUi.text_b6f8caf7b7cc")}</h2>
                   <b>{filteredDocuments.length}</b>
                 </span>
               </div>
@@ -1153,13 +1172,14 @@ export default function OutboundFlowReport() {
                 onClick={() => void applyFilters()}
                 disabled={updating || invalidRange}
               >
-                Cập nhật mới nhất <Icon name="refresh-cw" />
+                {tUi("updatedUi.text_83ddf4187c12") + " "}
+                <Icon name="refresh-cw" />
               </button>
             </div>
 
             <div
               className="outbound-reference-filters"
-              aria-label="Bộ lọc phiếu xuất"
+              aria-label={tUi("updatedUi.text_4f905d145ffd")}
             >
               <label className="outbound-table-search">
                 <Icon name="search" />
@@ -1170,22 +1190,22 @@ export default function OutboundFlowReport() {
                     setQuery(event.target.value);
                     setPage(1);
                   }}
-                  placeholder="Mã phiếu hoặc ghi chú..."
-                  aria-label="Tìm phiếu xuất"
+                  placeholder={tUi("updatedUi.text_fb8d84e68703")}
+                  aria-label={tUi("outbound.list.searchAria")}
                   disabled={updating || reportEmpty}
                 />
                 {query ? (
                   <button
                     type="button"
                     onClick={() => setQuery("")}
-                    aria-label="Xóa từ khóa"
+                    aria-label={tUi("updatedUi.text_323a278e441f")}
                   >
                     ×
                   </button>
                 ) : null}
               </label>
               <div className="outbound-reference-filter" data-filter="status">
-                <span>Trạng thái</span>
+                <span>{tUi("dashboard.composition.colStatus")}</span>
                 <FilterCombobox
                   id="rpt01-status"
                   value={draftStatus}
@@ -1201,7 +1221,7 @@ export default function OutboundFlowReport() {
                 className="outbound-reference-filter"
                 data-filter="recipient"
               >
-                <span>Người nhận</span>
+                <span>{tUi("outbound.list.colRecipient")}</span>
                 <FilterCombobox
                   id="rpt01-recipient"
                   value={draftRecipient}
@@ -1219,7 +1239,7 @@ export default function OutboundFlowReport() {
                 onClick={() => void applyFilters()}
                 disabled={invalidRange || updating}
               >
-                Áp dụng
+                {tUi("dashboard.snapshot.apply")}
               </button>
               <button
                 type="button"
@@ -1227,7 +1247,7 @@ export default function OutboundFlowReport() {
                 onClick={() => void resetFilters()}
                 disabled={updating}
               >
-                Đặt lại
+                {tUi("reports.packingLabel.reset")}
               </button>
             </div>
 
@@ -1246,10 +1266,11 @@ export default function OutboundFlowReport() {
                 <span>
                   <Icon name="inbox" />
                 </span>
-                <h3>Chưa có dữ liệu xuất kho</h3>
-                <p>Không tìm thấy phiếu xuất trong khoảng thời gian đã chọn.</p>
+                <h3>{tUi("updatedUi.text_22ddab94d334")}</h3>
+                <p>{tUi("updatedUi.text_3b849599a666")}</p>
                 <button type="button" onClick={widenRange}>
-                  <Icon name="calendar-days" /> Mở rộng khoảng thời gian
+                  <Icon name="calendar-days" />
+                  {" " + tUi("updatedUi.text_879c05bb679d")}
                 </button>
               </div>
             ) : searchEmpty ? (
@@ -1257,12 +1278,14 @@ export default function OutboundFlowReport() {
                 <span>
                   <Icon name="search" />
                 </span>
-                <h3>Không tìm thấy phiếu xuất</h3>
+                <h3>{tUi("updatedUi.text_e069efc59c5c")}</h3>
                 <p>
-                  Không có kết quả phù hợp với “{query}”. Hãy thử từ khóa khác.
+                  {tUi("updatedUi.text_5a5ffc21ba7d")}
+                  {query}
+                  {tUi("updatedUi.text_6c2aff5a26af")}
                 </p>
                 <button type="button" onClick={() => setQuery("")}>
-                  Xóa tìm kiếm
+                  {tUi("updatedUi.text_816c89e8e46b")}
                 </button>
               </div>
             ) : (
@@ -1271,19 +1294,29 @@ export default function OutboundFlowReport() {
                   <thead>
                     <tr>
                       <th>
-                        Phiếu xuất
-                        <span className="outbound-tablet-only"> / Toà</span>
+                        {tUi("outbound.list.colDocument")}
+                        <span className="outbound-tablet-only">
+                          {" " + tUi("updatedUi.text_52d04fdc17f2")}
+                        </span>
                       </th>
                       <th className="outbound-reference-request">
-                        Mã tòa yêu cầu
+                        {tUi("updatedUi.text_49c053966833")}
                       </th>
-                      <th>Người nhận</th>
-                      <th className="outbound-desktop-date">Ngày tạo</th>
-                      <th className="outbound-reference-note">Ghi chú</th>
-                      <th className="outbound-reference-progress">Đối chiếu</th>
-                      <th>Trạng thái</th>
+                      <th>{tUi("outbound.list.colRecipient")}</th>
+                      <th className="outbound-desktop-date">
+                        {tUi("inbound.list.colCreated")}
+                      </th>
+                      <th className="outbound-reference-note">
+                        {tUi("inbound.list.colNote")}
+                      </th>
+                      <th className="outbound-reference-progress">
+                        {tUi("outbound.list.colReconcile")}
+                      </th>
+                      <th>{tUi("dashboard.composition.colStatus")}</th>
                       <th>
-                        <span className="sr-only">Thao tác</span>
+                        <span className="sr-only">
+                          {tUi("outbound.detail.colAction")}
+                        </span>
                       </th>
                     </tr>
                   </thead>
@@ -1310,7 +1343,9 @@ export default function OutboundFlowReport() {
                             }
                           }}
                         >
-                          <td data-label="Mã phiếu">
+                          <td
+                            data-label={tUi("warranty.componentList.colCode")}
+                          >
                             <strong>{document.document_no || "—"}</strong>
                             <small className="outbound-tablet-only">
                               {requestNo}
@@ -1318,13 +1353,13 @@ export default function OutboundFlowReport() {
                           </td>
                           <td
                             className="outbound-reference-request"
-                            data-label="Mã tòa yêu cầu"
+                            data-label={tUi("updatedUi.text_49c053966833")}
                             title={requestNo === "—" ? undefined : requestNo}
                           >
                             {requestNo}
                           </td>
                           <td
-                            data-label="Người nhận"
+                            data-label={tUi("outbound.list.colRecipient")}
                             className="outbound-recipient-cell"
                           >
                             <span className="outbound-recipient-name">
@@ -1333,20 +1368,20 @@ export default function OutboundFlowReport() {
                           </td>
                           <td
                             className="outbound-desktop-date"
-                            data-label="Ngày tạo"
+                            data-label={tUi("inbound.list.colCreated")}
                           >
                             {formatDay(documentDay(document))}
                           </td>
                           <td
                             className="outbound-reference-note"
-                            data-label="Ghi chú"
+                            data-label={tUi("inbound.list.colNote")}
                             title={note === "—" ? undefined : note}
                           >
                             {note}
                           </td>
                           <td
                             className="outbound-reference-progress"
-                            data-label="Đối chiếu"
+                            data-label={tUi("outbound.list.colReconcile")}
                           >
                             <span
                               className="outbound-reconcile"
@@ -1359,23 +1394,37 @@ export default function OutboundFlowReport() {
                               <i />
                               <b>
                                 {normalizeStatus(document.status) === "POSTED"
-                                  ? `${formatNumber(quantityByDocument.get(document.document_no) ?? 0)} đã xuất`
+                                  ? tUi("updatedUi.text_0fc446864856", {
+                                      value0: String(
+                                        formatNumber(
+                                          quantityByDocument.get(
+                                            document.document_no,
+                                          ) ?? 0,
+                                        ),
+                                      ),
+                                    })
                                   : "—"}
                               </b>
                             </span>
                           </td>
-                          <td data-label="Trạng thái">
+                          <td
+                            data-label={tUi("dashboard.composition.colStatus")}
+                          >
                             <span className="outbound-status" data-tone={tone}>
                               {outboundStatusLabel(document.status)}
                             </span>
                           </td>
-                          <td data-label="Thao tác">
+                          <td data-label={tUi("outbound.detail.colAction")}>
                             <RowActionGroup>
                               <RowActionButton
                                 kind="view"
                                 type="button"
-                                aria-label={`Xem phiếu ${document.document_no}`}
-                                title={`Xem phiếu ${document.document_no}`}
+                                aria-label={tUi("updatedUi.text_f530867d0676", {
+                                  value0: String(document.document_no),
+                                })}
+                                title={tUi("updatedUi.text_f530867d0676", {
+                                  value0: String(document.document_no),
+                                })}
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   openDocument(document);
@@ -1383,7 +1432,7 @@ export default function OutboundFlowReport() {
                               >
                                 {normalizeStatus(document.status) === "POSTED"
                                   ? "Xem"
-                                  : "Mở"}
+                                  : tUi("outbound.list.open")}
                               </RowActionButton>
                             </RowActionGroup>
                           </td>
@@ -1398,13 +1447,24 @@ export default function OutboundFlowReport() {
             <footer className="outbound-table-footer hn-report-pagination-footer">
               <span>
                 {searchedDocuments.length === 0
-                  ? `0 kết quả / ${filteredDocuments.length} phiếu`
-                  : `Hiển thị ${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, searchedDocuments.length)} trong ${searchedDocuments.length} phiếu`}
+                  ? tUi("updatedUi.text_8f31a3be9ea1", {
+                      value0: String(filteredDocuments.length),
+                    })
+                  : tUi("updatedUi.text_c9bbf7bb2223", {
+                      value0: String((safePage - 1) * PAGE_SIZE + 1),
+                      value1: String(
+                        Math.min(
+                          safePage * PAGE_SIZE,
+                          searchedDocuments.length,
+                        ),
+                      ),
+                      value2: String(searchedDocuments.length),
+                    })}
               </span>
               <div className="outbound-pagination hn-report-pagination">
                 <button
                   type="button"
-                  aria-label="Trang trước"
+                  aria-label={tUi("reports.traceability.previousPage")}
                   disabled={safePage <= 1 || searchedDocuments.length === 0}
                   onClick={() => setPage((value) => Math.max(1, value - 1))}
                 >
@@ -1459,8 +1519,8 @@ export default function OutboundFlowReport() {
               <Icon name="warehouse" />
             </span>
             <i className="outbound-spinner" />
-            <strong>Đang cập nhật báo cáo</strong>
-            <small>Vui lòng chờ trong giây lát...</small>
+            <strong>{tUi("updatedUi.text_434c42929257")}</strong>
+            <small>{tUi("updatedUi.text_b271581f3ca5")}</small>
           </div>
         </div>
       ) : null}

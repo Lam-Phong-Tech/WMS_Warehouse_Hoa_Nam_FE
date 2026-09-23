@@ -54,6 +54,7 @@ import {
   ProductCard,
   TypePill,
 } from "./widgets";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 export default function IoHistoryReport() {
   const [searchParams] = useSearchParams();
@@ -61,7 +62,8 @@ export default function IoHistoryReport() {
   const demoScreen = searchParams.get("screen")?.toUpperCase() === "RPT-08";
   const demoMode = demoScreen || forcedState !== null;
   const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name) || "Kho Hoa Nam";
+    useAuthStore((state) => state.currentContext?.warehouse_name) ||
+    "Kho Hoa Nam";
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
 
   const initialDraftRange: [Dayjs, Dayjs] =
@@ -79,7 +81,8 @@ export default function IoHistoryReport() {
         ? [DEMO_FROM, DEMO_TO]
         : initialDraftRange;
 
-  const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>(initialDraftRange);
+  const [draftRange, setDraftRange] =
+    useState<[Dayjs, Dayjs]>(initialDraftRange);
   const [draftType, setDraftType] = useState<TransactionFilter>("ALL");
   const [draftActor, setDraftActor] = useState("");
   const [applied, setApplied] = useState<AppliedFilters>({
@@ -112,16 +115,24 @@ export default function IoHistoryReport() {
 
   const demoRows = useMemo(makeDemoRows, []);
   const liveRows = useMemo(
-    () => source.snapshot.rows.map(mapLiveRow).filter((row): row is HistoryRow => row !== null),
+    () =>
+      source.snapshot.rows
+        .map(mapLiveRow)
+        .filter((row): row is HistoryRow => row !== null),
     [source.snapshot.rows],
   );
   const allRows = demoMode ? demoRows : liveRows;
 
   const actorOptions = useMemo(() => {
-    const actors = [...new Set(allRows.map((row) => row.actor).filter((actor) => actor && actor !== "—"))]
-      .sort((left, right) => left.localeCompare(right, "vi"));
+    const actors = [
+      ...new Set(
+        allRows
+          .map((row) => row.actor)
+          .filter((actor) => actor && actor !== "—"),
+      ),
+    ].sort((left, right) => left.localeCompare(right, "vi"));
     return [
-      { value: "", label: "Tất cả" },
+      { value: "", label: tUi("dashboard.operations.filterAll") },
       ...actors.map((actor) => ({ value: actor, label: actor })),
     ];
   }, [allRows]);
@@ -173,8 +184,12 @@ export default function IoHistoryReport() {
     else if (forcedState === "export-unknown") setExportState("unknown");
   }, [forcedState]);
 
-  const inboundCount = reportRows.filter((row) => row.type === "INBOUND").length;
-  const outboundCount = reportRows.filter((row) => row.type === "OUTBOUND").length;
+  const inboundCount = reportRows.filter(
+    (row) => row.type === "INBOUND",
+  ).length;
+  const outboundCount = reportRows.filter(
+    (row) => row.type === "OUTBOUND",
+  ).length;
   const totalTransactions = inboundCount + outboundCount;
 
   const canonicalDemoRange =
@@ -189,8 +204,16 @@ export default function IoHistoryReport() {
   const liveOutboundProducts = reportRows
     .filter((row) => row.type === "OUTBOUND")
     .reduce((sum, row) => sum + row.quantity, 0);
-  const inboundProducts = canonicalDemoRange ? (applied.type === "OUTBOUND" ? 0 : 6480) : liveInboundProducts;
-  const outboundProducts = canonicalDemoRange ? (applied.type === "INBOUND" ? 0 : 5980) : liveOutboundProducts;
+  const inboundProducts = canonicalDemoRange
+    ? applied.type === "OUTBOUND"
+      ? 0
+      : 6480
+    : liveInboundProducts;
+  const outboundProducts = canonicalDemoRange
+    ? applied.type === "INBOUND"
+      ? 0
+      : 5980
+    : liveOutboundProducts;
   const totalProducts = inboundProducts + outboundProducts;
 
   const daily = useMemo(
@@ -208,11 +231,14 @@ export default function IoHistoryReport() {
   }, [daily, totalTransactions]);
 
   const invalidRange =
-    forcedState === "invalid" || draftRange[0].startOf("day").isAfter(draftRange[1].startOf("day"));
+    forcedState === "invalid" ||
+    draftRange[0].startOf("day").isAfter(draftRange[1].startOf("day"));
   const initialLoading =
-    forcedState === "loading" || (!demoMode && source.loading && liveRows.length === 0);
+    forcedState === "loading" ||
+    (!demoMode && source.loading && liveRows.length === 0);
   const hardError =
-    forcedState === "error" || (!demoMode && Boolean(source.error) && liveRows.length === 0);
+    forcedState === "error" ||
+    (!demoMode && Boolean(source.error) && liveRows.length === 0);
   const refreshing =
     forcedState === "refreshing" ||
     manualRefreshing ||
@@ -237,7 +263,8 @@ export default function IoHistoryReport() {
     readonly ||
     exportState === "exporting";
   const defaultDraftRange =
-    draftRange[0].isSame(DEMO_FROM, "day") && draftRange[1].isSame(DEMO_TO, "day");
+    draftRange[0].isSame(DEMO_FROM, "day") &&
+    draftRange[1].isSame(DEMO_TO, "day");
 
   const applyFilters = useCallback(() => {
     if (invalidRange) return;
@@ -299,7 +326,9 @@ export default function IoHistoryReport() {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setExportState(
-        /timeout|time\s*out|hết thời gian|quá thời gian|chưa xác định/i.test(message)
+        /timeout|time\s*out|hết thời gian|quá thời gian|chưa xác định/i.test(
+          message,
+        )
           ? "unknown"
           : "failed",
       );
@@ -318,14 +347,17 @@ export default function IoHistoryReport() {
     >
       <header className="rpt08-page-header">
         <div className="rpt08-heading">
-          <div className="rpt08-breadcrumb" aria-label="Đường dẫn điều hướng">
+          <div
+            className="rpt08-breadcrumb"
+            aria-label={tUi("updatedUi.text_610f66b336f3")}
+          >
             <HomeOutlined />
-            <span>Báo cáo</span>
+            <span>{tUi("reports.traceability.breadcrumbReports")}</span>
             <span aria-hidden="true">/</span>
-            <span>Lịch sử nhập - xuất kho</span>
+            <span>{tUi("updatedUi.text_8814615e6de0")}</span>
           </div>
-          <h1>Báo cáo Lịch sử nhập - xuất kho</h1>
-          <p>Theo dõi toàn bộ giao dịch nhập, xuất và luân chuyển hàng hóa</p>
+          <h1>{tUi("updatedUi.text_cedbc7cfb228")}</h1>
+          <p>{tUi("updatedUi.text_5c09481fb555")}</p>
         </div>
         <HeaderActions
           warehouse={warehouseName}
@@ -364,8 +396,10 @@ export default function IoHistoryReport() {
           {stale ? (
             <StatusBanner
               tone="warning"
-              title="Dữ liệu có thể chưa mới nhất"
-              message={`Đang hiển thị bản cập nhật gần nhất. Cập nhật lần cuối: ${displayAsOf(source.snapshot.dataAsOf, demoMode)}.`}
+              title={tUi("updatedUi.text_278fb7e1cb78")}
+              message={tUi("updatedUi.text_0d15f428b113", {
+                value0: String(displayAsOf(source.snapshot.dataAsOf, demoMode)),
+              })}
               primaryLabel="Thử cập nhật"
               onPrimary={refresh}
               onClose={() => setStaleDismissed(true)}
@@ -375,8 +409,8 @@ export default function IoHistoryReport() {
           {exportState === "failed" ? (
             <StatusBanner
               tone="error"
-              title="Không thể xuất báo cáo"
-              message="Báo cáo chưa được tạo. Vui lòng thử lại."
+              title={tUi("updatedUi.text_43dc1de9c0f5")}
+              message={tUi("updatedUi.text_420c6ee4be7e")}
               primaryLabel="Thử lại"
               onPrimary={() => void exportReport()}
               onClose={() => setExportState("idle")}
@@ -386,8 +420,8 @@ export default function IoHistoryReport() {
           {exportState === "unknown" ? (
             <StatusBanner
               tone="warning"
-              title="Chưa xác định kết quả xuất báo cáo"
-              message="Không nhận được xác nhận từ hệ thống. Hãy kiểm tra các tệp đã tải trước khi xuất lại để tránh trùng lặp."
+              title={tUi("updatedUi.text_59cf4eaf5714")}
+              message={tUi("updatedUi.text_b2fc9bf6624e")}
               primaryLabel="Đã hiểu"
               onPrimary={() => setExportState("idle")}
             />
@@ -432,7 +466,9 @@ export default function IoHistoryReport() {
             onAdjustRange={() => {
               setDraftRange([DEMO_FROM, DEMO_TO]);
               window.requestAnimationFrame(() => {
-                document.querySelector<HTMLElement>(".rpt08-date-control")?.focus();
+                document
+                  .querySelector<HTMLElement>(".rpt08-date-control")
+                  ?.focus();
               });
             }}
           />
@@ -441,19 +477,46 @@ export default function IoHistoryReport() {
 
       {detailRow ? (
         <DrillDownDialog
-          title={`Chi tiết giao dịch · ${detailRow.documentNo}`}
-          subtitle="Thông tin lấy từ lát cắt báo cáo đang hiển thị."
+          title={tUi("updatedUi.text_11e692fd1ec1", {
+            value0: String(detailRow.documentNo),
+          })}
+          subtitle={tUi("updatedUi.text_3244b982398e")}
           maxWidth="md"
           onClose={() => setDetailRow(null)}
         >
           <div className="rpt08-detail-grid">
             <dl>
-              <div><dt>Loại giao dịch</dt><dd><TypePill type={detailRow.type} /></dd></div>
-              <div><dt>Thời gian</dt><dd>{displayStamp(detailRow.timestamp)}</dd></div>
-              <div><dt>Đối tượng</dt><dd>{detailRow.objectPrimary} · {detailRow.objectSecondary}</dd></div>
-              <div><dt>Số lượng</dt><dd>{number(detailRow.quantity)}</dd></div>
-              <div><dt>Người thực hiện</dt><dd>{detailRow.actor}</dd></div>
-              <div><dt>Trạng thái</dt><dd>{detailRow.source?.status || "Đã ghi nhận"}</dd></div>
+              <div>
+                <dt>{tUi("updatedUi.text_94c1cbc6d405")}</dt>
+                <dd>
+                  <TypePill type={detailRow.type} />
+                </dd>
+              </div>
+              <div>
+                <dt>{tUi("inventory.movement.colTime")}</dt>
+                <dd>{displayStamp(detailRow.timestamp)}</dd>
+              </div>
+              <div>
+                <dt>{tUi("audit.colObject")}</dt>
+                <dd>
+                  {detailRow.objectPrimary} · {detailRow.objectSecondary}
+                </dd>
+              </div>
+              <div>
+                <dt>{tUi("dashboard.stockMix.colQuantity")}</dt>
+                <dd>{number(detailRow.quantity)}</dd>
+              </div>
+              <div>
+                <dt>{tUi("inventory.trace.colPerformedBy")}</dt>
+                <dd>{detailRow.actor}</dd>
+              </div>
+              <div>
+                <dt>{tUi("dashboard.composition.colStatus")}</dt>
+                <dd>
+                  {detailRow.source?.status ||
+                    tUi("warranty.componentIssueStatus.posted")}
+                </dd>
+              </div>
             </dl>
           </div>
         </DrillDownDialog>

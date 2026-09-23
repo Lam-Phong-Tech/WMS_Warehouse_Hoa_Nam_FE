@@ -18,6 +18,7 @@ import {
 import authMaskLight from "../assets/auth-v2-mask-light.png";
 import authLoginDesktop from "../assets/systemhn-auth01-desktop.jpg";
 import authSessionDesktop from "../assets/systemhn-auth02-desktop.jpg";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 export interface AuthShellProps {
   /** id của h1 — section aria-labelledby trỏ về đây (giữ hợp đồng a11y cũ). */
@@ -429,7 +430,7 @@ function BaselineAuthShell({
           >
             <Box>HOA NAM SCANNER</Box>
             <Box sx={{ fontWeight: 500 }}>
-              KẾT NỐI CON NGƯỜI - VẬN HÀNH HIỆU QUẢ
+              {tUi("updatedUi.text_ca2e59df2d03")}
             </Box>
           </Box>
         </Box>

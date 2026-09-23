@@ -59,6 +59,7 @@ import { ActionButton, RowActionButton } from "@/shared/components/actions";
 
 import { WarrantyListTable } from "@/modules/warranty/components/WarrantyListTable";
 import "./warranty-list.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const DETAIL_SCREENS = new Set(["WAR-03"]);
@@ -307,10 +308,10 @@ export default function WarrantyPage() {
       ["RETURNED", "RETURNED_TO_CUSTOMER", "CLOSED", "CANCELLED"].includes(
         row.status,
       )
-        ? "Chi tiết"
+        ? tUi("reports.importMatchReport.detail")
         : ["COMPLETED", "READY"].includes(row.status)
-          ? "Trả máy"
-          : "Cập nhật"}
+          ? tUi("updatedUi.text_532fdaffd860")
+          : tUi("updatedUi.text_5293d03c5908")}
     </RowActionButton>
   );
 
@@ -332,8 +333,8 @@ export default function WarrantyPage() {
 
         <header className="hn-war-header">
           <div>
-            <h1>Hồ sơ bảo hành</h1>
-            <p>Tiếp nhận, theo dõi xử lý và trả máy cho khách</p>
+            <h1>{tUi("notifications.subject.warrantyCase")}</h1>
+            <p>{tUi("updatedUi.text_35a49d741afd")}</p>
           </div>
           <div className="hn-war-header-actions">
             {" "}
@@ -347,7 +348,7 @@ export default function WarrantyPage() {
         <section className="hn-war-card" aria-labelledby="hn-war-list-title">
           <div className="hn-war-card-heading">
             <h2 id="hn-war-list-title">
-              Danh sách hồ sơ{" "}
+              {tUi("updatedUi.text_49ac5ad3c77e")}{" "}
               <span className="hn-war-count">
                 {listQuery.data
                   ? pagination.total.toLocaleString("vi-VN")
@@ -373,7 +374,9 @@ export default function WarrantyPage() {
           </div>
           <div className="hn-war-filters">
             <div className="hn-war-field hn-war-search">
-              <label htmlFor="hn-war-search">Tìm kiếm</label>{" "}
+              <label htmlFor="hn-war-search">
+                {tUi("reports.packingLabel.searchLabel")}
+              </label>{" "}
               <UiTextField
                 id="hn-war-search"
                 fullWidth
@@ -398,14 +401,16 @@ export default function WarrantyPage() {
               />
             </div>
             <div className="hn-war-field">
-              <label htmlFor="hn-war-status">Trạng thái</label>{" "}
+              <label htmlFor="hn-war-status">
+                {tUi("dashboard.composition.colStatus")}
+              </label>{" "}
               <UiSelect
                 id="hn-war-status"
                 fullWidth
                 menuClassName="hn-war-menu"
                 value={status}
                 aria-label={t("warranty.list.statusFilterAria")}
-                placeholder="Tất cả"
+                placeholder={tUi("dashboard.operations.filterAll")}
                 options={WARRANTY_BASELINE_STATUSES.map((value) => ({
                   value,
                   label: WARRANTY_STATUS_LABELS[value],
@@ -417,14 +422,16 @@ export default function WarrantyPage() {
               />
             </div>
             <div className="hn-war-field">
-              <label htmlFor="hn-war-identification">Nhận dạng</label>{" "}
+              <label htmlFor="hn-war-identification">
+                {tUi("updatedUi.text_717d850fc350")}
+              </label>{" "}
               <UiSelect
                 id="hn-war-identification"
                 fullWidth
                 menuClassName="hn-war-menu"
                 value={identification}
                 aria-label={t("warranty.list.identificationFilterAria")}
-                placeholder="Tất cả"
+                placeholder={tUi("dashboard.operations.filterAll")}
                 // UAT TC_FUNC_02: nhãn của ô lọc phải lấy từ ĐÚNG registry mà cột
                 // "Nhận diện" đang dùng. Bản trước gõ lại nhãn ở messages.ts nên ô
                 // lọc ghi "Đã xác định sản phẩm" còn cột ghi "Đã xác định" — người
@@ -440,14 +447,16 @@ export default function WarrantyPage() {
               />
             </div>
             <div className="hn-war-field">
-              <label htmlFor="hn-war-defect">Bệnh/lỗi</label>{" "}
+              <label htmlFor="hn-war-defect">
+                {tUi("warranty.list.colDefect")}
+              </label>{" "}
               <UiSelect
                 id="hn-war-defect"
                 fullWidth
                 menuClassName="hn-war-menu"
                 value={defectId}
                 aria-label={t("warranty.list.defectFilterAria")}
-                placeholder="Tất cả"
+                placeholder={tUi("dashboard.operations.filterAll")}
                 // Nhãn lựa chọn là "DEF-013 · Chập điện / cháy mô-tơ" — ô hẹp làm
                 // menu gãy dòng giữa tên bệnh/lỗi (phản hồi người dùng 07/09/2026).
                 options={[...(defectsQuery.data?.data ?? [])]
@@ -484,7 +493,7 @@ export default function WarrantyPage() {
                   void listQuery.refetch();
                 }}
               >
-                Áp dụng
+                {tUi("dashboard.snapshot.apply")}
               </button>
               <button
                 type="button"
@@ -499,7 +508,7 @@ export default function WarrantyPage() {
                   searchRef.current?.focus();
                 }}
               >
-                Đặt lại
+                {tUi("reports.packingLabel.reset")}
               </button>
             </div>
           </div>
@@ -531,12 +540,13 @@ export default function WarrantyPage() {
           <div className="hn-war-pagination">
             <div className="hn-war-pagination-info">
               <span>
-                Hiển thị{" "}
+                {tUi("putaway.queue.showing")}{" "}
                 {rows.length ? (pagination.current - 1) * perPage + 1 : 0} –{" "}
                 {rows.length
                   ? (pagination.current - 1) * perPage + rows.length
                   : 0}{" "}
-                / {pagination.total.toLocaleString("vi-VN")} hồ sơ
+                / {pagination.total.toLocaleString("vi-VN")}
+                {" " + tUi("reports.warrantyReport.tableUnit")}
               </span>{" "}
               <UiSelect
                 menuClassName="hn-war-menu"

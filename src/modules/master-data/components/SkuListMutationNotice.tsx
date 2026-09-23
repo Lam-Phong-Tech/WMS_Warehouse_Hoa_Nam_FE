@@ -1,5 +1,6 @@
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import "./sku-list-mutation-notice.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 export interface SkuListMutationNoticeValue {
   kind: "success" | "duplicate" | "failed" | "unknown";
@@ -25,34 +26,40 @@ export function SkuListMutationNotice({
   if (!notice) return null;
   const content = {
     success: {
-      title: english ? "SKU added successfully" : "Đã thêm SKU thành công",
+      title: english
+        ? "SKU added successfully"
+        : tUi("updatedUi.text_6c2636acef6b"),
       description: english
         ? `${notice.code} has been added to the catalog.`
-        : `${notice.code} đã được thêm vào danh mục.`,
-      action: english ? "Dismiss notification" : "Đóng thông báo",
+        : tUi("updatedUi.text_88cdc7c41433", { value0: String(notice.code) }),
+      action: english
+        ? "Dismiss notification"
+        : tUi("updatedUi.text_8af6ba927e1f"),
     },
     duplicate: {
-      title: english ? "SKU code already exists" : "Mã SKU đã tồn tại",
+      title: english
+        ? "SKU code already exists"
+        : tUi("updatedUi.text_e100305427de"),
       description: english
         ? `${notice.code} is already in the catalog. Please check before creating a new SKU.`
-        : `${notice.code} đã có trong danh mục. Vui lòng kiểm tra trước khi tạo mới.`,
-      action: english ? "Close" : "Đóng",
+        : tUi("updatedUi.text_a6a61dfcc0c9", { value0: String(notice.code) }),
+      action: english ? "Close" : tUi("common.close"),
     },
     failed: {
-      title: english ? "Unable to add SKU" : "Không thể thêm SKU",
+      title: english ? "Unable to add SKU" : tUi("updatedUi.text_dc7919efb154"),
       description: english
         ? "The information was not saved. Please try again."
-        : "Thông tin chưa được lưu. Vui lòng thử lại.",
-      action: english ? "Try again" : "Thử lại",
+        : tUi("updatedUi.text_18a738b00e9e"),
+      action: english ? "Try again" : tUi("common.retry"),
     },
     unknown: {
       title: english
         ? "SKU creation result is unknown"
-        : "Chưa xác định kết quả thêm SKU",
+        : tUi("updatedUi.text_53a48561f33c"),
       description: english
         ? "No confirmation was received from the system. Search for the SKU in the list before trying again to avoid duplicates."
-        : "Không nhận được xác nhận từ hệ thống. Hãy tìm mã SKU trong danh sách trước khi thử lại để tránh tạo trùng.",
-      action: english ? "Check the list" : "Kiểm tra danh sách",
+        : tUi("updatedUi.text_7133c366466e"),
+      action: english ? "Check the list" : tUi("updatedUi.text_fcbcf47fe1e3"),
     },
   }[notice.kind];
   const success = notice.kind === "success";

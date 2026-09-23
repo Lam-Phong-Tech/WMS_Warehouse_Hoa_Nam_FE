@@ -23,6 +23,7 @@ import {
   type StockReconcileRow,
 } from "./stock-reconcile-api";
 import "./stock-reconcile-report.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 type DateRange = { from: string; to: string };
 type Filters = DateRange & {
@@ -275,7 +276,9 @@ function KpiCard({
 function SkeletonReport() {
   return (
     <div className="rpt02-loading" role="status" aria-live="polite">
-      <span className="rpt02-sr-only">Đang tải báo cáo...</span>
+      <span className="rpt02-sr-only">
+        {tUi("updatedUi.text_e5895b543636")}
+      </span>
       <div className="rpt02-kpi-grid" aria-hidden="true">
         {Array.from({ length: 6 }, (_, index) => (
           <div className="rpt02-kpi rpt02-skeleton-card" key={index}>
@@ -385,7 +388,7 @@ function MovementChart({ points }: { points: FlowDailyPoint[] }) {
         <span className="rpt02-state__icon" aria-hidden="true">
           <Icon name="chart-column-big" />
         </span>
-        <p>Chưa có biến động trong khoảng thời gian này</p>
+        <p>{tUi("updatedUi.text_e4e185e125f3")}</p>
       </div>
     );
   }
@@ -452,7 +455,7 @@ function MovementChart({ points }: { points: FlowDailyPoint[] }) {
           <svg
             className="chart-svg rpt02-chart-svg"
             role="img"
-            aria-label="Biểu đồ biến động tồn kho theo ngày"
+            aria-label={tUi("updatedUi.text_9829ad21d404")}
             width={chartWidth}
             height={chartHeight}
             viewBox={`0 0 ${chartWidth} ${chartHeight}`}
@@ -554,7 +557,12 @@ function MovementChart({ points }: { points: FlowDailyPoint[] }) {
                     cy={pointY}
                     r="3"
                   >
-                    <title>{`${dayjs(point.date).format("DD/MM/YYYY")}: tồn ${quantity(point.closing)}`}</title>
+                    <title>
+                      {tUi("updatedUi.text_b61ca2400129", {
+                        value0: String(dayjs(point.date).format("DD/MM/YYYY")),
+                        value1: String(quantity(point.closing)),
+                      })}
+                    </title>
                   </circle>
                 </g>
               );
@@ -563,15 +571,15 @@ function MovementChart({ points }: { points: FlowDailyPoint[] }) {
         </div>
       </div>
       <details className="chart-table rpt02-chart-table">
-        <summary>Xem bảng dữ liệu</summary>
+        <summary>{tUi("updatedUi.text_fa612645bd64")}</summary>
         <div className="chart-table__body">
           <table>
             <thead>
               <tr>
-                <th>Ngày</th>
-                <th>Nhập</th>
-                <th>Xuất</th>
-                <th>Tồn cuối ngày</th>
+                <th>{tUi("dashboard.flow.colDate")}</th>
+                <th>{tUi("dashboard.snapshot.tooltipInbound")}</th>
+                <th>{tUi("dashboard.snapshot.tooltipOutbound")}</th>
+                <th>{tUi("dashboard.snapshot.closingStock")}</th>
               </tr>
             </thead>
             <tbody>
@@ -723,17 +731,17 @@ export default function StockReconcileReport() {
     if (!canExport || allRows.length === 0) return;
     exportXlsx(
       [
-        "Mã SKU",
-        "Tên hàng",
-        "Tồn đầu kỳ",
-        "Tổng nhập",
-        "Xuất sản phẩm",
-        "Xuất linh kiện BH",
-        "Hoàn tác",
-        "Tồn cuối kỳ",
-        "Tồn thực tế",
-        "Chênh lệch",
-        "Trạng thái",
+        tUi("inbound.skuInfo.fieldCode"),
+        tUi("inventory.balance.colName"),
+        tUi("dashboard.equation.opening"),
+        tUi("updatedUi.text_1993e3247f11"),
+        tUi("dashboard.equation.issueProduct"),
+        tUi("updatedUi.text_6d28e3f5d88a"),
+        tUi("iam.role.undo"),
+        tUi("dashboard.equation.closing"),
+        tUi("updatedUi.text_8c2153f1a52b"),
+        tUi("inventory.balance.colVariance"),
+        tUi("dashboard.composition.colStatus"),
       ],
       allRows.map((row) => [
         row.skuCode,
@@ -746,7 +754,9 @@ export default function StockReconcileReport() {
         row.closing,
         row.actual,
         row.delta,
-        row.mismatch ? "Cần kiểm tra" : "Khớp",
+        row.mismatch
+          ? tUi("reports.traceability.needsReview")
+          : tUi("reports.inventoryFlowReport.matched"),
       ]),
       `bao-cao-ton-kho-doi-soat-${applied.from}-${applied.to}`,
     );
@@ -772,11 +782,13 @@ export default function StockReconcileReport() {
           type="button"
           onClick={() => navigate(ROUTES.REPORTS_INVENTORY_FLOW)}
         >
-          Báo cáo
+          {tUi("reports.traceability.breadcrumbReports")}
         </button>
         <span>/</span>
         <strong>
-          {status === 404 ? "Không tìm thấy" : "Tồn kho & đối soát"}
+          {status === 404
+            ? tUi("updatedUi.text_438e5cde4a92")
+            : tUi("reports.stockReconcileReport.breadcrumbCurrent")}
         </strong>
       </nav>
 
@@ -791,22 +803,28 @@ export default function StockReconcileReport() {
           }
           title={
             status === 403
-              ? "Bạn không có quyền xem báo cáo này"
+              ? tUi("updatedUi.text_f30ab40e24a3")
               : status === 404
-                ? "Không tìm thấy báo cáo"
-                : "Báo cáo đang được bảo trì"
+                ? tUi("updatedUi.text_9ac737b89bc1")
+                : tUi("updatedUi.text_1f197c0b3e8c")
           }
           copy={
             status === 403
-              ? "Vui lòng liên hệ quản trị viên để được cấp quyền truy cập phù hợp."
+              ? tUi("updatedUi.text_cae47617a2e2")
               : status === 404
-                ? "Báo cáo bạn đang tìm không tồn tại hoặc đã được di chuyển."
-                : "Hệ thống đang nâng cấp báo cáo. Vui lòng quay lại sau ít phút."
+                ? tUi("updatedUi.text_6af51ff50143")
+                : tUi("updatedUi.text_76ba90c88790")
           }
-          code={status === 404 ? "Mã lỗi 404" : undefined}
-          primaryLabel={status === 503 ? "Kiểm tra lại" : "Về Tổng quan"}
+          code={status === 404 ? tUi("updatedUi.text_96537db5ddd9") : undefined}
+          primaryLabel={
+            status === 503
+              ? tUi("reverse.common.recheck")
+              : tUi("updatedUi.text_2864c6d3d5ee")
+          }
           onPrimary={status === 503 ? refresh : home}
-          secondaryLabel={status === 503 ? "Về Tổng quan" : undefined}
+          secondaryLabel={
+            status === 503 ? tUi("updatedUi.text_2864c6d3d5ee") : undefined
+          }
           onSecondary={status === 503 ? home : undefined}
           tone={
             status === 503 ? "warning" : status === 403 ? "danger" : "default"
@@ -816,16 +834,16 @@ export default function StockReconcileReport() {
         <>
           <header className="rpt02-heading">
             <div className="rpt02-heading__copy">
-              <h1 className="hn-report-page-title">Báo cáo Tồn kho &amp; đối soát</h1>
-              <p>Theo dõi biến động tồn kho và kiểm tra chênh lệch theo kỳ</p>
+              <h1 className="hn-report-page-title">
+                {tUi("updatedUi.text_4e7892be4a23")}
+              </h1>
+              <p>{tUi("updatedUi.text_cf3ca15cba35")}</p>
             </div>
             <div className="rpt02-heading__actions">
               <span
                 className="rpt02-tooltip"
                 data-tooltip={
-                  !canExport
-                    ? "Tài khoản chưa được cấp quyền xuất Excel"
-                    : undefined
+                  !canExport ? tUi("updatedUi.text_b363686f3815") : undefined
                 }
               >
                 <button
@@ -834,7 +852,8 @@ export default function StockReconcileReport() {
                   onClick={exportReport}
                   disabled={!canExport || allRows.length === 0 || updating}
                 >
-                  <Icon name="arrow-right" /> Xuất Excel
+                  <Icon name="arrow-right" />
+                  {" " + tUi("updatedUi.text_869645273267")}
                 </button>
               </span>
               <div className="rpt02-warehouse">
@@ -844,7 +863,8 @@ export default function StockReconcileReport() {
                 <div>
                   <strong>Kho Hoa Nam</strong>
                   <small>
-                    <i /> Đang hoạt động
+                    <i />
+                    {" " + tUi("dashboard.snapshot.warehouseActive")}
                   </small>
                 </div>
               </div>
@@ -855,12 +875,12 @@ export default function StockReconcileReport() {
             <aside className="rpt02-notice rpt02-notice--success" role="status">
               <span className="rpt02-notice__check" aria-hidden="true" />
               <div>
-                <strong>Đã cập nhật báo cáo</strong>
-                <p>Dữ liệu đã được làm mới.</p>
+                <strong>{tUi("updatedUi.text_5d0cd3a93731")}</strong>
+                <p>{tUi("updatedUi.text_d6c349552506")}</p>
               </div>
               <button
                 type="button"
-                aria-label="Đóng thông báo"
+                aria-label={tUi("updatedUi.text_8af6ba927e1f")}
                 onClick={() => setShowSuccess(false)}
               >
                 <Icon name="x" />
@@ -874,20 +894,20 @@ export default function StockReconcileReport() {
                 <Icon name="lock" />
               </span>
               <div>
-                <strong>Chế độ chỉ xem</strong>
-                <p>
-                  Bạn có quyền xem và tra cứu báo cáo. Tài khoản chưa được cấp
-                  quyền xuất Excel.
-                </p>
+                <strong>{tUi("updatedUi.text_4ce6445597cc")}</strong>
+                <p>{tUi("updatedUi.text_f4b806fda605")}</p>
               </div>
             </aside>
           ) : null}
 
-          <section className="rpt02-filter" aria-label="Bộ lọc báo cáo">
+          <section
+            className="rpt02-filter"
+            aria-label={tUi("reports.recipientAgency.filterTitle")}
+          >
             <label
               className={`rpt02-field rpt02-field--date${invalidRange ? " is-invalid" : ""}`}
             >
-              <span>Khoảng thời gian</span>
+              <span>{tUi("reports.packingLabel.dateRangeLabel")}</span>
               <UiVuexyDateRangePicker
                 className="rpt02-date-range"
                 popupClassName="rpt02-date-popup"
@@ -900,21 +920,21 @@ export default function StockReconcileReport() {
                   }))
                 }
                 maxDate={dayjs().startOf("day")}
-                aria-label="Khoảng thời gian báo cáo tồn kho"
+                aria-label={tUi("updatedUi.text_27bfb01971ac")}
                 disabled={updating || refreshing}
               />
               {invalidRange ? (
-                <small>Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.</small>
+                <small>{tUi("updatedUi.text_3e650f641d98")}</small>
               ) : null}
             </label>
 
             <div className="rpt02-field">
-              <span>Kho</span>
+              <span>{tUi("updatedUi.text_19c608bfa103")}</span>
               <UiSelect
                 fullWidth
-                aria-label="Kho"
+                aria-label={tUi("updatedUi.text_19c608bfa103")}
                 value={draft.warehouse}
-                placeholder="Tất cả kho"
+                placeholder={tUi("reports.inventoryFlow.warehouseAll")}
                 options={warehouseOptions.map((warehouse) => ({
                   value: warehouse,
                   label: warehouse,
@@ -927,15 +947,18 @@ export default function StockReconcileReport() {
             </div>
 
             <div className="rpt02-field">
-              <span>Nhóm hàng / SKU</span>
+              <span>{tUi("updatedUi.text_4967fc6e0793")}</span>
               <UiSelect
                 fullWidth
-                aria-label="Nhóm hàng / SKU"
+                aria-label={tUi("updatedUi.text_4967fc6e0793")}
                 value={draft.kind}
-                placeholder="Tất cả nhóm hàng"
+                placeholder={tUi("reports.stockReconcile.categoryAll")}
                 options={[
-                  { value: "PRODUCT", label: "Sản phẩm" },
-                  { value: "COMPONENT", label: "Linh kiện" },
+                  { value: "PRODUCT", label: tUi("dashboard.skuType.product") },
+                  {
+                    value: "COMPONENT",
+                    label: tUi("dashboard.skuType.component"),
+                  },
                 ]}
                 onChange={(kind) =>
                   setDraft((current) => ({ ...current, kind }))
@@ -945,15 +968,21 @@ export default function StockReconcileReport() {
             </div>
 
             <div className="rpt02-field">
-              <span>Trạng thái đối soát</span>
+              <span>{tUi("dashboard.equation.statusLabel")}</span>
               <UiSelect
                 fullWidth
-                aria-label="Trạng thái đối soát"
+                aria-label={tUi("dashboard.equation.statusLabel")}
                 value={draft.reconcile}
-                placeholder="Tất cả trạng thái"
+                placeholder={tUi("reports.inventoryFlow.statusAll")}
                 options={[
-                  { value: "MATCH", label: "Khớp" },
-                  { value: "MISMATCH", label: "Cần kiểm tra" },
+                  {
+                    value: "MATCH",
+                    label: tUi("reports.inventoryFlowReport.matched"),
+                  },
+                  {
+                    value: "MISMATCH",
+                    label: tUi("reports.traceability.needsReview"),
+                  },
                 ]}
                 onChange={(reconcile) =>
                   setDraft((current) => ({ ...current, reconcile }))
@@ -970,7 +999,7 @@ export default function StockReconcileReport() {
                 disabled={invalidRange || updating || refreshing}
               >
                 <Icon name={refreshing ? "loader-circle" : "search"} />
-                Áp dụng
+                {tUi("dashboard.snapshot.apply")}
               </button>
               <button
                 className="rpt02-button rpt02-button--ghost"
@@ -978,7 +1007,7 @@ export default function StockReconcileReport() {
                 onClick={resetFilters}
                 disabled={updating || refreshing}
               >
-                Đặt lại
+                {tUi("reports.packingLabel.reset")}
               </button>
             </div>
             <p className="rpt02-filter__note">
@@ -987,7 +1016,7 @@ export default function StockReconcileReport() {
                 1,
                 dayjs(applied.to).diff(dayjs(applied.from), "day") + 1,
               )}{" "}
-              ngày gần nhất · Múi giờ Việt Nam
+              {tUi("updatedUi.text_a0b12849189a")}
             </p>
           </section>
 
@@ -998,18 +1027,21 @@ export default function StockReconcileReport() {
               icon={status === 500 ? "triangle-alert" : "package-search"}
               title={
                 status === 500
-                  ? "Không thể xử lý yêu cầu báo cáo"
-                  : "Không thể tải báo cáo"
+                  ? tUi("updatedUi.text_07cd0352843d")
+                  : tUi("updatedUi.text_c1e574adfa82")
               }
               copy={
                 status === 500
-                  ? "Máy chủ gặp sự cố khi xử lý dữ liệu. Vui lòng thử lại sau."
-                  : "Đã xảy ra lỗi khi tải dữ liệu. Kiểm tra kết nối và thử lại."
+                  ? tUi("updatedUi.text_4ce9c8ec1759")
+                  : tUi("updatedUi.text_dfbc3676b189")
               }
               code={
                 status === 500
-                  ? "Mã lỗi 500"
-                  : `Kỳ yêu cầu: ${dayjs(applied.from).format("DD/MM/YYYY")} – ${dayjs(applied.to).format("DD/MM/YYYY")}`
+                  ? tUi("updatedUi.text_81a0db148499")
+                  : tUi("updatedUi.text_76db1ce5d436", {
+                      value0: String(dayjs(applied.from).format("DD/MM/YYYY")),
+                      value1: String(dayjs(applied.to).format("DD/MM/YYYY")),
+                    })
               }
               primaryLabel="Thử lại"
               onPrimary={refresh}
@@ -1020,7 +1052,7 @@ export default function StockReconcileReport() {
           ) : allRows.length === 0 ? (
             <EmptyState
               icon="inbox"
-              title="Chưa có dữ liệu trong khoảng thời gian này"
+              title={tUi("updatedUi.text_4aac0d04366a")}
               copy="Chưa phát sinh giao dịch tồn kho phù hợp với bộ lọc đã chọn."
               code={`${dayjs(applied.from).format("DD/MM/YYYY")} – ${dayjs(applied.to).format("DD/MM/YYYY")}`}
               primaryLabel="Đổi khoảng thời gian"
@@ -1036,48 +1068,50 @@ export default function StockReconcileReport() {
             />
           ) : (
             <>
-              <h2 className="rpt02-sr-only">Kiểm soát lượng khả dụng</h2>
+              <h2 className="rpt02-sr-only">
+                {tUi("reports.stockReconcileReport.normTitle")}
+              </h2>
               <section
                 className="rpt02-kpi-grid"
-                aria-label="Tổng quan tồn kho"
+                aria-label={tUi("updatedUi.text_c4cc87e118cc")}
               >
                 <KpiCard
-                  label="Tồn đầu kỳ"
+                  label={tUi("dashboard.equation.opening")}
                   value={quantity(summary.opening)}
                   note="Sản phẩm"
                   icon="box"
                   tone="blue"
                 />
                 <KpiCard
-                  label="Tổng nhập"
+                  label={tUi("updatedUi.text_1993e3247f11")}
                   value={signed(summary.receiptNet)}
                   note="Sản phẩm"
                   icon="down"
                   tone="green"
                 />
                 <KpiCard
-                  label="Xuất sản phẩm"
+                  label={tUi("dashboard.equation.issueProduct")}
                   value={signed(-summary.issueNet)}
                   note="Sản phẩm"
                   icon="up"
                   tone="red"
                 />
                 <KpiCard
-                  label="Xuất linh kiện BH"
+                  label={tUi("updatedUi.text_6d28e3f5d88a")}
                   value={signed(-summary.componentNet)}
                   note="Sản phẩm"
                   icon="wrench"
                   tone="orange"
                 />
                 <KpiCard
-                  label="Hoàn tác"
+                  label={tUi("iam.role.undo")}
                   value={signed(summary.reversalUnlinked)}
                   note="Sản phẩm"
                   icon="undo"
                   tone="green"
                 />
                 <KpiCard
-                  label="Tồn cuối kỳ"
+                  label={tUi("dashboard.equation.closing")}
                   value={quantity(summary.closing)}
                   note="Sản phẩm"
                   icon="boxes"
@@ -1089,24 +1123,28 @@ export default function StockReconcileReport() {
                 <article className="rpt02-panel chart-card rpt02-chart-card">
                   <header className="rpt02-panel__head">
                     <div>
-                      <h2>Biến động tồn kho</h2>
+                      <h2>{tUi("updatedUi.text_0edf72dbef9f")}</h2>
                       <p>
                         {dayjs(applied.from).format("DD/MM")} –{" "}
-                        {dayjs(applied.to).format("DD/MM/YYYY")} · Đơn vị tồn
+                        {dayjs(applied.to).format("DD/MM/YYYY")}
+                        {" " + tUi("updatedUi.text_ebfa6fb72c56")}
                       </p>
                     </div>
-                    <div className="rpt02-legend" aria-label="Chú giải biểu đồ">
+                    <div
+                      className="rpt02-legend"
+                      aria-label={tUi("dashboard.snapshot.chartLegendAria")}
+                    >
                       <span>
                         <i className="is-green" />
-                        Nhập
+                        {tUi("dashboard.snapshot.tooltipInbound")}
                       </span>
                       <span>
                         <i className="is-orange" />
-                        Xuất SP
+                        {tUi("dashboard.flow.issueProduct")}
                       </span>
                       <span>
                         <i className="is-blue" />
-                        Tồn cuối ngày
+                        {tUi("dashboard.snapshot.closingStock")}
                       </span>
                     </div>
                   </header>
@@ -1116,21 +1154,21 @@ export default function StockReconcileReport() {
                 <article className="rpt02-panel rpt02-reconcile">
                   <header className="rpt02-panel__head">
                     <div>
-                      <h2>Đối soát cuối kỳ</h2>
+                      <h2>{tUi("updatedUi.text_d76c6dc86895")}</h2>
                       <p>{dayjs(applied.to).format("DD/MM/YYYY")}</p>
                     </div>
                   </header>
                   <dl className="rpt02-reconcile__totals">
                     <div>
-                      <dt>Tồn hệ thống</dt>
+                      <dt>{tUi("updatedUi.text_37a49b4e2cd9")}</dt>
                       <dd>{quantity(systemTotal)}</dd>
                     </div>
                     <div>
-                      <dt>Tồn thực tế</dt>
+                      <dt>{tUi("updatedUi.text_8c2153f1a52b")}</dt>
                       <dd>{quantity(actualTotal)}</dd>
                     </div>
                     <div className={deltaTotal === 0 ? "is-ok" : "is-warning"}>
-                      <dt>Chênh lệch</dt>
+                      <dt>{tUi("inventory.balance.colVariance")}</dt>
                       <dd>{signed(deltaTotal)}</dd>
                     </div>
                     <div
@@ -1138,21 +1176,32 @@ export default function StockReconcileReport() {
                         mismatches.length === 0 ? "is-ok" : "is-warning"
                       }
                     >
-                      <dt>{mismatches.length} SKU cần kiểm tra</dt>
+                      <dt>
+                        {mismatches.length}
+                        {" " + tUi("updatedUi.text_a0c43686230e")}
+                      </dt>
                       <dd className="rpt02-reconcile__formula">
-                        Thực tế − Hệ thống
+                        {tUi("updatedUi.text_5b6efbe321b1")}
                       </dd>
                     </div>
                   </dl>
 
                   {mismatches.length > 0 ? (
                     <div className="rpt02-contract-table" aria-hidden="true">
-                      <table aria-label="SKU cần làm rõ">
+                      <table
+                        aria-label={tUi(
+                          "reports.stockReconcileReport.varianceCardTitle",
+                        )}
+                      >
                         <thead>
                           <tr>
                             <th>SKU</th>
-                            <th>Lệch ở</th>
-                            <th>Chênh lệch</th>
+                            <th>
+                              {tUi(
+                                "reports.stockReconcileReport.colMismatchAt",
+                              )}
+                            </th>
+                            <th>{tUi("inventory.balance.colVariance")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1169,35 +1218,37 @@ export default function StockReconcileReport() {
                   ) : null}
 
                   <div className="rpt02-reconcile__list">
-                    <strong>Chi tiết biến động</strong>
+                    <strong>
+                      {tUi("inventory.trace.movementDetailTitle")}
+                    </strong>
                     <span>
-                      <i>Tồn đầu</i>
+                      <i>{tUi("reports.inventoryFlow.opening")}</i>
                       <b>{quantity(summary.opening)}</b>
                     </span>
                     <span>
-                      <i>Nhập</i>
+                      <i>{tUi("dashboard.snapshot.tooltipInbound")}</i>
                       <b className="is-positive">
                         {signed(summary.receiptNet)}
                       </b>
                     </span>
                     <span>
-                      <i>Xuất SP</i>
+                      <i>{tUi("dashboard.flow.issueProduct")}</i>
                       <b className="is-negative">{signed(-summary.issueNet)}</b>
                     </span>
                     <span>
-                      <i>Xuất BH</i>
+                      <i>{tUi("updatedUi.text_8a6c35e57da8")}</i>
                       <b className="is-negative">
                         {signed(-summary.componentNet)}
                       </b>
                     </span>
                     <span>
-                      <i>Hoàn tác</i>
+                      <i>{tUi("iam.role.undo")}</i>
                       <b className="is-positive">
                         {signed(summary.reversalUnlinked)}
                       </b>
                     </span>
                     <span>
-                      <i>Tồn cuối</i>
+                      <i>{tUi("reports.inventoryFlow.closing")}</i>
                       <b>{quantity(summary.closing)}</b>
                     </span>
                   </div>
@@ -1206,7 +1257,8 @@ export default function StockReconcileReport() {
                     type="button"
                     onClick={goToMismatches}
                   >
-                    Xem SKU cần kiểm tra <Icon name="arrow-right" />
+                    {tUi("updatedUi.text_35d391efde06") + " "}
+                    <Icon name="arrow-right" />
                   </button>
                 </article>
 
@@ -1216,10 +1268,14 @@ export default function StockReconcileReport() {
                 >
                   <header className="rpt02-table-card__head">
                     <div>
-                      <h2>Chi tiết tồn kho &amp; đối soát</h2>
+                      <h2>{tUi("updatedUi.text_600fdcecb8cf")}</h2>
                       <p>
-                        {allRows.length} SKU trong kỳ ·{" "}
-                        <span>{mismatches.length} SKU lệch</span>
+                        {allRows.length}
+                        {" " + tUi("updatedUi.text_df80f0002f7f")}{" "}
+                        <span>
+                          {mismatches.length}
+                          {" " + tUi("updatedUi.text_8a002dbc4912")}
+                        </span>
                       </p>
                     </div>
                     <SearchInput
@@ -1229,8 +1285,8 @@ export default function StockReconcileReport() {
                         setPage(1);
                       }}
                       width="100%"
-                      aria-label="Tìm theo mã hoặc tên SKU"
-                      placeholder="Tìm mã hoặc tên SKU..."
+                      aria-label={tUi("updatedUi.text_48f97b02abf5")}
+                      placeholder={tUi("updatedUi.text_902e57d8df5b")}
                     />
                   </header>
 
@@ -1239,14 +1295,14 @@ export default function StockReconcileReport() {
                       <span className="rpt02-state__icon" aria-hidden="true">
                         <Icon name="search" />
                       </span>
-                      <h3>Không tìm thấy SKU phù hợp</h3>
-                      <p>Thử từ khóa khác hoặc xóa nội dung tìm kiếm.</p>
+                      <h3>{tUi("updatedUi.text_6537d7653abe")}</h3>
+                      <p>{tUi("updatedUi.text_a39e88670393")}</p>
                       <button
                         className="rpt02-button rpt02-button--ghost"
                         type="button"
                         onClick={() => setQuery("")}
                       >
-                        Xóa tìm kiếm
+                        {tUi("updatedUi.text_816c89e8e46b")}
                       </button>
                     </div>
                   ) : (
@@ -1256,16 +1312,30 @@ export default function StockReconcileReport() {
                           <thead>
                             <tr>
                               <th>SKU</th>
-                              <th>Tên hàng</th>
-                              <th className="num">Tồn đầu</th>
-                              <th className="num">Nhập</th>
-                              <th className="num">Xuất SP</th>
-                              <th className="num">Xuất LK BH</th>
-                              <th className="num">Hoàn tác</th>
-                              <th className="num">Tồn cuối</th>
-                              <th className="num">Thực tế</th>
-                              <th className="num">Chênh lệch</th>
-                              <th>Đối soát</th>
+                              <th>{tUi("inventory.balance.colName")}</th>
+                              <th className="num">
+                                {tUi("reports.inventoryFlow.opening")}
+                              </th>
+                              <th className="num">
+                                {tUi("dashboard.snapshot.tooltipInbound")}
+                              </th>
+                              <th className="num">
+                                {tUi("dashboard.flow.issueProduct")}
+                              </th>
+                              <th className="num">
+                                {tUi("updatedUi.text_68330ddddb9a")}
+                              </th>
+                              <th className="num">{tUi("iam.role.undo")}</th>
+                              <th className="num">
+                                {tUi("reports.inventoryFlow.closing")}
+                              </th>
+                              <th className="num">
+                                {tUi("dashboard.trend.chipActual")}
+                              </th>
+                              <th className="num">
+                                {tUi("inventory.balance.colVariance")}
+                              </th>
+                              <th>{tUi("inventory.balance.colReconcile")}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1275,11 +1345,14 @@ export default function StockReconcileReport() {
                                   <strong>{row.skuCode}</strong>
                                   <small>
                                     {row.kind === "COMPONENT"
-                                      ? "Linh kiện"
-                                      : "Sản phẩm"}
+                                      ? tUi("dashboard.skuType.component")
+                                      : tUi("dashboard.skuType.product")}
                                   </small>
                                 </td>
-                                <td>{row.skuName || "Chưa có tên hàng"}</td>
+                                <td>
+                                  {row.skuName ||
+                                    tUi("updatedUi.text_056cae173528")}
+                                </td>
                                 <td className="num">{quantity(row.opening)}</td>
                                 <td className="num is-positive">
                                   {signed(row.inbound)}
@@ -1304,7 +1377,11 @@ export default function StockReconcileReport() {
                                   <span
                                     className={`rpt02-row-status${row.mismatch ? " is-warning" : ""}`}
                                   >
-                                    {row.mismatch ? "Cần kiểm tra" : "Khớp"}
+                                    {row.mismatch
+                                      ? tUi("reports.traceability.needsReview")
+                                      : tUi(
+                                          "reports.inventoryFlowReport.matched",
+                                        )}
                                   </span>
                                   {row.checks.length > 0 ? (
                                     <span className="rpt02-checks">
@@ -1319,7 +1396,8 @@ export default function StockReconcileReport() {
                       </div>
                       <footer className="rpt02-pagination hn-report-pagination-footer">
                         <span>
-                          Hiển thị {(currentPage - 1) * PAGE_SIZE + 1}–
+                          {tUi("putaway.queue.showing") + " "}
+                          {(currentPage - 1) * PAGE_SIZE + 1}–
                           {Math.min(
                             currentPage * PAGE_SIZE,
                             filteredRows.length,
@@ -1329,7 +1407,9 @@ export default function StockReconcileReport() {
                         <div className="hn-report-pagination">
                           <button
                             type="button"
-                            aria-label="Trang trước"
+                            aria-label={tUi(
+                              "reports.traceability.previousPage",
+                            )}
                             onClick={() =>
                               setPage((value) => Math.max(1, value - 1))
                             }

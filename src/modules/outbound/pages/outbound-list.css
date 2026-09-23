@@ -1030,14 +1030,14 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
     margin-bottom: 5px;
   }
   .hn-outbound-recipient-cell::before {
-    content: "Người nhận: ";
+    content: var(--hn-translated-content-7, "Người nhận: ");
     color: var(--out-muted);
   }
   .hn-outbound-date::before {
-    content: "Ngày tạo: ";
+    content: var(--hn-translated-content-8, "Ngày tạo: ");
   }
   .hn-outbound-note::before {
-    content: "Ghi chú: ";
+    content: var(--hn-translated-content-9, "Ghi chú: ");
   }
   .hn-outbound-status-cell {
     max-width: 115px;
@@ -1140,4 +1140,10 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   .MuiAutocomplete-noOptions {
   color: var(--out-muted);
   font-size: 14px;
+}
+
+:root:lang(en) {
+  --hn-translated-content-7: "Recipient: ";
+  --hn-translated-content-8: "Created on: ";
+  --hn-translated-content-9: "Note: ";
 }

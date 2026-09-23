@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import type { IoDocType, IoHistoryRow } from "../io-history-api";
 import { ISO_DATE } from "../io-history-api";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 export type PreviewState =
   | "loading"
@@ -152,7 +153,9 @@ export function displayDay(value: string): string {
 export function displayAsOf(value: string, demo: boolean): string {
   if (demo) return "10/09/2026 · 16:45";
   const parsed = dayjs(value);
-  return parsed.isValid() ? parsed.format("DD/MM/YYYY · HH:mm") : "gần nhất";
+  return parsed.isValid()
+    ? parsed.format("DD/MM/YYYY · HH:mm")
+    : tUi("updatedUi.text_b495069027b3");
 }
 
 export function compactRange(from: string, to: string): string {
@@ -166,7 +169,8 @@ export function compactRange(from: string, to: string): string {
 }
 
 function parseObject(row: IoHistoryRow): [string, string] {
-  const firstSku = row.skuLines.find((line) => line.trim() !== "")?.trim() ?? "";
+  const firstSku =
+    row.skuLines.find((line) => line.trim() !== "")?.trim() ?? "";
   if (firstSku) {
     const separators = [" · ", " - ", " | "];
     for (const separator of separators) {
@@ -262,7 +266,9 @@ export function makeDemoRows(): HistoryRow[] {
       const target = type === "INBOUND" ? day.inbound : day.outbound;
       const used = day.key === "2026-09-10" ? usedOnLastDay[type] : 0;
       const remaining = Math.max(0, target - used);
-      const start = dayjs(`${day.key}T${day.key === "2026-09-10" ? "13:30" : "18:00"}:00+07:00`);
+      const start = dayjs(
+        `${day.key}T${day.key === "2026-09-10" ? "13:30" : "18:00"}:00+07:00`,
+      );
       for (let index = 0; index < remaining; index += 1) {
         const [objectPrimary, objectSecondary] =
           DEMO_OBJECTS[(sequence + index) % DEMO_OBJECTS.length];
@@ -274,7 +280,8 @@ export function makeDemoRows(): HistoryRow[] {
           type,
           objectPrimary,
           objectSecondary,
-          quantity: DEMO_QUANTITIES[(sequence + index) % DEMO_QUANTITIES.length],
+          quantity:
+            DEMO_QUANTITIES[(sequence + index) % DEMO_QUANTITIES.length],
           actor: DEMO_ACTORS[(sequence + index) % DEMO_ACTORS.length],
         });
         sequence += 1;
@@ -283,7 +290,8 @@ export function makeDemoRows(): HistoryRow[] {
   }
 
   return rows.sort(
-    (left, right) => dayjs(right.timestamp).valueOf() - dayjs(left.timestamp).valueOf(),
+    (left, right) =>
+      dayjs(right.timestamp).valueOf() - dayjs(left.timestamp).valueOf(),
   );
 }
 
@@ -300,7 +308,11 @@ function daysInRange(from: string, to: string): string[] {
   return result;
 }
 
-export function buildDaily(rows: HistoryRow[], from: string, to: string): DailyMovement[] {
+export function buildDaily(
+  rows: HistoryRow[],
+  from: string,
+  to: string,
+): DailyMovement[] {
   const keys = daysInRange(from, to);
   const counts = new Map<string, { inbound: number; outbound: number }>();
   for (const key of keys) counts.set(key, { inbound: 0, outbound: 0 });

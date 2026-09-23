@@ -33,6 +33,7 @@ import {
   text,
 } from "@/modules/reports/operations/report-format";
 import { useT } from "@/shared/i18n/useT";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const C = {
   navy: "var(--ops-heading)",
@@ -104,9 +105,9 @@ function mapStatus(value: string): UiStatus {
 }
 
 function labelOf(status: UiStatus): string {
-  if (status === "complete") return "Hoàn tất";
-  if (status === "waiting") return "Chờ tiếp nhận";
-  return "Đang xử lý";
+  if (status === "complete") return tUi("iam.permissionAction.post");
+  if (status === "waiting") return tUi("updatedUi.text_d3db3ce66df9");
+  return tUi("dashboard.snapshot.stateProcessing");
 }
 
 function normalizeRows(payload: unknown): UiRow[] {
@@ -315,7 +316,9 @@ function StatusPill({ row }: { row: UiRow }) {
       </Box>
       {row.overdueDays > 0 ? (
         <Box sx={{ color: C.red, fontSize: 10.5 }}>
-          Quá hạn {row.overdueDays} ngày
+          {tUi("dashboard.snapshot.stateOverdue") + " "}
+          {row.overdueDays}
+          {" " + tUi("reports.agencyComparison.unitDay")}
         </Box>
       ) : null}
     </Box>
@@ -341,17 +344,17 @@ function EmptyState({ noResult }: { noResult: boolean }) {
         ) : null}
         <Box sx={{ color: C.navy, fontSize: 19, fontWeight: 800 }}>
           {noResult
-            ? "Không tìm thấy phiếu phù hợp"
-            : "Chưa có dữ liệu bảo hành"}
+            ? tUi("updatedUi.text_8a0dfd2bc403")
+            : tUi("updatedUi.text_e1e7a06bd009")}
         </Box>
         <Box sx={{ mt: 0.55, color: C.muted, fontSize: 13 }}>
           {noResult
-            ? "Thử thay đổi từ khóa hoặc bộ lọc."
-            : "Không có phiếu bảo hành trong khoảng thời gian đã chọn."}
+            ? tUi("updatedUi.text_3bbb177609bb")
+            : tUi("updatedUi.text_eeffc0b6b7ba")}
         </Box>
         {!noResult ? (
           <Box sx={{ mt: 0.2, color: C.muted, fontSize: 13 }}>
-            Thay đổi khoảng thời gian hoặc dùng Đặt lại ở bộ lọc.
+            {tUi("updatedUi.text_cde9d2ff0b9b")}
           </Box>
         ) : null}
       </Box>
@@ -395,16 +398,18 @@ function FailurePanel({
           {offline ? <SyncOutlined /> : <WarningOutlined />}
         </Box>
         <Box sx={{ color: C.navy, fontSize: 25, fontWeight: 800 }}>
-          {offline ? "Không có kết nối mạng" : "Không thể tải dữ liệu"}
+          {offline
+            ? tUi("updatedUi.text_ce0ba8d55ff5")
+            : tUi("dashboard.alert.failedBadge")}
         </Box>
         <Box sx={{ mt: 0.55, color: C.muted, fontSize: 14 }}>
           {offline
-            ? "Kiểm tra kết nối và thử lại."
-            : "Đã xảy ra lỗi khi tải báo cáo. Vui lòng thử lại."}
+            ? tUi("updatedUi.text_3ad5d030ccde")
+            : tUi("updatedUi.text_746ce26e0f2a")}
         </Box>
         {!offline ? (
           <UiButton appearance="filled" sx={{ mt: 1.8 }} onClick={retry}>
-            Thử lại
+            {tUi("common.retry")}
           </UiButton>
         ) : null}
       </Box>
@@ -628,7 +633,7 @@ export default function WarrantyComponentsReport() {
       >
         <Box sx={{ minWidth: 0 }}>
           <Box sx={{ color: C.muted, fontSize: 12, fontWeight: 600 }}>
-            Báo cáo&nbsp;&nbsp;/&nbsp;&nbsp;Bảo hành linh kiện
+            {tUi("updatedUi.text_a274c3357d1a")}
           </Box>
           <Box
             component="h1"
@@ -643,7 +648,7 @@ export default function WarrantyComponentsReport() {
               fontWeight: 700,
             }}
           >
-            Báo cáo Bảo hành linh kiện
+            {tUi("updatedUi.text_cec73d47ebd3")}
           </Box>
           <Box
             sx={{
@@ -653,7 +658,7 @@ export default function WarrantyComponentsReport() {
               lineHeight: 1.3,
             }}
           >
-            Theo dõi tiến độ bảo hành, linh kiện thay thế và tình trạng xử lý
+            {tUi("updatedUi.text_af670993f5f4")}
           </Box>
         </Box>
         <Stack
@@ -671,20 +676,20 @@ export default function WarrantyComponentsReport() {
             disabled={invalid || loading || offline}
             onClick={exportXlsx}
           >
-            {exporting ? "Đang chuẩn bị..." : "Xuất báo cáo"}
+            {exporting
+              ? tUi("outbound.detail.preparing")
+              : tUi("reports.traceability.exportReport")}
           </UiButton>
         </Stack>
       </Stack>
 
       {offline ? (
-        <UiAlert tone="warning">
-          Bạn đang ngoại tuyến. Không thể tải dữ liệu mới.
-        </UiAlert>
+        <UiAlert tone="warning">{tUi("updatedUi.text_793312837e7f")}</UiAlert>
       ) : null}
 
       <Box
         component="section"
-        aria-label="Bộ lọc báo cáo"
+        aria-label={tUi("reports.recipientAgency.filterTitle")}
         sx={{ ...surface, p: { xs: 1.25, sm: 1.5 } }}
       >
         <Box
@@ -700,9 +705,11 @@ export default function WarrantyComponentsReport() {
           }}
         >
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>Khoảng thời gian</FilterLabel>
+            <FilterLabel>
+              {tUi("reports.packingLabel.dateRangeLabel")}
+            </FilterLabel>
             <UiVuexyDateRangePicker
-              aria-label="Khoảng thời gian"
+              aria-label={tUi("reports.packingLabel.dateRangeLabel")}
               value={range}
               format="DD/MM/YYYY"
               allowClear={false}
@@ -724,12 +731,12 @@ export default function WarrantyComponentsReport() {
               }}
             >
               {invalid
-                ? "Ngày bắt đầu không được sau ngày kết thúc."
-                : "7 ngày gần nhất  ·  Múi giờ Việt Nam"}
+                ? tUi("dashboard.dateError.order")
+                : tUi("updatedUi.text_1af3943a0084")}
             </Box>
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>Kho</FilterLabel>
+            <FilterLabel>{tUi("updatedUi.text_19c608bfa103")}</FilterLabel>
             <Box
               aria-label="Kho Hoa Nam"
               sx={{
@@ -749,29 +756,32 @@ export default function WarrantyComponentsReport() {
             </Box>
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>Trạng thái</FilterLabel>
+            <FilterLabel>{tUi("dashboard.composition.colStatus")}</FilterLabel>
             <UiSelect
               fullWidth
-              aria-label="Trạng thái"
+              aria-label={tUi("dashboard.composition.colStatus")}
               value={status}
-              placeholder="Tất cả"
+              placeholder={tUi("dashboard.operations.filterAll")}
               menuClassName="rpt06-select-menu"
               searchable={false}
               onChange={setStatus}
               options={[
-                { value: "complete", label: "Hoàn tất" },
-                { value: "processing", label: "Đang xử lý" },
-                { value: "waiting", label: "Chờ tiếp nhận" },
+                { value: "complete", label: tUi("iam.permissionAction.post") },
+                {
+                  value: "processing",
+                  label: tUi("dashboard.snapshot.stateProcessing"),
+                },
+                { value: "waiting", label: tUi("updatedUi.text_d3db3ce66df9") },
               ]}
             />
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>Tìm kiếm</FilterLabel>
+            <FilterLabel>{tUi("reports.packingLabel.searchLabel")}</FilterLabel>
             <SearchInput
               width="100%"
               value={keyword}
-              aria-label="Tìm mã phiếu, serial, SKU, linh kiện"
-              placeholder="Mã phiếu, serial, SKU, linh kiện..."
+              aria-label={tUi("updatedUi.text_b9892e42c46b")}
+              placeholder={tUi("updatedUi.text_71da4c0795f3")}
               onChange={(value) => setKeyword(value)}
             />
           </Box>
@@ -780,32 +790,31 @@ export default function WarrantyComponentsReport() {
             disabled={invalid || loading}
             onClick={() => pagination.reset()}
           >
-            Áp dụng
+            {tUi("dashboard.snapshot.apply")}
           </UiButton>
           <UiButton appearance="text" onClick={resetFilters}>
-            Đặt lại
+            {tUi("reports.packingLabel.reset")}
           </UiButton>
         </Box>
 
         {exporting ? (
           <Box sx={{ mt: 0.75 }}>
-            <UiAlert tone="info">Đang chuẩn bị dữ liệu xuất báo cáo.</UiAlert>
+            <UiAlert tone="info">{tUi("updatedUi.text_c4136b7b0b71")}</UiAlert>
           </Box>
         ) : exportFailed ? (
           <Box sx={{ mt: 0.75 }}>
-            <UiAlert tone="error">
-              Không thể xuất báo cáo. Vui lòng thử lại.
-            </UiAlert>
+            <UiAlert tone="error">{tUi("updatedUi.text_f2af03f694e3")}</UiAlert>
           </Box>
         ) : exportSuccess ? (
           <Box sx={{ mt: 0.75 }}>
-            <UiAlert tone="success">Xuất báo cáo thành công.</UiAlert>
+            <UiAlert tone="success">
+              {tUi("updatedUi.text_a808b9e33648")}
+            </UiAlert>
           </Box>
         ) : exportUnknown ? (
           <Box sx={{ mt: 0.75 }}>
             <UiAlert tone="warning">
-              Chưa xác định trạng thái xuất báo cáo. Hệ thống đang kiểm tra kết
-              quả.
+              {tUi("updatedUi.text_4d900e9a46cd")}
             </UiAlert>
           </Box>
         ) : null}
@@ -816,12 +825,14 @@ export default function WarrantyComponentsReport() {
       ) : (
         <>
           {partial ? (
-            <UiAlert tone="warning">Dữ liệu có thể chưa đầy đủ</UiAlert>
+            <UiAlert tone="warning">
+              {tUi("updatedUi.text_3349b06e35cf")}
+            </UiAlert>
           ) : null}
 
           <Box
             component="section"
-            aria-label="Tổng quan vận hành"
+            aria-label={tUi("dashboard.title")}
             sx={{
               display: "grid",
               gridTemplateColumns: {
@@ -833,7 +844,7 @@ export default function WarrantyComponentsReport() {
             }}
           >
             <MetricCard
-              label="Tổng phiếu"
+              label={tUi("updatedUi.text_2d173f0e4679")}
               value={fmt(rows.length)}
               hint="Phiếu trong kỳ"
               tone="primary"
@@ -841,25 +852,37 @@ export default function WarrantyComponentsReport() {
               loading={loading}
             />
             <MetricCard
-              label="Hoàn tất"
+              label={tUi("iam.permissionAction.post")}
               value={fmt(complete)}
-              hint={pct(complete, rows.length) + " tổng phiếu"}
+              hint={
+                pct(complete, rows.length) +
+                " " +
+                tUi("updatedUi.text_9871199f609c")
+              }
               tone="success"
               icon={<CheckCircleOutlined />}
               loading={loading}
             />
             <MetricCard
-              label="Đang xử lý"
+              label={tUi("dashboard.snapshot.stateProcessing")}
               value={fmt(processing)}
-              hint={pct(processing, rows.length) + " tổng phiếu"}
+              hint={
+                pct(processing, rows.length) +
+                " " +
+                tUi("updatedUi.text_9871199f609c")
+              }
               tone="info"
               icon={<SyncOutlined />}
               loading={loading}
             />
             <MetricCard
-              label="Chờ tiếp nhận"
+              label={tUi("updatedUi.text_d3db3ce66df9")}
               value={fmt(waiting)}
-              hint={pct(waiting, rows.length) + " tổng phiếu"}
+              hint={
+                pct(waiting, rows.length) +
+                " " +
+                tUi("updatedUi.text_9871199f609c")
+              }
               tone="warning"
               icon={<ReloadOutlined />}
               loading={loading}
@@ -886,7 +909,7 @@ export default function WarrantyComponentsReport() {
                     component="h2"
                     sx={{ m: 0, color: C.navy, fontSize: 18, fontWeight: 600 }}
                   >
-                    Tiến độ bảo hành
+                    {tUi("updatedUi.text_39e4ce8fcc3c")}
                   </Box>
                   {refreshing ? (
                     <Stack
@@ -898,8 +921,8 @@ export default function WarrantyComponentsReport() {
                         fontSize: 11.5,
                       }}
                     >
-                      <UiSpinner size={15} label={null} /> Đang cập nhật dữ
-                      liệu...
+                      <UiSpinner size={15} label={null} />
+                      {" " + tUi("updatedUi.text_0c576314af49")}
                     </Stack>
                   ) : partial ? (
                     <Box
@@ -913,7 +936,7 @@ export default function WarrantyComponentsReport() {
                         fontWeight: 700,
                       }}
                     >
-                      Chưa cập nhật
+                      {tUi("updatedUi.text_ebc5a4d489c7")}
                     </Box>
                   ) : null}
                 </Stack>
@@ -936,14 +959,15 @@ export default function WarrantyComponentsReport() {
                         fontSize: 13,
                       }}
                     >
-                      <WarningOutlined /> Không thể cập nhật tiến độ bảo hành.
+                      <WarningOutlined />
+                      {" " + tUi("updatedUi.text_3b3783c0c827")}
                     </Stack>
                     <UiButton
                       appearance="filled"
                       startIcon={<ReloadOutlined />}
                       onClick={() => void source.refetch()}
                     >
-                      Tải lại
+                      {tUi("shared.address.retry")}
                     </UiButton>
                   </Stack>
                 ) : loading ? (
@@ -958,7 +982,11 @@ export default function WarrantyComponentsReport() {
                 ) : (
                   <>
                     <Box
-                      aria-label={"Hoàn tất " + pct(complete, rows.length)}
+                      aria-label={
+                        tUi("iam.permissionAction.post") +
+                        " " +
+                        pct(complete, rows.length)
+                      }
                       sx={{
                         height: 36,
                         display: "flex",
@@ -1015,21 +1043,24 @@ export default function WarrantyComponentsReport() {
                         <Box component="span" sx={{ color: C.green }}>
                           ●
                         </Box>
-                        &nbsp; Hoàn tất ({complete}) &nbsp;
+                        {"  " + tUi("updatedUi.text_5fc81d24b14c")}
+                        {complete}) &nbsp;
                         <b>{pct(complete, rows.length)}</b>
                       </Box>
                       <Box sx={{ fontSize: 11.5 }}>
                         <Box component="span" sx={{ color: "#18a0d5" }}>
                           ●
                         </Box>
-                        &nbsp; Đang xử lý ({processing}) &nbsp;
+                        {"  " + tUi("updatedUi.text_58d81071493e")}
+                        {processing}) &nbsp;
                         <b>{pct(processing, rows.length)}</b>
                       </Box>
                       <Box sx={{ fontSize: 11.5 }}>
                         <Box component="span" sx={{ color: "#ff9528" }}>
                           ●
                         </Box>
-                        &nbsp; Chờ tiếp nhận ({waiting}) &nbsp;
+                        {"  " + tUi("updatedUi.text_0fb0f8863bb6")}
+                        {waiting}) &nbsp;
                         <b>{pct(waiting, rows.length)}</b>
                       </Box>
                     </Stack>
@@ -1063,7 +1094,7 @@ export default function WarrantyComponentsReport() {
                           {pct(complete, rows.length)}
                         </Box>
                         <Box sx={{ mt: 0.35, color: C.text, fontSize: 12.5 }}>
-                          hoàn tất
+                          {tUi("updatedUi.text_13625dbf64fd")}
                         </Box>
                       </>
                     )}
@@ -1104,10 +1135,13 @@ export default function WarrantyComponentsReport() {
                         <Box
                           sx={{ color: C.red, fontSize: 19, fontWeight: 800 }}
                         >
-                          {overdue} phiếu quá hạn
+                          {overdue}
+                          {" " + tUi("updatedUi.text_9f85e38f3fff")}
                         </Box>
                         <Box sx={{ mt: 0.2, color: C.muted, fontSize: 11.5 }}>
-                          Thuộc {unfinished} phiếu chưa hoàn tất
+                          {tUi("updatedUi.text_c304748868e0") + " "}
+                          {unfinished}
+                          {" " + tUi("updatedUi.text_6703ab94972c")}
                         </Box>
                       </Box>
                     )}
@@ -1137,7 +1171,7 @@ export default function WarrantyComponentsReport() {
                   component="h2"
                   sx={{ m: 0, color: C.navy, fontSize: 18, fontWeight: 600 }}
                 >
-                  Danh sách phiếu bảo hành
+                  {tUi("updatedUi.text_c62ca4dc7b07")}
                 </Box>
                 <Box
                   sx={{
@@ -1151,7 +1185,11 @@ export default function WarrantyComponentsReport() {
                   }}
                 >
                   {forcedState === "no-result"
-                    ? "0 kết quả / " + fmt(rows.length) + " phiếu"
+                    ? tUi("updatedUi.text_f3674c04b5e8") +
+                      " " +
+                      fmt(rows.length) +
+                      " " +
+                      tUi("updatedUi.text_20d8a6e7893b")
                     : fmt(rows.length)}
                 </Box>
                 {loading ? (
@@ -1164,7 +1202,8 @@ export default function WarrantyComponentsReport() {
                       fontSize: 11.5,
                     }}
                   >
-                    <UiSpinner size={15} label={null} /> Đang tải dữ liệu...
+                    <UiSpinner size={15} label={null} />
+                    {" " + tUi("masterData.common.loadingData")}
                   </Stack>
                 ) : null}
               </Stack>
@@ -1172,8 +1211,8 @@ export default function WarrantyComponentsReport() {
                 <SearchInput
                   width="100%"
                   value={keyword}
-                  aria-label="Tìm trong danh sách phiếu bảo hành"
-                  placeholder="Tìm mã phiếu, serial, SKU, linh kiện..."
+                  aria-label={tUi("updatedUi.text_3f7976cb08ea")}
+                  placeholder={tUi("updatedUi.text_451efe6a12da")}
                   onChange={(value) => setKeyword(value)}
                 />
               </Box>
@@ -1182,8 +1221,8 @@ export default function WarrantyComponentsReport() {
             {effectiveDetailError ? (
               <Box sx={{ px: 1.2, pb: 0.75 }}>
                 <UiAlert tone="error">
-                  <b>{effectiveDetailError}</b>&nbsp;&nbsp;|&nbsp;&nbsp;Không
-                  thể mở chi tiết phiếu. Vui lòng thử lại.
+                  <b>{effectiveDetailError}</b>
+                  {"  " + tUi("updatedUi.text_b31b4145e6d2")}
                 </UiAlert>
               </Box>
             ) : null}
@@ -1231,31 +1270,46 @@ export default function WarrantyComponentsReport() {
                   <thead>
                     <tr>
                       <th style={{ width: 46 }}>
-                        <input type="checkbox" aria-label="Chọn tất cả" />
+                        <input
+                          type="checkbox"
+                          aria-label={tUi(
+                            "reports.agencyComparison.pickerSelectAll",
+                          )}
+                        />
                       </th>
-                      <th style={{ width: 178 }}>Mã phiếu / Serial</th>
-                      <th style={{ width: 195 }}>SKU / Sản phẩm</th>
-                      <th style={{ width: 170 }}>Linh kiện bảo hành</th>
+                      <th style={{ width: 178 }}>
+                        {tUi("updatedUi.text_922013da333f")}
+                      </th>
+                      <th style={{ width: 195 }}>
+                        {tUi("updatedUi.text_100237901dd9")}
+                      </th>
+                      <th style={{ width: 170 }}>
+                        {tUi("updatedUi.text_6a91c6be24df")}
+                      </th>
                       <th
                         className="warranty-desktop-only"
                         style={{ width: 145 }}
                       >
-                        Ngày tiếp nhận
+                        {tUi("warranty.detail.fieldReceivedAt")}
                       </th>
                       <th
                         className="warranty-desktop-only"
                         style={{ width: 145 }}
                       >
-                        Hạn xử lý
+                        {tUi("updatedUi.text_61151ea4d85c")}
                       </th>
                       <th
                         className="warranty-tablet-only"
                         style={{ width: 150 }}
                       >
-                        Tiếp nhận / Hạn xử lý
+                        {tUi("updatedUi.text_2a2f8a4381c7")}
                       </th>
-                      <th style={{ width: 155 }}>Trạng thái</th>
-                      <th style={{ width: 92 }}>Chi tiết</th>
+                      <th style={{ width: 155 }}>
+                        {tUi("dashboard.composition.colStatus")}
+                      </th>
+                      <th style={{ width: 92 }}>
+                        {tUi("reports.importMatchReport.detail")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1266,7 +1320,11 @@ export default function WarrantyComponentsReport() {
                             <input
                               type="checkbox"
                               disabled
-                              aria-label={"Dòng tải " + (index + 1)}
+                              aria-label={
+                                tUi("updatedUi.text_42c8e174b25a") +
+                                " " +
+                                (index + 1)
+                              }
                             />
                           </td>
                           <td>
@@ -1316,7 +1374,9 @@ export default function WarrantyComponentsReport() {
                           <td>
                             <input
                               type="checkbox"
-                              aria-label={"Chọn " + row.caseNo}
+                              aria-label={
+                                tUi("shared.table.selectRow") + " " + row.caseNo
+                              }
                             />
                           </td>
                           <td>
@@ -1431,7 +1491,7 @@ export default function WarrantyComponentsReport() {
               }}
             >
               <Box sx={{ fontSize: 12.5, color: C.text }}>
-                Hiển thị{" "}
+                {tUi("putaway.queue.showing")}{" "}
                 {pagination.total === 0
                   ? 0
                   : (pagination.page - 1) * pagination.perPage + 1}
@@ -1440,7 +1500,8 @@ export default function WarrantyComponentsReport() {
                   pagination.page * pagination.perPage,
                   pagination.total,
                 )}{" "}
-                / {fmt(pagination.total)} phiếu
+                / {fmt(pagination.total)}
+                {" " + tUi("updatedUi.text_20d8a6e7893b")}
               </Box>
               <Stack
                 className="rpt06-pagination hn-report-pagination"

@@ -1,3 +1,4 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { useQueries } from "@tanstack/react-query";
 import { UiIcon } from "@/shared/ui";
 import {
@@ -7,16 +8,19 @@ import {
 } from "@/modules/outbound/services/alignedOutboundService";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
-const STATUS_CARDS: ReadonlyArray<{
-  status: OutboundStatus;
-  label: string;
-}> = [
-  { status: "DRAFT", label: "Nháp" },
-  { status: "SCANNING", label: "Đang quét xuất hàng" },
-  { status: "POSTED", label: "Đã xuất kho" },
-  { status: "CANCELLED", label: "Đã hủy" },
-];
+const getSTATUS_CARDS = localizedUiValue(
+  (): ReadonlyArray<{
+    status: OutboundStatus;
+    label: string;
+  }> => [
+    { status: "DRAFT", label: tUi("outbound.detail.labelStatusDraft") },
+    { status: "SCANNING", label: tUi("updatedUi.text_71e1f4001cc2") },
+    { status: "POSTED", label: tUi("reports.traceability.issued") },
+    { status: "CANCELLED", label: tUi("warranty.status.cancelled") },
+  ],
+);
 
 type CountResult = {
   data?: OutboundListResult;
@@ -42,7 +46,7 @@ function displayTotal(query: CountResult): string {
 /** OUT-01 overview remains independent of the list's current page and filters. */
 export function OutboundOverview({ onRefresh }: { onRefresh?: () => void }) {
   const queries = useQueries({
-    queries: [undefined, ...STATUS_CARDS.map(({ status }) => status)].map(
+    queries: [undefined, ...getSTATUS_CARDS().map(({ status }) => status)].map(
       (status) => ({
         queryKey: ["mvp-outbound", "overview", status ?? "all"],
         queryFn: () =>
@@ -65,17 +69,17 @@ export function OutboundOverview({ onRefresh }: { onRefresh?: () => void }) {
   return (
     <section
       className="hn-outbound-overview hn-outbound-card"
-      aria-label="Tình trạng xử lý phiếu"
+      aria-label={tUi("updatedUi.text_b11b59304497")}
       aria-busy={busy}
     >
-      <h2>Tình trạng xử lý phiếu</h2>
+      <h2>{tUi("updatedUi.text_b11b59304497")}</h2>
       <div className="hn-outbound-overview-metrics" aria-live="polite">
         <div className="hn-outbound-total">
           <strong>{displayTotal(queries[0])}</strong>
-          <span>Tổng phiếu xuất</span>
+          <span>{tUi("updatedUi.text_b825b57a8a53")}</span>
         </div>
         <div className="hn-outbound-stats">
-          {STATUS_CARDS.map(({ status, label }, index) => (
+          {getSTATUS_CARDS().map(({ status, label }, index) => (
             <div
               className="hn-outbound-stat"
               data-status={status}
@@ -94,19 +98,16 @@ export function OutboundOverview({ onRefresh }: { onRefresh?: () => void }) {
           role="alert"
           {...uiStateProps(UI_STATE.ERROR, "outbound-overview-error")}
         >
-          <span>Chưa tải được đầy đủ số liệu xử lý phiếu.</span>
+          <span>{tUi("updatedUi.text_66b84b6f7dee")}</span>
           <button type="button" onClick={refresh} disabled={busy}>
             <UiIcon name="refresh" size="sm" />
-            {busy ? "Đang tải…" : "Thử lại"}
+            {busy ? tUi("warranty.detail.uploading") : tUi("common.retry")}
           </button>
         </div>
       ) : null}
       <div className="hn-outbound-overview-note">
         <UiIcon name="info" size="sm" />
-        <span>
-          Quét và đối chiếu thực hiện trên Scanner App. Chỉ Post Issue thành
-          công mới làm giảm tồn kho; in hoặc in lại nhãn không làm thay đổi tồn.
-        </span>
+        <span>{tUi("updatedUi.text_ef700a3a2f41")}</span>
       </div>
     </section>
   );

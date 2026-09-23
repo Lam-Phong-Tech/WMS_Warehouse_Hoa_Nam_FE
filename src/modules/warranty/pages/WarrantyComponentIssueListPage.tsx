@@ -1,3 +1,4 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -55,13 +56,16 @@ import {
   resolveComponentIssueTracking,
 } from "./component-issue-list-data";
 import "./warranty-component-issues.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
-const STATUS_LABELS: Record<ComponentIssueStatus, string> = {
-  DRAFT: "Nháp",
-  SCANNING: "Đang quét/nhập",
-  POSTED: "Đã ghi sổ",
-  CANCELLED: "Đã hủy",
-};
+const getSTATUS_LABELS = localizedUiValue(
+  (): Record<ComponentIssueStatus, string> => ({
+    DRAFT: tUi("outbound.detail.labelStatusDraft"),
+    SCANNING: tUi("updatedUi.text_097ecdcddc79"),
+    POSTED: tUi("catalog.common.posted"),
+    CANCELLED: tUi("warranty.status.cancelled"),
+  }),
+);
 const EMPTY_SKU_INDEX = new Map<string, SkuRecord>();
 const SORT_ACCESSORS = {
   code: (row: ComponentIssueDocument) => row.component_issue_no || row.id,
@@ -284,9 +288,9 @@ export default function WarrantyComponentIssueListPage() {
       return (
         <span className="hn-war04-muted">
           {query?.isLoading
-            ? "Đang tải…"
+            ? tUi("warranty.detail.uploading")
             : query?.isError
-              ? "Chưa tải được linh kiện"
+              ? tUi("updatedUi.text_5b436b07866c")
               : EMPTY_TEXT}
         </span>
       );
@@ -304,7 +308,7 @@ export default function WarrantyComponentIssueListPage() {
           {document.lines
             .reduce((total, line) => total + line.required_qty, 0)
             .toLocaleString("vi-VN")}{" "}
-          linh kiện
+          {tUi("updatedUi.text_835ab3a8df42")}
         </small>
       </span>
     );
@@ -319,19 +323,19 @@ export default function WarrantyComponentIssueListPage() {
         <div className="hn-war04-heading">
           <nav
             className="hn-war04-breadcrumb"
-            aria-label="Điều hướng phiếu xuất linh kiện"
+            aria-label={tUi("updatedUi.text_4b213f6974d1")}
           >
             <button
               type="button"
               onClick={() => navigate("/warranty?screen=WAR-01")}
             >
-              Bảo hành & sửa chữa
+              {tUi("updatedUi.text_3df91fdd6362")}
             </button>
             <span>/</span>
-            <span>Phiếu xuất linh kiện</span>
+            <span>{tUi("warranty.detail.colIssueCode")}</span>
           </nav>
-          <h1>Phiếu xuất linh kiện bảo hành</h1>
-          <p>Cấp linh kiện cho hồ sơ bảo hành đang hoạt động</p>
+          <h1>{tUi("updatedUi.text_c16cb40fc462")}</h1>
+          <p>{tUi("updatedUi.text_3d3d7084fc83")}</p>
         </div>
         <div className="hn-war04-header-actions">
           <button
@@ -341,19 +345,19 @@ export default function WarrantyComponentIssueListPage() {
             disabled={!canIssue || !online}
             title={
               !canIssue
-                ? "Bạn không có quyền xuất linh kiện"
+                ? tUi("updatedUi.text_8b9ea58d5387")
                 : !online
-                  ? "Cần kết nối mạng để tạo phiếu"
+                  ? tUi("updatedUi.text_ee41b3a150d1")
                   : undefined
             }
           >
             <UiIcon name="plus" size="sm" />
-            Tạo phiếu xuất linh kiện
+            {tUi("updatedUi.text_6f935d4fb7e5")}
           </button>
           <button
             type="button"
             className="hn-war04-warehouse"
-            aria-label="Thông tin kho xuất linh kiện"
+            aria-label={tUi("updatedUi.text_b1358217705d")}
             aria-haspopup="menu"
             aria-expanded={Boolean(warehouseAnchor)}
             onClick={(event) => setWarehouseAnchor(event.currentTarget)}
@@ -363,23 +367,23 @@ export default function WarrantyComponentIssueListPage() {
               <strong>{warehouseName}</strong>
               <small>
                 {warehousesQuery.isLoading ? (
-                  "Đang tải…"
+                  tUi("warranty.detail.uploading")
                 ) : warehousesQuery.isError ? (
-                  "Chưa tải được thông tin kho"
+                  tUi("updatedUi.text_e2fc06eb7f37")
                 ) : activeWarehouse ? (
                   <>
                     <i />
-                    Đang hoạt động
+                    {tUi("dashboard.snapshot.warehouseActive")}
                   </>
                 ) : (
-                  "Chưa có kho hoạt động"
+                  tUi("updatedUi.text_5b9b6206bb97")
                 )}
               </small>
             </span>
           </button>
         </div>
         <p className="hn-war04-header-note">
-          Chỉ dùng cho bảo hành · Kho Hoa Nam chỉ đọc
+          {tUi("updatedUi.text_538fdb6d29e5")}
         </p>
       </header>
       <ComponentIssueOverview
@@ -391,14 +395,14 @@ export default function WarrantyComponentIssueListPage() {
       <aside className="hn-war04-stock-note">
         <UiIcon name="info" size="sm" />
         <span>
-          <strong>Chỉ phiếu Đã ghi sổ mới làm giảm tồn kho.</strong>
-          <small>Nháp, Đang quét/nhập và Đã hủy không làm thay đổi tồn.</small>
+          <strong>{tUi("updatedUi.text_9a966c0016ec")}</strong>
+          <small>{tUi("updatedUi.text_d988df33685a")}</small>
         </span>
       </aside>
       {!online ? (
         <div className="hn-war04-warning" role="status">
           <UiIcon name="wifi-slash" size="sm" />
-          Mất kết nối mạng. Dữ liệu đang hiển thị có thể chưa cập nhật.
+          {tUi("updatedUi.text_2ee63258302d")}
         </div>
       ) : null}
       <section
@@ -408,7 +412,7 @@ export default function WarrantyComponentIssueListPage() {
       >
         <div className="hn-war04-list-heading">
           <h2 id="hn-war04-list-title">
-            Danh sách phiếu{" "}
+            {tUi("updatedUi.text_e8768a710dc6")}{" "}
             <span
               className="hn-war04-count"
               aria-label={
@@ -416,7 +420,7 @@ export default function WarrantyComponentIssueListPage() {
                   ? t("warranty.componentList.total", {
                       count: pagination.total,
                     })
-                  : "Chưa có tổng số phiếu"
+                  : tUi("updatedUi.text_b254b45a81d8")
               }
             >
               {hasKnownTotal ? pagination.total.toLocaleString("vi-VN") : "—"}
@@ -427,9 +431,11 @@ export default function WarrantyComponentIssueListPage() {
             className="hn-war04-refresh"
             onClick={refreshAll}
             disabled={activeQuery.isFetching || !online}
-            title="Tải lại danh sách phiếu"
+            title={tUi("updatedUi.text_3e8bc3252b10")}
           >
-            {activeQuery.isFetching ? "Đang cập nhật…" : "Cập nhật mới nhất"}
+            {activeQuery.isFetching
+              ? tUi("updatedUi.text_f1d2b14e62c7")
+              : tUi("updatedUi.text_83ddf4187c12")}
           </button>
         </div>
         <form
@@ -440,7 +446,9 @@ export default function WarrantyComponentIssueListPage() {
           }}
         >
           <div className="hn-war04-field hn-war04-search">
-            <label htmlFor="hn-war04-search">Tìm kiếm</label>
+            <label htmlFor="hn-war04-search">
+              {tUi("reports.packingLabel.searchLabel")}
+            </label>
             <UiTextField
               id="hn-war04-search"
               value={searchInput}
@@ -455,7 +463,9 @@ export default function WarrantyComponentIssueListPage() {
             />
           </div>
           <div className="hn-war04-field">
-            <label htmlFor="hn-war04-status">Trạng thái</label>
+            <label htmlFor="hn-war04-status">
+              {tUi("dashboard.composition.colStatus")}
+            </label>
             <UiSelect
               id="hn-war04-status"
               value={status}
@@ -464,8 +474,8 @@ export default function WarrantyComponentIssueListPage() {
               fullWidth
               menuClassName="hn-war04-menu"
               options={[
-                { value: "", label: "Tất cả" },
-                ...Object.entries(STATUS_LABELS).map(([value, label]) => ({
+                { value: "", label: tUi("dashboard.operations.filterAll") },
+                ...Object.entries(getSTATUS_LABELS()).map(([value, label]) => ({
                   value,
                   label,
                 })),
@@ -477,16 +487,18 @@ export default function WarrantyComponentIssueListPage() {
             />
           </div>
           <div className="hn-war04-field">
-            <label htmlFor="hn-war04-tracking">Theo dõi</label>
+            <label htmlFor="hn-war04-tracking">
+              {tUi("dashboard.severity.p2")}
+            </label>
             <UiSelect
               id="hn-war04-tracking"
               value={tracking}
-              aria-label="Lọc theo dõi linh kiện"
+              aria-label={tUi("updatedUi.text_a9a7bcf8d30a")}
               displayEmpty
               fullWidth
               menuClassName="hn-war04-menu"
               options={[
-                { value: "", label: "Tất cả" },
+                { value: "", label: tUi("dashboard.operations.filterAll") },
                 { value: "SERIAL", label: "Serial" },
                 { value: "QUANTITY", label: "Box + SL" },
               ]}
@@ -502,14 +514,14 @@ export default function WarrantyComponentIssueListPage() {
               className="hn-war04-button hn-war04-primary"
               disabled={activeQuery.isFetching || !online}
             >
-              Áp dụng
+              {tUi("dashboard.snapshot.apply")}
             </button>
             <button
               type="button"
               className="hn-war04-button hn-war04-reset"
               onClick={resetFilters}
             >
-              Đặt lại
+              {tUi("reports.packingLabel.reset")}
             </button>
           </div>
         </form>
@@ -522,7 +534,7 @@ export default function WarrantyComponentIssueListPage() {
         ) : null}
         {relatedError && !activeQuery.isError ? (
           <div className="hn-war04-warning" role="status">
-            Một số thông tin hồ sơ hoặc linh kiện chưa tải được.
+            {tUi("updatedUi.text_11b3c173ea45")}
             <button
               type="button"
               onClick={() => {
@@ -532,7 +544,7 @@ export default function WarrantyComponentIssueListPage() {
                 });
               }}
             >
-              Thử lại
+              {tUi("common.retry")}
             </button>
           </div>
         ) : null}
@@ -546,7 +558,7 @@ export default function WarrantyComponentIssueListPage() {
             aria-busy="true"
             role="status"
           >
-            <span>Đang tải danh sách phiếu…</span>
+            <span>{tUi("updatedUi.text_08bfc6f1ff01")}</span>
             {[0, 1, 2, 3, 4].map((value) => (
               <div className="hn-war04-skeleton" key={value} />
             ))}
@@ -555,7 +567,7 @@ export default function WarrantyComponentIssueListPage() {
           <div className="hn-war04-table-wrap">
             <table
               className="hn-war04-table"
-              aria-label="Danh sách phiếu xuất linh kiện"
+              aria-label={tUi("updatedUi.text_11362358afdc")}
             >
               <colgroup>
                 <col className="hn-war04-code-col" />
@@ -569,28 +581,32 @@ export default function WarrantyComponentIssueListPage() {
               <thead>
                 <tr>
                   <SortableTh
-                    label="Phiếu"
+                    label={tUi("inbound.detail.fieldDocument")}
                     sortKey="code"
                     sortState={sortState}
                     onSort={requestSort}
                   />
-                  <th>Hồ sơ bảo hành</th>
-                  <th className="hn-war04-desktop">Linh kiện</th>
-                  <th className="hn-war04-desktop">Theo dõi</th>
+                  <th>{tUi("notifications.subject.warrantyCase")}</th>
+                  <th className="hn-war04-desktop">
+                    {tUi("dashboard.skuType.component")}
+                  </th>
+                  <th className="hn-war04-desktop">
+                    {tUi("dashboard.severity.p2")}
+                  </th>
                   <SortableTh
-                    label="Trạng thái"
+                    label={tUi("dashboard.composition.colStatus")}
                     sortKey="status"
                     sortState={sortState}
                     onSort={requestSort}
                   />
                   <SortableTh
-                    label="Cập nhật"
+                    label={tUi("updatedUi.text_5293d03c5908")}
                     sortKey="date"
                     sortType="value"
                     sortState={sortState}
                     onSort={requestSort}
                   />
-                  <th>Thao tác</th>
+                  <th>{tUi("outbound.detail.colAction")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -605,13 +621,13 @@ export default function WarrantyComponentIssueListPage() {
                     : row.warehouse_id;
                   const action =
                     row.status === "DRAFT"
-                      ? "Chỉnh sửa"
+                      ? tUi("updatedUi.text_7a77d7612e12")
                       : row.status === "SCANNING"
-                        ? "Ghi nhận"
-                        : "Chi tiết";
+                        ? tUi("outbound.detail.postConfirm")
+                        : tUi("reports.importMatchReport.detail");
                   return (
                     <tr key={row.id} onClick={() => openDocument(row)}>
-                      <td data-label="Phiếu">
+                      <td data-label={tUi("inbound.detail.fieldDocument")}>
                         <button
                           type="button"
                           className="hn-war04-code"
@@ -629,7 +645,9 @@ export default function WarrantyComponentIssueListPage() {
                           {warehouseText}
                         </span>
                       </td>
-                      <td data-label="Hồ sơ bảo hành">
+                      <td
+                        data-label={tUi("notifications.subject.warrantyCase")}
+                      >
                         <span className="hn-war04-case-code">
                           {caseInfo?.case_code || (
                             <span onClick={(event) => event.stopPropagation()}>
@@ -641,9 +659,9 @@ export default function WarrantyComponentIssueListPage() {
                           {caseInfo
                             ? `${caseInfo.identification_type === "TEMP_ONLY" ? "TEMP_ONLY · " : ""}${WARRANTY_STATUS_LABELS[caseInfo.status] ?? EMPTY_TEXT}`
                             : caseQuery?.isError
-                              ? "Chưa tải được hồ sơ"
+                              ? tUi("updatedUi.text_82a90f6c797e")
                               : caseQuery?.isPending
-                                ? "Đang tải…"
+                                ? tUi("warranty.detail.uploading")
                                 : EMPTY_TEXT}
                         </small>
                         <span className="hn-war04-compact">
@@ -659,30 +677,38 @@ export default function WarrantyComponentIssueListPage() {
                             : ""}
                         </span>
                       </td>
-                      <td data-label="Linh kiện" className="hn-war04-desktop">
+                      <td
+                        data-label={tUi("dashboard.skuType.component")}
+                        className="hn-war04-desktop"
+                      >
                         {renderComponents(row)}
                       </td>
-                      <td data-label="Theo dõi" className="hn-war04-desktop">
+                      <td
+                        data-label={tUi("dashboard.severity.p2")}
+                        className="hn-war04-desktop"
+                      >
                         {trackingLabel(document)}
                       </td>
-                      <td data-label="Trạng thái">
+                      <td data-label={tUi("dashboard.composition.colStatus")}>
                         <span
                           className={`hn-war04-status hn-war04-status-${row.status.toLowerCase()}`}
                         >
-                          {STATUS_LABELS[row.status] ?? row.status}
+                          {getSTATUS_LABELS()[row.status] ?? row.status}
                         </span>
                       </td>
-                      <td data-label="Cập nhật">
+                      <td data-label={tUi("updatedUi.text_5293d03c5908")}>
                         <time
                           dateTime={row.posted_at || row.document_date}
                           title={
-                            row.posted_at ? "Ngày ghi sổ" : "Ngày lập phiếu"
+                            row.posted_at
+                              ? tUi("reports.inventoryFlow.colPostedAt")
+                              : tUi("updatedUi.text_a17e6038ba64")
                           }
                         >
                           {displayDate(row.posted_at || row.document_date)}
                         </time>
                       </td>
-                      <td data-label="Thao tác">
+                      <td data-label={tUi("outbound.detail.colAction")}>
                         <RowActionGroup
                           className="hn-war04-row-actions"
                           onClick={(event) => event.stopPropagation()}
@@ -701,7 +727,9 @@ export default function WarrantyComponentIssueListPage() {
                           />
                           <RowActionButton
                             kind="more"
-                            aria-label={`Thao tác khác ${row.component_issue_no || row.id}`}
+                            aria-label={tUi("updatedUi.text_391ce00892b9", {
+                              value0: String(row.component_issue_no || row.id),
+                            })}
                             aria-haspopup="menu"
                             aria-expanded={rowMenu?.row.id === row.id}
                             onClick={(event) =>
@@ -721,7 +749,7 @@ export default function WarrantyComponentIssueListPage() {
             {tableEmptyText(
               activeQuery.isError ? activeQuery.error : null,
               hasFilters
-                ? "Không tìm thấy phiếu phù hợp với bộ lọc."
+                ? tUi("updatedUi.text_63b19aadd227")
                 : t("warranty.componentList.empty"),
             )}
             {hasFilters && !activeQuery.isError ? (
@@ -730,7 +758,7 @@ export default function WarrantyComponentIssueListPage() {
                 className="hn-war04-button"
                 onClick={resetFilters}
               >
-                Xóa bộ lọc
+                {tUi("updatedUi.text_f8f509b1e9da")}
               </button>
             ) : null}
           </div>
@@ -738,10 +766,26 @@ export default function WarrantyComponentIssueListPage() {
         <footer className="hn-war04-pagination">
           <span>
             {!hasKnownTotal
-              ? "Chưa có tổng số phiếu"
+              ? tUi("updatedUi.text_b254b45a81d8")
               : tracking
-                ? `${rows.length} phiếu trên trang · ${pagination.total} kết quả`
-                : `Hiển thị ${rows.length ? (pagination.current - 1) * pagination.pageSize + 1 : 0}–${rows.length ? (pagination.current - 1) * pagination.pageSize + rows.length : 0} / ${pagination.total} phiếu`}
+                ? tUi("updatedUi.text_1c482bfc5151", {
+                    value0: String(rows.length),
+                    value1: String(pagination.total),
+                  })
+                : tUi("updatedUi.text_4fb2cad0256d", {
+                    value0: String(
+                      rows.length
+                        ? (pagination.current - 1) * pagination.pageSize + 1
+                        : 0,
+                    ),
+                    value1: String(
+                      rows.length
+                        ? (pagination.current - 1) * pagination.pageSize +
+                            rows.length
+                        : 0,
+                    ),
+                    value2: String(pagination.total),
+                  })}
           </span>
           <div className="hn-war04-pagination-controls">
             <UiSelect
@@ -770,7 +814,9 @@ export default function WarrantyComponentIssueListPage() {
           </div>
         </footer>
       </section>
-      <p className="hn-war04-footer-note">Mục đích phiếu: WARRANTY</p>
+      <p className="hn-war04-footer-note">
+        {tUi("updatedUi.text_98a5893d0fce")}
+      </p>
       <Menu
         anchorEl={rowMenu?.anchor ?? null}
         open={Boolean(rowMenu)}
@@ -784,7 +830,7 @@ export default function WarrantyComponentIssueListPage() {
           }}
         >
           <UiIcon name="eye" size="sm" />
-          Mở phiếu xuất linh kiện
+          {tUi("updatedUi.text_913855b2952b")}
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -796,18 +842,18 @@ export default function WarrantyComponentIssueListPage() {
           }}
         >
           <UiIcon name="document" size="sm" />
-          Xem hồ sơ bảo hành
+          {tUi("dashboard.insight.warrantyAction")}
         </MenuItem>
         {rowMenu ? (
           <li className="hn-war04-menu-detail" role="presentation">
-            <strong>Kho xuất</strong>
+            <strong>{tUi("warranty.componentList.colWarehouse")}</strong>
             <span>
               {String(
                 warehouseById.get(rowMenu.row.warehouse_id)?.name ??
                   rowMenu.row.warehouse_id,
               )}
             </span>
-            <strong>Ghi chú</strong>
+            <strong>{tUi("inbound.list.colNote")}</strong>
             <span>
               {rowMenu.row.cancel_reason || rowMenu.row.note || EMPTY_TEXT}
             </span>
@@ -827,11 +873,9 @@ export default function WarrantyComponentIssueListPage() {
               ? String(
                   activeWarehouse.code ?? activeWarehouse.warehouse_code ?? "",
                 )
-              : "Thông tin kho chưa khả dụng."}
+              : tUi("updatedUi.text_d75562257216")}
           </span>
-          <span>
-            Kho xuất linh kiện được xác định theo hồ sơ và phiếu hiện có.
-          </span>
+          <span>{tUi("updatedUi.text_e2f1a830e8f7")}</span>
         </li>
         {warehousesQuery.isError ? (
           <MenuItem
@@ -840,7 +884,7 @@ export default function WarrantyComponentIssueListPage() {
               setWarehouseAnchor(null);
             }}
           >
-            Thử lại
+            {tUi("common.retry")}
           </MenuItem>
         ) : null}
       </Menu>

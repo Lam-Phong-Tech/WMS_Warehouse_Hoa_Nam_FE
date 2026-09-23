@@ -29,6 +29,7 @@ import {
 } from "@/modules/warranty/constants";
 import { useWarrantyCases } from "@/modules/warranty/hooks/use-warranty";
 import type { WarrantyCase } from "@/modules/warranty/types";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 interface ComponentIssueCasePickerProps {
   onClose: () => void;
@@ -100,7 +101,7 @@ export function ComponentIssueCasePicker({
       maxWidth="md"
       title={
         <span className="hn-war04-case-picker__header">
-          <span>Chọn hồ sơ bảo hành</span>
+          <span>{tUi("updatedUi.text_011a7faf1f18")}</span>
           <ActionIconButton kind="close" onClick={dialog.close} />
         </span>
       }
@@ -108,7 +109,7 @@ export function ComponentIssueCasePicker({
     >
       <div className="hn-war04-case-picker__body">
         <p className="hn-war04-case-picker__description">
-          Chọn hồ sơ đang hoạt động để tạo phiếu xuất linh kiện.
+          {tUi("updatedUi.text_0b5d83c18230")}
         </p>
         <UiTextField
           className="hn-war04-case-picker__search"

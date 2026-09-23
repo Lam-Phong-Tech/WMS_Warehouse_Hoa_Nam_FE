@@ -35,6 +35,7 @@ import {
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { useT } from "@/shared/i18n/useT";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const NAV = COMPONENT_TOKENS.nav;
 const C = NAV.color;
@@ -210,8 +211,12 @@ export function SideNav({
 
   const visibleGroups = getVisibleNavGroups(permissionCodes, isSuperAdmin);
   const systemGroup = visibleGroups.find((group) => group.name === "Hệ thống");
-  const primaryGroups = visibleGroups.filter((group) => group.name !== "Hệ thống");
-  const warehouseItem = systemGroup?.items.find((item) => item.screen === "WH-01");
+  const primaryGroups = visibleGroups.filter(
+    (group) => group.name !== "Hệ thống",
+  );
+  const warehouseItem = systemGroup?.items.find(
+    (item) => item.screen === "WH-01",
+  );
   /**
    * Nhãn menu đi qua i18n: khoá là screen-id (mục) và tên icon (nhóm) — nhãn
    * tiếng Việt trong nav-data vẫn là bản gốc và là fallback.
@@ -291,9 +296,9 @@ export function SideNav({
   };
 
   const systemItemLabel = (item: NavItemData) => {
-    if (item.screen === "IAM-01") return "Người dùng & phân quyền";
-    if (item.screen === "WH-01") return "Cài đặt";
-    if (item.screen === "AUDIT-01") return "Nhật ký hoạt động";
+    if (item.screen === "IAM-01") return tUi("topbar.accountUsers");
+    if (item.screen === "WH-01") return tUi("updatedUi.text_202e0e9b0b85");
+    if (item.screen === "AUDIT-01") return tUi("topbar.accountAudit");
     return navLabel(item.screen, item.label);
   };
 
@@ -562,9 +567,7 @@ export function SideNav({
               component="span"
               className="hn-sidebar-brand-subtitle"
               aria-hidden="true"
-            >
-            
-            </Box>
+            ></Box>
           </Box>
         ) : null}
 
@@ -631,9 +634,11 @@ export function SideNav({
           <Box
             component="section"
             className="hn-sidebar-system"
-            aria-label="Hệ thống"
+            aria-label={tUi("iam.permissionModule.system")}
           >
-            <Box className="hn-sidebar-system-title">HỆ THỐNG</Box>
+            <Box className="hn-sidebar-system-title">
+              {tUi("updatedUi.text_1beae08eb43f")}
+            </Box>
             <Box className="hn-sidebar-system-list">
               {systemGroup.items.map(renderSystemItem)}
             </Box>
@@ -646,9 +651,9 @@ export function SideNav({
           <Box className="hn-sidebar-worker" aria-hidden="true" />
           <Box className="hn-sidebar-bottom">
             <Box className="hn-sidebar-slogan" aria-hidden="true">
-              <span>CHÍNH XÁC</span>
-              <span>HIỆU QUẢ</span>
-              <span>VẬN HÀNH BỀN VỮNG</span>
+              <span>{tUi("updatedUi.text_5502102c0562")}</span>
+              <span>{tUi("updatedUi.text_aef0bf441ad0")}</span>
+              <span>{tUi("updatedUi.text_4ed68f6ac715")}</span>
             </Box>
             {warehouseItem ? (
               <Box
@@ -658,7 +663,7 @@ export function SideNav({
                 onClick={() => goTo(warehouseItem)}
                 onPointerEnter={() => preloadRoute(warehouseItem.path)}
                 onFocus={() => preloadRoute(warehouseItem.path)}
-                aria-label="Mở cấu hình Kho Hoa Nam"
+                aria-label={tUi("updatedUi.text_b4f188abbc07")}
               >
                 <Box className="hn-sidebar-warehouse-icon">
                   <UiIcon name="home" size="md" />
@@ -666,14 +671,19 @@ export function SideNav({
                 <Box className="hn-sidebar-warehouse-copy">
                   <strong>Kho Hoa Nam</strong>
                   <small>
-                    <span className="hn-sidebar-status-dot" aria-hidden="true" />
-                    Đang hoạt động
+                    <span
+                      className="hn-sidebar-status-dot"
+                      aria-hidden="true"
+                    />
+                    {tUi("dashboard.snapshot.warehouseActive")}
                   </small>
                 </Box>
                 <UiIcon name="angle-small-right" size="sm" />
               </Box>
             ) : null}
-            <Box className="hn-sidebar-version">Phiên bản 1.0.0</Box>
+            <Box className="hn-sidebar-version">
+              {tUi("updatedUi.text_3c311446f9b5")}
+            </Box>
           </Box>
         </>
       ) : null}

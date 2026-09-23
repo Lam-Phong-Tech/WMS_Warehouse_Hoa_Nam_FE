@@ -68,6 +68,7 @@ import {
   type DateRange,
   type OverviewPeriod,
 } from "../overview/overview-data";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const ISO = "YYYY-MM-DD";
 
@@ -154,13 +155,11 @@ export default function DashboardPage() {
     if (!custom.from || !custom.to) return t("dashboard.dateError.required");
     if (custom.from > custom.to) return t("dashboard.dateError.order");
     if (custom.to > today) return t("dashboard.dateError.future");
-    const selectedDays =
-      dayjs(custom.to).diff(dayjs(custom.from), "day") + 1;
-    if (
-      isMapReferenceScreen &&
-      selectedDays > MAP_OVERVIEW_MAX_RANGE_DAYS
-    ) {
-      return `Khoảng thời gian tối đa ${MAP_OVERVIEW_MAX_RANGE_DAYS} ngày.`;
+    const selectedDays = dayjs(custom.to).diff(dayjs(custom.from), "day") + 1;
+    if (isMapReferenceScreen && selectedDays > MAP_OVERVIEW_MAX_RANGE_DAYS) {
+      return tUi("updatedUi.text_f1e2ef1c8594", {
+        value0: String(MAP_OVERVIEW_MAX_RANGE_DAYS),
+      });
     }
     // Chốt chặn chung (2000 → hôm nay, chuỗi ISO sai như "2026-22-01"): so
     // chuỗi ở trên không bắt được các trường hợp này.
@@ -182,10 +181,7 @@ export default function DashboardPage() {
     [period, custom],
   );
   const dashboardRange = useMemo<DateRange>(
-    () =>
-      isMapReferenceScreen
-        ? { from: today, to: today }
-        : range,
+    () => (isMapReferenceScreen ? { from: today, to: today } : range),
     [isMapReferenceScreen, range, today],
   );
 
@@ -729,7 +725,9 @@ export default function DashboardPage() {
     return (
       <div className="hn-dash" data-mvp-screen="MAP-01">
         <DashboardSnapshot
-          name={profile?.name ?? user?.name ?? t("dashboard.snapshot.userFallback")}
+          name={
+            profile?.name ?? user?.name ?? t("dashboard.snapshot.userFallback")
+          }
           warehouseLabel={scopeLabel}
           cards={kpiCards}
           rows={mapChartRows}

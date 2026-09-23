@@ -1,3 +1,4 @@
+import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { useSearchParams } from "react-router-dom";
@@ -39,12 +40,13 @@ import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
 import type { InboundDocument } from "@/modules/inbound/types";
 import { formatQuantity } from "@/shared/utils/format-number";
 import "./inbound-list.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
-const STATUS_OPTIONS = Object.entries(INBOUND_STATUS_LABELS).map(
-  ([value, label]) => ({
+const getSTATUS_OPTIONS = localizedUiValue(() =>
+  Object.entries(INBOUND_STATUS_LABELS).map(([value, label]) => ({
     value,
-    label: value === "SCANNING" ? "Đang ghi nhận" : label,
-  }),
+    label: value === "SCANNING" ? tUi("updatedUi.text_0be7d9b1d01d") : label,
+  })),
 );
 const SORT_ACCESSORS = {
   code: (row: InboundDocument) => row.code,
@@ -73,13 +75,15 @@ function WarehouseContext() {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const warehouse = query.data?.[0];
   const name =
-    warehouse?.name == null ? "Kho nhập hàng" : String(warehouse.name);
+    warehouse?.name == null
+      ? tUi("updatedUi.text_c948344c0d34")
+      : String(warehouse.name);
   return (
     <>
       <button
         type="button"
         className="hn-inbound-warehouse"
-        aria-label="Thông tin kho nhập hàng"
+        aria-label={tUi("updatedUi.text_5e4c98466ae6")}
         aria-haspopup="menu"
         aria-expanded={Boolean(anchor)}
         onClick={(event) => setAnchor(event.currentTarget)}
@@ -89,16 +93,16 @@ function WarehouseContext() {
           <strong>{name}</strong>
           <small>
             {query.isError ? (
-              "Không tải được thông tin kho"
+              tUi("updatedUi.text_02ed7af0bfa9")
             ) : query.isLoading ? (
-              "Đang tải…"
+              tUi("warranty.detail.uploading")
             ) : warehouse ? (
               <>
                 <i />
-                Đang hoạt động
+                {tUi("dashboard.snapshot.warehouseActive")}
               </>
             ) : (
-              "Chưa có kho khả dụng"
+              tUi("updatedUi.text_0dd0fb192a87")
             )}
           </small>
         </span>
@@ -115,8 +119,8 @@ function WarehouseContext() {
           <span>{warehouse?.code == null ? "" : String(warehouse.code)}</span>
           <span>
             {warehouse
-              ? "Kho đang hoạt động trong phạm vi được cấp quyền."
-              : "Thông tin kho chưa khả dụng."}
+              ? tUi("updatedUi.text_739b544fcdfe")
+              : tUi("updatedUi.text_d75562257216")}
           </span>
         </li>
         {query.isError ? (
@@ -126,10 +130,12 @@ function WarehouseContext() {
               setAnchor(null);
             }}
           >
-            Thử lại
+            {tUi("common.retry")}
           </MenuItem>
         ) : null}
-        <MenuItem onClick={() => setAnchor(null)}>Đóng</MenuItem>
+        <MenuItem onClick={() => setAnchor(null)}>
+          {tUi("common.close")}
+        </MenuItem>
       </Menu>
     </>
   );
@@ -242,7 +248,7 @@ function InboundListScreen() {
       >
         <i />
         {row.status === "SCANNING"
-          ? "Đang ghi nhận"
+          ? tUi("updatedUi.text_0be7d9b1d01d")
           : businessLabel(
               INBOUND_STATUS_LABELS,
               row.status,
@@ -263,7 +269,8 @@ function InboundListScreen() {
   const progress = (row: InboundDocument) => (
     <>
       {row.skuCount == null ? "" : `${formatQuantity(row.skuCount)} SKU · `}
-      {formatQuantity(row.scanned)} đã quét
+      {formatQuantity(row.scanned)}
+      {" " + tUi("updatedUi.text_11589f1a7b52")}
     </>
   );
   const rowActions = (row: InboundDocument) => {
@@ -277,11 +284,17 @@ function InboundListScreen() {
             editable ? editDocument(row.id) : openDocument(row.id)
           }
         >
-          {editable ? "Chỉnh sửa" : tracking ? "Theo dõi" : "Chi tiết"}
+          {editable
+            ? tUi("updatedUi.text_7a77d7612e12")
+            : tracking
+              ? tUi("dashboard.severity.p2")
+              : tUi("reports.importMatchReport.detail")}
         </RowActionButton>
         <RowActionButton
           kind="more"
-          aria-label={`Thao tác khác cho ${displayValue(row.code)}`}
+          aria-label={tUi("updatedUi.text_3584db058a35", {
+            value0: String(displayValue(row.code)),
+          })}
           aria-haspopup="menu"
           aria-expanded={rowMenu?.row.id === row.id}
           onClick={(event) => setRowMenu({ anchor: event.currentTarget, row })}
@@ -313,8 +326,8 @@ function InboundListScreen() {
     >
       <header className="hn-inbound-header">
         <div>
-          <h1>Phiếu nhập kho</h1>
-          <p>Tạo phiếu, quản lý và theo dõi tiến độ nhập kho từ Scanner App</p>
+          <h1>{tUi("updatedUi.text_6e410870eb7f")}</h1>
+          <p>{tUi("updatedUi.text_30519bd9682d")}</p>
         </div>
         <div className="hn-inbound-header-actions">
           <WarehouseContext />
@@ -341,7 +354,7 @@ function InboundListScreen() {
       >
         <div className="hn-inbound-list-heading">
           <h2 id="hn-inbound-list-title">
-            Danh sách phiếu nhập{" "}
+            {tUi("updatedUi.text_b7f7bae4ff19")}{" "}
             <span>{query.data ? formatQuantity(total) : EMPTY_TEXT}</span>
           </h2>
           <div className="hn-inbound-sort">
@@ -350,7 +363,7 @@ function InboundListScreen() {
               aria-label={t("inbound.list.sortAria")}
               menuClassName="hn-inbound-menu"
               options={[
-                { value: "desc", label: "Cập nhật mới nhất" },
+                { value: "desc", label: tUi("updatedUi.text_83ddf4187c12") },
                 { value: "asc", label: t("inbound.list.sortOldest") },
               ]}
               onChange={(value) => {
@@ -368,13 +381,15 @@ function InboundListScreen() {
           }}
         >
           <div className="hn-inbound-filter hn-inbound-search">
-            <label htmlFor="hn-inbound-search">Tìm kiếm</label>
+            <label htmlFor="hn-inbound-search">
+              {tUi("reports.packingLabel.searchLabel")}
+            </label>
             <div className="hn-inbound-search-field">
               <UiIcon name="search" />
               <UiTextField
                 id="hn-inbound-search"
                 value={searchInput}
-                placeholder="Mã phiếu, nguồn hoặc tham chiếu…"
+                placeholder={tUi("updatedUi.text_16bb8e8dabab")}
                 fullWidth
                 slotProps={{
                   htmlInput: { "aria-label": t("inbound.list.searchAria") },
@@ -385,7 +400,7 @@ function InboundListScreen() {
                 <button
                   type="button"
                   className="hn-inbound-search-clear"
-                  aria-label="Xóa từ khóa tìm kiếm"
+                  aria-label={tUi("updatedUi.text_431466c48cf0")}
                   onClick={() => setSearchInput("")}
                 >
                   <UiIcon name="cross-small" size="sm" />
@@ -394,7 +409,9 @@ function InboundListScreen() {
             </div>
           </div>
           <div className="hn-inbound-filter">
-            <label htmlFor="hn-inbound-status-filter">Trạng thái</label>
+            <label htmlFor="hn-inbound-status-filter">
+              {tUi("dashboard.composition.colStatus")}
+            </label>
             <UiSelect
               id="hn-inbound-status-filter"
               fullWidth
@@ -402,7 +419,10 @@ function InboundListScreen() {
               value={status ?? ""}
               aria-label={t("inbound.list.statusFilterAria")}
               menuClassName="hn-inbound-menu"
-              options={[{ value: "", label: "Tất cả" }, ...STATUS_OPTIONS]}
+              options={[
+                { value: "", label: tUi("dashboard.operations.filterAll") },
+                ...getSTATUS_OPTIONS(),
+              ]}
               onChange={(value) => {
                 setStatus(value || undefined);
                 setPage(1);
@@ -410,7 +430,9 @@ function InboundListScreen() {
             />
           </div>
           <div className="hn-inbound-filter">
-            <label htmlFor="hn-inbound-info-filter">Thông tin SKU</label>
+            <label htmlFor="hn-inbound-info-filter">
+              {tUi("inbound.detail.colInfo")}
+            </label>
             <UiSelect
               id="hn-inbound-info-filter"
               fullWidth
@@ -419,7 +441,7 @@ function InboundListScreen() {
               aria-label={t("inbound.list.infoFilterAria")}
               menuClassName="hn-inbound-menu"
               options={[
-                { value: "", label: "Tất cả" },
+                { value: "", label: tUi("dashboard.operations.filterAll") },
                 { value: "1", label: t("inbound.list.infoFilterPending") },
                 { value: "0", label: t("inbound.list.infoFilterComplete") },
               ]}
@@ -435,7 +457,7 @@ function InboundListScreen() {
             className="hn-inbound-apply"
             icon={<></>}
           >
-            Áp dụng
+            {tUi("dashboard.snapshot.apply")}
           </ActionButton>
           <ActionButton
             kind="reset"
@@ -444,7 +466,7 @@ function InboundListScreen() {
             icon={<></>}
             onClick={resetFilters}
           >
-            Đặt lại
+            {tUi("reports.packingLabel.reset")}
           </ActionButton>
         </form>
         {query.isError ? (
@@ -467,36 +489,46 @@ function InboundListScreen() {
               {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-table")}
             >
               {rows.length
-                ? "Đang cập nhật danh sách…"
-                : "Đang tải danh sách phiếu nhập…"}
+                ? tUi("updatedUi.text_10db055811ab")
+                : tUi("updatedUi.text_ed527a82edf6")}
             </div>
           ) : null}
           <table className="hn-inbound-table">
             <thead>
               <tr>
-                {sortHeader("Phiếu", "code", "hn-inbound-col-code")}
                 {sortHeader(
-                  "Nguồn / Tham chiếu",
+                  tUi("inbound.detail.fieldDocument"),
+                  "code",
+                  "hn-inbound-col-code",
+                )}
+                {sortHeader(
+                  tUi("updatedUi.text_766b3eccf90f"),
                   "source",
                   "hn-inbound-col-source",
                 )}
                 {sortHeader(
-                  "Tiến độ ghi nhận",
+                  tUi("updatedUi.text_5306083bc2fb"),
                   "scanned",
                   "hn-inbound-desktop hn-inbound-col-progress",
                 )}
                 {sortHeader(
-                  "Người tạo",
+                  tUi("reverse.detail.fieldCreatedBy"),
                   "createdBy",
                   "hn-inbound-desktop hn-inbound-col-creator",
                 )}
-                {sortHeader("Trạng thái", "status", "hn-inbound-col-status")}
                 {sortHeader(
-                  "Cập nhật",
+                  tUi("dashboard.composition.colStatus"),
+                  "status",
+                  "hn-inbound-col-status",
+                )}
+                {sortHeader(
+                  tUi("updatedUi.text_5293d03c5908"),
                   "updatedAt",
                   "hn-inbound-desktop hn-inbound-col-date",
                 )}
-                <th className="hn-inbound-col-actions">Thao tác</th>
+                <th className="hn-inbound-col-actions">
+                  {tUi("outbound.detail.colAction")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -561,21 +593,21 @@ function InboundListScreen() {
               />
               <strong>
                 {query.isError
-                  ? "Chưa tải được danh sách phiếu nhập"
+                  ? tUi("updatedUi.text_9e4db3a2417e")
                   : hasFilters
-                    ? "Không tìm thấy phiếu nhập phù hợp"
+                    ? tUi("updatedUi.text_cb254eb425d2")
                     : t("inbound.list.empty")}
               </strong>
               <span>
                 {query.isError
-                  ? "Sử dụng nút Thử lại để tải lại dữ liệu."
+                  ? tUi("updatedUi.text_a8c4ecd17312")
                   : hasFilters
-                    ? "Thử từ khóa khác hoặc đặt lại bộ lọc."
-                    : "Phiếu nhập sẽ xuất hiện tại đây khi được tạo."}
+                    ? tUi("updatedUi.text_369f96fc8284")
+                    : tUi("updatedUi.text_d275583f99ae")}
               </span>
               {hasFilters && !query.isError ? (
                 <ActionButton kind="reset" onClick={resetFilters}>
-                  Đặt lại bộ lọc
+                  {tUi("updatedUi.text_49ced19e7f1d")}
                 </ActionButton>
               ) : null}
             </div>
@@ -596,10 +628,14 @@ function InboundListScreen() {
         <footer className="hn-inbound-pagination">
           <span aria-live="polite">
             {query.data
-              ? `Hiển thị ${first} – ${last} / ${formatQuantity(total)} phiếu`
+              ? tUi("updatedUi.text_ed9314f2e7c6", {
+                  value0: String(first),
+                  value1: String(last),
+                  value2: String(formatQuantity(total)),
+                })
               : loading
-                ? "Đang tải số lượng phiếu…"
-                : "Chưa có số liệu danh sách"}
+                ? tUi("updatedUi.text_5412ced1c478")
+                : tUi("updatedUi.text_324e2c9b114d")}
           </span>
           <div className="hn-inbound-pagination-controls">
             <UiSelect
@@ -634,9 +670,18 @@ function InboundListScreen() {
         {rowMenu ? (
           <li className="hn-inbound-menu-information" role="presentation">
             <strong>{displayValue(rowMenu.row.code)}</strong>
-            <span>Ngày tạo: {displayDate(rowMenu.row.date)}</span>
-            <span>Người tạo: {displayValue(rowMenu.row.createdBy)}</span>
-            <span>Ghi chú: {displayValue(rowMenu.row.note)}</span>
+            <span>
+              {tUi("updatedUi.text_4572c8880b00") + " "}
+              {displayDate(rowMenu.row.date)}
+            </span>
+            <span>
+              {tUi("updatedUi.text_fdae0fc430bb") + " "}
+              {displayValue(rowMenu.row.createdBy)}
+            </span>
+            <span>
+              {tUi("updatedUi.text_9b223cea940b") + " "}
+              {displayValue(rowMenu.row.note)}
+            </span>
           </li>
         ) : null}
         {rowMenu ? (

@@ -35,12 +35,10 @@ import type { StockMovementRow } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
-import {
-  ActionIconButton,
-  RowActionButton,
-} from "@/shared/components/actions";
+import { ActionIconButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import "./inventory-dialog.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const INVENTORY_DIALOG_TABLE_HEADER_STYLE: CSSProperties = {
   background: "var(--invd-pale)",
@@ -459,7 +457,10 @@ export function BalanceDetailModal({
               label={t("inventory.detail.fieldName")}
               value={balance.name}
             />
-            <DetailField label="Kho" value={balance.warehouse} />
+            <DetailField
+              label={tUi("updatedUi.text_19c608bfa103")}
+              value={balance.warehouse}
+            />
             <DetailField
               label={t("inventory.detail.fieldStockStatus")}
               value={

@@ -33,6 +33,7 @@ import {
   reprintLabelSnapshot,
 } from "@/modules/outbound/services/mvpOutboundService";
 import "./packing-label-report.css";
+import { tStatic as tUi } from "@/shared/i18n/useT";
 
 type ActionPhase = "idle" | "submitting" | "uncertain";
 
@@ -53,9 +54,9 @@ function makeIdempotencyKey(prefix: string) {
 }
 
 function resultLabel(value: PackingLabelResult) {
-  if (value === "PRINTED") return "In thành công";
-  if (value === "PRINT_FAILED") return "Lỗi in";
-  return "Đang xử lý";
+  if (value === "PRINTED") return tUi("reports.packingLabel.resultPrinted");
+  if (value === "PRINT_FAILED") return tUi("updatedUi.text_2a2df69319d9");
+  return tUi("dashboard.snapshot.stateProcessing");
 }
 
 function resultClass(value: PackingLabelResult) {
@@ -65,10 +66,11 @@ function resultClass(value: PackingLabelResult) {
 }
 
 function actionLabel(row: PackingLabelEvent, busy: boolean) {
-  if (busy) return "Đang xử lý…";
-  if (row.result === "PRINTED") return "In lại";
-  if (row.result === "PRINT_FAILED") return "Thử lại";
-  return "In nhãn";
+  if (busy) return tUi("updatedUi.text_79eb2035913d");
+  if (row.result === "PRINTED")
+    return tUi("reports.packingLabel.outcomeReprint");
+  if (row.result === "PRINT_FAILED") return tUi("common.retry");
+  return tUi("outbound.detail.print");
 }
 
 export default function PackingLabelPrintReport() {
@@ -228,7 +230,7 @@ export default function PackingLabelPrintReport() {
           snapshot.version === undefined ||
           !printerConfigId
         ) {
-          throw new Error("Thiếu thông tin phiên bản hoặc máy in.");
+          throw new Error(tUi("updatedUi.text_dde858009aea"));
         }
         await reprintLabelSnapshot({
           documentId: snapshot.documentId,
@@ -238,7 +240,10 @@ export default function PackingLabelPrintReport() {
           idempotencyKey: makeIdempotencyKey("rpt05-reprint"),
           reason: reason.trim(),
         });
-        setNotice({ tone: "success", text: "In lại nhãn thành công." });
+        setNotice({
+          tone: "success",
+          text: tUi("updatedUi.text_e1ba7a344055"),
+        });
         setReprintRow(null);
         report.refetch();
       } catch (error) {
@@ -250,8 +255,8 @@ export default function PackingLabelPrintReport() {
         setNotice({
           tone: uncertain ? "warning" : "error",
           text: uncertain
-            ? "Chưa xác định kết quả in. Yêu cầu đã gửi; tạm khóa gửi lại để tránh in trùng."
-            : message || "Không thể in lại nhãn.",
+            ? tUi("updatedUi.text_1d0ee43b7c56")
+            : message || tUi("updatedUi.text_7b667db21ada"),
         });
         if (uncertain) return;
       } finally {
@@ -275,7 +280,7 @@ export default function PackingLabelPrintReport() {
         snapshot.version === undefined ||
         !printerConfigId
       ) {
-        throw new Error("Thiếu thông tin phiên bản hoặc máy in.");
+        throw new Error(tUi("updatedUi.text_dde858009aea"));
       }
       await printLabelSnapshot({
         documentId: snapshot.documentId,
@@ -286,7 +291,7 @@ export default function PackingLabelPrintReport() {
       });
       setNotice({
         tone: "success",
-        text: "Đã gửi yêu cầu in nhãn thành công.",
+        text: tUi("updatedUi.text_13f25c7cce14"),
       });
       report.refetch();
     } catch (error) {
@@ -298,8 +303,8 @@ export default function PackingLabelPrintReport() {
       setNotice({
         tone: uncertain ? "warning" : "error",
         text: uncertain
-          ? "Chưa xác định kết quả in. Yêu cầu đã gửi; tạm khóa gửi lại để tránh in trùng."
-          : message || "Không thể gửi yêu cầu in nhãn.",
+          ? tUi("updatedUi.text_1d0ee43b7c56")
+          : message || tUi("updatedUi.text_43ee48f65338"),
       });
       if (uncertain) return;
     } finally {
@@ -338,7 +343,7 @@ export default function PackingLabelPrintReport() {
   return (
     <div className="hn-pkg-label" data-testid="rpt-tab-packing-label">
       <div className="hn-pkg-label__crumb">
-        ⌂&nbsp;&nbsp; Báo cáo &nbsp;/&nbsp; Nhãn đóng gói
+        {tUi("updatedUi.text_3b63f8aabf97")}
       </div>
 
       <header className="hn-pkg-label__header">
@@ -356,7 +361,9 @@ export default function PackingLabelPrintReport() {
             }
             onClick={exportXlsx}
           >
-            {exporter.exporting ? "Đang xuất…" : "Xuất báo cáo"}
+            {exporter.exporting
+              ? tUi("updatedUi.text_3de340210fb9")
+              : tUi("reports.traceability.exportReport")}
           </UiButton>
           <UiButton
             appearance="tonal"
@@ -364,20 +371,24 @@ export default function PackingLabelPrintReport() {
             disabled={!selectedRow || showFullFailure || actionPhase !== "idle"}
             onClick={() => selectedRow && void handlePrint(selectedRow)}
           >
-            {actionPhase === "submitting" ? "Đang gửi yêu cầu…" : "In nhãn"}
+            {actionPhase === "submitting"
+              ? tUi("updatedUi.text_8b96ca57d2f4")
+              : tUi("outbound.detail.print")}
           </UiButton>
         </div>
       </header>
 
       {!online ? (
         <div className="hn-pkg-label__banner is-warning">
-          <WarningOutlined /> Bạn đang ngoại tuyến. Không thể tải dữ liệu mới.
+          <WarningOutlined />
+          {" " + tUi("updatedUi.text_793312837e7f")}
         </div>
       ) : null}
 
       {actionPhase === "submitting" ? (
         <div className="hn-pkg-label__banner is-info">
-          <PrinterOutlined /> Đang gửi yêu cầu in nhãn
+          <PrinterOutlined />
+          {" " + tUi("updatedUi.text_c38ce88e41ef")}
         </div>
       ) : null}
 
@@ -391,7 +402,7 @@ export default function PackingLabelPrintReport() {
           <span>{notice.text}</span>
           <button
             type="button"
-            aria-label="Đóng thông báo"
+            aria-label={tUi("updatedUi.text_8af6ba927e1f")}
             onClick={() => setNotice(null)}
           >
             ×
@@ -399,11 +410,14 @@ export default function PackingLabelPrintReport() {
         </div>
       ) : null}
 
-      <section className="hn-pkg-label__filter" aria-label="Bộ lọc báo cáo">
+      <section
+        className="hn-pkg-label__filter"
+        aria-label={tUi("reports.recipientAgency.filterTitle")}
+      >
         <div
           className={"hn-pkg-label__field " + (draftInvalid ? "has-error" : "")}
         >
-          <label>Khoảng thời gian</label>
+          <label>{tUi("reports.packingLabel.dateRangeLabel")}</label>
           <UiVuexyDateRangePicker
             value={draftRange}
             format="DD/MM/YYYY"
@@ -417,47 +431,54 @@ export default function PackingLabelPrintReport() {
             }}
           />
           {draftInvalid ? (
-            <small>ⓘ Ngày bắt đầu không được sau ngày kết thúc.</small>
+            <small>{tUi("updatedUi.text_ed929e076375")}</small>
           ) : null}
         </div>
 
         <div className="hn-pkg-label__field">
-          <label>Kho</label>
+          <label>{tUi("updatedUi.text_19c608bfa103")}</label>
           <div className="hn-pkg-label__readonly">◇&nbsp;&nbsp;Kho Hoa Nam</div>
         </div>
 
         <div className="hn-pkg-label__field">
-          <label>Trạng thái</label>
+          <label>{tUi("dashboard.composition.colStatus")}</label>
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            aria-label="Trạng thái"
+            aria-label={tUi("dashboard.composition.colStatus")}
           >
-            <option value="">▤&nbsp;&nbsp;Tất cả</option>
-            <option value="PRINTED">In thành công</option>
-            <option value="PRINT_FAILED">Lỗi in</option>
-            <option value="PENDING_PRINT">Đang xử lý</option>
+            <option value="">{tUi("updatedUi.text_cdc3530d2f3f")}</option>
+            <option value="PRINTED">
+              {tUi("reports.packingLabel.resultPrinted")}
+            </option>
+            <option value="PRINT_FAILED">
+              {tUi("updatedUi.text_2a2df69319d9")}
+            </option>
+            <option value="PENDING_PRINT">
+              {tUi("dashboard.snapshot.stateProcessing")}
+            </option>
           </select>
         </div>
 
         <div className="hn-pkg-label__field">
-          <label>Tìm kiếm báo cáo</label>
+          <label>{tUi("updatedUi.text_5345eb7325a1")}</label>
           <SearchInput
             id="rpt-05-q"
             width="100%"
             value={keyword}
-            placeholder="Mã nhãn, SKU, mã phiếu..."
-            aria-label="Tìm kiếm báo cáo"
+            placeholder={tUi("updatedUi.text_28e2d39c772f")}
+            aria-label={tUi("updatedUi.text_5345eb7325a1")}
             onChange={setKeyword}
           />
         </div>
 
         <div className="hn-pkg-label__filter-meta">
           <span>
-            Kỳ báo cáo: {period.from.split("-").reverse().join("/")}–
+            {tUi("updatedUi.text_e7ea4adf1845") + " "}
+            {period.from.split("-").reverse().join("/")}–
             {period.to.split("-").reverse().join("/")}
           </span>
-          <span>Múi giờ Việt Nam</span>
+          <span>{tUi("updatedUi.text_bebd46bc068a")}</span>
         </div>
         <div className="hn-pkg-label__filter-actions">
           <UiButton
@@ -465,10 +486,10 @@ export default function PackingLabelPrintReport() {
             disabled={draftInvalid || !online}
             onClick={applyFilters}
           >
-            Áp dụng
+            {tUi("dashboard.snapshot.apply")}
           </UiButton>
           <UiButton appearance="text" onClick={resetFilters}>
-            Đặt lại
+            {tUi("reports.packingLabel.reset")}
           </UiButton>
         </div>
       </section>
@@ -477,7 +498,7 @@ export default function PackingLabelPrintReport() {
         onClose={() => {
           if (actionPhase !== "submitting") setReprintRow(null);
         }}
-        title="In lại nhãn"
+        title={tUi("outbound.detail.reprint")}
         maxWidth="sm"
         actions={
           <>
@@ -486,7 +507,7 @@ export default function PackingLabelPrintReport() {
               disabled={actionPhase === "submitting"}
               onClick={() => setReprintRow(null)}
             >
-              Hủy
+              {tUi("dashboard.snapshot.cancel")}
             </UiButton>
             <UiButton
               appearance="filled"
@@ -496,7 +517,7 @@ export default function PackingLabelPrintReport() {
                 if (reprintRow) void handlePrint(reprintRow, reprintReason);
               }}
             >
-              Xác nhận in lại
+              {tUi("updatedUi.text_a0455ba3ad22")}
             </UiButton>
           </>
         }
@@ -515,14 +536,14 @@ export default function PackingLabelPrintReport() {
           required
           multiline
           minRows={3}
-          label="Lý do in lại nhãn"
+          label={tUi("outbound.reprint.title")}
           value={reprintReason}
           disabled={actionPhase !== "idle"}
           error={reprintReasonError}
           helperText={
             reprintReasonError
-              ? "Nhập lý do in lại nhãn."
-              : "Lý do được lưu trong nhật ký in nhãn."
+              ? tUi("updatedUi.text_e113e89ba4b9")
+              : tUi("updatedUi.text_097751df70a6")
           }
           onChange={(event) => {
             setReprintReason(event.target.value);
@@ -535,16 +556,16 @@ export default function PackingLabelPrintReport() {
         <>
           <section
             className="hn-pkg-label__kpis"
-            aria-label="Tổng quan in nhãn"
+            aria-label={tUi("updatedUi.text_8919df372459")}
           >
             <article className="hn-pkg-label__kpi">
               <span className="hn-pkg-label__kpi-icon is-blue">
                 <PrinterOutlined />
               </span>
               <div>
-                <span>Tổng nhãn</span>
+                <span>{tUi("updatedUi.text_63a9dc4f581c")}</span>
                 <strong>{formatQuantity(metrics.total)}</strong>
-                <small>Nhãn duy nhất trong kỳ</small>
+                <small>{tUi("updatedUi.text_2c5c7edb2cb3")}</small>
               </div>
             </article>
             <article className="hn-pkg-label__kpi">
@@ -552,10 +573,11 @@ export default function PackingLabelPrintReport() {
                 <CheckCircleOutlined />
               </span>
               <div>
-                <span>In thành công</span>
+                <span>{tUi("reports.packingLabel.resultPrinted")}</span>
                 <strong>{formatQuantity(metrics.printed)}</strong>
                 <small className="is-green-text">
-                  {printedRate.toLocaleString("vi-VN")}% tổng nhãn
+                  {printedRate.toLocaleString("vi-VN")}
+                  {tUi("updatedUi.text_9828e86e38cd")}
                 </small>
               </div>
             </article>
@@ -564,9 +586,11 @@ export default function PackingLabelPrintReport() {
                 <WarningOutlined />
               </span>
               <div>
-                <span>Nhãn lỗi</span>
+                <span>{tUi("updatedUi.text_8d18877fc9ca")}</span>
                 <strong>{formatQuantity(metrics.failed)}</strong>
-                <small className="is-red-text">Cần kiểm tra</small>
+                <small className="is-red-text">
+                  {tUi("reports.traceability.needsReview")}
+                </small>
               </div>
             </article>
             <article className="hn-pkg-label__kpi">
@@ -574,15 +598,15 @@ export default function PackingLabelPrintReport() {
                 <UndoOutlined />
               </span>
               <div>
-                <span>Lượt in lại</span>
+                <span>{tUi("updatedUi.text_c5476e0cf681")}</span>
                 <strong>{formatQuantity(metrics.reprinted)}</strong>
-                <small>Lượt độc lập · Không cộng tổng nhãn</small>
+                <small>{tUi("updatedUi.text_9ec67691c148")}</small>
               </div>
             </article>
           </section>
 
           <section className="hn-pkg-label__health">
-            <h2>Tình trạng in nhãn</h2>
+            <h2>{tUi("updatedUi.text_d7501a48ef2c")}</h2>
             <div className="hn-pkg-label__health-body">
               <div className="hn-pkg-label__bar-wrap">
                 <div className="hn-pkg-label__bar">
@@ -596,22 +620,23 @@ export default function PackingLabelPrintReport() {
                 <div className="hn-pkg-label__legend">
                   <span>
                     <b className="is-green-dot" />{" "}
-                    <strong>{formatQuantity(metrics.printed)}</strong> thành
-                    công
+                    <strong>{formatQuantity(metrics.printed)}</strong>
+                    {" " + tUi("updatedUi.text_a68b980df605")}
                   </span>
                   <span>
                     <b className="is-red-dot" />{" "}
-                    <strong>{formatQuantity(metrics.failed)}</strong> lỗi
+                    <strong>{formatQuantity(metrics.failed)}</strong>
+                    {" " + tUi("updatedUi.text_9f2be3acefea")}
                   </span>
                 </div>
               </div>
               <div className="hn-pkg-label__health-number">
                 <strong>{printedRate.toLocaleString("vi-VN")}%</strong>
-                <span>Tỷ lệ in thành công</span>
+                <span>{tUi("updatedUi.text_9ada32d66f1d")}</span>
               </div>
               <div className="hn-pkg-label__health-number">
                 <strong>{formatQuantity(metrics.reprinted)}</strong>
-                <span>lượt in lại</span>
+                <span>{tUi("updatedUi.text_b26797dded3e")}</span>
               </div>
             </div>
           </section>
@@ -629,12 +654,14 @@ export default function PackingLabelPrintReport() {
               <WarningOutlined />
             </span>
             <h2>
-              {online ? "Không thể tải dữ liệu" : "Không có kết nối mạng"}
+              {online
+                ? tUi("dashboard.alert.failedBadge")
+                : tUi("updatedUi.text_ce0ba8d55ff5")}
             </h2>
             <p>
               {online
-                ? "Đã xảy ra lỗi khi tải báo cáo. Vui lòng thử lại."
-                : "Kiểm tra kết nối và thử lại."}
+                ? tUi("updatedUi.text_746ce26e0f2a")
+                : tUi("updatedUi.text_3ad5d030ccde")}
             </p>
             <UiButton
               appearance="tonal"
@@ -642,22 +669,23 @@ export default function PackingLabelPrintReport() {
               disabled={!online}
               onClick={refresh}
             >
-              Thử lại
+              {tUi("common.retry")}
             </UiButton>
           </div>
         ) : (
           <>
             <div className="hn-pkg-label__list-head">
               <div className="hn-pkg-label__list-title">
-                <h2>Danh sách nhãn</h2>
+                <h2>{tUi("updatedUi.text_257e942e79dc")}</h2>
                 <span className="hn-pkg-label__count">
                   {partial
-                    ? "Chưa cập nhật"
+                    ? tUi("updatedUi.text_ebc5a4d489c7")
                     : formatQuantity(filteredRows.length)}
                 </span>
                 {partial ? (
                   <span className="hn-pkg-label__partial">
-                    <WarningOutlined /> Dữ liệu có thể chưa đầy đủ
+                    <WarningOutlined />
+                    {" " + tUi("updatedUi.text_3349b06e35cf")}
                   </span>
                 ) : null}
               </div>
@@ -665,8 +693,8 @@ export default function PackingLabelPrintReport() {
                 id="rpt-05-table-q"
                 width="100%"
                 value={tableKeyword}
-                placeholder="Tìm trong danh sách nhãn..."
-                aria-label="Tìm trong danh sách nhãn"
+                placeholder={tUi("updatedUi.text_aa051eef2028")}
+                aria-label={tUi("updatedUi.text_e7b976530be3")}
                 onChange={setTableKeyword}
               />
             </div>
@@ -676,21 +704,22 @@ export default function PackingLabelPrintReport() {
                 <thead>
                   <tr>
                     <th>
-                      Mã nhãn /<br />
-                      Mã phiếu
+                      {tUi("updatedUi.text_54b9001e5cce")}
+                      <br />
+                      {tUi("warranty.componentList.colCode")}
                     </th>
                     <th>
                       SKU /<br />
-                      Sản phẩm
+                      {tUi("dashboard.skuType.product")}
                     </th>
-                    <th>Thời gian in</th>
-                    <th>Trạng thái</th>
+                    <th>{tUi("updatedUi.text_cc63dd2119ce")}</th>
+                    <th>{tUi("dashboard.composition.colStatus")}</th>
                     <th>
-                      Số lần
+                      {tUi("updatedUi.text_2b044f4871ca")}
                       <br />
                       in
                     </th>
-                    <th>Thao tác</th>
+                    <th>{tUi("outbound.detail.colAction")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -699,7 +728,7 @@ export default function PackingLabelPrintReport() {
                       <td colSpan={6}>
                         <div className="hn-pkg-label__empty">
                           <span className="hn-pkg-label__spinner" />
-                          Đang tải dữ liệu…
+                          {tUi("shared.states.loadingData")}
                         </div>
                       </td>
                     </tr>
@@ -710,17 +739,15 @@ export default function PackingLabelPrintReport() {
                           <span className="hn-pkg-label__state-icon is-small">
                             <WarningOutlined />
                           </span>
-                          <h3>Chưa tải được danh sách nhãn</h3>
-                          <p>Tải lại để cập nhật danh sách nhãn.</p>
-                          <small>
-                            Xuất báo cáo tạm khóa: danh sách chưa đầy đủ.
-                          </small>
+                          <h3>{tUi("updatedUi.text_f826e626c6ce")}</h3>
+                          <p>{tUi("updatedUi.text_150036f2ad25")}</p>
+                          <small>{tUi("updatedUi.text_15e514f9796a")}</small>
                           <UiButton
                             appearance="outlined"
                             startIcon={<ReloadOutlined />}
                             onClick={refresh}
                           >
-                            Tải lại
+                            {tUi("shared.address.retry")}
                           </UiButton>
                         </div>
                       </td>
@@ -729,8 +756,8 @@ export default function PackingLabelPrintReport() {
                     <tr>
                       <td colSpan={6}>
                         <div className="hn-pkg-label__empty">
-                          <h3>Không tìm thấy nhãn phù hợp</h3>
-                          <p>Thử thay đổi từ khóa hoặc bộ lọc.</p>
+                          <h3>{tUi("updatedUi.text_21b5584e639e")}</h3>
+                          <p>{tUi("updatedUi.text_3bbb177609bb")}</p>
                         </div>
                       </td>
                     </tr>
@@ -804,18 +831,19 @@ export default function PackingLabelPrintReport() {
             <div className="hn-pkg-label__list-footer hn-report-pagination-footer">
               <div>
                 <strong>
-                  Hiển thị{" "}
+                  {tUi("putaway.queue.showing")}{" "}
                   {filteredRows.length === 0
                     ? 0
                     : (safePage - 1) * PAGE_SIZE + 1}
                   –{Math.min(safePage * PAGE_SIZE, filteredRows.length)} /{" "}
-                  {formatQuantity(filteredRows.length)} nhãn
+                  {formatQuantity(filteredRows.length)}
+                  {" " + tUi("updatedUi.text_ab184fe298be")}
                 </strong>
-                <span>Dữ liệu theo kỳ đã áp dụng</span>
+                <span>{tUi("updatedUi.text_5f1b29ade3fd")}</span>
               </div>
               <nav
                 className="hn-pkg-label__pagination hn-report-pagination"
-                aria-label="Phân trang"
+                aria-label={tUi("shared.table.pagination")}
               >
                 <button
                   type="button"
