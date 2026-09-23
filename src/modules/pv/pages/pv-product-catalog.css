@@ -1,0 +1,1059 @@
+/* MST-PV-01: screen-local SystemHNWeb skin; existing data and actions stay in React. */
+.pv-catalog-page,
+.pv-catalog-dialog,
+.pv-catalog-menu {
+  --pv-ink: var(--ops-text);
+  --pv-heading: var(--ops-heading);
+  --pv-blue: var(--ops-link);
+  --pv-cta: var(--ops-primary);
+  --pv-muted: var(--ops-muted);
+  --pv-line: var(--ops-line);
+  --pv-pale: var(--ops-pale);
+  --pv-card: var(--ops-surface);
+  --pv-focus: var(--ops-focus-ring);
+  color: var(--pv-ink);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.pv-catalog-page {
+  container: pv-catalog / inline-size;
+  min-width: 0;
+  width: 100%;
+  padding: 0 0 20px;
+}
+
+.pv-catalog-page h1,
+.pv-catalog-page h2,
+.pv-catalog-page p {
+  margin: 0;
+}
+
+.pv-catalog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+
+.pv-catalog-heading > div:first-child {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.pv-catalog-page .pv-catalog-heading h1 {
+  color: var(--ops-heading);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 38px;
+}
+
+.pv-catalog-page .pv-catalog-heading p {
+  margin-top: 4px;
+  color: var(--pv-muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.pv-catalog-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pv-catalog-page .MuiButton-root:not(.hn-row-action),
+.pv-catalog-dialog .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  padding: 7px 12px;
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-transform: none;
+  box-shadow: none;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.pv-catalog-page .MuiButton-outlined,
+.pv-catalog-dialog .MuiButton-outlined {
+  border-color: var(--pv-line);
+  background: var(--pv-card);
+  color: var(--pv-blue);
+}
+
+.pv-catalog-page .MuiButton-text:not(.hn-row-action),
+.pv-catalog-dialog .MuiButton-text:not(.hn-row-action) {
+  color: var(--pv-blue);
+}
+
+.pv-catalog-page .MuiButton-outlined:hover,
+.pv-catalog-page .MuiButton-text:not(.hn-row-action):hover,
+.pv-catalog-dialog .MuiButton-outlined:hover,
+.pv-catalog-dialog .MuiButton-text:not(.hn-row-action):hover {
+  border-color: var(--pv-blue);
+  background: var(--pv-pale);
+  box-shadow: none;
+}
+
+.pv-catalog-page .pv-catalog-apply,
+.pv-catalog-page [data-testid="pv-catalog-add"],
+.pv-catalog-dialog [data-testid="pv-catalog-submit"] {
+  border: 1px solid var(--pv-cta);
+  background: var(--pv-cta);
+  color: var(--wms-on-primary);
+}
+
+.pv-catalog-page .pv-catalog-apply:hover,
+.pv-catalog-page [data-testid="pv-catalog-add"]:hover,
+.pv-catalog-dialog [data-testid="pv-catalog-submit"]:hover {
+  border-color: var(--ops-primary-hover);
+  background: var(--ops-primary-hover);
+  color: var(--wms-on-primary);
+}
+
+.pv-catalog-page .MuiButton-root:not(.hn-row-action).Mui-disabled,
+.pv-catalog-dialog .MuiButton-root:not(.hn-row-action).Mui-disabled {
+  color: var(--pv-muted);
+  border-color: var(--pv-line);
+  background: color-mix(in srgb, var(--pv-pale) 65%, var(--pv-card));
+  opacity: 0.65;
+}
+
+.pv-catalog-page .MuiButton-startIcon,
+.pv-catalog-page .MuiButton-endIcon,
+.pv-catalog-dialog .MuiButton-startIcon,
+.pv-catalog-dialog .MuiButton-endIcon {
+  color: inherit;
+}
+
+.pv-catalog-page .pv-catalog-warehouse {
+  display: flex;
+  gap: 10px;
+  min-height: 50px;
+  padding: 6px 12px;
+  text-align: left;
+}
+
+.pv-catalog-warehouse > span:not(.MuiTouchRipple-root) {
+  min-width: 0;
+}
+
+.pv-catalog-warehouse strong,
+.pv-catalog-warehouse small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.pv-catalog-warehouse strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.pv-catalog-warehouse small {
+  color: var(--pv-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.pv-catalog-panel {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--pv-card);
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--pv-heading) 4%, transparent);
+}
+
+.pv-catalog-panel + .pv-catalog-panel {
+  margin-top: 16px;
+}
+
+.pv-catalog-panel-heading,
+.pv-catalog-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+
+.pv-catalog-page .pv-catalog-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--pv-heading);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 26px;
+}
+
+.pv-catalog-panel-heading > span {
+  color: var(--pv-muted);
+  font-size: 12px;
+}
+
+.pv-catalog-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pv-catalog-stat {
+  --pv-stat: var(--pv-blue);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 14px;
+  min-height: 82px;
+  padding: 12px;
+  border: 1px solid var(--pv-line);
+  border-radius: 6px;
+  background: var(--pv-card);
+}
+
+.pv-catalog-stat[data-tone="success"] {
+  --pv-stat: var(--ops-success);
+}
+.pv-catalog-stat[data-tone="neutral"] {
+  --pv-stat: var(--pv-muted);
+}
+.pv-catalog-stat[data-tone="warning"] {
+  --pv-stat: var(--ops-warning);
+}
+
+.pv-catalog-stat-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--ops-radius-card);
+  background: color-mix(in srgb, var(--pv-stat) 10%, var(--pv-card));
+  color: var(--pv-stat);
+}
+
+.pv-catalog-stat-icon svg {
+  width: 30px;
+  height: 30px;
+}
+.pv-catalog-stat > div {
+  min-width: 0;
+}
+.pv-catalog-stat strong {
+  display: block;
+  color: var(--pv-stat);
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.pv-catalog-stat > div > span {
+  display: block;
+  margin-top: 5px;
+  color: var(--pv-muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.pv-catalog-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--pv-muted);
+  font-size: 14px;
+}
+.pv-catalog-info svg {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  color: var(--pv-blue);
+}
+.pv-catalog-page .pv-catalog-permission-note {
+  margin-top: 8px;
+  color: var(--pv-muted);
+  font-size: 14px;
+}
+
+.pv-catalog-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: var(--pv-pale);
+  color: var(--pv-blue);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-catalog-page .pv-catalog-refresh {
+  min-height: 30px;
+  padding: 3px 0 3px 6px;
+  color: var(--pv-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.pv-catalog-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(200px, 1.65fr) minmax(160px, 1fr) minmax(180px, 1fr)
+    auto auto;
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pv-catalog-search,
+.pv-catalog-filter {
+  min-width: 0;
+}
+.pv-catalog-page .pv-catalog-search > .MuiFormControl-root,
+.pv-catalog-page .pv-catalog-search > .MuiAutocomplete-root {
+  width: 100%;
+  min-width: 0;
+}
+.pv-catalog-filter > label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--pv-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.pv-catalog-page .MuiInputBase-root,
+.pv-catalog-dialog .MuiInputBase-root {
+  color: var(--pv-ink);
+  background-color: var(--pv-card);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+}
+.pv-catalog-page .MuiOutlinedInput-root:not(.MuiInputBase-multiline),
+.pv-catalog-dialog .MuiOutlinedInput-root:not(.MuiInputBase-multiline) {
+  min-height: var(--ops-control-height);
+}
+.pv-catalog-page .MuiOutlinedInput-notchedOutline,
+.pv-catalog-dialog .MuiOutlinedInput-notchedOutline {
+  border-color: var(--pv-line);
+}
+.pv-catalog-page .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline,
+.pv-catalog-dialog
+  .MuiOutlinedInput-root:hover
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--pv-blue);
+}
+.pv-catalog-page
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline,
+.pv-catalog-dialog
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--pv-blue);
+  border-width: 1px;
+}
+.pv-catalog-page .MuiOutlinedInput-root.Mui-focused,
+.pv-catalog-dialog .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px var(--pv-focus);
+}
+.pv-catalog-page .MuiInputBase-input::placeholder {
+  color: var(--pv-muted);
+  opacity: 1;
+}
+.pv-catalog-page .MuiSelect-icon,
+.pv-catalog-page .MuiInputAdornment-root,
+.pv-catalog-dialog .MuiSelect-icon {
+  color: var(--pv-blue);
+}
+.pv-catalog-dialog .MuiInputLabel-root.Mui-focused {
+  color: var(--pv-blue);
+}
+.pv-catalog-page
+  .MuiOutlinedInput-root.Mui-error
+  .MuiOutlinedInput-notchedOutline,
+.pv-catalog-dialog
+  .MuiOutlinedInput-root.Mui-error
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--wms-error);
+}
+.pv-catalog-page .MuiOutlinedInput-root.Mui-error,
+.pv-catalog-dialog .MuiOutlinedInput-root.Mui-error {
+  box-shadow: none;
+}
+.pv-catalog-dialog .MuiInputLabel-root.Mui-error {
+  color: var(--wms-error);
+}
+
+.pv-catalog-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 12px 0 10px;
+}
+.pv-catalog-page .pv-catalog-view-tabs .MuiButton-root {
+  min-height: 30px;
+  padding: 4px 9px;
+  font-size: 12px;
+  color: var(--pv-muted);
+}
+.pv-catalog-page .pv-catalog-view-tabs .MuiButton-root[aria-selected="true"] {
+  background: var(--pv-pale);
+  color: var(--pv-blue);
+}
+.pv-catalog-results {
+  min-width: 0;
+}
+.pv-catalog-table {
+  min-width: 0;
+}
+.pv-catalog-table > div:has(> table) {
+  border-color: var(--pv-line);
+  border-radius: 6px;
+}
+.pv-catalog-page .pv-catalog-table table {
+  width: 100%;
+  min-width: 0;
+  font-size: 14px;
+}
+.pv-catalog-page .pv-catalog-table thead th {
+  padding: 11px 12px;
+  color: var(--pv-blue);
+  background-color: var(--pv-pale);
+  background-image: none;
+  border-bottom-color: var(--pv-line);
+  font-size: 12px;
+  font-weight: 600;
+}
+.pv-catalog-page .pv-catalog-table thead th button {
+  color: var(--pv-blue);
+  font: inherit;
+}
+.pv-catalog-page .pv-catalog-table tbody td {
+  padding: 10px 12px;
+  color: var(--pv-blue);
+  border-bottom-color: var(--pv-line);
+  vertical-align: middle;
+}
+.pv-catalog-page .pv-catalog-table tbody tr {
+  transition: background-color 140ms ease;
+}
+.pv-catalog-page .pv-catalog-table tbody tr:hover {
+  background: color-mix(in srgb, var(--pv-pale) 55%, var(--pv-card));
+}
+.pv-catalog-table th:first-child {
+  width: 31%;
+}
+.pv-catalog-table td:last-child {
+  width: 150px;
+}
+.pv-catalog-table td a {
+  color: var(--pv-blue);
+}
+.pv-catalog-table time {
+  display: block;
+  max-width: 130px;
+  color: var(--pv-muted);
+  font-size: 12px;
+}
+
+.pv-catalog-product {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  text-align: left;
+}
+.pv-catalog-product-text {
+  min-width: 0;
+}
+.pv-catalog-product-name {
+  display: block;
+  color: var(--pv-blue);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.pv-catalog-product-sku {
+  display: none;
+  color: var(--pv-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+.pv-catalog-page .pv-catalog-image-compact {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 48px;
+  aspect-ratio: auto;
+  border: 1px solid var(--pv-line);
+  border-radius: 5px;
+  background: var(--pv-card);
+}
+.pv-catalog-image img {
+  object-fit: contain;
+}
+
+.pv-catalog-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--pv-muted) 10%, var(--pv-card));
+  color: var(--pv-muted);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.pv-catalog-status[data-tone="success"] {
+  background: color-mix(in srgb, var(--ops-success) 10%, var(--pv-card));
+  color: var(--ops-success);
+}
+.pv-catalog-status:hover:not(:disabled) {
+  border-color: currentColor;
+}
+.pv-catalog-status:disabled {
+  cursor: default;
+}
+.pv-catalog-page .pv-catalog-card {
+  border-color: var(--pv-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--pv-card);
+  box-shadow: none;
+}
+.pv-catalog-page .pv-catalog-card input:checked + span {
+  background-color: var(--pv-cta);
+}
+.pv-catalog-page .pv-catalog-card input:focus-visible + span {
+  box-shadow: 0 0 0 3px var(--pv-focus);
+}
+.pv-catalog-page .pv-catalog-table .MuiCard-root {
+  border-color: var(--pv-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--pv-card);
+  box-shadow: none;
+}
+.pv-catalog-page .pv-catalog-table .MuiCardContent-root {
+  padding: 14px;
+}
+
+.pv-catalog-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  color: var(--pv-muted);
+  font-size: 12px;
+}
+.pv-catalog-pagination > nav {
+  margin-left: auto;
+  min-width: 0;
+}
+.pv-catalog-page .pv-catalog-pagination .MuiInputBase-root {
+  min-height: 32px;
+  font-size: 12px;
+}
+.pv-catalog-page .pv-catalog-pagination .MuiSelect-select {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.pv-catalog-page .pv-catalog-pagination .MuiPaginationItem-root {
+  min-width: 30px;
+  height: 30px;
+  border: 1px solid var(--pv-line);
+  border-radius: 5px;
+  color: var(--pv-blue);
+  font-size: 12px;
+}
+.pv-catalog-page .pv-catalog-pagination .MuiPaginationItem-root.Mui-selected {
+  border-color: var(--pv-cta);
+  background: var(--pv-cta);
+  color: var(--wms-on-primary);
+}
+.pv-catalog-page
+  .pv-catalog-pagination
+  .MuiPaginationItem-root:not(.Mui-selected):hover {
+  background: var(--pv-pale);
+}
+.pv-catalog-page .pv-catalog-pagination .MuiPaginationItem-ellipsis {
+  border: 0;
+}
+
+.pv-catalog-dialog .MuiDialog-paper {
+  width: min(780px, calc(100% - 48px));
+  max-width: 780px;
+  margin: 24px;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--ops-radius-dialog);
+  background: var(--pv-card);
+  color: var(--pv-ink);
+}
+.pv-catalog-dialog .MuiDialogTitle-root {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--pv-line);
+  color: var(--ops-heading);
+  font-size: 18px;
+  font-weight: 700;
+}
+.pv-catalog-dialog .MuiDialogContent-root {
+  min-width: 0;
+  padding: 22px;
+}
+.pv-catalog-dialog .MuiDialogActions-root {
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--pv-line);
+}
+.pv-catalog-dialog .MuiInputLabel-root {
+  color: var(--pv-muted);
+  font-size: 14px;
+}
+.pv-catalog-dialog .MuiFormHelperText-root {
+  font-size: 12px;
+}
+.pv-catalog-dialog .MuiChip-root {
+  background: var(--pv-pale);
+  color: var(--pv-blue);
+}
+.pv-catalog-dialog .MuiCheckbox-root.Mui-checked {
+  color: var(--pv-blue);
+}
+.pv-catalog-menu.MuiPaper-root,
+.pv-catalog-menu .MuiPaper-root {
+  border: 1px solid var(--pv-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--pv-card);
+  color: var(--pv-blue);
+}
+.pv-catalog-menu .MuiMenuItem-root {
+  min-height: var(--ops-control-height);
+  font-size: 14px;
+}
+.pv-catalog-menu .MuiMenuItem-root:hover,
+.pv-catalog-menu .MuiMenuItem-root.Mui-selected {
+  background: var(--pv-pale);
+}
+
+.pv-catalog-page :is(button, a, [tabindex]):focus-visible,
+.pv-catalog-dialog :is(button, a, [tabindex]):focus-visible,
+.pv-catalog-menu .MuiMenuItem-root:focus-visible {
+  outline: 2px solid var(--pv-blue);
+  outline-offset: 2px;
+}
+
+@container pv-catalog (max-width: 1100px) {
+  .pv-catalog-heading-actions {
+    justify-content: flex-start;
+  }
+  .pv-catalog-filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  }
+  .pv-catalog-search {
+    grid-column: 1 / -1;
+  }
+  .pv-catalog-product-sku {
+    display: block;
+  }
+  .pv-catalog-table table > colgroup > col:nth-child(2),
+  .pv-catalog-table table > thead > tr > th:nth-child(2),
+  .pv-catalog-table table > tbody > tr > td:nth-child(2) {
+    display: none;
+  }
+}
+
+@container pv-catalog (max-width: 900px) {
+  .pv-catalog-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .pv-catalog-heading > div:first-child {
+    flex-basis: 100%;
+  }
+  .pv-catalog-heading-actions {
+    width: 100%;
+  }
+  .pv-catalog-panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .pv-catalog-table th:first-child {
+    width: 34%;
+  }
+  .pv-catalog-page .pv-catalog-table thead th,
+  .pv-catalog-page .pv-catalog-table tbody td {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+  .pv-catalog-table time {
+    max-width: 100px;
+  }
+}
+
+@container pv-catalog (max-width: 620px) {
+  .pv-catalog-heading-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .pv-catalog-page .pv-catalog-warehouse {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .pv-catalog-warehouse > span:last-of-type:not(.MuiTouchRipple-root) {
+    margin-left: auto;
+  }
+  .pv-catalog-heading-actions > .MuiButton-root {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+  .pv-catalog-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .pv-catalog-page .pv-catalog-apply,
+  .pv-catalog-page .pv-catalog-reset {
+    min-height: var(--ops-control-height);
+  }
+  .pv-catalog-panel {
+    padding: 12px;
+  }
+  .pv-catalog-stat {
+    gap: 10px;
+    padding: 10px;
+    min-height: 76px;
+  }
+  .pv-catalog-stat-icon {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+  }
+  .pv-catalog-stat-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+  .pv-catalog-stat strong {
+    font-size: 25px;
+  }
+  .pv-catalog-stat > div > span {
+    font-size: 12px;
+  }
+  .pv-catalog-page .pv-catalog-heading h1 {
+    font-size: 24px;
+  }
+  .pv-catalog-page .pv-catalog-heading p {
+    font-size: 14px;
+  }
+  .pv-catalog-page .pv-catalog-panel h2 {
+    font-size: 18px;
+  }
+  .pv-catalog-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .pv-catalog-pagination > nav {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .pv-catalog-page .pv-catalog-table table {
+    min-width: 550px;
+  }
+  .pv-catalog-page .pv-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .pv-catalog-page .pv-catalog-grid > .MuiGrid-root {
+    width: auto;
+    min-width: 0;
+  }
+}
+
+@container pv-catalog (max-width: 380px) {
+  .pv-catalog-heading-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pv-catalog-stat {
+    gap: 7px;
+    padding: 9px;
+  }
+  .pv-catalog-stat-icon {
+    flex-basis: 32px;
+    width: 32px;
+    height: 36px;
+  }
+  .pv-catalog-stat-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  .pv-catalog-stat strong {
+    font-size: 23px;
+  }
+  .pv-catalog-stat > div > span {
+    font-size: 11px;
+  }
+  .pv-catalog-stats {
+    gap: 8px;
+  }
+  .pv-catalog-filter {
+    grid-column: 1 / -1;
+  }
+  .pv-catalog-list-heading {
+    gap: 4px;
+  }
+  .pv-catalog-page .pv-catalog-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 979.98px) {
+  .pv-catalog-page {
+    padding: 0 0 20px;
+  }
+}
+@media (max-width: 599.98px) {
+  .pv-catalog-page {
+    padding: 0 0 20px;
+  }
+  .pv-catalog-page .pv-catalog-table .MuiCardContent-root > div {
+    gap: 10px;
+  }
+  .pv-catalog-page .pv-catalog-table .MuiCardContent-root > div:first-child {
+    flex-direction: column;
+  }
+  .pv-catalog-page
+    .pv-catalog-table
+    .MuiCardContent-root
+    > div:first-child
+    > div {
+    width: 100%;
+    text-align: left;
+  }
+  .pv-catalog-dialog .MuiDialog-paper {
+    width: calc(100% - 24px);
+    max-height: calc(100% - 24px);
+    margin: 12px;
+  }
+  .pv-catalog-dialog .MuiDialogTitle-root {
+    padding: 16px;
+    font-size: 18px;
+  }
+  .pv-catalog-dialog .MuiDialogContent-root {
+    padding: 18px 16px;
+  }
+  .pv-catalog-dialog .MuiDialogActions-root {
+    padding: 12px 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pv-catalog-page *,
+  .pv-catalog-dialog *,
+  .pv-catalog-menu * {
+    transition-duration: 0s;
+    animation-duration: 0s;
+    scroll-behavior: auto;
+  }
+}
+
+/* Match the reference density while retaining the shared shell proportions. */
+.hn-system-shell .MuiBox-root:has(> .hn-mvp-screen > .pv-catalog-page) {
+  gap: 10px;
+  padding-top: 14px;
+}
+.pv-catalog-panel-heading {
+  justify-content: flex-start;
+}
+.pv-catalog-panel-heading > span {
+  font-size: 12px;
+}
+.pv-catalog-info {
+  padding: 7px 10px;
+  border-radius: 5px;
+  background: var(--pv-pale);
+  color: var(--pv-blue);
+  margin-top: 10px;
+}
+.pv-catalog-stat {
+  background: color-mix(in srgb, var(--pv-stat) 4%, var(--pv-card));
+  border-color: color-mix(in srgb, var(--pv-stat) 15%, var(--pv-card));
+}
+.pv-catalog-stat strong {
+  color: var(--pv-heading);
+}
+.pv-catalog-stat > div > span {
+  color: var(--pv-blue);
+}
+.pv-catalog-search > div {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.pv-catalog-search .MuiFormControl-root {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.pv-catalog-filter > label {
+  color: var(--pv-blue);
+  font-weight: 600;
+}
+.pv-catalog-page .pv-catalog-table tbody td {
+  padding: 6px 10px;
+}
+.pv-catalog-page .pv-catalog-image-compact {
+  flex-basis: 52px;
+  width: 52px;
+  height: 36px;
+}
+.pv-catalog-product-name {
+  font-weight: 500;
+}
+.pv-catalog-page .pv-catalog-table thead th::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--pv-pale);
+  pointer-events: none;
+}
+.pv-catalog-view-tabs {
+  margin: 8px 0;
+}
+@container pv-catalog (min-width: 850px) {
+  .pv-catalog-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Autocomplete and page-size menus are portaled outside the page root. */
+body:has(.pv-catalog-page [role="combobox"][aria-expanded="true"])
+  .MuiAutocomplete-popper,
+body:has(.pv-catalog-dialog [role="combobox"][aria-expanded="true"])
+  .MuiAutocomplete-popper,
+body:has(.pv-catalog-pagination [aria-expanded="true"]) .MuiMenu-paper {
+  --pv-popover-blue: light-dark(var(--wms-auth-link), var(--wms-info-text));
+  --pv-popover-pale: light-dark(var(--wms-auth-pale), var(--wms-info-soft));
+  color: var(--pv-popover-blue);
+}
+body:has(.pv-catalog-page [role="combobox"][aria-expanded="true"])
+  .MuiAutocomplete-popper
+  .MuiAutocomplete-paper,
+body:has(.pv-catalog-dialog [role="combobox"][aria-expanded="true"])
+  .MuiAutocomplete-popper
+  .MuiAutocomplete-paper {
+  color: inherit;
+  border: 1px solid light-dark(var(--wms-auth-line), var(--wms-border));
+  font-size: 14px;
+}
+body:has(.pv-catalog-page [role="combobox"][aria-expanded="true"])
+  .MuiAutocomplete-popper
+  .MuiAutocomplete-option:is(.Mui-focused, [aria-selected="true"]),
+body:has(.pv-catalog-dialog [role="combobox"][aria-expanded="true"])
+  .MuiAutocomplete-popper
+  .MuiAutocomplete-option:is(.Mui-focused, [aria-selected="true"]),
+body:has(.pv-catalog-pagination [aria-expanded="true"])
+  .MuiMenu-paper
+  .MuiMenuItem-root:is(.Mui-selected, :hover) {
+  background: var(--pv-popover-pale);
+}
+
+.pv-catalog-page .pv-catalog-table table {
+  table-layout: fixed;
+}
+.pv-catalog-table col:first-child {
+  width: 29%;
+}
+.pv-catalog-table .hn-sortable-th {
+  white-space: normal;
+  text-align: left;
+}
+.pv-catalog-table .hn-sortable-th > span:first-child {
+  min-width: 0;
+}
+.pv-catalog-product-text {
+  flex: 1;
+  overflow: hidden;
+}
+.pv-catalog-product-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pv-catalog-product-sku {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pv-catalog-page .pv-catalog-warehouse > span:not(.MuiTouchRipple-root) {
+  margin-left: 0;
+  margin-right: auto;
+}
+.pv-catalog-dialog [data-testid="pv-image-dropzone"] .MuiButton-root {
+  background: var(--pv-pale);
+  color: var(--pv-blue);
+}
+@container pv-catalog (max-width: 1100px) {
+  .pv-catalog-table col:first-child {
+    width: 32%;
+  }
+  .pv-catalog-page .pv-catalog-table th {
+    white-space: normal;
+  }
+  .pv-catalog-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pv-catalog-page .pv-catalog-reset {
+    border: 1px solid var(--pv-line);
+    background: var(--pv-pale);
+  }
+}
+@container pv-catalog (max-width: 650px) {
+  .pv-catalog-page .pv-catalog-table table {
+    min-width: 650px;
+  }
+}
+
+.hn-system-shell .hn-mvp-screen:has(> .pv-catalog-page) {
+  padding: 0;
+}
+@container pv-catalog (min-width: 301px) and (max-width: 380px) {
+  .pv-catalog-heading-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .pv-catalog-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 575.98px) {
+  .pv-catalog-table .pv-catalog-product-sku {
+    display: none;
+  }
+}

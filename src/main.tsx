@@ -28,12 +28,14 @@ import "./shared/ui/tokens/css-vars.css";
 // Lớp override chế độ tối — phải đứng NGAY SAU bảng sáng và TRƯỚC mọi lớp khác,
 // vì nó chỉ đổi giá trị biến chứ không đổi selector nào của app.
 import "./shared/ui/tokens/css-vars-dark.css";
+import "./shared/ui/tokens/operations.css";
 // SystemHNWeb shell skin dùng chung cho mọi protected route; global CSS chỉ
 // được nạp tại entrypoint này theo ui:styles guard.
 import "./app/layouts/system-shell.css";
 import "./index.css";
 import "./styles/hn-wms-page-normalize.css";
 import "./styles/hn-wms-source-screen.css";
+import "./shared/ui/operations-ui.css";
 // hn-responsive.css đứng gần cuối: lớp responsive foundation thắng cascade
 // của các lớp scoped phía trên mà không sửa nội dung gốc.
 import "./styles/hn-responsive.css";

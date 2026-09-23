@@ -412,11 +412,10 @@ const PAGES: Array<{
   {
     Page: PendingEvidenceReportPage,
     path: ROUTES.REPORTS_PENDING_EVIDENCE,
-    // Bản port 1:1 mockup 8.3 dựng trang nguyên khối, mốc là vỏ trang RPT-08.
+    // RPT-08 giữ vỏ trang và render tiêu đề theo tham chiếu SystemHNWeb.
     testId: "wwhn-258-report-screen",
-    // "Lịch sử chứng từ đã ghi nhận" xuất hiện hai lần (tiêu đề mục + tiêu đề
-    // thẻ bảng) nên neo vào tiêu đề mục tổng quan cho duy nhất.
-    heading: /^Tổng quan lịch sử nhập – xuất$/,
+    // Tiêu đề trang duy nhất; không neo vào nhãn thẻ đã đổi bố cục.
+    heading: /^Báo cáo Lịch sử nhập - xuất kho$/,
   },
 ];
 

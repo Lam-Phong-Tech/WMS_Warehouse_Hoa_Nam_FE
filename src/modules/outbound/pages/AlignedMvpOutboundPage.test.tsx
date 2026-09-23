@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -136,7 +136,12 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
       screen.getByRole("button", { name: /Tiếp nhận yêu cầu xuất/ }),
     ).toBeInTheDocument();
     // DRAFT mutable + có outbound.scan → "Mở"; POSTED bất biến → "Xem" bất kể quyền.
-    expect(screen.getByRole("button", { name: /Mở/ })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("row", { name: /PX-20260820-0001/ })).getByRole(
+        "button",
+        { name: /Mở/ },
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Xem/ })).toBeInTheDocument();
   });
 

@@ -1,3 +1,4 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { useT } from "@/shared/i18n/useT";
 import { useMemo } from "react";
@@ -8,7 +9,6 @@ import type { UiStatusTone } from "@/shared/ui";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import type { ResponsiveTableColumn } from "@/shared/components/data-display/ResponsiveDataTable";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
-import { ActionButton } from "@/shared/components/actions";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { ROUTES } from "@/shared/constants/routes";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -145,12 +145,14 @@ export default function TabPendingEvidence() {
       render: (row) => {
         const meta = DOC_META[row.document_type];
         return meta && row.document_id ? (
-          <ActionButton
-            kind="view"
-            onClick={() => navigate(meta.link(row.document_id))}
-          >
-            {t("reports.pendingEvidence.openDocument")}
-          </ActionButton>
+          <RowActionGroup>
+            <RowActionButton
+              kind="view"
+              onClick={() => navigate(meta.link(row.document_id))}
+            >
+              {t("reports.pendingEvidence.openDocument")}
+            </RowActionButton>
+          </RowActionGroup>
         ) : (
           EMPTY_TEXT
         );

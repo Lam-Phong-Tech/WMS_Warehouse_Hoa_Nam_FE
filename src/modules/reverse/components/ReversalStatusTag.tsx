@@ -42,6 +42,7 @@ export function ReversalStatusTag({
   return (
     <>
       <UiStatusBadge
+        data-reversal-status={value}
         tone={tone}
         label={compact ? label.replace(/ ·.*$/, "") : label}
         sx={showReturnBadge ? { mr: 0.5, mb: 0.5 } : undefined}

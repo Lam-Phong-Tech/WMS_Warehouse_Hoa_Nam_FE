@@ -554,7 +554,7 @@ export function UiVuexyDateRangePicker({
                         transition: `background ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
                         "&:hover": {
                           bgcolor: selected ? S.primaryDark : S.primarySoft,
-                          color: selected ? S.onPrimary : S.primaryDark,
+                          color: selected ? S.onPrimary : S.infoText,
                         },
                         "&:focus-visible": {
                           outline: `2px solid ${S.primary}`,
@@ -688,7 +688,7 @@ const presetButtonSx = (active: boolean) => ({
   border: `1px solid ${active ? S.primary : "transparent"}`,
   borderRadius: `${RADIUS.control}px`,
   bgcolor: active ? S.primarySoft : "transparent",
-  color: active ? S.primaryDark : S.textHigh,
+  color: active ? S.infoText : S.textHigh,
   font: "inherit",
   fontSize: 13,
   fontWeight: active ? 700 : 500,
@@ -696,7 +696,7 @@ const presetButtonSx = (active: boolean) => ({
   whiteSpace: "nowrap",
   cursor: "pointer",
   transition: `background ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
-  "&:hover": { bgcolor: S.primarySoft, color: S.primaryDark },
+  "&:hover": { bgcolor: S.primarySoft, color: S.infoText },
   "&:focus-visible": { outline: `2px solid ${S.primary}`, outlineOffset: 1 },
 });
 
@@ -751,7 +751,7 @@ const pickerFieldTabSx = (active: boolean) => ({
   border: `1px solid ${active ? S.primary : S.border}`,
   borderRadius: `${RADIUS.control}px`,
   bgcolor: active ? S.primarySoft : S.bgSurface,
-  color: active ? S.primaryDark : S.textMedium,
+  color: active ? S.infoText : S.textMedium,
   font: "inherit",
   fontSize: 11,
   textAlign: "left",
@@ -771,7 +771,7 @@ const calendarNavButtonSx = {
   bgcolor: S.bgSubtle,
   color: S.textHigh,
   cursor: "pointer",
-  "&:hover": { bgcolor: S.primarySoft, color: S.primaryDark },
+  "&:hover": { bgcolor: S.primarySoft, color: S.infoText },
   "&:focus-visible": { outline: `2px solid ${S.primary}`, outlineOffset: 1 },
   "&:disabled": { opacity: 0.35, cursor: "not-allowed" },
 } as const;
@@ -795,7 +795,7 @@ const primaryFooterButtonSx = {
   px: 1.25,
   bgcolor: S.primary,
   color: S.onPrimary,
-  "&:hover": { bgcolor: S.primaryDark },
+  "&:hover": { bgcolor: S.infoText },
   "&:disabled": {
     bgcolor: S.grey200,
     color: S.textDisabled,

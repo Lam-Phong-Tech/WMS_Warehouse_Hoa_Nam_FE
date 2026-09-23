@@ -1,0 +1,367 @@
+.hn-sku-readonly-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 1px 15px;
+  border: 1px solid var(--ops-line);
+  border-radius: 999px;
+  background: var(--ops-pale);
+  color: var(--ops-muted);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.hn-sku-refresh-feedback {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--ops-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-sku-refresh-progress {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  height: 2px;
+  background: var(--ops-line);
+}
+.hn-sku-refresh-progress::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: var(--ops-primary);
+  content: "";
+  animation: hn-sku-progress 1.5s ease-in-out infinite;
+}
+.hn-sku-feedback-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, var(--ops-warning) 28%, var(--ops-line));
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-warning-soft);
+  color: var(--ops-warning);
+  font-size: 12px;
+  line-height: 20px;
+}
+.hn-sku-feedback-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 24px;
+}
+.hn-sku-feedback-copy {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hn-sku-feedback-copy strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.hn-sku-feedback-copy p {
+  margin: 0;
+}
+.hn-sku-feedback-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+  min-height: var(--ops-control-height);
+  max-width: 100%;
+  padding: 7px 20px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-primary);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.hn-sku-feedback-button:hover:not(:disabled) {
+  border-color: var(--ops-link);
+  background: var(--ops-pale);
+  color: var(--ops-primary);
+}
+.hn-sku-feedback-button--primary {
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+}
+.hn-sku-feedback-button--primary:hover:not(:disabled) {
+  border-color: var(--ops-primary-hover);
+  background: var(--ops-primary-hover);
+  color: var(--ops-on-primary);
+}
+.hn-sku-feedback-button:disabled {
+  border-color: var(--ops-line);
+  background: var(--ops-line);
+  color: var(--ops-inactive);
+  cursor: progress;
+}
+.hn-sku-feedback-button:focus-visible,
+.hn-sku-feedback-dismiss:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 3px;
+}
+.hn-sku-feedback-dismiss {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.hn-sku-feedback-dismiss:hover {
+  background: var(--ops-warning-soft);
+}
+.hn-sku-feedback-dismiss svg {
+  width: 18px;
+  height: 18px;
+}
+.hn-sku-feedback-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 320px;
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--ops-heading);
+}
+.hn-sku-feedback-illustration {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--ops-pale);
+  color: var(--ops-link);
+}
+.hn-sku-feedback-illustration .hn-sku-feedback-icon {
+  width: 42px;
+  height: 46px;
+}
+.hn-sku-feedback-empty--error .hn-sku-feedback-illustration {
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger);
+}
+.hn-sku-feedback-empty--muted .hn-sku-feedback-illustration {
+  background: var(--ops-pale);
+  color: var(--ops-muted);
+}
+.hn-sku-feedback-empty--warning .hn-sku-feedback-illustration {
+  background: var(--ops-warning-soft);
+  color: var(--ops-warning);
+}
+.hn-sku-feedback-empty h3 {
+  margin: 0;
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+}
+.hn-sku-feedback-empty p {
+  max-width: 620px;
+  margin: 10px 0 0;
+  color: var(--ops-muted);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.hn-sku-feedback-status-code {
+  margin-bottom: 10px;
+  color: var(--ops-muted);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.hn-sku-feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+.hn-sku-feedback-actions .hn-sku-feedback-button {
+  min-width: 122px;
+}
+.hn-sku-feedback-skeleton {
+  min-width: 0;
+}
+.hn-sku-feedback-loading {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  color: var(--ops-muted);
+  font-size: 12px;
+  line-height: 20px;
+}
+.hn-sku-feedback-spinner {
+  display: inline-block;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  border: 1.8px solid currentColor;
+  border-left-color: transparent;
+  border-radius: 50%;
+  animation: hn-sku-spin 800ms linear infinite;
+}
+.hn-sku-feedback-skeleton-row {
+  display: grid;
+  grid-template-columns: 0.9fr 1.8fr 1.25fr 0.55fr 1.1fr 1fr 0.9fr 0.5fr;
+  gap: 18px;
+  align-items: center;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ops-line);
+}
+.hn-sku-feedback-skeleton-line,
+.hn-sku-feedback-skeleton-square,
+.hn-sku-feedback-skeleton-pill {
+  display: block;
+  background: var(--ops-line);
+  animation: hn-sku-skeleton 1.5s ease-in-out infinite;
+}
+.hn-sku-feedback-skeleton-line {
+  width: 80%;
+  height: 10px;
+  border-radius: 3px;
+}
+.hn-sku-feedback-skeleton-square {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+.hn-sku-feedback-skeleton-product {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.hn-sku-feedback-skeleton-product > span:last-child {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+}
+.hn-sku-feedback-skeleton-product .hn-sku-feedback-skeleton-line:first-child {
+  display: none;
+}
+.hn-sku-feedback-skeleton-pill {
+  height: 23px;
+  border-radius: 999px;
+}
+.hn-sku-feedback-skeleton-date {
+  display: grid;
+  gap: 6px;
+}
+.hn-sku-feedback-skeleton-date .hn-sku-feedback-skeleton-line:last-child {
+  width: 45%;
+}
+@keyframes hn-sku-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes hn-sku-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(440%);
+  }
+}
+@keyframes hn-sku-skeleton {
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (max-width: 1199px) {
+  .hn-sku-feedback-skeleton-row {
+    grid-template-columns: 1.8fr 1.15fr 0.55fr 1.1fr 1fr 0.9fr 0.5fr;
+    gap: 12px;
+    min-height: 72px;
+  }
+  .hn-sku-feedback-skeleton-code {
+    display: none;
+  }
+  .hn-sku-feedback-skeleton-product .hn-sku-feedback-skeleton-line:first-child {
+    display: block;
+    width: 50%;
+  }
+}
+@media (max-width: 599px) {
+  .hn-sku-feedback-notice {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+  }
+  .hn-sku-feedback-copy {
+    flex-basis: calc(100% - 36px);
+  }
+  .hn-sku-feedback-notice > .hn-sku-feedback-button {
+    margin-left: 30px;
+  }
+  .hn-sku-feedback-dismiss {
+    margin-left: auto;
+  }
+  .hn-sku-feedback-empty {
+    min-height: 280px;
+    padding: 36px 14px;
+  }
+  .hn-sku-feedback-actions {
+    width: 100%;
+  }
+  .hn-sku-feedback-actions .hn-sku-feedback-button {
+    min-width: 0;
+  }
+  .hn-sku-feedback-skeleton-row {
+    grid-template-columns: 1.6fr 1fr 1fr;
+    min-height: 78px;
+  }
+  .hn-sku-feedback-skeleton-row > :nth-child(3),
+  .hn-sku-feedback-skeleton-row > :nth-child(4),
+  .hn-sku-feedback-skeleton-row > :nth-child(5),
+  .hn-sku-feedback-skeleton-row > :nth-child(7) {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hn-sku-feedback-spinner,
+  .hn-sku-refresh-progress::after,
+  .hn-sku-feedback-skeleton-line,
+  .hn-sku-feedback-skeleton-square,
+  .hn-sku-feedback-skeleton-pill {
+    animation: none;
+  }
+  .hn-sku-feedback-button {
+    transition: none;
+  }
+}

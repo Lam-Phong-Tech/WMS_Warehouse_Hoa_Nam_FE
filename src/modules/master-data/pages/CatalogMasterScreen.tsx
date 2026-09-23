@@ -1,9 +1,14 @@
-import { useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateMasterDerived } from "@/shared/cache/invalidation";
-import { toast } from "sonner";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { CatalogFeedback, CatalogNotice } from "../components/CatalogFeedback";
+import "./catalog-master.css";
 import {
   AppstoreOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  CloseOutlined,
   FileTextOutlined,
   InboxOutlined,
   ShopOutlined,
@@ -41,26 +46,20 @@ import {
   MASTER_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { ActionButton, ActionIconButton, RowActionButton } from "@/shared/components/actions";
 import {
   Box,
   Grid,
   MenuItem,
-  Stack,
   UiAlert,
   UiAutocomplete,
   UiCard,
   UiDialog,
   UiPagination,
   UiSelect,
-  UiStatusBadge,
   UiTabs,
-  UiTabPanel,
-  UiText,
   UiTextField,
   UiNumberField,
-  FILTER_WIDTH,
-  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { codeFormatError } from "@/shared/validation/text-rules";
@@ -188,6 +187,8 @@ function saveErrorMessage(error: unknown, t: TranslateFn): string {
 
 export function CatalogMasterScreen() {
   const t = useT();
+  const english = useLanguageStore((state) => state.language === "en");
+  const text = (vi: string, en: string) => (english ? en : vi);
   const tabs = useMemo(() => catalogTabs(t), [t]);
   const queryClient = useQueryClient();
   const canManage = useCan(P.CATALOG_MANAGE);
@@ -203,6 +204,23 @@ export function CatalogMasterScreen() {
   const [formValues, setFormValues] = useState<CatalogFormValues>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const [offline, setOffline] = useState(() => !navigator.onLine);
+  const [dismissedOffline, setDismissedOffline] = useState(false);
+  const [successNotice, setSuccessNotice] = useState("");
+  const [dismissedNotice, setDismissedNotice] = useState<unknown>(null);
+  useEffect(() => {
+    const update = () => {
+      setOffline(!navigator.onLine);
+      if (navigator.onLine) setDismissedOffline(false);
+    };
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
 
   const activeTab = tabs.find((tab) => tab.kind === activeKind) ?? tabs[0];
   const supportsBrand = catalogMasterSupportsBrand(activeKind);
@@ -285,6 +303,7 @@ export function CatalogMasterScreen() {
 
   const changeTab = (kind: CatalogMasterKind) => {
     setActiveKind(kind);
+    setSuccessNotice("");
     setKeyword("");
     setStatusFilter("");
     setPage(1);
@@ -377,7 +396,7 @@ export function CatalogMasterScreen() {
         values,
         sortOrder: sortOrderCheck.ok ? sortOrderCheck.value : null,
       });
-      toast.success(
+      setSuccessNotice(
         editingRecord
           ? t("masterData.catalog.updated", { item: activeTab.itemLabel })
           : t("masterData.catalog.created", { item: activeTab.itemLabel }),
@@ -428,9 +447,10 @@ export function CatalogMasterScreen() {
       width: 200,
       sortAccessor: (record) => record.code,
       render: (record) => (
-        <Box component="span" sx={{ fontWeight: 700 }}>
-          {record.code}
-        </Box>
+        <span className="hn-catalog-code">
+          <span aria-hidden="true">{activeTab.icon}</span>
+          <strong>{record.code}</strong>
+        </span>
       ),
     },
     {
@@ -488,14 +508,17 @@ export function CatalogMasterScreen() {
       sortType: "value",
       sortAccessor: (record) => record.status,
       render: (record) => (
-        <UiStatusBadge
-          tone={record.status === "ACTIVE" ? "success" : "warning"}
-          label={businessLabel(
+        <span
+          className="hn-catalog-status"
+          data-active={record.status === "ACTIVE"}
+        >
+          <span aria-hidden="true" />
+          {businessLabel(
             MASTER_STATUS_LABELS,
             record.status,
             t("masterData.status.other"),
           )}
-        />
+        </span>
       ),
     },
     {
@@ -506,368 +529,541 @@ export function CatalogMasterScreen() {
       truncate: 0,
       render: (record) =>
         canManage ? (
-          <ActionButton
+          <RowActionButton
             kind="edit"
             aria-label={t("masterData.catalog.editAria", { code: record.code })}
             onClick={() => openEdit(record)}
           >
             {t("masterData.common.edit")}
-          </ActionButton>
+          </RowActionButton>
         ) : null,
     },
   ];
 
-  const listError = listQuery.error
-    ? getApiErrorMessage(listQuery.error, t("masterData.catalog.errLoad"))
-    : "";
+  const hasFilters = Boolean(keyword.trim() || statusFilter);
+  const resetFilters = () => {
+    setKeyword("");
+    setStatusFilter("");
+    setPage(1);
+  };
+  const feedback = {
+    error: listQuery.error,
+    loading: listQuery.isLoading && !offline,
+    refreshing: listQuery.isFetching && !listQuery.isLoading,
+    hasRows: rows.length > 0,
+    hasFilters,
+    offline,
+    onRetry: () => {
+      void listQuery.refetch();
+    },
+    onReset: resetFilters,
+    updatedAt: listQuery.dataUpdatedAt,
+  };
+  const blockingError = !rows.length && (Boolean(listQuery.error) || offline);
+  const displayedFrom = rows.length
+    ? (pagination.current - 1) * perPage + 1
+    : 0;
+  const displayedTo = rows.length ? displayedFrom + rows.length - 1 : 0;
 
   return (
-    <>
-      <Stack spacing={2}>
-        <UiCard disablePadding>
-          <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}>
-            <UiTabs
-              value={activeKind}
-              onChange={(key) => changeTab(key as CatalogMasterKind)}
-              aria-label={t("masterData.catalog.typeAria")}
-              items={tabs.map((tab) => ({
-                key: tab.kind,
-                label: (
-                  <Box
-                    component="span"
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 0.75,
-                    }}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                  </Box>
-                ),
-              }))}
-            />
-          </Box>
-
-          <UiTabPanel value={activeKind} sx={{ p: 2 }}>
-            {listError ? (
-              <Box sx={{ mb: 1.5 }}>
-                <UiAlert tone="error">{listError}</UiAlert>
-              </Box>
-            ) : null}
-
-            <Stack
-              direction="row"
-              spacing={1.5}
-              sx={{
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                mb: 1.5,
-                rowGap: 1.5,
-              }}
+    <div className="hn-catalog-screen" data-screen="MST-CAT-01">
+      <header className="hn-catalog-header">
+        <div>
+          <h1>{text("Danh mục sản phẩm", "Product catalog")}</h1>
+          <p>
+            {text(
+              "Hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách đóng gói dùng khi tạo SKU.",
+              "Brands, categories, models, power sources and packaging used to create SKUs.",
+            )}
+          </p>
+        </div>
+        <div className="hn-catalog-header-actions">
+          {canManage ? (
+            <ActionButton
+              className="hn-catalog-primary"
+              kind="create"
+              onClick={openCreate}
             >
-              <Stack
-                direction="row"
-                spacing={1.5}
-                sx={{ flexWrap: "wrap", rowGap: 1.5 }}
+              {t("masterData.catalog.create", { item: activeTab.itemLabel })}
+            </ActionButton>
+          ) : (
+            <span className="hn-catalog-readonly">
+              {text("Chỉ xem", "Read only")}
+            </span>
+          )}
+        </div>
+      </header>
+
+      <div className="hn-catalog-tabs">
+        <UiTabs
+          value={activeKind}
+          onChange={(key) => changeTab(key as CatalogMasterKind)}
+          aria-label={t("masterData.catalog.typeAria")}
+          items={tabs.map((tab) => ({
+            key: tab.kind,
+            label: (
+              <Box
+                component="span"
+                sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
               >
-                <UiTextField
-                  value={keyword}
-                  placeholder={t("masterData.catalog.searchPlaceholder", {
-                    item: activeTab.itemLabel,
-                  })}
-                  slotProps={{
-                    htmlInput: {
-                      "aria-label": t("masterData.catalog.searchAria", {
-                        item: activeTab.itemLabel,
-                      }),
-                    },
-                  }}
-                  onChange={(event) => {
-                    setKeyword(event.target.value);
-                    setPage(1);
-                  }}
-                  sx={TOOLBAR_SEARCH_SX}
-                />
-                <UiSelect
-                  aria-label={t("masterData.status.filterAria")}
-                  value={statusFilter}
-                  onChange={(value) => {
-                    setStatusFilter(value as MasterStatus | "");
-                    setPage(1);
-                  }}
-                  placeholder={t("masterData.status.allPlaceholder")}
-                  minWidth={168}
-                  options={statusOptions(t)}
-                />
-                <UiSelect
-                  aria-label={t("masterData.common.pageSizeAria")}
-                  value={perPage}
-                  onChange={(value) => {
-                    setPerPage(Number(value));
-                    setPage(1);
-                  }}
-                  minWidth={FILTER_WIDTH.pageSize}
-                  options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
-                    value: size,
-                    label: `${size} / trang`,
-                  }))}
-                />
-              </Stack>
-              {canManage ? (
-                <ActionButton kind="create" onClick={openCreate}>
-                  {t("masterData.catalog.create", {
-                    item: activeTab.itemLabel,
-                  })}
-                </ActionButton>
-              ) : null}
-            </Stack>
+                {tab.icon}
+                {tab.label}
+              </Box>
+            ),
+          }))}
+        />
+      </div>
 
-            <ResponsiveDataTable<CatalogMasterRecord>
-              columns={columns}
-              rows={rows}
-              rowKey={(record) => record.id}
-              loading={listQuery.isLoading}
-              emptyText={t("masterData.catalog.empty", {
-                item: activeTab.itemLabel,
-              })}
-            />
-
-            <Stack
-              direction="row"
-              sx={{
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 1,
-                mt: 1.5,
-              }}
-            >
-              <UiText variant="secondary">
-                {t("masterData.catalog.total", {
-                  count: pagination.total,
+      {(!blockingError || hasFilters) && (
+        <section
+          className="hn-catalog-filters"
+          aria-label={text("Tìm kiếm và lọc", "Search and filters")}
+        >
+          <h2 className="hn-catalog-filter-title">
+            <FilterOutlined />
+            {text("Tìm kiếm và lọc", "Search and filters")}
+          </h2>
+          <div className="hn-catalog-filter-grid">
+            <div className="hn-catalog-search">
+              <label htmlFor="catalog-search">
+                {text("Tìm kiếm", "Search")}
+              </label>
+              <UiTextField
+                id="catalog-search"
+                value={keyword}
+                fullWidth
+                placeholder={t("masterData.catalog.searchPlaceholder", {
                   item: activeTab.itemLabel,
                 })}
-              </UiText>
-              <UiPagination
-                page={pagination.current}
-                pageSize={perPage}
-                total={pagination.total}
-                showTotal={false}
-                onPageChange={setPage}
+                slotProps={{
+                  htmlInput: {
+                    "aria-label": t("masterData.catalog.searchAria", {
+                      item: activeTab.itemLabel,
+                    }),
+                  },
+                  input: {
+                    startAdornment: (
+                      <span className="hn-catalog-input-icon">
+                        <SearchOutlined />
+                      </span>
+                    ),
+                    endAdornment: keyword ? (
+                      <span className="hn-catalog-input-clear">
+                        <ActionIconButton
+                          className="hn-catalog-clear"
+                          kind="clear"
+                          label={text("Xóa tìm kiếm", "Clear search")}
+                          onClick={() => {
+                            setKeyword("");
+                            setPage(1);
+                          }}
+                        />
+                      </span>
+                    ) : undefined,
+                  },
+                }}
+                onChange={(event) => {
+                  setKeyword(event.target.value);
+                  setPage(1);
+                }}
               />
-            </Stack>
-          </UiTabPanel>
-        </UiCard>
+              <small>
+                {text("Tìm theo mã hoặc tên", "Search by code or name")}
+              </small>
+            </div>
+            <div className="hn-catalog-field">
+              <span>{t("masterData.status.label")}</span>
+              <UiSelect
+                aria-label={t("masterData.status.filterAria")}
+                value={statusFilter}
+                fullWidth
+                menuClassName="hn-catalog-menu"
+                onChange={(value) => {
+                  setStatusFilter(value as MasterStatus | "");
+                  setPage(1);
+                }}
+                displayEmpty
+                options={[
+                  { value: "", label: text("Tất cả", "All") },
+                  ...statusOptions(t),
+                ]}
+              />
+            </div>
+            <div className="hn-catalog-filter-actions">
+              <ActionButton
+                className="hn-catalog-primary"
+                kind="refresh"
+                loading={listQuery.isFetching}
+                onClick={() => void listQuery.refetch()}
+              >
+                {text("Cập nhật", "Refresh")}
+              </ActionButton>
+              <ActionButton kind="reset" onClick={resetFilters}>
+                {text("Đặt lại", "Reset")}
+              </ActionButton>
+            </div>
+          </div>
+        </section>
+      )}
 
-        <UiDialog
-          open={isModalOpen}
-          onClose={guardBackdropClose(closeModal)}
-          maxWidth="sm"
-          fullWidth
-          title={
-            <>
-              {editingRecord
-                ? t("masterData.catalog.dialogEdit", {
-                    item: activeTab.itemLabel,
-                  })
-                : t("masterData.catalog.dialogCreate", {
-                    item: activeTab.itemLabel,
-                  })}
-              <ActionIconButton
-                kind="close"
-                label={t("common.close")}
-                onClick={closeModal}
-                disabled={saveMutation.isPending}
-                sx={{ position: "absolute", right: 10, top: 8 }}
-              />
-            </>
-          }
-          actions={
-            <>
-              <ActionButton
-                kind="cancel"
-                onClick={closeModal}
-                disabled={saveMutation.isPending}
-              >
-                {t("masterData.common.cancel")}
-              </ActionButton>
-              <ActionButton
-                kind="save"
-                onClick={() => void handleSubmit()}
-                disabled={saveMutation.isPending}
-              >
-                {saveMutation.isPending
-                  ? t("masterData.common.saving")
-                  : t("masterData.common.save")}
-              </ActionButton>
-            </>
-          }
+      {hasFilters && (
+        <div
+          className="hn-catalog-filter-chips"
+          aria-label={text("Bộ lọc đang áp dụng", "Active filters")}
         >
-          {formError ? (
-            <Box sx={{ mb: "14px" }}>
-              <UiAlert tone="error">{formError}</UiAlert>
-            </Box>
-          ) : null}
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <UiTextField
-                id="catalog-code"
-                label={activeTab.codeLabel}
-                required
-                fullWidth
-                placeholder={activeTab.codePlaceholder}
-                value={formValues.code}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setFormValues((current) => ({ ...current, code: value }));
-                  setFieldErrors((current) =>
-                    current.code ? { ...current, code: "" } : current,
-                  );
-                }}
-                disabled={saveMutation.isPending}
-                error={Boolean(fieldErrors.code)}
-                helperText={
-                  fieldErrors.code ||
-                  (editingRecord
-                    ? t("masterData.catalog.codeLockedHint")
-                    : undefined)
-                }
-                slotProps={{ htmlInput: { maxLength: 80 } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <UiTextField
-                id="catalog-name"
-                label={activeTab.nameLabel}
-                required
-                fullWidth
-                placeholder={activeTab.namePlaceholder}
-                value={formValues.name}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setFormValues((current) => ({ ...current, name: value }));
-                  setFieldErrors((current) =>
-                    current.name ? { ...current, name: "" } : current,
-                  );
-                }}
-                disabled={saveMutation.isPending}
-                error={Boolean(fieldErrors.name)}
-                helperText={fieldErrors.name}
-                slotProps={{ htmlInput: { maxLength: 200 } }}
-              />
-            </Grid>
-            {supportsBrand ? (
-              <Grid size={12}>
-                <UiAutocomplete
-                  data-testid="catalog-brand"
-                  label={t("masterData.catalog.brand")}
-                  value={formValues.brand_id ?? null}
-                  onChange={(next) => {
-                    const value = next == null ? "" : String(next);
-                    setFormValues((current) => ({
-                      ...current,
-                      brand_id: value || undefined,
-                    }));
-                    setFieldErrors((current) =>
-                      current.brand_id ? { ...current, brand_id: "" } : current,
-                    );
-                  }}
-                  disabled={saveMutation.isPending}
-                  error={Boolean(fieldErrors.brand_id)}
-                  helperText={
-                    fieldErrors.brand_id || t("masterData.catalog.brandHelper")
-                  }
-                  placeholder={t("masterData.catalog.brandOptional")}
-                  options={brandOptions.map((option) => ({
-                    value: option.value,
-                    label: option.label,
-                  }))}
-                />
-              </Grid>
-            ) : null}
-            <Grid size={12}>
-              <UiTextField
-                id="catalog-description"
-                label={t("masterData.common.description")}
-                fullWidth
-                multiline
-                minRows={3}
-                value={formValues.description ?? ""}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setFormValues((current) => ({
-                    ...current,
-                    description: value,
-                  }));
-                  setFieldErrors((current) =>
-                    current.description
-                      ? { ...current, description: "" }
-                      : current,
-                  );
-                }}
-                disabled={saveMutation.isPending}
-                error={Boolean(fieldErrors.description)}
-                helperText={fieldErrors.description}
-                slotProps={{ htmlInput: { maxLength: 2000 } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <UiNumberField
-                id="catalog-sort-order"
-                label={t("masterData.catalog.displayOrder")}
-                fullWidth
-                value={formValues.sort_order}
-                rule={NUMBER_RULES.sortOrder}
-                onChange={(next) => {
-                  setFormValues((current) => ({
-                    ...current,
-                    sort_order: next,
-                  }));
-                  setFieldErrors((current) =>
-                    current.sort_order
-                      ? { ...current, sort_order: "" }
-                      : current,
-                  );
-                }}
-                disabled={saveMutation.isPending}
-                error={Boolean(fieldErrors.sort_order)}
-                helperText={fieldErrors.sort_order}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <UiTextField
-                id="catalog-status"
-                select
-                label={t("masterData.status.label")}
-                required
-                fullWidth
-                value={formValues.status}
-                onChange={(event) => {
-                  const value = event.target.value as MasterStatus;
-                  setFormValues((current) => ({
-                    ...current,
-                    status: value,
-                  }));
-                  setFieldErrors((current) =>
-                    current.status ? { ...current, status: "" } : current,
-                  );
-                }}
-                disabled={saveMutation.isPending}
-                error={Boolean(fieldErrors.status)}
-                helperText={fieldErrors.status}
+          {keyword.trim() && (
+            <button
+              type="button"
+              onClick={() => {
+                setKeyword("");
+                setPage(1);
+              }}
+              aria-label={text("Xóa bộ lọc tìm kiếm", "Remove search filter")}
+            >
+              {keyword.trim()}
+              <CloseOutlined />
+            </button>
+          )}
+          {statusFilter && (
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter("");
+                setPage(1);
+              }}
+              aria-label={text("Xóa bộ lọc trạng thái", "Remove status filter")}
+            >
+              {businessLabel(MASTER_STATUS_LABELS, statusFilter)}
+              <CloseOutlined />
+            </button>
+          )}
+        </div>
+      )}
+      {successNotice && (
+        <div className="hn-catalog-success" role="status">
+          <span>{successNotice}</span>
+          <ActionIconButton
+            kind="close"
+            label={text("Đóng thông báo", "Dismiss notification")}
+            onClick={() => setSuccessNotice("")}
+          />
+        </div>
+      )}
+      {(dismissedNotice !== listQuery.error ||
+        feedback.refreshing ||
+        (offline && !dismissedOffline)) && (
+        <CatalogNotice
+          {...feedback}
+          onDismiss={() => {
+            setDismissedNotice(listQuery.error);
+            setDismissedOffline(offline);
+          }}
+        />
+      )}
+      {blockingError ? (
+        <CatalogFeedback {...feedback} />
+      ) : (
+        <UiCard disablePadding className="hn-catalog-table-card">
+          <div className="hn-catalog-table-heading">
+            <h2>
+              {activeTab.label}
+              <span className="hn-catalog-count">
+                {listQuery.isLoading
+                  ? "—"
+                  : pagination.total.toLocaleString(
+                      english ? "en-US" : "vi-VN",
+                    )}
+              </span>
+            </h2>
+            <span className="hn-catalog-updated">
+              {listQuery.dataUpdatedAt > 0
+                ? text("Cập nhật: ", "Updated: ") +
+                  new Date(listQuery.dataUpdatedAt).toLocaleTimeString(
+                    english ? "en-US" : "vi-VN",
+                    { hour: "2-digit", minute: "2-digit" },
+                  )
+                : ""}
+            </span>
+          </div>
+          <div className="hn-catalog-table-wrap">
+            {listQuery.isLoading && !offline ? (
+              <div
+                className="hn-catalog-skeleton"
+                role="status"
+                aria-label={text(
+                  "Đang tải danh mục sản phẩm",
+                  "Loading product catalog",
+                )}
               >
-                {statusOptions(t).map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
+                {Array.from({ length: 7 }, (_, index) => (
+                  <div key={index}>
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </div>
                 ))}
-              </UiTextField>
-            </Grid>
+              </div>
+            ) : rows.length ? (
+              <ResponsiveDataTable<CatalogMasterRecord>
+                columns={columns}
+                rows={rows}
+                rowKey={(record) => record.id}
+                loading={false}
+                emptyText={t("masterData.catalog.empty", {
+                  item: activeTab.itemLabel,
+                })}
+              />
+            ) : (
+              <CatalogFeedback {...feedback} />
+            )}
+          </div>
+          <div className="hn-catalog-pagination">
+            <span>
+              {text("Hiển thị", "Showing")} {displayedFrom}–{displayedTo} /{" "}
+              {t("masterData.catalog.total", {
+                count: pagination.total,
+                item: activeTab.itemLabel,
+              })}
+            </span>
+            <UiSelect
+              aria-label={t("masterData.common.pageSizeAria")}
+              value={perPage}
+              menuClassName="hn-catalog-menu"
+              onChange={(value) => {
+                setPerPage(Number(value));
+                setPage(1);
+              }}
+              options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
+                value: size,
+                label: size + text(" / trang", " / page"),
+              }))}
+            />
+            <UiPagination
+              page={pagination.current}
+              pageSize={perPage}
+              total={pagination.total}
+              showTotal={false}
+              onPageChange={setPage}
+            />
+          </div>
+        </UiCard>
+      )}
+
+      <UiDialog
+        className="hn-catalog-dialog"
+        open={isModalOpen}
+        onClose={guardBackdropClose(closeModal)}
+        maxWidth="sm"
+        fullWidth
+        title={
+          <>
+            {editingRecord
+              ? t("masterData.catalog.dialogEdit", {
+                  item: activeTab.itemLabel,
+                })
+              : t("masterData.catalog.dialogCreate", {
+                  item: activeTab.itemLabel,
+                })}
+            <ActionIconButton
+              kind="close"
+              label={t("common.close")}
+              onClick={closeModal}
+              disabled={saveMutation.isPending}
+              sx={{ position: "absolute", right: 10, top: 8 }}
+            />
+          </>
+        }
+        actions={
+          <>
+            <ActionButton
+              kind="cancel"
+              onClick={closeModal}
+              disabled={saveMutation.isPending}
+            >
+              {t("masterData.common.cancel")}
+            </ActionButton>
+            <ActionButton
+              className="hn-catalog-primary"
+              loading={saveMutation.isPending}
+              kind="save"
+              onClick={() => void handleSubmit()}
+              disabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending
+                ? t("masterData.common.saving")
+                : t("masterData.common.save")}
+            </ActionButton>
+          </>
+        }
+      >
+        {formError ? (
+          <Box sx={{ mb: "14px" }}>
+            <UiAlert tone="error">{formError}</UiAlert>
+          </Box>
+        ) : null}
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <UiTextField
+              id="catalog-code"
+              label={activeTab.codeLabel}
+              required
+              fullWidth
+              placeholder={activeTab.codePlaceholder}
+              value={formValues.code}
+              onChange={(event) => {
+                const value = event.target.value;
+                setFormValues((current) => ({ ...current, code: value }));
+                setFieldErrors((current) =>
+                  current.code ? { ...current, code: "" } : current,
+                );
+              }}
+              disabled={saveMutation.isPending}
+              error={Boolean(fieldErrors.code)}
+              helperText={
+                fieldErrors.code ||
+                (editingRecord
+                  ? t("masterData.catalog.codeLockedHint")
+                  : undefined)
+              }
+              slotProps={{ htmlInput: { maxLength: 80 } }}
+            />
           </Grid>
-        </UiDialog>
-      </Stack>
-    </>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <UiTextField
+              id="catalog-name"
+              label={activeTab.nameLabel}
+              required
+              fullWidth
+              placeholder={activeTab.namePlaceholder}
+              value={formValues.name}
+              onChange={(event) => {
+                const value = event.target.value;
+                setFormValues((current) => ({ ...current, name: value }));
+                setFieldErrors((current) =>
+                  current.name ? { ...current, name: "" } : current,
+                );
+              }}
+              disabled={saveMutation.isPending}
+              error={Boolean(fieldErrors.name)}
+              helperText={fieldErrors.name}
+              slotProps={{ htmlInput: { maxLength: 200 } }}
+            />
+          </Grid>
+          {supportsBrand ? (
+            <Grid size={12}>
+              <UiAutocomplete
+                data-testid="catalog-brand"
+                label={t("masterData.catalog.brand")}
+                value={formValues.brand_id ?? null}
+                onChange={(next) => {
+                  const value = next == null ? "" : String(next);
+                  setFormValues((current) => ({
+                    ...current,
+                    brand_id: value || undefined,
+                  }));
+                  setFieldErrors((current) =>
+                    current.brand_id ? { ...current, brand_id: "" } : current,
+                  );
+                }}
+                disabled={saveMutation.isPending}
+                error={Boolean(fieldErrors.brand_id)}
+                helperText={
+                  fieldErrors.brand_id || t("masterData.catalog.brandHelper")
+                }
+                placeholder={t("masterData.catalog.brandOptional")}
+                options={brandOptions.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                }))}
+              />
+            </Grid>
+          ) : null}
+          <Grid size={12}>
+            <UiTextField
+              id="catalog-description"
+              label={t("masterData.common.description")}
+              fullWidth
+              multiline
+              minRows={3}
+              value={formValues.description ?? ""}
+              onChange={(event) => {
+                const value = event.target.value;
+                setFormValues((current) => ({
+                  ...current,
+                  description: value,
+                }));
+                setFieldErrors((current) =>
+                  current.description
+                    ? { ...current, description: "" }
+                    : current,
+                );
+              }}
+              disabled={saveMutation.isPending}
+              error={Boolean(fieldErrors.description)}
+              helperText={fieldErrors.description}
+              slotProps={{ htmlInput: { maxLength: 2000 } }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <UiNumberField
+              id="catalog-sort-order"
+              label={t("masterData.catalog.displayOrder")}
+              fullWidth
+              value={formValues.sort_order}
+              rule={NUMBER_RULES.sortOrder}
+              onChange={(next) => {
+                setFormValues((current) => ({
+                  ...current,
+                  sort_order: next,
+                }));
+                setFieldErrors((current) =>
+                  current.sort_order ? { ...current, sort_order: "" } : current,
+                );
+              }}
+              disabled={saveMutation.isPending}
+              error={Boolean(fieldErrors.sort_order)}
+              helperText={fieldErrors.sort_order}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <UiTextField
+              id="catalog-status"
+              slotProps={{
+                select: {
+                  MenuProps: {
+                    slotProps: { paper: { className: "hn-catalog-menu" } },
+                  },
+                },
+              }}
+              select
+              label={t("masterData.status.label")}
+              required
+              fullWidth
+              value={formValues.status}
+              onChange={(event) => {
+                const value = event.target.value as MasterStatus;
+                setFormValues((current) => ({
+                  ...current,
+                  status: value,
+                }));
+                setFieldErrors((current) =>
+                  current.status ? { ...current, status: "" } : current,
+                );
+              }}
+              disabled={saveMutation.isPending}
+              error={Boolean(fieldErrors.status)}
+              helperText={fieldErrors.status}
+            >
+              {statusOptions(t).map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </UiTextField>
+          </Grid>
+        </Grid>
+      </UiDialog>
+    </div>
   );
 }

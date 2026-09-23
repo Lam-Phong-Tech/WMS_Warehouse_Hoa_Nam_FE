@@ -8,6 +8,7 @@
  * catalog/screen mới.
  */
 import Button from "@mui/material/Button";
+import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import IconButton from "@mui/material/IconButton";
 import { UiSpinner } from "./UiSpinner";
 import type { ButtonProps } from "@mui/material/Button";
@@ -56,7 +57,14 @@ export function UiButton({
                 backgroundColor: `rgba(${hexToRgb(
                   theme.palette[paletteColor as "primary"].main,
                 )}, 0.16)`,
-                color: theme.palette[paletteColor as "primary"].dark,
+                color: {
+                  primary: S.infoText,
+                  secondary: S.secondaryDark,
+                  success: S.successText,
+                  warning: S.warningText,
+                  error: S.errorText,
+                  info: S.infoText,
+                }[paletteColor],
                 "&:hover": {
                   backgroundColor: `rgba(${hexToRgb(
                     theme.palette[paletteColor as "primary"].main,

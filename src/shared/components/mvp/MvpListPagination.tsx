@@ -6,6 +6,8 @@ import { useT } from "@/shared/i18n/useT";
 interface PageSizeSelectorProps {
   value: number;
   onChange: (value: number) => void;
+  /** Optional screen-scoped styling for the dropdown portal. */
+  menuClassName?: string;
 }
 
 interface PaginationFooterProps {
@@ -23,6 +25,7 @@ interface PaginationFooterProps {
 export function MvpPageSizeSelector({
   value,
   onChange,
+  menuClassName,
 }: PageSizeSelectorProps) {
   const t = useT();
   // Giá trị hiện tại (vd: per_page=15 do BE trả về) có thể không nằm trong
@@ -43,6 +46,11 @@ export function MvpPageSizeSelector({
     // Theme lấy từ AppThemeProvider ở composition root — context xuyên qua portal.
     <div className="table-page-size">
       <Select
+        MenuProps={
+          menuClassName
+            ? { slotProps: { paper: { className: menuClassName } } }
+            : undefined
+        }
         value={value}
         sx={{ width: 130 }}
         inputProps={{ "aria-label": t("shared.table.rowsPerPageAria") }}

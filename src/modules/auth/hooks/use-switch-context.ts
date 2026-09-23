@@ -3,6 +3,7 @@ import type { QueryKey } from "@tanstack/react-query";
 import { authService } from "@/modules/auth/services/auth.service";
 import { useAuthStore } from "@/shared/store/auth.store";
 import type { SwitchContextRequest } from "@/modules/auth/types/auth.types";
+import { stopQueryPersistence } from "@/shared/cache/query-persister";
 
 const CONTEXT_INDEPENDENT_QUERY_ROOTS: readonly string[] = ["audit-logs"];
 
@@ -16,7 +17,7 @@ export function isContextScopedQuery(queryKey: QueryKey): boolean {
 /**
  * Switch context is atomic from the UI perspective: once the new JWT arrives,
  * old profile/permissions are revoked immediately and all scope-sensitive data
- * is invalidated before protected UI can render again.
+ * is removed before protected UI can render again.
  */
 export function useSwitchContext() {
   const queryClient = useQueryClient();
@@ -25,11 +26,15 @@ export function useSwitchContext() {
   return useMutation({
     mutationFn: (data: SwitchContextRequest) => authService.switchContext(data),
     onSuccess: async (result) => {
-      setToken(result.access_token);
-      queryClient.removeQueries({ queryKey: ["auth", "me"] });
-      await queryClient.invalidateQueries({
+      stopQueryPersistence();
+      const scoped = {
         predicate: (query) => isContextScopedQuery(query.queryKey),
-      });
+      } satisfies Parameters<typeof queryClient.cancelQueries>[0];
+      // Cancel old requests before removing their data. Merely invalidating
+      // leaves stale values available to the next context during refetch.
+      await queryClient.cancelQueries(scoped);
+      queryClient.removeQueries(scoped);
+      setToken(result.access_token);
     },
     // Rỗng có chủ đích, KHÔNG thừa: ContextSwitcher.tsx tự toast qua callback
     // onError truyền vào .mutate(vars, {onError}) — nhưng đó là callback

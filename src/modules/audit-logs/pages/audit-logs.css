@@ -1,0 +1,167 @@
+/* Audit presentation follows the SKU surface, spacing and colour hierarchy. */
+.hn-audit-settings {
+  container: hn-audit / inline-size;
+}
+.hn-audit-settings .hn-audit-filters {
+  display: grid;
+  grid-template-columns: minmax(230px, 1.5fr) repeat(2, minmax(160px, 1fr));
+  gap: 12px 16px;
+  padding: 14px 16px;
+  align-items: start;
+}
+.hn-audit-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.hn-audit-filter > label,
+.hn-audit-filter-label,
+.hn-audit-page-size > label {
+  color: var(--settings-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.hn-audit-filter-range {
+  grid-column: span 2;
+}
+.hn-audit-filter .MuiFormControl-root {
+  min-width: 0;
+  width: 100%;
+}
+.hn-audit-settings .hn-vuexy-date-field {
+  --wms-text-medium: var(--settings-muted);
+  min-height: var(--ops-control-height);
+  border-color: var(--settings-line);
+  border-radius: 6px;
+  color: var(--settings-text);
+  background: var(--settings-surface);
+}
+.hn-audit-settings .hn-vuexy-date-field > span {
+  color: var(--settings-muted);
+}
+.hn-audit-settings .hn-vuexy-date-field:hover,
+.hn-audit-settings .hn-vuexy-date-field[aria-expanded="true"] {
+  border-color: var(--settings-link);
+}
+.hn-audit-settings .hn-vuexy-date-field:focus-visible {
+  outline: 2px solid var(--settings-link);
+  outline-offset: 3px;
+}
+.hn-audit-settings .hn-vuexy-date-field[aria-expanded="true"],
+.hn-audit-settings .hn-vuexy-date-field:focus-visible {
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--settings-link) 13%, transparent);
+}
+/* The calendar resolves its semantic colours through CSS variables. Keep this
+   remapping on its portalled paper, so other date pickers retain their theme. */
+.hn-settings-menu[role="dialog"]:has([data-date-tab]) {
+  --wms-primary: var(--settings-cta);
+  --wms-primary-dark: var(--settings-cta-hover);
+  --wms-primary-soft: var(--settings-pale);
+  --wms-bg-surface: var(--settings-surface);
+  --wms-bg-subtle: var(--settings-pale);
+  --wms-text-high: var(--settings-ink);
+  --wms-text-medium: var(--settings-muted);
+  --wms-text-disabled: var(--settings-inactive);
+  --wms-border: var(--settings-line);
+  --wms-border-input: var(--settings-line);
+  --wms-grey-200: var(--settings-pale);
+  --wms-focus-ring: 0 0 0 3px
+    color-mix(in srgb, var(--settings-link) 13%, transparent);
+}
+.hn-audit-dialog .hn-audit-data-card {
+  background: var(--settings-pale);
+}
+.hn-audit-settings .hn-audit-list-card {
+  padding: 0 16px;
+  overflow: hidden;
+}
+.hn-audit-list-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 0;
+  min-height: 56px;
+}
+.hn-audit-page-size,
+.hn-audit-selection-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.hn-audit-selection-actions {
+  margin-left: auto;
+}
+.hn-audit-selection-actions:empty {
+  display: none;
+}
+.hn-audit-table {
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-audit-table > .MuiBox-root:has(> table) {
+  border-color: var(--settings-line);
+  border-radius: 6px;
+  scrollbar-color: var(--settings-line) transparent;
+  scrollbar-width: thin;
+  overscroll-behavior-inline: contain;
+}
+.hn-audit-settings .hn-audit-table :is(th, td) {
+  border-color: var(--settings-line);
+  vertical-align: middle;
+}
+.hn-audit-settings .hn-audit-table tbody tr:hover {
+  background: color-mix(
+    in srgb,
+    var(--settings-pale) 55%,
+    var(--settings-surface)
+  );
+}
+.hn-audit-settings .hn-audit-table .MuiCard-root {
+  color: var(--settings-text);
+  background: var(--settings-surface);
+  border-color: var(--settings-line);
+  border-radius: var(--ops-radius-card);
+  box-shadow: none;
+}
+.hn-audit-settings .hn-audit-table .MuiTypography-caption {
+  color: var(--settings-muted);
+}
+.hn-audit-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 0;
+  margin-top: 14px;
+  border-top: 1px solid var(--settings-line);
+}
+@container hn-audit (max-width: 900px) {
+  .hn-audit-settings .hn-audit-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-audit-filter-search {
+    grid-column: 1 / -1;
+  }
+  .hn-audit-filter-range {
+    grid-column: auto;
+  }
+}
+@container hn-audit (max-width: 600px) {
+  .hn-audit-settings .hn-audit-filters {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
+  }
+  .hn-audit-settings .hn-audit-list-card {
+    padding-inline: 12px;
+  }
+  .hn-audit-filter-search {
+    grid-column: auto;
+  }
+  .hn-audit-selection-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+}

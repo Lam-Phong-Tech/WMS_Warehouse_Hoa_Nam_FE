@@ -13,7 +13,7 @@
  * màu/kích thước bằng token Vuexy theo DEC-UI-BASELINE-01.
  */
 import { createTheme } from "@mui/material/styles";
-import Grow from "@mui/material/Grow";
+import Fade from "@mui/material/Fade";
 import type { PopperProps } from "@mui/material/Popper";
 import { MUI_ICON_SLOTS } from "@/shared/ui/icons";
 import {
@@ -21,7 +21,7 @@ import {
   COMPONENT_TOKENS as C,
   CONTROL,
   MOTION,
-  PALETTE,
+  OPERATIONS_PALETTE,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
   type ThemeModeName,
@@ -65,12 +65,17 @@ const menuOffsetModifier: NonNullable<PopperProps["modifiers"]>[number] = {
 };
 
 function buildMuiTheme(mode: ThemeModeName) {
-  const P = PALETTE[mode];
+  const P = OPERATIONS_PALETTE[mode];
   return createTheme({
     breakpoints: { values: { ...BREAKPOINTS } },
     palette: {
       mode,
-      primary: { main: P.primary, dark: P.primaryDark, light: P.primaryLight },
+      primary: {
+        main: P.primary,
+        dark: P.primaryDark,
+        light: P.primaryLight,
+        contrastText: P.onPrimary,
+      },
       secondary: { main: P.secondary, dark: P.secondaryDark },
       error: { main: P.error, dark: P.errorDark },
       warning: { main: P.warning, dark: P.warningDark },
@@ -122,9 +127,9 @@ function buildMuiTheme(mode: ThemeModeName) {
             fontSize: C.button.fontSize,
             textTransform: "none",
             transition: CONTROL_TRANSITION,
-            "&:hover:not(.Mui-disabled)": { transform: "translateY(-1px)" },
+            "&:hover:not(.Mui-disabled)": { transform: "none" },
             "&:active:not(.Mui-disabled)": {
-              transform: "translateY(0) scale(0.97)",
+              transform: "none",
               transitionDuration: `${MOTION.duration.instant}ms`,
             },
             // Focus phải thấy được bằng mắt: global :where(...) trong
@@ -159,7 +164,10 @@ function buildMuiTheme(mode: ThemeModeName) {
       },
       MuiOutlinedInput: {
         styleOverrides: {
-          root: { borderRadius: C.input.radius },
+          root: {
+            borderRadius: C.input.radius,
+            "&:not(.MuiInputBase-multiline)": { minHeight: C.input.height },
+          },
           input: {
             paddingTop: C.input.paddingY,
             paddingBottom: C.input.paddingY,
@@ -212,7 +220,7 @@ function buildMuiTheme(mode: ThemeModeName) {
       },
       MuiDialog: {
         defaultProps: {
-          slots: { transition: Grow },
+          slots: { transition: Fade },
           transitionDuration: {
             enter: MOTION.duration.slow,
             exit: MOTION.duration.normal,
@@ -220,7 +228,12 @@ function buildMuiTheme(mode: ThemeModeName) {
           closeAfterTransition: true,
         },
         styleOverrides: {
-          paper: { borderRadius: C.modal.radius },
+          paper: {
+            borderRadius: C.modal.radius,
+            border: `1px solid ${S.border}`,
+            boxShadow: "var(--ops-shadow-dialog)",
+            backgroundImage: "none",
+          },
         },
       },
       MuiDrawer: {
@@ -270,6 +283,9 @@ function buildMuiTheme(mode: ThemeModeName) {
           root: {
             fontSize: C.modal.titleFontSize,
             fontWeight: C.modal.titleFontWeight,
+            color: "var(--ops-heading)",
+            lineHeight: "26px",
+            borderBottom: `1px solid ${S.border}`,
             padding: "16px 20px",
           },
         },
@@ -285,6 +301,16 @@ function buildMuiTheme(mode: ThemeModeName) {
           root: {
             fontSize: TYPOGRAPHY.fontSizeBody,
             ".MuiDialogTitle-root + &": { paddingTop: "14px" },
+          },
+        },
+      },
+      MuiDialogActions: {
+        styleOverrides: {
+          root: {
+            borderTop: `1px solid ${S.border}`,
+            padding: "14px 20px",
+            gap: 8,
+            flexWrap: "wrap",
           },
         },
       },
@@ -365,7 +391,7 @@ function buildMuiTheme(mode: ThemeModeName) {
             },
             transition: CONTROL_TRANSITION,
             "&:active:not(.Mui-disabled)": {
-              transform: "scale(0.92)",
+              transform: "none",
               transitionDuration: `${MOTION.duration.instant}ms`,
             },
             "&:focus-visible": {

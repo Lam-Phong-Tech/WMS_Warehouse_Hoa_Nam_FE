@@ -8,10 +8,6 @@ import {
   UiSelect,
   UiTextField,
   UiVuexyDateRangePicker,
-  SEMANTIC_LIGHT as S,
-  TYPOGRAPHY,
-  FILTER_WIDTH,
-  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { TableLoadingBanner } from "@/shared/components/feedback/BusinessState";
@@ -43,6 +39,8 @@ import {
   describeAuditLog,
 } from "@/modules/audit-logs/constants/audit-log-labels";
 import { ActionButton } from "@/shared/components/actions";
+import "@/shared/ui/sku-aligned-settings.css";
+import "./audit-logs.css";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -51,8 +49,8 @@ const API_DATE_TIME = "YYYY-MM-DD HH:mm:ss";
 
 /** Chữ phụ trên toolbar (thay MUI Typography body2 color text.secondary). */
 const TOOLBAR_TEXT_SX = {
-  fontSize: TYPOGRAPHY.fontSizeSecondary,
-  color: S.textMedium,
+  fontSize: 12,
+  color: "var(--settings-muted)",
   whiteSpace: "nowrap",
 } as const;
 
@@ -177,59 +175,79 @@ export function AuditLogsPage() {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <div className="audit-logs-page hn-mvp-source-screen">
-      <div className="toolbar">
-        <UiTextField
-          value={searchInput}
-          placeholder={t("audit.searchPlaceholder")}
-          slotProps={{
-            htmlInput: { "aria-label": t("audit.searchAria") },
-          }}
-          onChange={(event) => setSearchInput(event.target.value)}
-          sx={TOOLBAR_SEARCH_SX}
-        />
-        <UiSelect
-          value={module}
-          aria-label={t("audit.moduleFilterAria")}
-          placeholder={t("audit.moduleFilterPlaceholder")}
-          minWidth={190}
-          onChange={(value) => {
-            setModule(value as AuditModule | "");
-            setPage(1);
-          }}
-          options={Object.entries(AUDIT_MODULE_LABELS).map(
-            ([value, label]) => ({ value, label }),
-          )}
-        />
-        <UiSelect
-          value={action}
-          aria-label={t("audit.actionFilterAria")}
-          placeholder={t("audit.actionFilterPlaceholder")}
-          minWidth={200}
-          onChange={(value) => {
-            setAction(value as AuditAction | "");
-            setPage(1);
-          }}
-          options={Object.entries(AUDIT_ACTION_LABELS).map(
-            ([value, label]) => ({ value, label }),
-          )}
-        />
-        <UiSelect
-          value={userId}
-          aria-label={t("audit.actorFilterAria")}
-          placeholder={t("audit.actorFilterPlaceholder")}
-          minWidth={220}
-          onChange={(value) => {
-            setUserId(String(value));
-            setPage(1);
-          }}
-          options={userOptions}
-        />
+    <div className="audit-logs-page hn-mvp-source-screen hn-settings-screen hn-audit-settings">
+      <div className="hn-settings-card hn-audit-filters">
+        <div className="hn-audit-filter hn-audit-filter-search">
+          <label htmlFor="audit-log-search">{t("audit.searchAria")}</label>
+          <UiTextField
+            id="audit-log-search"
+            fullWidth
+            value={searchInput}
+            placeholder={t("audit.searchPlaceholder")}
+            slotProps={{
+              htmlInput: { "aria-label": t("audit.searchAria") },
+            }}
+            onChange={(event) => setSearchInput(event.target.value)}
+          />
+        </div>
+        <div className="hn-audit-filter">
+          <label htmlFor="audit-log-module">{t("audit.colModule")}</label>
+          <UiSelect
+            id="audit-log-module"
+            fullWidth
+            menuClassName="hn-settings-menu"
+            value={module}
+            aria-label={t("audit.moduleFilterAria")}
+            placeholder={t("audit.moduleFilterPlaceholder")}
+            onChange={(value) => {
+              setModule(value as AuditModule | "");
+              setPage(1);
+            }}
+            options={Object.entries(AUDIT_MODULE_LABELS).map(
+              ([value, label]) => ({ value, label }),
+            )}
+          />
+        </div>
+        <div className="hn-audit-filter">
+          <label htmlFor="audit-log-action">{t("audit.colAction")}</label>
+          <UiSelect
+            id="audit-log-action"
+            fullWidth
+            menuClassName="hn-settings-menu"
+            value={action}
+            aria-label={t("audit.actionFilterAria")}
+            placeholder={t("audit.actionFilterPlaceholder")}
+            onChange={(value) => {
+              setAction(value as AuditAction | "");
+              setPage(1);
+            }}
+            options={Object.entries(AUDIT_ACTION_LABELS).map(
+              ([value, label]) => ({ value, label }),
+            )}
+          />
+        </div>
+        <div className="hn-audit-filter">
+          <span className="hn-audit-filter-label">{t("audit.colActor")}</span>
+          <UiSelect
+            fullWidth
+            menuClassName="hn-settings-menu"
+            value={userId}
+            aria-label={t("audit.actorFilterAria")}
+            placeholder={t("audit.actorFilterPlaceholder")}
+            onChange={(value) => {
+              setUserId(String(value));
+              setPage(1);
+            }}
+            options={userOptions}
+          />
+        </div>
         {/* Lịch "Từ ngày / Đến ngày" của dự án (cùng control với bộ lọc kỳ ở
           các màn báo cáo) — thay 2 ô `datetime-local` mà mỗi trình duyệt vẽ
           một kiểu, tiếng Anh và định dạng dd/mm/yyyy --:-- khó đọc. */}
-        <Box sx={{ width: FILTER_WIDTH.dateRange, maxWidth: "100%" }}>
+        <div className="hn-audit-filter hn-audit-filter-range">
+          <span className="hn-audit-filter-label">{t("audit.rangeAria")}</span>
           <UiVuexyDateRangePicker
+            popupClassName="hn-settings-menu"
             value={range}
             aria-label={t("audit.rangeAria")}
             maxDate={maxSelectableDate}
@@ -238,79 +256,102 @@ export function AuditLogsPage() {
               setPage(1);
             }}
           />
-        </Box>
-        <UiSelect
-          value={perPage}
-          aria-label={t("audit.pageSizeAria")}
-          minWidth={FILTER_WIDTH.pageSize}
-          onChange={(value) => {
-            setPerPage(Number(value));
-            setPage(1);
-          }}
-          options={perPageOptions.map((size) => ({
-            value: size,
-            label: `${size} / trang`,
-          }))}
-        />
-        {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang)
-         * để dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
-        <Box component="span" sx={TOOLBAR_TEXT_SX}>
-          {t("audit.total", { count: pagination.total })}
-        </Box>
-        <div className="spacer" />
-        {selection.selectedCount > 0 ? (
-          <>
-            <Box component="span" sx={TOOLBAR_TEXT_SX}>
-              {t("audit.selected", { count: selection.selectedCount })}
-            </Box>
-            <ActionButton kind="clear" onClick={selection.clear}>
-              {t("audit.clearSelection")}
-            </ActionButton>
-            <ActionButton kind="exportExcel" onClick={exportSelected}>
-              {t("audit.exportExcel", { count: selection.selectedCount })}
-            </ActionButton>
-          </>
-        ) : null}
+        </div>
       </div>
 
-      {isError ? (
-        <Box sx={{ mb: "14px" }}>
-          <ApiErrorAlert
-            error={error}
-            title={t("audit.loadError")}
-            onRetry={refetch}
-          />
-        </Box>
-      ) : null}
+      <div className="hn-settings-card hn-audit-list-card">
+        <div className="hn-audit-list-tools">
+          <div className="hn-audit-page-size">
+            <label htmlFor="audit-log-page-size">
+              {t("audit.pageSizeAria")}
+            </label>
+            <UiSelect
+              id="audit-log-page-size"
+              menuClassName="hn-settings-menu"
+              value={perPage}
+              aria-label={t("audit.pageSizeAria")}
+              minWidth={100}
+              onChange={(value) => {
+                setPerPage(Number(value));
+                setPage(1);
+              }}
+              options={perPageOptions.map((size) => ({
+                value: size,
+                label: `${size} / trang`,
+              }))}
+            />
+          </div>
+          {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang)
+           * để dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
+          <Box component="span" sx={TOOLBAR_TEXT_SX}>
+            {t("audit.total", { count: pagination.total })}
+          </Box>
+          <div className="hn-audit-selection-actions">
+            {selection.selectedCount > 0 ? (
+              <>
+                <Box component="span" sx={TOOLBAR_TEXT_SX}>
+                  {t("audit.selected", { count: selection.selectedCount })}
+                </Box>
+                <ActionButton
+                  className="hn-settings-secondary"
+                  kind="clear"
+                  onClick={selection.clear}
+                >
+                  {t("audit.clearSelection")}
+                </ActionButton>
+                <ActionButton
+                  className="hn-settings-primary"
+                  kind="exportExcel"
+                  onClick={exportSelected}
+                >
+                  {t("audit.exportExcel", { count: selection.selectedCount })}
+                </ActionButton>
+              </>
+            ) : null}
+          </div>
+        </div>
 
-      <TableLoadingBanner loading={isLoading || isFetching} />
-      <AuditLogsTable
-        data={auditLogs}
-        loading={isLoading || isFetching}
-        error={isError ? error : null}
-        page={pagination.current}
-        perPage={perPage}
-        selection={selection}
-        onSortChange={(field, order) => {
-          setSortBy(field);
-          setSortOrder(order);
-          setPage(1);
-        }}
-        onView={(log) => {
-          setSelectedLog(log);
-          setDetailOpen(true);
-        }}
-      />
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1.5 }}>
-        {/* showTotal tắt: "Tổng ... bản ghi" đã hiển thị trên toolbar. */}
-        <UiPagination
-          page={pagination.current}
-          pageSize={perPage}
-          total={pagination.total}
-          onPageChange={(nextPage) => setPage(nextPage)}
-          showTotal={false}
-        />
-      </Box>
+        {isError ? (
+          <Box sx={{ mb: "14px" }}>
+            <ApiErrorAlert
+              error={error}
+              title={t("audit.loadError")}
+              onRetry={refetch}
+            />
+          </Box>
+        ) : null}
+
+        <TableLoadingBanner loading={isLoading || isFetching} />
+        <div className="hn-audit-table">
+          <AuditLogsTable
+            data={auditLogs}
+            loading={isLoading || isFetching}
+            error={isError ? error : null}
+            page={pagination.current}
+            perPage={perPage}
+            selection={selection}
+            onSortChange={(field, order) => {
+              setSortBy(field);
+              setSortOrder(order);
+              setPage(1);
+            }}
+            onView={(log) => {
+              setSelectedLog(log);
+              setDetailOpen(true);
+            }}
+          />
+        </div>
+        <div className="hn-audit-pagination">
+          {/* showTotal tắt: "Tổng ... bản ghi" đã hiển thị trên toolbar. */}
+          <UiPagination
+            page={pagination.current}
+            pageSize={perPage}
+            total={pagination.total}
+            onPageChange={(nextPage) => setPage(nextPage)}
+            showTotal={false}
+          />
+        </div>
+      </div>
 
       <AuditLogDetailDrawer
         open={detailOpen}

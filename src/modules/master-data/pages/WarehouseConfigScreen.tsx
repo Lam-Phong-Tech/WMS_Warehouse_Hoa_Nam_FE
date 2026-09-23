@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import "@/shared/ui/sku-aligned-settings.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateMasterDerived } from "@/shared/cache/invalidation";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
@@ -314,9 +315,13 @@ export function WarehouseConfigScreen() {
 
   return (
     <>
-      <Stack spacing={2} sx={{ width: "100%" }}>
+      <Stack
+        className="hn-settings-screen hn-warehouse-settings"
+        sx={{ width: "100%" }}
+      >
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
           <ActionButton
+            className="hn-settings-primary"
             kind="save"
             onClick={() => void handleSubmit()}
             disabled={!canManage || !resolvedId || saveMutation.isPending}
@@ -369,7 +374,7 @@ export function WarehouseConfigScreen() {
           </UiAlert>
         ) : null}
 
-        <UiCard>
+        <UiCard className="hn-settings-card">
           {listQuery.isLoading || detailQuery.isLoading ? (
             <Stack spacing={1}>
               {Array.from({ length: 6 }).map((_, index) => (
@@ -377,7 +382,7 @@ export function WarehouseConfigScreen() {
               ))}
             </Stack>
           ) : !warehouse ? (
-            <UiText variant="secondary">
+            <UiText className="hn-settings-muted" variant="secondary">
               {t("masterData.warehouse.empty")}
             </UiText>
           ) : (
@@ -386,6 +391,7 @@ export function WarehouseConfigScreen() {
                 <Grid container sx={{ mb: 2 }}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <UiAutocomplete
+                      menuClassName="hn-settings-menu"
                       data-testid="warehouse-select"
                       label={t("masterData.warehouse.pick")}
                       value={resolvedId}
@@ -406,10 +412,12 @@ export function WarehouseConfigScreen() {
               ) : null}
 
               <Box
+                className="hn-settings-descriptions"
                 sx={{
                   border: 1,
-                  borderColor: "divider",
-                  borderRadius: 2,
+                  borderColor: "var(--settings-line)",
+                  borderRadius: "6px",
+                  bgcolor: "var(--settings-pale)",
                   p: 2,
                   mb: 2,
                 }}
@@ -425,6 +433,11 @@ export function WarehouseConfigScreen() {
                       label: t("masterData.warehouse.fieldCurrentStatus"),
                       value: (
                         <UiStatusBadge
+                          data-settings-tone={
+                            warehouse.status === "ACTIVE"
+                              ? "success"
+                              : "warning"
+                          }
                           tone={
                             warehouse.status === "ACTIVE"
                               ? "success"
@@ -468,6 +481,15 @@ export function WarehouseConfigScreen() {
                   <UiTextField
                     id="warehouse-status"
                     select
+                    slotProps={{
+                      select: {
+                        MenuProps: {
+                          slotProps: {
+                            paper: { className: "hn-settings-menu" },
+                          },
+                        },
+                      },
+                    }}
                     label={t("masterData.status.label")}
                     required
                     fullWidth
@@ -572,7 +594,7 @@ export function WarehouseConfigScreen() {
 
               {!canManage ? (
                 <Box sx={{ mt: 2 }}>
-                  <UiText variant="secondary">
+                  <UiText className="hn-settings-muted" variant="secondary">
                     {t("masterData.warehouse.readOnlyNotice")}
                   </UiText>
                 </Box>
@@ -582,6 +604,7 @@ export function WarehouseConfigScreen() {
         </UiCard>
 
         <UiDialog
+          className="hn-settings-dialog"
           open={confirmOpen}
           onClose={() => setConfirmOpen(false)}
           maxWidth="xs"
@@ -589,10 +612,15 @@ export function WarehouseConfigScreen() {
           title={confirmCopy.title}
           actions={
             <>
-              <ActionButton kind="cancel" onClick={() => setConfirmOpen(false)}>
+              <ActionButton
+                className="hn-settings-secondary"
+                kind="cancel"
+                onClick={() => setConfirmOpen(false)}
+              >
                 {t("masterData.common.cancel")}
               </ActionButton>
               <ActionButton
+                className="hn-settings-primary"
                 kind="confirm"
                 data-testid="warehouse-status-confirm"
                 onClick={() => void confirmStatusChange()}

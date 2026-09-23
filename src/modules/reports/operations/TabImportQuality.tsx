@@ -1,3 +1,4 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -758,12 +759,13 @@ export default function TabImportQuality() {
         onRowClick={(row) => setOpenBatch(row)}
         emptyText={t("reports.importQuality.batchEmpty")}
         renderRowActions={(row) => (
-          <ActionButton
-            kind="view"
-            aria-label={t("reports.importQuality.batchRowAria")}
-            sx={{ whiteSpace: "nowrap" }}
-            onClick={() => setOpenBatch(row)}
-          />
+          <RowActionGroup>
+            <RowActionButton
+              kind="view"
+              aria-label={t("reports.importQuality.batchRowAria")}
+              onClick={() => setOpenBatch(row)}
+            ></RowActionButton>
+          </RowActionGroup>
         )}
       />
       <ReportPaginationBar

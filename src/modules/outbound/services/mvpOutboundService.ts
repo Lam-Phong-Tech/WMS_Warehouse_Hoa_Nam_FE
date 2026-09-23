@@ -203,6 +203,8 @@ export interface ConsumeOutboundImportResult {
 
 export interface LabelSnapshotRecord {
   id: string;
+  /** Snapshot version used by print/reprint If-Match; missing stays unavailable. */
+  version?: number;
   labelCode?: string | null;
   documentId?: string | null;
   itemMatchId?: string | null;
@@ -774,8 +776,16 @@ function labelPayload(row: RawRecord): RawRecord {
 
 function normalizeLabelSnapshot(row: RawRecord): LabelSnapshotRecord {
   const payload = labelPayload(row);
+  const rawVersion = row.version;
+  const version =
+    (typeof rawVersion === "number" ||
+      (typeof rawVersion === "string" && rawVersion.trim() !== "")) &&
+    Number.isFinite(Number(rawVersion))
+      ? Number(rawVersion)
+      : undefined;
   return {
     id: text(row.id),
+    version,
     labelCode: text(row.label_code) || null,
     documentId: text(row.outbound_document_id) || null,
     itemMatchId: text(row.outbound_item_match_id) || null,

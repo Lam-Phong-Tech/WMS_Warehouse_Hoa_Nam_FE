@@ -11,7 +11,7 @@
   --wms-font-family:
     "Public Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  --wms-font-size-body: 15px;
+  --wms-font-size-body: 14px;
   --wms-font-size-secondary: 13px;
 
   /* Brand */
@@ -72,10 +72,10 @@
 
   /* Radius / control */
   --wms-radius-control: 6px;
-  --wms-radius-card: 6px;
+  --wms-radius-card: 8px;
   --wms-radius-sheet: 16px;
   --wms-radius-pill: 999px;
-  --wms-control-height: 38px;
+  --wms-control-height: 40px;
   --wms-control-height-touch: 44px;
 
   /* Motion (mirror của primitives.MOTION và hn-motion.css) */

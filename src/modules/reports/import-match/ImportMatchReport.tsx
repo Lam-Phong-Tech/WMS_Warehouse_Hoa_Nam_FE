@@ -1,3 +1,4 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   useDeferredValue,
   useMemo,
@@ -601,9 +602,11 @@ function SliceCard({
         ))}
       </Box>
       <Box>
-        <ActionButton kind="detail" onClick={onOpen}>
-          {t("reports.importMatchReport.viewDetail")}
-        </ActionButton>
+        <RowActionGroup>
+          <RowActionButton kind="detail" onClick={onOpen}>
+            {t("reports.importMatchReport.viewDetail")}
+          </RowActionButton>
+        </RowActionGroup>
       </Box>
     </Box>
   );
@@ -1207,7 +1210,11 @@ export default function ImportMatchReport() {
       <Box
         component="section"
         aria-labelledby="rpt-04-filters"
-        sx={{ ...REPORT_SURFACE_SX, p: { xs: 1.75, sm: 2, md: 2.25 }, overflow: "visible" }}
+        sx={{
+          ...REPORT_SURFACE_SX,
+          p: { xs: 1.75, sm: 2, md: 2.25 },
+          overflow: "visible",
+        }}
       >
         <Stack
           direction="row"
@@ -1705,7 +1712,11 @@ export default function ImportMatchReport() {
         />
         <Box
           component="article"
-          sx={{ ...REPORT_SURFACE_SX, pt: { xs: 1.75, md: 2 }, overflow: "hidden" }}
+          sx={{
+            ...REPORT_SURFACE_SX,
+            pt: { xs: 1.75, md: 2 },
+            overflow: "hidden",
+          }}
         >
           <Box
             role="tablist"
@@ -1892,16 +1903,17 @@ export default function ImportMatchReport() {
                 onRowClick={(row) => setOpenBatch(row)}
                 emptyText={t("reports.importMatchReport.logEmpty")}
                 renderRowActions={(row) => (
-                  <ActionButton
-                    kind="detail"
-                    aria-label={t("reports.importMatchReport.rowDetailAria", {
-                      code: row.batchNo,
-                    })}
-                    sx={{ whiteSpace: "nowrap" }}
-                    onClick={() => setOpenBatch(row)}
-                  >
-                    {t("reports.importMatchReport.detail")}
-                  </ActionButton>
+                  <RowActionGroup>
+                    <RowActionButton
+                      kind="detail"
+                      aria-label={t("reports.importMatchReport.rowDetailAria", {
+                        code: row.batchNo,
+                      })}
+                      onClick={() => setOpenBatch(row)}
+                    >
+                      {t("reports.importMatchReport.detail")}
+                    </RowActionButton>
+                  </RowActionGroup>
                 )}
                 // Trang có thể đặt tới 100 dòng/trang: cuộn trong khung và ghim
                 // tiêu đề cột thay vì kéo trang thành một dải rất dài.

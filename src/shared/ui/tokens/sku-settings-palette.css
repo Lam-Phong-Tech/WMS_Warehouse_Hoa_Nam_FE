@@ -1,0 +1,26 @@
+/* Settings surfaces mirror the Operations Overview palette, including its dark variants. */
+.hn-settings-screen,
+.hn-settings-dialog,
+.hn-settings-menu,
+.MuiAutocomplete-popper:has([id^="warehouse-address-"]),
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-settings-screen
+  ) {
+  --settings-ink: var(--ops-heading);
+  --settings-text: var(--ops-text);
+  --settings-muted: var(--ops-muted);
+  --settings-line: var(--ops-line);
+  --settings-surface: var(--ops-surface);
+  --settings-pale: var(--ops-pale);
+  --settings-canvas: var(--ops-canvas);
+  --settings-cta: var(--ops-primary);
+  --settings-cta-hover: var(--ops-primary-hover);
+  --settings-link: var(--ops-link);
+  --settings-success: var(--ops-success);
+  --settings-success-soft: var(--ops-success-soft);
+  --settings-inactive: var(--ops-inactive);
+}

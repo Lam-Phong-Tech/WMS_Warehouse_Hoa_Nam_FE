@@ -206,20 +206,20 @@
 
 /* Statistics in scanning pages follow the four-column HTML cards. */
 .hn-mvp-screen .ant-statistic {
-  border: 1px solid var(--line);
+  border: 1px solid var(--ops-line);
   border-radius: 14px;
   padding: 14px;
   background: var(--wms-bg-surface);
 }
 
 .hn-mvp-screen .ant-statistic-title {
-  color: var(--muted) !important;
+  color: var(--ops-muted) !important;
   font-size: 12px !important;
   margin-bottom: 4px !important;
 }
 
 .hn-mvp-screen .ant-statistic-content {
-  color: var(--text) !important;
+  color: var(--ops-text) !important;
   font-size: 22px !important;
   font-weight: 700 !important;
 }
@@ -227,7 +227,7 @@
 /* Keep nested business cards exactly at the HTML card size. */
 .hn-mvp-screen .ant-card:not(:first-child):not(.master-data-panel),
 .hn-mvp-screen .ant-row .ant-card {
-  border: 1px solid var(--line) !important;
+  border: 1px solid var(--ops-line) !important;
   border-radius: 14px !important;
   box-shadow: none !important;
 }

@@ -59,6 +59,8 @@ interface UiAutocompleteBaseProps {
   onAddNew?: () => void;
   addNewLabel?: string;
   sx?: SxProps<Theme>;
+  /** Optional screen-scoped class for the dropdown portal surface. */
+  menuClassName?: string;
   /** Dùng khi ô không có `label` hiển thị (bộ lọc trên thanh công cụ). */
   "aria-label"?: string;
   "data-testid"?: string;
@@ -101,6 +103,7 @@ export function UiAutocomplete({
   onAddNew,
   addNewLabel,
   sx,
+  menuClassName,
   "aria-label": ariaLabel,
   "data-testid": dataTestId,
 }: UiAutocompleteProps) {
@@ -200,6 +203,7 @@ export function UiAutocomplete({
         return addNewRow ? [...sliced, addNewRow] : sliced;
       }}
       slotProps={{
+        paper: { className: menuClassName },
         listbox: {
           onScroll: listWindow.onListScroll,
           sx: { maxHeight: OPTION_LIST_MAX_HEIGHT },

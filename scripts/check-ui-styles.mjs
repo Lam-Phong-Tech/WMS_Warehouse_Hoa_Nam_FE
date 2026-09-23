@@ -38,9 +38,12 @@ export const CSS_MANIFEST = [
   "./styles/hn-icon-font.css",
   "./shared/ui/tokens/css-vars.css",
   "./shared/ui/tokens/css-vars-dark.css",
+  "./shared/ui/tokens/operations.css",
+  "./app/layouts/system-shell.css",
   "./index.css",
   "./styles/hn-wms-page-normalize.css",
   "./styles/hn-wms-source-screen.css",
+  "./shared/ui/operations-ui.css",
   "./styles/hn-responsive.css",
   "./styles/hn-motion.css",
 ];

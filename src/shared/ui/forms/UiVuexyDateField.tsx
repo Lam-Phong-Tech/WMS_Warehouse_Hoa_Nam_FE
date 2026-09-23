@@ -299,7 +299,7 @@ export function UiVuexyDateField({
                       selected || isToday ? S.primarySoft : "transparent",
                     color:
                       selected || isToday
-                        ? S.primaryDark
+                        ? S.infoText
                         : outsideMonth
                           ? S.textDisabled
                           : S.textHigh,
@@ -311,7 +311,7 @@ export function UiVuexyDateField({
                     transition: `background ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
                     "&:hover": {
                       bgcolor: S.primarySoft,
-                      color: S.primaryDark,
+                      color: S.infoText,
                     },
                     "&:focus-visible": {
                       outline: `2px solid ${S.primary}`,
@@ -343,7 +343,7 @@ const calendarNavButtonSx = {
   fontSize: 16,
   cursor: "pointer",
   transition: `background ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
-  "&:hover": { bgcolor: S.primarySoft, color: S.primaryDark },
+  "&:hover": { bgcolor: S.primarySoft, color: S.infoText },
   "&:focus-visible": { outline: `2px solid ${S.primary}`, outlineOffset: 1 },
   "&:disabled": { opacity: 0.35, cursor: "not-allowed" },
 } as const;

@@ -109,8 +109,8 @@
   padding: 0 12px;
   border: 1px solid var(--map-line);
   border-radius: 6px;
-  background: var(--map-white);
-  color: var(--map-navy);
+  background: var(--map-card);
+  color: var(--map-heading);
   transition:
     border-color 140ms cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 140ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -156,7 +156,7 @@
 
 .hn-system-shell .hn-topbar .avatar {
   background: var(--map-pale);
-  color: var(--map-navy);
+  color: var(--map-heading);
 }
 
 .hn-system-shell .hn-topbar .topbar-actions {

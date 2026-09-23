@@ -1,3 +1,5 @@
+import { CheckOutlined } from "@/shared/components/icons";
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   useEffect,
   useMemo,
@@ -321,7 +323,7 @@ function FilterCombobox({
                     className="outbound-filter-combobox__check"
                     aria-hidden="true"
                   >
-                    ✓
+                    <CheckOutlined />
                   </b>
                 ) : null}
               </button>
@@ -789,7 +791,9 @@ export default function OutboundFlowReport() {
     <div className="hn-outbound-report" data-testid="rpt01-outbound-reference">
       {toastCopy ? (
         <div className="outbound-toast" role="status">
-          <span className="outbound-toast__icon">✓</span>
+          <span className="outbound-toast__icon" aria-hidden="true">
+            <CheckOutlined />
+          </span>
           <span>
             <strong>{toastCopy.title}</strong>
             <small>{toastCopy.detail}</small>
@@ -815,7 +819,7 @@ export default function OutboundFlowReport() {
 
       <header className="outbound-page-heading">
         <div>
-          <h1>Phiếu xuất kho</h1>
+          <h1 className="hn-report-page-title">Phiếu xuất kho</h1>
           <p>Tiếp nhận, quản lý và theo dõi tiến độ xuất kho từ Scanner App</p>
         </div>
         <div className="outbound-heading-actions">
@@ -1366,28 +1370,22 @@ export default function OutboundFlowReport() {
                             </span>
                           </td>
                           <td data-label="Thao tác">
-                            <button
-                              type="button"
-                              aria-label={`Xem phiếu ${document.document_no}`}
-                              title={`Xem phiếu ${document.document_no}`}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openDocument(document);
-                              }}
-                            >
-                              <Icon
-                                name={
-                                  normalizeStatus(document.status) === "POSTED"
-                                    ? "eye"
-                                    : "chevron-right"
-                                }
-                              />
-                              <span>
+                            <RowActionGroup>
+                              <RowActionButton
+                                kind="view"
+                                type="button"
+                                aria-label={`Xem phiếu ${document.document_no}`}
+                                title={`Xem phiếu ${document.document_no}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openDocument(document);
+                                }}
+                              >
                                 {normalizeStatus(document.status) === "POSTED"
                                   ? "Xem"
                                   : "Mở"}
-                              </span>
-                            </button>
+                              </RowActionButton>
+                            </RowActionGroup>
                           </td>
                         </tr>
                       );
@@ -1397,13 +1395,13 @@ export default function OutboundFlowReport() {
               </div>
             )}
 
-            <footer className="outbound-table-footer">
+            <footer className="outbound-table-footer hn-report-pagination-footer">
               <span>
                 {searchedDocuments.length === 0
                   ? `0 kết quả / ${filteredDocuments.length} phiếu`
                   : `Hiển thị ${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, searchedDocuments.length)} trong ${searchedDocuments.length} phiếu`}
               </span>
-              <div className="outbound-pagination">
+              <div className="outbound-pagination hn-report-pagination">
                 <button
                   type="button"
                   aria-label="Trang trước"

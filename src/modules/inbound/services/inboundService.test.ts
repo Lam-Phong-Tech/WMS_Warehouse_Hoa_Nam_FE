@@ -1020,3 +1020,53 @@ describe("inbound · cờ thông tin SKU trên từng dòng phiếu", () => {
     ).toBe(true);
   });
 });
+
+describe("inbound list · display-only SKU counts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("counts distinct nonempty SKU identities from loaded lines without changing quantities", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [
+        {
+          id: "IN-COUNT",
+          status: "SCANNING",
+          lines: [
+            { product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 },
+            { product_id: "SKU-1", qty_planned: 3, scanned_qty: 3 },
+            { sku_id: "SKU-2", qty_planned: 5, scanned_qty: 5 },
+            { product_id: " ", qty_planned: 1, scanned_qty: 1 },
+          ],
+        },
+      ],
+      meta: { total: 1 },
+    });
+
+    const result = await fetchInboundDocuments();
+
+    expect(result.data[0]).toMatchObject({
+      skuCount: 2,
+      expected: 11,
+      scanned: 11,
+      remaining: 0,
+      status: "SCANNING",
+    });
+  });
+
+  it("distinguishes absent line data from a genuinely empty receipt", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [
+        { id: "IN-UNLOADED", status: "DRAFT", total_scanned: 4 },
+        { id: "IN-EMPTY", status: "DRAFT", lines: [] },
+      ],
+      meta: { total: 2 },
+    });
+
+    const result = await fetchInboundDocuments();
+
+    expect(result.data[0].skuCount).toBeUndefined();
+    expect(result.data[0].scanned).toBe(4);
+    expect(result.data[1].skuCount).toBe(0);
+  });
+});

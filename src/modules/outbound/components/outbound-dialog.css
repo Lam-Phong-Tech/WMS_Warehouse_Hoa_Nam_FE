@@ -1,0 +1,420 @@
+/* OUT-01 intake and detail: these rules only apply while this dialog is mounted. */
+.hn-outbound-dialog,
+.hn-outbound-dialog:has(
+    [data-date-field="outbound-request-date"][aria-expanded="true"]
+  )
+  ~ .MuiPopover-root,
+.hn-outbound-dialog:has(.MuiAutocomplete-popupIndicatorOpen)
+  ~ .MuiAutocomplete-popper {
+  --outbound-dialog-ink: var(--ops-heading);
+  --outbound-dialog-primary: var(--ops-primary);
+  --outbound-dialog-border: var(--ops-line);
+  --outbound-dialog-muted: var(--ops-muted);
+  --outbound-dialog-soft: var(--ops-pale);
+  --outbound-dialog-white: var(--ops-on-primary);
+  --outbound-dialog-surface: var(--ops-surface);
+}
+
+.hn-outbound-dialog .MuiDialog-paper {
+  width: min(600px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: 16px;
+  border: 1px solid var(--outbound-dialog-border);
+  border-radius: var(--ops-radius-dialog);
+  background: var(--outbound-dialog-surface);
+  color: var(--outbound-dialog-ink);
+  box-shadow: var(--ops-shadow-dialog);
+}
+
+.hn-outbound-dialog .MuiDialogTitle-root {
+  flex: none;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--outbound-dialog-border);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+}
+
+.hn-outbound-dialog .MuiDialogTitle-root + .MuiDialogContent-root {
+  padding: 22px;
+  overscroll-behavior: contain;
+}
+
+.hn-outbound-dialog .MuiDialogActions-root {
+  flex: none;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 22px;
+  border-top: 1px solid var(--outbound-dialog-border);
+  background: var(--outbound-dialog-surface);
+}
+
+.hn-outbound-dialog .MuiDialogActions-root > :not(style) ~ :not(style) {
+  margin-left: 0;
+}
+
+.hn-outbound-dialog .MuiFormControl-root,
+.hn-outbound-dialog .MuiGrid-root {
+  min-width: 0;
+}
+
+.hn-outbound-dialog .MuiFormLabel-root {
+  color: var(--outbound-dialog-ink);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.hn-outbound-dialog .MuiInputLabel-root {
+  position: static;
+  max-width: 100%;
+  margin-bottom: 6px;
+  transform: none;
+  white-space: normal;
+}
+
+.hn-outbound-dialog .MuiInputLabel-root.MuiInputLabel-shrink {
+  font-size: 14px;
+}
+
+.hn-outbound-dialog
+  .MuiFormControl-root
+  > .MuiFormLabel-root:not(.MuiInputLabel-root) {
+  margin-bottom: 6px;
+}
+
+.hn-outbound-dialog .MuiOutlinedInput-notchedOutline legend {
+  max-width: 0;
+}
+
+.hn-outbound-dialog .MuiOutlinedInput-root {
+  min-height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
+  color: var(--outbound-dialog-ink);
+  font-size: 14px;
+  background: var(--outbound-dialog-surface);
+}
+
+.hn-outbound-dialog .MuiOutlinedInput-input {
+  padding: 9px 12px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.hn-outbound-dialog .MuiOutlinedInput-root.MuiInputBase-multiline {
+  padding: 10px 12px;
+}
+
+.hn-outbound-dialog .MuiInputBase-inputMultiline {
+  padding: 0;
+}
+
+.hn-outbound-dialog .MuiAutocomplete-root .MuiAutocomplete-input {
+  min-width: 0;
+  padding: 3px 6px;
+}
+
+.hn-outbound-dialog
+  .MuiOutlinedInput-root:not(.Mui-error)
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--outbound-dialog-border);
+}
+
+.hn-outbound-dialog
+  .MuiOutlinedInput-root:not(.Mui-error):hover
+  .MuiOutlinedInput-notchedOutline,
+.hn-outbound-dialog
+  .MuiOutlinedInput-root.Mui-focused:not(.Mui-error)
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--outbound-dialog-primary);
+}
+
+.hn-outbound-dialog .MuiOutlinedInput-root.Mui-focused:not(.Mui-error) {
+  box-shadow: 0 0 0 3px var(--ops-focus-ring);
+}
+
+.hn-outbound-dialog .MuiFormHelperText-root {
+  margin: 5px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+.hn-outbound-dialog .MuiFormHelperText-root:not(.Mui-error) {
+  color: var(--outbound-dialog-muted);
+}
+
+.hn-outbound-dialog .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+}
+
+.hn-outbound-dialog .hn-outbound-dialog__primary {
+  padding: 9px 16px;
+  background: var(--outbound-dialog-primary);
+  color: var(--outbound-dialog-white);
+  box-shadow: var(--ops-shadow-card);
+}
+
+.hn-outbound-dialog .hn-outbound-dialog__primary:hover {
+  background: var(--ops-primary-hover);
+}
+
+.hn-outbound-dialog .hn-outbound-dialog__primary.Mui-disabled {
+  background: var(--outbound-dialog-soft);
+  color: var(--outbound-dialog-muted);
+  box-shadow: none;
+}
+
+.hn-outbound-dialog__date {
+  position: relative;
+  min-width: 0;
+}
+
+.hn-outbound-dialog .hn-vuexy-date-field {
+  height: var(--ops-control-height);
+  border-color: var(--outbound-dialog-border);
+  border-radius: var(--ops-radius-control);
+  background: var(--outbound-dialog-surface);
+  color: var(--outbound-dialog-ink);
+}
+
+.hn-outbound-dialog .hn-vuexy-date-field [data-date-value],
+.hn-outbound-dialog .hn-vuexy-date-field > i {
+  color: inherit;
+}
+
+.hn-outbound-dialog__date:has(.hn-outbound-dialog__date-clear)
+  [data-date-value] {
+  padding-right: 24px;
+}
+
+.hn-outbound-dialog .hn-vuexy-date-field:hover:not(:disabled),
+.hn-outbound-dialog .hn-vuexy-date-field[aria-expanded="true"],
+.hn-outbound-dialog .hn-vuexy-date-field:focus-visible {
+  border-color: var(--outbound-dialog-primary);
+  box-shadow: 0 0 0 3px var(--ops-focus-ring);
+}
+
+.hn-outbound-dialog
+  .hn-outbound-dialog__date[aria-invalid="true"]
+  .hn-vuexy-date-field {
+  border-color: var(--wms-error);
+}
+
+.hn-outbound-dialog .hn-outbound-dialog__date-clear {
+  position: absolute;
+  top: 6px;
+  right: 32px;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--outbound-dialog-muted);
+  font-size: 12px;
+}
+
+.hn-outbound-dialog .hn-outbound-dialog__date-clear:hover {
+  color: var(--outbound-dialog-ink);
+  background: var(--outbound-dialog-soft);
+}
+
+/* Recolor only this field's portal through the shared calendar tokens. Keep
+   its current-day marker, outside-month contrast, bounds and focus behavior. */
+.hn-outbound-dialog:has(
+    [data-date-field="outbound-request-date"][aria-expanded="true"]
+  )
+  ~ .MuiPopover-root {
+  --wms-primary: var(--outbound-dialog-primary);
+  --wms-primary-dark: var(--outbound-dialog-ink);
+  --wms-primary-soft: var(--outbound-dialog-soft);
+  --wms-text-high: var(--outbound-dialog-ink);
+  --wms-text-medium: var(--outbound-dialog-muted);
+  --wms-text-disabled: var(--ops-inactive);
+  --wms-bg-surface: var(--outbound-dialog-surface);
+  --wms-bg-subtle: var(--outbound-dialog-soft);
+  --wms-border: var(--outbound-dialog-border);
+}
+
+.hn-outbound-dialog:has(
+    [data-date-field="outbound-request-date"][aria-expanded="true"]
+  )
+  ~ .MuiPopover-root
+  .MuiPaper-root {
+  border-radius: var(--ops-radius-control);
+  box-shadow: var(--ops-shadow-dialog);
+}
+
+.hn-outbound-dialog:has(
+    [data-date-field="outbound-request-date"][aria-expanded="true"]
+  )
+  ~ .MuiPopover-root
+  .MuiPaper-root
+  button[aria-selected="true"] {
+  background: var(--outbound-dialog-primary);
+  color: var(--outbound-dialog-white);
+}
+
+.hn-outbound-dialog:has(.MuiAutocomplete-popupIndicatorOpen)
+  ~ .MuiAutocomplete-popper
+  .MuiAutocomplete-paper {
+  border: 1px solid var(--outbound-dialog-border);
+  color: var(--outbound-dialog-ink);
+  font-size: 14px;
+}
+
+.hn-outbound-dialog:has(.MuiAutocomplete-popupIndicatorOpen)
+  ~ .MuiAutocomplete-popper
+  .MuiAutocomplete-option[aria-selected="true"],
+.hn-outbound-dialog:has(.MuiAutocomplete-popupIndicatorOpen)
+  ~ .MuiAutocomplete-popper
+  .MuiAutocomplete-option.Mui-focused {
+  background: var(--outbound-dialog-soft);
+}
+
+@media (max-width: 599px) {
+  .hn-outbound-dialog .MuiDialog-paper {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+    margin: 10px;
+  }
+
+  .hn-outbound-dialog .MuiDialogTitle-root {
+    padding: 14px 16px;
+    font-size: 18px;
+  }
+
+  .hn-outbound-dialog .MuiDialogTitle-root + .MuiDialogContent-root {
+    padding: 18px 16px;
+  }
+
+  .hn-outbound-dialog .MuiDialogActions-root {
+    gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .hn-outbound-dialog .hn-outbound-dialog__primary {
+    flex: 1 1 auto;
+    white-space: normal;
+  }
+}
+
+/* Preserve each dialog's existing size and the business colors of destructive
+   actions while sharing the reference's blue control palette. */
+.hn-outbound-dialog .MuiDialog-paperWidthXs {
+  width: min(444px, calc(100vw - 32px));
+}
+
+.hn-outbound-dialog .MuiDialog-paperWidthLg {
+  width: min(1200px, calc(100vw - 32px));
+}
+
+.hn-outbound-dialog .MuiDialogContent-root {
+  color: var(--outbound-dialog-ink);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+
+.hn-outbound-dialog .MuiDialogTitle-root > span,
+.hn-outbound-dialog .MuiStack-root,
+.hn-outbound-dialog .MuiAutocomplete-root {
+  min-width: 0;
+}
+
+.hn-outbound-dialog .MuiFormLabel-root.Mui-error {
+  color: var(--wms-error);
+}
+
+.hn-outbound-dialog .MuiInputBase-root {
+  max-width: 100%;
+}
+
+.hn-outbound-dialog .MuiButton-root:not(.hn-row-action) {
+  max-width: 100%;
+  white-space: normal;
+  line-height: 20px;
+}
+
+.hn-outbound-dialog .MuiDialogTitle-root .MuiIconButton-root {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  color: var(--ops-heading);
+}
+
+.hn-outbound-dialog__modes {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hn-outbound-dialog__modes > :not(style) ~ :not(style) {
+  margin-left: 0;
+}
+
+.hn-outbound-dialog
+  .hn-outbound-dialog__modes
+  .MuiButton-root:not(.hn-row-action) {
+  border: 1px solid var(--outbound-dialog-border);
+  color: var(--outbound-dialog-ink);
+  background: var(--outbound-dialog-surface);
+}
+
+.hn-outbound-dialog .hn-outbound-dialog__modes [aria-pressed="true"] {
+  border-color: var(--outbound-dialog-primary);
+  background: var(--outbound-dialog-soft);
+  box-shadow: inset 0 -2px var(--outbound-dialog-primary);
+}
+
+.hn-outbound-dialog .hn-outbound-dialog__section {
+  border-color: var(--outbound-dialog-border);
+  border-radius: var(--ops-radius-card);
+}
+
+.hn-outbound-dialog input[type="file"] {
+  max-width: 100%;
+  color: var(--outbound-dialog-ink);
+  font: inherit;
+}
+
+.hn-outbound-dialog input[type="file"]::file-selector-button {
+  min-height: var(--ops-control-height);
+  margin-right: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--outbound-dialog-border);
+  border-radius: var(--ops-radius-control);
+  background: var(--outbound-dialog-soft);
+  color: var(--outbound-dialog-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.hn-outbound-dialog:has(.MuiAutocomplete-popupIndicatorOpen)
+  ~ .MuiAutocomplete-popper
+  .MuiAutocomplete-paper {
+  background: var(--outbound-dialog-surface);
+}
+
+@media (max-width: 599px) {
+  .hn-outbound-dialog .MuiDialog-paperWidthLg {
+    width: calc(100vw - 20px);
+  }
+
+  .hn-outbound-dialog .MuiStack-root > :not(style) ~ :not(style) {
+    margin-left: 0;
+  }
+
+  .hn-outbound-dialog .MuiStack-root:has(> .MuiFormControl-root) {
+    column-gap: 12px;
+  }
+
+  .hn-outbound-dialog .hn-outbound-dialog__section {
+    padding: 12px;
+  }
+
+  .hn-outbound-dialog .hn-outbound-dialog__line {
+    column-gap: 12px;
+  }
+}

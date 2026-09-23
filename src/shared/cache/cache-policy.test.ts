@@ -12,6 +12,7 @@ import {
   applyQueryCacheDefaults,
   assertNoNestedPrefixes,
 } from "./apply-query-defaults";
+import { INVALIDATION_ROOTS } from "./invalidation";
 
 /**
  * TTL cache tương ứng ở BE (config/wms_cache.php). Staleness người dùng thấy
@@ -147,6 +148,26 @@ describe("chính sách cache", () => {
     expect(classOfQueryKey(["rpt-ops", "xnt", "a", "b"])).toBe("report");
     expect(classOfQueryKey(["dashboard", "overview-quick"])).toBe("dashboard");
     expect(classOfQueryKey(["notifications"])).toBe("realtime");
+  });
+
+  it("coverage uses report freshness and invalidation but never persists its raw payload", () => {
+    const keys = [
+      ["rpt-coverage", "warranty-defects", "2026-01-01", "2026-09-23", "{}"],
+      [
+        "rpt-coverage",
+        "outbound-by-recipient",
+        "2026-01-01",
+        "2026-09-23",
+        "{}",
+      ],
+    ];
+    expect(QUERY_CACHE_REGISTRY).toContainEqual(["rpt-coverage", "report"]);
+    for (const key of keys) {
+      expect(policyOfQueryKey(key)).toBe(CACHE_POLICIES.report);
+      expect(isPersistDenied(key)).toBe(true);
+    }
+    expect(INVALIDATION_ROOTS.stock).toContain("rpt-coverage");
+    expect(INVALIDATION_ROOTS.master).toContain("rpt-coverage");
   });
 
   it("khoá lạ rơi về nhóm an toàn nhất chứ không ném lỗi", () => {

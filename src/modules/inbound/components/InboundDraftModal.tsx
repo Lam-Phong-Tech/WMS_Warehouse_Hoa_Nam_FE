@@ -7,6 +7,8 @@ import {
   UiAlert,
   UiAutocomplete,
   UiDialog,
+  UiFormField,
+  UiVuexyDateField,
   UiTextField,
 } from "@/shared/ui";
 import { toast } from "sonner";
@@ -34,11 +36,9 @@ import type {
   UpdateInboundPayload,
 } from "@/modules/inbound/types";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
-import {
-  checkDate,
-  dateInputBounds,
-  pastDateBounds,
-} from "@/shared/validation/date-rules";
+import { checkDate, pastDateBounds } from "@/shared/validation/date-rules";
+
+import "./inbound-draft.css";
 
 interface FormValues {
   warehouseId: string;
@@ -125,6 +125,22 @@ export function InboundDraftModal({
   const status = detail?.document.status;
   const mutable = !documentId || status === "DRAFT" || status === "SCANNING";
   const saving = createMutation.isPending || updateMutation.isPending;
+  const documentDateBounds = pastDateBounds();
+  const parsedDocumentDate = dayjs(formValues.documentDate);
+  // Preserve malformed server values for submit validation without allowing
+  // dayjs to display a rolled-over date as though it were valid.
+  const documentDateValue =
+    parsedDocumentDate.isValid() &&
+    parsedDocumentDate.format("YYYY-MM-DD") === formValues.documentDate
+      ? parsedDocumentDate
+      : null;
+
+  const updateDocumentDate = (value: string) => {
+    setFormValues((current) => ({ ...current, documentDate: value }));
+    if (fieldErrors.documentDate) {
+      setFieldErrors((current) => ({ ...current, documentDate: "" }));
+    }
+  };
 
   useEffect(() => {
     if (!documentId) {
@@ -270,6 +286,7 @@ export function InboundDraftModal({
     <UiDialog
       {...dialog.dialogProps}
       maxWidth="sm"
+      className="hn-inbound-draft"
       title={
         <Stack
           direction="row"
@@ -282,6 +299,7 @@ export function InboundDraftModal({
           </span>
           <ActionIconButton
             kind="close"
+            className="hn-inbound-draft__dismiss"
             label={t("common.close")}
             onClick={dialog.close}
             disabled={saving}
@@ -290,12 +308,18 @@ export function InboundDraftModal({
       }
       actions={
         <>
-          <ActionButton kind="close" onClick={dialog.close}>
+          <ActionButton
+            kind="close"
+            className="hn-inbound-draft__cancel"
+            onClick={dialog.close}
+          >
             {t("common.close")}
           </ActionButton>
           {mutable && canCreate ? (
             <ActionButton
               kind="save"
+              className="hn-inbound-draft__save"
+              loading={saving}
               onClick={() => void handleSave()}
               disabled={saving}
             >
@@ -307,8 +331,6 @@ export function InboundDraftModal({
         </>
       }
     >
-      <br />
-
       {detailQuery.isError ? (
         <Box sx={{ mb: 2 }}>
           <UiAlert
@@ -326,45 +348,63 @@ export function InboundDraftModal({
         </Box>
       ) : null}
 
-      {documentId && !mutable ? (
+      {documentId && !detail && detailQuery.isLoading ? (
+        <Box role="status" aria-busy="true" sx={{ mb: 2 }}>
+          {t("shared.states.loadingData")}
+        </Box>
+      ) : null}
+
+      {documentId && status && !mutable ? (
         <Box sx={{ mb: 2 }}>
           <UiAlert tone="info">{t("inbound.draft.readonly")}</UiAlert>
         </Box>
       ) : null}
 
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <UiTextField
-            id="inbound-doc-date"
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <UiFormField
             label={t("inbound.draft.documentDate")}
-            type="date"
+            htmlFor="inbound-doc-date"
             required
-            fullWidth
-            value={formValues.documentDate}
-            onChange={(event) => {
-              setFormValues((current) => ({
-                ...current,
-                documentDate: event.target.value,
-              }));
-              if (fieldErrors.documentDate) {
-                setFieldErrors((current) => ({
-                  ...current,
-                  documentDate: "",
-                }));
-              }
-            }}
-            disabled={!mutable}
-            slotProps={{
-              inputLabel: { shrink: true },
-              htmlInput: dateInputBounds(pastDateBounds()),
-            }}
             error={Boolean(fieldErrors.documentDate)}
             helperText={
-              fieldErrors.documentDate || t("inbound.draft.documentDateHelper")
+              <span id="inbound-doc-date-help">
+                {fieldErrors.documentDate ||
+                  t("inbound.draft.documentDateHelper")}
+              </span>
             }
-          />
+          >
+            <Box
+              className="hn-inbound-draft__date"
+              role="group"
+              aria-label={t("inbound.draft.documentDate")}
+              aria-invalid={Boolean(fieldErrors.documentDate)}
+              aria-describedby="inbound-doc-date-help"
+            >
+              <UiVuexyDateField
+                id="inbound-doc-date"
+                field="inbound-document-date"
+                aria-label={t("inbound.draft.documentDate")}
+                value={documentDateValue}
+                onChange={(next) =>
+                  updateDocumentDate(next?.format("YYYY-MM-DD") ?? "")
+                }
+                minDate={documentDateBounds.minDate}
+                maxDate={documentDateBounds.maxDate}
+                disabled={!mutable}
+              />
+              {formValues.documentDate && mutable ? (
+                <ActionIconButton
+                  kind="close"
+                  className="hn-inbound-draft__date-clear"
+                  label={`${t("shared.form.autocompleteClear")}: ${t("inbound.draft.documentDate")}`}
+                  onClick={() => updateDocumentDate("")}
+                />
+              ) : null}
+            </Box>
+          </UiFormField>
         </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           {/* Danh sách kho gõ-để-tìm: số kho tăng theo thời gian, cuộn tay
               hết menu là hỏng thao tác nhập nhanh. */}
           <UiAutocomplete

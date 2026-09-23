@@ -7,7 +7,6 @@ import {
   UiAvatar,
   UiCard,
   UiDescriptions,
-  UiPageContainer,
   UiStatusBadge,
   UiText,
   type UiStatusTone,
@@ -25,6 +24,8 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { ROUTES } from "@/shared/constants/routes";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import "@/shared/ui/sku-aligned-settings.css";
+import "./profile-page.css";
 
 function permissionHistoryActionLabel(t: TranslateFn, action: string): string {
   const labels: Record<string, string> = {
@@ -74,6 +75,7 @@ function buildHistoryColumns(
       render: (row) => (
         <UiStatusBadge
           tone="neutral"
+          data-settings-tone="neutral"
           label={permissionHistoryActionLabel(t, row.action)}
         />
       ),
@@ -122,117 +124,144 @@ export function ProfilePage() {
 
   return (
     // Tiêu đề màn do header chung của shell dựng (AppPageHeader).
-    <UiPageContainer>
-      <UiCard>
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "16px",
-            marginBottom: "24px",
-          }}
-        >
-          <UiAvatar name={displayName} size="lg" />
+    <Box className="hn-settings-screen hn-profile-settings">
+      <UiCard className="hn-settings-card">
+        <Box className="hn-profile-identity">
+          <UiAvatar
+            className="hn-profile-avatar"
+            name={displayName}
+            size="lg"
+          />
           <Box sx={{ minWidth: 0, overflowWrap: "anywhere" }}>
-            <UiText variant="cardTitle">{displayName}</UiText>
-            {email ? <UiText variant="secondary">{email}</UiText> : null}
+            <UiText variant="cardTitle" className="hn-profile-name">
+              {displayName}
+            </UiText>
+            {email ? (
+              <UiText variant="secondary" className="hn-settings-muted">
+                {email}
+              </UiText>
+            ) : null}
           </Box>
         </Box>
 
-        <UiDescriptions
-          columns={2}
-          items={[
-            { label: t("auth.profile.fullName"), value: displayName },
-            { label: t("auth.profile.username"), value: empty(username) },
-            { label: t("auth.profile.employeeCode"), value: empty(code) },
-            { label: t("auth.profile.phone"), value: empty(phone) },
-            { label: t("auth.fields.email"), value: empty(email) },
-            {
-              label: t("auth.profile.status"),
-              value: (
-                <UiStatusBadge
-                  tone={statusTone(status)}
-                  label={statusLabel(t, status)}
-                />
-              ),
-            },
-            {
-              label: t("auth.profile.roles"),
-              value: isSuperAdmin ? (
-                <UiStatusBadge tone="warning" label="Super Admin" />
-              ) : roles.length > 0 ? (
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ flexWrap: "wrap", rowGap: 1 }}
-                >
-                  {roles.map((role) => (
-                    <UiStatusBadge
-                      key={role.role_id}
-                      tone="neutral"
-                      label={`${role.role_name}${
-                        role.role_code ? ` (${role.role_code})` : ""
-                      }`}
-                    />
-                  ))}
-                </Stack>
-              ) : (
-                empty(profile?.role?.name ?? currentContext?.role_name)
-              ),
-            },
-            {
-              label: t("auth.profile.warehouseScope"),
-              value:
-                warehouseScopes.length > 0 ? (
+        <Box className="hn-settings-descriptions">
+          <UiDescriptions
+            columns={2}
+            items={[
+              { label: t("auth.profile.fullName"), value: displayName },
+              { label: t("auth.profile.username"), value: empty(username) },
+              { label: t("auth.profile.employeeCode"), value: empty(code) },
+              { label: t("auth.profile.phone"), value: empty(phone) },
+              { label: t("auth.fields.email"), value: empty(email) },
+              {
+                label: t("auth.profile.status"),
+                value: (
+                  <UiStatusBadge
+                    tone={statusTone(status)}
+                    data-settings-tone={statusTone(status)}
+                    label={statusLabel(t, status)}
+                  />
+                ),
+              },
+              {
+                label: t("auth.profile.roles"),
+                value: isSuperAdmin ? (
+                  <UiStatusBadge
+                    tone="warning"
+                    data-settings-tone="warning"
+                    label="Super Admin"
+                  />
+                ) : roles.length > 0 ? (
                   <Stack
                     direction="row"
                     spacing={1}
                     sx={{ flexWrap: "wrap", rowGap: 1 }}
                   >
-                    {warehouseScopes.map((scope) => (
-                      <UiStatusBadge key={scope} tone="neutral" label={scope} />
+                    {roles.map((role) => (
+                      <UiStatusBadge
+                        key={role.role_id}
+                        tone="neutral"
+                        data-settings-tone="neutral"
+                        label={`${role.role_name}${
+                          role.role_code ? ` (${role.role_code})` : ""
+                        }`}
+                      />
                     ))}
                   </Stack>
                 ) : (
-                  empty(
-                    currentContext?.scope_ref ?? currentContext?.warehouse_name,
-                  )
+                  empty(profile?.role?.name ?? currentContext?.role_name)
                 ),
-            },
-            {
-              label: t("auth.profile.currentContext"),
-              value: empty(currentContext?.role_name),
-            },
-            {
-              label: t("auth.profile.grantedPermissions"),
-              value: permissionCodes.length,
-            },
-          ]}
-        />
+              },
+              {
+                label: t("auth.profile.warehouseScope"),
+                value:
+                  warehouseScopes.length > 0 ? (
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ flexWrap: "wrap", rowGap: 1 }}
+                    >
+                      {warehouseScopes.map((scope) => (
+                        <UiStatusBadge
+                          key={scope}
+                          tone="neutral"
+                          data-settings-tone="neutral"
+                          label={scope}
+                        />
+                      ))}
+                    </Stack>
+                  ) : (
+                    empty(
+                      currentContext?.scope_ref ??
+                        currentContext?.warehouse_name,
+                    )
+                  ),
+              },
+              {
+                label: t("auth.profile.currentContext"),
+                value: empty(currentContext?.role_name),
+              },
+              {
+                label: t("auth.profile.grantedPermissions"),
+                value: permissionCodes.length,
+              },
+            ]}
+          />
+        </Box>
       </UiCard>
 
       {/* WWHN-SEC-08 — lối vào duy nhất tới màn đăng ký MFA.
           Không có thẻ này thì /profile/mfa tồn tại nhưng không ai tìm thấy, và
           "tính năng đã có" trên giấy tờ lại bằng "không ai bật" trên thực tế. */}
-      <UiCard title={t("auth.mfa.setupTitle")}>
+      <UiCard className="hn-settings-card" title={t("auth.mfa.setupTitle")}>
         <Stack spacing="12px">
-          <UiText>{t("auth.mfa.setupSubtitle")}</UiText>
+          <UiText className="hn-settings-muted">
+            {t("auth.mfa.setupSubtitle")}
+          </UiText>
           <Box>
-            <Link to={ROUTES.MFA_SETUP}>{t("auth.mfa.startEnroll")}</Link>
+            <Link className="hn-profile-mfa-link" to={ROUTES.MFA_SETUP}>
+              {t("auth.mfa.startEnroll")}
+            </Link>
           </Box>
         </Stack>
       </UiCard>
 
-      <UiCard title={t("auth.profile.historyTitle")}>
+      <UiCard
+        className="hn-settings-card"
+        title={t("auth.profile.historyTitle")}
+      >
         <ResponsiveDataTable<MyPermissionHistoryEntry>
           columns={historyColumns}
+          headerCellStyle={{
+            background: "var(--settings-pale)",
+            color: "var(--settings-ink)",
+          }}
           rows={historyRows}
           rowKey={(row) => row.id}
           loading={historyQuery.isLoading}
           emptyText={t("auth.profile.historyEmpty")}
         />
       </UiCard>
-    </UiPageContainer>
+    </Box>
   );
 }

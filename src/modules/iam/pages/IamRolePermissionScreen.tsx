@@ -46,7 +46,7 @@ import {
   IAM_ROLE_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { ActionButton, ActionIconButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
 
 interface RoleFormValues {
   role_code: string;
@@ -435,6 +435,7 @@ export function IamRolePermissionScreen() {
     return (
       <Box
         key={role.role_id}
+        className="hn-iam-role-card"
         role="button"
         tabIndex={0}
         aria-pressed={selected}
@@ -485,12 +486,8 @@ export function IamRolePermissionScreen() {
           </Box>
         </Stack>
         {canManageRoles && !isSystemRole(role) && (
-          <Stack
-            direction="row"
-            spacing={0.25}
-            sx={{ alignItems: "flex-start" }}
-          >
-            <ActionIconButton
+          <RowActionGroup sx={{ alignItems: "flex-start" }}>
+            <RowActionButton
               kind="edit"
               label={t("iam.role.editAria", { name: role.role_name })}
               onClick={(event) => {
@@ -498,7 +495,7 @@ export function IamRolePermissionScreen() {
                 openEdit(role);
               }}
             />
-            <ActionIconButton
+            <RowActionButton
               kind={active ? "deactivate" : "activate"}
               label={
                 active
@@ -510,7 +507,7 @@ export function IamRolePermissionScreen() {
                 void confirmToggleStatus(role);
               }}
             />
-            <ActionIconButton
+            <RowActionButton
               kind="delete"
               label={t("iam.role.deleteAria", { name: role.role_name })}
               onClick={(event) => {
@@ -518,7 +515,7 @@ export function IamRolePermissionScreen() {
                 void confirmDeleteRole(role);
               }}
             />
-          </Stack>
+          </RowActionGroup>
         )}
       </Box>
     );
@@ -540,6 +537,8 @@ export function IamRolePermissionScreen() {
     return (
       <Box
         key={permission.permission_id}
+        className="hn-iam-permission-cell"
+        data-checked={checked}
         sx={{
           border: `1px solid ${checked ? S.primaryLight : S.border}`,
           backgroundColor: checked ? S.primarySoft : S.bgSurface,
@@ -617,7 +616,11 @@ export function IamRolePermissionScreen() {
   };
 
   return (
-    <Stack spacing={2} sx={{ width: "100%" }}>
+    <Stack
+      className="hn-iam-roles"
+      spacing={2}
+      sx={{ width: "100%", minWidth: 0 }}
+    >
       <Box
         sx={{
           display: "grid",
@@ -645,6 +648,7 @@ export function IamRolePermissionScreen() {
               }}
             />
             <MvpPageSizeSelector
+              menuClassName="hn-iam-menu"
               value={rolePerPage}
               onChange={(value) => {
                 setRolePerPage(value);
@@ -712,6 +716,7 @@ export function IamRolePermissionScreen() {
                 </ActionButton>
                 <ActionButton
                   kind="save"
+                  className="hn-iam-primary"
                   disabled={!permissionsChanged}
                   loading={syncPermissions.isPending}
                   onClick={requestSavePermissions}
@@ -760,6 +765,7 @@ export function IamRolePermissionScreen() {
                 return (
                   <Box
                     key={group}
+                    className="hn-iam-permission-group"
                     sx={{
                       border: `1px solid ${S.border}`,
                       borderRadius: "10px",
@@ -767,6 +773,7 @@ export function IamRolePermissionScreen() {
                     }}
                   >
                     <Box
+                      className="hn-iam-permission-group-header"
                       sx={{
                         display: "flex",
                         alignItems: "center",
@@ -828,6 +835,7 @@ export function IamRolePermissionScreen() {
       </Box>
 
       <UiDialog
+        className="hn-iam-dialog"
         title={t("iam.role.editTitle")}
         open={roleModalOpen}
         onClose={() => setRoleModalOpen(false)}
@@ -842,6 +850,7 @@ export function IamRolePermissionScreen() {
             </ActionButton>
             <ActionButton
               kind="save"
+              className="hn-iam-primary"
               loading={updateRole.isPending}
               onClick={() => void saveRole()}
             >
@@ -894,6 +903,13 @@ export function IamRolePermissionScreen() {
           />
           <UiTextField
             select
+            slotProps={{
+              select: {
+                MenuProps: {
+                  slotProps: { paper: { className: "hn-iam-menu" } },
+                },
+              },
+            }}
             label={t("iam.role.fieldScope")}
             required
             fullWidth
@@ -911,6 +927,13 @@ export function IamRolePermissionScreen() {
           </UiTextField>
           <UiTextField
             select
+            slotProps={{
+              select: {
+                MenuProps: {
+                  slotProps: { paper: { className: "hn-iam-menu" } },
+                },
+              },
+            }}
             label={t("iam.role.fieldStatus")}
             required
             fullWidth
@@ -929,6 +952,7 @@ export function IamRolePermissionScreen() {
       </UiDialog>
 
       <UiDialog
+        className="hn-iam-dialog"
         title={t("iam.role.reasonTitle")}
         open={isReasonModalOpen}
         onClose={() => setIsReasonModalOpen(false)}
@@ -943,6 +967,7 @@ export function IamRolePermissionScreen() {
             </ActionButton>
             <ActionButton
               kind="save"
+              className="hn-iam-primary"
               loading={syncPermissions.isPending}
               onClick={() => void savePermissions()}
             >

@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { queryClient } from "@/app/providers/query-client";
 import { mark } from "@/shared/perf/marks";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { startQueryPersistence } from "./query-persister";
-import type { CacheIdentity } from "./cache-namespace";
+import { startQueryPersistence, stopQueryPersistence } from "./query-persister";
+import { buildCacheNamespace, type CacheIdentity } from "./cache-namespace";
 
 /**
  * Cổng nạp persisted query cache.
@@ -24,44 +24,60 @@ export function usePersistedQueryCache(): boolean {
   const permissionCodes = useAuthStore((s) => s.permissionCodes);
   const isSuperAdmin = useAuthStore((s) => s.isSuperAdmin);
   const currentContext = useAuthStore((s) => s.currentContext);
-  const [ready, setReady] = useState(false);
+  const token = useAuthStore((s) => s.token);
+  const [readySession, setReadySession] = useState<{
+    namespace: string | null;
+    token: string | null;
+  } | null>(null);
+
+  const identity = useMemo<CacheIdentity | null>(
+    () =>
+      profile
+        ? {
+            userId: String(profile.user_id ?? profile.id ?? "unknown"),
+            warehouseScopeIds: profile.warehouse_scope_ids ?? [],
+            contextRef:
+              currentContext?.scope_ref ??
+              (currentContext?.warehouse_id != null
+                ? String(currentContext.warehouse_id)
+                : null),
+            permissionCodes,
+            isSuperAdmin,
+          }
+        : null,
+    [profile, permissionCodes, isSuperAdmin, currentContext],
+  );
+  const namespace = identity ? buildCacheNamespace(identity) : null;
 
   useEffect(() => {
-    if (!isProfileLoaded) return;
+    if (!isProfileLoaded) {
+      stopQueryPersistence();
+      return;
+    }
 
     // Đã báo "profile loaded" mà không có profile thì không có danh tính để đặt
     // namespace -> không nạp gì cả. Phải mở cổng ngay: giữ `ready=false` ở nhánh
     // này sẽ treo màn hình chờ vĩnh viễn, đúng kiểu lỗi biến cache thành điểm
     // chết của ứng dụng.
-    if (!profile) {
-      setReady(true);
-      return;
-    }
-
-    const identity: CacheIdentity = {
-      userId: String(profile.user_id ?? profile.id ?? "unknown"),
-      warehouseScopeIds: profile.warehouse_scope_ids ?? [],
-      contextRef:
-        currentContext?.scope_ref ??
-        (currentContext?.warehouse_id != null
-          ? String(currentContext.warehouse_id)
-          : null),
-      permissionCodes,
-      isSuperAdmin,
-    };
+    if (!identity) return;
 
     let cancelled = false;
     mark("cache:start");
     void startQueryPersistence(queryClient, identity).finally(() => {
       mark("cache:ready");
-      if (!cancelled) setReady(true);
+      if (!cancelled) setReadySession({ namespace, token });
     });
 
     return () => {
       cancelled = true;
+      stopQueryPersistence();
     };
-  }, [isProfileLoaded, profile, permissionCodes, isSuperAdmin, currentContext]);
+  }, [isProfileLoaded, identity, namespace, token]);
 
   // Chưa đăng nhập thì không có gì để nạp — đừng giữ màn hình chờ.
-  return isProfileLoaded ? ready : true;
+  return (
+    !isProfileLoaded ||
+    !identity ||
+    (readySession?.namespace === namespace && readySession.token === token)
+  );
 }

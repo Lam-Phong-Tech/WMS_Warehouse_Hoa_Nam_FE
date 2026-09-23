@@ -19,9 +19,9 @@ export const ACTION_ICON_COLORS = {
   /** Xem / Mở / Xem chi tiết / Preview / Lịch sử */
   view: S.info,
   /** Sửa / Cập nhật / Chỉnh sửa */
-  edit: S.warning,
+  edit: S.primary,
   /** Thêm mới / Tạo */
-  create: S.success,
+  create: S.primary,
   /** Xóa */
   delete: S.error,
   /** Hủy / Từ chối / Vô hiệu hóa / Khóa / Ngừng cấp — cùng tông với delete */
@@ -49,15 +49,15 @@ export type ActionIconColorKey = keyof typeof ACTION_ICON_COLORS;
  * spec X trên đúng nền soft của chính nó).
  */
 export const ACTION_TONAL_TEXT_COLORS: Record<ActionIconColorKey, string> = {
-  primary: S.primaryDark,
+  primary: S.infoText,
   view: S.infoText,
-  edit: S.warningText,
-  create: S.successText,
+  edit: S.infoText,
+  create: S.infoText,
   delete: S.errorText,
   danger: S.errorText,
   success: S.successText,
   neutral: S.secondaryDark,
   sync: S.infoText,
-  upload: S.primaryDark,
-  download: S.primaryDark,
+  upload: S.infoText,
+  download: S.infoText,
 };

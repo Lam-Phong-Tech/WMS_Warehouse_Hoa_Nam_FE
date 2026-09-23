@@ -1,3 +1,4 @@
+import "./warranty-dialog.css";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -1235,6 +1236,7 @@ export function WarrantyDetailModal({
   return (
     <>
       <UiDialog
+        className="hn-war-dialog"
         {...dialog.dialogProps}
         maxWidth="lg"
         fullWidth
@@ -2025,6 +2027,7 @@ export function WarrantyDetailModal({
         {/* Xem ảnh ngay trong modal: trước đây muốn nhìn ảnh phải tải tệp về
             máy rồi mở bằng ứng dụng ngoài. */}
         <UiDialog
+          className="hn-war-dialog"
           open={previewAttachment !== null}
           onClose={() => setPreviewId(null)}
           maxWidth="lg"
@@ -2147,6 +2150,7 @@ export function WarrantyDetailModal({
         </UiDialog>
 
         <UiDialog
+          className="hn-war-dialog"
           open={deleteConfirmId !== null}
           onClose={() => setDeleteConfirmId(null)}
           maxWidth="xs"
@@ -2198,6 +2202,7 @@ export function WarrantyDetailModal({
         </UiDialog>
 
         <UiDialog
+          className="hn-war-dialog"
           open={correctOpen}
           onClose={guardBackdropClose(() => {
             setCorrectOpen(false);
@@ -2414,6 +2419,7 @@ export function WarrantyDetailModal({
         </UiDialog>
 
         <UiDialog
+          className="hn-war-dialog"
           open={statusOpen}
           onClose={guardBackdropClose(() => {
             setStatusOpen(false);

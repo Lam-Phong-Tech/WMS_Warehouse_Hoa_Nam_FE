@@ -11,7 +11,7 @@ import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { muiTheme } from "@/shared/ui/theme/mui-adapter";
 import {
   COMPONENT_TOKENS as C,
-  PALETTE,
+  OPERATIONS_PALETTE,
   cssVarNameOf,
 } from "@/shared/ui/tokens";
 import {
@@ -26,7 +26,7 @@ import {
  * dark mode, SEMANTIC_LIGHT là mặt tiền `var(--wms-…)` — dùng nó ở đây thì test
  * chỉ so hai chuỗi biến với nhau và không còn bắt được theme drift nữa.
  */
-const S = PALETTE.light;
+const S = OPERATIONS_PALETTE.light;
 import { ICON_FAMILY } from "@/shared/ui/icons/icon-family";
 
 // Render qua MuiThemeProvider trực tiếp (test cô lập — không cần antd App).
@@ -41,7 +41,7 @@ function emotionCss(): string {
 }
 
 describe("UiButton", () => {
-  it("style Vuexy: cao 38, radius 6, chữ 15/500, primary #7367F0", () => {
+  it("style Vuexy: cao 40, radius 6, chữ 14/600, màu Tổng quan vận hành", () => {
     renderUi(<UiButton data-testid="b">Lưu</UiButton>);
     const css = emotionCss();
     expect(css).toContain(`height:${C.button.height}px`);
@@ -90,7 +90,7 @@ describe("UiStatusBadge", () => {
 });
 
 describe("UiText", () => {
-  it("pageTitle 24/500, body 15", () => {
+  it("pageTitle 24/500, body 14", () => {
     renderUi(
       <>
         <UiText variant="pageTitle">Tiêu đề</UiText>
@@ -99,7 +99,7 @@ describe("UiText", () => {
     );
     const css = emotionCss();
     expect(css).toContain("font-size:24px");
-    expect(css).toContain("font-size:15px");
+    expect(css).toContain("font-size:14px");
   });
 });
 

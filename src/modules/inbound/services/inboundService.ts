@@ -153,6 +153,17 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     warehouseId: text(row.dst_warehouse_id ?? row.warehouse_id),
     expected,
     scanned,
+    // The list endpoint eager-loads lines. An omitted array is unknown, not zero.
+    skuCount: Array.isArray(row.lines)
+      ? new Set(
+          lines
+            .map(
+              (line) =>
+                text(line.product_id).trim() || text(line.sku_id).trim(),
+            )
+            .filter(Boolean),
+        ).size
+      : undefined,
     posted,
     remaining: Math.max(expected - scanned, 0),
     status,

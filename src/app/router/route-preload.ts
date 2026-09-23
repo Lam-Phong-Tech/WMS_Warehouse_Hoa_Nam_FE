@@ -90,6 +90,7 @@ const IDLE_ORDER: string[] = [
 ];
 
 const started = new Set<string>();
+const pending = new Map<string, Promise<void>>();
 
 /** Khoá tra: bỏ query string, và cắt đoạn `/new` (route tạo mới dùng chung chunk). */
 function keyFor(pathname: string): string | null {
@@ -105,14 +106,30 @@ function keyFor(pathname: string): string | null {
 
 /** Nạp chunk của một route. An toàn gọi nhiều lần; lỗi mạng được nuốt (chỉ là nạp trước). */
 export function preloadRoute(pathname: string): void {
+  void loadRoute(pathname);
+}
+
+function loadRoute(pathname: string): Promise<void> {
   const key = keyFor(pathname);
-  if (!key || started.has(key)) return;
+  if (!key || LOADERS[key].isLoaded()) return Promise.resolve();
+  const existing = pending.get(key);
+  if (existing) return existing;
   started.add(key);
-  void LOADERS[key].preload().catch(() => {
-    // Nạp trước thất bại (mất mạng, deploy giữa chừng) thì để lần bấm thật tự tải
-    // lại — xoá dấu để không kẹt ở trạng thái "đã nạp".
-    started.delete(key);
-  });
+  const loading = LOADERS[key]
+    .preload()
+    .catch(() => {
+      // Nạp trước thất bại (mất mạng, deploy giữa chừng) thì để lần bấm thật tự tải
+      // lại — xoá dấu để không kẹt ở trạng thái "đã nạp".
+      started.delete(key);
+    })
+    .finally(() => {
+      pending.delete(key);
+      // lazyRoute deliberately swallows import failures. Check its actual
+      // loaded state so a failed hover can be retried on the next hover/focus.
+      if (!LOADERS[key].isLoaded()) started.delete(key);
+    });
+  pending.set(key, loading);
+  return loading;
 }
 
 /** Chunk của route này đã nằm sẵn trong bộ nhớ chưa (render sẽ không treo). */
@@ -126,10 +143,35 @@ export function isRoutePreloaded(pathname: string): boolean {
  * việc của người dùng thì nhường (rIC chỉ chạy khi luồng chính thật sự rảnh).
  * Không có rIC (Safari cũ) thì dùng setTimeout thưa.
  */
-export function preloadCommonRoutesWhenIdle(): void {
-  if (typeof window === "undefined") return;
+export function preloadCommonRoutesWhenIdle(
+  isBusy: () => boolean = () => false,
+): () => void {
+  if (typeof window === "undefined") return () => {};
   const queue = IDLE_ORDER.filter((p) => !started.has(p));
-  if (queue.length === 0) return;
+  if (queue.length === 0) return () => {};
+  let cancelled = false;
+  let timer: number | undefined;
+  let idle: number | undefined;
+  const w = window as Window & {
+    requestIdleCallback?: (
+      cb: () => void,
+      opts?: { timeout: number },
+    ) => number;
+    cancelIdleCallback?: (id: number) => void;
+  };
+  const connection = (
+    navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }
+  ).connection;
+  // Hover/focus preloading still works; speculative downloads respect the
+  // user's data-saving preference and constrained connections.
+  if (
+    connection?.saveData ||
+    /(^|-)2g$/.test(connection?.effectiveType ?? "")
+  ) {
+    return () => {};
+  }
 
   // ĐO ĐƯỢC: bản đầu nạp 17 màn ngay khi rảnh ⇒ ~120 chunk đổ về trong lúc
   // người dùng vừa mở màn đầu tiên, tranh băng thông với chính request dữ liệu
@@ -137,28 +179,39 @@ export function preloadCommonRoutesWhenIdle(): void {
   // lên, mỗi nhịp rảnh THẬT SỰ (timeout dài) chỉ một chunk, và không nạp trong
   // lúc trang đang có request mạng.
   const schedule = (fn: () => void, delayMs = 0) => {
-    const w = window as Window & {
-      requestIdleCallback?: (
-        cb: () => void,
-        opts?: { timeout: number },
-      ) => number;
-    };
+    if (cancelled) return;
     const run = () => {
+      if (cancelled) return;
       if (typeof w.requestIdleCallback === "function") {
-        w.requestIdleCallback(fn, { timeout: 10_000 });
+        idle = w.requestIdleCallback(fn, { timeout: 10_000 });
       } else {
-        window.setTimeout(fn, 2_000);
+        timer = window.setTimeout(fn, 2_000);
       }
     };
-    if (delayMs > 0) window.setTimeout(run, delayMs);
+    if (delayMs > 0) timer = window.setTimeout(run, delayMs);
     else run();
   };
 
   const step = () => {
+    if (cancelled) return;
+    if (
+      document.visibilityState === "hidden" ||
+      !navigator.onLine ||
+      isBusy()
+    ) {
+      schedule(step, 2_000);
+      return;
+    }
     const next = queue.shift();
     if (!next) return;
-    preloadRoute(next);
-    schedule(step, 400);
+    // Await the current chunk: on a slow link, a fixed 400 ms cadence would
+    // start the whole queue while the first import was still downloading.
+    void loadRoute(next).finally(() => schedule(step, 400));
   };
   schedule(step, 3_000);
+  return () => {
+    cancelled = true;
+    if (timer !== undefined) window.clearTimeout(timer);
+    if (idle !== undefined) w.cancelIdleCallback?.(idle);
+  };
 }

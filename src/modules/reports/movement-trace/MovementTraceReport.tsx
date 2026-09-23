@@ -1,3 +1,4 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   useCallback,
   useMemo,
@@ -954,6 +955,7 @@ export default function MovementTraceReport() {
           </Box>
           <Box
             component="h1"
+            className="hn-report-page-title"
             id="movement-trace-title"
             sx={{
               m: 0,
@@ -986,7 +988,7 @@ export default function MovementTraceReport() {
             onClick={refresh}
             disabled={report.isFetching}
           >
-            {t("reports.traceability.sampleData")}
+            {t("reports.movementTrace.refresh")}
           </UiButton>
           <UiButton
             type="button"
@@ -1661,11 +1663,19 @@ export default function MovementTraceReport() {
               {
                 key: "open",
                 header: "",
-                width: 54,
+                width: 80,
                 align: "center",
                 render: (row) => (
                   <>
-                    <RightOutlined aria-hidden="true" />
+                    <RowActionGroup>
+                      <RowActionButton
+                        kind="view"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelected(row);
+                        }}
+                      />
+                    </RowActionGroup>
                     <span className="trace-sr-only">{reversalChainText(row)}</span>
                     <span className="trace-sr-only">{LEDGER_ROW_STATUS_LABEL}</span>
                     <span className="trace-sr-only">#{rowIndexOf(ledgerFilter.rows, row) + 1}</span>
@@ -1683,7 +1693,7 @@ export default function MovementTraceReport() {
             maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
           />
         </Box>
-        <Box className="trace-pagination">
+        <Box className="trace-pagination hn-report-pagination-footer">
           <span>
             {t("reports.traceability.showingItems", {
               from: ledgerFilter.rows.length === 0
@@ -1695,7 +1705,7 @@ export default function MovementTraceReport() {
               total: formatQuantity(ledgerFilter.rows.length),
             })}
           </span>
-          <nav aria-label={t("reports.traceability.paginationAria")}>
+          <nav className="hn-report-pagination" aria-label={t("reports.traceability.paginationAria")}>
             <button
               type="button"
               aria-label={t("reports.traceability.previousPage")}

@@ -13,12 +13,8 @@ import {
   UiTextField,
   type UiStatusTone,
   FILTER_WIDTH,
-  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
-import {
-  ResponsiveDataTable,
-  type ResponsiveTableColumn,
-} from "@/shared/components/data-display/ResponsiveDataTable";
+import { type ResponsiveTableColumn } from "@/shared/components/data-display/ResponsiveDataTable";
 import { ToolOutlined } from "@/shared/components/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -59,7 +55,10 @@ import type {
   WarrantyCaseStatus,
   WarrantyIdentificationType,
 } from "@/modules/warranty/types";
-import { ActionButton } from "@/shared/components/actions";
+import { ActionButton, RowActionButton } from "@/shared/components/actions";
+
+import { WarrantyListTable } from "@/modules/warranty/components/WarrantyListTable";
+import "./warranty-list.css";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const DETAIL_SCREENS = new Set(["WAR-03"]);
@@ -291,13 +290,28 @@ export default function WarrantyPage() {
   ];
 
   const renderRowActions = (row: WarrantyCase) => (
-    <ActionButton
-      kind="edit"
-      sx={{ whiteSpace: "nowrap" }}
+    <RowActionButton
+      kind={
+        !canManage ||
+        ["RETURNED", "RETURNED_TO_CUSTOMER", "CLOSED", "CANCELLED"].includes(
+          row.status,
+        )
+          ? "view"
+          : ["COMPLETED", "READY"].includes(row.status)
+            ? "complete"
+            : "edit"
+      }
       onClick={() => setDetailId(row.id)}
     >
-      {t("warranty.list.edit")}
-    </ActionButton>
+      {!canManage ||
+      ["RETURNED", "RETURNED_TO_CUSTOMER", "CLOSED", "CANCELLED"].includes(
+        row.status,
+      )
+        ? "Chi tiết"
+        : ["COMPLETED", "READY"].includes(row.status)
+          ? "Trả máy"
+          : "Cập nhật"}
+    </RowActionButton>
   );
 
   const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
@@ -308,7 +322,7 @@ export default function WarrantyPage() {
 
   return (
     <>
-      <div className="warranty-page hn-mvp-source-screen">
+      <div className="warranty-page hn-war-list">
         {!canViewPii ? (
           <Box className="footer-note" sx={{ mb: 1 }}>
             <ToolOutlined style={{ marginRight: 6 }} />
@@ -316,172 +330,239 @@ export default function WarrantyPage() {
           </Box>
         ) : null}
 
-        <div className="toolbar">
-          {/* Annex D SCR-WAR-01 scan-focus: auto-focus ô quét, Enter/đầu đọc submit ngay
-            (không chờ debounce) và giữ focus sau khi tìm. §5.3 liệt kê camera là context
-            hợp lệ cho cả "warranty receive/search" nên WAR-01 có nút camera fallback. */}
-          <UiTextField
-            value={searchInput}
-            placeholder={t(
-              canViewPii
-                ? "warranty.list.searchPlaceholder"
-                : "warranty.list.searchPlaceholderNoPii",
-            )}
-            slotProps={{
-              htmlInput: { "aria-label": t("warranty.list.searchAria") },
-              input: { inputRef: searchRef, autoFocus: true },
-            }}
-            onChange={(event) => setSearchInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter") return;
-              event.preventDefault();
-              setSearch(searchInput.trim());
-              setPage(1);
-              searchRef.current?.focus();
-            }}
-            sx={TOOLBAR_SEARCH_SX}
-          />
-
-          <UiSelect
-            value={status}
-            aria-label={t("warranty.list.statusFilterAria")}
-            placeholder={t("warranty.list.statusFilterPlaceholder")}
-            minWidth={160}
-            options={WARRANTY_BASELINE_STATUSES.map((value) => ({
-              value,
-              label: WARRANTY_STATUS_LABELS[value],
-            }))}
-            onChange={(value) => {
-              setStatus(value as WarrantyCaseStatus | "");
-              setPage(1);
-            }}
-          />
-          <UiSelect
-            value={identification}
-            aria-label={t("warranty.list.identificationFilterAria")}
-            placeholder={t("warranty.list.identificationFilterPlaceholder")}
-            minWidth={FILTER_WIDTH.select}
-            // UAT TC_FUNC_02: nhãn của ô lọc phải lấy từ ĐÚNG registry mà cột
-            // "Nhận diện" đang dùng. Bản trước gõ lại nhãn ở messages.ts nên ô
-            // lọc ghi "Đã xác định sản phẩm" còn cột ghi "Đã xác định" — người
-            // kiểm thử đối chiếu hai chữ khác nhau và kết luận lọc trả sai.
-            options={WARRANTY_IDENTIFICATION_TYPES.map((value) => ({
-              value,
-              label: WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS[value],
-            }))}
-            onChange={(value) => {
-              setIdentification(value as WarrantyIdentificationType | "");
-              setPage(1);
-            }}
-          />
-          <UiSelect
-            value={defectId}
-            aria-label={t("warranty.list.defectFilterAria")}
-            placeholder={t("warranty.list.defectFilterPlaceholder")}
-            // Nhãn lựa chọn là "DEF-013 · Chập điện / cháy mô-tơ" — ô hẹp làm
-            // menu gãy dòng giữa tên bệnh/lỗi (phản hồi người dùng 07/09/2026).
-            minWidth={FILTER_WIDTH.selectWide}
-            options={[...(defectsQuery.data?.data ?? [])]
-              // BE trả danh mục theo created_at nên menu ra DEF-006, DEF-013,
-              // DEF-014, DEF-008... — người dùng phải quét mắt cả 15 dòng mới
-              // tìm được mã mình cần. Xếp theo mã cho khớp thứ tự họ tra.
-              .sort((a, b) =>
-                String(a.defect_code ?? "").localeCompare(
-                  String(b.defect_code ?? ""),
-                  "vi",
-                ),
-              )
-              .map((defect) => ({
-                value: String(
-                  defect.defect_id ?? (defect as { id?: unknown }).id ?? "",
-                ).trim(),
-                label: `${defect.defect_code} · ${defect.defect_name}`,
-              }))
-              .filter((option) => option.value !== "")}
-            onChange={(value) => {
-              setDefectId(value);
-              setPage(1);
-            }}
-          />
-          {/* Khác các ô lọc (placeholder khi rỗng), ô sắp xếp LUÔN có giá trị
-              nên cần nhãn nổi "Sắp xếp theo" — thiếu nó ô chỉ hiện "Mới nhất"
-              trơ trọi, không ai hiểu là control gì. */}
-          <UiSelect
-            value={sortOrder}
-            label={t("warranty.list.sortLabel")}
-            aria-label={t("warranty.list.sortAria")}
-            options={[
-              { value: "desc", label: t("warranty.list.sortNewest") },
-              { value: "asc", label: t("warranty.list.sortOldest") },
-            ]}
-            onChange={(value) => {
-              setSortOrder(value === "asc" ? "asc" : "desc");
-              setPage(1);
-            }}
-          />
-          <UiSelect
-            value={perPage}
-            aria-label={t("warranty.list.pageSizeAria")}
-            minWidth={FILTER_WIDTH.pageSize}
-            options={perPageOptions.map((size) => ({
-              value: size,
-              label: `${size} / trang`,
-            }))}
-            onChange={(value) => {
-              setPerPage(Number(value));
-              setPage(1);
-            }}
-          />
-          {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang) để
-           * dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
-          <Box component="span" sx={{ whiteSpace: "nowrap" }}>
-            <UiText variant="secondary">
-              {t("warranty.list.total", { count: pagination.total })}
-            </UiText>
-          </Box>
-          <div className="spacer" />
-          {canManage ? (
-            <ActionButton kind="create" onClick={() => setIntakeOpen(true)}>
-              {t("warranty.list.intake")}
-            </ActionButton>
+        <header className="hn-war-header">
+          <div>
+            <h1>Hồ sơ bảo hành</h1>
+            <p>Tiếp nhận, theo dõi xử lý và trả máy cho khách</p>
+          </div>
+          <div className="hn-war-header-actions">
+            {" "}
+            {canManage ? (
+              <ActionButton kind="create" onClick={() => setIntakeOpen(true)}>
+                {t("warranty.list.intake")}
+              </ActionButton>
+            ) : null}
+          </div>
+        </header>
+        <section className="hn-war-card" aria-labelledby="hn-war-list-title">
+          <div className="hn-war-card-heading">
+            <h2 id="hn-war-list-title">
+              Danh sách hồ sơ{" "}
+              <span className="hn-war-count">
+                {listQuery.data
+                  ? pagination.total.toLocaleString("vi-VN")
+                  : "—"}
+              </span>
+            </h2>
+            <div className="hn-war-sort">
+              {" "}
+              <UiSelect
+                menuClassName="hn-war-menu"
+                value={sortOrder}
+                aria-label={t("warranty.list.sortAria")}
+                options={[
+                  { value: "desc", label: t("warranty.list.sortNewest") },
+                  { value: "asc", label: t("warranty.list.sortOldest") },
+                ]}
+                onChange={(value) => {
+                  setSortOrder(value === "asc" ? "asc" : "desc");
+                  setPage(1);
+                }}
+              />
+            </div>
+          </div>
+          <div className="hn-war-filters">
+            <div className="hn-war-field hn-war-search">
+              <label htmlFor="hn-war-search">Tìm kiếm</label>{" "}
+              <UiTextField
+                id="hn-war-search"
+                fullWidth
+                value={searchInput}
+                placeholder={t(
+                  canViewPii
+                    ? "warranty.list.searchPlaceholder"
+                    : "warranty.list.searchPlaceholderNoPii",
+                )}
+                slotProps={{
+                  htmlInput: { "aria-label": t("warranty.list.searchAria") },
+                  input: { inputRef: searchRef, autoFocus: true },
+                }}
+                onChange={(event) => setSearchInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  setSearch(searchInput.trim());
+                  setPage(1);
+                  searchRef.current?.focus();
+                }}
+              />
+            </div>
+            <div className="hn-war-field">
+              <label htmlFor="hn-war-status">Trạng thái</label>{" "}
+              <UiSelect
+                id="hn-war-status"
+                fullWidth
+                menuClassName="hn-war-menu"
+                value={status}
+                aria-label={t("warranty.list.statusFilterAria")}
+                placeholder="Tất cả"
+                options={WARRANTY_BASELINE_STATUSES.map((value) => ({
+                  value,
+                  label: WARRANTY_STATUS_LABELS[value],
+                }))}
+                onChange={(value) => {
+                  setStatus(value as WarrantyCaseStatus | "");
+                  setPage(1);
+                }}
+              />
+            </div>
+            <div className="hn-war-field">
+              <label htmlFor="hn-war-identification">Nhận dạng</label>{" "}
+              <UiSelect
+                id="hn-war-identification"
+                fullWidth
+                menuClassName="hn-war-menu"
+                value={identification}
+                aria-label={t("warranty.list.identificationFilterAria")}
+                placeholder="Tất cả"
+                // UAT TC_FUNC_02: nhãn của ô lọc phải lấy từ ĐÚNG registry mà cột
+                // "Nhận diện" đang dùng. Bản trước gõ lại nhãn ở messages.ts nên ô
+                // lọc ghi "Đã xác định sản phẩm" còn cột ghi "Đã xác định" — người
+                // kiểm thử đối chiếu hai chữ khác nhau và kết luận lọc trả sai.
+                options={WARRANTY_IDENTIFICATION_TYPES.map((value) => ({
+                  value,
+                  label: WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS[value],
+                }))}
+                onChange={(value) => {
+                  setIdentification(value as WarrantyIdentificationType | "");
+                  setPage(1);
+                }}
+              />
+            </div>
+            <div className="hn-war-field">
+              <label htmlFor="hn-war-defect">Bệnh/lỗi</label>{" "}
+              <UiSelect
+                id="hn-war-defect"
+                fullWidth
+                menuClassName="hn-war-menu"
+                value={defectId}
+                aria-label={t("warranty.list.defectFilterAria")}
+                placeholder="Tất cả"
+                // Nhãn lựa chọn là "DEF-013 · Chập điện / cháy mô-tơ" — ô hẹp làm
+                // menu gãy dòng giữa tên bệnh/lỗi (phản hồi người dùng 07/09/2026).
+                options={[...(defectsQuery.data?.data ?? [])]
+                  // BE trả danh mục theo created_at nên menu ra DEF-006, DEF-013,
+                  // DEF-014, DEF-008... — người dùng phải quét mắt cả 15 dòng mới
+                  // tìm được mã mình cần. Xếp theo mã cho khớp thứ tự họ tra.
+                  .sort((a, b) =>
+                    String(a.defect_code ?? "").localeCompare(
+                      String(b.defect_code ?? ""),
+                      "vi",
+                    ),
+                  )
+                  .map((defect) => ({
+                    value: String(
+                      defect.defect_id ?? (defect as { id?: unknown }).id ?? "",
+                    ).trim(),
+                    label: `${defect.defect_code} · ${defect.defect_name}`,
+                  }))
+                  .filter((option) => option.value !== "")}
+                onChange={(value) => {
+                  setDefectId(value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <div className="hn-war-filter-actions">
+              <button
+                type="button"
+                className="hn-war-primary"
+                disabled={listQuery.isFetching}
+                onClick={() => {
+                  setSearch(searchInput.trim());
+                  setPage(1);
+                  void listQuery.refetch();
+                }}
+              >
+                Áp dụng
+              </button>
+              <button
+                type="button"
+                className="hn-war-reset"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearch("");
+                  setStatus("");
+                  setIdentification("");
+                  setDefectId("");
+                  setPage(1);
+                  searchRef.current?.focus();
+                }}
+              >
+                Đặt lại
+              </button>
+            </div>
+          </div>
+          {listQuery.isError ? (
+            <Box sx={{ mb: "14px" }}>
+              <ApiErrorAlert
+                error={listQuery.error}
+                title={t("warranty.list.loadError")}
+                onRetry={() => listQuery.refetch()}
+              />
+            </Box>
           ) : null}
-        </div>
 
-        {listQuery.isError ? (
-          <Box sx={{ mb: "14px" }}>
-            <ApiErrorAlert
-              error={listQuery.error}
-              title={t("warranty.list.loadError")}
-              onRetry={() => listQuery.refetch()}
-            />
-          </Box>
-        ) : null}
-
-        <TableLoadingBanner
-          loading={listQuery.isLoading || listQuery.isFetching}
-        />
-        <ResponsiveDataTable<WarrantyCase>
-          columns={columns}
-          rows={rows}
-          rowKey={(row) => row.id}
-          loading={listQuery.isLoading || listQuery.isFetching}
-          emptyText={tableEmptyText(
-            listQuery.isError ? listQuery.error : null,
-            t("warranty.list.empty"),
-          )}
-          onRowClick={(row) => setDetailId(row.id)}
-          renderRowActions={renderRowActions}
-        />
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1.5 }}>
-          {/* Tổng số đã hiện trong toolbar → showTotal=false, tránh lặp. */}
-          <UiPagination
-            page={pagination.current}
-            pageSize={perPage}
-            total={pagination.total}
-            showTotal={false}
-            onPageChange={(nextPage) => setPage(nextPage)}
+          <TableLoadingBanner
+            loading={listQuery.isLoading || listQuery.isFetching}
           />
-        </Box>
+          <WarrantyListTable
+            columns={columns}
+            rows={rows}
+            rowKey={(row) => row.id}
+            loading={listQuery.isLoading || listQuery.isFetching}
+            emptyText={tableEmptyText(
+              listQuery.isError ? listQuery.error : null,
+              t("warranty.list.empty"),
+            )}
+            onRowClick={(row) => setDetailId(row.id)}
+            renderRowActions={renderRowActions}
+          />
+          <div className="hn-war-pagination">
+            <div className="hn-war-pagination-info">
+              <span>
+                Hiển thị{" "}
+                {rows.length ? (pagination.current - 1) * perPage + 1 : 0} –{" "}
+                {rows.length
+                  ? (pagination.current - 1) * perPage + rows.length
+                  : 0}{" "}
+                / {pagination.total.toLocaleString("vi-VN")} hồ sơ
+              </span>{" "}
+              <UiSelect
+                menuClassName="hn-war-menu"
+                value={perPage}
+                aria-label={t("warranty.list.pageSizeAria")}
+                minWidth={FILTER_WIDTH.pageSize}
+                options={perPageOptions.map((size) => ({
+                  value: size,
+                  label: `${size} / trang`,
+                }))}
+                onChange={(value) => {
+                  setPerPage(Number(value));
+                  setPage(1);
+                }}
+              />
+            </div>
+            {/* Tổng số đã hiện trong toolbar → showTotal=false, tránh lặp. */}
+            <UiPagination
+              page={pagination.current}
+              pageSize={perPage}
+              total={pagination.total}
+              showTotal={false}
+              onPageChange={(nextPage) => setPage(nextPage)}
+            />
+          </div>
+        </section>
         {intakeOpen ? (
           <WarrantyIntakeModal
             open

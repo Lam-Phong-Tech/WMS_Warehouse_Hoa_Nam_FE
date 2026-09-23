@@ -10,7 +10,7 @@
  * còn phép DÒ đi qua `http.get` — nên hai đường tách nhau tự nhiên trong mock.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import dayjs from "dayjs";
 import { renderWithProviders } from "@/test/test-utils";
@@ -166,10 +166,15 @@ describe("RPT-IO-01 · gợi ý bộ lọc kỳ", () => {
 
     await user.click(await screen.findByTestId("report-range-advice-apply"));
 
-    // Dòng chú thích dưới tiêu đề bộ lọc in thẳng khoảng ngày đang xem.
-    expect(
-      await screen.findByText(/01-06-2026 → 31-08-2026/u),
-    ).toBeInTheDocument();
+    // Hai nút ngày phải hiện kỳ mới, không chỉ đổi chữ trong banner gợi ý.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Từ ngày" })).toHaveTextContent(
+        "01/06/2026",
+      );
+      expect(
+        screen.getByRole("button", { name: "Đến ngày" }),
+      ).toHaveTextContent("31/08/2026");
+    });
     // Kỳ mới được gọi thật, không chỉ đổi chữ trên màn.
     expect(viewedWindows()).toContain("2026-06-01");
   });

@@ -12,30 +12,39 @@
  * thị cho khách mới có nghĩa (REQ-SRS-018). Tạo SKU vẫn là việc của MST-01, và
  * ô chọn SKU ở đây có lối tắt sang đó.
  *
- * Ảnh KHÔNG đi qua BE: trình duyệt upload thẳng lên Cloudinary rồi chỉ gửi URL
- * (xem shared/lib/cloudinary.ts + PvProductImageField).
+ * Ảnh được tải qua API của hệ thống; danh sách URL và ảnh đại diện tiếp tục
+ * đi cùng payload hồ sơ (xem PvProductImageField).
  */
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ROUTES } from "@/shared/constants/routes";
+import { PvCatalogSymbol } from "./PvCatalogSymbol";
+import "./pv-product-catalog.css";
 import { toast } from "sonner";
 import {
   Box,
   Grid,
-  Stack,
   UiAutocomplete,
   UiButton,
-  UiCard,
   UiDialog,
   UiPagination,
   UiSelect,
   UiStatusBadge,
   UiTextField,
+  Menu,
+  MenuItem,
 } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
-import { FilterBar, SearchInput } from "@/shared/components";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { SearchInput } from "@/shared/components";
+import { ActionButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   AppstoreOutlined,
   CameraOutlined,
+  EyeOutlined,
+  ReloadOutlined,
+  HomeOutlined,
+  RightOutlined,
   UnorderedListOutlined,
 } from "@/shared/components/icons";
 import {
@@ -185,6 +194,7 @@ function PvCatalogImage({
 
   return (
     <Box
+      className={`pv-catalog-image${compact ? " pv-catalog-image-compact" : ""}`}
       sx={{
         // `position: relative` để ảnh bên trong định vị TUYỆT ĐỐI theo ô này.
         // `height: 100%` trên grid item KHÔNG giải được khi hàng grid tự co
@@ -262,6 +272,11 @@ function useCanManagePv() {
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   return {
+    canViewWarehouse: hasAnyWmsPermission(
+      permissionCodes,
+      [P.WAREHOUSE_VIEW, P.WAREHOUSE_MANAGE],
+      isSuperAdmin,
+    ),
     canManage: hasAnyWmsPermission(
       permissionCodes,
       [P.PV_MASTER_MANAGE],
@@ -306,6 +321,7 @@ function PvCatalogCard({
 
   return (
     <Box
+      className="pv-catalog-card"
       data-testid="pv-catalog-card"
       data-sku-code={profile.sku_code}
       sx={{
@@ -319,7 +335,11 @@ function PvCatalogCard({
         overflow: "hidden",
       }}
     >
-      <PvCatalogImage profile={profile} t={t} />
+      <PvCatalogImage
+        key={primaryImage(profile)?.url ?? profile.id}
+        profile={profile}
+        t={t}
+      />
 
       <Box sx={{ p: 1.5, display: "grid", gap: "6px", flex: 1 }}>
         <Box
@@ -367,7 +387,7 @@ function PvCatalogCard({
               }
             />
           </Box>
-          <ActionIconButton
+          <RowActionButton
             kind="edit"
             label={t("pv.productCatalog.editAction")}
             disabled={!canManage}
@@ -384,8 +404,16 @@ function PvCatalogCard({
 }
 
 export function PvProductCatalogPage() {
+  const navigate = useNavigate();
   const t = useT();
-  const { canManage, canPublish } = useCanManagePv();
+  const { canManage, canPublish, canViewWarehouse } = useCanManagePv();
+  const language = useLanguageStore((state) => state.language);
+  const context = useAuthStore((state) => state.currentContext);
+  const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
+  const [rowMenu, setRowMenu] = useState<{
+    anchor: HTMLElement;
+    row: PvAdminProfile;
+  } | null>(null);
 
   // Kiểu hiển thị là lựa chọn của PHIÊN LÀM VIỆC, không nằm trong bộ lọc: đổi
   // qua dạng hộp không được đụng tới trang / từ khoá đang xem.
@@ -618,63 +646,101 @@ export function PvProductCatalogPage() {
    */
   const tableColumns: ResponsiveTableColumn<PvAdminProfile>[] = [
     {
-      key: "image",
-      header: t("pv.productCatalog.colImage"),
-      width: 76,
-      align: "center",
-      render: (row) => <PvCatalogImage profile={row} t={t} compact />,
-    },
-    {
       key: "display_name",
-      header: t("pv.admin.displayName"),
+      header: copy("Sản phẩm", "Product"),
       sortAccessor: (row) => row.display_name,
-      render: (row) => row.display_name,
+      truncate: 0,
+      render: (row) => (
+        <div className="pv-catalog-product">
+          <PvCatalogImage
+            key={primaryImage(row)?.url ?? row.id}
+            profile={row}
+            t={t}
+            compact
+          />
+          <div className="pv-catalog-product-text">
+            <span className="pv-catalog-product-name" title={row.display_name}>
+              {row.display_name}
+            </span>
+            <span className="pv-catalog-product-sku">{row.sku_code}</span>
+          </div>
+        </div>
+      ),
     },
     {
       key: "sku_code",
-      header: t("pv.admin.skuCode"),
+      header: copy("Mã sản phẩm / SKU", "Product code / SKU"),
       sortAccessor: (row) => row.sku_code,
-      // Bấm mã để mở đúng trang khách sẽ thấy — giống cột mã ở bảng hồ sơ.
       render: (row) => <SkuLink id={row.sku_id} code={row.sku_code} />,
     },
     {
       key: "industries",
-      header: t("pv.admin.industry"),
+      header: copy("Nhóm sản phẩm", "Product group"),
       sortType: "value",
       sortAccessor: (row) => row.industry_ids.length,
-      hideOnMobile: true,
-      render: (row) => {
-        const names = row.industry_ids
+      render: (row) =>
+        row.industry_ids
           .map((id) => industryNameById.get(id))
-          .filter((name): name is string => Boolean(name));
-        return names.length > 0 ? names.join(", ") : EMPTY_TEXT;
-      },
+          .filter(Boolean)
+          .join(", ") || EMPTY_TEXT,
     },
     {
       key: "published",
-      header: t("pv.admin.published"),
+      header: copy("Trạng thái hiển thị", "Visibility"),
       sortType: "value",
       sortAccessor: (row) => Number(row.published),
-      width: 210,
+      truncate: 0,
       render: (row) => (
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <PvSwitch
-            checked={row.published}
-            disabled={!canPublish || setPublished.isPending}
-            aria-label={t("pv.admin.publishSwitchAria")}
-            data-testid="pv-catalog-publish-switch"
-            onChange={(next) => void togglePublish(row, next)}
-          />
-          <UiStatusBadge
-            tone={row.published ? "success" : "neutral"}
-            label={
-              row.published
-                ? t("pv.admin.publishedShown")
-                : t("pv.admin.publishedHidden")
-            }
-          />
-        </Stack>
+        <button
+          type="button"
+          role="switch"
+          className="pv-catalog-status"
+          data-tone={row.published ? "success" : "neutral"}
+          aria-checked={row.published}
+          aria-label={t("pv.admin.publishSwitchAria")}
+          title={copy(
+            "Bật/tắt hiển thị trên ứng dụng",
+            "Toggle app visibility",
+          )}
+          disabled={!canPublish || setPublished.isPending}
+          data-testid="pv-catalog-publish-switch"
+          onClick={() => void togglePublish(row, !row.published)}
+        >
+          {row.published
+            ? t("pv.admin.publishedShown")
+            : t("pv.admin.publishedHidden")}
+        </button>
       ),
+    },
+    {
+      key: "updated_at",
+      header: copy("Cập nhật", "Updated"),
+      render: (row) => {
+        // Render only a real record timestamp if supplied; never use request time.
+        const value = (row as PvAdminProfile & { updated_at?: string })
+          .updated_at;
+        const date = value ? new Date(value) : null;
+        return date && Number.isFinite(date.getTime()) ? (
+          <time dateTime={value}>
+            {date.toLocaleString(language === "vi" ? "vi-VN" : "en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </time>
+        ) : (
+          <span
+            title={copy(
+              "Chưa có thời gian cập nhật từ hệ thống",
+              "The system has not supplied an update time",
+            )}
+          >
+            —
+          </span>
+        );
+      },
     },
   ];
 
@@ -682,135 +748,324 @@ export function PvProductCatalogPage() {
     keyword.trim() !== "" ||
     industryFilter !== FILTER_ALL ||
     publishedFilter !== FILTER_ALL;
-  const withoutImage = rows.filter(
+  const withoutImage = visibleRows.filter(
     (row) => (row.images?.length ?? 0) === 0,
   ).length;
 
+  function resetFilters() {
+    setKeyword("");
+    setIndustryFilter(FILTER_ALL);
+    setPublishedFilter(FILTER_ALL);
+    setPage(1);
+  }
+
+  const statReady = profiles.data !== undefined;
+  const shown = visibleRows.filter((row) => row.published).length;
+  const stats = [
+    {
+      icon: "grid",
+      tone: "blue",
+      value: pagination.total,
+      label: copy("Tổng sản phẩm", "Total products"),
+      detail: copy(
+        "Tổng kết quả theo từ khóa và trạng thái; nhóm sản phẩm lọc trong trang hiện tại",
+        "Total matches for search and visibility; product group filters the current page",
+      ),
+    },
+    {
+      icon: "eye",
+      tone: "success",
+      value: shown,
+      label: t("pv.admin.publishedShown"),
+      detail: copy("Trong trang hiện tại", "On the current page"),
+    },
+    {
+      icon: "eye-off",
+      tone: "neutral",
+      value: visibleRows.length - shown,
+      label: t("pv.admin.publishedHidden"),
+      detail: copy("Trong trang hiện tại", "On the current page"),
+    },
+    {
+      icon: "image",
+      tone: "warning",
+      value: withoutImage,
+      label: copy("Chưa có ảnh", "No image"),
+      detail: copy("Trong trang hiện tại", "On the current page"),
+    },
+  ] as const;
+
   return (
-    <Box data-testid="pv-product-catalog-page">
-      <UiCard>
-        <Stack spacing={1.5}>
-          <Box>
-            <Box sx={{ fontSize: 13, color: S.textMedium }}>
-              {t("pv.productCatalog.lead")}
-            </Box>
-            {!canPublish ? (
-              <Box
-                component="span"
-                sx={{ fontSize: 12, color: S.textDisabled }}
-              >
-                {t("pv.admin.leadNoPublish")}
-              </Box>
-            ) : null}
-          </Box>
-
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <Box component="span" sx={{ fontSize: 12, color: S.textMedium }}>
-              {t("pv.productCatalog.statTotal", { count: pagination.total })}
-            </Box>
-            <Box component="span" sx={{ fontSize: 12, color: S.textMedium }}>
-              {t("pv.productCatalog.statNoImage", { count: withoutImage })}
-            </Box>
-          </Box>
-
-          <FilterBar
-            actions={
-              <ActionButton
-                kind="create"
-                disabled={!canManage}
-                onClick={openCreate}
-                data-testid="pv-catalog-add"
-              >
-                {t("pv.productCatalog.addAction")}
-              </ActionButton>
-            }
+    <Box className="pv-catalog-page" data-testid="pv-product-catalog-page">
+      <header className="pv-catalog-heading">
+        <div>
+          <h1 id="pv-catalog-title">
+            {copy("Sản phẩm trên App PV", "App PV products")}
+          </h1>
+          <p>
+            {copy(
+              "Quản lý danh mục sản phẩm hiển thị trên App Preview",
+              "Manage the products displayed in App Preview",
+            )}
+          </p>
+        </div>
+        <div className="pv-catalog-heading-actions">
+          <UiButton
+            onClick={() => navigate(ROUTES.WAREHOUSE_CONFIG)}
+            disabled={!canViewWarehouse}
+            aria-label={copy("Mở cấu hình kho", "Open warehouse settings")}
+            appearance="outlined"
+            className="pv-catalog-warehouse"
           >
+            <HomeOutlined />
+            <span>
+              <strong>
+                {context?.warehouse_name ||
+                  (context?.scope_type === "phong_ban"
+                    ? context?.department_name
+                    : null) ||
+                  (context?.scope_type !== "he_thong"
+                    ? context?.org_unit_name
+                    : null) ||
+                  copy("Toàn hệ thống", "System-wide")}
+              </strong>
+              <small>{copy("Phạm vi hiện tại", "Current scope")}</small>
+            </span>
+            <RightOutlined />
+          </UiButton>
+          <UiButton
+            onClick={() => navigate(ROUTES.PV_CATALOG)}
+            appearance="outlined"
+            startIcon={<EyeOutlined />}
+          >
+            {copy("Xem trước App PV", "Preview App PV")}
+          </UiButton>
+          <ActionButton
+            kind="create"
+            disabled={!canManage}
+            onClick={openCreate}
+            data-testid="pv-catalog-add"
+          >
+            {t("pv.productCatalog.addAction")}
+          </ActionButton>
+        </div>
+      </header>
+
+      <section
+        className="pv-catalog-panel"
+        aria-labelledby="pv-catalog-overview-title"
+      >
+        <div className="pv-catalog-panel-heading">
+          <h2 id="pv-catalog-overview-title">
+            {copy("Tổng quan danh mục", "Catalog overview")}
+          </h2>
+          <span>
+            {copy(
+              "Theo trạng thái hiển thị trên App PV · Thống kê trạng thái trong trang hiện tại",
+              "App PV visibility · Status counts on the current page",
+            )}
+          </span>
+        </div>
+        <div className="pv-catalog-stats" aria-busy={profiles.isFetching}>
+          {stats.map((stat) => (
+            <div
+              key={stat.icon}
+              className="pv-catalog-stat"
+              data-tone={stat.tone}
+              title={stat.detail}
+            >
+              <span className="pv-catalog-stat-icon">
+                <PvCatalogSymbol name={stat.icon} />
+              </span>
+              <div>
+                <strong>
+                  {statReady
+                    ? stat.value.toLocaleString(
+                        language === "vi" ? "vi-VN" : "en-US",
+                      )
+                    : "—"}
+                </strong>
+                <span>{stat.label}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="pv-catalog-info">
+          <PvCatalogSymbol name="info" />
+          <span>
+            {copy(
+              "Trạng thái hiển thị trên App PV không làm thay đổi số lượng tồn kho.",
+              "App PV visibility does not change stock quantities.",
+            )}
+          </span>
+        </div>
+        {!canPublish ? (
+          <p className="pv-catalog-permission-note">
+            {t("pv.admin.leadNoPublish")}
+          </p>
+        ) : null}
+      </section>
+
+      <section
+        className="pv-catalog-panel pv-catalog-list-panel"
+        aria-labelledby="pv-catalog-list-title"
+      >
+        <div className="pv-catalog-list-heading">
+          <h2 id="pv-catalog-list-title">
+            {copy("Danh sách sản phẩm", "Product list")}{" "}
+            <span className="pv-catalog-count">
+              {statReady
+                ? pagination.total.toLocaleString(
+                    language === "vi" ? "vi-VN" : "en-US",
+                  )
+                : "—"}
+            </span>
+          </h2>
+          <UiButton
+            appearance="text"
+            className="pv-catalog-refresh"
+            endIcon={<ReloadOutlined />}
+            disabled={profiles.isFetching}
+            onClick={() => void profiles.refetch()}
+            aria-label={copy(
+              "Cập nhật danh sách sản phẩm",
+              "Refresh product list",
+            )}
+          >
+            {profiles.isFetching
+              ? copy("Đang cập nhật…", "Refreshing…")
+              : copy("Cập nhật mới nhất", "Refresh")}
+          </UiButton>
+        </div>
+        <form
+          className="pv-catalog-filters"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setPage(1);
+            if (page === 1) void profiles.refetch();
+          }}
+        >
+          <div className="pv-catalog-search">
             <SearchInput
+              width="100%"
               value={keyword}
               onChange={(next) => applyFilter(() => setKeyword(next))}
-              placeholder={t("pv.admin.profileSearch")}
+              placeholder={copy(
+                "Tên sản phẩm, mã sản phẩm hoặc SKU...",
+                "Product name, product code or SKU...",
+              )}
               data-testid="pv-catalog-search"
             />
+          </div>
+          <div className="pv-catalog-filter">
+            <label id="pv-catalog-industry-label">
+              {copy("Nhóm sản phẩm", "Product group")}
+            </label>
             <UiSelect
               value={industryFilter}
               onChange={(next) => applyFilter(() => setIndustryFilter(next))}
               aria-label={t("pv.admin.industryFilterAria")}
-              minWidth={200}
+              minWidth={0}
+              fullWidth
+              menuClassName="pv-catalog-menu"
               options={[
-                { value: FILTER_ALL, label: t("pv.admin.industryAll") },
+                { value: FILTER_ALL, label: copy("Tất cả", "All") },
                 ...industryOptions,
               ]}
               data-testid="pv-catalog-industry-filter"
             />
+          </div>
+          <div className="pv-catalog-filter">
+            <label id="pv-catalog-published-label">
+              {copy("Trạng thái hiển thị", "Visibility")}
+            </label>
             <UiSelect
               value={publishedFilter}
               onChange={(next) => applyFilter(() => setPublishedFilter(next))}
               aria-label={t("pv.admin.publishedFilterAria")}
-              minWidth={180}
+              minWidth={0}
+              fullWidth
+              menuClassName="pv-catalog-menu"
               options={[
-                {
-                  value: FILTER_ALL,
-                  label: t("pv.productCatalog.publishedAll"),
-                },
+                { value: FILTER_ALL, label: copy("Tất cả", "All") },
                 { value: "true", label: t("pv.admin.publishedShown") },
                 { value: "false", label: t("pv.admin.publishedHidden") },
               ]}
               data-testid="pv-catalog-published-filter"
             />
-          </FilterBar>
-
-          {/* Thanh chọn kiểu hiển thị — cùng dáng tablist với các màn báo cáo
-              ("Dạng ngang" / "Dạng hộp") để cả app chỉ có MỘT cách nói về việc
-              đổi cách xem một danh sách. */}
-          <Stack
-            direction="row"
-            spacing={1}
-            role="tablist"
-            aria-label={t("pv.productCatalog.viewTablistAria")}
+          </div>
+          <UiButton
+            type="submit"
+            className="pv-catalog-apply"
+            disabled={profiles.isFetching}
           >
-            {(
-              [
-                {
-                  value: "table",
-                  label: t("pv.productCatalog.viewTable"),
-                  icon: <UnorderedListOutlined />,
-                },
-                {
-                  value: "card",
-                  label: t("pv.productCatalog.viewCard"),
-                  icon: <AppstoreOutlined />,
-                },
-              ] as const
-            ).map((tab) => {
-              const active = view === tab.value;
-              return (
-                <UiButton
-                  key={tab.value}
-                  role="tab"
-                  appearance={active ? "tonal" : "text"}
-                  startIcon={tab.icon}
-                  aria-selected={active}
-                  tabIndex={active ? 0 : -1}
-                  sx={{ color: active ? undefined : S.textMedium }}
-                  data-testid={`pv-catalog-view-${tab.value}`}
-                  onClick={() => setView(tab.value)}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key !== "ArrowLeft" &&
-                      event.key !== "ArrowRight"
-                    ) {
-                      return;
-                    }
-                    event.preventDefault();
-                    setView(view === "card" ? "table" : "card");
-                  }}
-                >
-                  {tab.label}
-                </UiButton>
-              );
-            })}
-          </Stack>
-
+            {copy("Áp dụng", "Apply")}
+          </UiButton>
+          <UiButton
+            appearance="text"
+            className="pv-catalog-reset"
+            onClick={resetFilters}
+          >
+            {copy("Đặt lại", "Reset")}
+          </UiButton>
+        </form>
+        <div
+          className="pv-catalog-view-tabs"
+          role="tablist"
+          aria-label={t("pv.productCatalog.viewTablistAria")}
+        >
+          {(
+            [
+              {
+                value: "table",
+                label: t("pv.productCatalog.viewTable"),
+                icon: <UnorderedListOutlined />,
+              },
+              {
+                value: "card",
+                label: t("pv.productCatalog.viewCard"),
+                icon: <AppstoreOutlined />,
+              },
+            ] as const
+          ).map((tab) => (
+            <UiButton
+              key={tab.value}
+              role="tab"
+              appearance="text"
+              aria-selected={view === tab.value}
+              tabIndex={view === tab.value ? 0 : -1}
+              startIcon={tab.icon}
+              data-testid={`pv-catalog-view-${tab.value}`}
+              onClick={() => setView(tab.value)}
+              onKeyDown={(event) => {
+                if (
+                  !["ArrowLeft", "ArrowRight", "Home", "End"].includes(
+                    event.key,
+                  )
+                )
+                  return;
+                event.preventDefault();
+                const next =
+                  event.key === "Home"
+                    ? "table"
+                    : event.key === "End"
+                      ? "card"
+                      : view === "card"
+                        ? "table"
+                        : "card";
+                setView(next);
+                event.currentTarget.parentElement
+                  ?.querySelector<HTMLButtonElement>(
+                    `[data-testid="pv-catalog-view-${next}"]`,
+                  )
+                  ?.focus();
+              }}
+            >
+              {tab.label}
+            </UiButton>
+          ))}
+        </div>
+        <div className="pv-catalog-results" aria-busy={profiles.isFetching}>
           {profiles.isLoading ? (
             <LoadingState tip={t("pv.common.loading")} />
           ) : profiles.isError ? (
@@ -852,24 +1107,44 @@ export function PvProductCatalogPage() {
               />
             </Box>
           ) : view === "table" ? (
-            <Box data-testid="pv-catalog-table">
+            <Box className="pv-catalog-table" data-testid="pv-catalog-table">
               <ResponsiveDataTable<PvAdminProfile>
                 columns={tableColumns}
                 rows={visibleRows}
                 rowKey={(row) => row.id}
+                mobileBreakpoint="sm"
+                actionColumnWidth={160}
+                maxBodyHeight="min(560px, 60vh)"
                 renderRowActions={(row) => (
-                  <ActionIconButton
-                    kind="edit"
-                    label={t("pv.productCatalog.editAction")}
-                    disabled={!canManage}
-                    onClick={() => openEdit(row)}
-                    data-testid="pv-catalog-edit"
-                  />
+                  <RowActionGroup sx={{ justifyContent: "flex-end" }}>
+                    <RowActionButton
+                      kind="edit"
+                      aria-label={t("pv.productCatalog.editAction")}
+                      disabled={!canManage}
+                      onClick={() => openEdit(row)}
+                      data-testid="pv-catalog-edit"
+                    >
+                      {copy("Chỉnh sửa", "Edit")}
+                    </RowActionButton>
+                    <RowActionButton kind="more" aria-label={
+                        copy("Thao tác với ", "Actions for ") + row.display_name
+                      }
+                      aria-haspopup="menu"
+                      aria-expanded={rowMenu?.row.id === row.id}
+                      onClick={(event) =>
+                        setRowMenu({ anchor: event.currentTarget, row })
+                      } />
+                  </RowActionGroup>
                 )}
               />
             </Box>
           ) : (
-            <Grid container spacing={2} data-testid="pv-catalog-grid">
+            <Grid
+              className="pv-catalog-grid"
+              container
+              spacing={2}
+              data-testid="pv-catalog-grid"
+            >
               {visibleRows.map((row) => (
                 <Grid key={row.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                   <PvCatalogCard
@@ -886,9 +1161,22 @@ export function PvProductCatalogPage() {
               ))}
             </Grid>
           )}
-
-          {pagination.total > 0 ? (
+        </div>
+        {pagination.total > 0 ? (
+          <div className="pv-catalog-pagination">
+            <span>
+              {copy("Hiển thị", "Showing")}{" "}
+              {industryFilter === FILTER_ALL
+                ? `${(pagination.current - 1) * pagination.pageSize + 1} – ${Math.min(pagination.current * pagination.pageSize, pagination.total)}`
+                : `${visibleRows.length} ${copy("kết quả trong trang", "matches on this page")}`}{" "}
+              /{" "}
+              {pagination.total.toLocaleString(
+                language === "vi" ? "vi-VN" : "en-US",
+              )}{" "}
+              {copy("sản phẩm", "products")}
+            </span>
             <UiPagination
+              showTotal={false}
               page={pagination.current}
               pageSize={pagination.pageSize}
               total={pagination.total}
@@ -897,11 +1185,40 @@ export function PvProductCatalogPage() {
               pageSizeOptions={[...MVP_PAGE_SIZE_OPTIONS]}
               disabled={profiles.isFetching}
             />
-          ) : null}
-        </Stack>
-      </UiCard>
+          </div>
+        ) : null}
+      </section>
+      <Menu
+        className="pv-catalog-menu"
+        anchorEl={rowMenu?.anchor ?? null}
+        open={Boolean(rowMenu)}
+        onClose={() => setRowMenu(null)}
+      >
+        <MenuItem
+          disabled={!canManage}
+          onClick={() => {
+            if (rowMenu) openEdit(rowMenu.row);
+            setRowMenu(null);
+          }}
+        >
+          {t("pv.productCatalog.editAction")}
+        </MenuItem>
+        <MenuItem
+          disabled={!canPublish || setPublished.isPending}
+          onClick={() => {
+            if (rowMenu)
+              void togglePublish(rowMenu.row, !rowMenu.row.published);
+            setRowMenu(null);
+          }}
+        >
+          {rowMenu?.row.published
+            ? copy("Ẩn khỏi App PV", "Hide from App PV")
+            : copy("Hiển thị trên App PV", "Show in App PV")}
+        </MenuItem>
+      </Menu>
 
       <UiDialog
+        className="pv-catalog-dialog"
         open={dialogMode !== null}
         onClose={guardBackdropClose(closeDialog)}
         maxWidth="md"

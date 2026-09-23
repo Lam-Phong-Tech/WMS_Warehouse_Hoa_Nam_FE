@@ -94,13 +94,13 @@
  */
 [data-report-screen="RPT-04"],
 body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .MuiPopover-paper.hn-vuexy-date-popup {
-  --wms-primary: var(--map-cta, var(--wms-auth-cta));
-  --wms-primary-dark: var(--map-navy, var(--wms-auth-navy));
-  --wms-primary-light: var(--map-link, var(--wms-auth-link));
-  --wms-primary-soft: var(--map-pale, light-dark(var(--wms-auth-pale), color-mix(in srgb, var(--wms-info-text) 14%, var(--wms-bg-surface))));
-  --wms-focus-ring: 0 0 0 3px var(--map-focus-ring, light-dark(var(--wms-auth-focus-ring), color-mix(in srgb, var(--wms-info-text) 28%, transparent)));
-  --rpt04-heading: var(--map-heading, light-dark(var(--wms-auth-navy), var(--wms-text-high)));
-  --rpt04-line: var(--map-line, light-dark(var(--wms-auth-line), var(--wms-border)));
+  --wms-primary: var(--ops-primary);
+  --wms-primary-dark: var(--ops-primary-hover);
+  --wms-primary-light: var(--ops-link);
+  --wms-primary-soft: var(--ops-pale);
+  --wms-focus-ring: 0 0 0 3px var(--ops-focus-ring);
+  --rpt04-heading: var(--ops-heading);
+  --rpt04-line: var(--ops-line);
   font-family: var(--wms-font-family);
   font-size: 14px;
   line-height: 1.45;
@@ -225,27 +225,27 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
 
 .rpt04-select-menu .MuiMenuItem-root {
   min-height: 38px;
-  color: #003b63;
+  color: var(--ops-heading);
   font-size: 14px;
 }
 
 .rpt04-select-menu .MuiMenuItem-root:hover {
-  background-color: #f2f9fc;
+  background-color: var(--ops-pale);
 }
 
 .rpt04-select-menu .MuiMenuItem-root.Mui-selected,
 .rpt04-select-menu .MuiMenuItem-root.Mui-selected:hover {
-  background-color: #eaf5f8;
-  color: #004e74;
+  background-color: var(--ops-pale);
+  color: var(--ops-primary);
 }
 
 .rpt04-select-menu .MuiMenuItem-root:focus-visible {
-  outline: 2px solid #086590;
+  outline: 2px solid var(--ops-link);
   outline-offset: -2px;
 }
 
 
-[data-report-screen="RPT-04"] .MuiButton-root {
+[data-report-screen="RPT-04"] .MuiButton-root:not(.hn-row-action) {
   min-height: 40px;
   height: auto;
   border-radius: 6px;
@@ -266,7 +266,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   background-color: var(--wms-primary-dark);
 }
 
-[data-report-screen="RPT-04"] :is(.MuiButton-outlined.MuiButton-colorPrimary, .MuiButton-text.MuiButton-colorPrimary):not(.Mui-disabled) {
+[data-report-screen="RPT-04"] :is(.MuiButton-outlined.MuiButton-colorPrimary, .MuiButton-text:not(.hn-row-action).MuiButton-colorPrimary):not(.Mui-disabled) {
   color: var(--wms-primary);
 }
 
@@ -401,14 +401,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   overflow-wrap: anywhere;
 }
 
-[data-report-screen="RPT-04"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root {
-  margin-left: auto;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
-
-[data-report-screen="RPT-04"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-root,
-[data-report-screen="RPT-04"] #rpt04-results table td:last-child .MuiButton-root {
+[data-report-screen="RPT-04"] #rpt04-results table td:last-child .MuiButton-root:not(.hn-row-action) {
   min-width: 40px;
   padding-inline: 8px;
 }
@@ -502,14 +495,14 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
     flex-basis: auto;
   }
 
-  [data-report-screen="RPT-04"] .MuiButton-root,
+  [data-report-screen="RPT-04"] .MuiButton-root:not(.hn-row-action),
   [data-report-screen="RPT-04"] .hn-vuexy-date-field {
     min-height: 44px;
   }
 }
 
 @media (pointer: coarse) {
-  [data-report-screen="RPT-04"] .MuiButton-root,
+  [data-report-screen="RPT-04"] .MuiButton-root:not(.hn-row-action),
   [data-report-screen="RPT-04"] .hn-vuexy-date-field,
   body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*="display:none"]) [data-report-screen="RPT-04"]) .hn-vuexy-date-popup button:not([aria-selected]) {
     min-height: 44px;
@@ -526,69 +519,73 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
 }
 
 
-/* RPT-04 — button + pagination parity with Báo cáo Truy vết hàng hóa (RPT-03).
- * Use direct RPT-03 values here instead of the app-wide primary token so the
- * screen cannot fall back to Vuexy purple when MUI portal/theme CSS loads later.
+/* RPT-04 button and pagination geometry. High-specificity states use the shared operations palette.
  */
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled) {
-  border-color: #075d96;
-  background: #075d96;
-  color: #fff;
-  box-shadow: 0 4px 9px rgb(6 86 143 / 15%);
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root:not(.hn-row-action).MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled) {
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+  box-shadow: var(--ops-shadow-card);
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
-  border-color: #064f80;
-  background: #064f80;
-  color: #fff;
-  box-shadow: 0 4px 9px rgb(6 86 143 / 18%);
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root:not(.hn-row-action).MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+  border-color: var(--ops-primary-hover);
+  background: var(--ops-primary-hover);
+  color: var(--ops-on-primary);
+  box-shadow: var(--ops-shadow-card);
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled) {
-  border-color: #bcdced;
-  background: #f3fbff;
-  color: #0e5191;
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root:not(.hn-row-action).MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled) {
+  border-color: var(--ops-line);
+  background: var(--ops-surface);
+  color: var(--ops-text);
   box-shadow: none;
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled):hover {
-  border-color: #079de7;
-  background: #eefaff;
-  color: #07549a;
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root:not(.hn-row-action).MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+  border-color: var(--ops-link);
+  background: var(--ops-pale);
+  color: var(--ops-link);
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled) {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root:not(.hn-row-action).MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled) {
   background: transparent;
-  color: #07549a;
+  color: var(--ops-link);
   box-shadow: none;
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root.MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):hover {
-  background: #eefaff;
-  color: #07549a;
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root:not(.hn-row-action).MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+  background: var(--ops-pale);
+  color: var(--ops-link);
 }
 
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root:focus-visible {
-  outline: 3px solid rgb(4 151 224 / 24%);
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] .MuiButton-root:not(.hn-row-action):focus-visible {
+  outline: 2px solid var(--ops-link);
   outline-offset: 2px;
 }
 
-/* Header action matches RPT-03 .trace-head-actions > .MuiButton-root:nth-child(2). */
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > .MuiStack-root:first-child > .MuiStack-root:last-child > .MuiButton-root {
+/* Header action matches RPT-03 .trace-head-actions > .MuiButton-root:not(.hn-row-action):nth-child(2). */
+#root [data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > .MuiStack-root:first-child > .MuiStack-root:last-child > .MuiButton-root:not(.hn-row-action) {
   min-width: 162px;
-  min-height: 40px;
+  min-height: var(--ops-control-height);
+  height: var(--ops-control-height);
+  box-sizing: border-box;
   padding: 0 14px;
+  padding-block: 0;
   border-radius: 7px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 20px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 /* Filter actions match RPT-03 apply/reset geometry and palette. */
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-root {
-  min-height: 43px;
+#root [data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  height: var(--ops-control-height);
+  box-sizing: border-box;
   padding: 0 16px;
+  padding-block: 0;
   border-radius: 6px;
   font-size: 14px;
   line-height: 20px;
@@ -597,62 +594,22 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
 }
 
 [data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-contained.MuiButton-colorPrimary {
-  border-color: #075e96;
-  background: #075e96;
-  color: #fff;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
   font-weight: 750;
   box-shadow: none;
 }
 
 [data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] > section[aria-label="Bộ lọc báo cáo"] > .MuiStack-root:last-child > .MuiButton-outlined.MuiButton-colorPrimary {
-  border-color: #bcdced;
-  background: #f3fbff;
-  color: #0e5191;
+  border-color: var(--ops-line);
+  background: var(--ops-surface);
+  color: var(--ops-text);
   font-weight: 700;
 }
 
-/* Pagination mirrors RPT-03 .trace-pagination exactly: 34px controls,
- * ocean active page, pale cyan inactive pages, same hover/disabled treatment.
- */
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-root {
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
-  min-height: 34px;
-  padding: 0;
-  border: 1px solid #c6dfed;
-  border-radius: 6px;
-  background: #f8fcff;
-  color: #07549a;
-  box-shadow: none;
-  font-size: 13px;
-  line-height: 1;
-  font-weight: 500;
-}
-
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-root:hover:not(.Mui-disabled) {
-  border-color: #079de7;
-  background: #eefaff;
-  color: #07549a;
-}
-
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled),
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
-  border-color: #075d96;
-  background: #075d96;
-  color: #fff;
-  box-shadow: 0 3px 8px rgb(6 84 142 / 18%);
-}
-
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results > .MuiStack-root:last-child > .MuiStack-root .MuiButton-root.Mui-disabled {
-  border-color: #c6dfed;
-  background: #f8fcff;
-  color: #07549a;
-  opacity: 0.42;
-}
-
 /* Table row chevron is a compact text action, not a purple CTA. */
-[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results table td:last-child .MuiButton-text.MuiButton-colorPrimary {
+[data-report-screen="RPT-04"][data-testid="rpt-tab-import-quality"] #rpt04-results table td:last-child .MuiButton-text:not(.hn-row-action).MuiButton-colorPrimary {
   min-width: 34px;
   width: 34px;
   min-height: 34px;
@@ -660,20 +617,23 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   padding: 0;
   border-radius: 6px;
   background: transparent;
-  color: #07549a;
+  color: var(--ops-link);
 }
 
 
 /* RPT-06 — Warranty report local polish. */
+[data-report-screen="RPT-06"][data-testid="report-07-warranty-components"],
+#root .hn-mvp-screen .hn-report-pagination {
+  --rpt06-ocean: var(--ops-primary);
+  --rpt06-ocean-dark: var(--ops-primary-hover);
+  --rpt06-cyan: var(--ops-link);
+  --rpt06-pale: var(--ops-pale);
+  --rpt06-pale-2: var(--ops-surface);
+  --rpt06-line: var(--ops-line);
+  --rpt06-muted: var(--ops-muted);
+  --rpt06-pager-ink: var(--ops-link);
+}
 [data-report-screen="RPT-06"][data-testid="report-07-warranty-components"] {
-  --rpt06-ocean: #075d96;
-  --rpt06-ocean-dark: #064f80;
-  --rpt06-cyan: #079de7;
-  --rpt06-pale: #eefaff;
-  --rpt06-pale-2: #f8fcff;
-  --rpt06-line: #c6dfed;
-  --rpt06-text: #073b7d;
-  --rpt06-muted: #5275a5;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -710,13 +670,13 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
 }
 
 [data-report-screen="RPT-06"] :is(.MuiOutlinedInput-root, .MuiSelect-select, .MuiInputBase-input) {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 [data-report-screen="RPT-06"] .MuiOutlinedInput-root {
   min-height: 40px;
   border-radius: 6px;
-  background: #fff;
+  background: var(--ops-surface);
 }
 
 [data-report-screen="RPT-06"] .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
@@ -730,7 +690,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
 [data-report-screen="RPT-06"] .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
   border-color: var(--rpt06-ocean);
   border-width: 1px;
-  box-shadow: 0 0 0 2px rgb(7 93 150 / 10%);
+  box-shadow: 0 0 0 3px var(--ops-focus-ring);
 }
 
 [data-report-screen="RPT-06"] .MuiSelect-icon {
@@ -746,15 +706,15 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   padding: 0 10px;
   border-color: var(--rpt06-line);
   border-radius: 6px;
-  background: #fff;
+  background: var(--ops-surface);
   color: var(--rpt06-text);
-  font-size: 12.5px;
+  font-size: 14px;
   box-shadow: none;
 }
 
 [data-report-screen="RPT-06"] .hn-vuexy-date-field:is(:hover, :focus-visible, [aria-expanded="true"]):not(:disabled) {
   border-color: var(--rpt06-cyan);
-  box-shadow: 0 0 0 2px rgb(7 157 231 / 11%);
+  box-shadow: 0 0 0 3px var(--ops-focus-ring);
   outline: 0;
 }
 
@@ -767,8 +727,8 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   color: var(--rpt06-ocean) !important;
 }
 
-/* Shared button primitive is purple by default; this screen follows the report ocean palette. */
-[data-report-screen="RPT-06"] .MuiButton-root {
+/* Report button geometry; semantic colors come from the operations palette. */
+[data-report-screen="RPT-06"] .MuiButton-root:not(.hn-row-action) {
   min-height: 38px;
   height: auto;
   padding-inline: 14px;
@@ -782,43 +742,61 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   box-shadow: none;
 }
 
-[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled) {
+/* Main report toolbars use the shared control size; row actions stay compact. */
+#root [data-report-screen="RPT-06"][data-testid="report-07-warranty-components"] > .MuiStack-root:first-child > .MuiStack-root:last-child > .MuiButton-root:not(.hn-row-action),
+#root [data-report-screen="RPT-06"][data-testid="report-07-warranty-components"] > section[aria-label="Bộ lọc báo cáo"] > .MuiBox-root > .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  height: var(--ops-control-height);
+  padding-block: 0;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+#root :is([data-report-screen="RPT-04"], [data-report-screen="RPT-06"]) > section[aria-label="Bộ lọc báo cáo"] .hn-vuexy-date-field {
+  min-height: var(--ops-control-height);
+  height: var(--ops-control-height);
+  padding-block: 0;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+[data-report-screen="RPT-06"] .MuiButton-root:not(.hn-row-action).MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled) {
   border-color: var(--rpt06-ocean);
   background: var(--rpt06-ocean);
-  color: #fff;
-  box-shadow: 0 4px 9px rgb(6 86 143 / 14%);
+  color: var(--ops-on-primary);
+  box-shadow: var(--ops-shadow-card);
 }
 
-[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+[data-report-screen="RPT-06"] .MuiButton-root:not(.hn-row-action).MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
   border-color: var(--rpt06-ocean-dark);
   background: var(--rpt06-ocean-dark);
-  color: #fff;
+  color: var(--ops-on-primary);
 }
 
-[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled) {
+[data-report-screen="RPT-06"] .MuiButton-root:not(.hn-row-action).MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled) {
   border-color: var(--rpt06-line);
   background: var(--rpt06-pale-2);
-  color: #07549a;
+  color: var(--ops-link);
 }
 
-[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+[data-report-screen="RPT-06"] .MuiButton-root:not(.hn-row-action).MuiButton-outlined.MuiButton-colorPrimary:not(.Mui-disabled):hover {
   border-color: var(--rpt06-cyan);
   background: var(--rpt06-pale);
-  color: #07549a;
+  color: var(--ops-link);
 }
 
-[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled) {
+[data-report-screen="RPT-06"] .MuiButton-root:not(.hn-row-action).MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled) {
   background: transparent;
-  color: #07549a;
+  color: var(--ops-link);
 }
 
-[data-report-screen="RPT-06"] .MuiButton-root.MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):hover {
+[data-report-screen="RPT-06"] .MuiButton-root:not(.hn-row-action).MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):hover {
   background: var(--rpt06-pale);
-  color: #07549a;
+  color: var(--ops-link);
 }
 
-[data-report-screen="RPT-06"] .MuiButton-root:focus-visible {
-  outline: 3px solid rgb(4 151 224 / 22%);
+[data-report-screen="RPT-06"] .MuiButton-root:not(.hn-row-action):focus-visible {
+  outline: 2px solid var(--ops-link);
   outline-offset: 2px;
 }
 
@@ -831,83 +809,83 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
 /* Select menu is portalled to body, so it needs its own screen-specific class. */
 .rpt06-select-menu.MuiPaper-root {
   margin-top: 4px;
-  border: 1px solid #c6dfed;
+  border: 1px solid var(--ops-line);
   border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgb(4 70 116 / 13%);
+  background: var(--ops-surface);
+  box-shadow: var(--ops-shadow-floating);
 }
 
 .rpt06-select-menu .MuiMenuItem-root {
   min-height: 36px;
   padding: 7px 12px;
-  color: #073b7d;
+  color: var(--ops-heading);
   font-size: 13px;
   line-height: 20px;
 }
 
 .rpt06-select-menu .MuiMenuItem-root:hover {
-  background: #f2f9fc;
+  background: var(--ops-pale);
 }
 
 .rpt06-select-menu .MuiMenuItem-root.Mui-selected,
 .rpt06-select-menu .MuiMenuItem-root.Mui-selected:hover {
-  background: #eaf5f8;
-  color: #004e74;
+  background: var(--ops-pale);
+  color: var(--ops-primary);
   font-weight: 650;
 }
 
 .rpt06-select-menu .MuiMenuItem-root:focus-visible {
-  outline: 2px solid #079de7;
+  outline: 2px solid var(--ops-link);
   outline-offset: -2px;
 }
 
 /* Date range popup: same colors as the visible fields, including selected days/presets. */
 body:has([data-report-screen="RPT-06"]) .MuiPopover-paper.hn-vuexy-date-popup {
-  --wms-primary: #075d96;
-  --wms-primary-dark: #064f80;
-  --wms-primary-soft: #eefaff;
-  --wms-on-primary: #fff;
+  --wms-primary: var(--ops-primary);
+  --wms-primary-dark: var(--ops-primary-hover);
+  --wms-primary-soft: var(--ops-pale);
+  --wms-on-primary: var(--ops-on-primary);
   max-width: calc(100vw - 24px);
   max-height: calc(100dvh - 24px);
   overflow-y: auto;
-  border-color: #c6dfed;
+  border-color: var(--ops-line);
   border-radius: 8px;
-  color: #073b7d;
+  color: var(--ops-heading);
   font-family: var(--wms-font-family);
   font-size: 13px;
-  box-shadow: 0 10px 30px rgb(4 70 116 / 15%);
+  box-shadow: var(--ops-shadow-floating);
 }
 
 body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button[aria-pressed="true"] {
-  border-color: #079de7;
-  background: #eefaff;
-  color: #07549a;
+  border-color: var(--ops-link);
+  background: var(--ops-pale);
+  color: var(--ops-link);
 }
 
 body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup [data-in-range="true"] {
-  background: #eefaff;
+  background: var(--ops-pale);
 }
 
 body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button[aria-selected="true"],
 body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup [data-date-action="apply"] {
-  border-color: #075d96;
-  background: #075d96;
-  color: #fff;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
 }
 
 body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:enabled:hover {
-  background: #eefaff;
-  color: #07549a;
+  background: var(--ops-pale);
+  color: var(--ops-link);
 }
 
 body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button[aria-selected="true"]:enabled:hover,
 body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup [data-date-action="apply"]:enabled:hover {
-  background: #064f80;
-  color: #fff;
+  background: var(--ops-primary-hover);
+  color: var(--ops-on-primary);
 }
 
 body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visible {
-  outline: 2px solid #079de7;
+  outline: 2px solid var(--ops-link);
   outline-offset: 1px;
 }
 
@@ -934,7 +912,7 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
 }
 
 /* Pagination mirrors Traceability: compact 34px boxes, ocean active, pale inactive. */
-[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root {
+[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root:not(.hn-row-action) {
   width: 34px;
   min-width: 34px;
   height: 34px;
@@ -943,41 +921,41 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
   border: 1px solid var(--rpt06-line);
   border-radius: 6px;
   background: var(--rpt06-pale-2);
-  color: #07549a;
+  color: var(--rpt06-pager-ink);
   box-shadow: none;
   font-size: 13px;
   line-height: 1;
   font-weight: 550;
 }
 
-[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root:hover:not(.Mui-disabled) {
+[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root:not(.hn-row-action):hover:not(.Mui-disabled) {
   border-color: var(--rpt06-cyan);
   background: var(--rpt06-pale);
-  color: #07549a;
+  color: var(--rpt06-pager-ink);
 }
 
 [data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled),
 [data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-contained.MuiButton-colorPrimary:not(.Mui-disabled):hover {
   border-color: var(--rpt06-ocean);
   background: var(--rpt06-ocean);
-  color: #fff;
-  box-shadow: 0 3px 8px rgb(6 84 142 / 17%);
+  color: var(--ops-on-primary);
+  box-shadow: var(--ops-shadow-card);
 }
 
-[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root.Mui-disabled {
+[data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root:not(.hn-row-action).Mui-disabled {
   border-color: var(--rpt06-line);
   background: var(--rpt06-pale-2);
-  color: #07549a;
+  color: var(--rpt06-pager-ink);
   opacity: .42;
 }
 
 /* The detail action is link-like ocean text, never a purple CTA. */
-[data-report-screen="RPT-06"] table td:last-child .MuiButton-text.MuiButton-colorPrimary {
+[data-report-screen="RPT-06"] table td:last-child .MuiButton-text:not(.hn-row-action).MuiButton-colorPrimary {
   min-width: 34px;
   min-height: 32px;
   padding: 0 6px;
   background: transparent;
-  color: #07549a;
+  color: var(--ops-link);
 }
 
 /* Compact tablet/mobile fallback without changing the data or interaction flow. */
@@ -990,7 +968,7 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
     grid-template-columns: minmax(0, 1fr);
   }
 
-  [data-report-screen="RPT-06"] .MuiButton-root {
+  [data-report-screen="RPT-06"] .MuiButton-root:not(.hn-row-action) {
     white-space: normal;
   }
 
@@ -1000,11 +978,11 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
 }
 
 @media (pointer: coarse) {
-  [data-report-screen="RPT-06"] :is(.MuiButton-root, .hn-vuexy-date-field) {
+  [data-report-screen="RPT-06"] :is(.MuiButton-root:not(.hn-row-action), .hn-vuexy-date-field) {
     min-height: 44px;
   }
 
-  [data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root {
+  [data-report-screen="RPT-06"] .rpt06-pagination .MuiButton-root:not(.hn-row-action) {
     width: 40px;
     min-width: 40px;
     height: 40px;
@@ -1023,17 +1001,137 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
 
 
 /* RPT-06 row detail action: real interactive target, same compact treatment as reference. */
-[data-report-screen="RPT-06"] table td:last-child .MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled) {
+[data-report-screen="RPT-06"] table td:last-child .MuiButton-text:not(.hn-row-action).MuiButton-colorPrimary:not(.Mui-disabled) {
   cursor: pointer;
   font-weight: 600;
 }
 
-[data-report-screen="RPT-06"] table td:last-child .MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):hover {
-  background: #eefaff;
-  color: #064f80;
+[data-report-screen="RPT-06"] table td:last-child .MuiButton-text:not(.hn-row-action).MuiButton-colorPrimary:not(.Mui-disabled):hover {
+  background: var(--ops-pale);
+  color: var(--ops-primary-hover);
 }
 
-[data-report-screen="RPT-06"] table td:last-child .MuiButton-text.MuiButton-colorPrimary:not(.Mui-disabled):focus-visible {
-  outline: 2px solid #079de7;
+[data-report-screen="RPT-06"] table td:last-child .MuiButton-text:not(.hn-row-action).MuiButton-colorPrimary:not(.Mui-disabled):focus-visible {
+  outline: 2px solid var(--ops-link);
   outline-offset: 1px;
+}
+
+
+/* Shared report page titles. The visible Warranty report is the typography
+ * reference; the explicit class excludes card headings, dialogs and errors.
+ * Scope outranks lazy-loaded report CSS, without adding !important. */
+[data-report-screen="RPT-06"][data-testid="report-07-warranty-components"],
+#root .hn-mvp-screen h1.hn-report-page-title {
+  --rpt06-text: var(--ops-heading);
+}
+
+#root .hn-mvp-screen h1.hn-report-page-title {
+  margin: 0;
+  font-family: var(--wms-font-family);
+  font-size: 24px;
+  font-weight: 750;
+  line-height: 38px;
+  letter-spacing: -0.02em;
+  color: var(--rpt06-text);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* All report titles use the same small-screen size, independent of sidebar
+ * width or each report's private container breakpoints. */
+@media (max-width: 767px) {
+  #root .hn-mvp-screen h1.hn-report-page-title {
+    font-size: 24px;
+  }
+}
+
+/* One report pager layout: counts and dates stay before the right-aligned controls.
+ * The explicit class leaves dialogs and pagination outside reports untouched. */
+#root .hn-mvp-screen .hn-report-pagination-footer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-width: 0;
+}
+
+#root .hn-mvp-screen .hn-report-pagination-footer > :not(.hn-report-pagination) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+#root .hn-mvp-screen .hn-report-pagination {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: center;
+  gap: 7px;
+  order: 1;
+  flex: 0 1 auto;
+  margin-inline-start: auto;
+  max-width: 100%;
+}
+
+#root .hn-mvp-screen .hn-report-pagination > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+#root .hn-mvp-screen .hn-report-pagination button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 1px solid var(--rpt06-line);
+  border-radius: 6px;
+  background: var(--rpt06-pale-2);
+  color: var(--rpt06-pager-ink);
+  box-shadow: none;
+  font-family: var(--wms-font-family);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#root .hn-mvp-screen .hn-report-pagination button:hover:not(:disabled) {
+  border-color: var(--rpt06-cyan);
+  background: var(--rpt06-pale);
+}
+
+#root .hn-mvp-screen .hn-report-pagination button:is(.is-active, [aria-current="page"], .MuiButton-contained):not(:disabled) {
+  border-color: var(--rpt06-ocean);
+  background: var(--rpt06-ocean);
+  color: var(--wms-on-primary);
+  box-shadow: var(--ops-shadow-card);
+}
+
+#root .hn-mvp-screen .hn-report-pagination button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+#root .hn-mvp-screen .hn-report-pagination button:focus-visible {
+  outline: 2px solid var(--rpt06-cyan);
+  outline-offset: 2px;
+}
+
+@media (max-width: 479px) {
+  #root .hn-mvp-screen .hn-report-pagination button {
+    width: 31px;
+    min-width: 31px;
+    height: 31px;
+    min-height: 31px;
+  }
 }

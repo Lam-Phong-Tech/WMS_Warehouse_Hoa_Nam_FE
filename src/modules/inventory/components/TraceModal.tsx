@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import {
   Box,
   Grid,
@@ -53,12 +53,21 @@ import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import "./inventory-dialog.css";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 
 interface Props {
   movementId: string | null;
   onClose: () => void;
 }
+
+const INVENTORY_DIALOG_TABLE_HEADER_STYLE: CSSProperties = {
+  background: "var(--invd-pale)",
+  color: "var(--invd-heading)",
+  fontSize: 12,
+  padding: "10px 9px",
+  borderBottom: "1px solid var(--invd-line)",
+};
 
 type RawRecord = Record<string, unknown>;
 
@@ -137,6 +146,7 @@ function CodeText({
   return (
     <Box
       component="code"
+      className="hn-inventory-code"
       sx={[
         {
           fontFamily: "monospace",
@@ -161,7 +171,13 @@ function CopyableCode({ value }: { value: string }) {
     <Stack
       direction="row"
       spacing={0.5}
-      sx={{ display: "inline-flex", alignItems: "center" }}
+      useFlexGap
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        minWidth: 0,
+        maxWidth: "100%",
+      }}
     >
       <CodeText>{value}</CodeText>
       <ActionIconButton
@@ -175,13 +191,15 @@ function CopyableCode({ value }: { value: string }) {
 
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Grid size={{ xs: 12, md: 6 }}>
+    <Grid size={{ xs: 12, md: 6 }} className="hn-inventory-detail-field">
       <Box sx={{ display: "block" }}>
         <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
           {label}
         </UiText>
       </Box>
-      <UiText variant="body">{value}</UiText>
+      <UiText variant="body" className="hn-inventory-detail-value">
+        {value}
+      </UiText>
     </Grid>
   );
 }
@@ -195,6 +213,7 @@ function DescriptionsBlock({
 }) {
   return (
     <Box
+      className="hn-inventory-detail-panel"
       sx={{
         border: "1px solid",
         borderColor: "divider",
@@ -204,6 +223,7 @@ function DescriptionsBlock({
     >
       <Box
         component="h6"
+        className="hn-inventory-section-title"
         sx={{
           m: 0,
           mb: 1.5,
@@ -225,6 +245,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
   return (
     <Box
       component="h6"
+      className="hn-inventory-section-title"
       sx={{
         m: 0,
         mb: 1,
@@ -530,12 +551,14 @@ export function TraceModal({ movementId, onClose }: Props) {
   return (
     <UiDialog
       {...dialog.dialogProps}
+      className="hn-inventory-dialog"
       maxWidth="lg"
       fullWidth
       title={
-        <Box sx={{ pr: 6 }}>
+        <Box sx={{ position: "relative", pr: 6 }}>
           {t("inventory.trace.title")}
           <ActionIconButton
+            className="hn-inventory-dialog-close"
             kind="close"
             label={t("common.close")}
             onClick={dialog.close}
@@ -544,12 +567,8 @@ export function TraceModal({ movementId, onClose }: Props) {
         </Box>
       }
     >
-      <Stack spacing={2}>
-        <Stack
-          direction="row"
-          spacing={1.5}
-          sx={{ flexWrap: "wrap", rowGap: 1.5 }}
-        >
+      <Stack spacing={2} className="hn-inventory-dialog-body">
+        <Stack className="hn-inventory-lookup">
           <UiTextField
             placeholder={t("inventory.trace.searchPlaceholder")}
             value={lookupCode}
@@ -560,7 +579,7 @@ export function TraceModal({ movementId, onClose }: Props) {
             onKeyDown={(event) => {
               if (event.key === "Enter") handleLookup();
             }}
-            sx={{ flex: 1, minWidth: 280 }}
+            sx={{ flex: "1 1 240px", minWidth: 0 }}
           />
           <ActionButton
             kind="search"
@@ -741,6 +760,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                   })}
                 </SectionLabel>
                 <ResponsiveDataTable
+                  headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+                  maxBodyHeight="clamp(240px, 45dvh, 520px)"
                   rows={codeTrace.container_items.map((row, index) =>
                     withRowKey(
                       row,
@@ -763,6 +784,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                   })}
                 </SectionLabel>
                 <ResponsiveDataTable
+                  headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+                  maxBodyHeight="clamp(240px, 45dvh, 520px)"
                   rows={codeTrace.movements}
                   rowKey={(row) => text(row.id, String(Math.random()))}
                   columns={movementColumns(t)}
@@ -786,6 +809,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                       : [];
                     return (
                       <Box
+                        className="hn-inventory-history-card"
                         key={text(wc.warranty_case_id, String(index))}
                         sx={{
                           border: "1px solid",
@@ -797,6 +821,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                         <Stack
                           direction="row"
                           spacing={1}
+                          useFlexGap
                           sx={{ alignItems: "center", flexWrap: "wrap" }}
                         >
                           <CopyableCode value={text(wc.warranty_case_code)} />
@@ -1043,6 +1068,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                   })}
                 </SectionLabel>
                 <ResponsiveDataTable
+                  headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+                  maxBodyHeight="clamp(240px, 45dvh, 520px)"
                   rows={trace.lines.map((row, index) =>
                     withRowKey(
                       row,
@@ -1140,6 +1167,8 @@ export function TraceModal({ movementId, onClose }: Props) {
                   ) : null}
                 </SectionLabel>
                 <ResponsiveDataTable
+                  headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+                  maxBodyHeight="clamp(240px, 45dvh, 520px)"
                   rows={trace.chain ?? []}
                   rowKey={(row) => row.id}
                   columns={chainColumns(t)}
@@ -1149,7 +1178,7 @@ export function TraceModal({ movementId, onClose }: Props) {
               </div>
             ) : null}
 
-            <div>
+            <div className="hn-inventory-timeline">
               <SectionLabel>{t("inventory.trace.timelineTitle")}</SectionLabel>
               {trace.timeline.length > 0 ? (
                 <UiTimeline

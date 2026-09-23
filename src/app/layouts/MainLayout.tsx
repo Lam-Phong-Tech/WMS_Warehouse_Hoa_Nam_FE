@@ -35,6 +35,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { ROUTES } from "@/shared/constants/routes";
 import { useNavigate } from "react-router-dom";
+import { queryClient } from "@/app/providers/query-client";
 import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
 
 /**
@@ -48,6 +49,7 @@ import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
  * nhau (đã xảy ra với RPT-04 và RPT-06).
  */
 const ROUTES_WITH_OWN_HEADER: string[] = [
+  ROUTES.PV_PRODUCT_CATALOG,
   ROUTES.DASHBOARD,
   ROUTES.REPORTS_INVENTORY_FLOW,
   ROUTES.REPORTS_OUTBOUND_FLOW,
@@ -88,12 +90,9 @@ function readStoredSidebarCollapsed() {
 export function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  // <lg (980): sidebar chuyển sang Drawer overlay + hamburger ở topbar
-  // (hợp đồng responsive 360/768/1280 của SRS — không bóp 2 cột trên mobile).
+  // Shell geometry is shared by every route; navigation must not resize it.
+  // Below lg (980px), use the same overlay drawer on every screen.
   const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("lg"));
-  const isReferenceTablet = useMediaQuery(
-    "(min-width: 980px) and (max-width: 1365px)",
-  );
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
   const { isLoading: isLoadingProfile } = useMe();
@@ -104,14 +103,6 @@ export function MainLayout() {
   // PEEK: đang thu gọn mà rê chuột/focus vào rail thì sidebar bung TẠM (không
   // ghi nhớ, không xô nội dung). Trạng thái "ghim" vẫn là sidebarCollapsed.
   const [sidebarPeek, setSidebarPeek] = useState(false);
-  const isReferenceFlowReport =
-    location.pathname === ROUTES.REPORTS_INVENTORY_FLOW ||
-    location.pathname === ROUTES.REPORTS_OUTBOUND_FLOW ||
-    location.pathname === ROUTES.REPORTS_STOCK_RECONCILE ||
-    location.pathname === ROUTES.REPORTS_TRACEABILITY;
-  const effectiveSidebarCollapsed =
-    sidebarCollapsed || (isReferenceFlowReport && isReferenceTablet);
-
   // Đổi trang trên mobile → tự đóng drawer điều hướng.
   useEffect(() => {
     setMobileNavOpen(false);
@@ -120,7 +111,9 @@ export function MainLayout() {
   // Sau khi shell đã lên và app rảnh: nạp dần chunk của các màn hay dùng, để lần
   // đầu bấm sang màn khác không phải nhìn skeleton chờ tải mã (xem route-preload.ts).
   useEffect(() => {
-    preloadCommonRoutesWhenIdle();
+    return preloadCommonRoutesWhenIdle(
+      () => queryClient.isFetching() > 0 || queryClient.isMutating() > 0,
+    );
   }, []);
 
   // Màn ĐẦU TIÊN sau khi tải trang không chạy hiệu ứng chuyển trang: `main.tsx`
@@ -168,23 +161,23 @@ export function MainLayout() {
     // Dark/System vẫn đổi thật nhờ light-dark() + color-scheme trên <html>.
     "--map-navy": AUTH_BASELINE.navy,
     "--map-cta": AUTH_BASELINE.cta,
-    "--map-accent": `light-dark(${AUTH_BASELINE.cta}, var(--wms-info-text))`,
-    "--map-heading": `light-dark(${AUTH_BASELINE.navy}, var(--wms-info-text))`,
-    "--map-link": `light-dark(${AUTH_BASELINE.link}, var(--wms-info-text))`,
-    "--map-card": `light-dark(${AUTH_BASELINE.white}, var(--wms-bg-surface))`,
-    "--map-pale": `light-dark(${AUTH_BASELINE.pale}, color-mix(in srgb, var(--wms-info-text) 14%, var(--wms-bg-surface)))`,
-    "--map-line": `light-dark(${AUTH_BASELINE.line}, var(--wms-border))`,
-    "--map-ink": `light-dark(${AUTH_BASELINE.ink}, var(--wms-text-strong))`,
-    "--map-muted": `light-dark(${AUTH_BASELINE.muted}, var(--wms-text-medium))`,
-    "--map-surface": `light-dark(${AUTH_BASELINE.surface}, var(--wms-bg-canvas))`,
-    "--map-success": `light-dark(${AUTH_BASELINE.success}, var(--wms-success))`,
-    "--map-warning": `light-dark(${AUTH_BASELINE.warning}, var(--wms-warning))`,
-    "--map-danger": `light-dark(${AUTH_BASELINE.danger}, var(--wms-error))`,
+    "--map-accent": "var(--ops-primary)",
+    "--map-heading": "var(--ops-heading)",
+    "--map-link": "var(--ops-link)",
+    "--map-card": "var(--ops-surface)",
+    "--map-pale": "var(--ops-pale)",
+    "--map-line": "var(--ops-line)",
+    "--map-ink": "var(--ops-text)",
+    "--map-muted": "var(--ops-muted)",
+    "--map-surface": "var(--ops-canvas)",
+    "--map-success": "var(--ops-success)",
+    "--map-warning": "var(--ops-warning)",
+    "--map-danger": "var(--ops-danger)",
     "--map-white": AUTH_BASELINE.white,
     "--map-hero-mid": AUTH_BASELINE.heroMid,
     "--map-hero-end": AUTH_BASELINE.heroEnd,
-    "--map-focus-ring": `light-dark(${AUTH_BASELINE.focusRing}, color-mix(in srgb, var(--wms-info-text) 28%, transparent))`,
-    "--map-card-shadow": `light-dark(${AUTH_BASELINE.cardShadow}, var(--wms-shadow-card))`,
+    "--map-focus-ring": "var(--ops-focus-ring)",
+    "--map-card-shadow": "var(--ops-shadow-card)",
   } as CSSProperties;
   const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
@@ -204,16 +197,15 @@ export function MainLayout() {
         style={systemShellStyle}
         sidebarClassName="hn-system-sidebar"
         mainClassName={isMapReferenceScreen ? "hn-map-main" : undefined}
-        collapsed={effectiveSidebarCollapsed}
-        sidebarWidth={isReferenceFlowReport ? 276 : SYSTEM_SIDEBAR_WIDTH}
-        sidebarCollapsedWidth={isReferenceFlowReport ? 86 : undefined}
+        collapsed={sidebarCollapsed}
+        sidebarWidth={SYSTEM_SIDEBAR_WIDTH}
         sidebarHidden={!isDesktop}
         peek={sidebarPeek}
         onPeekChange={setSidebarPeek}
         sidebar={
           <SideNav
             // Lúc "he mở", nội dung sidebar hiển thị y như khi đang mở rộng.
-            collapsed={effectiveSidebarCollapsed && !sidebarPeek}
+            collapsed={sidebarCollapsed && !sidebarPeek}
             onExpand={expandSidebar}
             onToggle={toggleSidebar}
           />

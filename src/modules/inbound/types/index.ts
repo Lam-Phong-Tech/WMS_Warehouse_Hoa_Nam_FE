@@ -9,6 +9,8 @@ export interface InboundDocument {
   /** Under the GĐ1 scan-driven contract this mirrors actual scanned quantity. */
   expected: number;
   scanned: number;
+  /** Distinct SKU identities from the loaded receipt lines; absent when not supplied. */
+  skuCount?: number;
   posted: number;
   remaining: number;
   status: InboundStatus;

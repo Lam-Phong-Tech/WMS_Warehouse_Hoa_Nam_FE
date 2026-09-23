@@ -1,3 +1,4 @@
+import "./iam-users.css";
 import { useT } from "@/shared/i18n/useT";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -66,8 +67,8 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
   ];
 
   return (
-    <>
-      <Box sx={{ marginBottom: 2 }}>
+    <div className="hn-iam-page">
+      <Box className="hn-iam-tabs" sx={{ marginBottom: 2, minWidth: 0 }}>
         <UiTabs
           items={tabItems}
           value={activeTab}
@@ -75,7 +76,7 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
         />
       </Box>
 
-      <UiTabPanel value={activeTab}>
+      <UiTabPanel value={activeTab} sx={{ minWidth: 0 }}>
         {activeTab === "users" ? (
           <IamUserScreen
             openCreateOnMount={openCreateOnMount || openCreateFromScreen}
@@ -84,6 +85,6 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
           <IamRolePermissionScreen />
         )}
       </UiTabPanel>
-    </>
+    </div>
   );
 }

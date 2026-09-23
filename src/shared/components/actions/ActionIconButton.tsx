@@ -46,6 +46,9 @@ export function ActionIconButton({
   return (
     <IconButton
       {...iconButtonProps}
+      data-action-kind={kind}
+      data-action-tone={spec.tone}
+      data-action-appearance={appearance}
       size="small"
       title={title ?? text}
       aria-label={ariaLabel ?? text}

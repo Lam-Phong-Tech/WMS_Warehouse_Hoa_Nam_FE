@@ -67,7 +67,9 @@ describe("SideNav RBAC filtering", () => {
 
     renderSideNav();
 
-    expect(screen.getByText(/Hoa Nam WMS/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "HOA NAM SCANNER" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Danh sách phiếu nhập")).toBeInTheDocument();
     expect(screen.getByText("Danh sách phiếu xuất")).toBeInTheDocument();
     expect(screen.getByText("Tra cứu tồn & đối soát")).toBeInTheDocument();

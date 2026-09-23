@@ -81,7 +81,11 @@ import type {
   ComponentIssueDocument,
   ComponentIssueLine,
 } from "@/modules/warranty/services/componentIssueService";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+} from "@/shared/components/actions";
 
 interface DraftLineValue {
   /** Danh tính ổn định của dòng (xem createRowKey) — không gửi lên API. */
@@ -111,6 +115,8 @@ function parseRequiredQty(raw: string): number | null {
 }
 
 interface ComponentIssueModalProps {
+  /** Optional screen-local presentation; shared business flow stays unchanged. */
+  className?: string;
   caseId: string;
   caseCode?: string;
   caseActive: boolean;
@@ -125,6 +131,7 @@ interface ComponentIssueModalProps {
  * warranty case active; full-post (mọi line scanned = required) mới trừ tồn.
  */
 export function ComponentIssueModal({
+  className,
   caseId,
   caseCode,
   caseActive,
@@ -533,6 +540,7 @@ export function ComponentIssueModal({
 
   return (
     <UiDialog
+      className={className}
       {...dialog.dialogProps}
       maxWidth="md"
       title={
@@ -728,7 +736,7 @@ export function ComponentIssueModal({
                             );
                           })()
                         : null}
-                      <ActionIconButton
+                      <RowActionButton
                         kind="delete"
                         disabled={draftLines.length <= 1}
                         onClick={() =>
@@ -899,6 +907,7 @@ export function ComponentIssueModal({
       </Stack>
 
       <UiDialog
+        className={className}
         open={cancelOpen}
         onClose={guardBackdropClose(() => setCancelOpen(false))}
         maxWidth="xs"
@@ -943,6 +952,7 @@ export function ComponentIssueModal({
       </UiDialog>
 
       <UiDialog
+        className={className}
         open={postConfirmOpen}
         onClose={() => setPostConfirmOpen(false)}
         maxWidth="xs"

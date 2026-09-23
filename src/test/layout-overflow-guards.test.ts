@@ -32,7 +32,7 @@ import { describe, expect, it } from "vitest";
 const REPORT_CSS = [
   "src/modules/reports/inventory-flow/inventory-flow-report.css",
   "src/modules/reports/stock-reconcile/stock-reconcile-report.css",
-  "src/modules/reports/io-history/io-history-report.css",
+  "src/modules/reports/io-history/io-history-operational.css",
 ] as const;
 
 const read = (file: string) => readFileSync(join(process.cwd(), file), "utf8");

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import "./outbound-dialog.css";
 import {
   Box,
   Grid,
@@ -55,7 +56,12 @@ import {
   type PackingLabelRecord,
 } from "@/modules/outbound/services/alignedOutboundService";
 import type { ReactNode } from "react";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+  RowActionGroup,
+} from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
@@ -602,16 +608,16 @@ export function AlignedOutboundDetailModal({
       mobileLabel: t("outbound.detail.colAction"),
       width: 190,
       render: (match) => (
-        <Stack direction="row" spacing={0.5}>
+        <RowActionGroup>
           {mutable && can("outbound.scan") ? (
-            <ActionButton
+            <RowActionButton
               kind="delete"
               onClick={() => void handleUnmatch(match)}
             >
               {t("outbound.detail.remove")}
-            </ActionButton>
+            </RowActionButton>
           ) : null}
-        </Stack>
+        </RowActionGroup>
       ),
     },
   ];
@@ -619,6 +625,7 @@ export function AlignedOutboundDetailModal({
   if (detailQuery.isLoading) {
     return (
       <UiDialog
+        className="hn-outbound-dialog"
         {...dialog.dialogProps}
         maxWidth="sm"
         fullWidth
@@ -632,6 +639,7 @@ export function AlignedOutboundDetailModal({
   if (detailQuery.isError || !detail || !doc) {
     return (
       <UiDialog
+        className="hn-outbound-dialog"
         {...dialog.dialogProps}
         maxWidth="sm"
         fullWidth
@@ -650,6 +658,7 @@ export function AlignedOutboundDetailModal({
   return (
     <>
       <UiDialog
+        className="hn-outbound-dialog"
         {...dialog.dialogProps}
         maxWidth="lg"
         fullWidth
@@ -673,7 +682,7 @@ export function AlignedOutboundDetailModal({
         }
       >
         <Stack spacing={2}>
-          <Box sx={SECTION_SX}>
+          <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
             <Grid container spacing={2}>
               <DetailField
                 label={t("outbound.detail.fieldDocument")}
@@ -698,7 +707,7 @@ export function AlignedOutboundDetailModal({
             </Grid>
           </Box>
 
-          <Box sx={SECTION_SX}>
+          <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
             <DocumentAttachmentsPanel
               documentType="OUTBOUND"
               documentId={documentId}
@@ -706,7 +715,7 @@ export function AlignedOutboundDetailModal({
             />
           </Box>
 
-          <Box sx={SECTION_SX}>
+          <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
             <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
               {t("outbound.detail.step1")}
             </Box>
@@ -719,7 +728,7 @@ export function AlignedOutboundDetailModal({
                 {/* Phiếu nhiều dòng thì danh sách này dài — cho gõ mã SKU
                     để nhảy thẳng tới dòng cần quét. */}
                 <UiAutocomplete
-                  sx={{ width: 300 }}
+                  sx={{ width: { xs: "100%", sm: 300 }, minWidth: 0 }}
                   fullWidth={false}
                   label={t("outbound.detail.autoSku")}
                   value={lineId || null}
@@ -735,7 +744,7 @@ export function AlignedOutboundDetailModal({
                     }))}
                 />
                 <UiTextField
-                  sx={{ width: 330 }}
+                  sx={{ width: { xs: "100%", sm: 330 }, minWidth: 0 }}
                   value={scanCode}
                   label={t("outbound.detail.scanField")}
                   placeholder={t("outbound.detail.scanField")}
@@ -787,7 +796,7 @@ export function AlignedOutboundDetailModal({
             </Stack>
           </Box>
 
-          <Box sx={SECTION_SX}>
+          <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
             <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
               {t("outbound.detail.step2")}
             </Box>
@@ -811,7 +820,7 @@ export function AlignedOutboundDetailModal({
                   sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
                 >
                   <UiTextField
-                    sx={{ width: 260 }}
+                    sx={{ width: { xs: "100%", sm: 260 }, minWidth: 0 }}
                     value={customerPhone}
                     label={t("outbound.detail.labelPhone")}
                     placeholder={t("outbound.detail.labelPhone")}
@@ -903,7 +912,7 @@ export function AlignedOutboundDetailModal({
 
           <Grid container spacing={2}>
             <Grid size={12}>
-              <Box sx={SECTION_SX}>
+              <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
                 <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
                   {t("outbound.detail.step3")}
                 </Box>
@@ -973,7 +982,7 @@ export function AlignedOutboundDetailModal({
                          */}
                         <UiAutocomplete
                           label={t("outbound.detail.fieldPrinter")}
-                          sx={{ width: 280 }}
+                          sx={{ width: { xs: "100%", sm: 280 }, minWidth: 0 }}
                           fullWidth={false}
                           value={printerId || null}
                           onChange={(next) =>
@@ -1044,6 +1053,7 @@ export function AlignedOutboundDetailModal({
         />
 
         <UiDialog
+          className="hn-outbound-dialog"
           open={postConfirmOpen}
           onClose={() => setPostConfirmOpen(false)}
           maxWidth="xs"
@@ -1080,6 +1090,7 @@ export function AlignedOutboundDetailModal({
         </UiDialog>
 
         <UiDialog
+          className="hn-outbound-dialog"
           open={cancelOpen}
           onClose={guardBackdropClose(() => setCancelOpen(false))}
           maxWidth="xs"
@@ -1141,6 +1152,7 @@ export function AlignedOutboundDetailModal({
         </UiDialog>
 
         <UiDialog
+          className="hn-outbound-dialog"
           open={reprintOpen}
           onClose={guardBackdropClose(() => setReprintOpen(false))}
           maxWidth="xs"

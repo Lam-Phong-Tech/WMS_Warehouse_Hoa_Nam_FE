@@ -1,7 +1,11 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import {
   UiButton,
+  UiAlert,
+  UiDialog,
+  UiTextField,
   UiVuexyDateRangePicker,
 } from "@/shared/ui";
 import {
@@ -84,6 +88,9 @@ export default function PackingLabelPrintReport() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [actionEventId, setActionEventId] = useState<string | null>(null);
   const [actionPhase, setActionPhase] = useState<ActionPhase>("idle");
+  const [reprintRow, setReprintRow] = useState<PackingLabelEvent | null>(null);
+  const [reprintReason, setReprintReason] = useState("");
+  const [reprintReasonError, setReprintReasonError] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [online, setOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
@@ -136,14 +143,22 @@ export default function PackingLabelPrintReport() {
 
   const metrics = useMemo(() => {
     const total = report.events.length;
-    const printed = report.events.filter((row) => row.result === "PRINTED").length;
-    const failed = report.events.filter((row) => row.result === "PRINT_FAILED").length;
-    const reprinted = report.events.filter((row) => row.action === "REPRINT").length;
+    const printed = report.events.filter(
+      (row) => row.result === "PRINTED",
+    ).length;
+    const failed = report.events.filter(
+      (row) => row.result === "PRINT_FAILED",
+    ).length;
+    const reprinted = report.events.filter(
+      (row) => row.action === "REPRINT",
+    ).length;
     return { total, printed, failed, reprinted };
   }, [report.events]);
 
   const printedRate =
-    metrics.total > 0 ? Math.round((metrics.printed / metrics.total) * 1000) / 10 : 0;
+    metrics.total > 0
+      ? Math.round((metrics.printed / metrics.total) * 1000) / 10
+      : 0;
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -164,7 +179,10 @@ export default function PackingLabelPrintReport() {
   };
 
   const resetFilters = () => {
-    const next: [Dayjs, Dayjs] = [dayjs().startOf("month"), dayjs().endOf("day")];
+    const next: [Dayjs, Dayjs] = [
+      dayjs().startOf("month"),
+      dayjs().endOf("day"),
+    ];
     setDraftRange(next);
     period.setRange(next);
     setStatusFilter("");
@@ -178,20 +196,38 @@ export default function PackingLabelPrintReport() {
     report.refetch();
   };
 
-  const handlePrint = async (row: PackingLabelEvent) => {
+  const handlePrint = async (
+    row: PackingLabelEvent,
+    confirmedReason?: string,
+  ) => {
     if (actionPhase !== "idle" || !online) return;
 
     if (row.result === "PRINTED") {
-      const reason = window.prompt("Lý do in lại nhãn");
-      if (!reason?.trim()) return;
+      if (confirmedReason === undefined) {
+        setReprintRow(row);
+        setReprintReason("");
+        setReprintReasonError(false);
+        setNotice(null);
+        return;
+      }
+      const reason = confirmedReason.trim();
+      if (!reason) {
+        setReprintReasonError(true);
+        return;
+      }
       setActionEventId(row.eventId);
       setActionPhase("submitting");
       setNotice(null);
       try {
         const snapshots = await fetchLabelSnapshots();
         const snapshot = snapshots.find((item) => item.id === row.labelId);
-        const printerConfigId = row.printerId || report.printerOptions[0]?.value;
-        if (!snapshot?.documentId || snapshot.version === undefined || !printerConfigId) {
+        const printerConfigId =
+          row.printerId || report.printerOptions[0]?.value;
+        if (
+          !snapshot?.documentId ||
+          snapshot.version === undefined ||
+          !printerConfigId
+        ) {
           throw new Error("Thiếu thông tin phiên bản hoặc máy in.");
         }
         await reprintLabelSnapshot({
@@ -203,6 +239,7 @@ export default function PackingLabelPrintReport() {
           reason: reason.trim(),
         });
         setNotice({ tone: "success", text: "In lại nhãn thành công." });
+        setReprintRow(null);
         report.refetch();
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -219,7 +256,9 @@ export default function PackingLabelPrintReport() {
         if (uncertain) return;
       } finally {
         setActionEventId(null);
-        setActionPhase((current) => (current === "submitting" ? "idle" : current));
+        setActionPhase((current) =>
+          current === "submitting" ? "idle" : current,
+        );
       }
       return;
     }
@@ -231,7 +270,11 @@ export default function PackingLabelPrintReport() {
       const snapshots = await fetchLabelSnapshots();
       const snapshot = snapshots.find((item) => item.id === row.labelId);
       const printerConfigId = row.printerId || report.printerOptions[0]?.value;
-      if (!snapshot?.documentId || snapshot.version === undefined || !printerConfigId) {
+      if (
+        !snapshot?.documentId ||
+        snapshot.version === undefined ||
+        !printerConfigId
+      ) {
         throw new Error("Thiếu thông tin phiên bản hoặc máy in.");
       }
       await printLabelSnapshot({
@@ -241,7 +284,10 @@ export default function PackingLabelPrintReport() {
         ifMatch: snapshot.version,
         idempotencyKey: makeIdempotencyKey("rpt05-print"),
       });
-      setNotice({ tone: "success", text: "Đã gửi yêu cầu in nhãn thành công." });
+      setNotice({
+        tone: "success",
+        text: "Đã gửi yêu cầu in nhãn thành công.",
+      });
       report.refetch();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -258,7 +304,9 @@ export default function PackingLabelPrintReport() {
       if (uncertain) return;
     } finally {
       setActionEventId(null);
-      setActionPhase((current) => (current === "submitting" ? "idle" : current));
+      setActionPhase((current) =>
+        current === "submitting" ? "idle" : current,
+      );
     }
   };
 
@@ -281,24 +329,31 @@ export default function PackingLabelPrintReport() {
     !report.loading &&
     !report.error &&
     filteredRows.length === 0 &&
-    (keyword.trim() !== "" || tableKeyword.trim() !== "" || statusFilter !== "");
+    (keyword.trim() !== "" ||
+      tableKeyword.trim() !== "" ||
+      statusFilter !== "");
 
   const showFullFailure = !online || Boolean(report.error);
 
   return (
     <div className="hn-pkg-label" data-testid="rpt-tab-packing-label">
-      <div className="hn-pkg-label__crumb">⌂&nbsp;&nbsp; Báo cáo &nbsp;/&nbsp; Nhãn đóng gói</div>
+      <div className="hn-pkg-label__crumb">
+        ⌂&nbsp;&nbsp; Báo cáo &nbsp;/&nbsp; Nhãn đóng gói
+      </div>
 
       <header className="hn-pkg-label__header">
         <div>
-          <h1>{t("reports.packingLabel.title")}</h1>
+          <h1 className="hn-report-page-title">
+            {t("reports.packingLabel.title")}
+          </h1>
           <p>{t("reports.packingLabel.description")}</p>
         </div>
         <div className="hn-pkg-label__header-actions">
-          <span className="hn-pkg-label__demo-chip">ⓘ&nbsp; Dữ liệu minh họa</span>
           <UiButton
             appearance="outlined"
-            disabled={exporter.exporting || showFullFailure || draftInvalid}
+            disabled={
+              Boolean(exporter.exporting) || showFullFailure || draftInvalid
+            }
             onClick={exportXlsx}
           >
             {exporter.exporting ? "Đang xuất…" : "Xuất báo cáo"}
@@ -328,16 +383,26 @@ export default function PackingLabelPrintReport() {
 
       {notice ? (
         <div className={"hn-pkg-label__banner is-" + notice.tone} role="status">
-          {notice.tone === "success" ? <CheckCircleOutlined /> : <WarningOutlined />}
+          {notice.tone === "success" ? (
+            <CheckCircleOutlined />
+          ) : (
+            <WarningOutlined />
+          )}
           <span>{notice.text}</span>
-          <button type="button" aria-label="Đóng thông báo" onClick={() => setNotice(null)}>
+          <button
+            type="button"
+            aria-label="Đóng thông báo"
+            onClick={() => setNotice(null)}
+          >
             ×
           </button>
         </div>
       ) : null}
 
       <section className="hn-pkg-label__filter" aria-label="Bộ lọc báo cáo">
-        <div className={"hn-pkg-label__field " + (draftInvalid ? "has-error" : "")}>
+        <div
+          className={"hn-pkg-label__field " + (draftInvalid ? "has-error" : "")}
+        >
           <label>Khoảng thời gian</label>
           <UiVuexyDateRangePicker
             value={draftRange}
@@ -388,35 +453,131 @@ export default function PackingLabelPrintReport() {
         </div>
 
         <div className="hn-pkg-label__filter-meta">
-          <span>Kỳ báo cáo: {period.from.split("-").reverse().join("/")}–{period.to.split("-").reverse().join("/")}</span>
+          <span>
+            Kỳ báo cáo: {period.from.split("-").reverse().join("/")}–
+            {period.to.split("-").reverse().join("/")}
+          </span>
           <span>Múi giờ Việt Nam</span>
         </div>
         <div className="hn-pkg-label__filter-actions">
-          <UiButton appearance="tonal" disabled={draftInvalid || !online} onClick={applyFilters}>
+          <UiButton
+            appearance="tonal"
+            disabled={draftInvalid || !online}
+            onClick={applyFilters}
+          >
             Áp dụng
           </UiButton>
-          <UiButton appearance="text" onClick={resetFilters}>Đặt lại</UiButton>
+          <UiButton appearance="text" onClick={resetFilters}>
+            Đặt lại
+          </UiButton>
         </div>
       </section>
+      <UiDialog
+        open={Boolean(reprintRow)}
+        onClose={() => {
+          if (actionPhase !== "submitting") setReprintRow(null);
+        }}
+        title="In lại nhãn"
+        maxWidth="sm"
+        actions={
+          <>
+            <UiButton
+              appearance="outlined"
+              disabled={actionPhase === "submitting"}
+              onClick={() => setReprintRow(null)}
+            >
+              Hủy
+            </UiButton>
+            <UiButton
+              appearance="filled"
+              loading={actionPhase === "submitting"}
+              disabled={!online || actionPhase !== "idle"}
+              onClick={() => {
+                if (reprintRow) void handlePrint(reprintRow, reprintReason);
+              }}
+            >
+              Xác nhận in lại
+            </UiButton>
+          </>
+        }
+      >
+        <p style={{ color: "var(--ops-muted)", margin: "0 0 14px" }}>
+          {reprintRow?.labelCode} · {reprintRow?.outboundNo}
+        </p>
+        {notice && notice.tone !== "success" ? (
+          <div style={{ marginBottom: 14 }}>
+            <UiAlert tone={notice.tone}>{notice.text}</UiAlert>
+          </div>
+        ) : null}
+        <UiTextField
+          autoFocus
+          fullWidth
+          required
+          multiline
+          minRows={3}
+          label="Lý do in lại nhãn"
+          value={reprintReason}
+          disabled={actionPhase !== "idle"}
+          error={reprintReasonError}
+          helperText={
+            reprintReasonError
+              ? "Nhập lý do in lại nhãn."
+              : "Lý do được lưu trong nhật ký in nhãn."
+          }
+          onChange={(event) => {
+            setReprintReason(event.target.value);
+            setReprintReasonError(false);
+          }}
+        />
+      </UiDialog>
 
       {!showFullFailure ? (
         <>
-          <section className="hn-pkg-label__kpis" aria-label="Tổng quan in nhãn">
+          <section
+            className="hn-pkg-label__kpis"
+            aria-label="Tổng quan in nhãn"
+          >
             <article className="hn-pkg-label__kpi">
-              <span className="hn-pkg-label__kpi-icon is-blue"><PrinterOutlined /></span>
-              <div><span>Tổng nhãn</span><strong>{formatQuantity(metrics.total)}</strong><small>Nhãn duy nhất trong kỳ</small></div>
+              <span className="hn-pkg-label__kpi-icon is-blue">
+                <PrinterOutlined />
+              </span>
+              <div>
+                <span>Tổng nhãn</span>
+                <strong>{formatQuantity(metrics.total)}</strong>
+                <small>Nhãn duy nhất trong kỳ</small>
+              </div>
             </article>
             <article className="hn-pkg-label__kpi">
-              <span className="hn-pkg-label__kpi-icon is-green"><CheckCircleOutlined /></span>
-              <div><span>In thành công</span><strong>{formatQuantity(metrics.printed)}</strong><small className="is-green-text">{printedRate.toLocaleString("vi-VN")}% tổng nhãn</small></div>
+              <span className="hn-pkg-label__kpi-icon is-green">
+                <CheckCircleOutlined />
+              </span>
+              <div>
+                <span>In thành công</span>
+                <strong>{formatQuantity(metrics.printed)}</strong>
+                <small className="is-green-text">
+                  {printedRate.toLocaleString("vi-VN")}% tổng nhãn
+                </small>
+              </div>
             </article>
             <article className="hn-pkg-label__kpi">
-              <span className="hn-pkg-label__kpi-icon is-red"><WarningOutlined /></span>
-              <div><span>Nhãn lỗi</span><strong>{formatQuantity(metrics.failed)}</strong><small className="is-red-text">Cần kiểm tra</small></div>
+              <span className="hn-pkg-label__kpi-icon is-red">
+                <WarningOutlined />
+              </span>
+              <div>
+                <span>Nhãn lỗi</span>
+                <strong>{formatQuantity(metrics.failed)}</strong>
+                <small className="is-red-text">Cần kiểm tra</small>
+              </div>
             </article>
             <article className="hn-pkg-label__kpi">
-              <span className="hn-pkg-label__kpi-icon is-blue"><UndoOutlined /></span>
-              <div><span>Lượt in lại</span><strong>{formatQuantity(metrics.reprinted)}</strong><small>Lượt độc lập · Không cộng tổng nhãn</small></div>
+              <span className="hn-pkg-label__kpi-icon is-blue">
+                <UndoOutlined />
+              </span>
+              <div>
+                <span>Lượt in lại</span>
+                <strong>{formatQuantity(metrics.reprinted)}</strong>
+                <small>Lượt độc lập · Không cộng tổng nhãn</small>
+              </div>
             </article>
           </section>
 
@@ -426,26 +587,55 @@ export default function PackingLabelPrintReport() {
               <div className="hn-pkg-label__bar-wrap">
                 <div className="hn-pkg-label__bar">
                   <span style={{ width: String(printedRate) + "%" }} />
-                  <i style={{ width: String(Math.max(0, 100 - printedRate)) + "%" }} />
+                  <i
+                    style={{
+                      width: String(Math.max(0, 100 - printedRate)) + "%",
+                    }}
+                  />
                 </div>
                 <div className="hn-pkg-label__legend">
-                  <span><b className="is-green-dot" /> <strong>{formatQuantity(metrics.printed)}</strong> thành công</span>
-                  <span><b className="is-red-dot" /> <strong>{formatQuantity(metrics.failed)}</strong> lỗi</span>
+                  <span>
+                    <b className="is-green-dot" />{" "}
+                    <strong>{formatQuantity(metrics.printed)}</strong> thành
+                    công
+                  </span>
+                  <span>
+                    <b className="is-red-dot" />{" "}
+                    <strong>{formatQuantity(metrics.failed)}</strong> lỗi
+                  </span>
                 </div>
               </div>
-              <div className="hn-pkg-label__health-number"><strong>{printedRate.toLocaleString("vi-VN")}%</strong><span>Tỷ lệ in thành công</span></div>
-              <div className="hn-pkg-label__health-number"><strong>{formatQuantity(metrics.reprinted)}</strong><span>lượt in lại</span></div>
+              <div className="hn-pkg-label__health-number">
+                <strong>{printedRate.toLocaleString("vi-VN")}%</strong>
+                <span>Tỷ lệ in thành công</span>
+              </div>
+              <div className="hn-pkg-label__health-number">
+                <strong>{formatQuantity(metrics.reprinted)}</strong>
+                <span>lượt in lại</span>
+              </div>
             </div>
           </section>
         </>
       ) : null}
 
-      <section className={"hn-pkg-label__list " + (showFullFailure ? "is-full-state" : "")}>
+      <section
+        className={
+          "hn-pkg-label__list " + (showFullFailure ? "is-full-state" : "")
+        }
+      >
         {showFullFailure ? (
           <div className="hn-pkg-label__full-state">
-            <span className="hn-pkg-label__state-icon"><WarningOutlined /></span>
-            <h2>{online ? "Không thể tải dữ liệu" : "Không có kết nối mạng"}</h2>
-            <p>{online ? "Đã xảy ra lỗi khi tải báo cáo. Vui lòng thử lại." : "Kiểm tra kết nối và thử lại."}</p>
+            <span className="hn-pkg-label__state-icon">
+              <WarningOutlined />
+            </span>
+            <h2>
+              {online ? "Không thể tải dữ liệu" : "Không có kết nối mạng"}
+            </h2>
+            <p>
+              {online
+                ? "Đã xảy ra lỗi khi tải báo cáo. Vui lòng thử lại."
+                : "Kiểm tra kết nối và thử lại."}
+            </p>
             <UiButton
               appearance="tonal"
               startIcon={<ReloadOutlined />}
@@ -461,10 +651,14 @@ export default function PackingLabelPrintReport() {
               <div className="hn-pkg-label__list-title">
                 <h2>Danh sách nhãn</h2>
                 <span className="hn-pkg-label__count">
-                  {partial ? "Chưa cập nhật" : formatQuantity(filteredRows.length)}
+                  {partial
+                    ? "Chưa cập nhật"
+                    : formatQuantity(filteredRows.length)}
                 </span>
                 {partial ? (
-                  <span className="hn-pkg-label__partial">⚠ Dữ liệu có thể chưa đầy đủ</span>
+                  <span className="hn-pkg-label__partial">
+                    <WarningOutlined /> Dữ liệu có thể chưa đầy đủ
+                  </span>
                 ) : null}
               </div>
               <SearchInput
@@ -481,26 +675,53 @@ export default function PackingLabelPrintReport() {
               <table className="hn-pkg-label__table">
                 <thead>
                   <tr>
-                    <th>Mã nhãn /<br />Mã phiếu</th>
-                    <th>SKU /<br />Sản phẩm</th>
+                    <th>
+                      Mã nhãn /<br />
+                      Mã phiếu
+                    </th>
+                    <th>
+                      SKU /<br />
+                      Sản phẩm
+                    </th>
                     <th>Thời gian in</th>
                     <th>Trạng thái</th>
-                    <th>Số lần<br />in</th>
+                    <th>
+                      Số lần
+                      <br />
+                      in
+                    </th>
                     <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.loading ? (
-                    <tr><td colSpan={6}><div className="hn-pkg-label__empty"><span className="hn-pkg-label__spinner" />Đang tải dữ liệu…</div></td></tr>
+                    <tr>
+                      <td colSpan={6}>
+                        <div className="hn-pkg-label__empty">
+                          <span className="hn-pkg-label__spinner" />
+                          Đang tải dữ liệu…
+                        </div>
+                      </td>
+                    </tr>
                   ) : partial ? (
                     <tr>
                       <td colSpan={6}>
                         <div className="hn-pkg-label__empty">
-                          <span className="hn-pkg-label__state-icon is-small"><WarningOutlined /></span>
+                          <span className="hn-pkg-label__state-icon is-small">
+                            <WarningOutlined />
+                          </span>
                           <h3>Chưa tải được danh sách nhãn</h3>
                           <p>Tải lại để cập nhật danh sách nhãn.</p>
-                          <small>Xuất báo cáo tạm khóa: danh sách chưa đầy đủ.</small>
-                          <UiButton appearance="outlined" startIcon={<ReloadOutlined />} onClick={refresh}>Tải lại</UiButton>
+                          <small>
+                            Xuất báo cáo tạm khóa: danh sách chưa đầy đủ.
+                          </small>
+                          <UiButton
+                            appearance="outlined"
+                            startIcon={<ReloadOutlined />}
+                            onClick={refresh}
+                          >
+                            Tải lại
+                          </UiButton>
                         </div>
                       </td>
                     </tr>
@@ -515,32 +736,62 @@ export default function PackingLabelPrintReport() {
                     </tr>
                   ) : (
                     pageRows.map((row) => {
-                      const skuSummary = report.labels.get(row.labelId)?.skuSummary || "—";
-                      const busy = actionEventId === row.eventId && actionPhase === "submitting";
+                      const skuSummary =
+                        report.labels.get(row.labelId)?.skuSummary || "—";
+                      const busy =
+                        actionEventId === row.eventId &&
+                        actionPhase === "submitting";
                       return (
                         <tr
                           key={row.eventId}
-                          className={selectedRow?.eventId === row.eventId ? "is-selected" : ""}
+                          className={
+                            selectedRow?.eventId === row.eventId
+                              ? "is-selected"
+                              : ""
+                          }
                           onClick={() => setSelectedEventId(row.eventId)}
                         >
-                          <td><strong>{row.labelCode || "—"}</strong><span>{row.outboundNo || "—"}</span></td>
-                          <td><strong>{skuSummary.split(",")[0] || "—"}</strong><span>{row.recipient || "—"}</span></td>
-                          <td>{row.attemptedAt ? formatDateTime(row.attemptedAt) : "—"}</td>
-                          <td><span className={"hn-pkg-label__status " + resultClass(row.result)}><b />{resultLabel(row.result)}</span></td>
-                          <td className="is-center">{Math.max(1, row.attemptNo || 1)}</td>
                           <td>
-                            <UiButton
-                              appearance="outlined"
-                              size="small"
-                              startIcon={busy ? <ReloadOutlined /> : <UndoOutlined />}
-                              disabled={actionPhase !== "idle" || !online}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void handlePrint(row);
-                              }}
+                            <strong>{row.labelCode || "—"}</strong>
+                            <span>{row.outboundNo || "—"}</span>
+                          </td>
+                          <td>
+                            <strong>{skuSummary.split(",")[0] || "—"}</strong>
+                            <span>{row.recipient || "—"}</span>
+                          </td>
+                          <td>
+                            {row.attemptedAt
+                              ? formatDateTime(row.attemptedAt)
+                              : "—"}
+                          </td>
+                          <td>
+                            <span
+                              className={
+                                "hn-pkg-label__status " +
+                                resultClass(row.result)
+                              }
                             >
-                              {actionLabel(row, busy)}
-                            </UiButton>
+                              <b />
+                              {resultLabel(row.result)}
+                            </span>
+                          </td>
+                          <td className="is-center">
+                            {Math.max(1, row.attemptNo || 1)}
+                          </td>
+                          <td>
+                            <RowActionGroup>
+                              <RowActionButton
+                                kind="print"
+                                disabled={actionPhase !== "idle" || !online}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  void handlePrint(row);
+                                }}
+                                loading={busy}
+                              >
+                                {actionLabel(row, busy)}
+                              </RowActionButton>
+                            </RowActionGroup>
                           </td>
                         </tr>
                       );
@@ -550,22 +801,59 @@ export default function PackingLabelPrintReport() {
               </table>
             </div>
 
-            <div className="hn-pkg-label__list-footer">
+            <div className="hn-pkg-label__list-footer hn-report-pagination-footer">
               <div>
                 <strong>
-                  Hiển thị {filteredRows.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–
-                  {Math.min(safePage * PAGE_SIZE, filteredRows.length)} / {formatQuantity(filteredRows.length)} nhãn
+                  Hiển thị{" "}
+                  {filteredRows.length === 0
+                    ? 0
+                    : (safePage - 1) * PAGE_SIZE + 1}
+                  –{Math.min(safePage * PAGE_SIZE, filteredRows.length)} /{" "}
+                  {formatQuantity(filteredRows.length)} nhãn
                 </strong>
                 <span>Dữ liệu theo kỳ đã áp dụng</span>
               </div>
-              <nav className="hn-pkg-label__pagination" aria-label="Phân trang">
-                <button type="button" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>‹</button>
-                {Array.from({ length: Math.min(totalPages, 3) }, (_, index) => index + 1).map((value) => (
-                  <button key={value} type="button" className={safePage === value ? "is-active" : ""} onClick={() => setPage(value)}>{value}</button>
+              <nav
+                className="hn-pkg-label__pagination hn-report-pagination"
+                aria-label="Phân trang"
+              >
+                <button
+                  type="button"
+                  disabled={safePage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  ‹
+                </button>
+                {Array.from(
+                  { length: Math.min(totalPages, 3) },
+                  (_, index) => index + 1,
+                ).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={safePage === value ? "is-active" : ""}
+                    onClick={() => setPage(value)}
+                  >
+                    {value}
+                  </button>
                 ))}
                 {totalPages > 4 ? <span>…</span> : null}
-                {totalPages > 3 ? <button type="button" className={safePage === totalPages ? "is-active" : ""} onClick={() => setPage(totalPages)}>{totalPages}</button> : null}
-                <button type="button" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>›</button>
+                {totalPages > 3 ? (
+                  <button
+                    type="button"
+                    className={safePage === totalPages ? "is-active" : ""}
+                    onClick={() => setPage(totalPages)}
+                  >
+                    {totalPages}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  ›
+                </button>
               </nav>
             </div>
           </>

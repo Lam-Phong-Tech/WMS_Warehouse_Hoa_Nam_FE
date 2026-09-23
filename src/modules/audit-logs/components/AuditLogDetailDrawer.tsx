@@ -1,15 +1,6 @@
 import { useT } from "@/shared/i18n/useT";
 import { type ReactNode } from "react";
-import {
-  Box,
-  Grid,
-  Stack,
-  UiDialog,
-  UiStatusBadge,
-  SEMANTIC_LIGHT as S,
-  RADIUS,
-  TYPOGRAPHY,
-} from "@/shared/ui";
+import { Box, Grid, Stack, UiDialog, UiStatusBadge } from "@/shared/ui";
 import { toast } from "sonner";
 import type { AuditLog } from "../types/audit-logs.types";
 import { formatDateTime } from "@/shared/utils/format-date";
@@ -30,11 +21,13 @@ import { EMPTY_TEXT } from "@/shared/constants/display";
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Grid size={{ xs: 12, sm: 6 }}>
-      <Box sx={{ fontSize: 12, color: S.textMedium }}>{label}</Box>
+      <Box sx={{ fontSize: 12, color: "var(--settings-muted)", mb: 0.5 }}>
+        {label}
+      </Box>
       <Box
         sx={{
-          fontSize: TYPOGRAPHY.fontSizeSecondary,
-          color: S.textHigh,
+          fontSize: 14,
+          color: "var(--settings-text)",
           overflowWrap: "anywhere",
         }}
       >
@@ -64,31 +57,34 @@ function AuditDataBlock({ title, data }: { title: string; data: unknown }) {
         sx={{
           m: 0,
           mb: 1,
-          fontSize: TYPOGRAPHY.fontSizeBody,
-          fontWeight: 700,
-          color: S.textHigh,
+          fontSize: 16,
+          fontWeight: 600,
+          color: "var(--settings-ink)",
         }}
       >
         {title}
       </Box>
       <Box
+        className="hn-settings-card hn-audit-data-card"
         sx={{
-          bgcolor: S.bgSubtle,
-          border: `1px solid ${S.border}`,
-          borderRadius: `${RADIUS.card}px`,
+          bgcolor: "var(--settings-pale)",
+          border: "1px solid var(--settings-line)",
+          borderRadius: "10px",
           p: 2,
         }}
       >
         <Grid container spacing={1.5}>
           {entries.map((entry) => (
             <Grid key={entry.key} size={{ xs: 12, sm: 6 }}>
-              <Box sx={{ fontSize: 12, color: S.textMedium }}>
+              <Box
+                sx={{ fontSize: 12, color: "var(--settings-muted)", mb: 0.5 }}
+              >
                 {entry.label}
               </Box>
               <Box
                 sx={{
-                  fontSize: TYPOGRAPHY.fontSizeSecondary,
-                  color: S.textHigh,
+                  fontSize: 14,
+                  color: "var(--settings-text)",
                   overflowWrap: "anywhere",
                 }}
               >
@@ -130,6 +126,7 @@ export function AuditLogDetailDrawer({
 
   return (
     <UiDialog
+      className="hn-settings-dialog hn-audit-dialog"
       open={open}
       onClose={onClose}
       maxWidth="sm"
@@ -147,9 +144,10 @@ export function AuditLogDetailDrawer({
     >
       <Stack spacing={2}>
         <Box
+          className="hn-settings-card"
           sx={{
-            border: `1px solid ${S.border}`,
-            borderRadius: `${RADIUS.card}px`,
+            border: "1px solid var(--settings-line)",
+            borderRadius: "10px",
             p: 2,
           }}
         >
@@ -169,6 +167,7 @@ export function AuditLogDetailDrawer({
               value={
                 <UiStatusBadge
                   tone={auditActionTone(auditLog.action)}
+                  data-settings-tone={auditActionTone(auditLog.action)}
                   label={auditActionLabel(auditLog.action)}
                 />
               }

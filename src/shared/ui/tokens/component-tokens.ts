@@ -42,7 +42,7 @@ export const COMPONENT_TOKENS = {
   },
   /** [DX] dialog Vuexy cùng ngôn ngữ card (radius nhỏ); sheet mobile 16 */
   modal: {
-    radius: RADIUS.card,
+    radius: 12,
     sheetRadius: RADIUS.sheet,
     titleFontSize: TYPOGRAPHY.cardTitle.fontSize,
     titleFontWeight: TYPOGRAPHY.cardTitle.fontWeight,

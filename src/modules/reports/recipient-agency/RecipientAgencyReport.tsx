@@ -1,3 +1,4 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { Box, UiSelect, UiVuexyDateRangePicker } from "@/shared/ui";
@@ -28,10 +29,7 @@ import {
 } from "./recipient-agency-api";
 import "./recipient-agency-report.css";
 
-const DEMO_RANGE: [Dayjs, Dayjs] = [
-  dayjs("2026-09-04"),
-  dayjs("2026-09-10"),
-];
+const DEMO_RANGE: [Dayjs, Dayjs] = [dayjs("2026-09-04"), dayjs("2026-09-10")];
 
 type StatusFilter = "ALL" | "COMPLETE" | "INCOMPLETE";
 type ForcedState =
@@ -72,16 +70,16 @@ type DetailDocument = {
 };
 
 const COLORS = {
-  navy: "#073b7d",
-  ocean: "#075d96",
-  oceanDark: "#004e74",
-  cyan: "#079de7",
-  cyanSoft: "#edf9ff",
-  green: "#0aa653",
-  orange: "#f28a00",
-  muted: "#5275a5",
-  border: "#c9e7f4",
-  skeleton: "#dce8f4",
+  navy: "var(--ops-heading)",
+  ocean: "var(--ops-primary)",
+  oceanDark: "var(--ops-primary-hover)",
+  cyan: "var(--ops-link)",
+  cyanSoft: "var(--ops-pale)",
+  green: "var(--ops-success)",
+  orange: "var(--ops-warning)",
+  muted: "var(--ops-muted)",
+  border: "var(--ops-line)",
+  skeleton: "var(--ops-line)",
 } as const;
 
 function readForcedState(): ForcedState {
@@ -196,7 +194,9 @@ function MetricCard({
 }) {
   return (
     <section
-      className={"rpt07-kpi rpt07-kpi--" + tone + (warning ? " is-warning" : "")}
+      className={
+        "rpt07-kpi rpt07-kpi--" + tone + (warning ? " is-warning" : "")
+      }
       aria-label={label}
     >
       <div className="rpt07-kpi__icon">{loading ? null : icon}</div>
@@ -232,7 +232,9 @@ function PanelEmpty({
       <div className="rpt07-panel-empty__icon">
         {partial ? "—" : <InboxOutlined />}
       </div>
-      <strong>{partial ? "Chưa có dữ liệu" : "Chưa có dữ liệu trong kỳ"}</strong>
+      <strong>
+        {partial ? "Chưa có dữ liệu" : "Chưa có dữ liệu trong kỳ"}
+      </strong>
       <span>
         {partial
           ? "Chưa đủ dữ liệu để xác nhận báo cáo."
@@ -255,7 +257,10 @@ function Pagination({
 }) {
   if (totalPages <= 1) {
     return (
-      <div className="rpt07-pagination" aria-label="Phân trang">
+      <div
+        className="rpt07-pagination hn-report-pagination"
+        aria-label="Phân trang"
+      >
         <button type="button" className="is-active" disabled={disabled}>
           1
         </button>
@@ -302,7 +307,10 @@ function Pagination({
   }
 
   return (
-    <div className="rpt07-pagination" aria-label="Phân trang">
+    <div
+      className="rpt07-pagination hn-report-pagination"
+      aria-label="Phân trang"
+    >
       {nodes}
     </div>
   );
@@ -345,10 +353,11 @@ function DateRangeControl({
 }
 
 export default function RecipientAgencyReport() {
-  const forcedState = useMemo(readForcedState, []);
+  const forcedState = useMemo(() => readForcedState(), []);
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name) || "Kho Hoa Nam";
+    useAuthStore((state) => state.currentContext?.warehouse_name) ||
+    "Kho Hoa Nam";
 
   const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>(DEMO_RANGE);
   const [draftAgency, setDraftAgency] = useState("");
@@ -375,8 +384,7 @@ export default function RecipientAgencyReport() {
     forcedState === "loading" ||
     (source.isLoading && source.events.length === 0);
   const refreshing =
-    forcedState === "refreshing" ||
-    (!initialLoading && source.isFetching);
+    forcedState === "refreshing" || (!initialLoading && source.isFetching);
   const hardError =
     forcedState === "error" ||
     Boolean(source.error && source.events.length === 0);
@@ -437,17 +445,16 @@ export default function RecipientAgencyReport() {
 
     for (const event of filteredEvents) {
       const key = dealerKey(event);
-      const current =
-        groups.get(key) ?? {
-          key,
-          name: dealerName(event),
-          receiver: receiverName(event),
-          documents: new Set<string>(),
-          events: [],
-          gross: 0,
-          reversed: 0,
-          latestAt: "",
-        };
+      const current = groups.get(key) ?? {
+        key,
+        name: dealerName(event),
+        receiver: receiverName(event),
+        documents: new Set<string>(),
+        events: [],
+        gross: 0,
+        reversed: 0,
+        latestAt: "",
+      };
 
       current.events.push(event);
       if (current.receiver === "—") {
@@ -530,9 +537,7 @@ export default function RecipientAgencyReport() {
     const needle = search.trim().toLocaleLowerCase("vi");
     if (!needle) return dealers;
     return dealers.filter((row) => {
-      const docNos = row.events
-        .map((event) => event.outbound_no)
-        .join(" ");
+      const docNos = row.events.map((event) => event.outbound_no).join(" ");
       return (row.name + " " + row.receiver + " " + docNos)
         .toLocaleLowerCase("vi")
         .includes(needle);
@@ -540,7 +545,9 @@ export default function RecipientAgencyReport() {
   }, [dealers, search]);
 
   const noSearchResult =
-    (search.trim().length > 0 && tableRows.length === 0 && dealers.length > 0) ||
+    (search.trim().length > 0 &&
+      tableRows.length === 0 &&
+      dealers.length > 0) ||
     forcedState === "no-result";
   const reportEmpty =
     !initialLoading &&
@@ -564,9 +571,8 @@ export default function RecipientAgencyReport() {
   const topRows = dealers.slice(0, 5);
   const topMax = Math.max(
     10,
-    Math.ceil(
-      Math.max(0, ...topRows.map((row) => row.totalDocuments)) / 10,
-    ) * 10,
+    Math.ceil(Math.max(0, ...topRows.map((row) => row.totalDocuments)) / 10) *
+      10,
   );
   const axisTicks = Array.from({ length: 6 }, (_, index) =>
     Math.round((topMax * index) / 5),
@@ -602,14 +608,13 @@ export default function RecipientAgencyReport() {
       }
     >();
     for (const event of detailRow.events) {
-      const current =
-        map.get(event.outbound_document_id) ?? {
-          id: event.outbound_document_id,
-          no: event.outbound_no || "—",
-          date: event.occurred_at,
-          gross: 0,
-          reversed: 0,
-        };
+      const current = map.get(event.outbound_document_id) ?? {
+        id: event.outbound_document_id,
+        no: event.outbound_no || "—",
+        date: event.occurred_at,
+        gross: 0,
+        reversed: 0,
+      };
       if (event.event_type === "ISSUE_POSTED") {
         current.gross += event.quantity;
         current.date = event.occurred_at || current.date;
@@ -653,7 +658,8 @@ export default function RecipientAgencyReport() {
 
   const exportReport = () => {
     const selectedRecipientId = applied.agency
-      ? baseEvents.find((event) => dealerKey(event) === applied.agency)?.recipient.id ?? ""
+      ? (baseEvents.find((event) => dealerKey(event) === applied.agency)
+          ?.recipient.id ?? "")
       : "";
     void exporter.exportReport("xlsx", {
       reportCode: "outbound-by-agency",
@@ -696,19 +702,23 @@ export default function RecipientAgencyReport() {
 
       <header className="rpt07-header">
         <div className="rpt07-heading">
-          <h1>Báo cáo Xuất theo người nhận đại lý</h1>
+          <h1 className="hn-report-page-title">
+            Báo cáo Xuất theo người nhận đại lý
+          </h1>
           <p>Theo dõi sản lượng xuất và tình trạng giao nhận theo đại lý</p>
         </div>
         <div className="rpt07-head-actions">
-          <div className="rpt07-demo-note" role="note">
-            <span>ⓘ</span>
-            Dữ liệu minh họa
-          </div>
-          <div className="rpt07-warehouse-card" aria-label={"Kho " + warehouseName}>
+          <div
+            className="rpt07-warehouse-card"
+            aria-label={"Kho " + warehouseName}
+          >
             <StockOutlined />
             <span>
               <strong>{warehouseName}</strong>
-              <small><i />Đang hoạt động</small>
+              <small>
+                <i />
+                Đang hoạt động
+              </small>
             </span>
           </div>
           <div className="rpt07-export-wrap">
@@ -724,7 +734,11 @@ export default function RecipientAgencyReport() {
               disabled={exportDisabled}
               onClick={exportReport}
             >
-              {exporting ? <span className="rpt07-spinner" /> : <DownloadOutlined />}
+              {exporting ? (
+                <span className="rpt07-spinner" />
+              ) : (
+                <DownloadOutlined />
+              )}
               {exporting ? "Đang xuất..." : "Xuất báo cáo"}
             </button>
           </div>
@@ -798,7 +812,11 @@ export default function RecipientAgencyReport() {
             </button>
           </div>
           <div className="rpt07-filter-reset">
-            <button type="button" onClick={resetFilters} disabled={initialLoading}>
+            <button
+              type="button"
+              onClick={resetFilters}
+              disabled={initialLoading}
+            >
               Đặt lại
             </button>
           </div>
@@ -815,12 +833,17 @@ export default function RecipientAgencyReport() {
       </section>
 
       {partial ? (
-        <section className="rpt07-partial-banner" role="status" aria-live="polite">
+        <section
+          className="rpt07-partial-banner"
+          role="status"
+          aria-live="polite"
+        >
           <WarningOutlined />
           <div>
             <strong>Dữ liệu chưa đầy đủ</strong>
             <span>
-              Một số nguồn chưa đồng bộ. Số liệu có thể thay đổi sau khi tải lại.
+              Một số nguồn chưa đồng bộ. Số liệu có thể thay đổi sau khi tải
+              lại.
             </span>
             <small>Cập nhật gần nhất: —</small>
           </div>
@@ -899,7 +922,10 @@ export default function RecipientAgencyReport() {
             />
           </section>
 
-          <section className="rpt07-analysis-grid" aria-label="Phân tích theo đại lý">
+          <section
+            className="rpt07-analysis-grid"
+            aria-label="Phân tích theo đại lý"
+          >
             <div className="rpt07-panel rpt07-bar-panel">
               <div className="rpt07-panel__header">
                 <div>
@@ -922,7 +948,11 @@ export default function RecipientAgencyReport() {
               ) : reportEmpty ? (
                 <PanelEmpty />
               ) : (
-                <div className="rpt07-bars" role="img" aria-label="Top đại lý theo số phiếu xuất">
+                <div
+                  className="rpt07-bars"
+                  role="img"
+                  aria-label="Top đại lý theo số phiếu xuất"
+                >
                   <div className="rpt07-bars__rows">
                     {topRows.map((row) => (
                       <div className="rpt07-bar-row" key={row.key}>
@@ -953,7 +983,11 @@ export default function RecipientAgencyReport() {
               )}
             </div>
 
-            <div className={"rpt07-panel rpt07-ratio-panel" + (warning ? " is-warning" : "")}>
+            <div
+              className={
+                "rpt07-panel rpt07-ratio-panel" + (warning ? " is-warning" : "")
+              }
+            >
               <div className="rpt07-panel__header">
                 <div>
                   <h2>Tỷ lệ hoàn tất</h2>
@@ -1003,11 +1037,20 @@ export default function RecipientAgencyReport() {
                       <strong>{formatNumber(documentTotals.complete)}</strong>
                       <span>Hoàn tất</span>
                     </div>
-                    <div className={"rpt07-legend-row is-warning" + (warning ? " is-emphasized" : "")}>
+                    <div
+                      className={
+                        "rpt07-legend-row is-warning" +
+                        (warning ? " is-emphasized" : "")
+                      }
+                    >
                       <i />
                       <strong>{formatNumber(documentTotals.incomplete)}</strong>
-                      <span>{warning ? "phiếu chưa hoàn tất" : "Chưa hoàn tất"}</span>
-                      {warning ? <small>{incompleteLabel} tổng phiếu</small> : null}
+                      <span>
+                        {warning ? "phiếu chưa hoàn tất" : "Chưa hoàn tất"}
+                      </span>
+                      {warning ? (
+                        <small>{incompleteLabel} tổng phiếu</small>
+                      ) : null}
                     </div>
                     <div className="rpt07-top-five">
                       <span>Top 5 đại lý</span>
@@ -1020,7 +1063,10 @@ export default function RecipientAgencyReport() {
             </div>
           </section>
 
-          <section className="rpt07-table-card" aria-labelledby="rpt07-table-title">
+          <section
+            className="rpt07-table-card"
+            aria-labelledby="rpt07-table-title"
+          >
             <div className="rpt07-table-toolbar">
               <div className="rpt07-table-title">
                 <h2 id="rpt07-table-title">Danh sách đại lý nhận hàng</h2>
@@ -1065,12 +1111,25 @@ export default function RecipientAgencyReport() {
                   {initialLoading ? (
                     Array.from({ length: 5 }).map((_, index) => (
                       <tr key={"loading-" + index}>
-                        <td><LoadingBar width="78%" /><LoadingBar width="55%" height={9} /></td>
-                        <td><LoadingBar width="30px" /></td>
-                        <td><LoadingBar width="46px" /></td>
-                        <td><LoadingBar width="78%" /></td>
-                        <td><LoadingBar width="72px" /></td>
-                        <td><LoadingBar width="36px" /></td>
+                        <td>
+                          <LoadingBar width="78%" />
+                          <LoadingBar width="55%" height={9} />
+                        </td>
+                        <td>
+                          <LoadingBar width="30px" />
+                        </td>
+                        <td>
+                          <LoadingBar width="46px" />
+                        </td>
+                        <td>
+                          <LoadingBar width="78%" />
+                        </td>
+                        <td>
+                          <LoadingBar width="72px" />
+                        </td>
+                        <td>
+                          <LoadingBar width="36px" />
+                        </td>
                       </tr>
                     ))
                   ) : partial ? (
@@ -1109,7 +1168,9 @@ export default function RecipientAgencyReport() {
                             <InboxOutlined />
                           </div>
                           <strong>Chưa có dữ liệu trong kỳ</strong>
-                          <span>Hãy chọn khoảng thời gian khác để xem báo cáo.</span>
+                          <span>
+                            Hãy chọn khoảng thời gian khác để xem báo cáo.
+                          </span>
                           <button
                             type="button"
                             className="rpt07-primary-button"
@@ -1130,10 +1191,16 @@ export default function RecipientAgencyReport() {
                       return (
                         <tr key={row.key}>
                           <td data-label="Đại lý / Người nhận">
-                            <strong className="rpt07-dealer-name" title={row.name}>
+                            <strong
+                              className="rpt07-dealer-name"
+                              title={row.name}
+                            >
                               {row.name}
                             </strong>
-                            <span className="rpt07-receiver-name" title={row.receiver}>
+                            <span
+                              className="rpt07-receiver-name"
+                              title={row.receiver}
+                            >
                               {row.receiver}
                             </span>
                           </td>
@@ -1164,13 +1231,15 @@ export default function RecipientAgencyReport() {
                             {formatDate(row.latestAt)}
                           </td>
                           <td data-label="Chi tiết">
-                            <button
-                              type="button"
-                              className="rpt07-detail-button"
-                              onClick={() => setDetailRow(row)}
-                            >
-                              Xem <span>›</span>
-                            </button>
+                            <RowActionGroup>
+                              <RowActionButton
+                                kind="view"
+                                type="button"
+                                onClick={() => setDetailRow(row)}
+                              >
+                                Xem
+                              </RowActionButton>
+                            </RowActionGroup>
                           </td>
                         </tr>
                       );
@@ -1180,7 +1249,7 @@ export default function RecipientAgencyReport() {
               </table>
             </div>
 
-            <div className="rpt07-table-footer">
+            <div className="rpt07-table-footer hn-report-pagination-footer">
               <div className="rpt07-table-footer__count">
                 {initialLoading ? (
                   <LoadingBar width="135px" />
@@ -1191,17 +1260,20 @@ export default function RecipientAgencyReport() {
                 ) : (
                   <span>
                     Hiển thị {(visiblePage - 1) * 5 + 1}–
-                    {Math.min(visiblePage * 5, tableRows.length)} / {tableRows.length} đại lý
+                    {Math.min(visiblePage * 5, tableRows.length)} /{" "}
+                    {tableRows.length} đại lý
                   </span>
                 )}
               </div>
               <div className="rpt07-table-footer__meta">
-                Dữ liệu minh họa · {fromDisplay}–{toDisplay}
+                {fromDisplay}–{toDisplay}
               </div>
               <Pagination
                 page={visiblePage}
                 totalPages={totalPages}
-                disabled={initialLoading || partial || reportEmpty || noSearchResult}
+                disabled={
+                  initialLoading || partial || reportEmpty || noSearchResult
+                }
                 onChange={setPage}
               />
             </div>
@@ -1244,7 +1316,11 @@ export default function RecipientAgencyReport() {
                       <td>{formatDate(document.date)}</td>
                       <td>{formatNumber(document.quantity)}</td>
                       <td>
-                        <span className={document.incomplete ? "is-pending" : "is-complete"}>
+                        <span
+                          className={
+                            document.incomplete ? "is-pending" : "is-complete"
+                          }
+                        >
                           {document.incomplete ? "Chưa hoàn tất" : "Hoàn tất"}
                         </span>
                       </td>

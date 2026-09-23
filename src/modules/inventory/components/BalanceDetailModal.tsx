@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   Box,
   Grid,
@@ -35,8 +35,20 @@ import type { StockMovementRow } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  ActionIconButton,
+  RowActionButton,
+} from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import "./inventory-dialog.css";
+
+const INVENTORY_DIALOG_TABLE_HEADER_STYLE: CSSProperties = {
+  background: "var(--invd-pale)",
+  color: "var(--invd-heading)",
+  fontSize: 12,
+  padding: "10px 9px",
+  borderBottom: "1px solid var(--invd-line)",
+};
 
 type RawRecord = Record<string, unknown>;
 
@@ -79,6 +91,7 @@ function CodeText({ children }: { children: ReactNode }) {
   return (
     <Box
       component="code"
+      className="hn-inventory-code"
       sx={{
         fontFamily: "monospace",
         fontSize: 13,
@@ -95,11 +108,13 @@ function CodeText({ children }: { children: ReactNode }) {
 
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Grid size={{ xs: 12, md: 6 }}>
+    <Grid size={{ xs: 12, md: 6 }} className="hn-inventory-detail-field">
       <Box sx={{ display: "block" }}>
         <UiText variant="caption">{label}</UiText>
       </Box>
-      <UiText variant="body">{value}</UiText>
+      <UiText variant="body" className="hn-inventory-detail-value">
+        {value}
+      </UiText>
     </Grid>
   );
 }
@@ -107,6 +122,7 @@ function DetailField({ label, value }: { label: string; value: ReactNode }) {
 function StatBox({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Box
+      className="hn-inventory-stat"
       sx={{
         border: "1px solid",
         borderColor: "divider",
@@ -136,6 +152,7 @@ function StatBox({ label, value }: { label: string; value: ReactNode }) {
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
     <Box
+      className="hn-inventory-section-title"
       sx={{
         fontSize: 14,
         fontWeight: 700,
@@ -391,12 +408,14 @@ export function BalanceDetailModal({
   return (
     <UiDialog
       {...dialog.dialogProps}
+      className="hn-inventory-dialog"
       maxWidth="lg"
       fullWidth
       title={
         <Box sx={{ position: "relative", pr: 6 }}>
           {t("inventory.detail.title", { sku: balance.sku })}
           <ActionIconButton
+            className="hn-inventory-dialog-close"
             kind="close"
             label={t("common.close")}
             onClick={dialog.close}
@@ -405,8 +424,9 @@ export function BalanceDetailModal({
         </Box>
       }
     >
-      <Stack spacing={2}>
+      <Stack spacing={2} className="hn-inventory-dialog-body">
         <Box
+          className="hn-inventory-detail-panel"
           sx={{
             border: "1px solid",
             borderColor: "divider",
@@ -421,6 +441,7 @@ export function BalanceDetailModal({
                 <Stack
                   direction="row"
                   spacing={0.5}
+                  useFlexGap
                   sx={{ alignItems: "center" }}
                 >
                   <CodeText>{balance.sku}</CodeText>
@@ -460,6 +481,7 @@ export function BalanceDetailModal({
                 <Stack
                   direction="row"
                   spacing={1}
+                  useFlexGap
                   sx={{ alignItems: "center" }}
                 >
                   <UiStatusBadge
@@ -521,7 +543,7 @@ export function BalanceDetailModal({
           </Grid>
         </Box>
 
-        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", rowGap: 2 }}>
+        <Stack className="hn-inventory-stats">
           <StatBox
             label={t("inventory.detail.statAvailable")}
             value={formatQty(balance.available, balance.uom)}
@@ -555,6 +577,8 @@ export function BalanceDetailModal({
             })}
           </SectionTitle>
           <ResponsiveDataTable<RawRecord>
+            headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+            maxBodyHeight="clamp(240px, 45dvh, 520px)"
             rows={(subledger?.items as RawRecord[]) ?? []}
             columns={itemColumns}
             rowKey={(row) => text(row.id, String(Math.random()))}
@@ -570,6 +594,8 @@ export function BalanceDetailModal({
             })}
           </SectionTitle>
           <ResponsiveDataTable<RawRecord>
+            headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+            maxBodyHeight="clamp(240px, 45dvh, 520px)"
             rows={(subledger?.containers as RawRecord[]) ?? []}
             columns={containerColumns}
             rowKey={(row) => text(row.id, String(Math.random()))}
@@ -585,6 +611,9 @@ export function BalanceDetailModal({
             })}
           </SectionTitle>
           <ResponsiveDataTable<StockMovementRow>
+            actionColumnWidth={128}
+            headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+            maxBodyHeight="clamp(240px, 45dvh, 520px)"
             rows={movements}
             columns={movementColumns}
             rowKey={(row) => row.id}
@@ -593,13 +622,12 @@ export function BalanceDetailModal({
             renderRowActions={
               onTraceMovement
                 ? (row) => (
-                    <ActionButton
-                      kind="history"
-                      sx={{ whiteSpace: "nowrap" }}
+                    <RowActionButton
+                      kind="trace"
                       onClick={() => onTraceMovement(String(row.id))}
                     >
                       {t("inventory.detail.trace")}
-                    </ActionButton>
+                    </RowActionButton>
                   )
                 : undefined
             }

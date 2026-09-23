@@ -57,6 +57,8 @@ export interface DocumentAttachmentsPanelProps {
   documentId: string;
   /** Phiếu đã POSTED/CANCELLED — BE trả 409 STATE_CONFLICT nếu vẫn cố upload. */
   disabled?: boolean;
+  /** Optional screen-scoped presentation for the preview and deletion portals. */
+  dialogClassName?: string;
 }
 
 /**
@@ -164,6 +166,7 @@ export function DocumentAttachmentsPanel({
   documentType,
   documentId,
   disabled = false,
+  dialogClassName,
 }: DocumentAttachmentsPanelProps) {
   const t = useT();
   const queryClient = useQueryClient();
@@ -525,6 +528,7 @@ export function DocumentAttachmentsPanel({
 
       {/* Xem chứng từ ngay tại chỗ: trước đây muốn nhìn ảnh phải tải tệp về máy. */}
       <Dialog
+        className={dialogClassName}
         open={previewAttachment !== null}
         onClose={() => setPreviewId(null)}
         maxWidth="lg"
@@ -625,6 +629,7 @@ export function DocumentAttachmentsPanel({
 
       {/* Xoá chứng từ là hành động không hoàn tác — trước đây bấm icon là mất luôn. */}
       <Dialog
+        className={dialogClassName}
         open={deleteConfirmId !== null}
         onClose={() => setDeleteConfirmId(null)}
         maxWidth="xs"

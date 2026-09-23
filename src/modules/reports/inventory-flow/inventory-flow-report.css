@@ -26,12 +26,12 @@
 
 .hn-rpt01 {
   /* Bảng màu demo — phần đã có token */
-  --ink: var(--wms-text-strong);
-  --muted: var(--wms-text-medium);
-  --line: var(--wms-border);
-  --primary: var(--wms-primary);
-  --primary-dark: var(--wms-primary-dark);
-  --primary-soft: var(--wms-primary-soft);
+  --ink: var(--ops-heading);
+  --muted: var(--ops-muted);
+  --line: var(--ops-line);
+  --primary: var(--ops-primary);
+  --primary-dark: var(--ops-primary-hover);
+  --primary-soft: var(--ops-pale);
   --teal: var(--wms-info);
   --green: var(--wms-success);
   --green-soft: var(--wms-success-soft);
@@ -41,38 +41,42 @@
   --red-soft: var(--wms-error-soft);
   --blue: var(--wms-info);
   --blue-soft: var(--wms-info-soft);
-  --surface: var(--wms-bg-surface);
-  --surface-muted: #faf9fc;
-  --shadow: var(--wms-shadow-card);
-  --floating-shadow: var(--wms-shadow-floating);
-  --radius: var(--wms-radius-card);
+  --surface: var(--ops-surface);
+  --surface-muted: var(--ops-canvas);
+  --shadow: var(--ops-shadow-card);
+  --floating-shadow: var(--ops-shadow-floating);
+  --radius: var(--ops-radius-card);
 
   /* Sắc riêng của demo, chưa có token tương ứng */
-  --hnf-chip-neutral-bg: #ebeaf0;
-  --hnf-chip-neutral-fg: #554f61;
-  --hnf-chip-info-fg: #155faf;
+  --hnf-chip-neutral-bg: var(--ops-pale);
+  --hnf-chip-neutral-fg: var(--ops-muted);
+  --hnf-chip-info-fg: var(--ops-link);
   --hnf-match-fg: #157a46;
-  --hnf-ghost-border: #d9d6e3;
+  --hnf-ghost-border: var(--ops-line);
   --hnf-alert-warning-fg: #6f430c;
   --hnf-alert-error-fg: #8d2130;
   --hnf-alert-info-fg: #154f91;
-  --hnf-axis: #5f596a;
-  --hnf-grid-line: #eceaf0;
-  --hnf-table-line: #eeeaf3;
-  --hnf-row-line: rgba(47, 43, 61, 0.07);
-  --hnf-card-line: rgba(47, 43, 61, 0.06);
-  --hnf-segment-bg: rgba(47, 43, 61, 0.06);
+  --hnf-axis: var(--ops-muted);
+  --hnf-grid-line: var(--ops-line);
+  --hnf-table-line: var(--ops-line);
+  --hnf-row-line: var(--ops-line);
+  --hnf-card-line: var(--ops-line);
+  --hnf-segment-bg: var(--ops-pale);
   --hnf-segment-shadow: 0 2px 6px rgba(47, 43, 61, 0.11);
-  --hnf-equation-card-bg: #fcfbff;
-  --hnf-equation-neutral: #8f8b99;
-  --hnf-equation-neutral-soft: rgba(47, 43, 61, 0.07);
-  --hnf-equation-line: #ebe9f0;
+  --hnf-equation-card-bg: var(--ops-surface);
+  --hnf-equation-neutral: var(--ops-muted);
+  --hnf-equation-neutral-soft: var(--ops-pale);
+  --hnf-equation-line: var(--ops-line);
   --hnf-equation-shadow: 0 2px 7px rgba(47, 43, 61, 0.05);
-  --hnf-equation-op-line: #e4e1eb;
+  --hnf-equation-op-line: var(--ops-line);
   --hnf-equation-op-shadow: 0 3px 8px rgba(47, 43, 61, 0.11);
-  --hnf-equation-note-bg: rgba(47, 43, 61, 0.035);
-  --hnf-result-gradient: linear-gradient(135deg, #7367f0 0%, #9188f4 100%);
-  --hnf-result-shadow: 0 8px 18px rgba(115, 103, 240, 0.24);
+  --hnf-equation-note-bg: var(--ops-pale);
+  --hnf-result-gradient: linear-gradient(
+    135deg,
+    var(--ops-primary),
+    var(--ops-link)
+  );
+  --hnf-result-shadow: var(--ops-shadow-card);
   --hnf-legend-inbound: #28c76f;
   --hnf-legend-product: #ff6b76;
   --hnf-legend-component: #ffb96a;
@@ -88,14 +92,14 @@
   --hnf-chart-component: var(--wms-warning);
   --hnf-chart-reversal: var(--wms-info);
   --hnf-chart-closing: var(--wms-primary);
-  --hnf-overlay: rgba(47, 43, 61, 0.35);
-  --hnf-overlay-shadow: 0 18px 48px rgba(47, 43, 61, 0.24);
-  --hnf-modal-line: rgba(47, 43, 61, 0.1);
+  --hnf-overlay: color-mix(in srgb, var(--ops-heading) 40%, transparent);
+  --hnf-overlay-shadow: var(--ops-shadow-dialog);
+  --hnf-modal-line: var(--ops-line);
   --hnf-insight-shadow: 0 6px 20px rgba(47, 43, 61, 0.1);
-  --hnf-skeleton: #e9e8ee;
-  --hnf-focus: #2168d4;
-  --hnf-scrollbar-thumb: rgba(47, 43, 61, 0.22);
-  --hnf-scrollbar-thumb-hover: rgba(47, 43, 61, 0.38);
+  --hnf-skeleton: var(--ops-line);
+  --hnf-focus: var(--ops-link);
+  --hnf-scrollbar-thumb: var(--ops-line);
+  --hnf-scrollbar-thumb-hover: var(--ops-muted);
 
   color: var(--ink);
   font-size: 15px;
@@ -119,21 +123,21 @@
   box-sizing: border-box;
 }
 
-.hn-rpt01 button,
+.hn-rpt01 button:not(.hn-row-action),
 .hn-rpt01 input {
   font: inherit;
 }
 
-.hn-rpt01 button,
+.hn-rpt01 button:not(.hn-row-action),
 .hn-rpt01 input {
-  min-height: 40px;
+  min-height: var(--ops-control-height);
 }
 
-.hn-rpt01 button {
+.hn-rpt01 button:not(.hn-row-action) {
   cursor: pointer;
 }
 
-.hn-rpt01 button:focus-visible,
+.hn-rpt01 button:not(.hn-row-action):focus-visible,
 .hn-rpt01 input:focus-visible,
 .hn-rpt01 summary:focus-visible,
 .hn-rpt01 [tabindex]:focus-visible {
@@ -190,20 +194,26 @@
 .hn-rpt01 h3,
 .hn-rpt01 p {
   margin-top: 0;
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 700;
+  color: var(--ops-heading);
 }
 .hn-rpt01 h1 {
   margin-bottom: 4px;
   font-size: 24px;
   line-height: 38px;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 0;
+  color: var(--ops-heading);
 }
 .hn-rpt01 h2,
 .hn-rpt01 h3 {
   margin-bottom: 0;
   font-size: 18px;
-  line-height: 24px;
+  line-height: 26px;
   font-weight: 600;
+  color: var(--ops-heading);
 }
 .hn-rpt01 .page-header p {
   max-width: 680px;
@@ -308,7 +318,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 38px;
+  min-height: var(--ops-control-height);
   padding: 8px 16px;
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -331,7 +341,7 @@
   color: var(--wms-on-primary);
 }
 .hn-rpt01 .button-primary:hover {
-  background: var(--primary-dark);
+  background: var(--ops-primary-hover);
 }
 .hn-rpt01 .button-primary:disabled {
   cursor: not-allowed;
@@ -584,8 +594,8 @@
   --equation-soft: rgba(0, 186, 209, 0.11);
 }
 .hn-rpt01 .equation-item[data-tone="closing"] {
-  --equation-accent: var(--wms-primary);
-  --equation-soft: rgba(115, 103, 240, 0.15);
+  --equation-accent: var(--ops-primary);
+  --equation-soft: var(--ops-pale);
 }
 .hn-rpt01 .equation-item-head {
   display: grid;
@@ -1311,6 +1321,10 @@
 }
 .hn-rpt01 .page-header h1 {
   margin: 0;
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 700;
+  color: var(--ops-heading);
 }
 .hn-rpt01 .page-header p {
   margin: 4px 0 0;
@@ -1445,8 +1459,8 @@
   padding: 10px 12px;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  background: var(--surface-muted);
-  color: var(--muted);
+  background: var(--ops-pale);
+  color: var(--ops-heading);
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1505,20 +1519,6 @@
   color: var(--hnf-match-fg);
   font-size: 11px;
   font-weight: 700;
-}
-.hn-rpt01 .mini-action {
-  min-height: 30px;
-  padding: 4px 9px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--primary-soft);
-  color: var(--primary-dark);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-}
-.hn-rpt01 .mini-action:hover {
-  background: color-mix(in srgb, var(--primary) 25%, var(--surface));
 }
 .hn-rpt01 .report-snapshot-grid {
   display: grid;
@@ -1644,7 +1644,7 @@
 .hn-rpt01 .modal {
   z-index: 71;
   border: 1px solid var(--hnf-modal-line);
-  border-radius: var(--radius);
+  border-radius: var(--ops-radius-dialog);
   background: var(--surface);
   box-shadow: var(--hnf-overlay-shadow);
 }
@@ -1667,8 +1667,10 @@
 }
 .hn-rpt01 .modal-head h2 {
   margin: 5px 0 8px;
-  font-size: 20px;
-  line-height: 28px;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--ops-heading);
 }
 .hn-rpt01 .modal-head .eyebrow {
   color: var(--primary-dark);
@@ -1818,7 +1820,6 @@
    Không cần khối `prefers-reduced-motion` riêng: hn-motion.css đã tắt toàn cục.
    ═════════════════════════════════════════════════════════════════════════ */
 .hn-rpt01 .button,
-.hn-rpt01 .mini-action,
 .hn-rpt01 .legend-button,
 .hn-rpt01 .modal-close,
 .hn-rpt01 .chart-table summary {
@@ -1832,12 +1833,10 @@
 }
 
 /* Phản hồi bấm: nhấc nhẹ khi rê, "lún" khi nhấn — cùng nhịp với `.ant-btn`. */
-.hn-rpt01 .button:not(:disabled):hover,
-.hn-rpt01 .mini-action:not(:disabled):hover {
+.hn-rpt01 .button:not(:disabled):hover {
   transform: translateY(-1px);
 }
 .hn-rpt01 .button:not(:disabled):active,
-.hn-rpt01 .mini-action:not(:disabled):active,
 .hn-rpt01 .legend-button:active {
   transform: translateY(0) scale(0.98);
   transition-duration: var(--hn-dur-instant);
@@ -1976,13 +1975,13 @@
 }
 
 @media (max-width: 979px) {
-  .hn-rpt01 button,
+  .hn-rpt01 button:not(.hn-row-action),
   .hn-rpt01 input {
-    min-height: 44px;
+    min-height: var(--ops-control-height);
   }
   .hn-rpt01 .button,
   .hn-rpt01 .legend-button {
-    min-height: 44px;
+    min-height: var(--ops-control-height);
   }
   .hn-rpt01 .refresh-block {
     grid-column: 1 / -1;
@@ -2144,6 +2143,9 @@
   }
   .hn-rpt01 h1 {
     font-size: 24px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
   }
   .hn-rpt01 .scope-block .chip-neutral {
     display: none;
@@ -2179,9 +2181,9 @@
 }
 
 @media (pointer: coarse) {
-  .hn-rpt01 button,
+  .hn-rpt01 button:not(.hn-row-action),
   .hn-rpt01 input {
-    min-height: 44px;
+    min-height: var(--ops-control-height);
   }
 }
 
@@ -2191,44 +2193,48 @@
    (src/shared/ui/tokens/css-vars-dark.css) nên ở đây chỉ khai lại các sắc
    riêng `--hnf-*` và mấy chỗ demo vẽ gradient cứng. Cùng cơ chế với RPT-02. */
 :root[data-theme="dark"] .hn-rpt01 {
-  --hnf-surface-muted: #35354f;
-  --hnf-equation-card-bg: #2c2c44;
-  --hnf-chip-neutral-bg: #41415d;
-  --hnf-chip-neutral-fg: #d8d4e8;
-  --hnf-chip-info-fg: #8fc2ff;
+  --hnf-surface-muted: var(--ops-canvas);
+  --hnf-equation-card-bg: var(--ops-surface);
+  --hnf-chip-neutral-bg: var(--ops-pale);
+  --hnf-chip-neutral-fg: var(--ops-muted);
+  --hnf-chip-info-fg: var(--ops-link);
   --hnf-match-fg: #70e6a7;
-  --hnf-ghost-border: rgba(231, 227, 252, 0.18);
+  --hnf-ghost-border: var(--ops-line);
   --hnf-alert-warning-fg: #ffc27a;
   --hnf-alert-error-fg: #ff9ba0;
   --hnf-alert-info-fg: #8fc2ff;
-  --hnf-axis: rgba(231, 227, 252, 0.68);
-  --hnf-grid-line: #44445e;
-  --hnf-table-line: rgba(231, 227, 252, 0.08);
-  --hnf-row-line: rgba(231, 227, 252, 0.08);
-  --hnf-card-line: rgba(231, 227, 252, 0.08);
-  --hnf-segment-bg: rgba(231, 227, 252, 0.07);
+  --hnf-axis: var(--ops-muted);
+  --hnf-grid-line: var(--ops-line);
+  --hnf-table-line: var(--ops-line);
+  --hnf-row-line: var(--ops-line);
+  --hnf-card-line: var(--ops-line);
+  --hnf-segment-bg: var(--ops-pale);
   --hnf-segment-shadow: 0 2px 6px rgba(12, 12, 24, 0.22);
-  --hnf-equation-neutral: #8f8b99;
-  --hnf-equation-neutral-soft: rgba(231, 227, 252, 0.08);
-  --hnf-equation-line: #474761;
+  --hnf-equation-neutral: var(--ops-muted);
+  --hnf-equation-neutral-soft: var(--ops-pale);
+  --hnf-equation-line: var(--ops-line);
   --hnf-equation-shadow: 0 2px 8px rgba(12, 12, 24, 0.2);
-  --hnf-equation-op-line: #4a4a65;
+  --hnf-equation-op-line: var(--ops-line);
   --hnf-equation-op-shadow: 0 3px 8px rgba(12, 12, 24, 0.32);
-  --hnf-equation-note-bg: rgba(231, 227, 252, 0.045);
-  --hnf-result-gradient: linear-gradient(135deg, #675dd8 0%, #8379ea 100%);
-  --hnf-overlay: rgba(29, 25, 38, 0.5);
-  --hnf-overlay-shadow: 0 18px 48px rgba(12, 12, 24, 0.48);
-  --hnf-modal-line: rgba(231, 227, 252, 0.12);
+  --hnf-equation-note-bg: var(--ops-pale);
+  --hnf-result-gradient: linear-gradient(
+    135deg,
+    var(--ops-primary),
+    var(--ops-link)
+  );
+  --hnf-overlay: color-mix(in srgb, var(--ops-heading) 40%, transparent);
+  --hnf-overlay-shadow: var(--ops-shadow-dialog);
+  --hnf-modal-line: var(--ops-line);
   --hnf-insight-shadow: 0 6px 20px rgba(12, 12, 24, 0.34);
-  --hnf-scrollbar-thumb: rgba(231, 227, 252, 0.24);
-  --hnf-scrollbar-thumb-hover: rgba(231, 227, 252, 0.4);
+  --hnf-scrollbar-thumb: var(--ops-line);
+  --hnf-scrollbar-thumb-hover: var(--ops-muted);
 }
 :root[data-theme="dark"] .hn-rpt01 .equation-card {
-  background: linear-gradient(180deg, #303049 0%, #2c2c44 100%);
+  background: var(--ops-surface);
 }
 :root[data-theme="dark"] .hn-rpt01 .equation-item,
 :root[data-theme="dark"] .hn-rpt01 .equation-item + .equation-item::before {
-  background: #35354f;
+  background: var(--ops-surface);
 }
 :root[data-theme="dark"] .hn-rpt01 .equation-item + .equation-item::before {
   color: var(--ink);

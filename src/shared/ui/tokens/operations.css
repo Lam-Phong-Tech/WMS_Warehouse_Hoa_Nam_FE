@@ -1,0 +1,109 @@
+/* Operations Overview is the application-wide visual reference.
+   Keep raw values in sync with operations.ts (verified by parity tests). */
+:root,
+html[data-theme="light"] {
+  --ops-heading: #003b63;
+  --ops-primary: #004e74;
+  --ops-primary-hover: #003b63;
+  --ops-text: #12344b;
+  --ops-muted: #627c8e;
+  --ops-line: #d9e8ef;
+  --ops-pale: #eaf5f8;
+  --ops-link: #086590;
+  --ops-surface: #ffffff;
+  --ops-canvas: #f5fafc;
+  --ops-success: #16865b;
+  --ops-warning: #b97809;
+  --ops-danger: #c2413a;
+  --ops-on-primary: #ffffff;
+  --ops-inactive: #879baa;
+  --ops-success-soft: #e7f4ed;
+  --ops-success-text: #106b48;
+  --ops-warning-text: #8f5b00;
+  --ops-danger-text: #a9322c;
+  --ops-warning-soft: #fff4dc;
+  --ops-danger-soft: #fbedea;
+  --ops-focus-ring: rgba(8, 101, 144, 0.2);
+  --ops-shadow-card: 0 2px 8px rgba(0, 59, 99, 0.04);
+  --ops-shadow-floating: 0 10px 28px rgba(0, 59, 99, 0.14);
+  --ops-shadow-dialog: 0 20px 60px rgba(0, 59, 99, 0.22);
+  --ops-ink-rgb: 18, 52, 75;
+}
+html[data-theme="dark"] {
+  --ops-heading: #daecf6;
+  --ops-primary: #086b92;
+  --ops-primary-hover: #075b7d;
+  --ops-text: #c8ddeb;
+  --ops-muted: #9db7ca;
+  --ops-line: #344d60;
+  --ops-pale: #223d50;
+  --ops-link: #72c9ee;
+  --ops-surface: #192d3e;
+  --ops-canvas: #122332;
+  --ops-success: #68d5a4;
+  --ops-warning: #f1bf66;
+  --ops-danger: #f18e87;
+  --ops-on-primary: #ffffff;
+  --ops-inactive: #7794a9;
+  --ops-success-soft: #1c4037;
+  --ops-success-text: #68d5a4;
+  --ops-warning-text: #f1bf66;
+  --ops-danger-text: #f18e87;
+  --ops-warning-soft: #443a25;
+  --ops-danger-soft: #452e32;
+  --ops-focus-ring: rgba(114, 201, 238, 0.3);
+  --ops-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.16);
+  --ops-shadow-floating: 0 10px 28px rgba(0, 0, 0, 0.32);
+  --ops-shadow-dialog: 0 20px 60px rgba(0, 0, 0, 0.45);
+  --ops-ink-rgb: 200, 221, 235;
+}
+:root,
+:root[data-theme] {
+  --wms-primary: var(--ops-primary);
+  --wms-primary-dark: var(--ops-primary-hover);
+  --wms-primary-light: var(--ops-link);
+  --wms-primary-soft: var(--ops-pale);
+  --wms-on-primary: var(--ops-on-primary);
+  --wms-secondary: var(--ops-muted);
+  --wms-secondary-dark: var(--ops-heading);
+  --wms-secondary-soft: var(--ops-pale);
+  --wms-success: var(--ops-success);
+  --wms-success-dark: var(--ops-success);
+  --wms-success-soft: var(--ops-success-soft);
+  --wms-success-text: var(--ops-success-text);
+  --wms-warning: var(--ops-warning);
+  --wms-warning-dark: var(--ops-warning);
+  --wms-warning-soft: var(--ops-warning-soft);
+  --wms-warning-text: var(--ops-warning-text);
+  --wms-error: var(--ops-danger);
+  --wms-error-dark: var(--ops-danger);
+  --wms-error-soft: var(--ops-danger-soft);
+  --wms-error-text: var(--ops-danger-text);
+  --wms-info: var(--ops-link);
+  --wms-info-dark: var(--ops-primary-hover);
+  --wms-info-soft: var(--ops-pale);
+  --wms-info-text: var(--ops-link);
+  --wms-bg-canvas: var(--ops-canvas);
+  --wms-bg-surface: var(--ops-surface);
+  --wms-bg-subtle: var(--ops-pale);
+  --wms-ink-rgb: var(--ops-ink-rgb);
+  --wms-text-strong: var(--ops-heading);
+  --wms-text-high: var(--ops-text);
+  --wms-text-medium: var(--ops-muted);
+  --wms-text-disabled: var(--ops-inactive);
+  --wms-border: var(--ops-line);
+  --wms-border-input: var(--ops-line);
+  --wms-divider: var(--ops-line);
+  --wms-shadow-card: var(--ops-shadow-card);
+  --wms-shadow-floating: var(--ops-shadow-floating);
+  --wms-grey-100: var(--ops-canvas);
+  --wms-grey-200: var(--ops-pale);
+  --wms-grey-300: var(--ops-line);
+  --wms-grey-500: var(--ops-inactive);
+  --wms-focus-ring: 0 0 0 3px var(--ops-focus-ring);
+  --ops-control-height: 40px;
+  --ops-radius-control: 6px;
+  --ops-radius-card: 8px;
+  --ops-radius-dialog: 12px;
+  --ops-gap: 14px;
+}

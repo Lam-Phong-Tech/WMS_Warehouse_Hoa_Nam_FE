@@ -3,6 +3,7 @@ import { ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import {
   ACTION_KINDS,
   ActionIconButton,
+  RowActionButton,
   actionIcon,
   type ActionKind,
 } from "@/shared/components/actions";
@@ -51,11 +52,13 @@ export interface ActionDropdownProps {
   items: ActionItem[];
   /** Tooltip + aria-label cho nút mở menu. */
   tooltip?: string;
+  /** Compact trigger for action columns and their mobile cards. */
+  row?: boolean;
   disabled?: boolean;
 }
 
 /**
- * Dropdown thao tác — hiển thị icon bút, bấm vào sổ ra danh sách các nút thao tác.
+ * Dropdown thao tác — hiển thị icon ba chấm, bấm vào sổ ra danh sách các nút thao tác.
  * Dùng cho các cột "Thao tác" trong bảng để gom các action (Sửa, Vô hiệu, Xóa, ...)
  * trong khi action Xem (nếu có) vẫn hiển thị riêng bên ngoài.
  *
@@ -70,6 +73,7 @@ export interface ActionDropdownProps {
 export function ActionDropdown({
   items,
   tooltip,
+  row = false,
   disabled = false,
 }: ActionDropdownProps) {
   const t = useT();
@@ -105,13 +109,16 @@ export function ActionDropdown({
   if (visibleItems.length === 0) return null;
 
   const handleClose = () => setAnchorEl(null);
+  const Trigger = row ? RowActionButton : ActionIconButton;
 
   return (
     <>
-      <ActionIconButton
+      <Trigger
         kind="more"
         label={tooltip ?? t("shared.actions.actions")}
         disabled={disabled}
+        aria-haspopup="menu"
+        aria-expanded={open}
         onClick={(e) => setAnchorEl(e.currentTarget)}
       />
       <Menu

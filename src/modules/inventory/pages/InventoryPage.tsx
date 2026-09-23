@@ -15,14 +15,16 @@ import {
   UiText,
   UiTextField,
   type UiTabItem,
-  FILTER_WIDTH,
-  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
-import { AppstoreOutlined, SwapOutlined } from "@/shared/components/icons";
+import {
+  AppstoreOutlined,
+  SwapOutlined,
+  SearchOutlined,
+} from "@/shared/components/icons";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import {
@@ -60,9 +62,15 @@ import type {
 } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+} from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
+
+import "./inventory-page.css";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -110,28 +118,7 @@ function TabLabel({ icon, text }: { icon: ReactNode; text: string }) {
  * `minWidth: 0` + ellipsis để mã dài kết thúc bằng "…" thay vì cắt ngang.
  */
 function CodeText({ children }: { children: ReactNode }) {
-  return (
-    <Box
-      component="code"
-      sx={{
-        fontFamily: "monospace",
-        fontSize: 13,
-        px: 0.5,
-        borderRadius: 1,
-        backgroundColor: SEMANTIC_LIGHT.secondarySoft,
-        color: SEMANTIC_LIGHT.textHigh,
-        display: "inline-block",
-        minWidth: 0,
-        maxWidth: "100%",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-        verticalAlign: "middle",
-      }}
-    >
-      {children}
-    </Box>
-  );
+  return <code className="hn-inventory-code">{children}</code>;
 }
 
 const inventoryTabItems = (t: TranslateFn): UiTabItem[] => [
@@ -255,12 +242,8 @@ export default function InventoryPage() {
 
   // Bảng nhiều cột nhất dự án (~16 cột cả 2 tab) — chuyển sang
   // ResponsiveDataTable: desktop giữ UX bảng, mobile/tablet hẹp (<md) chuyển
-  // thành card. 5-6 cột nghiệp vụ cốt lõi (SKU/tên/trạng thái/khả
-  // dụng/vị trí/đối soát — đúng mục đích "Tra cứu tồn & đối soát" của màn
-  // này) hiện trên card; "Tồn hiện có"/"Tồn theo sổ cái" (số lượng phụ, đã có
-  // "Khả dụng" là số chính và "Chênh lệch" đã tóm tắt phép so 2 số này) cùng
-  // "STT" (thứ tự không còn ý nghĩa nhiều trong danh sách card) ẩn trên
-  // mobile. Toàn bộ sorter ở đây vốn là client-side (so sánh trực tiếp
+  // thành card. Các cột nghiệp vụ đều hiện trên card, gồm cả tồn hiện có và sổ cái
+  // để không mất bằng chứng đối soát ở màn hình hẹp. Chỉ STT được ẩn. Toàn bộ sorter ở đây vốn là client-side (so sánh trực tiếp
   // trên mảng `balances` của trang hiện tại, không có tham số sort gửi lên
   // API) nên cột nào cũng giữ được qua `sortAccessor`.
   const balanceColumns: ResponsiveTableColumn<InventoryBalanceRow>[] = [
@@ -331,6 +314,7 @@ export default function InventoryPage() {
       render: (row) => (
         <UiStatusBadge
           tone={row.stockStatus === "AVAILABLE" ? "success" : "warning"}
+          data-tone={row.stockStatus === "AVAILABLE" ? "success" : "warning"}
           label={businessLabel(
             INVENTORY_STOCK_STATUS_LABELS,
             row.stockStatus,
@@ -355,7 +339,6 @@ export default function InventoryPage() {
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.onHand,
-      hideOnMobile: true,
       render: (row) => formatQty(row.onHand, row.uom),
     },
     {
@@ -368,7 +351,6 @@ export default function InventoryPage() {
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.ledgerTotal,
-      hideOnMobile: true,
       render: (row) => formatQty(row.ledgerTotal, row.uom),
     },
     {
@@ -386,7 +368,7 @@ export default function InventoryPage() {
             <Box
               component="span"
               sx={{
-                color: SEMANTIC_LIGHT.textMedium,
+                color: "var(--inv-muted)",
                 fontVariantNumeric: "tabular-nums",
               }}
             >
@@ -476,6 +458,7 @@ export default function InventoryPage() {
           <span>
             <UiStatusBadge
               tone={reconcileColor(row.reconcile)}
+              data-tone={reconcileColor(row.reconcile)}
               label={businessLabel(
                 RECONCILE_STATUS_LABELS,
                 row.reconcile,
@@ -519,6 +502,7 @@ export default function InventoryPage() {
         <Stack sx={{ alignItems: "flex-start" }}>
           <UiStatusBadge
             tone="neutral"
+            data-tone="neutral"
             label={businessLabel(
               MOVEMENT_TYPE_LABELS,
               row.type,
@@ -590,56 +574,190 @@ export default function InventoryPage() {
     },
   ];
 
-  return (
-    <>
-      <div className="inventory-page hn-mvp-source-screen">
-        <Box sx={{ marginTop: "12px" }}>
-          <UiTabs
-            items={inventoryTabItems(t)}
-            value={activeTab}
-            onChange={(key) => setActiveTab(key)}
-          />
-        </Box>
+  const isBalance = activeTab === "balance";
+  const query = isBalance ? balanceQuery : movementQuery;
+  const pagination = isBalance ? balancePagination : movementPagination;
+  const perPage = isBalance ? balancePerPage : movementPerPage;
+  const hasFilters = isBalance
+    ? Boolean(searchInput || skuType || stockStatus)
+    : Boolean(movementSearch || movementType);
+  const resetFilters = () => {
+    if (isBalance) {
+      setSearchInput("");
+      setSearch("");
+      setSkuType("");
+      setStockStatus("");
+      setBalancePage(1);
+    } else {
+      setMovementSearch("");
+      setMovementType("");
+      setMovementPage(1);
+    }
+  };
+  const emptyContent = (
+    <div className="hn-inventory-empty">
+      {tableEmptyText(
+        query.isError ? query.error : null,
+        t(isBalance ? "inventory.balance.empty" : "inventory.movement.empty"),
+      )}
+      {hasFilters && !query.isError ? (
+        <ActionButton kind="reset" onClick={resetFilters} />
+      ) : null}
+    </div>
+  );
 
-        {activeTab === "balance" ? (
-          <UiTabPanel value={activeTab}>
-            <div className="toolbar">
-              <UiTextField
-                value={searchInput}
-                placeholder={t("inventory.balance.searchPlaceholder")}
-                slotProps={{
-                  htmlInput: {
-                    "aria-label": t("inventory.balance.searchAria"),
-                  },
-                }}
-                onChange={(e) => setSearchInput(e.target.value)}
-                sx={TOOLBAR_SEARCH_SX}
-              />
-              <UiSelect
-                value={skuType}
-                aria-label={t("inventory.balance.typeFilterAria")}
-                placeholder={t("inventory.balance.typeFilterPlaceholder")}
-                minWidth={FILTER_WIDTH.select}
-                options={[
-                  {
-                    value: "PRODUCT",
-                    label: t("inventory.balance.typeProduct"),
-                  },
-                  {
-                    value: "COMPONENT",
-                    label: t("inventory.balance.typeComponent"),
-                  },
-                ]}
-                onChange={(value) => {
+  return (
+    <div className="inventory-page hn-mvp-source-screen hn-inventory">
+      <div className="hn-inventory-navigation">
+        <UiTabs
+          items={inventoryTabItems(t)}
+          value={activeTab}
+          onChange={setActiveTab}
+        />
+        <div className="hn-inventory-actions">
+          <ActionButton
+            kind="refresh"
+            className="hn-inventory-refresh"
+            loading={query.isFetching}
+            onClick={() => void query.refetch()}
+          />
+          {isBalance && canTrace ? (
+            <ActionButton
+              kind="trace"
+              className="hn-inventory-primary"
+              onClick={() => setTraceMovementId("__lookup__")}
+            >
+              {t("inventory.balance.traceCode")}
+            </ActionButton>
+          ) : null}
+        </div>
+      </div>
+
+      <UiTabPanel value={activeTab} className="hn-inventory-panel">
+        <div
+          className={
+            isBalance
+              ? "hn-inventory-filters"
+              : "hn-inventory-filters hn-inventory-filters--movement"
+          }
+        >
+          <div className="hn-inventory-field hn-inventory-search">
+            <label htmlFor="inventory-search">
+              {t(
+                isBalance
+                  ? "inventory.balance.searchAria"
+                  : "inventory.movement.searchAria",
+              )}
+            </label>
+            <UiTextField
+              id="inventory-search"
+              fullWidth
+              value={isBalance ? searchInput : movementSearch}
+              placeholder={t(
+                isBalance
+                  ? "inventory.balance.searchPlaceholder"
+                  : "inventory.movement.searchPlaceholder",
+              )}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <SearchOutlined className="hn-inventory-search-icon" />
+                  ),
+                },
+                htmlInput: {
+                  "aria-label": t(
+                    isBalance
+                      ? "inventory.balance.searchAria"
+                      : "inventory.movement.searchAria",
+                  ),
+                },
+              }}
+              onChange={(e) => {
+                if (isBalance) setSearchInput(e.target.value);
+                else {
+                  setMovementSearch(e.target.value);
+                  setMovementPage(1);
+                }
+              }}
+            />
+          </div>
+          <div className="hn-inventory-field">
+            <label htmlFor="inventory-type">
+              {t(
+                isBalance
+                  ? "inventory.balance.typeFilterAria"
+                  : "inventory.movement.colType",
+              )}
+            </label>
+            <UiSelect
+              id="inventory-type"
+              fullWidth
+              menuClassName="hn-inventory-menu"
+              value={isBalance ? skuType : movementType}
+              aria-label={t(
+                isBalance
+                  ? "inventory.balance.typeFilterAria"
+                  : "inventory.movement.typeFilterAria",
+              )}
+              placeholder={t(
+                isBalance
+                  ? "inventory.balance.typeFilterPlaceholder"
+                  : "inventory.movement.typeFilterPlaceholder",
+              )}
+              options={
+                isBalance
+                  ? [
+                      {
+                        value: "PRODUCT",
+                        label: t("inventory.balance.typeProduct"),
+                      },
+                      {
+                        value: "COMPONENT",
+                        label: t("inventory.balance.typeComponent"),
+                      },
+                    ]
+                  : [
+                      {
+                        value: "RECEIPT",
+                        label: t("inventory.movement.typeReceipt"),
+                      },
+                      {
+                        value: "ISSUE",
+                        label: t("inventory.movement.typeIssue"),
+                      },
+                      {
+                        value: "COMPONENT_ISSUE",
+                        label: t("inventory.movement.typeComponentIssue"),
+                      },
+                      {
+                        value: "REVERSAL",
+                        label: t("inventory.movement.typeReversal"),
+                      },
+                    ]
+              }
+              onChange={(value) => {
+                if (isBalance) {
                   setSkuType(value as "PRODUCT" | "COMPONENT" | "");
                   setBalancePage(1);
-                }}
-              />
+                } else {
+                  setMovementType(value);
+                  setMovementPage(1);
+                }
+              }}
+            />
+          </div>
+          {isBalance ? (
+            <div className="hn-inventory-field">
+              <label htmlFor="inventory-status">
+                {t("inventory.balance.colStockStatus")}
+              </label>
               <UiSelect
+                id="inventory-status"
+                fullWidth
+                menuClassName="hn-inventory-menu"
                 value={stockStatus}
                 aria-label={t("inventory.balance.statusFilterAria")}
                 placeholder={t("inventory.balance.statusFilterPlaceholder")}
-                minWidth={190}
                 options={[
                   {
                     value: "AVAILABLE",
@@ -663,247 +781,173 @@ export default function InventoryPage() {
                   setBalancePage(1);
                 }}
               />
+            </div>
+          ) : null}
+          <ActionButton
+            kind="reset"
+            disabled={!hasFilters}
+            onClick={resetFilters}
+            className="hn-inventory-reset"
+          />
+        </div>
+
+        <section
+          className="hn-inventory-data"
+          aria-labelledby="inventory-table-title"
+        >
+          <div className="hn-inventory-data-heading">
+            <h2 id="inventory-table-title">
+              {t(
+                isBalance
+                  ? "inventory.tab.balances"
+                  : "inventory.tab.movements",
+              )}
+            </h2>
+            <span className="hn-inventory-count" aria-live="polite">
+              {t(
+                isBalance
+                  ? "inventory.balance.total"
+                  : "inventory.movement.total",
+                {
+                  count: formatQuantity(pagination.total),
+                },
+              )}
+            </span>
+          </div>
+          {query.isError ? (
+            <div className="hn-inventory-feedback">
+              <ApiErrorAlert
+                error={query.error}
+                title={t(
+                  isBalance
+                    ? "inventory.balance.loadError"
+                    : "inventory.movement.loadError",
+                )}
+                onRetry={() => void query.refetch()}
+              />
+            </div>
+          ) : null}
+          <TableLoadingBanner loading={query.isLoading || query.isFetching} />
+          <div className="hn-inventory-table">
+            {isBalance ? (
+              <ResponsiveDataTable<InventoryBalanceRow>
+                headerCellStyle={{
+                  background: "var(--inv-pale)",
+                  color: "var(--inv-ink)",
+                  fontSize: 12,
+                  padding: "10px 9px",
+                  borderColor: "var(--inv-line)",
+                  borderBottom: "1px solid var(--inv-line)",
+                }}
+                rowKey={(row) => row.id}
+                maxBodyHeight="clamp(280px, 52dvh, 640px)"
+                columns={balanceColumns}
+                rows={balances}
+                loading={balanceQuery.isLoading || balanceQuery.isFetching}
+                emptyText={emptyContent}
+                onRowClick={(row) => setBalanceDetailRow(row)}
+                renderRowActions={(row) => (
+                  <RowActionButton
+                    kind="view"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setBalanceDetailRow(row);
+                    }}
+                  >
+                    {t("inventory.balance.open")}
+                  </RowActionButton>
+                )}
+              />
+            ) : (
+              <ResponsiveDataTable<StockMovementRow>
+                headerCellStyle={{
+                  background: "var(--inv-pale)",
+                  color: "var(--inv-ink)",
+                  fontSize: 12,
+                  padding: "10px 9px",
+                  borderColor: "var(--inv-line)",
+                  borderBottom: "1px solid var(--inv-line)",
+                }}
+                actionColumnWidth={128}
+                rowKey={(row) => row.id}
+                maxBodyHeight="clamp(280px, 52dvh, 640px)"
+                columns={movementColumns}
+                rows={movements}
+                loading={movementQuery.isLoading || movementQuery.isFetching}
+                emptyText={emptyContent}
+                renderRowActions={(row) => (
+                  <Tooltip
+                    title={t(
+                      canTrace
+                        ? "inventory.movement.traceTooltip"
+                        : "inventory.movement.traceNoPermission",
+                    )}
+                  >
+                    <span>
+                      <RowActionButton
+                        kind="trace"
+                        disabled={!canTrace || !row.id}
+                        onClick={() => handleOpenTrace(String(row.id))}
+                      >
+                        {t("inventory.movement.trace")}
+                      </RowActionButton>
+                    </span>
+                  </Tooltip>
+                )}
+              />
+            )}
+          </div>
+          <div className="hn-inventory-footer">
+            <div className="hn-inventory-page-size">
+              <label htmlFor="inventory-page-size">
+                {t("inventory.balance.pageSizeAria")}
+              </label>
               <UiSelect
-                value={balancePerPage}
+                id="inventory-page-size"
+                value={perPage}
                 aria-label={t("inventory.balance.pageSizeAria")}
-                minWidth={FILTER_WIDTH.pageSize}
-                options={pageSizeOptions(balancePerPage).map((size) => ({
+                menuClassName="hn-inventory-menu"
+                minWidth={76}
+                options={pageSizeOptions(perPage).map((size) => ({
                   value: size,
-                  label: `${size} / trang`,
+                  label: String(size),
                 }))}
                 onChange={(value) => {
-                  setBalancePerPage(Number(value));
-                  setBalancePage(1);
-                }}
-              />
-              {/* Tổng số dòng hiển thị ngay trong khu vực filter/toolbar — tránh
-                phải kéo xuống cuối bảng mới thấy (tiêu chí 4). */}
-
-              <div className="spacer" />
-              {canTrace ? (
-                <ActionButton
-                  kind="trace"
-                  onClick={() => setTraceMovementId("__lookup__")}
-                >
-                  {t("inventory.balance.traceCode")}
-                </ActionButton>
-              ) : null}
-            </div>
-
-            {balanceQuery.isError ? (
-              <Box sx={{ mb: "14px" }}>
-                <ApiErrorAlert
-                  error={balanceQuery.error}
-                  title={t("inventory.balance.loadError")}
-                  onRetry={() => balanceQuery.refetch()}
-                />
-              </Box>
-            ) : null}
-
-            <TableLoadingBanner
-              loading={balanceQuery.isLoading || balanceQuery.isFetching}
-            />
-            <ResponsiveDataTable<InventoryBalanceRow>
-              rowKey={(row) => row.id}
-              columns={balanceColumns}
-              rows={balances}
-              loading={balanceQuery.isLoading || balanceQuery.isFetching}
-              emptyText={tableEmptyText(
-                balanceQuery.isError ? balanceQuery.error : null,
-                t("inventory.balance.empty"),
-              )}
-              onRowClick={(row) => setBalanceDetailRow(row)}
-              renderRowActions={(row) => (
-                <ActionButton
-                  kind="view"
-                  sx={{ whiteSpace: "nowrap" }}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setBalanceDetailRow(row);
-                  }}
-                >
-                  {t("inventory.balance.open")}
-                </ActionButton>
-              )}
-            />
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 1,
-                mt: 1.5,
-              }}
-            >
-              {/* Giữ nguyên câu chữ tổng của antd showTotal cũ → UiText riêng,
-                tắt showTotal mặc định ("Tổng {total} bản ghi") của UiPagination. */}
-              <UiText variant="secondary">
-                {t("inventory.balance.total", {
-                  count: formatQuantity(balancePagination.total),
-                })}
-                kho
-              </UiText>
-              <UiPagination
-                page={balancePagination.current}
-                pageSize={balancePagination.pageSize}
-                total={balancePagination.total}
-                showTotal={false}
-                onPageChange={(page) => setBalancePage(page)}
-              />
-            </Box>
-          </UiTabPanel>
-        ) : (
-          <UiTabPanel value={activeTab}>
-            <div className="toolbar">
-              <UiTextField
-                value={movementSearch}
-                placeholder={t("inventory.movement.searchPlaceholder")}
-                slotProps={{
-                  htmlInput: {
-                    "aria-label": t("inventory.movement.searchAria"),
-                  },
-                }}
-                onChange={(e) => {
-                  setMovementSearch(e.target.value);
-                  setMovementPage(1);
-                }}
-                sx={TOOLBAR_SEARCH_SX}
-              />
-              <UiSelect
-                value={movementType}
-                aria-label={t("inventory.movement.typeFilterAria")}
-                placeholder={t("inventory.balance.typeFilterPlaceholder")}
-                minWidth={190}
-                options={[
-                  {
-                    value: "RECEIPT",
-                    label: t("inventory.movement.typeReceipt"),
-                  },
-                  { value: "ISSUE", label: t("inventory.movement.typeIssue") },
-                  {
-                    value: "COMPONENT_ISSUE",
-                    label: t("inventory.movement.typeComponentIssue"),
-                  },
-                  {
-                    value: "REVERSAL",
-                    label: t("inventory.movement.typeReversal"),
-                  },
-                ]}
-                onChange={(value) => {
-                  setMovementType(value);
-                  setMovementPage(1);
-                }}
-              />
-              <UiSelect
-                value={movementPerPage}
-                aria-label={t("inventory.balance.pageSizeAria")}
-                minWidth={FILTER_WIDTH.pageSize}
-                options={pageSizeOptions(movementPerPage).map((size) => ({
-                  value: size,
-                  label: `${size} / trang`,
-                }))}
-                onChange={(value) => {
-                  setMovementPerPage(Number(value));
-                  setMovementPage(1);
-                }}
-              />
-              <UiText variant="secondary">
-                {t("inventory.movement.total", {
-                  count: formatQuantity(movementPagination.total),
-                })}
-              </UiText>
-            </div>
-
-            {movementQuery.isError ? (
-              <Box sx={{ mb: "14px" }}>
-                <ApiErrorAlert
-                  error={movementQuery.error}
-                  title={t("inventory.movement.loadError")}
-                  onRetry={() => movementQuery.refetch()}
-                />
-              </Box>
-            ) : null}
-
-            <TableLoadingBanner
-              loading={movementQuery.isLoading || movementQuery.isFetching}
-            />
-            <ResponsiveDataTable<StockMovementRow>
-              rowKey={(row) => row.id}
-              columns={movementColumns}
-              rows={movements}
-              loading={movementQuery.isLoading || movementQuery.isFetching}
-              emptyText={tableEmptyText(
-                movementQuery.isError ? movementQuery.error : null,
-                t("inventory.movement.empty"),
-              )}
-              renderRowActions={(row) => (
-                <Tooltip
-                  title={
-                    canTrace
-                      ? t("inventory.movement.traceTooltip")
-                      : t("inventory.movement.traceNoPermission")
+                  if (isBalance) {
+                    setBalancePerPage(Number(value));
+                    setBalancePage(1);
+                  } else {
+                    setMovementPerPage(Number(value));
+                    setMovementPage(1);
                   }
-                >
-                  {/* span trung gian để tooltip vẫn hiện khi nút bị disabled */}
-                  <span>
-                    <ActionButton
-                      kind="history"
-                      sx={{ whiteSpace: "nowrap" }}
-                      disabled={!canTrace || !row.id}
-                      onClick={() => handleOpenTrace(String(row.id))}
-                    >
-                      {t("inventory.movement.trace")}
-                    </ActionButton>
-                  </span>
-                </Tooltip>
-              )}
-            />
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 1,
-                mt: 1.5,
-              }}
-            >
-              {/* Giữ nguyên câu chữ tổng của antd showTotal cũ → UiText riêng,
-                tắt showTotal mặc định ("Tổng {total} bản ghi") của UiPagination. */}
-              <UiText variant="secondary">
-                {t("inventory.movement.total", {
-                  count: formatQuantity(movementPagination.total),
-                })}
-              </UiText>
-              <UiPagination
-                page={movementPagination.current}
-                pageSize={movementPagination.pageSize}
-                total={movementPagination.total}
-                showTotal={false}
-                onPageChange={(page) => setMovementPage(page)}
+                }}
               />
-            </Box>
-          </UiTabPanel>
-        )}
-
-        {balanceDetailRow ? (
-          <BalanceDetailModal
-            balance={balanceDetailRow}
-            onClose={() => setBalanceDetailRow(null)}
-            onTraceMovement={canTrace ? handleOpenTrace : undefined}
-          />
-        ) : null}
-
-        {traceMovementId ? (
-          <TraceModal
-            movementId={
-              traceMovementId === "__lookup__" ? null : traceMovementId
-            }
-            onClose={() => setTraceMovementId(null)}
-          />
-        ) : null}
-      </div>
-    </>
+            </div>
+            <UiPagination
+              page={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              showTotal={false}
+              onPageChange={(page) =>
+                isBalance ? setBalancePage(page) : setMovementPage(page)
+              }
+            />
+          </div>
+        </section>
+      </UiTabPanel>
+      {balanceDetailRow ? (
+        <BalanceDetailModal
+          balance={balanceDetailRow}
+          onClose={() => setBalanceDetailRow(null)}
+          onTraceMovement={canTrace ? handleOpenTrace : undefined}
+        />
+      ) : null}
+      {traceMovementId ? (
+        <TraceModal
+          movementId={traceMovementId === "__lookup__" ? null : traceMovementId}
+          onClose={() => setTraceMovementId(null)}
+        />
+      ) : null}
+    </div>
   );
 }

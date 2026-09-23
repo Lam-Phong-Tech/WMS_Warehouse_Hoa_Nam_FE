@@ -1,3 +1,5 @@
+import { CheckOutlined } from "@/shared/components/icons";
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   useEffect,
   useMemo,
@@ -276,7 +278,7 @@ function FilterCombobox({
                     className="inbound-filter-combobox__check"
                     aria-hidden="true"
                   >
-                    ✓
+                    <CheckOutlined />
                   </b>
                 ) : null}
               </button>
@@ -715,7 +717,9 @@ export default function InboundFlowReport() {
     <div className="hn-inbound-report" data-testid="rpt01-inbound-reference">
       {toastCopy ? (
         <div className="inbound-toast" role="status">
-          <span className="inbound-toast__icon">✓</span>
+          <span className="inbound-toast__icon" aria-hidden="true">
+            <CheckOutlined />
+          </span>
           <span>
             <strong>{toastCopy.title}</strong>
             <small>{toastCopy.detail}</small>
@@ -742,7 +746,7 @@ export default function InboundFlowReport() {
 
       <header className="inbound-page-heading">
         <div>
-          <h1>Báo cáo Nhập kho</h1>
+          <h1 className="hn-report-page-title">Báo cáo Nhập kho</h1>
           <p>Theo dõi sản lượng, tiến độ và chứng từ nhập kho</p>
         </div>
         <div className="inbound-heading-actions">
@@ -1248,17 +1252,20 @@ export default function InboundFlowReport() {
                             {document.created_by_name || "—"}
                           </td>
                           <td data-label="Thao tác">
-                            <button
-                              type="button"
-                              aria-label={`Xem phiếu ${document.document_no}`}
-                              title={`Xem phiếu ${document.document_no}`}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openDocument(document);
-                              }}
-                            >
-                              <Icon name="chevron-right" />
-                            </button>
+                            <RowActionGroup>
+                              <RowActionButton
+                                kind="view"
+                                type="button"
+                                aria-label={`Xem phiếu ${document.document_no}`}
+                                title={`Xem phiếu ${document.document_no}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openDocument(document);
+                                }}
+                              >
+                                Xem
+                              </RowActionButton>
+                            </RowActionGroup>
                           </td>
                         </tr>
                       );
@@ -1268,13 +1275,13 @@ export default function InboundFlowReport() {
               </div>
             )}
 
-            <footer className="inbound-table-footer">
+            <footer className="inbound-table-footer hn-report-pagination-footer">
               <span>
                 {searchedDocuments.length === 0
                   ? `0 kết quả / ${filteredDocuments.length} phiếu`
                   : `Hiển thị ${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, searchedDocuments.length)} trong ${searchedDocuments.length} phiếu`}
               </span>
-              <div className="inbound-pagination">
+              <div className="inbound-pagination hn-report-pagination">
                 <button
                   type="button"
                   aria-label="Trang trước"

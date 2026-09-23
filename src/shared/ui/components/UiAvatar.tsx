@@ -1,7 +1,7 @@
 /**
  * Foundation Avatar — không có ảnh thì hiện chữ cái đầu của 2 từ cuối trong
  * tên (quy ước tên tiếng Việt: "Nguyễn Văn An" → "VA"), nền primarySoft +
- * chữ primaryDark 600.
+ * chữ infoText 600.
  */
 import Avatar from "@mui/material/Avatar";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
@@ -41,7 +41,7 @@ export function UiAvatar({ name, src, size = "md", className }: UiAvatarProps) {
         fontSize: Math.round(px * 0.38),
         fontWeight: 600,
         backgroundColor: S.primarySoft,
-        color: S.primaryDark,
+        color: S.infoText,
       }}
     >
       {name ? initialsOf(name) : null}

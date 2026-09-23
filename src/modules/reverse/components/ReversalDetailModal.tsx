@@ -74,7 +74,11 @@ const returnConditionOptions = (
 /** Cặp nhãn/giá trị trong Dialog chi tiết (thay antd Descriptions.Item). */
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+    <Grid
+      className="hn-reversal-detail-field"
+      size={{ xs: 12, sm: 6, lg: 3 }}
+      sx={{ minWidth: 0, overflowWrap: "anywhere" }}
+    >
       <Box
         sx={{
           typography: "caption",
@@ -84,7 +88,9 @@ function DetailField({ label, value }: { label: string; value: ReactNode }) {
       >
         {label}
       </Box>
-      <Box sx={{ typography: "body2" }}>{value}</Box>
+      <Box sx={{ typography: "body2", minWidth: 0, overflowWrap: "anywhere" }}>
+        {value}
+      </Box>
     </Grid>
   );
 }
@@ -311,6 +317,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
   return (
     <>
       <UiDialog
+        className="hn-reversal-dialog"
         {...dialog.dialogProps}
         maxWidth="xl"
         fullWidth
@@ -374,6 +381,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
           {doc ? (
             <>
               <Box
+                className="hn-reversal-panel"
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
@@ -510,6 +518,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               </Box>
 
               <Box
+                className="hn-reversal-panel"
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
@@ -518,6 +527,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                 }}
               >
                 <DocumentAttachmentsPanel
+                  dialogClassName="hn-reversal-dialog"
                   documentType="REVERSAL"
                   documentId={doc.id}
                   disabled={doc.status !== "DRAFT"}
@@ -532,6 +542,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
 
               {isDraft && canPost ? (
                 <Box
+                  className="hn-reversal-panel"
                   sx={{
                     bgcolor: "action.hover",
                     border: "1px solid",
@@ -550,6 +561,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     <Stack
                       direction="row"
                       spacing={2}
+                      useFlexGap
                       sx={{
                         alignItems: "flex-end",
                         flexWrap: "wrap",
@@ -557,16 +569,26 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                         rowGap: 1.5,
                       }}
                     >
-                      <UiSelect
-                        label={t("reverse.create.returnConditionLabel")}
-                        minWidth={320}
-                        value={returnCondition}
-                        options={returnConditionOptions(t)}
-                        onChange={(value) =>
-                          setReturnCondition(value as ReversalReturnCondition)
-                        }
-                      />
+                      <Box
+                        sx={{
+                          minWidth: 0,
+                          maxWidth: "100%",
+                          width: { xs: "100%", sm: 320 },
+                        }}
+                      >
+                        <UiSelect
+                          menuClassName="hn-reversal-menu"
+                          label={t("reverse.create.returnConditionLabel")}
+                          fullWidth
+                          value={returnCondition}
+                          options={returnConditionOptions(t)}
+                          onChange={(value) =>
+                            setReturnCondition(value as ReversalReturnCondition)
+                          }
+                        />
+                      </Box>
                       <ActionButton
+                        className="hn-reversal-primary"
                         kind="confirm"
                         disabled={busy}
                         onClick={() => void handleConfirm()}
@@ -588,6 +610,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                   <Stack
                     direction="row"
                     spacing={2}
+                    useFlexGap
                     sx={{
                       alignItems: "flex-end",
                       flexWrap: "wrap",
@@ -603,6 +626,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     >
                       <span>
                         <ActionButton
+                          className="hn-reversal-primary"
                           kind="complete"
                           disabled={busy || pendingReturn || !evidenceProvided}
                           onClick={() => setPostConfirmOpen(true)}
@@ -617,7 +641,11 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       value={cancelReason}
                       placeholder={t("reverse.detail.cancelReasonPlaceholder")}
                       onChange={(event) => setCancelReason(event.target.value)}
-                      sx={{ minWidth: 320 }}
+                      sx={{
+                        minWidth: 0,
+                        maxWidth: "100%",
+                        width: { xs: "100%", sm: 320 },
+                      }}
                       slotProps={{
                         htmlInput: { maxLength: CANCEL_REASON_MAX },
                       }}
@@ -659,6 +687,13 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
             </Box>
             <ResponsiveDataTable<ReversalLine>
               columns={lineColumns}
+              headerCellStyle={{
+                background: "var(--rev-pale)",
+                color: "var(--rev-ink)",
+                fontSize: 12,
+                padding: "10px 9px",
+                borderColor: "var(--rev-line)",
+              }}
               rows={pagedLines}
               rowKey={(row) => row.id}
               loading={linesQuery.isLoading}
@@ -679,6 +714,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
       </UiDialog>
 
       <UiDialog
+        className="hn-reversal-dialog"
         open={postConfirmOpen}
         onClose={() => setPostConfirmOpen(false)}
         maxWidth="xs"
@@ -703,6 +739,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               {t("reverse.common.recheck")}
             </ActionButton>
             <ActionButton
+              className="hn-reversal-primary"
               kind="complete"
               onClick={() => void handlePost()}
               disabled={postBusy}

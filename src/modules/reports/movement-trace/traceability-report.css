@@ -1,15 +1,15 @@
 #traceability-rpt03.hn-trace-report {
-  --trace-navy: #073c77;
-  --trace-blue: #006caf;
-  --trace-blue-bright: #0aa6e8;
-  --trace-text: #073b78;
-  --trace-muted: #52749a;
-  --trace-line: #cfe4f1;
-  --trace-canvas: #f3fbff;
-  --trace-success: #118a45;
-  --trace-warning: #ff6b13;
-  --trace-danger: #ff3f57;
-  --trace-shadow: 0 2px 7px rgb(20 76 121 / 7%);
+  --trace-navy: var(--ops-heading);
+  --trace-blue: var(--ops-primary);
+  --trace-blue-bright: var(--ops-link);
+  --trace-text: var(--ops-text);
+  --trace-muted: var(--ops-muted);
+  --trace-line: var(--ops-line);
+  --trace-canvas: var(--ops-canvas);
+  --trace-success: var(--ops-success);
+  --trace-warning: var(--ops-warning);
+  --trace-danger: var(--ops-danger);
+  --trace-shadow: var(--ops-shadow-card);
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -31,7 +31,9 @@
   box-sizing: border-box;
 }
 
-.hn-system-shell:has(.hn-trace-report) .hn-topbar .header-control:nth-child(-n + 3) {
+.hn-system-shell:has(.hn-trace-report)
+  .hn-topbar
+  .header-control:nth-child(-n + 3) {
   display: none;
 }
 
@@ -58,25 +60,26 @@
 }
 
 #traceability-rpt03 .trace-page-heading h1 {
-  color: #073b78;
-  font-size: clamp(22px, 1.45vw, 28px);
-  font-weight: 750;
+  color: var(--ops-heading);
+  font-size: 24px;
+  font-weight: 700;
   letter-spacing: -0.35px;
-  line-height: 1.25;
+  line-height: 38px;
 }
 
 #traceability-rpt03 .trace-page-heading h1 + div,
 #traceability-rpt03 .trace-page-heading h1 + div > div {
-  color: #0878c9;
-  font-size: 14px;
-  line-height: 20px;
+  color: var(--ops-heading);
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 700;
 }
 
 #traceability-rpt03 .trace-breadcrumb {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #225d99;
+  color: var(--ops-link);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0;
@@ -89,7 +92,7 @@
 }
 
 #traceability-rpt03 .trace-breadcrumb strong {
-  color: #1b5794;
+  color: var(--ops-link);
   font-weight: 650;
 }
 
@@ -99,24 +102,24 @@
 }
 
 #traceability-rpt03 .trace-head-actions > .MuiButton-root {
-  min-height: 40px;
+  min-height: var(--ops-control-height);
   padding: 0 14px;
-  border-radius: 7px;
-  font-size: 13px;
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 #traceability-rpt03 .trace-head-actions > .MuiButton-root:first-child {
   border-color: transparent;
-  background: #e2f5ff;
-  color: #0765af;
+  background: var(--ops-pale);
+  color: var(--ops-link);
   box-shadow: none;
 }
 
 #traceability-rpt03 .trace-head-actions > .MuiButton-root:nth-child(2) {
   min-width: 162px;
-  background: #075d96;
+  background: var(--ops-primary);
   color: white;
   box-shadow: 0 4px 9px rgb(6 86 143 / 15%);
 }
@@ -129,7 +132,7 @@
   height: 58px;
   padding: 7px 12px 7px 10px;
   border: 1px solid var(--trace-line);
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   background: white;
   box-shadow: var(--trace-shadow);
 }
@@ -141,8 +144,8 @@
   flex: 0 0 42px;
   place-items: center;
   border-radius: 6px;
-  background: #eef8ff;
-  color: #07539a;
+  background: var(--ops-pale);
+  color: var(--ops-link);
   font-size: 23px;
 }
 
@@ -155,7 +158,7 @@
 
 #traceability-rpt03 .trace-warehouse-card strong {
   overflow: hidden;
-  color: #073b78;
+  color: var(--ops-heading);
   font-size: 14px;
   font-weight: 750;
   text-overflow: ellipsis;
@@ -180,7 +183,7 @@
 
 #traceability-rpt03 .trace-warehouse-card__arrow {
   width: 16px;
-  color: #0c55a0;
+  color: var(--ops-link);
   transform: rotate(90deg);
 }
 
@@ -189,7 +192,7 @@
   gap: 10px;
   padding: 12px 16px 9px;
   border-color: var(--trace-line);
-  border-radius: 8px;
+  border-radius: var(--ops-radius-card);
   box-shadow: var(--trace-shadow);
 }
 
@@ -209,7 +212,7 @@
 
 #traceability-rpt03 .trace-field > div:first-child:not(.MuiFormControl-root) {
   margin-bottom: 5px;
-  color: #174c85;
+  color: var(--ops-text);
   font-size: 13px;
   font-weight: 650;
 }
@@ -259,23 +262,23 @@
 #traceability-rpt03 .trace-field .MuiInputBase-root,
 #traceability-rpt03 .trace-field .MuiButton-root,
 #traceability-rpt03 .trace-field .ant-picker {
-  min-height: 43px;
-  border-radius: 6px;
+  min-height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
   font-size: 14px;
 }
 
 #traceability-rpt03 .trace-field .MuiInputBase-root,
 #traceability-rpt03 .trace-field .ant-picker {
-  border-color: #bcd9eb;
-  background: #fafdff;
-  color: #0d4f91;
+  border-color: var(--ops-line);
+  background: var(--ops-canvas);
+  color: var(--ops-link);
 }
 
 #traceability-rpt03 .trace-field .MuiInputBase-root:hover,
 #traceability-rpt03 .trace-field .ant-picker:hover,
 #traceability-rpt03 .trace-field .MuiInputBase-root.Mui-focused,
 #traceability-rpt03 .trace-field .ant-picker-focused {
-  border-color: #048fe0;
+  border-color: var(--ops-line);
   box-shadow: 0 0 0 2px rgb(4 143 224 / 10%);
 }
 
@@ -302,15 +305,15 @@
 }
 
 #traceability-rpt03 .trace-field--apply .MuiButton-root {
-  background: #075e96;
+  background: var(--ops-primary);
   color: white;
   font-weight: 750;
 }
 
 #traceability-rpt03 .trace-field--reset .MuiButton-root {
-  border-color: #bcdced;
-  background: #f3fbff;
-  color: #0e5191;
+  border-color: var(--ops-line);
+  background: var(--ops-canvas);
+  color: var(--ops-link);
   font-weight: 700;
 }
 
@@ -320,7 +323,7 @@
   left: 16px;
   z-index: 8;
   min-height: 18px;
-  color: #4a7198;
+  color: var(--ops-muted);
   font-size: 12px;
 }
 
@@ -332,7 +335,7 @@
 
 #traceability-rpt03 .trace-advanced-filters[open] summary {
   margin-bottom: 10px;
-  color: #086eaf;
+  color: var(--ops-link);
   font-weight: 700;
 }
 
@@ -348,7 +351,7 @@
 
 #traceability-rpt03 .trace-advanced-filters > .MuiBox-root {
   padding-top: 10px;
-  border-top: 1px solid #e2eef5;
+  border-top: 1px solid var(--ops-line);
 }
 
 #traceability-rpt03 .trace-filter-card > .MuiBox-root:last-child {
@@ -383,13 +386,13 @@
 }
 
 #traceability-rpt03 .trace-kpi--primary .trace-kpi__icon {
-  color: #073f81;
-  background: #edf9ff;
+  color: var(--ops-link);
+  background: var(--ops-pale);
 }
 
 #traceability-rpt03 .trace-kpi--info .trace-kpi__icon {
-  color: #0a579b;
-  background: #eef8fe;
+  color: var(--ops-link);
+  background: var(--ops-pale);
 }
 
 #traceability-rpt03 .trace-kpi--warning .trace-kpi__icon {
@@ -403,13 +406,13 @@
 }
 
 #traceability-rpt03 .trace-kpi__label {
-  color: #154980;
+  color: var(--ops-text);
   font-size: 14px;
   font-weight: 700;
 }
 
 #traceability-rpt03 .trace-kpi__value {
-  color: #063c78;
+  color: var(--ops-heading);
   font-size: clamp(28px, 1.7vw, 32px);
   font-weight: 750;
   line-height: 1.05;
@@ -417,7 +420,7 @@
 
 #traceability-rpt03 .trace-kpi__hint {
   margin-top: 4px;
-  color: #2173bb;
+  color: var(--ops-muted);
   font-size: 12.5px;
 }
 
@@ -434,7 +437,7 @@
 #traceability-rpt03.hn-trace-report.is-loading .trace-kpi__value,
 #traceability-rpt03.hn-trace-report.is-loading .trace-kpi__hint {
   color: transparent;
-  background: #e1ebf3;
+  background: var(--ops-line);
   box-shadow: none;
 }
 
@@ -462,32 +465,44 @@
   min-height: 160px;
   color: transparent;
   background:
-    linear-gradient(to top, #e1ebf3 0 58%, transparent 58%) 8% 100% / 7% 72% no-repeat,
-    linear-gradient(to top, #e1ebf3 0 76%, transparent 76%) 23% 100% / 7% 72% no-repeat,
-    linear-gradient(to top, #e1ebf3 0 66%, transparent 66%) 38% 100% / 7% 72% no-repeat,
-    linear-gradient(to top, #e1ebf3 0 82%, transparent 82%) 53% 100% / 7% 72% no-repeat,
-    linear-gradient(to top, #e1ebf3 0 70%, transparent 70%) 68% 100% / 7% 72% no-repeat,
-    linear-gradient(to top, #e1ebf3 0 78%, transparent 78%) 83% 100% / 7% 72% no-repeat,
-    repeating-linear-gradient(to bottom, transparent 0 31px, #edf3f7 31px 32px);
+    linear-gradient(to top, var(--ops-line) 0 58%, transparent 58%) 8% 100% / 7%
+      72% no-repeat,
+    linear-gradient(to top, var(--ops-line) 0 76%, transparent 76%) 23% 100% /
+      7% 72% no-repeat,
+    linear-gradient(to top, var(--ops-line) 0 66%, transparent 66%) 38% 100% /
+      7% 72% no-repeat,
+    linear-gradient(to top, var(--ops-line) 0 82%, transparent 82%) 53% 100% /
+      7% 72% no-repeat,
+    linear-gradient(to top, var(--ops-line) 0 70%, transparent 70%) 68% 100% /
+      7% 72% no-repeat,
+    linear-gradient(to top, var(--ops-line) 0 78%, transparent 78%) 83% 100% /
+      7% 72% no-repeat,
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 31px,
+      var(--ops-pale) 31px 32px
+    );
 }
 
 #traceability-rpt03.hn-trace-report.is-loading .trace-panel-empty > * {
   visibility: hidden;
 }
 
-#traceability-rpt03.hn-trace-report.is-loading .trace-quality-panel .trace-panel-empty::before {
+#traceability-rpt03.hn-trace-report.is-loading
+  .trace-quality-panel
+  .trace-panel-empty::before {
   position: absolute;
   top: 22px;
   left: calc(50% - 54px);
   width: 108px;
   height: 108px;
-  border: 18px solid #e1ebf3;
+  border: 18px solid var(--ops-line);
   border-radius: 50%;
   content: "";
 }
 
 #traceability-rpt03.hn-trace-report.is-loading .trace-donut {
-  background: #e1ebf3;
+  background: var(--ops-line);
 }
 
 #traceability-rpt03.hn-trace-report.is-loading .trace-donut strong,
@@ -497,28 +512,35 @@
   color: transparent;
 }
 
-#traceability-rpt03.hn-trace-report.is-loading .trace-quality-legend > div::before,
+#traceability-rpt03.hn-trace-report.is-loading
+  .trace-quality-legend
+  > div::before,
 #traceability-rpt03.hn-trace-report.is-loading .trace-quality-legend dt,
 #traceability-rpt03.hn-trace-report.is-loading .trace-quality-legend dd,
 #traceability-rpt03.hn-trace-report.is-loading .trace-quality-alert {
-  background: #e1ebf3;
+  background: var(--ops-line);
   border-color: transparent;
   color: transparent;
 }
 
-#traceability-rpt03.hn-trace-report.is-loading .trace-ledger-card [aria-busy="true"] {
+#traceability-rpt03.hn-trace-report.is-loading
+  .trace-ledger-card
+  [aria-busy="true"] {
   min-height: 188px;
   color: transparent;
   background: repeating-linear-gradient(
     to bottom,
-    #e1ebf3 0 10px,
+    var(--ops-line) 0 10px,
     transparent 10px 35px
   );
   background-position: 10px 14px;
   background-size: calc(100% - 20px) 35px;
 }
 
-#traceability-rpt03.hn-trace-report.is-loading .trace-ledger-card [aria-busy="true"] > * {
+#traceability-rpt03.hn-trace-report.is-loading
+  .trace-ledger-card
+  [aria-busy="true"]
+  > * {
   visibility: hidden;
 }
 
@@ -530,14 +552,16 @@
   width: 120px;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, #12a7e5, transparent);
+  background: linear-gradient(90deg, transparent, var(--ops-link), transparent);
   background-size: 200% 100%;
   content: "";
   animation: trace-refresh 900ms linear infinite;
 }
 
 @keyframes trace-refresh {
-  to { background-position: -200% 0; }
+  to {
+    background-position: -200% 0;
+  }
 }
 
 #traceability-rpt03 .trace-analysis-grid {
@@ -552,7 +576,7 @@
   min-height: 224px;
   overflow: hidden;
   border: 1px solid var(--trace-line);
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   background: white;
   box-shadow: var(--trace-shadow);
 }
@@ -568,13 +592,14 @@
 
 #traceability-rpt03 .trace-panel__header h2 {
   margin: 0;
-  color: #073b78;
+  color: var(--ops-heading);
   font-size: 18px;
-  font-weight: 750;
+  font-weight: 600;
+  line-height: 26px;
 }
 
 #traceability-rpt03 .trace-panel__header span {
-  color: #073b78;
+  color: var(--ops-heading);
   font-size: 13px;
   font-weight: 700;
 }
@@ -591,7 +616,7 @@
   flex-direction: column;
   justify-content: space-between;
   padding-bottom: 21px;
-  color: #2766a3;
+  color: var(--ops-link);
   font-size: 11px;
 }
 
@@ -601,14 +626,14 @@
   grid-template-columns: repeat(7, minmax(24px, 1fr));
   gap: clamp(10px, 2vw, 34px);
   padding: 5px 12px 0;
-  border-left: 1px solid #d1e3ee;
-  border-bottom: 1px solid #97c5df;
+  border-left: 1px solid var(--ops-line);
+  border-bottom: 1px solid var(--ops-line);
   background: repeating-linear-gradient(
     to bottom,
     transparent 0,
     transparent calc(25% - 1px),
-    #d8e8f2 calc(25% - 1px),
-    #d8e8f2 25%
+    var(--ops-pale) calc(25% - 1px),
+    var(--ops-pale) 25%
   );
 }
 
@@ -624,7 +649,7 @@
 #traceability-rpt03 .trace-bar strong {
   align-self: end;
   padding-bottom: 3px;
-  color: #073b78;
+  color: var(--ops-heading);
   font-size: 12px;
   line-height: 1;
 }
@@ -635,7 +660,9 @@
   border-radius: 3px 3px 0 0;
   background: linear-gradient(180deg, #087cbf, #00639e);
   box-shadow: inset 0 1px rgb(255 255 255 / 20%);
-  transition: height 280ms ease, filter 160ms ease;
+  transition:
+    height 280ms ease,
+    filter 160ms ease;
 }
 
 #traceability-rpt03 .trace-bar i.is-latest {
@@ -649,7 +676,7 @@
 #traceability-rpt03 .trace-bar span {
   align-self: end;
   padding-top: 6px;
-  color: #07539a;
+  color: var(--ops-link);
   font-size: 11px;
   white-space: nowrap;
 }
@@ -660,7 +687,7 @@
   place-content: center;
   place-items: center;
   gap: 8px;
-  color: #6785a3;
+  color: var(--ops-muted);
 }
 
 #traceability-rpt03 .trace-panel-empty svg {
@@ -694,7 +721,7 @@
   inset: 25px;
   border-radius: inherit;
   background: white;
-  box-shadow: 0 0 0 1px #edf3f7;
+  box-shadow: 0 0 0 1px var(--ops-line);
   content: "";
 }
 
@@ -708,14 +735,14 @@
 }
 
 #traceability-rpt03 .trace-donut strong {
-  color: #073b78;
+  color: var(--ops-heading);
   font-size: 26px;
   line-height: 1;
 }
 
 #traceability-rpt03 .trace-donut small {
   margin-top: 4px;
-  color: #0b58a0;
+  color: var(--ops-muted);
   font-size: 11px;
   font-weight: 650;
 }
@@ -733,7 +760,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   padding-left: 27px;
-  color: #0a4a88;
+  color: var(--ops-text);
 }
 
 #traceability-rpt03 .trace-quality-legend > div::before {
@@ -759,13 +786,13 @@
 }
 
 #traceability-rpt03 .trace-quality-legend dt {
-  color: #0c4b88;
+  color: var(--ops-text);
   font-size: 13px;
 }
 
 #traceability-rpt03 .trace-quality-legend dd {
   margin: 0;
-  color: #073b78;
+  color: var(--ops-heading);
   font-size: 13px;
   font-weight: 750;
 }
@@ -779,7 +806,7 @@
   padding: 5px 8px 5px 10px;
   border: 1px solid #ffc575;
   border-radius: 5px;
-  background: #fffaf0;
+  background: var(--ops-pale);
   color: #f24d17;
 }
 
@@ -801,10 +828,10 @@
   min-width: 150px;
   min-height: 30px;
   padding: 0 12px;
-  border: 1px solid #049bea;
-  border-radius: 5px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
   background: white;
-  color: #07549a;
+  color: var(--ops-heading);
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -812,7 +839,7 @@
 }
 
 #traceability-rpt03 .trace-quality-alert button:hover {
-  background: #eefaff;
+  background: var(--ops-pale);
 }
 
 #traceability-rpt03 .trace-quality-alert button:focus-visible,
@@ -838,7 +865,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   align-items: start;
   border: 1px solid var(--trace-line);
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   box-shadow: var(--trace-shadow);
 }
 
@@ -850,9 +877,9 @@
 }
 
 #traceability-rpt03 .trace-ledger-card h2 {
-  color: #073b78;
-  font-size: 20px;
-  font-weight: 750;
+  color: var(--ops-heading);
+  font-size: 18px;
+  font-weight: 600;
   line-height: 26px;
 }
 
@@ -861,8 +888,8 @@
   margin-left: 10px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: #eaf6ff;
-  color: #07549a;
+  background: var(--ops-pale);
+  color: var(--ops-heading);
   font-size: 13px;
   font-weight: 700;
 }
@@ -875,30 +902,52 @@
   padding: 6px 16px 6px 0;
 }
 
-#traceability-rpt03 .trace-ledger-card [data-testid="movement-trace-ledger-filter"] {
+#traceability-rpt03
+  .trace-ledger-card
+  [data-testid="movement-trace-ledger-filter"] {
   min-height: 44px;
   padding: 6px;
 }
 
-#traceability-rpt03 .trace-ledger-card [data-testid="movement-trace-ledger-filter"] > .MuiFormControl-root:first-child {
+#traceability-rpt03
+  .trace-ledger-card
+  [data-testid="movement-trace-ledger-filter"]
+  > .MuiFormControl-root:first-child {
   width: 100%;
   min-width: 0;
   max-width: none;
   flex: 1 1 auto;
 }
 
-#traceability-rpt03 .trace-ledger-card [data-testid="movement-trace-ledger-filter"] > .MuiFormControl-root:first-child .MuiInputBase-root {
+#traceability-rpt03
+  .trace-ledger-card
+  [data-testid="movement-trace-ledger-filter"]
+  > .MuiFormControl-root:first-child
+  .MuiInputBase-root {
   min-height: 40px;
   font-size: 15px;
 }
 
-#traceability-rpt03 .trace-ledger-card [data-testid="movement-trace-ledger-filter"] > .MuiFormControl-root:first-child .MuiInputBase-input {
+#traceability-rpt03
+  .trace-ledger-card
+  [data-testid="movement-trace-ledger-filter"]
+  > .MuiFormControl-root:first-child
+  .MuiInputBase-input {
   box-sizing: content-box;
 }
 
-#traceability-rpt03 .trace-ledger-card [data-testid="movement-trace-ledger-filter"] > .MuiFormControl-root:nth-child(2),
-#traceability-rpt03 .trace-ledger-card [data-testid="movement-trace-ledger-filter"] > .MuiAutocomplete-root,
-#traceability-rpt03 .trace-ledger-card [data-testid="movement-trace-ledger-filter"] > .MuiStack-root {
+#traceability-rpt03
+  .trace-ledger-card
+  [data-testid="movement-trace-ledger-filter"]
+  > .MuiFormControl-root:nth-child(2),
+#traceability-rpt03
+  .trace-ledger-card
+  [data-testid="movement-trace-ledger-filter"]
+  > .MuiAutocomplete-root,
+#traceability-rpt03
+  .trace-ledger-card
+  [data-testid="movement-trace-ledger-filter"]
+  > .MuiStack-root {
   display: none;
 }
 
@@ -907,23 +956,26 @@
   padding: 0 16px;
 }
 
-#traceability-rpt03 .trace-ledger-card > .MuiBox-root:nth-child(3) > .MuiBox-root {
+#traceability-rpt03
+  .trace-ledger-card
+  > .MuiBox-root:nth-child(3)
+  > .MuiBox-root {
   overflow-x: auto;
-  border-color: #cfe2ee;
+  border-color: var(--ops-line);
   border-radius: 6px;
 }
 
 #traceability-rpt03 .trace-ledger-card table {
   min-width: 1050px;
-  color: #0a4b88;
+  color: var(--ops-text);
   font-size: 14px;
 }
 
 #traceability-rpt03 .trace-ledger-card thead th {
   padding: 9px 12px;
-  border-color: #cde2ef;
-  background: #eff9ff;
-  color: #09539a;
+  border-color: var(--ops-line);
+  background: var(--ops-pale);
+  color: var(--ops-heading);
   font-size: 14px;
   font-weight: 700;
   line-height: 20px;
@@ -932,17 +984,19 @@
 #traceability-rpt03 .trace-ledger-card tbody td {
   height: 42px;
   padding: 7px 12px;
-  border-color: #d8e7f0;
-  color: #0c4b87;
+  border-color: var(--ops-line);
+  color: var(--ops-text);
   line-height: 20px;
 }
 
 #traceability-rpt03 .trace-ledger-card tbody tr {
-  transition: background-color 140ms ease, transform 140ms ease;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
 }
 
 #traceability-rpt03 .trace-ledger-card tbody tr:hover {
-  background: #f0faff;
+  background: var(--ops-pale);
 }
 
 #traceability-rpt03 .trace-product-cell,
@@ -956,7 +1010,7 @@
 }
 
 #traceability-rpt03 .trace-product-cell strong {
-  color: #073b78;
+  color: var(--ops-heading);
   font-weight: 750;
 }
 
@@ -973,7 +1027,7 @@
 
 #traceability-rpt03 .trace-code-cell small,
 #traceability-rpt03 .trace-event-cell small {
-  color: #6b88a5;
+  color: var(--ops-muted);
   font-size: 12px;
 }
 
@@ -994,13 +1048,13 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #dff7eb;
+  background: var(--ops-pale);
   color: #128a45;
   font-weight: 750;
 }
 
 #traceability-rpt03 .trace-completeness--warning {
-  background: #fff1e5;
+  background: var(--ops-pale);
   color: #f05b17;
 }
 
@@ -1012,7 +1066,7 @@
   gap: 16px;
   min-height: 51px;
   padding: 8px 16px;
-  color: #0a4f91;
+  color: var(--ops-link);
   font-size: 13px;
 }
 
@@ -1028,23 +1082,23 @@
   height: 34px;
   padding: 0;
   place-items: center;
-  border: 1px solid #c6dfed;
+  border: 1px solid var(--ops-line);
   border-radius: 6px;
-  background: #f8fcff;
-  color: #07549a;
+  background: var(--ops-canvas);
+  color: var(--ops-heading);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
 }
 
 #traceability-rpt03 .trace-pagination button:hover:not(:disabled) {
-  border-color: #079de7;
-  background: #eefaff;
+  border-color: var(--ops-link);
+  background: var(--ops-pale);
 }
 
 #traceability-rpt03 .trace-pagination button.is-active {
-  border-color: #075d96;
-  background: #075d96;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
   color: white;
   box-shadow: 0 3px 8px rgb(6 84 142 / 18%);
 }
@@ -1056,80 +1110,97 @@
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-panel-container {
   overflow: hidden;
-  border: 1px solid #b9ddec;
+  border: 1px solid var(--ops-line);
   border-radius: 9px;
   box-shadow: 0 13px 35px rgb(7 61 119 / 17%);
 }
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-header {
-  border-color: #dcebf3;
-  color: #073b78;
+  border-color: var(--ops-line);
+  color: var(--ops-heading);
 }
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-header button,
 .hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-content th {
-  color: #15558f;
+  color: var(--ops-text);
 }
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-cell-in-view,
 .hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-cell-inner {
-  color: #254c73;
+  color: var(--ops-muted);
 }
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-cell-in-range::before,
-.hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-cell-range-start:not(.ant-picker-cell-range-start-single)::before,
-.hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-cell-range-end:not(.ant-picker-cell-range-end-single)::before {
-  background: #e6f6ff;
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  .ant-picker-cell-range-start:not(.ant-picker-cell-range-start-single)::before,
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  .ant-picker-cell-range-end:not(.ant-picker-cell-range-end-single)::before {
+  background: var(--ops-pale);
 }
 
-.hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-cell-selected .ant-picker-cell-inner,
-.hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-cell-range-start .ant-picker-cell-inner,
-.hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-cell-range-end .ant-picker-cell-inner {
-  background: #087ac0;
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  .ant-picker-cell-selected
+  .ant-picker-cell-inner,
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  .ant-picker-cell-range-start
+  .ant-picker-cell-inner,
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  .ant-picker-cell-range-end
+  .ant-picker-cell-inner {
+  background: var(--ops-link);
   color: white;
 }
 
-.hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-cell-today .ant-picker-cell-inner::before {
-  border-color: #0aa0e4;
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  .ant-picker-cell-today
+  .ant-picker-cell-inner::before {
+  border-color: var(--ops-line);
 }
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup.MuiPopover-paper {
   overflow: hidden;
-  border: 1px solid #b9ddec;
+  border: 1px solid var(--ops-line);
   border-radius: 9px;
   box-shadow: 0 13px 35px rgb(7 61 119 / 17%);
 }
 
-.hn-vuexy-date-popup.hn-vuexy-date-popup [data-date-tab="start"][data-active="true"],
-.hn-vuexy-date-popup.hn-vuexy-date-popup [data-date-tab="end"][data-active="true"] {
-  border-color: #078fd6;
-  background: #eaf7ff;
-  color: #07549a;
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  [data-date-tab="start"][data-active="true"],
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  [data-date-tab="end"][data-active="true"] {
+  border-color: var(--ops-line);
+  background: var(--ops-pale);
+  color: var(--ops-heading);
   box-shadow: 0 0 0 2px rgb(7 143 214 / 10%);
 }
 
-.hn-vuexy-date-popup.hn-vuexy-date-popup [role="gridcell"] > button[aria-selected="true"] {
-  background: #0879ba;
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  [role="gridcell"]
+  > button[aria-selected="true"] {
+  background: var(--ops-primary);
   color: white;
   box-shadow: 0 2px 7px rgb(8 121 186 / 20%);
 }
 
-.hn-vuexy-date-popup.hn-vuexy-date-popup [role="group"] > button[aria-pressed="true"] {
-  background: #eaf7ff;
-  color: #07549a;
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  [role="group"]
+  > button[aria-pressed="true"] {
+  background: var(--ops-pale);
+  color: var(--ops-heading);
 }
 
-.hn-vuexy-date-popup.hn-vuexy-date-popup [data-date-action="apply"]:not(:disabled) {
-  background: #075e96;
+.hn-vuexy-date-popup.hn-vuexy-date-popup
+  [data-date-action="apply"]:not(:disabled) {
+  background: var(--ops-primary);
   color: white;
 }
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup [data-date-action="cancel"] {
-  color: #075e96;
+  color: var(--ops-primary);
 }
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup * {
-  scrollbar-color: #9fcfe6 transparent;
+  scrollbar-color: var(--ops-line) transparent;
 }
 
 @media (max-width: 1365px) and (min-width: 980px) {
@@ -1155,13 +1226,17 @@
 
   #traceability-rpt03 .trace-page-heading h1 {
     font-size: 24px;
-    line-height: 32px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
   }
 
   #traceability-rpt03 .trace-page-heading h1 + div,
   #traceability-rpt03 .trace-page-heading h1 + div > div {
-    font-size: 14px;
-    line-height: 20px;
+    font-size: 24px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
   }
 
   #traceability-rpt03 .trace-head-actions {
@@ -1196,18 +1271,39 @@
     grid-row: auto;
   }
 
-  #traceability-rpt03 .trace-field--date { grid-column: 1 / 7; grid-row: 1; }
-  #traceability-rpt03 .trace-field--warehouse { grid-column: 7 / 13; grid-row: 1; }
-  #traceability-rpt03 .trace-field--code-type { grid-column: 1 / 7; grid-row: 2; }
-  #traceability-rpt03 .trace-field--status { grid-column: 7 / 13; grid-row: 2; }
-  #traceability-rpt03 .trace-field--search { grid-column: 1 / 8; grid-row: 3; }
-  #traceability-rpt03 .trace-field--apply { grid-column: 8 / 11; grid-row: 3; }
-  #traceability-rpt03 .trace-field--reset { grid-column: 11 / 13; grid-row: 3; }
+  #traceability-rpt03 .trace-field--date {
+    grid-column: 1 / 7;
+    grid-row: 1;
+  }
+  #traceability-rpt03 .trace-field--warehouse {
+    grid-column: 7 / 13;
+    grid-row: 1;
+  }
+  #traceability-rpt03 .trace-field--code-type {
+    grid-column: 1 / 7;
+    grid-row: 2;
+  }
+  #traceability-rpt03 .trace-field--status {
+    grid-column: 7 / 13;
+    grid-row: 2;
+  }
+  #traceability-rpt03 .trace-field--search {
+    grid-column: 1 / 8;
+    grid-row: 3;
+  }
+  #traceability-rpt03 .trace-field--apply {
+    grid-column: 8 / 11;
+    grid-row: 3;
+  }
+  #traceability-rpt03 .trace-field--reset {
+    grid-column: 11 / 13;
+    grid-row: 3;
+  }
 
   #traceability-rpt03 .trace-field .MuiInputBase-root,
   #traceability-rpt03 .trace-field .MuiButton-root,
   #traceability-rpt03 .trace-field .ant-picker {
-    min-height: 44px;
+    min-height: var(--ops-control-height);
     font-size: 14px;
   }
 
@@ -1228,9 +1324,15 @@
     font-size: 25px;
   }
 
-  #traceability-rpt03 .trace-kpi__label { font-size: 13px; }
-  #traceability-rpt03 .trace-kpi__value { font-size: 30px; }
-  #traceability-rpt03 .trace-kpi__hint { font-size: 12.5px; }
+  #traceability-rpt03 .trace-kpi__label {
+    font-size: 13px;
+  }
+  #traceability-rpt03 .trace-kpi__value {
+    font-size: 30px;
+  }
+  #traceability-rpt03 .trace-kpi__hint {
+    font-size: 12.5px;
+  }
 
   #traceability-rpt03 .trace-analysis-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -1363,14 +1465,18 @@
   }
 
   #traceability-rpt03 .trace-page-heading h1 {
-    font-size: 22px;
-    line-height: 30px;
+    font-size: 24px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
   }
 
   #traceability-rpt03 .trace-page-heading h1 + div,
   #traceability-rpt03 .trace-page-heading h1 + div > div {
-    font-size: 13px;
-    line-height: 1.4;
+    font-size: 24px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
   }
 
   #traceability-rpt03 .trace-filter-grid,
@@ -1388,13 +1494,27 @@
     grid-column: 1;
   }
 
-  #traceability-rpt03 .trace-field--date { grid-row: 1; }
-  #traceability-rpt03 .trace-field--warehouse { grid-row: 2; }
-  #traceability-rpt03 .trace-field--code-type { grid-row: 3; }
-  #traceability-rpt03 .trace-field--status { grid-row: 4; }
-  #traceability-rpt03 .trace-field--search { grid-row: 5; }
-  #traceability-rpt03 .trace-field--apply { grid-row: 6; }
-  #traceability-rpt03 .trace-field--reset { grid-row: 7; }
+  #traceability-rpt03 .trace-field--date {
+    grid-row: 1;
+  }
+  #traceability-rpt03 .trace-field--warehouse {
+    grid-row: 2;
+  }
+  #traceability-rpt03 .trace-field--code-type {
+    grid-row: 3;
+  }
+  #traceability-rpt03 .trace-field--status {
+    grid-row: 4;
+  }
+  #traceability-rpt03 .trace-field--search {
+    grid-row: 5;
+  }
+  #traceability-rpt03 .trace-field--apply {
+    grid-row: 6;
+  }
+  #traceability-rpt03 .trace-field--reset {
+    grid-row: 7;
+  }
 
   #traceability-rpt03 .trace-kpi {
     min-height: 96px;
@@ -1472,6 +1592,9 @@
   #traceability-rpt03 .trace-panel__header h2,
   #traceability-rpt03 .trace-ledger-card h2 {
     font-size: 18px;
+    line-height: 26px;
+    font-weight: 600;
+    color: var(--ops-heading);
   }
 
   #traceability-rpt03 .trace-panel__header span {

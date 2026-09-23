@@ -816,13 +816,10 @@ export default function StockReconcileReport() {
         <>
           <header className="rpt02-heading">
             <div className="rpt02-heading__copy">
-              <h1>Báo cáo Tồn kho &amp; đối soát</h1>
+              <h1 className="hn-report-page-title">Báo cáo Tồn kho &amp; đối soát</h1>
               <p>Theo dõi biến động tồn kho và kiểm tra chênh lệch theo kỳ</p>
             </div>
             <div className="rpt02-heading__actions">
-              <span className="rpt02-demo-pill">
-                <i /> Dữ liệu minh họa
-              </span>
               <span
                 className="rpt02-tooltip"
                 data-tooltip={
@@ -1320,7 +1317,7 @@ export default function StockReconcileReport() {
                           </tbody>
                         </table>
                       </div>
-                      <footer className="rpt02-pagination">
+                      <footer className="rpt02-pagination hn-report-pagination-footer">
                         <span>
                           Hiển thị {(currentPage - 1) * PAGE_SIZE + 1}–
                           {Math.min(
@@ -1329,7 +1326,7 @@ export default function StockReconcileReport() {
                           )}{" "}
                           trong {filteredRows.length} SKU
                         </span>
-                        <div>
+                        <div className="hn-report-pagination">
                           <button
                             type="button"
                             aria-label="Trang trước"

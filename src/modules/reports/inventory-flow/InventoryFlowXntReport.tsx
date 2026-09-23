@@ -1,3 +1,4 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 /**
  * MÀN "BÁO CÁO NHẬP – XUẤT – TỒN" (RPT-01) — port 1:1 mockup UI/UX đã chốt
  * `8.1.WMS_Hoa_Nam_Bao_Cao_Xuat_Nhap_Ton.html`: cùng cấu trúc khối, cùng class,
@@ -1081,15 +1082,17 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
                             {fmt(row.reversal_unlinked_net)}
                           </td>
                           <td className="num">
-                            <button
-                              className="mini-action"
-                              type="button"
-                              onClick={(event) =>
-                                openDrill(row.sku_code, event.currentTarget)
-                              }
-                            >
-                              {t("reports.inventoryFlowReport.reconcile")}
-                            </button>
+                            <RowActionGroup>
+                              <RowActionButton
+                                kind="detail"
+                                type="button"
+                                onClick={(event) =>
+                                  openDrill(row.sku_code, event.currentTarget)
+                                }
+                              >
+                                {t("reports.inventoryFlowReport.reconcile")}
+                              </RowActionButton>
+                            </RowActionGroup>
                           </td>
                         </tr>
                       ))
@@ -1172,15 +1175,17 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
                           <dd>{fmt(row.reversal_unlinked_net)}</dd>
                         </div>
                       </dl>
-                      <button
-                        className="mini-action"
-                        type="button"
-                        onClick={(event) =>
-                          openDrill(row.sku_code, event.currentTarget)
-                        }
-                      >
-                        {t("reports.inventoryFlowReport.reconcileSku")}
-                      </button>
+                      <RowActionGroup>
+                        <RowActionButton
+                          kind="detail"
+                          type="button"
+                          onClick={(event) =>
+                            openDrill(row.sku_code, event.currentTarget)
+                          }
+                        >
+                          {t("reports.inventoryFlowReport.reconcileSku")}
+                        </RowActionButton>
+                      </RowActionGroup>
                     </article>
                   ))}
                   <WindowedMore window={skuSectionWindow} />

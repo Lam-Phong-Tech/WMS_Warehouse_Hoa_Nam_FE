@@ -1,3 +1,4 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
@@ -16,7 +17,6 @@ import {
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
-import { ActionButton } from "@/shared/components/actions";
 import { useHasPermission } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
@@ -1284,12 +1284,13 @@ export default function TabWarranty() {
         onRowClick={(row) => setOpenCase(row)}
         emptyText={t("reports.warranty.caseTableEmpty")}
         renderRowActions={(row) => (
-          <ActionButton
-            kind="view"
-            aria-label={t("reports.warranty.caseDetailAria")}
-            sx={{ whiteSpace: "nowrap" }}
-            onClick={() => setOpenCase(row)}
-          />
+          <RowActionGroup>
+            <RowActionButton
+              kind="view"
+              aria-label={t("reports.warranty.caseDetailAria")}
+              onClick={() => setOpenCase(row)}
+            ></RowActionButton>
+          </RowActionGroup>
         )}
       />
       <ReportPaginationBar

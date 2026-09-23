@@ -1,0 +1,72 @@
+/* Profile accents share the Operations Overview palette; cards remain the dominant surface. */
+.hn-profile-settings .hn-profile-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.hn-profile-settings .hn-profile-avatar.MuiAvatar-root {
+  flex: none;
+  background: var(--settings-pale);
+  color: var(--settings-link);
+  border: 1px solid var(--settings-line);
+}
+
+.hn-profile-settings .hn-profile-name {
+  color: var(--settings-ink);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+}
+
+.hn-profile-settings .hn-profile-mfa-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ops-control-height);
+  padding: 8px 16px;
+  border: 1px solid var(--settings-line);
+  border-radius: 6px;
+  background: var(--settings-pale);
+  color: var(--settings-cta);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.hn-profile-settings .hn-profile-mfa-link:hover {
+  border-color: var(--settings-link);
+  background: color-mix(
+    in srgb,
+    var(--settings-link) 12%,
+    var(--settings-surface)
+  );
+}
+
+.hn-profile-settings .hn-profile-mfa-link:focus-visible {
+  outline: 2px solid var(--settings-link);
+  outline-offset: 3px;
+}
+
+.hn-profile-settings .MuiCard-root {
+  color: var(--settings-text);
+  background: var(--settings-surface);
+  border-color: var(--settings-line);
+  border-radius: var(--ops-radius-card);
+  box-shadow: none;
+}
+
+.hn-profile-settings .MuiTypography-caption {
+  color: var(--settings-muted);
+  font-size: 12px;
+}
+
+.hn-profile-settings .MuiBox-root:has(> table) {
+  border-color: var(--settings-line);
+  border-radius: 6px;
+}

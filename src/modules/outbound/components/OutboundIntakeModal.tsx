@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import dayjs from "dayjs";
+import "./outbound-dialog.css";
 import {
   Box,
   Grid,
@@ -10,6 +12,8 @@ import {
   // nên dùng bản không-RHF.
   UiAutocomplete,
   UiDialog,
+  UiFormField,
+  UiVuexyDateField,
   UiNumberField,
   UiPagination,
   UiStatusBadge,
@@ -57,11 +61,7 @@ import {
   checkFile,
 } from "@/shared/validation/file-rules";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
-import {
-  checkDate,
-  dateInputBounds,
-  pastDateBounds,
-} from "@/shared/validation/date-rules";
+import { checkDate, pastDateBounds } from "@/shared/validation/date-rules";
 
 /** Trần độ dài mã phiếu yêu cầu — khớp `import_no`/`request_no` max:80 của BE. */
 const REQUEST_NO_MAX = 80;
@@ -238,6 +238,13 @@ export function OutboundIntakeModal({
   const [recipientAddress, setRecipientAddress] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [requestDate, setRequestDate] = useState("");
+  const requestDateBounds = pastDateBounds();
+  const parsedRequestDate = dayjs(requestDate);
+  const requestDateValue =
+    parsedRequestDate.isValid() &&
+    parsedRequestDate.format("YYYY-MM-DD") === requestDate
+      ? parsedRequestDate
+      : null;
   const [lines, setLines] = useState<LineInput[]>([createEmptyLine()]);
   // Lỗi kiểm tra hiển thị INLINE ngay dưới từng ô (thay cho một khối lỗi tổng
   // data-ui-state="error"): người dùng thấy đúng ô nào cần sửa.
@@ -882,6 +889,7 @@ export function OutboundIntakeModal({
   return (
     <>
       <UiDialog
+        className="hn-outbound-dialog hn-outbound-intake"
         {...dialog.dialogProps}
         open={open && dialog.open}
         onClose={close}
@@ -912,9 +920,14 @@ export function OutboundIntakeModal({
         }
       >
         <Stack spacing={2}>
-          <Stack direction="row" spacing={1.5}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            className="hn-outbound-dialog__modes"
+          >
             <ActionButton
               kind="edit"
+              aria-pressed={mode === "manual"}
               onClick={() => {
                 setMode("manual");
                 setPreview(null);
@@ -924,6 +937,7 @@ export function OutboundIntakeModal({
             </ActionButton>
             <ActionButton
               kind="import"
+              aria-pressed={mode === "excel"}
               onClick={() => {
                 setMode("excel");
                 setPreview(null);
@@ -1040,24 +1054,49 @@ export function OutboundIntakeModal({
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <UiTextField
-                    fullWidth
-                    type="date"
+                  <UiFormField
                     label={t("outbound.intake.fieldRequestDate")}
-                    value={requestDate}
-                    onChange={(event) => {
-                      setRequestDate(event.target.value);
-                      clearFieldError("requestDate");
-                    }}
-                    slotProps={{
-                      inputLabel: { shrink: true },
-                      htmlInput: dateInputBounds(pastDateBounds()),
-                    }}
+                    htmlFor="outbound-request-date"
                     error={Boolean(fieldErrors.requestDate)}
                     helperText={
-                      fieldErrors.requestDate ?? t("outbound.intake.dateHelper")
+                      <span id="outbound-request-date-help">
+                        {fieldErrors.requestDate ??
+                          t("outbound.intake.dateHelper")}
+                      </span>
                     }
-                  />
+                  >
+                    <Box
+                      className="hn-outbound-dialog__date"
+                      role="group"
+                      aria-label={t("outbound.intake.fieldRequestDate")}
+                      aria-invalid={Boolean(fieldErrors.requestDate)}
+                      aria-describedby="outbound-request-date-help"
+                    >
+                      <UiVuexyDateField
+                        id="outbound-request-date"
+                        field="outbound-request-date"
+                        aria-label={t("outbound.intake.fieldRequestDate")}
+                        value={requestDateValue}
+                        onChange={(next) => {
+                          setRequestDate(next?.format("YYYY-MM-DD") ?? "");
+                          clearFieldError("requestDate");
+                        }}
+                        minDate={requestDateBounds.minDate}
+                        maxDate={requestDateBounds.maxDate}
+                      />
+                      {requestDate ? (
+                        <ActionIconButton
+                          kind="close"
+                          className="hn-outbound-dialog__date-clear"
+                          label={`${t("shared.form.autocompleteClear")}: ${t("outbound.intake.fieldRequestDate")}`}
+                          onClick={() => {
+                            setRequestDate("");
+                            clearFieldError("requestDate");
+                          }}
+                        />
+                      ) : null}
+                    </Box>
+                  </UiFormField>
                 </Grid>
                 <Grid size={12}>
                   <UiAddressField
@@ -1075,6 +1114,7 @@ export function OutboundIntakeModal({
                   {lines.map((line, index) => (
                     <AnimatedListItem key={line.key} gap={12}>
                       <Stack
+                        className="hn-outbound-dialog__line"
                         direction="row"
                         spacing={1.5}
                         sx={{
@@ -1084,7 +1124,7 @@ export function OutboundIntakeModal({
                         }}
                       >
                         <UiAutocomplete
-                          sx={{ minWidth: 380 }}
+                          sx={{ width: { xs: "100%", sm: 380 }, minWidth: 0 }}
                           options={
                             // Giữ nhãn của SKU ĐANG CHỌN kể cả khi nó rơi ra ngoài
                             // kết quả tìm kiếm hiện tại.
@@ -1180,6 +1220,7 @@ export function OutboundIntakeModal({
               >
                 <ActionButton
                   kind="view"
+                  className="hn-outbound-dialog__primary"
                   disabled={!canImport || validateManualMutation.isPending}
                   onClick={handleValidateManual}
                 >
@@ -1220,6 +1261,7 @@ export function OutboundIntakeModal({
               <Box>
                 <ActionButton
                   kind="upload"
+                  className="hn-outbound-dialog__primary"
                   disabled={
                     !canImport ||
                     !file ||

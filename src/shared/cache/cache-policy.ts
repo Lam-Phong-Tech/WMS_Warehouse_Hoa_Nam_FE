@@ -236,6 +236,9 @@ export const QUERY_CACHE_REGISTRY: ReadonlyArray<
   // --- Báo cáo ---
   ["reports", "report"],
   ["rpt-ops", "report"],
+  // Coverage retains the raw endpoint response (including recipient/warranty
+  // rows), so its whole prefix is blocked from disk in PERSIST_DENYLIST below.
+  ["rpt-coverage", "report"],
   ["rpt-xnt-01", "report"],
   ["rpt-io-01", "report"],
   ["rpt-mov-01", "report"],
@@ -258,15 +261,16 @@ export const QUERY_CACHE_REGISTRY: ReadonlyArray<
  * CHẶN GHI ĐĨA THEO TỪNG KHOÁ — thắng cả chính sách của nhóm.
  *
  * Dùng cho những query mà nhóm cho phép persist nhưng NỘI DUNG thì không nên nằm
- * trên đĩa máy dùng chung. Hiện có một mục: danh bạ người dùng (tên, email,
- * phòng ban) tuy được trang báo cáo dùng như một bảng tra cứu, nhưng đó là dữ
- * liệu cá nhân — khác hẳn danh mục SKU hay kho.
+ * trên đĩa máy dùng chung: danh bạ người dùng và payload thô dùng để dò khoảng
+ * ngày báo cáo. Coverage có thể chứa hồ sơ bảo hành/đối tượng nhận hàng, dù
+ * giao diện cuối cùng chỉ dùng tập ngày có dữ liệu.
  *
  * Khớp theo TIỀN TỐ khoá: khai `["rpt-ops", "user-directory"]` là chặn mọi biến
  * thể tham số của nó.
  */
 export const PERSIST_DENYLIST: ReadonlyArray<readonly string[]> = [
   ["rpt-ops", "user-directory"],
+  ["rpt-coverage"],
 ];
 
 /** Khoá này có bị chặn ghi đĩa theo danh sách trên không. */

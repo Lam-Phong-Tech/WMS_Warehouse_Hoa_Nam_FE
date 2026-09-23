@@ -9,7 +9,7 @@ import {
   UiStatusBadge,
   UiTextField,
 } from "@/shared/ui";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import {
   useCreateIamDepartment,
   useIamDepartments,
@@ -144,6 +144,7 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
 
   return (
     <UiDialog
+      className="hn-iam-dialog"
       open={open}
       onClose={onClose}
       maxWidth="sm"
@@ -192,6 +193,13 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
           />
           <UiTextField
             select
+            slotProps={{
+              select: {
+                MenuProps: {
+                  slotProps: { paper: { className: "hn-iam-menu" } },
+                },
+              },
+            }}
             label={t("iam.department.fieldStatus")}
             value={form.status}
             onChange={(event) =>
@@ -221,6 +229,7 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
         <Stack direction="row" spacing={1}>
           <ActionButton
             kind={isEditing ? "save" : "create"}
+            className="hn-iam-primary"
             onClick={submit}
             disabled={!canSave || saving}
           >
@@ -285,7 +294,7 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
                           : t("iam.department.badgeInactive")
                       }
                     />
-                    <ActionIconButton
+                    <RowActionButton
                       kind="edit"
                       aria-label={t("iam.department.editAria", {
                         name: department.department_name,

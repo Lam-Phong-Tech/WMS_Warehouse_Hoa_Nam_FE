@@ -1,0 +1,158 @@
+/* Shared geometry and portal surfaces. Module CSS owns its layout and aliases
+   its colors to --ops-*; no per-route theme provider or duplicate palette. */
+.hn-system-shell main {
+  scrollbar-gutter: stable;
+  color: var(--ops-text);
+  background-color: var(--ops-canvas);
+}
+.hn-system-shell #hn-page-title {
+  color: var(--ops-heading);
+  font-size: 24px;
+  line-height: 38px;
+  letter-spacing: -0.02em;
+}
+.hn-system-shell :is(button, a, input, select, textarea):focus-visible {
+  outline-color: var(--ops-link);
+  outline-offset: 3px;
+}
+
+body:has(.hn-system-shell) :is(.MuiDialog-paper, .ant-modal-content) {
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-dialog);
+  color: var(--ops-text);
+  background: var(--ops-surface);
+  box-shadow: var(--ops-shadow-dialog);
+}
+body:has(.hn-system-shell) :is(.MuiDialogTitle-root, .ant-modal-title) {
+  color: var(--ops-heading);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+}
+body:has(.hn-system-shell) :is(.MuiMenu-paper, .MuiAutocomplete-paper) {
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-text);
+  box-shadow: var(--ops-shadow-floating);
+}
+body:has(.hn-system-shell) .MuiMenuItem-root.Mui-selected {
+  background-color: var(--ops-pale);
+  color: var(--ops-heading);
+}
+body:has(.hn-system-shell) .MuiAutocomplete-option[aria-selected="true"] {
+  color: var(--ops-heading);
+}
+
+/* Primary actions have one solid fill. Row actions keep their compact tone,
+   and destructive / approval actions retain their semantic feedback. */
+body:has(.hn-system-shell)
+  .MuiButton-root[data-action-appearance="tonal"]:is(
+    [data-action-kind="create"],
+    [data-action-kind="save"],
+    [data-action-kind="confirm"],
+    [data-action-kind="send"],
+    [data-action-kind="publish"]
+  ):not(.Mui-disabled) {
+  background-color: var(--ops-primary);
+  color: var(--ops-on-primary);
+  border-radius: var(--ops-radius-control);
+  box-shadow: none;
+}
+body:has(.hn-system-shell)
+  .MuiButton-root[data-action-appearance="tonal"]:is(
+    [data-action-kind="create"],
+    [data-action-kind="save"],
+    [data-action-kind="confirm"],
+    [data-action-kind="send"],
+    [data-action-kind="publish"]
+  ):not(.Mui-disabled):hover {
+  background-color: var(--ops-primary-hover);
+}
+body:has(.hn-system-shell) .MuiButton-root {
+  transition-property: color, background-color, border-color, box-shadow;
+}
+@media (max-width: 600px) {
+  body:has(.hn-system-shell) .MuiDialog-paper:not(.MuiDialog-paperFullScreen) {
+    margin: 12px;
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  body:has(.hn-system-shell) .MuiDialogActions-root {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+}
+
+/* Action columns use the SKU list geometry; toolbar and dialog controls stay 40px. */
+body .hn-row-actions.MuiStack-root {
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+}
+body .hn-row-actions.MuiStack-root > * {
+  margin: 0;
+}
+body .hn-row-action.MuiButton-root[data-row-action] {
+  /* Keep action colors stable inside pages that scope legacy --wms aliases. */
+  --wms-primary: var(--ops-primary);
+  --wms-primary-dark: var(--ops-heading);
+  --wms-on-primary: var(--ops-on-primary);
+  --wms-info: var(--ops-link);
+  --wms-info-dark: var(--ops-primary-hover);
+  --wms-info-text: var(--ops-link);
+  --wms-secondary: var(--ops-muted);
+  --wms-secondary-dark: var(--ops-heading);
+  --wms-success: var(--ops-success);
+  --wms-success-text: var(--ops-success-text);
+  --wms-error: var(--ops-danger);
+  --wms-error-text: var(--ops-danger-text);
+  --wms-text-disabled: var(--ops-inactive);
+  height: 32px;
+  min-height: 32px;
+  min-width: 30px;
+  padding: 6px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--ops-radius-control);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+  text-transform: none;
+  box-shadow: none;
+}
+body .hn-row-action.MuiButton-root[data-row-action] :is(.fi, svg) {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+body .hn-row-action.MuiButton-root[data-row-action="view"]:not(.Mui-disabled) {
+  color: var(--ops-link);
+  background: transparent;
+}
+body
+  .hn-row-action.MuiButton-root[data-row-action="view"]:not(
+    .Mui-disabled
+  ):hover {
+  background: var(--ops-pale);
+}
+body
+  .hn-row-action.MuiButton-root[data-row-action="view"]:not([aria-busy="true"])
+  .MuiButton-startIcon {
+  display: none;
+}
+body .hn-row-action.MuiButton-root[data-row-action="view"] .MuiButton-endIcon {
+  margin-left: 5px;
+  margin-right: 0;
+}
+body
+  .hn-row-action.MuiButton-root[data-row-action="view"]
+  .MuiButton-endIcon
+  > span {
+  font-size: inherit;
+}
+body .hn-row-action.MuiButton-root[data-row-action]:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 2px;
+}

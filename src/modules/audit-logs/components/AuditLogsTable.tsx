@@ -1,13 +1,7 @@
 import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useT } from "@/shared/i18n/useT";
 import { useState } from "react";
-import {
-  Box,
-  Stack,
-  UiStatusBadge,
-  SEMANTIC_LIGHT as S,
-  TYPOGRAPHY,
-} from "@/shared/ui";
+import { Box, Stack, UiStatusBadge } from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -31,13 +25,13 @@ import {
   auditObjectTypeLabel,
   describeAuditLog,
 } from "../constants/audit-log-labels";
-import { ActionButton } from "@/shared/components/actions";
+import { RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 
 /** Chữ trong ô bảng (thay Typography body2). */
 const CELL_TEXT_SX = {
-  fontSize: TYPOGRAPHY.fontSizeSecondary,
-  color: S.textHigh,
+  fontSize: 13,
+  color: "var(--settings-text)",
 } as const;
 
 /**
@@ -157,6 +151,7 @@ export function AuditLogsTable({
       render: (row) => (
         <UiStatusBadge
           tone={auditActionTone(row.action)}
+          data-settings-tone={auditActionTone(row.action)}
           label={auditActionLabel(row.action)}
         />
       ),
@@ -206,8 +201,8 @@ export function AuditLogsTable({
               <Box
                 title={objectCode}
                 sx={{
-                  fontSize: 11,
-                  color: S.textMedium,
+                  fontSize: 12,
+                  color: "var(--settings-muted)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -219,8 +214,8 @@ export function AuditLogsTable({
               <Box
                 title={row.object_id}
                 sx={{
-                  fontSize: 11,
-                  color: S.textMedium,
+                  fontSize: 12,
+                  color: "var(--settings-muted)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -294,6 +289,13 @@ export function AuditLogsTable({
 
   return (
     <ResponsiveDataTable<AuditLog>
+      headerCellStyle={{
+        backgroundColor: "var(--settings-pale)",
+        backgroundImage: "none",
+        color: "var(--settings-ink)",
+        borderBottom: "1px solid var(--settings-line)",
+        fontSize: 12,
+      }}
       columns={columns}
       rows={data}
       rowKey={(row) => row.id}
@@ -305,14 +307,14 @@ export function AuditLogsTable({
       renderRowActions={
         onView
           ? (row) => (
-              <ActionButton
+              <RowActionButton
                 kind="view"
                 sx={{ whiteSpace: "nowrap" }}
                 aria-label={t("audit.rowDetailAria")}
                 onClick={() => onView(row)}
               >
                 Xem
-              </ActionButton>
+              </RowActionButton>
             )
           : undefined
       }

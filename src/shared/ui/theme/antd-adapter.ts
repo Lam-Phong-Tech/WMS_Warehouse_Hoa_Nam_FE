@@ -7,7 +7,7 @@ import { theme as antdAlgorithms, type ThemeConfig } from "antd";
 import {
   COMPONENT_TOKENS as C,
   MOTION,
-  PALETTE,
+  OPERATIONS_PALETTE,
   TYPOGRAPHY,
   type ThemeModeName,
 } from "@/shared/ui/tokens";
@@ -18,7 +18,7 @@ import {
  * `var(--wms-…)` sẽ làm thuật toán sinh ra màu rác.
  */
 export function buildAntdTheme(mode: ThemeModeName): ThemeConfig {
-  const S = PALETTE[mode];
+  const S = OPERATIONS_PALETTE[mode];
   return {
     algorithm:
       mode === "dark"

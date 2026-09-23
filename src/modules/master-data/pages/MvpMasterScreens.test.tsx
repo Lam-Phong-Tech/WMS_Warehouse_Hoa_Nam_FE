@@ -158,7 +158,7 @@ describe("API-backed MVP master screens", () => {
         <DefectMasterScreen openCreateOnMount />
       </MemoryRouter>,
     );
-    expect(screen.getByText("Không chạy motor")).toBeInTheDocument();
+    expect(screen.getByText("DF-MOTOR-01")).toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

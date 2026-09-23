@@ -1,0 +1,475 @@
+/* Inventory portals use the shared operations dashboard palette and type scale.
+   All aliases and overrides stay on inventory dialogs; status semantics remain. */
+.hn-inventory-dialog {
+  --invd-heading: var(--ops-heading);
+  --invd-ink: var(--ops-text);
+  --invd-muted: var(--ops-muted);
+  --invd-line: var(--ops-line);
+  --invd-surface: var(--ops-surface);
+  --invd-pale: var(--ops-pale);
+  --invd-cta: var(--ops-primary);
+  --invd-accent: var(--ops-link);
+  --invd-success: var(--ops-success);
+  --invd-success-soft: var(--ops-success-soft);
+  --wms-primary: var(--invd-cta);
+  --wms-primary-dark: var(--invd-heading);
+  --wms-primary-soft: var(--invd-pale);
+  --wms-secondary-dark: var(--invd-muted);
+  --wms-secondary-soft: var(--invd-pale);
+  --wms-success-text: var(--invd-success);
+  --wms-success-soft: var(--invd-success-soft);
+  --wms-info-text: var(--invd-accent);
+  --wms-info-soft: var(--invd-pale);
+  --wms-text-strong: var(--invd-heading);
+  --wms-text-high: var(--invd-ink);
+  --wms-text-medium: var(--invd-muted);
+  --wms-border: var(--invd-line);
+  --wms-divider: var(--invd-line);
+  --wms-bg-surface: var(--invd-surface);
+  --wms-bg-subtle: var(--invd-pale);
+  --wms-focus-ring: 0 0 0 3px
+    color-mix(in srgb, var(--invd-accent) 13%, transparent);
+  color: var(--invd-ink);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.hn-inventory-dialog .MuiDialog-paper {
+  width: min(1160px, calc(100vw - 48px));
+  max-width: 1160px;
+  max-height: calc(100dvh - 48px);
+  margin: 24px;
+  border: 1px solid var(--invd-line);
+  border-radius: var(--ops-radius-dialog);
+  background: var(--invd-surface);
+  color: var(--invd-ink);
+  box-shadow: var(--ops-shadow-dialog);
+}
+
+.hn-inventory-dialog .MuiDialogTitle-root {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--invd-line);
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.hn-inventory-dialog .hn-inventory-dialog-close {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  color: var(--invd-muted);
+  background: transparent;
+}
+
+.hn-inventory-dialog .MuiDialogContent-root {
+  padding: 18px 22px 22px;
+  min-width: 0;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.hn-inventory-dialog .hn-inventory-dialog-body,
+.hn-inventory-dialog .hn-inventory-dialog-body > *,
+.hn-inventory-dialog .MuiGrid-root,
+.hn-inventory-dialog .MuiStack-root,
+.hn-inventory-dialog .hn-inventory-detail-value {
+  min-width: 0;
+}
+
+.hn-inventory-dialog .hn-inventory-detail-panel {
+  border: 1px solid var(--invd-line);
+  border-radius: var(--ops-radius-card);
+  padding: 16px;
+  background: var(--invd-pale);
+}
+
+.hn-inventory-dialog .hn-inventory-detail-field > .MuiBox-root {
+  margin-bottom: 4px;
+}
+
+.hn-inventory-dialog
+  .hn-inventory-detail-field
+  > .MuiBox-root
+  > .MuiTypography-root {
+  color: var(--invd-muted);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+.hn-inventory-dialog .hn-inventory-detail-value {
+  color: var(--invd-ink);
+  font-size: 14px;
+  line-height: 21px;
+  overflow-wrap: anywhere;
+}
+
+.hn-inventory-dialog .hn-inventory-detail-value > .MuiStack-root {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.hn-inventory-dialog .hn-inventory-code {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  padding: 2px 6px;
+  border: 1px solid var(--invd-line);
+  border-radius: 6px;
+  background: var(--invd-surface);
+  color: var(--invd-accent);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+
+.hn-inventory-dialog .hn-inventory-section-title {
+  margin: 0 0 12px;
+  color: var(--invd-heading);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+}
+
+.hn-inventory-dialog .hn-inventory-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hn-inventory-dialog .hn-inventory-stat {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--invd-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--invd-surface);
+  overflow-wrap: anywhere;
+}
+
+.hn-inventory-dialog .hn-inventory-stat .MuiTypography-root {
+  color: var(--invd-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hn-inventory-dialog .hn-inventory-stat > .MuiBox-root:last-child {
+  margin-top: 4px;
+  color: var(--invd-heading);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hn-inventory-dialog .hn-inventory-lookup {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--invd-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--invd-pale);
+}
+
+.hn-inventory-dialog :is(.MuiFormControl-root, .MuiTextField-root) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hn-inventory-dialog .MuiInputBase-root {
+  min-height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
+  background: var(--invd-surface);
+  color: var(--invd-ink);
+  font-size: 14px;
+}
+
+.hn-inventory-dialog .MuiInputBase-input::placeholder {
+  color: var(--invd-muted);
+  opacity: 1;
+}
+
+.hn-inventory-dialog
+  .MuiOutlinedInput-root:not(.Mui-error)
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--invd-line);
+}
+
+.hn-inventory-dialog
+  .MuiOutlinedInput-root:not(.Mui-error):hover
+  .MuiOutlinedInput-notchedOutline,
+.hn-inventory-dialog
+  .MuiOutlinedInput-root.Mui-focused:not(.Mui-error)
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--invd-accent);
+  border-width: 1px;
+}
+
+.hn-inventory-dialog .MuiInputBase-root.Mui-focused:not(.Mui-error) {
+  box-shadow: var(--wms-focus-ring);
+}
+
+.hn-inventory-dialog .MuiFormLabel-root.Mui-focused:not(.Mui-error) {
+  color: var(--invd-accent);
+}
+
+.hn-inventory-dialog .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  max-width: 100%;
+  border: 1px solid var(--invd-line);
+  border-radius: var(--ops-radius-control);
+  padding: 8px 12px;
+  color: var(--invd-heading);
+  background: var(--invd-pale);
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.hn-inventory-dialog .MuiButton-root:not(.hn-row-action):hover,
+.hn-inventory-dialog .MuiIconButton-root:hover {
+  border-color: var(--invd-accent);
+  background: color-mix(in srgb, var(--invd-accent) 12%, var(--invd-surface));
+}
+
+.hn-inventory-dialog
+  .hn-inventory-lookup
+  > .MuiButton-root:not(.hn-row-action) {
+  padding-inline: 24px;
+  color: var(--wms-on-primary);
+  background: var(--invd-cta);
+  border-color: var(--invd-cta);
+}
+
+.hn-inventory-dialog
+  .hn-inventory-lookup
+  > .MuiButton-root:not(.hn-row-action):hover {
+  background: var(--ops-primary-hover);
+  border-color: var(--ops-primary-hover);
+}
+
+.hn-inventory-dialog .MuiButton-root:not(.hn-row-action).Mui-disabled {
+  color: var(--wms-text-disabled);
+  background: var(--invd-pale);
+  border-color: var(--invd-line);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hn-inventory-dialog .MuiIconButton-root {
+  flex-shrink: 0;
+  width: 38px;
+  height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
+  color: var(--invd-accent);
+}
+
+.hn-inventory-dialog
+  :is(button, input, textarea, [role="combobox"]):focus-visible {
+  outline: 2px solid var(--invd-accent);
+  outline-offset: 3px;
+}
+
+.hn-inventory-dialog .MuiChip-root {
+  max-width: 100%;
+  min-height: 24px;
+  height: auto;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.hn-inventory-dialog .MuiChip-label {
+  padding: 3px 8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hn-inventory-dialog .table-wrap,
+.hn-inventory-dialog .MuiBox-root:has(> table),
+.hn-inventory-dialog .MuiCard-root {
+  min-width: 0;
+  max-width: 100%;
+  border-color: var(--invd-line);
+  border-radius: var(--ops-radius-card);
+}
+
+.hn-inventory-dialog .MuiBox-root:has(> table) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--invd-line) transparent;
+  overscroll-behavior: contain;
+}
+
+.hn-inventory-dialog table {
+  font-size: 14px;
+  color: var(--invd-ink);
+}
+
+.hn-inventory-dialog th {
+  background: var(--invd-pale);
+  background-image: none;
+  color: var(--invd-heading);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.hn-inventory-dialog th button {
+  color: inherit;
+  font: inherit;
+}
+
+.hn-inventory-dialog :is(th, td) {
+  padding: 10px 9px;
+  border-color: var(--invd-line);
+  vertical-align: middle;
+}
+
+.hn-inventory-dialog tbody tr {
+  transition: background-color 0.14s ease;
+}
+
+.hn-inventory-dialog tbody tr:hover {
+  background: color-mix(in srgb, var(--invd-pale) 55%, var(--invd-surface));
+}
+
+.hn-inventory-dialog td .MuiTypography-root {
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.hn-inventory-dialog table .MuiButton-root:not(.hn-row-action) {
+  min-height: 32px;
+  height: 32px;
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--invd-accent);
+}
+
+.hn-inventory-dialog .MuiCard-root {
+  color: var(--invd-ink);
+  background: var(--invd-surface);
+  box-shadow: none;
+}
+
+.hn-inventory-dialog .MuiCardContent-root {
+  padding: 14px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.hn-inventory-dialog .MuiCardContent-root > .MuiBox-root {
+  min-width: 0;
+  gap: 12px;
+}
+
+.hn-inventory-dialog .MuiCardContent-root > .MuiBox-root > .MuiTypography-root {
+  color: var(--invd-muted);
+  font-size: 12px;
+  flex: 0 1 42%;
+}
+
+.hn-inventory-dialog .MuiCardContent-root > .MuiBox-root > .MuiBox-root {
+  min-width: 0;
+  max-width: 60%;
+  overflow-wrap: anywhere;
+}
+
+.hn-inventory-dialog .hn-inventory-history-card {
+  border-color: var(--invd-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--invd-surface);
+  overflow-wrap: anywhere;
+}
+
+.hn-inventory-dialog .hn-inventory-timeline li .MuiTypography-root {
+  font-size: 14px;
+  line-height: 21px;
+  overflow-wrap: anywhere;
+}
+
+.hn-inventory-dialog
+  .hn-inventory-timeline
+  li
+  .MuiTypography-root
+  + .MuiTypography-root {
+  color: var(--invd-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+@media (max-width: 767px) {
+  .hn-inventory-dialog .MuiDialog-paper {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    margin: 12px;
+  }
+
+  .hn-inventory-dialog .MuiDialogTitle-root {
+    padding: 16px;
+  }
+
+  .hn-inventory-dialog .MuiDialogContent-root {
+    padding: 14px;
+    scrollbar-gutter: auto;
+  }
+
+  .hn-inventory-dialog .hn-inventory-detail-panel {
+    padding: 14px;
+  }
+
+  .hn-inventory-dialog .hn-inventory-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hn-inventory-dialog .hn-inventory-stat > .MuiBox-root:last-child {
+    font-size: 22px;
+  }
+
+  .hn-inventory-dialog .MuiButton-root:not(.hn-row-action) {
+    white-space: normal;
+    height: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .hn-inventory-dialog
+    .hn-inventory-lookup
+    > .MuiButton-root:not(.hn-row-action) {
+    width: 100%;
+  }
+
+  .hn-inventory-dialog .hn-inventory-lookup {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 359px) {
+  .hn-inventory-dialog .hn-inventory-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hn-inventory-dialog .MuiButton-root:not(.hn-row-action),
+  .hn-inventory-dialog tbody tr {
+    transition: none;
+  }
+}

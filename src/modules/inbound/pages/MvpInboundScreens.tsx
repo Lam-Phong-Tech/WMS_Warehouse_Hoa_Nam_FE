@@ -73,7 +73,11 @@ import type {
   InboundScanEntry,
   ReceiptEvidence,
 } from "@/modules/inbound/types";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+} from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
@@ -995,13 +999,13 @@ export function InboundScanModal({
               label={t("inbound.detail.infoIncomplete")}
             />
             {canScan && isMutable ? (
-              <ActionButton
+              <RowActionButton
                 kind="edit"
                 disabled={working}
                 onClick={() => setSkuInfoLine(line)}
               >
                 {t("inbound.detail.fillInfo")}
-              </ActionButton>
+              </RowActionButton>
             ) : null}
           </Stack>
         ),
@@ -1111,13 +1115,13 @@ export function InboundScanModal({
       width: 110,
       render: (entry) =>
         entry.status === "ACTIVE" && canScan && isMutable ? (
-          <ActionButton
+          <RowActionButton
             kind="delete"
             disabled={working}
             onClick={() => void handleUnscan(entry)}
           >
             {t("inbound.detail.removeAction")}
-          </ActionButton>
+          </RowActionButton>
         ) : null,
     },
   ];

@@ -32,6 +32,10 @@ export interface UiSelectChoice {
 }
 
 export interface UiSelectProps {
+  /** Connect a visible external label to the dropdown. */
+  id?: string;
+  /** Show an explicit empty-value choice without a placeholder row. */
+  displayEmpty?: boolean;
   value: string | number | "";
   onChange: (value: string) => void;
   options: UiSelectChoice[];
@@ -69,6 +73,8 @@ export interface UiSelectProps {
 }
 
 export function UiSelect({
+  id,
+  displayEmpty,
   value,
   onChange,
   options,
@@ -120,6 +126,7 @@ export function UiSelect({
         placeholder={placeholder}
         disabled={disabled}
         fullWidth={fullWidth}
+        menuClassName={menuClassName}
         // Ô tìm kiếm không co theo nội dung như dropdown thường: bề rộng lấy từ
         // nhãn (fitSelectMinWidth), sàn FILTER_WIDTH.select khi màn không khai.
         sx={{ minWidth: fittedMinWidth }}
@@ -156,6 +163,7 @@ export function UiSelect({
         </InputLabel>
       ) : null}
       <Select
+        id={id}
         /*
          * Trần bề rộng để nhãn quá dài không kéo menu tràn màn hình, và trần
          * CAO đúng 5 dòng: menu dài hơn một tầm nhìn thì người dùng mất chỗ
@@ -176,7 +184,7 @@ export function UiSelect({
         notched={forceShrink}
         value={value}
         onChange={(event) => onChange(String(event.target.value))}
-        displayEmpty={Boolean(placeholder)}
+        displayEmpty={displayEmpty ?? Boolean(placeholder)}
         // aria-invalid/aria-describedby phải tự khai: MUI Select không tự gắn
         // như TextField, nên trình đọc màn hình sẽ không đọc câu lỗi nếu thiếu.
         inputProps={{

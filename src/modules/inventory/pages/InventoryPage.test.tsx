@@ -88,32 +88,45 @@ function mockQueries(
     balances?: unknown[];
     balancesError?: boolean;
     balancesLoading?: boolean;
+    balancesTotal?: number;
     movements?: unknown[];
     movementsError?: boolean;
+    movementsTotal?: number;
   } = {},
 ) {
+  const balanceRefetch = vi.fn();
+  const movementRefetch = vi.fn();
   vi.mocked(useInventoryBalances).mockReturnValue({
     data: {
       rows: overrides.balances ?? [BALANCE_ROW],
-      meta: { total: (overrides.balances ?? [BALANCE_ROW]).length },
+      meta: {
+        total:
+          overrides.balancesTotal ??
+          (overrides.balances ?? [BALANCE_ROW]).length,
+      },
     },
     isLoading: overrides.balancesLoading ?? false,
     isFetching: false,
     isError: overrides.balancesError ?? false,
     error: overrides.balancesError ? new Error("boom") : null,
-    refetch: vi.fn(),
+    refetch: balanceRefetch,
   } as never);
   vi.mocked(useStockMovements).mockReturnValue({
     data: {
       rows: overrides.movements ?? [MOVEMENT_ROW],
-      meta: { total: (overrides.movements ?? [MOVEMENT_ROW]).length },
+      meta: {
+        total:
+          overrides.movementsTotal ??
+          (overrides.movements ?? [MOVEMENT_ROW]).length,
+      },
     },
     isLoading: false,
     isFetching: false,
     isError: overrides.movementsError ?? false,
     error: overrides.movementsError ? new Error("boom") : null,
-    refetch: vi.fn(),
+    refetch: movementRefetch,
   } as never);
+  return { balanceRefetch, movementRefetch };
 }
 
 describe("InventoryPage (INV-01 hub)", () => {
@@ -249,6 +262,144 @@ describe("InventoryPage (INV-01 hub)", () => {
     });
   });
 
+  it("Làm mới chỉ tải lại tab đang xem và giữ nguyên bộ lọc", async () => {
+    const { balanceRefetch, movementRefetch } = mockQueries();
+    renderWithProviders(<InventoryPage />);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Tìm tồn kho" }), {
+      target: { value: "SKU-001" },
+    });
+    await waitFor(() => {
+      expect(useInventoryBalances).toHaveBeenLastCalledWith(
+        expect.objectContaining({ keyword: "SKU-001" }),
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
+    expect(balanceRefetch).toHaveBeenCalledTimes(1);
+    expect(movementRefetch).not.toHaveBeenCalled();
+    expect(screen.getByRole("textbox", { name: "Tìm tồn kho" })).toHaveValue(
+      "SKU-001",
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Lịch sử biến động" }));
+    fireEvent.change(
+      await screen.findByRole("textbox", { name: "Tìm biến động tồn kho" }),
+      { target: { value: "IN-001" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
+    expect(movementRefetch).toHaveBeenCalledTimes(1);
+    expect(balanceRefetch).toHaveBeenCalledTimes(1);
+    expect(useStockMovements).toHaveBeenLastCalledWith(
+      expect.objectContaining({ search: "IN-001", keyword: "IN-001" }),
+    );
+    expect(
+      screen.getByRole("textbox", { name: "Tìm biến động tồn kho" }),
+    ).toHaveValue("IN-001");
+  });
+
+  it("Đặt lại đưa bộ lọc tab hiện tại về mặc định và trang 1, giữ riêng bộ lọc và phân trang của tab còn lại", async () => {
+    mockQueries({ balancesTotal: 120, movementsTotal: 120 });
+    renderWithProviders(<InventoryPage />);
+
+    const choose = async (label: string, option: string) => {
+      fireEvent.mouseDown(screen.getByRole("combobox", { name: label }));
+      fireEvent.click(await screen.findByRole("option", { name: option }));
+    };
+
+    expect(screen.getByRole("button", { name: "Đặt lại" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", { name: "Tìm tồn kho" }), {
+      target: { value: "  SKU-001  " },
+    });
+    await waitFor(() => {
+      expect(useInventoryBalances).toHaveBeenLastCalledWith(
+        expect.objectContaining({ keyword: "SKU-001" }),
+      );
+    });
+    await choose("Lọc loại hàng", "Linh kiện");
+    await choose("Lọc trạng thái tồn", "Hàng lỗi");
+    await choose("Số dòng mỗi trang", "20");
+    fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
+    const balanceFilters = {
+      keyword: "SKU-001",
+      sku_type: "COMPONENT",
+      stock_status: "DEFECTIVE",
+      page: 2,
+      per_page: 20,
+    };
+    expect(useInventoryBalances).toHaveBeenLastCalledWith(balanceFilters);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Lịch sử biến động" }));
+    fireEvent.change(
+      await screen.findByRole("textbox", { name: "Tìm biến động tồn kho" }),
+      { target: { value: "IN-001" } },
+    );
+    await choose("Lọc loại biến động", "Xuất kho");
+    await choose("Số dòng mỗi trang", "50");
+    fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
+    const movementFilters = {
+      search: "IN-001",
+      keyword: "IN-001",
+      movement_type: "ISSUE",
+      page: 2,
+      per_page: 50,
+    };
+    expect(useStockMovements).toHaveBeenLastCalledWith(movementFilters);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Tồn kho hiện tại" }));
+    expect(
+      await screen.findByRole("textbox", { name: "Tìm tồn kho" }),
+    ).toHaveValue("  SKU-001  ");
+    expect(
+      screen.getByRole("combobox", { name: "Lọc loại hàng" }),
+    ).toHaveTextContent("Linh kiện");
+    expect(
+      screen.getByRole("combobox", { name: "Lọc trạng thái tồn" }),
+    ).toHaveTextContent("Hàng lỗi");
+    expect(useInventoryBalances).toHaveBeenLastCalledWith(balanceFilters);
+    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
+    const defaultBalanceFilters = {
+      keyword: undefined,
+      sku_type: undefined,
+      stock_status: undefined,
+      page: 1,
+      per_page: 20,
+    };
+    expect(useInventoryBalances).toHaveBeenLastCalledWith(
+      defaultBalanceFilters,
+    );
+    expect(screen.getByRole("textbox", { name: "Tìm tồn kho" })).toHaveValue(
+      "",
+    );
+    expect(screen.getByRole("button", { name: "Đặt lại" })).toBeDisabled();
+    expect(useStockMovements).toHaveBeenLastCalledWith(movementFilters);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Lịch sử biến động" }));
+    expect(
+      await screen.findByRole("textbox", { name: "Tìm biến động tồn kho" }),
+    ).toHaveValue("IN-001");
+    expect(
+      screen.getByRole("combobox", { name: "Lọc loại biến động" }),
+    ).toHaveTextContent("Xuất kho");
+    expect(
+      screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
+    ).toHaveTextContent("50");
+    expect(useStockMovements).toHaveBeenLastCalledWith(movementFilters);
+    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
+    expect(useStockMovements).toHaveBeenLastCalledWith({
+      search: undefined,
+      keyword: undefined,
+      movement_type: undefined,
+      page: 1,
+      per_page: 50,
+    });
+    expect(
+      screen.getByRole("textbox", { name: "Tìm biến động tồn kho" }),
+    ).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Đặt lại" })).toBeDisabled();
+    expect(useInventoryBalances).toHaveBeenLastCalledWith(
+      defaultBalanceFilters,
+    );
+  });
   it("deep-link ?screen=TRACE-01&id=mv-9 mở TraceModal đúng movement", async () => {
     renderWithProviders(<InventoryPage />, [
       "/inventory?screen=TRACE-01&id=mv-9",

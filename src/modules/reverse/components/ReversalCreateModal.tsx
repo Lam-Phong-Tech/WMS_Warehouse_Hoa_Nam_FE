@@ -154,6 +154,7 @@ function SerialItemsSelect({
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
+        slotProps={{ paper: { className: "hn-reversal-menu" } }}
       >
         {options.length === 0 ? (
           <MenuItem disabled>{t("reverse.create.noAvailableItems")}</MenuItem>
@@ -559,6 +560,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
   return (
     <>
       <UiDialog
+        className="hn-reversal-dialog"
         {...dialog.dialogProps}
         maxWidth="lg"
         fullWidth
@@ -604,6 +606,13 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
           <Box>
             <ResponsiveDataTable<ReversibleMovement>
               columns={movementColumns}
+              headerCellStyle={{
+                background: "var(--rev-pale)",
+                color: "var(--rev-ink)",
+                fontSize: 12,
+                padding: "10px 9px",
+                borderColor: "var(--rev-line)",
+              }}
               rows={pagedMovements}
               rowKey={(row) => row.id}
               loading={movementsQuery.isLoading}
@@ -624,6 +633,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
 
           {selectedMovement ? (
             <Box
+              className="hn-reversal-panel"
               sx={{
                 bgcolor: "action.hover",
                 border: "1px solid",
@@ -719,6 +729,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   <>
                     <Box sx={{ maxWidth: 420 }}>
                       <UiSelect
+                        menuClassName="hn-reversal-menu"
                         fullWidth
                         label={t("reverse.create.returnConditionLabel")}
                         value={returnCondition}
@@ -770,6 +781,13 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
               <Box sx={{ mt: 2 }}>
                 <ResponsiveDataTable<ReversibleMovementLine>
                   columns={lineColumns}
+                  headerCellStyle={{
+                    background: "var(--rev-pale)",
+                    color: "var(--rev-ink)",
+                    fontSize: 12,
+                    padding: "10px 9px",
+                    borderColor: "var(--rev-line)",
+                  }}
                   rows={selectedMovement.lines}
                   rowKey={(line) => line.id}
                   loading={movementsQuery.isFetching}
@@ -863,6 +881,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
                   <Box sx={{ typography: "h6" }}>{qty(totalQty)}</Box>
                 </Box>
                 <ActionButton
+                  className="hn-reversal-primary"
                   kind="create"
                   disabled={!canSubmit || createMutation.isPending}
                   onClick={() => setSubmitConfirmOpen(true)}
@@ -882,6 +901,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       </UiDialog>
 
       <UiDialog
+        className="hn-reversal-dialog"
         open={submitConfirmOpen}
         onClose={() => setSubmitConfirmOpen(false)}
         maxWidth="xs"
@@ -897,6 +917,7 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
               {t("reverse.common.recheck")}
             </ActionButton>
             <ActionButton
+              className="hn-reversal-primary"
               kind="create"
               onClick={() => void doSubmit()}
               disabled={submitBusy}

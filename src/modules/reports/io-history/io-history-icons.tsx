@@ -18,6 +18,30 @@
 
 /** Đúng bảng `paths` của `report-8.3-shell.js`. */
 const IO_ICON_PATHS = {
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v6M12 7h.01" />
+    </>
+  ),
+  warehouse: (
+    <>
+      <path d="M3 8h18v13H3zM6 8l6-6 6 6" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="7" r="4" />
+      <path d="M4 21v-3a8 8 0 0 1 16 0v3Z" />
+    </>
+  ),
+  chevron: <path d="m7 10 5 5 5-5" />,
+  lock: (
+    <>
+      <rect x="5" y="10" width="14" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </>
+  ),
   search: (
     <>
       <circle cx="11" cy="11" r="7" />

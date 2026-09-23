@@ -190,7 +190,7 @@ export function ChartGrid({ children }: { children: ReactNode }) {
     <Box
       sx={{
         display: "grid",
-        gap: 2,
+        gap: "var(--ops-gap)",
         gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
         mb: 2,
       }}
@@ -308,7 +308,7 @@ export function ReportKpiRow({ children }: { children: ReactNode }) {
     <Box
       sx={{
         display: "grid",
-        gap: 1.5,
+        gap: "var(--ops-gap)",
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         mb: 2,
       }}

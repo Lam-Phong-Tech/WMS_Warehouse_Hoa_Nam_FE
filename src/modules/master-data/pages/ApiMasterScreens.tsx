@@ -1,6 +1,25 @@
+import { DefectOverview } from "@/modules/master-data/components/DefectOverview";
+import { DefectEmptyState, DefectNotice } from "@/modules/master-data/components/DefectFeedback";
+import { DefectMutationNotice, type DefectMutationNoticeValue } from "@/modules/master-data/components/DefectMutationNotice";
+import { DefectSymbol } from "@/modules/master-data/components/DefectSymbol";
+import "@/modules/master-data/components/agency-list.css";
+import {
+  SkuListMutationNotice,
+  type SkuListMutationNoticeValue,
+} from "@/modules/master-data/components/SkuListMutationNotice";
+import { SearchOutlined } from "@/shared/components/icons";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { SkuListOverview } from "@/modules/master-data/components/SkuListOverview";
+import {
+  SkuListNotice,
+  SkuListEmptyState,
+} from "@/modules/master-data/components/SkuListFeedback";
+import "./sku-list.css";
+import "./defect-list.css";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -69,14 +88,13 @@ import { SkuThumbnail } from "@/shared/components/data-display/SkuThumbnail";
 import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { ActionButton, ActionIconButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   Box,
   Checkbox,
   FormControlLabel,
   Grid,
   MenuItem,
-  SEMANTIC_LIGHT,
   Stack,
   UiAddressField,
   UiAlert,
@@ -85,13 +103,11 @@ import {
   UiDescriptions,
   UiDialog,
   UiNumberField,
+  UiPagination,
   UiSelect,
   UiStatusBadge,
   UiTextField,
   useUiConfirm,
-  FILTER_WIDTH,
-  TOOLBAR_SEARCH_SX,
-  TOOLBAR_SEARCH_WIDE_SX,
 } from "@/shared/ui";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { validatePhone } from "@/shared/constants/validation.constants";
@@ -282,26 +298,6 @@ const TRUNCATE_CELL_STYLE: CSSProperties = {
   whiteSpace: "normal",
 };
 
-/**
- * Khung cuộn của bảng HTML thô — thay class `.table-wrap` (wireframe CSS):
- * cùng border/radius nhưng lấy từ theme token, không phụ thuộc CSS global.
- */
-const TABLE_WRAP_SX = {
-  overflowX: "auto",
-  border: 1,
-  borderColor: "divider",
-  borderRadius: 2.5,
-} as const;
-
-/** Thanh công cụ lọc — thay class `.toolbar` (wireframe CSS). */
-const TOOLBAR_SX = {
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: 1,
-  mb: "14px",
-} as const;
-
 /** Chú thích phụ dưới ô nhập (thay Typography caption của MUI). */
 const FIELD_CAPTION_SX = {
   display: "block",
@@ -372,6 +368,19 @@ function SkuCatalogSelect({
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
+  const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
+  const language = useLanguageStore((state) => state.language);
+  const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
+  const [offline, setOffline] = useState(() => !navigator.onLine);
+  useEffect(() => {
+    const updateConnection = () => setOffline(!navigator.onLine);
+    window.addEventListener("online", updateConnection);
+    window.addEventListener("offline", updateConnection);
+    return () => {
+      window.removeEventListener("online", updateConnection);
+      window.removeEventListener("offline", updateConnection);
+    };
+  }, []);
   // Deep-link ?screen=MST-02 (mo modal tao) — page tu xu ly sau khi go bypass layout.
   const [skuSearchParams] = useSearchParams();
   const openCreateRequested =
@@ -397,6 +406,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [publishError, setPublishError] = useState<unknown>(null);
+  const [mutationNotice, setMutationNotice] =
+    useState<SkuListMutationNoticeValue | null>(null);
 
   const query = useMvpSkus({
     keyword: keyword.trim(),
@@ -680,10 +691,31 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       } else {
         await createMutation.mutateAsync(payload);
         toast.success(t("masterData.sku.created"));
+        setMutationNotice({ kind: "success", code });
       }
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
+      if (!editing) {
+        const normalized = normalizeError(error);
+        const transportCode =
+          typeof error === "object" && error !== null && "code" in error
+            ? String(error.code)
+            : "";
+        const outcomeUnknown = [
+          "ECONNABORTED",
+          "ETIMEDOUT",
+          "ERR_NETWORK",
+        ].includes(transportCode);
+        const duplicate =
+          normalized.status === 409 &&
+          /DUPLICATE|ALREADY_EXISTS|SKU_CODE/i.test(normalized.code ?? "");
+        setMutationNotice({
+          kind: outcomeUnknown ? "unknown" : duplicate ? "duplicate" : "failed",
+          code,
+          message: outcomeUnknown ? undefined : getMutationErrorMessage(error),
+        });
+      }
       if (
         normalizeError(error).code === "SKU_IDENTITY_IMMUTABLE_AFTER_STOCK" &&
         editing
@@ -713,115 +745,260 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     ? MVP_PAGE_SIZE_OPTIONS
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
+  const hasFilters = Boolean(
+    keyword.trim() || status || type || brandId || pendingInfoOnly,
+  );
+  const resetFilters = () => {
+    setKeyword("");
+    setStatus("");
+    setType("");
+    setBrandId("");
+    setPendingInfoOnly(false);
+    setPage(1);
+  };
+  const refreshList = () => {
+    void query.refetch();
+    setOverviewRefreshKey((current) => current + 1);
+  };
+  const listUnavailable =
+    !query.isLoading && rows.length === 0 && Boolean(query.error || offline);
+  const listErrorStatus = query.error
+    ? normalizeError(query.error).status
+    : undefined;
+
   return (
     <>
-      <div className="hn-mvp-source-screen" data-mvp-screen="MST-01">
+      <div
+        className="hn-mvp-source-screen hn-sku-screen"
+        data-mvp-screen="MST-01"
+        data-list-state={
+          listUnavailable
+            ? "unavailable"
+            : query.isLoading
+              ? "loading"
+              : "ready"
+        }
+        data-system-error={
+          (listUnavailable &&
+            [403, 404, 500, 503].includes(listErrorStatus ?? 0)) ||
+          undefined
+        }
+      >
         {confirmDialog}
-        <Stack direction="row" sx={TOOLBAR_SX}>
-          <UiTextField
-            value={keyword}
-            onChange={(event) => {
-              setKeyword(event.target.value);
-              setPage(1);
-            }}
-            placeholder={t("masterData.sku.searchPlaceholder")}
-            slotProps={{
-              htmlInput: { "aria-label": t("masterData.sku.searchAria") },
-            }}
-            sx={TOOLBAR_SEARCH_SX}
-          />
-          <UiSelect
-            aria-label={t("masterData.sku.typeFilterAria")}
-            value={type}
-            onChange={(value) => {
-              setType(value as SkuType | "");
-              setPage(1);
-            }}
-            placeholder={t("masterData.sku.typeFilterPlaceholder")}
-            minWidth={FILTER_WIDTH.select}
-            options={[
-              { value: "PRODUCT", label: t("masterData.sku.typeProduct") },
-              { value: "COMPONENT", label: t("masterData.sku.typeComponent") },
-            ]}
-          />
-          <UiSelect
-            aria-label={t("masterData.sku.brandFilterAria")}
-            value={brandId}
-            disabled={catalogsQuery.isLoading}
-            onChange={(value) => {
-              setBrandId(value);
-              setPage(1);
-            }}
-            placeholder={t("masterData.sku.brandFilterPlaceholder")}
-            minWidth={FILTER_WIDTH.select}
-            options={brands.map((brand) => ({
-              value: brand.id,
-              label: brand.name || brand.code,
-            }))}
-          />
-          <UiSelect
-            aria-label={t("masterData.status.filterAria")}
-            value={status}
-            onChange={(value) => {
-              setStatus(value as MasterStatus | "");
-              setPage(1);
-            }}
-            placeholder={t("masterData.status.allPlaceholder")}
-            minWidth={FILTER_WIDTH.select}
-            options={statusOptions(t)}
-          />
-          <UiSelect
-            aria-label={t("masterData.common.pageSizeAria")}
-            value={perPage}
-            onChange={(value) => {
-              setPerPage(Number(value));
-              setPage(1);
-            }}
-            minWidth={FILTER_WIDTH.pageSize}
-            options={perPageOptions.map((size) => ({
-              value: size,
-              label: `${size} / trang`,
-            }))}
-          />
-          <Box sx={{ flex: 1 }} />
-          <ActionButton
-            kind="filter"
-            aria-pressed={pendingInfoOnly}
-            onClick={() => {
-              setPendingInfoOnly((current) => !current);
-              setPage(1);
-            }}
-            title={t("masterData.sku.pendingTooltip")}
-            sx={
-              pendingInfoOnly
-                ? {
-                    backgroundColor: SEMANTIC_LIGHT.warningSoft,
-                    color: SEMANTIC_LIGHT.warningText,
-                  }
-                : undefined
-            }
-          >
-            {t("masterData.sku.pendingInfo")}
-          </ActionButton>
-          {canManage ? (
+        <header className="hn-sku-header">
+          <div>
+            <h1>{copy("Danh sách SKU", "SKU list")}</h1>
+            <p>
+              {copy(
+                "Quản lý thông tin định danh và trạng thái sử dụng của sản phẩm",
+                "Manage product identification and usage status",
+              )}
+            </p>
+          </div>
+          <div className="hn-sku-header-actions">
+            {canManage ? (
+              <>
+                <ActionButton
+                  kind="import"
+                  onClick={() => setImportModalOpen(true)}
+                >
+                  {t("masterData.sku.importExcel")}
+                </ActionButton>
+                <ActionButton
+                  kind="create"
+                  className="hn-sku-primary"
+                  onClick={openCreate}
+                  disabled={offline || query.isLoading}
+                >
+                  {t("masterData.sku.create")}
+                </ActionButton>
+              </>
+            ) : (
+              <span className="hn-sku-readonly">
+                {copy("Chỉ xem", "Read only")}
+              </span>
+            )}
+          </div>
+        </header>
+        <SkuListOverview refreshKey={overviewRefreshKey} />
+        <form
+          className="hn-sku-filters"
+          onSubmit={(event) => {
+            event.preventDefault();
+            refreshList();
+          }}
+        >
+          <div className="hn-sku-filter hn-sku-filter-search">
+            <label htmlFor="sku-list-search">
+              {copy("Tìm kiếm", "Search")}
+            </label>
+            <UiTextField
+              id="sku-list-search"
+              value={keyword}
+              onChange={(event) => {
+                setKeyword(event.target.value);
+                setPage(1);
+              }}
+              placeholder={t("masterData.sku.searchPlaceholder")}
+              slotProps={{
+                htmlInput: { "aria-label": t("masterData.sku.searchAria") },
+                input: {
+                  startAdornment: (
+                    <SearchOutlined className="hn-sku-search-icon" />
+                  ),
+                },
+              }}
+              fullWidth
+            />
+            <span className="hn-sku-filter-hint">
+              {copy(
+                "Có thể tìm theo mã SKU hoặc tên sản phẩm",
+                "Search by SKU code or product name",
+              )}
+            </span>
+          </div>
+          <div className="hn-sku-filter">
+            <span className="hn-sku-filter-label">
+              {t("masterData.sku.colType")}
+            </span>
+            <UiSelect
+              aria-label={t("masterData.sku.typeFilterAria")}
+              value={type}
+              onChange={(value) => {
+                setType(value as SkuType | "");
+                setPage(1);
+              }}
+              placeholder={copy("Tất cả", "All")}
+              fullWidth
+              menuClassName="hn-sku-menu"
+              options={[
+                { value: "PRODUCT", label: t("masterData.sku.typeProduct") },
+                {
+                  value: "COMPONENT",
+                  label: t("masterData.sku.typeComponent"),
+                },
+              ]}
+            />
+          </div>
+          <div className="hn-sku-filter">
+            <span className="hn-sku-filter-label">
+              {t("masterData.sku.colBrand")}
+            </span>
+            <UiSelect
+              aria-label={t("masterData.sku.brandFilterAria")}
+              value={brandId}
+              disabled={catalogsQuery.isLoading}
+              onChange={(value) => {
+                setBrandId(value);
+                setPage(1);
+              }}
+              placeholder={copy("Tất cả", "All")}
+              fullWidth
+              menuClassName="hn-sku-menu"
+              options={brands.map((brand) => ({
+                value: brand.id,
+                label: brand.name || brand.code,
+              }))}
+            />
+          </div>
+          <div className="hn-sku-filter">
+            <span className="hn-sku-filter-label">
+              {t("masterData.status.label")}
+            </span>
+            <UiSelect
+              aria-label={t("masterData.status.filterAria")}
+              value={status}
+              onChange={(value) => {
+                setStatus(value as MasterStatus | "");
+                setPage(1);
+              }}
+              placeholder={copy("Tất cả", "All")}
+              fullWidth
+              menuClassName="hn-sku-menu"
+              options={statusOptions(t)}
+            />
+          </div>
+          <div className="hn-sku-filter-actions">
             <ActionButton
-              kind="import"
-              onClick={() => setImportModalOpen(true)}
+              kind="filter"
+              icon={<span />}
+              className="hn-sku-primary"
+              type="submit"
+              loading={query.isFetching && !query.isLoading}
+              disabled={offline}
             >
-              {t("masterData.sku.importExcel")}
+              {copy("Áp dụng", "Apply")}
             </ActionButton>
-          ) : null}
-          {canManage ? (
-            <ActionButton kind="create" onClick={openCreate}>
-              {t("masterData.sku.create")}
+            <ActionButton kind="reset" icon={<span />} onClick={resetFilters}>
+              {copy("Đặt lại", "Reset")}
             </ActionButton>
-          ) : null}
-        </Stack>
-
-        <ApiErrorAlert
+          </div>
+        </form>
+        {hasFilters ? (
+          <div
+            className="hn-sku-filter-chips"
+            aria-label={copy("Bộ lọc đang áp dụng", "Applied filters")}
+          >
+            {[
+              { value: keyword, label: keyword, clear: () => setKeyword("") },
+              {
+                value: type,
+                label: skuTypeLabel(type, t),
+                clear: () => setType(""),
+              },
+              {
+                value: brandId,
+                label: refLabel(brandIndex, brandId),
+                clear: () => setBrandId(""),
+              },
+              {
+                value: status,
+                label: masterStatusLabel(status, t),
+                clear: () => setStatus(""),
+              },
+            ]
+              .filter((filter) => Boolean(filter.value))
+              .map((filter, index) => (
+                <button
+                  type="button"
+                  key={index}
+                  onClick={() => {
+                    filter.clear();
+                    setPage(1);
+                  }}
+                  aria-label={`${copy("Xóa bộ lọc", "Remove filter")}: ${filter.label}`}
+                >
+                  <span>{filter.label}</span>
+                  <span aria-hidden="true">×</span>
+                </button>
+              ))}
+          </div>
+        ) : null}
+        <SkuListMutationNotice
+          notice={mutationNotice}
+          onDismiss={() => setMutationNotice(null)}
+          onRetry={() => {
+            setModalOpen(true);
+            setMutationNotice(null);
+          }}
+          onCheck={() => {
+            resetFilters();
+            setKeyword(mutationNotice?.code ?? "");
+            setMutationNotice(null);
+          }}
+        />
+        <SkuListNotice
           error={query.error}
-          fallback={t("masterData.sku.errLoad")}
-          onRetry={() => void query.refetch()}
+          loading={query.isLoading}
+          refreshing={query.isFetching && !query.isLoading}
+          hasRows={rows.length > 0}
+          hasFilters={hasFilters}
+          offline={offline}
+          readonly={!canManage}
+          onRetry={refreshList}
+          onReset={resetFilters}
+          onCreate={canManage ? openCreate : undefined}
+          updatedAt={query.dataUpdatedAt}
         />
 
         {importModalOpen ? (
@@ -829,7 +1006,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             open={importModalOpen}
             canImport={canManage}
             onClose={() => setImportModalOpen(false)}
-            onImported={() => void query.refetch()}
+            onImported={refreshList}
           />
         ) : null}
 
@@ -854,212 +1031,314 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </Box>
         ) : null}
 
-        <Box sx={TABLE_WRAP_SX} aria-busy={query.isLoading}>
-          <table className="sku-table">
-            <thead>
-              <tr>
-                <th className="stt-col">STT</th>
-                {/* Cột ảnh: nhận diện hàng bằng hình nhanh hơn đọc mã — nhiều mã
-                    DongCheng chỉ khác nhau ở cỡ/đuôi mã máy. */}
-                <th
-                  className="thumb-col"
-                  aria-label={t("masterData.sku.colImage")}
-                />
-                <SortableTh
-                  label="SKU"
-                  sortKey="skuCode"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.sku.colType")}
-                  sortKey="type"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.sku.colBrand")}
-                  sortKey="brand"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.sku.colCategory")}
-                  sortKey="category"
-                  className="wrap-col"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.sku.colMinStock")}
-                  sortKey="minStock"
-                  className="wrap-col"
-                  sortState={sortState}
-                  onSort={requestSort}
-                  sortType="value"
-                />
-                <SortableTh
-                  label={t("masterData.sku.colMaxStock")}
-                  sortKey="maxStock"
-                  className="wrap-col"
-                  sortState={sortState}
-                  onSort={requestSort}
-                  sortType="value"
-                />
-                <SortableTh
-                  label={t("masterData.status.label")}
-                  sortKey="status"
-                  sortState={sortState}
-                  onSort={requestSort}
-                  sortType="value"
-                />
-                <SortableTh
-                  label={t("masterData.sku.colPvApp")}
-                  sortKey="published"
-                  className="wrap-col"
-                  sortState={sortState}
-                  onSort={requestSort}
-                  sortType="value"
-                />
-                <th aria-label={t("masterData.common.actionsAria")} />
-              </tr>
-            </thead>
-            <tbody>
-              {query.isLoading ? (
+        <section className="hn-sku-list-card" aria-labelledby="sku-list-title">
+          <div className="hn-sku-list-heading">
+            <h2 id="sku-list-title">
+              {copy("Danh sách SKU", "SKU list")}{" "}
+              <span className="hn-sku-count">
+                {query.isLoading
+                  ? "—"
+                  : pagination.total.toLocaleString(
+                      language === "vi" ? "vi-VN" : "en-US",
+                    )}
+              </span>
+            </h2>
+            <div className="hn-sku-list-tools">
+              <ActionButton
+                kind="filter"
+                aria-pressed={pendingInfoOnly}
+                className="hn-sku-pending-filter"
+                onClick={() => {
+                  setPendingInfoOnly((current) => !current);
+                  setPage(1);
+                }}
+                title={t("masterData.sku.pendingTooltip")}
+              >
+                {t("masterData.sku.pendingInfo")}
+              </ActionButton>
+              <ActionButton
+                kind="refresh"
+                iconOnly
+                label={copy("Làm mới danh sách SKU", "Refresh SKU list")}
+                onClick={refreshList}
+                loading={query.isFetching}
+                disabled={offline}
+              />
+            </div>
+          </div>
+          <div
+            className="hn-sku-table-scroll"
+            role="region"
+            aria-label={copy(
+              "Bảng danh sách SKU, cuộn ngang để xem đầy đủ",
+              "SKU table, scroll horizontally to view all columns",
+            )}
+            tabIndex={0}
+            aria-busy={query.isLoading}
+          >
+            <table className="sku-table">
+              <thead>
                 <tr>
-                  <td colSpan={11} className="muted">
-                    {t("masterData.common.loadingData")}
-                  </td>
+                  <th className="stt-col">STT</th>
+                  {/* Cột ảnh: nhận diện hàng bằng hình nhanh hơn đọc mã — nhiều mã
+                    DongCheng chỉ khác nhau ở cỡ/đuôi mã máy. */}
+                  <th
+                    className="thumb-col"
+                    aria-label={t("masterData.sku.colImage")}
+                  />
+                  <SortableTh
+                    label="SKU"
+                    sortKey="skuCode"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.sku.colType")}
+                    sortKey="type"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.sku.colBrand")}
+                    sortKey="brand"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.sku.colCategory")}
+                    sortKey="category"
+                    className="wrap-col"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.sku.colMinStock")}
+                    sortKey="minStock"
+                    className="wrap-col"
+                    sortState={sortState}
+                    onSort={requestSort}
+                    sortType="value"
+                  />
+                  <SortableTh
+                    label={t("masterData.sku.colMaxStock")}
+                    sortKey="maxStock"
+                    className="wrap-col"
+                    sortState={sortState}
+                    onSort={requestSort}
+                    sortType="value"
+                  />
+                  <SortableTh
+                    label={t("masterData.status.label")}
+                    sortKey="status"
+                    sortState={sortState}
+                    onSort={requestSort}
+                    sortType="value"
+                  />
+                  <SortableTh
+                    label={t("masterData.sku.colPvApp")}
+                    sortKey="published"
+                    className="wrap-col"
+                    sortState={sortState}
+                    onSort={requestSort}
+                    sortType="value"
+                  />
+                  <th aria-label={t("masterData.common.actionsAria")}>
+                    {copy("Chi tiết", "Details")}
+                  </th>
                 </tr>
-              ) : sortedRows.length > 0 ? (
-                sortedRows.map((record) => {
-                  const recordId = record.sku_id ?? record.id ?? "";
-                  const isPublished = Boolean(record.published_to_app);
-                  const statusAllowsPublish = record.status === "ACTIVE";
-                  return (
-                    <tr key={recordId}>
-                      <td className="stt-col">
-                        {mvpRowNumber(page, perPage, originalIndexOf(record))}
-                      </td>
-                      <td className="thumb-col">
-                        <SkuThumbnail
-                          url={record.image_url}
-                          name={record.sku_name ?? record.name}
-                        />
-                      </td>
-                      <td className="name-col">
-                        <TruncatedText lines={1} maxWidth={300}>
-                          <SkuLink
-                            id={record.sku_id ?? undefined}
-                            code={record.sku_code ?? record.code ?? ""}
+              </thead>
+              <tbody>
+                {query.isLoading ? (
+                  <tr>
+                    <td colSpan={11} className="muted">
+                      <SkuListEmptyState
+                        loading
+                        hasRows={false}
+                        hasFilters={hasFilters}
+                        offline={offline}
+                        refreshing={false}
+                        readonly={!canManage}
+                        onRetry={refreshList}
+                        onReset={resetFilters}
+                      />
+                    </td>
+                  </tr>
+                ) : sortedRows.length > 0 ? (
+                  sortedRows.map((record) => {
+                    const recordId = record.sku_id ?? record.id ?? "";
+                    const isPublished = Boolean(record.published_to_app);
+                    const statusAllowsPublish = record.status === "ACTIVE";
+                    return (
+                      <tr
+                        key={recordId}
+                        data-status={record.status}
+                        data-created={
+                          (mutationNotice?.kind === "success" &&
+                            mutationNotice.code ===
+                              (record.sku_code ?? record.code)) ||
+                          undefined
+                        }
+                      >
+                        <td className="stt-col">
+                          {mvpRowNumber(page, perPage, originalIndexOf(record))}
+                        </td>
+                        <td className="thumb-col">
+                          <SkuThumbnail
+                            url={record.image_url}
+                            name={record.sku_name ?? record.name}
                           />
-                        </TruncatedText>
-                        <TruncatedText
-                          lines={1}
-                          maxWidth={300}
-                          className="muted"
-                        >
-                          {record.sku_name ?? record.name ?? ""}
-                        </TruncatedText>
-                      </td>
-                      <td>{skuTypeLabel(record.sku_type, t)}</td>
-                      {/* Bỏ title={brand_id/category_id}: tooltip trước đây in
+                        </td>
+                        <td className="name-col">
+                          <TruncatedText lines={1} maxWidth={300}>
+                            <SkuLink
+                              id={record.sku_id ?? undefined}
+                              code={record.sku_code ?? record.code ?? ""}
+                            />
+                          </TruncatedText>
+                          <TruncatedText
+                            lines={1}
+                            maxWidth={300}
+                            className="muted"
+                          >
+                            {record.sku_name ?? record.name ?? ""}
+                          </TruncatedText>
+                        </td>
+                        <td>{skuTypeLabel(record.sku_type, t)}</td>
+                        {/* Bỏ title={brand_id/category_id}: tooltip trước đây in
                         nguyên UUID ra khi rê chuột. */}
-                      <td>{refLabel(brandIndex, record.brand_id)}</td>
-                      <td>{refLabel(categoryIndex, record.category_id)}</td>
-                      <td>{stockThresholdLabel(record.min_stock)}</td>
-                      <td>{stockThresholdLabel(record.max_stock)}</td>
-                      <td>
-                        <UiStatusBadge
-                          tone={masterStatusTone(record.status)}
-                          label={masterStatusLabel(record.status, t)}
-                        />
-                      </td>
-                      <td>
-                        <UiStatusBadge
-                          tone={isPublished ? "success" : "warning"}
-                          label={
-                            isPublished
-                              ? t("masterData.sku.publishedBadge")
-                              : t("masterData.sku.unpublishedBadge")
-                          }
-                          title={
-                            isPublished
-                              ? t("masterData.sku.publishedTooltip")
-                              : t("masterData.sku.unpublishedTooltip")
-                          }
-                        />
-                      </td>
-                      <td className="actions-col">
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          sx={{ flexWrap: "nowrap" }}
-                        >
-                          {/* Nhãn mặc định của kind="view" đã là "Xem"/"View"
+                        <td>{refLabel(brandIndex, record.brand_id)}</td>
+                        <td>{refLabel(categoryIndex, record.category_id)}</td>
+                        <td>{stockThresholdLabel(record.min_stock)}</td>
+                        <td>{stockThresholdLabel(record.max_stock)}</td>
+                        <td>
+                          <UiStatusBadge
+                            tone={masterStatusTone(record.status)}
+                            label={masterStatusLabel(record.status, t)}
+                          />
+                        </td>
+                        <td>
+                          <UiStatusBadge
+                            tone={isPublished ? "success" : "warning"}
+                            label={
+                              isPublished
+                                ? t("masterData.sku.publishedBadge")
+                                : t("masterData.sku.unpublishedBadge")
+                            }
+                            title={
+                              isPublished
+                                ? t("masterData.sku.publishedTooltip")
+                                : t("masterData.sku.unpublishedTooltip")
+                            }
+                          />
+                        </td>
+                        <td className="actions-col">
+                          <RowActionGroup>
+                            {/* Nhãn mặc định của kind="view" đã là "Xem"/"View"
                               song ngữ — trước đây ghi cứng "Xem" nên bản tiếng
                               Anh vẫn ra tiếng Việt (file này được miễn quét
                               trong i18n-coverage nên guard không bắt được). */}
-                          <ActionButton
-                            kind="view"
-                            onClick={() => setViewing(record)}
-                          />
-                          {canManage ? (
-                            <ActionButton
-                              kind="edit"
-                              onClick={() => openEdit(record)}
-                            >
-                              {t("masterData.common.edit")}
-                            </ActionButton>
-                          ) : null}
-                          {canPublish ? (
-                            <ActionButton
-                              // Nút 2 trạng thái: màu phải đổi theo NGHĨA của
-                              // lần bấm sắp tới — đỏ khi sắp gỡ, xanh khi sắp đưa lên.
-                              kind={isPublished ? "unpublish" : "publish"}
-                              disabled={
-                                publishMutation.isPending ||
-                                (!isPublished && !statusAllowsPublish)
-                              }
-                              title={
-                                !isPublished && !statusAllowsPublish
-                                  ? t("masterData.sku.errPublishInactive")
-                                  : isPublished
-                                    ? t("masterData.sku.unpublishAction")
-                                    : t("masterData.sku.publishAction")
-                              }
-                              onClick={() => void togglePublish(record)}
-                            >
-                              {isPublished
-                                ? t("masterData.sku.unpublishConfirm")
-                                : t("masterData.sku.publishConfirm")}
-                            </ActionButton>
-                          ) : null}
-                        </Stack>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={11} className="muted">
-                    {t("masterData.sku.empty")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Box>
-
-        <MvpPaginationFooter
-          current={pagination.current}
-          pageSize={perPage}
-          total={pagination.total}
-          itemLabel="SKU"
-          onChange={setPage}
-        />
+                            <RowActionButton
+                              kind="view"
+                              onClick={() => setViewing(record)}
+                            />
+                            {canManage ? (
+                              <RowActionButton
+                                kind="edit"
+                                iconOnly
+                                title={t("masterData.common.edit")}
+                                onClick={() => openEdit(record)}
+                              >
+                                {t("masterData.common.edit")}
+                              </RowActionButton>
+                            ) : null}
+                            {canPublish ? (
+                              <RowActionButton
+                                // Nút 2 trạng thái: màu phải đổi theo NGHĨA của
+                                // lần bấm sắp tới — đỏ khi sắp gỡ, xanh khi sắp đưa lên.
+                                kind={isPublished ? "unpublish" : "publish"}
+                                iconOnly
+                                disabled={
+                                  publishMutation.isPending ||
+                                  (!isPublished && !statusAllowsPublish)
+                                }
+                                title={
+                                  !isPublished && !statusAllowsPublish
+                                    ? t("masterData.sku.errPublishInactive")
+                                    : isPublished
+                                      ? t("masterData.sku.unpublishAction")
+                                      : t("masterData.sku.publishAction")
+                                }
+                                onClick={() => void togglePublish(record)}
+                              >
+                                {isPublished
+                                  ? t("masterData.sku.unpublishConfirm")
+                                  : t("masterData.sku.publishConfirm")}
+                              </RowActionButton>
+                            ) : null}
+                          </RowActionGroup>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={11} className="muted">
+                      <SkuListEmptyState
+                        error={query.error}
+                        loading={false}
+                        hasRows={false}
+                        hasFilters={hasFilters}
+                        offline={offline}
+                        refreshing={false}
+                        readonly={!canManage}
+                        onRetry={refreshList}
+                        onReset={resetFilters}
+                        onCreate={canManage ? openCreate : undefined}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="hn-sku-pagination">
+            <div className="hn-sku-page-info">
+              <span>
+                {copy("Hiển thị", "Showing")}{" "}
+                {pagination.total ? (pagination.current - 1) * perPage + 1 : 0}–
+                {Math.min(pagination.current * perPage, pagination.total)} /{" "}
+                {pagination.total.toLocaleString(
+                  language === "vi" ? "vi-VN" : "en-US",
+                )}{" "}
+                SKU
+              </span>
+              <UiSelect
+                aria-label={t("masterData.common.pageSizeAria")}
+                value={perPage}
+                onChange={(value) => {
+                  setPerPage(Number(value));
+                  setPage(1);
+                }}
+                menuClassName="hn-sku-menu"
+                options={perPageOptions.map((size) => ({
+                  value: size,
+                  label: `${size} / ${copy("trang", "page")}`,
+                }))}
+              />
+            </div>
+            <UiPagination
+              page={pagination.current}
+              pageSize={perPage}
+              total={pagination.total}
+              onPageChange={setPage}
+              showTotal={false}
+              disabled={query.isLoading}
+            />
+          </div>
+        </section>
 
         <UiDialog
+          className="hn-sku-dialog"
           open={Boolean(viewing)}
           onClose={() => setViewing(null)}
           maxWidth="sm"
@@ -1186,6 +1465,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         </UiDialog>
 
         <UiDialog
+          className="hn-sku-dialog"
           open={modalOpen}
           onClose={guardBackdropClose(close)}
           maxWidth="md"
@@ -1211,6 +1491,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               </ActionButton>
               <ActionButton
                 kind="save"
+                className="hn-sku-primary"
+                loading={isSaving}
                 disabled={isSaving}
                 type="submit"
                 form="sku-master-form"
@@ -1861,218 +2143,265 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
 
   return (
     <>
-      <div className="hn-mvp-source-screen" data-mvp-screen="AGY-01">
+      <div
+        className="hn-mvp-source-screen hn-agency-screen"
+        data-mvp-screen="AGY-01"
+      >
         {confirmDialog}
-        <Stack direction="row" sx={TOOLBAR_SX}>
-          <UiTextField
-            value={keyword}
-            onChange={(event) => {
-              setKeyword(event.target.value);
-              setPage(1);
-            }}
-            placeholder={t("masterData.recipient.searchPlaceholder")}
-            slotProps={{
-              htmlInput: { "aria-label": t("masterData.recipient.searchAria") },
-            }}
-            // UAT TC_UI_06: placeholder liệt kê 4 tiêu chí (~317px) — bản 240px
-            // cắt cụt chữ ngay khi ô còn trống.
-            sx={TOOLBAR_SEARCH_WIDE_SX}
-          />
-          <UiSelect
-            aria-label={t("masterData.recipient.typeFilterAria")}
-            value={recipientType}
-            onChange={(value) => {
-              setRecipientType(value as RecipientType | "");
-              setPage(1);
-            }}
-            placeholder={t("masterData.recipient.typeFilterPlaceholder")}
-            minWidth={160}
-            options={RECIPIENT_TYPES.map((value) => ({
-              value,
-              label: RECIPIENT_TYPE_LABELS[value],
-            }))}
-          />
-          <UiSelect
-            aria-label={t("masterData.status.filterAria")}
-            value={status}
-            onChange={(value) => {
-              setStatus(value as MasterStatus | "");
-              setPage(1);
-            }}
-            placeholder={t("masterData.status.allPlaceholder")}
-            minWidth={FILTER_WIDTH.select}
-            options={statusOptions(t)}
-          />
-          <UiSelect
-            aria-label={t("masterData.common.pageSizeAria")}
-            value={perPage}
-            onChange={(value) => {
-              setPerPage(Number(value));
-              setPage(1);
-            }}
-            minWidth={FILTER_WIDTH.pageSize}
-            options={perPageOptions.map((size) => ({
-              value: size,
-              label: `${size} / trang`,
-            }))}
-          />
-          <Box sx={{ flex: 1 }} />
+        <header className="agy-heading">
+          <div>
+            <h1>Đại lý &amp; Nơi nhận</h1>
+            <p>Quản lý hồ sơ đối tượng nhận hàng phục vụ nghiệp vụ xuất kho</p>
+          </div>
           {canManage ? (
             <ActionButton kind="create" onClick={openCreate}>
               {t("masterData.recipient.create")}
             </ActionButton>
           ) : null}
-        </Stack>
+        </header>
+        <section
+          className="agy-list-card"
+          aria-label="Danh sách đại lý và nơi nhận"
+        >
+          <div className="agy-list-heading">
+            <h2>Danh sách đại lý &amp; nơi nhận</h2>
+            <span className="agy-total">
+              {query.isLoading ? "—" : pagination.total.toLocaleString("vi-VN")}
+            </span>
+          </div>
+          <div className="agy-toolbar">
+            <div className="agy-filter">
+              <span>Tìm kiếm</span>
+              <div className="agy-search">
+                <SearchOutlined aria-hidden="true" />
+                <UiTextField
+                  value={keyword}
+                  onChange={(event) => {
+                    setKeyword(event.target.value);
+                    setPage(1);
+                  }}
+                  placeholder={t("masterData.recipient.searchPlaceholder")}
+                  fullWidth
+                  slotProps={{
+                    htmlInput: {
+                      "aria-label": t("masterData.recipient.searchAria"),
+                    },
+                  }}
+                />
+              </div>
+            </div>
+            <div className="agy-filter">
+              <span>Loại nơi nhận</span>
+              <UiSelect
+                aria-label={t("masterData.recipient.typeFilterAria")}
+                value={recipientType}
+                onChange={(value) => {
+                  setRecipientType(value as RecipientType | "");
+                  setPage(1);
+                }}
+                placeholder={t("masterData.recipient.typeFilterPlaceholder")}
+                fullWidth
+                menuClassName="agy-select-menu"
+                options={RECIPIENT_TYPES.map((value) => ({
+                  value,
+                  label: RECIPIENT_TYPE_LABELS[value],
+                }))}
+              />
+            </div>
+            <div className="agy-filter">
+              <span>Trạng thái</span>
+              <UiSelect
+                aria-label={t("masterData.status.filterAria")}
+                value={status}
+                onChange={(value) => {
+                  setStatus(value as MasterStatus | "");
+                  setPage(1);
+                }}
+                placeholder={t("masterData.status.allPlaceholder")}
+                fullWidth
+                menuClassName="agy-select-menu"
+                options={statusOptions(t)}
+              />
+            </div>
+          </div>
 
-        <ApiErrorAlert
-          error={query.error}
-          fallback={t("masterData.recipient.errLoad")}
-          onRetry={() => void query.refetch()}
-        />
+          <ApiErrorAlert
+            error={query.error}
+            fallback={t("masterData.recipient.errLoad")}
+            onRetry={() => void query.refetch()}
+          />
 
-        <Box sx={TABLE_WRAP_SX} aria-busy={query.isLoading}>
-          <table>
-            <thead>
-              <tr>
-                <th className="stt-col">STT</th>
-                <SortableTh
-                  label={t("masterData.recipient.colCode")}
-                  sortKey="code"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.recipient.colName")}
-                  sortKey="name"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.recipient.colType")}
-                  sortKey="recipientType"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.recipient.colMarket")}
-                  sortKey="market"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.recipient.colRegion")}
-                  sortKey="region"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.recipient.colContact")}
-                  sortKey="contact"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.recipient.colPhone")}
-                  sortKey="phone"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.recipient.colAddress")}
-                  sortKey="address"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.status.label")}
-                  sortKey="status"
-                  sortState={sortState}
-                  onSort={requestSort}
-                  sortType="value"
-                />
-                <th aria-label={t("masterData.common.actionsAria")} />
-              </tr>
-            </thead>
-            <tbody>
-              {query.isLoading ? (
+          <Box className="agy-table-wrap" aria-busy={query.isLoading}>
+            <table className="agy-table">
+              <thead>
                 <tr>
-                  <td colSpan={11} className="muted">
-                    {t("masterData.common.loadingData")}
-                  </td>
+                  <th className="stt-col">STT</th>
+                  <SortableTh
+                    label={t("masterData.recipient.colCode")}
+                    sortKey="code"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.recipient.colName")}
+                    sortKey="name"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.recipient.colType")}
+                    sortKey="recipientType"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.recipient.colMarket")}
+                    sortKey="market"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.recipient.colRegion")}
+                    sortKey="region"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.recipient.colContact")}
+                    sortKey="contact"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.recipient.colPhone")}
+                    sortKey="phone"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.recipient.colAddress")}
+                    sortKey="address"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    label={t("masterData.status.label")}
+                    sortKey="status"
+                    sortState={sortState}
+                    onSort={requestSort}
+                    sortType="value"
+                  />
+                  <th aria-label={t("masterData.common.actionsAria")}>
+                    Thao tác
+                  </th>
                 </tr>
-              ) : sortedRows.length > 0 ? (
-                sortedRows.map((record) => (
-                  <tr key={record.agency_id}>
-                    <td className="stt-col">
-                      {mvpRowNumber(page, perPage, originalIndexOf(record))}
-                    </td>
-                    <td>{record.agency_code}</td>
-                    <td style={TRUNCATE_CELL_STYLE}>
-                      <TruncatedText lines={1} maxWidth={220}>
-                        {record.agency_name}
-                      </TruncatedText>
-                    </td>
-                    <td>
-                      {record.recipient_type ? (
-                        <UiStatusBadge
-                          tone="neutral"
-                          label={recipientTypeLabel(record.recipient_type)}
-                        />
-                      ) : (
-                        EMPTY_TEXT
-                      )}
-                    </td>
-                    <td>{agencyPlaceLabel(record.market) || EMPTY_TEXT}</td>
-                    <td>{agencyPlaceLabel(record.region) || EMPTY_TEXT}</td>
-                    <td>{record.contact_name || EMPTY_TEXT}</td>
-                    <td>{record.phone || EMPTY_TEXT}</td>
-                    <td style={TRUNCATE_CELL_STYLE}>
-                      <TruncatedText maxWidth={300}>
-                        {formatAddress(record.address) || EMPTY_TEXT}
-                      </TruncatedText>
-                    </td>
-                    <td>
-                      <UiStatusBadge
-                        tone={masterStatusTone(record.status)}
-                        label={masterStatusLabel(record.status, t)}
-                      />
-                    </td>
-                    <td>
-                      {canManage ? (
-                        <ActionButton
-                          kind="edit"
-                          onClick={() => openEdit(record)}
-                        >
-                          {t("masterData.common.edit")}
-                        </ActionButton>
-                      ) : (
-                        <span className="muted">
-                          {t("masterData.common.viewOnly")}
-                        </span>
-                      )}
+              </thead>
+              <tbody>
+                {query.isLoading ? (
+                  <tr>
+                    <td colSpan={11} className="muted">
+                      {t("masterData.common.loadingData")}
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={11} className="muted">
-                    {t("masterData.recipient.empty")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Box>
+                ) : sortedRows.length > 0 ? (
+                  sortedRows.map((record) => (
+                    <tr key={record.agency_id}>
+                      <td className="stt-col">
+                        {mvpRowNumber(page, perPage, originalIndexOf(record))}
+                      </td>
+                      <td>{record.agency_code}</td>
+                      <td style={TRUNCATE_CELL_STYLE}>
+                        <TruncatedText lines={1} maxWidth={220}>
+                          {record.agency_name}
+                        </TruncatedText>
+                      </td>
+                      <td>
+                        {record.recipient_type ? (
+                          <UiStatusBadge
+                            tone="neutral"
+                            label={recipientTypeLabel(record.recipient_type)}
+                          />
+                        ) : (
+                          EMPTY_TEXT
+                        )}
+                      </td>
+                      <td>{agencyPlaceLabel(record.market) || EMPTY_TEXT}</td>
+                      <td>{agencyPlaceLabel(record.region) || EMPTY_TEXT}</td>
+                      <td>{record.contact_name || EMPTY_TEXT}</td>
+                      <td>{record.phone || EMPTY_TEXT}</td>
+                      <td style={TRUNCATE_CELL_STYLE}>
+                        <TruncatedText maxWidth={300}>
+                          {formatAddress(record.address) || EMPTY_TEXT}
+                        </TruncatedText>
+                      </td>
+                      <td
+                        className={
+                          record.status === "ACTIVE"
+                            ? "agy-status-active"
+                            : "agy-status-inactive"
+                        }
+                      >
+                        <UiStatusBadge
+                          tone={masterStatusTone(record.status)}
+                          label={masterStatusLabel(record.status, t)}
+                        />
+                      </td>
+                      <td>
+                        {canManage ? (
+                          <RowActionButton
+                            kind="edit"
+                            onClick={() => openEdit(record)}
+                          >
+                            {t("masterData.common.edit")}
+                          </RowActionButton>
+                        ) : (
+                          <span className="muted">
+                            {t("masterData.common.viewOnly")}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={11} className="muted">
+                      {t("masterData.recipient.empty")}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </Box>
 
-        <MvpPaginationFooter
-          current={pagination.current}
-          pageSize={perPage}
-          total={pagination.total}
-          itemLabel={t("masterData.recipient.itemLabel")}
-          onChange={setPage}
-        />
-
+          <div className="agy-footer-row">
+            <MvpPaginationFooter
+              current={pagination.current}
+              pageSize={perPage}
+              total={pagination.total}
+              itemLabel={t("masterData.recipient.itemLabel")}
+              onChange={setPage}
+            />
+            <div className="agy-filter agy-page-size">
+              <span>Số dòng mỗi trang</span>
+              <UiSelect
+                aria-label={t("masterData.common.pageSizeAria")}
+                value={perPage}
+                onChange={(value) => {
+                  setPerPage(Number(value));
+                  setPage(1);
+                }}
+                fullWidth
+                menuClassName="agy-select-menu"
+                options={perPageOptions.map((size) => ({
+                  value: size,
+                  label: `${size} / trang`,
+                }))}
+              />
+            </div>
+          </div>
+        </section>
         <UiDialog
+          className="agy-dialog"
           open={modalOpen}
           onClose={guardBackdropClose(close)}
           maxWidth="sm"
@@ -2194,7 +2523,12 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   error={Boolean(fieldErrors.recipient_type)}
                   helperText={fieldErrors.recipient_type}
                   slotProps={{
-                    select: { displayEmpty: true },
+                    select: {
+                      displayEmpty: true,
+                      MenuProps: {
+                        slotProps: { paper: { className: "agy-select-menu" } },
+                      },
+                    },
                     inputLabel: { shrink: true },
                   }}
                 >
@@ -2302,6 +2636,13 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <UiTextField
                   id="agency-status"
+                  slotProps={{
+                    select: {
+                      MenuProps: {
+                        slotProps: { paper: { className: "agy-select-menu" } },
+                      },
+                    },
+                  }}
                   select
                   label={t("masterData.status.label")}
                   fullWidth
@@ -2381,6 +2722,8 @@ const DEFECT_FORM_FIELDS = {
 
 export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
+  const language = useLanguageStore((state) => state.language);
+  const copy = (vi: string, en: string) => (language === "en" ? en : vi);
   const [defectSearchParams] = useSearchParams();
   const openCreateRequested =
     openCreateOnMount || defectSearchParams.get("screen") === "DEF-02";
@@ -2395,6 +2738,29 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [form, setForm] = useState<DefectPayload>(EMPTY_DEFECT_FORM);
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [offline, setOffline] = useState(() => !navigator.onLine);
+  const [notice, setNotice] = useState<DefectMutationNoticeValue | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [verificationCode, setVerificationCode] = useState<string | null>(null);
+  const [reloadingRecord, setReloadingRecord] = useState(false);
+  const recoverySession = useRef(0);
+  const verificationRequest = useRef(0);
+  const defectFormRef = useRef<HTMLFormElement>(null);
+  const warehouseName = useAuthStore(
+    (state) => state.currentContext?.warehouse_name,
+  );
+  useEffect(() => {
+    const update = () => setOffline(!navigator.onLine);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+      recoverySession.current += 1;
+      verificationRequest.current += 1;
+    };
+  }, []);
 
   const query = useMvpDefects({
     keyword: keyword.trim(),
@@ -2421,8 +2787,18 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     },
   );
 
+  // Recovery responses belong to the form session that requested them.
+  const resetRecovery = () => {
+    recoverySession.current += 1;
+    verificationRequest.current += 1;
+    setReloadingRecord(false);
+    setVerificationCode(null);
+  };
+
   const openCreate = () => {
+    setNotice(null);
     if (!canManage) return;
+    resetRecovery();
     setEditing(null);
     setForm({ ...EMPTY_DEFECT_FORM });
     setFormError("");
@@ -2436,7 +2812,9 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   }, [canManage, openCreateRequested]);
 
   const openEdit = (record: DefectRecord) => {
+    setNotice(null);
     if (!canManage) return;
+    resetRecovery();
     setEditing(record);
     setForm({
       defect_code: record.defect_code,
@@ -2449,12 +2827,130 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     setModalOpen(true);
   };
 
-  const close = () => {
+  const closeNow = () => {
     if (isSaving) return;
+    resetRecovery();
     setModalOpen(false);
     setEditing(null);
     setFormError("");
     setFieldErrors({});
+    setNotice(null);
+    setDiscardOpen(false);
+  };
+  const initialForm = editing
+    ? {
+        defect_code: editing.defect_code,
+        defect_name: editing.defect_name,
+        description: editing.description ?? "",
+        status: editing.status,
+      }
+    : EMPTY_DEFECT_FORM;
+  const dirty = (Object.keys(initialForm) as (keyof DefectPayload)[]).some(
+    (key) => (form[key] ?? "") !== (initialForm[key] ?? ""),
+  );
+  const close = () => {
+    if (isSaving) return;
+    // Stop a late reload from replacing the draft while the exit prompt is open.
+    if (reloadingRecord) {
+      recoverySession.current += 1;
+      setReloadingRecord(false);
+    }
+    if (dirty) setDiscardOpen(true);
+    else closeNow();
+  };
+  const resetFilters = () => {
+    setKeyword("");
+    setStatus("");
+    setPage(1);
+  };
+  const refresh = () => {
+    setRefreshKey((key) => key + 1);
+    void query.refetch();
+  };
+  const hasFilters = Boolean(keyword.trim() || status);
+  const blockingError = rows.length === 0 && Boolean(query.error || offline);
+  const busy = query.isLoading && !offline;
+  const refreshing = Boolean(query.isFetching && !query.isLoading);
+  const stale = rows.length > 0 && Boolean(query.error || offline);
+  const mutationDisabled = busy || refreshing || stale || blockingError;
+  const feedback = {
+    error: query.error,
+    loading: busy,
+    refreshing,
+    hasRows: rows.length > 0,
+    hasFilters,
+    offline,
+    readonly: !canManage,
+    onRetry: refresh,
+    onReset: resetFilters,
+    updatedAt: query.dataUpdatedAt,
+  };
+  const checkSavedResult = () => {
+    // Verify the attempted code with an unfiltered, fresh read; never retry the write.
+    const code = form.defect_code.trim();
+    resetRecovery();
+    setKeyword(code);
+    setStatus("");
+    setPage(1);
+    setModalOpen(false);
+    setVerificationCode(code);
+  };
+  const { refetch: refetchDefects } = query;
+  useEffect(() => {
+    if (
+      verificationCode === null ||
+      keyword !== verificationCode ||
+      status !== "" ||
+      page !== 1
+    )
+      return;
+    const request = ++verificationRequest.current;
+    const finish = () => {
+      if (verificationRequest.current === request) setVerificationCode(null);
+    };
+    // A filter change does not cancel settlement of this pending verification.
+    // A replaced/closed form or unmount invalidates its request token instead.
+    void refetchDefects().then(finish, finish);
+  }, [verificationCode, keyword, status, page, refetchDefects]);
+  const reloadEditing = async () => {
+    if (reloadingRecord || !editing || !modalOpen) return;
+    const session = recoverySession.current;
+    const recordId = editing.defect_id;
+    setReloadingRecord(true);
+    try {
+      const result = await query.refetch();
+      if (recoverySession.current !== session) return;
+      if (result.isError || result.error) {
+        setFormError(
+          copy(
+            "Không thể tải dữ liệu mới. Vui lòng thử lại; bản đang nhập vẫn được giữ nguyên.",
+            "Unable to load the latest data. Try again; your draft has been preserved.",
+          ),
+        );
+        return;
+      }
+      const current = result.data?.data.find(
+        (row) => row.defect_id === recordId,
+      );
+      if (current) openEdit(current);
+      else
+        setFormError(
+          copy(
+            "Hồ sơ không còn trong kết quả hiện tại. Đóng biểu mẫu và cập nhật danh sách để kiểm tra lại.",
+            "This record is no longer in the current results. Close the form and refresh the list to check it.",
+          ),
+        );
+    } catch {
+      if (recoverySession.current !== session) return;
+      setFormError(
+        copy(
+          "Không thể tải dữ liệu mới. Vui lòng thử lại.",
+          "Unable to load the latest data. Please try again.",
+        ),
+      );
+    } finally {
+      if (recoverySession.current === session) setReloadingRecord(false);
+    }
   };
 
   const validateDefectForm = (): boolean => {
@@ -2485,7 +2981,25 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
-    if (!validateDefectForm()) return;
+    if (
+      isSaving ||
+      !canManage ||
+      notice?.kind === "unknown" ||
+      notice?.kind === "conflict"
+    )
+      return;
+    setNotice(null);
+    if (!validateDefectForm()) {
+      setNotice({ kind: "validation" });
+      requestAnimationFrame(() =>
+        document
+          .querySelector<HTMLInputElement>(
+            '#defect-master-form [aria-invalid="true"]',
+          )
+          ?.focus(),
+      );
+      return;
+    }
     const payload: DefectPayload = {
       defect_code: form.defect_code.trim(),
       defect_name: form.defect_name.trim(),
@@ -2495,7 +3009,11 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     if (form.status === "INACTIVE" && editing?.status === "ACTIVE") {
       const confirmed = await confirmAction({
         title: t("masterData.defect.deactivateTitle"),
-        content: t("masterData.defect.deactivateBody"),
+        content: (
+          <span className="hn-defect-confirm-content">
+            {t("masterData.defect.deactivateBody")}
+          </span>
+        ),
         confirmText: t("masterData.sku.deactivateConfirm"),
       });
       if (!confirmed) return;
@@ -2513,6 +3031,12 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         await createMutation.mutateAsync(payload);
         toast.success(t("masterData.defect.created"));
       }
+      setNotice({
+        kind: "success",
+        code: payload.defect_code,
+        name: payload.defect_name,
+        editing: Boolean(editing),
+      });
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
@@ -2533,6 +3057,35 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         ),
       }));
       toast.error(getMutationErrorMessage(error));
+      const normalized = normalizeError(error);
+      const transportCode =
+        typeof error === "object" && error !== null && "code" in error
+          ? String(error.code)
+          : "";
+      const unknown = ["ECONNABORTED", "ETIMEDOUT", "ERR_NETWORK"].includes(
+        transportCode,
+      );
+      const conflict =
+        normalized.status === 412 ||
+        /STALE_VERSION|VERSION_CONFLICT|CONCURRENCY/i.test(
+          normalized.code ?? "",
+        );
+      const duplicate =
+        Boolean(serverFieldErrors.defectCode) ||
+        /DUPLICATE|ALREADY_EXISTS/i.test(normalized.code ?? "");
+      setNotice({
+        kind: unknown
+          ? "unknown"
+          : conflict
+            ? "conflict"
+            : duplicate
+              ? "duplicate"
+              : normalized.status === 422
+                ? "validation"
+                : "failed",
+        code: payload.defect_code,
+        editing: Boolean(editing),
+      });
       setFormError(message ?? "");
     }
   };
@@ -2544,310 +3097,662 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   return (
-    <>
-      <div className="hn-mvp-source-screen" data-mvp-screen="DEF-01">
-        {confirmDialog}
-        <Stack direction="row" sx={TOOLBAR_SX}>
-          <UiTextField
-            value={keyword}
-            onChange={(event) => {
-              setKeyword(event.target.value);
-              setPage(1);
-            }}
-            placeholder={t("masterData.defect.searchPlaceholder")}
-            slotProps={{
-              htmlInput: { "aria-label": t("masterData.defect.searchAria") },
-            }}
-            sx={TOOLBAR_SEARCH_SX}
-          />
-          <UiSelect
-            aria-label={t("masterData.status.filterAria")}
-            value={status}
-            onChange={(value) => {
-              setStatus(value as MasterStatus | "");
-              setPage(1);
-            }}
-            placeholder={t("masterData.status.allPlaceholder")}
-            minWidth={FILTER_WIDTH.select}
-            options={statusOptions(t)}
-          />
-          <UiSelect
-            aria-label={t("masterData.common.pageSizeAria")}
-            value={perPage}
-            onChange={(value) => {
-              setPerPage(Number(value));
-              setPage(1);
-            }}
-            minWidth={FILTER_WIDTH.pageSize}
-            options={perPageOptions.map((size) => ({
-              value: size,
-              label: `${size} / trang`,
-            }))}
-          />
-          <Box sx={{ flex: 1 }} />
-          {canManage ? (
-            <ActionButton kind="create" onClick={openCreate}>
-              {t("masterData.defect.create")}
+    <div
+      className="hn-mvp-source-screen hn-defect-screen"
+      data-mvp-screen="DEF-01"
+    >
+      {confirmDialog}
+      <header className="hn-defect-header">
+        <div className="hn-defect-heading-copy">
+          <div className="hn-defect-title-row">
+            <h1>{copy("Danh mục bệnh / lỗi", "Defect catalog")}</h1>
+            {!canManage && (
+              <span className="hn-defect-readonly">
+                <DefectSymbol name="eye" />
+                {copy("Chỉ xem", "View only")}
+              </span>
+            )}
+          </div>
+          <p>
+            {copy(
+              "Quản lý hồ sơ bệnh/lỗi phục vụ nghiệp vụ bảo hành",
+              "Manage defect records for warranty operations",
+            )}
+          </p>
+        </div>
+        <div className="hn-defect-header-actions">
+          <div className="hn-defect-warehouse">
+            <DefectSymbol name="warehouse" />
+            <div>
+              <strong>{warehouseName || "Kho Hoa Nam"}</strong>
+              <span>
+                <i />
+                {copy("Đang hoạt động", "Active")}
+              </span>
+            </div>
+          </div>
+          {canManage && (
+            <ActionButton
+              kind="create"
+              icon={<DefectSymbol name="plus" />}
+              aria-label={t("masterData.defect.create")}
+              className="hn-defect-primary"
+              onClick={openCreate}
+              disabled={mutationDisabled}
+            >
+              {copy("Thêm lỗi / bệnh", "Add defect")}
             </ActionButton>
-          ) : null}
-        </Stack>
-
-        <ApiErrorAlert
-          error={query.error}
-          fallback={t("masterData.defect.errLoad")}
-          onRetry={() => void query.refetch()}
-        />
-
-        <Box sx={TABLE_WRAP_SX} aria-busy={query.isLoading}>
-          <table>
-            <thead>
-              <tr>
-                <th className="stt-col">STT</th>
-                <SortableTh
-                  label={t("masterData.defect.colCode")}
-                  sortKey="code"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.defect.colName")}
-                  sortKey="name"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.common.description")}
-                  sortKey="description"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("masterData.status.label")}
-                  sortKey="status"
-                  sortState={sortState}
-                  onSort={requestSort}
-                  sortType="value"
-                />
-                <th aria-label={t("masterData.common.actionsAria")} />
-              </tr>
-            </thead>
-            <tbody>
-              {query.isLoading ? (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    {t("masterData.common.loadingData")}
-                  </td>
-                </tr>
-              ) : sortedRows.length > 0 ? (
-                sortedRows.map((record) => (
-                  <tr key={record.defect_id}>
-                    <td className="stt-col">
-                      {mvpRowNumber(page, perPage, originalIndexOf(record))}
-                    </td>
-                    <td>{record.defect_code}</td>
-                    <td style={TRUNCATE_CELL_STYLE}>
-                      <TruncatedText lines={1} maxWidth={220}>
-                        {record.defect_name}
-                      </TruncatedText>
-                    </td>
-                    <td style={TRUNCATE_CELL_STYLE}>
-                      <TruncatedText maxWidth={300}>
-                        {record.description || EMPTY_TEXT}
-                      </TruncatedText>
-                    </td>
-                    <td>
-                      <UiStatusBadge
-                        tone={masterStatusTone(record.status)}
-                        label={masterStatusLabel(record.status, t)}
+          )}
+        </div>
+      </header>
+      {!blockingError && (
+        <>
+          <DefectOverview refreshKey={refreshKey} loading={busy} stale={stale} />
+          <form
+            className="hn-defect-filters"
+            onSubmit={(event) => {
+              event.preventDefault();
+              refresh();
+            }}
+          >
+            <div className="hn-defect-filter hn-defect-filter-search">
+              <label htmlFor="defect-list-search">
+                {copy("Tìm kiếm", "Search")}
+              </label>
+              <UiTextField
+                id="defect-list-search"
+                value={keyword}
+                disabled={busy}
+                onChange={(event) => {
+                  setKeyword(event.target.value);
+                  setPage(1);
+                }}
+                placeholder={copy(
+                  "Nhập mã hoặc tên bệnh/lỗi",
+                  "Enter defect code or name",
+                )}
+                slotProps={{
+                  htmlInput: {
+                    "aria-label": t("masterData.defect.searchAria"),
+                  },
+                  input: {
+                    startAdornment: (
+                      <DefectSymbol
+                        name="search"
+                        className="hn-defect-search-icon"
                       />
-                    </td>
-                    <td>
-                      {canManage ? (
-                        <ActionButton
-                          kind="edit"
-                          onClick={() => openEdit(record)}
-                        >
-                          {t("masterData.common.edit")}
-                        </ActionButton>
-                      ) : (
-                        <span className="muted">
-                          {t("masterData.common.viewOnly")}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    {t("masterData.defect.empty")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Box>
-
-        <MvpPaginationFooter
-          current={pagination.current}
-          pageSize={perPage}
-          total={pagination.total}
-          itemLabel={t("masterData.defect.itemLabel")}
-          onChange={setPage}
-        />
-
-        <UiDialog
-          open={modalOpen}
-          onClose={guardBackdropClose(close)}
-          maxWidth="sm"
-          fullWidth
-          title={
-            <>
-              {editing
-                ? t("masterData.defect.dialogEdit")
-                : t("masterData.defect.dialogCreate")}
-              <ActionIconButton
-                kind="close"
-                label={t("common.close")}
-                onClick={close}
-                disabled={isSaving}
-                sx={{ position: "absolute", right: 10, top: 8 }}
+                    ),
+                    endAdornment: keyword ? (
+                      <button
+                        className="hn-defect-clear"
+                        type="button"
+                        onClick={() => {
+                          setKeyword("");
+                          setPage(1);
+                        }}
+                        aria-label={copy("Xóa từ khóa", "Clear keyword")}
+                      >
+                        <DefectSymbol name="close" />
+                      </button>
+                    ) : undefined,
+                  },
+                }}
+                fullWidth
               />
-            </>
-          }
-          actions={
-            <>
-              <ActionButton kind="cancel" onClick={close} disabled={isSaving}>
-                {t("masterData.common.cancel")}
+            </div>
+            <div className="hn-defect-filter">
+              <label htmlFor="defect-list-status">
+                {t("masterData.status.label")}
+              </label>
+              <UiSelect
+                id="defect-list-status"
+                aria-label={t("masterData.status.filterAria")}
+                value={status}
+                disabled={busy}
+                onChange={(value) => {
+                  setStatus(value as MasterStatus | "");
+                  setPage(1);
+                }}
+                fullWidth
+                displayEmpty
+                menuClassName="hn-defect-menu"
+                options={[
+                  { value: "", label: copy("Tất cả", "All") },
+                  ...statusOptions(t),
+                ]}
+              />
+            </div>
+            <div className="hn-defect-filter-actions">
+              <ActionButton
+                kind="filter"
+                icon={<span />}
+                className="hn-defect-primary"
+                type="submit"
+                disabled={busy || refreshing || offline}
+              >
+                {copy("Áp dụng", "Apply")}
               </ActionButton>
               <ActionButton
-                kind="save"
-                disabled={isSaving}
-                type="submit"
-                form="defect-master-form"
+                kind="reset"
+                icon={<span />}
+                className="hn-defect-secondary"
+                onClick={resetFilters}
+                disabled={busy}
               >
-                {isSaving
-                  ? t("masterData.common.saving")
-                  : t("masterData.defect.submit")}
+                {copy("Đặt lại", "Reset")}
               </ActionButton>
-            </>
-          }
-        >
-          <form id="defect-master-form" onSubmit={submit} noValidate>
-            {formError ? (
-              <Box sx={{ mb: "14px" }}>
-                <UiAlert tone="error">{formError}</UiAlert>
-              </Box>
-            ) : null}
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="defect-code"
-                  slotProps={{
-                    htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_code },
-                  }}
-                  label={t("masterData.defect.colCode")}
-                  required
-                  fullWidth
-                  value={form.defect_code}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setForm((current) => ({
-                      ...current,
-                      defect_code: value,
-                    }));
-                    setFieldErrors((current) =>
-                      current.defect_code
-                        ? { ...current, defect_code: "" }
-                        : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.defect_code)}
-                  helperText={fieldErrors.defect_code}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="defect-name"
-                  slotProps={{
-                    htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_name },
-                  }}
-                  label={t("masterData.defect.colName")}
-                  required
-                  fullWidth
-                  value={form.defect_name}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setForm((current) => ({
-                      ...current,
-                      defect_name: value,
-                    }));
-                    setFieldErrors((current) =>
-                      current.defect_name
-                        ? { ...current, defect_name: "" }
-                        : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.defect_name)}
-                  helperText={fieldErrors.defect_name}
-                />
-              </Grid>
-              <Grid size={12}>
-                <UiTextField
-                  id="defect-description"
-                  slotProps={{
-                    htmlInput: { maxLength: DEFECT_TEXT_MAX.description },
-                  }}
-                  label={t("masterData.common.description")}
-                  fullWidth
-                  multiline
-                  minRows={3}
-                  value={form.description ?? ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setForm((current) => ({
-                      ...current,
-                      description: value,
-                    }));
-                    setFieldErrors((current) =>
-                      current.description
-                        ? { ...current, description: "" }
-                        : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.description)}
-                  helperText={fieldErrors.description}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="defect-status"
-                  select
-                  label={t("masterData.status.label")}
-                  fullWidth
-                  disabled={isSaving}
-                  value={form.status}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      status: event.target.value as MasterStatus,
-                    }))
-                  }
-                >
-                  {statusOptions(t).map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </UiTextField>
-              </Grid>
-            </Grid>
+            </div>
           </form>
-        </UiDialog>
-      </div>
-    </>
+          {!canManage && (
+            <div className="hn-defect-readonly-note">
+              <DefectSymbol name="info" />
+              {copy(
+                "Bạn có thể tra cứu danh mục; chức năng thêm và sửa không khả dụng với quyền hiện tại.",
+                "You can browse the catalog; adding and editing are unavailable with your current permissions.",
+              )}
+            </div>
+          )}
+        </>
+      )}
+      {stale && <DefectNotice {...feedback} />}
+      {!modalOpen && notice && (
+        <DefectMutationNotice
+          notice={notice}
+          placement="list"
+          busy={verificationCode !== null}
+          onDismiss={() => setNotice(null)}
+          onCheck={checkSavedResult}
+          onRetry={() => setModalOpen(true)}
+          onReload={() => void reloadEditing()}
+        />
+      )}
+      {blockingError ? (
+        <section className="hn-defect-blocking">
+          <DefectEmptyState {...feedback} />
+        </section>
+      ) : (
+        <section
+          className="hn-defect-list-card"
+          aria-labelledby="defect-list-title"
+        >
+          <div className="hn-defect-list-heading">
+            <h2 id="defect-list-title">
+              {copy("Danh sách bệnh / lỗi", "Defect list")}
+              <span className="hn-defect-count">
+                {busy
+                  ? "—"
+                  : pagination.total.toLocaleString(
+                      language === "en" ? "en-US" : "vi-VN",
+                    )}{" "}
+                {hasFilters
+                  ? copy("kết quả", "results")
+                  : copy("hồ sơ", "records")}
+              </span>
+              {stale && (
+                <span className="hn-defect-stale-badge">
+                  {copy("Dữ liệu gần nhất", "Last available data")}
+                </span>
+              )}
+            </h2>
+            <ActionButton
+              kind="refresh"
+              icon={<DefectSymbol name="refresh" />}
+              className="hn-defect-secondary hn-defect-refresh"
+              onClick={refresh}
+              disabled={busy || offline}
+              loading={refreshing}
+            >
+              {refreshing
+                ? copy("Đang cập nhật...", "Updating...")
+                : copy("Cập nhật mới nhất", "Refresh latest")}
+            </ActionButton>
+          </div>
+          {refreshing && !stale && <DefectNotice {...feedback} />}
+          {hasFilters && (
+            <div className="hn-defect-applied">
+              <DefectSymbol name="filter" />
+              <strong>{copy("Đã áp dụng", "Applied")}</strong>
+              {keyword.trim() && (
+                <span>
+                  {copy("Tìm kiếm:", "Search:")} {keyword.trim()}
+                </span>
+              )}
+              {status && (
+                <span>
+                  {t("masterData.status.label")}: {masterStatusLabel(status, t)}
+                </span>
+              )}
+            </div>
+          )}
+          <div
+            className="hn-defect-table-scroll"
+            role="region"
+            aria-label={copy(
+              "Bảng danh mục bệnh / lỗi",
+              "Defect catalog table",
+            )}
+            tabIndex={0}
+            aria-busy={busy || refreshing}
+          >
+            <table
+              className="defect-table"
+              data-empty={(!busy && sortedRows.length === 0) || undefined}
+            >
+              <thead>
+                <tr>
+                  <th className="stt-col">STT</th>
+                  <SortableTh
+                    className="code-col"
+                    label={
+                      <>
+                        <span className="hn-defect-desktop-label">
+                          {t("masterData.defect.colCode")}
+                        </span>
+                        <span className="hn-defect-tablet-label">
+                          {copy("Mã / Tên lỗi, bệnh", "Code / Defect name")}
+                        </span>
+                      </>
+                    }
+                    tooltipLabel={t("masterData.defect.colCode")}
+                    sortKey="code"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    className="name-col"
+                    label={t("masterData.defect.colName")}
+                    sortKey="name"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    className="description-col"
+                    label={t("masterData.common.description")}
+                    sortKey="description"
+                    sortState={sortState}
+                    onSort={requestSort}
+                  />
+                  <SortableTh
+                    className="status-col"
+                    label={t("masterData.status.label")}
+                    sortKey="status"
+                    sortState={sortState}
+                    onSort={requestSort}
+                    sortType="value"
+                  />
+                  <th className="actions-col">{copy("Thao tác", "Actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {busy ? (
+                  Array.from({ length: 7 }, (_, row) => (
+                    <tr
+                      key={row}
+                      aria-hidden="true"
+                      className="hn-defect-skeleton-row"
+                    >
+                      {[
+                        "stt-col",
+                        "code-col",
+                        "name-col",
+                        "description-col",
+                        "status-col",
+                        "actions-col",
+                      ].map((col) => (
+                        <td className={col} key={col}>
+                          <span className="hn-defect-skeleton" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : sortedRows.length > 0 ? (
+                  sortedRows.map((record) => (
+                    <tr
+                      key={record.defect_id}
+                      data-status={record.status}
+                      data-recently-saved={
+                        (notice?.kind === "success" &&
+                          notice.code === record.defect_code) ||
+                        undefined
+                      }
+                    >
+                      <td className="stt-col">
+                        {String(
+                          mvpRowNumber(page, perPage, originalIndexOf(record)),
+                        ).padStart(2, "0")}
+                      </td>
+                      <td className="code-col">
+                        <span>{record.defect_code}</span>
+                        <span className="hn-defect-tablet-name">
+                          {record.defect_name}
+                        </span>
+                      </td>
+                      <td className="name-col">
+                        <TruncatedText lines={1} maxWidth="100%">
+                          {record.defect_name}
+                        </TruncatedText>
+                      </td>
+                      <td className="description-col">
+                        <TruncatedText lines={2} maxWidth="100%">
+                          {record.description || EMPTY_TEXT}
+                        </TruncatedText>
+                      </td>
+                      <td className="status-col">
+                        <UiStatusBadge
+                          tone={masterStatusTone(record.status)}
+                          label={masterStatusLabel(record.status, t)}
+                        />
+                      </td>
+                      <td className="actions-col">
+                        {canManage ? (
+                          <RowActionButton
+                            kind="edit"
+                            onClick={() => openEdit(record)}
+                            disabled={mutationDisabled}
+                          >
+                            {t("masterData.common.edit")}
+                          </RowActionButton>
+                        ) : (
+                          <span aria-label={copy("Chỉ xem", "View only")}>
+                            —
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6}>
+                      <DefectEmptyState {...feedback} />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {busy && (
+            <span className="hn-defect-sr-only" role="status">
+              {t("masterData.common.loadingData")}
+            </span>
+          )}
+          <div className="hn-defect-pagination">
+            <span>
+              {copy("Hiển thị", "Showing")}{" "}
+              {pagination.total === 0
+                ? 0
+                : (pagination.current - 1) * perPage + 1}
+              {pagination.total > 0
+                ? "–" + Math.min(pagination.current * perPage, pagination.total)
+                : ""}{" "}
+              / {pagination.total}{" "}
+              {hasFilters
+                ? copy("kết quả", "results")
+                : copy("hồ sơ", "records")}
+            </span>
+            <div className="hn-defect-page-controls">
+              <UiSelect
+                aria-label={t("masterData.common.pageSizeAria")}
+                value={perPage}
+                disabled={busy}
+                onChange={(value) => {
+                  setPerPage(Number(value));
+                  setPage(1);
+                }}
+                menuClassName="hn-defect-menu"
+                options={perPageOptions.map((size) => ({
+                  value: size,
+                  label: t("shared.table.perPage", { size }),
+                }))}
+              />
+              <UiPagination
+                page={pagination.current}
+                pageSize={perPage}
+                total={pagination.total}
+                showTotal={false}
+                onPageChange={setPage}
+              />
+            </div>
+          </div>
+        </section>
+      )}
+      <UiDialog
+        className="hn-defect-dialog"
+        open={modalOpen}
+        onClose={(event, reason) => guardBackdropClose(close)(event, reason)}
+        maxWidth="sm"
+        fullWidth
+        title={
+          <>
+            <span className="hn-defect-dialog-title">
+              <span className="hn-defect-dialog-icon">
+                <DefectSymbol name={editing ? "edit" : "clipboard"} />
+              </span>
+              <span>
+                {editing
+                  ? copy("Sửa lỗi / bệnh", "Edit defect")
+                  : copy("Thêm lỗi / bệnh", "Add defect")}
+                <small>
+                  {editing
+                    ? copy(
+                        "Các trường có dấu * là bắt buộc.",
+                        "Fields marked * are required.",
+                      )
+                    : copy(
+                        "Các trường có dấu * là bắt buộc.",
+                        "Fields marked * are required.",
+                      )}
+                </small>
+              </span>
+            </span>
+            <ActionIconButton
+              kind="close"
+              label={t("common.close")}
+              onClick={close}
+              disabled={isSaving}
+              sx={{ position: "absolute", right: 16, top: 20 }}
+            />
+          </>
+        }
+        actions={
+          <>
+            <ActionButton
+              kind="cancel"
+              icon={<span />}
+              className="hn-defect-secondary"
+              onClick={close}
+              disabled={isSaving}
+            >
+              {t("masterData.common.cancel")}
+            </ActionButton>
+            <ActionButton
+              kind="save"
+              icon={<span />}
+              aria-label={t("masterData.defect.submit")}
+              className="hn-defect-primary"
+              disabled={
+                isSaving ||
+                notice?.kind === "unknown" ||
+                notice?.kind === "conflict"
+              }
+              loading={isSaving}
+              type="submit"
+              form="defect-master-form"
+            >
+              {isSaving
+                ? copy("Đang lưu...", "Saving...")
+                : copy("Lưu", "Save")}
+            </ActionButton>
+          </>
+        }
+      >
+        <form
+          ref={defectFormRef}
+          id="defect-master-form"
+          onSubmit={submit}
+          noValidate
+        >
+          <DefectMutationNotice
+            notice={notice}
+            placement="form"
+            onDismiss={() => setNotice(null)}
+            onCheck={checkSavedResult}
+            onReload={() => void reloadEditing()}
+            onRetry={() => defectFormRef.current?.requestSubmit()}
+            busy={isSaving || reloadingRecord || verificationCode !== null}
+          />
+          {formError && <UiAlert tone="error">{formError}</UiAlert>}
+          <div className="hn-defect-fields">
+            <UiTextField
+              id="defect-code"
+              slotProps={{
+                inputLabel: { shrink: true },
+                htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_code },
+              }}
+              label={t("masterData.defect.colCode")}
+              required
+              fullWidth
+              autoFocus={!editing}
+              value={form.defect_code}
+              placeholder={copy("Nhập mã lỗi", "Enter defect code")}
+              onChange={(event) => {
+                setForm((current) => ({
+                  ...current,
+                  defect_code: event.target.value,
+                }));
+                setFieldErrors((current) => ({ ...current, defect_code: "" }));
+              }}
+              disabled={
+                isSaving || reloadingRecord || notice?.kind === "unknown"
+              }
+              error={Boolean(fieldErrors.defect_code)}
+              helperText={fieldErrors.defect_code}
+            />
+            <UiTextField
+              id="defect-name"
+              slotProps={{
+                inputLabel: { shrink: true },
+                htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_name },
+              }}
+              label={t("masterData.defect.colName")}
+              required
+              fullWidth
+              autoFocus={Boolean(editing)}
+              value={form.defect_name}
+              placeholder={copy("Nhập tên lỗi / bệnh", "Enter defect name")}
+              onChange={(event) => {
+                setForm((current) => ({
+                  ...current,
+                  defect_name: event.target.value,
+                }));
+                setFieldErrors((current) => ({ ...current, defect_name: "" }));
+              }}
+              disabled={
+                isSaving || reloadingRecord || notice?.kind === "unknown"
+              }
+              error={Boolean(fieldErrors.defect_name)}
+              helperText={fieldErrors.defect_name}
+            />
+            <UiTextField
+              id="defect-description"
+              slotProps={{
+                inputLabel: { shrink: true },
+                htmlInput: { maxLength: DEFECT_TEXT_MAX.description },
+              }}
+              label={t("masterData.common.description")}
+              fullWidth
+              multiline
+              minRows={3}
+              value={form.description ?? ""}
+              placeholder={copy("Nhập mô tả", "Enter description")}
+              onChange={(event) => {
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }));
+                setFieldErrors((current) => ({ ...current, description: "" }));
+              }}
+              disabled={
+                isSaving || reloadingRecord || notice?.kind === "unknown"
+              }
+              error={Boolean(fieldErrors.description)}
+              helperText={fieldErrors.description}
+            />
+            <UiTextField
+              id="defect-status"
+              slotProps={{
+                inputLabel: { shrink: true },
+                select: {
+                  MenuProps: {
+                    slotProps: { paper: { className: "hn-defect-menu" } },
+                  },
+                },
+              }}
+              select
+              label={t("masterData.status.label")}
+              fullWidth
+              disabled={
+                isSaving || reloadingRecord || notice?.kind === "unknown"
+              }
+              value={form.status}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  status: event.target.value as MasterStatus,
+                }))
+              }
+            >
+              {statusOptions(t).map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </UiTextField>
+          </div>
+          {isSaving && (
+            <div className="hn-defect-saving" role="status">
+              <span className="hn-defect-loader" />
+              {copy(
+                "Đang lưu thông tin lỗi/bệnh...",
+                "Saving defect information...",
+              )}
+            </div>
+          )}
+        </form>
+      </UiDialog>
+      <UiDialog
+        className="hn-defect-dialog hn-defect-discard"
+        open={discardOpen}
+        onClose={() => setDiscardOpen(false)}
+        title={copy("Bạn có thay đổi chưa lưu", "You have unsaved changes")}
+        actions={
+          <>
+            <ActionButton
+              kind="confirm"
+              icon={<span />}
+              className="hn-defect-secondary"
+              onClick={closeNow}
+            >
+              {copy("Bỏ thay đổi", "Discard changes")}
+            </ActionButton>
+            <ActionButton
+              kind="cancel"
+              icon={<span />}
+              className="hn-defect-primary"
+              autoFocus
+              onClick={() => setDiscardOpen(false)}
+            >
+              {copy("Tiếp tục chỉnh sửa", "Continue editing")}
+            </ActionButton>
+          </>
+        }
+      >
+        <p>
+          {copy(
+            "Rời khỏi biểu mẫu sẽ bỏ các thay đổi chưa lưu.",
+            "Leaving the form will discard unsaved changes.",
+          )}
+        </p>
+      </UiDialog>
+    </div>
   );
 }

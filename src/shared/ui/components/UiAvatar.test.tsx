@@ -1,6 +1,6 @@
 /**
  * UiAvatar — initials 2 từ cuối của tên, ảnh khi có src, kích thước theo
- * token size (28/36/44) + màu primarySoft/primaryDark.
+ * token size (28/36/44) + màu primarySoft/infoText.
  */
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -38,12 +38,12 @@ describe("UiAvatar", () => {
     );
   });
 
-  it("size sm → 28px; nền primarySoft + chữ primaryDark", () => {
+  it("size sm → 28px; nền primarySoft + chữ infoText", () => {
     renderUi(<UiAvatar name="Nguyễn Văn An" size="sm" />);
     const css = emotionCss();
     expect(css).toContain("width:28px");
     expect(css).toContain("height:28px");
     expect(css).toContain(S.primarySoft);
-    expect(css.toLowerCase()).toContain(S.primaryDark.toLowerCase());
+    expect(css.toLowerCase()).toContain(S.infoText.toLowerCase());
   });
 });

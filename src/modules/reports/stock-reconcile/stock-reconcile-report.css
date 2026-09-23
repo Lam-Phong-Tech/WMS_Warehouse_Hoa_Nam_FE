@@ -1,19 +1,19 @@
 .hn-rpt02 {
-  --rpt02-ink: #26384b;
-  --rpt02-muted: #6f7d8e;
-  --rpt02-line: #dce5ec;
-  --rpt02-primary: #075b91;
-  --rpt02-primary-dark: #123454;
-  --rpt02-primary-soft: #e8f4fb;
-  --rpt02-green: #2fb344;
-  --rpt02-green-soft: #edf9ef;
-  --rpt02-red: #d63939;
-  --rpt02-red-soft: #fdeaea;
-  --rpt02-orange: #f59f00;
-  --rpt02-orange-soft: #fff6e4;
-  --rpt02-blue-soft: var(--wms-info-soft);
-  --rpt02-surface: #fff;
-  --rpt02-canvas: #f4f7f9;
+  --rpt02-ink: var(--ops-text);
+  --rpt02-muted: var(--ops-muted);
+  --rpt02-line: var(--ops-line);
+  --rpt02-primary: var(--ops-primary);
+  --rpt02-primary-dark: var(--ops-primary-hover);
+  --rpt02-primary-soft: var(--ops-pale);
+  --rpt02-green: var(--ops-success);
+  --rpt02-green-soft: var(--ops-success-soft);
+  --rpt02-red: var(--ops-danger);
+  --rpt02-red-soft: var(--ops-danger-soft);
+  --rpt02-orange: var(--ops-warning);
+  --rpt02-orange-soft: var(--ops-warning-soft);
+  --rpt02-blue-soft: var(--ops-pale);
+  --rpt02-surface: var(--ops-surface);
+  --rpt02-canvas: var(--ops-canvas);
   container-name: hn-rpt02;
   container-type: inline-size;
   position: relative;
@@ -21,7 +21,7 @@
   min-width: 0;
   padding: 2px 0 28px;
   color: var(--rpt02-ink);
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: var(--wms-font-family);
   font-size: 15px;
   line-height: 1.45;
 }
@@ -67,7 +67,7 @@
   gap: 8px;
   min-width: 0;
   margin-bottom: 13px;
-  color: #1d5b9c;
+  color: var(--ops-link);
   font-size: 14px;
   line-height: 16px;
 }
@@ -76,7 +76,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #1d5b9c;
+  color: var(--ops-link);
   cursor: pointer;
 }
 
@@ -86,7 +86,7 @@
 
 .rpt02-breadcrumb strong {
   overflow: hidden;
-  color: #325d8d;
+  color: var(--ops-text);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -114,14 +114,18 @@
 .rpt02-no-result h3,
 .rpt02-no-result p {
   margin: 0;
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 700;
+  color: var(--ops-heading);
 }
 
 .rpt02-heading h1 {
-  color: #123454;
-  font-size: 29px;
+  color: var(--ops-heading);
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.35px;
-  line-height: 1.2;
+  line-height: 38px;
 }
 
 .rpt02-heading p {
@@ -168,10 +172,10 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-height: 48px;
+  min-height: var(--ops-control-height);
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: var(--ops-radius-control);
   cursor: pointer;
   font-size: 15px;
   font-weight: 700;
@@ -210,9 +214,9 @@
 .rpt02-export {
   min-width: 158px;
   min-height: 48px;
-  border-color: #163b63;
-  background: #163b63;
-  color: var(--wms-on-primary);
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
   font-size: 16px;
   white-space: nowrap;
 }
@@ -222,7 +226,7 @@
 }
 
 .rpt02-export:hover:not(:disabled) {
-  background: #123454;
+  background: var(--ops-primary-hover);
   box-shadow: 0 4px 12px rgb(14 38 68 / 20%);
   transform: translateY(-1px);
 }
@@ -288,8 +292,8 @@
   flex: none;
   place-items: center;
   border-radius: 6px;
-  background: #e7f7fa;
-  color: #0c9eae;
+  background: var(--ops-pale);
+  color: var(--ops-link);
 }
 
 .rpt02-warehouse svg {
@@ -304,7 +308,7 @@
 
 .rpt02-warehouse strong {
   overflow: hidden;
-  color: #27445f;
+  color: var(--ops-heading);
   font-size: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -369,7 +373,7 @@
   margin-left: auto;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--ops-radius-control);
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -439,7 +443,7 @@
 }
 
 .rpt02-field > span:first-child {
-  color: #52677a;
+  color: var(--ops-muted);
   font-size: 15px;
   font-weight: 700;
 }
@@ -463,13 +467,13 @@
 }
 
 .hn-rpt02 .rpt02-field .MuiSelect-select.MuiInputBase-input {
-  color: #364e64;
+  color: var(--ops-text);
   font-family: Inter, "Segoe UI", Arial, sans-serif !important;
   font-size: 15px !important;
 }
 
 .rpt02-field .MuiOutlinedInput-notchedOutline {
-  border-color: #b8daf0;
+  border-color: var(--ops-line);
 }
 
 .rpt02-field .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline {
@@ -488,7 +492,7 @@
   grid-template-columns: 1fr 1fr;
   min-height: 48px;
   overflow: hidden;
-  border: 1px solid #a8d8f4;
+  border: 1px solid var(--ops-line);
   border-radius: 7px;
   background: var(--rpt02-surface);
   transition:
@@ -510,7 +514,7 @@
 
 .rpt02-field .rpt02-date-range .hn-vuexy-date-field {
   min-width: 0;
-  min-height: 46px;
+  min-height: var(--ops-control-height);
   padding: 0 10px;
   border: 0;
   border-radius: 0;
@@ -525,7 +529,7 @@
 
 .rpt02-field .rpt02-date-range .hn-vuexy-date-field span[data-date-value] {
   overflow: hidden;
-  color: #173e78;
+  color: var(--ops-heading);
   font-size: 15px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -537,45 +541,45 @@
 }
 
 .rpt02-date-popup [data-date-tab][data-active="true"] {
-  border-color: #0b6da8 !important;
-  background: #e8f4fb !important;
-  color: #075b91 !important;
+  border-color: var(--ops-link) !important;
+  background: var(--ops-pale) !important;
+  color: var(--ops-primary) !important;
 }
 
 .rpt02-date-popup [data-date-tab]:hover {
-  border-color: #169bd5 !important;
+  border-color: var(--ops-link) !important;
 }
 
 .rpt02-date-popup [role="gridcell"][data-in-range="true"] {
-  background: #e4f3fb !important;
+  background: var(--ops-pale) !important;
 }
 
 .rpt02-date-popup button[aria-selected="true"] {
-  background: #075b91 !important;
-  color: #fff !important;
+  background: var(--ops-primary) !important;
+  color: var(--ops-on-primary) !important;
 }
 
 .rpt02-date-popup button[aria-selected="true"]:hover {
-  background: #064c79 !important;
+  background: var(--ops-primary-hover) !important;
 }
 
 .rpt02-date-popup [data-date-action="clear"],
 .rpt02-date-popup [data-date-action="cancel"] {
-  color: #0b6da8 !important;
+  color: var(--ops-link) !important;
 }
 
 .rpt02-date-popup [data-date-action="clear"]:hover,
 .rpt02-date-popup [data-date-action="cancel"]:hover {
-  background: #e8f4fb !important;
+  background: var(--ops-pale) !important;
 }
 
 .rpt02-date-popup [data-date-action="apply"] {
-  background: #075b91 !important;
-  color: #fff !important;
+  background: var(--ops-primary) !important;
+  color: var(--ops-on-primary) !important;
 }
 
 .rpt02-date-popup [data-date-action="apply"]:hover:not(:disabled) {
-  background: #064c79 !important;
+  background: var(--ops-primary-hover) !important;
 }
 
 .rpt02-filter__actions {
@@ -586,8 +590,8 @@
 }
 
 .rpt02-button--primary {
-  border-color: #075b91;
-  background: #075b91;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
   color: var(--wms-on-primary);
   box-shadow: 0 3px 8px
     color-mix(in srgb, var(--rpt02-primary) 20%, transparent);
@@ -602,7 +606,7 @@
 .rpt02-button--ghost {
   border-color: transparent;
   background: var(--rpt02-surface);
-  color: #144779;
+  color: var(--ops-heading);
 }
 
 .rpt02-button--ghost:hover:not(:disabled) {
@@ -617,7 +621,7 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  color: #2b6496;
+  color: var(--ops-muted);
   font-size: 13px;
 }
 
@@ -726,7 +730,7 @@
 
 .rpt02-kpi__copy small {
   overflow: hidden;
-  color: #173f73;
+  color: var(--ops-muted);
   font-size: 16px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -735,7 +739,7 @@
 
 .rpt02-kpi__copy strong {
   margin-top: 0;
-  color: #082d74;
+  color: var(--ops-heading);
   font-size: 46px;
   font-weight: 700;
   letter-spacing: 0;
@@ -745,7 +749,7 @@
 .rpt02-kpi__copy > span {
   overflow: hidden;
   margin-top: 0;
-  color: #1f5a9c;
+  color: var(--ops-muted);
   font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -782,7 +786,7 @@
 
 .rpt02-panel {
   min-width: 0;
-  border-radius: 9px;
+  border-radius: var(--ops-radius-card);
 }
 
 .rpt02-panel__head {
@@ -802,10 +806,10 @@
 
 .rpt02-panel__head h2,
 .rpt02-table-card__head h2 {
-  color: #0e3870;
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.3;
+  color: var(--ops-heading);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
 }
 
 .rpt02-panel__head p,
@@ -1046,7 +1050,7 @@
   padding: 7px 9px;
   border: 1px solid var(--rpt02-line);
   border-radius: 6px;
-  background: var(--wms-bg-subtle);
+  background: var(--ops-pale);
 }
 
 .rpt02-reconcile__totals div:first-child {
@@ -1353,13 +1357,13 @@
 }
 
 .rpt02-table-scroll td {
-  color: #194f93;
+  color: var(--ops-heading);
 }
 
 .rpt02-table-scroll th {
   height: 35px;
-  background: #f7f9fb;
-  color: #123f77;
+  background: var(--ops-pale);
+  color: var(--ops-heading);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -1395,7 +1399,7 @@
 }
 
 .rpt02-table-scroll td:first-child strong {
-  color: #082e73;
+  color: var(--ops-text);
 }
 
 .rpt02-table-scroll td:first-child small {
@@ -1438,7 +1442,7 @@
   padding: 9px 16px;
   border-top: 1px solid var(--rpt02-line);
   color: var(--rpt02-muted);
-  color: #164e8b;
+  color: var(--ops-heading);
   font-size: 13px;
 }
 
@@ -1502,9 +1506,10 @@
 .rpt02-state h2 {
   max-width: 560px;
   margin-top: 15px;
-  color: var(--rpt02-ink);
-  font-size: 20px;
-  font-weight: 750;
+  color: var(--ops-heading);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
 }
 
 .rpt02-state p {
@@ -1900,7 +1905,10 @@
   }
 
   .rpt02-heading h1 {
-    font-size: 38px;
+    font-size: 24px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
   }
 
   .rpt02-heading p {
@@ -2009,7 +2017,10 @@
 
   .rpt02-panel__head h2,
   .rpt02-table-card__head h2 {
-    font-size: 25px;
+    font-size: 18px;
+    line-height: 26px;
+    font-weight: 600;
+    color: var(--ops-heading);
   }
 
   .rpt02-panel__head p,
@@ -2069,8 +2080,10 @@
   }
 
   .rpt02-heading h1 {
-    font-size: clamp(26px, 8vw, 30px);
-    line-height: 1.15;
+    font-size: 24px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
   }
 
   .rpt02-heading p {
@@ -2126,10 +2139,11 @@
 }
 
 .rpt02-heading h1 {
-  font-size: clamp(21px, 1.7vw, 28px);
-  font-weight: 800;
-  line-height: 1.25;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 38px;
   letter-spacing: -0.03em;
+  color: var(--ops-heading);
 }
 
 .rpt02-heading p {
@@ -2141,7 +2155,7 @@
 
 .rpt02-export,
 .rpt02-button {
-  min-height: 44px;
+  min-height: var(--ops-control-height);
   font-size: 14px;
 }
 
@@ -2204,7 +2218,7 @@
 
 .rpt02-field .rpt02-date-range,
 .rpt02-field .rpt02-date-range .hn-vuexy-date-field {
-  min-height: 44px;
+  min-height: var(--ops-control-height);
 }
 
 .rpt02-field .rpt02-date-range .hn-vuexy-date-field {
@@ -2263,8 +2277,10 @@
 
 .rpt02-panel__head h2,
 .rpt02-table-card__head h2 {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+  color: var(--ops-heading);
 }
 
 .rpt02-panel__head p,
@@ -2335,7 +2351,10 @@
 
 @media (max-width: 639px) {
   .rpt02-heading h1 {
-    font-size: 20px;
+    font-size: 24px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
   }
 
   .rpt02-kpi__copy strong {

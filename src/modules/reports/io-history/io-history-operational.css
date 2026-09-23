@@ -1,164 +1,88 @@
-/**
- * RPT-IO-01 "Báo cáo Lịch sử nhập – xuất kho" — port 1:1 CSS của mockup UI/UX
- * đã chốt `8.3.WMS_Hoa_Nam_Bao_Cao_Lich_Su_Nhap_Xuat.html`.
- *
- * Mockup nạp BỐN lớp style theo đúng thứ tự sau (cascade, không phải độ đặc
- * hiệu, quyết định giá trị cuối):
- *   1. `<style>` khối nền của trang (dòng 8 của mockup);
- *   2. `<style>` khối ghi đè riêng 8.3 (dòng 11–50);
- *   3. `Other/8.3.../vuexy-baseline.css` (token + shell + .card/.chip/.kpi…);
- *   4. `Other/8.3.../report-8.3.css` (khối `.report-03 …`, thắng sau cùng).
- * File này GỘP SẴN bốn lớp đó thành giá trị cuối cùng của từng selector, giữ
- * nguyên số đo; mỗi chỗ có ghi chú khi lớp sau đè lớp trước.
- *
- * PHẠM VI: mọi selector nằm dưới `.hn-rpt-io` nên không rò sang màn khác. Đây
- * là CSS CỤC BỘ (khai trong docs/ui/vuexy-sync/allowlists/css-baseline.json).
- *
- * MÀU: dùng token `--wms-*` ở mọi chỗ mockup dùng đúng bảng màu Vuexy; các sắc
- * xám/sắc chữ phụ mockup tự đặt mà bảng token CHƯA có được gom vào khối
- * `--hnio-*` ngay đầu file.
- *
- * KHÔNG dùng cờ ưu tiên cascade nào (guard `yarn ui:styles` ratchet). Ba chỗ
- * mockup ép `grid-column` bằng cờ đó (`.filtergrid > .field`, `.search`) được
- * thay bằng cách khai lại với ĐÚNG độ đặc hiệu `:nth-child(n)` và đặt sau, cho
- * kết quả hiển thị y hệt.
- *
- * KHÔNG chép lại: `.app/.side/.brand/.nav/.top/.avatar` (vỏ shell — dự án đã có
- * sidebar/topbar thật), `.hidden` (dùng render có điều kiện của React thay cho
- * lớp ẩn có cờ ưu tiên cascade), `.toast` (dự án dùng toast dùng chung),
- * `.facts/.fact` (8.3 dựng hộp thoại bằng `.detail-*`, hai lớp kia không được
- * DOM nào tham chiếu) và các luật bị lớp sau vô hiệu hoàn toàn (vd `.picker`
- * trong @media 560 đã bị `.report-03 .picker` đè).
- */
-
+/* RPT-08 only. Geometry follows the Desktop/Tablet SystemHNWeb references.
+   The report owns its content; the application retains its navigation and data scope. */
+.hn-mvp-screen:has(.hn-rpt-io) {
+  padding: 0;
+  background: var(--map-surface, var(--wms-bg-canvas));
+}
+.hn-rpt-io,
+.hn-rpt-io-select-menu {
+  --ink: var(--ops-heading);
+  --muted: var(--ops-muted);
+  --line: var(--ops-line);
+  --primary: var(--ops-primary);
+  --primary-dark: var(--ops-primary-hover);
+  --primary-soft: var(--ops-pale);
+  --surface: var(--ops-surface);
+  --radius: var(--ops-radius-card);
+  --hnio-overlay: color-mix(in srgb, var(--ops-heading) 40%, transparent);
+  --hnio-modal-line: var(--line);
+  --hnio-modal-shadow: var(--ops-shadow-dialog);
+  --hnio-detail-border: var(--line);
+  --hnio-detail-bg: var(--primary-soft);
+  --hnio-detail-line: var(--line);
+  --hnio-detail-fact-line: var(--line);
+  --hnio-recon-ok-bg: var(--primary-soft);
+  --hnio-hint-bg: var(--primary-soft);
+  --cyan: #19b6c3;
+  --hnio-surface-muted: var(--primary-soft);
+}
 .hn-rpt-io {
-  /* Bảng màu mockup — phần đã có token */
-  --ink: var(--wms-text-strong);
-  --muted: var(--wms-text-medium);
-  --line: var(--wms-border);
-  --primary: var(--wms-auth-cta);
-  --primary-dark: var(--wms-auth-navy);
-  --primary-soft: var(--wms-auth-pale);
-  --green: var(--wms-success);
-  --green-soft: var(--wms-success-soft);
-  --amber: var(--wms-warning);
-  --amber-soft: var(--wms-warning-soft);
-  --red: var(--wms-error);
-  --red-soft: var(--wms-error-soft);
-  --cyan: var(--wms-info);
-  --blue-soft: var(--wms-info-soft);
-  --surface: var(--wms-bg-surface);
-  --shadow: var(--wms-shadow-card);
-  --radius: var(--wms-radius-card);
-
-  /* Sắc riêng của mockup, chưa có token tương ứng */
-  --hnio-surface-muted: #faf9fc;
-  --hnio-chip-info-fg: var(--wms-auth-link);
-  --hnio-ok-fg: #168c4c;
-  --hnio-warn-fg: #c46d16;
-  --hnio-info-fg: #007b8c;
-  --hnio-pdf-fg: #d7373c;
-  --hnio-focus: var(--wms-auth-link);
-  --hnio-card-line: rgba(47, 43, 61, 0.06);
-  --hnio-segment-bg: rgba(47, 43, 61, 0.06);
-  --hnio-segment-shadow: 0 2px 6px rgba(47, 43, 61, 0.11);
-  --hnio-control-line: rgba(47, 43, 61, 0.22);
-  --hnio-grid-line: rgba(47, 43, 61, 0.09);
-  --hnio-row-stripe: rgba(47, 43, 61, 0.014);
-  --hnio-row-hover: rgba(0, 78, 116, 0.055);
-  --hnio-kpi-hover-shadow: 0 8px 24px rgba(47, 43, 61, 0.16);
-  --hnio-floating-shadow: 0 12px 30px rgba(47, 43, 61, 0.18);
-  --hnio-menu-shadow: 0 14px 36px rgba(47, 43, 61, 0.18);
-  --hnio-overlay: rgba(47, 43, 61, 0.45);
-  --hnio-modal-line: rgba(47, 43, 61, 0.08);
-  --hnio-modal-shadow: 0 20px 64px rgba(47, 43, 61, 0.28);
-  --hnio-ok-soft: rgba(40, 199, 111, 0.13);
-  --hnio-warn-soft: rgba(255, 159, 67, 0.16);
-  --hnio-info-soft: rgba(0, 186, 209, 0.13);
-  --hnio-excel-soft: rgba(40, 199, 111, 0.12);
-  --hnio-pdf-soft: rgba(255, 76, 81, 0.11);
-  --hnio-option-hover: rgba(0, 78, 116, 0.09);
-  --hnio-day-hover: rgba(0, 78, 116, 0.11);
-  --hnio-detail-line: rgba(0, 78, 116, 0.18);
-  --hnio-detail-border: rgba(0, 78, 116, 0.2);
-  --hnio-detail-bg: linear-gradient(
-    135deg,
-    rgba(0, 78, 116, 0.09),
-    rgba(0, 186, 209, 0.06)
-  );
-  --hnio-detail-fact-line: rgba(47, 43, 61, 0.08);
-  --hnio-recon-ok-bg: rgba(40, 199, 111, 0.07);
-  --hnio-neg-fg: var(--wms-error-text);
-  --hnio-neg-soft: var(--red-soft);
-  --hnio-zero-fg: var(--muted);
-  --hnio-zero-soft: var(--hnio-segment-bg);
-  --hnio-hint-bg: rgba(0, 186, 209, 0.07);
-
+  container: hn-rpt-io / inline-size;
+  width: 100%;
+  min-width: 0;
   color: var(--ink);
-  font-size: 15px;
-  line-height: 22px;
-  font-weight: 400;
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 1.45;
 }
-
-/*
- * CHỈ pseudo-element. KHÔNG được thêm lại `.hn-rpt-io *` vào đây: quy tắc đó có
- * độ đặc hiệu 0-1-0, bằng đúng class emotion của MUI và được nạp SAU (CSS của
- * trang đi theo chunk lazy), nên nó đè `box-sizing: content-box` mà
- * `.MuiInputBase-input` cố ý đặt cho <input> (MUI tính chiều cao ô nhập bằng
- * `height: 1.4375em` + padding theo content-box). Bị ép border-box thì 1.4375em
- * phải chứa luôn padding → ô "Tìm SKU" trong SectionFilterBar tụt còn ~24px,
- * thấp hơn UiSelect đứng cạnh. Phần tử thường đã có border-box từ
- * `* { box-sizing }` ở src/index.css (đặc hiệu 0-0-0, đúng tầng để MUI vẫn
- * thắng được ở các ngoại lệ của nó).
- */
-.hn-rpt-io *::before,
-.hn-rpt-io *::after {
-  box-sizing: border-box;
+.hn-rpt-io .page-wrap {
+  width: 100%;
+  min-width: 0;
+  padding: 18px 24px 28px;
 }
-
-.hn-rpt-io button,
-.hn-rpt-io input {
+.hn-rpt-io button:not(.hn-row-action),
+.hn-rpt-io input,
+.hn-rpt-io select {
   font: inherit;
 }
-
-/* vuexy-baseline: mọi nút/ô nhập cao tối thiểu 40px (đè `height` nhỏ hơn). */
-.hn-rpt-io button,
-.hn-rpt-io input[type="date"] {
-  min-height: 40px;
-}
-
-.hn-rpt-io button {
+.hn-rpt-io button:not(.hn-row-action) {
   cursor: pointer;
 }
-
-.hn-rpt-io button:focus-visible,
-.hn-rpt-io input:focus-visible,
-.hn-rpt-io [tabindex]:focus-visible {
-  outline: 3px solid var(--hnio-focus);
-  outline-offset: 2px;
+.hn-rpt-io button:not(.hn-row-action):disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
-
+.hn-rpt-io button:not(.hn-row-action):focus-visible,
+.hn-rpt-io select:focus-visible,
+.hn-rpt-io input:focus-visible,
+.hn-rpt-io summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
 .hn-rpt-io h1,
 .hn-rpt-io h2,
 .hn-rpt-io h3,
 .hn-rpt-io p {
-  margin-top: 0;
+  margin: 0;
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 700;
+  color: var(--ops-heading);
 }
-
-.hn-rpt-io h2,
-.hn-rpt-io h3 {
-  margin-bottom: 0;
+.hn-rpt-io h2 {
   font-size: 18px;
-  line-height: 24px;
+  line-height: 26px;
   font-weight: 600;
+  color: var(--ops-heading);
 }
-
-/* vuexy-baseline: mọi hình nằm trong một phần tử [data-icon] đều kéo đầy ô. */
 .hn-rpt-io [data-icon] {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
-
 .hn-rpt-io [data-icon] > svg {
   width: 100%;
   height: 100%;
@@ -168,1050 +92,781 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
-.hn-rpt-io .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ── Vỏ trang ───────────────────────────────────────────────────────────── */
-/* `.content` (max-width 1500) bị `.report-03 .content.page-wrap` gỡ trần. */
-.hn-rpt-io .page-wrap {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 20px 24px 48px;
-}
-
-.hn-rpt-io .breadcrumb {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.hn-rpt-io .breadcrumb strong {
-  color: var(--primary-dark);
-}
-
-/* `.report-03` đổi header từ flex-có-gạch-chân sang khối phẳng. */
-.hn-rpt-io .reporthead {
-  display: block;
-  margin-bottom: 18px;
-  padding-bottom: 0;
-  border-bottom: 0;
-}
-
-.hn-rpt-io .headtop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  width: 100%;
-}
-
-.hn-rpt-io .eyebrow {
-  display: inline-block;
-  color: var(--primary-dark);
-  font-size: 12.5px;
-  line-height: 18px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.hn-rpt-io .reporthead h1 {
-  margin: 4px 0;
-  font-size: 24px;
-  line-height: 38px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-.hn-rpt-io .reporthead p {
-  max-width: 760px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 22px;
-}
-
-.hn-rpt-io .chips {
-  display: flex;
-  flex-wrap: wrap;
-  align-self: flex-start;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.hn-rpt-io .meta {
-  display: flex;
-  flex-basis: 100%;
-  flex-wrap: wrap;
-  gap: 8px 22px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 12.5px;
-  line-height: 18px;
-}
-
-.hn-rpt-io .meta b {
-  color: var(--ink);
-}
-
-.hn-rpt-io .truncate {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ── Chip / badge ───────────────────────────────────────────────────────── */
-.hn-rpt-io .chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 4px 8px;
-  border-radius: var(--radius);
-  font-size: 12.5px;
-  line-height: 18px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* `.type` KHÔNG mang lớp `.chip` nên giữ nguyên dạng viên thuốc của khối nền. */
-.hn-rpt-io .type {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 3px 8px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.hn-rpt-io .chip-success {
-  color: var(--green);
-  background: var(--green-soft);
-}
-
-.hn-rpt-io .chip-info {
-  color: var(--hnio-chip-info-fg);
-  background: var(--blue-soft);
-}
-
-.hn-rpt-io .info {
-  color: var(--hnio-info-fg);
-  background: var(--hnio-info-soft);
-}
-
-.hn-rpt-io .ok {
-  color: var(--hnio-ok-fg);
-  background: var(--hnio-ok-soft);
-}
-
-.hn-rpt-io .warn {
-  color: var(--hnio-warn-fg);
-  background: var(--hnio-warn-soft);
-}
-
-/* ── Thẻ (card) ─────────────────────────────────────────────────────────── */
 .hn-rpt-io .card {
-  /*
-   * Bỏ qua layout/paint cho thẻ đang nằm ngoài màn hình. Trace một màn báo cáo
-   * cho thấy ~60% thời gian luồng chính là style/layout/paint, phần lớn cho các
-   * thẻ ở dưới mà người dùng chưa cuộn tới. `auto 480px` giữ chỗ để thanh cuộn
-   * không nhảy; sau lần vẽ đầu trình duyệt tự nhớ kích thước thật.
-   */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 480px;
   min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--hnio-card-line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-/*
- * `flex-shrink: 0`: đầu thẻ khai min-height nên mất mức tối thiểu tự động theo
- * nội dung. Thẻ nào là flex column thì đầu thẻ co được xuống dưới chiều cao chữ
- * và phần dôi đè lên thân — cùng lỗi đã sửa ở RPT-01 (07/09/2026).
- * Guard: src/test/layout-overflow-guards.test.ts
- */
-.hn-rpt-io .cardhead {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  min-height: 62px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--line);
-}
-
-.hn-rpt-io .cardhead-l {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.hn-rpt-io .headicon {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius);
-  color: var(--primary-dark);
-  background: var(--primary-soft);
-  font-size: 16px;
-}
-
-/* Mockup đặt sắc lam cho hai `.headicon` bằng style nội tuyến. */
-.hn-rpt-io .headicon.is-info {
-  color: var(--cyan);
-  background: var(--hnio-info-soft);
-}
-
-.hn-rpt-io .headicon svg {
-  width: 19px;
-  height: 19px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.65;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.hn-rpt-io .title {
-  color: var(--ink);
-  font-size: 15px;
-  line-height: 21px;
-  font-weight: 600;
-}
-
-/* Cột chữ trong cardhead-l là flex item lồng nhau: thiếu min-width 0 thì
-   .note (ellipsis một dòng) không bị ép bề ngang mà nở theo max-content,
-   tràn khỏi thẻ ở màn hẹp (TC_UI_04, 390px). */
-.hn-rpt-io .cardhead-l > div {
-  min-width: 0;
-}
-
-.hn-rpt-io .note {
-  overflow: hidden;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 12.5px;
-  line-height: 18px;
-  font-weight: 400;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ── Bộ lọc ─────────────────────────────────────────────────────────────── */
-/*
- * Thẻ bộ lọc là MỘT hàng flex-wrap: 3 ô lọc + hàng nút. Lưới 12 cột của mockup
- * (Kỳ 5 + Khoảng ngày 4 + Loại 3 / Tìm nhanh 7 + nút 5) hết lý do tồn tại khi ô
- * "Kỳ" gộp vào lịch (`report-period-single-control`): 3 ô còn lại vừa khít
- * một hàng, ở màn rộng bị kéo dài vô lý (khoảng ngày ~600px ở 1920) còn hàng
- * nút neo tuyệt đối thì đè lên ô "Tìm nhanh". Mỗi ô có cỡ gốc + trần riêng;
- * màn rộng thì nút nằm cùng hàng sát phải, hẹp dần thì nút rồi từng ô lần
- * lượt xuống hàng — không cần điểm ngắt riêng cho lưới nữa.
- *
- * `content-visibility: visible`: thẻ này KHÔNG được hưởng `content-visibility:
- * auto` của `.card` — chế độ đó kèm paint containment nên menu "Loại chứng
- * từ" (position:absolute, xổ xuống dưới đáy thẻ) bị cắt và nửa dưới không bấm
- * được.
- */
-.hn-rpt-io .filters {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 14px 16px;
-  margin-bottom: 20px;
-  padding: 16px 20px;
-  overflow: visible;
-  content-visibility: visible;
-  border: 1px solid var(--hnio-card-line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-
-/* `.report-03` ẩn hẳn đầu thẻ bộ lọc (chỉ còn lưới ô lọc + hàng nút). */
-.hn-rpt-io .filters > .cardhead {
-  display: none;
-}
-
-/* Các ô lọc là con trực tiếp của hàng flex ở trên (không thêm lớp bọc). */
-.hn-rpt-io .filtergrid {
-  display: contents;
-}
-
-.hn-rpt-io .filtergrid > .field:nth-child(1) {
-  flex: 1 1 300px;
-  max-width: 380px;
-}
-
-.hn-rpt-io .filtergrid > .field:nth-child(2) {
-  flex: 1 1 220px;
-  max-width: 300px;
-}
-
-.hn-rpt-io .filtergrid > .field:nth-child(3) {
-  flex: 1 1 240px;
-  max-width: 420px;
-}
-
-.hn-rpt-io .field {
-  min-width: 0;
-}
-
-.hn-rpt-io .field label {
-  display: block;
-  margin-bottom: 7px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-}
-
-.hn-rpt-io .periods {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0;
-  width: fit-content;
-  max-width: 100%;
-  padding: 3px;
-  border: 0;
-  border-radius: var(--radius);
-  background: var(--hnio-segment-bg);
-}
-
-.hn-rpt-io .period {
-  min-width: 58px;
-  min-height: 36px;
-  padding: 6px 12px;
-  border: 0;
-  border-radius: 4px;
-  color: var(--muted);
-  background: transparent;
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.hn-rpt-io .period.active {
-  color: var(--primary-dark);
-  background: var(--surface);
-  box-shadow: var(--hnio-segment-shadow);
-}
-
-.hn-rpt-io .control {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 40px;
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--hnio-control-line);
-  border-radius: var(--radius);
-  color: var(--ink);
-  background: var(--surface);
-  font-size: 13px;
-  line-height: 20px;
-  text-align: left;
-}
-
-.hn-rpt-io .control:hover,
-.hn-rpt-io .control:focus-within {
-  border-color: var(--primary);
-}
-
-.hn-rpt-io .rangewrap,
-.hn-rpt-io .selectwrap {
-  position: relative;
-}
-
-.hn-rpt-io .range {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
-  align-items: center;
-  gap: 4px;
-}
-
-.hn-rpt-io .range button {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.hn-rpt-io .range i {
-  color: var(--muted);
-  text-align: center;
-}
-
-.hn-rpt-io .search input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-}
-
-/* Mockup đặt 17px cho icon kính lúp trong ô "Tìm nhanh" bằng style nội tuyến. */
-.hn-rpt-io .control > [data-icon] {
-  flex: 0 0 auto;
-  width: 17px;
-  height: 17px;
-  margin-right: 8px;
-}
-
-/* ── Lớp nổi: menu loại chứng từ + lịch chọn khoảng ngày ────────────────── */
-.hn-rpt-io .menu {
-  position: absolute;
-  z-index: 20;
-  min-width: 100%;
-  margin-top: 5px;
-  padding: 6px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--hnio-menu-shadow);
+  box-shadow: none;
 }
-
-.hn-rpt-io .picker {
-  position: absolute;
-  right: auto;
-  left: 0;
-  z-index: 20;
-  min-width: 320px;
-  margin-top: 5px;
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: var(--hnio-floating-shadow);
-}
-
-.hn-rpt-io .opt {
-  display: block;
-  width: 100%;
-  min-height: 35px;
-  padding: 0 9px;
-  border: 0;
-  border-radius: 5px;
-  color: var(--ink);
-  background: transparent;
-  text-align: left;
-}
-
-.hn-rpt-io .opt:hover,
-.hn-rpt-io .opt.active {
-  color: var(--primary-dark);
-  background: var(--hnio-option-hover);
-}
-
-.hn-rpt-io .pickhead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0;
-  padding: 14px 16px 11px;
-  border-bottom: 1px solid var(--line);
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 800;
-}
-
-/* Hai nút ‹ › của mockup là nút chết; bản này gắn hành vi đổi tháng thật. */
-.hn-rpt-io .picknav {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  color: var(--muted);
-}
-
-.hn-rpt-io .picknav button {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  min-width: 28px;
-  height: 28px;
-  min-height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 5px;
-  color: inherit;
-  background: transparent;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.hn-rpt-io .picknav button:hover:not(:disabled) {
-  color: var(--primary-dark);
-  background: var(--hnio-option-hover);
-}
-
-.hn-rpt-io .picknav button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-.hn-rpt-io .pickstate {
-  margin: 10px 16px 8px;
-  color: var(--primary-dark);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.hn-rpt-io .cal {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  padding: 0 14px 10px;
-}
-
-.hn-rpt-io .cal span {
-  display: grid;
-  place-items: center;
-  height: 23px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.hn-rpt-io .day {
-  display: grid;
-  place-items: center;
-  height: 32px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.hn-rpt-io .day:hover:not(:disabled),
-.hn-rpt-io .day.between {
-  background: var(--hnio-day-hover);
-}
-
-.hn-rpt-io .day.selected {
-  border-radius: 50%;
-  color: var(--wms-on-primary);
-  background: var(--primary);
-}
-
-.hn-rpt-io .day:disabled {
-  cursor: not-allowed;
-  color: var(--wms-text-disabled);
-}
-
-/* Ô đệm của các ngày thuộc tháng khác — mockup vẽ lưới chạy thẳng từ ngày 1. */
-.hn-rpt-io .day-pad {
-  height: 32px;
-}
-
-.hn-rpt-io .pickfoot {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin: 0;
-  padding: 12px 14px;
-  border-top: 1px solid var(--line);
-  background: var(--surface);
-}
-
-/* ── Hàng nút của bộ lọc ────────────────────────────────────────────────── */
-/*
- * Là một mục của hàng flex ở `.filters`: `margin-left: auto` đẩy nó sát mép
- * phải khi còn chỗ trên cùng hàng với 3 ô lọc; hết chỗ thì nó xuống hàng riêng
- * và vẫn sát phải. (Mockup neo bằng `position: absolute` — cách đó đè lên ô
- * "Tìm nhanh" ngay khi lưới bớt ô, xem ghi chú ở `.filters`.)
- */
-.hn-rpt-io .actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-left: auto;
-  padding: 0;
-  border-top: 0;
-}
-
 .hn-rpt-io .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 38px;
-  padding: 0 12px;
+  gap: 8px;
+  min-height: var(--ops-control-height);
+  height: var(--ops-control-height);
+  box-sizing: border-box;
+  padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: var(--radius);
-  color: var(--ink);
-  background: var(--surface);
-  font-size: 13px;
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+  font-weight: 650;
   line-height: 20px;
-  font-weight: 500;
   white-space: nowrap;
-}
-
-.hn-rpt-io .btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.hn-rpt-io .btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.hn-rpt-io .btn [data-icon] {
-  display: inline-grid;
-  place-items: center;
-  width: 17px;
-  height: 17px;
-}
-
-.hn-rpt-io .btn [data-icon] svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.65;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.hn-rpt-io .secondary {
-  border-color: var(--line);
-  color: var(--muted);
-}
-
-.hn-rpt-io .excel {
-  color: var(--hnio-ok-fg);
-  background: var(--hnio-excel-soft);
-}
-
-.hn-rpt-io .pdf {
-  color: var(--hnio-pdf-fg);
-  background: var(--hnio-pdf-soft);
-}
-
-.hn-rpt-io .primary {
-  color: var(--wms-on-primary);
-  background: var(--primary);
-}
-
-/* ── Khối mục (section) ─────────────────────────────────────────────────── */
-.hn-rpt-io .report-section-block {
-  margin-bottom: 20px;
-}
-
-.hn-rpt-io .section-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 20px 0 12px;
-}
-
-.hn-rpt-io .section-heading > div {
-  display: grid;
-  gap: 4px;
-}
-
-.hn-rpt-io .section-meta {
-  color: var(--muted);
-  font-size: 12.5px;
-  line-height: 18px;
-  text-align: right;
-}
-
-/* ── Bốn thẻ KPI ────────────────────────────────────────────────────────── */
-.hn-rpt-io .kpis {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin: 0 0 20px;
-}
-
-.hn-rpt-io .report-section-block > .kpis {
-  margin-bottom: 0;
-}
-
-.hn-rpt-io .kpi {
-  position: relative;
-  display: block;
-  min-height: 156px;
-  padding: 20px;
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease;
+    background 140ms,
+    border-color 140ms,
+    box-shadow 140ms;
 }
-
-.hn-rpt-io .kpi:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--hnio-kpi-hover-shadow);
+.hn-rpt-io .btn:hover:not(:disabled) {
+  box-shadow: 0 2px 7px rgba(0, 78, 116, 0.1);
 }
-
-/* Bốn sắc thẻ KPI — mockup truyền qua `--tone` / `--soft` nội tuyến. */
-.hn-rpt-io .kpi[data-tone="inbound"] {
-  --kpi-tone: var(--cyan);
-  --kpi-soft: rgba(0, 186, 209, 0.12);
+.hn-rpt-io .secondary {
+  color: var(--primary);
+  border-color: var(--line);
+  background: var(--surface);
 }
-
-.hn-rpt-io .kpi[data-tone="outbound"] {
-  --kpi-tone: var(--primary);
-  --kpi-soft: rgba(0, 78, 116, 0.11);
+.hn-rpt-io .secondary:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
 }
-
-.hn-rpt-io .kpi[data-tone="reversal"] {
-  --kpi-tone: var(--amber);
-  --kpi-soft: var(--hnio-warn-soft);
-}
-
-.hn-rpt-io .kpi[data-tone="net"] {
-  --kpi-tone: var(--green);
-  --kpi-soft: var(--hnio-ok-soft);
-}
-
-.hn-rpt-io .kpitop {
+.hn-rpt-io .io-page-heading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-  text-transform: none;
+  gap: 14px;
+  margin-bottom: 16px;
 }
-
-.hn-rpt-io .kpilabel {
-  min-height: 22px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-  text-transform: none;
-}
-
-.hn-rpt-io .kpiicon {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius);
-  color: var(--kpi-tone);
-  background: var(--kpi-soft);
-  font-size: 18px;
-}
-
-.hn-rpt-io .kpiicon svg {
-  width: 19px;
-  height: 19px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.hn-rpt-io .kpivalue {
-  margin: 10px 0 5px;
-  color: var(--ink);
-  font-size: 30px;
-  line-height: 38px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.hn-rpt-io .kpinote {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12.5px;
-  line-height: 18px;
-}
-
-/* ── Biểu đồ đường theo ngày ────────────────────────────────────────────── */
-.hn-rpt-io .chart {
-  margin-bottom: 20px;
-}
-
-.hn-rpt-io .report-section-block > .chart {
-  margin-bottom: 0;
-}
-
-.hn-rpt-io .chartbody {
+.hn-rpt-io .io-heading-copy {
   min-width: 0;
-  padding: 14px 24px 10px;
 }
-
-.hn-rpt-io .legend {
+.hn-rpt-io .breadcrumb {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 16px;
-  margin-bottom: 6px;
-  color: var(--muted);
-  font-size: 12.5px;
+  gap: 5px;
+  color: var(--ink);
+  font-size: 12px;
   line-height: 18px;
+  margin-bottom: 3px;
 }
-
-.hn-rpt-io .legend span {
+.hn-rpt-io .io-page-heading h1 {
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ops-heading);
+}
+.hn-rpt-io .io-page-heading p {
+  font-size: 13px;
+  line-height: 21px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.hn-rpt-io .io-heading-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  max-width: 48%;
+}
+.hn-rpt-io .io-source {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  border-radius: 6px;
+  background: var(--primary-soft);
+  padding: 8px;
+  color: var(--ink);
+  font-size: 12px;
+  white-space: nowrap;
 }
-
-.hn-rpt-io .legend i {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin: 0;
-  border-radius: 50%;
-  background: var(--series-color);
-}
-
-.hn-rpt-io .chartsvg {
-  display: block;
-  width: 100%;
-  max-width: none;
-  height: 245px;
-  min-height: 245px;
-  overflow: visible;
-}
-
-.hn-rpt-io .chartsvg text {
-  fill: var(--muted);
-  font-family: inherit;
-  font-size: 11px;
-}
-
-/* UAT TC_UI_25: nhãn giá trị cuối kỳ — đậm + viền nền để đọc được cả khi
-   nằm đè lên đường vẽ/nhãn trục (cùng kỹ thuật với RPT-01). */
-.hn-rpt-io .chartsvg text.chart-endvalue {
-  fill: var(--ink);
-  font-weight: 700;
-  paint-order: stroke;
-  stroke: var(--surface);
-  stroke-width: 3px;
-  stroke-linejoin: round;
-}
-
-.hn-rpt-io .chart-grid {
-  stroke: var(--hnio-grid-line);
-}
-
-.hn-rpt-io .chart-line {
-  fill: none;
-  stroke: var(--series-color);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.hn-rpt-io .chart-point {
-  fill: var(--surface);
-  stroke: var(--series-color);
-  stroke-width: 3;
-}
-
-/* Ba chuỗi của mockup: nhập (lam) · xuất (tím) · hoàn tác (đỏ). */
-.hn-rpt-io .series-inbound {
-  --series-color: var(--cyan);
-}
-
-.hn-rpt-io .series-outbound {
-  --series-color: var(--primary);
-}
-
-.hn-rpt-io .series-reversal {
-  --series-color: var(--red);
-}
-
-/* ── Hai tab Bảng / Lát cắt ─────────────────────────────────────────────── */
-.hn-rpt-io .tabs {
-  display: inline-flex;
-  gap: 4px;
-  margin: 0 0 16px;
-  padding: 3px;
-  border: 0;
-  border-radius: var(--radius);
-  background: var(--hnio-segment-bg);
-  box-shadow: none;
-}
-
-.hn-rpt-io .tab {
-  min-height: 36px;
-  padding: 0 13px;
-  border: 0;
-  border-radius: 4px;
-  color: var(--muted);
-  background: transparent;
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-}
-
-.hn-rpt-io .tab[aria-selected="true"] {
-  color: var(--primary-dark);
-  background: var(--surface);
-  box-shadow: var(--hnio-segment-shadow);
-}
-
-.hn-rpt-io .tab [data-icon] {
-  display: inline-grid;
-  place-items: center;
+.hn-rpt-io .io-source [data-icon] {
+  color: var(--primary);
   width: 16px;
   height: 16px;
-  margin-right: 6px;
-  vertical-align: -3px;
 }
-
-.hn-rpt-io .tab [data-icon] svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.65;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.hn-rpt-io .io-warehouse-info {
+  position: relative;
+  min-width: 160px;
+  max-width: 240px;
 }
-
-/* ── Bảng lịch sử chứng từ ──────────────────────────────────────────────── */
-.hn-rpt-io .scroll {
-  overflow-x: auto;
+.hn-rpt-io .io-warehouse-info > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  border: 1px solid var(--ops-line);
+  border-radius: 7px;
+  padding: 7px 10px;
+  background: var(--surface);
 }
-
-.hn-rpt-io table {
-  width: 100%;
-  min-width: 1080px;
-  border-collapse: collapse;
+.hn-rpt-io .io-warehouse-info > summary::-webkit-details-marker {
+  display: none;
+}
+.hn-rpt-io .io-warehouse-info > summary > span:not([data-icon]) {
+  min-width: 0;
+}
+.hn-rpt-io .io-warehouse-info > summary > b,
+.hn-rpt-io .io-warehouse-info b {
+  display: block;
   font-size: 13px;
-  line-height: 20px;
+  overflow-wrap: anywhere;
 }
-
-.hn-rpt-io th {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
-  color: var(--muted);
-  background: var(--hnio-surface-muted);
-  font-size: 11.5px;
-  line-height: 17px;
-  font-weight: 600;
-  text-align: left;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.hn-rpt-io td {
-  max-width: 190px;
-  padding: 11px 12px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
-}
-
-.hn-rpt-io tbody tr:nth-child(even) {
-  background: var(--hnio-row-stripe);
-}
-
-.hn-rpt-io tbody tr:hover {
-  background: var(--hnio-row-hover);
-}
-
-.hn-rpt-io .cell {
-  overflow: hidden;
-  color: var(--ink);
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.hn-rpt-io .sub {
-  overflow: hidden;
-  margin-top: 3px;
-  color: var(--muted);
+.hn-rpt-io .io-warehouse-info small {
+  display: block;
+  margin-top: 2px;
   font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--muted);
 }
-
-.hn-rpt-io .qty {
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  white-space: nowrap;
+.hn-rpt-io .io-warehouse-info [data-icon="warehouse"] {
+  width: 24px;
+  height: 24px;
+  color: var(--primary);
 }
-
-/* ── Ô "Qty posted" dạng viên ──────────────────────────────────────────── */
-/*
- * NGOÀI MOCKUP (yêu cầu người dùng 2026-09-03): mockup in số lượng thành chữ
- * đậm trần. Ở đây bọc thành viên có nền như cột "Trạng thái" để đọc lướt phân
- * biệt ngay chiều tăng/giảm; số đo lấy đúng của `.type` (viên trong bảng) nên
- * hai cột cạnh nhau cao bằng nhau.
- */
-.hn-rpt-io .qty-chip {
+.hn-rpt-io .io-warehouse-info [data-icon="chevron"] {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+}
+.hn-rpt-io .io-warehouse-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 8;
+  width: min(280px, calc(100vw - 40px));
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(9, 49, 76, 0.15);
+  background: var(--surface);
+}
+.hn-rpt-io .io-warehouse-popover p {
+  font-size: 13px;
+  margin: 5px 0;
+}
+.hn-rpt-io .io-export {
+  position: relative;
+}
+.hn-rpt-io .io-export-trigger {
+  border-color: var(--primary);
+  color: var(--ink);
+  background: var(--surface);
+  min-width: 154px;
+}
+.hn-rpt-io .io-export-trigger:hover:not(:disabled) {
+  background: var(--primary-soft);
+}
+.hn-rpt-io .io-export-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 185px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(9, 49, 76, 0.15);
+}
+.hn-rpt-io .io-export-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  width: 100%;
+  border: 0;
+  border-radius: var(--ops-radius-control);
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  font-size: 13px;
+}
+.hn-rpt-io .io-export-menu button:hover {
+  background: var(--primary-soft);
+}
+.hn-rpt-io .io-export-scope {
+  max-width: 250px;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.hn-rpt-io .io-readonly {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 3px 8px;
-  border-radius: 99px;
-  font-size: 12.5px;
-  font-weight: 800;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 15px;
+  background: var(--primary-soft);
+  border-radius: 6px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.hn-rpt-io .filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: end;
+  gap: 7px 16px;
+  margin-bottom: 16px;
+  padding: 14px 16px 11px;
+}
+.hn-rpt-io .io-filter-fields {
+  display: grid;
+  grid-template-columns:
+    minmax(255px, 1.25fr) minmax(140px, 1fr) minmax(135px, 1fr)
+    minmax(145px, 1fr);
+  gap: 14px;
+}
+.hn-rpt-io .field {
+  min-width: 0;
+}
+.hn-rpt-io .field > label {
+  display: block;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 20px;
+  margin-bottom: 4px;
+}
+.hn-rpt-io .io-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: var(--ops-control-height);
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--surface);
+  padding: 0 10px;
+}
+.hn-rpt-io .io-select-wrap:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(8, 126, 175, 0.12);
+}
+.hn-rpt-io .io-select-wrap [data-icon] {
+  width: 14px;
+  height: 14px;
+  color: var(--primary);
+}
+.hn-rpt-io .io-select-wrap [data-icon="chevron"] {
+  width: 11px;
+  height: 11px;
+  pointer-events: none;
+  margin-left: -24px;
+}
+.hn-rpt-io .io-select-wrap select,
+.hn-rpt-io .io-select-wrap input {
+  min-width: 0;
+  width: 100%;
+  padding: 9px 18px 9px 0;
+  min-height: var(--ops-control-height);
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  font-size: 13px;
+  background: transparent;
+  text-overflow: ellipsis;
+}
+.hn-rpt-io .io-select-wrap select {
+  appearance: none;
+  cursor: pointer;
+}
+.hn-rpt-io .io-select-wrap option {
+  color: var(--ink);
+  background: var(--surface);
+}
+.hn-rpt-io .io-warehouse-field {
+  background: var(--ops-canvas);
+}
+.hn-rpt-io .io-period-note {
+  grid-column: 1;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 20px;
+}
+.hn-rpt-io .io-filter-actions {
+  display: flex;
+  gap: 12px;
+  grid-column: 2;
+  grid-row: 1;
+}
+.hn-rpt-io .io-apply {
+  min-width: 115px;
+  background: var(--primary);
+  color: var(--ops-on-primary);
+}
+.hn-rpt-io .io-apply:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+.hn-rpt-io .io-reset {
+  min-width: 84px;
+  color: var(--ink);
+  background: transparent;
+}
+.hn-rpt-io .io-reset:hover:not(:disabled) {
+  background: var(--primary-soft);
+}
+.hn-rpt-io .hn-rpt-io-date-range {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  min-height: 39px;
+  border: 1px solid var(--ops-line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.hn-rpt-io .hn-rpt-io-date-range:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(8, 126, 175, 0.12);
+}
+.hn-rpt-io .hn-vuexy-date-field {
+  display: flex;
+  gap: 5px;
+  justify-content: flex-start;
+  min-height: var(--ops-control-height);
+  padding: 8px 7px;
+  border: 0;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+}
+.hn-rpt-io .hn-vuexy-date-field > span:first-child {
+  display: none;
+}
+.hn-rpt-io .hn-vuexy-date-field > i {
+  order: -1;
+  width: 16px;
+  height: 16px;
+}
+.hn-rpt-io .hn-vuexy-date-field[data-date-field="to"] > i::before {
+  content: none;
+}
+.hn-rpt-io .hn-vuexy-date-field[data-date-field="to"] > i {
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.hn-rpt-io .hn-vuexy-date-field[data-date-field="to"]::before {
+  content: "–";
+  color: var(--muted);
+  margin-left: -5px;
+  margin-right: 3px;
+}
+.hn-rpt-io .hn-vuexy-date-field[data-date-field="to"]::after {
+  content: "⌄";
+  color: var(--muted);
+  margin-left: auto;
+  font-size: 12px;
+}
+.hn-rpt-io .hn-vuexy-date-field:hover,
+.hn-rpt-io .hn-vuexy-date-field[aria-expanded="true"] {
+  background: var(--primary-soft);
+}
+.hn-rpt-io .hn-vuexy-date-field [data-date-value] {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.hn-rpt-io .is-invalid .hn-rpt-io-date-range {
+  border-color: #d85151;
+}
+.hn-rpt-io .io-field-error {
+  display: block;
+  color: #c74848;
+  font-size: 12px;
+  margin-top: 5px;
+}
+.hn-rpt-io-date-popup {
+  --io-date-primary: var(--ops-primary);
+  --io-date-soft: var(--ops-pale);
+  color: var(--ops-heading);
+  font-family: var(--wms-font-family);
+  border-color: var(--ops-line);
+}
+.hn-rpt-io-date-popup [data-date-tab][data-active="true"],
+.hn-rpt-io-date-popup [role="group"] button[aria-pressed="true"],
+.hn-rpt-io-date-popup [role="group"] button:hover,
+.hn-rpt-io-date-popup [data-date-tab]:hover {
+  border-color: var(--io-date-primary);
+  color: var(--ops-heading);
+  background: var(--io-date-soft);
+}
+.hn-rpt-io-date-popup [data-in-range="true"] {
+  background: var(--ops-pale);
+}
+.hn-rpt-io-date-popup button[aria-selected="true"],
+.hn-rpt-io-date-popup [data-date-action="apply"] {
+  color: var(--ops-on-primary);
+  background: var(--io-date-primary);
+}
+.hn-rpt-io-date-popup button[aria-selected="true"]:hover,
+.hn-rpt-io-date-popup [data-date-action="apply"]:hover {
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+}
+.hn-rpt-io-date-popup button[aria-selected="false"]:hover {
+  background: var(--io-date-soft);
+  color: var(--ops-heading);
+}
+.hn-rpt-io-date-popup [data-date-action="cancel"],
+.hn-rpt-io-date-popup [data-date-action="clear"] {
+  color: var(--io-date-primary);
+}
+.hn-rpt-io-date-popup button:focus-visible {
+  outline-color: var(--io-date-primary);
+}
+.hn-rpt-io .io-history-card {
+  padding: 12px 16px 0;
+  margin-top: 16px;
+  overflow: hidden;
+}
+.hn-rpt-io .io-table-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.hn-rpt-io .io-table-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--ops-heading);
+}
+.hn-rpt-io .io-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: var(--primary-soft);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.hn-rpt-io .io-table-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 32%;
+  min-height: 36px;
+  border: 1px solid var(--ops-line);
+  border-radius: 6px;
+  padding: 0 10px;
+  color: var(--primary);
+}
+.hn-rpt-io .io-table-search:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(8, 126, 175, 0.1);
+}
+.hn-rpt-io .io-table-search input {
+  border: 0;
+  outline: 0;
+  min-width: 0;
+  width: 100%;
+  padding: 7px 0;
+  color: var(--ink);
+  background: transparent;
+  font-size: 12px;
+}
+.hn-rpt-io .io-table-search input::placeholder {
+  color: var(--muted);
+}
+.hn-rpt-io .io-table-search button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  min-width: 24px;
+  min-height: 30px;
+}
+.hn-rpt-io .io-additional-controls {
+  margin-bottom: 10px;
+}
+.hn-rpt-io .io-additional-controls > summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 0;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  list-style: none;
+}
+.hn-rpt-io .io-additional-controls > summary::after {
+  content: "⌄";
+  margin-left: 3px;
+}
+.hn-rpt-io .io-additional-controls[open] > summary::after {
+  content: "⌃";
+}
+.hn-rpt-io .io-additional-controls > summary [data-icon] {
+  width: 13px;
+  height: 13px;
+}
+.hn-rpt-io .io-additional-body {
+  padding: 10px 0;
+  display: grid;
+  gap: 10px;
+}
+.hn-rpt-io .tabs {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.hn-rpt-io .tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 7px 12px;
+  min-height: 36px;
+  font-size: 12px;
+}
+.hn-rpt-io .tab[aria-selected="true"] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--ink);
+  font-weight: 650;
+}
+.hn-rpt-io .io-global-search {
+  max-width: 500px;
+}
+.hn-rpt-io .io-global-search > label {
+  font-size: 12px;
+  font-weight: 650;
+  display: block;
+  margin-bottom: 5px;
+}
+.hn-rpt-io .control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 10px;
+  background: var(--surface);
+}
+.hn-rpt-io .control input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+}
+.hn-rpt-io .scroll {
+  max-height: clamp(320px, 56vh, 640px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ops-line) transparent;
+}
+.hn-rpt-io .io-history-table {
+  width: 100%;
+  min-width: 700px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 19px;
+}
+.hn-rpt-io .io-history-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ops-pale);
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 7px 10px;
+  box-shadow: inset 0 -1px 0 var(--line);
+  white-space: nowrap;
+}
+.hn-rpt-io .io-history-table th:nth-child(1) {
+  width: 15%;
+}
+.hn-rpt-io .io-history-table th:nth-child(2) {
+  width: 10%;
+}
+.hn-rpt-io .io-history-table th:nth-child(3) {
+  width: 16%;
+}
+.hn-rpt-io .io-history-table th:nth-child(4) {
+  width: 24%;
+}
+.hn-rpt-io .io-history-table th:nth-child(5) {
+  width: 9%;
+}
+.hn-rpt-io .io-history-table th:nth-child(6) {
+  width: 18%;
+}
+.hn-rpt-io .io-history-table th:nth-child(7) {
+  width: 8%;
+}
+.hn-rpt-io .io-history-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  overflow: hidden;
+}
+.hn-rpt-io .io-history-table tr:hover {
+  background: var(--ops-canvas);
+}
+.hn-rpt-io .io-history-table tr:focus-within {
+  background: var(--primary-soft);
+}
+.hn-rpt-io .io-history-table .cell,
+.hn-rpt-io .io-history-table b {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-rpt-io .io-history-table time {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-
-.hn-rpt-io .qty-chip.is-pos {
-  color: var(--hnio-ok-fg);
-  background: var(--hnio-ok-soft);
+.hn-rpt-io .io-history-table .io-object {
+  display: flex;
+  gap: 4px;
 }
-
-.hn-rpt-io .qty-chip.is-neg {
-  color: var(--hnio-neg-fg);
-  background: var(--hnio-neg-soft);
+.hn-rpt-io .io-object > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-/* Ròng bằng 0 không phải tăng cũng không phải giảm — để trung tính. */
-.hn-rpt-io .qty-chip.is-zero {
-  color: var(--hnio-zero-fg);
-  background: var(--hnio-zero-soft);
+.hn-rpt-io .io-object > span + span::before {
+  content: " · ";
 }
-
-.hn-rpt-io .empty-row {
-  padding: 36px;
-  color: var(--muted);
+.hn-rpt-io .io-history-table .qty {
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
-
+.hn-rpt-io .type,
+.hn-rpt-io .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border-radius: 16px;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 18px;
+}
+.hn-rpt-io .ok {
+  background: var(--ops-pale);
+  color: var(--ops-link);
+}
+.hn-rpt-io .warn {
+  background: var(--ops-pale);
+  color: var(--ops-link);
+}
+.hn-rpt-io .info {
+  background: var(--ops-pale);
+  color: var(--ops-muted);
+}
+.hn-rpt-io .io-history-table .io-tablet-label {
+  display: none;
+}
 .hn-rpt-io .tfoot {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 11px;
+  line-height: 20px;
+  color: var(--muted);
+}
+.hn-rpt-io .tfoot small {
+  font-size: 10px;
+  color: var(--ink);
+}
+.hn-rpt-io .io-pagination {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.hn-rpt-io .io-pagination > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.hn-rpt-io .io-pagination button {
+  border: 0;
+  border-radius: 4px;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 3px 7px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+}
+.hn-rpt-io .io-pagination button:hover:not(:disabled) {
+  background: var(--primary-soft);
+}
+.hn-rpt-io .io-pagination button[aria-current="page"] {
+  background: var(--primary);
+  color: var(--ops-on-primary);
+}
+.hn-rpt-io .io-page-gap {
+  padding: 0 3px;
+}
+.hn-rpt-io .cardhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.hn-rpt-io .cardhead-l {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  padding: 12px 20px;
+  min-width: 0;
+}
+.hn-rpt-io .headicon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: var(--primary-soft);
+  border-radius: 7px;
+}
+.hn-rpt-io .title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.hn-rpt-io .note,
+.hn-rpt-io .sub {
   color: var(--muted);
   font-size: 12px;
 }
-
-/* ── Lát cắt đối soát ───────────────────────────────────────────────────── */
 .hn-rpt-io .slices {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1313,7 +968,6 @@
   white-space: nowrap;
 }
 
-/* ── Hộp thoại chi tiết chứng từ ────────────────────────────────────────── */
 .hn-rpt-io .backdrop {
   position: fixed;
   inset: 0;
@@ -1329,7 +983,7 @@
   max-height: calc(100vh - 40px);
   overflow: auto;
   border: 1px solid var(--hnio-modal-line);
-  border-radius: 10px;
+  border-radius: var(--ops-radius-dialog);
   background: var(--surface);
   box-shadow: var(--hnio-modal-shadow);
 }
@@ -1344,7 +998,10 @@
 
 .hn-rpt-io .modal h2 {
   margin: 0;
-  font-size: 19px;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--ops-heading);
 }
 
 .hn-rpt-io .modalbody {
@@ -1463,144 +1120,33 @@
   line-height: 1.5;
 }
 
-/* ── Dải trạng thái tải / lỗi (KHÔNG có trong mockup offline) ───────────── */
-/*
- * Mockup chạy trên một khối JSON cứng nên không có trạng thái tải hay lỗi
- * mạng. Bản này đọc dữ liệu THẬT nên phải nói được hai trạng thái đó; dùng
- * đúng dải `.page-alert` của vuexy-baseline mà các báo cáo khác đang dùng.
- */
-.hn-rpt-io .page-alert {
-  margin: 0 0 20px;
-  padding: 12px 16px;
-  border-left: 4px solid var(--amber);
-  border-radius: var(--radius);
-  color: var(--hnio-warn-fg);
-  background: var(--amber-soft);
-  font-size: 13px;
-  line-height: 20px;
+.hn-rpt-io .backdrop {
+  z-index: 1400;
 }
-
-.hn-rpt-io .page-alert.is-error {
-  border-color: var(--red);
-  color: var(--hnio-pdf-fg);
-  background: var(--red-soft);
+.hn-rpt-io .modal {
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 40px);
 }
-
-.hn-rpt-io .page-alert.is-info {
-  border-color: var(--cyan);
-  color: var(--hnio-chip-info-fg);
-  background: var(--blue-soft);
+.hn-rpt-io .modalhead {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 2;
 }
-
-/* ── Điểm ngắt (giữ nguyên thứ tự khai báo của mockup) ──────────────────── */
-@media (max-width: 1199px) {
-  .hn-rpt-io .slices {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.hn-rpt-io .modal h2 {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--ops-heading);
 }
-
-@media (max-width: 991px) {
-  .hn-rpt-io .kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.hn-rpt-io .detail-recon b {
+  font-size: 20px;
 }
-
-@media (max-width: 767px) {
-  .hn-rpt-io .headtop {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .hn-rpt-io .chips {
-    justify-content: flex-start;
-  }
-
-  /* Điện thoại: mỗi ô lọc một hàng, hàng nút chiếm trọn bề ngang. */
-  .hn-rpt-io .filtergrid > .field:nth-child(n) {
-    flex-basis: 100%;
-    max-width: none;
-  }
-
-  .hn-rpt-io .actions {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
-  }
-
-  .hn-rpt-io .periods {
-    display: grid;
-    width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .hn-rpt-io .period {
-    min-width: 0;
-    font-size: 11px;
-  }
-
-  .hn-rpt-io .kpis {
-    grid-template-columns: 1fr;
-  }
-
-  .hn-rpt-io .chartbody {
-    padding-inline: 16px;
-  }
-}
-
-@media (max-width: 560px) {
-  .hn-rpt-io .page-wrap {
-    padding: 14px;
-  }
-
-  .hn-rpt-io .actions .btn {
-    flex: 1 1 45%;
-  }
-
-  .hn-rpt-io .slices {
-    grid-template-columns: 1fr;
-    max-height: 560px;
-    padding: 14px;
-  }
-
-  .hn-rpt-io .cardhead {
-    padding: 12px 14px;
-  }
-
-  .hn-rpt-io .detail-summary,
-  .hn-rpt-io .detail-grid,
-  .hn-rpt-io .detail-recon {
-    grid-template-columns: 1fr;
-  }
-
-  .hn-rpt-io .detail-qty {
-    padding: 12px 0 0;
-    border-top: 1px solid var(--hnio-detail-line);
-    border-left: 0;
-    text-align: left;
-  }
-
-  .hn-rpt-io .detail-recon div {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .hn-rpt-io .detail-recon div:last-child {
-    border-bottom: 0;
-  }
-}
-
-/*
- * Nút "Đặt lại": icon quay trong lúc gọi lại số liệu.
- *
- * Lượt gọi lại xong trong khoảng 50ms nên chỉ đặt `disabled` thì không ai kịp
- * thấy — người dùng tưởng nút chết. `useReportRefresh` giữ trạng thái bận tối
- * thiểu 420ms để vòng quay này chạy trọn một nhịp, và báo kết quả bằng toast.
- */
 .hn-rpt-io .refresh-icon {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
 }
-.hn-rpt-io .refresh-icon.is-spinning {
+.hn-rpt-io .is-spinning {
   animation: hn-rpt-io-spin 900ms linear infinite;
 }
 @keyframes hn-rpt-io-spin {
@@ -1608,323 +1154,401 @@
     transform: rotate(360deg);
   }
 }
-
-/* ═════════════════════════════════════════════════════════════════════════
-   BỔ SUNG NGOÀI MOCKUP · Cột STT
-   -------------------------------------------------------------------------
-   Mọi danh sách của màn báo cáo phải đánh số dòng để đối chiếu vị trí khi trao
-   đổi. Bảng chứng từ có cột STT đứng đầu; khối "lát cắt" dùng nhãn STT dạng
-   chip cho cùng một con số.
-   ═════════════════════════════════════════════════════════════════════════ */
-.hn-rpt-io th.stt-col,
-.hn-rpt-io td.stt-col {
-  width: 56px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+@container hn-rpt-io (max-width:1250px) {
+  .hn-rpt-io .io-page-heading {
+    align-items: flex-start;
+  }
+  .hn-rpt-io .io-heading-actions {
+    max-width: 42%;
+  }
+  .hn-rpt-io .io-source {
+    display: none;
+  }
+  .hn-rpt-io .io-filter-fields {
+    grid-column: 1 / -1;
+    grid-template-columns:
+      minmax(255px, 1.3fr) minmax(125px, 1fr) minmax(125px, 1fr)
+      minmax(135px, 1fr);
+  }
+  .hn-rpt-io .io-filter-actions {
+    grid-row: 2;
+  }
+  .hn-rpt-io .io-table-search {
+    width: 38%;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(1) {
+    width: 18%;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(3) {
+    width: 17%;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(4) {
+    width: 21%;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(6) {
+    width: 17%;
+  }
 }
-.hn-rpt-io .stt-badge {
-  width: fit-content;
-  margin-bottom: 4px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--hnio-surface-muted);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 18px;
-  letter-spacing: 0.02em;
-}
-
-/* ═════════════════════════════════════════════════════════════════════════
-   BỔ SUNG NGOÀI MOCKUP · Bảng "Lịch sử chứng từ đã ghi nhận" cuộn trong khung
-   -------------------------------------------------------------------------
-   Mockup 8.3 chỉ có 5 chứng từ cứng nên bảng luôn ngắn. Một kỳ thật có hàng
-   trăm chứng từ: để nguyên thì bảng kéo trang thành một dải rất dài, và muốn
-   đổi lại bộ lọc của CHÍNH khối đó người dùng phải cuộn ngược hết cả trang.
-
-   Cho bảng cuộn TRONG khung của nó: thanh lọc và hàng tiêu đề cột luôn nằm
-   trong tầm mắt, phần trang phía dưới không bị đẩy đi đâu. Ngưỡng chiều cao
-   dùng chung với RPT-01/RPT-02 (`--hn-rpt-scroll-h`) để 8 màn báo cáo cuộn
-   giống nhau. Là `max-height` nên kỳ ít chứng từ KHÔNG bị độn khoảng trắng —
-   chỉ kỳ dài mới sinh thanh cuộn.
-
-   Khối "Dạng hộp" (`.slices`) vốn đã cuộn trong khung từ bản port; ở đây chỉ
-   khoác cho nó cùng một bộ thanh cuộn để hai chế độ xem không lệch nhau.
-   ═════════════════════════════════════════════════════════════════════════ */
-.hn-rpt-io {
-  --hn-rpt-scroll-h: clamp(320px, 56vh, 640px);
-  /* Dẫn xuất từ `--muted` (đã theo chế độ sáng/tối) nên không cần bản dark riêng. */
-  --hnio-scrollbar-thumb: color-mix(in srgb, var(--muted) 45%, transparent);
-  --hnio-scrollbar-thumb-hover: color-mix(
-    in srgb,
-    var(--muted) 72%,
-    transparent
-  );
-}
-
-.hn-rpt-io .scroll {
-  max-height: var(--hn-rpt-scroll-h);
-  overflow-y: auto;
-  /* Cuộn hết bảng thì DỪNG, không "xuyên" ra cuộn tiếp cả trang. */
-  overscroll-behavior: contain;
-  scroll-behavior: smooth;
-}
-
-.hn-rpt-io .scroll,
-.hn-rpt-io .slices {
-  scrollbar-width: thin;
-  scrollbar-color: var(--hnio-scrollbar-thumb) transparent;
-}
-
-/*
- * Cuộn dọc mà hàng tiêu đề trôi mất thì không còn biết cột nào là cột nào.
- *
- * Viền dưới vẽ bằng `box-shadow: inset` chứ không phải `border-bottom`: ô
- * sticky giữ nguyên chỗ nhưng đường viền của nó vẫn trượt theo nội dung ở một
- * số trình duyệt, để lại khe hở giữa tiêu đề và dòng đầu tiên.
- */
-.hn-rpt-io .scroll thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  border-bottom: 0;
-  box-shadow: inset 0 -1px 0 var(--line);
-}
-
-.hn-rpt-io .scroll::-webkit-scrollbar,
-.hn-rpt-io .slices::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-.hn-rpt-io .scroll::-webkit-scrollbar-thumb,
-.hn-rpt-io .slices::-webkit-scrollbar-thumb {
-  border: 3px solid transparent;
-  border-radius: 999px;
-  background: var(--hnio-scrollbar-thumb);
-  background-clip: content-box;
-}
-.hn-rpt-io .scroll:hover::-webkit-scrollbar-thumb,
-.hn-rpt-io .slices:hover::-webkit-scrollbar-thumb {
-  background: var(--hnio-scrollbar-thumb-hover);
-  background-clip: content-box;
-}
-
-/* ── Không ô nào trong bảng danh sách được xuống dòng ─────────────────────────
- * Chữ dài cắt bằng "…". Trần bề ngang đặt ở KHỐI BÊN TRONG ô (.cell/.sub/.sku)
- * chứ không ở <td>: table-layout auto bỏ qua max-width của ô, nên chặn ở ô thì
- * "…" không bao giờ hiện.
- * .chart-table (bảng thay thế biểu đồ trong <details>) cố ý không nằm trong
- * phạm vi này — ở đó người dùng cần đọc trọn giá trị.
- */
-.hn-rpt-io .scroll td {
-  white-space: nowrap;
-}
-.hn-rpt-io .scroll td .cell,
-.hn-rpt-io .scroll td .sub,
-.hn-rpt-io .scroll td .sku {
-  display: block;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-
-/* ═════════════════════════════════════════════════════════════════════════
-   RPT-08 · HOA NAM OCEAN ALIGNMENT
-   -------------------------------------------------------------------------
-   Chỉ áp dụng cho màn Lịch sử nhập – xuất kho. Giữ nguyên logic/report data,
-   nhưng đồng bộ màu, tỷ lệ control và responsive với Tổng quan vận hành.
-   Popup lịch render qua portal nên có class riêng để không làm đổi 7 report
-   còn lại đang dùng cùng UiVuexyDateRangePicker.
-   ═════════════════════════════════════════════════════════════════════════ */
-.hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field {
-  min-height: 40px;
-  border-color: var(--hnio-control-line);
-  border-radius: var(--radius);
-  color: var(--ink);
-  background: var(--surface);
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field:hover,
-.hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field[aria-expanded="true"] {
-  border-color: var(--primary);
-}
-
-.hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field:focus-visible {
-  outline: 0;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--wms-auth-focus-ring);
-}
-
-.hn-rpt-io .hn-rpt-io-date-range [data-date-value] {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.hn-rpt-io-date-popup {
-  font-family: var(--wms-font-family);
-}
-
-.hn-rpt-io-date-popup [data-date-tab][data-active="true"],
-.hn-rpt-io-date-popup [role="group"] button[aria-pressed="true"] {
-  border-color: var(--wms-auth-cta);
-  color: var(--wms-auth-navy);
-  background: var(--wms-auth-pale);
-}
-
-.hn-rpt-io-date-popup [role="group"] button:hover,
-.hn-rpt-io-date-popup [data-date-tab]:hover {
-  border-color: var(--wms-auth-cta);
-  color: var(--wms-auth-navy);
-  background: var(--wms-auth-pale);
-}
-
-.hn-rpt-io-date-popup [data-in-range="true"] {
-  background: rgba(0, 78, 116, 0.1);
-}
-
-.hn-rpt-io-date-popup button[aria-selected="true"] {
-  color: var(--wms-on-primary);
-  background: var(--wms-auth-cta);
-}
-
-.hn-rpt-io-date-popup button[aria-selected="true"]:hover {
-  color: var(--wms-on-primary);
-  background: var(--wms-auth-navy);
-}
-
-.hn-rpt-io-date-popup button[aria-selected="false"]:hover {
-  color: var(--wms-auth-navy);
-  background: var(--wms-auth-pale);
-}
-
-.hn-rpt-io-date-popup [data-date-action="apply"] {
-  color: var(--wms-on-primary);
-  background: var(--wms-auth-cta);
-}
-
-.hn-rpt-io-date-popup [data-date-action="apply"]:hover {
-  background: var(--wms-auth-navy);
-}
-
-.hn-rpt-io-date-popup [data-date-action="clear"],
-.hn-rpt-io-date-popup [data-date-action="cancel"] {
-  color: var(--wms-auth-cta);
-}
-
-.hn-rpt-io-date-popup button:focus-visible {
-  outline-color: var(--wms-auth-link);
-}
-
-.hn-rpt-io tbody tr:focus-within {
-  background: var(--wms-auth-pale);
-  box-shadow: inset 3px 0 0 var(--wms-auth-cta);
-}
-
-/* Ưu tiên đủ bề ngang cho hai mốc ngày, tránh cắt "DD/MM/YYYY" ở Tablet. */
-.hn-rpt-io .filtergrid > .field:nth-child(1) {
-  flex-basis: 420px;
-  max-width: 520px;
-}
-
-@media (max-width: 1199px) {
+@container hn-rpt-io (max-width:1000px) {
   .hn-rpt-io .page-wrap {
-    padding-inline: 20px;
+    padding: 16px;
   }
-
-  .hn-rpt-io .filtergrid > .field:nth-child(1) {
-    flex-basis: 380px;
-    max-width: 520px;
+  .hn-rpt-io .io-page-heading h1 {
+    font-size: 24px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
   }
-}
-
-@media (max-width: 991px) {
+  .hn-rpt-io .io-heading-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    max-width: 220px;
+    gap: 7px;
+  }
+  .hn-rpt-io .io-export-trigger {
+    width: 100%;
+  }
+  .hn-rpt-io .io-filter-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 18px;
+  }
   .hn-rpt-io .filters {
-    gap: 12px 14px;
-    padding: 14px 16px;
-  }
-
-  .hn-rpt-io .cardhead {
-    padding-inline: 16px;
-  }
-
-  .hn-rpt-io .slices {
+    padding: 15px 16px;
     gap: 12px;
   }
-}
-
-@media (max-width: 767px) {
-  .hn-rpt-io .reporthead h1 {
-    font-size: 22px;
-    line-height: 32px;
+  .hn-rpt-io .io-table-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
   }
-
-  .hn-rpt-io .section-heading {
+  .hn-rpt-io .io-table-search {
+    width: 100%;
+  }
+  .hn-rpt-io .io-history-table .io-document-column,
+  .hn-rpt-io .io-history-table .io-desktop-label {
+    display: none;
+  }
+  .hn-rpt-io .io-history-table .io-tablet-label {
+    display: block;
+  }
+  .hn-rpt-io .io-history-table {
+    min-width: 620px;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(1) {
+    width: 23%;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(2) {
+    width: 13%;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(4) {
+    width: 23%;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(5) {
+    width: 11%;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(6) {
+    width: 20%;
+  }
+  .hn-rpt-io .io-history-table th:nth-child(7) {
+    width: 10%;
+  }
+  .hn-rpt-io .io-history-table td {
+    padding: 12px 8px;
+  }
+  .hn-rpt-io .io-history-table th {
+    padding-inline: 8px;
+  }
+  .hn-rpt-io .io-history-table .io-tablet-label {
+    margin-top: 3px;
+  }
+  .hn-rpt-io .io-history-table .io-object {
+    display: block;
+  }
+  .hn-rpt-io .io-object > span {
+    display: block;
+  }
+  .hn-rpt-io .io-object > span + span {
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .hn-rpt-io .io-object > span + span::before {
+    content: none;
+  }
+  .hn-rpt-io .slices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-rpt-io .tfoot {
+    flex-wrap: wrap;
+  }
+}
+@container hn-rpt-io (max-width:650px) {
+  .hn-rpt-io .io-warehouse-popover,
+  .hn-rpt-io .io-export-menu {
+    left: 0;
+    right: auto;
+    max-width: calc(100cqw - 32px);
+  }
+  .hn-rpt-io .io-page-heading {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hn-rpt-io .io-heading-actions {
+    display: flex;
+    max-width: 100%;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .hn-rpt-io .io-warehouse-info {
+    max-width: 58%;
+    min-width: 0;
+  }
+  .hn-rpt-io .io-warehouse-info > summary {
+    padding: 6px 8px;
+  }
+  .hn-rpt-io .io-page-heading h1 {
+    font-size: 24px;
+    line-height: 38px;
+    font-weight: 700;
+    color: var(--ops-heading);
+  }
+  .hn-rpt-io .io-page-heading p {
+    font-size: 12px;
+  }
+  .hn-rpt-io .io-filter-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .hn-rpt-io .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-rpt-io .io-period-note {
+    grid-row: 2;
+  }
+  .hn-rpt-io .io-filter-actions {
+    grid-row: 3;
+    grid-column: 1;
+    justify-content: flex-end;
+  }
+  .hn-rpt-io .io-filter-actions .btn {
+    flex: 1;
+  }
+  .hn-rpt-io .io-history-card {
+    padding: 12px 12px 0;
+  }
+  .hn-rpt-io .io-table-heading h2 {
+    font-size: 18px;
+    line-height: 26px;
+    font-weight: 600;
+    color: var(--ops-heading);
+  }
+  .hn-rpt-io .tfoot {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
   }
-
-  .hn-rpt-io .section-meta {
-    text-align: left;
+  .hn-rpt-io .io-pagination {
+    align-self: center;
   }
-
-  .hn-rpt-io .kpi {
-    min-height: 144px;
-    padding: 16px;
+  .hn-rpt-io .slices {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
   }
-
-  .hn-rpt-io .kpivalue {
-    font-size: 28px;
-    line-height: 34px;
+  .hn-rpt-io .collapsed {
+    align-items: flex-start;
+    flex-direction: column;
   }
-
-  .hn-rpt-io .cardhead {
-    min-height: 58px;
+  .hn-rpt-io .summary span {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .hn-rpt-io .io-additional-body [data-testid="rptio-document-section-filter"] {
+    min-width: 0;
   }
 }
-
 @media (max-width: 560px) {
-  .hn-rpt-io .reporthead h1 {
-    font-size: 21px;
-    line-height: 30px;
+  .hn-rpt-io .page-wrap {
+    padding: 12px;
   }
-
-  .hn-rpt-io .filters {
+  .hn-rpt-io .backdrop {
+    padding: 12px;
+  }
+  .hn-rpt-io .modal {
+    max-height: calc(100dvh - 24px);
+  }
+  .hn-rpt-io .modalhead,
+  .hn-rpt-io .modalbody {
     padding: 14px;
   }
-
-  .hn-rpt-io .modal {
-    width: min(780px, calc(100% - 16px));
+  .hn-rpt-io .detail-summary,
+  .hn-rpt-io .detail-grid,
+  .hn-rpt-io .detail-recon {
+    grid-template-columns: 1fr;
+  }
+  .hn-rpt-io .detail-qty {
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    text-align: left;
+  }
+  .hn-rpt-io .detail-recon div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
   }
 }
-
 @media (pointer: coarse) {
   .hn-rpt-io .btn,
-  .hn-rpt-io .control,
   .hn-rpt-io .tab,
-  .hn-rpt-io .period,
-  .hn-rpt-io .opt,
-  .hn-rpt-io .hn-rpt-io-date-range .hn-vuexy-date-field {
+  .hn-rpt-io .io-pagination button,
+  .hn-rpt-io .io-select-wrap select,
+  .hn-rpt-io .hn-vuexy-date-field {
     min-height: 44px;
   }
+  .hn-rpt-io .io-pagination button {
+    min-width: 36px;
+  }
 }
-
 @media (prefers-reduced-motion: reduce) {
   .hn-rpt-io .btn,
-  .hn-rpt-io .kpi,
-  .hn-rpt-io .refresh-icon {
+  .hn-rpt-io .is-spinning {
     animation: none;
     transition: none;
   }
+}
+[data-theme="dark"] .hn-rpt-io,
+[data-theme="dark"] .hn-rpt-io-select-menu {
+  --ink: var(--ops-heading);
+  --muted: var(--ops-muted);
+  --line: var(--ops-line);
+  --primary-soft: var(--ops-pale);
+}
 
-  .hn-rpt-io .btn:hover:not(:disabled),
-  .hn-rpt-io .kpi:hover {
-    transform: none;
+/* The two report filters use the application's animated select surface. */
+.hn-rpt-io .io-combobox {
+  position: relative;
+  min-width: 0;
+}
+.hn-rpt-io .io-combobox > [data-icon] {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 11px;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
+  color: var(--primary);
+  pointer-events: none;
+}
+.hn-rpt-io .io-combobox .MuiFormControl-root {
+  min-width: 0;
+}
+.hn-rpt-io .io-combobox .MuiOutlinedInput-root {
+  min-height: 39px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 20px;
+  transition: box-shadow 160ms ease;
+}
+.hn-rpt-io .io-combobox .MuiSelect-select.MuiInputBase-input {
+  min-height: 20px;
+  padding: 9px 32px 9px 31px;
+  font-family: var(--wms-font-family);
+  font-weight: 400;
+}
+.hn-rpt-io .io-combobox .MuiOutlinedInput-notchedOutline {
+  border-color: var(--line);
+  transition: border-color 160ms ease;
+}
+.hn-rpt-io
+  .io-combobox
+  .MuiOutlinedInput-root:hover
+  .MuiOutlinedInput-notchedOutline,
+.hn-rpt-io .io-combobox .Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primary);
+  border-width: 1px;
+}
+.hn-rpt-io .io-combobox .Mui-focused {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.hn-rpt-io .io-combobox .MuiSelect-icon {
+  color: var(--primary);
+  font-size: 17px;
+  right: 9px;
+  transition: transform 180ms ease;
+}
+.hn-rpt-io-select-menu.MuiPaper-root {
+  margin-top: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--ops-radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 14%, transparent);
+  font-family: var(--wms-font-family);
+  overscroll-behavior: contain;
+}
+.hn-rpt-io-select-menu .MuiList-root {
+  padding: 5px;
+}
+.hn-rpt-io-select-menu .MuiMenuItem-root {
+  gap: 12px;
+  min-height: var(--ops-control-height);
+  margin: 2px 0;
+  padding: 8px 10px;
+  border-radius: var(--ops-radius-control);
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+.hn-rpt-io-select-menu .MuiMenuItem-root:is(:hover, .Mui-focusVisible) {
+  background: var(--primary-soft);
+}
+.hn-rpt-io-select-menu .MuiMenuItem-root.Mui-selected {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-weight: 650;
+}
+.hn-rpt-io-select-menu .MuiMenuItem-root.Mui-selected::after {
+  content: "✓";
+  margin-left: auto;
+  color: var(--primary);
+  flex: none;
+}
+/* UiDialog owns enter/exit, focus and backdrop. Its retained content must not
+ * collapse while the closing transition is still playing. */
+.hn-rpt-io.io-detail-overlay .MuiBackdrop-root {
+  background: var(--hnio-overlay);
+}
+.hn-rpt-io.io-detail-overlay .MuiDialog-container {
+  padding: 20px;
+}
+.hn-rpt-io.io-detail-overlay .modal {
+  color: var(--ink);
+  margin: 0;
+  width: 100%;
+  max-width: 760px;
+  max-height: 100%;
+  scrollbar-gutter: stable;
+}
+.hn-rpt-io.io-detail-overlay .MuiDialogContent-root {
+  padding: 0;
+  flex: none;
+  overflow: visible;
+}
+@media (max-width: 560px) {
+  .hn-rpt-io.io-detail-overlay .MuiDialog-container {
+    padding: 12px;
+  }
+}
+@media (pointer: coarse) {
+  .hn-rpt-io .io-combobox .MuiOutlinedInput-root,
+  .hn-rpt-io-select-menu .MuiMenuItem-root {
+    min-height: var(--ops-control-height);
   }
 }

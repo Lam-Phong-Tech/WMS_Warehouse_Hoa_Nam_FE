@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IamUserScreen } from "@/modules/iam/pages/IamUserScreen";
 import { useAuthStore } from "@/shared/store/auth.store";
 
+vi.unmock("antd");
+
 const { mutation } = vi.hoisted(() => ({
   mutation: () => ({
     isPending: false,

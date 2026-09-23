@@ -1,3 +1,4 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import {
@@ -11,14 +12,12 @@ import {
   UiVuexyDateRangePicker,
 } from "@/shared/ui";
 import {
-  BarChartOutlined,
   CheckCircleOutlined,
   DownloadOutlined,
   FileTextOutlined,
   WarningOutlined,
 } from "@/shared/components/icons";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
-import { VuexyDemoIcon } from "@/shared/ui/icons/VuexyDemoIcon";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarChart";
@@ -54,28 +53,28 @@ import {
 } from "./import-match-model";
 
 const C = {
-  navy: "#073b7d",
-  navyDark: "#002f67",
-  primary: "#006ca8",
-  primaryDark: "#00598d",
-  cyanSoft: "#edf9ff",
-  border: "#c9e7f4",
-  borderStrong: "#a8d7ea",
-  bg: "#f6fbfe",
-  text: "#073b7d",
-  muted: "#5275a5",
-  green: "#1fa651",
-  greenSoft: "#e8f8ee",
-  orange: "#ff8b18",
-  orangeSoft: "#fff4e8",
-  red: "#ff3346",
-  redSoft: "#fff0f2",
+  navy: "var(--ops-heading)",
+  navyDark: "var(--ops-heading)",
+  primary: "var(--ops-primary)",
+  primaryDark: "var(--ops-primary-hover)",
+  cyanSoft: "var(--ops-pale)",
+  border: "var(--ops-line)",
+  borderStrong: "var(--ops-line)",
+  bg: "var(--ops-canvas)",
+  text: "var(--ops-text)",
+  muted: "var(--ops-muted)",
+  green: "var(--ops-success)",
+  greenSoft: "var(--ops-success-soft)",
+  orange: "var(--ops-warning)",
+  orangeSoft: "var(--ops-warning-soft)",
+  red: "var(--ops-danger)",
+  redSoft: "var(--ops-danger-soft)",
 } as const;
 
 const surface = {
   border: `1px solid ${C.border}`,
-  borderRadius: "8px",
-  bgcolor: "#fff",
+  borderRadius: "var(--ops-radius-card)",
+  bgcolor: "var(--ops-surface)",
   boxShadow: "0 1px 2px rgba(4, 70, 116, 0.03)",
 } as const;
 
@@ -136,11 +135,19 @@ function MetricCard({
         alignItems: "center",
         gap: 1.25,
         cursor: onClick ? "pointer" : "default",
-        transition: "transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease",
+        transition:
+          "transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease",
         "&:hover": onClick
-          ? { transform: "translateY(-1px)", borderColor: C.borderStrong, boxShadow: "0 6px 18px rgba(0, 75, 120, .08)" }
+          ? {
+              transform: "translateY(-1px)",
+              borderColor: C.borderStrong,
+              boxShadow: "0 6px 18px rgba(0, 75, 120, .08)",
+            }
           : undefined,
-        "&:focus-visible": { outline: `2px solid ${C.primary}`, outlineOffset: 2 },
+        "&:focus-visible": {
+          outline: `2px solid ${C.primary}`,
+          outlineOffset: 2,
+        },
       }}
     >
       <Box
@@ -159,7 +166,14 @@ function MetricCard({
         {icon}
       </Box>
       <Box sx={{ minWidth: 0 }}>
-        <Box sx={{ color: C.text, fontSize: 13, fontWeight: 700, lineHeight: 1.25 }}>
+        <Box
+          sx={{
+            color: C.text,
+            fontSize: 13,
+            fontWeight: 700,
+            lineHeight: 1.25,
+          }}
+        >
           {label}
         </Box>
         <Box
@@ -184,7 +198,15 @@ function MetricCard({
 
 function FilterLabel({ children }: { children: ReactNode }) {
   return (
-    <Box sx={{ mb: 0.55, fontSize: 12.5, fontWeight: 700, color: C.text, lineHeight: "18px" }}>
+    <Box
+      sx={{
+        mb: 0.55,
+        fontSize: 12.5,
+        fontWeight: 700,
+        color: C.text,
+        lineHeight: "18px",
+      }}
+    >
       {children}
     </Box>
   );
@@ -204,7 +226,9 @@ function resultLabel(row: ImportMatchBatch): string {
 
 export default function ImportQualityBaseline() {
   const t = useT();
-  const [range, setRange] = useState<[Dayjs, Dayjs]>(() => presetRange("this-month"));
+  const [range, setRange] = useState<[Dayjs, Dayjs]>(() =>
+    presetRange("this-month"),
+  );
   const [result, setResult] = useState<ImportMatchResultFilter>("");
   const [kind, setKind] = useState<ItemKind>("all");
   const [keyword, setKeyword] = useState("");
@@ -226,7 +250,9 @@ export default function ImportQualityBaseline() {
       sortByNewest(
         buildImportBatches(
           Array.isArray(source.data?.data) ? source.data.data : [],
-          (actorId) => users.entries.find((entry) => entry.user_id === actorId)?.name ?? "",
+          (actorId) =>
+            users.entries.find((entry) => entry.user_id === actorId)?.name ??
+            "",
         ),
       ),
     [source.data, users.entries],
@@ -238,18 +264,28 @@ export default function ImportQualityBaseline() {
       { from, to, result, status: "", actor: "", keyword, sku: "", kind },
       (code) => catalog.kindOfCode(code),
     );
-    return issuesOnly ? rows.filter((row) => row.failed > 0 || row.duplicate > 0) : rows;
+    return issuesOnly
+      ? rows.filter((row) => row.failed > 0 || row.duplicate > 0)
+      : rows;
   }, [allRows, from, to, result, keyword, kind, catalog, issuesOnly]);
 
   const totals = useMemo(() => totalsOf(filteredRows), [filteredRows]);
   const trend = useMemo(() => trendByDay(filteredRows), [filteredRows]);
   const pagination = useClientPagination(filteredRows, 5);
-  const lastPage = Math.max(1, Math.ceil(pagination.total / pagination.perPage));
+  const lastPage = Math.max(
+    1,
+    Math.ceil(pagination.total / pagination.perPage),
+  );
   const issueCount = totals.failed + totals.duplicate;
-  const qualityPct = totals.total > 0 ? (totals.success / totals.total) * 100 : 0;
+  const qualityPct =
+    totals.total > 0 ? (totals.success / totals.total) * 100 : 0;
   const greenStop = Math.max(0, Math.min(100, qualityPct));
-  const orangeShare = totals.total > 0 ? (totals.duplicate / totals.total) * 100 : 0;
-  const orangeStop = Math.max(greenStop, Math.min(100, greenStop + orangeShare));
+  const orangeShare =
+    totals.total > 0 ? (totals.duplicate / totals.total) * 100 : 0;
+  const orangeStop = Math.max(
+    greenStop,
+    Math.min(100, greenStop + orangeShare),
+  );
 
   const { refresh } = useReportRefresh({
     refetch: () => source.refetch(),
@@ -267,7 +303,9 @@ export default function ImportQualityBaseline() {
 
   const apply = () => {
     pagination.reset();
-    document.getElementById("rpt04-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document
+      .getElementById("rpt04-results")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const exportXlsx = () =>
@@ -286,7 +324,8 @@ export default function ImportQualityBaseline() {
   const pageNumbers = useMemo(() => {
     if (lastPage <= 4) return Array.from({ length: lastPage }, (_, i) => i + 1);
     if (pagination.page <= 2) return [1, 2, 3];
-    if (pagination.page >= lastPage - 1) return [lastPage - 2, lastPage - 1, lastPage];
+    if (pagination.page >= lastPage - 1)
+      return [lastPage - 2, lastPage - 1, lastPage];
     return [pagination.page - 1, pagination.page, pagination.page + 1];
   }, [lastPage, pagination.page]);
 
@@ -298,28 +337,36 @@ export default function ImportQualityBaseline() {
         width: "100%",
         minWidth: 0,
         display: "grid",
-        gap: { xs: 1.25, sm: 1.5, md: 1.25 },
+        gap: "var(--ops-gap)",
         color: C.text,
         fontSize: { xs: 13, md: 14 },
         "& *": { boxSizing: "border-box" },
         "& .hn-vuexy-date-range.ant-picker": {
-          minHeight: 42,
+          minHeight: "var(--ops-control-height)",
           borderColor: C.primary,
-          borderRadius: "6px",
+          borderRadius: "var(--ops-radius-control)",
           boxShadow: "none",
           color: C.text,
         },
-        "& .hn-vuexy-date-range.ant-picker:hover": { borderColor: C.primaryDark },
+        "& .hn-vuexy-date-range.ant-picker:hover": {
+          borderColor: C.primaryDark,
+        },
         "& .hn-vuexy-date-range.ant-picker-focused": {
           borderColor: C.primary,
           boxShadow: "0 0 0 2px rgba(0,108,168,.13)",
         },
-        "& .hn-vuexy-date-range .ant-picker-active-bar": { background: C.primary },
+        "& .hn-vuexy-date-range .ant-picker-active-bar": {
+          background: C.primary,
+        },
       }}
     >
       <Stack
         direction={{ xs: "column", md: "row" }}
-        sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", md: "flex-end" }, gap: 1.25 }}
+        sx={{
+          justifyContent: "space-between",
+          alignItems: { xs: "stretch", md: "flex-end" },
+          gap: 1.25,
+        }}
       >
         <Box sx={{ minWidth: 0 }}>
           <Box sx={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>
@@ -327,28 +374,39 @@ export default function ImportQualityBaseline() {
           </Box>
           <Box
             component="h1"
+            className="hn-report-page-title"
             sx={{
               m: 0,
               mt: 0.35,
               color: C.navy,
-              fontSize: { xs: 25, sm: 29, md: 31 },
-              lineHeight: 1.08,
+              fontSize: 24,
+              lineHeight: "38px",
               letterSpacing: "-.028em",
-              fontWeight: 800,
+              fontWeight: 700,
             }}
           >
             Báo cáo Nhập liệu, đối chiếu & lỗi
           </Box>
-          <Box sx={{ mt: 0.25, color: "#086ec4", fontSize: { xs: 13.5, md: 15 }, lineHeight: 1.3 }}>
+          <Box
+            sx={{
+              mt: 0.25,
+              color: "var(--ops-link)",
+              fontSize: { xs: 13.5, md: 15 },
+              lineHeight: 1.3,
+            }}
+          >
             Theo dõi chất lượng dữ liệu, kết quả đối chiếu và lỗi phát sinh
           </Box>
         </Box>
 
-        <Stack direction="row" sx={{ gap: 1, flexWrap: "wrap", justifyContent: { xs: "flex-start", md: "flex-end" } }}>
-          <Box className="rpt04-demo-chip" role="note">
-            <VuexyDemoIcon name="info" />
-            <Box component="span">Dữ liệu minh họa</Box>
-          </Box>
+        <Stack
+          direction="row"
+          sx={{
+            gap: 1,
+            flexWrap: "wrap",
+            justifyContent: { xs: "flex-start", md: "flex-end" },
+          }}
+        >
           <UiButton
             appearance="filled"
             startIcon={<DownloadOutlined />}
@@ -361,7 +419,11 @@ export default function ImportQualityBaseline() {
         </Stack>
       </Stack>
 
-      <Box component="section" aria-label="Bộ lọc báo cáo" sx={{ ...surface, p: { xs: 1.25, sm: 1.5 } }}>
+      <Box
+        component="section"
+        aria-label="Bộ lọc báo cáo"
+        sx={{ ...surface, p: { xs: 1.25, sm: 1.5 } }}
+      >
         <Box
           sx={{
             display: "grid",
@@ -399,13 +461,13 @@ export default function ImportQualityBaseline() {
             <Box
               aria-label="Kho Hoa Nam"
               sx={{
-                minHeight: 42,
+                minHeight: "var(--ops-control-height)",
                 px: 1.5,
                 display: "flex",
                 alignItems: "center",
                 border: `1px solid ${C.border}`,
-                borderRadius: "6px",
-                bgcolor: "#f7fbfd",
+                borderRadius: "var(--ops-radius-control)",
+                bgcolor: "var(--ops-canvas)",
                 color: C.muted,
                 fontWeight: 600,
               }}
@@ -449,13 +511,17 @@ export default function ImportQualityBaseline() {
 
         <Stack
           direction={{ xs: "column", sm: "row" }}
-          sx={{ mt: 1.15, gap: 1, alignItems: "stretch" }}
+          sx={{
+            mt: 1.15,
+            gap: 1,
+            alignItems: { xs: "stretch", sm: "center" },
+          }}
         >
           <Box
             className="rpt04-search-label"
             sx={{
               display: { xs: "none", lg: "flex" },
-              minHeight: 40,
+              minHeight: "var(--ops-control-height)",
               alignItems: "center",
               flex: "0 0 auto",
               color: C.text,
@@ -486,9 +552,17 @@ export default function ImportQualityBaseline() {
         </Stack>
       </Box>
 
-      {invalid ? <UiAlert tone="error">Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.</UiAlert> : null}
+      {invalid ? (
+        <UiAlert tone="error">
+          Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.
+        </UiAlert>
+      ) : null}
       {source.error ? (
-        <ApiErrorAlert error={source.error} title="Không thể tải báo cáo" onRetry={refresh} />
+        <ApiErrorAlert
+          error={source.error}
+          title="Không thể tải báo cáo"
+          onRetry={refresh}
+        />
       ) : null}
 
       <Box
@@ -496,7 +570,11 @@ export default function ImportQualityBaseline() {
         aria-label="Tổng quan chất lượng dữ liệu"
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(4, minmax(0, 1fr))" },
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, minmax(0, 1fr))",
+            xl: "repeat(4, minmax(0, 1fr))",
+          },
           gap: { xs: 1, md: 1.15 },
         }}
       >
@@ -549,30 +627,71 @@ export default function ImportQualityBaseline() {
         component="section"
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", xl: "minmax(0, 1.75fr) minmax(330px, .85fr)" },
+          gridTemplateColumns: {
+            xs: "1fr",
+            xl: "minmax(0, 1.75fr) minmax(330px, .85fr)",
+          },
           gap: 1.15,
         }}
       >
         <Box sx={{ ...surface, p: { xs: 1.25, md: 1.5 }, minWidth: 0 }}>
-          <Stack direction={{ xs: "column", sm: "row" }} sx={{ justifyContent: "space-between", gap: .75, mb: .5 }}>
-            <Box component="h2" sx={{ m: 0, color: C.navy, fontSize: { xs: 18, md: 19 }, lineHeight: 1.2, fontWeight: 800 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            sx={{ justifyContent: "space-between", gap: 0.75, mb: 0.5 }}
+          >
+            <Box
+              component="h2"
+              sx={{
+                m: 0,
+                color: C.navy,
+                fontSize: 18,
+                lineHeight: "26px",
+                fontWeight: 600,
+              }}
+            >
               Kết quả đối chiếu theo ngày
             </Box>
             <Box sx={{ fontWeight: 700, color: C.navy, fontSize: 13 }}>
-              Tổng: {fmt(totals.total)} <Box component="span" sx={{ fontWeight: 500 }}>bản ghi</Box>
+              Tổng: {fmt(totals.total)}{" "}
+              <Box component="span" sx={{ fontWeight: 500 }}>
+                bản ghi
+              </Box>
             </Box>
           </Stack>
           {source.isLoading ? (
-            <Box sx={{ height: 190, display: "grid", placeItems: "center" }}><UiSpinner /></Box>
+            <Box sx={{ height: 190, display: "grid", placeItems: "center" }}>
+              <UiSpinner />
+            </Box>
           ) : trend.length === 0 ? (
-            <Box sx={{ height: 190, display: "grid", placeItems: "center", color: C.muted }}>Chưa có dữ liệu trong khoảng thời gian đã chọn.</Box>
+            <Box
+              sx={{
+                height: 190,
+                display: "grid",
+                placeItems: "center",
+                color: C.muted,
+              }}
+            >
+              Chưa có dữ liệu trong khoảng thời gian đã chọn.
+            </Box>
           ) : (
             <MultiSeriesBarChart
               categories={trend.map((point) => axisDayLabel(point.day))}
               series={[
-                { name: "Khớp", data: trend.map((point) => point.success), color: CHART_COLORS.success },
-                { name: "Chênh lệch", data: trend.map((point) => point.duplicate), color: CHART_COLORS.warning },
-                { name: "Lỗi dữ liệu", data: trend.map((point) => point.failed), color: CHART_COLORS.danger },
+                {
+                  name: "Khớp",
+                  data: trend.map((point) => point.success),
+                  color: CHART_COLORS.success,
+                },
+                {
+                  name: "Chênh lệch",
+                  data: trend.map((point) => point.duplicate),
+                  color: CHART_COLORS.warning,
+                },
+                {
+                  name: "Lỗi dữ liệu",
+                  data: trend.map((point) => point.failed),
+                  color: CHART_COLORS.danger,
+                },
               ]}
               stacked
               showValues
@@ -582,8 +701,25 @@ export default function ImportQualityBaseline() {
           )}
         </Box>
 
-        <Box sx={{ ...surface, p: { xs: 1.25, md: 1.5 }, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <Box component="h2" sx={{ m: 0, color: C.navy, fontSize: { xs: 18, md: 19 }, lineHeight: 1.2, fontWeight: 800 }}>
+        <Box
+          sx={{
+            ...surface,
+            p: { xs: 1.25, md: 1.5 },
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box
+            component="h2"
+            sx={{
+              m: 0,
+              color: C.navy,
+              fontSize: 18,
+              lineHeight: "26px",
+              fontWeight: 600,
+            }}
+          >
             Chất lượng dữ liệu
           </Box>
           <Box
@@ -591,7 +727,11 @@ export default function ImportQualityBaseline() {
               flex: 1,
               py: 1.25,
               display: "grid",
-              gridTemplateColumns: { xs: "minmax(145px, .9fr) 1fr", sm: "minmax(170px, .9fr) 1fr", xl: "1fr" },
+              gridTemplateColumns: {
+                xs: "minmax(145px, .9fr) 1fr",
+                sm: "minmax(170px, .9fr) 1fr",
+                xl: "1fr",
+              },
               gap: 1.25,
               alignItems: "center",
             }}
@@ -613,25 +753,45 @@ export default function ImportQualityBaseline() {
                   width: "64%",
                   height: "64%",
                   borderRadius: "50%",
-                  bgcolor: "#fff",
+                  bgcolor: "var(--ops-surface)",
                   position: "absolute",
                 },
               }}
             >
               <Box sx={{ zIndex: 1, textAlign: "center", color: C.navy }}>
-                <Box sx={{ fontWeight: 800, fontSize: { xs: 22, sm: 26 }, lineHeight: 1 }}>{qualityPct.toFixed(1).replace(".", ",")}%</Box>
-                <Box sx={{ mt: .35, fontSize: 11.5 }}>Khớp</Box>
+                <Box
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: { xs: 22, sm: 26 },
+                    lineHeight: 1,
+                  }}
+                >
+                  {qualityPct.toFixed(1).replace(".", ",")}%
+                </Box>
+                <Box sx={{ mt: 0.35, fontSize: 11.5 }}>Khớp</Box>
               </Box>
             </Box>
 
-            <Box sx={{ display: "grid", gap: .85 }}>
+            <Box sx={{ display: "grid", gap: 0.85 }}>
               {[
                 ["Khớp", fmt(totals.success), C.green],
                 ["Chênh lệch", fmt(totals.duplicate), C.orange],
                 ["Lỗi dữ liệu", fmt(totals.failed), C.red],
               ].map(([label, value, color]) => (
-                <Stack key={label} direction="row" sx={{ alignItems: "center", gap: .85 }}>
-                  <Box sx={{ width: 15, height: 15, borderRadius: "50%", bgcolor: color, flex: "none" }} />
+                <Stack
+                  key={label}
+                  direction="row"
+                  sx={{ alignItems: "center", gap: 0.85 }}
+                >
+                  <Box
+                    sx={{
+                      width: 15,
+                      height: 15,
+                      borderRadius: "50%",
+                      bgcolor: color,
+                      flex: "none",
+                    }}
+                  />
                   <Box sx={{ flex: 1, minWidth: 0, fontSize: 13 }}>{label}</Box>
                   <Box sx={{ fontWeight: 800, fontSize: 13.5 }}>{value}</Box>
                 </Stack>
@@ -643,10 +803,10 @@ export default function ImportQualityBaseline() {
             direction="row"
             sx={{
               mt: "auto",
-              p: .85,
-              minHeight: 40,
+              p: 0.85,
+              minHeight: "var(--ops-control-height)",
               border: `1px solid ${C.orange}`,
-              borderRadius: "6px",
+              borderRadius: "var(--ops-radius-control)",
               bgcolor: "#fffaf3",
               color: "#eb4c16",
               alignItems: "center",
@@ -655,14 +815,18 @@ export default function ImportQualityBaseline() {
               flexWrap: "wrap",
             }}
           >
-            <Box sx={{ fontWeight: 700, fontSize: 12.5 }}>{fmt(issueCount)} bản ghi cần kiểm tra</Box>
+            <Box sx={{ fontWeight: 700, fontSize: 12.5 }}>
+              {fmt(issueCount)} bản ghi cần kiểm tra
+            </Box>
             <UiButton
               appearance="outlined"
               onClick={() => {
                 setResult("");
                 setIssuesOnly(true);
                 pagination.reset();
-                document.getElementById("rpt04-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                document
+                  .getElementById("rpt04-results")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
               Xem {fmt(issueCount)} bản ghi
@@ -671,23 +835,43 @@ export default function ImportQualityBaseline() {
         </Box>
       </Box>
 
-      <Box id="rpt04-results" component="section" sx={{ ...surface, overflow: "hidden", scrollMarginTop: 96 }}>
+      <Box
+        id="rpt04-results"
+        component="section"
+        sx={{ ...surface, overflow: "hidden", scrollMarginTop: 96 }}
+      >
         <Stack
           direction={{ xs: "column", sm: "row" }}
           sx={{
             px: { xs: 1.25, md: 1.5 },
             pt: 1.15,
-            pb: .75,
+            pb: 0.75,
             alignItems: { xs: "stretch", sm: "center" },
             justifyContent: "space-between",
             gap: 1,
           }}
         >
-          <Stack direction="row" sx={{ alignItems: "center", gap: .8, flexWrap: "wrap" }}>
-            <Box component="h2" sx={{ m: 0, color: C.navy, fontSize: { xs: 18, md: 19 }, fontWeight: 800 }}>
+          <Stack
+            direction="row"
+            sx={{ alignItems: "center", gap: 0.8, flexWrap: "wrap" }}
+          >
+            <Box
+              component="h2"
+              sx={{ m: 0, color: C.navy, fontSize: 18, fontWeight: 600 }}
+            >
               Danh sách đối chiếu & lỗi
             </Box>
-            <Box sx={{ px: 1, py: .25, borderRadius: 999, bgcolor: C.cyanSoft, color: C.navy, fontWeight: 800, fontSize: 12.5 }}>
+            <Box
+              sx={{
+                px: 1,
+                py: 0.25,
+                borderRadius: 999,
+                bgcolor: C.cyanSoft,
+                color: C.navy,
+                fontWeight: 800,
+                fontSize: 12.5,
+              }}
+            >
               {fmt(pagination.total)}
             </Box>
           </Stack>
@@ -713,8 +897,25 @@ export default function ImportQualityBaseline() {
                 header: "Mã tham chiếu / Đối tượng",
                 render: (row) => (
                   <Box sx={{ minWidth: 0 }}>
-                    <Box sx={{ fontWeight: 800, color: C.navy, overflowWrap: "anywhere" }}>{row.batchNo || "—"}</Box>
-                    <Box sx={{ mt: .15, color: C.muted, fontSize: 11.5, overflowWrap: "anywhere" }}>{row.caption || row.sourceFile || "—"}</Box>
+                    <Box
+                      sx={{
+                        fontWeight: 800,
+                        color: C.navy,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {row.batchNo || "—"}
+                    </Box>
+                    <Box
+                      sx={{
+                        mt: 0.15,
+                        color: C.muted,
+                        fontSize: 11.5,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {row.caption || row.sourceFile || "—"}
+                    </Box>
                   </Box>
                 ),
               },
@@ -731,7 +932,12 @@ export default function ImportQualityBaseline() {
                 key: "result",
                 header: "Kết quả",
                 width: 135,
-                render: (row) => <UiStatusBadge tone={resultTone(row)} label={resultLabel(row)} />,
+                render: (row) => (
+                  <UiStatusBadge
+                    tone={resultTone(row)}
+                    label={resultLabel(row)}
+                  />
+                ),
               },
               {
                 key: "updated",
@@ -750,14 +956,21 @@ export default function ImportQualityBaseline() {
                 : "Chưa có dữ liệu đối chiếu trong khoảng thời gian đã chọn."
             }
             renderRowActions={(row) => (
-              <UiButton appearance="text" aria-label={`Xem chi tiết ${row.batchNo}`} onClick={() => setOpenBatch(row)}>
-                ›
-              </UiButton>
+              <RowActionGroup>
+                <RowActionButton
+                  kind="view"
+                  aria-label={`Xem chi tiết ${row.batchNo}`}
+                  onClick={() => setOpenBatch(row)}
+                >
+                  Xem
+                </RowActionButton>
+              </RowActionGroup>
             )}
           />
         </Box>
 
         <Stack
+          className="hn-report-pagination-footer"
           direction={{ xs: "column", sm: "row" }}
           sx={{
             px: { xs: 1.25, md: 1.5 },
@@ -768,11 +981,32 @@ export default function ImportQualityBaseline() {
           }}
         >
           <Box sx={{ fontSize: 12.5, color: C.text }}>
-            Hiển thị {pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.perPage + 1}–
-            {Math.min(pagination.page * pagination.perPage, pagination.total)} / {fmt(pagination.total)} bản ghi
+            Hiển thị{" "}
+            {pagination.total === 0
+              ? 0
+              : (pagination.page - 1) * pagination.perPage + 1}
+            –{Math.min(pagination.page * pagination.perPage, pagination.total)}{" "}
+            / {fmt(pagination.total)} bản ghi
           </Box>
-          <Stack direction="row" sx={{ gap: .55, alignItems: "center", justifyContent: { xs: "flex-end", sm: "initial" }, flexWrap: "wrap" }}>
-            <UiButton appearance="outlined" disabled={pagination.page <= 1} onClick={() => pagination.setPage(Math.max(1, pagination.page - 1))}>‹</UiButton>
+          <Stack
+            className="hn-report-pagination"
+            direction="row"
+            sx={{
+              gap: 0.55,
+              alignItems: "center",
+              justifyContent: { xs: "flex-end", sm: "initial" },
+              flexWrap: "wrap",
+            }}
+          >
+            <UiButton
+              appearance="outlined"
+              disabled={pagination.page <= 1}
+              onClick={() =>
+                pagination.setPage(Math.max(1, pagination.page - 1))
+              }
+            >
+              ‹
+            </UiButton>
             {pageNumbers.map((page) => (
               <UiButton
                 key={page}
@@ -782,11 +1016,26 @@ export default function ImportQualityBaseline() {
                 {page}
               </UiButton>
             ))}
-            {lastPage > 4 && pagination.page < lastPage - 2 ? <Box sx={{ px: .25 }}>…</Box> : null}
-            {lastPage > 3 && !pageNumbers.includes(lastPage) ? (
-              <UiButton appearance="outlined" onClick={() => pagination.setPage(lastPage)}>{lastPage}</UiButton>
+            {lastPage > 4 && pagination.page < lastPage - 2 ? (
+              <Box sx={{ px: 0.25 }}>…</Box>
             ) : null}
-            <UiButton appearance="outlined" disabled={pagination.page >= lastPage} onClick={() => pagination.setPage(Math.min(lastPage, pagination.page + 1))}>›</UiButton>
+            {lastPage > 3 && !pageNumbers.includes(lastPage) ? (
+              <UiButton
+                appearance="outlined"
+                onClick={() => pagination.setPage(lastPage)}
+              >
+                {lastPage}
+              </UiButton>
+            ) : null}
+            <UiButton
+              appearance="outlined"
+              disabled={pagination.page >= lastPage}
+              onClick={() =>
+                pagination.setPage(Math.min(lastPage, pagination.page + 1))
+              }
+            >
+              ›
+            </UiButton>
           </Stack>
         </Stack>
       </Box>
@@ -800,7 +1049,10 @@ export default function ImportQualityBaseline() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" },
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+              },
               gap: 1,
             }}
           >
@@ -814,9 +1066,26 @@ export default function ImportQualityBaseline() {
               ["Tỷ lệ khớp", pct(openBatch.success, openBatch.total)],
               ["Cập nhật", openBatch.at ? fmtDateTime(openBatch.at) : "—"],
             ].map(([label, value]) => (
-              <Box key={label} sx={{ p: 1.25, borderRadius: "7px", bgcolor: C.bg, border: `1px solid ${C.border}` }}>
+              <Box
+                key={label}
+                sx={{
+                  p: 1.25,
+                  borderRadius: "7px",
+                  bgcolor: C.bg,
+                  border: `1px solid ${C.border}`,
+                }}
+              >
                 <Box sx={{ color: C.muted, fontSize: 11.5 }}>{label}</Box>
-                <Box sx={{ mt: .25, color: C.navy, fontWeight: 700, overflowWrap: "anywhere" }}>{value}</Box>
+                <Box
+                  sx={{
+                    mt: 0.25,
+                    color: C.navy,
+                    fontWeight: 700,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {value}
+                </Box>
               </Box>
             ))}
           </Box>

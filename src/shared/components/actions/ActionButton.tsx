@@ -141,6 +141,9 @@ export function ActionButton({
   return (
     <Button
       {...buttonProps}
+      data-action-kind={kind}
+      data-action-tone={spec.tone}
+      data-action-appearance={appearance}
       variant="text"
       size="small"
       color="primary"

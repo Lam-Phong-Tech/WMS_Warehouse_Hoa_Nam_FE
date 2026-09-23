@@ -7,7 +7,7 @@
  * dayjs|null (giữ nguyên như antd) để call site hiện hành không đổi logic.
  */
 import { useMemo } from "react";
-import { DatePicker } from "antd";
+import { DatePicker, type DatePickerProps } from "antd";
 import type { Dayjs } from "dayjs";
 import { ANTD_PICKER_ICONS, antdAllowClear } from "@/shared/ui/icons";
 import { defaultDateBounds } from "@/shared/validation/date-rules";
@@ -29,6 +29,14 @@ function useDateBounds(minDate?: Dayjs | null, maxDate?: Dayjs | null) {
 const { RangePicker } = DatePicker;
 
 export interface UiDatePickerProps {
+  id?: string;
+  /** Optional local popup styling/container; default callers retain their existing portal. */
+  popupClassName?: string;
+  popupAlign?: DatePickerProps["popupAlign"];
+  getPopupContainer?: (trigger: HTMLElement) => HTMLElement;
+  status?: "error" | "warning";
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean;
   value: Dayjs | null;
   onChange: (value: Dayjs | null) => void;
   placeholder?: string;
@@ -43,6 +51,13 @@ export interface UiDatePickerProps {
 }
 
 export function UiDatePicker({
+  id,
+  popupClassName,
+  popupAlign,
+  getPopupContainer,
+  status,
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
   value,
   onChange,
   placeholder,
@@ -56,6 +71,15 @@ export function UiDatePicker({
   const { minDate, maxDate } = useDateBounds(minDateProp, maxDateProp);
   return (
     <DatePicker
+      id={id}
+      classNames={
+        popupClassName ? { popup: { root: popupClassName } } : undefined
+      }
+      popupAlign={popupAlign}
+      getPopupContainer={getPopupContainer}
+      status={status}
+      aria-describedby={ariaDescribedBy}
+      aria-invalid={ariaInvalid}
       value={value}
       onChange={onChange}
       minDate={minDate}

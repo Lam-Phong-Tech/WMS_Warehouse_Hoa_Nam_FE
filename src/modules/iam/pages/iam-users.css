@@ -1,0 +1,929 @@
+/* IAM presentation follows the Operations Overview palette and density. */
+.hn-iam-page,
+.hn-iam-dialog,
+.hn-iam-menu,
+.hn-iam-date-popover,
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-iam-page
+  )
+  section[aria-labelledby="hn-page-title"] {
+  --iam-ink: var(--ops-heading);
+  --iam-text: var(--ops-text);
+  --iam-muted: var(--ops-muted);
+  --iam-line: var(--ops-line);
+  --iam-surface: var(--ops-surface);
+  --iam-pale: var(--ops-pale);
+  --iam-cta: var(--ops-primary);
+  --iam-link: var(--ops-link);
+  --iam-success: var(--ops-success);
+  --iam-success-soft: var(--ops-success-soft);
+  --iam-inactive: var(--ops-inactive);
+  --wms-primary: var(--iam-cta);
+  --wms-primary-dark: var(--iam-ink);
+  --wms-primary-light: var(--iam-link);
+  --wms-primary-soft: var(--iam-pale);
+  --wms-info: var(--iam-link);
+  --wms-info-text: var(--iam-ink);
+  --wms-info-soft: var(--iam-pale);
+  --wms-success: var(--iam-success);
+  --wms-success-soft: var(--iam-success-soft);
+  --wms-success-text: var(--iam-success);
+  --wms-secondary-dark: var(--iam-muted);
+  --wms-secondary-soft: var(--iam-pale);
+  --wms-bg-surface: var(--iam-surface);
+  --wms-bg-subtle: var(--iam-pale);
+  --wms-text-strong: var(--iam-ink);
+  --wms-text-high: var(--iam-ink);
+  --wms-text-medium: var(--iam-muted);
+  --wms-text-disabled: var(--iam-inactive);
+  --wms-border: var(--iam-line);
+  --wms-border-input: var(--iam-line);
+  --wms-divider: var(--iam-line);
+  --wms-focus-ring: 0 0 0 3px
+    color-mix(in srgb, var(--iam-link) 13%, transparent);
+  color: var(--iam-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Keep-alive pages must not recolor the active page after navigating away. */
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-iam-page
+  ) {
+  background: var(--ops-canvas);
+}
+.hn-mvp-screen:has(.hn-iam-page) {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-iam-page
+  )
+  section[aria-labelledby="hn-page-title"] {
+  gap: 12px 16px;
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-iam-page
+  )
+  [id="hn-page-title"] {
+  color: var(--iam-ink);
+  font-size: 24px;
+  line-height: 38px;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-iam-page
+  )
+  [id="hn-page-title"]
+  + div {
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--iam-muted);
+}
+.hn-iam-page {
+  container: hn-iam / inline-size;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.hn-iam-page > *,
+.hn-iam-screen > *,
+.hn-iam-roles > *,
+.hn-iam-dialog .MuiDialogContent-root > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-iam-page .MuiTabs-root {
+  min-height: 42px;
+  border-bottom: 1px solid var(--iam-line);
+}
+.hn-iam-page .MuiTab-root {
+  min-height: 42px;
+  padding: 10px 18px;
+  color: var(--iam-muted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+.hn-iam-page .MuiTab-root.Mui-selected {
+  color: var(--iam-cta);
+}
+.hn-iam-page .MuiTabs-indicator {
+  background: var(--iam-cta);
+  height: 2px;
+}
+.hn-iam-page .MuiTab-root:hover {
+  background: var(--iam-pale);
+}
+.hn-iam-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-iam-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.hn-iam-actions:empty {
+  display: none;
+}
+.hn-iam-page .MuiButton-root:not(.hn-row-action),
+.hn-iam-dialog .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  box-shadow: none;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.hn-iam-page .MuiButton-root:not(.hn-row-action) {
+  color: var(--iam-ink);
+}
+.hn-iam-actions > .MuiButton-root:not(.hn-iam-primary) {
+  color: var(--iam-ink);
+  background: var(--iam-pale);
+}
+.hn-iam-page .hn-iam-primary.MuiButton-root,
+.hn-iam-dialog .hn-iam-primary.MuiButton-root {
+  color: var(--wms-on-primary);
+  background: var(--iam-cta);
+  padding-inline: 24px;
+  font-weight: 600;
+}
+.hn-iam-page .hn-iam-primary.MuiButton-root:hover,
+.hn-iam-dialog .hn-iam-primary.MuiButton-root:hover {
+  background: var(--ops-primary-hover);
+}
+.hn-iam-page .MuiButton-root:not(.hn-row-action).Mui-disabled,
+.hn-iam-dialog .MuiButton-root:not(.hn-row-action).Mui-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.hn-iam-page
+  :is(button, input, [role="combobox"], [role="button"]):focus-visible,
+.hn-iam-dialog :is(button, input, [role="combobox"]):focus-visible,
+.hn-iam-table-scroll:focus-visible {
+  outline: 2px solid var(--iam-link);
+  outline-offset: 3px;
+}
+.hn-iam-screen .hn-iam-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1.8fr) repeat(2, minmax(145px, 1.1fr))
+    minmax(135px, 1fr) minmax(105px, 0.7fr);
+  align-items: start;
+  gap: 12px 16px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--iam-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--iam-surface);
+}
+.hn-iam-filter,
+.hn-iam-search {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.hn-iam-filter-label,
+.hn-iam-date-label {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--iam-ink);
+}
+.hn-iam-filter > .MuiFormControl-root,
+.hn-iam-search > .MuiFormControl-root,
+.hn-iam-filter > .MuiAutocomplete-root,
+.hn-iam-search > .MuiAutocomplete-root {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-iam-page .MuiInputBase-root,
+.hn-iam-dialog .MuiInputBase-root {
+  background: var(--iam-surface);
+  color: var(--iam-text);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.hn-iam-page .MuiInputBase-root:not(.MuiInputBase-multiline),
+.hn-iam-dialog .MuiInputBase-root:not(.MuiInputBase-multiline) {
+  min-height: var(--ops-control-height);
+}
+.hn-iam-page .MuiOutlinedInput-notchedOutline,
+.hn-iam-dialog .MuiOutlinedInput-notchedOutline {
+  border-color: var(--iam-line);
+}
+.hn-iam-page .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline,
+.hn-iam-dialog .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--iam-link);
+}
+.hn-iam-page .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline,
+.hn-iam-dialog .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--iam-link);
+  border-width: 1px;
+}
+.hn-iam-page .MuiInputBase-root.Mui-focused,
+.hn-iam-dialog .MuiInputBase-root.Mui-focused {
+  box-shadow: var(--wms-focus-ring);
+}
+.hn-iam-page .MuiInputBase-root.Mui-error .MuiOutlinedInput-notchedOutline,
+.hn-iam-dialog .MuiInputBase-root.Mui-error .MuiOutlinedInput-notchedOutline {
+  border-color: var(--wms-error);
+}
+.hn-iam-page .MuiInputBase-root.Mui-disabled,
+.hn-iam-dialog .MuiInputBase-root.Mui-disabled {
+  background: var(--iam-pale);
+}
+.hn-iam-page .MuiInputBase-input::placeholder,
+.hn-iam-dialog .MuiInputBase-input::placeholder {
+  color: var(--iam-muted);
+  opacity: 1;
+}
+.hn-iam-page .MuiSelect-icon,
+.hn-iam-dialog .MuiSelect-icon,
+.hn-iam-page .MuiAutocomplete-popupIndicator,
+.hn-iam-dialog .MuiAutocomplete-popupIndicator {
+  color: var(--iam-muted);
+}
+.hn-iam-page .MuiFormLabel-root,
+.hn-iam-dialog .MuiFormLabel-root {
+  color: var(--iam-ink);
+  font-size: 13px;
+}
+.hn-iam-page .MuiFormLabel-root.MuiInputLabel-shrink,
+.hn-iam-dialog .MuiFormLabel-root.MuiInputLabel-shrink {
+  font-size: 17.3333px;
+}
+.hn-iam-page .MuiFormLabel-root.Mui-focused,
+.hn-iam-dialog .MuiFormLabel-root.Mui-focused {
+  color: var(--iam-link);
+}
+.hn-iam-page .MuiFormHelperText-root,
+.hn-iam-dialog .MuiFormHelperText-root {
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-iam-list-card {
+  border: 1px solid var(--iam-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--iam-surface);
+  padding: 0 16px;
+  overflow: hidden;
+}
+.hn-iam-list-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 0;
+}
+.hn-iam-list-heading h2 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--iam-ink);
+}
+.hn-iam-count {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 20px;
+  background: var(--iam-pale);
+  color: var(--iam-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.hn-iam-screen .hn-iam-table-scroll {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  scrollbar-color: color-mix(in srgb, var(--iam-link) 30%, var(--iam-line))
+    transparent;
+  scrollbar-width: thin;
+  overscroll-behavior-inline: contain;
+}
+.hn-iam-screen .hn-iam-table-scroll table {
+  width: 100%;
+  min-width: 1000px;
+  table-layout: auto;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--iam-text);
+}
+.hn-iam-screen .hn-iam-table-scroll :is(th, td),
+.hn-iam-dialog table.hn-iam-dialog-table :is(th, td) {
+  border-bottom: 1px solid var(--iam-line);
+  padding: 10px 9px;
+  vertical-align: middle;
+}
+.hn-iam-screen .hn-iam-table-scroll th,
+.hn-iam-dialog table.hn-iam-dialog-table th {
+  background: var(--iam-pale);
+  color: var(--iam-ink);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+.hn-iam-screen .hn-iam-table-scroll th button {
+  color: inherit;
+  font: inherit;
+}
+.hn-iam-screen .hn-iam-table-scroll tbody tr {
+  transition: background-color 0.14s ease;
+}
+.hn-iam-screen .hn-iam-table-scroll tbody tr:hover {
+  background: color-mix(in srgb, var(--iam-pale) 55%, var(--iam-surface));
+}
+.hn-iam-screen .hn-iam-table-scroll td:nth-child(2) {
+  min-width: 180px;
+}
+.hn-iam-screen .hn-iam-table-scroll td:nth-child(2) > :first-child {
+  color: var(--iam-ink);
+  font-weight: 600;
+}
+.hn-iam-screen .hn-iam-table-scroll .muted {
+  color: var(--iam-muted);
+  font-size: 12px;
+}
+.hn-iam-screen .hn-iam-table-scroll .stt-col {
+  width: 38px;
+  font-weight: 500;
+}
+.hn-iam-screen .hn-iam-table-scroll :is(th, td):last-child:not([colspan]) {
+  position: sticky;
+  right: 0;
+  background: var(--iam-surface);
+  box-shadow: -4px 0 8px color-mix(in srgb, var(--iam-ink) 5%, transparent);
+}
+.hn-iam-screen .hn-iam-table-scroll th:last-child {
+  background: var(--iam-pale);
+}
+.hn-iam-screen .hn-iam-table-scroll td[colspan] {
+  white-space: normal;
+  padding: 28px 12px;
+  text-align: center;
+}
+.hn-iam-screen .hn-iam-table-scroll .pill {
+  min-height: 24px;
+  padding: 3px 10px;
+  gap: 6px;
+  border-radius: 20px;
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 500;
+}
+.hn-iam-screen .hn-iam-table-scroll .pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+.hn-iam-screen .hn-iam-table-scroll .pill.ok {
+  color: var(--iam-success);
+  background: var(--iam-success-soft);
+}
+.hn-iam-screen .mvp-pagination-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 0;
+  border-top: 1px solid var(--iam-line);
+  padding: 14px 0;
+  color: var(--iam-muted);
+  font-size: 12px;
+}
+.hn-iam-page .MuiPaginationItem-root {
+  border-radius: 6px;
+  color: var(--iam-ink);
+  font-size: 12px;
+}
+.hn-iam-page .MuiPaginationItem-root.Mui-selected {
+  background: var(--iam-cta);
+  color: var(--wms-on-primary);
+}
+.hn-iam-page .MuiPaginationItem-root.Mui-selected:hover {
+  background: var(--ops-primary-hover);
+}
+.hn-iam-menu.MuiPaper-root,
+.hn-iam-menu .MuiPaper-root {
+  background: var(--iam-surface);
+  border: 1px solid var(--iam-line);
+  border-radius: 6px;
+}
+.hn-iam-menu .MuiMenuItem-root,
+.hn-iam-menu .MuiAutocomplete-option {
+  color: var(--iam-text);
+  min-height: var(--ops-control-height);
+  font-size: 14px;
+}
+.hn-iam-menu .MuiMenuItem-root.Mui-selected,
+.hn-iam-menu .MuiMenuItem-root:hover,
+.hn-iam-menu .MuiAutocomplete-option[aria-selected="true"],
+.hn-iam-menu .MuiAutocomplete-option.Mui-focused {
+  background: var(--iam-pale);
+  color: var(--iam-ink);
+}
+.hn-iam-dialog .MuiDialog-paper {
+  border: 1px solid var(--iam-line);
+  border-radius: 12px;
+  background: var(--iam-surface);
+  color: var(--iam-text);
+  overflow: visible;
+}
+.hn-iam-dialog .MuiDialogTitle-root {
+  color: var(--iam-ink);
+  font-size: 18px;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+.hn-iam-dialog .MuiDialogTitle-root > .MuiStack-root {
+  gap: 12px;
+}
+.hn-iam-dialog .MuiDialogTitle-root .MuiIconButton-root {
+  flex: none;
+}
+.hn-iam-dialog .MuiDialogContent-root {
+  min-width: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.hn-iam-dialog .MuiDialogActions-root {
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid var(--iam-line);
+  padding-top: 14px;
+}
+.hn-iam-dialog .MuiDialogActions-root > :not(:first-of-type) {
+  margin-left: 0;
+}
+.hn-iam-dialog .hn-iam-form-section {
+  min-width: 0;
+  border-color: var(--iam-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--iam-surface);
+}
+.hn-iam-dialog .hn-iam-section-title {
+  color: var(--iam-ink);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.hn-iam-dialog .hn-iam-field-hint {
+  color: var(--iam-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-iam-dialog .MuiFormControl-root,
+.hn-iam-dialog .MuiAutocomplete-root {
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-iam-dialog .MuiFormControlLabel-label {
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-iam-page .MuiCheckbox-root.Mui-checked,
+.hn-iam-dialog .MuiCheckbox-root.Mui-checked {
+  color: var(--iam-link);
+}
+.hn-iam-dialog .MuiBox-root:has(> table.hn-iam-dialog-table) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border-color: var(--iam-line);
+}
+.hn-iam-dialog table.hn-iam-dialog-table {
+  min-width: 460px;
+  color: var(--iam-text);
+  font-size: 13px;
+}
+.hn-iam-dialog table.hn-iam-dialog-table td {
+  overflow-wrap: anywhere;
+}
+.hn-iam-dialog .MuiChip-root,
+.hn-iam-roles .MuiChip-root {
+  height: auto;
+  min-height: 24px;
+  max-width: 100%;
+  border-radius: 20px;
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 500;
+}
+.hn-iam-dialog .MuiChip-label,
+.hn-iam-roles .MuiChip-label {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding-block: 3px;
+}
+.hn-iam-roles .MuiPaper-root {
+  border: 1px solid var(--iam-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--iam-surface);
+  box-shadow: none;
+}
+.hn-iam-roles .MuiPaper-root > .MuiBox-root:first-child {
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 16px 0;
+}
+.hn-iam-roles .MuiPaper-root > .MuiBox-root:last-child {
+  padding: 16px;
+}
+.hn-iam-roles h2.MuiTypography-root {
+  color: var(--iam-ink);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.hn-iam-roles h2 > .MuiStack-root {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.hn-iam-roles .hn-iam-role-card {
+  border-radius: 8px;
+  border-color: var(--iam-line);
+  background: var(--iam-surface);
+  color: var(--iam-text);
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease;
+}
+.hn-iam-roles .hn-iam-role-card[aria-pressed="true"],
+.hn-iam-roles .hn-iam-role-card:hover {
+  border-color: var(--iam-link);
+  background: var(--iam-pale);
+}
+.hn-iam-roles .hn-iam-permission-group {
+  border-color: var(--iam-line);
+  border-radius: var(--ops-radius-card);
+}
+.hn-iam-roles .hn-iam-permission-group-header {
+  border-color: var(--iam-line);
+  background: var(--iam-pale);
+  color: var(--iam-ink);
+}
+.hn-iam-roles .hn-iam-permission-cell {
+  min-width: 0;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+.hn-iam-roles .hn-iam-permission-cell input[type="checkbox"] {
+  accent-color: var(--iam-link);
+}
+.hn-iam-roles .hn-iam-permission-cell .MuiIconButton-root {
+  flex: none;
+}
+
+/* The date picker keeps its existing dayjs and keyboard behavior. */
+.hn-iam-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.hn-iam-date-field .ant-picker {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--ops-control-height);
+  border: 1px solid var(--iam-line);
+  border-radius: 6px;
+  background: var(--iam-surface);
+  color: var(--iam-text);
+}
+.hn-iam-date-field .ant-picker .ant-picker-input > input {
+  color: var(--iam-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 20px;
+}
+.hn-iam-date-field .ant-picker .ant-picker-input > input::placeholder {
+  color: var(--iam-muted);
+}
+.hn-iam-date-field
+  .ant-picker.ant-picker-outlined:hover:not(.ant-picker-disabled),
+.hn-iam-date-field
+  .ant-picker.ant-picker-outlined.ant-picker-focused:not(.ant-picker-disabled) {
+  border-color: var(--iam-link);
+}
+.hn-iam-date-field
+  .ant-picker.ant-picker-outlined.ant-picker-focused:not(.ant-picker-disabled) {
+  box-shadow: var(--wms-focus-ring);
+}
+.hn-iam-date-field .ant-picker-suffix,
+.hn-iam-date-field .ant-picker-clear {
+  color: var(--iam-muted);
+  background: var(--iam-surface);
+}
+.hn-iam-date-field.is-error .ant-picker.ant-picker-outlined {
+  border-color: var(--wms-error);
+}
+.hn-iam-date-field .ant-picker.ant-picker-disabled {
+  background: var(--iam-pale);
+}
+.hn-iam-date-field .ant-picker.ant-picker-disabled input {
+  color: var(--iam-inactive);
+}
+.hn-iam-date-help {
+  margin: 0;
+  color: var(--iam-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-iam-date-field.is-error .hn-iam-date-help {
+  color: var(--wms-error-text);
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-panel-container {
+  border: 1px solid var(--iam-line);
+  border-radius: 8px;
+  background: var(--iam-surface);
+  max-width: calc(100vw - 24px);
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-panel {
+  border-color: var(--iam-line);
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-header {
+  color: var(--iam-ink);
+  border-color: var(--iam-line);
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-header button {
+  color: var(--iam-muted);
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-header button:hover {
+  color: var(--iam-link);
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-header-view button {
+  color: var(--iam-ink);
+  font-size: 14px;
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-content th {
+  color: var(--iam-muted);
+  font-size: 12px;
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-content td {
+  font-size: 13px;
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-cell {
+  color: var(--iam-inactive);
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-cell-in-view {
+  color: var(--iam-text);
+}
+.hn-iam-date-popover.ant-picker-dropdown
+  .ant-picker-cell:hover:not(.ant-picker-cell-disabled)
+  .ant-picker-cell-inner {
+  background: var(--iam-pale);
+}
+.hn-iam-date-popover.ant-picker-dropdown
+  .ant-picker-cell-in-view.ant-picker-cell-selected:not(
+    .ant-picker-cell-disabled
+  )
+  .ant-picker-cell-inner {
+  background: var(--iam-cta);
+  color: var(--wms-on-primary);
+}
+.hn-iam-date-popover.ant-picker-dropdown
+  .ant-picker-cell-in-view.ant-picker-cell-today
+  .ant-picker-cell-inner::before {
+  border-color: var(--iam-link);
+}
+.hn-iam-date-popover.ant-picker-dropdown
+  .ant-picker-cell-disabled
+  .ant-picker-cell-inner {
+  color: var(--iam-inactive);
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-footer {
+  border-color: var(--iam-line);
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-now-btn {
+  color: var(--iam-link);
+}
+.hn-iam-date-popover button:focus-visible,
+.hn-iam-date-popover a:focus-visible {
+  outline: 2px solid var(--iam-link);
+  outline-offset: 2px;
+}
+
+@container hn-iam (max-width: 1100px) {
+  .hn-iam-screen .hn-iam-toolbar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .hn-iam-search {
+    grid-column: 1 / -1;
+  }
+}
+@container hn-iam (max-width: 900px) {
+  .hn-iam-screen .hn-iam-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container hn-iam (max-width: 700px) {
+  .hn-iam-list-card {
+    padding-inline: 12px;
+  }
+  .hn-iam-screen .mvp-pagination-footer {
+    align-items: flex-start;
+  }
+  .hn-iam-screen .mvp-pagination-footer > nav {
+    margin-left: auto;
+  }
+  .hn-iam-roles .MuiPaper-root > .MuiBox-root {
+    min-width: 0;
+  }
+  .hn-iam-roles .hn-iam-permission-group-header {
+    flex-wrap: wrap;
+  }
+}
+@container hn-iam (max-width: 440px) {
+  .hn-iam-screen .hn-iam-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-iam-actions > .MuiButton-root {
+    flex: 1 1 155px;
+    min-width: min(100%, 155px);
+    padding-inline: 10px;
+  }
+  .hn-iam-screen .hn-iam-toolbar {
+    gap: 10px;
+    padding: 12px;
+  }
+  .hn-iam-page .MuiTab-root {
+    padding-inline: 12px;
+    font-size: 13px;
+  }
+  .hn-iam-list-heading h2 {
+    font-size: 17px;
+    gap: 8px;
+  }
+  .hn-iam-screen .mvp-pagination-footer {
+    gap: 10px;
+  }
+  .hn-iam-page .MuiPaginationItem-root {
+    min-width: 26px;
+    margin-inline: 2px;
+  }
+}
+@media (max-width: 600px) {
+  .hn-system-shell
+    main:has(
+      .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+          [style*="display:none"]
+        )
+        .hn-iam-page
+    )
+    [id="hn-page-title"] {
+    font-size: 22px;
+    line-height: 32px;
+  }
+  .hn-iam-dialog .MuiDialog-paper {
+    margin: 12px;
+    width: calc(100% - 24px);
+    max-width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .hn-iam-dialog .MuiDialogTitle-root {
+    padding: 16px 14px;
+  }
+  .hn-iam-dialog .MuiDialogContent-root {
+    padding: 14px;
+  }
+  .hn-iam-dialog .MuiDialogActions-root {
+    padding-inline: 14px;
+  }
+  .hn-iam-dialog .hn-iam-form-section {
+    padding: 14px;
+  }
+  .hn-iam-dialog
+    .MuiDialogContent-root
+    .MuiStack-root:has(> .hn-iam-section-title) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hn-iam-page .MuiButton-root:not(.hn-row-action),
+  .hn-iam-page .MuiTab-root,
+  .hn-iam-dialog .MuiButton-root:not(.hn-row-action),
+  .hn-iam-screen .hn-iam-table-scroll tbody tr,
+  .hn-iam-roles .hn-iam-role-card {
+    transition: none;
+  }
+}
+
+.hn-iam-dialog .MuiTypography-root + .MuiTypography-root {
+  font-size: 14px;
+  line-height: 21px;
+}
+.hn-iam-screen .hn-iam-table-scroll table:has(td[colspan]) {
+  min-width: 0;
+}
+.hn-iam-roles .hn-iam-permission-cell[data-checked="true"] {
+  border-color: var(--iam-link);
+  background: var(--iam-pale);
+}
+.hn-iam-date-popover.ant-picker-dropdown
+  :is(
+    .ant-picker-date-panel,
+    .ant-picker-month-panel,
+    .ant-picker-year-panel,
+    .ant-picker-decade-panel
+  ) {
+  width: min(280px, calc(100vw - 88px));
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-content {
+  width: 100%;
+  min-width: 0;
+}
+.hn-iam-date-popover.ant-picker-dropdown .ant-picker-content :is(th, td) {
+  padding: 3px 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  text-align: center;
+}
+@container hn-iam (max-width: 700px) {
+  .hn-iam-screen .hn-iam-table-scroll table:has(td[colspan]) thead {
+    display: none;
+  }
+}
+
+.hn-iam-menu .MuiMenuItem-root.Mui-selected:hover,
+.hn-iam-menu .MuiAutocomplete-option[aria-selected="true"].Mui-focused {
+  background: var(--iam-pale);
+  color: var(--iam-ink);
+}
+.hn-iam-date-popover.ant-picker-dropdown
+  .ant-picker-cell:hover:not(.ant-picker-cell-in-view):not(
+    .ant-picker-cell-disabled
+  )
+  .ant-picker-cell-inner,
+.hn-iam-date-popover.ant-picker-dropdown
+  .ant-picker-cell:hover:not(.ant-picker-cell-selected):not(
+    .ant-picker-cell-range-start
+  ):not(.ant-picker-cell-range-end):not(.ant-picker-cell-disabled)
+  .ant-picker-cell-inner {
+  background: var(--iam-pale);
+}
+
+@container hn-iam (max-width: 700px) {
+  .hn-iam-screen .hn-iam-table-scroll :is(th, td):last-child:not([colspan]) {
+    position: static;
+    box-shadow: none;
+  }
+}
+
+/* Reserve room for popup alignment at short viewport edges. */
+.hn-iam-date-popover.ant-picker-dropdown {
+  padding-block: 8px;
+}

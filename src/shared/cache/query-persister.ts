@@ -66,16 +66,27 @@ interface PersistedRecord {
 
 let disabled = false;
 let activeNamespace: string | null = null;
+let activeClient: QueryClient | null = null;
+let restorePromise: Promise<void> | null = null;
+// Async storage work may finish after logout or a context change.
+let persistenceGeneration = 0;
 let unsubscribe: (() => void) | null = null;
 let writeTimer: ReturnType<typeof setTimeout> | null = null;
 
-function isPersistable(query: Query): boolean {
-  const key = query.queryKey;
+function isCurrentSession(namespace: string, generation: number): boolean {
+  return activeNamespace === namespace && persistenceGeneration === generation;
+}
+
+function isPersistableKey(key: Query["queryKey"]): boolean {
   const root = Array.isArray(key) ? key[0] : key;
   if (typeof root !== "string" || !PERSISTABLE_ROOTS.has(root)) return false;
   // Danh sách chặn theo khoá thắng cả chính sách nhóm (vd. danh bạ người dùng
   // nằm trong nhóm `report` nhưng là dữ liệu cá nhân).
-  if (isPersistDenied(key)) return false;
+  return !isPersistDenied(key);
+}
+
+function isPersistable(query: Query): boolean {
+  if (!isPersistableKey(query.queryKey)) return false;
   if (query.state.status !== "success") return false;
   if (query.state.data === undefined) return false;
   // Query đang lỗi ở lần fetch gần nhất vẫn giữ data cũ; đừng đóng băng nó xuống đĩa.
@@ -122,6 +133,8 @@ function capSize(state: DehydratedState): DehydratedState {
 
 async function writeNow(client: QueryClient): Promise<void> {
   if (disabled || !activeNamespace) return;
+  const namespace = activeNamespace;
+  const generation = persistenceGeneration;
 
   const state = capSize(
     dehydrate(client, {
@@ -136,24 +149,37 @@ async function writeNow(client: QueryClient): Promise<void> {
     state,
   };
 
-  const ok = await idbSet(activeNamespace, record);
+  const ok = await idbSet(namespace, record);
+  if (!isCurrentSession(namespace, generation)) {
+    if (activeNamespace !== namespace) await idbDelete(namespace);
+    return;
+  }
   if (!ok) {
     // Ghi hỏng gần như luôn là hết quota. Thử dọn rác trước khi đầu hàng.
-    await pruneOtherNamespaces();
-    const retry = await idbSet(activeNamespace, record);
+    await pruneOtherNamespaces(namespace, generation);
+    if (!isCurrentSession(namespace, generation)) return;
+    const retry = await idbSet(namespace, record);
+    if (!isCurrentSession(namespace, generation)) {
+      if (activeNamespace !== namespace) await idbDelete(namespace);
+      return;
+    }
     if (!retry) {
       disabled = true;
       return;
     }
   }
 
-  await pruneOtherNamespaces();
+  await pruneOtherNamespaces(namespace, generation);
 }
 
-async function pruneOtherNamespaces(): Promise<void> {
+async function pruneOtherNamespaces(
+  namespace: string,
+  generation: number,
+): Promise<void> {
   const keys = await idbKeys();
+  if (!isCurrentSession(namespace, generation)) return;
   await Promise.all(
-    keys.filter((key) => key !== activeNamespace).map((key) => idbDelete(key)),
+    keys.filter((key) => key !== namespace).map((key) => idbDelete(key)),
   );
   // Bản ghi của schema cũ không khớp tiền tố hiện tại cũng bị dọn ở trên —
   // điều kiện lọc duy nhất là "không phải namespace đang dùng".
@@ -212,10 +238,11 @@ function withTimeout<T>(
   ms: number,
   fallback: T,
 ): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
-  ]);
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 /**
@@ -225,26 +252,50 @@ function withTimeout<T>(
  * dùng gợi ý user trong cookie: cookie có thể là của phiên trước trên máy dùng
  * chung, hydrate theo nó là mở đúng cửa rò dữ liệu chéo tài khoản.
  */
-export async function startQueryPersistence(
+export function startQueryPersistence(
   client: QueryClient,
   identity: CacheIdentity,
 ): Promise<void> {
   const namespace = buildCacheNamespace(identity);
-  if (activeNamespace === namespace && unsubscribe) return;
+  if (
+    activeNamespace === namespace &&
+    activeClient === client &&
+    restorePromise
+  ) {
+    return restorePromise;
+  }
 
   stopQueryPersistence();
   activeNamespace = namespace;
+  activeClient = client;
   disabled = false;
+  restorePromise = restoreAndSubscribe(
+    client,
+    namespace,
+    persistenceGeneration,
+  );
+  return restorePromise;
+}
 
+async function restoreAndSubscribe(
+  client: QueryClient,
+  namespace: string,
+  generation: number,
+): Promise<void> {
   const record = await withTimeout(
     idbGet<PersistedRecord>(namespace),
     RESTORE_TIMEOUT_MS,
     null,
   );
+  if (!isCurrentSession(namespace, generation)) return;
 
   if (record && record.buildId === APP_BUILD_ID && record.state?.queries) {
     const queries = record.state.queries
-      .filter((query) => isFresh(query.state.dataUpdatedAt, query.queryKey))
+      .filter(
+        (query) =>
+          isPersistable(query as unknown as Query) &&
+          isFresh(query.state.dataUpdatedAt, query.queryKey),
+      )
       .map((query) => {
         const policy = policyOfQueryKey(query.queryKey as Query["queryKey"]);
         if (!policy.revalidateOnRestore) return query;
@@ -268,19 +319,30 @@ export async function startQueryPersistence(
     // Build cũ hoặc bản ghi hỏng: bỏ hẳn, đừng cố cứu shape không còn đúng.
     await idbDelete(namespace);
   }
+  if (!isCurrentSession(namespace, generation)) return;
 
   unsubscribe = client.getQueryCache().subscribe((event) => {
-    if (event.type === "updated" || event.type === "removed") {
+    if (!isPersistableKey(event.query.queryKey)) return;
+    // Search, inventory, observer changes and fetch starts do not change the
+    // disk snapshot. Avoid serializing all cached reports for unrelated UI work.
+    if (
+      event.type === "removed" ||
+      (event.type === "updated" &&
+        ["success", "error", "invalidate", "setState"].includes(
+          event.action.type,
+        ))
+    ) {
       scheduleWrite(client);
     }
   });
   ensureFlushOnLeave(client);
 
-  void pruneOtherNamespaces();
+  void pruneOtherNamespaces(namespace, generation);
 }
 
 /** Dừng theo dõi. Không tự xoá dữ liệu — dùng `clearPersistedQueryCache` cho việc đó. */
 export function stopQueryPersistence(): void {
+  persistenceGeneration += 1;
   if (writeTimer) {
     clearTimeout(writeTimer);
     writeTimer = null;
@@ -288,6 +350,8 @@ export function stopQueryPersistence(): void {
   unsubscribe?.();
   unsubscribe = null;
   activeNamespace = null;
+  activeClient = null;
+  restorePromise = null;
 }
 
 /**
@@ -297,7 +361,10 @@ export function stopQueryPersistence(): void {
 export async function clearPersistedQueryCache(): Promise<void> {
   stopQueryPersistence();
   const keys = await idbKeys();
-  await Promise.all(keys.map((key) => idbDelete(key)));
+  // A new authenticated session may have started while IDB listed old keys.
+  await Promise.all(
+    keys.filter((key) => key !== activeNamespace).map((key) => idbDelete(key)),
+  );
 }
 
 /** Chỉ dùng cho test. */

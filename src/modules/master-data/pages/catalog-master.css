@@ -1,0 +1,1124 @@
+/* Catalog-only presentation; API contracts and shared master screens retain their behavior. */
+.hn-catalog-screen,
+.hn-catalog-dialog,
+.hn-catalog-menu,
+body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
+  /* Local aliases use the shared operations dashboard palette. */
+  --catalog-ink: var(--ops-heading);
+  --catalog-text: var(--ops-text);
+  --catalog-muted: var(--ops-muted);
+  --catalog-line: var(--ops-line);
+  --catalog-surface: var(--ops-surface);
+  --catalog-pale: var(--ops-pale);
+  --catalog-canvas: var(--ops-canvas);
+  --catalog-cta: var(--ops-primary);
+  --catalog-cta-end: var(--ops-primary);
+  --catalog-link: var(--ops-link);
+  --catalog-success: var(--ops-success);
+  --catalog-success-dot: var(--ops-success);
+  --catalog-success-soft: var(--ops-success-soft);
+  --catalog-inactive: var(--ops-inactive);
+  --catalog-inactive-soft: var(--ops-pale);
+  --cat-ink: var(--catalog-ink);
+  --cat-muted: var(--catalog-muted);
+  --cat-line: var(--catalog-line);
+  --cat-surface: var(--catalog-surface);
+  --cat-pale: var(--catalog-pale);
+  --cat-link: var(--catalog-link);
+  --cat-primary: var(--catalog-cta);
+  color: var(--catalog-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.hn-catalog-screen {
+  container: hn-catalog / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ops-gap);
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Keep-alive pages must not alter the visible shell after navigation. */
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-catalog-screen
+  ) {
+  background: var(--ops-canvas);
+}
+
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-catalog-screen
+  )
+  section[aria-labelledby="hn-page-title"] {
+  display: none;
+}
+
+.hn-mvp-screen:has(.hn-catalog-screen) {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hn-catalog-screen > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hn-catalog-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 0 2px 2px;
+}
+
+.hn-catalog-header > div:first-child {
+  min-width: 0;
+}
+
+.hn-catalog-header h1 {
+  margin: 0;
+  color: var(--ops-heading);
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.hn-catalog-header p {
+  margin: 3px 0 0;
+  color: var(--catalog-muted);
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.hn-catalog-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hn-catalog-screen .MuiButton-root:not(.hn-row-action),
+.hn-catalog-dialog .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  text-transform: none;
+  box-shadow: none;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.hn-catalog-screen .MuiButton-root:not(.hn-row-action),
+.hn-catalog-dialog .MuiButton-root:not(.hn-row-action) {
+  color: var(--catalog-ink);
+}
+
+.hn-catalog-screen .hn-catalog-primary.MuiButton-root,
+.hn-catalog-dialog .hn-catalog-primary.MuiButton-root {
+  color: var(--wms-on-primary);
+  background: var(--catalog-cta);
+  background-image: none;
+  padding-inline: 20px;
+  border: 1px solid transparent;
+}
+
+.hn-catalog-screen .hn-catalog-primary.MuiButton-root:hover,
+.hn-catalog-dialog .hn-catalog-primary.MuiButton-root:hover {
+  background: var(--ops-primary-hover);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--catalog-ink) 15%, transparent);
+}
+
+.hn-catalog-screen .hn-catalog-primary.MuiButton-root:active,
+.hn-catalog-dialog .hn-catalog-primary.MuiButton-root:active {
+  background: var(--catalog-ink);
+  box-shadow: none;
+}
+
+.hn-catalog-screen .MuiButton-root:not(.hn-row-action).Mui-disabled,
+.hn-catalog-dialog .MuiButton-root:not(.hn-row-action).Mui-disabled {
+  opacity: 0.5;
+}
+
+.hn-catalog-screen button:focus-visible,
+.hn-catalog-dialog button:focus-visible {
+  outline: 2px solid var(--catalog-link);
+  outline-offset: 3px;
+}
+
+/* The input wrapper already supplies the visible focus border and halo. */
+.hn-catalog-screen .MuiInputBase-input:focus-visible,
+.hn-catalog-dialog .MuiInputBase-input:focus-visible {
+  outline: none;
+}
+
+.hn-catalog-screen .hn-catalog-tabs,
+.hn-catalog-screen .hn-catalog-filters,
+.hn-catalog-screen .hn-catalog-table-card {
+  border: 1px solid var(--catalog-line);
+  border-radius: 12px;
+  background: var(--catalog-surface);
+  box-shadow: none;
+}
+
+.hn-catalog-tabs {
+  padding-inline: 12px;
+  overflow: hidden;
+}
+
+.hn-catalog-tabs .MuiTabs-root {
+  min-height: var(--ops-control-height);
+  border-bottom: 0;
+}
+
+.hn-catalog-tabs .MuiTab-root {
+  min-height: var(--ops-control-height);
+  padding: 12px 18px;
+  color: var(--catalog-muted);
+  font-size: 14px;
+  line-height: 20px;
+  text-transform: none;
+  font-weight: 600;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.hn-catalog-tabs .MuiTab-root:hover {
+  background: var(--catalog-pale);
+  color: var(--catalog-ink);
+}
+
+.hn-catalog-tabs .MuiTab-root.Mui-selected {
+  color: var(--catalog-link);
+}
+
+.hn-catalog-tabs .MuiTabs-indicator {
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--catalog-link);
+}
+
+.hn-catalog-tabs .MuiTabs-scrollButtons {
+  color: var(--catalog-link);
+  width: 30px;
+}
+
+.hn-catalog-filters {
+  padding: 14px 16px;
+}
+
+.hn-catalog-filter-title {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--catalog-ink);
+}
+
+.hn-catalog-filter-title h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+}
+
+.hn-catalog-filter-title > .fi {
+  color: var(--catalog-link);
+  font-size: 20px;
+}
+
+.hn-catalog-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(160px, 240px) minmax(
+      240px,
+      300px
+    );
+  align-items: start;
+  gap: 12px 16px;
+}
+
+.hn-catalog-search,
+.hn-catalog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hn-catalog-search > label,
+.hn-catalog-field > label,
+.hn-catalog-field > span {
+  color: var(--catalog-ink);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.hn-catalog-search > small {
+  color: var(--catalog-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hn-catalog-screen .MuiFormControl-root,
+.hn-catalog-dialog .MuiFormControl-root {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hn-catalog-screen .MuiInputBase-root,
+.hn-catalog-dialog .MuiInputBase-root {
+  min-height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
+  background: var(--catalog-surface);
+  color: var(--catalog-text);
+  font-size: 14px;
+  line-height: 20px;
+  transition: box-shadow 0.16s ease;
+}
+
+.hn-catalog-screen .MuiInputBase-input,
+.hn-catalog-dialog .MuiInputBase-input {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.hn-catalog-screen .MuiOutlinedInput-notchedOutline,
+.hn-catalog-dialog .MuiOutlinedInput-notchedOutline {
+  border-color: var(--catalog-line);
+}
+
+.hn-catalog-screen .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline,
+.hn-catalog-dialog .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--catalog-link);
+}
+
+.hn-catalog-screen
+  .MuiInputBase-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline,
+.hn-catalog-dialog
+  .MuiInputBase-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--catalog-link);
+  border-width: 1px;
+}
+
+.hn-catalog-screen .MuiInputBase-root.Mui-focused,
+.hn-catalog-dialog .MuiInputBase-root.Mui-focused {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--catalog-link) 13%, transparent);
+}
+
+.hn-catalog-screen .MuiInputBase-input::placeholder,
+.hn-catalog-dialog .MuiInputBase-input::placeholder {
+  color: var(--catalog-muted);
+  opacity: 1;
+}
+
+.hn-catalog-screen .MuiSelect-icon,
+.hn-catalog-dialog .MuiSelect-icon {
+  color: var(--catalog-muted);
+  font-size: 20px;
+}
+
+.hn-catalog-screen .MuiInputAdornment-root,
+.hn-catalog-dialog .MuiInputAdornment-root {
+  color: var(--catalog-link);
+}
+
+.hn-catalog-screen .MuiInputAdornment-root .fi {
+  font-size: 20px;
+}
+
+.hn-catalog-screen .MuiFormLabel-root.Mui-focused,
+.hn-catalog-dialog .MuiFormLabel-root.Mui-focused {
+  color: var(--catalog-link);
+}
+
+.hn-catalog-screen
+  .MuiInputBase-root.Mui-error
+  .MuiOutlinedInput-notchedOutline,
+.hn-catalog-dialog
+  .MuiInputBase-root.Mui-error
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--wms-error);
+}
+
+.hn-catalog-screen .MuiFormLabel-root.Mui-error,
+.hn-catalog-dialog .MuiFormLabel-root.Mui-error {
+  color: var(--wms-error);
+}
+
+.hn-catalog-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+}
+
+.hn-catalog-filter-actions .MuiButton-root {
+  flex: 1;
+  min-width: 0;
+}
+
+.hn-catalog-screen .hn-catalog-clear.MuiButton-root {
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.hn-catalog-screen .hn-catalog-clear.MuiButton-root:hover {
+  background: var(--catalog-pale);
+}
+
+.hn-catalog-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.hn-catalog-filter-chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 10px;
+  border: 1px solid var(--catalog-line);
+  border-radius: 20px;
+  background: var(--catalog-pale);
+  color: var(--catalog-text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.hn-catalog-filter-chips button:hover {
+  border-color: var(--catalog-link);
+  background: color-mix(
+    in srgb,
+    var(--catalog-link) 10%,
+    var(--catalog-surface)
+  );
+}
+
+.hn-catalog-table-card > .MuiBox-root {
+  padding: 0 16px;
+}
+
+.hn-catalog-table-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+  min-height: 54px;
+  padding: 10px 0;
+}
+
+.hn-catalog-table-heading h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--catalog-ink);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.hn-catalog-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 12px;
+  border-radius: 20px;
+  background: var(--catalog-pale);
+  color: var(--catalog-ink);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hn-catalog-updated {
+  color: var(--catalog-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hn-catalog-table-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hn-catalog-table-wrap > .MuiBox-root:has(> table) {
+  min-width: 0;
+  max-width: 100%;
+  border: 0;
+  border-radius: 6px 6px 0 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--catalog-line) transparent;
+  overscroll-behavior-inline: contain;
+}
+
+.hn-catalog-table-wrap table {
+  min-width: 860px;
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--catalog-text);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.hn-catalog-table-wrap table :is(th, td) {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--catalog-line);
+  vertical-align: middle;
+}
+
+.hn-catalog-table-wrap table th {
+  background: var(--catalog-pale);
+  color: var(--catalog-ink);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.hn-catalog-table-wrap table th button {
+  color: inherit;
+  font: inherit;
+}
+
+.hn-catalog-table-wrap table tbody tr {
+  height: 52px;
+  transition: background-color 0.14s ease;
+}
+
+.hn-catalog-table-wrap table tbody tr:hover {
+  background: color-mix(
+    in srgb,
+    var(--catalog-pale) 60%,
+    var(--catalog-surface)
+  );
+}
+
+.hn-catalog-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--catalog-ink);
+}
+
+.hn-catalog-code > .fi,
+.hn-catalog-code > span:first-child:not(:last-child) {
+  display: inline-flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--catalog-pale);
+  color: var(--catalog-link);
+  font-size: 18px;
+}
+
+.hn-catalog-code strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+.hn-catalog-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--catalog-inactive-soft);
+  color: var(--catalog-inactive);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.hn-catalog-status > span:first-child {
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.hn-catalog-status[data-active="true"] > span:first-child {
+  background: var(--catalog-success-dot);
+}
+
+.hn-catalog-status[data-active="true"] {
+  color: var(--catalog-success);
+  background: var(--catalog-success-soft);
+}
+
+.hn-catalog-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  color: var(--catalog-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hn-catalog-pagination > span,
+.hn-catalog-pagination > p {
+  margin: 0;
+}
+
+.hn-catalog-pagination .MuiTypography-root {
+  color: var(--catalog-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hn-catalog-pagination .MuiInputBase-root {
+  min-height: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
+.hn-catalog-pagination .MuiPagination-ul {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.hn-catalog-screen .MuiPaginationItem-root {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--catalog-ink);
+  font-size: 12px;
+}
+
+.hn-catalog-screen .MuiPaginationItem-root:hover {
+  background: var(--catalog-pale);
+}
+
+.hn-catalog-screen .MuiPaginationItem-root.Mui-selected {
+  background: var(--catalog-cta);
+  color: var(--wms-on-primary);
+}
+
+.hn-catalog-screen .MuiPaginationItem-root.Mui-selected:hover {
+  background: color-mix(in srgb, var(--catalog-cta) 85%, var(--catalog-ink));
+}
+
+.hn-catalog-readonly {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: var(--catalog-pale);
+  color: var(--catalog-muted);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.hn-catalog-menu.MuiPaper-root {
+  border: 1px solid var(--catalog-line);
+  border-radius: 6px;
+  background: var(--catalog-surface);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--catalog-ink) 14%, transparent);
+}
+
+.hn-catalog-menu .MuiMenuItem-root {
+  min-height: var(--ops-control-height);
+  color: var(--catalog-text);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.hn-catalog-menu .MuiMenuItem-root.Mui-selected,
+.hn-catalog-menu .MuiMenuItem-root.Mui-selected:hover,
+.hn-catalog-menu .MuiMenuItem-root.Mui-focusVisible,
+.hn-catalog-menu .MuiMenuItem-root:hover {
+  background: var(--catalog-pale);
+  color: var(--catalog-ink);
+}
+
+.hn-catalog-dialog .MuiDialog-paper {
+  width: min(600px, calc(100% - 40px));
+  max-width: 600px;
+  max-height: calc(100dvh - 40px);
+  margin: 20px;
+  border: 1px solid var(--catalog-line);
+  border-radius: var(--ops-radius-dialog);
+  background: var(--catalog-surface);
+  color: var(--catalog-text);
+}
+
+.hn-catalog-dialog .MuiDialogTitle-root {
+  padding: 18px 52px 16px 20px;
+  border-bottom: 1px solid var(--catalog-line);
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.hn-catalog-dialog .MuiDialogTitle-root .MuiIconButton-root {
+  color: var(--ops-heading);
+}
+
+.hn-catalog-dialog .MuiDialogTitle-root .MuiIconButton-root:hover {
+  background: var(--catalog-pale);
+  color: var(--ops-heading);
+}
+
+.hn-catalog-dialog .MuiDialogContent-root {
+  min-width: 0;
+  padding: 22px 20px;
+  overscroll-behavior: contain;
+}
+
+.hn-catalog-dialog .MuiFormLabel-root {
+  color: var(--catalog-text);
+  font-size: 14px;
+}
+
+.hn-catalog-dialog .MuiInputBase-root.MuiInputBase-multiline {
+  height: auto;
+  padding-block: 10px;
+}
+
+.hn-catalog-dialog .MuiInputBase-inputMultiline {
+  padding-block: 0;
+}
+
+.hn-catalog-dialog .MuiFormHelperText-root {
+  margin-left: 0;
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+.hn-catalog-dialog .MuiCheckbox-root.Mui-checked,
+.hn-catalog-dialog .MuiRadio-root.Mui-checked,
+.hn-catalog-dialog .MuiSwitch-switchBase.Mui-checked {
+  color: var(--catalog-link);
+}
+
+.hn-catalog-dialog .MuiDialogActions-root {
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--catalog-line);
+}
+
+.hn-catalog-dialog .MuiDialogActions-root > :not(:first-of-type) {
+  margin-left: 0;
+}
+
+.hn-catalog-dialog .MuiDialogActions-root > .MuiButton-root {
+  min-width: 90px;
+}
+
+@container hn-catalog (max-width: 900px) {
+  .hn-catalog-filter-title {
+    display: flex;
+  }
+
+  .hn-catalog-filter-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 1fr);
+  }
+
+  .hn-catalog-search {
+    grid-column: 1 / -1;
+  }
+
+  .hn-catalog-filter-actions .MuiButton-root:last-child {
+    flex: 0 1 105px;
+    border-color: var(--catalog-line);
+  }
+
+  .hn-catalog-table-heading {
+    align-items: flex-start;
+  }
+}
+
+@container hn-catalog (max-width: 600px) {
+  .hn-catalog-header {
+    align-items: flex-start;
+  }
+
+  .hn-catalog-header-actions {
+    width: 100%;
+  }
+
+  .hn-catalog-tabs {
+    padding-inline: 4px;
+  }
+
+  .hn-catalog-tabs .MuiTab-root {
+    padding-inline: 12px;
+    font-size: 14px;
+  }
+
+  .hn-catalog-filters {
+    padding: 12px;
+  }
+
+  .hn-catalog-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hn-catalog-filter-actions {
+    padding-top: 2px;
+  }
+
+  .hn-catalog-table-card > .MuiBox-root {
+    padding-inline: 12px;
+  }
+
+  .hn-catalog-table-heading h2 {
+    font-size: 18px;
+    line-height: 26px;
+  }
+
+  .hn-catalog-updated {
+    width: 100%;
+  }
+
+  .hn-catalog-pagination {
+    justify-content: flex-start;
+  }
+
+  .hn-catalog-pagination > nav {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 767px) {
+  .hn-catalog-table-wrap .MuiCard-root {
+    border-color: var(--catalog-line);
+    border-radius: var(--ops-radius-card);
+    background: var(--catalog-surface);
+    color: var(--catalog-text);
+    box-shadow: none;
+  }
+
+  .hn-catalog-table-wrap .MuiCardContent-root {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .hn-catalog-table-wrap .MuiCardContent-root:last-child {
+    padding-bottom: 12px;
+  }
+
+  .hn-catalog-table-wrap .MuiCardContent-root > .MuiBox-root {
+    gap: 12px;
+  }
+
+  .hn-catalog-table-wrap
+    .MuiCardContent-root
+    > .MuiBox-root
+    > .MuiTypography-root {
+    flex: 0 1 38%;
+    color: var(--catalog-muted);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .hn-catalog-table-wrap .MuiCardContent-root > .MuiBox-root > .MuiBox-root {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .hn-catalog-table-wrap .hn-catalog-code strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 480px) {
+  .hn-catalog-dialog .MuiDialog-paper {
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+    margin: 12px;
+  }
+
+  .hn-catalog-dialog .MuiDialogTitle-root {
+    padding-left: 16px;
+    font-size: 17px;
+    line-height: 26px;
+  }
+
+  .hn-catalog-dialog .MuiDialogContent-root {
+    padding: 20px 16px;
+  }
+
+  .hn-catalog-dialog .MuiDialogActions-root {
+    padding-inline: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hn-catalog-screen .MuiButton-root:not(.hn-row-action),
+  .hn-catalog-dialog .MuiButton-root:not(.hn-row-action),
+  .hn-catalog-screen .MuiInputBase-root,
+  .hn-catalog-dialog .MuiInputBase-root,
+  .hn-catalog-tabs .MuiTab-root,
+  .hn-catalog-filter-chips button,
+  .hn-catalog-table-wrap table tbody tr {
+    transition: none;
+  }
+}
+
+/* Search labels remain outside their controls; helper text never moves adjacent fields. */
+.hn-catalog-filter-title {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.hn-catalog-filter-title > :is(.fi, svg) {
+  color: var(--catalog-link);
+  font-size: 20px;
+}
+
+.hn-catalog-filter-actions {
+  padding-top: 24px;
+}
+
+.hn-catalog-filter-actions > .MuiButton-root:last-child {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--catalog-ink);
+}
+
+.hn-catalog-filter-actions > .MuiButton-root:last-child:hover {
+  background: var(--catalog-pale);
+}
+
+.hn-catalog-input-icon,
+.hn-catalog-input-clear {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--catalog-link);
+}
+
+.hn-catalog-input-icon {
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+.hn-catalog-input-clear {
+  margin-left: 8px;
+}
+
+.hn-catalog-input-clear .MuiIconButton-root {
+  width: 28px;
+  height: 28px;
+  color: var(--catalog-muted);
+}
+
+.hn-catalog-input-clear .MuiIconButton-root:hover {
+  background: var(--catalog-pale);
+  color: var(--catalog-link);
+}
+
+.hn-catalog-table-wrap table th {
+  box-shadow: inset 0 0 0 100vmax var(--catalog-pale);
+}
+
+.hn-catalog-table-wrap table .hn-sortable-th {
+  color: var(--catalog-ink);
+  font-size: 12px;
+}
+
+.hn-catalog-table-wrap table .hn-sortable-th[aria-sort="ascending"],
+.hn-catalog-table-wrap table .hn-sortable-th[aria-sort="descending"] {
+  color: var(--catalog-link);
+}
+
+.hn-catalog-success {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--catalog-success) 28%, transparent);
+  border-radius: var(--ops-radius-card);
+  background: var(--catalog-success-soft);
+  color: var(--catalog-success);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.hn-catalog-success > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hn-catalog-success .MuiIconButton-root {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.hn-catalog-skeleton {
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+}
+
+.hn-catalog-skeleton > div {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.6fr 0.8fr;
+  align-items: center;
+  gap: 24px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--catalog-line);
+}
+
+.hn-catalog-skeleton span {
+  display: block;
+  height: 14px;
+  max-width: 180px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--catalog-pale) 20%,
+    var(--catalog-line) 45%,
+    var(--catalog-pale) 70%
+  );
+  background-size: 300% 100%;
+  animation: hn-catalog-loading 1.8s ease-in-out infinite;
+}
+
+.hn-catalog-skeleton span:last-child {
+  max-width: 100px;
+}
+
+@keyframes hn-catalog-loading {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+@container hn-catalog (max-width: 900px) {
+  .hn-catalog-filter-actions > .MuiButton-root:last-child {
+    border-color: var(--catalog-line);
+  }
+}
+
+@container hn-catalog (max-width: 600px) {
+  .hn-catalog-filter-actions {
+    padding-top: 2px;
+  }
+
+  .hn-catalog-skeleton > div {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    min-height: 100px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hn-catalog-skeleton span {
+    animation: none;
+  }
+}
+
+body:has(.hn-catalog-dialog) .MuiAutocomplete-popper .MuiAutocomplete-paper {
+  border: 1px solid var(--catalog-line);
+  border-radius: 6px;
+  background: var(--catalog-surface);
+  color: var(--catalog-text);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--catalog-ink) 14%, transparent);
+}
+
+body:has(.hn-catalog-dialog) .MuiAutocomplete-popper .MuiAutocomplete-option {
+  min-height: 40px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+body:has(.hn-catalog-dialog)
+  .MuiAutocomplete-popper
+  .MuiAutocomplete-option.Mui-focused,
+body:has(.hn-catalog-dialog)
+  .MuiAutocomplete-popper
+  .MuiAutocomplete-option[aria-selected="true"],
+body:has(.hn-catalog-dialog)
+  .MuiAutocomplete-popper
+  .MuiAutocomplete-option[aria-selected="true"].Mui-focused {
+  background: var(--catalog-pale);
+  color: var(--catalog-ink);
+}
+
+body:has(.hn-catalog-dialog)
+  .MuiAutocomplete-popper
+  :is(.MuiAutocomplete-loading, .MuiAutocomplete-noOptions) {
+  color: var(--catalog-muted);
+  font-size: 14px;
+}
+
+.hn-catalog-table-wrap table .hn-sortable-th:hover,
+.hn-catalog-table-wrap table .hn-sortable-th__icon--active {
+  color: var(--catalog-link);
+}
+
+.hn-catalog-table-wrap
+  table
+  .hn-sortable-th__icon:not(.hn-sortable-th__icon--active) {
+  color: var(--catalog-muted);
+}

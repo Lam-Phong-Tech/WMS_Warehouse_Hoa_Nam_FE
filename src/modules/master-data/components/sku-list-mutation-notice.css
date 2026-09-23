@@ -1,0 +1,124 @@
+.hn-sku-mutation-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, var(--ops-danger) 28%, var(--ops-line));
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger);
+  font-size: 12px;
+  line-height: 20px;
+}
+.hn-sku-mutation-notice--success {
+  border-color: color-mix(in srgb, var(--ops-success) 28%, var(--ops-line));
+  background: var(--ops-success-soft);
+  color: var(--ops-success);
+}
+.hn-sku-mutation-notice--unknown {
+  border-color: color-mix(in srgb, var(--ops-warning) 28%, var(--ops-line));
+  background: var(--ops-warning-soft);
+  color: var(--ops-warning);
+}
+.hn-sku-mutation-icon {
+  display: block;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 24px;
+}
+.hn-sku-mutation-copy {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hn-sku-mutation-copy strong {
+  display: block;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.hn-sku-mutation-copy p {
+  margin: 0;
+}
+.hn-sku-mutation-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: var(--ops-control-height);
+  max-width: 100%;
+  padding: 7px 20px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-primary);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+.hn-sku-mutation-button:hover {
+  border-color: var(--ops-link);
+  background: var(--ops-pale);
+}
+.hn-sku-mutation-button--primary {
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+}
+.hn-sku-mutation-button--primary:hover {
+  border-color: var(--ops-primary-hover);
+  background: var(--ops-primary-hover);
+}
+.hn-sku-mutation-button:focus-visible,
+.hn-sku-mutation-dismiss:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 3px;
+}
+.hn-sku-mutation-dismiss {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.hn-sku-mutation-dismiss:hover {
+  background: var(--ops-success-soft);
+}
+.hn-sku-mutation-dismiss svg {
+  width: 18px;
+  height: 18px;
+}
+@media (max-width: 599px) {
+  .hn-sku-mutation-notice {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+  }
+  .hn-sku-mutation-copy {
+    flex-basis: calc(100% - 68px);
+  }
+  .hn-sku-mutation-notice:not(.hn-sku-mutation-notice--success)
+    .hn-sku-mutation-copy {
+    flex-basis: calc(100% - 36px);
+  }
+  .hn-sku-mutation-button {
+    margin-left: 30px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hn-sku-mutation-button {
+    transition: none;
+  }
+}

@@ -71,7 +71,7 @@ import {
 } from "@/shared/constants/business-labels";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { ActionButton, ActionIconButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
@@ -357,14 +357,14 @@ function SimpleMasterTab({
             : t("pv.admin.masterEmpty", { title })
         }
         renderRowActions={(row) => (
-          <ActionButton
+          <RowActionButton
             kind="edit"
             disabled={!canManage}
             data-testid={`${testId}-edit`}
             onClick={() => openForm(row)}
           >
             {t("pv.common.edit")}
-          </ActionButton>
+          </RowActionButton>
         )}
       />
 
@@ -723,23 +723,23 @@ export default function PvAdminPage() {
   ];
 
   const renderProfileRowActions = (row: PvAdminProfile) => (
-    <Stack direction="row" spacing={1}>
-      <ActionButton
+    <RowActionGroup>
+      <RowActionButton
         kind="view"
         data-testid="pv-admin-profile-view"
         onClick={() => setProfileViewing(row)}
       >
         {t("pv.common.view")}
-      </ActionButton>
-      <ActionButton
+      </RowActionButton>
+      <RowActionButton
         kind="edit"
         disabled={!canManageMaster}
         data-testid="pv-admin-profile-edit"
         onClick={() => openProfileForm(row)}
       >
         {t("pv.admin.profileEditAction")}
-      </ActionButton>
-    </Stack>
+      </RowActionButton>
+    </RowActionGroup>
   );
 
   return (
@@ -1418,18 +1418,18 @@ function PvRuleTab({
             : t("pv.admin.ruleEmpty")
         }
         renderRowActions={(row) => (
-          <Stack direction="row" spacing={1}>
-            <ActionButton kind="view" onClick={() => setViewing(row)}>
+          <RowActionGroup>
+            <RowActionButton kind="view" onClick={() => setViewing(row)}>
               {t("pv.common.view")}
-            </ActionButton>
-            <ActionButton
+            </RowActionButton>
+            <RowActionButton
               kind="edit"
               disabled={!canManage}
               onClick={() => openForm(row)}
             >
               {t("pv.common.edit")}
-            </ActionButton>
-          </Stack>
+            </RowActionButton>
+          </RowActionGroup>
         )}
       />
 

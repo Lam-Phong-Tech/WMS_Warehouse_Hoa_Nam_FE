@@ -1,11 +1,46 @@
 {
   "meta": {
     "owner": "FE1 Team",
-    "reason": "Hiện trạng CSS cục bộ + !important sau Part 2. Ratchet: !important chỉ được GIẢM; không thêm CSS import ngoài entrypoint. · 2026-09-03: thêm stock-reconcile-report.css — port 1:1 demo UI/UX 8.2 (RPT-02), cùng cơ chế CSS cục bộ như dashboard-overview.css, không dùng !important nào. · 2026-09-03: thêm inventory-flow-report.css — port 1:1 mockup UI/UX 8.1 (RPT-01), cùng cơ chế, không dùng !important nào. · 2026-09-03: thêm io-history-report.css — port 1:1 mockup UI/UX 8.3 (RPT-IO-01 trên route RPT-08), cùng cơ chế CSS cục bộ, không dùng cờ ưu tiên cascade nào.",
+    "reason": "Hiện trạng CSS cục bộ + !important sau Part 2. Ratchet: !important chỉ được GIẢM; không thêm CSS import ngoài entrypoint. · 2026-09-03: thêm stock-reconcile-report.css — port 1:1 demo UI/UX 8.2 (RPT-02), cùng cơ chế CSS cục bộ như dashboard-overview.css, không dùng !important nào. · 2026-09-03: thêm inventory-flow-report.css — port 1:1 mockup UI/UX 8.1 (RPT-01), cùng cơ chế, không dùng !important nào. · 2026-09-03: thêm io-history-report.css — port 1:1 mockup UI/UX 8.3 (RPT-IO-01 trên route RPT-08), cùng cơ chế CSS cục bộ, không dùng cờ ưu tiên cascade nào. · 2026-09-22: RPT-08 SystemHNWeb — register the three report-scoped presentation stylesheets (page, overview and feedback); no global stylesheet or !important added. · 2026-09-22: MST-01 SystemHNWeb — register only the SKU list, feedback and mutation-notice presentation stylesheets; scoped to SKU classes with no new global stylesheet or !important allowance. · 2026-09-23: Operations Overview is the shared palette; register the four existing scoped report stylesheet imports. Existing priority-rule budgets are unchanged by this task.",
     "deadline": "Part 3-4 — rút các lớp wireframe/exact/normalize theo 09-remediation §Phase C",
     "generated_by": "scripts/check-ui-styles.mjs --update-baseline"
   },
   "cssImports": {
+    "src/modules/master-data/pages/WarehouseConfigScreen.tsx": [
+      "@/shared/ui/sku-aligned-settings.css"
+    ],
+    "src/modules/auth/pages/ProfilePage.tsx": [
+      "@/shared/ui/sku-aligned-settings.css",
+      "./profile-page.css"
+    ],
+    "src/modules/audit-logs/pages/AuditLogsPage.tsx": [
+      "@/shared/ui/sku-aligned-settings.css",
+      "./audit-logs.css"
+    ],
+    "src/modules/iam/pages/IamUsersGd1Page.tsx": [
+      "./iam-users.css"
+    ],
+    "src/modules/reverse/pages/ReversalPage.tsx": [
+      "./reversal-list.css"
+    ],
+    "src/modules/warranty/components/WarrantyDetailModal.tsx": [
+      "./warranty-dialog.css"
+    ],
+    "src/modules/warranty/components/WarrantyIntakeModal.tsx": [
+      "./warranty-dialog.css"
+    ],
+    "src/modules/warranty/pages/WarrantyPage.tsx": [
+      "./warranty-list.css"
+    ],
+    "src/modules/master-data/pages/CatalogMasterScreen.tsx": [
+      "./catalog-master.css"
+    ],
+    "src/modules/master-data/components/CatalogFeedback.tsx": [
+      "./catalog-feedback.css"
+    ],
+    "src/modules/pv/pages/PvProductCatalogPage.tsx": [
+      "./pv-product-catalog.css"
+    ],
     "src/shared/pwa/PwaStatus.tsx": [
       "./pwa-status.css"
     ],
@@ -26,6 +61,65 @@
     ],
     "src/modules/reports/io-history/IoHistoryReport.tsx": [
       "./io-history-report.css"
+    ],
+    "src/modules/reports/io-history/IoHistoryOverview.tsx": [
+      "./io-history-overview.css"
+    ],
+    "src/modules/reports/io-history/IoHistoryFeedback.tsx": [
+      "./io-history-feedback.css"
+    ],
+    "src/modules/master-data/pages/ApiMasterScreens.tsx": [
+      "./sku-list.css",
+      "@/modules/master-data/components/agency-list.css",
+      "./defect-list.css"
+    ],
+    "src/modules/master-data/components/SkuListFeedback.tsx": [
+      "./sku-list-feedback.css"
+    ],
+    "src/modules/master-data/components/SkuListMutationNotice.tsx": [
+      "./sku-list-mutation-notice.css"
+    ],
+    "src/modules/inbound/pages/InboundPage.tsx": [
+      "./inbound-list.css"
+    ],
+    "src/modules/inbound/components/InboundDraftModal.tsx": [
+      "./inbound-draft.css"
+    ],
+    "src/modules/putaway/pages/MvpPutawayPage.tsx": [
+      "./putaway-queue.css"
+    ],
+    "src/modules/outbound/pages/AlignedMvpOutboundPage.tsx": [
+      "./outbound-list.css"
+    ],
+    "src/modules/outbound/components/OutboundIntakeModal.tsx": [
+      "./outbound-dialog.css"
+    ],
+    "src/modules/outbound/components/AlignedOutboundDetailModal.tsx": [
+      "./outbound-dialog.css"
+    ],
+    "src/modules/inventory/pages/InventoryPage.tsx": [
+      "./inventory-page.css"
+    ],
+    "src/modules/inventory/components/BalanceDetailModal.tsx": [
+      "./inventory-dialog.css"
+    ],
+    "src/modules/inventory/components/TraceModal.tsx": [
+      "./inventory-dialog.css"
+    ],
+    "src/modules/warranty/pages/WarrantyComponentIssueListPage.tsx": [
+      "./warranty-component-issues.css"
+    ],
+    "src/modules/reports/inventory-flow/InboundFlowReport.tsx": [
+      "./inbound-flow-report.css"
+    ],
+    "src/modules/reports/inventory-flow/OutboundFlowReport.tsx": [
+      "./outbound-flow-report.css"
+    ],
+    "src/modules/reports/packing-label/PackingLabelPrintReport.tsx": [
+      "./packing-label-report.css"
+    ],
+    "src/modules/reports/recipient-agency/RecipientAgencyReport.tsx": [
+      "./recipient-agency-report.css"
     ]
   },
   "important": {

@@ -1,3 +1,4 @@
+import { IamDateField } from "@/modules/iam/components/IamDateField";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   useEffect,
@@ -21,8 +22,6 @@ import {
   UiStatusBadge,
   UiTextField,
   type UiStatusTone,
-  FILTER_WIDTH,
-  TOOLBAR_SEARCH_SX,
 } from "@/shared/ui";
 import {
   useCreateIamUser,
@@ -64,7 +63,7 @@ import {
 import { useAuthStore } from "@/shared/store/auth.store";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { ActionButton, ActionIconButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { DepartmentManagerModal } from "@/modules/iam/components/DepartmentManagerModal";
 import {
@@ -233,7 +232,12 @@ function FieldHint({
   mt?: number;
 }) {
   return (
-    <Box sx={{ mt, fontSize: 12, color: "text.secondary" }}>{children}</Box>
+    <Box
+      className="hn-iam-field-hint"
+      sx={{ mt, fontSize: 12, color: "text.secondary" }}
+    >
+      {children}
+    </Box>
   );
 }
 
@@ -246,7 +250,10 @@ function SectionTitle({
   mb?: number;
 }) {
   return (
-    <Box sx={{ fontWeight: 700, fontSize: 14, mb, color: "text.primary" }}>
+    <Box
+      className="hn-iam-section-title"
+      sx={{ fontWeight: 700, fontSize: 14, mb, color: "text.primary" }}
+    >
       {children}
     </Box>
   );
@@ -268,6 +275,7 @@ function DialogTable({
   return (
     <Box
       component="table"
+      className="hn-iam-dialog-table"
       sx={(theme) => ({
         width: "100%",
         borderCollapse: "collapse",
@@ -844,78 +852,11 @@ export function IamUserScreen({
     : "";
 
   return (
-    <div className="hn-mvp-source-screen" data-mvp-screen="IAM-01">
-      <div className="toolbar">
-        <UiTextField
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value);
-            setPage(1);
-          }}
-          placeholder={t("iam.user.searchPlaceholder")}
-          slotProps={{
-            htmlInput: { "aria-label": t("iam.user.searchAria") },
-          }}
-          sx={TOOLBAR_SEARCH_SX}
-        />
-        <UiSelect
-          value={roleFilter}
-          onChange={(value) => {
-            setRoleFilter(value);
-            setPage(1);
-          }}
-          disabled={rolesQuery.isLoading}
-          aria-label={t("iam.user.roleFilterAria")}
-          placeholder={t("iam.user.roleFilterPlaceholder")}
-          minWidth={FILTER_WIDTH.select}
-          options={roles.map((role) => ({
-            value: role.role_id,
-            label: role.role_name,
-          }))}
-        />
-        <UiSelect
-          value={departmentFilter}
-          onChange={(value) => {
-            setDepartmentFilter(value);
-            setPage(1);
-          }}
-          disabled={departmentsQuery.isLoading}
-          aria-label={t("iam.user.departmentFilterAria")}
-          placeholder={t("iam.user.departmentFilterPlaceholder")}
-          minWidth={FILTER_WIDTH.select}
-          options={departments.map((department) => ({
-            value: department.department_id,
-            label: department.department_name,
-          }))}
-        />
-        <UiSelect
-          value={statusFilter}
-          onChange={(value) => {
-            setStatusFilter(value as IamUserStatus | "");
-            setPage(1);
-          }}
-          aria-label={t("iam.user.statusFilterAria")}
-          placeholder={t("iam.user.statusFilterPlaceholder")}
-          minWidth={FILTER_WIDTH.select}
-          options={STATUS_OPTIONS.map((status) => ({
-            value: status.value,
-            label: status.label,
-          }))}
-        />
-        <UiSelect
-          value={perPage}
-          onChange={(value) => {
-            setPerPage(Number(value));
-            setPage(1);
-          }}
-          aria-label={t("iam.user.pageSizeAria")}
-          minWidth={FILTER_WIDTH.pageSize}
-          options={perPageOptions.map((size) => ({
-            value: size,
-            label: `${size} / trang`,
-          }))}
-        />
-        <div className="spacer" />
+    <div
+      className="hn-mvp-source-screen hn-iam-screen"
+      data-mvp-screen="IAM-01"
+    >
+      <div className="hn-iam-actions">
         {canManageUsers ? (
           <ActionButton
             kind="settings"
@@ -927,12 +868,109 @@ export function IamUserScreen({
         {canManageUsers ? (
           <ActionButton
             kind="create"
+            className="hn-iam-primary"
             onClick={openCreate}
             disabled={rolesQuery.isLoading || roles.length === 0}
           >
             {t("iam.user.create")}
           </ActionButton>
         ) : null}
+      </div>
+      <div className="toolbar hn-iam-toolbar">
+        <div className="hn-iam-filter hn-iam-search">
+          <span className="hn-iam-filter-label">
+            {t("iam.user.searchAria")}
+          </span>
+          <UiTextField
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+            placeholder={t("iam.user.searchPlaceholder")}
+            slotProps={{
+              htmlInput: { "aria-label": t("iam.user.searchAria") },
+            }}
+            fullWidth
+          />
+        </div>
+        <div className="hn-iam-filter">
+          <span className="hn-iam-filter-label">{t("iam.user.colRole")}</span>
+          <UiSelect
+            value={roleFilter}
+            onChange={(value) => {
+              setRoleFilter(value);
+              setPage(1);
+            }}
+            disabled={rolesQuery.isLoading}
+            aria-label={t("iam.user.roleFilterAria")}
+            placeholder={t("iam.user.roleFilterPlaceholder")}
+            fullWidth
+            menuClassName="hn-iam-menu"
+            options={roles.map((role) => ({
+              value: role.role_id,
+              label: role.role_name,
+            }))}
+          />
+        </div>
+        <div className="hn-iam-filter">
+          <span className="hn-iam-filter-label">
+            {t("iam.user.colDepartment")}
+          </span>
+          <UiSelect
+            value={departmentFilter}
+            onChange={(value) => {
+              setDepartmentFilter(value);
+              setPage(1);
+            }}
+            disabled={departmentsQuery.isLoading}
+            aria-label={t("iam.user.departmentFilterAria")}
+            placeholder={t("iam.user.departmentFilterPlaceholder")}
+            fullWidth
+            menuClassName="hn-iam-menu"
+            options={departments.map((department) => ({
+              value: department.department_id,
+              label: department.department_name,
+            }))}
+          />
+        </div>
+        <div className="hn-iam-filter">
+          <span className="hn-iam-filter-label">{t("iam.user.colStatus")}</span>
+          <UiSelect
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value as IamUserStatus | "");
+              setPage(1);
+            }}
+            aria-label={t("iam.user.statusFilterAria")}
+            placeholder={t("iam.user.statusFilterPlaceholder")}
+            fullWidth
+            menuClassName="hn-iam-menu"
+            options={STATUS_OPTIONS.map((status) => ({
+              value: status.value,
+              label: status.label,
+            }))}
+          />
+        </div>
+        <div className="hn-iam-filter">
+          <span className="hn-iam-filter-label">
+            {t("iam.user.pageSizeAria")}
+          </span>
+          <UiSelect
+            value={perPage}
+            onChange={(value) => {
+              setPerPage(Number(value));
+              setPage(1);
+            }}
+            aria-label={t("iam.user.pageSizeAria")}
+            fullWidth
+            menuClassName="hn-iam-menu"
+            options={perPageOptions.map((size) => ({
+              value: size,
+              label: `${size} / trang`,
+            }))}
+          />
+        </div>
       </div>
 
       {listError ? (
@@ -955,127 +993,154 @@ export function IamUserScreen({
         </Box>
       ) : null}
 
-      <div className="table-wrap" aria-busy={usersQuery.isLoading}>
-        <table>
-          <thead>
-            <tr>
-              <th className="stt-col">STT</th>
-              <SortableTh
-                label={t("iam.user.colUser")}
-                sortKey="name"
-                sortState={sortState}
-                onSort={requestSort}
-              />
-              <SortableTh
-                label={t("iam.user.colDepartment")}
-                sortKey="department"
-                sortState={sortState}
-                onSort={requestSort}
-              />
-              <SortableTh
-                label={t("iam.user.colRole")}
-                sortKey="role"
-                sortState={sortState}
-                onSort={requestSort}
-              />
-              <SortableTh
-                label={t("iam.user.colScope")}
-                sortKey="scope"
-                sortState={sortState}
-                onSort={requestSort}
-              />
-              <SortableTh
-                label={t("iam.user.colStatus")}
-                sortKey="status"
-                sortState={sortState}
-                onSort={requestSort}
-                sortType="value"
-              />
-              <SortableTh
-                label={t("iam.user.colLastLogin")}
-                sortKey="lastLogin"
-                sortState={sortState}
-                onSort={requestSort}
-                sortType="value"
-              />
-              <th aria-label={t("iam.user.actionsAria")} />
-            </tr>
-          </thead>
-          <tbody>
-            {usersQuery.isLoading ? (
+      <section
+        className="hn-iam-list-card"
+        aria-labelledby="iam-users-list-title"
+      >
+        <div className="hn-iam-list-heading">
+          <h2 id="iam-users-list-title">
+            {t("iam.tab.users")}{" "}
+            <span className="hn-iam-count">
+              {usersQuery.isLoading ? "—" : total}
+            </span>
+          </h2>
+        </div>
+        <div
+          className="table-wrap hn-iam-table-scroll"
+          role="region"
+          aria-label={t("iam.tab.users")}
+          tabIndex={0}
+          aria-busy={usersQuery.isLoading}
+        >
+          <table>
+            <thead>
               <tr>
-                <td colSpan={8}>
-                  <span className="muted">{t("iam.user.loadingData")}</span>
-                </td>
+                <th className="stt-col">STT</th>
+                <SortableTh
+                  label={t("iam.user.colUser")}
+                  sortKey="name"
+                  sortState={sortState}
+                  onSort={requestSort}
+                />
+                <SortableTh
+                  label={t("iam.user.colDepartment")}
+                  sortKey="department"
+                  sortState={sortState}
+                  onSort={requestSort}
+                />
+                <SortableTh
+                  label={t("iam.user.colRole")}
+                  sortKey="role"
+                  sortState={sortState}
+                  onSort={requestSort}
+                />
+                <SortableTh
+                  label={t("iam.user.colScope")}
+                  sortKey="scope"
+                  sortState={sortState}
+                  onSort={requestSort}
+                />
+                <SortableTh
+                  label={t("iam.user.colStatus")}
+                  sortKey="status"
+                  sortState={sortState}
+                  onSort={requestSort}
+                  sortType="value"
+                />
+                <SortableTh
+                  label={t("iam.user.colLastLogin")}
+                  sortKey="lastLogin"
+                  sortState={sortState}
+                  onSort={requestSort}
+                  sortType="value"
+                />
+                <th aria-label={t("iam.user.actionsAria")} />
               </tr>
-            ) : sortedUsers.length > 0 ? (
-              sortedUsers.map((user) => {
-                const primaryRole = user.roles?.[0];
-                return (
-                  <tr key={user.user_id}>
-                    <td className="stt-col">
-                      {mvpRowNumber(page, perPage, originalIndexOf(user))}
-                    </td>
-                    <td style={{ maxWidth: 260 }}>
-                      <TruncatedText lines={1} maxWidth={240}>
-                        {user.display_name}
-                      </TruncatedText>
-                      <TruncatedText lines={1} maxWidth={240} className="muted">
-                        {user.username}
-                      </TruncatedText>
-                    </td>
-                    <td>{departmentLabel(user)}</td>
-                    <td>
-                      {primaryRole?.role_name ?? t("iam.user.unassigned")}
-                    </td>
-                    <td>{scopeLabel(primaryRole, warehouseNames, t)}</td>
-                    <td>
-                      <span className={statusClass(user.status)}>
-                        {statusLabel(user.status)}
-                      </span>
-                    </td>
-                    <td>{formatLastLogin(user.last_login_at, t)}</td>
-                    <td>
-                      <Stack direction="row" spacing={1}>
-                        <ActionButton
-                          kind="view"
-                          onClick={() => openView(user)}
+            </thead>
+            <tbody>
+              {usersQuery.isLoading ? (
+                <tr>
+                  <td colSpan={8}>
+                    <span className="muted">{t("iam.user.loadingData")}</span>
+                  </td>
+                </tr>
+              ) : sortedUsers.length > 0 ? (
+                sortedUsers.map((user) => {
+                  const primaryRole = user.roles?.[0];
+                  return (
+                    <tr key={user.user_id}>
+                      <td className="stt-col">
+                        {mvpRowNumber(page, perPage, originalIndexOf(user))}
+                      </td>
+                      <td
+                        className="hn-iam-user-name"
+                        style={{ maxWidth: 260 }}
+                      >
+                        <TruncatedText lines={1} maxWidth={240}>
+                          {user.display_name}
+                        </TruncatedText>
+                        <TruncatedText
+                          lines={1}
+                          maxWidth={240}
+                          className="muted"
                         >
-                          Xem
-                        </ActionButton>
-                        {canManageUsers ? (
-                          <ActionButton
-                            kind="edit"
-                            onClick={() => openEdit(user)}
+                          {user.username}
+                        </TruncatedText>
+                      </td>
+                      <td>{departmentLabel(user)}</td>
+                      <td>
+                        {primaryRole?.role_name ?? t("iam.user.unassigned")}
+                      </td>
+                      <td>{scopeLabel(primaryRole, warehouseNames, t)}</td>
+                      <td>
+                        <span className={statusClass(user.status)}>
+                          {statusLabel(user.status)}
+                        </span>
+                      </td>
+                      <td>{formatLastLogin(user.last_login_at, t)}</td>
+                      <td>
+                        <RowActionGroup>
+                          <RowActionButton
+                            kind="view"
+                            onClick={() => openView(user)}
                           >
-                            {t("iam.user.edit")}
-                          </ActionButton>
-                        ) : null}
-                      </Stack>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={8}>
-                  <span className="muted">{t("iam.user.empty")}</span>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                            Xem
+                          </RowActionButton>
+                          {canManageUsers ? (
+                            <RowActionButton
+                              kind="edit"
+                              onClick={() => openEdit(user)}
+                            >
+                              {t("iam.user.edit")}
+                            </RowActionButton>
+                          ) : null}
+                        </RowActionGroup>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={8}>
+                    <span className="muted">{t("iam.user.empty")}</span>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-      <MvpPaginationFooter
-        current={page}
-        pageSize={perPage}
-        total={total}
-        itemLabel={t("iam.user.itemLabel")}
-        onChange={setPage}
-      />
+        <MvpPaginationFooter
+          current={page}
+          pageSize={perPage}
+          total={total}
+          itemLabel={t("iam.user.itemLabel")}
+          onChange={setPage}
+        />
+      </section>
 
       <UiDialog
+        className="hn-iam-dialog"
         open={isModalOpen}
         onClose={guardBackdropClose(closeModal)}
         maxWidth="md"
@@ -1108,6 +1173,7 @@ export function IamUserScreen({
             </ActionButton>
             <ActionButton
               kind="save"
+              className="hn-iam-primary"
               disabled={isSaving || !formState.roleId}
               type="submit"
               form="iam-user-form"
@@ -1127,6 +1193,7 @@ export function IamUserScreen({
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Box
+                className="hn-iam-form-section"
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
@@ -1205,6 +1272,7 @@ export function IamUserScreen({
                     slotProps={{ htmlInput: { maxLength: EMAIL_MAX_LENGTH } }}
                   />
                   <UiAutocomplete
+                    menuClassName="hn-iam-menu"
                     data-testid="iam-department"
                     label={t("iam.user.colDepartment")}
                     value={formState.departmentId || null}
@@ -1243,6 +1311,13 @@ export function IamUserScreen({
                   <UiTextField
                     id="iam-status"
                     select
+                    slotProps={{
+                      select: {
+                        MenuProps: {
+                          slotProps: { paper: { className: "hn-iam-menu" } },
+                        },
+                      },
+                    }}
                     label={t("iam.user.colStatus")}
                     required
                     fullWidth
@@ -1264,6 +1339,7 @@ export function IamUserScreen({
 
             <Grid size={{ xs: 12, md: 6 }}>
               <Box
+                className="hn-iam-form-section"
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
@@ -1276,6 +1352,7 @@ export function IamUserScreen({
                 <Stack spacing={2}>
                   <div>
                     <UiAutocomplete
+                      menuClassName="hn-iam-menu"
                       data-testid="iam-role"
                       label={t("iam.user.colRole")}
                       required
@@ -1298,6 +1375,7 @@ export function IamUserScreen({
                   </div>
                   <div>
                     <UiAutocomplete
+                      menuClassName="hn-iam-menu"
                       data-testid="iam-extra-roles"
                       multiple
                       label={t("iam.user.fieldExtraRoles")}
@@ -1327,6 +1405,7 @@ export function IamUserScreen({
                       dấu * chỉ khiến người dùng tưởng phải chọn một kho.
                     */}
                     <UiAutocomplete
+                      menuClassName="hn-iam-menu"
                       data-testid="iam-scope"
                       label={t("iam.user.fieldDataScope")}
                       value={formState.scopeRef}
@@ -1353,51 +1432,36 @@ export function IamUserScreen({
                       })}
                     </FieldHint>
                   </div>
-                  <UiTextField
+                  <IamDateField
                     id="iam-effective-from"
                     label={t("iam.user.fieldValidFrom")}
-                    type="date"
-                    fullWidth
                     value={formState.effectiveFrom}
-                    onChange={(event) =>
-                      updateField("effectiveFrom", event.target.value)
-                    }
+                    onChange={(value) => updateField("effectiveFrom", value)}
                     disabled={isSaving || isEditingSelf}
                     error={Boolean(fieldErrors.effectiveFrom)}
                     helperText={
                       fieldErrors.effectiveFrom ?? t("iam.user.dateHelper")
                     }
-                    slotProps={{
-                      htmlInput: { ...EFFECTIVE_DATE_INPUT },
-                      inputLabel: { shrink: true },
-                    }}
+                    min={EFFECTIVE_DATE_INPUT.min}
+                    max={EFFECTIVE_DATE_INPUT.max}
                   />
-                  <UiTextField
+                  <IamDateField
                     id="iam-effective-to"
                     label={t("iam.user.fieldValidTo")}
-                    type="date"
-                    fullWidth
                     value={formState.effectiveTo}
-                    onChange={(event) =>
-                      updateField("effectiveTo", event.target.value)
-                    }
+                    onChange={(value) => updateField("effectiveTo", value)}
                     disabled={isSaving || isEditingSelf}
                     error={Boolean(fieldErrors.effectiveTo)}
                     helperText={
                       fieldErrors.effectiveTo ?? t("iam.user.dateHelper")
                     }
-                    slotProps={{
-                      htmlInput: {
-                        ...EFFECTIVE_DATE_INPUT,
-                        // Lịch "đến" không cho chọn trước "từ" (nếu "từ" hợp lệ).
-                        min:
-                          formState.effectiveFrom &&
-                          formState.effectiveFrom > EFFECTIVE_DATE_INPUT.min
-                            ? formState.effectiveFrom
-                            : EFFECTIVE_DATE_INPUT.min,
-                      },
-                      inputLabel: { shrink: true },
-                    }}
+                    min={
+                      formState.effectiveFrom &&
+                      formState.effectiveFrom > EFFECTIVE_DATE_INPUT.min
+                        ? formState.effectiveFrom
+                        : EFFECTIVE_DATE_INPUT.min
+                    }
+                    max={EFFECTIVE_DATE_INPUT.max}
                   />
                   <UiTextField
                     id="iam-password"
@@ -1474,6 +1538,7 @@ export function IamUserScreen({
       </UiDialog>
 
       <UiDialog
+        className="hn-iam-dialog"
         open={Boolean(viewingUser)}
         onClose={closeView}
         maxWidth="sm"
@@ -1647,14 +1712,14 @@ export function IamUserScreen({
                         <td>{formatDateTime(override.granted_at)}</td>
                         <td>
                           {canManageUsers ? (
-                            <ActionButton
+                            <RowActionButton
                               kind="revoke"
                               onClick={() =>
                                 openRevokeConfirm(override.permission_id)
                               }
                             >
                               {t("iam.user.revoke")}
-                            </ActionButton>
+                            </RowActionButton>
                           ) : null}
                         </td>
                       </tr>
@@ -1743,6 +1808,7 @@ export function IamUserScreen({
       </UiDialog>
 
       <UiDialog
+        className="hn-iam-dialog"
         open={isGrantModalOpen}
         onClose={closeGrantModal}
         maxWidth="xs"
@@ -1769,6 +1835,7 @@ export function IamUserScreen({
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           {grantError ? <UiAlert tone="error">{grantError}</UiAlert> : null}
           <UiAutocomplete
+            menuClassName="hn-iam-menu"
             label={t("iam.user.fieldPermission")}
             value={grantPermissionId || null}
             onChange={(next) => {
@@ -1813,6 +1880,7 @@ export function IamUserScreen({
       </UiDialog>
 
       <UiDialog
+        className="hn-iam-dialog"
         open={Boolean(revokingPermissionId)}
         onClose={closeRevokeConfirm}
         maxWidth="xs"

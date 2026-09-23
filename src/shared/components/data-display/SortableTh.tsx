@@ -7,6 +7,8 @@ import { useT } from "@/shared/i18n/useT";
 export interface SortableThProps {
   /** Nhãn cột hiển thị, cũng dùng để dựng câu tooltip. */
   label: React.ReactNode;
+  /** Plain wording for tooltips when the visible label contains responsive markup. */
+  tooltipLabel?: string;
   /** Khoá cột — phải trùng với key khai báo trong `accessors` của `useClientSort`. */
   sortKey: string;
   sortState: ClientSortState;
@@ -27,6 +29,7 @@ export interface SortableThProps {
  */
 export function SortableTh({
   label,
+  tooltipLabel,
   sortKey,
   sortState,
   onSort,
@@ -43,13 +46,21 @@ export function SortableTh({
       ? [t("shared.table.sortAsc"), t("shared.table.sortDesc")]
       : [t("shared.table.sortAZ"), t("shared.table.sortZA")];
 
+  const resolvedTooltipLabel =
+    tooltipLabel ?? (typeof label === "string" ? label : undefined);
   const tooltipTitle =
-    typeof label === "string"
+    resolvedTooltipLabel !== undefined
       ? direction === "asc"
-        ? t("shared.table.sortByTooltip", { label, direction: desc })
+        ? t("shared.table.sortByTooltip", {
+            label: resolvedTooltipLabel,
+            direction: desc,
+          })
         : direction === "desc"
-          ? t("shared.table.clearSortTooltip", { label })
-          : t("shared.table.sortByTooltip", { label, direction: asc })
+          ? t("shared.table.clearSortTooltip", { label: resolvedTooltipLabel })
+          : t("shared.table.sortByTooltip", {
+              label: resolvedTooltipLabel,
+              direction: asc,
+            })
       : "";
 
   const icon = renderSortIcon({

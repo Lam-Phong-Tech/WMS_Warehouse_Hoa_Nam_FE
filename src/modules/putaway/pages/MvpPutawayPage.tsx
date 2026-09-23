@@ -4,15 +4,13 @@ import {
   Grid,
   Stack,
   UiAlert,
-  UiCard,
   UiDialog,
   UiPagination,
   UiSelect,
   UiStatusBadge,
-  UiTabs,
-  UiTabPanel,
   UiTextField,
   FILTER_WIDTH,
+  UiIcon,
 } from "@/shared/ui";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import {
@@ -26,7 +24,6 @@ import {
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { toast } from "sonner";
-import { HistoryOutlined, InboxOutlined } from "@/shared/components/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import { useSearchParams, Link as RouterLink } from "react-router-dom";
@@ -36,7 +33,6 @@ import {
   getErrorRequestId,
   normalizeError,
 } from "@/shared/api/api-error";
-import { ActionDropdown } from "@/shared/components/feedback/ActionDropdown";
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { TraySelectionGrid } from "@/modules/putaway/components/TraySelectionGrid";
@@ -45,6 +41,7 @@ import {
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
@@ -61,6 +58,9 @@ import {
 } from "@/modules/putaway/services/putawayService";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
+
+import { PutawayQueue } from "../components/PutawayQueue";
+import "./putaway-queue.css";
 
 type PutawayFormValues = {
   to_tray_id: string;
@@ -144,14 +144,6 @@ function ApiErrorAlert({
 
 /** Sort client-side toàn bộ danh sách (không chỉ trang hiện tại) — giữ đúng
  * hành vi sorter của antd Table trước migrate (Part 4 Vuexy sync). */
-const TASK_SORT_ACCESSORS: Record<string, SortAccessor<PutawayTask>> = {
-  box_code: (row) => row.box_code,
-  sku_code: (row) => row.sku_code,
-  quantity: (row) => row.quantity,
-  status: (row) => row.status,
-  draft: (row) => row.to_tray_code || "",
-};
-
 const HISTORY_SORT_ACCESSORS: Record<string, SortAccessor<PutawayHistory>> = {
   created_at: (row) => new Date(row.created_at),
   box_code: (row) => row.box_code,
@@ -167,6 +159,29 @@ export default function MvpPutawayPage() {
   const queryClient = useQueryClient();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const currentContext = useAuthStore((state) => state.currentContext);
+  const warehouseQuery = useWarehouseDirectory({
+    enabled: hasAnyWmsPermission(
+      permissionCodes,
+      [P.WAREHOUSE_VIEW],
+      isSuperAdmin,
+    ),
+  });
+  const warehouses = warehouseQuery.data ?? [];
+  const warehouse =
+    currentContext?.warehouse_id != null
+      ? warehouses.find(
+          (row) => String(row.id) === String(currentContext.warehouse_id),
+        )
+      : warehouses.length === 1
+        ? warehouses[0]
+        : undefined;
+  const warehouseName =
+    currentContext?.warehouse_name ||
+    (typeof warehouse?.name === "string" ? warehouse.name : undefined);
+  const warehouseStatus = String(warehouse?.status ?? "")
+    .trim()
+    .toUpperCase();
   // SRS §3: Putaway create/confirm/cancel dùng permission key `putaway.manage`
   // (NV kho = A*). BE nhận `putaway.manage|container.manage` nên FE gate đúng bộ đó;
   // gate chỉ theo container.manage sẽ ẩn nút với chính nhân viên kho được phân quyền.
@@ -182,9 +197,7 @@ export default function MvpPutawayPage() {
   // Lịch sử xếp khay là bảng tra cứu/đối soát — lọc phía FE trên dữ liệu đã tải
   // (không gọi thêm API) để đáp ứng tiêu chí filter cho bảng tra cứu.
   const [historySearchDraft, setHistorySearchDraft] = useState("");
-  const [pendingPageSize, setPendingPageSize] = useState(10);
   const [historyPageSize, setHistoryPageSize] = useState(10);
-  const [pendingPage, setPendingPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
   const [selected, setSelected] = useState<PutawayTask | null>(null);
   const [detailRow, setDetailRow] = useState<PutawayTask | null>(null);
@@ -243,8 +256,6 @@ export default function MvpPutawayPage() {
   const tasks = tasksQuery.data ?? [];
   const history = historyQuery.data ?? [];
   const trays = traysQuery.data ?? [];
-  const loading =
-    tasksQuery.isLoading || historyQuery.isLoading || traysQuery.isLoading;
 
   const filteredHistory = useMemo(() => {
     const keyword = historySearchDraft.trim().toLowerCase();
@@ -262,17 +273,7 @@ export default function MvpPutawayPage() {
 
   // Sort toàn danh sách rồi mới cắt trang (đúng hành vi antd Table cũ);
   // clamp trang khi dữ liệu co lại để không rơi vào trang rỗng.
-  const taskSort = useClientSort(tasks, TASK_SORT_ACCESSORS);
   const historySort = useClientSort(filteredHistory, HISTORY_SORT_ACCESSORS);
-  const pendingPageCount = Math.max(
-    1,
-    Math.ceil(tasks.length / pendingPageSize),
-  );
-  const safePendingPage = Math.min(pendingPage, pendingPageCount);
-  const pagedTasks = taskSort.sortedRows.slice(
-    (safePendingPage - 1) * pendingPageSize,
-    safePendingPage * pendingPageSize,
-  );
   const historyPageCount = Math.max(
     1,
     Math.ceil(filteredHistory.length / historyPageSize),
@@ -462,129 +463,6 @@ export default function MvpPutawayPage() {
     }
   };
 
-  const taskColumns: ResponsiveTableColumn<PutawayTask>[] = [
-    {
-      key: "stt",
-      header: "STT",
-      align: "center",
-      width: 56,
-      hideOnMobile: true,
-      // Vị trí trong danh sách GỐC (chưa sắp xếp) — số đi theo dòng.
-      render: (row) => rowIndexOf(tasks, row) + 1,
-    },
-    {
-      key: "box_code",
-      header: t("putaway.page.colBox"),
-      width: 170,
-      sortable: true,
-      render: (row) => <strong>{row.box_code}</strong>,
-    },
-    {
-      key: "sku_code",
-      header: t("putaway.page.colSku"),
-      width: 170,
-      sortable: true,
-      render: (row) => <SkuLink code={row.sku_code} />,
-    },
-    {
-      key: "quantity",
-      header: t("putaway.page.colQuantity"),
-      width: 100,
-      align: "right",
-      sortable: true,
-      sortType: "value",
-      render: (row) => row.quantity,
-    },
-    {
-      key: "status",
-      header: t("putaway.page.colBoxStatus"),
-      width: 210,
-      sortable: true,
-      render: (row) => (
-        <UiStatusBadge
-          tone={row.status === "STORED" ? "success" : "warning"}
-          label={boxStatusLabel(t, row.status)}
-        />
-      ),
-    },
-    {
-      key: "draft",
-      header: t("putaway.page.colDraft"),
-      width: 180,
-      sortable: true,
-      render: (row) =>
-        row.draft_id ? (
-          <UiStatusBadge
-            tone="info"
-            label={row.to_tray_code || t("putaway.page.draftSelectedTray")}
-          />
-        ) : (
-          <UiStatusBadge
-            tone="neutral"
-            label={t("putaway.page.draftNotCreated")}
-          />
-        ),
-    },
-    {
-      key: "actions",
-      // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
-      truncate: 0,
-      header: t("putaway.page.colActions"),
-      width: 260,
-      render: (row) => {
-        const canOpenPutaway =
-          !row.draft_id && row.status === "RECEIVED_PENDING_PUTAWAY";
-        const dropdownItems = row.draft_id
-          ? [
-              {
-                key: "confirm",
-                kind: "confirm" as const,
-                label: t("putaway.page.actionConfirm"),
-                disabled: !canManage,
-                onClick: () => confirmWithPrompt(row),
-              },
-              {
-                key: "cancel",
-                kind: "cancel" as const,
-                label: t("putaway.page.actionCancelDraft"),
-                danger: true,
-                disabled: !canManage,
-                onClick: () => cancelWithPrompt(row),
-              },
-            ]
-          : [];
-
-        return (
-          <Stack
-            direction="row"
-            sx={{ gap: 0.25, alignItems: "center", flexWrap: "wrap" }}
-          >
-            <ActionButton kind="view" onClick={() => setDetailRow(row)}>
-              {t("putaway.page.actionView")}
-            </ActionButton>
-            {/* PTW-GRID: nút chính mở lưới chọn khay — trước đây ẩn trong dropdown
-                "..." khiến người dùng không thấy giao diện chọn khay. */}
-            {canOpenPutaway ? (
-              <ActionButton
-                kind="swap"
-                disabled={!canManage}
-                onClick={() => openPutaway(row)}
-              >
-                {t("putaway.page.actionPutaway")}
-              </ActionButton>
-            ) : null}
-            {dropdownItems.length > 0 ? (
-              <ActionDropdown
-                tooltip={t("putaway.page.actionsTooltip")}
-                items={dropdownItems}
-              />
-            ) : null}
-          </Stack>
-        );
-      },
-    },
-  ];
-
   const historyColumns: ResponsiveTableColumn<PutawayHistory>[] = [
     {
       key: "stt",
@@ -650,231 +528,181 @@ export default function MvpPutawayPage() {
     },
   ];
 
-  const firstError = tasksQuery.error ?? historyQuery.error ?? traysQuery.error;
-
   return (
-    <div className="putaway-page master-data-page">
-      {/* Tiêu đề màn do header chung của shell dựng (AppPageHeader); hàng này
-          chỉ còn giữ hành động. Ô rỗng để nút vẫn nằm bên phải. */}
-      <div className="page-heading">
-        <div />
-        {/* Mục 15: lối vào trực tiếp màn XEM tổng quan khay (read-only), tách
-            khỏi thao tác chọn khay trong dialog tạo lệnh. */}
-        <RouterLink
-          to={ROUTES.PUTAWAY_TRAYS}
-          style={{ textDecoration: "none" }}
-        >
-          <ActionButton
-            kind="view"
-            label={t("putaway.page.trayOverviewLink")}
-          />
-        </RouterLink>
-      </div>
-
-      <UiCard className="master-data-panel">
-        <div className="master-data-contract-strip">
-          <UiStatusBadge tone="info" label={t("putaway.page.stripTasks")} />
-          <UiStatusBadge tone="info" label={t("putaway.page.stripConfirm")} />
-          <UiStatusBadge
-            tone="warning"
-            label={t("putaway.page.stripPermission")}
-          />
-          <UiStatusBadge
-            tone="success"
-            label={t("putaway.page.stripStockNeutral")}
-          />
+    <div className="putaway-page hn-putaway-page" data-screen="PTW-00">
+      <header className="ptw-heading">
+        <div>
+          <h1>{t("putaway.queue.title")}</h1>
+          <p>{t("putaway.queue.subtitle")}</p>
         </div>
-
-        <Box className="master-data-state-alert">
-          <UiAlert tone="info" title={t("putaway.page.introTitle")}>
-            {t("putaway.page.introBody")}
-          </UiAlert>
-        </Box>
-
-        {firstError ? (
-          <ApiErrorAlert
-            error={firstError}
-            fallback={t("putaway.page.loadFailed")}
-          />
+        {warehouseName ? (
+          <div className="ptw-warehouse">
+            <UiIcon name="warehouse-alt" />
+            <div>
+              <strong>{warehouseName}</strong>
+              <small>
+                {t(
+                  warehouseStatus === "ACTIVE"
+                    ? "putaway.queue.warehouseActive"
+                    : warehouseStatus === "INACTIVE"
+                      ? "putaway.queue.warehouseInactive"
+                      : "putaway.queue.warehouse",
+                )}
+              </small>
+            </div>
+          </div>
         ) : null}
-
-        <>
-          <Box sx={{ mb: 2 }}>
-            <UiTabs
-              value={activeTab}
-              onChange={setActiveTab}
-              items={[
-                {
-                  key: "pending",
-                  label: (
-                    <Stack
-                      direction="row"
-                      spacing={0.75}
-                      sx={{ alignItems: "center" }}
-                    >
-                      <InboxOutlined style={{ fontSize: 15 }} />
-                      <span>
-                        {t("putaway.page.tabPending", { count: tasks.length })}
-                      </span>
-                    </Stack>
-                  ),
-                },
-                {
-                  key: "history",
-                  label: (
-                    <Stack
-                      direction="row"
-                      spacing={0.75}
-                      sx={{ alignItems: "center" }}
-                    >
-                      <HistoryOutlined style={{ fontSize: 15 }} />
-                      <span>{t("putaway.page.tabHistory")}</span>
-                    </Stack>
-                  ),
-                },
-              ]}
-            />
-          </Box>
-
-          {/* Filter (tìm kiếm) và chọn số dòng/trang đặt cùng một hàng, ngay trên
-              bảng — tránh để page-size lệch chỗ khỏi thanh filter/trạng thái. */}
-          <Grid
-            container
-            spacing={1.5}
-            className="filter-row"
-            sx={{
-              alignItems: "center",
-              justifyContent: "space-between",
-              mb: 1.5,
-            }}
-          >
-            <Grid size={{ xs: 12, md: 4 }}>
-              {activeTab === "pending" ? (
-                <SearchInput
-                  value={searchDraft}
-                  placeholder={t("putaway.page.searchPendingPlaceholder")}
-                  slotProps={{
-                    htmlInput: {
-                      "aria-label": t("putaway.page.searchPendingAria"),
-                    },
-                  }}
-                  width="100%"
-                  onChange={setSearchDraft}
-                />
-              ) : (
-                <SearchInput
-                  value={historySearchDraft}
-                  placeholder={t("putaway.page.searchHistoryPlaceholder")}
-                  slotProps={{
-                    htmlInput: {
-                      "aria-label": t("putaway.page.searchHistoryAria"),
-                    },
-                  }}
-                  width="100%"
-                  onChange={setHistorySearchDraft}
-                />
-              )}
-            </Grid>
-            <Grid>
-              <UiSelect
-                value={
-                  activeTab === "pending" ? pendingPageSize : historyPageSize
-                }
-                aria-label={t("putaway.page.pageSizeAria")}
-                options={PAGE_SIZE_OPTIONS.map((size) => ({
-                  value: size,
-                  label: t("putaway.page.pageSizeOption", { size }),
-                }))}
-                onChange={(value) => {
-                  if (activeTab === "pending") {
-                    setPendingPageSize(Number(value));
-                  } else {
-                    setHistoryPageSize(Number(value));
-                  }
+      </header>
+      <nav className="ptw-tabs" aria-label={t("putaway.queue.navigation")}>
+        <button
+          type="button"
+          className={activeTab === "pending" ? "is-active" : undefined}
+          aria-current={activeTab === "pending" ? "page" : undefined}
+          onClick={() => setActiveTab("pending")}
+        >
+          <UiIcon name="cube" />
+          <span>{t("putaway.queue.pendingTab")}</span>
+        </button>
+        <button
+          type="button"
+          className={activeTab === "orders" ? "is-active" : undefined}
+          aria-current={activeTab === "orders" ? "page" : undefined}
+          onClick={() => setActiveTab("orders")}
+        >
+          <UiIcon name="list" />
+          <span>{t("putaway.queue.ordersTab")}</span>
+        </button>
+        <RouterLink to={ROUTES.PUTAWAY_TRAYS}>
+          <UiIcon name="apps" />
+          <span>{t("putaway.queue.traysTab")}</span>
+        </RouterLink>
+        <button
+          type="button"
+          className={activeTab === "history" ? "is-active" : undefined}
+          aria-current={activeTab === "history" ? "page" : undefined}
+          onClick={() => setActiveTab("history")}
+        >
+          <UiIcon name="time-past" />
+          <span>{t("putaway.queue.historyTab")}</span>
+        </button>
+      </nav>
+      {activeTab !== "history" ? (
+        <PutawayQueue
+          key={activeTab}
+          tasks={tasks}
+          orders={activeTab === "orders"}
+          loading={tasksQuery.isLoading}
+          refreshing={tasksQuery.isFetching}
+          error={
+            tasksQuery.error ? (
+              <ApiErrorAlert
+                error={tasksQuery.error}
+                fallback={t("putaway.page.loadFailed")}
+              />
+            ) : null
+          }
+          canManage={canManage}
+          search={searchDraft}
+          onSearch={setSearchDraft}
+          onApplySearch={() => setSearch(searchDraft.trim())}
+          onRefresh={() => {
+            void tasksQuery.refetch();
+          }}
+          onView={setDetailRow}
+          onCreate={openPutaway}
+          onConfirm={confirmWithPrompt}
+          onCancel={cancelWithPrompt}
+        />
+      ) : (
+        <section
+          className="ptw-list ptw-history"
+          aria-label={t("putaway.queue.historyTitle")}
+        >
+          <div className="ptw-list-heading">
+            <h2>{t("putaway.queue.historyTitle")}</h2>
+            <p>{t("putaway.queue.historySubtitle")}</p>
+          </div>
+          {historyQuery.error ? (
+            <div className="ptw-error">
+              <ApiErrorAlert
+                error={historyQuery.error}
+                fallback={t("putaway.page.loadFailed")}
+              />
+              <button
+                type="button"
+                className="ptw-row-action"
+                disabled={historyQuery.isFetching}
+                onClick={() => {
+                  void historyQuery.refetch();
                 }}
-                minWidth={FILTER_WIDTH.pageSize}
-              />
-            </Grid>
-          </Grid>
-        </>
-
-        {activeTab === "pending" ? (
-          <UiTabPanel value={activeTab}>
-            <ResponsiveDataTable<PutawayTask>
-              columns={taskColumns}
-              rows={pagedTasks}
-              rowKey={(row) => row.id}
-              loading={loading}
-              sortState={taskSort.sortState}
-              onSortChange={taskSort.requestSort}
-              emptyText={t("putaway.page.emptyPending")}
-            />
-            <Stack
-              direction="row"
-              sx={{
-                mt: 1.5,
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 1,
+              >
+                {t("common.retry")}
+              </button>
+            </div>
+          ) : null}
+          <div className="ptw-history-filters">
+            <SearchInput
+              value={historySearchDraft}
+              placeholder={t("putaway.page.searchHistoryPlaceholder")}
+              slotProps={{
+                htmlInput: {
+                  "aria-label": t("putaway.page.searchHistoryAria"),
+                },
               }}
-            >
-              <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                {t("putaway.page.totalBoxes", { count: tasks.length })}
-              </Box>
-              <UiPagination
-                page={safePendingPage}
-                pageSize={pendingPageSize}
-                total={tasks.length}
-                onPageChange={setPendingPage}
-                showTotal={false}
-              />
-            </Stack>
-          </UiTabPanel>
-        ) : (
-          <UiTabPanel value={activeTab}>
-            <ResponsiveDataTable<PutawayHistory>
-              columns={historyColumns}
-              rows={pagedHistory}
-              rowKey={(row) => row.id}
-              loading={loading}
-              sortState={historySort.sortState}
-              onSortChange={historySort.requestSort}
-              emptyText={
-                historySearchDraft.trim()
-                  ? t("putaway.page.emptyHistoryFiltered")
-                  : t("putaway.page.emptyHistory")
-              }
-            />
-            <Stack
-              direction="row"
-              sx={{
-                mt: 1.5,
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 1,
+              width="100%"
+              onChange={(value) => {
+                setHistorySearchDraft(value);
+                setHistoryPage(1);
               }}
-            >
-              <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                {t("putaway.page.totalRecords", {
-                  count: filteredHistory.length,
-                })}
-              </Box>
-              <UiPagination
-                page={safeHistoryPage}
-                pageSize={historyPageSize}
-                total={filteredHistory.length}
-                onPageChange={setHistoryPage}
-                showTotal={false}
-              />
-            </Stack>
-          </UiTabPanel>
-        )}
-      </UiCard>
+            />
+            <UiSelect
+              value={historyPageSize}
+              aria-label={t("putaway.page.pageSizeAria")}
+              options={PAGE_SIZE_OPTIONS.map((size) => ({
+                value: size,
+                label: t("putaway.page.pageSizeOption", { size }),
+              }))}
+              onChange={(value) => {
+                setHistoryPageSize(Number(value));
+                setHistoryPage(1);
+              }}
+              minWidth={FILTER_WIDTH.pageSize}
+              menuClassName="ptw-filter-menu"
+            />
+          </div>
+          <ResponsiveDataTable<PutawayHistory>
+            columns={historyColumns}
+            rows={pagedHistory}
+            rowKey={(row) => row.id}
+            loading={historyQuery.isLoading}
+            sortState={historySort.sortState}
+            onSortChange={historySort.requestSort}
+            emptyText={
+              historySearchDraft.trim()
+                ? t("putaway.page.emptyHistoryFiltered")
+                : t("putaway.page.emptyHistory")
+            }
+          />
+          <footer className="ptw-footer">
+            <span className="ptw-range">
+              {t("putaway.page.totalRecords", {
+                count: filteredHistory.length,
+              })}
+            </span>
+            <UiPagination
+              page={safeHistoryPage}
+              pageSize={historyPageSize}
+              total={filteredHistory.length}
+              onPageChange={setHistoryPage}
+              showTotal={false}
+            />
+          </footer>
+        </section>
+      )}
 
       <>
         <UiDialog
+          className="ptw-dialog"
           open={Boolean(selected)}
           onClose={guardBackdropClose(closePutaway)}
           maxWidth="md"
@@ -978,6 +806,24 @@ export default function MvpPutawayPage() {
               </UiAlert>
             </Box>
 
+            {traysQuery.error ? (
+              <div className="ptw-error">
+                <ApiErrorAlert
+                  error={traysQuery.error}
+                  fallback={t("putaway.page.loadFailed")}
+                />
+                <button
+                  type="button"
+                  className="ptw-row-action"
+                  disabled={traysQuery.isFetching}
+                  onClick={() => {
+                    void traysQuery.refetch();
+                  }}
+                >
+                  {t("common.retry")}
+                </button>
+              </div>
+            ) : null}
             <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
               {t("putaway.page.chooseTrayTitle")}
             </Box>
@@ -1074,6 +920,7 @@ export default function MvpPutawayPage() {
         </UiDialog>
 
         <UiDialog
+          className="ptw-dialog"
           open={Boolean(detailRow)}
           onClose={() => setDetailRow(null)}
           maxWidth="sm"
@@ -1168,6 +1015,7 @@ export default function MvpPutawayPage() {
         </UiDialog>
 
         <UiDialog
+          className="ptw-dialog"
           open={Boolean(confirmPrompt)}
           onClose={() => setConfirmPrompt(null)}
           maxWidth="xs"

@@ -128,7 +128,7 @@ export const SPACING = {
 } as const;
 
 /** [ĐO control/card=6] [X sheet 16] */
-export const RADIUS = { control: 6, card: 6, sheet: 16, pill: 999 } as const;
+export const RADIUS = { control: 6, card: 8, sheet: 16, pill: 999 } as const;
 
 export const TYPOGRAPHY = {
   /**
@@ -138,22 +138,22 @@ export const TYPOGRAPHY = {
   fontFamily:
     '"Public Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   /** [ĐO] body 15px, [ĐO] label/secondary 13px */
-  fontSizeBody: 15,
+  fontSizeBody: 14,
   fontSizeSecondary: 13,
-  lineHeightBody: 1.467, // 22/15 [X]
+  lineHeightBody: 22 / 14,
   /** [ĐO] h4 login 24/500/38 */
   heading: { fontSize: 24, fontWeight: 500, lineHeight: 38 / 24 },
   /** [X] card title 18/24 w600 */
-  cardTitle: { fontSize: 18, fontWeight: 600, lineHeight: 24 / 18 },
+  cardTitle: { fontSize: 18, fontWeight: 600, lineHeight: 26 / 18 },
   /** [X] KPI 22/30 w600 */
   kpi: { fontSize: 22, fontWeight: 600, lineHeight: 30 / 22 },
   /** [ĐO] button 15/500 */
-  button: { fontSize: 15, fontWeight: 500 },
+  button: { fontSize: 14, fontWeight: 600 },
 } as const;
 
 /** [ĐO] button/input cao 38px; [X] touch target mobile 44px */
 export const CONTROL = {
-  height: 38,
+  height: 40,
   heightTouch: 44,
   inputPaddingX: 14,
   inputPaddingY: 7,

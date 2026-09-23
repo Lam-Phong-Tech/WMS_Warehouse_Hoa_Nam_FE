@@ -144,3 +144,22 @@ describe("UiSelect — báo lỗi", () => {
     expect(screen.getByText("Kho").textContent).toContain("*");
   });
 });
+
+describe("UiSelect — scoped portal presentation", () => {
+  it.each([{ options: SHORT }, { options: LONG }])(
+    "keeps menu styling and selection when the dropdown changes mode",
+    async ({ options }) => {
+      const user = userEvent.setup();
+      render(<Host options={options} menuClassName="hn-iam-menu" />);
+      await user.click(screen.getByRole("combobox", { name: "Lọc hàng hoá" }));
+      const option = screen
+        .getAllByRole("option")
+        .find((item) => item.textContent === String(options[0].label));
+      expect(option?.closest(".hn-iam-menu")).not.toBeNull();
+      await user.click(option!);
+      expect(screen.getByTestId("value")).toHaveTextContent(
+        String(options[0].value),
+      );
+    },
+  );
+});

@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -175,12 +182,13 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     expect(placeholder).toContain("sản phẩm");
   });
 
-  it("bấm Mở mở modal chi tiết đúng case (WAR-03)", async () => {
+  it("bấm Cập nhật mở modal chi tiết đúng case (WAR-03)", async () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
 
-    // a908c42 chuẩn hoá hành động dòng thành ActionButton kind="edit" nhãn "Sửa"
-    // (trước là "Mở") — test cập nhật theo UI đã duyệt.
-    const openButtons = await screen.findAllByRole("button", { name: /Sửa/ });
+    // Nhãn trình bày mới là "Cập nhật", vẫn mở modal chi tiết WAR-03.
+    const openButtons = await screen.findAllByRole("button", {
+      name: /Cập nhật/,
+    });
     fireEvent.click(openButtons[0]);
 
     expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-1");
@@ -317,5 +325,308 @@ describe("WarrantyPage (WAR-01 hub)", () => {
         expect.objectContaining({ sort_order: "asc", page: 1 }),
       );
     });
+  });
+
+  it("Áp dụng giữ nguyên tham số lọc API; Đặt lại chỉ xóa bộ lọc và giữ cỡ trang, thứ tự", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByText("BH-0001");
+
+    fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái bảo hành"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Đang kiểm tra" }),
+    );
+    fireEvent.mouseDown(screen.getByLabelText("Lọc loại nhận diện"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Tiếp nhận tạm" }),
+    );
+    fireEvent.mouseDown(screen.getByLabelText("Lọc bệnh/lỗi"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "DEF-004 · Chập điện" }),
+    );
+    fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách bảo hành"));
+    fireEvent.click(await screen.findByRole("option", { name: "Cũ nhất" }));
+    fireEvent.mouseDown(screen.getByLabelText("Số dòng mỗi trang"));
+    fireEvent.click(await screen.findByRole("option", { name: "20 / trang" }));
+
+    const search = screen.getByRole("textbox", { name: /Tìm hồ sơ bảo hành/ });
+    fireEvent.change(search, { target: { value: "  BH-0001  " } });
+    const apply = screen.getByRole("button", { name: "Áp dụng" });
+    await waitFor(() => expect(apply).toBeEnabled());
+    fireEvent.click(apply);
+    await waitFor(() =>
+      expect(fetchWarrantyCases).toHaveBeenLastCalledWith({
+        search: "BH-0001",
+        status: "CHECKING",
+        identification_status: "TEMP_ONLY",
+        defect_id: "defect-4",
+        page: 1,
+        per_page: 20,
+        sort_order: "asc",
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
+    await waitFor(() =>
+      expect(fetchWarrantyCases).toHaveBeenLastCalledWith({
+        search: undefined,
+        status: undefined,
+        identification_status: undefined,
+        defect_id: undefined,
+        page: 1,
+        per_page: 20,
+        sort_order: "asc",
+      }),
+    );
+    expect(search).toHaveValue("");
+    expect(search).toHaveFocus();
+  });
+
+  it("Enter trên mã hồ sơ mở đúng modal chi tiết hiện có", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    const caseButton = await screen.findByRole("button", { name: "BH-0002" });
+    act(() => caseButton.focus());
+    await user.keyboard("{Enter}");
+    expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-2");
+  });
+
+  it("mở menu và chọn chi tiết bằng bàn phím không mở nhầm hồ sơ của dòng khác", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    const menuButton = await screen.findByRole("button", {
+      name: "Thao tác hồ sơ BH-0002",
+    });
+    act(() => menuButton.focus());
+    await user.keyboard(" ");
+    const item = await screen.findByRole("menuitem", {
+      name: "Xem chi tiết hồ sơ",
+    });
+    expect(screen.queryByTestId("detail-modal")).not.toBeInTheDocument();
+    expect(menuButton).toHaveAttribute("aria-expanded", "true");
+    act(() => item.focus());
+    await user.keyboard("{Enter}");
+    expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-2");
+    await waitFor(() =>
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("hiển thị serial, hạn và tuổi hồ sơ do API cung cấp; không tự suy dữ liệu còn thiếu", async () => {
+    vi.mocked(fetchWarrantyCases).mockResolvedValue({
+      data: [
+        {
+          ...CASES[0],
+          case_code: "BH-DATA",
+          serial_number: "SN-FROM-API",
+          item_code: "ITEM-ALIAS",
+          estimated_completion_date: "2026-09-25",
+          case_age_days: 47,
+        },
+        {
+          ...CASES[1],
+          case_code: "BH-MISSING",
+          item_id: "item-internal-uuid",
+          case_age_days: undefined,
+        },
+      ],
+      meta: { total: 2 },
+    });
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    const dataRow = (
+      await screen.findByRole("button", { name: "BH-DATA" })
+    ).closest("tr")!;
+    expect(within(dataRow).getByText("SN: SN-FROM-API")).toBeInTheDocument();
+    expect(within(dataRow).queryByText(/ITEM-ALIAS/)).not.toBeInTheDocument();
+    expect(within(dataRow).getByText("10/08/2026")).toBeInTheDocument();
+    expect(within(dataRow).getByText("25/09/2026")).toBeInTheDocument();
+    expect(
+      dataRow.querySelector('[data-label="Tuổi hồ sơ"]'),
+    ).toHaveTextContent("47 ngày");
+
+    const missingRow = screen
+      .getByRole("button", { name: "BH-MISSING" })
+      .closest("tr")!;
+    expect(within(missingRow).queryByText(/^SN:/)).not.toBeInTheDocument();
+    expect(
+      within(missingRow).queryByText(/item-internal-uuid/),
+    ).not.toBeInTheDocument();
+    expect(
+      missingRow.querySelector('[data-label="Tuổi hồ sơ"]'),
+    ).toHaveTextContent("Chưa có");
+    expect(missingRow.querySelector('[title="Hạn xử lý"]')).toHaveTextContent(
+      "Chưa có",
+    );
+  });
+
+  it("giữ thao tác sắp xếp Bệnh/lỗi và Nhận diện qua menu bàn phím, không gọi API khác", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchWarrantyCases).mockResolvedValue({
+      data: [
+        { ...CASES[0], defect_code: "Z", defect: "Lỗi Z" },
+        { ...CASES[1], defect_code: "A", defect: "Lỗi A" },
+      ],
+      meta: { total: 2 },
+    });
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByRole("button", { name: "BH-0001" });
+    const sortButton = screen.getByRole("button", {
+      name: "Sắp xếp khác cho danh sách bảo hành",
+    });
+    const rowCodes = () =>
+      within(screen.getByRole("table", { name: "Danh sách hồ sơ bảo hành" }))
+        .getAllByRole("button", { name: /^BH-000[12]$/ })
+        .map((button) => button.textContent);
+    const callsBefore = vi.mocked(fetchWarrantyCases).mock.calls.length;
+
+    act(() => sortButton.focus());
+    await user.keyboard("{Enter}");
+    const defectSort = await screen.findByRole("menuitem", {
+      name: "Sắp xếp theo bệnh/lỗi",
+    });
+    act(() => defectSort.focus());
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(rowCodes()).toEqual(["BH-0002", "BH-0001"]));
+
+    act(() => sortButton.focus());
+    await user.keyboard("{Enter}");
+    const identificationSort = await screen.findByRole("menuitem", {
+      name: "Sắp xếp theo nhận diện",
+    });
+    act(() => identificationSort.focus());
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(rowCodes()).toEqual(["BH-0001", "BH-0002"]));
+    expect(fetchWarrantyCases).toHaveBeenCalledTimes(callsBefore);
+    expect(screen.queryByTestId("detail-modal")).not.toBeInTheDocument();
+  });
+
+  it("đang tải giữ khung skeleton và không hiển thị nhầm trạng thái rỗng", async () => {
+    vi.mocked(fetchWarrantyCases).mockImplementation(
+      () =>
+        new Promise<Awaited<ReturnType<typeof fetchWarrantyCases>>>(() => {}),
+    );
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+
+    expect(await screen.findByTestId("ui-state-loading-table")).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    const table = screen.getByRole("table", {
+      name: "Danh sách hồ sơ bảo hành",
+    });
+    const skeletonRows = table.querySelectorAll("tbody tr.hn-war-skeleton");
+    expect(skeletonRows.length).toBeGreaterThan(0);
+    skeletonRows.forEach((row) =>
+      expect(row).toHaveAttribute("aria-hidden", "true"),
+    );
+    expect(table.closest(".hn-war-table-wrap")).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(
+      screen.queryByTestId("ui-state-empty-table"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("ui-state-error-table"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^BH-/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("danh sách thành công không có hồ sơ hiển thị rỗng và giữ tiêu đề bảng", async () => {
+    vi.mocked(fetchWarrantyCases).mockResolvedValue({
+      data: [],
+      meta: { total: 0 },
+    });
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+
+    expect(
+      await screen.findByTestId("ui-state-empty-table"),
+    ).toBeInTheDocument();
+    const table = screen.getByRole("table", {
+      name: "Danh sách hồ sơ bảo hành",
+    });
+    expect(
+      within(table).getByRole("columnheader", { name: /Hồ sơ/ }),
+    ).toBeInTheDocument();
+    expect(table.querySelectorAll("tbody tr")).toHaveLength(0);
+    expect(
+      screen.queryByTestId("ui-state-loading-table"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("ui-state-error-table"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Thử lại" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("lỗi API hiển thị lỗi thật và Thử lại giữ nguyên trạng thái, nhận diện đã chọn", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByRole("button", { name: "BH-0001" });
+    fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái bảo hành"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Đang kiểm tra" }),
+    );
+    await waitFor(() =>
+      expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: "CHECKING" }),
+      ),
+    );
+    await screen.findByRole("button", { name: "BH-0001" });
+
+    vi.mocked(fetchWarrantyCases).mockRejectedValueOnce(
+      new Error("Không kết nối được máy chủ bảo hành."),
+    );
+    fireEvent.mouseDown(screen.getByLabelText("Lọc loại nhận diện"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Tiếp nhận tạm" }),
+    );
+    expect(
+      await screen.findByText("Không tải được danh sách bảo hành"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("ui-state-error-table")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("ui-state-empty-table"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("ui-state-loading-table"),
+    ).not.toBeInTheDocument();
+    const failedParams = vi.mocked(fetchWarrantyCases).mock.calls.at(-1)?.[0];
+    expect(failedParams).toEqual({
+      search: undefined,
+      status: "CHECKING",
+      identification_status: "TEMP_ONLY",
+      defect_id: undefined,
+      page: 1,
+      per_page: 10,
+      sort_order: "desc",
+    });
+    const callsBeforeRetry = vi.mocked(fetchWarrantyCases).mock.calls.length;
+
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(
+      await screen.findByRole("button", { name: "BH-0001" }),
+    ).toBeInTheDocument();
+    expect(fetchWarrantyCases).toHaveBeenCalledTimes(callsBeforeRetry + 1);
+    expect(fetchWarrantyCases).toHaveBeenLastCalledWith(failedParams);
+    expect(
+      screen.queryByTestId("ui-state-error-table"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Lọc trạng thái bảo hành")).toHaveTextContent(
+      "Đang kiểm tra",
+    );
+    expect(screen.getByLabelText("Lọc loại nhận diện")).toHaveTextContent(
+      "Tiếp nhận tạm",
+    );
+  });
+
+  it("bấm mã SKU trong dòng vẫn mở đúng modal chi tiết bảo hành hiện có", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    const row = (
+      await screen.findByRole("button", { name: "BH-0001" })
+    ).closest("tr")!;
+    fireEvent.click(within(row).getByText("KT-2000"));
+    expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-1");
   });
 });

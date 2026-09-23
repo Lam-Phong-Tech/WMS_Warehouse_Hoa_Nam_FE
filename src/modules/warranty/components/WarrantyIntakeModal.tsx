@@ -1,3 +1,4 @@
+import "./warranty-dialog.css";
 import { useEffect, useMemo, useState } from "react";
 import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import { useForm } from "react-hook-form";
@@ -666,6 +667,7 @@ export function WarrantyIntakeModal({
 
   return (
     <UiDialog
+      className="hn-war-dialog"
       {...dialog.dialogProps}
       open={open && dialog.open}
       maxWidth="md"
@@ -1121,6 +1123,7 @@ export function WarrantyIntakeModal({
       </Stack>
 
       <UiDialog
+        className="hn-war-dialog"
         open={defectDialogOpen}
         maxWidth="xs"
         fullWidth

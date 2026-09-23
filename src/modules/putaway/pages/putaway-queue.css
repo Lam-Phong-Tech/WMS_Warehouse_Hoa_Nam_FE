@@ -1,0 +1,1164 @@
+/* PTW-00: presentation only. Keep the shell, data requests, and mutation flow owned
+   by their existing components. Portal dialogs repeat the scoped brand aliases. */
+.putaway-page.hn-putaway-page,
+.ptw-dialog,
+.ptw-filter-menu {
+  --ptw-heading: var(--ops-heading);
+  --ptw-text: var(--ops-text);
+  --ptw-muted: var(--ops-muted);
+  --ptw-primary: var(--ops-primary);
+  --ptw-link: var(--ops-link);
+  --ptw-line: var(--ops-line);
+  --ptw-card: var(--ops-surface);
+  --ptw-pale: var(--ops-pale);
+  --ptw-canvas: var(--ops-canvas);
+  --ptw-success: var(--ops-success);
+  --ptw-warning: var(--ops-warning);
+  --ptw-danger: var(--ops-danger);
+  --ptw-radius: var(--ops-radius-card);
+  color: var(--ptw-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 22px;
+}
+.putaway-page.hn-putaway-page {
+  container: hn-putaway / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ops-gap);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-putaway-page
+  ) {
+  background: var(--ops-canvas);
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-putaway-page
+  )
+  section[aria-labelledby="hn-page-title"] {
+  display: none;
+}
+.hn-mvp-screen:has(.hn-putaway-page) {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.hn-putaway-page > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-putaway-page :is(h1, h2, p) {
+  margin: 0;
+}
+.hn-putaway-page :is(button, input, select) {
+  font: inherit;
+}
+.hn-putaway-page button {
+  cursor: pointer;
+}
+.hn-putaway-page :is(button, input, select, a, [tabindex="0"]):focus-visible,
+.ptw-dialog
+  :is(
+    button,
+    input,
+    textarea,
+    [role="combobox"],
+    [tabindex="0"]
+  ):focus-visible {
+  outline: 2px solid var(--ptw-primary);
+  outline-offset: 3px;
+}
+.hn-putaway-page :is(button, input, select):disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.hn-putaway-page .ptw-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+}
+.hn-putaway-page .ptw-heading > div:first-child {
+  min-width: 0;
+  flex: 1 1 360px;
+}
+.hn-putaway-page .ptw-heading h1 {
+  color: var(--ops-heading);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 38px;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.hn-putaway-page .ptw-heading p {
+  margin-top: 4px;
+  color: var(--ptw-muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-putaway-page .ptw-warehouse {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 8px 14px;
+  color: var(--ptw-heading);
+  background: var(--ptw-card);
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ptw-radius);
+  font-weight: 600;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.hn-putaway-page .ptw-warehouse > :first-child {
+  flex-shrink: 0;
+  color: var(--ptw-primary);
+}
+.hn-putaway-page .ptw-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 46px;
+  background: var(--ptw-card);
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ptw-radius);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.hn-putaway-page .ptw-tabs :is(button, a) {
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 11px 26px;
+  color: var(--ptw-heading);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--ptw-line);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+.hn-putaway-page .ptw-tabs :is(button, a):first-child {
+  border-radius: calc(var(--ptw-radius) - 1px) 0 0 calc(var(--ptw-radius) - 1px);
+}
+.hn-putaway-page .ptw-tabs :is(button, a):hover {
+  background: var(--ptw-pale);
+  color: var(--ptw-primary);
+}
+.hn-putaway-page .ptw-tabs .is-active,
+.hn-putaway-page .ptw-tabs .is-active:hover {
+  color: var(--ops-on-primary);
+  background: var(--ptw-primary);
+  border-right-color: var(--ptw-primary);
+  font-weight: 600;
+}
+.hn-putaway-page :is(.ptw-filters, .ptw-stats, .ptw-list) {
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ptw-radius);
+  background: var(--ptw-card);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ptw-heading) 3%, transparent);
+}
+.hn-putaway-page .ptw-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 2fr) minmax(150px, 1fr) minmax(150px, 1fr)
+    auto;
+  grid-template-areas: "search status receipt actions" "hint hint hint hint";
+  gap: 10px 18px;
+  padding: 12px 14px;
+  align-items: end;
+}
+.hn-putaway-page .ptw-search {
+  grid-area: search;
+  min-width: 0;
+}
+.hn-putaway-page .ptw-status-filter {
+  grid-area: status;
+  min-width: 0;
+}
+.hn-putaway-page .ptw-receipt-filter {
+  grid-area: receipt;
+  min-width: 0;
+}
+.hn-putaway-page .ptw-filters label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ptw-heading);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.hn-putaway-page .ptw-search-control {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: var(--ops-control-height);
+  padding: 0 12px;
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ptw-card);
+  color: var(--ptw-muted);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.hn-putaway-page .ptw-search-control:focus-within {
+  border-color: var(--ptw-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ptw-primary) 12%, transparent);
+}
+.hn-putaway-page .ptw-search-control > :not(input) {
+  flex-shrink: 0;
+}
+.hn-putaway-page .ptw-search-control input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: var(--ops-control-height);
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ptw-text);
+  box-shadow: none;
+  font-size: 14px;
+}
+.hn-putaway-page .ptw-search-control input::placeholder {
+  color: var(--ptw-muted);
+  opacity: 0.85;
+}
+.hn-putaway-page .ptw-search-control button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ops-radius-control);
+  background: transparent;
+  color: var(--ptw-muted);
+}
+.hn-putaway-page :is(.ptw-status-filter, .ptw-receipt-filter) select,
+.hn-putaway-page .ptw-page-size select,
+.hn-putaway-page select.ptw-page-size {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: var(--ops-control-height);
+  padding: 8px 10px;
+  color: var(--ptw-heading);
+  background: var(--ptw-card);
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ops-radius-control);
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+.hn-putaway-page :is(.ptw-status-filter, .ptw-receipt-filter) select:hover,
+.hn-putaway-page .ptw-page-size select:hover {
+  border-color: var(--ptw-primary);
+}
+.hn-putaway-page .ptw-filter-actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+.hn-putaway-page :is(.ptw-primary, .ptw-reset) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: var(--ops-control-height);
+  padding: 8px 18px;
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.hn-putaway-page .ptw-primary {
+  color: var(--ops-on-primary);
+  background: var(--ptw-primary);
+  border-color: var(--ptw-primary);
+}
+.hn-putaway-page .ptw-primary:hover:not(:disabled) {
+  background: var(--ops-primary-hover);
+  border-color: var(--ops-primary-hover);
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--ptw-primary) 16%, transparent);
+}
+.hn-putaway-page .ptw-reset {
+  padding-inline: 14px;
+  color: var(--ptw-text);
+  background: var(--ptw-card);
+}
+.hn-putaway-page .ptw-reset:hover:not(:disabled) {
+  color: var(--ptw-link);
+  background: var(--ptw-pale);
+  border-color: var(--ptw-primary);
+}
+.hn-putaway-page .ptw-filter-hint {
+  grid-area: hint;
+  min-width: 0;
+  color: var(--ptw-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-putaway-page .ptw-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 10px 0;
+}
+.hn-putaway-page .ptw-stats > article {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 0 25px;
+}
+.hn-putaway-page .ptw-stats > article + article {
+  border-left: 1px solid var(--ptw-line);
+}
+.hn-putaway-page .ptw-stat-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  color: var(--ptw-primary);
+  background: var(--ptw-pale);
+  border-radius: 50%;
+}
+.hn-putaway-page .ptw-stats > article > div:not(.ptw-stat-icon) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+.hn-putaway-page .ptw-stats > article > div > span {
+  color: var(--ptw-heading);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.hn-putaway-page .ptw-stats strong {
+  color: var(--ptw-heading);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 38px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.hn-putaway-page .ptw-list {
+  overflow: hidden;
+}
+.hn-putaway-page .ptw-list-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  padding: 10px 14px 8px;
+}
+.hn-putaway-page .ptw-list-heading h2 {
+  color: var(--ptw-heading);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+}
+.hn-putaway-page .ptw-list-heading p {
+  flex-basis: 100%;
+  color: var(--ptw-muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-putaway-page .ptw-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  padding: 2px 9px;
+  color: var(--ptw-primary);
+  background: var(--ptw-pale);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+.hn-putaway-page .ptw-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ptw-line) transparent;
+}
+.hn-putaway-page table.ptw-table {
+  width: 100%;
+  min-width: 760px;
+  margin: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: var(--ptw-text);
+  font-size: 14px;
+  line-height: 20px;
+}
+.hn-putaway-page .ptw-table :is(th, td) {
+  padding: 6px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--ptw-line);
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.hn-putaway-page .ptw-table th {
+  padding-block: 10px;
+  color: var(--ptw-heading);
+  background: var(--ptw-pale);
+  font-size: 12px;
+  font-weight: 600;
+}
+.hn-putaway-page .ptw-table tbody tr {
+  transition: background-color 150ms ease;
+}
+.hn-putaway-page .ptw-table tbody tr:is(:hover, :focus-within),
+.hn-putaway-page .ptw-table tbody tr.is-selected,
+.hn-putaway-page .ptw-table tbody tr[aria-selected="true"] {
+  background: color-mix(in srgb, var(--ptw-primary) 5%, var(--ptw-card));
+}
+.hn-putaway-page .ptw-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.hn-putaway-page .ptw-table .ptw-check-col {
+  width: 42px;
+  text-align: center;
+}
+.hn-putaway-page .ptw-table .ptw-box-col {
+  width: 13%;
+}
+.hn-putaway-page .ptw-table .ptw-sku-col {
+  width: 9%;
+}
+.hn-putaway-page .ptw-table .ptw-name-col {
+  width: 19%;
+}
+.hn-putaway-page .ptw-table .ptw-receipt-col {
+  width: 14%;
+}
+.hn-putaway-page .ptw-table .ptw-quantity-col {
+  width: 8%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.hn-putaway-page .ptw-table .ptw-status-col {
+  width: 12%;
+}
+.hn-putaway-page .ptw-table .ptw-updated-col {
+  width: 9%;
+  color: var(--ptw-muted);
+  font-size: 12px;
+}
+.hn-putaway-page .ptw-table th.ptw-updated-col {
+  color: var(--ptw-heading);
+  font-size: 12px;
+}
+.hn-putaway-page .ptw-table .ptw-action-col {
+  width: 9%;
+  text-align: center;
+}
+.hn-putaway-page .ptw-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--ptw-primary);
+  vertical-align: middle;
+  cursor: pointer;
+}
+.hn-putaway-page .ptw-table :is(.ptw-text-button, a) {
+  color: var(--ptw-link);
+  font-weight: 500;
+  text-decoration: none;
+}
+.hn-putaway-page .ptw-text-button {
+  display: inline;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: inherit;
+  overflow-wrap: anywhere;
+}
+.hn-putaway-page .ptw-text-button:hover,
+.hn-putaway-page .ptw-table a:hover {
+  color: var(--ptw-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hn-putaway-page .ptw-table th > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: inherit;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+.hn-putaway-page .ptw-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--ptw-primary) 28%, var(--ptw-line));
+  border-radius: 5px;
+  background: var(--ptw-card);
+  color: var(--ptw-primary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+.hn-putaway-page .ptw-row-action:hover:not(:disabled) {
+  background: var(--ptw-pale);
+  border-color: var(--ptw-primary);
+}
+.hn-putaway-page .ptw-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ptw-warning) 10%, var(--ptw-card));
+  color: var(--ptw-warning);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  text-align: center;
+}
+.hn-putaway-page .ptw-badge.is-stored {
+  color: var(--ptw-success);
+  border-color: color-mix(in srgb, var(--ptw-success) 22%, var(--ptw-card));
+  background: color-mix(in srgb, var(--ptw-success) 10%, var(--ptw-card));
+}
+.hn-putaway-page .ptw-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--ptw-line);
+}
+.hn-putaway-page .ptw-range {
+  flex: 1 1 180px;
+  color: var(--ptw-muted);
+  font-size: 14px;
+}
+.hn-putaway-page .ptw-range strong {
+  color: var(--ptw-heading);
+  font-weight: 600;
+}
+.hn-putaway-page .ptw-footer nav {
+  min-width: 0;
+}
+.hn-putaway-page .ptw-footer .MuiPaginationItem-root {
+  min-width: 32px;
+  height: 32px;
+  margin: 0 2px;
+  color: var(--ptw-muted);
+  border: 1px solid var(--ptw-line);
+  border-radius: 5px;
+  font-size: 12px;
+}
+.hn-putaway-page .ptw-footer .MuiPaginationItem-root:hover {
+  background: var(--ptw-pale);
+}
+.hn-putaway-page .ptw-footer .MuiPaginationItem-root.Mui-selected {
+  color: var(--ops-on-primary);
+  background: var(--ptw-primary);
+  border-color: var(--ptw-primary);
+}
+.hn-putaway-page .ptw-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  color: var(--ptw-muted);
+  font-size: 14px;
+}
+.hn-putaway-page .ptw-page-size select,
+.hn-putaway-page select.ptw-page-size {
+  width: auto;
+  min-width: 60px;
+  height: 34px;
+  padding-block: 5px;
+}
+.hn-putaway-page .ptw-selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--ptw-line);
+  background: var(--ptw-pale);
+  color: var(--ptw-heading);
+  font-size: 14px;
+}
+.hn-putaway-page .ptw-selection button {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ptw-link);
+  font-weight: 500;
+}
+.hn-putaway-page :is(.ptw-empty, .ptw-loading) {
+  padding: 44px 24px;
+  color: var(--ptw-muted);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.hn-putaway-page .ptw-table :is(td.ptw-empty, td.ptw-loading) {
+  padding: 44px 24px;
+  text-align: center;
+}
+.ptw-dialog .MuiDialog-paper {
+  width: calc(100% - 32px);
+  margin: 16px;
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ops-radius-dialog);
+  background: var(--ptw-card);
+  color: var(--ptw-text);
+}
+.ptw-dialog .MuiDialogTitle-root {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--ptw-line);
+  color: var(--ops-heading);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+.ptw-dialog .MuiDialogContent-root {
+  min-width: 0;
+  padding: 20px 22px;
+  font-size: 14px;
+}
+.ptw-dialog .MuiDialogTitle-root + .MuiDialogContent-root {
+  padding-top: 20px;
+}
+.ptw-dialog .MuiDialogActions-root {
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--ptw-line);
+  background: var(--ptw-canvas);
+}
+.ptw-dialog .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+  box-shadow: none;
+}
+.ptw-dialog .MuiButton-containedPrimary {
+  color: var(--ops-on-primary);
+  background: var(--ptw-primary);
+}
+.ptw-dialog .MuiButton-containedPrimary:hover {
+  background: var(--ops-primary-hover);
+}
+.ptw-dialog
+  :is(
+    .MuiButton-textPrimary,
+    .MuiButton-outlinedPrimary,
+    .MuiInputLabel-root.Mui-focused
+  ) {
+  color: var(--ptw-primary);
+}
+.ptw-dialog .MuiOutlinedInput-root {
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+}
+.ptw-dialog
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ptw-primary);
+}
+
+.hn-putaway-page .ptw-warehouse > div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.hn-putaway-page .ptw-warehouse small {
+  color: var(--ptw-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+.hn-putaway-page .ptw-list-heading h2 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.hn-putaway-page .ptw-filters .MuiFormControl-root {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-putaway-page
+  :is(.ptw-filters, .ptw-history-filters)
+  .MuiOutlinedInput-root {
+  min-height: var(--ops-control-height);
+  height: var(--ops-control-height);
+  color: var(--ptw-heading);
+  background: var(--ptw-card);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+}
+.hn-putaway-page
+  :is(.ptw-filters, .ptw-history-filters)
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ptw-line);
+}
+.hn-putaway-page
+  :is(.ptw-filters, .ptw-history-filters)
+  .MuiOutlinedInput-root:hover
+  .MuiOutlinedInput-notchedOutline,
+.hn-putaway-page
+  :is(.ptw-filters, .ptw-history-filters)
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ptw-primary);
+}
+.hn-putaway-page :is(.ptw-filters, .ptw-history-filters) .MuiSelect-select {
+  padding: 9px 32px 9px 12px;
+  line-height: 20px;
+}
+.hn-putaway-page :is(.ptw-filters, .ptw-history-filters) .MuiSelect-icon {
+  color: var(--ptw-muted);
+}
+.ptw-filter-menu.MuiPaper-root {
+  max-width: min(520px, calc(100vw - 32px));
+  color: var(--ptw-text);
+  background: var(--ptw-card);
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ops-radius-card);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--ptw-heading) 12%, transparent);
+}
+.ptw-filter-menu .MuiMenuItem-root {
+  min-height: var(--ops-control-height);
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.ptw-filter-menu .MuiMenuItem-root:is(:hover, .Mui-focusVisible) {
+  color: var(--ptw-link);
+  background: var(--ptw-pale);
+}
+.ptw-filter-menu .MuiMenuItem-root.Mui-selected,
+.ptw-filter-menu .MuiMenuItem-root.Mui-selected:hover {
+  color: var(--ptw-primary);
+  background: var(--ptw-pale);
+  font-weight: 600;
+}
+.hn-putaway-page .ptw-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.hn-putaway-page .ptw-error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--ptw-danger) 28%, var(--ptw-line));
+  border-radius: var(--ptw-radius);
+  background: color-mix(in srgb, var(--ptw-danger) 5%, var(--ptw-card));
+}
+.hn-putaway-page .ptw-error > :first-child {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.hn-putaway-page .ptw-history-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 20px 16px;
+}
+.hn-putaway-page .ptw-history-filters > :first-child {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.hn-putaway-page .ptw-history-filters > :last-child {
+  max-width: 100%;
+}
+.hn-putaway-page .ptw-table .hn-sortable-th > span:first-child {
+  min-width: 0;
+}
+.hn-putaway-page .ptw-table .hn-sortable-th > :last-child:not(:first-child) {
+  flex-shrink: 0;
+}
+.hn-putaway-page .ptw-table .ptw-empty > :is(strong, span) {
+  display: block;
+  margin: 8px 0;
+}
+.hn-putaway-page .ptw-table .ptw-empty > strong {
+  color: var(--ptw-heading);
+  font-size: 15px;
+  font-weight: 600;
+}
+.hn-putaway-page .ptw-table .ptw-empty > .ptw-row-action {
+  margin-top: 8px;
+}
+.hn-putaway-page .ptw-table .ptw-loading td {
+  height: 42px;
+  padding-block: 12px;
+}
+.hn-putaway-page .ptw-table .ptw-loading td > span {
+  display: block;
+  width: 82%;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--ptw-pale);
+  animation: ptw-loading-pulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes ptw-loading-pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+
+@container hn-putaway (max-width: 880px) {
+  .hn-putaway-page .ptw-filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "search search" "status receipt" "hint actions";
+    gap: 12px 18px;
+  }
+  .hn-putaway-page .ptw-filter-hint {
+    align-self: center;
+  }
+  .hn-putaway-page .ptw-stats > article {
+    gap: 12px;
+    padding-inline: 18px;
+  }
+  .hn-putaway-page .ptw-table :is(th, td) {
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+  .hn-putaway-page .ptw-table .ptw-check-col {
+    width: 34px;
+  }
+  .hn-putaway-page .ptw-table .ptw-updated-col {
+    font-size: 12px;
+  }
+  .hn-putaway-page .ptw-table .ptw-name-col {
+    width: 15%;
+  }
+  .hn-putaway-page .ptw-table .ptw-action-col {
+    width: 12%;
+  }
+}
+@container hn-putaway (max-width: 760px) {
+  .hn-putaway-page .ptw-heading h1 {
+    font-size: 24px;
+  }
+  .hn-putaway-page .ptw-heading > div:first-child {
+    flex-basis: 100%;
+  }
+  .hn-putaway-page .ptw-warehouse {
+    padding-block: 6px;
+  }
+  .hn-putaway-page .ptw-stats > article {
+    gap: 10px;
+    padding-inline: 14px;
+  }
+  .hn-putaway-page .ptw-stat-icon {
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--ops-radius-card);
+  }
+  .hn-putaway-page .ptw-stats span {
+    font-size: 12px;
+    line-height: 18px;
+  }
+  .hn-putaway-page .ptw-stats strong {
+    font-size: 27px;
+    line-height: 34px;
+  }
+  .hn-putaway-page .ptw-list-heading h2 {
+    font-size: 18px;
+  }
+  .hn-putaway-page .ptw-footer {
+    gap: 12px;
+  }
+  .hn-putaway-page .ptw-range {
+    flex-basis: 100%;
+  }
+}
+@container hn-putaway (max-width: 520px) {
+  .hn-putaway-page .ptw-heading h1 {
+    font-size: 24px;
+  }
+  .hn-putaway-page .ptw-heading p {
+    font-size: 14px;
+    line-height: 22px;
+  }
+  .hn-putaway-page .ptw-tabs :is(button, a) {
+    padding-inline: 16px;
+  }
+  .hn-putaway-page .ptw-tabs :is(button, a) {
+    gap: 6px;
+    font-size: 14px;
+  }
+  .hn-putaway-page .ptw-filters {
+    grid-template-areas: "search search" "status receipt" "hint hint" "actions actions";
+    gap: 12px;
+    padding: 14px;
+  }
+  .hn-putaway-page .ptw-filter-actions {
+    justify-content: stretch;
+  }
+  .hn-putaway-page .ptw-filter-actions > button {
+    flex: 1 1 auto;
+  }
+  .hn-putaway-page .ptw-stats {
+    padding-block: 14px;
+  }
+  .hn-putaway-page .ptw-stats > article {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding-inline: 12px;
+  }
+  .hn-putaway-page .ptw-stats strong {
+    font-size: 25px;
+    line-height: 32px;
+  }
+  .hn-putaway-page .ptw-list-heading {
+    padding: 14px;
+  }
+  .hn-putaway-page .ptw-list-heading h2 {
+    font-size: 19px;
+    line-height: 26px;
+  }
+  .hn-putaway-page :is(.ptw-footer, .ptw-selection) {
+    padding-inline: 14px;
+  }
+  .hn-putaway-page .ptw-footer .MuiPaginationItem-root {
+    min-width: 28px;
+    height: 30px;
+    margin-inline: 1px;
+  }
+}
+@media (max-width: 600px) {
+  .ptw-dialog .MuiDialog-paper {
+    max-width: calc(100% - 20px);
+    max-height: calc(100% - 20px);
+    margin: 10px;
+  }
+  .ptw-dialog .MuiDialogTitle-root {
+    padding: 14px 16px;
+    font-size: 18px;
+  }
+  .ptw-dialog .MuiDialogContent-root,
+  .ptw-dialog .MuiDialogTitle-root + .MuiDialogContent-root {
+    padding: 16px;
+  }
+  .ptw-dialog .MuiDialogActions-root {
+    padding: 12px 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hn-putaway-page *,
+  .hn-putaway-page *::before,
+  .hn-putaway-page *::after,
+  .ptw-dialog * {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
+
+/* Reference controls retain the same visual rhythm at dashboard scale. */
+.hn-putaway-page .ptw-tabs :is(button, a) {
+  min-width: 185px;
+}
+.hn-putaway-page .ptw-reset {
+  border-color: transparent;
+}
+.hn-putaway-page .ptw-stat-icon > i {
+  color: inherit;
+}
+.hn-putaway-page .ptw-table [data-testid="sku-code"] {
+  font-weight: 400;
+}
+.hn-putaway-page .ptw-footer .MuiPaginationItem-root {
+  border-color: transparent;
+}
+@container hn-putaway (max-width: 900px) {
+  .hn-putaway-page .ptw-tabs :is(button, a) {
+    min-width: 0;
+    flex: 1 0 auto;
+    padding-inline: 16px;
+  }
+}
+/* On tablets, identifiers and status pills keep their intended single line;
+   long API values can still wrap without forcing viewport overflow. */
+.hn-putaway-page .ptw-table th {
+  overflow-wrap: normal;
+}
+.hn-putaway-page .ptw-badge {
+  white-space: nowrap;
+}
+.hn-putaway-page .ptw-table .ptw-box-col {
+  width: 16%;
+}
+.hn-putaway-page .ptw-table .ptw-receipt-col {
+  width: 13%;
+}
+.hn-putaway-page .ptw-table .ptw-updated-col {
+  width: 8%;
+}
+.hn-putaway-page .ptw-table .ptw-check-col {
+  width: 34px;
+  padding-inline: 5px;
+}
+.hn-putaway-page .ptw-stat-icon {
+  border-radius: 50%;
+}
+.hn-putaway-page .ptw-table {
+  min-width: 850px;
+}
+.hn-putaway-page .ptw-table th > button {
+  text-align: inherit;
+}
+body:has(.hn-putaway-page) .MuiAutocomplete-popper .MuiAutocomplete-paper {
+  color: light-dark(var(--wms-text-strong), var(--wms-text-strong));
+  border: 1px solid light-dark(var(--wms-auth-line), var(--wms-border));
+}
+body:has(.hn-putaway-page)
+  .MuiAutocomplete-popper
+  .MuiAutocomplete-option[aria-selected="true"],
+body:has(.hn-putaway-page)
+  .MuiAutocomplete-popper
+  .MuiAutocomplete-option.Mui-focused {
+  color: light-dark(var(--wms-auth-navy), var(--wms-text-strong));
+  background: light-dark(var(--wms-auth-pale), var(--wms-primary-soft));
+}
+.hn-putaway-page table.ptw-table {
+  min-width: 850px;
+}
+@container hn-putaway (max-width: 520px) {
+  .hn-putaway-page .ptw-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+  .hn-putaway-page .ptw-tabs :is(button, a) {
+    min-height: 44px;
+    padding: 10px;
+  }
+  .hn-putaway-page .ptw-tabs :is(button, a):nth-child(n + 3) {
+    border-top: 1px solid var(--ptw-line);
+  }
+}
+
+.ptw-dialog .ant-input-affix-wrapper {
+  color: var(--ptw-text);
+  border-color: var(--ptw-line);
+  background: var(--ptw-card);
+}
+.ptw-dialog .ant-input-affix-wrapper:focus-within {
+  border-color: var(--ptw-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ptw-primary) 15%, transparent);
+}
+.ptw-dialog .ant-input-affix-wrapper .ant-input {
+  color: var(--ptw-text);
+  background: transparent;
+}
+.ptw-dialog .ant-input-affix-wrapper .ant-input:focus-visible {
+  outline: 0;
+}
+/* Match the shared action components' tonal primary variant in dialogs. */
+.ptw-dialog
+  .MuiButton-root:not(.hn-row-action).MuiButton-colorPrimary:not(
+    .Mui-disabled
+  ):not(.MuiButton-containedPrimary):not([data-action-kind]) {
+  color: var(--ptw-primary);
+  background: color-mix(in srgb, var(--ptw-primary) 12%, var(--ptw-card));
+}
+.ptw-dialog
+  .MuiButton-root:not(.hn-row-action).MuiButton-colorPrimary:not(
+    .Mui-disabled
+  ):not(.MuiButton-containedPrimary):not([data-action-kind]):hover {
+  background: color-mix(in srgb, var(--ptw-primary) 20%, var(--ptw-card));
+}
+.ptw-dialog .MuiButton-colorPrimary .MuiButton-startIcon {
+  color: inherit;
+}
+.hn-putaway-page table.ptw-table:has(.ptw-empty) {
+  min-width: 0;
+}
+.hn-putaway-page .ptw-table:has(.ptw-empty) thead {
+  display: none;
+}
+.hn-putaway-page .ptw-table-wrap:has(.ptw-empty) {
+  overflow-x: hidden;
+}

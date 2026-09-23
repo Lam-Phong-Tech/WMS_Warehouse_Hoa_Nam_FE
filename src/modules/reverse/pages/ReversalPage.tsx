@@ -2,14 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useT } from "@/shared/i18n/useT";
-import {
-  Box,
-  Tooltip,
-  UiSelect,
-  UiTextField,
-  FILTER_WIDTH,
-  TOOLBAR_SEARCH_SX,
-} from "@/shared/ui";
+import { Box, Tooltip, UiSelect, UiTextField } from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -39,9 +32,12 @@ import { ReversalStatusTag } from "../components/ReversalStatusTag";
 import type { ReversalDocument } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
-import { ActionButton } from "@/shared/components/actions";
+import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
+
+import { SearchOutlined } from "@/shared/components/icons";
+import "./reversal-list.css";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -123,7 +119,11 @@ export default function ReversalPage() {
       width: 170,
       sortAccessor: (row) => row.reversal_code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ ĐIỀU CHỈNH đọc được.
-      render: (row) => <strong>{row.reversal_code || EMPTY_TEXT}</strong>,
+      render: (row) => (
+        <strong className="hn-reversal-code">
+          {row.reversal_code || EMPTY_TEXT}
+        </strong>
+      ),
     },
     {
       key: "ref",
@@ -132,6 +132,7 @@ export default function ReversalPage() {
       sortAccessor: (row) => row.reference_document_code || "",
       render: (row) => (
         <Box
+          className="hn-reversal-source-code"
           component="code"
           sx={{
             px: 0.5,
@@ -182,6 +183,7 @@ export default function ReversalPage() {
         <div>
           <Tooltip title={row.reason || EMPTY_TEXT}>
             <Box
+              className="hn-reversal-reason"
               sx={{
                 maxWidth: 230,
                 overflow: "hidden",
@@ -229,10 +231,13 @@ export default function ReversalPage() {
 
   return (
     <>
-      <div className="reversal-page hn-mvp-source-screen">
+      <div
+        className="reversal-page hn-mvp-source-screen hn-reversal-screen"
+        data-mvp-screen="REV-00"
+      >
         {!canPost ? (
           <Box
-            className="footer-note"
+            className="hn-reversal-readonly"
             role="note"
             data-testid="reversal-readonly-note"
             sx={{ mb: 1.5 }}
@@ -241,103 +246,138 @@ export default function ReversalPage() {
           </Box>
         ) : null}
 
-        <div className="toolbar">
-          <UiTextField
-            value={searchInput}
-            placeholder={t("reverse.list.searchPlaceholder")}
-            slotProps={{
-              htmlInput: { "aria-label": t("reverse.list.searchAria") },
-            }}
-            onChange={(event) => setSearchInput(event.target.value)}
-            sx={TOOLBAR_SEARCH_SX}
-          />
-          <UiSelect
-            value={statusFilter}
-            aria-label={t("reverse.list.statusFilterAria")}
-            placeholder={t("reverse.list.statusFilterPlaceholder")}
-            minWidth={168}
-            options={Object.entries(REVERSAL_STATUS_LABELS).map(
-              ([value, label]) => ({
-                value,
-                label: label.replace(/ ·.*$/, ""),
-              }),
-            )}
-            onChange={(value) => {
-              setStatusFilter(value);
-              setPage(1);
-            }}
-          />
-          <UiSelect
-            value={perPage}
-            aria-label={t("shared.table.rowsPerPageAria")}
-            minWidth={FILTER_WIDTH.pageSize}
-            options={perPageOptions.map((size) => ({
-              value: size,
-              label: t("shared.table.perPage", { size }),
-            }))}
-            onChange={(value) => {
-              setPerPage(Number(value));
-              setPage(1);
-            }}
-          />
-          <div className="spacer" />
+        <div className="hn-reversal-filters">
+          <div className="hn-reversal-filter hn-reversal-filter-search">
+            <label htmlFor="reversal-search">
+              {t("reverse.list.searchAria")}
+            </label>
+            <UiTextField
+              id="reversal-search"
+              value={searchInput}
+              placeholder={t("reverse.list.searchPlaceholder")}
+              slotProps={{
+                htmlInput: { "aria-label": t("reverse.list.searchAria") },
+                input: {
+                  startAdornment: (
+                    <SearchOutlined className="hn-reversal-search-icon" />
+                  ),
+                },
+              }}
+              onChange={(event) => setSearchInput(event.target.value)}
+              fullWidth
+            />
+          </div>
+          <div className="hn-reversal-filter">
+            <label id="reversal-status-label">
+              {t("reverse.detail.colStatus")}
+            </label>
+            <UiSelect
+              value={statusFilter}
+              aria-label={t("reverse.list.statusFilterAria")}
+              placeholder={t("reverse.list.statusFilterPlaceholder")}
+              menuClassName="hn-reversal-menu"
+              fullWidth
+              options={Object.entries(REVERSAL_STATUS_LABELS).map(
+                ([value, label]) => ({
+                  value,
+                  label: label.replace(/ ·.*$/, ""),
+                }),
+              )}
+              onChange={(value) => {
+                setStatusFilter(value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="hn-reversal-filter">
+            <label>{t("shared.table.rowsPerPageAria")}</label>
+            <UiSelect
+              value={perPage}
+              aria-label={t("shared.table.rowsPerPageAria")}
+              menuClassName="hn-reversal-menu"
+              fullWidth
+              options={perPageOptions.map((size) => ({
+                value: size,
+                label: t("shared.table.perPage", { size }),
+              }))}
+              onChange={(value) => {
+                setPerPage(Number(value));
+                setPage(1);
+              }}
+            />
+          </div>
           {canPost ? (
-            <ActionButton kind="create" onClick={() => setCreateOpen(true)}>
-              {t("reverse.create.submit")}
-            </ActionButton>
+            <div className="hn-reversal-filter-actions">
+              <ActionButton
+                kind="create"
+                className="hn-reversal-primary"
+                onClick={() => setCreateOpen(true)}
+              >
+                {t("reverse.create.submit")}
+              </ActionButton>
+            </div>
           ) : null}
         </div>
+        <section
+          className="hn-reversal-list-card"
+          aria-label={t("reverse.list.unitName")}
+        >
+          {listQuery.isError ? (
+            <Box sx={{ mb: 1.75 }}>
+              <ApiErrorAlert
+                error={listQuery.error}
+                title={t("reverse.list.loadError")}
+                onRetry={() => listQuery.refetch()}
+              />
+            </Box>
+          ) : null}
 
-        {listQuery.isError ? (
-          <Box sx={{ mb: 1.75 }}>
-            <ApiErrorAlert
-              error={listQuery.error}
-              title={t("reverse.list.loadError")}
-              onRetry={() => listQuery.refetch()}
+          <TableLoadingBanner
+            loading={listQuery.isLoading || listQuery.isFetching}
+          />
+          <ResponsiveDataTable<ReversalDocument>
+            headerCellStyle={{
+              background: "var(--rev-pale)",
+              color: "var(--rev-ink)",
+              fontSize: 12,
+              padding: "10px 9px",
+              borderColor: "var(--rev-line)",
+            }}
+            columns={columns}
+            rows={rows}
+            rowKey={(row) => row.id}
+            // Chỉ khoá bảng khi tải lần đầu — ResponsiveDataTable thay hẳn nội
+            // dung bảng bằng "Đang tải..." khi loading=true (không giữ dòng cũ
+            // như overlay spinner của antd Table), nên không dùng isFetching ở
+            // đây để tránh bảng trắng xoá mỗi lần đổi trang/lọc (đã có
+            // TableLoadingBanner báo isFetching phía trên).
+            loading={listQuery.isLoading}
+            emptyText={tableEmptyText(
+              listQuery.isError ? listQuery.error : null,
+              t("reverse.list.empty"),
+            )}
+            // antd Table cũ mở modal chi tiết bằng onDoubleClick; ResponsiveDataTable
+            // chỉ hỗ trợ onRowClick (bấm 1 lần) — đổi thành bấm 1 lần để mở, đã nêu
+            // trong báo cáo bàn giao.
+            onRowClick={(row) => setDetailId(row.id)}
+            renderRowActions={(row) => (
+              <RowActionButton kind="view" onClick={() => setDetailId(row.id)}>
+                {t("reverse.list.open")}
+              </RowActionButton>
+            )}
+          />
+          <div className="hn-reversal-pagination">
+            <TopPagination
+              placement="bottom"
+              total={listPagination.total}
+              current={listPagination.current}
+              pageSize={listPagination.pageSize}
+              unitName={t("reverse.list.unitName")}
+              showSizeChanger={false}
+              onChange={(nextPage) => setPage(nextPage)}
             />
-          </Box>
-        ) : null}
-
-        <TableLoadingBanner
-          loading={listQuery.isLoading || listQuery.isFetching}
-        />
-        <ResponsiveDataTable<ReversalDocument>
-          columns={columns}
-          rows={rows}
-          rowKey={(row) => row.id}
-          // Chỉ khoá bảng khi tải lần đầu — ResponsiveDataTable thay hẳn nội
-          // dung bảng bằng "Đang tải..." khi loading=true (không giữ dòng cũ
-          // như overlay spinner của antd Table), nên không dùng isFetching ở
-          // đây để tránh bảng trắng xoá mỗi lần đổi trang/lọc (đã có
-          // TableLoadingBanner báo isFetching phía trên).
-          loading={listQuery.isLoading}
-          emptyText={tableEmptyText(
-            listQuery.isError ? listQuery.error : null,
-            t("reverse.list.empty"),
-          )}
-          // antd Table cũ mở modal chi tiết bằng onDoubleClick; ResponsiveDataTable
-          // chỉ hỗ trợ onRowClick (bấm 1 lần) — đổi thành bấm 1 lần để mở, đã nêu
-          // trong báo cáo bàn giao.
-          onRowClick={(row) => setDetailId(row.id)}
-          renderRowActions={(row) => (
-            <ActionButton
-              kind="view"
-              sx={{ whiteSpace: "nowrap" }}
-              onClick={() => setDetailId(row.id)}
-            >
-              {t("reverse.list.open")}
-            </ActionButton>
-          )}
-        />
-        <TopPagination
-          placement="bottom"
-          total={listPagination.total}
-          current={listPagination.current}
-          pageSize={listPagination.pageSize}
-          unitName={t("reverse.list.unitName")}
-          showSizeChanger={false}
-          onChange={(nextPage) => setPage(nextPage)}
-        />
+          </div>
+        </section>
 
         {createOpen ? (
           <ReversalCreateModal

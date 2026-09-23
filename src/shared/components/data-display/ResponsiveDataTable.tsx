@@ -7,7 +7,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { useCallback, useRef, type ReactNode } from "react";
+import { useCallback, useRef, type ReactNode, type CSSProperties } from "react";
 import { MvpSelectionCheckbox } from "@/shared/components/mvp/MvpSelectionCell";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { UiSpinner } from "@/shared/ui";
@@ -101,6 +101,8 @@ export interface ResponsiveDataTableProps<T> {
    * vốn cuộn dọc tự nhiên, lồng thêm một khung cuộn nữa chỉ gây kẹt cử chỉ.
    */
   maxBodyHeight?: number | string;
+  /** Optional screen presentation; omitted keeps the shared table unchanged. */
+  headerCellStyle?: CSSProperties;
 }
 
 /**
@@ -126,6 +128,7 @@ export function ResponsiveDataTable<T>({
   rowSelection,
   selectionLabel,
   maxBodyHeight,
+  headerCellStyle: headerCellOverrides,
 }: ResponsiveDataTableProps<T>) {
   const t = useT();
   const theme = useTheme();
@@ -600,6 +603,7 @@ export function ResponsiveDataTable<T>({
                     ...headerBackground,
                     borderBottom: 1,
                     borderColor: "divider",
+                    ...headerCellOverrides,
                   }}
                 >
                   <MvpSelectionCheckbox
@@ -624,6 +628,7 @@ export function ResponsiveDataTable<T>({
                   ...headerBackground,
                   borderBottom: `1px solid ${theme.palette.divider}`,
                   whiteSpace: "nowrap",
+                  ...headerCellOverrides,
                 };
 
                 // SortableTh tự trả về nguyên 1 thẻ <th> — KHÔNG bọc thêm Box
@@ -664,6 +669,7 @@ export function ResponsiveDataTable<T>({
                     borderColor: "divider",
                     textAlign: "right",
                     whiteSpace: "nowrap",
+                    ...headerCellOverrides,
                   }}
                 >
                   {t("shared.table.actions")}

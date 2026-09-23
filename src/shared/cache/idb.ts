@@ -76,7 +76,13 @@ function runTx<T>(
         try {
           const tx = db.transaction(STORE, mode);
           const request = work(tx.objectStore(STORE));
-          request.onsuccess = () => resolve(request.result);
+          let result: T | null = null;
+          request.onsuccess = () => {
+            result = request.result;
+          };
+          // A successful request can still be rolled back (quota/abort). Only
+          // report success after the whole transaction has committed.
+          tx.oncomplete = () => resolve(result);
           request.onerror = () => resolve(null);
           tx.onabort = () => resolve(null);
           tx.onerror = () => resolve(null);
@@ -92,13 +98,7 @@ export function idbGet<T>(key: string): Promise<T | null> {
 }
 
 export async function idbSet(key: string, value: unknown): Promise<boolean> {
-  const result = await runTx("readwrite", (store) =>
-    store.put(value, key),
-  ).then(
-    () => true,
-    () => false,
-  );
-  return result !== null && result !== false;
+  return (await runTx("readwrite", (store) => store.put(value, key))) !== null;
 }
 
 export function idbDelete(key: string): Promise<unknown> {

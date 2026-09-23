@@ -18,7 +18,7 @@ import { UiIcon } from "./UiIcon";
 import type { UiStatusTone } from "./UiStatusBadge";
 
 const TONE_STYLES: Record<UiStatusTone, { bg: string; color: string }> = {
-  primary: { bg: S.primarySoft, color: S.primaryDark },
+  primary: { bg: S.primarySoft, color: S.infoText },
   success: { bg: S.successSoft, color: S.successText },
   warning: { bg: S.warningSoft, color: S.warningText },
   error: { bg: S.errorSoft, color: S.errorText },

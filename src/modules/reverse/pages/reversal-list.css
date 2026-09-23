@@ -1,0 +1,520 @@
+/* REV-00 follows the operations dashboard palette and scale. Rules are scoped to this
+   page and its portals; services, permissions and workflow stay unchanged. */
+.hn-reversal-screen,
+.hn-reversal-dialog,
+.hn-reversal-menu,
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-reversal-screen
+  ) {
+  --rev-ink: var(--ops-heading);
+  --rev-text: var(--ops-text);
+  --rev-muted: var(--ops-muted);
+  --rev-line: var(--ops-line);
+  --rev-surface: var(--ops-surface);
+  --rev-pale: var(--ops-pale);
+  --rev-cta: var(--ops-primary);
+  --rev-link: var(--ops-link);
+  --rev-success: var(--ops-success);
+  --rev-success-soft: var(--ops-success-soft);
+  --wms-primary: var(--rev-cta);
+  --wms-primary-dark: var(--rev-ink);
+  --wms-primary-soft: var(--rev-pale);
+  --wms-focus-ring: 0 0 0 3px
+    color-mix(in srgb, var(--rev-link) 13%, transparent);
+  color: var(--rev-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-reversal-screen
+  ) {
+  background: var(--ops-canvas);
+}
+/* The existing shared header keeps its real scope/role and translated copy. */
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-reversal-screen
+  )
+  section[aria-labelledby="hn-page-title"]
+  h1 {
+  color: var(--ops-heading);
+  font-size: 24px;
+  line-height: 38px;
+  letter-spacing: -0.02em;
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-reversal-screen
+  )
+  section[aria-labelledby="hn-page-title"]
+  h1
+  + div {
+  color: var(--rev-muted);
+  font-size: 14px;
+  line-height: 21px;
+}
+.hn-mvp-screen:has(.hn-reversal-screen) {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.hn-reversal-screen {
+  container: hn-reversal / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ops-gap);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-reversal-screen > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-reversal-filters,
+.hn-reversal-list-card {
+  border: 1px solid var(--rev-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--rev-surface);
+}
+.hn-reversal-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(240px, 2fr) minmax(170px, 1fr) minmax(125px, 0.6fr)
+    auto;
+  gap: 12px 16px;
+  padding: 14px 16px;
+  align-items: end;
+}
+.hn-reversal-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.hn-reversal-filter > label {
+  color: var(--rev-ink);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.hn-reversal-search-icon {
+  color: var(--rev-link);
+  margin-right: 10px;
+  font-size: 18px;
+  flex: none;
+}
+.hn-reversal-filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+  line-height: 20px;
+  box-shadow: none;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .hn-reversal-primary.MuiButton-root:not(.hn-row-action) {
+  color: var(--wms-on-primary);
+  background: var(--rev-cta);
+  padding-inline: 24px;
+  font-weight: 600;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .hn-reversal-primary.MuiButton-root:not(.hn-row-action):hover {
+  background: var(--ops-primary-hover);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiButton-root:not(.hn-row-action).Mui-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  :is(button, input, textarea, [role="combobox"]):focus-visible {
+  outline: 2px solid var(--rev-link);
+  outline-offset: 3px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  :is(.MuiFormControl-root, .MuiTextField-root) {
+  min-width: 0;
+  max-width: 100%;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiInputBase-root {
+  background: var(--rev-surface);
+  color: var(--rev-text);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiInputBase-root:not(.Mui-error)
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--rev-line);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiInputBase-root:not(.Mui-error):hover
+  .MuiOutlinedInput-notchedOutline,
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiInputBase-root.Mui-focused:not(.Mui-error)
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--rev-link);
+  border-width: 1px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiInputBase-root.Mui-focused:not(.Mui-error) {
+  box-shadow: var(--wms-focus-ring);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiFormLabel-root.Mui-focused:not(.Mui-error) {
+  color: var(--rev-link);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiInputBase-input::placeholder {
+  color: var(--rev-muted);
+  opacity: 1;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiSelect-icon {
+  color: var(--rev-muted);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiSelect-select > span {
+  color: var(--rev-text);
+}
+.hn-reversal-list-card {
+  padding: 16px;
+  overflow: hidden;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiBox-root:has(> table) {
+  border-color: var(--rev-line);
+  border-radius: 6px;
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rev-line) transparent;
+  overscroll-behavior-inline: contain;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) table {
+  font-size: 14px;
+  color: var(--rev-text);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) table :is(td, th) {
+  vertical-align: middle;
+  border-color: var(--rev-line);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) table td {
+  padding: 10px 9px;
+  border-bottom: 1px solid var(--rev-line);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) table th {
+  background: var(--rev-pale);
+  color: var(--rev-ink);
+  font-size: 12px;
+  line-height: 18px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) table th button {
+  color: inherit;
+  font: inherit;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) table tbody tr {
+  transition: background-color 0.14s ease;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) table tbody tr:hover {
+  background: color-mix(in srgb, var(--rev-pale) 55%, var(--rev-surface));
+}
+.hn-reversal-screen table :is(td, th):last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--rev-surface);
+  box-shadow: -4px 0 8px color-mix(in srgb, var(--rev-ink) 5%, transparent);
+}
+.hn-reversal-screen table th:last-child {
+  background: var(--rev-pale);
+}
+.hn-reversal-code {
+  color: var(--rev-ink);
+  font-weight: 600;
+}
+.hn-reversal-screen .hn-reversal-source-code {
+  color: var(--rev-link);
+  background: var(--rev-pale);
+  font-size: 12px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiChip-root {
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  min-height: 24px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) [data-reversal-status="POSTED"] {
+  color: var(--rev-success);
+  background: var(--rev-success-soft);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) [data-reversal-status="DRAFT"] {
+  color: var(--rev-link);
+  background: var(--rev-pale);
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  [data-reversal-status]
+  .MuiChip-label::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: currentColor;
+}
+.hn-reversal-pagination {
+  padding-top: 2px;
+}
+.hn-reversal-pagination .MuiTypography-root {
+  color: var(--rev-muted);
+  font-size: 12px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiPaginationItem-root {
+  border-radius: 6px;
+  color: var(--rev-ink);
+  font-size: 12px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiPaginationItem-root.Mui-selected {
+  background: var(--rev-cta);
+  color: var(--wms-on-primary);
+}
+.hn-reversal-readonly {
+  padding: 10px 14px;
+  color: var(--rev-muted);
+  background: var(--rev-pale);
+  border: 1px solid var(--rev-line);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.hn-reversal-menu.MuiPaper-root {
+  background: var(--rev-surface);
+  border: 1px solid var(--rev-line);
+  border-radius: 6px;
+}
+.hn-reversal-menu .MuiMenuItem-root {
+  font-size: 14px;
+  color: var(--rev-text);
+  min-height: var(--ops-control-height);
+}
+.hn-reversal-menu
+  .MuiMenuItem-root:is(.Mui-selected, .Mui-focusVisible, :hover) {
+  color: var(--rev-ink);
+  background: var(--rev-pale);
+}
+.hn-reversal-menu .MuiCheckbox-root.Mui-checked,
+.hn-reversal-dialog .MuiCheckbox-root.Mui-checked {
+  color: var(--rev-link);
+}
+.hn-reversal-dialog .MuiDialog-paper {
+  border: 1px solid var(--rev-line);
+  border-radius: var(--ops-radius-dialog);
+  background: var(--rev-surface);
+  color: var(--rev-text);
+}
+.hn-reversal-dialog .MuiDialogTitle-root {
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+.hn-reversal-dialog .MuiDialogContent-root {
+  min-width: 0;
+  overscroll-behavior: contain;
+}
+.hn-reversal-dialog .MuiDialogActions-root {
+  border-top: 1px solid var(--rev-line);
+  padding-top: 14px;
+}
+.hn-reversal-dialog .hn-reversal-panel {
+  background: var(--rev-pale);
+  border-color: var(--rev-line);
+}
+.hn-reversal-dialog .hn-reversal-detail-field {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hn-reversal-dialog .hn-reversal-detail-field .MuiStack-root {
+  min-width: 0;
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.hn-reversal-dialog .hn-reversal-detail-field .MuiStack-root > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hn-reversal-dialog .hn-reversal-detail-field .MuiIconButton-root {
+  flex-shrink: 0;
+}
+.hn-reversal-dialog .hn-reversal-detail-field .MuiChip-root {
+  max-width: 100%;
+  height: auto;
+}
+.hn-reversal-dialog .hn-reversal-detail-field .MuiChip-label {
+  white-space: normal;
+  padding-block: 3px;
+}
+.hn-reversal-dialog .hn-reversal-detail-field > :first-child {
+  color: var(--rev-muted);
+  font-size: 12px;
+}
+.hn-reversal-dialog .hn-reversal-detail-field > :last-child {
+  color: var(--rev-ink);
+  font-size: 14px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiCard-root {
+  color: var(--rev-text);
+  background: var(--rev-surface);
+  border: 1px solid var(--rev-line);
+  border-radius: var(--ops-radius-card);
+  box-shadow: none;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiCardContent-root {
+  padding: 14px;
+  font-size: 14px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiCardContent-root
+  > .MuiBox-root {
+  min-width: 0;
+  gap: 12px;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiCardContent-root
+  > .MuiBox-root
+  > .MuiTypography-root {
+  color: var(--rev-muted);
+  font-size: 12px;
+  flex: 0 1 42%;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog)
+  .MuiCardContent-root
+  > .MuiBox-root
+  > .MuiBox-root {
+  max-width: 60%;
+  overflow-wrap: anywhere;
+}
+.hn-reversal-screen .MuiCard-root .hn-reversal-reason {
+  white-space: normal;
+  overflow: visible;
+  max-width: 100%;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiCard-root .MuiChip-root {
+  max-width: 100%;
+  height: auto;
+}
+:is(.hn-reversal-screen, .hn-reversal-dialog) .MuiCard-root .MuiChip-label {
+  white-space: normal;
+  padding-block: 3px;
+}
+@container hn-reversal (max-width: 1000px) {
+  .hn-reversal-filters {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 0.8fr);
+  }
+  .hn-reversal-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+@container hn-reversal (max-width: 700px) {
+  .hn-reversal-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-reversal-filter-search {
+    grid-column: 1 / -1;
+  }
+  .hn-reversal-list-card {
+    padding: 12px;
+  }
+}
+@container hn-reversal (max-width: 440px) {
+  .hn-reversal-filters {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+  .hn-reversal-filter-actions .MuiButton-root:not(.hn-row-action) {
+    width: 100%;
+    padding-inline: 10px;
+  }
+  .hn-reversal-pagination nav {
+    margin-left: auto;
+  }
+}
+@media (max-width: 600px) {
+  .hn-system-shell
+    main:has(
+      .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+          [style*="display:none"]
+        )
+        .hn-reversal-screen
+    )
+    section[aria-labelledby="hn-page-title"]
+    h1 {
+    font-size: 24px;
+    line-height: 38px;
+  }
+  .hn-system-shell
+    main:has(
+      .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+          [style*="display:none"]
+        )
+        .hn-reversal-screen
+    )
+    section[aria-labelledby="hn-page-title"]
+    h1
+    + div {
+    font-size: 12px;
+  }
+  .hn-reversal-dialog .MuiDialog-paper {
+    margin: 12px;
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .hn-reversal-dialog .MuiDialogContent-root {
+    padding: 14px;
+  }
+  .hn-reversal-dialog .MuiDialogActions-root {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .hn-reversal-dialog .hn-reversal-panel .MuiButton-root:not(.hn-row-action),
+  .hn-reversal-dialog
+    .MuiDialogActions-root
+    .MuiButton-root:not(.hn-row-action) {
+    white-space: normal;
+    height: auto;
+    max-width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.hn-reversal-screen, .hn-reversal-dialog)
+    .MuiButton-root:not(.hn-row-action),
+  :is(.hn-reversal-screen, .hn-reversal-dialog) table tbody tr {
+    transition: none;
+  }
+}

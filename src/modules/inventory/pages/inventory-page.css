@@ -1,0 +1,607 @@
+/* INV-01 uses the operations dashboard palette and scale, scoped to this page and its menus. */
+.hn-inventory,
+.hn-inventory-menu,
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-inventory
+  ) {
+  --inv-ink: var(--ops-heading);
+  --inv-text: var(--ops-text);
+  --inv-muted: var(--ops-muted);
+  --inv-line: var(--ops-line);
+  --inv-card: var(--ops-surface);
+  --inv-pale: var(--ops-pale);
+  --inv-cta: var(--ops-primary);
+  --inv-accent: var(--ops-link);
+  --inv-success: var(--ops-success);
+  --inv-success-soft: var(--ops-success-soft);
+  --wms-primary: var(--inv-cta);
+  --wms-primary-dark: var(--inv-ink);
+  --wms-primary-soft: var(--inv-pale);
+  --inv-focus-ring: 0 0 0 3px var(--ops-focus-ring);
+  color: var(--inv-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-inventory {
+  container: hn-inventory / inline-size;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  color: var(--inv-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-inventory
+  ) {
+  background: var(--ops-canvas);
+}
+.hn-mvp-screen:has(> .hn-inventory) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-inventory
+  )
+  section[aria-labelledby="hn-page-title"] {
+  margin-bottom: 14px;
+  color: var(--inv-muted);
+}
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-inventory
+  )
+  #hn-page-title {
+  color: var(--ops-heading);
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.hn-inventory-navigation,
+.hn-inventory-actions,
+.hn-inventory-data-heading,
+.hn-inventory-footer,
+.hn-inventory-page-size {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.hn-inventory-navigation {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.hn-inventory-navigation > .MuiTabs-root {
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-inventory .MuiTabs-root {
+  min-height: var(--ops-control-height);
+}
+.hn-inventory .MuiTab-root {
+  min-height: var(--ops-control-height);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--inv-muted);
+  border-radius: 6px 6px 0 0;
+}
+.hn-inventory .MuiTab-root.Mui-selected {
+  color: var(--inv-accent);
+  background: var(--inv-pale);
+  font-weight: 600;
+}
+.hn-inventory .MuiTabs-indicator {
+  background: var(--inv-accent);
+  height: 2px;
+}
+.hn-inventory .MuiTab-root:hover {
+  background: var(--inv-pale);
+}
+.hn-inventory-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.hn-inventory-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(240px, 1.7fr) minmax(170px, 1fr) minmax(210px, 1.2fr)
+    auto;
+  gap: 12px 16px;
+  align-items: end;
+  padding: 14px 16px;
+  border: 1px solid var(--inv-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--inv-card);
+}
+.hn-inventory-filters--movement {
+  grid-template-columns: minmax(240px, 1.7fr) minmax(210px, 1fr) auto;
+}
+.hn-inventory-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.hn-inventory-field > label,
+.hn-inventory-page-size > label {
+  color: var(--inv-ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.hn-inventory .MuiInputBase-root {
+  color: var(--inv-text);
+  background: var(--inv-card);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+  line-height: 20px;
+}
+.hn-inventory .MuiInputBase-input {
+  min-width: 0;
+}
+.hn-inventory
+  .MuiInputBase-root:not(.Mui-error)
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--inv-line);
+}
+.hn-inventory
+  .MuiInputBase-root:not(.Mui-error):hover
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--inv-accent);
+}
+.hn-inventory
+  .MuiInputBase-root.Mui-focused:not(.Mui-error)
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--inv-accent);
+  border-width: 1px;
+}
+.hn-inventory .MuiInputBase-root.Mui-focused:not(.Mui-error) {
+  box-shadow: var(--inv-focus-ring);
+}
+.hn-inventory .MuiSelect-icon {
+  color: var(--inv-muted);
+}
+.hn-inventory .hn-inventory-search-icon {
+  color: var(--inv-accent);
+}
+.hn-inventory-search-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+.hn-inventory .MuiSelect-select > span {
+  color: var(--inv-text);
+}
+.hn-inventory .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  padding: 6px 14px;
+  border: 1px solid var(--inv-line);
+  border-radius: var(--ops-radius-control);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--inv-ink);
+  background: var(--inv-card);
+  box-shadow: none;
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.hn-inventory .MuiButton-root:not(.hn-row-action):hover {
+  background: var(--inv-pale);
+  border-color: var(--inv-accent);
+}
+.hn-inventory .MuiButton-root:not(.hn-row-action):active {
+  box-shadow: inset 0 1px 3px
+    color-mix(in srgb, var(--inv-accent) 13%, transparent);
+}
+.hn-inventory .hn-inventory-primary {
+  background: var(--inv-cta);
+  color: var(--wms-on-primary);
+  border-color: transparent;
+  padding-inline: 24px;
+  font-weight: 600;
+}
+.hn-inventory .hn-inventory-primary:hover {
+  background: var(--ops-primary-hover);
+  color: var(--wms-on-primary);
+}
+.hn-inventory .MuiButton-root:not(.hn-row-action).Mui-disabled {
+  color: var(--inv-muted);
+  background: var(--inv-pale);
+  opacity: 0.5;
+}
+.hn-inventory button:focus-visible,
+.hn-inventory [tabindex="0"]:focus-visible {
+  outline: 2px solid var(--inv-accent);
+  outline-offset: 3px;
+}
+.hn-inventory-data {
+  min-width: 0;
+  max-width: 100%;
+  padding: 16px;
+  border: 1px solid var(--inv-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--inv-card);
+}
+.hn-inventory-data-heading {
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.hn-inventory-data-heading h2 {
+  margin: 0;
+  color: var(--inv-ink);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+}
+.hn-inventory-count {
+  padding: 2px 12px;
+  color: var(--inv-ink);
+  font-weight: 600;
+  background: var(--inv-pale);
+  border-radius: 20px;
+  font-size: 12px;
+  line-height: 20px;
+}
+.hn-inventory-table {
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-inventory-table > .MuiBox-root:has(> table) {
+  border-color: var(--inv-line);
+  border-radius: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--inv-muted) var(--inv-pale);
+}
+.hn-inventory-table table {
+  color: var(--inv-text);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-inventory-table table th {
+  padding: 10px 9px;
+  border-bottom: 1px solid var(--inv-line);
+  background: var(--inv-pale);
+  line-height: 18px;
+}
+.hn-inventory-table table th,
+.hn-inventory-table .hn-sortable-th {
+  color: var(--inv-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.hn-inventory-table table td {
+  border-color: var(--inv-line);
+  vertical-align: middle;
+  padding: 10px 9px;
+}
+.hn-inventory-table table tbody tr {
+  transition: background-color 160ms ease;
+}
+.hn-inventory-table table tbody tr:hover {
+  background: color-mix(in srgb, var(--inv-pale) 55%, var(--inv-card));
+}
+.hn-inventory-table table td strong {
+  font-weight: 600;
+}
+.hn-inventory .hn-inventory-code {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  background: transparent;
+  color: var(--inv-accent);
+  font: 600 13px/20px var(--wms-font-family);
+}
+.hn-inventory-table .MuiTypography-root {
+  color: var(--inv-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-inventory-table .MuiChip-root {
+  height: auto;
+  min-height: 24px;
+  max-width: 100%;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 20px;
+}
+.hn-inventory-table .MuiChip-label {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  padding-block: 2px;
+}
+.hn-inventory-table .MuiIconButton-root {
+  color: var(--inv-muted);
+  background: transparent;
+  border-radius: var(--ops-radius-control);
+}
+.hn-inventory-table .MuiIconButton-root:hover {
+  color: var(--inv-accent);
+  background: var(--inv-pale);
+}
+.hn-inventory-table .MuiCard-root {
+  border: 1px solid var(--inv-line);
+  border-radius: var(--ops-radius-card);
+  color: var(--inv-text);
+  background: var(--inv-card);
+  box-shadow: none;
+}
+.hn-inventory-empty {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--inv-muted);
+}
+.hn-inventory-feedback {
+  margin-bottom: 14px;
+}
+.hn-inventory-data > [data-ui-state="loading"] {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--inv-pale);
+}
+.hn-inventory-footer {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--inv-line);
+}
+.hn-inventory-footer .MuiPaginationItem-root {
+  min-width: 32px;
+  height: 32px;
+  color: var(--inv-text);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.hn-inventory-footer .MuiPaginationItem-root.Mui-selected {
+  color: var(--wms-on-primary);
+  background: var(--inv-cta);
+}
+.hn-inventory-footer .MuiPaginationItem-root:not(.Mui-selected):hover {
+  background: var(--inv-pale);
+  color: var(--inv-accent);
+}
+.hn-inventory-menu.MuiPaper-root {
+  color: var(--inv-text);
+  background: var(--inv-card);
+  border: 1px solid var(--inv-line);
+  border-radius: var(--ops-radius-card);
+}
+.hn-inventory-menu .MuiMenuItem-root {
+  min-height: var(--ops-control-height);
+  font-size: 14px;
+  line-height: 20px;
+  white-space: normal;
+}
+.hn-inventory-menu .MuiMenuItem-root.Mui-selected {
+  color: var(--inv-ink);
+  background: var(--inv-pale);
+}
+.hn-inventory-menu .MuiMenuItem-root:hover,
+.hn-inventory-menu .MuiMenuItem-root.Mui-focusVisible {
+  color: var(--inv-ink);
+  background: var(--inv-pale);
+}
+@container hn-inventory (max-width: 920px) {
+  .hn-inventory-filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+  .hn-inventory-search {
+    grid-column: 1 / -1;
+  }
+  .hn-inventory-reset {
+    justify-self: start;
+  }
+  .hn-inventory-filters--movement .hn-inventory-search {
+    grid-column: auto;
+  }
+  .hn-inventory-filters--movement .hn-inventory-reset {
+    grid-column: 1 / -1;
+  }
+}
+@container hn-inventory (max-width: 620px) {
+  .hn-inventory-navigation {
+    gap: 12px;
+  }
+  .hn-inventory-navigation > .MuiTabs-root {
+    flex: 1 1 100%;
+  }
+  .hn-inventory-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .hn-inventory-actions > .MuiButton-root:not(.hn-row-action) {
+    flex: 1;
+    padding-inline: 10px;
+  }
+  .hn-inventory-filters,
+  .hn-inventory-data {
+    padding: 12px;
+  }
+  .hn-inventory-filters--movement {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-inventory .MuiTab-root {
+    padding-inline: 12px;
+    font-size: 14px;
+  }
+  .hn-inventory-data-heading h2 {
+    font-size: 17px;
+  }
+  .hn-inventory-footer {
+    justify-content: center;
+  }
+  .hn-inventory-page-size {
+    justify-content: center;
+  }
+}
+@container hn-inventory (max-width: 400px) {
+  .hn-inventory-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-inventory-search {
+    grid-column: auto;
+  }
+  .hn-inventory-reset {
+    width: 100%;
+  }
+  .hn-inventory-data-heading {
+    gap: 6px;
+  }
+  .hn-inventory-page-size {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .hn-inventory-footer .MuiPagination-ul {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hn-inventory-panel {
+    animation: none;
+  }
+  .hn-inventory button,
+  .hn-inventory-table table tbody tr {
+    transition: none;
+  }
+}
+
+/* Keep the row action reachable while the data columns scroll horizontally. */
+.hn-inventory-table table thead th:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: var(--inv-pale);
+}
+.hn-inventory-table table tbody td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--inv-card);
+  box-shadow: -1px 0 0 var(--inv-line);
+}
+.hn-inventory-table table tbody tr:hover td:last-child {
+  background: color-mix(in srgb, var(--inv-pale) 55%, var(--inv-card));
+}
+
+/* Long product names and identifiers also fit the compact card layout. */
+.hn-inventory-table .MuiCardContent-root {
+  overflow-wrap: anywhere;
+}
+
+.hn-system-shell
+  main:has(
+    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+        [style*="display:none"]
+      )
+      .hn-inventory
+  )
+  #hn-page-title
+  + div {
+  color: var(--inv-muted);
+  font-size: 14px;
+  line-height: 21px;
+}
+.hn-inventory :is(.MuiFormControl-root, .MuiTextField-root) {
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-inventory .MuiInputBase-input::placeholder {
+  color: var(--inv-muted);
+  opacity: 1;
+}
+.hn-inventory .hn-inventory-refresh {
+  background: var(--inv-pale);
+}
+.hn-inventory-table table th button {
+  font: inherit;
+  color: inherit;
+}
+.hn-inventory-table table td strong {
+  color: var(--inv-ink);
+}
+.hn-inventory-table .MuiChip-root[data-tone="success"] {
+  color: var(--inv-success);
+  background: var(--inv-success-soft);
+}
+.hn-inventory-table .MuiChip-root[data-tone="neutral"] {
+  color: var(--inv-muted);
+  background: var(--inv-pale);
+}
+.hn-inventory-page-size > label {
+  color: var(--inv-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.hn-inventory-page-size .MuiInputBase-root {
+  height: 32px;
+  font-size: 12px;
+}
+.hn-inventory-table > .MuiBox-root:has(> table) {
+  overscroll-behavior-inline: contain;
+}
+.hn-inventory-table .MuiCardContent-root {
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .hn-system-shell
+    main:has(
+      .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+          [style*="display:none"]
+        )
+        .hn-inventory
+    )
+    #hn-page-title {
+    font-size: 24px;
+    line-height: 38px;
+  }
+  .hn-system-shell
+    main:has(
+      .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
+          [style*="display:none"]
+        )
+        .hn-inventory
+    )
+    #hn-page-title
+    + div {
+    font-size: 14px;
+  }
+}

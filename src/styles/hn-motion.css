@@ -129,7 +129,7 @@ svg {
 .hn-card:hover,
 .hn-stat:hover {
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
-  transform: translateY(-2px);
+  transform: none;
 }
 
 .hn-pill,
@@ -157,10 +157,10 @@ svg {
   transition: var(--hn-t-control) !important;
 }
 .ant-btn:not(:disabled):hover {
-  transform: translateY(-1px);
+  transform: none;
 }
 .ant-btn:not(:disabled):active {
-  transform: translateY(0) scale(0.98);
+  transform: none;
   transition-duration: var(--hn-dur-instant) !important;
 }
 .ant-btn .anticon,
@@ -227,7 +227,7 @@ svg {
   transition: var(--hn-t-control) !important;
 }
 .ant-pagination .ant-pagination-item:hover {
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .ant-tabs .ant-tabs-tab {
@@ -390,7 +390,7 @@ svg {
    từ opacity 0 — người dùng chờ THÊM gần 0,3 giây sau khi dữ liệu đã sẵn sàng,
    và Chrome không tính LCP cho cây đang opacity 0 nên chỉ số cũng bị đội lên
    đúng chừng đó. Hiệu ứng vẫn giữ, nhưng:
-     · bắt đầu ở opacity .4 (chữ đọc được ngay từ khung hình đầu),
+     · bắt đầu ở opacity .85, không dịch vị trí nội dung (chữ đọc được ngay từ khung hình đầu),
      · rút xuống 160 ms,
      · và KHÔNG chạy ở màn đầu tiên sau khi tải trang (thuộc tính
        [data-hn-first-load] do main.tsx đặt, MainLayout gỡ sau khung hình đầu) —
@@ -401,12 +401,10 @@ svg {
 
 @keyframes hn-page-enter {
   from {
-    opacity: 0.4;
-    transform: translate3d(0, 6px, 0);
+    opacity: 0.85;
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
   }
 }
 

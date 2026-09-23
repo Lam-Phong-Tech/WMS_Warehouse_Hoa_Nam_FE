@@ -1,3 +1,4 @@
+import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { Box, UiAlert, UiSelect, UiStatusBadge } from "@/shared/ui";
@@ -10,7 +11,6 @@ import {
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
-import { ActionButton } from "@/shared/components/actions";
 import {
   WaterfallChart,
   type WaterfallPoint,
@@ -989,14 +989,15 @@ export default function TabInventoryFlow() {
         onSortChange={onXntSortChange}
         emptyText={t("reports.inventoryFlow.skuTableEmpty")}
         renderRowActions={(row) => (
-          <ActionButton
-            kind="view"
-            aria-label={t("reports.inventoryFlow.rowDetailAria")}
-            sx={{ whiteSpace: "nowrap" }}
-            onClick={() =>
-              setXntDetailRow({ row, index: xntSortedRows.indexOf(row) })
-            }
-          />
+          <RowActionGroup>
+            <RowActionButton
+              kind="view"
+              aria-label={t("reports.inventoryFlow.rowDetailAria")}
+              onClick={() =>
+                setXntDetailRow({ row, index: xntSortedRows.indexOf(row) })
+              }
+            ></RowActionButton>
+          </RowActionGroup>
         )}
       />
       <ReportPaginationBar
@@ -1203,14 +1204,15 @@ export default function TabInventoryFlow() {
         onSortChange={onSortChange}
         emptyText={t("reports.inventoryFlow.docEmpty")}
         renderRowActions={(row) => (
-          <ActionButton
-            kind="view"
-            aria-label={t("reports.inventoryFlow.docDetailAria")}
-            sx={{ whiteSpace: "nowrap" }}
-            onClick={() =>
-              setDetailRow({ row, index: sortedRows.indexOf(row) })
-            }
-          />
+          <RowActionGroup>
+            <RowActionButton
+              kind="view"
+              aria-label={t("reports.inventoryFlow.docDetailAria")}
+              onClick={() =>
+                setDetailRow({ row, index: sortedRows.indexOf(row) })
+              }
+            ></RowActionButton>
+          </RowActionGroup>
         )}
       />
       <ReportPaginationBar
