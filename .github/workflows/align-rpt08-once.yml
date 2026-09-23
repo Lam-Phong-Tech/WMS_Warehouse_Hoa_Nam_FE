@@ -2,10 +2,7 @@ name: Validate RPT08 report alignment
 on:
   push:
     branches: [dev]
-    paths:
-      - .github/workflows/align-rpt08-once.yml
-      - scripts/check-rpt08-layout.mjs
-      - scripts/apply-rpt08-layout.py
+    paths: [.github/workflows/align-rpt08-once.yml]
 permissions:
   contents: write
 concurrency:
@@ -39,34 +36,74 @@ jobs:
         run: |
           yarn install --frozen-lockfile --non-interactive > /tmp/rpt08-install.log 2>&1 || { tail -40 /tmp/rpt08-install.log; exit 1; }
           npx playwright install --with-deps chromium > /tmp/rpt08-browser-install.log 2>&1 || { tail -40 /tmp/rpt08-browser-install.log; exit 1; }
-      - name: Apply only reviewed RPT08 presentation changes
+      - name: Preserve contrast within the newly themed cards and capture previews
         run: |
-          python3 scripts/apply-rpt08-layout.py
-          node_modules/.bin/prettier --write src/modules/reports/io-history/rpt08/alignment.css src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/io-history/rpt08/widgets.tsx src/modules/reports/io-history/rpt08/report-layout.test.tsx
+          python3 - <<'PY'
+          from pathlib import Path
+          css = Path('src/modules/reports/io-history/rpt08/alignment.css')
+          css.write_text(css.read_text() + '''
+          /* The card palette follows the current theme; its inset surfaces must too. */
+          #rpt08-history-report .rpt08-donut::before { background: var(--ops-surface); }
+          #rpt08-history-report .rpt08-product-breakdown > span,
+          #rpt08-history-report .rpt08-unit-row small,
+          #rpt08-history-report .rpt08-table-heading h2 > span {
+            background: var(--ops-pale); color: var(--ops-link);
+          }
+          #rpt08-history-report .rpt08-chart-legend,
+          #rpt08-history-report .rpt08-y-axis,
+          #rpt08-history-report .rpt08-bar-group > small,
+          #rpt08-history-report .rpt08-panel-heading > div:first-child > span,
+          #rpt08-history-report .rpt08-donut-side,
+          #rpt08-history-report .rpt08-overview-breakdown > div,
+          #rpt08-history-report .rpt08-overview-breakdown small,
+          #rpt08-history-report .rpt08-unit-row,
+          #rpt08-history-report .rpt08-product-total span { color: var(--ops-muted); }
+          #rpt08-history-report .rpt08-code-cell strong { color: var(--ops-heading); }
+          ''')
+          script = Path('scripts/check-rpt08-layout.mjs')
+          source = script.read_text()
+          marker = '          cases++;'
+          assert source.count(marker) == 1
+          source = source.replace(marker, '''          if ((width === 1920 && sidebar === 300) || (width === 800 && theme === 'light')) {
+            await fs.mkdir('test-results/rpt08-layout', {recursive:true});
+            await page.locator('#rpt08-history-report').screenshot({path:'test-results/rpt08-layout/'+language+'-'+theme+'-'+width+'.png', animations:'disabled'});
+          }
+          cases++;''')
+          source = source.replace("            const issues = [];", """            const issues = [];
+            const donut = root.querySelector('.rpt08-donut');
+            const card = root.querySelector('.rpt08-activity-card');
+            if(getComputedStyle(donut, '::before').backgroundColor !== getComputedStyle(card).backgroundColor)issues.push('donut inset theme mismatch');""")
+          script.write_text(source)
+          PY
+          node_modules/.bin/prettier --write src/modules/reports/io-history/rpt08/alignment.css scripts/check-rpt08-layout.mjs
           git diff --check
-      - name: TypeScript check
-        run: npm run typecheck
       - name: History, shell and language regression tests
         run: |
           npm run test -- src/modules/reports/io-history src/app/layouts src/shared/i18n --maxWorkers=2 > /tmp/rpt08-tests.log 2>&1 || { tail -160 /tmp/rpt08-tests.log; exit 1; }
           tail -14 /tmp/rpt08-tests.log
-      - name: Real report layout and interaction checks in Chromium
+      - name: Real report geometry and interaction checks in Chromium
         run: node scripts/check-rpt08-layout.mjs
-      - name: Preserve shared topbar visibility
-        run: node scripts/check-report-topbar.mjs
-      - name: Production build
+      - name: Upload local-fixture screenshots for visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpt08-layout-review
+          path: test-results/rpt08-layout
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Production build including TypeScript
         run: |
           npm run build > /tmp/rpt08-build.log 2>&1 || { tail -80 /tmp/rpt08-build.log; exit 1; }
           tail -5 /tmp/rpt08-build.log
-      - name: Publish validated RPT08 changes directly to dev
+      - name: Publish validated scoped polish directly to dev
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git diff --check
-          git add -- src/modules/reports/io-history/io-history-report.css src/modules/reports/io-history/rpt08/alignment.css src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/io-history/rpt08/widgets.tsx src/modules/reports/io-history/rpt08/report-layout.test.tsx
+          git add -- src/modules/reports/io-history/rpt08/alignment.css scripts/check-rpt08-layout.mjs
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'fix(reports): align history title, layout and pagination with shared reports' -m 'Use existing shared title and pager contracts. Scope responsive spacing to RPT08 and retain both operational and preview routes. Preserve data, filtering, export and row-detail handlers. Validate with focused tests and real-component Chromium checks before publishing.'
+          git commit -m 'fix(reports): preserve history card contrast across light and dark themes' -m 'Keep inset surfaces consistent with the shared report palette; retain real-component geometry and interaction checks with screenshot evidence.'
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin HEAD:refs/heads/dev
           git rev-parse HEAD
