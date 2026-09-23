@@ -327,7 +327,7 @@ export default function RecipientAgencyReport() {
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const warehouseName =
     useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() || "—";
-  const initialRange = useMemo<[Dayjs, Dayjs]>(currentSevenDayRange, []);
+  const initialRange = useMemo<[Dayjs, Dayjs]>(() => currentSevenDayRange(), []);
 
   const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>(initialRange);
   const [draftAgency, setDraftAgency] = useState("");
