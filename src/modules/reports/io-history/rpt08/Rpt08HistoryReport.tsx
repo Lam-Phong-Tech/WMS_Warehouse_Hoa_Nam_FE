@@ -152,13 +152,17 @@ export default function IoHistoryReport() {
   ).length;
   const totalTransactions = inboundCount + outboundCount;
 
-  const inboundProducts = reportRows
-    .filter((row) => row.type === "INBOUND")
-    .reduce((sum, row) => sum + row.quantity, 0);
-  const outboundProducts = reportRows
-    .filter((row) => row.type === "OUTBOUND")
-    .reduce((sum, row) => sum + row.quantity, 0);
-  const totalProducts = inboundProducts + outboundProducts;
+  const productTotal = (type: HistoryRow["type"]): number | null => {
+    const rows = reportRows.filter((row) => row.type === type);
+    if (rows.some((row) => row.quantity === null)) return null;
+    return rows.reduce((sum, row) => sum + (row.quantity ?? 0), 0);
+  };
+  const inboundProducts = productTotal("INBOUND");
+  const outboundProducts = productTotal("OUTBOUND");
+  const totalProducts =
+    inboundProducts === null || outboundProducts === null
+      ? null
+      : inboundProducts + outboundProducts;
 
   const daily = useMemo(
     () => buildDaily(reportRows, applied.from, applied.to),
@@ -440,7 +444,7 @@ export default function IoHistoryReport() {
               </div>
               <div>
                 <dt>{tUi("dashboard.stockMix.colQuantity")}</dt>
-                <dd>{number(detailRow.quantity)}</dd>
+                <dd>{detailRow.quantity === null ? "—" : number(detailRow.quantity)}</dd>
               </div>
               <div>
                 <dt>{tUi("inventory.trace.colPerformedBy")}</dt>
