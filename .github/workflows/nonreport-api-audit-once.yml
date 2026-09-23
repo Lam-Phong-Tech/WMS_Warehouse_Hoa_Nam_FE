@@ -1,0 +1,55 @@
+name: Non-report API data audit
+on:
+  push:
+    branches: [dev]
+    paths: [.github/workflows/nonreport-api-audit-once.yml, scripts/nonreport-api-audit/**]
+permissions:
+  contents: read
+concurrency:
+  group: nonreport-api-data-audit
+  cancel-in-progress: true
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Inventory every tracked non-report runtime source and suspect data
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,re,json,collections
+          tracked=subprocess.check_output(['git','ls-files','src','public'],text=True).splitlines()
+          ext={'.ts','.tsx','.js','.jsx','.json','.html'}
+          tests=lambda p: bool(re.search(r'(?:\.(?:test|spec)\.|/(?:test|tests|__tests__|__mocks__|__fixtures__)/)',p))
+          runtime=[p for p in tracked if Path(p).suffix in ext and '/reports/' not in p and not tests(p)]
+          groups=collections.Counter('/'.join(p.split('/')[:3]) for p in runtime)
+          print('AUDIT_SCOPE',json.dumps({'runtime_files':len(runtime),'reports_excluded':sum('/reports/' in p for p in tracked),'test_files_separate':sum(tests(p) for p in tracked),'groups':dict(groups)},ensure_ascii=False))
+          pats={
+           'sample-runtime':r'(?i)\b(?:mockData|mockRows|sampleData|demoData|demoRows|seedData|makeDemo\w*|generateMock\w*|DEMO_\w*|MOCK_\w*|SAMPLE_\w*|FAKE_\w*|useMock\w*|demoMode|forcedState|readPreviewState|readForcedState|faker)\b',
+           'sample-text':r'(?i)dữ liệu (?:mẫu|minh họa)|Nguyễn Văn [ABC]|Trần Thị [ABC]|Minh Phát|Hoàng Gia|example\.com|John Doe|Jane Doe|Lorem ipsum|dummyjson|jsonplaceholder',
+           'fake-generation':r'Math\.random\(|setTimeout\(|Promise\.resolve\(\[|localStorage\.(?:getItem|setItem)|sessionStorage\.(?:getItem|setItem)',
+           'hardcoded-domain':r'(?:\|\||\?\?)\s*(?:[1-9][0-9.]*|[\x22\x27](?:Kho Hoa Nam|Kho tổng|ACTIVE|POSTED|COMPLETED|HN-|SKU-|SP-|PN-|PX-|SN-)[^\x22\x27]*[\x22\x27])',
+           'preview-flags':r'get\([\x22\x27](?:state|variant|preview|demo|mock|ui-state)[\x22\x27]\)|VITE_.*(?:MOCK|DEMO)|setupWorker|msw/browser',
+          }
+          total=collections.Counter()
+          for p in runtime:
+           raw=Path(p).read_text(errors='replace')
+           # Preserve line numbers while excluding block comments; candidates require manual review.
+           code=re.sub(r'/\*[\s\S]*?\*/',lambda m:'\n'*m[0].count('\n'),raw)
+           hits=[]
+           for n,line in enumerate(code.splitlines(),1):
+            if line.lstrip().startswith('//'):continue
+            kinds=[k for k,rx in pats.items() if re.search(rx,line)]
+            if kinds:
+             hits.append({'line':n,'kinds':kinds,'text':line.strip()[:360]})
+             total.update(kinds)
+           if hits:print('CANDIDATES',json.dumps({'path':p,'hits':hits},ensure_ascii=False))
+           if re.search(r'(?:Page|Screen|Modal|Dialog|Drawer|Detail|Snapshot|Overview)\.(?:tsx|ts)$',p):
+            print('UI_SOURCE',json.dumps({'path':p,'api':sorted(set(re.findall(r'API_ENDPOINTS\.(\w+)|(?:http|apiClient|axios)\.(get|post|put|patch|delete)',code))),'imports':re.findall(r'from\s+[\x22\x27]([^\x22\x27]+)',code),'lines':len(raw.splitlines())},ensure_ascii=False))
+          print('CANDIDATE_TOTALS',json.dumps(dict(total)))
+          for p in ['src/app/router/index.tsx','src/app/router/routes.tsx','src/app/router/router.tsx','src/main.tsx','vite.config.ts','src/shared/config/env.ts']:
+           if Path(p).exists():print('ROUTE_BOOTSTRAP',p,'\n'+Path(p).read_text())
+          PY
