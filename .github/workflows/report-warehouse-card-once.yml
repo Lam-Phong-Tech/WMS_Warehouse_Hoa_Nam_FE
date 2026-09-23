@@ -1,0 +1,42 @@
+name: Unify report warehouse cards
+on:
+  push:
+    branches: [dev]
+    paths: [.github/workflows/report-warehouse-card-once.yml, scripts/report-warehouse-card-staging/**]
+permissions:
+  contents: read
+concurrency:
+  group: report-warehouse-card-once
+  cancel-in-progress: false
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read report header integration points
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,re,hashlib
+          root=Path('src/modules/reports')
+          files=['inventory-flow/InboundFlowReport.tsx','inventory-flow/OutboundFlowReport.tsx','stock-reconcile/StockReconcileReport.tsx','movement-trace/MovementTraceReport.tsx','import-match/ImportQualityBaseline.tsx','packing-label/PackingLabelPrintReport.tsx','warranty-components/WarrantyComponentsReport.tsx','recipient-agency/RecipientAgencyReport.tsx','io-history/IoHistoryReport.tsx','io-history/rpt08/controls.tsx']
+          for file in files:
+            p=root/file; s=p.read_text(); lines=s.splitlines(); ranges=[]
+            for i,line in enumerate(lines):
+              if re.search(r'(className=.{0,12}[^\n]*(?:warehouse|heading|page-header)|Kho Hoa Nam|warehouseName|warehouseActive|function HeaderActions)',line):
+                a=max(0,i-5);b=min(len(lines),i+24)
+                if ranges and a<=ranges[-1][1]:ranges[-1][1]=max(b,ranges[-1][1])
+                else:ranges.append([a,b])
+            print('\nFILE',file,'BLOB',hashlib.sha1(b'blob '+str(len(p.read_bytes())).encode()+b'\0'+p.read_bytes()).hexdigest())
+            for a,b in ranges:print('\n'.join(f'{j+1}: {lines[j]}' for j in range(a,b)))
+          print('\nAUTH CONTEXT')
+          for p in [Path('src/shared/store/auth.store.ts'),Path('src/modules/auth/types/index.ts')]:
+            if not p.exists():continue
+            lines=p.read_text().splitlines()
+            for i,line in enumerate(lines):
+              if re.search(r'warehouse|currentContext',line):print(str(p),i+1,'\n'.join(lines[max(0,i-3):i+5]))
+          print('\nPACKAGE SCRIPTS',json.dumps(json.loads(Path('package.json').read_text())['scripts']))
+          PY
