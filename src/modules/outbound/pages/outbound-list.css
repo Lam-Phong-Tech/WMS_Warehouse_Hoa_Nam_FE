@@ -171,7 +171,7 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   color: inherit;
 }
 .hn-outbound-list .hn-outbound-intake,
-.hn-outbound-list .hn-outbound-apply {
+.hn-outbound-list .MuiButton-root.hn-outbound-apply {
   background: var(--out-primary);
   border: 1px solid var(--out-primary);
   color: var(--wms-on-primary);
