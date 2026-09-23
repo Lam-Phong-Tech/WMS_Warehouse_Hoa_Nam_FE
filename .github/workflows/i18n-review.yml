@@ -1,0 +1,39 @@
+name: Localization source review
+
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/i18n-review.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Package tracked UI sources for localization review
+        run: |
+          python3 - <<'PY'
+          import pathlib, subprocess, zipfile
+          allowed = {'.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.css', '.html', '.lock'}
+          paths = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          with zipfile.ZipFile('localization-review.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
+              for value in paths:
+                  path = pathlib.Path(value)
+                  if not value or not path.is_file() or path.suffix not in allowed:
+                      continue
+                  if path.parts[0] not in ('src', 'scripts', 'tests', 'e2e', 'patches') and len(path.parts) != 1:
+                      continue
+                  archive.write(path, value)
+              archive.writestr('REVIEW_SOURCE_SHA.txt', subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: localization-review
+          path: localization-review.zip
+          retention-days: 1
