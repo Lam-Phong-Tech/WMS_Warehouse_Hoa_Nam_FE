@@ -31,11 +31,15 @@ s=s[:a]+'''  const effectiveBusyId = detailBusyId;
 '''+s[z:]
 a=s.index(') : exportFailed ? (');z=s.index(') : null}',a)
 s=s[:a]+s[z:]
+# The table badge reflects actual filtered API rows, never a URL preview state.
+assert s.count('forcedState === "no-result"') == 1
+s=s.replace('forcedState === "no-result"','rows.length > 0 && filteredRows.length === 0')
 assert not re.search(r'\b(?:forcedState|ForcedState|exportFailed|exportSuccess|exportUnknown)\b',s)
 assert s.count('dayjs("2026-09-04")')==2 and s.count('dayjs("2026-09-10")')==2
 s=s.replace('dayjs("2026-09-04")','dayjs().subtract(6, "day").startOf("day")').replace('dayjs("2026-09-10")','dayjs().startOf("day")')
 s='import { useAuthStore } from "@/shared/store/auth.store";\n'+s
 s=s.replace('  const t = useT();','  const t = useT();\n  const warehouseName = useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() || "—";')
 s=s.replace('<Box component="span">Kho Hoa Nam</Box>','<Box component="span">{warehouseName}</Box>')
+s=s.replace('aria-label="Kho Hoa Nam"','aria-label={warehouseName}')
 p.write_text(s)
 print('Warranty report now derives loading/errors/exports/data from API state and actual warehouse context.')
