@@ -120,7 +120,7 @@ export type IoHistoryResult = {
   loading: boolean;
   fetching: boolean;
   error: unknown;
-  refetch: () => void;
+  refetch: () => Promise<void>;
 };
 
 /**
@@ -373,10 +373,11 @@ export function useIoHistorySnapshot({
       ledger.isLoading,
     fetching: documents.isFetching || reversals.isFetching || ledger.isFetching,
     error: documents.error ?? reversals.error ?? ledger.error,
-    refetch: () => {
-      void documents.refetch();
-      void reversals.refetch();
-      void ledger.refetch();
+    refetch: async () => {
+      const tasks: Promise<unknown>[] = [ledger.refetch()];
+      if (wantsStockDocuments) tasks.push(documents.refetch());
+      if (wantsReversals) tasks.push(reversals.refetch());
+      await Promise.all(tasks);
     },
   };
 }
