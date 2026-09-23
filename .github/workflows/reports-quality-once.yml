@@ -1,0 +1,62 @@
+name: Review live reports and controls
+on:
+  push:
+    branches: [dev]
+    paths: [.github/workflows/reports-quality-once.yml]
+permissions:
+  contents: read
+concurrency:
+  group: reports-quality-once
+  cancel-in-progress: false
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Inventory report routes, sample-data paths and API sources
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('src/modules/reports')
+          patterns={
+            'SAMPLE_PATHS':r'(?i)\b(?:demo\w*|\w*demo\w*|fixture\w*|\w*fixture\w*|mock\w*|sample\w*|seed\w*)\b|Math\.random|2026-09-(?:04|10)|6480|5980|1235|12460',
+            'API_SOURCES':r'(?i)(?:use\w*(?:report|snapshot|query)|\w*(?:fetch|load)\w*\(|reportCode:|endpoint:|api\.get|http\.get)',
+          }
+          for label,pattern in patterns.items():
+            print('\n===== '+label+' =====')
+            for p in sorted(root.rglob('*')):
+              if p.suffix not in ('.ts','.tsx') or re.search(r'\.(test|spec)\.|__tests__|fixtures',str(p)):continue
+              found=[]
+              for n,line in enumerate(p.read_text().splitlines(),1):
+                if re.search(pattern,line) and not line.strip().startswith(('*','//')):
+                  if label=='SAMPLE_PATHS' and re.search(r'VuexyDemoIcon|demo-icon|className=.*demo|\.demo-chip',line):continue
+                  found.append(f'{n}: {line.strip()[:220]}')
+              if found: print(str(p)+'\n'+'\n'.join(found))
+          print('\n===== PAGE ENTRYPOINTS =====')
+          for p in sorted((root/'pages').glob('*.tsx')):
+            if '.test.' not in p.name: print('\n'+str(p)+'\n'+p.read_text()[:18000])
+          print('\n===== RECENT REPORT AUDIT TESTS =====')
+          for p in sorted(root.rglob('*test*')):
+            if p.is_file() and re.search('api-only|live|fixture|source',p.name,re.I):print(str(p)+'\n'+p.read_text()[:18000])
+          print('\n===== API SNAPSHOT =====')
+          p=root/'io-history/io-history-api.ts'
+          print(p.read_text())
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - name: Install frozen dependencies
+        run: yarn install --frozen-lockfile --non-interactive > /tmp/reports-install.log 2>&1 || { tail -40 /tmp/reports-install.log; exit 1; }
+      - name: Record baseline report, shell and language tests
+        run: |
+          npm run test -- src/modules/reports src/app/layouts src/shared/i18n --maxWorkers=2 > /tmp/reports-baseline.log 2>&1 || true
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const r=JSON.parse(fs.readFileSync('test-results/vitest-results.json','utf8'));
+          console.log(JSON.stringify({tests:r.numTotalTests,passed:r.numPassedTests,failed:r.numFailedTests,failures:r.testResults.flatMap(s=>(s.assertionResults||[]).filter(t=>t.status==='failed').map(t=>({file:s.name.replace(process.cwd()+'/',''),name:t.fullName,messages:t.failureMessages?.map(m=>m.slice(0,600))})))},null,2));
+          JS
