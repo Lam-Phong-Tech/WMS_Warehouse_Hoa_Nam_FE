@@ -1,0 +1,57 @@
+.hn-language-boundary {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 24px;
+  background: var(--ops-canvas);
+  color: var(--ops-text);
+  font-family: var(--wms-font-family);
+}
+.hn-language-boundary > section {
+  width: min(100%, 480px);
+  padding: 24px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+}
+.hn-language-boundary h1 {
+  margin: 0 0 8px;
+  color: var(--ops-heading);
+  font-size: 20px;
+  line-height: 1.4;
+}
+.hn-language-boundary p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.hn-language-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+.hn-language-actions button {
+  min-height: var(--ops-control-height, 40px);
+  padding: 8px 18px;
+  border: 1px solid var(--ops-primary);
+  border-radius: var(--ops-radius-control, 6px);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.hn-language-actions button:hover {
+  background: var(--ops-primary-hover);
+}
+.hn-language-actions button:focus-visible {
+  outline: 2px solid var(--ops-primary);
+  outline-offset: 3px;
+}
+.hn-language-actions .hn-language-secondary {
+  background: var(--ops-surface);
+  color: var(--ops-primary);
+}
+.hn-language-actions .hn-language-secondary:hover {
+  background: var(--ops-pale);
+}
