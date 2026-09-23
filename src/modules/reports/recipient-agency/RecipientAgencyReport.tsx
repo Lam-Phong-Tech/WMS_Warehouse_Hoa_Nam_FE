@@ -30,19 +30,12 @@ import {
 import "./recipient-agency-report.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
-const DEMO_RANGE: [Dayjs, Dayjs] = [dayjs("2026-09-04"), dayjs("2026-09-10")];
+function currentSevenDayRange(): [Dayjs, Dayjs] {
+  const end = dayjs().startOf("day");
+  return [end.subtract(6, "day"), end];
+}
 
 type StatusFilter = "ALL" | "COMPLETE" | "INCOMPLETE";
-type ForcedState =
-  | "loading"
-  | "refreshing"
-  | "empty"
-  | "no-result"
-  | "error"
-  | "partial"
-  | "warning"
-  | "readonly"
-  | null;
 
 type AppliedFilters = {
   from: string;
@@ -82,35 +75,6 @@ const COLORS = {
   border: "var(--ops-line)",
   skeleton: "var(--ops-line)",
 } as const;
-
-function readForcedState(): ForcedState {
-  const raw = new URLSearchParams(window.location.search).get("state");
-  const aliases: Record<string, ForcedState> = {
-    loading: "loading",
-    "initial-loading": "loading",
-    p02: "loading",
-    refreshing: "refreshing",
-    p03: "refreshing",
-    empty: "empty",
-    p04: "empty",
-    "no-result": "no-result",
-    "no-search-result": "no-result",
-    p06: "no-result",
-    error: "error",
-    "load-error": "error",
-    p07: "error",
-    partial: "partial",
-    "partial-stale": "partial",
-    p09: "partial",
-    warning: "warning",
-    "incomplete-warning": "warning",
-    p10: "warning",
-    readonly: "readonly",
-    "readonly-no-export": "readonly",
-    p11: "readonly",
-  };
-  return aliases[(raw ?? "").toLowerCase()] ?? null;
-}
 
 function dealerKey(event: RecipientAgencyLedgerEvent): string {
   return (
@@ -360,24 +324,21 @@ function DateRangeControl({
 }
 
 export default function RecipientAgencyReport() {
-  const forcedState = useMemo(() => readForcedState(), []);
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name) ||
-    "Kho Hoa Nam";
+    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() || "—";
+  const initialRange = useMemo<[Dayjs, Dayjs]>(currentSevenDayRange, []);
 
-  const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>(DEMO_RANGE);
+  const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>(initialRange);
   const [draftAgency, setDraftAgency] = useState("");
   const [draftStatus, setDraftStatus] = useState<StatusFilter>("ALL");
   const [applied, setApplied] = useState<AppliedFilters>({
-    from: DEMO_RANGE[0].format("YYYY-MM-DD"),
-    to: DEMO_RANGE[1].format("YYYY-MM-DD"),
+    from: initialRange[0].format("YYYY-MM-DD"),
+    to: initialRange[1].format("YYYY-MM-DD"),
     agency: "",
     status: "ALL",
   });
-  const [search, setSearch] = useState(
-    forcedState === "no-result" ? "zzzz" : "",
-  );
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [detailRow, setDetailRow] = useState<DealerRow | null>(null);
 
@@ -387,26 +348,15 @@ export default function RecipientAgencyReport() {
   });
   const exporter = useReportExport();
 
-  const initialLoading =
-    forcedState === "loading" ||
-    (source.isLoading && source.events.length === 0);
-  const refreshing =
-    forcedState === "refreshing" || (!initialLoading && source.isFetching);
-  const hardError =
-    forcedState === "error" ||
-    Boolean(source.error && source.events.length === 0);
+  const initialLoading = source.isLoading && source.events.length === 0;
+  const refreshing = !initialLoading && source.isFetching;
+  const hardError = Boolean(source.error && source.events.length === 0);
   const partial =
-    forcedState === "partial" ||
-    source.truncated ||
-    Boolean(source.error && source.events.length > 0);
-  const readonly = forcedState === "readonly" || !canExportPermission;
-  const warning = forcedState === "warning";
+    source.truncated || Boolean(source.error && source.events.length > 0);
+  const readonly = !canExportPermission;
   const controlsBusy = initialLoading || refreshing;
 
-  const baseEvents = useMemo(
-    () => (forcedState === "empty" ? [] : source.events),
-    [forcedState, source.events],
-  );
+  const baseEvents = source.events;
 
   const incompleteDocumentIds = useMemo(() => {
     const ids = new Set<string>();
@@ -552,10 +502,9 @@ export default function RecipientAgencyReport() {
   }, [dealers, search]);
 
   const noSearchResult =
-    (search.trim().length > 0 &&
-      tableRows.length === 0 &&
-      dealers.length > 0) ||
-    forcedState === "no-result";
+    search.trim().length > 0 &&
+    tableRows.length === 0 &&
+    dealers.length > 0;
   const reportEmpty =
     !initialLoading &&
     !hardError &&
@@ -592,6 +541,7 @@ export default function RecipientAgencyReport() {
     documentTotals.total > 0
       ? (documentTotals.complete / documentTotals.total) * 100
       : 0;
+  const warning = documentTotals.incomplete > 0;
   const completionLabel = percentage(
     documentTotals.complete,
     documentTotals.total,
@@ -651,12 +601,13 @@ export default function RecipientAgencyReport() {
   };
 
   const resetFilters = () => {
-    setDraftRange(DEMO_RANGE);
+    const nextRange = currentSevenDayRange();
+    setDraftRange(nextRange);
     setDraftAgency("");
     setDraftStatus("ALL");
     setApplied({
-      from: DEMO_RANGE[0].format("YYYY-MM-DD"),
-      to: DEMO_RANGE[1].format("YYYY-MM-DD"),
+      from: nextRange[0].format("YYYY-MM-DD"),
+      to: nextRange[1].format("YYYY-MM-DD"),
       agency: "",
       status: "ALL",
     });
