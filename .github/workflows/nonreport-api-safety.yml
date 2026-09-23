@@ -39,6 +39,7 @@ jobs:
           test -f test-results/vitest-results.json || { tail -60 /tmp/before.log; exit 1; }
           cp test-results/vitest-results.json /tmp/before.json
       - name: Apply reviewed candidate without changing a branch
+        id: patch
         run: |
           node scripts/nonreport-api-audit/patch.mjs
           node scripts/nonreport-api-audit/patch-extra.mjs
@@ -60,8 +61,8 @@ jobs:
             const p='src/modules/reverse/services/reversalService.ts';let s=load(p,'b78b9a038527bfadcc5f09095d4e6a6a231a419d');
             s='import { requiredApiNumber, requiredApiState } from "@/shared/api/api-read-values";\n'+s;
             s=edits(s,n=>ts.isFunctionDeclaration(n)&&n.name?.text==='num','function num(value: unknown): number { return requiredApiNumber(value, "reversal.quantity"); }',1);
-            s=rep(s,'status: (text(row.status) as ReversalDocument["status"]) || "DRAFT",','status: requiredApiState(row.status, "reversal.status", ["DRAFT", "POSTED", "CANCELLED"]),');
-            s=rep(s,'status: (text(row.status) as ReversalLine["status"]) || "DRAFT",','status: requiredApiState(row.status, "reversal.line.status", ["DRAFT", "POSTED", "CANCELLED"]),');
+            s=rep(s,'status: (text(row.status) as ReversalDocument["status"]) || "DRAFT",','status: requiredApiState(row.status, ["DRAFT", "POSTED", "CANCELLED"], "reversal.status"),');
+            s=rep(s,'status: (text(row.status) as ReversalLine["status"]) || "DRAFT",','status: requiredApiState(row.status, ["DRAFT", "POSTED", "CANCELLED"], "reversal.line.status"),');
             s=edits(s,(n,f)=>ts.isPropertyAssignment(n)&&n.name.getText(f)==='can_reverse','can_reverse: row.can_reverse === true',2);
             s=rep(s,'return { "If-Match": String(version) };','return { "If-Match": String(requirePositiveNumber(version, "If-Match")) };');put(p,s);
           }
@@ -69,10 +70,10 @@ jobs:
             const p='src/modules/warranty/services/componentIssueService.ts';let s=load(p,'8b16713c48677c25af8317b1c76f25b94f6d6aea');
             s='import { requiredApiNumber, requiredApiState } from "@/shared/api/api-read-values";\n'+s;
             s=edits(s,n=>ts.isFunctionDeclaration(n)&&n.name?.text==='num','function num(value: unknown): number { return requiredApiNumber(value, "component_issue.quantity"); }',1);
-            s=rep(s,'status: text(row.status, "ACTIVE") as ComponentIssueItem["status"],','status: requiredApiState(row.status, "component_issue.item.status", ["ACTIVE", "REMOVED", "POSTED"]),');
-            s=rep(s,'status: text(document.status, "DRAFT") as ComponentIssueStatus,','status: requiredApiState(document.status, "component_issue.status", ["DRAFT", "SCANNING", "POSTED", "CANCELLED"]),');
+            s=rep(s,'status: text(row.status, "ACTIVE") as ComponentIssueItem["status"],','status: requiredApiState(row.status, ["ACTIVE", "REMOVED", "POSTED"], "component_issue.item.status"),');
+            s=rep(s,'status: text(document.status, "DRAFT") as ComponentIssueStatus,','status: requiredApiState(document.status, ["DRAFT", "SCANNING", "POSTED", "CANCELLED"], "component_issue.status"),');
             s=rep(s,'version: num(document.version) || 1,','version: requiredApiNumber(document.version, "component_issue.version"),');
-            for(const state of ['SCANNING','CANCELLED','POSTED'])s=rep(s,`status: text(row.status, "${state}") as ComponentIssueStatus,`,'status: requiredApiState(row.status, "component_issue.status", ["DRAFT", "SCANNING", "POSTED", "CANCELLED"]),');
+            for(const state of ['SCANNING','CANCELLED','POSTED'])s=rep(s,`status: text(row.status, "${state}") as ComponentIssueStatus,`,'status: requiredApiState(row.status, ["DRAFT", "SCANNING", "POSTED", "CANCELLED"], "component_issue.status"),');
             put(p,s);
           }
           fs.writeFileSync('/tmp/nonreport-changed.json',JSON.stringify([...changed]));
@@ -81,8 +82,10 @@ jobs:
           git diff --check
           test -z "$(git diff --name-only -- src/modules/reports)"
       - name: Typecheck all consumers
+        id: types
         run: npm run typecheck
       - name: Compare safety-module regressions
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
         run: |
           rm -f test-results/vitest-results.json
           npm run test -- src/modules/auth src/modules/reverse src/modules/warranty --maxWorkers=2 > /tmp/after.log 2>&1 || true
