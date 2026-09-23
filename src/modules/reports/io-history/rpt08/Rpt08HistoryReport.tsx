@@ -356,7 +356,9 @@ export default function IoHistoryReport() {
             <span aria-hidden="true">/</span>
             <span>{tUi("updatedUi.text_8814615e6de0")}</span>
           </div>
-          <h1>{tUi("updatedUi.text_cedbc7cfb228")}</h1>
+          <h1 className="hn-report-page-title">
+            {tUi("updatedUi.text_cedbc7cfb228")}
+          </h1>
           <p>{tUi("updatedUi.text_5c09481fb555")}</p>
         </div>
         <HeaderActions

@@ -369,10 +369,28 @@ function Pagination({
 
   return (
     <nav
-      className="rpt08-pagination"
+      className="rpt08-pagination hn-report-pagination"
       aria-label={tUi("shared.table.pagination")}
     >
+      <button
+        type="button"
+        data-page-direction="previous"
+        aria-label={tUi("reports.traceability.previousPage")}
+        disabled={page <= 1}
+        onClick={() => onChange(page - 1)}
+      >
+        ‹
+      </button>
       {nodes}
+      <button
+        type="button"
+        data-page-direction="next"
+        aria-label={tUi("updatedUi.text_8cac33aab67d")}
+        disabled={page >= totalPages}
+        onClick={() => onChange(page + 1)}
+      >
+        ›
+      </button>
     </nav>
   );
 }
@@ -543,7 +561,8 @@ export function HistoryTable({
                         className="rpt08-view-button"
                         onClick={() => onOpenRow(row)}
                       >
-                        Xem <span aria-hidden="true">›</span>
+                        {tUi("reports.ioHistory.view")}{" "}
+                        <span aria-hidden="true">›</span>
                       </button>
                     </td>
                   </tr>
@@ -557,7 +576,7 @@ export function HistoryTable({
       {noResult ? <NoResultTable onClear={() => onSearch("")} /> : null}
 
       {!empty && !noResult ? (
-        <footer className="rpt08-table-footer">
+        <footer className="rpt08-table-footer hn-report-pagination-footer">
           <span>
             {tUi("putaway.queue.showing") + " "}
             {start}–{end} / {number(total)}
