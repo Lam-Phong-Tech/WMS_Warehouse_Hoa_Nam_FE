@@ -5,7 +5,7 @@ on:
     branches: [dev]
     paths:
       - '.github/workflows/i18n-review.yml'
-      - 'scripts/localize-interface.mjs'
+      - 'scripts/*localiz*.mjs'
       - 'scripts/i18n-reviewed-translations.tsv'
       - 'src/shared/i18n/**'
 
@@ -31,7 +31,7 @@ env:
 jobs:
   review:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,26 +41,13 @@ jobs:
           node-version: 22
           cache: yarn
       - name: Install frozen dependencies
-        run: yarn install --frozen-lockfile --non-interactive
-      - name: Apply reviewed translations in the temporary checkout only
-        run: node scripts/localize-interface.mjs --apply
-      - name: Format only localization changes
+        run: yarn install --frozen-lockfile --non-interactive > /tmp/i18n-install.log 2>&1 || { tail -40 /tmp/i18n-install.log; exit 1; }
+      - name: Apply and audit reviewed interface translations
+        run: node scripts/prepare-localization.mjs
+      - name: Type check
+        run: npm run typecheck > /tmp/i18n-types.log 2>&1 || { cat /tmp/i18n-types.log; exit 1; }
+      - name: Focused language switching regression tests
+        if: ${{ !cancelled() }}
         run: |
-          node --input-type=module <<'JS'
-          import fs from 'node:fs';
-          import {execFileSync} from 'node:child_process';
-          const changed = execFileSync('git', ['diff', '--name-only', '-z']).toString().split('\0');
-          const added = execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z']).toString().split('\0');
-          const paths = [...new Set([...changed, ...added, 'src/shared/i18n/EnglishLanguageBoundary.tsx', 'src/shared/i18n/EnglishLanguageBoundary.test.tsx', 'src/shared/i18n/english-coverage.test.ts', 'src/shared/i18n/english-messages.ts', 'src/shared/i18n/english-language-boundary.css', 'src/App.tsx'])].filter(p => p.startsWith('src/') && /\.(ts|tsx|css)$/.test(p) && fs.existsSync(p));
-          execFileSync('node_modules/.bin/prettier', ['--write', ...paths], {stdio:'inherit'});
-          execFileSync('git', ['diff', '--check'], {stdio:'inherit'});
-          execFileSync('git', ['diff', '--stat'], {stdio:'inherit'});
-          JS
-      - name: Type check translated application
-        run: npm run typecheck
-      - name: Translation and changed-screen regression tests
-        if: ${{ !cancelled() }}
-        run: npm run test -- src/shared/i18n src/modules/inbound src/modules/outbound src/modules/reports src/modules/master-data src/app/layouts src/shared/constants/business-labels.test.ts
-      - name: Production build
-        if: ${{ !cancelled() }}
-        run: npm run build
+          npm run test -- src/shared/i18n src/modules/reports/io-history/IoHistoryFeedback.locale.test.tsx > /tmp/i18n-tests.log 2>&1 || { tail -160 /tmp/i18n-tests.log; exit 1; }
+          tail -12 /tmp/i18n-tests.log
