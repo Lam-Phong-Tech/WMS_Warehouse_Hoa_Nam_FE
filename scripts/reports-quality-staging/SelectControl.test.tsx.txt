@@ -1,0 +1,53 @@
+import { fireEvent, render, screen, cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { SelectControl } from "./SelectControl";
+
+afterEach(cleanup);
+const options = [{value:"ALL",label:"Tất cả"},{value:"INBOUND",label:"Nhập kho"},{value:"OUTBOUND",label:"Xuất kho"}];
+function setup(extra: {disabled?:boolean; readonly?:boolean} = {}) {
+  const onChange = vi.fn();
+  const view = render(<SelectControl ariaLabel="Loại giao dịch" value="ALL" options={options} icon={null} onChange={onChange} {...extra}/>);
+  const trigger = screen.getByRole("combobox");
+  return {...view,trigger,onChange};
+}
+describe("RPT08 dropdown interaction",()=>{
+  it("keeps a hidden inert list for exit motion, with no focusable hidden options",()=>{
+    const {trigger,container}=setup();
+    expect(trigger).toHaveAttribute("aria-expanded","false");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(container.querySelector('[role="listbox"]')).toHaveAttribute("inert");
+    fireEvent.click(trigger);
+    expect(screen.getByRole("listbox")).not.toHaveAttribute("inert");
+    fireEvent.click(screen.getByRole("option",{name:"Nhập kho"}));
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+  it("supports arrow navigation and commits the API enum once",()=>{
+    const {trigger,onChange}=setup(); trigger.focus();
+    fireEvent.keyDown(trigger,{key:"ArrowDown"});
+    fireEvent.keyDown(trigger,{key:"ArrowDown"});
+    expect(trigger).toHaveAttribute("aria-activedescendant");
+    fireEvent.keyDown(trigger,{key:"Enter"});
+    expect(onChange).toHaveBeenCalledExactlyOnceWith("INBOUND");
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute("aria-expanded","false");
+  });
+  it("Escape and outside pointer close without changing the filter",()=>{
+    const {trigger,onChange}=setup();
+    fireEvent.click(trigger);fireEvent.keyDown(trigger,{key:"Escape"});
+    expect(screen.queryByRole("listbox")).toBeNull();
+    fireEvent.click(trigger);fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("listbox")).toBeNull();expect(onChange).not.toHaveBeenCalled();
+  });
+  it("Tab closes without intercepting keyboard traversal",()=>{
+    const {trigger}=setup();fireEvent.click(trigger);fireEvent.keyDown(trigger,{key:"Tab"});
+    expect(trigger).toHaveAttribute("aria-expanded","false");
+  });
+  it.each([{disabled:true},{readonly:true}])("does not mutate disabled/read-only controls: %j",extra=>{
+    const {trigger,onChange}=setup(extra);fireEvent.click(trigger);fireEvent.keyDown(trigger,{key:"ArrowDown"});
+    expect(screen.queryByRole("listbox")).toBeNull();expect(onChange).not.toHaveBeenCalled();
+  });
+  it("does not substitute the first label for an unknown API value",()=>{
+    render(<SelectControl ariaLabel="Actor" value="missing" options={[{value:"",label:"All"}]} icon={null} onChange={()=>{}}/>);
+    expect(screen.getByRole("combobox")).toHaveTextContent("—");
+  });
+});

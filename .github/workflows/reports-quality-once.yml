@@ -2,61 +2,98 @@ name: Review live reports and controls
 on:
   push:
     branches: [dev]
-    paths: [.github/workflows/reports-quality-once.yml]
+    paths:
+      - .github/workflows/reports-quality-once.yml
+      - scripts/reports-quality-staging/**
+      - scripts/check-reports-live-controls.mjs
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: reports-quality-once
   cancel-in-progress: false
 jobs:
   review:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      VITE_APP_ENV: test
+      VITE_APP_TITLE: WMS Hoa Nam
+      VITE_APP_VERSION: 1.0.0-reports-quality
+      VITE_API_BASE_URL: http://127.0.0.1:5199/api/v1
+      VITE_API_HEALTH_PATH: /health
+      VITE_API_TIMEOUT_MS: '10000'
+      VITE_API_WITH_CREDENTIALS: 'true'
+      VITE_STORAGE_URL: ''
+      VITE_ENABLE_ANALYTICS: 'false'
+      VITE_ENABLE_DEBUG: 'false'
+      VITE_ENABLE_PERF_MONITOR: 'false'
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Inventory report routes, sample-data paths and API sources
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          root=Path('src/modules/reports')
-          patterns={
-            'SAMPLE_PATHS':r'(?i)\b(?:demo\w*|\w*demo\w*|fixture\w*|\w*fixture\w*|mock\w*|sample\w*|seed\w*)\b|Math\.random|2026-09-(?:04|10)|6480|5980|1235|12460',
-            'API_SOURCES':r'(?i)(?:use\w*(?:report|snapshot|query)|\w*(?:fetch|load)\w*\(|reportCode:|endpoint:|api\.get|http\.get)',
-          }
-          for label,pattern in patterns.items():
-            print('\n===== '+label+' =====')
-            for p in sorted(root.rglob('*')):
-              if p.suffix not in ('.ts','.tsx') or re.search(r'\.(test|spec)\.|__tests__|fixtures',str(p)):continue
-              found=[]
-              for n,line in enumerate(p.read_text().splitlines(),1):
-                if re.search(pattern,line) and not line.strip().startswith(('*','//')):
-                  if label=='SAMPLE_PATHS' and re.search(r'VuexyDemoIcon|demo-icon|className=.*demo|\.demo-chip',line):continue
-                  found.append(f'{n}: {line.strip()[:220]}')
-              if found: print(str(p)+'\n'+'\n'.join(found))
-          print('\n===== PAGE ENTRYPOINTS =====')
-          for p in sorted((root/'pages').glob('*.tsx')):
-            if '.test.' not in p.name: print('\n'+str(p)+'\n'+p.read_text()[:18000])
-          print('\n===== RECENT REPORT AUDIT TESTS =====')
-          for p in sorted(root.rglob('*test*')):
-            if p.is_file() and re.search('api-only|live|fixture|source',p.name,re.I):print(str(p)+'\n'+p.read_text()[:18000])
-          print('\n===== API SNAPSHOT =====')
-          p=root/'io-history/io-history-api.ts'
-          print(p.read_text())
-          PY
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: yarn
-      - name: Install frozen dependencies
-        run: yarn install --frozen-lockfile --non-interactive > /tmp/reports-install.log 2>&1 || { tail -40 /tmp/reports-install.log; exit 1; }
-      - name: Record baseline report, shell and language tests
+      - name: Install frozen dependencies and Chromium
+        run: |
+          yarn install --frozen-lockfile --non-interactive > /tmp/reports-install.log 2>&1 || { tail -40 /tmp/reports-install.log; exit 1; }
+          npx playwright install --with-deps chromium > /tmp/reports-browser-install.log 2>&1 || { tail -40 /tmp/reports-browser-install.log; exit 1; }
+      - name: Capture baseline report tests before any application changes
         run: |
           npm run test -- src/modules/reports src/app/layouts src/shared/i18n --maxWorkers=2 > /tmp/reports-baseline.log 2>&1 || true
+          test -f test-results/vitest-results.json
+          cp test-results/vitest-results.json /tmp/reports-baseline.json
+          tail -14 /tmp/reports-baseline.log
+      - name: Apply only reviewed control and API-integrity changes
+        run: |
+          python3 scripts/reports-quality-staging/repair.py
+          cp scripts/reports-quality-staging/io-history-api.integrity.test.tsx.txt src/modules/reports/io-history/io-history-api.integrity.test.tsx
+          cp scripts/reports-quality-staging/reports-api-only.test.ts.txt src/modules/reports/reports-api-only.test.ts
+          node_modules/.bin/prettier --write src/modules/reports/io-history/rpt08/SelectControl.tsx src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/rpt08/controls.tsx src/modules/reports/io-history/rpt08/controls.css src/modules/reports/io-history/rpt08/base.css src/modules/reports/io-history/rpt08/table-states.css src/modules/reports/io-history/io-history-api.ts src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/warranty-components/WarrantyComponentsReport.tsx src/modules/reports/reports-api-only.test.ts scripts/check-reports-live-controls.mjs
+          git diff --check
+      - name: TypeScript validation
+        run: npm run typecheck
+      - name: New dropdown, API-source and quantity-integrity tests must pass
+        run: npm run test -- src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/reports-api-only.test.ts --maxWorkers=2
+      - name: Compare every report, shell and language test against baseline
+        run: |
+          npm run test -- src/modules/reports src/app/layouts src/shared/i18n --maxWorkers=2 > /tmp/reports-after.log 2>&1 || true
           node --input-type=module <<'JS'
           import fs from 'node:fs';
-          const r=JSON.parse(fs.readFileSync('test-results/vitest-results.json','utf8'));
-          console.log(JSON.stringify({tests:r.numTotalTests,passed:r.numPassedTests,failed:r.numFailedTests,failures:r.testResults.flatMap(s=>(s.assertionResults||[]).filter(t=>t.status==='failed').map(t=>({file:s.name.replace(process.cwd()+'/',''),name:t.fullName,messages:t.failureMessages?.map(m=>m.slice(0,600))})))},null,2));
+          import assert from 'node:assert/strict';
+          const before=JSON.parse(fs.readFileSync('/tmp/reports-baseline.json','utf8'));
+          const after=JSON.parse(fs.readFileSync('test-results/vitest-results.json','utf8'));
+          const failures=r=>r.testResults.flatMap(s=>(s.assertionResults||[]).filter(t=>t.status==='failed').map(t=>({file:s.name.replace(process.cwd()+'/',''),name:t.fullName}))).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
+          const oldNames=new Set(failures(before).map(f=>JSON.stringify(f)));
+          const newFailures=failures(after).filter(f=>!oldNames.has(JSON.stringify(f)));
+          const summary={baseline:{total:before.numTotalTests,passed:before.numPassedTests,failed:before.numFailedTests},updated:{total:after.numTotalTests,passed:after.numPassedTests,failed:after.numFailedTests},newFailures,remainingFailures:failures(after)};
+          console.log(JSON.stringify(summary,null,2));
+          fs.writeFileSync('test-results/reports-quality-tests.json',JSON.stringify(summary,null,2));
+          assert.equal(before.numTotalTests,245,'Unexpected baseline; inspect before publishing');
+          assert.equal(before.numFailedTests,26,'Unexpected baseline failures');
+          assert(after.numTotalTests>=before.numTotalTests+18,'Missing regression tests');
+          assert.deepEqual(newFailures,[],'New report regressions');
+          assert.equal(after.numRuntimeErrorTestSuites||0,0,'Test suite runtime errors');
           JS
+      - name: Read-only API responses, report geometry and smooth control interactions
+        run: node scripts/check-reports-live-controls.mjs
+      - name: Preserve global language, appearance and shortcut controls
+        run: node scripts/check-report-topbar.mjs
+      - name: Production build
+        run: |
+          npm run build > /tmp/reports-build.log 2>&1 || { tail -80 /tmp/reports-build.log; exit 1; }
+          tail -5 /tmp/reports-build.log
+      - name: Publish validated repair directly to dev and remove temporary tooling
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git diff --check
+          git add -- src/modules/reports/io-history/io-history-report.css src/modules/reports/io-history/rpt08/SelectControl.tsx src/modules/reports/io-history/rpt08/SelectControl.test.tsx src/modules/reports/io-history/rpt08/controls.tsx src/modules/reports/io-history/rpt08/controls.css src/modules/reports/io-history/rpt08/base.css src/modules/reports/io-history/rpt08/table-states.css src/modules/reports/io-history/io-history-api.ts src/modules/reports/io-history/io-history-api.integrity.test.tsx src/modules/reports/io-history/rpt08/Rpt08HistoryReport.tsx src/modules/reports/warranty-components/WarrantyComponentsReport.tsx src/modules/reports/reports-api-only.test.ts scripts/check-reports-live-controls.mjs
+          git rm -r -- scripts/reports-quality-staging .github/workflows/reports-quality-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix(reports): align history controls and enforce API-derived report data' -m 'Use shared operations colors, smooth non-reflowing dropdown transitions and keyboard navigation. Preserve API null quantities; exclude cached sources outside the requested scope and wait for required report sources. Remove the remaining fixed sample reporting period. Validate real report components with intercepted API responses and compare all report tests to baseline; no live warehouse records modified.'
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin HEAD:refs/heads/dev
+          git rev-parse HEAD
