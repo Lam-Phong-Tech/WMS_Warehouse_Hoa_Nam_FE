@@ -241,6 +241,10 @@ export function useIoHistorySnapshot({
   });
   const ledger = useInventoryLedger({ from, to, enabled: valid });
   const users = useUserDirectory();
+  const resolvingSnapshot =
+    documents.isPlaceholderData ||
+    ledger.isPlaceholderData ||
+    (wantsReversals && reversals.isPlaceholderData);
 
   /** `source_id` → movement của chứng từ đó (số lượng, id, tổng qty có dấu). */
   const movementsByDocument = useMemo(() => {
@@ -264,6 +268,7 @@ export function useIoHistorySnapshot({
   }, [ledger.data]);
 
   const rows = useMemo<IoHistoryRow[]>(() => {
+    if (resolvingSnapshot) return [];
     const result: IoHistoryRow[] = [];
 
     // ── Phiếu nhập / xuất ────────────────────────────────────────────────
@@ -358,16 +363,30 @@ export function useIoHistorySnapshot({
 
     // Mockup sắp mới nhất trước theo `posted_at` (`b.posted.localeCompare(a)`).
     return result.sort((a, b) => b.postedAt.localeCompare(a.postedAt));
-  }, [documents.data, reversals.data, movementsByDocument, users, from, to]);
+  }, [
+    documents.data,
+    reversals.data,
+    movementsByDocument,
+    users,
+    from,
+    to,
+    resolvingSnapshot,
+  ]);
 
   const snapshot = useMemo<IoHistorySnapshot>(
-    () => ({ rows, dataAsOf: text(documents.data?.meta?.timestamp, "") }),
-    [rows, documents.data],
+    () => ({
+      rows,
+      dataAsOf: resolvingSnapshot
+        ? ""
+        : text(documents.data?.meta?.timestamp, ""),
+    }),
+    [rows, documents.data, resolvingSnapshot],
   );
 
   return {
     snapshot,
     loading:
+      resolvingSnapshot ||
       (wantsStockDocuments && documents.isLoading) ||
       (wantsReversals && reversals.isLoading) ||
       ledger.isLoading,
