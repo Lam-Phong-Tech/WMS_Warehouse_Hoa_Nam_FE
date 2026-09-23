@@ -70,7 +70,7 @@ export function OverviewCard({
             <i className="is-inbound" />
             <span>
               {tUi("dashboard.snapshot.inbound") + " "}
-              <strong>{number(inbound)}</strong>
+              <strong>{inbound === null ? "—" : number(inbound)}</strong>
               {total ? <small> · {percent(inboundRate)}</small> : null}
             </span>
           </div>
@@ -78,7 +78,7 @@ export function OverviewCard({
             <i className="is-outbound" />
             <span>
               {tUi("dashboard.snapshot.outbound") + " "}
-              <strong>{number(outbound)}</strong>
+              <strong>{outbound === null ? "—" : number(outbound)}</strong>
               {total ? <small> · {percent(outboundRate)}</small> : null}
             </span>
           </div>
@@ -93,9 +93,9 @@ export function ProductCard({
   inbound,
   outbound,
 }: {
-  total: number;
-  inbound: number;
-  outbound: number;
+  total: number | null;
+  inbound: number | null;
+  outbound: number | null;
 }) {
   return (
     <section
@@ -108,7 +108,7 @@ export function ProductCard({
       <div className="rpt08-product-card__body">
         <h2>{tUi("updatedUi.text_87e5b1b15d2e")}</h2>
         <div className="rpt08-product-total">
-          <strong>{number(total)}</strong>
+          <strong>{total === null ? "—" : number(total)}</strong>
           <span>{tUi("updatedUi.text_9bfcaa70b19e")}</span>
         </div>
         <div className="rpt08-product-breakdown">
@@ -551,7 +551,7 @@ export function HistoryTable({
                       <span>{row.objectPrimary}</span>
                       <small> · {row.objectSecondary}</small>
                     </td>
-                    <td className="is-number">{number(row.quantity)}</td>
+                    <td className="is-number">{row.quantity === null ? "—" : number(row.quantity)}</td>
                     <td>{row.actor}</td>
                     <td>
                       <button
