@@ -70,7 +70,7 @@ export function OverviewCard({
             <i className="is-inbound" />
             <span>
               {tUi("dashboard.snapshot.inbound") + " "}
-              <strong>{inbound === null ? "—" : number(inbound)}</strong>
+              <strong>{number(inbound)}</strong>
               {total ? <small> · {percent(inboundRate)}</small> : null}
             </span>
           </div>
@@ -78,7 +78,7 @@ export function OverviewCard({
             <i className="is-outbound" />
             <span>
               {tUi("dashboard.snapshot.outbound") + " "}
-              <strong>{outbound === null ? "—" : number(outbound)}</strong>
+              <strong>{number(outbound)}</strong>
               {total ? <small> · {percent(outboundRate)}</small> : null}
             </span>
           </div>
@@ -114,12 +114,12 @@ export function ProductCard({
         <div className="rpt08-product-breakdown">
           <span>
             <i className="is-inbound" />
-            <strong>{number(inbound)}</strong>
+            <strong>{inbound === null ? "—" : number(inbound)}</strong>
             {" " + tUi("updatedUi.text_22652147af7d")}
           </span>
           <span>
             <i className="is-outbound" />
-            <strong>{number(outbound)}</strong>
+            <strong>{outbound === null ? "—" : number(outbound)}</strong>
             {" " + tUi("updatedUi.text_4f12e82f09c9")}
           </span>
         </div>
@@ -551,7 +551,9 @@ export function HistoryTable({
                       <span>{row.objectPrimary}</span>
                       <small> · {row.objectSecondary}</small>
                     </td>
-                    <td className="is-number">{row.quantity === null ? "—" : number(row.quantity)}</td>
+                    <td className="is-number">
+                      {row.quantity === null ? "—" : number(row.quantity)}
+                    </td>
                     <td>{row.actor}</td>
                     <td>
                       <button
