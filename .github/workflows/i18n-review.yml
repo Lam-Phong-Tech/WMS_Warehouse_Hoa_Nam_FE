@@ -3,7 +3,9 @@ name: Localization source review
 on:
   push:
     branches: [dev]
-    paths: ['.github/workflows/i18n-review.yml']
+    paths:
+      - '.github/workflows/i18n-review.yml'
+      - 'scripts/audit-localization.mjs'
 
 permissions:
   contents: read
@@ -11,29 +13,24 @@ permissions:
 jobs:
   review:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [catalog, shared, outbound, inbound, inventory, reports, master-data, auth, receiving, putaway, warranty, iam, notifications, audit-logs, errors]
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Package tracked UI sources for localization review
-        run: |
-          python3 - <<'PY'
-          import pathlib, subprocess, zipfile
-          allowed = {'.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.css', '.html', '.lock'}
-          paths = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
-          with zipfile.ZipFile('localization-review.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
-              for value in paths:
-                  path = pathlib.Path(value)
-                  if not value or not path.is_file() or path.suffix not in allowed:
-                      continue
-                  if path.parts[0] not in ('src', 'scripts', 'tests', 'e2e', 'patches') and len(path.parts) != 1:
-                      continue
-                  archive.write(path, value)
-              archive.writestr('REVIEW_SOURCE_SHA.txt', subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode())
-          PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/setup-node@v4
         with:
-          name: localization-review
-          path: localization-review.zip
-          retention-days: 1
+          node-version: 22
+      - name: Install parser only (no repository dependencies changed)
+        run: |
+          npm install --prefix "$RUNNER_TEMP/i18n-parser" typescript@6.0.2 --ignore-scripts --no-audit --no-fund
+          mkdir -p node_modules
+          ln -s "$RUNNER_TEMP/i18n-parser/node_modules/typescript" node_modules/typescript
+      - name: Audit interface literals and catalog coverage
+        env:
+          REVIEW_GROUP: ${{ matrix.group }}
+        run: node scripts/audit-localization.mjs "$REVIEW_GROUP"
