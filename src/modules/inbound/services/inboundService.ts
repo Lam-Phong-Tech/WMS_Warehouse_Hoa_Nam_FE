@@ -1,3 +1,4 @@
+import { nullableApiNumber } from "@/shared/api/api-read-values";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { withConcurrencyContract } from "@/shared/api/concurrency-contract";
@@ -141,7 +142,7 @@ function normalizeDocument(row: RawRecord): InboundDocument {
       )
     : num(row.scanned_qty ?? row.qty_scanned ?? row.total_scanned);
   const status = normalizeStatus(row.status);
-  const posted = status === "POSTED" ? expected : 0;
+  const posted = status === "POSTED" ? scanned : 0;
   return {
     id: text(row.id ?? row.stock_document_id),
     code: text(row.doc_no ?? row.code ?? row.document_no),
@@ -170,7 +171,7 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
     createdBy: text(row.created_by_name ?? row.creator_name, "-"),
     updatedAt: text(row.updated_at) || undefined,
-    version: num(row.version ?? row.lock_version ?? 1),
+    version: nullableApiNumber(row.version ?? row.lock_version) ?? undefined,
     sourceReference: text(row.source_reference ?? row.source_name) || undefined,
     note: text(row.note) || undefined,
     // Phiếu (thường là phiếu Mini App quét ra SKU mới) đang chờ người ở web bổ
@@ -188,7 +189,7 @@ function normalizeLine(
 ): InboundLine {
   const expected = num(row.qty_planned ?? row.qty_expected ?? row.quantity);
   const scanned = num(row.scanned_qty ?? row.qty_scanned ?? 0);
-  const posted = status === "POSTED" ? expected : 0;
+  const posted = status === "POSTED" ? scanned : 0;
   return {
     id: text(row.id ?? row.stock_document_line_id),
     documentId,
@@ -216,7 +217,13 @@ function normalizeLine(
   };
 }
 function normalizeDetail(row: RawRecord): InboundDetail {
-  const document = normalizeDocument(row);
+  const document = {
+    ...normalizeDocument(row),
+    version: requirePositiveNumber(
+      row.version ?? row.lock_version,
+      "inbound.version",
+    ),
+  };
   return {
     document,
     lines: rawLines(row).map((line) =>

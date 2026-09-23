@@ -16,7 +16,7 @@ export interface InboundDocument {
   status: InboundStatus;
   createdBy: string;
   updatedAt?: string;
-  version: number;
+  version?: number;
   sourceReference?: string;
   note?: string;
   /**
@@ -80,7 +80,7 @@ export interface CompleteInboundLineSkuResult {
 }
 
 export interface InboundDetail {
-  document: InboundDocument;
+  document: InboundDocument & { version: number };
   lines: InboundLine[];
 }
 
