@@ -20,7 +20,7 @@ export type HistoryRow = {
   type: Exclude<IoDocType, "REVERSAL">;
   objectPrimary: string;
   objectSecondary: string;
-  quantity: number;
+  quantity: number | null;
   actor: string;
   source?: IoHistoryRow;
 };
@@ -100,7 +100,7 @@ export function mapLiveRow(row: IoHistoryRow): HistoryRow | null {
     type: row.type,
     objectPrimary,
     objectSecondary,
-    quantity: Math.abs(row.qty ?? 0),
+    quantity: row.qty === null ? null : Math.abs(row.qty),
     actor: row.actor || "—",
     source: row,
   };
