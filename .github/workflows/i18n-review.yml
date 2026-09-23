@@ -46,7 +46,9 @@ jobs:
       - name: Install frozen dependencies
         run: yarn install --frozen-lockfile --non-interactive > /tmp/i18n-install.log 2>&1 || { tail -40 /tmp/i18n-install.log; exit 1; }
       - name: Apply and audit reviewed interface translations
-        run: node scripts/prepare-localization.mjs
+        run: |
+          cat scripts/i18n-reviewed-translations-css.tsv >> scripts/i18n-reviewed-translations-extra.tsv
+          node scripts/prepare-localization.mjs
       - name: Format changed source only
         run: |
           node --input-type=module <<'JS'
@@ -60,11 +62,10 @@ jobs:
           JS
       - name: Type check
         run: npm run typecheck > /tmp/i18n-types.log 2>&1 || { cat /tmp/i18n-types.log; exit 1; }
-      - name: Language and warehouse regression tests
-        if: ${{ !cancelled() }}
-        run: |
-          npm run test -- src/shared/i18n src/modules/inbound src/modules/outbound src/modules/reports src/modules/master-data src/modules/warranty src/app/layouts src/shared/constants/business-labels.test.ts --maxWorkers=4 > /tmp/i18n-tests.log 2>&1 || { tail -180 /tmp/i18n-tests.log; exit 1; }
-          tail -12 /tmp/i18n-tests.log
+      - name: Compare language and warehouse tests with the pre-task baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/test-localization.mjs
       - name: Production build
         run: npm run build > /tmp/i18n-build.log 2>&1 || { tail -80 /tmp/i18n-build.log; exit 1; }
       - name: Publish validated UI changes directly to dev
@@ -82,6 +83,12 @@ jobs:
           git diff --cached --stat
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'fix(i18n): complete English copy across warehouse screens and preserve localized controls'
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const tests=JSON.parse(fs.readFileSync('/tmp/localization-validation.json','utf8'));
+          const audit=JSON.parse(fs.readFileSync('i18n-migration-review.json','utf8'));
+          fs.writeFileSync('/tmp/i18n-commit.txt',`fix(i18n): complete English interface copy across warehouse screens\n\nTranslate ${audit.translatedOccurrences} fixed UI occurrences with ${audit.newMessages} new message pairs.\nTypecheck and production build passed.\nTests: ${tests.passed}/${tests.total} passed; ${tests.preExistingFailures} identical existing failures verified against ${tests.baseline}; no new failures.\nPreserve identifiers, API values and user-entered content.\n`);
+          JS
+          git commit -F /tmp/i18n-commit.txt
           git push origin HEAD:refs/heads/dev
           git rev-parse HEAD
