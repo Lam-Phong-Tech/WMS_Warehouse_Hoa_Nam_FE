@@ -226,14 +226,16 @@ export function BalanceDetailModal({
           component="span"
           sx={{
             color:
-              row.qty >= 0
-                ? SEMANTIC_LIGHT.successText
-                : SEMANTIC_LIGHT.errorText,
+              row.qty === null
+                ? "text.secondary"
+                : row.qty >= 0
+                  ? SEMANTIC_LIGHT.successText
+                  : SEMANTIC_LIGHT.errorText,
             fontVariantNumeric: "tabular-nums",
             fontWeight: 600,
           }}
         >
-          {row.qty >= 0
+          {row.qty !== null && row.qty >= 0
             ? `+${formatQuantity(row.qty)}`
             : formatQuantity(row.qty)}
         </Box>
@@ -372,7 +374,7 @@ export function BalanceDetailModal({
       header: t("inventory.detail.colQty"),
       width: 100,
       align: "right",
-      render: (row) => formatQuantity(Number(row.quantity ?? 0)),
+      render: (row) => formatQuantity(Number(row.quantity)),
     },
     {
       key: "container_status",
@@ -574,7 +576,7 @@ export function BalanceDetailModal({
         <div>
           <SectionTitle>
             {t("inventory.detail.itemsTitle", {
-              count: subledger?.item_count ?? balance.serialQty,
+              count: formatQuantity(subledger?.item_count ?? balance.serialQty),
             })}
           </SectionTitle>
           <ResponsiveDataTable<RawRecord>
@@ -582,7 +584,12 @@ export function BalanceDetailModal({
             maxBodyHeight="clamp(240px, 45dvh, 520px)"
             rows={(subledger?.items as RawRecord[]) ?? []}
             columns={itemColumns}
-            rowKey={(row) => text(row.id, String(Math.random()))}
+            rowKey={(row) =>
+              text(
+                row.id ?? row.item_id ?? row.item_code,
+                `item-row-${((subledger?.items as RawRecord[]) ?? []).indexOf(row)}`,
+              )
+            }
             loading={subledgerQuery.isLoading}
             emptyText={t("inventory.detail.itemsEmpty")}
           />
@@ -591,7 +598,9 @@ export function BalanceDetailModal({
         <div>
           <SectionTitle>
             {t("inventory.detail.containersTitle", {
-              count: subledger?.container_count ?? balance.boxQty,
+              count: formatQuantity(
+                subledger?.container_count ?? balance.boxQty,
+              ),
             })}
           </SectionTitle>
           <ResponsiveDataTable<RawRecord>
@@ -599,7 +608,12 @@ export function BalanceDetailModal({
             maxBodyHeight="clamp(240px, 45dvh, 520px)"
             rows={(subledger?.containers as RawRecord[]) ?? []}
             columns={containerColumns}
-            rowKey={(row) => text(row.id, String(Math.random()))}
+            rowKey={(row) =>
+              text(
+                row.id ?? row.container_id ?? row.container_code,
+                `container-row-${((subledger?.containers as RawRecord[]) ?? []).indexOf(row)}`,
+              )
+            }
             loading={subledgerQuery.isLoading}
             emptyText={t("inventory.detail.containersEmpty")}
           />

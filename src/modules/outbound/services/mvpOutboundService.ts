@@ -1,3 +1,8 @@
+import {
+  requiredApiState,
+  requiredApiNumber,
+  nullableApiNumber,
+} from "@/shared/api/api-read-values";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import type { ApiMeta } from "@/shared/types/api-response";
@@ -296,11 +301,12 @@ function parseJsonArray(value: unknown): OutboundImportRow["errors"] {
 }
 
 function normalizeStatus(value: unknown): OutboundStatus {
-  const status = text(value).toUpperCase();
-  if (status === "SCANNING" || status === "POSTED" || status === "CANCELLED") {
-    return status;
-  }
-  return "DRAFT";
+  return requiredApiState(value, [
+    "DRAFT",
+    "SCANNING",
+    "POSTED",
+    "CANCELLED",
+  ] as const);
 }
 
 function rawLines(row: RawRecord): RawRecord[] {
@@ -324,9 +330,7 @@ function normalizeLine(row: RawRecord, documentId: string): OutboundLineRecord {
 }
 
 function optionalNum(value: unknown): number | undefined {
-  if (value === undefined || value === null) return undefined;
-  const result = Number(value);
-  return Number.isFinite(result) ? result : undefined;
+  return nullableApiNumber(value) ?? undefined;
 }
 
 function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
@@ -360,7 +364,11 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
 }
 
 function normalizeItemMatch(row: RawRecord): OutboundItemMatchRecord {
-  const status = text(row.status, "ACTIVE").toUpperCase();
+  const status = requiredApiState(row.status, [
+    "ACTIVE",
+    "REMOVED",
+    "POSTED",
+  ] as const);
   return {
     id: text(row.id),
     lineId: text(row.line_id ?? row.outbound_line_id),
@@ -369,11 +377,8 @@ function normalizeItemMatch(row: RawRecord): OutboundItemMatchRecord {
     skuId: text(row.sku_id ?? row.product_id),
     itemCode: text(row.item_code) || null,
     serialNumber: text(row.serial_number) || null,
-    quantity: num(row.quantity ?? 1) || 1,
-    status:
-      status === "REMOVED" || status === "POSTED"
-        ? (status as "REMOVED" | "POSTED")
-        : "ACTIVE",
+    quantity: requiredApiNumber(row.quantity, "item_match.quantity"),
+    status,
     matchedAt: text(row.matched_at) || undefined,
     removedAt: text(row.removed_at) || null,
     labelSnapshotId: text(row.label_snapshot_id) || null,
@@ -387,7 +392,10 @@ function normalizeMovement(row: RawRecord): OutboundMovementRecord {
     id: text(row.id ?? row.movement_id),
     movementType: text(row.movement_type ?? row.type, "-"),
     productId: text(row.product_id ?? row.sku_id) || null,
-    quantity: num(row.quantity ?? row.qty ?? row.quantity_delta),
+    quantity: requiredApiNumber(
+      row.quantity ?? row.qty ?? row.qty_delta ?? row.quantity_delta,
+      "movement.quantity",
+    ),
     createdAt: text(row.created_at ?? row.occurred_at) || undefined,
   };
 }

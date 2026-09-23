@@ -118,13 +118,17 @@ describe("DashboardSnapshot MAP-01 parity", () => {
     expect(apply).toBeEnabled();
   });
 
-  it("phát trạng thái nghiệp vụ của bộ reference Tablet", () => {
-    renderSnapshot({ referenceState: "urgent" });
-
+  it("không sinh trạng thái nghiệp vụ từ tham số trình diễn", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/dashboard?screen=MAP-01&state=overview-urgent",
+    );
+    const { container } = renderSnapshot();
+    expect(container.querySelector(".snapshot-reference-banner")).toBeNull();
     expect(
-      screen.getByRole("status", {
-        name: "Trạng thái tổng quan: Khẩn cấp",
-      }),
-    ).toBeInTheDocument();
+      screen.queryByRole("status", { name: "Trạng thái tổng quan: Khẩn cấp" }),
+    ).not.toBeInTheDocument();
+    window.history.replaceState({}, "", "/");
   });
 });

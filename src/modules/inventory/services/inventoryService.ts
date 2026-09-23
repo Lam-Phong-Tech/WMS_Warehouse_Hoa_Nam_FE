@@ -1,3 +1,7 @@
+import {
+  nullableApiNumber,
+  requiredApiIdentity,
+} from "@/shared/api/api-read-values";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import type { ApiMeta } from "@/shared/types/api-response";
@@ -50,10 +54,10 @@ export type InventoryBalanceRow = {
   /** ERD bảng 29: bucket trạng thái tồn — chiều phân rã chính của SCR-INV-01. */
   stockStatus: string;
   uom: string;
-  available: number;
-  onHand: number;
-  serialQty: number;
-  boxQty: number;
+  available: number | null;
+  onHand: number | null;
+  serialQty: number | null;
+  boxQty: number | null;
   /** DR-LOC-001: gợi ý tương đối, không tạo bucket tồn và có thể rỗng. */
   containerCode: string;
   /** Mã KHAY đang chứa hộp trên — chỉ có sau khi Putaway confirm, rỗng trước đó. */
@@ -67,8 +71,8 @@ export type InventoryBalanceRow = {
    * Now rendered in InventoryPage's balance table as "Tồn theo sổ cái" / "Chênh lệch",
    * sitting right before the "Đối soát" tag they justify (see WWHN-191 evidence).
    */
-  ledgerTotal: number;
-  variance: number;
+  ledgerTotal: number | null;
+  variance: number | null;
   /**
    * WWHN-198 / DEC-INV-RESERVED-001: `reserved_qty` là COMPATIBILITY FIELD, backend
    * ghim hằng 0 và nó KHÔNG phải nguồn sự thật của khả dụng. Giữ chỗ trong hệ thống
@@ -80,7 +84,7 @@ export type InventoryBalanceRow = {
    * `available_qty`, Annex D SCR-OUT-01). Giữ lại ở đây chỉ để pass-through cho
    * caller nào cần raw value, giống ledgerTotal/variance ở trên.
    */
-  reservedQty: number;
+  reservedQty: number | null;
   incidentId: string | null;
   incidentStatus: string | null;
   updatedAt: string;
@@ -96,7 +100,7 @@ export type StockMovementRow = {
   sku: string;
   warehouse: string;
   lotNo: string;
-  qty: number;
+  qty: number | null;
   beforeQty: number | null;
   afterQty: number | null;
   source: string;
@@ -204,16 +208,12 @@ function rowsOf<T>(value: T[] | { data?: T[] } | undefined | null): T[] {
       : [];
 }
 
-function num(value: unknown): number {
-  return Number(value ?? 0);
-}
-
 function text(value: unknown, fallback = ""): string {
   return value === undefined || value === null ? fallback : String(value);
 }
 
 function nullableNum(value: unknown): number | null {
-  return value === undefined || value === null ? null : num(value);
+  return nullableApiNumber(value);
 }
 
 function clean<T extends Record<string, unknown>>(params: T): T {
@@ -237,10 +237,10 @@ function nested(
 function normalizeBalance(row: RawRecord): InventoryBalanceRow {
   const prod = nested(row, "product");
   const wh = nested(row, "warehouse");
-  const available = num(
+  const available = nullableNum(
     row.available_qty ?? row.qty_available ?? row.available,
   );
-  const onHand = num(
+  const onHand = nullableNum(
     row.on_hand_qty ?? row.qty_on_hand ?? row.on_hand ?? row.quantity,
   );
   const reconcile = text(
@@ -257,12 +257,10 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
       wh?.warehouse_name ??
       wh?.code ??
       row.warehouse_code,
-    "System scope",
+    "",
   );
   return {
-    id: text(
-      row.id ?? `${row.warehouse_id ?? "system"}-${row.product_id ?? row.sku}`,
-    ),
+    id: requiredApiIdentity(row.id ?? row.balance_id, "balance_id"),
     sku: text(
       row.sku ??
         row.sku_code ??
@@ -284,17 +282,17 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
       "-",
     ),
     warehouse: whName,
-    stockStatus: text(row.stock_status, "AVAILABLE"),
+    stockStatus: text(row.stock_status),
     uom: text(row.uom ?? row.unit ?? prod?.unit ?? row.unit_name, ""),
     available,
     onHand,
-    serialQty: num(
+    serialQty: nullableNum(
       row.item_subledger_count ??
         row.serial_qty ??
         row.item_qty ??
         row.serial_count,
     ),
-    boxQty: num(
+    boxQty: nullableNum(
       row.container_subledger_count ??
         row.box_qty ??
         row.container_qty ??
@@ -305,9 +303,9 @@ function normalizeBalance(row: RawRecord): InventoryBalanceRow {
     location: text(row.location_hint, ""),
     reconcile,
     reconcileNote: mismatchReason,
-    ledgerTotal: num(row.ledger_total),
-    variance: num(row.variance),
-    reservedQty: num(row.reserved_qty),
+    ledgerTotal: nullableNum(row.ledger_total),
+    variance: nullableNum(row.variance),
+    reservedQty: nullableNum(row.reserved_qty),
     incidentId:
       row.incident_id === undefined || row.incident_id === null
         ? null
@@ -329,7 +327,9 @@ function normalizeMovement(row: RawRecord): StockMovementRow {
   const wh = nested(row, "warehouse");
   const doc = nested(row, "document");
   const creator = nested(row, "creator");
-  const qty = num(row.qty_change ?? row.qty_delta ?? row.quantity ?? row.qty);
+  const qty = nullableNum(
+    row.qty_change ?? row.qty_delta ?? row.quantity ?? row.qty,
+  );
   return {
     id: text(row.id),
     // KHÔNG fallback `?? row.id`: field này tên là "movementId" nhưng nghĩa là
@@ -355,7 +355,7 @@ function normalizeMovement(row: RawRecord): StockMovementRow {
         row.warehouse_code,
       "-",
     ),
-    lotNo: text(row.lot_no ?? row.batch_no ?? row.stock_status ?? row.lot, "-"),
+    lotNo: text(row.lot_no ?? row.batch_no ?? row.lot, "-"),
     qty,
     beforeQty: nullableNum(
       row.before_qty ?? row.balance_before ?? row.qty_before,
@@ -366,8 +366,7 @@ function normalizeMovement(row: RawRecord): StockMovementRow {
         row.doc_no ??
         row.source_code ??
         doc?.doc_no ??
-        doc?.code ??
-        row.movement_no,
+        doc?.code,
     ),
     sourceType: text(
       row.document_type ?? row.source_type ?? doc?.doc_type ?? row.ref_type,
@@ -382,14 +381,9 @@ function normalizeMovement(row: RawRecord): StockMovementRow {
       "-",
     ),
     chain: text(
-      row.chain_type ??
-        row.correction_chain_id ??
-        row.reference_type ??
-        "Original",
+      row.chain_type ?? row.correction_chain_id ?? row.reference_type ?? "",
     ),
-    status: text(
-      row.status ?? row.posting_status ?? row.stock_status ?? "POSTED",
-    ),
+    status: text(row.status ?? row.posting_status),
   };
 }
 
@@ -423,7 +417,7 @@ function normalizeTraceSource(
       "-",
     ),
     status: text(source.status ?? row.status, "-"),
-    postedAt: text(source.posted_at ?? row.posted_at ?? source.created_at),
+    postedAt: text(source.posted_at ?? row.posted_at),
     actor: text(
       source.actor_name ??
         source.created_by_name ??

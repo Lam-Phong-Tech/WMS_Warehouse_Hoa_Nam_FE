@@ -3,15 +3,15 @@
  *
  * - Dùng CHÍNH production exports (@/shared/ui + adapter ResponsiveDataTable) —
  *   không component demo-only.
- * - Dữ liệu cố định, tiếng Việt dài, có case dense/empty — không phụ thuộc
- *   API/locale/timezone runtime (deterministic cho visual golden).
+ * - Không chứa chứng từ, người dùng, KPI hoặc danh mục giả. Các bề mặt dữ liệu
+ *   chưa nối API hiển thị rỗng/chưa có; fixture kiểm thử không nằm trong runtime.
  * - Route DEV-only: /ui-foundation (/component-catalog redirect về đây).
  *   E2E computed-style + golden + responsive: e2e/ui-foundation.spec.ts.
  * - Light theme only — dark chưa thuộc baseline (semantic-dark.ts).
  * - Keyboard/focus: mọi control trong trang tab được theo thứ tự DOM; focus
  *   ring dùng token --wms-focus-ring (kiểm bằng E2E + test ARIA từng component).
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import {
@@ -55,7 +55,7 @@ import {
 } from "@/shared/ui";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
 import { EMPTY_TEXT } from "@/shared/constants/display";
-import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { useT } from "@/shared/i18n/useT";
 
 const TOKEN_SWATCHES: Array<{ name: string; value: string }> = [
   { name: "primary", value: S.primary },
@@ -74,46 +74,6 @@ interface CatalogRow {
   agency: string;
   qty: number;
   status: "DRAFT" | "POSTED" | "ERROR";
-}
-
-function catalogRows(t: TranslateFn): CatalogRow[] {
-  return [
-    {
-      id: "r1",
-      code: "XK-2026-000123",
-      agency: t("catalog.data.agencyLong"),
-      qty: 1280,
-      status: "POSTED",
-    },
-    {
-      id: "r2",
-      code: "XK-2026-000124",
-      agency: t("catalog.data.agencyMinhPhat"),
-      qty: 64,
-      status: "DRAFT",
-    },
-    {
-      id: "r3",
-      code: "NK-2026-00088",
-      agency: t("catalog.data.warehouseCentral"),
-      qty: 4096,
-      status: "POSTED",
-    },
-    {
-      id: "r4",
-      code: "XK-2026-000125",
-      agency: t("catalog.data.agencyHongHa"),
-      qty: 12,
-      status: "ERROR",
-    },
-    {
-      id: "r5",
-      code: "NK-2026-00089",
-      agency: t("catalog.data.agencySaiGon"),
-      qty: 730,
-      status: "DRAFT",
-    },
-  ];
 }
 
 const STATUS_TONE = {
@@ -136,10 +96,10 @@ interface CatalogFormValues {
   date: unknown;
 }
 
-/** Form showcase — có field lỗi cưỡng bức để soi state validation (fixture). */
+/** Developer-only form anatomy; no persisted business data or forced API outcome. */
 function FormsSection() {
   const t = useT();
-  const { control, setError } = useForm<CatalogFormValues>({
+  const { control } = useForm<CatalogFormValues>({
     defaultValues: {
       code: "",
       password: "",
@@ -147,7 +107,7 @@ function FormsSection() {
       qty: null,
       agency: "",
       brand: "",
-      note: t("catalog.longText"),
+      note: "",
       accept: false,
       active: true,
       mode: "barcode",
@@ -155,29 +115,9 @@ function FormsSection() {
     },
   });
 
-  useEffect(() => {
-    setError("qty", {
-      message: t("catalog.forms.errQty"),
-    });
-    setError("agency", { message: t("catalog.forms.errAgency") });
-  }, [setError, t]);
-
-  const options = useMemo(
-    () => [
-      { value: "hn", label: t("catalog.data.warehouseCentral") },
-      { value: "mp", label: t("catalog.data.agencyMinhPhat") },
-      {
-        value: "dn",
-        label: t("catalog.data.agencyLong"),
-      },
-      {
-        value: "off",
-        label: t("catalog.forms.agencyInactive"),
-        disabled: true,
-      },
-    ],
-    [t],
-  );
+  const options = useMemo<
+    Array<{ value: string; label: string; disabled?: boolean }>
+  >(() => [], []);
 
   return (
     <UiCard title={t("catalog.forms.sectionTitle")}>
@@ -234,11 +174,7 @@ function FormsSection() {
           control={control}
           name="brand"
           label={t("catalog.forms.brand")}
-          options={[
-            { value: "b1", label: t("catalog.data.brandBaoViet") },
-            { value: "b2", label: t("catalog.data.brandHoaPhat") },
-            { value: "b3", label: t("catalog.data.brandThongNhat") },
-          ]}
+          options={[]}
         />
         <UiFormDate
           control={control}
@@ -375,7 +311,7 @@ function LayoutSection({
                   >
                     <UiIcon name="menu-burger" />
                   </UiIconButton>
-                  <UiAvatar name={t("catalog.data.userLam")} />
+                  <UiAvatar name={EMPTY_TEXT} />
                 </Stack>
               }
             />
@@ -400,7 +336,7 @@ function LayoutSection({
               </UiButton>
             }
           >
-            <UiText variant="body">{t("catalog.longText")}</UiText>
+            <UiText variant="body">{EMPTY_TEXT}</UiText>
           </UiPageContainer>
         </UiAppShell>
       </Box>
@@ -414,14 +350,14 @@ export default function FoundationCatalogPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [tab, setTab] = useState("all");
-  const [page, setPage] = useState(3);
+  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [collapsed, setCollapsed] = useState(false);
   const { confirm, confirmDialog } = useUiConfirm();
   const [lastConfirm, setLastConfirm] = useState<string>(
     t("catalog.overlays.notAsked"),
   );
-  const rows = useMemo(() => catalogRows(t), [t]);
+  const rows = useMemo<CatalogRow[]>(() => [], []);
 
   return (
     <Box
@@ -459,7 +395,7 @@ export default function FoundationCatalogPage() {
             {t("catalog.typography.cardTitle")}
           </UiText>
           <UiText variant="body">
-            {t("catalog.typography.body", { text: t("catalog.longText") })}
+            {t("catalog.typography.body", { text: EMPTY_TEXT })}
           </UiText>
           <UiText variant="secondary">
             {t("catalog.typography.secondary")}
@@ -530,27 +466,27 @@ export default function FoundationCatalogPage() {
         >
           <UiKpiCard
             label={t("catalog.kpi.available")}
-            value="1.284.560"
+            value={EMPTY_TEXT}
             icon="box"
             tone="primary"
             hint={t("catalog.kpi.availableHint")}
           />
           <UiKpiCard
             label={t("catalog.kpi.pendingDocs")}
-            value="27"
+            value={EMPTY_TEXT}
             icon="time-quarter-past"
             tone="warning"
           />
           <UiKpiCard
             label={t("catalog.kpi.issuedToday")}
-            value="312"
+            value={EMPTY_TEXT}
             icon="inbox-out"
             tone="success"
             data-testid="kpi-success"
           />
           <UiKpiCard
             label={t("catalog.kpi.errors")}
-            value="3"
+            value={EMPTY_TEXT}
             icon="cross-circle"
             tone="error"
           />
@@ -577,7 +513,7 @@ export default function FoundationCatalogPage() {
           <UiPagination
             page={page}
             pageSize={pageSize}
-            total={137}
+            total={rows.length}
             onPageChange={setPage}
             onPageSizeChange={setPageSize}
           />
@@ -637,63 +573,12 @@ export default function FoundationCatalogPage() {
 
       <UiCard title="Descriptions / Timeline / Avatar / Alert">
         <Stack sx={{ gap: 3 }}>
-          <UiDescriptions
-            items={[
-              {
-                label: t("catalog.descriptions.adjustCode"),
-                value: "REV-20260818-0001",
-              },
-              {
-                label: t("catalog.common.status"),
-                value: (
-                  <UiStatusBadge
-                    tone="success"
-                    label={t("catalog.badges.approved")}
-                  />
-                ),
-              },
-              {
-                label: t("catalog.descriptions.createdBy"),
-                value: t("catalog.data.userLam"),
-              },
-              {
-                label: t("catalog.common.recipient"),
-                value: t("catalog.longText"),
-                span: 3,
-              },
-              { label: t("catalog.descriptions.note"), value: EMPTY_TEXT },
-            ]}
-          />
-          <UiTimeline
-            items={[
-              {
-                title: t("catalog.common.createDoc"),
-                time: "08:00 18/08/2026",
-                tone: "primary",
-              },
-              {
-                title: t("catalog.timeline.scanned"),
-                description: t("catalog.timeline.scannedBy"),
-                time: "08:41",
-                tone: "info",
-              },
-              {
-                title: t("catalog.timeline.printed"),
-                time: "08:45",
-                tone: "success",
-              },
-              {
-                title: t("catalog.timeline.pendingIssue"),
-                description: t("catalog.timeline.pendingIssueDesc"),
-                time: EMPTY_TEXT,
-                tone: "warning",
-              },
-            ]}
-          />
+          <UiDescriptions items={[]} />
+          <UiTimeline items={[]} />
           <Stack direction="row" sx={{ gap: 1.5, alignItems: "center" }}>
-            <UiAvatar name={t("catalog.data.userLam")} size="lg" />
-            <UiAvatar name={t("catalog.data.userAn")} />
-            <UiAvatar name={t("catalog.data.warehouseShort")} size="sm" />
+            <UiAvatar name={EMPTY_TEXT} size="lg" />
+            <UiAvatar name={EMPTY_TEXT} />
+            <UiAvatar name={EMPTY_TEXT} size="sm" />
           </Stack>
           <Stack sx={{ gap: 1.5 }}>
             <UiAlert
@@ -705,7 +590,7 @@ export default function FoundationCatalogPage() {
             </UiAlert>
             <UiAlert tone="info">{t("catalog.alerts.infoBody")}</UiAlert>
             <UiAlert tone="warning" title={t("catalog.alerts.warningTitle")}>
-              {t("catalog.longText")}
+              {EMPTY_TEXT}
             </UiAlert>
             <UiAlert
               tone="error"
@@ -795,7 +680,7 @@ export default function FoundationCatalogPage() {
         >
           <UiText variant="body">
             {t("catalog.overlays.dialogBody", {
-              text: t("catalog.longText"),
+              text: EMPTY_TEXT,
             })}
           </UiText>
         </UiDialog>
@@ -804,7 +689,7 @@ export default function FoundationCatalogPage() {
           onClose={() => setDrawerOpen(false)}
           title={t("catalog.overlays.drawerTitle")}
         >
-          <UiText variant="body">{t("catalog.longText")}</UiText>
+          <UiText variant="body">{EMPTY_TEXT}</UiText>
         </UiDrawer>
         <UiConfirmDialog
           open={confirmOpen}

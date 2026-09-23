@@ -5662,30 +5662,15 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   catalog: {
-    longText:
-      "Outbound issue note XK-2026-000123 for Trần Nguyễn Bách Hóa Tổng Hợp Miền Đông Nam Bộ agency — checks line wrapping without horizontal overflow.",
     common: {
       qty: "Quantity",
       recipient: "Recipient",
       status: "Status",
       posted: "Posted",
       createDoc: "Create document",
-      serverError:
-        "The server returned error 500 (request_id: a1b2c3-fixture).",
+      serverError: "Unable to load data from the server.",
     },
-    data: {
-      agencyLong: "Trần Nguyễn Bách Hóa Tổng Hợp Miền Đông Nam Bộ agency",
-      agencyMinhPhat: "Minh Phát agency",
-      agencyHongHa: "Hồng Hà agency",
-      agencySaiGon: "Sài Gòn Chợ Lớn agency",
-      warehouseCentral: "Hoa Nam central warehouse",
-      warehouseShort: "Kho",
-      brandBaoViet: "Bảo Việt Electric",
-      brandHoaPhat: "Hoà Phát Home",
-      brandThongNhat: "Điện cơ Thống Nhất",
-      userLam: "Trần Tùng Lâm",
-      userAn: "Nguyễn Văn An",
-    },
+
     tokens: {
       sectionTitle: "Tokens — baseline colours (DEC-UI-BASELINE-01)",
     },

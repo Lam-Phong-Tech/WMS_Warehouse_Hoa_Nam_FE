@@ -19,22 +19,7 @@ import {
 import type { CompositionRow } from "./OverviewComposition";
 import type { IssueRow } from "./OverviewOperations";
 
-export type ChartState =
-  | "ready"
-  | "loading"
-  | "empty"
-  | "failed"
-  | "forbidden";
-export type OverviewReferenceState =
-  | "loading"
-  | "empty"
-  | "error"
-  | "permission-denied"
-  | "pending-approval"
-  | "processing"
-  | "completed"
-  | "overdue"
-  | "urgent";
+export type ChartState = "ready" | "loading" | "empty" | "failed" | "forbidden";
 
 const ISO = "YYYY-MM-DD";
 const KPI_TONES: Array<{ icon: DashboardIconName; tone: string }> = [
@@ -47,17 +32,12 @@ const KPI_TONES: Array<{ icon: DashboardIconName; tone: string }> = [
 
 const dateLabel = (value: string) => dayjs(value).format("DD/MM");
 
-function periodText(
-  period: OverviewPeriod,
-  range: DateRange,
-  t: TranslateFn,
-) {
+function periodText(period: OverviewPeriod, range: DateRange, t: TranslateFn) {
   if (period === "last7") return t("dashboard.snapshot.periodLast7");
   if (period === "today") return t("dashboard.snapshot.periodToday");
   if (period === "month") return t("dashboard.snapshot.periodLast30");
 
-  const inclusiveDays =
-    dayjs(range.to).diff(dayjs(range.from), "day") + 1;
+  const inclusiveDays = dayjs(range.to).diff(dayjs(range.from), "day") + 1;
   const endsToday = range.to === dashboardNow().format(ISO);
   if (endsToday && inclusiveDays === 14)
     return t("dashboard.snapshot.periodLast14");
@@ -208,30 +188,44 @@ function SnapshotChart({
     x: pad.left + step * index + step / 2,
     y: pad.top + plotH - (value / maxTrend) * plotH,
   });
-  const trendPoints = rows.map((row, index) =>
-    pointFor(index, trend.find((item) => item.date === row.date)?.closing ?? 0),
-  );
+  const trendPoints = rows.map((row, index) => {
+    const closing = trend.find((item) => item.date === row.date)?.closing;
+    return closing === undefined ||
+      closing === null ||
+      !Number.isFinite(closing)
+      ? null
+      : pointFor(index, closing);
+  });
   const d = trendPoints
-    .map(
-      (point, index) =>
-        `${index ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`,
+    .map((point, index) =>
+      point === null
+        ? ""
+        : `${index > 0 && trendPoints[index - 1] !== null ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`,
     )
     .join(" ");
   const ticks = [0, 0.25, 0.5, 0.75, 1];
   const hoveredRow =
     hoveredIndex === null ? null : (rows[hoveredIndex] ?? null);
   const hoveredPoint =
-    hoveredIndex === null ? null : (trendPoints[hoveredIndex] ?? null);
+    hoveredIndex === null
+      ? null
+      : (trendPoints[hoveredIndex] ?? {
+          x: pad.left + step * hoveredIndex + step / 2,
+          y: pad.top + plotH / 2,
+        });
   const hoveredStock = hoveredRow
-    ? (trend.find((item) => item.date === hoveredRow.date)?.closing ?? 0)
-    : 0;
+    ? (trend.find((item) => item.date === hoveredRow.date)?.closing ?? null)
+    : null;
   // Tooltip cao gần bằng nửa vùng plot. Với điểm tồn ở sát cạnh trên, hiển thị
   // nó phía trên sẽ che tiêu đề và chú giải của biểu đồ.
   const showTooltipBelow = hoveredPoint !== null && hoveredPoint.y < 140;
 
   return (
     <div className="snapshot-chart-canvas">
-      <div className="snapshot-legend" aria-label={t("dashboard.snapshot.chartLegendAria")}>
+      <div
+        className="snapshot-legend"
+        aria-label={t("dashboard.snapshot.chartLegendAria")}
+      >
         <span className="is-in">
           <i />
           {t("dashboard.snapshot.inbound")}
@@ -314,7 +308,8 @@ function SnapshotChart({
                   inbound: fmt(row.inbound),
                   outbound: fmt(row.product + row.component),
                   stock: fmt(
-                    trend.find((item) => item.date === row.date)?.closing ?? 0,
+                    trend.find((item) => item.date === row.date)?.closing ??
+                      null,
                   ),
                 })}
                 onMouseEnter={() => setHoveredIndex(index)}
@@ -334,15 +329,17 @@ function SnapshotChart({
           );
         })}
         <path className="snapshot-trend" d={d} />
-        {trendPoints.map((point, index) => (
-          <circle
-            className="snapshot-point"
-            key={rows[index]?.date ?? index}
-            cx={point.x}
-            cy={point.y}
-            r="4"
-          />
-        ))}
+        {trendPoints.map((point, index) =>
+          point === null ? null : (
+            <circle
+              className="snapshot-point"
+              key={rows[index]?.date ?? index}
+              cx={point.x}
+              cy={point.y}
+              r="4"
+            />
+          ),
+        )}
         <text className="snapshot-stock-axis" x={W - 2} y={17} textAnchor="end">
           {t("dashboard.snapshot.closingStock")}
         </text>
@@ -359,11 +356,13 @@ function SnapshotChart({
           <strong>{dayjs(hoveredRow.date).format("DD/MM/YYYY")}</strong>
           <span>
             <i className="is-in" />
-            {t("dashboard.snapshot.tooltipInbound")} <b>{fmt(hoveredRow.inbound)}</b>
+            {t("dashboard.snapshot.tooltipInbound")}{" "}
+            <b>{fmt(hoveredRow.inbound)}</b>
           </span>
           <span>
             <i className="is-out" />
-            {t("dashboard.snapshot.tooltipOutbound")}{" "}<b>{fmt(hoveredRow.product + hoveredRow.component)}</b>
+            {t("dashboard.snapshot.tooltipOutbound")}{" "}
+            <b>{fmt(hoveredRow.product + hoveredRow.component)}</b>
           </span>
           <span>
             <i className="is-stock" />
@@ -496,7 +495,6 @@ export function DashboardSnapshot({
   failed,
   forbidden,
   chartStateOverride,
-  referenceState,
   showWarranty,
   onRetry,
   onNavigate,
@@ -517,7 +515,6 @@ export function DashboardSnapshot({
   failed: boolean;
   forbidden: boolean;
   chartStateOverride?: ChartState;
-  referenceState?: OverviewReferenceState;
   showWarranty: boolean;
   onRetry: () => void;
   onNavigate: (route: string) => void;
@@ -617,25 +614,13 @@ export function DashboardSnapshot({
     },
     [] as Array<CompositionRow & { from: number; to: number; index: number }>,
   );
-  const referenceLoading = referenceState === "loading";
-  const referenceEmpty = referenceState === "empty";
-  const referenceFailed = referenceState === "error";
-  const referenceForbidden = referenceState === "permission-denied";
-  const effectiveLoading = loading || referenceLoading;
-  const effectiveFailed = failed || referenceFailed;
-  const effectiveForbidden = forbidden || referenceForbidden;
-  const effectiveRows = referenceEmpty ? [] : rows;
-  const referenceChartState: ChartState | undefined = referenceForbidden
-    ? "forbidden"
-    : referenceLoading
-      ? "loading"
-      : referenceFailed
-        ? "failed"
-        : referenceEmpty
-          ? "empty"
-          : undefined;
+
+  const effectiveLoading = loading;
+  const effectiveFailed = failed;
+  const effectiveForbidden = forbidden;
+  const effectiveRows = rows;
+
   const chartState: ChartState =
-    referenceChartState ??
     chartStateOverride ??
     (effectiveForbidden
       ? "forbidden"
@@ -682,44 +667,12 @@ export function DashboardSnapshot({
     }
     setRangePickMode("from");
   };
-  const tasks = referenceEmpty ? [] : issues.slice(0, 5);
-  const referenceOperationState =
-    referenceState === "pending-approval"
-      ? {
-          label: t("dashboard.snapshot.statePending"),
-          icon: "file-clock" as DashboardIconName,
-          tone: "warning",
-        }
-      : referenceState === "processing"
-        ? {
-            label: t("dashboard.snapshot.stateProcessing"),
-            icon: "loader-circle" as DashboardIconName,
-            tone: "info",
-          }
-        : referenceState === "completed"
-          ? {
-              label: t("dashboard.snapshot.stateCompleted"),
-              icon: "circle-dot" as DashboardIconName,
-              tone: "success",
-            }
-          : referenceState === "overdue"
-            ? {
-                label: t("dashboard.snapshot.stateOverdue"),
-                icon: "file-clock" as DashboardIconName,
-                tone: "danger",
-              }
-            : referenceState === "urgent"
-              ? {
-                  label: t("dashboard.snapshot.stateUrgent"),
-                  icon: "triangle-alert" as DashboardIconName,
-                  tone: "danger",
-                }
-              : null;
+  const tasks = issues.slice(0, 5);
+
   return (
     <div
       className="hn-dashboard-snapshot"
       data-ui="dashboard-reference"
-      data-reference-state={referenceState ?? "live"}
       data-chart-state={chartState}
     >
       <header className="snapshot-heading">
@@ -764,19 +717,6 @@ export function DashboardSnapshot({
         </button>
       </header>
 
-      {referenceOperationState ? (
-        <section
-          className={`snapshot-reference-state is-${referenceOperationState.tone}`}
-          role="status"
-          aria-label={t("dashboard.snapshot.referenceStateAria", { state: referenceOperationState.label })}
-        >
-          <span>
-            <DashIcon name={referenceOperationState.icon} />
-          </span>
-          <strong>{referenceOperationState.label}</strong>
-        </section>
-      ) : null}
-
       {effectiveForbidden ? (
         <section className="snapshot-page-state">
           <span>
@@ -799,50 +739,45 @@ export function DashboardSnapshot({
         </section>
       ) : (
         <>
-          {!referenceEmpty && !referenceFailed ? (
-            <section className="snapshot-kpis" aria-label={t("dashboard.snapshot.kpiAria")}>
+          {
+            <section
+              className="snapshot-kpis"
+              aria-label={t("dashboard.snapshot.kpiAria")}
+            >
               {cards.map((card, index) => {
-              const appearance = KPI_TONES[index] ?? KPI_TONES[0];
-              return (
-                <article
-                  key={card.id}
-                  className={`snapshot-kpi ${
-                    effectiveLoading ? "is-loading" : ""
-                  }`}
-                  data-kpi-id={card.id}
-                >
-                  <span className={`snapshot-kpi-icon is-${appearance.tone}`}>
-                    <DashIcon name={appearance.icon} />
-                  </span>
-                  <div>
-                    <span>{card.label}</span>
-                    <strong>
-                      {effectiveLoading
-                        ? ""
-                        : card.value === null
-                          ? "—"
-                          : fmt(card.value)}
-                    </strong>
-                    <small>{effectiveLoading ? "" : card.note}</small>
-                    {!effectiveLoading && card.delta ? (
-                      <em className={`is-${card.trend}`}>{card.delta}</em>
-                    ) : null}
-                  </div>
-                </article>
-              );
+                const appearance = KPI_TONES[index] ?? KPI_TONES[0];
+                return (
+                  <article
+                    key={card.id}
+                    className={`snapshot-kpi ${
+                      effectiveLoading ? "is-loading" : ""
+                    }`}
+                    data-kpi-id={card.id}
+                  >
+                    <span className={`snapshot-kpi-icon is-${appearance.tone}`}>
+                      <DashIcon name={appearance.icon} />
+                    </span>
+                    <div>
+                      <span>{card.label}</span>
+                      <strong>
+                        {effectiveLoading
+                          ? ""
+                          : card.value === null
+                            ? "—"
+                            : fmt(card.value)}
+                      </strong>
+                      <small>{effectiveLoading ? "" : card.note}</small>
+                      {!effectiveLoading && card.delta ? (
+                        <em className={`is-${card.trend}`}>{card.delta}</em>
+                      ) : null}
+                    </div>
+                  </article>
+                );
               })}
             </section>
-          ) : null}
+          }
 
-          {referenceEmpty ? (
-            <section className="snapshot-page-state is-empty">
-              <span>
-                <DashIcon name="inbox" />
-              </span>
-              <h2>{t("dashboard.snapshot.emptyTitle")}</h2>
-              <p>{t("dashboard.snapshot.emptyCopy")}</p>
-            </section>
-          ) : effectiveFailed ? (
+          {effectiveFailed ? (
             <section className="snapshot-page-state is-error">
               <span>
                 <DashIcon name="triangle-alert" />
@@ -880,7 +815,9 @@ export function DashboardSnapshot({
                             type="button"
                             role="menuitemradio"
                             aria-checked={selectedPreset === 7}
-                            className={selectedPreset === 7 ? "is-selected" : ""}
+                            className={
+                              selectedPreset === 7 ? "is-selected" : ""
+                            }
                             onClick={() => selectDays(7)}
                           >
                             {t("dashboard.snapshot.periodLast7")}
@@ -889,7 +826,9 @@ export function DashboardSnapshot({
                             type="button"
                             role="menuitemradio"
                             aria-checked={selectedPreset === 14}
-                            className={selectedPreset === 14 ? "is-selected" : ""}
+                            className={
+                              selectedPreset === 14 ? "is-selected" : ""
+                            }
                             onClick={() => selectDays(14)}
                           >
                             {t("dashboard.snapshot.periodLast14")}
@@ -898,7 +837,9 @@ export function DashboardSnapshot({
                             type="button"
                             role="menuitemradio"
                             aria-checked={selectedPreset === 30}
-                            className={selectedPreset === 30 ? "is-selected" : ""}
+                            className={
+                              selectedPreset === 30 ? "is-selected" : ""
+                            }
                             onClick={() => selectDays(30)}
                           >
                             {t("dashboard.snapshot.periodLast30")}
@@ -936,7 +877,8 @@ export function DashboardSnapshot({
                       type="button"
                       onClick={() => onNavigate("/reports/import-quality")}
                     >
-                      {t("dashboard.snapshot.viewAll")} <DashIcon name="arrow-right" />
+                      {t("dashboard.snapshot.viewAll")}{" "}
+                      <DashIcon name="arrow-right" />
                     </button>
                   </header>
                   {effectiveLoading ? (
@@ -990,15 +932,14 @@ export function DashboardSnapshot({
                       type="button"
                       onClick={() => onNavigate("/inbound")}
                     >
-                      {t("dashboard.snapshot.viewAll")} <DashIcon name="arrow-right" />
+                      {t("dashboard.snapshot.viewAll")}{" "}
+                      <DashIcon name="arrow-right" />
                     </button>
                   </header>
                   <div className="snapshot-empty-table">
                     <DashIcon name="inbox" />
                     <strong>{t("dashboard.snapshot.recentDocsEmpty")}</strong>
-                    <span>
-                      {t("dashboard.snapshot.recentDocsCopy")}
-                    </span>
+                    <span>{t("dashboard.snapshot.recentDocsCopy")}</span>
                   </div>
                 </article>
                 <article className="snapshot-card snapshot-stock">
@@ -1008,7 +949,8 @@ export function DashboardSnapshot({
                       type="button"
                       onClick={() => onNavigate("/inventory")}
                     >
-                      {t("dashboard.snapshot.viewDetail")} <DashIcon name="arrow-right" />
+                      {t("dashboard.snapshot.viewDetail")}{" "}
+                      <DashIcon name="arrow-right" />
                     </button>
                   </header>
                   {effectiveLoading ? (
@@ -1060,7 +1002,9 @@ export function DashboardSnapshot({
                     <DashIcon name="package-search" />
                   </span>
                   <div>
-                    <strong>{t("dashboard.snapshot.warehouseInfoTitle")}</strong>
+                    <strong>
+                      {t("dashboard.snapshot.warehouseInfoTitle")}
+                    </strong>
                     <small>{t("dashboard.snapshot.warehouseInfoCopy")}</small>
                   </div>
                   <DashIcon name="arrow-right" />
@@ -1073,7 +1017,9 @@ export function DashboardSnapshot({
                     <DashIcon name="chart-column-big" />
                   </span>
                   <div>
-                    <strong>{t("dashboard.snapshot.todayProgressTitle")}</strong>
+                    <strong>
+                      {t("dashboard.snapshot.todayProgressTitle")}
+                    </strong>
                     <small>{t("dashboard.snapshot.todayProgressCopy")}</small>
                   </div>
                   <DashIcon name="arrow-right" />
@@ -1083,7 +1029,9 @@ export function DashboardSnapshot({
                     <DashIcon name="calendar-days" />
                   </span>
                   <div>
-                    <strong>{t("dashboard.snapshot.dailyScheduleTitle")}</strong>
+                    <strong>
+                      {t("dashboard.snapshot.dailyScheduleTitle")}
+                    </strong>
                     <small>{t("dashboard.snapshot.dailyScheduleCopy")}</small>
                   </div>
                   <DashIcon name="arrow-right" />
@@ -1094,13 +1042,31 @@ export function DashboardSnapshot({
                   <h2>{t("dashboard.snapshot.warehouseTasksTitle")}</h2>
                   <div>
                     {[
-                      ["package-plus", t("dashboard.snapshot.actionInbound"), "/inbound"],
-                      ["package-minus", t("dashboard.snapshot.actionOutbound"), "/outbound"],
+                      [
+                        "package-plus",
+                        t("dashboard.snapshot.actionInbound"),
+                        "/inbound",
+                      ],
+                      [
+                        "package-minus",
+                        t("dashboard.snapshot.actionOutbound"),
+                        "/outbound",
+                      ],
                       ...(showWarranty
-                        ? [["briefcase-medical", t("dashboard.snapshot.actionWarranty"), "/warranty"]]
+                        ? [
+                            [
+                              "briefcase-medical",
+                              t("dashboard.snapshot.actionWarranty"),
+                              "/warranty",
+                            ],
+                          ]
                         : []),
                       ["search", t("dashboard.snapshot.actionScan"), "/scan"],
-                      ["chart-column-big", t("dashboard.snapshot.actionCheck"), "/inventory"],
+                      [
+                        "chart-column-big",
+                        t("dashboard.snapshot.actionCheck"),
+                        "/inventory",
+                      ],
                     ].map(([icon, label, route]) => (
                       <button
                         type="button"
@@ -1120,15 +1086,16 @@ export function DashboardSnapshot({
                       type="button"
                       onClick={() => onNavigate("/audit-logs")}
                     >
-                      {t("dashboard.snapshot.viewAll")} <DashIcon name="arrow-right" />
+                      {t("dashboard.snapshot.viewAll")}{" "}
+                      <DashIcon name="arrow-right" />
                     </button>
                   </header>
                   <div className="snapshot-empty-table">
                     <DashIcon name="inbox" />
-                    <strong>{t("dashboard.snapshot.recentActivityEmpty")}</strong>
-                    <span>
-                      {t("dashboard.snapshot.recentActivityCopy")}
-                    </span>
+                    <strong>
+                      {t("dashboard.snapshot.recentActivityEmpty")}
+                    </strong>
+                    <span>{t("dashboard.snapshot.recentActivityCopy")}</span>
                   </div>
                 </article>
               </section>

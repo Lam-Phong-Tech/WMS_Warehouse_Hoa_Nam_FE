@@ -5653,29 +5653,15 @@ export const MESSAGES_VI = {
     },
   },
   catalog: {
-    longText:
-      "Phiếu xuất kho số XK-2026-000123 của Đại lý Trần Nguyễn Bách Hóa Tổng Hợp Miền Đông Nam Bộ — kiểm tra xuống dòng, không tràn ngang.",
     common: {
       qty: "Số lượng",
       recipient: "Nơi nhận",
       status: "Trạng thái",
       posted: "Đã ghi sổ",
       createDoc: "Tạo phiếu",
-      serverError: "Máy chủ trả lỗi 500 (request_id: a1b2c3-fixture).",
+      serverError: "Không tải được dữ liệu từ máy chủ.",
     },
-    data: {
-      agencyLong: "Đại lý Trần Nguyễn Bách Hóa Tổng Hợp Miền Đông Nam Bộ",
-      agencyMinhPhat: "Đại lý Minh Phát",
-      agencyHongHa: "Đại lý Hồng Hà",
-      agencySaiGon: "Đại lý Sài Gòn Chợ Lớn",
-      warehouseCentral: "Kho tổng Hoa Nam",
-      warehouseShort: "Kho",
-      brandBaoViet: "Bảo Việt Electric",
-      brandHoaPhat: "Hoà Phát Home",
-      brandThongNhat: "Điện cơ Thống Nhất",
-      userLam: "Trần Tùng Lâm",
-      userAn: "Nguyễn Văn An",
-    },
+
     tokens: {
       sectionTitle: "Tokens — màu chuẩn (DEC-UI-BASELINE-01)",
     },

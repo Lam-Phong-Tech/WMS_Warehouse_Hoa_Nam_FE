@@ -363,6 +363,7 @@ export default function InventoryPage() {
       sortType: "value",
       sortAccessor: (row) => row.variance,
       render: (row) => {
+        if (row.variance === null) return EMPTY_TEXT;
         if (row.variance === 0) {
           return (
             <Box
@@ -541,14 +542,16 @@ export default function InventoryPage() {
           component="span"
           sx={{
             color:
-              row.qty >= 0
-                ? SEMANTIC_LIGHT.successText
-                : SEMANTIC_LIGHT.errorText,
+              row.qty === null
+                ? "text.secondary"
+                : row.qty >= 0
+                  ? SEMANTIC_LIGHT.successText
+                  : SEMANTIC_LIGHT.errorText,
             fontVariantNumeric: "tabular-nums",
             fontWeight: 600,
           }}
         >
-          {row.qty >= 0
+          {row.qty !== null && row.qty >= 0
             ? `+${formatQuantity(row.qty)}`
             : formatQuantity(row.qty)}
         </Box>

@@ -1,3 +1,8 @@
+import {
+  nullableApiNumber,
+  requiredApiIdentity,
+  requiredApiState,
+} from "@/shared/api/api-read-values";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import type { MasterStatus } from "@/modules/master-data/types/mvp-master.types";
@@ -122,18 +127,18 @@ function toRecord(
   row: RawRecord,
 ): CatalogMasterRecord {
   const definition = CATALOG_MASTER_DEFINITIONS[kind];
-  const rawVersion = Number(row.version);
+  const rawVersion = nullableApiNumber(row.version);
   const status = text(row.status).toUpperCase();
   return {
-    id: text(row.id),
+    id: requiredApiIdentity(row.id),
     code: text(row[definition.codeField]),
     name: text(row[definition.nameField]),
     description: row.description === null ? null : text(row.description),
     sort_order: Number.isFinite(Number(row.sort_order))
       ? Number(row.sort_order)
       : 0,
-    status: status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
-    version: Number.isFinite(rawVersion) ? rawVersion : null,
+    status: requiredApiState(status, ["ACTIVE", "INACTIVE"] as const),
+    version: rawVersion,
     brand_id: definition.supportsBrand ? text(row.brand_id) || null : null,
   };
 }

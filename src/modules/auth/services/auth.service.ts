@@ -241,11 +241,7 @@ function normalizeMeResponse(data: BackendMeResponse): MeResponse {
     branch: data.branch ?? null,
     department: data.department ?? null,
     position: data.position ?? null,
-    role: data.role ?? {
-      id: 0,
-      name: roles[0]?.role_name ?? "",
-      permissions: [],
-    },
+    role: data.role ?? null,
     active_context: null,
     available_contexts: availableContexts,
     is_super_admin: isSuperAdmin,

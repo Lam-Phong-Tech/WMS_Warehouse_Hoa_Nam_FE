@@ -132,8 +132,10 @@ function numberFormat(): Intl.NumberFormat {
   return format;
 }
 
-export function fmt(value: number): string {
-  return numberFormat().format(value);
+export function fmt(value: number | null | undefined): string {
+  return value === null || value === undefined || !Number.isFinite(value)
+    ? "—"
+    : numberFormat().format(value);
 }
 
 /** Locale BCP-47 khớp ngôn ngữ đang chọn — cho `Intl` ngoài chỗ định dạng số. */

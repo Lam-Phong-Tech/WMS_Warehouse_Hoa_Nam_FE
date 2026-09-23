@@ -47,7 +47,7 @@ export interface MeResponse {
   branch: MeOrgRef | null;
   department: MeOrgRef | null;
   position: MeOrgRef | null;
-  role: MeRole;
+  role: MeRole | null;
   active_context: MeContext | null;
   available_contexts: MeContext[];
   is_super_admin?: boolean;

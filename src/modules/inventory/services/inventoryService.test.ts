@@ -75,7 +75,7 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
     expect(result.meta).toEqual({ total: 1, page: 1, per_page: 20 });
   });
 
-  it("fetchInventoryBalances giữ fallback normalization để tương thích payload hiện hành", async () => {
+  it("fetchInventoryBalances không tạo balance ID giả khi API thiếu định danh", async () => {
     vi.mocked(http.getPage).mockResolvedValue({
       data: [
         {
@@ -93,16 +93,8 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
       meta: {},
     });
 
-    const result = await fetchInventoryBalances();
-
-    expect(result.rows[0]).toMatchObject({
-      id: "5-99",
-      sku: "ALT-CODE",
-      name: "Tên thay thế",
-      available: 4,
-      onHand: 4,
-      reconcile: "MISMATCH",
-      reconcileNote: "Lệch do chưa đối soát",
+    await expect(fetchInventoryBalances()).rejects.toMatchObject({
+      code: "WMS_FE_MISSING_API_ID",
     });
   });
 

@@ -41,7 +41,6 @@ import { OverviewInsights, type SignalRow } from "../overview/OverviewInsights";
 import {
   DashboardSnapshot,
   type ChartState,
-  type OverviewReferenceState,
 } from "../overview/DashboardSnapshot";
 import { useLazyReveal } from "../overview/use-lazy-reveal";
 import {
@@ -147,7 +146,6 @@ export default function DashboardPage() {
       ? new URLSearchParams(window.location.search)
       : null;
   const isMapReferenceScreen = mapSearchParams?.get("screen") === "MAP-01";
-  const mapState = mapSearchParams?.get("state") ?? "";
 
   const today = dashboardNow().format(ISO);
   const dateError = useMemo(() => {
@@ -349,16 +347,7 @@ export default function DashboardPage() {
         trend: trendOf(onHandDelta),
         note: t("dashboard.kpi.onHandNote"),
         icon: "layout-dashboard",
-        spark:
-          type === "ALL"
-            ? trendRows.map((row) => row.closing)
-            : flowRows.reduce<number[]>((series, row) => {
-                const previous = series.at(-1) ?? 0;
-                series.push(
-                  previous + row.inbound - row.product - row.component,
-                );
-                return series;
-              }, []),
+        spark: type === "ALL" ? trendRows.map((row) => row.closing) : [],
         source: "reports/dashboard-overview",
       },
       {
@@ -532,13 +521,17 @@ export default function DashboardPage() {
       {
         id: "DASH-KPI-16",
         name: t("dashboard.insight.rowSkuPending"),
-        value: String(overviewData?.issues.sku_pending_info ?? 0),
+        value: overviewData
+          ? String(overviewData.issues.sku_pending_info)
+          : EMPTY_TEXT,
         icon: "package-search",
       },
       {
         id: "DASH-KPI-17",
         name: t("dashboard.insight.rowImportError"),
-        value: String(overviewData?.issues.import_error ?? 0),
+        value: overviewData
+          ? String(overviewData.issues.import_error)
+          : EMPTY_TEXT,
         icon: "settings-2",
       },
       {
@@ -682,16 +675,7 @@ export default function DashboardPage() {
    * "Hôm nay", còn bộ lọc 7/14/30/custom chỉ đổi nguồn chart theo contract v2.
    * RBAC, điều hướng và endpoint vẫn dùng các service canonical của dự án.
    */
-  const qaChartState: ChartState | undefined =
-    mapState === "filter-loading"
-      ? "loading"
-      : mapState === "filter-empty"
-        ? "empty"
-        : mapState === "filter-error"
-          ? "failed"
-          : mapState === "filter-permission-denied"
-            ? "forbidden"
-            : undefined;
+
   const chartHttpStatus =
     httpStatus(chartSource.overview.error) ??
     httpStatus(chartSource.xntDaily.error);
@@ -706,20 +690,7 @@ export default function DashboardPage() {
           : mapChartRows.length === 0
             ? "empty"
             : "ready";
-  const chartStateOverride = qaChartState ?? liveChartState;
-
-  const overviewStateMap: Record<string, OverviewReferenceState> = {
-    "overview-loading": "loading",
-    "overview-empty": "empty",
-    "overview-error": "error",
-    "overview-permission-denied": "permission-denied",
-    "overview-pending-approval": "pending-approval",
-    "overview-processing": "processing",
-    "overview-completed": "completed",
-    "overview-overdue": "overdue",
-    "overview-urgent": "urgent",
-  };
-  const referenceState = overviewStateMap[mapState];
+  const chartStateOverride = liveChartState;
 
   if (isMapReferenceScreen)
     return (
@@ -743,7 +714,6 @@ export default function DashboardPage() {
           failed={failed}
           forbidden={forbidden}
           chartStateOverride={chartStateOverride}
-          referenceState={referenceState}
           showWarranty={canViewWarranty}
           onRetry={refreshAll}
           onNavigate={navigate}

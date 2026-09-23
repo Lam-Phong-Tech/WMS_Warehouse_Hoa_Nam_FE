@@ -1,3 +1,7 @@
+import {
+  requiredApiNumber,
+  requiredApiState,
+} from "@/shared/api/api-read-values";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import {
@@ -49,7 +53,7 @@ function optionalText(value: unknown): string | undefined {
 }
 
 function num(value: unknown): number {
-  return Number(value ?? 0);
+  return requiredApiNumber(value, "reversal.quantity");
 }
 
 /**
@@ -57,7 +61,7 @@ function num(value: unknown): number {
  * thiếu header thì BE trả 428 PRECONDITION_REQUIRED.
  */
 function ifMatch(version: number): Record<string, string> {
-  return { "If-Match": String(version) };
+  return { "If-Match": String(requirePositiveNumber(version, "If-Match")) };
 }
 
 function normalizeReversalDocument(row: RawRecord): ReversalDocument {
@@ -65,7 +69,11 @@ function normalizeReversalDocument(row: RawRecord): ReversalDocument {
     id: text(row.id),
     // KHÔNG rơi xuống row.id: thiếu mã thì để "-", không in UUID.
     reversal_code: text(row.reversal_code ?? row.reversal_no, "-"),
-    status: (text(row.status) as ReversalDocument["status"]) || "DRAFT",
+    status: requiredApiState(
+      row.status,
+      ["DRAFT", "POSTED", "CANCELLED"],
+      "reversal.status",
+    ),
     physical_return_status: optionalText(
       row.physical_return_status,
     ) as ReversalDocument["physical_return_status"],
@@ -118,7 +126,11 @@ function normalizeReversalLine(row: RawRecord): ReversalLine {
       row.stock_status,
     ) as ReversalLine["stock_status"],
     posted_movement_id: optionalText(row.posted_movement_id),
-    status: (text(row.status) as ReversalLine["status"]) || "DRAFT",
+    status: requiredApiState(
+      row.status,
+      ["DRAFT", "POSTED", "CANCELLED"],
+      "reversal.line.status",
+    ),
     reason: optionalText(row.reason),
   };
 }
@@ -146,7 +158,7 @@ function normalizeReversibleLine(row: RawRecord): ReversibleMovementLine {
     remaining_qty: num(row.remaining_qty ?? reversibleQty),
     uom: optionalText(row.uom),
     dependency_guard: guard,
-    can_reverse: Boolean(row.can_reverse ?? (!guard && reversibleQty > 0)),
+    can_reverse: row.can_reverse === true,
     is_serial_tracked: Boolean(row.is_serial_tracked),
     // item_scoped mới là cờ quyết định reverse theo Item (PRODUCT || serial). BE
     // cũ chưa có field này thì fallback về is_serial_tracked để không vỡ.
@@ -177,9 +189,7 @@ function normalizeReversibleMovement(row: RawRecord): ReversibleMovement {
     posted_by: optionalText(row.posted_by_name),
     version: optionalText(row.version),
     dependency_guard: guard,
-    can_reverse: Boolean(
-      row.can_reverse ?? (!guard && lines.some((line) => line.can_reverse)),
-    ),
+    can_reverse: row.can_reverse === true,
     lines,
   };
 }

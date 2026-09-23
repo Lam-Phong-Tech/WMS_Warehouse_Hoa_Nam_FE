@@ -1,3 +1,7 @@
+import {
+  requiredApiNumber,
+  requiredApiState,
+} from "@/shared/api/api-read-values";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
@@ -81,8 +85,7 @@ function text(value: unknown, fallback = ""): string {
 }
 
 function num(value: unknown): number {
-  const result = Number(value ?? 0);
-  return Number.isFinite(result) ? result : 0;
+  return requiredApiNumber(value, "component_issue.quantity");
 }
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
@@ -99,7 +102,11 @@ function normalizeItem(row: RawRecord): ComponentIssueItem {
     item_id: text(row.item_id) || undefined,
     container_id: text(row.container_id) || undefined,
     quantity: num(row.quantity),
-    status: text(row.status, "ACTIVE") as ComponentIssueItem["status"],
+    status: requiredApiState(
+      row.status,
+      ["ACTIVE", "REMOVED", "POSTED"],
+      "component_issue.item.status",
+    ),
   };
 }
 
@@ -132,11 +139,15 @@ function normalizeDocument(row: RawRecord): ComponentIssueDocument {
     warranty_case_id: text(document.warranty_case_id),
     document_date: text(document.document_date),
     purpose: "WARRANTY",
-    status: text(document.status, "DRAFT") as ComponentIssueStatus,
+    status: requiredApiState(
+      document.status,
+      ["DRAFT", "SCANNING", "POSTED", "CANCELLED"],
+      "component_issue.status",
+    ),
     note: text(document.note) || undefined,
     cancel_reason: text(document.cancel_reason) || undefined,
     posted_at: text(document.posted_at) || undefined,
-    version: num(document.version) || 1,
+    version: requiredApiNumber(document.version, "component_issue.version"),
     lines: rawLines.map(normalizeLine),
   };
 }
@@ -280,7 +291,11 @@ export async function scanComponentIssue(input: {
   return {
     version: requirePositiveNumber(row.version, "version"),
     scanned_qty: num(row.scanned_qty),
-    status: text(row.status, "SCANNING") as ComponentIssueStatus,
+    status: requiredApiState(
+      row.status,
+      ["DRAFT", "SCANNING", "POSTED", "CANCELLED"],
+      "component_issue.status",
+    ),
   };
 }
 
@@ -304,7 +319,11 @@ export async function cancelComponentIssue(input: {
   assertNeutral(row, "Component Issue cancel");
   return {
     version: requirePositiveNumber(row.version, "version"),
-    status: text(row.status, "CANCELLED") as ComponentIssueStatus,
+    status: requiredApiState(
+      row.status,
+      ["DRAFT", "SCANNING", "POSTED", "CANCELLED"],
+      "component_issue.status",
+    ),
   };
 }
 
@@ -349,7 +368,11 @@ export async function postComponentIssue(input: {
   }
   return {
     version: requirePositiveNumber(row.version, "version"),
-    status: text(row.status, "POSTED") as ComponentIssueStatus,
+    status: requiredApiState(
+      row.status,
+      ["DRAFT", "SCANNING", "POSTED", "CANCELLED"],
+      "component_issue.status",
+    ),
     movement_ids: movements,
   };
 }
