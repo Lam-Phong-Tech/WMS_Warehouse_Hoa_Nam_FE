@@ -640,20 +640,35 @@ export function useRecipientAgencyLedger({
   });
   const catalog = useSkuCatalog();
   const users = useUserDirectory();
+  const resolvingSnapshot =
+    outbound.isPlaceholderData ||
+    reversals.isPlaceholderData ||
+    documents.isPlaceholderData;
 
   const events = useMemo(
     () =>
-      buildLedger(
-        outbound.data,
-        reversals.data,
-        documents.data,
-        catalog,
-        users,
-      ),
-    [outbound.data, reversals.data, documents.data, catalog, users],
+      resolvingSnapshot
+        ? []
+        : buildLedger(
+            outbound.data,
+            reversals.data,
+            documents.data,
+            catalog,
+            users,
+          ),
+    [
+      outbound.data,
+      reversals.data,
+      documents.data,
+      catalog,
+      users,
+      resolvingSnapshot,
+    ],
   );
 
-  const loadedRowCount = listOf(outbound.data?.rows).length;
+  const loadedRowCount = resolvingSnapshot
+    ? 0
+    : listOf(outbound.data?.rows).length;
   const serverRowTotal = n(
     (outbound.data?.pagination as Raw | undefined)?.total,
     loadedRowCount,
@@ -672,7 +687,11 @@ export function useRecipientAgencyLedger({
     truncated: serverRowTotal > loadedRowCount,
     serverRowTotal,
     loadedRowCount,
-    isLoading: outbound.isLoading || reversals.isLoading || documents.isLoading,
+    isLoading:
+      resolvingSnapshot ||
+      outbound.isLoading ||
+      reversals.isLoading ||
+      documents.isLoading,
     isFetching:
       outbound.isFetching || reversals.isFetching || documents.isFetching,
     error: outbound.error ?? reversals.error ?? documents.error ?? null,
