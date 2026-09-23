@@ -127,3 +127,17 @@ html[data-theme="dark"] #root [data-report-warehouse].hn-report-warehouse {
   --report-warehouse-dot-soft: var(--ops-success-soft);
   box-shadow: var(--ops-shadow-card);
 }
+
+/*
+ * 1024px desktop/tablet-landscape guard for the outbound report.
+ * Its header actions are absolutely positioned at >=980px, so after the shared
+ * 230px warehouse card replaces the legacy control, the English heading must
+ * reserve that exact lane instead of extending underneath the card.
+ * The card geometry itself remains identical to the inbound reference.
+ */
+@media (min-width: 980px) and (max-width: 1120px) {
+  #root .hn-mvp-screen .hn-outbound-report .outbound-page-heading > div:first-child {
+    min-width: 0;
+    max-width: calc(100% - 242px);
+  }
+}
