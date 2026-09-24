@@ -1,3 +1,4 @@
+import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -82,7 +83,8 @@ const ATTACHMENT_KIND_KEYS: Record<string, MessageKey> = {
 /** Tham chiếu ổn định cho danh sách rỗng: dùng làm dependency của effect tải ảnh. */
 const EMPTY_ATTACHMENTS: DocumentAttachment[] = [];
 
-function formatFileSize(bytes: number): string {
+function formatFileSize(bytes: number | null): string {
+  if (bytes === null || !Number.isFinite(bytes) || bytes < 0) return EMPTY_TEXT;
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${bytes} B`;
@@ -228,8 +230,10 @@ export function DocumentAttachmentsPanel({
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  const attachments = query.data?.attachments ?? EMPTY_ATTACHMENTS;
-  const evidenceStatus = query.data?.evidenceStatus ?? "NOT_REQUIRED";
+  const attachments = query.isError
+    ? EMPTY_ATTACHMENTS
+    : (query.data?.attachments ?? EMPTY_ATTACHMENTS);
+  const evidenceStatus = query.isSuccess ? query.data.evidenceStatus : null;
   const imageAttachments = attachments.filter(isImageAttachment);
   const fileAttachments = attachments.filter(
     (attachment) => !isImageAttachment(attachment),
@@ -282,6 +286,13 @@ export function DocumentAttachmentsPanel({
         <Typography variant="body2" color="text.secondary">
           {t("shared.attachments.loadingList")}
         </Typography>
+      ) : query.isError ? (
+        <ApiErrorAlert
+          error={query.error}
+          onRetry={() => {
+            void query.refetch();
+          }}
+        />
       ) : (
         <>
           {imageAttachments.length || !disabled ? (

@@ -1,3 +1,4 @@
+import { nullableApiNumber } from "@/shared/api/api-read-values";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import {
   Box,
@@ -104,6 +105,13 @@ const TAG_COLOR_TONES: Record<string, UiStatusTone> = {
   default: "neutral",
 };
 
+function quantityColor(value: number | null): string | undefined {
+  return value === null
+    ? undefined
+    : value >= 0
+      ? SEMANTIC_LIGHT.successText
+      : SEMANTIC_LIGHT.errorText;
+}
 function text(value: unknown, fallback = "-"): string {
   return value === undefined || value === null ? fallback : String(value);
 }
@@ -289,7 +297,7 @@ const containerItemColumns = (
     header: t("inventory.trace.colQty"),
     width: 100,
     align: "right",
-    render: (row) => formatQuantity(Number(row.quantity ?? 0)),
+    render: (row) => formatQuantity(nullableApiNumber(row.quantity)),
   },
   {
     key: "status",
@@ -337,17 +345,18 @@ const movementColumns = (
     width: 100,
     align: "right",
     render: (row) => {
-      const qty = Number(row.qty_delta ?? row.quantity ?? 0);
+      const qty = nullableApiNumber(row.qty_delta ?? row.quantity);
       return (
         <Box
           component="span"
           sx={{
-            color:
-              qty >= 0 ? SEMANTIC_LIGHT.successText : SEMANTIC_LIGHT.errorText,
+            color: quantityColor(qty),
             fontWeight: 600,
           }}
         >
-          {qty >= 0 ? `+${formatQuantity(qty)}` : formatQuantity(qty)}
+          {qty !== null && qty >= 0
+            ? `+${formatQuantity(qty)}`
+            : formatQuantity(qty)}
         </Box>
       );
     },
@@ -414,7 +423,9 @@ const traceLineColumns = (
     width: 100,
     align: "right",
     render: (row) =>
-      formatQuantity(Number(row.quantity ?? row.qty ?? row.qty_actual ?? 0)),
+      formatQuantity(
+        nullableApiNumber(row.quantity ?? row.qty ?? row.qty_actual),
+      ),
   },
   {
     key: "status",
@@ -485,14 +496,11 @@ const chainColumns = (
       <Box
         component="span"
         sx={{
-          color:
-            row.qty_delta >= 0
-              ? SEMANTIC_LIGHT.successText
-              : SEMANTIC_LIGHT.errorText,
+          color: quantityColor(nullableApiNumber(row.qty_delta)),
           fontWeight: 600,
         }}
       >
-        {formatQuantity(Number(row.qty_delta))}
+        {formatQuantity(nullableApiNumber(row.qty_delta))}
       </Box>
     ),
   },
@@ -787,8 +795,13 @@ export function TraceModal({ movementId, onClose }: Props) {
                 <ResponsiveDataTable
                   headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
                   maxBodyHeight="clamp(240px, 45dvh, 520px)"
-                  rows={codeTrace.movements}
-                  rowKey={(row) => text(row.id, String(Math.random()))}
+                  rows={codeTrace.movements.map((row, index) =>
+                    withRowKey(
+                      row,
+                      `${submittedCode ?? ""}:${text(row.id ?? row.movement_id, "")}:${index}`,
+                    ),
+                  )}
+                  rowKey={(row) => text(row.__rowKey)}
                   columns={movementColumns(t)}
                   loading={physicalCodeQuery.isFetching}
                   emptyText={t("inventory.trace.movementsEmpty")}
@@ -970,15 +983,22 @@ export function TraceModal({ movementId, onClose }: Props) {
                 <Box
                   component="span"
                   sx={{
-                    color:
-                      Number(movement.qty_change ?? movement.quantity ?? 0) >= 0
-                        ? SEMANTIC_LIGHT.successText
-                        : SEMANTIC_LIGHT.errorText,
+                    color: quantityColor(
+                      nullableApiNumber(
+                        movement.qty_delta ??
+                          movement.qty_change ??
+                          movement.quantity,
+                      ),
+                    ),
                     fontWeight: 600,
                   }}
                 >
                   {formatQuantity(
-                    Number(movement.qty_change ?? movement.quantity ?? 0),
+                    nullableApiNumber(
+                      movement.qty_delta ??
+                        movement.qty_change ??
+                        movement.quantity,
+                    ),
                   )}
                 </Box>
               }
@@ -1111,6 +1131,7 @@ export function TraceModal({ movementId, onClose }: Props) {
                       component="span"
                       sx={{
                         color:
+                          trace.netEffect.reversedQty !== null &&
                           trace.netEffect.reversedQty > 0
                             ? SEMANTIC_LIGHT.errorText
                             : undefined,
@@ -1133,13 +1154,23 @@ export function TraceModal({ movementId, onClose }: Props) {
                   label={t("inventory.trace.fieldStatus")}
                   value={
                     <UiStatusBadge
-                      tone={trace.netEffect.fullyReversed ? "error" : "success"}
+                      tone={
+                        trace.netEffect.fullyReversed === null ||
+                        trace.netEffect.reversalCount === null
+                          ? "neutral"
+                          : trace.netEffect.fullyReversed
+                            ? "error"
+                            : "success"
+                      }
                       label={
-                        trace.netEffect.fullyReversed
-                          ? t("inventory.trace.fullyReversed")
-                          : t("inventory.trace.stillEffective", {
-                              count: trace.netEffect.reversalCount,
-                            })
+                        trace.netEffect.fullyReversed === null ||
+                        trace.netEffect.reversalCount === null
+                          ? t("inventory.trace.undetermined")
+                          : trace.netEffect.fullyReversed
+                            ? t("inventory.trace.fullyReversed")
+                            : t("inventory.trace.stillEffective", {
+                                count: trace.netEffect.reversalCount,
+                              })
                       }
                     />
                   }

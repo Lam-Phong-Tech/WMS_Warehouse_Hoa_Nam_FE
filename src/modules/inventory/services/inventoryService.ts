@@ -143,12 +143,12 @@ export type ReversalNetEffect = {
   basis: string;
   originalMovementId: string;
   originalMovementType: string;
-  originalQty: number;
-  reversedQty: number;
-  remainingReversibleQty: number;
-  netQtyDelta: number;
-  fullyReversed: boolean;
-  reversalCount: number;
+  originalQty: number | null;
+  reversedQty: number | null;
+  remainingReversibleQty: number | null;
+  netQtyDelta: number | null;
+  fullyReversed: boolean | null;
+  reversalCount: number | null;
 };
 
 export type StockMovementTraceSource = {
@@ -328,7 +328,7 @@ function normalizeMovement(row: RawRecord): StockMovementRow {
   const doc = nested(row, "document");
   const creator = nested(row, "creator");
   const qty = nullableNum(
-    row.qty_change ?? row.qty_delta ?? row.quantity ?? row.qty,
+    row.qty_delta ?? row.qty_change ?? row.quantity ?? row.qty,
   );
   return {
     id: text(row.id),
@@ -460,7 +460,7 @@ function normalizeCorrectionChain(row: RawRecord): {
   const nodes = Array.isArray(chainRaw.nodes)
     ? (chainRaw.nodes as CorrectionChainNode[])
     : [];
-  const effect = row.net_effect as RawRecord | undefined;
+  const effect = nested(row, "net_effect");
 
   return {
     chain: nodes,
@@ -470,15 +470,20 @@ function normalizeCorrectionChain(row: RawRecord): {
     chainTruncated: Boolean(chainRaw.truncated),
     netEffect: effect
       ? {
-          basis: text(effect.basis, "LEDGER"),
+          basis: text(effect.basis),
           originalMovementId: text(effect.original_movement_id, ""),
           originalMovementType: text(effect.original_movement_type, "-"),
-          originalQty: Number(effect.original_qty ?? 0),
-          reversedQty: Number(effect.reversed_qty ?? 0),
-          remainingReversibleQty: Number(effect.remaining_reversible_qty ?? 0),
-          netQtyDelta: Number(effect.net_qty_delta ?? 0),
-          fullyReversed: Boolean(effect.fully_reversed),
-          reversalCount: Number(effect.reversal_count ?? 0),
+          originalQty: nullableApiNumber(effect.original_qty),
+          reversedQty: nullableApiNumber(effect.reversed_qty),
+          remainingReversibleQty: nullableApiNumber(
+            effect.remaining_reversible_qty,
+          ),
+          netQtyDelta: nullableApiNumber(effect.net_qty_delta),
+          fullyReversed:
+            typeof effect.fully_reversed === "boolean"
+              ? effect.fully_reversed
+              : null,
+          reversalCount: nullableApiNumber(effect.reversal_count),
         }
       : null,
   };

@@ -1,6 +1,14 @@
+import {
+  nullableApiNumber,
+  requiredApiIdentity,
+  requiredApiState,
+} from "@/shared/api/api-read-values";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
-import { requireNonEmptyString } from "@/shared/api/wms-contract";
+import {
+  requireNonEmptyString,
+  WmsContractError,
+} from "@/shared/api/wms-contract";
 
 /**
  * "Chứng từ nhập/xuất/hoàn trả": ảnh/scan/PDF đính kèm phiếu nhập, phiếu xuất,
@@ -27,7 +35,7 @@ export interface DocumentAttachment {
   attachment_type: AttachmentKind;
   file_name: string;
   content_type: string;
-  file_size_bytes: number;
+  file_size_bytes: number | null;
   checksum?: string;
   note?: string;
   status: "ACTIVE" | "DELETED" | "QUARANTINED";
@@ -57,17 +65,27 @@ function text(value: unknown, fallback = ""): string {
   return value === undefined || value === null ? fallback : String(value);
 }
 
-function numberOrZero(value: unknown): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
+function attachmentFileSize(value: unknown): number | null {
+  const size = nullableApiNumber(value);
+  return size !== null && size >= 0 ? size : null;
+}
+function requireEvidenceFlag(value: unknown): boolean {
+  if (typeof value !== "boolean")
+    throw new WmsContractError(
+      "WMS_FE_MISSING_API_VALUE",
+      "Phản hồi máy chủ chưa xác định yêu cầu chứng từ. Vui lòng tải lại để kiểm tra.",
+    );
+  return value;
 }
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
-  return Array.isArray(value)
-    ? value
-    : Array.isArray(value.data)
-      ? value.data
-      : [];
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object" && Array.isArray(value.data))
+    return value.data;
+  throw new WmsContractError(
+    "WMS_FE_INVALID_API_ROWS",
+    "Phản hồi máy chủ không có danh sách chứng từ hợp lệ. Vui lòng tải lại để kiểm tra.",
+  );
 }
 
 function endpointFor(documentType: DocumentAttachmentType): string {
@@ -83,18 +101,34 @@ function endpointFor(documentType: DocumentAttachmentType): string {
 
 function normalizeAttachment(row: RawRecord): DocumentAttachment {
   return {
-    id: text(row.id),
-    document_type: text(row.document_type) as DocumentAttachmentType,
+    id: requiredApiIdentity(row.id, "attachment.id"),
+    document_type: requiredApiState(
+      row.document_type,
+      ["INBOUND", "OUTBOUND", "REVERSAL"] as const,
+      "attachment.document_type",
+    ),
     document_id: text(row.document_id),
-    attachment_type:
-      (text(row.attachment_type, "OTHER") as AttachmentKind) || "OTHER",
+    attachment_type: requiredApiState(
+      row.attachment_type,
+      [
+        "SOURCE_DOCUMENT",
+        "INVOICE",
+        "DELIVERY_NOTE",
+        "PHOTO",
+        "OTHER",
+      ] as const,
+      "attachment.attachment_type",
+    ),
     file_name: text(row.file_name, "-"),
     content_type: text(row.content_type),
-    file_size_bytes: numberOrZero(row.file_size_bytes),
+    file_size_bytes: attachmentFileSize(row.file_size_bytes),
     checksum: text(row.checksum) || undefined,
     note: text(row.note) || undefined,
-    status:
-      (text(row.status, "ACTIVE") as DocumentAttachment["status"]) || "ACTIVE",
+    status: requiredApiState(
+      row.status,
+      ["ACTIVE", "DELETED", "QUARANTINED"] as const,
+      "attachment.status",
+    ),
     uploaded_at: text(row.uploaded_at) || undefined,
     uploaded_by: text(row.uploaded_by) || undefined,
   };
@@ -113,10 +147,12 @@ export async function fetchDocumentAttachments(
     attachments: rowsOf(
       result.data as RawRecord[] | { data?: RawRecord[] },
     ).map(normalizeAttachment),
-    evidenceStatus:
-      (result.meta?.evidence_status as EvidenceStatus | undefined) ??
-      "NOT_REQUIRED",
-    requiresEvidence: Boolean(result.meta?.requires_evidence),
+    evidenceStatus: requiredApiState(
+      result.meta?.evidence_status,
+      ["PROVIDED", "PENDING", "NOT_REQUIRED"] as const,
+      "attachment.evidence_status",
+    ),
+    requiresEvidence: requireEvidenceFlag(result.meta?.requires_evidence),
   };
 }
 
@@ -185,7 +221,11 @@ export async function fetchPendingEvidence(): Promise<PendingEvidenceItem[]> {
   );
   return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
     (row) => ({
-      document_type: text(row.document_type) as DocumentAttachmentType,
+      document_type: requiredApiState(
+        row.document_type,
+        ["INBOUND", "OUTBOUND", "REVERSAL"] as const,
+        "attachment.document_type",
+      ),
       document_id: text(row.document_id),
       document_no: text(row.document_no),
       warehouse_id: text(row.warehouse_id) || null,
