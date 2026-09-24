@@ -3,34 +3,19 @@ import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
 import { requireNonEmptyString, WmsContractError } from "@/shared/api/wms-contract";
 import {
-  nullableApiNumber,
-  optionalApiState,
-  requiredApiIdentity,
-  requiredApiNumber,
-  requiredApiRows,
-  requiredApiState,
-  requiredApiVersion,
+  nullableApiNumber, optionalApiState, requiredApiIdentity,
+  requiredApiNumber, requiredApiRows, requiredApiState, requiredApiVersion,
 } from "@/shared/api/api-read-values";
-import {
-  hasAnyWmsPermission,
-  WMS_PERMISSION_CATALOG as P,
-} from "@/shared/constants/wms-permissions";
+import { hasAnyWmsPermission, WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { maskWarrantyAddress, maskWarrantyName, maskWarrantyPhone } from "../constants";
 import type {
-  CreateWarrantyCaseRequest,
-  UpdateWarrantyCaseRequest,
-  WarrantyAttachment,
-  WarrantyAttachmentType,
-  WarrantyCase,
-  WarrantyCasePage,
-  WarrantyCaseStatus,
-  WarrantyEvent,
-  WarrantyListParams,
+  CreateWarrantyCaseRequest, UpdateWarrantyCaseRequest, WarrantyAttachment,
+  WarrantyAttachmentType, WarrantyCase, WarrantyCasePage, WarrantyCaseStatus,
+  WarrantyEvent, WarrantyListParams,
 } from "../types";
 
 type RawRecord = Record<string, unknown>;
-
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
   return requiredApiRows<T>(value, "warranty.rows");
 }
@@ -52,8 +37,7 @@ export function makeWarrantyIdempotencyKey(operation: string): string {
   const uuid = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   return `fe:${operation}:${uuid}`;
 }
-
-/** Only documented aliases are translated; missing/unknown state is not RECEIVED. */
+/** Only documented aliases are translated; missing state is never RECEIVED. */
 function canonicalStatus(value: unknown): WarrantyCaseStatus {
   const status = text(value).toUpperCase();
   switch (status) {
@@ -69,8 +53,7 @@ function canonicalStatus(value: unknown): WarrantyCaseStatus {
       ] as const, "warranty.status");
   }
 }
-
-/** §13.8 / WWHN-247: keep the existing permission-based, idempotent PII masking. */
+/** Preserve permission-aware, idempotent PII masking for every consumer. */
 function resolveWarrantyPii(row: RawRecord): {
   customer_name: string;
   customer_phone?: string;
@@ -92,19 +75,16 @@ function resolveWarrantyPii(row: RawRecord): {
     pii_masked: !full,
   };
 }
-
 function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
   const temporaryCode = text(row.temporary_item_code ?? row.temp_item_code) || undefined;
   const missingReason = text(row.missing_code_reason ?? row.temp_only_reason) || undefined;
   const identificationType = requiredApiState(
     row.identification_type ?? row.identification_status,
-    ["IDENTIFIED", "TEMP_ONLY"] as const,
-    "warranty.identification_status",
+    ["IDENTIFIED", "TEMP_ONLY"] as const, "warranty.identification_status",
   );
   const status = canonicalStatus(row.status);
   const caseDescription = text(row.description ?? row.notes) || undefined;
   const pii = resolveWarrantyPii(row);
-  // GĐ1-REQ-010: preserve the documented date alias, not unrelated timestamps.
   const estimatedCompletionDate =
     text(row.estimated_completion_date ?? row.expected_completion_date) || undefined;
   return {
@@ -154,11 +134,9 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     created_at: text(row.created_at),
     created_by: text(row.created_by_name, "-"),
     notes: caseDescription,
-    // Read-only records may lack a version; writes validate/refetch instead of inventing one.
     version: numberOrUndefined(row.version),
   };
 }
-
 function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
   return {
     id: requiredApiIdentity(row.warranty_event_id ?? row.id, "warranty_event_id"),
@@ -169,15 +147,14 @@ function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
       "TEMP_RESOLUTION", "CUSTOMER_CONTACTED", "RETURNED",
     ] as const, "warranty.event_type"),
     from_status: row.from_status ? canonicalStatus(row.from_status) : undefined,
-    // A note without a transition must not claim that the case was received again.
+    // Empty text carries no transition claim and is accepted by the label-map consumer.
     to_status: row.to_status == null && row.status == null
-      ? undefined : canonicalStatus(row.to_status ?? row.status),
+      ? "" : canonicalStatus(row.to_status ?? row.status),
     description: text(row.description ?? row.note ?? row.message, "-"),
     performed_by: text(row.performed_by_name, "-"),
     performed_at: text(row.performed_at ?? row.event_at ?? row.created_at),
   };
 }
-
 function normalizeAttachment(row: RawRecord): WarrantyAttachment {
   return {
     id: requiredApiIdentity(row.id, "attachment_id"),
@@ -194,7 +171,6 @@ function normalizeAttachment(row: RawRecord): WarrantyAttachment {
     uploaded_by: text(row.uploaded_by_name) || undefined,
   };
 }
-
 function assertStockNeutral(row: RawRecord, action: string): void {
   if (row.stock_effect !== undefined && row.stock_effect !== "NONE") {
     throw new WmsContractError("WMS_FE_INVALID_WARRANTY_RESPONSE", `${action} must have stock_effect=NONE`);
@@ -209,7 +185,6 @@ function assertWarrantyRead(action: string): void {
 function assertWarrantyWrite(action: string): void {
   assertWmsActionPermission([P.WARRANTY_MANAGE], action);
 }
-
 export async function fetchWarrantyCases(params: WarrantyListParams = {}): Promise<WarrantyCasePage> {
   assertWarrantyRead("view warranty cases");
   const mappedParams = {
@@ -242,7 +217,6 @@ export async function fetchWarrantyCaseEvents(caseId: string | number, params: R
   );
   return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizeWarrantyEvent);
 }
-
 export async function createWarrantyCase(payload: CreateWarrantyCaseRequest): Promise<WarrantyCase> {
   assertWarrantyWrite("create warranty case");
   const description = requireNonEmptyString(payload.defect_description || payload.reported_defect || payload.notes, "defect_description");
@@ -273,14 +247,12 @@ export async function createWarrantyCase(payload: CreateWarrantyCaseRequest): Pr
   assertStockNeutral(row, "Warranty case creation");
   return normalizeWarrantyCase(row);
 }
-
 export async function updateWarrantyCase(caseId: string | number, request: UpdateWarrantyCaseRequest): Promise<WarrantyCase> {
   assertWarrantyWrite("update warranty case");
   const id = requireNonEmptyString(String(caseId), "caseId");
   const status = request.status ? canonicalStatus(request.status) : undefined;
   const current = request.ifMatch === undefined ? await fetchWarrantyCase(id) : undefined;
   const ifMatch = requiredApiVersion(request.ifMatch ?? current?.version);
-  // Annex C: preserve the status endpoint, concurrency and idempotency contract.
   const row = await http.post<RawRecord>(endpoint(API_ENDPOINTS.WARRANTY_CASE_STATUS, ":id", id), clean({
     status,
     note: request.reason,
@@ -308,7 +280,6 @@ export async function updateWarrantyCase(caseId: string | number, request: Updat
 }
 /** @deprecated dùng updateWarrantyCase. */
 export const updateWarrantyCaseStatus = updateWarrantyCase;
-
 export async function fetchWarrantyAttachments(caseId: string | number): Promise<WarrantyAttachment[]> {
   assertWarrantyRead("view warranty attachments");
   const id = requireNonEmptyString(String(caseId), "caseId");

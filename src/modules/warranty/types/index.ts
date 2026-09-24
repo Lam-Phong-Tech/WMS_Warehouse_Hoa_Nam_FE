@@ -1,7 +1,6 @@
 /** Warranty module types aligned with the current /api/v1/warranty-cases contract. */
 export type WarrantyCaseStatus =
   | "RECEIVED" | "CHECKING" | "REPAIRING" | "COMPLETED" | "RETURNED" | "CANCELLED"
-  // Compatibility aliases accepted only when reading older data snapshots.
   | "OPEN" | "PROCESSING" | "WAITING_PARTS" | "READY" | "RETURNED_TO_CUSTOMER" | "CLOSED";
 export type WarrantyIdentificationType = "IDENTIFIED" | "TEMP_ONLY";
 export type WarrantyPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -29,10 +28,8 @@ export interface WarrantyCase {
   purchase_date?: string;
   masked_customer_name?: string;
   masked_customer_phone?: string;
-  /** §13.8: service applies permission-aware, idempotent PII masking. */
   pii_masked: boolean;
   agency_name?: string;
-  /** Legacy primary defect display; prefer the multi-defect fields when supplied. */
   defect: string;
   defect_code: string;
   defect_id?: string;
@@ -45,7 +42,7 @@ export interface WarrantyCase {
   condition_status?: string;
   cancel_reason?: string;
   status: WarrantyCaseStatus;
-  /** The current detail API need not supply a priority. Do not invent MEDIUM. */
+  /** Missing priority is not MEDIUM. */
   priority?: WarrantyPriority;
   missing_code_reason?: string;
   manual_product_description?: string;
@@ -53,7 +50,6 @@ export interface WarrantyCase {
   warehouse_name?: string;
   received_at: string;
   expected_return_at?: string;
-  /** BA M1: nullable expected repair/completion date. */
   expected_completion_date?: string;
   estimated_completion_date?: string;
   completed_at?: string;
@@ -62,7 +58,7 @@ export interface WarrantyCase {
   created_at: string;
   created_by: string;
   notes?: string;
-  /** Missing on a read is unknown. Every write must obtain a valid server version. */
+  /** Reads may omit a version; every write must obtain a real server version. */
   version?: number;
 }
 export interface WarrantyEvent {
@@ -70,8 +66,8 @@ export interface WarrantyEvent {
   case_id: string;
   event_type: WarrantyEventType;
   from_status?: WarrantyCaseStatus;
-  /** NOTE events need not transition the case. */
-  to_status?: WarrantyCaseStatus;
+  /** Empty means no transition supplied, e.g. NOTE; it is not a case status. */
+  to_status: WarrantyCaseStatus | "";
   description: string;
   performed_by: string;
   performed_at: string;
@@ -104,7 +100,6 @@ export interface WarrantyListParams {
   defect_ids?: string[];
   page?: number;
   per_page?: number;
-  /** Most/least recent according to the server's created/updated ordering. */
   sort_order?: "desc" | "asc";
 }
 export interface WarrantyCasePage {
@@ -148,7 +143,6 @@ export interface UpdateWarrantyCaseRequest {
   defect_codes?: string[];
   expected_completion_date?: string;
   estimated_completion_date?: string;
-  /** Sent only when the caller edits PII; the backend remains the permission authority. */
   customer_name?: string;
   customer_phone?: string;
   customer_address?: string;
