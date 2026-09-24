@@ -13,6 +13,7 @@ import { useT } from "@/shared/i18n/useT";
 import { LoadingContext, LoadingDepthContext } from "./loading-context";
 import { LoadingController } from "./loading-controller";
 import { LoadingOverlayStack } from "./loading-stack";
+import { createForegroundReadIntent } from "./foreground-interaction";
 import { UnifiedLoading } from "./UnifiedLoading";
 import "./coordinated-loading.css";
 
@@ -66,6 +67,7 @@ export function CoordinatedLoadingBoundary({
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const savedFocus = useRef<HTMLElement | null>(null);
   const stack = useMemo(() => stackFor(client), [client]);
+  const readIntent = useMemo(() => createForegroundReadIntent(), []);
   const topOverlay = useSyncExternalStore(
     stack.subscribe,
     stack.getSnapshot,
@@ -101,16 +103,20 @@ export function CoordinatedLoadingBoundary({
     const cache = client?.getQueryCache();
     const activeReads = new Set(cache?.getAll().filter((query) => query.isActive()).map((query) => query.queryHash));
     const unsubscribeQueries = cache?.subscribe((event) => {
-      // A newly observed/enabled key is foreground work (tab/filter/page),
-      // even when cached. Updates of existing active reads stay background.
-      // Do not arm the page behind a portal dialog or an inactive query.
+      // Include plain-button refetches of an existing cached key. Only reads
+      // started by this surface's current interaction are foreground; mutation
+      // events and later polling/refetch ticks never consume the gesture.
       const top = stack.getSnapshot();
       const wasActive = activeReads.has(event.query.queryHash);
       const isActive = event.query.isActive();
       if (isActive) activeReads.add(event.query.queryHash);
       else activeReads.delete(event.query.queryHash);
+      const interactiveRead =
+        readIntent.isArmed() &&
+        event.type === "updated" &&
+        event.action.type === "fetch";
       if (
-        isActive && (!wasActive || event.type === "observerAdded") &&
+        isActive && (!wasActive || event.type === "observerAdded" || interactiveRead) &&
         event.query.meta?.loading !== "background" &&
         (top === undefined || top === id)
       ) controller.beginBatch();
@@ -119,12 +125,13 @@ export function CoordinatedLoadingBoundary({
     const unsubscribeOverlays = stack.subscribe(controller.refresh);
     controller.activate();
     return () => {
+      readIntent.clear();
       controller.deactivate();
       unsubscribeQueries?.();
       unsubscribeOverlays();
       removeOverlay?.();
     };
-  }, [client, controller, depth, enabled, id, mode, stack]);
+  }, [client, controller, depth, enabled, id, mode, readIntent, stack]);
 
   const blocked = enabled && snapshot.phase !== "ready";
   const covered = topOverlay !== undefined && topOverlay !== id;
@@ -143,15 +150,21 @@ export function CoordinatedLoadingBoundary({
     }
   }, [blocked, covered]);
 
+  const ownsInteraction = (target: EventTarget | null) =>
+    enabled &&
+    target instanceof Element &&
+    target.closest(".hn-loading-boundary") === surfaceRef.current;
+
   return (
     <LoadingDepthContext.Provider value={depth}>
       <LoadingContext.Provider value={controller}>
         <div
           ref={surfaceRef}
           onClickCapture={(event) => {
-            // Portal clicks belong to the dialog, not the page behind it.
+            // Portal/nested-scope clicks belong only to their nearest boundary.
             const target = event.target;
-            if (!(target instanceof Element) || !event.currentTarget.contains(target)) return;
+            if (!ownsInteraction(target) || !(target instanceof Element)) return;
+            readIntent.arm();
             const action = target.closest("[data-action-kind], [data-loading-batch]");
             const kind = action?.getAttribute("data-action-kind");
             if (
@@ -159,6 +172,12 @@ export function CoordinatedLoadingBoundary({
               kind === "refresh" || kind === "search" ||
               kind === "filter" || kind === "reset" || kind === "retry"
             ) controller.beginBatch();
+          }}
+          onSubmitCapture={(event) => {
+            if (ownsInteraction(event.target)) readIntent.arm();
+          }}
+          onKeyDownCapture={(event) => {
+            if (event.key === "Enter" && ownsInteraction(event.target)) readIntent.arm();
           }}
           className={`hn-loading-boundary hn-loading-boundary--${mode}`}
           data-loading-phase={enabled ? snapshot.phase : "inactive"}

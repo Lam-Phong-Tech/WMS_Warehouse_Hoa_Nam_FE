@@ -45,8 +45,8 @@ jobs:
           cache: yarn
       - name: Install locked dependencies
         run: yarn install --frozen-lockfile --non-interactive
-      - name: Loading controller, chart and React integration regressions
-        run: npm run test -- src/shared/ui/loading src/shared/components/charts --maxWorkers=2
+      - name: Loading, chart and report-refresh regressions
+        run: npm run test -- src/shared/ui/loading src/shared/components/charts src/modules/reports/operations/report-refresh --maxWorkers=2
       - name: Typecheck the committed application
         if: ${{ !cancelled() }}
         run: npm run typecheck
