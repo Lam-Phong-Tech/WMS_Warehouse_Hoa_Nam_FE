@@ -8,12 +8,13 @@ on:
       - 'src/shared/ui/components/UiDialog.tsx'
       - 'src/shared/ui/components/UiStateSurface.tsx'
       - 'src/shared/components/ui-states/PageSkeleton.tsx'
-      - 'src/shared/components/data-display/LoadingState.tsx'
-      - 'src/shared/components/feedback/Loading.tsx'
+      - 'src/shared/components/data-display/**'
+      - 'src/shared/components/feedback/**'
       - 'src/shared/components/charts/**'
       - 'src/modules/reports/**'
-      - 'src/modules/overview/**'
-      - 'src/app/router/index.tsx'
+      - 'src/modules/dashboard/**'
+      - 'src/modules/putaway/**'
+      - 'src/app/router/**'
 permissions:
   contents: read
 concurrency:
@@ -38,22 +39,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Capture exact committed source for loading review
-        run: git archive --format=tar.gz --output=loading-review-source.tar.gz HEAD
-      - uses: actions/upload-artifact@v4
-        with:
-          name: loading-review-source-${{ github.sha }}
-          path: loading-review-source.tar.gz
-          retention-days: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: yarn
       - name: Install locked dependencies
         run: yarn install --frozen-lockfile --non-interactive
-      - name: Loading controller and React integration regressions
-        id: tests
-        run: npm run test -- src/shared/ui/loading --maxWorkers=2
+      - name: Loading controller, chart and React integration regressions
+        run: npm run test -- src/shared/ui/loading src/shared/components/charts --maxWorkers=2
       - name: Typecheck the committed application
         if: ${{ !cancelled() }}
         run: npm run typecheck

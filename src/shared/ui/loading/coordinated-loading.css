@@ -70,7 +70,8 @@
 /* Remove staggered entrance delay, not spinner rotation or hover/focus feedback. */
 .hn-loading-boundary__content .hn-fade-in,
 .hn-loading-boundary__content .hn-fade-in-up,
-.hn-loading-boundary__content .hn-scale-in {
+.hn-loading-boundary__content .hn-scale-in,
+.hn-loading-boundary__content .hn-stagger > * {
   animation-delay: 0ms !important;
 }
 @media (prefers-reduced-motion: reduce) {

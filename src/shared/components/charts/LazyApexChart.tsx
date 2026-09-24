@@ -1,158 +1,188 @@
 import {
+  Component,
   lazy,
   Suspense,
+  useContext,
   useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ComponentProps,
   type CSSProperties,
+  type LazyExoticComponent,
+  type ReactNode,
 } from "react";
+import type { ApexOptions } from "apexcharts";
+import { LoadingContext } from "@/shared/ui/loading/loading-context";
+import { createChartRenderCycle } from "@/shared/ui/loading/chart-render-cycle";
+import { UnifiedLoading } from "@/shared/ui/loading/UnifiedLoading";
+import { UiStateSurface } from "@/shared/ui/components/UiStateSurface";
+import { useT } from "@/shared/i18n/useT";
+
+const loadChart = () => import("react-apexcharts");
+const InitialApexChart = lazy(loadChart);
+type ChartComponent = Awaited<ReturnType<typeof loadChart>>["default"];
+type ApexChartProps = ComponentProps<ChartComponent>;
+type ChartEvents = NonNullable<NonNullable<ApexOptions["chart"]>["events"]>;
+type LifecycleEvent = NonNullable<ChartEvents["mounted"]>;
+
+/** A failed chunk must settle the screen, not retain an invisible participant. */
+class ChartErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+}
 
 /**
- * Lối vào DUY NHẤT tới `react-apexcharts` cho 8 chart wrapper dùng chung.
- *
- * Hai việc nó làm, cả hai đều đo được là đáng:
- *
- * 1. NẠP THƯ VIỆN LƯỜI. `react-apexcharts` + `apexcharts` là chunk lớn nhất của
- *    cả app (888 KB, ~254 KB gzip). Import tĩnh trong wrapper nghĩa là màn đầu
- *    tiên có chart (dashboard, mọi màn báo cáo) phải tải + parse nó trước khi vẽ
- *    được BẤT CỨ THỨ GÌ, kể cả phần bảng không liên quan. `lazy()` ở đây tách
- *    nó khỏi đường tải của route: bảng/KPI lên trước, chart theo sau.
- *
- * 2. CHỈ VẼ KHI SẮP NHÌN THẤY. ApexCharts vẽ SVG và đo chữ bằng `getBBox()` cho
- *    từng nhãn — trace một màn báo cáo cho thấy 60% thời gian luồng chính là
- *    style/layout/paint, chart là phần lớn của số đó. Chart nằm dưới màn hình mà
- *    vẫn vẽ ngay là trả tiền cho thứ chưa ai nhìn. IntersectionObserver với
- *    `rootMargin` 200px: chart bắt đầu vẽ khi người dùng cuộn tới cách nó 200px,
- *    đủ sớm để không thấy trống.
- *
- * Ô giữ chỗ có ĐÚNG chiều cao của chart để bố cục không nhảy khi chart vào.
- *
- * Tắt animation vào: mỗi khung animation là một lượt layout SVG nữa, và trên máy
- * chậm nó là thứ làm chart "giật" lúc vào màn. Đây là hiệu ứng trang trí, không
- * phải dữ liệu.
+ * One ticket covers the module AND the actual SVG mount/update. The generated
+ * lifecycle callbacks also make an equal-data refresh an observable Apex update,
+ * so it cannot leave a ticket waiting for an event that will never be emitted.
+ * Do not remount on data changes: preserve the chart's legend/zoom interactions.
  */
-const ApexChart = lazy(() => import("react-apexcharts"));
+function CoordinatedChart({
+  Chart,
+  ...props
+}: ApexChartProps & { Chart: LazyExoticComponent<ChartComponent> }) {
+  const controller = useContext(LoadingContext);
+  const id = useId();
+  const currentCycle = useRef<object | null>(null);
+  const hasRendered = useRef(false);
+  const cycle = useMemo(() => {
+    const acknowledgement = createChartRenderCycle(controller, id, currentCycle);
+    const events = props.options?.chart?.events;
+    const mounted: LifecycleEvent = function (this: unknown, ...args) {
+      try { events?.mounted?.apply(this, args); } finally { hasRendered.current = true; acknowledgement.complete(); }
+    };
+    const updated: LifecycleEvent = function (this: unknown, ...args) {
+      try { events?.updated?.apply(this, args); } finally { hasRendered.current = true; acknowledgement.complete(); }
+    };
+    return {
+      acknowledgement,
+      options: {
+        ...props.options,
+        chart: {
+          ...props.options?.chart,
+          animations: { ...props.options?.chart?.animations, enabled: false },
+          events: { ...events, mounted, updated },
+        },
+      } satisfies ApexOptions,
+    };
+    // Series/size changes intentionally create a new lifecycle acknowledgement.
+  }, [controller, id, props.options, props.series, props.width, props.height, props.type]);
 
-type ApexChartProps = ComponentProps<typeof ApexChart>;
+  useLayoutEffect(() => {
+    // Draft filter typing and background redraws must not hide a ready page.
+    // Mounts and redraws during an existing foreground barrier do participate.
+    cycle.acknowledgement.activate(
+      !hasRendered.current || controller?.getSnapshot().phase !== "ready",
+    );
+    return () => cycle.acknowledgement.dispose();
+  }, [controller, cycle]);
 
-const NO_ANIMATION = { enabled: false } as const;
+  return (
+    <Suspense fallback={controller ? null : <UnifiedLoading />}>
+      <Chart {...props} options={cycle.options} />
+    </Suspense>
+  );
+}
 
+/**
+ * Shared entry for all Apex wrappers and the putaway tray grid. Inside a page or
+ * dialog barrier, prepare ALL mounted charts while content remains measurable:
+ * viewport-lazy rendering would otherwise show cards before their chart or wait
+ * forever for a hidden chart to intersect. Outside a barrier, retain lazy scroll.
+ */
 export function LazyApexChart(props: ApexChartProps) {
+  const controller = useContext(LoadingContext);
+  const t = useT();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [near, setNear] = useState(false);
-  /**
-   * Bề rộng THẬT của ô chứa, đo bằng ResizeObserver — UAT 09/09: ApexCharts 7
-   * với width "100%" chỉ lấy kích thước MỘT LẦN lúc mount; đo thực nghiệm
-   * (1500px → 1100px và ngược lại) svg giữ nguyên width cũ, nên mở trang ở
-   * cửa sổ to rồi bo nhỏ là cột biểu đồ tràn ra ngoài card, đè cả card đứng
-   * cạnh (ảnh RPT-04). Truyền width BẰNG SỐ và cập nhật theo observer thì
-   * react-apexcharts mới thật sự vẽ lại đúng cỡ ở cả hai chiều co/giãn.
-   */
   const [hostWidth, setHostWidth] = useState(0);
+  const [attempt, setAttempt] = useState(0);
+  const [Chart, setChart] = useState(() => InitialApexChart);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = hostRef.current;
-    if (!node || typeof ResizeObserver === "undefined") return;
+    if (!node) return;
+    const measure = (value: number) => {
+      const next = Math.floor(value);
+      // Keep-alive display:none must not replace a valid width with zero.
+      if (next > 0) setHostWidth((prev) => Math.abs(prev - next) > 1 ? next : prev);
+    };
+    measure(node.getBoundingClientRect().width);
+    if (typeof ResizeObserver === "undefined") {
+      const resize = () => measure(node.getBoundingClientRect().width);
+      window.addEventListener("resize", resize);
+      return () => window.removeEventListener("resize", resize);
+    }
     const observer = new ResizeObserver((entries) => {
-      const next = Math.floor(entries[0]?.contentRect.width ?? 0);
-      // 0 = đang ẩn (keep-alive display:none) — giữ số đo cũ, tránh vẽ chart 0px.
-      if (next > 0) {
-        setHostWidth((prev) => (Math.abs(prev - next) > 1 ? next : prev));
-      }
+      measure(entries[0]?.contentRect.width ?? 0);
     });
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
+    if (controller) return;
     const node = hostRef.current;
     if (!node) return;
     if (typeof IntersectionObserver === "undefined") {
       setNear(true);
       return;
     }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setNear(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "200px 0px" },
-    );
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setNear(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "200px 0px" });
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [controller]);
 
   const height = typeof props.height === "number" ? props.height : undefined;
-  const options = {
-    ...props.options,
-    chart: {
-      ...props.options?.chart,
-      animations: { ...props.options?.chart?.animations, ...NO_ANIMATION },
-    },
-  };
-
-  // Không bao giờ vẽ rộng hơn ô chứa: caller khai width số (DonutChart 340)
-  // thì kẹp theo host; caller để trống/"100%" thì lấy đúng số đo host.
   const width = (() => {
     if (hostWidth <= 0) return props.width;
-    if (typeof props.width === "number")
-      return Math.min(props.width, hostWidth);
+    if (typeof props.width === "number") return Math.min(props.width, hostWidth);
     if (props.width === undefined || props.width === "100%") return hostWidth;
     return props.width;
   })();
-
-  /*
-   * `contain: inline-size` là mấu chốt của chiều CO (đo 09/09 bằng Chromium
-   * thật, RPT-04 1500→1100px): ApexCharts ghi `style.width=<px>` lên
-   * .apexcharts-canvas, còn ô chứa chart ở các màn báo cáo là grid/flex item
-   * với `min-width:auto` — min-content của item bị chính cái canvas cũ chống
-   * ra nên item KHÔNG co theo cột lưới; host này vì thế giữ nguyên bề rộng,
-   * observer không bắn, chart không bao giờ được vẽ lại: vòng tự khoá. Khai
-   * kích thước nội tại = 0 thì host chỉ còn đi theo ô chứa và observer bắn
-   * đúng cỡ mới. `width:100%` để host vẫn lấp đầy khi nó là flex item (nếu
-   * không, containment làm nó co về 0). Host là flex căn giữa để chart hẹp
-   * hơn ô (donut 340px) đứng giữa như trước; chart lấp đầy thì không đổi gì.
-   */
+  // Preserve inline-size containment: without it a stale canvas prevents shrink.
   const hostStyle: CSSProperties = {
-    contain: "inline-size",
-    width: "100%",
-    minWidth: 0,
-    display: "flex",
-    justifyContent: "center",
+    contain: "inline-size", width: "100%", minWidth: 0,
+    display: "flex", justifyContent: "center",
     ...(height !== undefined ? { minHeight: height } : null),
+  };
+  const retry = () => {
+    // React.lazy caches rejected promises. A retry needs a fresh lazy wrapper.
+    setChart(() => lazy(loadChart));
+    setAttempt((value) => value + 1);
   };
 
   return (
-    <div ref={hostRef} style={hostStyle}>
-      {near ? (
-        <Suspense
-          fallback={
-            <div
-              style={height !== undefined ? { height } : undefined}
-              aria-hidden="true"
-            />
-          }
-        >
-          {/* key theo width: react-apexcharts không tin cậy khi update
-              width lúc runtime (đo 09/09: svg giữ nguyên cỡ cũ) — remount là
-              đường duy nhất chắc chắn ăn ở cả hai chiều co/giãn; animation đã
-              tắt nên remount không gây nháy. */}
-          <ApexChart
+    <div ref={hostRef} style={hostStyle} data-chart-loading="coordinated">
+      {controller || near ? (
+        <ChartErrorBoundary key={attempt} fallback={
+          <UiStateSurface kind="error" action={
+            <button type="button" className="hn-loading-boundary__retry" onClick={retry}>
+              {t("common.retry")}
+            </button>
+          } />
+        }>
+          {/* Width remount is retained for Apex's responsive canvas limitation. */}
+          <CoordinatedChart
             key={typeof width === "number" ? width : "auto"}
+            Chart={Chart}
             {...props}
             width={width}
-            options={options}
           />
-        </Suspense>
-      ) : (
-        <div
-          style={height !== undefined ? { height } : undefined}
-          aria-hidden="true"
-        />
-      )}
+        </ChartErrorBoundary>
+      ) : <div style={height !== undefined ? { height } : undefined} aria-hidden="true" />}
     </div>
   );
 }

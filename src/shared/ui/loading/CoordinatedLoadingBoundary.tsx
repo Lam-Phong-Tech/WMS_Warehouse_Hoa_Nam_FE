@@ -98,7 +98,24 @@ export function CoordinatedLoadingBoundary({
   useLayoutEffect(() => {
     if (!enabled) return;
     const removeOverlay = mode === "page" ? undefined : stack.add(id, depth);
-    const unsubscribeQueries = client?.getQueryCache().subscribe(controller.refresh);
+    const cache = client?.getQueryCache();
+    const activeReads = new Set(cache?.getAll().filter((query) => query.isActive()).map((query) => query.queryHash));
+    const unsubscribeQueries = cache?.subscribe((event) => {
+      // A newly observed/enabled key is foreground work (tab/filter/page),
+      // even when cached. Updates of existing active reads stay background.
+      // Do not arm the page behind a portal dialog or an inactive query.
+      const top = stack.getSnapshot();
+      const wasActive = activeReads.has(event.query.queryHash);
+      const isActive = event.query.isActive();
+      if (isActive) activeReads.add(event.query.queryHash);
+      else activeReads.delete(event.query.queryHash);
+      if (
+        isActive && (!wasActive || event.type === "observerAdded") &&
+        event.query.meta?.loading !== "background" &&
+        (top === undefined || top === id)
+      ) controller.beginBatch();
+      else controller.refresh();
+    });
     const unsubscribeOverlays = stack.subscribe(controller.refresh);
     controller.activate();
     return () => {
@@ -140,7 +157,7 @@ export function CoordinatedLoadingBoundary({
             if (
               action?.hasAttribute("data-loading-batch") ||
               kind === "refresh" || kind === "search" ||
-              kind === "filter" || kind === "reset"
+              kind === "filter" || kind === "reset" || kind === "retry"
             ) controller.beginBatch();
           }}
           className={`hn-loading-boundary hn-loading-boundary--${mode}`}

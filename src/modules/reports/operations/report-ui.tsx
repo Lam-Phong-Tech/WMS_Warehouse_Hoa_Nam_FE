@@ -6,7 +6,6 @@ import {
   UiAlert,
   UiButton,
   UiDialog,
-  UiSpinner,
   RADIUS,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
@@ -14,6 +13,8 @@ import {
 import { ActionIconButton } from "@/shared/components/actions";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { useLoadingParticipant } from "@/shared/ui/loading/loading-context";
+import { UnifiedLoading } from "@/shared/ui/loading/UnifiedLoading";
 import { RPT_CAPTION_SX, RPT_CARD_SX, RPT_TITLE_SX } from "./report-tokens";
 
 /** Nhóm nút chọn (kỳ / chiều xem / Top N) — một kiểu toggle duy nhất cho trang. */
@@ -43,6 +44,7 @@ export function SegmentedToggle<T extends string>({
             key={option.value}
             size="small"
             appearance={active ? "filled" : "outlined"}
+            data-loading-batch
             aria-pressed={active}
             onClick={() => onChange(option.value)}
           >
@@ -133,6 +135,7 @@ export function ChartCard({
   emptyText,
 }: ChartCardProps) {
   const t = useT();
+  useLoadingParticipant(Boolean(loading) && !error);
   const resolvedEmptyText = emptyText ?? t("reports.common.noData");
   // Tiêu đề là duy nhất trong một tab, và chỉ một tab được mount tại một
   // thời điểm — đủ để làm id neo cho aria-labelledby.
@@ -159,9 +162,7 @@ export function ChartCard({
           onRetry={onRetry}
         />
       ) : loading ? (
-        <Box sx={{ display: "grid", placeItems: "center", minHeight: 220 }}>
-          <UiSpinner />
-        </Box>
+        <UnifiedLoading minHeight={220} />
       ) : empty ? (
         <Box
           sx={{
