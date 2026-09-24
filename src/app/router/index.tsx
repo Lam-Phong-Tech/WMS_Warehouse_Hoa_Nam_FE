@@ -4,9 +4,9 @@ import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { resolveRouteEntryPermission } from "@/app/router/access";
-import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
-import { Loading } from "@/shared/components/feedback/Loading";
 import { PageLoadBoundary } from "@/app/router/PageLoadBoundary";
+import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
+import { CoordinatedLoadingBoundary } from "@/shared/ui/loading/CoordinatedLoadingBoundary";
 import { DASHBOARD_CANONICAL, ROUTES } from "@/shared/constants/routes";
 // Mọi màn khai báo MỘT LẦN ở route-components.ts (router và route-preload dùng
 // chung). Chúng là `lazyRoute`: vẫn tách chunk như `React.lazy`, nhưng khi chunk
@@ -55,15 +55,24 @@ import {
   WarrantyReportPage,
 } from "@/app/router/route-components";
 
-function withShellLoader(node: ReactNode) {
-  return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
-}
-
-function withPageLoader(node: ReactNode) {
-  return (
-    <Suspense fallback={<Loading opaque />}>
+/**
+ * Cổng loading dùng chung cho mọi route.
+ *
+ * `CoordinatedLoadingBoundary` theo dõi các read đang hoạt động của React Query;
+ * `PageLoadBoundary` bên trong bổ sung các request HTTP trực tiếp (không qua Query)
+ * trong lúc trang còn tải ban đầu. MainLayout truyền `coordinate = false`: shell
+ * vẫn tương tác được, mỗi màn tự sở hữu một nhóm loading của mình.
+ */
+function withPageLoader(node: ReactNode, coordinate = true) {
+  const content = (
+    <Suspense fallback={<PageSkeleton />}>
       <PageLoadBoundary>{node}</PageLoadBoundary>
     </Suspense>
+  );
+  return coordinate ? (
+    <CoordinatedLoadingBoundary>{content}</CoordinatedLoadingBoundary>
+  ) : (
+    content
   );
 }
 
@@ -105,7 +114,8 @@ export const router = createBrowserRouter([
     children: [
       {
         path: ROUTES.HOME,
-        element: withShellLoader(<MainLayout />),
+        // The shell stays interactive; each actual screen owns one loading group.
+        element: withPageLoader(<MainLayout />, false),
         children: [
           {
             index: true,
@@ -345,17 +355,12 @@ export const router = createBrowserRouter([
             element: withPageLoader(<MfaSetupPage />),
           },
           // 403 nằm TRONG MainLayout: người dùng đã đăng nhập nên phải giữ
-          // sidebar/topbar để đi tiếp chỗ khác, thay vì mắc kẹt ở một trang
-          // trống. KHÔNG bọc routeEl — chính trang báo thiếu quyền thì không
-          // được đòi quyền, nếu không sẽ lặp vô hạn.
+          // sidebar/topbar để đi tiếp, thay vì mắc kẹt ở một trang trống.
           {
             path: ROUTES.NO_PERMISSION,
             element: withPageLoader(<NoPermissionPage />),
           },
-          // 404 cũng nằm trong khung: người đã đăng nhập gõ sai URL vẫn còn
-          // sidebar/topbar để đi tiếp. Người CHƯA đăng nhập rơi vào nhánh này
-          // sẽ bị ProtectedRoute đá về /login — quyết định đã chốt với PM,
-          // thay cho hành vi 404-trần của NAV-02 trước đây.
+          // 404 giữ nguyên trong shell và sau ProtectedRoute.
           { path: "*", element: withPageLoader(<NotFoundPage />) },
         ],
       },
