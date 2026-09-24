@@ -6,6 +6,7 @@ export interface LoadingRead {
   background?: boolean;
 }
 export type LoadingPhase = "loading" | "offline" | "ready";
+export type LoadingParticipation = "always" | "foreground";
 export interface LoadingSnapshot {
   readonly phase: LoadingPhase;
   readonly initial: boolean;
@@ -19,13 +20,16 @@ export interface LoadingEnvironment {
 export class LoadingController {
   private readonly environment: LoadingEnvironment;
   private readonly listeners = new Set<() => void>();
-  private readonly participants = new Set<string>();
+  private readonly participants = new Map<string, LoadingParticipation>();
   private snapshot: LoadingSnapshot = { phase: "loading", initial: true };
   private revealed = false;
   private batch = false;
   private active = false;
   private cancelFrame: (() => void) | undefined;
-  constructor(environment: LoadingEnvironment) { this.environment = environment; }
+
+  constructor(environment: LoadingEnvironment) {
+    this.environment = environment;
+  }
   getSnapshot = (): LoadingSnapshot => this.snapshot;
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -33,14 +37,27 @@ export class LoadingController {
   };
   activate = (): void => { this.active = true; this.refresh(); };
   deactivate = (): void => { this.active = false; this.cancelSettlement(); };
-  setParticipant = (id: string, pending: boolean): void => {
-    if (pending === this.participants.has(id)) return;
-    if (pending) this.participants.add(id);
-    else this.participants.delete(id);
+
+  /**
+   * Keep background chart work registered without hiding a ready screen. If a
+   * foreground read begins while that draw is unfinished, it must join the gate.
+   */
+  setParticipant = (
+    id: string,
+    pending: boolean,
+    participation: LoadingParticipation = "always",
+  ): void => {
+    if (pending) {
+      if (this.participants.get(id) === participation) return;
+      this.participants.set(id, participation);
+    } else if (!this.participants.delete(id)) {
+      return;
+    }
     this.refresh();
   };
   /** Arm before a filter/refresh handler. A validation-only click shows no loader. */
   beginBatch = (): void => { this.batch = true; this.refresh(); };
+
   private pendingPhase(): Exclude<LoadingPhase, "ready"> | null {
     if (this.revealed && this.environment.covered()) return null;
     const reads = this.environment.reads().filter((read) =>
@@ -51,7 +68,9 @@ export class LoadingController {
     if (fetching) return "loading";
     // A complete cached snapshot remains usable offline; a missing one does not.
     if (paused) return "offline";
-    if (this.participants.size > 0) return "loading";
+    for (const participation of this.participants.values()) {
+      if (participation === "always" || !this.revealed || this.snapshot.phase !== "ready") return "loading";
+    }
     return null;
   }
   refresh = (): void => {

@@ -9,26 +9,22 @@ import {
   useMemo,
   useRef,
   useState,
-  type ComponentProps,
   type CSSProperties,
   type LazyExoticComponent,
   type ReactNode,
 } from "react";
-import type { ApexOptions } from "apexcharts";
+import type { Props as ApexChartProps } from "react-apexcharts";
 import { LoadingContext } from "@/shared/ui/loading/loading-context";
 import { createChartRenderCycle } from "@/shared/ui/loading/chart-render-cycle";
 import { UnifiedLoading } from "@/shared/ui/loading/UnifiedLoading";
 import { UiStateSurface } from "@/shared/ui/components/UiStateSurface";
 import { useT } from "@/shared/i18n/useT";
 
-const loadChart = () => import("react-apexcharts");
+const loadChart = () => import("./ApexChartRenderer");
 const InitialApexChart = lazy(loadChart);
 type ChartComponent = Awaited<ReturnType<typeof loadChart>>["default"];
-type ApexChartProps = ComponentProps<ChartComponent>;
-type ChartEvents = NonNullable<NonNullable<ApexOptions["chart"]>["events"]>;
-type LifecycleEvent = NonNullable<ChartEvents["mounted"]>;
 
-/** A failed chunk must settle the screen, not retain an invisible participant. */
+/** A failed module/draw settles the screen into an error with an explicit retry. */
 class ChartErrorBoundary extends Component<
   { children: ReactNode; fallback: ReactNode },
   { failed: boolean }
@@ -38,12 +34,7 @@ class ChartErrorBoundary extends Component<
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
-/**
- * One ticket covers the module AND the actual SVG mount/update. The generated
- * lifecycle callbacks also make an equal-data refresh an observable Apex update,
- * so it cannot leave a ticket waiting for an event that will never be emitted.
- * Do not remount on data changes: preserve the chart's legend/zoom interactions.
- */
+/** The module AND the latest committed engine draw own one presentation ticket. */
 function CoordinatedChart({
   Chart,
   ...props
@@ -54,48 +45,40 @@ function CoordinatedChart({
   const hasRendered = useRef(false);
   const cycle = useMemo(() => {
     const acknowledgement = createChartRenderCycle(controller, id, currentCycle);
-    const events = props.options?.chart?.events;
-    const mounted: LifecycleEvent = function (this: unknown, ...args) {
-      try { events?.mounted?.apply(this, args); } finally { hasRendered.current = true; acknowledgement.complete(); }
-    };
-    const updated: LifecycleEvent = function (this: unknown, ...args) {
-      try { events?.updated?.apply(this, args); } finally { hasRendered.current = true; acknowledgement.complete(); }
-    };
     return {
       acknowledgement,
-      options: {
-        ...props.options,
-        chart: {
-          ...props.options?.chart,
-          animations: { ...props.options?.chart?.animations, enabled: false },
-          events: { ...events, mounted, updated },
-        },
-      } satisfies ApexOptions,
+      ready: () => {
+        hasRendered.current = true;
+        acknowledgement.complete();
+      },
     };
-    // Series/size changes intentionally create a new lifecycle acknowledgement.
+    // Each committed input has its own completion callback, even for equal data.
   }, [controller, id, props.options, props.series, props.width, props.height, props.type]);
 
   useLayoutEffect(() => {
-    // Draft filter typing and background redraws must not hide a ready page.
-    // Mounts and redraws during an existing foreground barrier do participate.
-    cycle.acknowledgement.activate(
-      !hasRendered.current || controller?.getSnapshot().phase !== "ready",
-    );
+    // Activity/StrictMode recreates the engine's effects. On reactivation, wait
+    // for that fresh draw rather than trusting the SVG destroyed during cleanup.
+    return () => { hasRendered.current = false; };
+  }, []);
+
+  useLayoutEffect(() => {
+    // Background redraws stay registered without hiding a ready page. A refresh
+    // that starts before they finish will wait for them automatically.
+    cycle.acknowledgement.activate(true, hasRendered.current ? "foreground" : "always");
     return () => cycle.acknowledgement.dispose();
-  }, [controller, cycle]);
+  }, [cycle]);
 
   return (
     <Suspense fallback={controller ? null : <UnifiedLoading />}>
-      <Chart {...props} options={cycle.options} />
+      <Chart {...props} onRenderReady={cycle.ready} />
     </Suspense>
   );
 }
 
 /**
  * Shared entry for all Apex wrappers and the putaway tray grid. Inside a page or
- * dialog barrier, prepare ALL mounted charts while content remains measurable:
- * viewport-lazy rendering would otherwise show cards before their chart or wait
- * forever for a hidden chart to intersect. Outside a barrier, retain lazy scroll.
+ * dialog barrier, prepare all mounted charts while the content is measurable.
+ * Outside a barrier, retain viewport-lazy rendering to avoid needless work.
  */
 export function LazyApexChart(props: ApexChartProps) {
   const controller = useContext(LoadingContext);
@@ -152,14 +135,12 @@ export function LazyApexChart(props: ApexChartProps) {
     if (props.width === undefined || props.width === "100%") return hostWidth;
     return props.width;
   })();
-  // Preserve inline-size containment: without it a stale canvas prevents shrink.
   const hostStyle: CSSProperties = {
     contain: "inline-size", width: "100%", minWidth: 0,
     display: "flex", justifyContent: "center",
     ...(height !== undefined ? { minHeight: height } : null),
   };
   const retry = () => {
-    // React.lazy caches rejected promises. A retry needs a fresh lazy wrapper.
     setChart(() => lazy(loadChart));
     setAttempt((value) => value + 1);
   };
@@ -174,7 +155,7 @@ export function LazyApexChart(props: ApexChartProps) {
             </button>
           } />
         }>
-          {/* Width remount is retained for Apex's responsive canvas limitation. */}
+          {/* Preserve the width remount needed by the responsive canvas. */}
           <CoordinatedChart
             key={typeof width === "number" ? width : "auto"}
             Chart={Chart}

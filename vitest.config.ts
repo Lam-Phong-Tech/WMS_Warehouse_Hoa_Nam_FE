@@ -63,6 +63,12 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
+      // Existing DOM-only report/tray tests mock the old renderer module.
+      // Keep that mock identity at the new facade without weakening assertions.
+      // Promise/lifecycle tests import the facade directly and mock only the
+      // actual apexcharts/client engine. This alias is test-only, not a Vite
+      // production alias, and adds no data or mocking to the application.
+      "react-apexcharts": path.resolve(rootDir, "./src/shared/components/charts/ApexChartRenderer.tsx"),
     },
   },
 });

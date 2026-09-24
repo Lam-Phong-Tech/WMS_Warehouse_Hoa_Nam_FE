@@ -4,7 +4,9 @@ on:
     branches: [dev]
     paths:
       - '.github/workflows/loading-sync-verification.yml'
+      - 'vitest.config.ts'
       - 'src/shared/ui/loading/**'
+      - 'src/shared/ui/use-tab-view*'
       - 'src/shared/ui/components/UiDialog.tsx'
       - 'src/shared/ui/components/UiStateSurface.tsx'
       - 'src/shared/components/ui-states/PageSkeleton.tsx'
@@ -45,8 +47,11 @@ jobs:
           cache: yarn
       - name: Install locked dependencies
         run: yarn install --frozen-lockfile --non-interactive
-      - name: Loading, chart and report-refresh regressions
-        run: npm run test -- src/shared/ui/loading src/shared/components/charts src/modules/reports/operations/report-refresh --maxWorkers=2
+      - name: Loading, chart, transition and report-refresh regressions
+        run: npm run test -- src/shared/ui/loading src/shared/ui/use-tab-view.test.tsx src/shared/components/charts src/modules/reports/operations/report-refresh --maxWorkers=2
+      - name: Existing chart consumer regressions
+        if: ${{ !cancelled() }}
+        run: npm run test -- src/test/report-tables-column-align.test.tsx src/test/reports-operations-tabs-smoke.test.tsx src/modules/reports/import-match/ImportMatchReport.test.tsx src/modules/reports/recipient-agency/AgencyComparisonTab.test.tsx src/modules/putaway/components/TraySelectionGrid.test.tsx --maxWorkers=2
       - name: Typecheck the committed application
         if: ${{ !cancelled() }}
         run: npm run typecheck

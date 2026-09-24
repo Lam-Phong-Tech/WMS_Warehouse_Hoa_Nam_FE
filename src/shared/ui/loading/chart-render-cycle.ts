@@ -1,4 +1,4 @@
-import type { LoadingController } from "./loading-controller";
+import type { LoadingController, LoadingParticipation } from "./loading-controller";
 
 type Owner = { current: object | null };
 
@@ -10,9 +10,9 @@ export function createChartRenderCycle(
 ) {
   const key = {};
   return {
-    activate(pending = true) {
+    activate(pending = true, participation: LoadingParticipation = "always") {
       owner.current = key;
-      controller?.setParticipant(id, pending);
+      controller?.setParticipant(id, pending, participation);
     },
     complete() {
       if (owner.current === key) controller?.setParticipant(id, false);
