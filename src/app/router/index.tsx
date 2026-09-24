@@ -5,6 +5,8 @@ import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { resolveRouteEntryPermission } from "@/app/router/access";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
+import { Loading } from "@/shared/components/feedback/Loading";
+import { PageLoadBoundary } from "@/app/router/PageLoadBoundary";
 import { DASHBOARD_CANONICAL, ROUTES } from "@/shared/constants/routes";
 // Mọi màn khai báo MỘT LẦN ở route-components.ts (router và route-preload dùng
 // chung). Chúng là `lazyRoute`: vẫn tách chunk như `React.lazy`, nhưng khi chunk
@@ -53,8 +55,16 @@ import {
   WarrantyReportPage,
 } from "@/app/router/route-components";
 
-function withPageLoader(node: ReactNode) {
+function withShellLoader(node: ReactNode) {
   return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
+}
+
+function withPageLoader(node: ReactNode) {
+  return (
+    <Suspense fallback={<Loading opaque />}>
+      <PageLoadBoundary>{node}</PageLoadBoundary>
+    </Suspense>
+  );
 }
 
 function routeEl(path: string, node: ReactNode) {
@@ -73,12 +83,7 @@ function DashboardCanonicalRoute() {
   // canonical về MAP-01, đồng thời giữ các query khác (ví dụ state=... cho QA).
   if (params.get("screen") !== "MAP-01") {
     params.set("screen", "MAP-01");
-    return (
-      <Navigate
-        to={`${ROUTES.DASHBOARD}?${params.toString()}`}
-        replace
-      />
-    );
+    return <Navigate to={`${ROUTES.DASHBOARD}?${params.toString()}`} replace />;
   }
 
   return routeEl(ROUTES.DASHBOARD, <DashboardPage />);
@@ -100,9 +105,12 @@ export const router = createBrowserRouter([
     children: [
       {
         path: ROUTES.HOME,
-        element: withPageLoader(<MainLayout />),
+        element: withShellLoader(<MainLayout />),
         children: [
-          { index: true, element: <Navigate to={DASHBOARD_CANONICAL} replace /> },
+          {
+            index: true,
+            element: <Navigate to={DASHBOARD_CANONICAL} replace />,
+          },
           {
             path: ROUTES.AUDIT_LOGS,
             element: routeEl(ROUTES.AUDIT_LOGS, <AuditLogsPage />),
@@ -334,7 +342,7 @@ export const router = createBrowserRouter([
             // se tao vong lap "khong vao duoc vi chua dang ky, khong dang ky
             // duoc vi khong vao duoc".
             path: ROUTES.MFA_SETUP,
-            element: <MfaSetupPage />,
+            element: withPageLoader(<MfaSetupPage />),
           },
           // 403 nằm TRONG MainLayout: người dùng đã đăng nhập nên phải giữ
           // sidebar/topbar để đi tiếp chỗ khác, thay vì mắc kẹt ở một trang

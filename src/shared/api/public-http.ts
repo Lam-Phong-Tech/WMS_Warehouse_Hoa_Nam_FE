@@ -2,6 +2,7 @@ import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { runtimeConfig } from "@/shared/config/env";
 import type { ApiMeta, ApiResponse } from "@/shared/types/api-response";
 import { tStatic } from "@/shared/i18n/useT";
+import { installRequestActivityTracker } from "@/shared/api/request-activity";
 
 /**
  * WWHN-252 — client HTTP cho nhóm endpoint App PV ẩn danh.
@@ -25,6 +26,8 @@ export const publicApi = axios.create({
   // Không gửi cookie: request PV phải hoàn toàn ẩn danh.
   withCredentials: false,
 });
+
+installRequestActivityTracker(publicApi);
 
 export interface PublicApiError extends Error {
   status?: number;

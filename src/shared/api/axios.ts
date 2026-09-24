@@ -14,6 +14,7 @@ import {
   OFFLINE_MUTATION_CODE,
   OFFLINE_MUTATION_MESSAGE,
 } from "@/shared/pwa/offline-policy";
+import { installRequestActivityTracker } from "@/shared/api/request-activity";
 
 declare module "axios" {
   interface AxiosError {
@@ -39,6 +40,10 @@ export const api = axios.create({
   timeout: runtimeConfig.apiTimeoutMs,
   withCredentials: runtimeConfig.apiWithCredentials,
 });
+
+// Đăng ký trước interceptor auth: response lỗi được chốt bộ đếm trước khi tầng
+// auth refresh/retry; request retry sau đó được tính thành một lượt mới độc lập.
+installRequestActivityTracker(api);
 
 function responseStatus(error: unknown): number | undefined {
   if (typeof error !== "object" || error === null) return undefined;

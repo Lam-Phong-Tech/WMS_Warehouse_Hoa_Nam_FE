@@ -11,7 +11,7 @@ import { useT } from "@/shared/i18n/useT";
  * Overlay loading toàn màn hình (bootstrap phiên, chuyển route bảo vệ).
  * WWHN-268: phát `data-ui-state="loading"` cho ma trận bằng chứng QA2.
  */
-export function Loading() {
+export function Loading({ opaque = false }: { opaque?: boolean } = {}) {
   const t = useT();
   return (
     <div
@@ -22,12 +22,14 @@ export function Loading() {
         position: "fixed",
         inset: 0,
         // Màn trắng mờ trên nền hiện tại (không có token white-alpha riêng).
-        background: "rgba(255, 255, 255, 0.6)",
+        background: opaque
+          ? "var(--ops-canvas, #f7f8fa)"
+          : "rgba(255, 255, 255, 0.6)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "column",
-        backdropFilter: "blur(4px)",
+        backdropFilter: opaque ? undefined : "blur(4px)",
         zIndex: Z_INDEX.blockingLoading,
       }}
     >
