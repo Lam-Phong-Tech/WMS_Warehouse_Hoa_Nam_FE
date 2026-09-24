@@ -58,3 +58,55 @@ export function requiredApiIdentity(value: unknown, field = "id"): string {
     );
   return id;
 }
+
+/** Only a boolean received from the API is a confirmed server decision. */
+export function nullableApiBoolean(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
+export function requiredApiBoolean(value: unknown, field: string): boolean {
+  const result = nullableApiBoolean(value);
+  if (result === null)
+    throw new WmsContractError(
+      "WMS_FE_MISSING_API_VALUE",
+      `Chưa nhận đủ dữ liệu từ máy chủ (${field}). Vui lòng tải lại.`,
+    );
+  return result;
+}
+
+/** Optional presentation fields stay absent; an unsupported state is not a default state. */
+export function optionalApiState<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  field: string,
+): T | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  return requiredApiState(value, allowed, field);
+}
+
+/** An explicit empty array is valid; a missing/malformed list is not an empty result. */
+export function requiredApiRows<T>(value: unknown, field = "rows"): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (
+    value &&
+    typeof value === "object" &&
+    Array.isArray((value as { data?: unknown }).data)
+  ) {
+    return (value as { data: T[] }).data;
+  }
+  throw new WmsContractError(
+    "WMS_FE_MISSING_API_VALUE",
+    `Danh sách từ máy chủ chưa đầy đủ hoặc không hợp lệ (${field}). Vui lòng tải lại.`,
+  );
+}
+
+/** Missing/invalid versions must never be replaced with 0 or 1 before a write. */
+export function requiredApiVersion(value: unknown, field = "If-Match"): number {
+  const version = requiredApiNumber(value, field);
+  if (!Number.isSafeInteger(version) || version <= 0)
+    throw new WmsContractError(
+      "WMS_FE_MISSING_API_VALUE",
+      "Chưa có phiên bản bản ghi hợp lệ từ máy chủ. Vui lòng tải lại trước khi thao tác.",
+    );
+  return version;
+}
