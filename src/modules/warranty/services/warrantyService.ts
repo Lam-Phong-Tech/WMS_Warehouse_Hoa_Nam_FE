@@ -1,21 +1,22 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
+import { requireNonEmptyString, WmsContractError } from "@/shared/api/wms-contract";
 import {
-  requireNonEmptyString,
-  requirePositiveNumber,
-  WmsContractError,
-} from "@/shared/api/wms-contract";
+  nullableApiNumber,
+  optionalApiState,
+  requiredApiIdentity,
+  requiredApiNumber,
+  requiredApiRows,
+  requiredApiState,
+  requiredApiVersion,
+} from "@/shared/api/api-read-values";
 import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
-import {
-  maskWarrantyAddress,
-  maskWarrantyName,
-  maskWarrantyPhone,
-} from "../constants";
+import { maskWarrantyAddress, maskWarrantyName, maskWarrantyPhone } from "../constants";
 import type {
   CreateWarrantyCaseRequest,
   UpdateWarrantyCaseRequest,
@@ -31,81 +32,45 @@ import type {
 type RawRecord = Record<string, unknown>;
 
 function rowsOf<T>(value: T[] | { data?: T[] }): T[] {
-  return Array.isArray(value)
-    ? value
-    : Array.isArray(value.data)
-      ? value.data
-      : [];
+  return requiredApiRows<T>(value, "warranty.rows");
 }
-
 function clean(params: Record<string, unknown>) {
-  return Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== "" && value !== undefined && value !== null,
-    ),
-  );
+  return Object.fromEntries(Object.entries(params).filter(
+    ([, value]) => value !== "" && value !== undefined && value !== null,
+  ));
 }
-
 function text(value: unknown, fallback = ""): string {
   return value === undefined || value === null ? fallback : String(value);
 }
-
 function numberOrUndefined(value: unknown): number | undefined {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  return nullableApiNumber(value) ?? undefined;
 }
-
-function endpoint(
-  template: string,
-  key: string,
-  value: string | number,
-): string {
+function endpoint(template: string, key: string, value: string | number): string {
   return template.replace(key, String(value));
 }
-
 export function makeWarrantyIdempotencyKey(operation: string): string {
-  const uuid =
-    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  const uuid = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   return `fe:${operation}:${uuid}`;
 }
 
+/** Only documented aliases are translated; missing/unknown state is not RECEIVED. */
 function canonicalStatus(value: unknown): WarrantyCaseStatus {
   const status = text(value).toUpperCase();
   switch (status) {
-    case "OPEN":
-      return "RECEIVED";
-    case "PROCESSING":
-      return "CHECKING";
-    case "WAITING_PARTS":
-      return "REPAIRING";
-    case "READY":
-      return "COMPLETED";
+    case "OPEN": return "RECEIVED";
+    case "PROCESSING": return "CHECKING";
+    case "WAITING_PARTS": return "REPAIRING";
+    case "READY": return "COMPLETED";
     case "RETURNED_TO_CUSTOMER":
-    case "CLOSED":
-      return "RETURNED";
-    case "RECEIVED":
-    case "CHECKING":
-    case "REPAIRING":
-    case "COMPLETED":
-    case "RETURNED":
-    case "CANCELLED":
-      return status;
+    case "CLOSED": return "RETURNED";
     default:
-      return "RECEIVED";
+      return requiredApiState(status, [
+        "RECEIVED", "CHECKING", "REPAIRING", "COMPLETED", "RETURNED", "CANCELLED",
+      ] as const, "warranty.status");
   }
 }
 
-/**
- * §13.8 · WWHN-247 — PII bảo hành đi qua đúng MỘT cửa ở FE.
- *
- * BE (`WarrantyPiiMasker`) đã mask khi actor thiếu `warranty.pii.view` và trả cờ
- * `pii_masked`. WWHN-244 đã mask thêm một lớp ở tầng render của WAR-01/WAR-03.
- * Lớp này đóng phần còn lại: mọi consumer khác của service (React Query cache,
- * prefill form hiệu chỉnh, deep-link, code mới sau này) cũng chỉ nhận được giá trị
- * đã mask. Fail-closed theo cả hai nguồn — BE báo đã mask HOẶC actor không có quyền.
- *
- * Mask idempotent trên chính output của BE nên áp nhiều lớp không làm sai hiển thị.
- */
+/** §13.8 / WWHN-247: keep the existing permission-based, idempotent PII masking. */
 function resolveWarrantyPii(row: RawRecord): {
   customer_name: string;
   customer_phone?: string;
@@ -114,69 +79,37 @@ function resolveWarrantyPii(row: RawRecord): {
 } {
   const authState = useAuthStore.getState();
   const canViewPii = hasAnyWmsPermission(
-    authState.permissionCodes,
-    [P.WARRANTY_PII_VIEW],
-    authState.isSuperAdmin,
+    authState.permissionCodes, [P.WARRANTY_PII_VIEW], authState.isSuperAdmin,
   );
   const full = canViewPii && row.pii_masked !== true;
-
   const name = text(row.customer_name ?? row.customer).trim();
   const phone = text(row.customer_phone).trim();
   const address = text(row.customer_address).trim();
-
   return {
-    // Thiếu dữ liệu thì trả CHUỖI RỖNG, không phải "-": ô rỗng của WMS là
-    // "Chưa có" (EMPTY_TEXT) và chỉ tầng render mới biết ngôn ngữ đang bật.
-    // Sentinel "-" ở đây làm mọi `value || EMPTY_TEXT` phía dưới mất tác dụng
-    // (chuỗi "-" là truthy) nên người dùng thấy dấu gạch giữa bảng tiếng Việt.
     customer_name: full ? name : maskWarrantyName(name),
     customer_phone: (full ? phone : maskWarrantyPhone(phone)) || undefined,
-    customer_address:
-      (full ? address : maskWarrantyAddress(address)) || undefined,
+    customer_address: (full ? address : maskWarrantyAddress(address)) || undefined,
     pii_masked: !full,
   };
 }
 
 function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
-  const temporaryCode =
-    text(row.temporary_item_code ?? row.temp_item_code) || undefined;
-  const missingReason =
-    text(row.missing_code_reason ?? row.temp_only_reason) || undefined;
-  /**
-   * UAT TC_FUNC_02: khi BE đã nói rõ identification_status thì TIN BE — bản
-   * trước còn tự suy TEMP_ONLY từ temporary_item_code/missing_code_reason kể
-   * cả khi BE trả IDENTIFIED, làm kết quả lọc "Nhận diện" trông như không ăn
-   * (BE lọc đúng nhưng FE dán nhãn khác). Chỉ suy diễn khi BE bỏ trống field.
-   */
-  const beIdentification = text(
+  const temporaryCode = text(row.temporary_item_code ?? row.temp_item_code) || undefined;
+  const missingReason = text(row.missing_code_reason ?? row.temp_only_reason) || undefined;
+  const identificationType = requiredApiState(
     row.identification_type ?? row.identification_status,
+    ["IDENTIFIED", "TEMP_ONLY"] as const,
+    "warranty.identification_status",
   );
-  const identificationType =
-    beIdentification === "TEMP_ONLY"
-      ? "TEMP_ONLY"
-      : beIdentification === "IDENTIFIED"
-        ? "IDENTIFIED"
-        : Boolean(temporaryCode) || Boolean(missingReason)
-          ? "TEMP_ONLY"
-          : "IDENTIFIED";
   const status = canonicalStatus(row.status);
   const caseDescription = text(row.description ?? row.notes) || undefined;
   const pii = resolveWarrantyPii(row);
-  // GĐ1-REQ-010: estimated_completion_date là cột canonical; expected_completion_date
-  // là alias legacy có thể giữ giá trị lỗi thời trên row cũ nên chỉ dùng làm fallback.
+  // GĐ1-REQ-010: preserve the documented date alias, not unrelated timestamps.
   const estimatedCompletionDate =
-    text(row.estimated_completion_date ?? row.expected_completion_date) ||
-    undefined;
-
+    text(row.estimated_completion_date ?? row.expected_completion_date) || undefined;
   return {
-    id: text(row.warranty_case_id ?? row.id),
-    case_code: text(
-      row.case_code ??
-        row.warranty_case_code ??
-        row.warranty_case_no ??
-        row.code ??
-        row.doc_no,
-    ),
+    id: requiredApiIdentity(row.warranty_case_id ?? row.id, "warranty_case_id"),
+    case_code: text(row.case_code ?? row.warranty_case_code ?? row.warranty_case_no ?? row.code ?? row.doc_no),
     sku: text(row.sku ?? row.sku_code ?? row.product_sku),
     sku_name: text(row.sku_name ?? row.product_name),
     item_code: text(row.item_code ?? row.serial_number) || undefined,
@@ -197,25 +130,18 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     defect: text(row.defect_name ?? row.defect ?? row.defect_description),
     defect_code: text(row.defect_code),
     defect_id: text(row.defect_id) || undefined,
-    defect_ids: Array.isArray(row.defect_ids)
-      ? row.defect_ids.map((id) => text(id)).filter(Boolean)
-      : undefined,
-    defects: Array.isArray(row.defects)
-      ? (row.defects as WarrantyCase["defects"])
-      : undefined,
+    defect_ids: Array.isArray(row.defect_ids) ? row.defect_ids.map((id) => text(id)).filter(Boolean) : undefined,
+    defects: Array.isArray(row.defects) ? row.defects as WarrantyCase["defects"] : undefined,
     reported_defect: text(row.reported_defect ?? row.description) || undefined,
     confirmed_defect: text(row.confirmed_defect) || undefined,
     accessories_received: text(row.accessories_received) || undefined,
-    received_condition:
-      text(row.received_condition ?? row.condition_status) || undefined,
+    received_condition: text(row.received_condition ?? row.condition_status) || undefined,
     condition_status: text(row.condition_status) || undefined,
     cancel_reason: text(row.cancel_reason) || undefined,
     status,
-    priority: text(row.priority, "MEDIUM") as WarrantyCase["priority"],
+    priority: optionalApiState(row.priority, ["LOW", "MEDIUM", "HIGH", "URGENT"] as const, "warranty.priority"),
     missing_code_reason: missingReason,
-    manual_product_description:
-      text(row.manual_product_description ?? row.product_description) ||
-      undefined,
+    manual_product_description: text(row.manual_product_description ?? row.product_description) || undefined,
     item_status: text(row.item_status) || undefined,
     warehouse_name: text(row.warehouse_name ?? row.scope_name) || undefined,
     received_at: text(row.received_at ?? row.created_at),
@@ -223,30 +149,30 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     expected_completion_date: estimatedCompletionDate,
     estimated_completion_date: estimatedCompletionDate,
     completed_at: text(row.completed_at) || undefined,
-    returned_at:
-      text(
-        row.returned_at ?? (status === "RETURNED" ? row.closed_at : undefined),
-      ) || undefined,
+    returned_at: text(row.returned_at ?? (status === "RETURNED" ? row.closed_at : undefined)) || undefined,
     case_age_days: numberOrUndefined(row.case_age_days ?? row.age_days),
     created_at: text(row.created_at),
-    // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
     created_by: text(row.created_by_name, "-"),
     notes: caseDescription,
-    version: numberOrUndefined(row.version) ?? 1,
+    // Read-only records may lack a version; writes validate/refetch instead of inventing one.
+    version: numberOrUndefined(row.version),
   };
 }
 
 function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
   return {
-    id: text(row.warranty_event_id ?? row.id),
+    id: requiredApiIdentity(row.warranty_event_id ?? row.id, "warranty_event_id"),
     case_id: text(row.warranty_case_id ?? row.case_id),
-    event_type:
-      (text(row.event_type) as WarrantyEvent["event_type"]) || "STATUS_CHANGE",
+    event_type: requiredApiState(row.event_type, [
+      "RECEIVE", "CHECK", "REPAIR", "COMPLETE", "RETURN", "CANCEL", "NOTE", "TEMP_ONLY",
+      "RECEIVED", "STATUS_CHANGE", "NOTE_ADDED", "PARTS_ORDERED", "PARTS_RECEIVED",
+      "TEMP_RESOLUTION", "CUSTOMER_CONTACTED", "RETURNED",
+    ] as const, "warranty.event_type"),
     from_status: row.from_status ? canonicalStatus(row.from_status) : undefined,
-    to_status: canonicalStatus(row.to_status ?? row.status),
+    // A note without a transition must not claim that the case was received again.
+    to_status: row.to_status == null && row.status == null
+      ? undefined : canonicalStatus(row.to_status ?? row.status),
     description: text(row.description ?? row.note ?? row.message, "-"),
-    // KHÔNG rơi xuống row.performed_by / row.created_by: đó là UUID actor thô,
-    // không phải tên — thiếu performed_by_name (join users) thì "-".
     performed_by: text(row.performed_by_name, "-"),
     performed_at: text(row.performed_at ?? row.event_at ?? row.created_at),
   };
@@ -254,59 +180,37 @@ function normalizeWarrantyEvent(row: RawRecord): WarrantyEvent {
 
 function normalizeAttachment(row: RawRecord): WarrantyAttachment {
   return {
-    id: text(row.id),
+    id: requiredApiIdentity(row.id, "attachment_id"),
     warranty_case_id: text(row.warranty_case_id),
     file_name: text(row.file_name, "-"),
     content_type: text(row.content_type ?? row.mime_type),
-    file_size_bytes:
-      numberOrUndefined(row.file_size_bytes ?? row.file_size) ?? 0,
+    file_size_bytes: requiredApiNumber(row.file_size_bytes ?? row.file_size, "attachment.file_size_bytes"),
     checksum: text(row.checksum) || undefined,
-    attachment_type:
-      (text(row.attachment_type, "OTHER") as WarrantyAttachmentType) || "OTHER",
-    media_kind:
-      (text(row.media_kind, "IMAGE") as WarrantyAttachment["media_kind"]) ||
-      "IMAGE",
-    duration_seconds: numberOrUndefined(row.duration_seconds) ?? null,
-    status:
-      (text(row.status, "ACTIVE") as WarrantyAttachment["status"]) || "ACTIVE",
+    attachment_type: requiredApiState(row.attachment_type, ["INTAKE", "DIAGNOSTIC", "RETURN", "OTHER"] as const, "attachment.attachment_type"),
+    media_kind: requiredApiState(row.media_kind, ["IMAGE", "VIDEO"] as const, "attachment.media_kind"),
+    duration_seconds: nullableApiNumber(row.duration_seconds),
+    status: requiredApiState(row.status, ["ACTIVE", "DELETED", "QUARANTINED"] as const, "attachment.status"),
     uploaded_at: text(row.uploaded_at ?? row.created_at) || undefined,
-    // uploaded_by / created_by là UUID: chỉ nhận tên BE đã join, không thì bỏ.
     uploaded_by: text(row.uploaded_by_name) || undefined,
   };
 }
 
 function assertStockNeutral(row: RawRecord, action: string): void {
   if (row.stock_effect !== undefined && row.stock_effect !== "NONE") {
-    throw new WmsContractError(
-      "WMS_FE_INVALID_WARRANTY_RESPONSE",
-      `${action} must have stock_effect=NONE`,
-    );
+    throw new WmsContractError("WMS_FE_INVALID_WARRANTY_RESPONSE", `${action} must have stock_effect=NONE`);
   }
   if (row.movement_created !== undefined && row.movement_created !== false) {
-    throw new WmsContractError(
-      "WMS_FE_INVALID_WARRANTY_RESPONSE",
-      `${action} must not create stock movement`,
-    );
+    throw new WmsContractError("WMS_FE_INVALID_WARRANTY_RESPONSE", `${action} must not create stock movement`);
   }
 }
-
-/**
- * Annex C listWarrantyCases dùng `warranty.view`; BE nhận `warranty.view|warranty.manage`
- * cho toàn bộ bề mặt đọc SCR-WAR-01. FE phải chấp nhận đúng như vậy, nếu không role chỉ
- * có warranty.view (LEADERSHIP, WAREHOUSE_APPROVER) bị chặn ngay ở client.
- */
 function assertWarrantyRead(action: string): void {
   assertWmsActionPermission([P.WARRANTY_VIEW, P.WARRANTY_MANAGE], action);
 }
-
-/** Mọi mutation case bảo hành vẫn yêu cầu `warranty.manage`. */
 function assertWarrantyWrite(action: string): void {
   assertWmsActionPermission([P.WARRANTY_MANAGE], action);
 }
 
-export async function fetchWarrantyCases(
-  params: WarrantyListParams = {},
-): Promise<WarrantyCasePage> {
+export async function fetchWarrantyCases(params: WarrantyListParams = {}): Promise<WarrantyCasePage> {
   assertWarrantyRead("view warranty cases");
   const mappedParams = {
     page: params.page,
@@ -318,234 +222,127 @@ export async function fetchWarrantyCases(
     keyword: params.search ?? params.keyword,
     sort_order: params.sort_order,
   };
-  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    API_ENDPOINTS.WARRANTY_CASES,
-    { params: clean(mappedParams) },
-  );
+  const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(API_ENDPOINTS.WARRANTY_CASES, { params: clean(mappedParams) });
   return {
-    data: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-      normalizeWarrantyCase,
-    ),
+    data: rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizeWarrantyCase),
     meta: result.meta as Record<string, unknown> | undefined,
   };
 }
-
-export async function fetchWarrantyCase(
-  caseId: string | number,
-): Promise<WarrantyCase> {
+export async function fetchWarrantyCase(caseId: string | number): Promise<WarrantyCase> {
   assertWarrantyRead("view warranty case detail");
-  const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
-  const row = await http.get<RawRecord>(
-    endpoint(API_ENDPOINTS.WARRANTY_CASE, ":id", normalizedCaseId),
-  );
-  return normalizeWarrantyCase(row);
+  const id = requireNonEmptyString(String(caseId), "caseId");
+  return normalizeWarrantyCase(await http.get<RawRecord>(endpoint(API_ENDPOINTS.WARRANTY_CASE, ":id", id)));
 }
-
-export async function fetchWarrantyCaseEvents(
-  caseId: string | number,
-  params: Record<string, unknown> = {},
-): Promise<WarrantyEvent[]> {
+export async function fetchWarrantyCaseEvents(caseId: string | number, params: Record<string, unknown> = {}): Promise<WarrantyEvent[]> {
   assertWarrantyRead("view warranty events");
-  const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
+  const id = requireNonEmptyString(String(caseId), "caseId");
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    endpoint(API_ENDPOINTS.WARRANTY_CASE_EVENTS, ":caseId", normalizedCaseId),
+    endpoint(API_ENDPOINTS.WARRANTY_CASE_EVENTS, ":caseId", id),
     { params: clean({ ...params, per_page: params.per_page ?? 100 }) },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeWarrantyEvent,
-  );
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizeWarrantyEvent);
 }
 
-export async function createWarrantyCase(
-  payload: CreateWarrantyCaseRequest,
-): Promise<WarrantyCase> {
+export async function createWarrantyCase(payload: CreateWarrantyCaseRequest): Promise<WarrantyCase> {
   assertWarrantyWrite("create warranty case");
-  const description = requireNonEmptyString(
-    payload.defect_description || payload.reported_defect || payload.notes,
-    "defect_description",
-  );
+  const description = requireNonEmptyString(payload.defect_description || payload.reported_defect || payload.notes, "defect_description");
   const body: Record<string, unknown> = {
-    customer_name: requireNonEmptyString(
-      payload.customer_name,
-      "customer_name",
-    ),
-    customer_phone: requireNonEmptyString(
-      payload.customer_phone,
-      "customer_phone",
-    ),
+    customer_name: requireNonEmptyString(payload.customer_name, "customer_name"),
+    customer_phone: requireNonEmptyString(payload.customer_phone, "customer_phone"),
     customer_address: payload.customer_address?.trim() || undefined,
     purchase_date: payload.purchase_date || undefined,
     defect_id: payload.defect_id || undefined,
     defect_ids: payload.defect_ids,
     defect_codes: payload.defect_codes,
-    estimated_completion_date:
-      payload.estimated_completion_date ?? payload.expected_completion_date,
+    estimated_completion_date: payload.estimated_completion_date ?? payload.expected_completion_date,
     defect_code: payload.defect_code || undefined,
     description,
     reported_defect: payload.reported_defect?.trim() || description,
     accessories_received: payload.accessories_received?.trim() || undefined,
     received_condition: payload.received_condition?.trim() || undefined,
   };
-
   if (payload.identification_type === "IDENTIFIED") {
     body.item_code = requireNonEmptyString(payload.item_code, "item_code");
   } else {
-    body.missing_code_reason = requireNonEmptyString(
-      payload.missing_code_reason,
-      "missing_code_reason",
-    );
-    body.manual_product_description = requireNonEmptyString(
-      payload.manual_product_description,
-      "manual_product_description",
-    );
+    body.missing_code_reason = requireNonEmptyString(payload.missing_code_reason, "missing_code_reason");
+    body.manual_product_description = requireNonEmptyString(payload.manual_product_description, "manual_product_description");
   }
-
-  const row = await http.post<RawRecord>(
-    API_ENDPOINTS.WARRANTY_CASES,
-    clean(body),
-    {
-      headers: {
-        "Idempotency-Key": makeWarrantyIdempotencyKey("warranty-create"),
-      },
-    },
-  );
+  const row = await http.post<RawRecord>(API_ENDPOINTS.WARRANTY_CASES, clean(body), {
+    headers: { "Idempotency-Key": makeWarrantyIdempotencyKey("warranty-create") },
+  });
   assertStockNeutral(row, "Warranty case creation");
   return normalizeWarrantyCase(row);
 }
 
-export async function updateWarrantyCase(
-  caseId: string | number,
-  request: UpdateWarrantyCaseRequest,
-): Promise<WarrantyCase> {
+export async function updateWarrantyCase(caseId: string | number, request: UpdateWarrantyCaseRequest): Promise<WarrantyCase> {
   assertWarrantyWrite("update warranty case");
-  const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
+  const id = requireNonEmptyString(String(caseId), "caseId");
   const status = request.status ? canonicalStatus(request.status) : undefined;
-  const current = request.ifMatch
-    ? undefined
-    : await fetchWarrantyCase(normalizedCaseId);
-  const ifMatch = requirePositiveNumber(
-    request.ifMatch ?? current?.version,
-    "If-Match",
-  );
-  // Annex C: operation chuẩn là POST /warranty-cases/{id}/status
-  // (transitionWarrantyStatus). PATCH /warranty-cases/{id} là alias legacy của BE,
-  // không thuộc 67 operation OpenAPI v1.7 nên FE không dùng nữa.
-  const row = await http.post<RawRecord>(
-    endpoint(API_ENDPOINTS.WARRANTY_CASE_STATUS, ":id", normalizedCaseId),
-    clean({
-      status,
-      // §13.8: ghi chú xử lý đi vào warranty_event.note, KHÔNG ghi đè mô tả
-      // tiếp nhận gốc (description) của case.
-      note: request.reason,
-      confirmed_defect: request.confirmed_defect,
-      condition_status: request.condition_status,
-      received_condition: request.received_condition,
-      accessories_received: request.accessories_received,
-      cancel_reason: request.cancel_reason,
-      // Annex D SCR-WAR-01: sửa lại chẩn đoán/PII sai lúc tiếp nhận. PII chỉ gửi khi
-      // caller thực sự nhập — BE trả 403 nếu actor thiếu warranty.pii.view.
-      defect_id: request.defect_id,
-      defect_ids: request.defect_ids,
-      defect_codes: request.defect_codes,
-      estimated_completion_date:
-        request.estimated_completion_date ?? request.expected_completion_date,
-      customer_name: request.customer_name,
-      customer_phone: request.customer_phone,
-      customer_address: request.customer_address,
-      purchase_date: request.purchase_date,
-    }),
-    {
-      headers: {
-        "If-Match": String(ifMatch),
-        "Idempotency-Key":
-          request.idempotency_key ??
-          makeWarrantyIdempotencyKey(`warranty-update-${normalizedCaseId}`),
-      },
+  const current = request.ifMatch === undefined ? await fetchWarrantyCase(id) : undefined;
+  const ifMatch = requiredApiVersion(request.ifMatch ?? current?.version);
+  // Annex C: preserve the status endpoint, concurrency and idempotency contract.
+  const row = await http.post<RawRecord>(endpoint(API_ENDPOINTS.WARRANTY_CASE_STATUS, ":id", id), clean({
+    status,
+    note: request.reason,
+    confirmed_defect: request.confirmed_defect,
+    condition_status: request.condition_status,
+    received_condition: request.received_condition,
+    accessories_received: request.accessories_received,
+    cancel_reason: request.cancel_reason,
+    defect_id: request.defect_id,
+    defect_ids: request.defect_ids,
+    defect_codes: request.defect_codes,
+    estimated_completion_date: request.estimated_completion_date ?? request.expected_completion_date,
+    customer_name: request.customer_name,
+    customer_phone: request.customer_phone,
+    customer_address: request.customer_address,
+    purchase_date: request.purchase_date,
+  }), {
+    headers: {
+      "If-Match": String(ifMatch),
+      "Idempotency-Key": request.idempotency_key ?? makeWarrantyIdempotencyKey(`warranty-update-${id}`),
     },
-  );
+  });
   assertStockNeutral(row, "Warranty status update");
   return normalizeWarrantyCase(row);
 }
-
 /** @deprecated dùng updateWarrantyCase. */
 export const updateWarrantyCaseStatus = updateWarrantyCase;
 
-export async function fetchWarrantyAttachments(
-  caseId: string | number,
-): Promise<WarrantyAttachment[]> {
+export async function fetchWarrantyAttachments(caseId: string | number): Promise<WarrantyAttachment[]> {
   assertWarrantyRead("view warranty attachments");
-  const normalizedCaseId = requireNonEmptyString(String(caseId), "caseId");
+  const id = requireNonEmptyString(String(caseId), "caseId");
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
-    endpoint(
-      API_ENDPOINTS.WARRANTY_CASE_ATTACHMENTS,
-      ":caseId",
-      normalizedCaseId,
-    ),
+    endpoint(API_ENDPOINTS.WARRANTY_CASE_ATTACHMENTS, ":caseId", id),
     { params: { per_page: 100 } },
   );
-  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(
-    normalizeAttachment,
-  );
+  return rowsOf(result.data as RawRecord[] | { data?: RawRecord[] }).map(normalizeAttachment);
 }
-
-export async function uploadWarrantyAttachment(input: {
-  caseId: string;
-  file: File;
-  attachmentType?: WarrantyAttachmentType;
-}): Promise<WarrantyAttachment> {
+export async function uploadWarrantyAttachment(input: { caseId: string; file: File; attachmentType?: WarrantyAttachmentType }): Promise<WarrantyAttachment> {
   assertWarrantyWrite("upload warranty attachment");
-  const normalizedCaseId = requireNonEmptyString(input.caseId, "caseId");
+  const id = requireNonEmptyString(input.caseId, "caseId");
   const formData = new FormData();
   formData.append("file", input.file);
-  if (input.attachmentType) {
-    formData.append("attachment_type", input.attachmentType);
-  }
-  const row = await http.post<RawRecord>(
-    endpoint(
-      API_ENDPOINTS.WARRANTY_CASE_ATTACHMENTS,
-      ":caseId",
-      normalizedCaseId,
-    ),
-    formData,
-  );
+  if (input.attachmentType) formData.append("attachment_type", input.attachmentType);
+  const row = await http.post<RawRecord>(endpoint(API_ENDPOINTS.WARRANTY_CASE_ATTACHMENTS, ":caseId", id), formData);
   assertStockNeutral(row, "Warranty attachment upload");
   return normalizeAttachment(row);
 }
-
-export async function downloadWarrantyAttachment(input: {
-  attachmentId: string;
-  fileName?: string;
-}): Promise<void> {
+export async function downloadWarrantyAttachment(input: { attachmentId: string; fileName?: string }): Promise<void> {
   assertWarrantyRead("download warranty attachment");
-  const attachmentId = requireNonEmptyString(
-    input.attachmentId,
-    "attachmentId",
-  );
-  const blob = await http.downloadBlob(
-    endpoint(API_ENDPOINTS.WARRANTY_ATTACHMENT_DOWNLOAD, ":id", attachmentId),
-  );
+  const id = requireNonEmptyString(input.attachmentId, "attachmentId");
+  const blob = await http.downloadBlob(endpoint(API_ENDPOINTS.WARRANTY_ATTACHMENT_DOWNLOAD, ":id", id));
   const url = URL.createObjectURL(blob);
   try {
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = input.fileName || `warranty-attachment-${attachmentId}`;
+    anchor.download = input.fileName || `warranty-attachment-${id}`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  } finally { URL.revokeObjectURL(url); }
 }
-
-export async function deleteWarrantyAttachment(
-  attachmentId: string,
-): Promise<void> {
+export async function deleteWarrantyAttachment(attachmentId: string): Promise<void> {
   assertWarrantyWrite("delete warranty attachment");
-  await http.delete(
-    endpoint(
-      API_ENDPOINTS.WARRANTY_ATTACHMENT,
-      ":id",
-      requireNonEmptyString(attachmentId, "attachmentId"),
-    ),
-  );
+  await http.delete(endpoint(API_ENDPOINTS.WARRANTY_ATTACHMENT, ":id", requireNonEmptyString(attachmentId, "attachmentId")));
 }

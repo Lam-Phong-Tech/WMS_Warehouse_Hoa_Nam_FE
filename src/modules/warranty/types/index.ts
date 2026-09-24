@@ -1,29 +1,16 @@
 /** Warranty module types aligned with the current /api/v1/warranty-cases contract. */
 export type WarrantyCaseStatus =
-  | "RECEIVED"
-  | "CHECKING"
-  | "REPAIRING"
-  | "COMPLETED"
-  | "RETURNED"
-  | "CANCELLED"
+  | "RECEIVED" | "CHECKING" | "REPAIRING" | "COMPLETED" | "RETURNED" | "CANCELLED"
   // Compatibility aliases accepted only when reading older data snapshots.
-  | "OPEN"
-  | "PROCESSING"
-  | "WAITING_PARTS"
-  | "READY"
-  | "RETURNED_TO_CUSTOMER"
-  | "CLOSED";
-
+  | "OPEN" | "PROCESSING" | "WAITING_PARTS" | "READY" | "RETURNED_TO_CUSTOMER" | "CLOSED";
 export type WarrantyIdentificationType = "IDENTIFIED" | "TEMP_ONLY";
 export type WarrantyPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-
 export interface WarrantyCaseDefect {
   defect_id: string;
   defect_code: string;
   defect_name: string;
   is_primary?: boolean;
 }
-
 export interface WarrantyCase {
   id: string;
   case_code: string;
@@ -42,18 +29,13 @@ export interface WarrantyCase {
   purchase_date?: string;
   masked_customer_name?: string;
   masked_customer_phone?: string;
-  /**
-   * §13.8: true = tên/SĐT/địa chỉ đang ở dạng mask. `resolveWarrantyPii` chốt cờ này
-   * fail-closed (BE báo đã mask HOẶC actor thiếu `warranty.pii.view`), nên UI đọc cờ
-   * này thay vì tự suy từ danh sách quyền phía client.
-   */
+  /** §13.8: service applies permission-aware, idempotent PII masking. */
   pii_masked: boolean;
   agency_name?: string;
-  /** Legacy primary defect display, kept for old screens. */
+  /** Legacy primary defect display; prefer the multi-defect fields when supplied. */
   defect: string;
   defect_code: string;
   defect_id?: string;
-  /** BA M1: one warranty case can contain multiple catalog defects. */
   defect_ids?: string[];
   defects?: WarrantyCaseDefect[];
   reported_defect?: string;
@@ -63,16 +45,16 @@ export interface WarrantyCase {
   condition_status?: string;
   cancel_reason?: string;
   status: WarrantyCaseStatus;
-  priority: WarrantyPriority;
+  /** The current detail API need not supply a priority. Do not invent MEDIUM. */
+  priority?: WarrantyPriority;
   missing_code_reason?: string;
   manual_product_description?: string;
   item_status?: string;
   warehouse_name?: string;
   received_at: string;
   expected_return_at?: string;
-  /** BA M1: expected repair/completion date; nullable and editable. */
+  /** BA M1: nullable expected repair/completion date. */
   expected_completion_date?: string;
-  /** Backward-compatible FE alias for older local UI code. */
   estimated_completion_date?: string;
   completed_at?: string;
   returned_at?: string;
@@ -80,46 +62,25 @@ export interface WarrantyCase {
   created_at: string;
   created_by: string;
   notes?: string;
-  version: number;
+  /** Missing on a read is unknown. Every write must obtain a valid server version. */
+  version?: number;
 }
-
 export interface WarrantyEvent {
   id: string;
   case_id: string;
   event_type: WarrantyEventType;
   from_status?: WarrantyCaseStatus;
-  to_status: WarrantyCaseStatus;
+  /** NOTE events need not transition the case. */
+  to_status?: WarrantyCaseStatus;
   description: string;
   performed_by: string;
   performed_at: string;
 }
-
 export type WarrantyEventType =
-  // Taxonomy ERD §46 (backend hiện hành)
-  | "RECEIVE"
-  | "CHECK"
-  | "REPAIR"
-  | "COMPLETE"
-  | "RETURN"
-  | "CANCEL"
-  | "NOTE"
-  | "TEMP_ONLY"
-  // Giá trị legacy còn trong dữ liệu cũ
-  | "RECEIVED"
-  | "STATUS_CHANGE"
-  | "NOTE_ADDED"
-  | "PARTS_ORDERED"
-  | "PARTS_RECEIVED"
-  | "TEMP_RESOLUTION"
-  | "CUSTOMER_CONTACTED"
-  | "RETURNED";
-
-export type WarrantyAttachmentType =
-  | "INTAKE"
-  | "DIAGNOSTIC"
-  | "RETURN"
-  | "OTHER";
-
+  | "RECEIVE" | "CHECK" | "REPAIR" | "COMPLETE" | "RETURN" | "CANCEL" | "NOTE" | "TEMP_ONLY"
+  | "RECEIVED" | "STATUS_CHANGE" | "NOTE_ADDED" | "PARTS_ORDERED" | "PARTS_RECEIVED"
+  | "TEMP_RESOLUTION" | "CUSTOMER_CONTACTED" | "RETURNED";
+export type WarrantyAttachmentType = "INTAKE" | "DIAGNOSTIC" | "RETURN" | "OTHER";
 export interface WarrantyAttachment {
   id: string;
   warranty_case_id: string;
@@ -134,7 +95,6 @@ export interface WarrantyAttachment {
   uploaded_at?: string;
   uploaded_by?: string;
 }
-
 export interface WarrantyListParams {
   search?: string;
   keyword?: string;
@@ -144,19 +104,13 @@ export interface WarrantyListParams {
   defect_ids?: string[];
   page?: number;
   per_page?: number;
-  /**
-   * "Sắp xếp theo" của WAR-01 — BE xếp theo thời điểm tạo/sửa gần nhất
-   * (COALESCE(updated_at, created_at)): "desc" = Mới nhất, "asc" = Cũ nhất.
-   * Bỏ trống = thứ tự mặc định cũ của BE.
-   */
+  /** Most/least recent according to the server's created/updated ordering. */
   sort_order?: "desc" | "asc";
 }
-
 export interface WarrantyCasePage {
   data: WarrantyCase[];
   meta?: Record<string, unknown>;
 }
-
 export interface CreateWarrantyCaseRequest {
   identification_type: WarrantyIdentificationType;
   item_code?: string;
@@ -166,10 +120,8 @@ export interface CreateWarrantyCaseRequest {
   customer_address?: string;
   purchase_date?: string;
   agency_name?: string;
-  /** Legacy primary defect fields. */
   defect_id?: string;
   defect_code?: string;
-  /** BA M1 preferred multi-defect fields. */
   defect_ids?: string[];
   defect_codes?: string[];
   defect_description: string;
@@ -183,23 +135,20 @@ export interface CreateWarrantyCaseRequest {
   priority?: WarrantyPriority;
   estimated_completion_date?: string;
 }
-
 export interface UpdateWarrantyCaseRequest {
   status?: WarrantyCaseStatus;
-  /** Ghi chú/evidence hiển thị trên timeline. */
   reason?: string;
   confirmed_defect?: string;
   condition_status?: string;
   received_condition?: string;
   accessories_received?: string;
   cancel_reason?: string;
-  /** Legacy primary defect field; new forms should prefer defect_ids. */
   defect_id?: string;
   defect_ids?: string[];
   defect_codes?: string[];
   expected_completion_date?: string;
   estimated_completion_date?: string;
-  /** PII — chỉ gửi khi actor có `warranty.pii.view`; BE trả 403 nếu thiếu quyền. */
+  /** Sent only when the caller edits PII; the backend remains the permission authority. */
   customer_name?: string;
   customer_phone?: string;
   customer_address?: string;
@@ -207,23 +156,16 @@ export interface UpdateWarrantyCaseRequest {
   idempotency_key?: string;
   ifMatch?: number;
 }
-
 /** @deprecated dùng UpdateWarrantyCaseRequest. */
 export type UpdateWarrantyStatusRequest = UpdateWarrantyCaseRequest;
-
 export interface WarrantyDefect {
   code: string;
   name: string;
   category: string;
   description?: string;
 }
-
 export type WarrantyErrorCode =
-  | "WMS_WARRANTY_CASE_NOT_FOUND"
-  | "WMS_WARRANTY_INVALID_STATUS_TRANSITION"
-  | "WMS_WARRANTY_SKU_NOT_FOUND"
-  | "WMS_WARRANTY_DUPLICATE_SERIAL"
-  | "WMS_WARRANTY_TEMP_ONLY_REQUIRED"
-  | "WMS_WARRANTY_ITEM_NOT_FOUND"
-  | "WMS_WARRANTY_DEFECT_NOT_FOUND"
-  | "WMS_WARRANTY_VERSION_CONFLICT";
+  | "WMS_WARRANTY_CASE_NOT_FOUND" | "WMS_WARRANTY_INVALID_STATUS_TRANSITION"
+  | "WMS_WARRANTY_SKU_NOT_FOUND" | "WMS_WARRANTY_DUPLICATE_SERIAL"
+  | "WMS_WARRANTY_TEMP_ONLY_REQUIRED" | "WMS_WARRANTY_ITEM_NOT_FOUND"
+  | "WMS_WARRANTY_DEFECT_NOT_FOUND" | "WMS_WARRANTY_VERSION_CONFLICT";
