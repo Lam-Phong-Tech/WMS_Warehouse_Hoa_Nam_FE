@@ -1,40 +1,16 @@
-/**
- * Nội bộ render bằng design-system foundation (Part 3) — public API giữ nguyên.
- */
-import { UiSpinner } from "@/shared/ui";
-import { SEMANTIC_LIGHT, Z_INDEX } from "@/shared/ui/tokens";
-
+import { Z_INDEX } from "@/shared/ui/tokens";
+import { UnifiedLoading } from "@/shared/ui/loading/UnifiedLoading";
+import { useLoadingParticipant } from "@/shared/ui/loading/loading-context";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
-import { useT } from "@/shared/i18n/useT";
-
-/**
- * Overlay loading toàn màn hình (bootstrap phiên, chuyển route bảo vệ).
- * WWHN-268: phát `data-ui-state="loading"` cho ma trận bằng chứng QA2.
- */
+/** Bootstrap/permission loading keeps its fullscreen scope, using the same visual. */
 export function Loading() {
-  const t = useT();
+  useLoadingParticipant(true);
   return (
-    <div
-      {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-fullscreen")}
-      aria-busy="true"
-      aria-live="polite"
-      style={{
-        position: "fixed",
-        inset: 0,
-        // Màn trắng mờ trên nền hiện tại (không có token white-alpha riêng).
-        background: "rgba(255, 255, 255, 0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column",
-        backdropFilter: "blur(4px)",
-        zIndex: Z_INDEX.blockingLoading,
-      }}
-    >
-      <UiSpinner size={40} />
-      <div style={{ marginTop: 10, color: SEMANTIC_LIGHT.textMedium }}>
-        {t("shared.states.loadingDots")}
-      </div>
+    <div {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-fullscreen")}
+      aria-busy="true" style={{ position: "fixed", inset: 0,
+        background: "rgba(255, 255, 255, 0.6)", display: "flex", alignItems: "center",
+        justifyContent: "center", backdropFilter: "blur(4px)", zIndex: Z_INDEX.blockingLoading }}>
+      <UnifiedLoading />
     </div>
   );
 }

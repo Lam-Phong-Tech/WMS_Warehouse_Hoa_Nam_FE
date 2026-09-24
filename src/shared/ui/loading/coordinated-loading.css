@@ -1,0 +1,80 @@
+.hn-loading-boundary {
+  position: relative;
+  min-width: 0;
+}
+.hn-loading-boundary[data-loading-phase="loading"],
+.hn-loading-boundary[data-loading-phase="offline"] {
+  min-height: 180px;
+}
+.hn-loading-boundary--page[data-loading-phase="loading"],
+.hn-loading-boundary--page[data-loading-phase="offline"] {
+  min-height: min(420px, 60dvh);
+}
+.hn-loading-boundary__content {
+  min-width: 0;
+}
+/* Some widgets set visibility explicitly. They must not reveal through a
+   blocked parent; portals outside this DOM subtree retain their own scope. */
+.hn-loading-boundary[data-loading-phase="loading"] > .hn-loading-boundary__content,
+.hn-loading-boundary[data-loading-phase="offline"] > .hn-loading-boundary__content,
+.hn-loading-boundary[data-loading-phase="loading"] > .hn-loading-boundary__content *,
+.hn-loading-boundary[data-loading-phase="offline"] > .hn-loading-boundary__content * {
+  visibility: hidden !important;
+}
+.hn-loading-boundary__cover {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-block: clamp(20px, 8vh, 64px);
+}
+.hn-loading-boundary__cover > .hn-unified-loading {
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+}
+.hn-unified-loading {
+  color: var(--ops-primary, #004e74);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+.hn-unified-loading__label {
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.hn-loading-boundary__retry {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  min-height: 38px;
+  padding: 6px 16px;
+  cursor: pointer;
+}
+.hn-loading-boundary__retry:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+/* Remove staggered entrance delay, not spinner rotation or hover/focus feedback. */
+.hn-loading-boundary__content .hn-fade-in,
+.hn-loading-boundary__content .hn-fade-in-up,
+.hn-loading-boundary__content .hn-scale-in {
+  animation-delay: 0ms !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hn-unified-loading .hn-spinner i {
+    animation: none !important;
+  }
+}

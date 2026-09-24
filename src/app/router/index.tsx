@@ -5,6 +5,7 @@ import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { resolveRouteEntryPermission } from "@/app/router/access";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
+import { CoordinatedLoadingBoundary } from "@/shared/ui/loading/CoordinatedLoadingBoundary";
 import { DASHBOARD_CANONICAL, ROUTES } from "@/shared/constants/routes";
 // Mọi màn khai báo MỘT LẦN ở route-components.ts (router và route-preload dùng
 // chung). Chúng là `lazyRoute`: vẫn tách chunk như `React.lazy`, nhưng khi chunk
@@ -53,8 +54,11 @@ import {
   WarrantyReportPage,
 } from "@/app/router/route-components";
 
-function withPageLoader(node: ReactNode) {
-  return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
+function withPageLoader(node: ReactNode, coordinate = true) {
+  const content = <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
+  return coordinate
+    ? <CoordinatedLoadingBoundary>{content}</CoordinatedLoadingBoundary>
+    : content;
 }
 
 function routeEl(path: string, node: ReactNode) {
@@ -100,7 +104,8 @@ export const router = createBrowserRouter([
     children: [
       {
         path: ROUTES.HOME,
-        element: withPageLoader(<MainLayout />),
+        // The shell stays interactive; each actual screen owns one loading group.
+        element: withPageLoader(<MainLayout />, false),
         children: [
           { index: true, element: <Navigate to={DASHBOARD_CANONICAL} replace /> },
           {
@@ -334,20 +339,15 @@ export const router = createBrowserRouter([
             // se tao vong lap "khong vao duoc vi chua dang ky, khong dang ky
             // duoc vi khong vao duoc".
             path: ROUTES.MFA_SETUP,
-            element: <MfaSetupPage />,
+            element: withPageLoader(<MfaSetupPage />),
           },
           // 403 nằm TRONG MainLayout: người dùng đã đăng nhập nên phải giữ
-          // sidebar/topbar để đi tiếp chỗ khác, thay vì mắc kẹt ở một trang
-          // trống. KHÔNG bọc routeEl — chính trang báo thiếu quyền thì không
-          // được đòi quyền, nếu không sẽ lặp vô hạn.
+          // sidebar/topbar để đi tiếp, thay vì mắc kẹt ở một trang trống.
           {
             path: ROUTES.NO_PERMISSION,
             element: withPageLoader(<NoPermissionPage />),
           },
-          // 404 cũng nằm trong khung: người đã đăng nhập gõ sai URL vẫn còn
-          // sidebar/topbar để đi tiếp. Người CHƯA đăng nhập rơi vào nhánh này
-          // sẽ bị ProtectedRoute đá về /login — quyết định đã chốt với PM,
-          // thay cho hành vi 404-trần của NAV-02 trước đây.
+          // 404 giữ nguyên trong shell và sau ProtectedRoute.
           { path: "*", element: withPageLoader(<NotFoundPage />) },
         ],
       },
