@@ -20,6 +20,11 @@ const gridCss = await readFile(resolve(root, "src/modules/dashboard/overview/sna
 const chartCss = await readFile(resolve(root, "src/modules/dashboard/overview/snapshot-stock-flow.css"), "utf8");
 assert.ok(chartCss.startsWith('@import "./snapshot-main-grid.css";'), "layout must be imported by the eagerly loaded chart stylesheet");
 assert.ok(!/setTimeout|requestAnimationFrame|ResizeObserver/.test(gridCss), "no layout timers");
+// Reproduce 56b5f7d: documents occupied only column 1, stock spanned rows 2/3.
+const previousGridCss = gridCss
+  .replace(/(> \.snapshot-recent\s*\{\s*grid-column:) 1 \/ -1;/, "$1 1;")
+  .replace(/(> \.snapshot-stock\s*\{\s*grid-column: 2;\s*grid-row:) 2;/, "$1 2 / 4;");
+assert.notEqual(previousGridCss, gridCss, "regression must reproduce previous placement");
 const output = resolve(root, "test-results/dashboard-priority-layout");
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ executablePath: option("--chromium"), headless: true });
@@ -38,14 +43,18 @@ const fixtureCss = `
   .fixture-legend { height:32px; }
   .fixture-svg { display:block; width:100%; height:320px; }
   .fixture svg rect { fill:#e3edf2; }
+  .fixture-document-row { padding:12px; border-top:1px solid #d6e4eb; }
 `;
-function markup(count, state, containerWidth) {
+function markup(count, state, containerWidth, documents) {
   const tasks = count ? `<div>${Array.from({ length: count }, (_, index) => `
     <button type="button" class="snapshot-priority-row" data-task="${index}">
       <span class="snapshot-priority-icon">!</span>
       <span><strong>Priority item ${index + 1}</strong><small>Long item description remains inside the same row.</small></span>
       <b>1</b><i>View</i>
     </button>`).join("")}</div>` : `<div class="snapshot-chart-state"><strong>No pending work</strong></div>`;
+  const documentBody = documents
+    ? `<div>${Array.from({ length: documents }, (_, index) => `<div class="fixture-document-row">Test document ${index + 1}</div>`).join("")}</div>`
+    : `<div class="snapshot-empty-table">Document area</div>`;
   return `<main class="fixture" style="width:${containerWidth}px;max-width:100%"><div class="hn-dashboard-snapshot">
     <section class="snapshot-main-grid">
       <article class="snapshot-card snapshot-chart-card">
@@ -55,16 +64,17 @@ function markup(count, state, containerWidth) {
       <article class="snapshot-card snapshot-priority"><header><h2>Priority work</h2><button data-control="priority">View all</button></header>
         ${state === "loading" ? `<div class="snapshot-list-loading"></div>` : tasks}
       </article>
-      <article class="snapshot-card snapshot-recent"><header><h2>Recent documents</h2><button data-control="recent">View all</button></header><div class="snapshot-empty-table">Document area</div></article>
+      <article class="snapshot-card snapshot-recent"><header><h2>Recent documents</h2><button data-control="recent">View all</button></header>${documentBody}</article>
       <article class="snapshot-card snapshot-stock"><header><h2>Stock composition</h2><button data-control="stock">Details</button></header><div class="snapshot-empty-table">Composition area</div></article>
     </section>
   </div></main>`;
 }
-async function mount({ width, containerWidth = width, count = 3, state = "ready", patched = true, lateBase = false }) {
+async function mount({ width, containerWidth = width, count = 3, state = "ready", documents = 0, version = "current", lateBase = false }) {
   await page.setViewportSize({ width, height: 1300 });
+  const layout = version === "previous" ? previousGridCss : version === "legacy" ? "" : gridCss;
   // The old main stylesheet may be loaded AFTER the chart module in Vite.
-  const sources = patched ? (lateBase ? gridCss + baseCss : baseCss + gridCss) : baseCss;
-  await page.setContent(`<style>${fixtureCss}${chartCss.replace(/@import[^;]+;/g, "")}${sources}</style>${markup(count, state, containerWidth)}`);
+  const sources = lateBase ? layout + baseCss : baseCss + layout;
+  await page.setContent(`<style>${fixtureCss}${chartCss.replace(/@import[^;]+;/g, "")}${sources}</style>${markup(count, state, containerWidth, documents)}`);
   await page.evaluate(() => document.fonts.ready);
 }
 async function bounds() {
@@ -75,9 +85,8 @@ async function bounds() {
     };
     const cards = [...grid.children].map(rect);
     const priority = grid.querySelector(".snapshot-priority");
-    const last = priority.lastElementChild;
-    return { cards, gap:parseFloat(getComputedStyle(grid).rowGap),
-      priorityTail:rect(priority).bottom - rect(last).bottom,
+    return { cards, grid:rect(grid), gap:parseFloat(getComputedStyle(grid).rowGap),
+      priorityTail:rect(priority).bottom - rect(priority.lastElementChild).bottom,
       scrollWidth:document.documentElement.scrollWidth, viewport:innerWidth,
       controls:[...grid.querySelectorAll("[data-control]")].map((el) => el.dataset.control),
       shimmer:priority.querySelector(".snapshot-list-loading") ? rect(priority.querySelector(".snapshot-list-loading")) : null,
@@ -95,10 +104,15 @@ function check(data, stacked, state) {
       close(data.cards[index].x, chart.x, "single-column alignment");
       close(data.cards[index].width, chart.width, "no implicit second column");
     }
+    close(data.grid.bottom, stock.bottom, "no trailing tablet grid track");
   } else {
     close(priority.y, chart.y, "top alignment");
     close(stock.y - priority.bottom, data.gap, "composition follows priority immediately");
-    close(recent.y - chart.bottom, data.gap, "documents follow chart");
+    close(recent.y - Math.max(chart.bottom, stock.bottom), data.gap, "documents follow BOTH columns");
+    close(recent.x, data.grid.x, "documents start at grid left edge");
+    close(recent.right, data.grid.right, "documents reach grid right edge; no empty right cell");
+    close(data.grid.bottom, recent.bottom, "no trailing desktop grid track");
+    assert.ok(stock.bottom <= recent.y - data.gap + 1, "stock cannot overlap full-width documents");
     assert.ok(priority.height < chart.height, "short card must not stretch with chart");
     assert.ok(priority.x >= chart.right + data.gap - 1, "columns do not overlap");
   }
@@ -109,9 +123,12 @@ function check(data, stacked, state) {
   }
 }
 try {
-  await mount({ width:1625, count:3, patched:false });
+  await mount({ width:1625, count:3, version:"legacy" });
+  const legacy = await bounds();
+  assert.ok(legacy.priorityTail > 150, "must reproduce the original stretched white card");
+  await mount({ width:1625, count:3, version:"previous" });
   const before = await bounds();
-  assert.ok(before.priorityTail > 150, "must reproduce the reported stretched white card first");
+  assert.ok(before.grid.right - before.cards[2].right > 300, "must reproduce empty column beside documents");
   for (const width of [1920, 1625, 1280, 1024, 900, 800, 375, 320]) {
     for (const count of [0, 1, 3, 5]) {
       for (const lateBase of [false, true]) {
@@ -123,26 +140,33 @@ try {
     await mount({ width, state:"loading" });
     check(await bounds(), width <= 900, "loading");
     results.push({ width, state:"loading" });
+    await mount({ width, documents:10 });
+    check(await bounds(), width <= 900, "ready");
+    results.push({ width, documents:10 });
   }
-  // Desktop viewport with a narrow main panel must follow the named container.
   await mount({ width:1625, containerWidth:850 });
   check(await bounds(), true, "ready");
   results.push({ width:1625, containerWidth:850 });
-  // Actual viewport resize, without reparenting/remounting/rebuilding markup.
   await mount({ width:1625 });
   await page.setViewportSize({ width:800, height:1300 });
   check(await bounds(), true, "ready");
   await page.setViewportSize({ width:1625, height:1300 });
   check(await bounds(), false, "ready");
   results.push({ resize:"1625 -> 800 -> 1625" });
-  // Changes in live task count reflow directly through CSS, not a stale height.
   await page.locator('[data-task="2"]').evaluate((element) => element.remove());
   check(await bounds(), false, "ready");
   results.push({ mutation:"remove one task" });
+  // Real text wrapping must move the full-width row down, not overlap it.
+  await page.locator(".snapshot-priority-row small").evaluateAll((elements) => {
+    elements.forEach((element) => { element.style.whiteSpace = "normal"; element.textContent += " More test text.".repeat(12); });
+  });
+  const wrapped = await bounds();
+  close(wrapped.cards[2].y - Math.max(wrapped.cards[0].bottom, wrapped.cards[3].bottom), wrapped.gap, "wrapped tasks keep documents below both columns");
+  results.push({ mutation:"wrap long descriptions" });
+  await mount({ width:1625 });
   await page.emulateMedia({ reducedMotion:"reduce" });
   check(await bounds(), false, "ready");
   results.push({ reducedMotion:true });
-  await mount({ width:1625 });
   const after = await bounds();
   close(after.cards[0].height, before.cards[0].height, "chart height must remain unchanged");
   close(after.cards[0].width, before.cards[0].width, "chart width must remain unchanged");
@@ -151,8 +175,8 @@ try {
   await page.screenshot({ path:resolve(output, "layout-800.png"), fullPage:true });
   const report = { status:"passed", checks:results.length,
     scope:option("--base-css") ? "isolated Chromium with reviewed legacy CSS excerpt" : "isolated Chromium with full repository dashboard CSS",
-    before:{ priorityHeight:before.cards[1].height, priorityTail:before.priorityTail },
-    after:{ priorityHeight:after.cards[1].height, priorityTail:after.priorityTail }, results };
+    before:{ priorityHeight:before.cards[1].height, priorityTail:before.priorityTail, emptyRightWidth:before.grid.right - before.cards[2].right },
+    after:{ priorityHeight:after.cards[1].height, priorityTail:after.priorityTail, emptyRightWidth:after.grid.right - after.cards[2].right }, results };
   await writeFile(resolve(output, "results.json"), JSON.stringify(report, null, 2));
   console.log(JSON.stringify({ ...report, results:undefined }, null, 2));
 } finally { await browser.close(); }

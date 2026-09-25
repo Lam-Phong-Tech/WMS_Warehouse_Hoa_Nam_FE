@@ -1,8 +1,8 @@
 /* MAP-01: a short priority list must not stretch with the taller stock chart.
  * Keep the four articles in their existing DOM/focus order. The first track is
  * content-sized; stock composition starts immediately below the priority card,
- * while recent documents stay below the chart. Do not shrink the chart, cap the
- * task list, invent filler items, or use negative offsets/JS height timers.
+ * while recent documents occupy a full-width row below BOTH columns. Do not
+ * shrink the chart, cap tasks, invent filler items or use offsets/height timers.
  */
 .hn-dashboard-snapshot .snapshot-main-grid {
   grid-template-rows: min-content minmax(0, 1fr) min-content;
@@ -20,12 +20,12 @@
   position: relative;
 }
 .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-recent {
-  grid-column: 1;
+  grid-column: 1 / -1;
   grid-row: 3;
 }
 .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-stock {
   grid-column: 2;
-  grid-row: 2 / 4;
+  grid-row: 2;
 }
 /* The legacy shimmer is absolute. Give it a real slot when the fixed card
  * minimum is removed, rather than covering the heading or collapsing the card.
