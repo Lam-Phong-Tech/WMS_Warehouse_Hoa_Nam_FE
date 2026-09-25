@@ -38,7 +38,7 @@ afterEach(() => {
   cleanup(); clients.splice(0).forEach((value) => value.clear()); vi.unstubAllGlobals();
 });
 
-it("plain refresh buttons coordinate existing cached keys without data-action markers", async () => {
+it("plain refresh buttons keep the page visible while cached keys refresh", async () => {
   const chart = deferred(), table = deferred();
   function Report() {
     const a = useQuery({ queryKey: ["chart"], queryFn: () => chart.promise });
@@ -52,14 +52,15 @@ it("plain refresh buttons coordinate existing cached keys without data-action ma
   await settle(); expect(screen.getByText("old-chart")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Refresh" })); await settle();
   expect(view.container.querySelector(".hn-loading-boundary")).toHaveAttribute("data-loading-phase", "loading");
-  expect(screen.getAllByRole("status")).toHaveLength(1);
+  expect(view.container.querySelector(".hn-loading-boundary__cover")).toBeNull();
+  expect(view.container.querySelector(".hn-loading-boundary__content")).not.toHaveAttribute("inert");
   await act(async () => { chart.resolve("new-chart"); }); await settle();
-  expect(screen.getByText("new-chart")).not.toBeVisible();
+  expect(screen.getByText("new-chart")).toBeVisible();
   await act(async () => { table.resolve("new-table"); }); await settle();
   expect(screen.getByText("new-chart")).toBeVisible(); expect(screen.getByText("new-table")).toBeVisible();
 });
 
-it("Enter-based search coordinates a same-key refetch without requiring a form", async () => {
+it("Enter-based search keeps controls visible during a same-key refetch", async () => {
   const read = deferred();
   function Search() {
     const query = useQuery({ queryKey: ["chart"], queryFn: () => read.promise });
@@ -70,7 +71,7 @@ it("Enter-based search coordinates a same-key refetch without requiring a form",
   }
   render(<QueryClientProvider client={client()}><CoordinatedLoadingBoundary><Search /></CoordinatedLoadingBoundary></QueryClientProvider>);
   await settle(); fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" }); await settle();
-  expect(screen.getByText("old-chart")).not.toBeVisible();
+  expect(screen.getByText("old-chart")).toBeVisible();
   await act(async () => { read.resolve("new-chart"); }); await settle();
   expect(screen.getByText("new-chart")).toBeVisible();
 });

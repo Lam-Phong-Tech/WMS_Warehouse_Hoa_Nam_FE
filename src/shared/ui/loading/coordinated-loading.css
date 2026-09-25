@@ -2,23 +2,20 @@
   position: relative;
   min-width: 0;
 }
-.hn-loading-boundary[data-loading-phase="loading"],
-.hn-loading-boundary[data-loading-phase="offline"] {
+.hn-loading-boundary[data-loading-blocked="true"] {
   min-height: 180px;
 }
-.hn-loading-boundary--page[data-loading-phase="loading"],
-.hn-loading-boundary--page[data-loading-phase="offline"] {
+.hn-loading-boundary--page[data-loading-blocked="true"] {
   min-height: min(420px, 60dvh);
 }
 .hn-loading-boundary__content {
   min-width: 0;
 }
-/* Some widgets set visibility explicitly. They must not reveal through a
-   blocked parent; portals outside this DOM subtree retain their own scope. */
-.hn-loading-boundary[data-loading-phase="loading"] > .hn-loading-boundary__content,
-.hn-loading-boundary[data-loading-phase="offline"] > .hn-loading-boundary__content,
-.hn-loading-boundary[data-loading-phase="loading"] > .hn-loading-boundary__content *,
-.hn-loading-boundary[data-loading-phase="offline"] > .hn-loading-boundary__content * {
+/* Only the initial barrier may hide content. A later read still has phase
+   loading/offline, but must not hide the filters via this descendant rule.
+   Portals outside this DOM subtree retain their own scope. */
+.hn-loading-boundary[data-loading-blocked="true"] > .hn-loading-boundary__content,
+.hn-loading-boundary[data-loading-blocked="true"] > .hn-loading-boundary__content * {
   visibility: hidden !important;
 }
 .hn-loading-boundary__cover {
@@ -33,12 +30,12 @@
 /* Skeletons occupy the SAME grid cell as the hidden work. They contribute to
    layout immediately, even while the route chunk has not mounted. Never use
    display:none on the real content: chart width measurement must keep working. */
-.hn-loading-boundary[data-loading-phase="loading"] {
+.hn-loading-boundary[data-loading-blocked="true"][data-loading-phase="loading"] {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
-.hn-loading-boundary[data-loading-phase="loading"] > .hn-loading-boundary__content,
+.hn-loading-boundary[data-loading-blocked="true"][data-loading-phase="loading"] > .hn-loading-boundary__content,
 .hn-loading-boundary__cover--skeleton {
   grid-area: 1 / 1;
   min-width: 0;

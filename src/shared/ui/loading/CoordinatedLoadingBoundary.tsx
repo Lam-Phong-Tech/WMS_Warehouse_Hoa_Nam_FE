@@ -12,6 +12,7 @@ import { usePageVisible } from "@/shared/ui/page-visibility";
 import { useT } from "@/shared/i18n/useT";
 import { LoadingContext, LoadingDepthContext } from "./loading-context";
 import { LoadingController } from "./loading-controller";
+import { shouldBlockLoadingSurface } from "./loading-presentation";
 import { LoadingOverlayStack } from "./loading-stack";
 import { createForegroundReadIntent } from "./foreground-interaction";
 import { LoadingSkeleton } from "./LoadingSkeleton";
@@ -54,7 +55,9 @@ export interface CoordinatedLoadingBoundaryProps {
  * Keep children mounted and measurable until the visible read group settles.
  * Errors are settled outcomes; existing error/empty/403 renderers remain intact.
  * Disabled queries, unobserved prefetches and cached background refreshes do not
- * block. This barrier never changes HTTP, mutations or cached business data.
+ * block. After the initial reveal, all reads keep the surface interactive;
+ * tables/charts own their local pending/error states. This boundary never
+ * changes HTTP, mutations or cached business data.
  */
 export function CoordinatedLoadingBoundary({
   children,
@@ -138,7 +141,9 @@ export function CoordinatedLoadingBoundary({
     };
   }, [client, controller, depth, enabled, id, mode, readIntent, stack]);
 
-  const blocked = enabled && snapshot.phase !== "ready";
+  // A new filter/key/participant may be pending without resetting the page.
+  // Use this same decision for the cover, CSS, focus and accessibility state.
+  const blocked = shouldBlockLoadingSurface(snapshot, enabled);
   const covered = topOverlay !== undefined && topOverlay !== id;
   useLayoutEffect(() => {
     if (blocked) {
@@ -187,6 +192,7 @@ export function CoordinatedLoadingBoundary({
           className={`hn-loading-boundary hn-loading-boundary--${mode}`}
           data-loading-phase={enabled ? snapshot.phase : "inactive"}
           data-loading-initial={snapshot.initial ? "true" : "false"}
+          data-loading-blocked={blocked ? "true" : "false"}
           aria-busy={blocked && snapshot.phase === "loading"}
         >
           <div

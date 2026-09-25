@@ -40,7 +40,7 @@ afterEach(() => {
   cleanup(); clients.splice(0).forEach((client) => client.clear()); vi.unstubAllGlobals();
 });
 
-it("waits for all newly observed cached filter results, not the fastest", async () => {
+it("tracks all cached filter reads without hiding the page", async () => {
   const client = makeClient();
   client.setQueryData(["chart"], "old-chart"); client.setQueryData(["table"], "old-table");
   const chart = deferred(), table = deferred();
@@ -51,22 +51,23 @@ it("waits for all newly observed cached filter results, not the fastest", async 
   const view = render(ui(false)); await settle();
   expect(screen.getByTestId("initial")).toBeVisible();
   view.rerender(ui(true)); await settle();
-  expect(screen.getByTestId("chart")).not.toBeVisible();
-  expect(screen.getAllByRole("status")).toHaveLength(1);
+  expect(screen.getByTestId("chart")).toBeVisible();
+  expect(view.container.querySelector(".hn-loading-boundary__cover")).toBeNull();
+  expect(view.container.querySelector(".hn-loading-boundary__content")).not.toHaveAttribute("inert");
   await act(async () => { chart.resolve("new-chart"); }); await settle();
-  expect(screen.getByTestId("chart")).not.toBeVisible();
+  expect(screen.getByTestId("chart")).toBeVisible();
   await act(async () => { table.resolve("new-table"); }); await settle();
   expect(screen.getByText("new-chart")).toBeVisible(); expect(screen.getByText("new-table")).toBeVisible();
 });
 
-it("coordinates a cached disabled query when it becomes enabled", async () => {
+it("keeps a cached tab visible when its query becomes enabled", async () => {
   const client = makeClient(); client.setQueryData(["tab"], "cached-tab");
   const read = deferred();
   const ui = (enabled: boolean) => <QueryClientProvider client={client}><CoordinatedLoadingBoundary>
     <Read name="tab" enabled={enabled} read={() => read.promise} />
   </CoordinatedLoadingBoundary></QueryClientProvider>;
   const view = render(ui(false)); await settle(); expect(screen.getByText("cached-tab")).toBeVisible();
-  view.rerender(ui(true)); await settle(); expect(screen.getByText("cached-tab")).not.toBeVisible();
+  view.rerender(ui(true)); await settle(); expect(screen.getByText("cached-tab")).toBeVisible();
   await act(async () => { read.resolve("fresh-tab"); }); await settle(); expect(screen.getByText("fresh-tab")).toBeVisible();
 });
 

@@ -6,7 +6,7 @@ import { CoordinatedLoadingBoundary } from "./loading/CoordinatedLoadingBoundary
 
 afterEach(cleanup);
 
-it("does not reveal a selected tab before its deferred panel commits", async () => {
+it("keeps tab controls interactive while the deferred panel is prepared", async () => {
   let ready = false;
   let finish!: () => void;
   const work = new Promise<void>((resolve) => { finish = resolve; });
@@ -29,7 +29,9 @@ it("does not reveal a selected tab before its deferred panel commits", async () 
   fireEvent.click(screen.getByText("Next tab"));
   expect(container.querySelector(".hn-loading-boundary")).toHaveAttribute("data-loading-phase", "loading");
   expect(screen.getByTestId("selected")).toHaveTextContent("next");
-  expect(screen.getByText("first-panel")).not.toBeVisible();
+  expect(screen.getByText("first-panel")).toBeVisible();
+  expect(screen.getByText("Next tab")).toBeVisible();
+  expect(container.querySelector(".hn-loading-boundary__cover")).toBeNull();
   await act(async () => { ready = true; finish(); });
   await waitFor(() => expect(screen.getByText("new-panel")).toBeVisible());
 });
