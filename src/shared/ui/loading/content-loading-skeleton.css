@@ -1,0 +1,20 @@
+/* Geometry is measured relative to the actual content origin. Do not add a
+   second page padding, invented grid, card count or breakpoint here. */
+.hn-content-skeleton { overflow: hidden; }
+.hn-content-skeleton__shapes {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.hn-content-skeleton__shape {
+  display: block;
+  position: absolute;
+  box-sizing: border-box;
+  background: var(--hn-skeleton-fill);
+}
+.hn-content-skeleton__shape--surface {
+  background: var(--hn-skeleton-surface);
+  border: 1px solid var(--hn-skeleton-border);
+}
+/* One shared ancestor animation from loading-skeleton.css. No per-box clock,
+   reveal transition, color-coded data series or focusable placeholder controls. */

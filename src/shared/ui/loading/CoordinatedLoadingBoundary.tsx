@@ -15,6 +15,7 @@ import { LoadingController } from "./loading-controller";
 import { LoadingOverlayStack } from "./loading-stack";
 import { createForegroundReadIntent } from "./foreground-interaction";
 import { LoadingSkeleton } from "./LoadingSkeleton";
+import { ContentLoadingSkeleton } from "./ContentLoadingSkeleton";
 import "./coordinated-loading.css";
 
 const stacks = new WeakMap<QueryClient, LoadingOverlayStack>();
@@ -68,6 +69,7 @@ export function CoordinatedLoadingBoundary({
   const depth = parentDepth + (mode === "page" ? 0 : 1);
   const t = useT();
   const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const savedFocus = useRef<HTMLElement | null>(null);
   const stack = useMemo(() => stackFor(client), [client]);
   const readIntent = useMemo(() => createForegroundReadIntent(), []);
@@ -188,6 +190,7 @@ export function CoordinatedLoadingBoundary({
           aria-busy={blocked && snapshot.phase === "loading"}
         >
           <div
+            ref={contentRef}
             className="hn-loading-boundary__content"
             aria-hidden={blocked || undefined}
             inert={blocked || undefined}
@@ -217,7 +220,11 @@ export function CoordinatedLoadingBoundary({
                   </button>
                 </div>
               ) : (
-                fallback ?? <LoadingSkeleton layout={mode === "page" ? "list" : "detail"} />
+                <ContentLoadingSkeleton
+                  contentRef={contentRef}
+                  label={t("shared.states.loadingData")}
+                  fallback={fallback ?? <LoadingSkeleton layout={mode === "page" ? "list" : "detail"} />}
+                />
               )}
             </div>
           ) : null}
