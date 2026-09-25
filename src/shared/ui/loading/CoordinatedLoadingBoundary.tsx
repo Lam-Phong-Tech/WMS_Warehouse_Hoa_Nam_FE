@@ -14,7 +14,7 @@ import { LoadingContext, LoadingDepthContext } from "./loading-context";
 import { LoadingController } from "./loading-controller";
 import { LoadingOverlayStack } from "./loading-stack";
 import { createForegroundReadIntent } from "./foreground-interaction";
-import { UnifiedLoading } from "./UnifiedLoading";
+import { LoadingSkeleton } from "./LoadingSkeleton";
 import "./coordinated-loading.css";
 
 const stacks = new WeakMap<QueryClient, LoadingOverlayStack>();
@@ -45,6 +45,8 @@ export interface CoordinatedLoadingBoundaryProps {
   children: ReactNode;
   mode?: "page" | "dialog" | "drawer";
   active?: boolean;
+  /** Eager layout placeholders; never register this fallback as pending work. */
+  fallback?: ReactNode;
 }
 
 /**
@@ -57,6 +59,7 @@ export function CoordinatedLoadingBoundary({
   children,
   mode = "page",
   active = true,
+  fallback,
 }: CoordinatedLoadingBoundaryProps) {
   const client = useContext(QueryClientContext);
   const visible = usePageVisible();
@@ -194,7 +197,8 @@ export function CoordinatedLoadingBoundary({
           </div>
           {blocked ? (
             <div
-              className="hn-loading-boundary__cover"
+              className={`hn-loading-boundary__cover${snapshot.phase === "loading" ? " hn-loading-boundary__cover--skeleton" : ""}`}
+              aria-hidden={covered || undefined}
               style={covered ? { visibility: "hidden" } : undefined}
             >
               {snapshot.phase === "offline" ? (
@@ -212,7 +216,9 @@ export function CoordinatedLoadingBoundary({
                     {t("common.retry")}
                   </button>
                 </div>
-              ) : <UnifiedLoading />}
+              ) : (
+                fallback ?? <LoadingSkeleton layout={mode === "page" ? "list" : "detail"} />
+              )}
             </div>
           ) : null}
         </div>

@@ -4,6 +4,7 @@ import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { resolveRouteEntryPermission } from "@/app/router/access";
+import { RouteLoadingSkeleton } from "@/app/router/RouteLoadingSkeleton";
 import { PageLoadBoundary } from "@/app/router/PageLoadBoundary";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
 import { CoordinatedLoadingBoundary } from "@/shared/ui/loading/CoordinatedLoadingBoundary";
@@ -64,13 +65,16 @@ import {
  * vẫn tương tác được, mỗi màn tự sở hữu một nhóm loading của mình.
  */
 function withPageLoader(node: ReactNode, coordinate = true) {
+  const skeleton = <RouteLoadingSkeleton />;
   const content = (
-    <Suspense fallback={<PageSkeleton />}>
+    <Suspense fallback={<PageSkeleton>{skeleton}</PageSkeleton>}>
       <PageLoadBoundary>{node}</PageLoadBoundary>
     </Suspense>
   );
   return coordinate ? (
-    <CoordinatedLoadingBoundary>{content}</CoordinatedLoadingBoundary>
+    <CoordinatedLoadingBoundary fallback={skeleton}>
+      {content}
+    </CoordinatedLoadingBoundary>
   ) : (
     content
   );

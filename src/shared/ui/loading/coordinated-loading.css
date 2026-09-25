@@ -30,6 +30,26 @@
   justify-content: center;
   padding-block: clamp(20px, 8vh, 64px);
 }
+/* Skeletons occupy the SAME grid cell as the hidden work. They contribute to
+   layout immediately, even while the route chunk has not mounted. Never use
+   display:none on the real content: chart width measurement must keep working. */
+.hn-loading-boundary[data-loading-phase="loading"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.hn-loading-boundary[data-loading-phase="loading"] > .hn-loading-boundary__content,
+.hn-loading-boundary__cover--skeleton {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.hn-loading-boundary__cover--skeleton {
+  position: relative;
+  inset: auto;
+  display: block;
+  padding: 0;
+  width: 100%;
+}
 .hn-loading-boundary__cover > .hn-unified-loading {
   position: sticky;
   top: 24px;

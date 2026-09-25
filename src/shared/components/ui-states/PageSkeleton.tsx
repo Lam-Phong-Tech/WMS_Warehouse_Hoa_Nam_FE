@@ -1,7 +1,9 @@
-import { UnifiedLoading } from "@/shared/ui/loading/UnifiedLoading";
+import type { ReactNode } from "react";
+import { LoadingSkeleton } from "@/shared/ui/loading/LoadingSkeleton";
 import { useLoadingParticipant } from "@/shared/ui/loading/loading-context";
-/** Route chunks and API data share one loading surface; children remain mounted. */
-export function PageSkeleton() {
+
+/** The route chunk joins the same group as its API and chart preparation. */
+export function PageSkeleton({ children }: { children?: ReactNode }) {
   useLoadingParticipant(true);
-  return <UnifiedLoading minHeight={360} testId="ui-state-loading-skeleton" />;
+  return children ?? <LoadingSkeleton testId="ui-state-loading-skeleton" />;
 }
