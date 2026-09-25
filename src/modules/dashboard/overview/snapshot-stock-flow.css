@@ -1,3 +1,5 @@
+@import "./snapshot-main-grid.css";
+
 /* MAP-01 only. Do not inherit the old 760 x 238 SVG stretching rules. */
 .hn-stock-flow {
   --stock-flow-in: var(--ops-primary, #004e74);

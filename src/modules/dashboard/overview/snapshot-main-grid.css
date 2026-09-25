@@ -1,0 +1,64 @@
+/* MAP-01: a short priority list must not stretch with the taller stock chart.
+ * Keep the four articles in their existing DOM/focus order. The first track is
+ * content-sized; stock composition starts immediately below the priority card,
+ * while recent documents stay below the chart. Do not shrink the chart, cap the
+ * task list, invent filler items, or use negative offsets/JS height timers.
+ */
+.hn-dashboard-snapshot .snapshot-main-grid {
+  grid-template-rows: min-content minmax(0, 1fr) min-content;
+  align-items: start;
+}
+.hn-dashboard-snapshot .snapshot-main-grid > .snapshot-chart-card {
+  grid-column: 1;
+  grid-row: 1 / 3;
+}
+.hn-dashboard-snapshot .snapshot-main-grid > .snapshot-priority {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 0;
+  padding-bottom: 8px;
+  position: relative;
+}
+.hn-dashboard-snapshot .snapshot-main-grid > .snapshot-recent {
+  grid-column: 1;
+  grid-row: 3;
+}
+.hn-dashboard-snapshot .snapshot-main-grid > .snapshot-stock {
+  grid-column: 2;
+  grid-row: 2 / 4;
+}
+/* The legacy shimmer is absolute. Give it a real slot when the fixed card
+ * minimum is removed, rather than covering the heading or collapsing the card.
+ * It still participates in the existing page-wide loading presentation.
+ */
+.hn-dashboard-snapshot .snapshot-priority > .snapshot-list-loading {
+  position: relative;
+  inset: auto;
+  min-height: 160px;
+  margin-inline: 10px;
+  border-radius: 6px;
+}
+/* Reset BOTH coordinates when the existing dashboard switches to one column.
+ * Otherwise explicit column 2 silently creates an overflowing tablet column.
+ */
+@container hn-dash (max-width: 900px) {
+  .hn-dashboard-snapshot .snapshot-main-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-card {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+/* Also safe in an uncontained embed or a browser without container queries. */
+@media (max-width: 900px) {
+  .hn-dashboard-snapshot .snapshot-main-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-card {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
