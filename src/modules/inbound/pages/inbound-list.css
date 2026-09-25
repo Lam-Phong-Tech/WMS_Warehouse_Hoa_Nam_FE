@@ -123,6 +123,12 @@
   background: var(--in-primary);
   border: 1px solid var(--in-primary);
 }
+/* The neutral MUI rule above is more specific than the solid-action rule.
+   Keep Apply white in every enabled interaction state, without recoloring
+   disabled/loading controls or changing any other action on the page. */
+.hn-inbound-list .MuiButton-root.hn-inbound-apply:not(:disabled):not(.Mui-disabled) {
+  color: var(--wms-on-primary);
+}
 .hn-inbound-list .hn-inbound-create:hover,
 .hn-inbound-list .hn-inbound-apply:hover {
   background: var(--ops-primary-hover);
