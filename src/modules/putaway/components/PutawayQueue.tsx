@@ -502,7 +502,10 @@ export function PutawayQueue(props: Props) {
                         )}
                       </td>
                       <td className="ptw-action-col">
-                        <RowActionGroup justifyContent="center">
+                        {/* MUI 9 removed system props; alignment must be in sx. */}
+                        <RowActionGroup
+                          sx={{ justifyContent: "center", width: "100%" }}
+                        >
                           {row.draft_id ? (
                             <ActionDropdown
                               row
