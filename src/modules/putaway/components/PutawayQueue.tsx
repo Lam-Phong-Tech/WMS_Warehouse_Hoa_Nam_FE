@@ -502,7 +502,7 @@ export function PutawayQueue(props: Props) {
                         )}
                       </td>
                       <td className="ptw-action-col">
-                        <RowActionGroup>
+                        <RowActionGroup justifyContent="center">
                           {row.draft_id ? (
                             <ActionDropdown
                               row
