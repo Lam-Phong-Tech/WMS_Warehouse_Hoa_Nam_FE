@@ -1,97 +1,35 @@
 import { describe, expect, it } from "vitest";
-import {
-  loginSchema,
-  toLoginRequest,
-} from "@/modules/auth/schemas/login.schema";
-
-// Placeholder — không dùng credential seed/thật trong test theo pre-commit policy;
-// ghép chuỗi để không khớp heuristic "password = '...'" của hook secret-scan.
+import { loginSchema, toLoginRequest, USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH } from "./login.schema";
 const TEST_ONLY_PASSWORD = ["placeholder", "login", "pw"].join("-");
-
-describe("loginSchema — BE m1 auth identifier contract", () => {
-  it("accepts non-gmail business email and maps it to email payload", () => {
-    const values = loginSchema.parse({
-      identifier: "test-super-admin@gmail.com",
-      password: TEST_ONLY_PASSWORD,
-    });
-
-    expect(toLoginRequest(values)).toEqual({
-      email: "test-super-admin@gmail.com",
-      password: TEST_ONLY_PASSWORD,
-    });
+describe("TC_VAL_01 — UAT identifier contract (BE username support tracked separately)", () => {
+  it.each(["ADMIN", "admin", "warehouse-keeper-01", "operator.test_01"])("maps %s to username without changing case", (identifier) => {
+    expect(toLoginRequest(loginSchema.parse({ identifier, password: TEST_ONLY_PASSWORD })))
+      .toEqual({ username: identifier, password: TEST_ONLY_PASSWORD });
   });
-
-  it("rejects a bare username — email đầy đủ mới đăng nhập được", () => {
-    expect(
-      loginSchema.safeParse({
-        identifier: "admin",
-        password: TEST_ONLY_PASSWORD,
-      }).success,
-    ).toBe(false);
-    expect(
-      loginSchema.safeParse({
-        identifier: "warehouse-keeper-01",
-        password: TEST_ONLY_PASSWORD,
-      }).success,
-    ).toBe(false);
+  it.each(["operator@example.test", "Operator@Example.test"])("maps %s to email without changing case", (identifier) => {
+    expect(toLoginRequest(loginSchema.parse({ identifier, password: TEST_ONLY_PASSWORD })))
+      .toEqual({ email: identifier, password: TEST_ONLY_PASSWORD });
   });
-
-  it("accepts exact lowercase email and never silently fixes email casing", () => {
-    const values = loginSchema.parse({
-      identifier: " admin@gmail.com ",
-      password: TEST_ONLY_PASSWORD,
-    });
-
-    expect(toLoginRequest(values)).toEqual({
-      email: "admin@gmail.com",
-      password: TEST_ONLY_PASSWORD,
-    });
-    expect(
-      loginSchema.safeParse({
-        identifier: "admin@gmaiL.com",
-        password: TEST_ONLY_PASSWORD,
-      }).success,
-    ).toBe(false);
-    expect(
-      loginSchema.safeParse({
-        identifier: "Admin@gmail.com",
-        password: TEST_ONLY_PASSWORD,
-      }).success,
-    ).toBe(false);
+  it("trims the identifier, but never trims or changes the password", () => {
+    expect(toLoginRequest(loginSchema.parse({ identifier: " operator ", password: " Secret " })))
+      .toEqual({ username: "operator", password: " Secret " });
   });
-
-  it("does not impose password-strength rules on login", () => {
-    const shortPw = "x";
-    expect(
-      loginSchema.safeParse({
-        identifier: "admin@gmail.com",
-        password: shortPw,
-      }).success,
-    ).toBe(true);
+  it.each(["admin@", "admin@com", "admin@@example.test", "admin..test@example.test", "admin user@example.test"])("rejects malformed email %s", (identifier) => {
+    const result = loginSchema.safeParse({ identifier, password: TEST_ONLY_PASSWORD });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].message).toBe("Định dạng Email không hợp lệ");
   });
-
-  it("rejects malformed email", () => {
-    const anyPw = "abc";
-    expect(
-      loginSchema.safeParse({ identifier: "admin@", password: anyPw }).success,
-    ).toBe(false);
-    expect(
-      loginSchema.safeParse({
-        identifier: "admin@@gmail.com",
-        password: anyPw,
-      }).success,
-    ).toBe(false);
-    expect(
-      loginSchema.safeParse({
-        identifier: "admin..test@gmail.com",
-        password: anyPw,
-      }).success,
-    ).toBe(false);
-    expect(
-      loginSchema.safeParse({
-        identifier: "admin user@gmail.com",
-        password: anyPw,
-      }).success,
-    ).toBe(false);
+  it.each(["admin#123", "admin user", "admin/01"])("uses the username rule for %s", (identifier) => {
+    const result = loginSchema.safeParse({ identifier, password: TEST_ONLY_PASSWORD });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].message).toBe("Tên tài khoản không được chứa ký tự đặc biệt");
+  });
+  it("keeps login distinct from new-password strength validation", () => {
+    expect(loginSchema.safeParse({ identifier: "operator", password: "x" }).success).toBe(true);
+  });
+  it("rejects empty fields and excessive lengths", () => {
+    expect(loginSchema.safeParse({ identifier: "", password: "" }).success).toBe(false);
+    expect(loginSchema.safeParse({ identifier: "a".repeat(USERNAME_MAX_LENGTH + 1), password: "x" }).success).toBe(false);
+    expect(loginSchema.safeParse({ identifier: "operator", password: "x".repeat(PASSWORD_MAX_LENGTH + 1) }).success).toBe(false);
   });
 });
