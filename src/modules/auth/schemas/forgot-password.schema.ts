@@ -14,6 +14,7 @@ export function buildForgotPasswordEmailSchema(t: TranslateFn) {
     email: z
       .string()
       .trim()
+      .toLowerCase()
       .min(1, t("auth.validation.emailRequired"))
       .max(EMAIL_MAX_LENGTH, t("auth.validation.emailTooLong"))
       .email(t("auth.validation.emailInvalid")),

@@ -13,7 +13,6 @@ import type {
   SwitchContextRequest,
   SwitchContextResponse,
   VerifyOtpRequest,
-  VerifyOtpResponse,
 } from "@/modules/auth/types/auth.types";
 import type { MeContext, MeResponse } from "@/modules/auth/types/me.types";
 import type {
@@ -23,6 +22,7 @@ import type {
 } from "@/modules/auth/types/mfa.types";
 import type { User, UserRoleAssignment } from "@/shared/types/user";
 import { tStatic } from "@/shared/i18n/useT";
+import { passwordRecoveryService } from "./password-recovery.service";
 
 export class AuthContractError extends Error {
   readonly field: string;
@@ -384,22 +384,15 @@ export const authService = {
 
   /** Cũng dùng để "Gửi lại mã" — gọi lại chính request này, BE không có endpoint resend riêng. */
   forgotPassword(data: ForgotPasswordRequest) {
-    return http.post<null>(API_ENDPOINTS.FORGOT_PASSWORD, data);
+    return passwordRecoveryService.forgotPassword(data);
   },
 
   async verifyOtp(data: VerifyOtpRequest) {
-    const response = await http.post<VerifyOtpResponse>(
-      API_ENDPOINTS.VERIFY_OTP,
-      data,
-    );
-    return {
-      ...response,
-      reset_token: requireNonEmptyString(response.reset_token, "reset_token"),
-    };
+    return passwordRecoveryService.verifyOtp(data);
   },
 
   resetPassword(data: ResetPasswordRequest) {
-    return http.post<null>(API_ENDPOINTS.RESET_PASSWORD, data);
+    return passwordRecoveryService.resetPassword(data);
   },
 };
 
