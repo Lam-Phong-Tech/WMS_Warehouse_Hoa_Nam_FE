@@ -44,6 +44,8 @@ function CoordinatedChart({
   const currentCycle = useRef<object | null>(null);
   const hasRendered = useRef(false);
   const cycle = useMemo(() => {
+    // The helper only captures this ref; it reads and writes current after commit.
+    // eslint-disable-next-line react-hooks/refs
     const acknowledgement = createChartRenderCycle(controller, id, currentCycle);
     return {
       acknowledgement,

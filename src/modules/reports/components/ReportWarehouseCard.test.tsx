@@ -11,10 +11,8 @@ const directory = vi.hoisted(() => ({
 vi.mock("@/shared/data/reference-queries", () => ({
   useWarehouseDirectory: () => directory,
 }));
-import {
-  ReportWarehouseCard,
-  resolveReportWarehouse,
-} from "./ReportWarehouseCard";
+import { ReportWarehouseCard } from "./ReportWarehouseCard";
+import { resolveReportWarehouse } from "./report-warehouse";
 const warehouse = {
   id: 1,
   code: "KHO-TONG-HN",

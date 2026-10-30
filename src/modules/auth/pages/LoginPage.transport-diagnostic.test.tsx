@@ -26,8 +26,8 @@ describe("AUTH UAT — transport banners, no diagnostic leaks and no password re
     useAuthStore.getState().logout(); useAuthStore.setState({ isBootstrapped: true });
   });
   afterEach(() => { vi.restoreAllMocks(); rememberLoginThrottle(null); });
-  it.each([failure(500), failure(503), { isAxiosError: true, code: "ERR_NETWORK", message: "ERR_NETWORK/network", wmsTransport: { summary: "PRIVATE_TECHNICAL_DETAILS" } }])
-    ("TC_UI_LOGIN_08: shows the service banner and retry, without automatically resending", async (error) => {
+  it.each([failure(500), failure(503), { isAxiosError: true, code: "ERR_NETWORK", message: "ERR_NETWORK/network", wmsTransport: { summary: "PRIVATE_TECHNICAL_DETAILS" } }])(
+    "TC_UI_LOGIN_08: shows the service banner and retry, without automatically resending", async (error) => {
       vi.mocked(authService.login).mockRejectedValue(error);
       renderLogin(); await fill(); await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
       const alert = await screen.findByRole("alert");
