@@ -2024,14 +2024,13 @@
 }
 
 /*
- * Màn hình desktop hẹp (1366–1599px) vẫn có sidebar 276px, vì vậy vùng nội
- * dung thực tế không đủ cho bốn cột lọc có min-width của bản desktop rộng.
- * Chuyển riêng bộ lọc thành hai cột để không tạo cuộn ngang hoặc ép chữ.
+ * Trên desktop hẹp, bốn trường lọc vẫn nằm cùng hàng. Nhóm hai ngày chiếm
+ * khoảng hai phần; nút thao tác xuống hàng dưới để các ô không bị ép chữ.
  */
 @media (max-width: 1599px) and (min-width: 1366px) {
   .inbound-filter-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px 20px;
+    grid-template-columns: minmax(0, 2.1fr) repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
   }
 
   .inbound-filter-field--date {
@@ -2045,19 +2044,19 @@
   }
 
   .inbound-filter-field[data-filter="status"] {
-    grid-column: 1;
-    grid-row: 2;
+    grid-column: 3;
+    grid-row: 1;
   }
 
   .inbound-filter-actions {
-    grid-column: 2;
+    grid-column: 2 / 4;
     grid-row: 2;
     justify-content: flex-end;
   }
 
   .inbound-filter-note {
-    grid-column: 1 / -1;
-    grid-row: 3;
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .inbound-kpi {
@@ -2709,7 +2708,7 @@
   }
 }
 
-@media (min-width: 980px) and (max-width: 1599px) {
+@media (min-width: 980px) and (max-width: 1365px) {
   .inbound-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px 16px;
