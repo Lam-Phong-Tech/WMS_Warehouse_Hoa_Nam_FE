@@ -35,6 +35,7 @@ const { useWarehouseDirectory } = vi.hoisted(() => ({
 vi.mock("@/shared/data/reference-queries", () => ({ useWarehouseDirectory }));
 
 import { WarehouseConfigScreen } from "@/modules/master-data/pages/WarehouseConfigScreen";
+import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 
 const WAREHOUSE = {
@@ -76,7 +77,7 @@ function setup({
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[ROUTES.WAREHOUSE_CONFIG]}>
         <WarehouseConfigScreen />
       </MemoryRouter>
     </QueryClientProvider>,

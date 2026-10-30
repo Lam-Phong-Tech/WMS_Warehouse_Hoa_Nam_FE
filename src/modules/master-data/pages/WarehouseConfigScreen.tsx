@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AppPageHeader } from "@/app/layouts/AppPageHeader";
 import "@/shared/ui/sku-aligned-settings.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateMasterDerived } from "@/shared/cache/invalidation";
@@ -319,18 +320,20 @@ export function WarehouseConfigScreen() {
         className="hn-settings-screen hn-warehouse-settings"
         sx={{ width: "100%" }}
       >
-        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-          <ActionButton
-            className="hn-settings-primary"
-            kind="save"
-            onClick={() => void handleSubmit()}
-            disabled={!canManage || !resolvedId || saveMutation.isPending}
-          >
-            {saveMutation.isPending
-              ? t("masterData.common.saving")
-              : t("masterData.warehouse.submit")}
-          </ActionButton>
-        </Box>
+        <AppPageHeader
+          actions={
+            <ActionButton
+              className="hn-settings-primary"
+              kind="save"
+              onClick={() => void handleSubmit()}
+              disabled={!canManage || !resolvedId || saveMutation.isPending}
+            >
+              {saveMutation.isPending
+                ? t("masterData.common.saving")
+                : t("masterData.warehouse.submit")}
+            </ActionButton>
+          }
+        />
 
         <UiAlert
           tone="info"

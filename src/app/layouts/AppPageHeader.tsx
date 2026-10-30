@@ -15,6 +15,7 @@
  * 1:1 từ mockup) thì `MainLayout` không render component này để tránh hai tiêu
  * đề chồng nhau — danh sách nằm ở `ROUTES_WITH_OWN_HEADER`.
  */
+import type { ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { Box, Stack, UiStatusBadge, SEMANTIC_LIGHT as S } from "@/shared/ui";
 import { TYPOGRAPHY } from "@/shared/ui/tokens";
@@ -62,7 +63,7 @@ function resolveScreenId(pathname: string, search: string): string | null {
   return null;
 }
 
-export function AppPageHeader() {
+export function AppPageHeader({ actions }: { actions?: ReactNode }) {
   const location = useLocation();
   const navLabel = useNavLabel();
   const language = useLanguageStore((s) => s.language);
@@ -92,13 +93,30 @@ export function AppPageHeader() {
   // rỗng nghĩa, để chính trang tự nói nó là gì.
   if (meta === UNKNOWN_SCREEN_META) return null;
 
+  const contextBadges =
+    scopeLabel || roleLabel ? (
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
+      >
+        {scopeLabel ? (
+          <UiStatusBadge tone="primary" label={scopeLabel} />
+        ) : null}
+        {roleLabel ? <UiStatusBadge tone="neutral" label={roleLabel} /> : null}
+      </Stack>
+    ) : null;
+
   return (
     <Box
       component="section"
       aria-labelledby="hn-page-title"
       sx={{
         display: "flex",
-        alignItems: { xs: "flex-start", md: "flex-end" },
+        alignItems: {
+          xs: "flex-start",
+          md: actions ? "flex-start" : "flex-end",
+        },
         justifyContent: "space-between",
         flexWrap: "wrap",
         gap: 1.5,
@@ -143,20 +161,22 @@ export function AppPageHeader() {
           {meta.description}
         </Box>
       </Box>
-      {scopeLabel || roleLabel ? (
+      {actions ? (
         <Stack
-          direction="row"
-          spacing={1}
-          sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
+          spacing={1.5}
+          sx={{
+            alignItems: "flex-end",
+            minWidth: 0,
+            maxWidth: "100%",
+            ml: "auto",
+          }}
         >
-          {scopeLabel ? (
-            <UiStatusBadge tone="primary" label={scopeLabel} />
-          ) : null}
-          {roleLabel ? (
-            <UiStatusBadge tone="neutral" label={roleLabel} />
-          ) : null}
+          {contextBadges}
+          {actions}
         </Stack>
-      ) : null}
+      ) : (
+        contextBadges
+      )}
     </Box>
   );
 }
