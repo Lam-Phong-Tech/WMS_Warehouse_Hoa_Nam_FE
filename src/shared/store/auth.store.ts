@@ -117,23 +117,31 @@ export const useAuthStore = create<AuthState>()(
         lastAppliedMe = me;
 
         const { active_context, available_contexts, ...profile } = me;
+        const sameIdentity = String(get().user?.id) === String(me.id);
         const isSuperAdmin =
           me.is_super_admin ??
           me.roles.some((role) => role.role_code === "SUPER_ADMIN");
         const currentContext =
           active_context ??
-          get().currentContext ??
+          (sameIdentity ? get().currentContext : null) ??
           available_contexts[0] ??
           null;
 
         set({
+          // Only authenticated server data restores identity. The persisted
+          // cookie is an optional hint and can be absent or exceed its limit.
+          user: profile,
           profile,
           currentContext,
           // BE m1 trả permission ở top-level /auth/me, không theo active_context.
           permissionCodes: me.permissions,
           isSuperAdmin,
           contexts:
-            available_contexts.length > 0 ? available_contexts : get().contexts,
+            available_contexts.length > 0
+              ? available_contexts
+              : sameIdentity
+                ? get().contexts
+                : [],
           isProfileLoaded: true,
         });
       },
