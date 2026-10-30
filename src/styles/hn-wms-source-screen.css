@@ -889,7 +889,8 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
   outline-offset: 1px;
 }
 
-/* SKU/product and warranty-component text must never paint into neighboring columns. */
+/* Warranty identifiers and product/component text stay inside their own columns. */
+[data-report-screen="RPT-06"] table td.warranty-case-cell,
 [data-report-screen="RPT-06"] table td.warranty-sku-cell,
 [data-report-screen="RPT-06"] table td:has(> .warranty-component-cell) {
   min-width: 0;
@@ -898,12 +899,10 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
 }
 
 [data-report-screen="RPT-06"] .warranty-sku-cell > *,
+[data-report-screen="RPT-06"] .warranty-case-cell > *,
 [data-report-screen="RPT-06"] .warranty-component-cell {
-  min-width: 0;
-  max-width: 100%;
-}
-
-[data-report-screen="RPT-06"] .warranty-component-cell {
+  display: block;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;

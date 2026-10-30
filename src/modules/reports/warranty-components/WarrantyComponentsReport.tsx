@@ -1311,11 +1311,15 @@ export default function WarrantyComponentsReport() {
                               }
                             />
                           </td>
-                          <td>
-                            <Box sx={{ color: C.navy, fontWeight: 800 }}>
+                          <td className="warranty-case-cell">
+                            <Box
+                              title={row.caseNo}
+                              sx={{ color: C.navy, fontWeight: 800 }}
+                            >
                               {row.caseNo}
                             </Box>
                             <Box
+                              title={row.serial}
                               sx={{
                                 mt: 0.08,
                                 color: "var(--ops-link)",
