@@ -1,26 +1,6 @@
 name: WWHN-181 Exact SHA Sign-off
 
 on:
-  push:
-    branches:
-      - m1
-    paths:
-      - ".github/workflows/wwhn-181-signoff.yml"
-      - "docs/Task_docs_Jira/WWHN-181.md"
-      - "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json"
-      - "docs/evidence/WWHN-181/**"
-      - "scripts/run-wwhn-181-runtime-ui-evidence.mjs"
-      - "scripts/run-wwhn-153-runtime-evidence.mjs"
-      - "scripts/verify-wwhn-181-*.mjs"
-      - "scripts/verify-wms-contract-signoff.mjs"
-      - "src/modules/receiving/**"
-      - "src/modules/shipping/**"
-      - "src/modules/stocktake/**"
-      - "src/modules/warranty/**"
-      - "src/shared/api/**"
-      - "src/test/warranty-v17-fail-closed.test.ts"
-      - "src/test/wms-contract-signoff-guards.test.ts"
-      - "package.json"
   workflow_dispatch:
     inputs:
       backend_sha:

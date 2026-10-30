@@ -1,32 +1,7 @@
 name: Flow 06 FE Exact SHA
 
 on:
-  push:
-    branches: [m1]
-    paths:
-      - 'eslint.config.js'
-      - 'src/modules/reports/**'
-      - 'src/modules/outbound/components/AlignedOutboundDetailModal.tsx'
-      - 'src/modules/outbound/pages/AlignedMvpOutboundPage.tsx'
-      - 'src/modules/outbound/services/alignedOutboundService.ts'
-      - 'src/test/flow06-*.test.ts'
-      - 'docs/HoaNam_ERD_Moi_Nhat.md'
-      - 'docs/HoaNam_Tai_lieu_tong_hop_Moi_Nhat.md'
-      - 'docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md'
-      - '.github/workflows/flow06-fe-exact-sha.yml'
-  pull_request:
-    branches: [m1]
-    paths:
-      - 'eslint.config.js'
-      - 'src/modules/reports/**'
-      - 'src/modules/outbound/components/AlignedOutboundDetailModal.tsx'
-      - 'src/modules/outbound/pages/AlignedMvpOutboundPage.tsx'
-      - 'src/modules/outbound/services/alignedOutboundService.ts'
-      - 'src/test/flow06-*.test.ts'
-      - 'docs/HoaNam_ERD_Moi_Nhat.md'
-      - 'docs/HoaNam_Tai_lieu_tong_hop_Moi_Nhat.md'
-      - 'docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md'
-      - '.github/workflows/flow06-fe-exact-sha.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read

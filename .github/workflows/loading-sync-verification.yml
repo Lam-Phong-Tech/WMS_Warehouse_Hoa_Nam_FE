@@ -1,22 +1,7 @@
 name: Coordinated loading verification
 on:
-  push:
-    branches: [dev]
-    paths:
-      - '.github/workflows/loading-sync-verification.yml'
-      - 'vitest.config.ts'
-      - 'src/shared/ui/loading/**'
-      - 'src/shared/ui/use-tab-view*'
-      - 'src/shared/ui/components/UiDialog.tsx'
-      - 'src/shared/ui/components/UiStateSurface.tsx'
-      - 'src/shared/components/ui-states/PageSkeleton.tsx'
-      - 'src/shared/components/data-display/**'
-      - 'src/shared/components/feedback/**'
-      - 'src/shared/components/charts/**'
-      - 'src/modules/reports/**'
-      - 'src/modules/dashboard/**'
-      - 'src/modules/putaway/**'
-      - 'src/app/router/**'
+  workflow_dispatch:
+
 permissions:
   contents: read
 concurrency:

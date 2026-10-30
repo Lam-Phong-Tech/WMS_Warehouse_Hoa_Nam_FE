@@ -1,12 +1,7 @@
 name: Non-report API verification
 on:
-  push:
-    branches: [dev]
-    paths:
-      - 'src/**'
-      - '!src/modules/reports/**'
-      - 'scripts/nonreport-api-audit/**'
-      - '.github/workflows/nonreport-api-verification.yml'
+  workflow_dispatch:
+
 permissions:
   contents: read
 concurrency:

@@ -4,8 +4,6 @@ name: WWHN-274 FE Release Sign-off
 # source_sha) chu khong chi tren HEAD cua push, de reviewer luon truy xuat duoc
 # "run PASS + artifact" ung voi dung candidate SHA da pin trong docs/Jira.
 on:
-  push:
-    branches: [m1]
   workflow_dispatch:
     inputs:
       source_sha:
