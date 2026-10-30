@@ -851,7 +851,6 @@ export default function InventoryPage() {
                   borderBottom: "1px solid var(--inv-line)",
                 }}
                 rowKey={(row) => row.id}
-                maxBodyHeight="clamp(280px, 52dvh, 640px)"
                 columns={balanceColumns}
                 rows={balances}
                 loading={balanceQuery.isLoading || balanceQuery.isFetching}
@@ -881,7 +880,6 @@ export default function InventoryPage() {
                 }}
                 actionColumnWidth={128}
                 rowKey={(row) => row.id}
-                maxBodyHeight="clamp(280px, 52dvh, 640px)"
                 columns={movementColumns}
                 rows={movements}
                 loading={movementQuery.isLoading || movementQuery.isFetching}
