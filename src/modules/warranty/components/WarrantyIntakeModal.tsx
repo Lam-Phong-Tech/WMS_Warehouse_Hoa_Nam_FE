@@ -1,5 +1,5 @@
 import "./warranty-dialog.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -7,13 +7,17 @@ import {
   Box,
   FormControlLabel,
   Grid,
+  InfoIcon,
   Radio,
   SEMANTIC_LIGHT,
   Stack,
+  Tooltip,
   UiAddressField,
   UiAlert,
   UiDialog,
   UiFormAutocomplete,
+  UiIconButton,
+  UiSelect,
   UiStatusBadge,
   UiText,
   UiTextField,
@@ -26,6 +30,7 @@ import {
 import {
   extractFieldErrorsRaw,
   getApiErrorMessage,
+  normalizeError,
   resolveFormErrors,
 } from "@/shared/api/api-error";
 import { ACTION_ICON_COLORS } from "@/shared/theme/actionIconColors";
@@ -76,6 +81,7 @@ import {
 
 /** BE create case: item_code maxLength 200 (OpenAPI SCR-WAR-01). */
 const ITEM_CODE_MAX_LENGTH = 200;
+const INTAKE_ERROR_TOAST_ID = "warranty-intake-error";
 /** Mô tả bệnh/lỗi mới: dùng chung trần văn bản tự do 2000 (BE không giới hạn). */
 const DEFECT_DESCRIPTION_MAX_LENGTH = 2000;
 
@@ -362,10 +368,24 @@ export function WarrantyIntakeModal({
       );
     }
   };
-  // Change Pack QR/SKU (guide §13 WAR-02): quét raw QR -> classify(WARRANTY) ->
-  // tự điền item/SKU; classify cần warehouse_id (REQ-SRS-001: một kho ACTIVE).
+  // Web intake records explicit warehouse ownership for both identification paths.
+  // A singleton lookup is not confirmation: the operator must select and confirm it.
   const warehousesQuery = useActiveWarehouses({ enabled: open });
-  const warehouse = warehousesQuery.data?.[0];
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
+  const [confirmedWarehouseId, setConfirmedWarehouseId] = useState("");
+  const warehouseOptions = (warehousesQuery.data ?? []).map((row) => ({
+    value: String(row.id),
+    label: [row.code ?? row.warehouse_code, row.name ?? row.warehouse_name]
+      .filter(Boolean)
+      .join(" · "),
+  }));
+  const warehouse =
+    !warehousesQuery.isError && selectedWarehouseId === confirmedWarehouseId
+      ? warehousesQuery.data?.find(
+          (row) => String(row.id) === confirmedWarehouseId,
+        )
+      : undefined;
+  const scanResolutionVersion = useRef(0);
   const [resolvedItem, setResolvedItem] = useState<{
     skuCode?: string;
     itemUnique?: string;
@@ -380,6 +400,7 @@ export function WarrantyIntakeModal({
    * đối không auto-switch (guide §13: "không auto-switch silent").
    */
   const resolveScannedCode = async (rawCode: string) => {
+    const version = ++scanResolutionVersion.current;
     const code = rawCode.trim();
     if (!code) return;
     setItemCode(code);
@@ -392,6 +413,7 @@ export function WarrantyIntakeModal({
         context: "WARRANTY_RECEIVE",
         warehouse_id: String(warehouse.id),
       });
+      if (version !== scanResolutionVersion.current) return;
       setItemCode(classified.normalized_code_value || code);
       setResolvedItem({
         skuCode: classified.sku_code,
@@ -399,6 +421,7 @@ export function WarrantyIntakeModal({
         objectStatus: classified.object_status,
       });
     } catch (error) {
+      if (version !== scanResolutionVersion.current) return;
       setResolveError(
         getApiErrorMessage(error, t("warranty.intake.qrUnresolved")),
       );
@@ -532,6 +555,10 @@ export function WarrantyIntakeModal({
   };
 
   const resetForm = () => {
+    toast.dismiss(INTAKE_ERROR_TOAST_ID);
+    setSelectedWarehouseId("");
+    setConfirmedWarehouseId("");
+    scanResolutionVersion.current++;
     setIdentificationType("IDENTIFIED");
     setItemCode("");
     setMissingCodeReason("");
@@ -555,6 +582,12 @@ export function WarrantyIntakeModal({
 
   const submit = async () => {
     setFormError(null);
+    if (!warehouse?.id) {
+      const message = t("warranty.intake.errWarehouse");
+      setFieldErrors({ warehouse: message });
+      setFormError(message);
+      return;
+    }
     // Kiểm tra định dạng từng ô trước, gom hết lỗi rồi mới dừng — người dùng
     // thấy mọi ô sai một lượt thay vì sửa từng lỗi qua banner.
     const errors: Record<string, string> = {};
@@ -612,6 +645,7 @@ export function WarrantyIntakeModal({
 
     try {
       const created = await createMutation.mutateAsync({
+        warehouse_id: String(warehouse.id),
         identification_type: identificationType,
         item_code: itemCode.trim() || undefined,
         missing_code_reason: missingCodeReason.trim() || undefined,
@@ -641,16 +675,33 @@ export function WarrantyIntakeModal({
       resetForm();
       onCreated(created);
     } catch (error: unknown) {
-      // Toast ngắn đã hiện qua onError của createMutation (use-warranty.ts).
-      // Ở đây chỉ dựng banner lỗi CỐ ĐỊNH trong form — kèm chi tiết từng field
-      // sai (hữu ích hơn khi đọc trong banner so với nhét vào một dòng toast).
+      // Keep the banner and toast consistent, including against older backend copy.
       // Không kèm request_id: đó là mã tra cứu kỹ thuật, người dùng đọc không
       // hiểu (xem ApiErrorAlert.tsx — request_id chỉ hiện ở dòng phụ có nhãn).
       const fieldErrors = extractFieldErrorsRaw(error);
-      const errorMsg = `${getApiErrorMessage(error, t("warranty.error.createCase"))}${
-        fieldErrors ? ` (${Object.values(fieldErrors).flat().join("; ")})` : ""
-      }`;
+      const { code } = normalizeError(error);
+      const intakeMessages: Record<string, string> = {
+        WAREHOUSE_CONTEXT_REQUIRED: t("warranty.intake.errWarehouse"),
+        WAREHOUSE_CONTEXT_MISMATCH: t("warranty.intake.errWarehouseMismatch"),
+        WARRANTY_ITEM_NOT_FOUND: t("warranty.intake.errItemNotFound"),
+        WARRANTY_ITEM_NOT_ELIGIBLE: t("warranty.intake.errItemNotEligible"),
+        ACTIVE_WARRANTY_EXISTS: t("warranty.intake.errActiveCase"),
+      };
+      if (
+        code === "WAREHOUSE_CONTEXT_REQUIRED" ||
+        code === "WAREHOUSE_CONTEXT_MISMATCH"
+      ) {
+        setConfirmedWarehouseId("");
+      }
+      const errorMsg =
+        intakeMessages[code ?? ""] ??
+        `${getApiErrorMessage(error, t("warranty.error.createCase"))}${
+          fieldErrors
+            ? ` (${Object.values(fieldErrors).flat().join("; ")})`
+            : ""
+        }`;
       setFormError(errorMsg);
+      toast.error(errorMsg, { id: INTAKE_ERROR_TOAST_ID });
     }
   };
 
@@ -662,7 +713,25 @@ export function WarrantyIntakeModal({
   const changeIdentificationType = (
     value: WarrantyIdentificationType | null,
   ) => {
-    if (value) setIdentificationType(value);
+    if (!value || value === identificationType) return;
+    setIdentificationType(value);
+    toast.dismiss(INTAKE_ERROR_TOAST_ID);
+    setFormError(null);
+    setFieldErrors({});
+    setResolveError(null);
+    setResolvedItem(null);
+    scanResolutionVersion.current++;
+  };
+
+  const changeWarehouse = (value: string) => {
+    toast.dismiss(INTAKE_ERROR_TOAST_ID);
+    setSelectedWarehouseId(value);
+    setConfirmedWarehouseId("");
+    setFormError(null);
+    clearFieldError("warehouse");
+    setResolvedItem(null);
+    setResolveError(null);
+    scanResolutionVersion.current++;
   };
 
   return (
@@ -704,6 +773,78 @@ export function WarrantyIntakeModal({
       <Stack spacing={2}>
         {formError ? <UiAlert tone="error">{formError}</UiAlert> : null}
 
+        <Stack spacing={1}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            sx={{ alignItems: { sm: "flex-start" } }}
+          >
+            <UiSelect
+              required
+              fullWidth
+              label={t("warranty.intake.warehouse")}
+              placeholder={t("warranty.intake.warehousePlaceholder")}
+              value={selectedWarehouseId}
+              options={warehouseOptions}
+              onChange={changeWarehouse}
+              disabled={
+                busy || warehousesQuery.isPending || warehousesQuery.isError
+              }
+              error={Boolean(fieldErrors.warehouse)}
+              helperText={
+                fieldErrors.warehouse ?? t("warranty.intake.warehouseHint")
+              }
+            />
+            <ActionButton
+              kind="confirm"
+              disabled={
+                busy ||
+                !selectedWarehouseId ||
+                Boolean(warehouse) ||
+                warehousesQuery.isPending ||
+                warehousesQuery.isError
+              }
+              onClick={() => {
+                setConfirmedWarehouseId(selectedWarehouseId);
+                toast.dismiss(INTAKE_ERROR_TOAST_ID);
+                setFormError(null);
+                clearFieldError("warehouse");
+              }}
+              sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
+            >
+              {t("warranty.intake.confirmWarehouse")}
+            </ActionButton>
+          </Stack>
+          {warehousesQuery.isPending ? (
+            <UiText variant="caption">
+              {t("warranty.intake.warehousesLoading")}
+            </UiText>
+          ) : warehousesQuery.isError ? (
+            <UiAlert tone="error">
+              {t("warranty.intake.warehousesLoadError")}
+              <ActionButton
+                kind="refresh"
+                onClick={() => void warehousesQuery.refetch()}
+                disabled={warehousesQuery.isFetching}
+              >
+                {t("common.retry")}
+              </ActionButton>
+            </UiAlert>
+          ) : warehouseOptions.length === 0 ? (
+            <UiAlert tone="warning">{t("warranty.intake.noWarehouse")}</UiAlert>
+          ) : null}
+          {warehouse ? (
+            <UiAlert tone="success">
+              {t("warranty.intake.warehouseConfirmed", {
+                warehouse:
+                  warehouseOptions.find(
+                    (option) => option.value === confirmedWarehouseId,
+                  )?.label ?? "",
+              })}
+            </UiAlert>
+          ) : null}
+        </Stack>
+
         <Box>
           <Box sx={{ mb: 0.5 }}>
             <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
@@ -723,6 +864,7 @@ export function WarrantyIntakeModal({
                   name="warranty-intake-identification-type"
                   value="IDENTIFIED"
                   checked={identificationType === "IDENTIFIED"}
+                  disabled={busy}
                   onChange={() => changeIdentificationType("IDENTIFIED")}
                 />
               }
@@ -735,6 +877,7 @@ export function WarrantyIntakeModal({
                   name="warranty-intake-identification-type"
                   value="TEMP_ONLY"
                   checked={identificationType === "TEMP_ONLY"}
+                  disabled={busy}
                   onChange={() => changeIdentificationType("TEMP_ONLY")}
                 />
               }
@@ -771,10 +914,31 @@ export function WarrantyIntakeModal({
           </>
         ) : (
           <Box>
-            <Box sx={{ mb: 0.5 }}>
+            <Box
+              sx={{ mb: 0.5, display: "flex", alignItems: "center", gap: 0.5 }}
+            >
               <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
                 {t("warranty.intake.itemCode")}
               </UiText>
+              <Tooltip
+                title={t("warranty.intake.itemCodeNotice")}
+                arrow
+                describeChild
+                slotProps={{
+                  tooltip: {
+                    sx: { maxWidth: 440, fontSize: 13, lineHeight: 1.6 },
+                  },
+                }}
+              >
+                <UiIconButton
+                  type="button"
+                  size="small"
+                  aria-label={t("warranty.intake.itemCodeNoticeLabel")}
+                  sx={{ p: 0.25, color: SEMANTIC_LIGHT.textMedium }}
+                >
+                  <InfoIcon style={{ fontSize: 16 }} />
+                </UiIconButton>
+              </Tooltip>
             </Box>
             <Stack
               direction="row"
@@ -790,6 +954,7 @@ export function WarrantyIntakeModal({
                   autoFocus
                   placeholder={t("warranty.intake.itemCodePlaceholder")}
                   onChange={(value) => {
+                    scanResolutionVersion.current++;
                     setItemCode(value);
                     setResolvedItem(null);
                     setResolveError(null);

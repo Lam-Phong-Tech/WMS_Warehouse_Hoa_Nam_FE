@@ -321,6 +321,7 @@ export function WarehouseConfigScreen() {
         sx={{ width: "100%" }}
       >
         <AppPageHeader
+          showEyebrow={false}
           actions={
             <ActionButton
               className="hn-settings-primary"
@@ -334,13 +335,6 @@ export function WarehouseConfigScreen() {
             </ActionButton>
           }
         />
-
-        <UiAlert
-          tone="info"
-          title={t("masterData.warehouse.singleWarehouseTitle")}
-        >
-          {t("masterData.warehouse.singleWarehouseBody")}
-        </UiAlert>
 
         {listError ? <UiAlert tone="error">{listError}</UiAlert> : null}
         {detailError ? <UiAlert tone="error">{detailError}</UiAlert> : null}

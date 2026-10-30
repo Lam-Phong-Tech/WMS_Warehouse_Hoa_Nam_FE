@@ -253,7 +253,11 @@ export function MainLayout() {
            * Cấu hình kho, vì chỗ người dùng gặp lỗi 409 lại là màn nhập/xuất/bảo hành.
            */}
           <WarehousePausedBanner />
-          {ownsHeader ? null : <AppPageHeader />}
+          {ownsHeader ? null : (
+            <AppPageHeader
+              showEyebrow={location.pathname !== ROUTES.IAM_USERS}
+            />
+          )}
           {/*
            * Trang KHÔNG keep-alive: key theo pathname + ?screen= → remount chạy lại
            * hiệu ứng chuyển màn (hn-page-transition). KHÔNG đưa cả search vào key:

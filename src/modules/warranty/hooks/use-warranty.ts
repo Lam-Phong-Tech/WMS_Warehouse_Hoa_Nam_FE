@@ -183,9 +183,9 @@ function useInvalidateWarrantyMutation<TVariables, TResult>(
 }
 
 export function useCreateWarrantyCase() {
-  return useInvalidateWarrantyMutation(
-    (payload: CreateWarrantyCaseRequest) => createWarrantyCase(payload),
-    "warranty.error.createCase",
+  // The intake form owns its error toast so changing the intake type can dismiss it.
+  return useInvalidateWarrantyMutation((payload: CreateWarrantyCaseRequest) =>
+    createWarrantyCase(payload),
   );
 }
 

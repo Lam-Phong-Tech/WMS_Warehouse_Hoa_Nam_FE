@@ -1,9 +1,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const markAllRead = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
+
 vi.mock("@/modules/notifications/hooks/useNotifications", () => ({
+  useMarkAllNotificationsRead: () => markAllRead,
   useUnreadCountQuery: vi.fn(),
   useNotificationsQuery: () => ({
     data: { data: [] },
@@ -16,6 +25,7 @@ import { AppTopbar } from "./AppTopbar";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { useThemeStore } from "@/shared/ui/theme/theme.store";
+import { useNotificationStore } from "@/shared/store/notification.store";
 import { MESSAGES_VI } from "@/shared/i18n/messages";
 import { MESSAGES_EN } from "@/shared/i18n/messages.en";
 
@@ -39,6 +49,9 @@ function renderTopbar() {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks();
+  markAllRead.isPending = false;
+  useNotificationStore.getState().reset();
   useAuthStore.setState({
     isProfileLoaded: true,
     isSuperAdmin: true,
@@ -138,6 +151,58 @@ describe("AppTopbar", () => {
     expect(useThemeStore.getState().mode).toBe("dark");
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(localStorage.getItem("hoa-nam-theme")).toBe("dark");
+  });
+
+  it("icon đánh dấu tất cả đã đọc gọi mutation và giữ bảng thông báo mở", () => {
+    useNotificationStore.getState().setUnreadCount(24);
+    renderTopbar();
+    fireEvent.click(screen.getByRole("button", { name: "Thông báo, 24" }));
+    const markReadButton = screen.getByRole("menuitem", {
+      name: "Đánh dấu tất cả đã đọc",
+    });
+
+    expect(markReadButton).toHaveAttribute("title", "Đánh dấu tất cả đã đọc");
+    expect(markReadButton).toBeEnabled();
+    fireEvent.click(markReadButton);
+
+    expect(markAllRead.mutate).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("button", { name: "Thông báo, 24" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    // The existing mutation updates this shared count after the API succeeds.
+    act(() => useNotificationStore.getState().setUnreadCount(0));
+    expect(markReadButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Thông báo" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  it("khóa icon khi không còn thông báo chưa đọc", () => {
+    renderTopbar();
+    fireEvent.click(screen.getByRole("button", { name: "Thông báo" }));
+    const markReadButton = screen.getByRole("menuitem", {
+      name: "Đánh dấu tất cả đã đọc",
+    });
+
+    expect(markReadButton).toBeDisabled();
+    fireEvent.click(markReadButton);
+    expect(markAllRead.mutate).not.toHaveBeenCalled();
+  });
+
+  it("khóa icon trong khi đang gửi yêu cầu để tránh bấm lặp", () => {
+    useNotificationStore.getState().setUnreadCount(3);
+    markAllRead.isPending = true;
+    renderTopbar();
+    fireEvent.click(screen.getByRole("button", { name: "Thông báo, 3" }));
+    const markReadButton = screen.getByRole("menuitem", {
+      name: "Đánh dấu tất cả đã đọc",
+    });
+
+    expect(markReadButton).toBeDisabled();
+    expect(markReadButton).toHaveAttribute("aria-busy", "true");
+    fireEvent.click(markReadButton);
+    expect(markAllRead.mutate).not.toHaveBeenCalled();
   });
 });
 

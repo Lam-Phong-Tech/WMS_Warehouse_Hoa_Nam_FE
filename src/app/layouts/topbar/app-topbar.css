@@ -592,6 +592,32 @@
 }
 
 /* ── thông báo ──────────────────────────────────────────────────────────── */
+.hn-topbar .notification-menu-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+}
+.hn-topbar .notification-mark-read {
+  display: inline-grid;
+  place-items: center;
+  min-width: 38px;
+  width: 38px;
+  min-height: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary);
+}
+.hn-topbar .notification-mark-read:hover:not(:disabled) {
+  background: var(--primary-soft);
+}
+.hn-topbar .notification-mark-read:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .hn-topbar .notification-row {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;

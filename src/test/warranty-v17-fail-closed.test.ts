@@ -35,6 +35,7 @@ describe("WWHN-181 warranty v1.7 fail-closed boundary", () => {
   it("does not POST the create payload when actor only holds the legacy temp_only permission", async () => {
     await expect(
       createWarrantyCase({
+        warehouse_id: "11111111-1111-4111-8111-111111111111",
         identification_type: "TEMP_ONLY",
         customer_name: "Khach hang",
         customer_phone: "0900000000",

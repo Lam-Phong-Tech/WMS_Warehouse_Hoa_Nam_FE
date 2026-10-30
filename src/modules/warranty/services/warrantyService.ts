@@ -221,6 +221,7 @@ export async function createWarrantyCase(payload: CreateWarrantyCaseRequest): Pr
   assertWarrantyWrite("create warranty case");
   const description = requireNonEmptyString(payload.defect_description || payload.reported_defect || payload.notes, "defect_description");
   const body: Record<string, unknown> = {
+    warehouse_id: requireNonEmptyString(payload.warehouse_id, "warehouse_id"),
     customer_name: requireNonEmptyString(payload.customer_name, "customer_name"),
     customer_phone: requireNonEmptyString(payload.customer_phone, "customer_phone"),
     customer_address: payload.customer_address?.trim() || undefined,

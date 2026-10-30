@@ -1112,6 +1112,27 @@ export const MESSAGES_EN: MessageTree = {
     },
     intake: {
       title: "Receive for warranty",
+      warehouse: "Warranty intake warehouse",
+      warehousePlaceholder: "Select an intake warehouse",
+      warehouseHint:
+        "Select and confirm the warehouse responsible for this case.",
+      confirmWarehouse: "Confirm warehouse",
+      warehouseConfirmed: "Intake warehouse confirmed: {warehouse}.",
+      errWarehouse:
+        "The intake warehouse has not been confirmed. Select a warehouse and click Confirm warehouse before saving.",
+      errWarehouseMismatch:
+        "The intake warehouse differs from your working warehouse. Select the matching warehouse or switch your working warehouse before saving.",
+      errItemNotFound:
+        "No device matches this code. Check the code on the device; if it cannot be identified, select No code to create a temporary case.",
+      errItemNotEligible:
+        "This device has not been issued or returned to the customer and cannot be received for warranty. Please check its outbound history.",
+      errActiveCase:
+        "This device already has a warranty case that has not been returned or cancelled. Please process the existing case before creating another one.",
+      warehousesLoading: "Loading intake warehouses…",
+      warehousesLoadError:
+        "Unable to load intake warehouses. Please retry or contact an administrator.",
+      noWarehouse:
+        "No active intake warehouse is available to you. Please contact an administrator.",
       errDefectCode: "The defect code is required.",
       errDefectName: "The defect / symptom name is required.",
       defectAdded: "Symptom/defect {code} added.",
@@ -1151,6 +1172,9 @@ export const MESSAGES_EN: MessageTree = {
       lostReason: "Reason the code is missing",
       identityDescription: "Device identification description",
       itemCode: "Device code / serial / item barcode *",
+      itemCodeNoticeLabel: "Note on entering a device code / serial",
+      itemCodeNotice:
+        "Note: If you enter the serial of another eligible device by mistake, the system may accept the case for that device. The software checks the entered code; staff must compare it with the code on the physical device. The intake warehouse is not required by this code to be the warehouse that originally issued the device.",
       itemCodePlaceholder:
         "Scan the composite QR / barcode, or type the serial",
       itemCodeHint:
