@@ -202,8 +202,12 @@
 .hn-agency-screen .agy-table tr:last-child td {
   border-bottom: 0;
 }
-.hn-agency-screen .agy-table tbody tr:hover td {
+/* Keep hover continuous across the gaps and padding of reflowed grid rows. */
+.hn-agency-screen .agy-table tbody tr:hover {
   background: color-mix(in srgb, var(--agy-pale) 65%, var(--agy-surface));
+}
+.hn-agency-screen .agy-table tbody tr:hover td {
+  background: transparent;
 }
 .hn-agency-screen .agy-table td:nth-child(2) {
   font-weight: 700;

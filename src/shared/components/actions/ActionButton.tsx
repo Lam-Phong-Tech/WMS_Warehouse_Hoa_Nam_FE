@@ -63,6 +63,7 @@ export interface ActionButtonProps extends Omit<
  * Hình thức chốt cứng, không cho lệch giữa các màn:
  *   • bề mặt `tonal` (nền nhạt cùng tông nghiệp vụ) — nút nhận diện được là nút
  *   • icon đứng trước nhãn, tô đúng tông màu nghiệp vụ theo `kind`
+ *     (Hủy/Đóng có nhãn không thêm X trùng với nút đóng ở tiêu đề)
  *   • cỡ `small`, chiều cao 38px theo `muiTheme`
  *
  * Icon / màu / nhãn mặc định KHÔNG khai tại màn mà lấy từ
@@ -132,10 +133,17 @@ export function ActionButton({
   // Bề mặt `tonal` đã tô màu cho cả chữ lẫn icon, nên icon kế thừa màu chữ;
   // bề mặt `flat` thì icon phải tự tô để còn phân biệt được hành động.
   const tonal = appearance === "tonal";
+  const textDismissAction =
+    !iconOnly && (kind === "cancel" || kind === "close");
+  const defaultIcon = textDismissAction ? null : tonal ? (
+    <Icon />
+  ) : (
+    <Icon style={{ color: actionColor(kind) }} />
+  );
   const iconNode = loading ? (
     <UiSpinner size={16} label={null} />
   ) : (
-    (icon ?? (tonal ? <Icon /> : <Icon style={{ color: actionColor(kind) }} />))
+    (icon ?? defaultIcon)
   );
 
   return (

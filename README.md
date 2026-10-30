@@ -1,20 +1,28 @@
 # Hoa Nam Tools - Frontend
 
-Frontend Web Admin cho hệ thống WMS Hoa Nam, xây dựng bằng React + Vite + TypeScript + Ant Design.
+Frontend Web Admin cho hệ thống WMS Hoa Nam, xây dựng bằng React + Vite + TypeScript + MUI 9.
 
 ## Kiến trúc
 
 Ứng dụng tuân theo `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md` và requirement hiện hành trong `docs/HN_SRS_FRD_v1.12_FULL.md`. Khi tài liệu kỹ thuật cũ xung đột requirement mới hơn, phải xử lý theo source/approval hierarchy của dự án, không tự suy diễn contract.
 
-| Tiêu chí | Giá trị hiện hành |
-| --- | --- |
-| Framework | React 19 + TypeScript + Vite 8 |
-| UI | Ant Design 6.x |
+| Tiêu chí         | Giá trị hiện hành                                    |
+| ---------------- | ---------------------------------------------------- |
+| Framework        | React 19 + TypeScript + Vite 8                       |
+| UI               | MUI 9 (chính) + Ant Design 6 (scan/date remnant)     |
 | State management | Zustand (auth/client), TanStack Query (server state) |
-| Forms | React Hook Form + Zod |
-| Routing | React Router v7 |
-| Testing | Vitest (unit/integration), Playwright (E2E) |
-| CI Node baseline | Node.js 22 |
+| Forms            | React Hook Form + Zod                                |
+| Routing          | React Router v7                                      |
+| Testing          | Vitest (unit/integration), Playwright (E2E)          |
+| CI Node baseline | Node.js 22                                           |
+
+## Thiết kế UI
+
+Trước khi tạo hoặc sửa màn hình, đọc 3 tài liệu chuẩn dưới đây. Baseline hiện hành là **Operations / SystemHNWeb**; không tự dùng lại token/shell Vuexy cũ.
+
+- [`docs/ui/DESIGN_FOUNDATIONS.md`](docs/ui/DESIGN_FOUNDATIONS.md) - màu, typography, spacing, radius, shadow, motion, component nền tảng.
+- [`docs/ui/LAYOUT_RESPONSIVE.md`](docs/ui/LAYOUT_RESPONSIVE.md) - shell, breakpoint, grid, responsive desktop/tablet/mobile, quy tắc bảng.
+- [`docs/ui/UI_PATTERNS_GOVERNANCE.md`](docs/ui/UI_PATTERNS_GOVERNANCE.md) - page template, trạng thái, form, RBAC, accessibility, i18n, quy trình thay đổi UI.
 
 ## Bắt đầu
 
@@ -37,14 +45,14 @@ Sao chép `.env.example` thành `.env` và cập nhật các giá trị phù h�
 cp .env.example .env
 ```
 
-| Biến | Mô tả | Mặc định/tham chiếu |
-| --- | --- | --- |
-| `VITE_APP_ENV` | Môi trường (`local`, `dev`, `uat`, `prod`, `test`) | `local` |
-| `VITE_API_BASE_URL` | URL cơ sở API | `http://localhost:8080/api/v1` |
-| `VITE_API_TIMEOUT_MS` | Timeout API (ms) | `10000` |
-| `VITE_API_WITH_CREDENTIALS` | Gửi credential/cookie cho refresh-session | `true` (bắt buộc; runtime luôn enforce) |
-| `VITE_STORAGE_URL` | URL storage (tùy chọn) | - |
-| `VITE_API_HEALTH_PATH` | Health path tương đối so với `/api/v1` | `/health` → `/api/v1/health` |
+| Biến                        | Mô tả                                              | Mặc định/tham chiếu                     |
+| --------------------------- | -------------------------------------------------- | --------------------------------------- |
+| `VITE_APP_ENV`              | Môi trường (`local`, `dev`, `uat`, `prod`, `test`) | `local`                                 |
+| `VITE_API_BASE_URL`         | URL cơ sở API                                      | `http://localhost:8080/api/v1`          |
+| `VITE_API_TIMEOUT_MS`       | Timeout API (ms)                                   | `10000`                                 |
+| `VITE_API_WITH_CREDENTIALS` | Gửi credential/cookie cho refresh-session          | `true` (bắt buộc; runtime luôn enforce) |
+| `VITE_STORAGE_URL`          | URL storage (tùy chọn)                             | -                                       |
+| `VITE_API_HEALTH_PATH`      | Health path tương đối so với `/api/v1`             | `/health` → `/api/v1/health`            |
 
 Không commit secret/credential vào repository hoặc tài liệu handover. DEV/UAT/PROD phải inject `VITE_API_BASE_URL` và các origin/cookie policy tương ứng qua pipeline/deployment; không hard-code domain production trong source FE.
 
@@ -135,6 +143,7 @@ Nguyên tắc:
 - `docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html` - screen/UX baseline.
 - `docs/HoaNam_ERD_Moi_Nhat.md` - ERD/data dictionary technical proposal.
 - `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md` - kiến trúc/dev guide.
+- `docs/ui/DESIGN_FOUNDATIONS.md`, `docs/ui/LAYOUT_RESPONSIVE.md`, `docs/ui/UI_PATTERNS_GOVERNANCE.md` - chuẩn thiết kế UI hiện hành.
 - `docs/Task_docs_Jira/` - task-specific trace/evidence docs.
 - `docs/Task_docs_Jira/WWHN-311.md` - frontend handover cho WWHN-311.
 - `docs/evidence/` - evidence/register được task-specific verifier/CI sử dụng.

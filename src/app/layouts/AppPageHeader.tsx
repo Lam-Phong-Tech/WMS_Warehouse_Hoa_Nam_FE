@@ -63,7 +63,13 @@ function resolveScreenId(pathname: string, search: string): string | null {
   return null;
 }
 
-export function AppPageHeader({ actions }: { actions?: ReactNode }) {
+export function AppPageHeader({
+  actions,
+  showEyebrow = true,
+}: {
+  actions?: ReactNode;
+  showEyebrow?: boolean;
+}) {
   const location = useLocation();
   const navLabel = useNavLabel();
   const language = useLanguageStore((s) => s.language);
@@ -79,12 +85,13 @@ export function AppPageHeader({ actions }: { actions?: ReactNode }) {
   // Chặng giữa của breadcrumb là tên nhóm menu; route không thuộc nhóm nào
   // (403/404/hồ sơ…) thì không có eyebrow thay vì bịa ra một cụm chữ.
   const groupEntry = trail.length >= 3 ? trail[1] : null;
-  const eyebrow = groupEntry
-    ? (groupEntry.i18nKey
-        ? navLabel(groupEntry.i18nKey, groupEntry.label)
-        : groupEntry.label
-      ).toUpperCase()
-    : null;
+  const eyebrow =
+    showEyebrow && groupEntry
+      ? (groupEntry.i18nKey
+          ? navLabel(groupEntry.i18nKey, groupEntry.label)
+          : groupEntry.label
+        ).toUpperCase()
+      : null;
 
   const scopeLabel = scopeLabelOf(context);
   const roleLabel = isSuperAdmin ? "Super Admin" : (context?.role_name ?? null);

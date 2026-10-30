@@ -84,31 +84,89 @@ describe("warrantyService", () => {
     });
   });
   describe("createWarrantyCase (WAR-02)", () => {
+    it("không gửi tiếp nhận khi thiếu kho đã xác nhận", async () => {
+      await expect(
+        createWarrantyCase({
+          warehouse_id: "",
+          identification_type: "IDENTIFIED",
+          item_code: "SER-001",
+          customer_name: "Trần B",
+          customer_phone: "0900000001",
+          defect_description: "Không lên nguồn",
+        }),
+      ).rejects.toMatchObject({ code: "WMS_FE_INVALID_PAYLOAD" });
+      expect(http.post).not.toHaveBeenCalled();
+    });
+    it("TEMP_ONLY gửi kho đã xác nhận và không gửi mã máy cũ", async () => {
+      vi.mocked(http.post).mockResolvedValue(
+        caseResponse({
+          identification_status: "TEMP_ONLY",
+          temporary_item_code: "TEMP-001",
+        }),
+      );
+      await createWarrantyCase({
+        warehouse_id: "11111111-1111-4111-8111-111111111111",
+        identification_type: "TEMP_ONLY",
+        item_code: "SER-CU",
+        customer_name: "Trần B",
+        customer_phone: "0900000001",
+        defect_description: "Không lên nguồn",
+        missing_code_reason: "Mất tem",
+        manual_product_description: "Máy khoan màu xanh",
+      });
+      expect(vi.mocked(http.post).mock.calls[0][1]).toMatchObject({
+        warehouse_id: "11111111-1111-4111-8111-111111111111",
+        missing_code_reason: "Mất tem",
+        manual_product_description: "Máy khoan màu xanh",
+      });
+      expect(vi.mocked(http.post).mock.calls[0][1]).not.toHaveProperty(
+        "item_code",
+      );
+    });
+    it.each([
+      "WARRANTY_ITEM_NOT_FOUND",
+      "WARRANTY_ITEM_NOT_ELIGIBLE",
+      "ACTIVE_WARRANTY_EXISTS",
+    ])("giữ nguyên lỗi kiểm tra máy từ backend: %s", async (code) => {
+      const error = { response: { status: 422, data: { error: { code } } } };
+      vi.mocked(http.post).mockRejectedValue(error);
+      await expect(
+        createWarrantyCase({
+          warehouse_id: "11111111-1111-4111-8111-111111111111",
+          identification_type: "IDENTIFIED",
+          item_code: "SER-001",
+          customer_name: "Trần B",
+          customer_phone: "0900000001",
+          defect_description: "Không lên nguồn",
+        }),
+      ).rejects.toBe(error);
+      expect(http.post).toHaveBeenCalledTimes(1);
+    });
     it("IDENTIFIED: bắt buộc item_code và gửi Idempotency-Key", async () => {
       vi.mocked(http.post).mockResolvedValue(caseResponse({ id: "wc-2", case_code: "BH-0002" }));
-      const created = await createWarrantyCase({ identification_type: "IDENTIFIED", item_code: "SER-001",
+      const created = await createWarrantyCase({ warehouse_id: "11111111-1111-4111-8111-111111111111", identification_type: "IDENTIFIED", item_code: "SER-001",
         customer_name: "Trần B", customer_phone: "0900000001", defect_description: "Không lên nguồn",
         accessories_received: "Pin, sạc", received_condition: "Trầy nhẹ" });
       expect(created.id).toBe("wc-2");
       const [url, body, config] = vi.mocked(http.post).mock.calls[0];
       expect(url).toBe("/warranty-cases");
-      expect(body).toMatchObject({ item_code: "SER-001", accessories_received: "Pin, sạc", received_condition: "Trầy nhẹ" });
+      expect(body).toMatchObject({ warehouse_id: "11111111-1111-4111-8111-111111111111", item_code: "SER-001", accessories_received: "Pin, sạc", received_condition: "Trầy nhẹ" });
       expect(body).not.toHaveProperty("missing_code_reason");
       expect((config as { headers: Record<string, string> }).headers["Idempotency-Key"]).toMatch(/^fe:warranty-create:/);
     });
     it("IDENTIFIED thiếu item_code: chặn trước khi gọi HTTP", async () => {
-      await expect(createWarrantyCase({ identification_type: "IDENTIFIED", customer_name: "Trần B",
+      await expect(createWarrantyCase({ warehouse_id: "11111111-1111-4111-8111-111111111111", identification_type: "IDENTIFIED", customer_name: "Trần B",
         customer_phone: "0900000001", defect_description: "Không lên nguồn" })).rejects.toMatchObject({ code: "WMS_FE_INVALID_PAYLOAD" });
       expect(http.post).not.toHaveBeenCalled();
     });
     it("TEMP_ONLY: bắt buộc missing_code_reason + manual_product_description", async () => {
-      await expect(createWarrantyCase({ identification_type: "TEMP_ONLY", customer_name: "Trần B",
+      await expect(createWarrantyCase({ warehouse_id: "11111111-1111-4111-8111-111111111111", identification_type: "TEMP_ONLY", customer_name: "Trần B",
         customer_phone: "0900000001", defect_description: "Không lên nguồn", missing_code_reason: "Mất tem" })).rejects.toMatchObject({ code: "WMS_FE_INVALID_PAYLOAD" });
       expect(http.post).not.toHaveBeenCalled();
     });
     it("từ chối response làm thay đổi tồn kho (stock_effect != NONE)", async () => {
       vi.mocked(http.post).mockResolvedValue({ id: "wc-3", stock_effect: "DECREASE" });
-      await expect(createWarrantyCase({ identification_type: "IDENTIFIED", item_code: "SER-002",
+      await expect(createWarrantyCase({ warehouse_id: "11111111-1111-4111-8111-111111111111", identification_type: "IDENTIFIED", item_code: "SER-002",
         customer_name: "Trần B", customer_phone: "0900000001", defect_description: "Kẹt motor" })).rejects.toMatchObject({ code: "WMS_FE_INVALID_WARRANTY_RESPONSE" });
     });
   });

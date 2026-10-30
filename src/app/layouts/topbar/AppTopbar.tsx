@@ -15,7 +15,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { VuexyDemoIcon, type VuexyDemoIconName } from "@/shared/ui";
+import { UiIcon, VuexyDemoIcon, type VuexyDemoIconName } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useLogout } from "@/modules/auth/hooks/use-logout";
@@ -29,6 +29,7 @@ import {
 import { getVisibleNavGroups } from "@/app/layouts/nav-data";
 import { useNotificationStore } from "@/shared/store/notification.store";
 import {
+  useMarkAllNotificationsRead,
   useNotificationsQuery,
   useUnreadCountQuery,
 } from "@/modules/notifications/hooks/useNotifications";
@@ -165,6 +166,7 @@ export function AppTopbar({
     { per_page: 5 },
     { enabled: openMenu === "notification" },
   );
+  const markAllRead = useMarkAllNotificationsRead();
   const notificationItems = Array.isArray(notifications.data?.data)
     ? notifications.data.data
     : [];
@@ -623,9 +625,23 @@ export function AppTopbar({
                   <strong>{t("topbar.notificationTitle")}</strong>
                   <span>{t("topbar.notificationHint")}</span>
                 </div>
-                {unreadCount > 0 ? (
-                  <span className="chip chip-error">{unreadCount}</span>
-                ) : null}
+                <span className="notification-menu-actions">
+                  {unreadCount > 0 ? (
+                    <span className="chip chip-error">{unreadCount}</span>
+                  ) : null}
+                  <button
+                    className="notification-mark-read"
+                    type="button"
+                    role="menuitem"
+                    aria-label={t("notifications.page.markAll")}
+                    title={t("notifications.page.markAll")}
+                    aria-busy={markAllRead.isPending}
+                    disabled={unreadCount === 0 || markAllRead.isPending}
+                    onClick={() => markAllRead.mutate()}
+                  >
+                    <UiIcon name="check-double" />
+                  </button>
+                </span>
               </div>
               {renderNotificationBody()}
               <button

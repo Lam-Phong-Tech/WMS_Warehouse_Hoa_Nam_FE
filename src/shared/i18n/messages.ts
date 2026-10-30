@@ -1112,6 +1112,27 @@ export const MESSAGES_VI = {
     },
     intake: {
       title: "Tiếp nhận bảo hành",
+      warehouse: "Kho tiếp nhận bảo hành",
+      warehousePlaceholder: "Chọn kho tiếp nhận",
+      warehouseHint:
+        "Chọn và xác nhận kho chịu trách nhiệm tiếp nhận hồ sơ này.",
+      confirmWarehouse: "Xác nhận kho",
+      warehouseConfirmed: "Đã xác nhận kho tiếp nhận: {warehouse}.",
+      errWarehouse:
+        "Bạn chưa xác nhận kho tiếp nhận bảo hành. Vui lòng chọn kho và nhấn Xác nhận kho trước khi lưu.",
+      errWarehouseMismatch:
+        "Kho tiếp nhận không khớp kho đang làm việc. Vui lòng chọn lại kho tiếp nhận hoặc chuyển kho làm việc trước khi lưu.",
+      errItemNotFound:
+        "Không tìm thấy máy theo mã đã nhập. Vui lòng kiểm tra mã trên máy; nếu không thể xác định mã, chọn Mất mã để tiếp nhận hồ sơ tạm.",
+      errItemNotEligible:
+        "Máy chưa ở trạng thái đã xuất hoặc đã trả cho khách nên chưa thể tiếp nhận bảo hành. Vui lòng kiểm tra lịch sử xuất máy.",
+      errActiveCase:
+        "Máy đang có hồ sơ bảo hành chưa trả hoặc chưa hủy. Vui lòng xử lý hồ sơ hiện có trước khi tạo hồ sơ mới.",
+      warehousesLoading: "Đang tải danh sách kho tiếp nhận…",
+      warehousesLoadError:
+        "Không tải được danh sách kho tiếp nhận. Vui lòng thử lại hoặc liên hệ quản trị viên.",
+      noWarehouse:
+        "Bạn chưa có kho tiếp nhận đang hoạt động. Vui lòng liên hệ quản trị viên.",
       errDefectCode: "Mã lỗi là bắt buộc.",
       errDefectName: "Tên lỗi / bệnh là bắt buộc.",
       defectAdded: "Đã thêm bệnh/lỗi {code}.",
@@ -1151,6 +1172,9 @@ export const MESSAGES_VI = {
       lostReason: "Lý do mất/không có mã",
       identityDescription: "Mô tả nhận diện máy",
       itemCode: "Mã máy / serial / mã vạch hiện vật *",
+      itemCodeNoticeLabel: "Lưu ý khi nhập mã máy / serial",
+      itemCodeNotice:
+        "Lưu ý: Nếu nhập nhầm serial của một máy khác cũng đủ điều kiện, hệ thống vẫn có thể nhận theo máy đó. Phần mềm kiểm tra dữ liệu theo mã nhập vào; nhân viên phải đối chiếu mã trên máy thực tế. Kho tiếp nhận cũng không được code này bắt buộc phải là kho đã xuất bán máy.",
       itemCodePlaceholder: "Quét QR tổng hợp / mã vạch hoặc nhập serial",
       itemCodeHint:
         "Sản phẩm phải đã xuất cho khách và chưa có phiếu bảo hành nào đang xử lý.",

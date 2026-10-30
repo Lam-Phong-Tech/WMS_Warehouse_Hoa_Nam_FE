@@ -107,6 +107,7 @@ export interface WarrantyCasePage {
   meta?: Record<string, unknown>;
 }
 export interface CreateWarrantyCaseRequest {
+  warehouse_id: string;
   identification_type: WarrantyIdentificationType;
   item_code?: string;
   sku?: string;
