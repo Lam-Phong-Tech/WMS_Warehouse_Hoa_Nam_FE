@@ -740,7 +740,11 @@ export default function WarrantyComponentsReport() {
           >
             {tUi("dashboard.snapshot.apply")}
           </UiButton>
-          <UiButton appearance="text" onClick={resetFilters}>
+          <UiButton
+            appearance="outlined"
+            sx={{ borderColor: "var(--ops-line)" }}
+            onClick={resetFilters}
+          >
             {tUi("reports.packingLabel.reset")}
           </UiButton>
         </Box>
@@ -1039,7 +1043,7 @@ export default function WarrantyComponentsReport() {
                       gridTemplateColumns: "58px 1fr",
                       gap: 1,
                       alignItems: "center",
-                      borderRadius: "7px",
+                      borderRadius: "var(--ops-radius-card)",
                       bgcolor: C.redSoft,
                     }}
                   >

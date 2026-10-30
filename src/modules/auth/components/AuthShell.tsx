@@ -203,7 +203,7 @@ function BaselineAuthShell({
           },
         },
         "& .MuiAlert-root": {
-          borderRadius: "10px",
+          borderRadius: "var(--ops-radius-card)",
           border: `1px solid ${AUTH_BASELINE.line}`,
           boxShadow: "none",
         },
@@ -215,7 +215,7 @@ function BaselineAuthShell({
         "& .hn-auth-back-link a": { color: AUTH_BASELINE.link },
         "& .hn-auth-note": {
           border: "none",
-          borderRadius: "12px",
+          borderRadius: "var(--ops-radius-card)",
           backgroundColor: AUTH_BASELINE.pale,
           color: AUTH_BASELINE.muted,
           padding: { xs: "14px 16px", sm: "16px 18px" },
@@ -317,7 +317,7 @@ function BaselineAuthShell({
             overflow: "hidden",
             backgroundColor: AUTH_BASELINE.white,
             border: `1px solid ${AUTH_BASELINE.line}`,
-            borderRadius: "16px",
+            borderRadius: "var(--ops-radius-card)",
             boxShadow: AUTH_BASELINE.cardShadow,
           }}
         >

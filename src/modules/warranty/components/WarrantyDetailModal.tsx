@@ -320,7 +320,7 @@ function ImageAttachmentTile({
           position: "relative",
           width: "100%",
           aspectRatio: "1 / 1",
-          borderRadius: 2,
+          borderRadius: "var(--ops-radius-card)",
           overflow: "hidden",
           border: "1px solid",
           borderColor: "divider",
@@ -426,7 +426,7 @@ function AttachmentRow({
         alignItems: "center",
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 2,
+        borderRadius: "var(--ops-radius-card)",
         px: 1.5,
         py: 1,
       }}
@@ -1442,7 +1442,7 @@ export function WarrantyDetailModal({
               sx={{
                 border: "1px solid",
                 borderColor: "divider",
-                borderRadius: 2,
+                borderRadius: "var(--ops-radius-card)",
                 p: 2,
               }}
             >
@@ -1514,7 +1514,7 @@ export function WarrantyDetailModal({
                       sx={{
                         border: "1px solid",
                         borderColor: "divider",
-                        borderRadius: 2,
+                        borderRadius: "var(--ops-radius-card)",
                         p: 2,
                       }}
                     >
@@ -1589,7 +1589,7 @@ export function WarrantyDetailModal({
                       sx={{
                         border: "1px solid",
                         borderColor: "divider",
-                        borderRadius: 2,
+                        borderRadius: "var(--ops-radius-card)",
                         p: 2,
                       }}
                     >
@@ -1795,7 +1795,7 @@ export function WarrantyDetailModal({
                               aspectRatio: "1 / 1",
                               border: "1px dashed",
                               borderColor: "divider",
-                              borderRadius: 2,
+                              borderRadius: "var(--ops-radius-card)",
                               color: "text.secondary",
                               cursor: uploadMutation.isPending
                                 ? "not-allowed"
@@ -1906,7 +1906,7 @@ export function WarrantyDetailModal({
                           gap: 0.5,
                           border: "1px dashed",
                           borderColor: "divider",
-                          borderRadius: 2,
+                          borderRadius: "var(--ops-radius-card)",
                           py: 3,
                           cursor: uploadMutation.isPending
                             ? "not-allowed"
@@ -2000,7 +2000,7 @@ export function WarrantyDetailModal({
                   sx={{
                     border: "1px solid",
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     p: 2,
                   }}
                 >

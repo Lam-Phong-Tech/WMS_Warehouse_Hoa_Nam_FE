@@ -267,11 +267,6 @@
   font-size: 12px;
   line-height: 20px;
 }
-.hn-sku-filter-hint {
-  color: var(--sku-muted);
-  font-size: 12px;
-  line-height: 18px;
-}
 .hn-sku-search-icon {
   color: var(--sku-link);
   margin-right: 10px;
@@ -414,11 +409,22 @@
   color: inherit;
   font: inherit;
 }
-.hn-sku-screen table.sku-table tbody tr {
+.hn-sku-screen table.sku-table tbody tr[data-clickable="true"] {
+  cursor: pointer;
+}
+.hn-sku-screen table.sku-table tbody tr[data-clickable="true"] > td {
   transition: background-color 0.14s ease;
 }
-.hn-sku-screen table.sku-table tbody tr:hover {
+.hn-sku-screen
+  table.sku-table
+  tbody
+  tr[data-clickable="true"]:is(:hover, :focus-visible)
+  > td {
   background: color-mix(in srgb, var(--sku-pale) 55%, var(--sku-surface));
+}
+.hn-sku-screen table.sku-table tbody tr[data-clickable="true"]:focus-visible {
+  outline: 2px solid var(--sku-link);
+  outline-offset: -2px;
 }
 .hn-sku-screen table.sku-table td.name-col {
   min-width: 190px;
@@ -556,9 +562,6 @@
   .hn-sku-filter-search {
     grid-column: 1 / -1;
   }
-  .hn-sku-filter-hint {
-    display: none;
-  }
   .hn-sku-filter-actions {
     margin-top: 24px;
   }
@@ -682,6 +685,9 @@
 .hn-sku-header-actions > .MuiButton-root:not(.hn-sku-primary) {
   background: var(--sku-pale);
   color: var(--sku-ink);
+}
+.hn-sku-header-actions > .hn-sku-import-button.MuiButton-root {
+  border: 1px solid var(--sku-line);
 }
 .hn-sku-overview-icon > svg {
   width: 42px;

@@ -38,11 +38,14 @@ import { ResponsiveDataTable } from "@/shared/components";
 import type { ResponsiveTableColumn } from "@/shared/components";
 import {
   Box,
+  InfoIcon,
   SEMANTIC_LIGHT as S,
   Stack,
   Switch,
+  Tooltip,
   UiAlert,
   UiDialog,
+  UiIconButton,
   UiPagination,
   UiStatusBadge,
   UiText,
@@ -437,6 +440,7 @@ export function SkuImportModal({
   const [digestError, setDigestError] = useState<string | null>(null);
   // Lỗi sơ bộ của tệp vừa chọn (đuôi/dung lượng) — hiện cùng chỗ với digestError.
   const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const payloadGeneration = useRef(0);
 
   const invalidatePreview = () => {
@@ -668,48 +672,104 @@ export function SkuImportModal({
         maxWidth="md"
         fullWidth
         title={
-          <>
-            {t("masterData.import.title")}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1,
+              pr: 4,
+            }}
+          >
+            <Box component="span">{t("masterData.import.title")}</Box>
+            <Tooltip
+              arrow
+              placement="bottom-start"
+              title={
+                <Stack spacing={0.5} sx={{ maxWidth: 440 }}>
+                  <Box component="strong">
+                    {t("masterData.import.stepsTitle")}
+                  </Box>
+                  <Box>
+                    {t("masterData.import.stepsBody", {
+                      constraints: describeConstraints(constraints),
+                    })}
+                  </Box>
+                </Stack>
+              }
+            >
+              <UiIconButton
+                size="small"
+                aria-label={t("masterData.import.instructionsAria")}
+                sx={{ color: S.infoText }}
+              >
+                <InfoIcon />
+              </UiIconButton>
+            </Tooltip>
+            <ActionButton
+              kind="reset"
+              disabled={previewMutation.isPending || commitMutation.isPending}
+              onClick={resetAll}
+              sx={{ ml: "auto" }}
+            >
+              {t("masterData.import.reset")}
+            </ActionButton>
             <ActionIconButton
               kind="close"
               label={t("common.close")}
               onClick={close}
               sx={{ position: "absolute", right: 10, top: 8 }}
             />
-          </>
+          </Box>
         }
       >
         <Stack spacing={1.75}>
-          <UiAlert tone="info" title={t("masterData.import.stepsTitle")}>
-            {t("masterData.import.stepsBody", {
-              constraints: describeConstraints(constraints),
-            })}
-          </UiAlert>
-
           <Stack
             direction="row"
             spacing={2}
             sx={{ flexWrap: "wrap", rowGap: 1.5, alignItems: "center" }}
           >
-            <input
-              key={fileInputKey}
-              type="file"
-              accept={acceptAttribute(constraints)}
-              aria-label={t("masterData.import.fileAria")}
-              onChange={(event) => {
-                const next = event.target.files?.[0] ?? null;
-                const error = next ? precheckFile(next, constraints) : null;
-                setFileError(error);
-                if (error) {
-                  // Tệp sai đuôi/quá cỡ: không giữ lại, đổi key để input tự xoá.
-                  setFile(null);
-                  setFileInputKey((key) => key + 1);
-                } else {
-                  setFile(next);
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              <input
+                key={fileInputKey}
+                ref={fileInputRef}
+                type="file"
+                accept={acceptAttribute(constraints)}
+                aria-label={t("masterData.import.fileAria")}
+                tabIndex={-1}
+                hidden
+                onChange={(event) => {
+                  const next = event.target.files?.[0] ?? null;
+                  const error = next ? precheckFile(next, constraints) : null;
+                  setFileError(error);
+                  if (error) {
+                    // Tệp sai đuôi/quá cỡ: không giữ lại, đổi key để input tự xoá.
+                    setFile(null);
+                    setFileInputKey((key) => key + 1);
+                  } else {
+                    setFile(next);
+                  }
+                  invalidatePreview();
+                }}
+              />
+              <ActionButton
+                kind="upload"
+                type="button"
+                disabled={
+                  !canImport ||
+                  previewMutation.isPending ||
+                  commitMutation.isPending
                 }
-                invalidatePreview();
-              }}
-            />
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {t("masterData.import.uploadFile")}
+              </ActionButton>
+              <Box sx={{ overflowWrap: "anywhere" }}>
+                <UiText variant="secondary">
+                  {file?.name ?? t("masterData.import.noFileSelected")}
+                </UiText>
+              </Box>
+            </Stack>
             <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
               <Switch
                 checked={updateExisting}
@@ -848,27 +908,6 @@ export function SkuImportModal({
               ) : null}
             </Stack>
           ) : null}
-
-          <Stack
-            direction="row"
-            spacing={1.5}
-            sx={{ justifyContent: "flex-end" }}
-          >
-            <ActionButton
-              kind="reset"
-              disabled={previewMutation.isPending || commitMutation.isPending}
-              onClick={resetAll}
-            >
-              {t("masterData.import.reset")}
-            </ActionButton>
-            <ActionButton
-              kind="close"
-              disabled={previewMutation.isPending || commitMutation.isPending}
-              onClick={close}
-            >
-              {t("common.close")}
-            </ActionButton>
-          </Stack>
         </Stack>
       </UiDialog>
     </>

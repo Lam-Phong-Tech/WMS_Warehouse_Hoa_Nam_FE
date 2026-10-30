@@ -385,7 +385,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
-                  borderRadius: 2,
+                  borderRadius: "var(--ops-radius-card)",
                   p: 2,
                 }}
               >
@@ -522,7 +522,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
-                  borderRadius: 2,
+                  borderRadius: "var(--ops-radius-card)",
                   p: 2,
                 }}
               >
@@ -547,7 +547,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                     bgcolor: "action.hover",
                     border: "1px solid",
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     p: 2,
                   }}
                 >

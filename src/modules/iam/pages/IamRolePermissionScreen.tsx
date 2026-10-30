@@ -449,7 +449,7 @@ export function IamRolePermissionScreen() {
         sx={{
           border: `1px solid ${selected ? S.primary : S.border}`,
           backgroundColor: selected ? S.primarySoft : S.bgSurface,
-          borderRadius: "12px",
+          borderRadius: "var(--ops-radius-card)",
           padding: "10px 12px",
           marginBottom: 1,
           cursor: "pointer",
@@ -542,7 +542,7 @@ export function IamRolePermissionScreen() {
         sx={{
           border: `1px solid ${checked ? S.primaryLight : S.border}`,
           backgroundColor: checked ? S.primarySoft : S.bgSurface,
-          borderRadius: "10px",
+          borderRadius: "var(--ops-radius-card)",
           padding: "8px 10px",
           height: "100%",
         }}
@@ -768,7 +768,7 @@ export function IamRolePermissionScreen() {
                     className="hn-iam-permission-group"
                     sx={{
                       border: `1px solid ${S.border}`,
-                      borderRadius: "10px",
+                      borderRadius: "var(--ops-radius-card)",
                       overflow: "hidden",
                     }}
                   >

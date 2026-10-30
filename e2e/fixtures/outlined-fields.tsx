@@ -21,6 +21,7 @@ import "@/shared/ui/sku-aligned-settings.css";
 import "@/modules/master-data/pages/catalog-master.css";
 import "@/modules/master-data/pages/sku-list.css";
 import "@/modules/master-data/pages/defect-list.css";
+import "@/modules/pv/pages/pv-product-catalog.css";
 import "@/modules/reports/inventory-flow/inventory-flow-report.css";
 import "@/modules/reports/inventory-flow/inbound-flow-report.css";
 import "@/modules/reports/inventory-flow/outbound-flow-report.css";
@@ -66,6 +67,13 @@ export function Fields() {
           data-testid="long"
           label="Địa chỉ cụ thể của kho tổng Hoa Nam"
           defaultValue="Hà Nội"
+          fullWidth
+        />
+        <UiTextField
+          data-testid="pv-display-name"
+          label="Tên hiển thị"
+          required
+          defaultValue="AAAAB"
           fullWidth
         />
         <UiTextField data-testid="empty" label="Người liên hệ" fullWidth />

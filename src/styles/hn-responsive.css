@@ -514,7 +514,7 @@ button svg {
 .ant-modal .ant-statistic,
 .ant-drawer .ant-statistic {
   border: 1px solid var(--line, var(--wms-border));
-  border-radius: 14px;
+  border-radius: var(--ops-radius-card);
   padding: 14px;
   background: var(--wms-bg-surface);
 }

@@ -37,7 +37,7 @@ function RecoveryError({ children }: { children: string }) {
       role="alert"
       aria-live="polite"
       sx={{
-        borderRadius: "9px",
+        borderRadius: "var(--ops-radius-card)",
         padding: "13px 15px",
         color: "#A33348",
         backgroundColor: "#FFF1F3",

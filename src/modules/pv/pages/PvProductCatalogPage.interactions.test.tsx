@@ -397,9 +397,34 @@ describe("MST-PV-01 · catalog interactions", () => {
     for (const stat of pageStats) {
       expect(within(stat).getByText("1")).toBeInTheDocument();
     }
+    const info = within(overview).getByRole("button", {
+      name: "Thông tin tổng quan danh mục",
+    });
     expect(
-      within(overview).getByText(/Thống kê trạng thái trong trang hiện tại/),
+      within(overview).queryByText(/Thống kê trạng thái trong trang hiện tại/),
+    ).not.toBeInTheDocument();
+    fireEvent.pointerEnter(info, { pointerType: "mouse" });
+    expect(
+      await screen.findByText(/Thống kê trạng thái trong trang hiện tại/),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/không làm thay đổi số lượng tồn kho/),
+    ).toBeInTheDocument();
+    fireEvent.pointerLeave(info, { pointerType: "mouse" });
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/Thống kê trạng thái trong trang hiện tại/),
+      ).not.toBeInTheDocument(),
+    );
+
+    fireEvent.pointerDown(info, { pointerType: "touch" });
+    fireEvent.click(info);
+    expect(info).toHaveAttribute("aria-expanded", "true");
+    expect(
+      await screen.findByText(/không làm thay đổi số lượng tồn kho/),
+    ).toBeInTheDocument();
+    fireEvent.pointerDown(document.body, { pointerType: "touch" });
+    await waitFor(() => expect(info).toHaveAttribute("aria-expanded", "false"));
 
     await chooseFilter("pv-catalog-industry-filter", "Dụng cụ");
     expect(within(total).getByText("42")).toBeInTheDocument();

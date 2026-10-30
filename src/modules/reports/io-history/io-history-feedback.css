@@ -217,7 +217,7 @@
   margin: clamp(20px, 12vh, 150px) auto;
   padding: 36px 24px;
   border: 1px solid var(--hnio-feedback-border);
-  border-radius: 12px;
+  border-radius: var(--ops-radius-card);
   color: var(--hnio-feedback-ink);
   background: var(--wms-bg-surface, var(--ops-surface));
   text-align: center;
@@ -291,7 +291,7 @@
   margin: clamp(20px, 12vh, 150px) auto;
   padding: 28px;
   border: 1px solid var(--hnio-feedback-border);
-  border-radius: 16px;
+  border-radius: var(--ops-radius-card);
   background: var(--wms-bg-surface, var(--ops-surface));
   box-shadow: 0 10px 30px rgb(13 58 83 / 6%);
 }

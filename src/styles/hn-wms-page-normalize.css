@@ -207,7 +207,7 @@
 /* Statistics in scanning pages follow the four-column HTML cards. */
 .hn-mvp-screen .ant-statistic {
   border: 1px solid var(--ops-line);
-  border-radius: 14px;
+  border-radius: var(--ops-radius-card);
   padding: 14px;
   background: var(--wms-bg-surface);
 }
@@ -228,7 +228,7 @@
 .hn-mvp-screen .ant-card:not(:first-child):not(.master-data-panel),
 .hn-mvp-screen .ant-row .ant-card {
   border: 1px solid var(--ops-line) !important;
-  border-radius: 14px !important;
+  border-radius: var(--ops-radius-card) !important;
   box-shadow: none !important;
 }
 

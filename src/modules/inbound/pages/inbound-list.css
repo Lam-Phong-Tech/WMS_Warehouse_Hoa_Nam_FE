@@ -313,7 +313,7 @@
   align-items: flex-start;
   gap: 9px;
   padding: 8px 11px;
-  border-radius: 5px;
+  border-radius: var(--ops-radius-card);
   color: var(--in-text);
   background: var(--in-pale);
   font-size: 14px;
@@ -465,7 +465,7 @@
 }
 .hn-inbound-list .hn-inbound-reset {
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--in-line);
 }
 .hn-inbound-list .hn-inbound-reset:hover {
   background: var(--in-pale);

@@ -132,7 +132,7 @@ function StatCard({ label, value }: { label: string; value: number }) {
       sx={{
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 2,
+        borderRadius: "var(--ops-radius-card)",
         p: 1.5,
         height: "100%",
       }}
@@ -1252,7 +1252,7 @@ export function InboundScanModal({
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
-                  borderRadius: 2,
+                  borderRadius: "var(--ops-radius-card)",
                   p: 2,
                   mb: 2,
                 }}
@@ -1345,7 +1345,7 @@ export function InboundScanModal({
                   sx={{
                     border: "1px solid",
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     p: 2,
                     mb: 2,
                   }}
@@ -1399,7 +1399,7 @@ export function InboundScanModal({
                       sx={{
                         border: "1px solid",
                         borderColor: "primary.main",
-                        borderRadius: 2,
+                        borderRadius: "var(--ops-radius-card)",
                         p: 2,
                         mb: 1.5,
                       }}
@@ -1540,7 +1540,7 @@ export function InboundScanModal({
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
-                  borderRadius: 2,
+                  borderRadius: "var(--ops-radius-card)",
                   p: 2,
                   mt: 2,
                 }}
@@ -1575,7 +1575,7 @@ export function InboundScanModal({
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
-                  borderRadius: 2,
+                  borderRadius: "var(--ops-radius-card)",
                   p: 2,
                   mt: 2,
                 }}
@@ -1637,7 +1637,7 @@ export function InboundScanModal({
                   sx={{
                     border: "1px solid",
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     p: 2,
                     mt: 2,
                   }}
@@ -1869,7 +1869,7 @@ export function InboundSourceScreen({
         sx={{
           border: "1px solid",
           borderColor: "divider",
-          borderRadius: 2,
+          borderRadius: "var(--ops-radius-card)",
           p: 2,
         }}
       >

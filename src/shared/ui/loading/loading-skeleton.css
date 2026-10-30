@@ -76,7 +76,7 @@
   min-width: 0;
   padding: 16px;
   border: 1px solid var(--hn-skeleton-border);
-  border-radius: 10px;
+  border-radius: var(--ops-radius-card);
   background: var(--hn-skeleton-surface);
 }
 .hn-skeleton__fields {
@@ -130,7 +130,7 @@
 .hn-skeleton--detail .hn-skeleton__heading > .hn-skeleton__shape--action { display: none; }
 .hn-skeleton--auth .hn-skeleton__shapes { display: grid; grid-template-columns: 1fr 1fr; align-items: center; min-height: 75dvh; }
 .hn-skeleton__hero { padding: 24px; }
-.hn-skeleton__shape--hero { height: 65dvh; border-radius: 12px; }
+.hn-skeleton__shape--hero { height: 65dvh; border-radius: var(--ops-radius-card); }
 @keyframes hn-skeleton-pulse {
   0%, 100% { opacity: .65; }
   50% { opacity: 1; }

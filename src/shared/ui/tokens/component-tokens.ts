@@ -40,9 +40,9 @@ export const COMPONENT_TOKENS = {
     titleFontSize: TYPOGRAPHY.cardTitle.fontSize,
     titleFontWeight: TYPOGRAPHY.cardTitle.fontWeight,
   },
-  /** [DX] dialog Vuexy cùng ngôn ngữ card (radius nhỏ); sheet mobile 16 */
+  /** Dialog dùng cùng bán kính với các khối nội dung. */
   modal: {
-    radius: 12,
+    radius: RADIUS.card,
     sheetRadius: RADIUS.sheet,
     titleFontSize: TYPOGRAPHY.cardTitle.fontSize,
     titleFontWeight: TYPOGRAPHY.cardTitle.fontWeight,

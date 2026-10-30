@@ -227,7 +227,7 @@ function DescriptionsBlock({
       sx={{
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 2,
+        borderRadius: "var(--ops-radius-card)",
         p: 2,
       }}
     >
@@ -829,7 +829,7 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
                         sx={{
                           border: "1px solid",
                           borderColor: "divider",
-                          borderRadius: 2,
+                          borderRadius: "var(--ops-radius-card)",
                           p: 1.5,
                         }}
                       >

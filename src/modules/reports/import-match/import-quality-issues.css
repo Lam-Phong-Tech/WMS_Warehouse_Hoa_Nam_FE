@@ -15,7 +15,7 @@
 .hn-import-issues__badge.is-error { background: var(--ops-danger-soft); color: var(--ops-danger); }
 .hn-import-issues__badge.is-warning { background: var(--ops-warning-soft); color: var(--ops-warning); }
 .hn-import-issues__detail { border-left: 1px solid var(--ops-line); padding: 18px; background: var(--ops-surface); }
-.hn-import-issues__callout { display: grid; gap: 8px; margin: 18px 0; padding: 16px; border-radius: 7px; }
+.hn-import-issues__callout { display: grid; gap: 8px; margin: 18px 0; padding: 16px; border-radius: var(--ops-radius-card); }
 .hn-import-issues__callout.is-error { background: var(--ops-danger-soft); color: var(--ops-danger); }
 .hn-import-issues__callout.is-warning { background: var(--ops-warning-soft); color: var(--ops-warning); }
 .hn-import-issues__callout span { font-size: 12px; font-weight: 700; }

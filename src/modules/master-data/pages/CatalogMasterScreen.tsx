@@ -667,9 +667,6 @@ export function CatalogMasterScreen() {
                   setPage(1);
                 }}
               />
-              <small>
-                {text("Tìm theo mã hoặc tên", "Search by code or name")}
-              </small>
             </div>
             <div className="hn-catalog-field">
               <span>{t("masterData.status.label")}</span>

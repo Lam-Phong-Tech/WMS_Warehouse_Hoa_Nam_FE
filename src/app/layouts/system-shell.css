@@ -118,7 +118,6 @@
 
 .hn-system-shell .hn-topbar .topbar-search:focus-within {
   border-color: var(--map-link);
-  box-shadow: 0 0 0 3px var(--map-focus-ring);
 }
 
 .hn-system-shell .hn-topbar .topbar-search input {
@@ -206,6 +205,10 @@
 .hn-system-shell .hn-topbar :is(button, input):focus-visible {
   outline: 2px solid var(--map-white);
   outline-offset: 2px;
+}
+
+.hn-system-shell .hn-topbar .topbar-search input:focus-visible {
+  outline: none;
 }
 
 .hn-system-shell .hn-topbar .header-menu :is(button, input):focus-visible {

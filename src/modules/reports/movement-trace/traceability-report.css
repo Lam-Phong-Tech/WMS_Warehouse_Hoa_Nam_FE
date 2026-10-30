@@ -338,7 +338,7 @@
   bottom: auto;
   padding: 12px;
   border: 1px solid var(--trace-line);
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   background: white;
   box-shadow: 0 12px 28px rgb(7 61 119 / 16%);
 }
@@ -367,7 +367,7 @@
   min-height: 112px;
   padding: 12px 16px;
   border: 1px solid var(--trace-line);
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   box-shadow: var(--trace-shadow);
 }
 
@@ -799,7 +799,7 @@
   margin: 0 12px 8px;
   padding: 5px 8px 5px 10px;
   border: 1px solid #ffc575;
-  border-radius: 5px;
+  border-radius: var(--ops-radius-card);
   background: var(--ops-pale);
   color: #f24d17;
 }
@@ -1105,7 +1105,7 @@
 .hn-vuexy-date-popup.hn-vuexy-date-popup .ant-picker-panel-container {
   overflow: hidden;
   border: 1px solid var(--ops-line);
-  border-radius: 9px;
+  border-radius: var(--ops-radius-card);
   box-shadow: 0 13px 35px rgb(7 61 119 / 17%);
 }
 
@@ -1154,7 +1154,7 @@
 .hn-vuexy-date-popup.hn-vuexy-date-popup.MuiPopover-paper {
   overflow: hidden;
   border: 1px solid var(--ops-line);
-  border-radius: 9px;
+  border-radius: var(--ops-radius-card);
   box-shadow: 0 13px 35px rgb(7 61 119 / 17%);
 }
 

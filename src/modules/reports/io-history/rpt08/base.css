@@ -65,7 +65,7 @@
 #rpt08-history-report .rpt08-card {
   min-width: 0;
   border: 1px solid var(--rpt08-border);
-  border-radius: 9px;
+  border-radius: var(--ops-radius-card);
   background: var(--rpt08-card);
   box-shadow: var(--rpt08-shadow);
 }
@@ -558,6 +558,7 @@
 }
 
 #rpt08-history-report .rpt08-reset-button {
+  border: 1px solid var(--ops-line);
   background: transparent;
   color: #0c477f;
 }

@@ -69,7 +69,7 @@ function AuditDataBlock({ title, data }: { title: string; data: unknown }) {
         sx={{
           bgcolor: "var(--settings-pale)",
           border: "1px solid var(--settings-line)",
-          borderRadius: "10px",
+          borderRadius: "var(--ops-radius-card)",
           p: 2,
         }}
       >
@@ -147,7 +147,7 @@ export function AuditLogDetailDrawer({
           className="hn-settings-card"
           sx={{
             border: "1px solid var(--settings-line)",
-            borderRadius: "10px",
+            borderRadius: "var(--ops-radius-card)",
             p: 2,
           }}
         >

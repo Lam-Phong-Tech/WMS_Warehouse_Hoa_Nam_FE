@@ -114,7 +114,7 @@ const DISPLAY_DATE = "DD-MM-YYYY";
 const REPORT_SURFACE_SX = {
   bgcolor: S.bgSurface,
   border: `1px solid ${S.border}`,
-  borderRadius: 10,
+  borderRadius: "var(--ops-radius-card)",
   boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
 } as const;
 
@@ -1285,7 +1285,11 @@ export default function ImportMatchReport() {
                   : t("reports.importMatchReport.showFilters")}
               </UiButton>
             ) : null}
-            <UiButton appearance="text" onClick={resetFilters}>
+            <UiButton
+              appearance="outlined"
+              sx={{ borderColor: "var(--ops-line)" }}
+              onClick={resetFilters}
+            >
               {t("reports.importMatchReport.reset")}
             </UiButton>
           </Stack>

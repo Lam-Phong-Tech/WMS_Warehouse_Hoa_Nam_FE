@@ -192,3 +192,29 @@ test("pointer hover, click, editing and option selection keep a single border", 
   await expect(province.getByRole("combobox")).toHaveValue("Hà Nội");
   await expectSingleFocus(province);
 });
+
+test("PV product edit label stays clear on hover and focus", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/e2e/fixtures/outlined-fields.html?skin=pv-catalog-dialog");
+  const field = page.getByTestId("pv-display-name");
+  const input = field.locator("input");
+  await field.hover();
+  await input.click();
+  await expectSingleFocus(field);
+  await expect(field.locator(".MuiOutlinedInput-root")).toHaveCSS(
+    "box-shadow",
+    "none",
+  );
+  const label = await field.locator(".MuiInputLabel-root").boundingBox();
+  const notch = await field.locator("legend").boundingBox();
+  expect(label).not.toBeNull();
+  expect(notch).not.toBeNull();
+  expect(notch!.x).toBeLessThanOrEqual(label!.x - 2);
+  expect(notch!.x + notch!.width).toBeGreaterThanOrEqual(
+    label!.x + label!.width + 2,
+  );
+  await field.screenshot({
+    path: testInfo.outputPath("pv-display-name-focus.png"),
+  });
+});

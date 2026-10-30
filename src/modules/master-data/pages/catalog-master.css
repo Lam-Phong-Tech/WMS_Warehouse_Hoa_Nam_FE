@@ -179,7 +179,7 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
 .hn-catalog-screen .hn-catalog-filters,
 .hn-catalog-screen .hn-catalog-table-card {
   border: 1px solid var(--catalog-line);
-  border-radius: 12px;
+  border-radius: var(--ops-radius-card);
   background: var(--catalog-surface);
   box-shadow: none;
 }
@@ -276,12 +276,6 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
   font-size: 12px;
   line-height: 20px;
   font-weight: 600;
-}
-
-.hn-catalog-search > small {
-  color: var(--catalog-muted);
-  font-size: 12px;
-  line-height: 18px;
 }
 
 .hn-catalog-screen .MuiFormControl-root,
@@ -917,7 +911,7 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
   }
 }
 
-/* Search labels remain outside their controls; helper text never moves adjacent fields. */
+/* Search labels remain outside their controls. */
 .hn-catalog-filter-title {
   font-size: 16px;
   line-height: 24px;

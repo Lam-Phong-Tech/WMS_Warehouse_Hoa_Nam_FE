@@ -540,7 +540,7 @@
   padding: 16px;
   border: 1px solid
     color-mix(in srgb, var(--equation-accent) 17%, var(--hnf-equation-line));
-  border-radius: 10px;
+  border-radius: var(--ops-radius-card);
   background: var(--surface);
   box-shadow: var(--hnf-equation-shadow);
   overflow: visible;
@@ -655,7 +655,7 @@
   margin-top: 4px;
   padding: 14px 16px;
   border: 1px solid var(--hnf-row-line);
-  border-radius: 10px;
+  border-radius: var(--ops-radius-card);
   background: var(--hnf-equation-note-bg);
   color: var(--muted);
   font-size: 12.5px;

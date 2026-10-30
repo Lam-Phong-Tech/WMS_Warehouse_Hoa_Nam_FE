@@ -440,7 +440,7 @@ export function TraySelectionGrid({
       sx={{
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 2,
+        borderRadius: "var(--ops-radius-card)",
         p: 1.5,
         bgcolor: "background.paper",
       }}
@@ -478,7 +478,7 @@ export function TraySelectionGrid({
           p: 1,
           border: "1px solid",
           borderColor: "divider",
-          borderRadius: 2,
+          borderRadius: "var(--ops-radius-card)",
           bgcolor: "background.default",
         }}
       >
@@ -582,7 +582,7 @@ export function TraySelectionGrid({
           border: "1px solid",
           borderColor: selectedTray ? "success.main" : "divider",
           bgcolor: selectedTray ? S.successSoft : "background.default",
-          borderRadius: 2,
+          borderRadius: "var(--ops-radius-card)",
           px: 1.5,
           py: 1.25,
         }}

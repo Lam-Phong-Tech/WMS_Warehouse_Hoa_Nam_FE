@@ -278,6 +278,7 @@ function buildMuiTheme(mode: ThemeModeName) {
       MuiPaper: {
         styleOverrides: {
           root: {
+            "&.MuiPaper-rounded": { borderRadius: C.card.radius },
             transition: [
               `box-shadow ${MOTION.duration.normal}ms ${MOTION.easing.standard}`,
               `border-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
@@ -340,6 +341,7 @@ function buildMuiTheme(mode: ThemeModeName) {
         defaultProps: { ...MUI_ICON_SLOTS.MuiAlert },
         styleOverrides: {
           root: {
+            borderRadius: C.card.radius,
             animation: `hn-fade-in-up ${MOTION.duration.normal}ms ${MOTION.easing.out} backwards`,
           },
         },

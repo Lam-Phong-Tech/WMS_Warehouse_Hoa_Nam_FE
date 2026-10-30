@@ -419,6 +419,7 @@
   width: 100%;
   height: var(--ops-control-height);
   padding: 0 8px;
+  border: 1px solid var(--ops-line);
   border-radius: var(--ops-radius-control);
   background: transparent;
   color: var(--ops-text);
@@ -1316,7 +1317,7 @@
   align-items: center;
   gap: 10px;
   border: 1px solid var(--rpt07-border);
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   background: var(--ops-canvas);
 }
 
@@ -1339,7 +1340,7 @@
   margin-top: 12px;
   overflow-x: auto;
   border: 1px solid var(--rpt07-border);
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   background: var(--ops-surface);
 }
 
@@ -1656,7 +1657,7 @@
     margin: 0 0 10px;
     padding: 10px 11px;
     border: 1px solid var(--rpt07-border);
-    border-radius: 7px;
+    border-radius: var(--ops-radius-card);
     background: var(--ops-surface);
   }
 

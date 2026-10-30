@@ -283,7 +283,7 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   padding: 9px 12px;
   background: var(--out-pale);
   color: var(--out-primary);
-  border-radius: 6px;
+  border-radius: var(--ops-radius-card);
   font-size: 14px;
   line-height: 22px;
 }
@@ -465,7 +465,7 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
 }
 .hn-outbound-list .hn-outbound-reset {
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--out-line);
 }
 .hn-outbound-list .hn-outbound-reset:hover {
   background: var(--out-pale);

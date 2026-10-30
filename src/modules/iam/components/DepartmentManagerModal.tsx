@@ -265,7 +265,7 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
                     alignItems: "center",
                     justifyContent: "space-between",
                     border: (theme) => `1px solid ${theme.palette.divider}`,
-                    borderRadius: 1,
+                    borderRadius: "var(--ops-radius-card)",
                     px: 1.5,
                     py: 1,
                   }}

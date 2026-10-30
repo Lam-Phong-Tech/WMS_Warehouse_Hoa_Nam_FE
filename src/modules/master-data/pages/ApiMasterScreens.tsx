@@ -815,6 +815,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <>
                 <ActionButton
                   kind="import"
+                  className="hn-sku-import-button"
                   onClick={() => setImportModalOpen(true)}
                 >
                   {t("masterData.sku.importExcel")}
@@ -865,12 +866,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               }}
               fullWidth
             />
-            <span className="hn-sku-filter-hint">
-              {copy(
-                "Có thể tìm theo mã SKU hoặc tên sản phẩm",
-                "Search by SKU code or product name",
-              )}
-            </span>
           </div>
           <div className="hn-sku-filter">
             <span className="hn-sku-filter-label">
@@ -1186,7 +1181,27 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     return (
                       <tr
                         key={recordId}
+                        data-clickable="true"
                         data-status={record.status}
+                        tabIndex={0}
+                        onClick={(event) => {
+                          if (
+                            event.target instanceof Element &&
+                            event.target.closest(
+                              "a, button, input, select, textarea, [role='button']",
+                            )
+                          ) {
+                            return;
+                          }
+                          setViewing(record);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.target !== event.currentTarget) return;
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setViewing(record);
+                          }
+                        }}
                         data-created={
                           (mutationNotice?.kind === "success" &&
                             mutationNotice.code ===
@@ -1376,7 +1391,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               sx={{
                 border: 1,
                 borderColor: "divider",
-                borderRadius: 2,
+                borderRadius: "var(--ops-radius-card)",
                 p: 2,
               }}
             >
@@ -1531,7 +1546,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   sx={{
                     border: 1,
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     p: 2,
                     height: "100%",
                   }}
@@ -1686,7 +1701,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   sx={{
                     border: 1,
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     p: 2,
                     height: "100%",
                   }}
