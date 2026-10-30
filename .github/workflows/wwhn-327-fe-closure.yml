@@ -1,20 +1,6 @@
 name: WWHN-327 FE Closure
 
 on:
-  push:
-    branches:
-      - m1
-    paths:
-      - "src/modules/dashboard/**"
-      - "src/shared/api/endpoints.ts"
-      - "src/shared/constants/wms-permissions.ts"
-      - "e2e/wwhn-327-dashboard-kpi.spec.ts"
-      - "docs/Task_docs_Jira/WWHN-327.md"
-      - "docs/evidence/WWHN-327/**"
-      - "scripts/verify-wwhn-327-closure.mjs"
-      - "package.json"
-      - "yarn.lock"
-      - ".github/workflows/wwhn-327-fe-closure.yml"
   workflow_dispatch:
 
 permissions:

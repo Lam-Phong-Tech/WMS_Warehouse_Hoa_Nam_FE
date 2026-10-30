@@ -11,10 +11,6 @@ name: WWHN-233 FE count/recount deferral gate
 #   3. Bề mặt count/recount/partial/stale ở FE bằng zero.
 
 on:
-  push:
-    branches: [m1]
-  pull_request:
-    branches: [m1]
   workflow_dispatch:
 
 jobs:
