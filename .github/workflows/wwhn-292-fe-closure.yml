@@ -1,18 +1,6 @@
 name: WWHN-292 FE Closure
 
 on:
-  push:
-    branches:
-      - m1
-    paths:
-      - "src/**"
-      - "e2e/wwhn-292-ui-responsive-rbac.spec.ts"
-      - "docs/Task_docs_Jira/WWHN-292.md"
-      - "docs/evidence/wwhn-292/**"
-      - "scripts/verify-wwhn-292-closure.mjs"
-      - "package.json"
-      - "yarn.lock"
-      - ".github/workflows/wwhn-292-fe-closure.yml"
   workflow_dispatch:
 
 permissions:

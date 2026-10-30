@@ -8,22 +8,6 @@ name: WWHN-328 FE Consumer Pin
 # comment Jira nên nó đứt mà không ai biết.
 
 on:
-  push:
-    branches: [m1]
-    paths:
-      - "src/modules/dashboard/**"
-      - "docs/evidence/WWHN-327/**"
-      - "docs/evidence/WWHN-327/**"
-      - "docs/Task_docs_Jira/WWHN-327.md"
-      - "scripts/verify-wwhn-328-fe-consumer.mjs"
-      - ".github/workflows/wwhn-328-fe-consumer-pin.yml"
-  pull_request:
-    branches: [m1]
-    paths:
-      - "src/modules/dashboard/**"
-      - "docs/evidence/WWHN-327/**"
-      - "scripts/verify-wwhn-328-fe-consumer.mjs"
-      - ".github/workflows/wwhn-328-fe-consumer-pin.yml"
   workflow_dispatch:
 
 permissions:
