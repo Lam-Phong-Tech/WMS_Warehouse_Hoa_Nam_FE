@@ -42,9 +42,7 @@ export function buildLoginSchema(t: TranslateFn, copy: AuthUatCopy = getAuthUatC
 export const loginSchema = buildLoginSchema(tStatic);
 export type LoginFormValues = z.infer<typeof loginSchema>;
 
-/** Send exactly ONE identity field. Never manufacture an email from a username.
- * BE/dev currently prohibits username; see docs/uat/AUTH-UAT-new-v1.md.
- */
+/** Send exactly one identity field. The backend accepts username or email. */
 export function toLoginRequest(values: LoginFormValues): LoginRequest {
   const identifier = values.identifier.trim();
   return identifier.includes("@")
