@@ -260,7 +260,10 @@ export function MainLayout() {
                 location.pathname !== ROUTES.IAM_USERS &&
                 location.pathname !== ROUTES.REVERSE
               }
-              showDescription={location.pathname !== ROUTES.REVERSE}
+              showDescription={
+                location.pathname !== ROUTES.IAM_USERS &&
+                location.pathname !== ROUTES.REVERSE
+              }
               showContextBadges={location.pathname !== ROUTES.REVERSE}
             />
           )}

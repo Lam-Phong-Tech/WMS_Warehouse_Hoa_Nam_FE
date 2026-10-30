@@ -33,8 +33,6 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTextField,
-  Menu,
-  MenuItem,
 } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { SearchInput } from "@/shared/components";
@@ -411,11 +409,6 @@ export function PvProductCatalogPage() {
   const language = useLanguageStore((state) => state.language);
   const context = useAuthStore((state) => state.currentContext);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
-  const [rowMenu, setRowMenu] = useState<{
-    anchor: HTMLElement;
-    row: PvAdminProfile;
-  } | null>(null);
-
   // Kiểu hiển thị là lựa chọn của PHIÊN LÀM VIỆC, không nằm trong bộ lọc: đổi
   // qua dạng hộp không được đụng tới trang / từ khoá đang xem.
   const [view, setView] = useState<PvCatalogView>("table");
@@ -1129,14 +1122,15 @@ export function PvProductCatalogPage() {
                     >
                       {copy("Chỉnh sửa", "Edit")}
                     </RowActionButton>
-                    <RowActionButton kind="more" aria-label={
-                        copy("Thao tác với ", "Actions for ") + row.display_name
-                      }
-                      aria-haspopup="menu"
-                      aria-expanded={rowMenu?.row.id === row.id}
-                      onClick={(event) =>
-                        setRowMenu({ anchor: event.currentTarget, row })
-                      } />
+                    <RowActionButton
+                      kind={row.published ? "unpublish" : "publish"}
+                      aria-label={`${copy(
+                        row.published ? "Ẩn khỏi App PV" : "Hiển thị trên App PV",
+                        row.published ? "Hide from App PV" : "Show in App PV",
+                      )}: ${row.display_name}`}
+                      disabled={!canPublish || setPublished.isPending}
+                      onClick={() => void togglePublish(row, !row.published)}
+                    />
                   </RowActionGroup>
                 )}
               />
@@ -1191,35 +1185,6 @@ export function PvProductCatalogPage() {
           </div>
         ) : null}
       </section>
-      <Menu
-        className="pv-catalog-menu"
-        anchorEl={rowMenu?.anchor ?? null}
-        open={Boolean(rowMenu)}
-        onClose={() => setRowMenu(null)}
-      >
-        <MenuItem
-          disabled={!canManage}
-          onClick={() => {
-            if (rowMenu) openEdit(rowMenu.row);
-            setRowMenu(null);
-          }}
-        >
-          {t("pv.productCatalog.editAction")}
-        </MenuItem>
-        <MenuItem
-          disabled={!canPublish || setPublished.isPending}
-          onClick={() => {
-            if (rowMenu)
-              void togglePublish(rowMenu.row, !rowMenu.row.published);
-            setRowMenu(null);
-          }}
-        >
-          {rowMenu?.row.published
-            ? copy("Ẩn khỏi App PV", "Hide from App PV")
-            : copy("Hiển thị trên App PV", "Show in App PV")}
-        </MenuItem>
-      </Menu>
-
       <UiDialog
         className="pv-catalog-dialog"
         open={dialogMode !== null}

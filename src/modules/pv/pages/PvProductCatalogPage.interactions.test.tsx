@@ -263,27 +263,21 @@ describe("MST-PV-01 · catalog interactions", () => {
     { permission: "pv.master.manage", canManage: true, canPublish: false },
     { permission: "pv.publish", canManage: false, canPublish: true },
   ])(
-    "keeps row-menu actions gated for $permission",
+    "keeps direct row actions gated for $permission",
     async ({ permission, canManage, canPublish }) => {
       signInWith([permission]);
       renderWithProviders(<PvProductCatalogPage />);
-      fireEvent.click(
-        await screen.findByRole("button", {
-          name: "Thao tác với " + WITH_IMAGE.display_name,
-        }),
-      );
-
-      const menu = await screen.findByRole("menu");
-      const edit = within(menu).getByRole("menuitem", { name: "Sửa sản phẩm" });
-      const publish = within(menu).getByRole("menuitem", {
-        name: "Ẩn khỏi App PV",
+      const edit = await screen.findAllByTestId("pv-catalog-edit");
+      const publish = screen.getByRole("button", {
+        name: `Ẩn khỏi App PV: ${WITH_IMAGE.display_name}`,
       });
-      expect(edit.getAttribute("aria-disabled")).toBe(
-        canManage ? null : "true",
-      );
-      expect(publish.getAttribute("aria-disabled")).toBe(
-        canPublish ? null : "true",
-      );
+      expect(edit[0]).toHaveProperty("disabled", !canManage);
+      expect(publish).toHaveProperty("disabled", !canPublish);
+      expect(
+        screen.queryByRole("button", {
+          name: `Thao tác với ${WITH_IMAGE.display_name}`,
+        }),
+      ).not.toBeInTheDocument();
 
       fireEvent.click(publish);
       if (canPublish) {
@@ -294,14 +288,27 @@ describe("MST-PV-01 · catalog interactions", () => {
             WITH_IMAGE.version,
           ),
         );
-        await waitFor(() =>
-          expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
-        );
       } else {
         expect(setPvProductPublishedMock).not.toHaveBeenCalled();
       }
     },
   );
+
+  it("shows a hidden product on App PV with one click", async () => {
+    renderWithProviders(<PvProductCatalogPage />);
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: `Hiển thị trên App PV: ${WITHOUT_IMAGE.display_name}`,
+      }),
+    );
+    await waitFor(() =>
+      expect(setPvProductPublishedMock).toHaveBeenCalledWith(
+        WITHOUT_IMAGE.sku_id,
+        true,
+        WITHOUT_IMAGE.version,
+      ),
+    );
+  });
 
   it.each([412, 428])(
     "refetches a stale publish (%s) without losing filters or retrying the write",
