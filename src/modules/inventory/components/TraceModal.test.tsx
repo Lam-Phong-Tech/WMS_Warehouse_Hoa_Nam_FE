@@ -49,6 +49,15 @@ describe("TraceModal (TRACE-01)", () => {
     ).toBeInTheDocument();
   });
 
+  it("mở từ báo cáo với mã vật lý có sẵn thì truy vết mã ngay", async () => {
+    renderWithProviders(
+      <TraceModal movementId={null} initialCode="RFID-BOX-1" onClose={() => {}} />,
+    );
+
+    expect(screen.getByLabelText("Tra cứu mã vật lý")).toHaveValue("RFID-BOX-1");
+    expect(usePhysicalCodeTrace).toHaveBeenCalledWith("RFID-BOX-1");
+  });
+
   it("truy vết theo movementId: hiển thị chi tiết movement + chứng từ nguồn + timeline (DEV211-P1-01)", async () => {
     vi.mocked(useStockMovement).mockReturnValue(
       emptyQuery({
@@ -119,7 +128,7 @@ describe("TraceModal (TRACE-01)", () => {
     fireEvent.change(screen.getByLabelText("Tra cứu mã vật lý"), {
       target: { value: "SN-ITEM-1" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Tra cứu/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Tra cứu/ }));
 
     // i18n: resolved_type ITEM render qua SCAN_CLASSIFICATION_LABELS.
     expect(await screen.findByText("Sản phẩm cụ thể")).toBeInTheDocument();
@@ -156,7 +165,7 @@ describe("TraceModal (TRACE-01)", () => {
     fireEvent.change(screen.getByLabelText("Tra cứu mã vật lý"), {
       target: { value: "RFID-BOX-1" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Tra cứu/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Tra cứu/ }));
 
     // i18n: nhánh CONTAINER hiện mô tả "Mã vật chứa" + bảng sản phẩm trong vật chứa.
     expect(await screen.findByText("Mã vật chứa")).toBeInTheDocument();
@@ -175,7 +184,7 @@ describe("TraceModal (TRACE-01)", () => {
     fireEvent.change(screen.getByLabelText("Tra cứu mã vật lý"), {
       target: { value: "UNKNOWN-CODE" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Tra cứu/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Tra cứu/ }));
 
     expect(
       await screen.findByText("Không tìm thấy mã vật lý"),
@@ -222,10 +231,10 @@ describe("TraceModal (TRACE-01)", () => {
     ).toBeInTheDocument();
   });
 
-  it("nút Tra cứu bị disable khi ô nhập trống", () => {
+  it("nút Tra cứu bị disable khi ô nhập trống", async () => {
     renderWithProviders(<TraceModal movementId={null} onClose={() => {}} />);
 
-    expect(screen.getByRole("button", { name: /Tra cứu/ })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: /Tra cứu/ })).toBeDisabled();
   });
 
   it("Enter trong ô tra cứu kích hoạt lookup giống bấm nút", async () => {

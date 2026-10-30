@@ -83,6 +83,7 @@ const MOVEMENT_TRACE = {
       product_code: "SKU-VENT-01",
       product_name: "Máy thở VENT",
       qty_delta: 2,
+      physical_code: "RFID-BOX-1",
       actor: "thukho.hn",
       source_type: "INBOUND_DOCUMENT",
       source_id: "in-1",
@@ -108,6 +109,15 @@ const PAGE_PAYLOAD: Record<string, unknown> = {
 // Danh mục SKU của màn báo cáo giờ đi qua GET /skus/lookup (một request, không
 // phân trang — xem fetchAllSkus); cùng dòng dữ liệu với "/products" ở trên.
 PAYLOAD["/skus/lookup"] = PAGE_PAYLOAD["/products"];
+PAYLOAD["/stock-movements/trace-by-code"] = {
+  physical_code: { code_value: "RFID-BOX-1", carrier_type: "RFID", status: "ACTIVE" },
+  resolved_type: "CONTAINER",
+  resolved_id: "box-1",
+  resolved_object: { container_code: "BOX-1", container_type: "BOX" },
+  container_items: [],
+  movements: [],
+  warranty_history: [],
+};
 
 function renderReport() {
   renderWithProviders(<MovementTraceReport />, [ROUTES.REPORTS_TRACEABILITY]);
@@ -246,6 +256,32 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     expect(drawer).not.toHaveTextContent("chain-2");
     expect(drawer).not.toHaveTextContent("req-abc");
     expect(within(drawer).queryByText("Mã yêu cầu")).not.toBeInTheDocument();
+  });
+
+  it("từ bằng chứng mở lịch sử serial hoặc BOX bằng mã vật lý của dòng", async () => {
+    const user = userEvent.setup();
+    renderReport();
+
+    const table = await screen.findByRole("table");
+    const receiptRow = within(table)
+      .getByText("IN-2026-00031")
+      .closest("tr") as HTMLElement;
+    await user.click(receiptRow);
+
+    const drawer = await screen.findByRole("dialog", {
+      name: /Bằng chứng biến động/,
+    });
+    await user.click(
+      within(drawer).getByRole("button", { name: /Truy vết mã vật lý/ }),
+    );
+
+    expect(await screen.findByLabelText("Tra cứu mã vật lý")).toHaveValue(
+      "RFID-BOX-1",
+    );
+    expect(http.get).toHaveBeenCalledWith(
+      "/stock-movements/trace-by-code",
+      { params: { code: "RFID-BOX-1" } },
+    );
   });
 
   it("cột chuỗi phiếu đảo hiện mã biến động thay cho định danh chuỗi nội bộ", async () => {

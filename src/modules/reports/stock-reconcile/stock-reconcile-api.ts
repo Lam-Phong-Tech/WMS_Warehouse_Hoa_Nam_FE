@@ -283,6 +283,7 @@ export function useStockReconcileSnapshot({
 
 export type MovementEvent = {
   id: string;
+  movement_no: string;
   movement_type: string;
   occurred_at: string;
   warehouse_code: string;
@@ -314,6 +315,7 @@ export function useSkuMovements(skuCode: string | null) {
       .filter((row) => text(row.product_code, "") === skuCode)
       .map((row) => ({
         id: text(row.id, ""),
+        movement_no: text(row.movement_no, ""),
         movement_type: text(row.movement_type, ""),
         occurred_at: text(row.occurred_at, ""),
         warehouse_code: text(row.warehouse_code, ""),

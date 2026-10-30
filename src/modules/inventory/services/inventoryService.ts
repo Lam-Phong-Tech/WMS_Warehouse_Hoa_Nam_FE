@@ -197,6 +197,53 @@ export type SubledgerResult = {
   container_count: number;
 };
 
+/** P18 is a read-only BOX register, not a warehouse balance or placement proof. */
+export type BoxReadProjection = {
+  container_id: string;
+  container_code: string;
+  container_type: "BOX";
+  status: string;
+  sku: { id: string; code: string; name: string; unit: string } | null;
+  contained_qty: number | null;
+  quantity_status: string;
+  available_qty: null;
+  reserved_qty: null;
+  parent_container_id: string | null;
+  location_hint: string | null;
+};
+
+export async function fetchBoxReadProjection(
+  containerId: string,
+  warehouseId: string,
+): Promise<BoxReadProjection> {
+  return http.get<BoxReadProjection>(
+    API_ENDPOINTS.CONTAINER.replace(":id", encodeURIComponent(containerId)),
+    {
+      params: { warehouse_id: warehouseId },
+      headers: { "X-Container-Read-Contract": "p18-single-warehouse-boxes-v1" },
+    },
+  );
+}
+
+export type ContainerRegisterDetail = {
+  container_id: string;
+  container_code: string;
+  container_type: string;
+  status: string;
+  parent_container_id: string | null;
+  location_hint: string | null;
+  items?: RawRecord[];
+};
+
+/** Register metadata only; a parent link does not prove physical placement. */
+export async function fetchContainerRegisterDetail(
+  containerId: string,
+): Promise<ContainerRegisterDetail> {
+  return http.get<ContainerRegisterDetail>(
+    API_ENDPOINTS.CONTAINER.replace(":id", encodeURIComponent(containerId)),
+  );
+}
+
 export type PagedResult<T> = { rows: T[]; meta: ApiMeta };
 
 function rowsOf<T>(value: T[] | { data?: T[] } | undefined | null): T[] {

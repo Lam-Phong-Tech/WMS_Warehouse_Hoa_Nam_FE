@@ -6,12 +6,16 @@ import {
   traceStockMovementSource,
   traceByPhysicalCode,
   fetchBalanceSubledger,
+  fetchBoxReadProjection,
+  fetchContainerRegisterDetail,
   type InventoryBalanceFilters,
   type StockMovementFilters,
   type PagedResult,
   type InventoryBalanceRow,
   type StockMovementRow,
   type SubledgerResult,
+  type BoxReadProjection,
+  type ContainerRegisterDetail,
 } from "../services/inventoryService";
 
 export const inventoryKeys = {
@@ -26,6 +30,10 @@ export const inventoryKeys = {
     [...inventoryKeys.all, "traceByCode", code] as const,
   subledger: (balanceId: string) =>
     [...inventoryKeys.all, "subledger", balanceId] as const,
+  box: (containerId: string, warehouseId: string) =>
+    [...inventoryKeys.all, "box", containerId, warehouseId] as const,
+  container: (containerId: string) =>
+    [...inventoryKeys.all, "container", containerId] as const,
 };
 
 export function useInventoryBalances(params: InventoryBalanceFilters) {
@@ -63,6 +71,25 @@ export function useBalanceSubledger(balanceId: string | null | undefined) {
     queryKey: inventoryKeys.subledger(balanceId ?? ""),
     queryFn: () => fetchBalanceSubledger(balanceId ?? ""),
     enabled: Boolean(balanceId),
+  });
+}
+
+export function useBoxReadProjection(
+  containerId: string | null | undefined,
+  warehouseId: string | null | undefined,
+) {
+  return useQuery<BoxReadProjection>({
+    queryKey: inventoryKeys.box(containerId ?? "", warehouseId ?? ""),
+    queryFn: () => fetchBoxReadProjection(containerId ?? "", warehouseId ?? ""),
+    enabled: Boolean(containerId && warehouseId),
+  });
+}
+
+export function useContainerRegisterDetail(containerId: string | null | undefined) {
+  return useQuery<ContainerRegisterDetail>({
+    queryKey: inventoryKeys.container(containerId ?? ""),
+    queryFn: () => fetchContainerRegisterDetail(containerId ?? ""),
+    enabled: Boolean(containerId),
   });
 }
 

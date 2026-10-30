@@ -1,6 +1,6 @@
 /**
- * RPT-05 "Nhãn đóng gói · In / In lại" — màn port 1:1 mockup 8.6 chạy trên
- * endpoint thật qua `packing-label-api`.
+ * RPT-05 "Nhãn đóng gói · In / In lại" dùng endpoint thật qua
+ * `packing-label-api` và màn chi tiết/xem trước theo UIUX V2.
  *
  * File này khóa những gì typecheck không bắt được:
  *  · một dòng = một lần in, ghép đúng nhãn/phiếu/máy in/người thao tác từ ba
@@ -9,8 +9,7 @@
  *    in THÀNH CÔNG thứ hai trở đi), không phải "tổng số lần in trừ 1";
  *  · `FAILED` của trigger PostgreSQL và `PRINT_FAILED` của tầng nghiệp vụ về
  *    cùng một nhãn hiển thị;
- *  · tab Bảng/Lát cắt, bộ lọc chi tiết và hộp thoại audit đều dẫn tới dữ liệu
- *    thật chứ không phải nút chết.
+ *  · lọc trạng thái, mở chi tiết bản lưu, lịch sử in và xem trước nhãn từ đúng ID.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, within } from "@testing-library/react";
@@ -25,6 +24,9 @@ vi.mock("@/shared/api/http", () => ({
     post: vi.fn(),
     downloadFile: vi.fn(),
   },
+}));
+vi.mock("@/modules/outbound/components/AlignedOutboundDetailModal", () => ({
+  AlignedOutboundDetailModal: ({ documentId }: { documentId: string }) => <div data-testid="outbound-source-id">{documentId}</div>,
 }));
 
 import { http } from "@/shared/api/http";
@@ -144,6 +146,7 @@ const PAYLOAD: Record<string, unknown> = {
   "/reports/label-log": { rows: LABEL_LOG_ROWS, summary: {} },
   [`/label-snapshots/${LABEL_1}`]: {
     id: LABEL_1,
+    outbound_document_id: "outbound-1",
     status: "PRINTED",
     version: 2,
     applied_at: "2026-09-01T08:10:00+07:00",
@@ -229,34 +232,27 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(within(table).getAllByText("PL-PX-0001")).toHaveLength(2);
     expect(within(table).getAllByText("PL-PX-0002")).toHaveLength(2);
     expect(within(table).getAllByText("Đại lý An Phát")).toHaveLength(2);
-    expect(within(table).getAllByText("Nguyễn Kho Vận")).toHaveLength(4);
     // Định danh bản lưu (label_snapshot_id) không có mã nghiệp vụ — bảng chỉ
     // hiện mã nhãn, không in định danh nội bộ (phản ánh 10/09/2026).
     expect(table).not.toHaveTextContent(LABEL_1);
     expect(table).not.toHaveTextContent(LABEL_2);
-    expect(within(table).getAllByText(/Zebra ZD421/)).toHaveLength(2);
-
-    // `FAILED` của trigger đọc ra đúng nhãn nghiệp vụ, kèm lý do đã Việt hoá.
-    expect(within(table).getByText("In lỗi")).toBeInTheDocument();
-    expect(within(table).getByText("Máy in hết giấy")).toBeInTheDocument();
-    expect(within(table).getByText("Máy in hết giấy nhãn")).toBeInTheDocument();
-
-    // In lại = lần in THÀNH CÔNG thứ hai; thử lại sau lỗi vẫn là Print.
-    expect(within(table).getAllByText("In lại")).toHaveLength(1);
-    expect(within(table).getAllByText("In lần đầu")).toHaveLength(3);
+    const user = userEvent.setup();
+    await user.click(within(table).getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0]);
+    expect((await screen.findAllByText(/Zebra ZD421 · Nguyễn Kho Vận/)).length).toBe(2);
+    expect(screen.getByText("Nhãn đầu bị nhòe khi dán")).toBeInTheDocument();
+    expect(screen.getByText("In lại")).toBeInTheDocument();
   });
 
   it("tổng quan tính trên đúng tập dòng đang hiển thị", async () => {
     renderReport();
 
-    const kpis = await screen.findByLabelText("Tổng quan vận hành in nhãn", {
+    const kpis = await screen.findByLabelText("Tổng quan in nhãn", {
       selector: "section",
     });
     expect(await within(kpis).findByText("4")).toBeInTheDocument(); // tổng lượt in
     expect(within(kpis).getByText("3")).toBeInTheDocument(); // in thành công
     expect(within(kpis).getAllByText("1")).toHaveLength(2); // in lỗi + in lại
-    expect(within(kpis).getByText("75%")).toBeInTheDocument();
-    expect(within(kpis).getAllByText("25%")).toHaveLength(2);
+    expect(kpis).toHaveTextContent(/75\s*%/);
   });
 
   it("ô tìm kiếm thu hẹp đúng tập event và cập nhật tổng quan", async () => {
@@ -266,69 +262,77 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     await screen.findByRole("table");
     await user.type(
       screen.getByRole("textbox", {
-        name: "Tìm phiếu xuất hoặc mã nhãn",
+        name: "Tìm trong danh sách nhãn",
       }),
       "PX-0002",
     );
 
     const table = await screen.findByRole("table");
     expect(within(table).getAllByRole("row")).toHaveLength(3); // 1 header + 2
-    expect(screen.getByText("2 sự kiện")).toBeInTheDocument();
+    expect(within(table).getAllByText("PL-PX-0002")).toHaveLength(2);
   });
 
-  it("mở bộ lọc chi tiết và chuyển Bảng ↔ Lát cắt", async () => {
+  it("lọc theo kết quả in và khôi phục đầy đủ dòng", async () => {
     const user = userEvent.setup();
     renderReport();
 
-    const advanced = await screen.findByRole("button", {
-      name: /Bộ lọc chi tiết/,
-    });
-    expect(advanced).toHaveAttribute("aria-expanded", "false");
-    await user.click(advanced);
-    expect(
-      screen.getByRole("button", { name: /Thu gọn bộ lọc/ }),
-    ).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByLabelText("Lọc theo thao tác")).toBeInTheDocument();
-    expect(screen.getByLabelText("Lọc theo kết quả")).toBeInTheDocument();
-    expect(screen.getByLabelText("Lọc theo máy in")).toBeInTheDocument();
-
-    const sliceTab = screen.getByRole("tab", { name: /Dạng hộp/ });
-    await user.click(sliceTab);
-    expect(sliceTab).toHaveAttribute("aria-selected", "true");
-    // Sang Lát cắt thì lưới bộ lọc thu lại, chừa nút bung lại.
-    expect(
-      await screen.findByRole("button", { name: "Hiện bộ lọc" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("button", { name: /Xem vết kiểm chứng/ }),
-    ).toHaveLength(4);
+    const table = await screen.findByRole("table");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Trạng thái" }), "PRINT_FAILED");
+    expect(within(table).getAllByRole("row")).toHaveLength(2);
+    expect(within(table).getByText("Lỗi in")).toBeInTheDocument();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Trạng thái" }), "");
+    expect(within(table).getAllByRole("row")).toHaveLength(5);
   });
 
-  it("mở hộp thoại audit của đúng nhãn kèm bản lưu bất biến", async () => {
+  it("mở chi tiết đúng nhãn kèm bản lưu và lịch sử in", async () => {
     const user = userEvent.setup();
     renderReport();
 
-    await screen.findByRole("table");
+    await screen.findAllByRole("button", { name: /Xem chi tiết nhãn/ });
     await user.click(
-      screen.getAllByRole("button", { name: /Xem vết kiểm chứng/ })[0],
+      screen.getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0],
     );
 
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("Bản lưu bất biến")).toBeInTheDocument();
-    expect(within(dialog).getByText("v2")).toBeInTheDocument();
-    // Không còn ô "Mã bản lưu" in định danh nội bộ của bản lưu.
-    expect(within(dialog).queryByText("Mã bản lưu")).not.toBeInTheDocument();
-    expect(dialog).not.toHaveTextContent(LABEL_1);
-    expect(within(dialog).getByText("SKU-A x2, SKU-B x1")).toBeInTheDocument();
-    expect(within(dialog).getByText("Đại lý An Phát")).toBeInTheDocument();
-    // Lịch sử attempt chỉ của ĐÚNG nhãn đã mở (LS-1 có 2 lần in).
-    expect(
-      within(dialog).getByText("Lịch sử lần thử của nhãn"),
-    ).toBeInTheDocument();
-    expect(within(dialog).getAllByText("In lại")).toHaveLength(1);
-    expect(
-      within(dialog).getByText("Nhãn đầu bị nhòe khi dán"),
-    ).toBeInTheDocument();
+    const detail = await screen.findByTestId("packing-label-detail");
+    expect(within(detail).getByText("Trạng thái bản lưu")).toBeInTheDocument();
+    expect(within(detail).getByText("Đã in")).toBeInTheDocument();
+    expect(detail).not.toHaveTextContent(LABEL_1);
+    expect(within(detail).getByText("SKU-A x2, SKU-B x1")).toBeInTheDocument();
+    expect(within(detail).getByText("Nhãn đầu bị nhòe khi dán")).toBeInTheDocument();
+  });
+
+  it("mở trang chi tiết và bản xem trước từ đúng bản lưu nhãn", async () => {
+    const user = userEvent.setup();
+    vi.mocked(http.get).mockImplementation(async (url: unknown) =>
+      String(url) === "/reports/label-log"
+        ? ({ rows: LABEL_LOG_ROWS.map((row) => ({ ...row, outbound_date: "2026-10-29", created_at: "2026-10-29 08:00:00" })), summary: {} } as never)
+        : ((PAYLOAD[String(url)] ?? { rows: [] }) as never),
+    );
+    renderReport();
+    await screen.findAllByText("PL-PX-0001");
+
+    await user.click(screen.getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0]);
+    expect(await screen.findByRole("heading", { name: "Chi tiết nhãn đóng gói" })).toBeInTheDocument();
+    expect(http.get).toHaveBeenCalledWith("/label-snapshots/ls-1");
+    expect(screen.getByText("SKU-A x2, SKU-B x1")).toBeInTheDocument();
+    expect(screen.getByText("Lịch sử in nhãn")).toBeInTheDocument();
+    expect(screen.queryByText("Công ty Tân Phát")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Xem trước nhãn" }));
+    expect(await screen.findByRole("heading", { name: "Xem trước nhãn" })).toBeInTheDocument();
+    expect(screen.getByText("100 mm")).toBeInTheDocument();
+    expect(screen.getByText("150 mm")).toBeInTheDocument();
+    expect(screen.getAllByText("PL-PX-0001")).toHaveLength(2);
+  });
+
+  it("mở phiếu xuất nguồn từ ID của bản lưu nhãn", async () => {
+    const user = userEvent.setup();
+    renderReport();
+    await screen.findAllByRole("button", { name: /Xem chi tiết nhãn/ });
+    await user.click(screen.getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0]);
+    await screen.findByTestId("packing-label-detail");
+    await user.click(screen.getByRole("button", { name: "Mở phiếu xuất" }));
+    expect(screen.getByTestId("outbound-source-id")).toHaveTextContent("outbound-1");
   });
 
   /**
@@ -340,19 +344,20 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     const user = userEvent.setup();
     renderReport();
 
-    const table = await screen.findByRole("table");
+    await screen.findAllByRole("button", { name: /Xem chi tiết nhãn/ });
+    const table = screen.getByRole("table");
     expect(table).not.toHaveTextContent("PAPER_OUT");
 
     const failedRow = within(table)
       .getAllByRole("row")
-      .find((row) => row.textContent?.includes("Máy in hết giấy nhãn"));
+      .find((row) => row.textContent?.includes("Lỗi in"));
     await user.click(
-      within(failedRow!).getByRole("button", { name: /Xem vết kiểm chứng/ }),
+      within(failedRow!).getByRole("button", { name: /Xem chi tiết nhãn/ }),
     );
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByTestId("packing-label-detail");
     expect(
-      await within(dialog).findByText("Máy in hết giấy"),
+      await within(dialog).findByText("Máy in hết giấy nhãn"),
     ).toBeInTheDocument();
     expect(dialog).not.toHaveTextContent("PAPER_OUT");
   });
@@ -361,21 +366,20 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     const user = userEvent.setup();
     renderReport();
 
-    await screen.findByRole("table");
+    await screen.findAllByRole("button", { name: /Xem chi tiết nhãn/ });
     await user.click(
-      screen.getAllByRole("button", { name: /Xem vết kiểm chứng/ })[0],
+      screen.getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0],
     );
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByTestId("packing-label-detail");
     expect(await within(dialog).findByText("Đã in")).toBeInTheDocument();
     expect(dialog).not.toHaveTextContent("PRINTED");
   });
 
-  it("hai nút xuất mở theo quyền REPORT_EXPORT", async () => {
+  it("cho xuất báo cáo khi có quyền REPORT_EXPORT", async () => {
     renderReport();
 
     await screen.findByRole("table");
-    expect(screen.getByRole("button", { name: /Xuất XLSX/ })).toBeEnabled();
-    expect(screen.getByRole("button", { name: /Xuất PDF/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Xuất báo cáo/ })).toBeEnabled();
   });
 });

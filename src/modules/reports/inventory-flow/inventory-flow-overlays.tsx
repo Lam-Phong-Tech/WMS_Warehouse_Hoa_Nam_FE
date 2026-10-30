@@ -23,10 +23,12 @@ export function DrillDownModal({
   titleId,
   onClose,
   children,
+  className,
 }: {
   titleId: string;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 }) {
   const modalRef = useRef<HTMLElement>(null);
 
@@ -67,7 +69,7 @@ export function DrillDownModal({
       <div className="backdrop" onClick={onClose} />
       <section
         ref={modalRef}
-        className="modal"
+        className={`modal${className ? ` ${className}` : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

@@ -135,6 +135,8 @@ export type FlowDocument = {
   document_date: string;
   /** SKU mở hộp thoại đối soát khi bấm "Đối chiếu dòng chứng từ". */
   drillKey: string;
+  /** Dòng chứng từ đã có trong báo cáo; người chỉ có quyền xem báo cáo vẫn đọc được. */
+  reportLines?: Array<{ id: string; sku: string; name: string; expected: number; scanned: number; posted: number }>;
 };
 
 /** Một điểm của hai biểu đồ theo ngày. */
@@ -528,6 +530,14 @@ export function useInventoryFlowSnapshot({
         posted_at: text(row.posted_at, ""),
         document_date: text(row.document_date, ""),
         drillKey: text(lines[0]?.product_code, ""),
+        reportLines: lines.map((line) => ({
+          id: text(line.id, ""),
+          sku: text(line.product_code, ""),
+          name: text(line.product_name, ""),
+          expected: n(line.expected_qty),
+          scanned: n(line.scanned_qty),
+          posted: n(line.posted_qty),
+        })),
       });
     }
 

@@ -26,7 +26,6 @@ import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarCh
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
 import {
   useSkuCatalog,
-  useSkuImportReports,
   useUserDirectory,
 } from "@/modules/reports/operations/report-data";
 import {
@@ -41,7 +40,8 @@ import {
 import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import { useT } from "@/shared/i18n/useT";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
-import { useReportExport } from "@/modules/reports/operations/report-export";
+import { downloadImportQualityExport, useImportQualityBatches } from "./import-quality-api";
+import { ImportQualityIssuePanel } from "./ImportQualityIssuePanel";
 import { useClientPagination } from "@/modules/reports/operations/report-columns";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import {
@@ -237,6 +237,8 @@ export default function ImportQualityBaseline() {
   const [keyword, setKeyword] = useState("");
   const [issuesOnly, setIssuesOnly] = useState(false);
   const [openBatch, setOpenBatch] = useState<ImportMatchBatch | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   const from = range[0].format(API_DATE);
   const to = range[1].format(API_DATE);
@@ -245,14 +247,13 @@ export default function ImportQualityBaseline() {
 
   const catalog = useSkuCatalog();
   const users = useUserDirectory();
-  const source = useSkuImportReports({ enabled: !invalid });
-  const exporter = useReportExport();
+  const source = useImportQualityBatches(!invalid);
 
   const allRows = useMemo(
     () =>
       sortByNewest(
         buildImportBatches(
-          Array.isArray(source.data?.data) ? source.data.data : [],
+          Array.isArray(source.data) ? source.data : [],
           (actorId) =>
             users.entries.find((entry) => entry.user_id === actorId)?.name ??
             "",
@@ -311,18 +312,23 @@ export default function ImportQualityBaseline() {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const exportXlsx = () =>
-    exporter.exportReport("xlsx", {
-      reportCode: "import-match",
-      fileStem: "bao-cao-nhap-lieu-doi-chieu-loi",
-      fileSuffix: `-${from}-${to}`,
-      filters: {
+  const exportXlsx = async () => {
+    setExporting(true);
+    setExportError("");
+    try {
+      await downloadImportQualityExport({
         from_date: from,
         to_date: to,
         ...(result ? { result } : {}),
         ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
-      },
-    });
+        ...(issuesOnly ? { issues_only: "1" } : {}),
+      });
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : "Không thể tải báo cáo nhập liệu.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const pageNumbers = useMemo(() => {
     if (lastPage <= 4) return Array.from({ length: lastPage }, (_, i) => i + 1);
@@ -414,8 +420,8 @@ export default function ImportQualityBaseline() {
           <UiButton
             appearance="filled"
             startIcon={<DownloadOutlined />}
-            loading={exporter.exporting === "xlsx"}
-            disabled={invalid || source.isLoading}
+            loading={exporting}
+            disabled={invalid || source.isLoading || kind !== "all"}
             onClick={() => void exportXlsx()}
           >
             {tUi("reports.traceability.exportReport")}
@@ -570,6 +576,7 @@ export default function ImportQualityBaseline() {
           onRetry={refresh}
         />
       ) : null}
+      {exportError ? <UiAlert tone="error">{exportError}</UiAlert> : null}
 
       <Box
         component="section"
@@ -1134,6 +1141,7 @@ export default function ImportQualityBaseline() {
               </Box>
             ))}
           </Box>
+          {openBatch.id ? <ImportQualityIssuePanel key={openBatch.id} batchId={openBatch.id} sourceFile={openBatch.sourceFile} /> : null}
         </DrillDownDialog>
       ) : null}
     </Box>

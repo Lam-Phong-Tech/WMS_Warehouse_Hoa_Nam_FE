@@ -72,6 +72,7 @@ import {
 } from "@/modules/reports/operations/report-section-filter";
 import { InventoryFlowChart } from "./inventory-flow-chart";
 import { DrillDownModal, ModalCloseButton } from "./inventory-flow-overlays";
+import { FlowDocumentDetailModal } from "./FlowDocumentDetailModal";
 import {
   ALL_WAREHOUSES_LABEL,
   closingOf,
@@ -346,6 +347,10 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
     row: XntRow;
     trigger: HTMLElement;
   } | null>(null);
+  const [documentDrill, setDocumentDrill] = useState<{
+    document: FlowDocument & { doc_type: "INBOUND" | "OUTBOUND" };
+    trigger: HTMLElement;
+  } | null>(null);
 
   const { snapshot, loading, fetching, error, refetch } =
     useInventoryFlowSnapshot({
@@ -574,6 +579,10 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
   const closeDrill = () => {
     drill?.trigger.focus({ preventScroll: true });
     setDrill(null);
+  };
+  const closeDocumentDrill = () => {
+    documentDrill?.trigger.focus({ preventScroll: true });
+    setDocumentDrill(null);
   };
 
   const openDrill = (skuCode: string, trigger: HTMLElement) => {
@@ -1471,20 +1480,21 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
                         <button
                           className="button insight-action"
                           type="button"
-                          disabled={document.drillKey === ""}
-                          /* Nút chỉ tắt khi chứng từ chưa truy được SKU nào (phiếu
-                           chưa Post nên chưa sinh movement) — nói rõ lý do thay
-                           vì để người dùng bấm vào một nút không phản hồi. */
+                          disabled={document.doc_type === "REVERSAL" && document.drillKey === ""}
                           title={
-                            document.drillKey === ""
+                            document.doc_type === "REVERSAL" && document.drillKey === ""
                               ? t("reports.inventoryFlowReport.drillDisabled")
                               : undefined
                           }
-                          onClick={(event) =>
-                            openDrill(document.drillKey, event.currentTarget)
-                          }
+                          onClick={(event) => {
+                            if (document.doc_type === "REVERSAL") {
+                              openDrill(document.drillKey, event.currentTarget);
+                            } else {
+                              setDocumentDrill({ document: document as FlowDocument & { doc_type: "INBOUND" | "OUTBOUND" }, trigger: event.currentTarget });
+                            }
+                          }}
                         >
-                          {t("reports.inventoryFlowReport.drillDocument")}
+                          {t(document.doc_type === "REVERSAL" ? "reports.inventoryFlowReport.drillDocument" : "reports.inventoryFlowReport.detailOpen")}
                           <VuexyDemoIcon name="arrow-right" />
                         </button>
                       </div>
@@ -1497,6 +1507,10 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
           </section>
         </div>
       </div>
+
+      {documentDrill !== null ? (
+        <FlowDocumentDetailModal document={documentDrill.document} onClose={closeDocumentDrill} />
+      ) : null}
 
       {drillRow !== null ? (
         <DrillDownModal titleId="rpt01-detail-title-modal" onClose={closeDrill}>

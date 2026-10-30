@@ -25,9 +25,12 @@ import { useReportExport } from "../operations/report-export";
 import { useT } from "@/shared/i18n/useT";
 import {
   usePackingLabelReport,
+  usePackingLabelSnapshot,
   type PackingLabelEvent,
   type PackingLabelResult,
 } from "./packing-label-api";
+import { PackingLabelSnapshotScreen } from "./PackingLabelSnapshotScreen";
+import { AlignedOutboundDetailModal } from "@/modules/outbound/components/AlignedOutboundDetailModal";
 import {
   fetchLabelSnapshots,
   printLabelSnapshot,
@@ -89,6 +92,9 @@ export default function PackingLabelPrintReport() {
   const [tableKeyword, setTableKeyword] = useState("");
   const [page, setPage] = useState(1);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [detailLabelId, setDetailLabelId] = useState<string | null>(null);
+  const [viewOutboundId, setViewOutboundId] = useState<string | null>(null);
+  const [preview, setPreview] = useState(false);
   const [actionEventId, setActionEventId] = useState<string | null>(null);
   const [actionPhase, setActionPhase] = useState<ActionPhase>("idle");
   const [reprintRow, setReprintRow] = useState<PackingLabelEvent | null>(null);
@@ -115,6 +121,13 @@ export default function PackingLabelPrintReport() {
     to: period.to,
     enabled: online,
   });
+
+  const snapshotContext = useMemo(() => ({
+    labels: report.labels,
+    printerNames: new Map(report.printerOptions.map((item) => [item.value, item.label])),
+    actorNames: new Map(report.events.filter((item) => item.actorId).map((item) => [item.actorId, item.actorName])),
+  }), [report.labels, report.printerOptions, report.events]);
+  const snapshot = usePackingLabelSnapshot(detailLabelId, snapshotContext);
 
   const draftInvalid = draftRange[0].isAfter(draftRange[1], "day");
 
@@ -174,6 +187,10 @@ export default function PackingLabelPrintReport() {
     filteredRows.find((row) => row.eventId === selectedEventId) ??
     pageRows[0] ??
     null;
+
+  const detailEvent = report.events.find((row) => row.labelId === detailLabelId && row.eventId === selectedEventId)
+    ?? report.events.find((row) => row.labelId === detailLabelId)
+    ?? null;
 
   const applyFilters = () => {
     if (draftInvalid) return;
@@ -340,6 +357,28 @@ export default function PackingLabelPrintReport() {
       statusFilter !== "");
 
   const showFullFailure = !online || Boolean(report.error);
+
+  if (detailLabelId) {
+    return <><PackingLabelSnapshotScreen
+      detail={snapshot.detail}
+      loading={snapshot.loading}
+      error={snapshot.error}
+      preview={preview}
+      selectedEvent={detailEvent}
+      onBack={() => { setDetailLabelId(null); setPreview(false); setViewOutboundId(null); }}
+      onPreview={() => setPreview((current) => !current)}
+      onPrint={() => {
+        if (detailEvent) {
+          setDetailLabelId(null);
+          setPreview(false);
+          void handlePrint(detailEvent);
+        }
+      }}
+      onOpenSource={() => {
+        if (snapshot.detail?.outboundDocumentId) setViewOutboundId(snapshot.detail.outboundDocumentId);
+      }}
+    />{viewOutboundId ? <AlignedOutboundDetailModal documentId={viewOutboundId} onClose={() => setViewOutboundId(null)} onChanged={() => void report.refetch()} /> : null}</>;
+  }
 
   return (
     <div className="hn-pkg-label" data-testid="rpt-tab-packing-label">
@@ -810,6 +849,18 @@ export default function PackingLabelPrintReport() {
                           </td>
                           <td>
                             <RowActionGroup>
+                              <RowActionButton
+                                kind="view"
+                                aria-label={`Xem chi tiết nhãn ${row.labelCode}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setSelectedEventId(row.eventId);
+                                  setDetailLabelId(row.labelId);
+                                  setPreview(false);
+                                }}
+                              >
+                                Chi tiết
+                              </RowActionButton>
                               <RowActionButton
                                 kind="print"
                                 disabled={actionPhase !== "idle" || !online}

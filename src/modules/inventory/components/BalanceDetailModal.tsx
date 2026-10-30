@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import {
   Box,
   Grid,
@@ -39,6 +39,7 @@ import { ActionIconButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import "./inventory-dialog.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
+import { BoxReadDetailDialog } from "./BoxReadDetailDialog";
 
 const INVENTORY_DIALOG_TABLE_HEADER_STYLE: CSSProperties = {
   background: "var(--invd-pale)",
@@ -184,6 +185,7 @@ export function BalanceDetailModal({
 
   const subledgerQuery = useBalanceSubledger(String(balance.id));
   const subledger = subledgerQuery.data;
+  const [selectedBox, setSelectedBox] = useState<{ id: string; code: string } | null>(null);
 
   const movementColumns: ResponsiveTableColumn<StockMovementRow>[] = [
     {
@@ -352,7 +354,21 @@ export function BalanceDetailModal({
       key: "container_code",
       header: t("inventory.detail.colContainerCode"),
       width: 140,
-      render: (row) => <CodeText>{text(row.container_code)}</CodeText>,
+      render: (row) => {
+        const id = text(row.container_id ?? row.id, "");
+        const code = text(row.container_code);
+        const isBox = text(row.container_type, "").toUpperCase() === "BOX";
+        return isBox && id && subledger?.warehouse_id ? (
+          <button
+            type="button"
+            className="hn-inventory-box-link"
+            aria-label={`Xem BOX ${code}`}
+            onClick={() => setSelectedBox({ id, code })}
+          >
+            <CodeText>{code}</CodeText>
+          </button>
+        ) : <CodeText>{code}</CodeText>;
+      },
     },
     {
       key: "container_type",
@@ -406,6 +422,7 @@ export function BalanceDetailModal({
   ];
 
   return (
+    <>
     <UiDialog
       {...dialog.dialogProps}
       className="hn-inventory-dialog"
@@ -650,5 +667,14 @@ export function BalanceDetailModal({
         </div>
       </Stack>
     </UiDialog>
+    {selectedBox && subledger?.warehouse_id ? (
+      <BoxReadDetailDialog
+        containerId={selectedBox.id}
+        warehouseId={subledger.warehouse_id}
+        code={selectedBox.code}
+        onClose={() => setSelectedBox(null)}
+      />
+    ) : null}
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
+import { TraceModal } from "@/modules/inventory/components/TraceModal";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   useCallback,
@@ -596,6 +597,7 @@ export default function MovementTraceReport() {
   // Lỗi khoảng ngày lúc bấm Tra cứu — hiện ngay dưới ô, không bắn query.
   const [dateError, setDateError] = useState<string | null>(null);
   const [selected, setSelected] = useState<MovementTraceRow | null>(null);
+  const [selectedPhysicalCode, setSelectedPhysicalCode] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
   const catalog = useSkuCatalog();
@@ -1963,6 +1965,25 @@ export default function MovementTraceReport() {
                     label={t("reports.movementTrace.fieldReversalChain")}
                     value={reversalChainText(selected)}
                   />
+                  {selected.physicalCode ? (
+                    <EvidenceField
+                      label="Mã vật lý"
+                      value={
+                        <Stack spacing={1} sx={{ alignItems: "flex-start" }}>
+                          <span>{selected.physicalCode}</span>
+                          <UiButton
+                            size="small"
+                            appearance="outlined"
+                            onClick={() =>
+                              setSelectedPhysicalCode(selected.physicalCode)
+                            }
+                          >
+                            Truy vết mã vật lý
+                          </UiButton>
+                        </Stack>
+                      }
+                    />
+                  ) : null}
                   {/* Không có ô "Mã yêu cầu": giá trị cũ là meta.request_id của
                     CHÍNH lần gọi báo cáo — giống nhau cho mọi dòng, chỉ là mã
                     đối chiếu log, không phải bằng chứng của biến động này. */}
@@ -1984,6 +2005,13 @@ export default function MovementTraceReport() {
           ) : null}
         </Box>
       </Drawer>
+      {selectedPhysicalCode ? (
+        <TraceModal
+          movementId={null}
+          initialCode={selectedPhysicalCode}
+          onClose={() => setSelectedPhysicalCode(null)}
+        />
+      ) : null}
     </Box>
   );
 }
