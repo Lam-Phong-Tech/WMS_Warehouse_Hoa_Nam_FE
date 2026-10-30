@@ -16,7 +16,7 @@ export function ReportChartPanel({
   children,
 }: ReportChartPanelProps) {
   return (
-    <Card variant="outlined" sx={{ borderRadius: 2, height: "100%" }}>
+    <Card variant="outlined" sx={{ borderRadius: "var(--ops-radius-card)", height: "100%" }}>
       <CardContent sx={{ display: "grid", gap: 1.25 }}>
         <Box
           sx={{

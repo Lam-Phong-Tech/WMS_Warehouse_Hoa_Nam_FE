@@ -125,7 +125,7 @@ function StatBox({ label, value }: { label: string; value: ReactNode }) {
       sx={{
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 2,
+        borderRadius: "var(--ops-radius-card)",
         px: 2,
         py: 1,
         minWidth: 110,
@@ -447,7 +447,7 @@ export function BalanceDetailModal({
           sx={{
             border: "1px solid",
             borderColor: "divider",
-            borderRadius: 2,
+            borderRadius: "var(--ops-radius-card)",
             p: 2,
           }}
         >

@@ -9,8 +9,8 @@ import { ACTION_KINDS, type ActionKind } from "./action-kinds";
  * Kiểu bề mặt của nút hành động.
  *
  * - `flat`  — nền trong suốt, chỉ icon mang màu nghiệp vụ.
- * - `tonal` — NỀN NHẠT cùng tông + chữ/icon đậm cùng màu, không viền, không
- *             đổ bóng. Dựng theo biến thể `tonal` của Vuexy.
+ * - `tonal` — NỀN NHẠT cùng tông + chữ/icon đậm cùng màu, không đổ bóng.
+ *             Riêng nút Đặt lại có viền nhạt để nhận diện rõ.
  */
 export type ActionAppearance = "flat" | "tonal";
 
@@ -67,7 +67,7 @@ export function actionTonalText(kind: ActionKind): string {
  * Bo góc lặp lại tường minh ở đây để ghi đè bo góc mà MUI tự đặt cho biến thể
  * nút đang dùng — giá trị vẫn là `RADIUS.control` chung của hệ.
  *
- * KHÔNG đổ bóng và KHÔNG viền — đúng như `variant="tonal"` của Vuexy.
+ * Không đổ bóng; chỉ hành động Đặt lại có viền nhạt.
  */
 // Cố ý KHÔNG chú thích kiểu trả về là SxProps<Theme>: SxProps có thể là mảng
 // hoặc hàm, nên nơi gọi không spread ({...}) vào sx được. Để TS tự suy ra kiểu
@@ -76,7 +76,7 @@ export function actionSurfaceSx(kind: ActionKind) {
   const tone = ACTION_ICON_COLORS[ACTION_KINDS[kind].tone];
   return {
     color: actionTonalText(kind),
-    border: 0,
+    border: kind === "reset" ? "1px solid var(--ops-line)" : 0,
     borderRadius: `${SURFACE.radius}px`,
     backgroundColor: tint(tone, SURFACE.fill),
     boxShadow: "none",

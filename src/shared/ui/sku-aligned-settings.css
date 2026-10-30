@@ -354,7 +354,7 @@
   border: 1px solid var(--settings-line);
 }
 .hn-settings-dialog .MuiDialog-paper {
-  border-radius: 12px;
+  border-radius: var(--ops-radius-dialog);
 }
 .hn-settings-dialog .MuiDialogTitle-root {
   color: var(--settings-ink);

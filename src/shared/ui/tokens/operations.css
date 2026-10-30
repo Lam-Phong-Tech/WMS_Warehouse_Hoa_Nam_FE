@@ -100,10 +100,11 @@ html[data-theme="dark"] {
   --wms-grey-200: var(--ops-pale);
   --wms-grey-300: var(--ops-line);
   --wms-grey-500: var(--ops-inactive);
+  --wms-radius-card: var(--ops-radius-card);
   --wms-focus-ring: 0 0 0 3px var(--ops-focus-ring);
   --ops-control-height: 40px;
   --ops-radius-control: 6px;
   --ops-radius-card: 8px;
-  --ops-radius-dialog: 12px;
+  --ops-radius-dialog: var(--ops-radius-card);
   --ops-gap: 14px;
 }

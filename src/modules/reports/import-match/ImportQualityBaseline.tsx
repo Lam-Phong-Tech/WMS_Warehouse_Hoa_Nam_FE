@@ -1122,7 +1122,7 @@ export default function ImportQualityBaseline() {
                 key={label}
                 sx={{
                   p: 1.25,
-                  borderRadius: "7px",
+                  borderRadius: "var(--ops-radius-card)",
                   bgcolor: C.bg,
                   border: `1px solid ${C.border}`,
                 }}

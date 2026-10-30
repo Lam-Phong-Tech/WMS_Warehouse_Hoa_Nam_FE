@@ -1287,7 +1287,7 @@ export function OutboundIntakeModal({
               sx={{
                 border: "1px solid",
                 borderColor: "divider",
-                borderRadius: 2,
+                borderRadius: "var(--ops-radius-card)",
                 p: 2,
               }}
             >

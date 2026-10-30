@@ -36,7 +36,7 @@
   inset: auto;
   min-height: 160px;
   margin-inline: 10px;
-  border-radius: 6px;
+  border-radius: var(--ops-radius-card);
 }
 /* Reset BOTH coordinates when the existing dashboard switches to one column.
  * Otherwise explicit column 2 silently creates an overflowing tablet column.

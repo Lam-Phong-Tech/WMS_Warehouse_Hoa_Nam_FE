@@ -151,7 +151,7 @@
   background: var(--ops-primary-hover);
 }
 .hn-war04 .hn-war04-reset {
-  border-color: transparent;
+  border-color: var(--war-line);
   background: transparent;
 }
 .hn-war04-warehouse {

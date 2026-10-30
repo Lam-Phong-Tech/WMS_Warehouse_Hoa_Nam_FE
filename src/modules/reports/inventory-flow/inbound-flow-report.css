@@ -645,7 +645,7 @@
   align-items: center;
   gap: 11px;
   padding: 11px 14px;
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
 }
 
 .inbound-readonly-banner {
@@ -700,7 +700,7 @@
   flex-direction: row-reverse;
   gap: 20px;
   padding: 14px 20px;
-  border-radius: 9px;
+  border-radius: var(--ops-radius-card);
 }
 
 .inbound-kpi::before {
@@ -1530,7 +1530,7 @@
   gap: 9px;
   padding: 10px 11px;
   border: 1px solid #a7deb3;
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   background: var(--ops-pale);
   color: #2d7540;
   box-shadow: 0 8px 25px rgb(25 68 40 / 18%);
@@ -1587,7 +1587,7 @@
   flex-direction: column;
   padding: 20px;
   border: 1px solid var(--ops-line);
-  border-radius: 9px;
+  border-radius: var(--ops-radius-card);
   background: rgb(255 255 255 / 96%);
   box-shadow: 0 12px 35px rgb(34 62 86 / 16%);
 }

@@ -475,7 +475,7 @@
 }
 .hn-iam-dialog .MuiDialog-paper {
   border: 1px solid var(--iam-line);
-  border-radius: 12px;
+  border-radius: var(--ops-radius-dialog);
   background: var(--iam-surface);
   color: var(--iam-text);
   overflow: visible;

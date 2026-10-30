@@ -566,9 +566,10 @@ export default function AgencyComparisonTab() {
               })}
             />
             <UiButton
-              appearance="text"
+              appearance="outlined"
               color="secondary"
               size="small"
+              sx={{ borderColor: "var(--ops-line)" }}
               disabled={activeFilterCount === 0}
               onClick={resetFilters}
             >

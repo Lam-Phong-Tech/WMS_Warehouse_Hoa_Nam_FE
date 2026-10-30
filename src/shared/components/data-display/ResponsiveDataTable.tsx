@@ -244,7 +244,7 @@ export function ResponsiveDataTable<T>({
           mb: 1.5,
           px: 1.5,
           py: 1,
-          borderRadius: 2,
+          borderRadius: "var(--ops-radius-card)",
           bgcolor: "action.hover",
           border: 1,
           borderColor: "divider",

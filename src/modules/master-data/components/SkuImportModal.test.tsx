@@ -66,6 +66,29 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
     vi.mocked(importSkuExcel).mockResolvedValue(cleanDryRun());
   });
   afterEach(cleanupTestState);
+  it("dùng nút tải tệp tiếng Việt, hướng dẫn theo hover và nút làm lại ở tiêu đề", async () => {
+    renderModal();
+    const input = screen.getByLabelText("Chọn tệp Excel chứa SKU") as HTMLInputElement;
+    const upload = await screen.findByRole("button", { name: "Tải lên" });
+    expect(input).not.toBeVisible();
+    expect(screen.getByText("Chưa chọn tệp")).toBeInTheDocument();
+    const clickInput = vi.spyOn(input, "click").mockImplementation(() => {});
+    fireEvent.click(upload);
+    expect(clickInput).toHaveBeenCalledOnce();
+
+    const instructions = screen.getByRole("button", { name: "Hướng dẫn nhập SKU" });
+    expect(screen.queryByText(/Hệ thống chỉ ghi dữ liệu/)).not.toBeInTheDocument();
+    fireEvent.mouseOver(instructions);
+    expect(await screen.findByText(/Hệ thống chỉ ghi dữ liệu/)).toBeInTheDocument();
+
+    selectFile("danh-sach.xlsx");
+    expect(screen.getByText("danh-sach.xlsx")).toBeInTheDocument();
+    const reset = screen.getByRole("button", { name: "Làm lại" });
+    expect(reset.closest(".MuiDialogTitle-root")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Đóng" })).toHaveLength(1);
+    fireEvent.click(reset);
+    expect(screen.getByText("Chưa chọn tệp")).toBeInTheDocument();
+  });
   it("bật update_existing sau khi dry-run (false → true): nút Import tắt và không commit payload chưa kiểm tra", async () => {
     renderModal(); selectFile(); await runDryRun();
     fireEvent.click(optionSwitch());
@@ -111,6 +134,8 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
         errorFileMaxOnDiskHours: 36, concurrentImportPolicy: "FAIL_CLOSED_409" }, dataScope: "ACTOR_SCOPED",
     });
     renderModal();
+    await waitFor(() => expect((screen.getByLabelText("Chọn tệp Excel chứa SKU") as HTMLInputElement).accept).toBe(".xlsx"));
+    fireEvent.mouseOver(screen.getByRole("button", { name: "Hướng dẫn nhập SKU" }));
     await waitFor(() => expect(screen.getByText(/Tối đa 250 dòng dữ liệu/)).toBeInTheDocument());
     expect(screen.getByText(/kích thước tệp không quá 5 MB/)).toBeInTheDocument();
     expect(screen.getByText(/tệp lỗi có thể tải trong 12 giờ/)).toBeInTheDocument();
@@ -120,6 +145,7 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
   it("BE không công bố hạn mức: mô tả chung, không bịa con số", async () => {
     vi.mocked(fetchSkuImportConstraints).mockResolvedValue({ constraints: null, dataScope: null });
     renderModal();
+    fireEvent.mouseOver(screen.getByRole("button", { name: "Hướng dẫn nhập SKU" }));
     await waitFor(() => expect(screen.getByText(/Giới hạn số dòng và kích thước tệp do hệ thống kiểm soát/)).toBeInTheDocument());
   });
 });

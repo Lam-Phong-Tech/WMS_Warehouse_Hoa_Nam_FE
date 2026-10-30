@@ -404,6 +404,7 @@
 }
 .hn-rpt-io .io-reset {
   min-width: 84px;
+  border-color: var(--ops-line);
   color: var(--ink);
   background: transparent;
 }

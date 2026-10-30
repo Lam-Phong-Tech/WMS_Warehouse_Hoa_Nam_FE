@@ -32,7 +32,7 @@ export function ReportKpiCard({
   return (
     <Card
       variant="outlined"
-      sx={{ borderRadius: 2, minWidth: 0, height: "100%" }}
+      sx={{ borderRadius: "var(--ops-radius-card)", minWidth: 0, height: "100%" }}
     >
       <CardContent
         sx={{ display: "grid", gap: 0.75, "&:last-child": { pb: 2 } }}

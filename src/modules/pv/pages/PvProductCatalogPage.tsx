@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { PvCatalogSymbol } from "./PvCatalogSymbol";
+import { PvCatalogOverviewInfo } from "./PvCatalogOverviewInfo";
 import "./pv-product-catalog.css";
 import { toast } from "sonner";
 import {
@@ -859,12 +860,17 @@ export function PvProductCatalogPage() {
           <h2 id="pv-catalog-overview-title">
             {copy("Tổng quan danh mục", "Catalog overview")}
           </h2>
-          <span>
-            {copy(
+          <PvCatalogOverviewInfo
+            label={copy("Thông tin tổng quan danh mục", "Catalog overview information")}
+            scopeText={copy(
               "Theo trạng thái hiển thị trên App PV · Thống kê trạng thái trong trang hiện tại",
               "App PV visibility · Status counts on the current page",
             )}
-          </span>
+            stockText={copy(
+              "Trạng thái hiển thị trên App PV không làm thay đổi số lượng tồn kho.",
+              "App PV visibility does not change stock quantities.",
+            )}
+          />
         </div>
         <div className="pv-catalog-stats" aria-busy={profiles.isFetching}>
           {stats.map((stat) => (
@@ -889,15 +895,6 @@ export function PvProductCatalogPage() {
               </div>
             </div>
           ))}
-        </div>
-        <div className="pv-catalog-info">
-          <PvCatalogSymbol name="info" />
-          <span>
-            {copy(
-              "Trạng thái hiển thị trên App PV không làm thay đổi số lượng tồn kho.",
-              "App PV visibility does not change stock quantities.",
-            )}
-          </span>
         </div>
         {!canPublish ? (
           <p className="pv-catalog-permission-note">
@@ -946,7 +943,11 @@ export function PvProductCatalogPage() {
           }}
         >
           <div className="pv-catalog-search">
+            <label htmlFor="pv-catalog-search-input">
+              {copy("Tìm kiếm", "Search")}
+            </label>
             <SearchInput
+              id="pv-catalog-search-input"
               width="100%"
               value={keyword}
               onChange={(next) => applyFilter(() => setKeyword(next))}
@@ -994,20 +995,22 @@ export function PvProductCatalogPage() {
               data-testid="pv-catalog-published-filter"
             />
           </div>
-          <UiButton
-            type="submit"
-            className="pv-catalog-apply"
-            disabled={profiles.isFetching}
-          >
-            {copy("Áp dụng", "Apply")}
-          </UiButton>
-          <UiButton
-            appearance="text"
-            className="pv-catalog-reset"
-            onClick={resetFilters}
-          >
-            {copy("Đặt lại", "Reset")}
-          </UiButton>
+          <div className="pv-catalog-filter-actions">
+            <UiButton
+              type="submit"
+              className="pv-catalog-apply"
+              disabled={profiles.isFetching}
+            >
+              {copy("Áp dụng", "Apply")}
+            </UiButton>
+            <UiButton
+              appearance="text"
+              className="pv-catalog-reset"
+              onClick={resetFilters}
+            >
+              {copy("Đặt lại", "Reset")}
+            </UiButton>
+          </div>
         </form>
         <div
           className="pv-catalog-view-tabs"

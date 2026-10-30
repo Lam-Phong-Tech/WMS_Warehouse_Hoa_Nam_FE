@@ -145,7 +145,7 @@ function labelStatus(t: TranslateFn, value?: string | null): string {
 const SECTION_SX = {
   border: "1px solid",
   borderColor: "divider",
-  borderRadius: 2,
+  borderRadius: "var(--ops-radius-card)",
   p: 2,
 } as const;
 

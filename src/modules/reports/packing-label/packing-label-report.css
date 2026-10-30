@@ -853,7 +853,7 @@
 .hn-label-detail__history table { width: 100%; border-collapse: collapse; min-width: 680px; }
 .hn-label-detail__history th, .hn-label-detail__history td { border: 1px solid var(--ops-line); padding: 9px 12px; text-align: left; }
 .hn-label-detail__history th { background: var(--ops-canvas); color: var(--ops-heading); }
-.hn-label-detail__notice { margin-top: 10px; border: 1px solid #b8e4fa; border-radius: 5px; background: #edf9ff; color: #23618a; padding: 10px 13px; font-size: 12px; }
+.hn-label-detail__notice { margin-top: 10px; border: 1px solid #b8e4fa; border-radius: var(--ops-radius-card); background: #edf9ff; color: #23618a; padding: 10px 13px; font-size: 12px; }
 .hn-label-detail__state { padding: 36px; border: 1px solid var(--ops-line); border-radius: var(--ops-radius-card); background: var(--ops-surface); }
 .hn-label-detail__preview-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 20px; }
 .hn-label-detail__preview-stage { min-width: 0; padding: 8px; border: 1px solid var(--ops-line); border-radius: var(--ops-radius-card); background: var(--ops-surface); }
@@ -862,7 +862,7 @@
 .hn-label-detail__paper-wrap { position: relative; display: grid; place-items: center; min-height: 610px; padding: 44px; background: #e7edf2; }
 .hn-label-detail__measure-top { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); }
 .hn-label-detail__measure-side { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); }
-.hn-label-detail__paper { width: min(100%, 370px); aspect-ratio: 2 / 3; padding: 32px 22px; background: white; border-radius: 7px; box-shadow: 0 10px 24px #1737541c; color: #111827; }
+.hn-label-detail__paper { width: min(100%, 370px); aspect-ratio: 2 / 3; padding: 32px 22px; background: white; border-radius: var(--ops-radius-card); box-shadow: 0 10px 24px #1737541c; color: #111827; }
 .hn-label-detail__paper-brand { text-align: center; font-weight: 800; font-size: 19px; }
 .hn-label-detail__paper h2 { margin: 26px 0 20px; padding-bottom: 16px; border-bottom: 2px solid #111827; text-align: center; font-size: 25px; }
 .hn-label-detail__paper .hn-label-detail__field { border: 0; padding: 6px 0; grid-template-columns: 38% 1fr; }

@@ -325,7 +325,7 @@ export function DocumentAttachmentsPanel({
                         position: "relative",
                         width: "100%",
                         aspectRatio: "1 / 1",
-                        borderRadius: 2,
+                        borderRadius: "var(--ops-radius-card)",
                         overflow: "hidden",
                         border: "1px solid",
                         borderColor: "divider",
@@ -424,7 +424,7 @@ export function DocumentAttachmentsPanel({
                     aspectRatio: "1 / 1",
                     border: "1px dashed",
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     color: "text.secondary",
                     textAlign: "center",
                     cursor: uploadMutation.isPending
@@ -467,7 +467,7 @@ export function DocumentAttachmentsPanel({
                     alignItems: "center",
                     border: "1px solid",
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     px: 1.5,
                     py: 1,
                   }}

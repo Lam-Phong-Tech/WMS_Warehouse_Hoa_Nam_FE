@@ -530,7 +530,11 @@ export default function PackingLabelPrintReport() {
           >
             {tUi("dashboard.snapshot.apply")}
           </UiButton>
-          <UiButton appearance="text" onClick={resetFilters}>
+          <UiButton
+            appearance="outlined"
+            sx={{ borderColor: "var(--ops-line)" }}
+            onClick={resetFilters}
+          >
             {tUi("reports.packingLabel.reset")}
           </UiButton>
         </div>

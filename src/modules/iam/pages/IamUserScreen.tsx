@@ -1197,7 +1197,7 @@ export function IamUserScreen({
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
-                  borderRadius: 2,
+                  borderRadius: "var(--ops-radius-card)",
                   p: 2,
                   height: "100%",
                 }}
@@ -1343,7 +1343,7 @@ export function IamUserScreen({
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
-                  borderRadius: 2,
+                  borderRadius: "var(--ops-radius-card)",
                   p: 2,
                   height: "100%",
                 }}
@@ -1520,7 +1520,7 @@ export function IamUserScreen({
                           fontSize: 14,
                           border: "1px solid",
                           borderColor: "divider",
-                          borderRadius: 1.5,
+                          borderRadius: "var(--ops-radius-card)",
                           px: 1.5,
                           py: 1,
                         }}
@@ -1563,7 +1563,7 @@ export function IamUserScreen({
               sx={{
                 border: "1px solid",
                 borderColor: "divider",
-                borderRadius: 2,
+                borderRadius: "var(--ops-radius-card)",
                 p: 2,
               }}
             >
@@ -1619,7 +1619,7 @@ export function IamUserScreen({
                   sx={{
                     border: "1px solid",
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     overflow: "hidden",
                   }}
                 >
@@ -1684,7 +1684,7 @@ export function IamUserScreen({
                     mt: 1,
                     border: "1px solid",
                     borderColor: "divider",
-                    borderRadius: 2,
+                    borderRadius: "var(--ops-radius-card)",
                     overflow: "hidden",
                   }}
                 >
@@ -1737,7 +1737,7 @@ export function IamUserScreen({
               sx={{
                 border: "1px solid",
                 borderColor: "divider",
-                borderRadius: 2,
+                borderRadius: "var(--ops-radius-card)",
                 overflow: "hidden",
               }}
             >

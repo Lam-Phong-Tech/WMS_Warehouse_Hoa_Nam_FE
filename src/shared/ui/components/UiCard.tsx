@@ -1,5 +1,5 @@
 /**
- * Foundation Card — surface trắng, radius 6, bóng mềm Vuexy (token), tiêu đề
+ * Foundation Card — surface trắng, radius theo token card, bóng mềm Vuexy, tiêu đề
  * card 18/600. "Một card một mục đích" (spec X §1) — không lồng card trắng.
  */
 import Paper from "@mui/material/Paper";

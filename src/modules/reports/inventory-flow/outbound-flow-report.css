@@ -730,7 +730,7 @@
   min-width: 108px;
   min-height: var(--ops-control-height);
   padding: 0 12px;
-  border: 0;
+  border: 1px solid var(--ops-line);
   background: var(--ops-surface);
   color: var(--ops-heading);
   font-size: 15px;
@@ -758,7 +758,7 @@
   align-items: center;
   gap: 11px;
   padding: 11px 14px;
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
 }
 
 .outbound-readonly-banner {
@@ -813,7 +813,7 @@
   flex-direction: row-reverse;
   gap: 20px;
   padding: 14px 20px;
-  border-radius: 9px;
+  border-radius: var(--ops-radius-card);
 }
 
 .outbound-kpi::before {
@@ -1599,7 +1599,7 @@
   gap: 9px;
   padding: 10px 11px;
   border: 1px solid #a7deb3;
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   background: var(--ops-pale);
   color: #2d7540;
   box-shadow: 0 8px 25px rgb(25 68 40 / 18%);
@@ -1656,7 +1656,7 @@
   flex-direction: column;
   padding: 20px;
   border: 1px solid var(--ops-line);
-  border-radius: 9px;
+  border-radius: var(--ops-radius-card);
   background: rgb(255 255 255 / 96%);
   box-shadow: 0 12px 35px rgb(34 62 86 / 16%);
 }
@@ -2718,7 +2718,7 @@
   overflow: hidden;
   padding: 17px 20px 13px;
   border: 1px solid var(--ops-line);
-  border-radius: 7px;
+  border-radius: var(--ops-radius-card);
   background: var(--ops-surface);
   box-shadow: 0 2px 8px rgb(31 79 119 / 5%);
 }
@@ -2773,7 +2773,7 @@
   min-height: 94px;
   padding: 13px 14px;
   border: 1px solid var(--ops-line);
-  border-radius: 5px;
+  border-radius: var(--ops-radius-card);
   background: var(--ops-canvas);
 }
 
@@ -2961,7 +2961,7 @@
 }
 
 .outbound-reference-filters .outbound-reset-button {
-  border: 0;
+  border: 1px solid var(--ops-line);
   background: transparent;
   color: var(--ops-link);
   box-shadow: none;

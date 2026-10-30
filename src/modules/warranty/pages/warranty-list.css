@@ -273,7 +273,7 @@
   min-height: var(--ops-control-height);
 }
 .hn-war-reset {
-  border: 1px solid transparent;
+  border: 1px solid var(--war-line);
   border-radius: 6px;
   color: var(--war-ink);
   background: transparent;
