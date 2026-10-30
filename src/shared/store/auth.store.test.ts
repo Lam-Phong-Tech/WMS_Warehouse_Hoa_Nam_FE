@@ -118,6 +118,49 @@ describe("useAuthStore WWHN-165", () => {
     expect(state.isProfileLoaded).toBe(true);
   });
 
+  it("restores user from /auth/me when token exists but the persisted user is missing", () => {
+    useAuthStore.getState().setToken("restored-access");
+    useAuthStore
+      .getState()
+      .setProfile({ ...baseMe, active_context: null, available_contexts: [] });
+    expect(useAuthStore.getState().user).toMatchObject({
+      id: baseMe.id,
+      email: baseMe.email,
+    });
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(useAuthStore.getState().permissionCodes).toEqual(baseMe.permissions);
+  });
+
+  it("replaces a stale identity and discards its contexts when the authenticated profile belongs to another user", () => {
+    useAuthStore
+      .getState()
+      .setAuth({ token: "old-access", user: mockUser, contexts: [CTX_A] });
+    useAuthStore.getState().setProfile({
+      ...baseMe,
+      id: "different-user",
+      active_context: null,
+      available_contexts: [],
+    });
+    expect(useAuthStore.getState().user?.id).toBe("different-user");
+    expect(useAuthStore.getState().currentContext).toBeNull();
+    expect(useAuthStore.getState().contexts).toEqual([]);
+  });
+
+  it("preserves the selected warehouse when refreshing the same authenticated user", () => {
+    useAuthStore.getState().setAuth({
+      token: "old-access",
+      user: mockUser,
+      contexts: [CTX_A, CTX_B],
+    });
+    useAuthStore.getState().setCurrentContext(CTX_B);
+    useAuthStore.getState().setToken("new-access");
+    useAuthStore
+      .getState()
+      .setProfile({ ...baseMe, active_context: null, available_contexts: [] });
+    expect(useAuthStore.getState().currentContext).toEqual(CTX_B);
+    expect(useAuthStore.getState().contexts).toEqual([CTX_A, CTX_B]);
+  });
+
   it("is_super_admin explicit được ưu tiên", () => {
     useAuthStore.getState().setProfile({
       ...baseMe,

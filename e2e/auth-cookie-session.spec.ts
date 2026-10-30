@@ -46,6 +46,9 @@ test("login, F5 refresh, and logout use only the HttpOnly refresh cookie", async
       response.url().endsWith("/api/v1/auth/refresh") &&
       response.request().method() === "POST",
   );
+  // The server cookie is the session credential; a missing/oversized UI hint
+  // must not make F5 redirect an authenticated user to /login.
+  await context.clearCookies({ name: "erp-auth" });
   await page.reload();
   const refresh = await refreshResponse;
   expect(refresh.status()).toBe(200);

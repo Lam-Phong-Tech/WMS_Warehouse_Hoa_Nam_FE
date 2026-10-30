@@ -2,6 +2,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/app/providers/query-client";
+import { startWorkSession } from "@/shared/lib/session-idle";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
@@ -16,14 +19,19 @@ vi.mock("@/app/bootstrap-auth", () => ({ bootstrapAuth: bootstrapAuthMock }));
 
 function renderProtectedRoute() {
   return render(
-    <MemoryRouter initialEntries={[ROUTES.INVENTORY]}>
-      <Routes>
-        <Route path={ROUTES.LOGIN} element={<div>Login Page</div>} />
-        <Route element={<ProtectedRoute />}>
-          <Route path={ROUTES.INVENTORY} element={<div>Inventory Page</div>} />
-        </Route>
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[ROUTES.INVENTORY]}>
+        <Routes>
+          <Route path={ROUTES.LOGIN} element={<div>Login Page</div>} />
+          <Route element={<ProtectedRoute />}>
+            <Route
+              path={ROUTES.INVENTORY}
+              element={<div>Inventory Page</div>}
+            />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -70,6 +78,7 @@ describe("ProtectedRoute WWHN-165", () => {
   });
 
   it("/auth/me lỗi trước profile -> fail-closed có retry", async () => {
+    startWorkSession();
     const refetch = vi.fn();
     useMeMock.mockReturnValue({
       data: undefined,
@@ -89,12 +98,56 @@ describe("ProtectedRoute WWHN-165", () => {
   });
 
   it("profile đã load -> render outlet", () => {
-    useAuthStore.setState({ isAuthenticated: true, isProfileLoaded: true });
+    startWorkSession();
+    useAuthStore.setState({
+      isAuthenticated: true,
+      isProfileLoaded: true,
+      user: {
+        id: "u-1",
+        name: "Operator",
+        email: "operator@example.test",
+        code: "OP",
+      },
+    });
     renderProtectedRoute();
     expect(screen.getByText("Inventory Page")).toBeInTheDocument();
   });
 
+  it("restored server identity reaches confirmation and still requires explicit confirmation before protected content", async () => {
+    useAuthStore.getState().setToken("restored-access");
+    useAuthStore.getState().setProfile({
+      id: "restored",
+      email: "restored@example.test",
+      name: "Restored",
+      code: "RESTORED",
+      roles: [],
+      permissions: [],
+      warehouse_scope_ids: [],
+      company: null,
+      branch: null,
+      department: null,
+      position: null,
+      role: null,
+      active_context: null,
+      available_contexts: [],
+    });
+    renderProtectedRoute();
+    // AuthSessionCheck can briefly render the same heading while the cache
+    // loads. Wait for the actual confirmation action before asserting its UI.
+    const start = await screen.findByRole("button", {
+      name: "Bắt đầu làm việc",
+    });
+    expect(
+      screen.getByRole("heading", { name: "Xác nhận phiên đăng nhập" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Login Page")).not.toBeInTheDocument();
+    expect(screen.queryByText("Inventory Page")).not.toBeInTheDocument();
+    await userEvent.click(start);
+    expect(await screen.findByText("Inventory Page")).toBeInTheDocument();
+  });
+
   it("có danh tính thật -> vẫn render outlet sau khi nạp persisted cache", async () => {
+    startWorkSession();
     // Cổng cache (usePersistedQueryCache) chặn Outlet cho tới khi cache của ĐÚNG
     // danh tính vừa được máy chủ xác nhận nạp xong. Test này giữ cho cổng đó
     // không bao giờ biến thành màn hình chờ vĩnh viễn — cache là tối ưu, không
@@ -102,6 +155,12 @@ describe("ProtectedRoute WWHN-165", () => {
     useAuthStore.setState({
       isAuthenticated: true,
       isProfileLoaded: true,
+      user: {
+        id: "u-1",
+        name: "Operator",
+        email: "operator@example.test",
+        code: "OP",
+      },
       profile: {
         user_id: "u-1",
         warehouse_scope_ids: ["wh-1"],
