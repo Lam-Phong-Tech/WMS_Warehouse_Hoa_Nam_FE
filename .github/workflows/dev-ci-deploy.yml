@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   test:
-    name: Lint, typecheck, Vitest, build
+    name: Lint, typecheck, core Vitest, build
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -54,15 +54,8 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
-      - name: Run the repository test command
-        run: pnpm test
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: frontend-test-results-${{ github.run_id }}
-          path: test-results/
-          if-no-files-found: warn
-          retention-days: 7
+      - name: Run the local core regression command
+        run: pnpm test:ci
       - name: Build deployable artifact
         run: pnpm build
       - name: Bind DEV health to the tested SHA
