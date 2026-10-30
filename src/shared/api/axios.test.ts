@@ -50,7 +50,8 @@ function rejectedHandler() {
       handlers: Array<{ rejected: (error: unknown) => Promise<unknown> }>;
     }
   ).handlers;
-  const handler = handlers.find((item) => item?.rejected);
+  // Request activity installs its own interceptor first; auth is installed last.
+  const handler = [...handlers].reverse().find((item) => item?.rejected);
   if (!handler) throw new Error("Missing response interceptor");
   return handler.rejected;
 }
