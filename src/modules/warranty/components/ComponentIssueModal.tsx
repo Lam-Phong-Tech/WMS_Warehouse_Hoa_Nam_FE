@@ -569,42 +569,41 @@ export function ComponentIssueModal({
         </Box>
       }
       actions={
-        <>
-          <ActionButton kind="close" onClick={dialog.close}>
-            {t("common.close")}
-          </ActionButton>
-          {documentId && isOpenDocument ? (
-            <>
+        documentId && !isOpenDocument ? null : (
+          <>
+            {documentId && isOpenDocument ? (
+              <>
+                <ActionButton
+                  kind="deactivate"
+                  disabled={!canIssue || cancelMutation.isPending}
+                  onClick={() => setCancelOpen(true)}
+                >
+                  {t("warranty.componentIssue.cancelTrigger")}
+                </ActionButton>
+                <ActionButton
+                  kind="approve"
+                  disabled={
+                    !canIssue || !allLinesComplete || postMutation.isPending
+                  }
+                  onClick={() => setPostConfirmOpen(true)}
+                >
+                  {t("warranty.componentIssue.postTrigger")}
+                </ActionButton>
+              </>
+            ) : null}
+            {!documentId ? (
               <ActionButton
-                kind="deactivate"
-                disabled={!canIssue || cancelMutation.isPending}
-                onClick={() => setCancelOpen(true)}
+                kind="create"
+                disabled={!canIssue || !caseActive || createMutation.isPending}
+                onClick={() => void handleCreate()}
               >
-                {t("warranty.componentIssue.cancelTrigger")}
+                {createMutation.isPending
+                  ? t("warranty.componentIssue.creating")
+                  : t("warranty.componentIssue.create")}
               </ActionButton>
-              <ActionButton
-                kind="approve"
-                disabled={
-                  !canIssue || !allLinesComplete || postMutation.isPending
-                }
-                onClick={() => setPostConfirmOpen(true)}
-              >
-                {t("warranty.componentIssue.postTrigger")}
-              </ActionButton>
-            </>
-          ) : null}
-          {!documentId ? (
-            <ActionButton
-              kind="create"
-              disabled={!canIssue || !caseActive || createMutation.isPending}
-              onClick={() => void handleCreate()}
-            >
-              {createMutation.isPending
-                ? t("warranty.componentIssue.creating")
-                : t("warranty.componentIssue.create")}
-            </ActionButton>
-          ) : null}
-        </>
+            ) : null}
+          </>
+        )
       }
     >
       <Stack spacing={2} sx={{ mt: 0.5 }}>

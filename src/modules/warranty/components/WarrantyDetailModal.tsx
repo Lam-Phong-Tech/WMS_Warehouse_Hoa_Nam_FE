@@ -1302,9 +1302,6 @@ export function WarrantyDetailModal({
         }
         actions={
           <>
-            <ActionButton kind="close" onClick={dialog.close}>
-              {t("common.close")}
-            </ActionButton>
             <ActionButton
               kind="edit"
               disabled={!canManage || !detail || isTerminal}
