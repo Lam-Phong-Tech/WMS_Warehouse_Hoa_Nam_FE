@@ -1297,6 +1297,18 @@
   min-width: 0;
   color: var(--rpt07-navy);
 }
+.rpt07-return-dialog { display: grid; gap: 18px; padding: 20px 24px 28px; }
+.rpt07-return-dialog__back { justify-self: start; border: 0; background: transparent; color: var(--ops-link); cursor: pointer; }
+.rpt07-return-dialog h3, .rpt07-return-dialog h4 { margin: 0 0 12px; color: var(--ops-heading); }
+.rpt07-return-dialog__totals { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 18px; border: 1px solid var(--ops-line); border-radius: 8px; background: var(--ops-pale); }
+.rpt07-return-dialog__totals div { display: grid; gap: 6px; min-width: 120px; }
+.rpt07-return-dialog__totals small { color: var(--ops-muted); }
+.rpt07-return-dialog__totals strong { font-size: 24px; color: var(--ops-heading); }
+.rpt07-return-dialog__table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--ops-line); border-radius: 8px; }
+.rpt07-return-dialog table { width: 100%; border-collapse: collapse; min-width: 620px; }
+.rpt07-return-dialog th, .rpt07-return-dialog td { padding: 12px 14px; border-bottom: 1px solid var(--ops-line); text-align: left; }
+.rpt07-return-dialog th { background: var(--ops-pale); color: var(--ops-heading); }
+.rpt07-return-dialog tbody tr:last-child td { border-bottom: 0; }
 
 .rpt07-detail-dialog__summary {
   padding: 10px 12px;

@@ -10,6 +10,8 @@ vi.mock("@/shared/api/http", () => ({
 
 import { http } from "@/shared/api/http";
 import {
+  fetchBoxReadProjection,
+  fetchContainerRegisterDetail,
   fetchBalanceSubledger,
   fetchInventoryBalances,
   fetchStockMovement,
@@ -116,6 +118,30 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
     );
     expect(result.item_count).toBe(1);
     expect(result.items).toHaveLength(1);
+  });
+
+  it("reads a BOX with the scoped read contract and never supplies guessed availability", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      container_id: "box-1", container_code: "BOX-001", contained_qty: 5,
+      available_qty: null, reserved_qty: null, quantity_status: "RECORDED_CONTAINER_CONTENTS",
+    });
+
+    const box = await fetchBoxReadProjection("box-1", "warehouse-1");
+
+    expect(http.get).toHaveBeenCalledWith("/containers/box-1", {
+      params: { warehouse_id: "warehouse-1" },
+      headers: { "X-Container-Read-Contract": "p18-single-warehouse-boxes-v1" },
+    });
+    expect(box.contained_qty).toBe(5);
+    expect(box.available_qty).toBeNull();
+    expect(box.reserved_qty).toBeNull();
+  });
+
+  it("loads a linked tray register record by its exact parent id", async () => {
+    vi.mocked(http.get).mockResolvedValue({ container_id: "tray-1", container_code: "KH-001", container_type: "TRAY" });
+    const tray = await fetchContainerRegisterDetail("tray-1");
+    expect(http.get).toHaveBeenCalledWith("/containers/tray-1");
+    expect(tray.container_type).toBe("TRAY");
   });
 
   it("fetchStockMovements gọi GET /stock-movements với filter và normalize movement", async () => {

@@ -60,6 +60,7 @@ import { tStatic as tUi } from "@/shared/i18n/useT";
 
 interface Props {
   movementId: string | null;
+  initialCode?: string;
   onClose: () => void;
 }
 
@@ -531,11 +532,13 @@ const chainColumns = (
 ];
 
 /** TRACE-01 · Truy vết mã vật lý, biến động tồn và chứng từ nguồn. */
-export function TraceModal({ movementId, onClose }: Props) {
+export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
   const t = useT();
   const dialog = useDialogExit(onClose);
-  const [lookupCode, setLookupCode] = useState("");
-  const [submittedCode, setSubmittedCode] = useState<string | null>(null);
+  const [lookupCode, setLookupCode] = useState(initialCode);
+  const [submittedCode, setSubmittedCode] = useState<string | null>(
+    initialCode.trim() || null,
+  );
 
   const movementQuery = useStockMovement(movementId);
   const traceQuery = useStockMovementTrace(movementId);

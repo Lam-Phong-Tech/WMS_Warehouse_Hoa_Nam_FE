@@ -1665,6 +1665,89 @@
   padding: 22px 24px 16px;
   border-bottom: 1px solid var(--line);
 }
+.hn-rpt01 .flow-document-modal {
+  width: min(960px, calc(100vw - 32px));
+}
+.hn-rpt01 .flow-document-detail {
+  padding: 20px 24px 24px;
+}
+.hn-rpt01 .flow-document-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.hn-rpt01 .flow-document-detail-summary > div {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+.hn-rpt01 .flow-document-detail-summary small {
+  color: var(--muted);
+}
+.hn-rpt01 .flow-document-detail-summary strong {
+  overflow-wrap: anywhere;
+  color: var(--ops-heading);
+  font-size: 18px;
+}
+.hn-rpt01 .flow-document-detail-lines {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.hn-rpt01 .flow-document-detail-lines > p {
+  margin: 0;
+  padding: 20px;
+  color: var(--muted);
+}
+.hn-rpt01 .flow-document-detail-lines article {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 2fr) 80px;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.hn-rpt01 .flow-document-detail-lines article:last-child {
+  border-bottom: 0;
+}
+.hn-rpt01 .flow-document-detail-lines article > span:last-of-type {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.hn-rpt01 .flow-document-detail-match {
+  display: flex;
+  gap: 16px;
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12px;
+}
+.hn-rpt01 .flow-document-detail-history {
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.hn-rpt01 .flow-document-detail-history h3 {
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.hn-rpt01 .flow-document-detail-history > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.hn-rpt01 .flow-document-detail-history > div:last-child { border-bottom: 0; }
+@media (max-width: 640px) {
+  .hn-rpt01 .flow-document-detail-summary { grid-template-columns: 1fr; }
+  .hn-rpt01 .flow-document-detail-lines article { grid-template-columns: 1fr auto; }
+  .hn-rpt01 .flow-document-detail-lines article > span:nth-child(2) { grid-column: 1 / -1; }
+}
 .hn-rpt01 .modal-head h2 {
   margin: 5px 0 8px;
   font-size: 18px;

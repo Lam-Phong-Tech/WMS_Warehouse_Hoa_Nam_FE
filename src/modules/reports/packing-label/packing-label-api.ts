@@ -93,6 +93,7 @@ export type PackingLabelEvent = {
 
 export type PackingLabelDetail = {
   labelId: string;
+  outboundDocumentId: string;
   labelCode: string;
   outboundNo: string;
   outboundDate: string;
@@ -460,6 +461,11 @@ export function usePackingLabelSnapshot(
     // chỉ có snapshot thô thì rơi về số hiện vật đếm được trong payload.
     const itemIds = listOf(payload.item_ids);
     const content =
+      text(payload.sku_summary, "") ||
+      listOf(payload.items).map((item) => {
+        const code = text(item.sku_code, "");
+        return code ? `${code} x${n(item.quantity, 1)}` : "";
+      }).filter(Boolean).join(", ") ||
       label?.skuSummary ||
       (itemIds.length > 0
         ? tStatic("reports.packingLabel.itemCountShort", {
@@ -469,6 +475,7 @@ export function usePackingLabelSnapshot(
 
     return {
       labelId,
+      outboundDocumentId: text(row?.outbound_document_id, ""),
       labelCode: text(payload.label_code, label?.labelCode ?? ""),
       outboundNo: text(payload.outbound_no, label?.outboundNo ?? ""),
       outboundDate: label?.outboundDate ?? "",

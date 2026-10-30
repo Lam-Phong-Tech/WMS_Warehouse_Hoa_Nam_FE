@@ -19,6 +19,7 @@ import {
   type XntRow,
 } from "@/modules/reports/inventory-flow/inventory-flow-api";
 import { checkLabelOf } from "./stock-reconcile-labels";
+import { StockReconcileEvidenceModal } from "./StockReconcileEvidenceModal";
 import {
   useStockReconcileSnapshot,
   type StockReconcileRow,
@@ -609,6 +610,7 @@ export default function StockReconcileReport() {
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [selectedEvidence, setSelectedEvidence] = useState<DetailRow | null>(null);
   const pageRef = useRef<HTMLElement | null>(null);
   const tableRef = useRef<HTMLElement | null>(null);
 
@@ -1378,6 +1380,14 @@ export default function StockReconcileReport() {
                                       {row.checks.map(checkLabelOf).join(", ")}
                                     </span>
                                   ) : null}
+                                  <button
+                                    type="button"
+                                    className="rpt02-evidence-link"
+                                    aria-label={`Xem bằng chứng ${row.skuCode}`}
+                                    onClick={() => setSelectedEvidence(row)}
+                                  >
+                                    Xem bằng chứng
+                                  </button>
                                 </td>
                               </tr>
                             ))}
@@ -1432,6 +1442,23 @@ export default function StockReconcileReport() {
           )}
         </>
       )}
+      {selectedEvidence ? (
+        <StockReconcileEvidenceModal
+          skuCode={selectedEvidence.skuCode}
+          skuName={selectedEvidence.skuName}
+          warehouse={selectedEvidence.warehouse}
+          opening={selectedEvidence.opening}
+          inbound={selectedEvidence.inbound}
+          productOutbound={selectedEvidence.productOutbound}
+          componentOutbound={selectedEvidence.componentOutbound}
+          reversal={selectedEvidence.reversal}
+          closing={selectedEvidence.closing}
+          actual={selectedEvidence.actual}
+          delta={selectedEvidence.delta}
+          checks={selectedEvidence.checks}
+          onClose={() => setSelectedEvidence(null)}
+        />
+      ) : null}
     </main>
   );
 }

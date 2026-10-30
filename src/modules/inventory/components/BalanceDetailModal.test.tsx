@@ -1,15 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
 vi.mock("@/modules/inventory/hooks/use-inventory", () => ({
   useStockMovements: vi.fn(),
   useBalanceSubledger: vi.fn(),
+  useBoxReadProjection: vi.fn(),
+  useContainerRegisterDetail: vi.fn(),
 }));
 
 import {
   useBalanceSubledger,
+  useBoxReadProjection,
+  useContainerRegisterDetail,
   useStockMovements,
 } from "@/modules/inventory/hooks/use-inventory";
 import type { InventoryBalanceRow } from "@/modules/inventory/services/inventoryService";
@@ -98,6 +102,19 @@ describe("BalanceDetailModal", () => {
     vi.mocked(useBalanceSubledger).mockReset();
     vi.mocked(useStockMovements).mockReset();
     mockSubledger();
+    vi.mocked(useBoxReadProjection).mockReturnValue({
+      data: {
+        container_id: "cont-1", container_code: "BOX-001", container_type: "BOX",
+        status: "OPEN", sku: { id: "p-1", code: "SKU-001", name: "Máy khoan", unit: "cái" },
+        contained_qty: 5, quantity_status: "RECORDED_CONTAINER_CONTENTS",
+        available_qty: null, reserved_qty: null, parent_container_id: null, location_hint: "A-01",
+      },
+      isLoading: false, isError: false, error: null, refetch: vi.fn(),
+    } as never);
+    vi.mocked(useContainerRegisterDetail).mockReturnValue({
+      data: { container_id: "tray-1", container_code: "KH-001", container_type: "TRAY", status: "OPEN", parent_container_id: null, location_hint: "A-01", items: [] },
+      isLoading: false, isError: false, error: null, refetch: vi.fn(),
+    } as never);
     mockMovements([
       {
         id: "mv-1",
@@ -216,8 +233,7 @@ describe("BalanceDetailModal", () => {
       />,
     );
 
-    await screen.findByText("MV-0001");
-    fireEvent.click(screen.getByRole("button", { name: /Truy vết/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Truy vết/ }));
 
     expect(onTraceMovement).toHaveBeenCalledWith("mv-1");
   });
@@ -231,5 +247,34 @@ describe("BalanceDetailModal", () => {
     expect(
       screen.queryByRole("button", { name: /Truy vết/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("opens the recorded BOX projection and does not turn unknown reserve into zero", async () => {
+    renderWithProviders(<BalanceDetailModal balance={BALANCE} onClose={() => {}} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Xem BOX BOX-001" }));
+    const boxDialog = await screen.findByRole("dialog", { name: /Chi tiết BOX-001/ });
+    expect(useBoxReadProjection).toHaveBeenCalledWith("cont-1", "w-1");
+    expect(within(boxDialog).getByText("5")).toBeInTheDocument();
+    expect(within(boxDialog).getByText(/chưa có dữ liệu lượng giữ và khả dụng/)).toBeInTheDocument();
+    expect(within(boxDialog).queryByText(/Đã giữ.*0/)).not.toBeInTheDocument();
+  });
+
+  it("follows a recorded BOX parent to its tray register without claiming physical placement", async () => {
+    vi.mocked(useBoxReadProjection).mockReturnValue({
+      data: {
+        container_id: "cont-1", container_code: "BOX-001", container_type: "BOX",
+        status: "OPEN", sku: null, contained_qty: 5,
+        quantity_status: "RECORDED_CONTAINER_CONTENTS", available_qty: null,
+        reserved_qty: null, parent_container_id: "tray-1", location_hint: "A-01",
+      },
+      isLoading: false, isError: false, error: null, refetch: vi.fn(),
+    } as never);
+    renderWithProviders(<BalanceDetailModal balance={BALANCE} onClose={() => {}} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Xem BOX BOX-001" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Xem khay liên kết/ }));
+    expect(useContainerRegisterDetail).toHaveBeenCalledWith("tray-1");
+    expect(await screen.findByText("KH-001")).toBeInTheDocument();
+    expect(screen.getByText(/chưa xác nhận vị trí vật lý/)).toBeInTheDocument();
   });
 });

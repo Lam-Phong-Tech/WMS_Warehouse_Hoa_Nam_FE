@@ -21,6 +21,7 @@ import {
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import { useReportExport } from "@/modules/reports/operations/report-export";
+import { useReversalDocuments } from "@/modules/reports/operations/report-data";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -28,6 +29,7 @@ import {
   useRecipientAgencyLedger,
   type RecipientAgencyLedgerEvent,
 } from "./recipient-agency-api";
+import { RecipientReturnDialog } from "./RecipientReturnDialog";
 import "./recipient-agency-report.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -346,10 +348,16 @@ export default function RecipientAgencyReport() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [detailRow, setDetailRow] = useState<DealerRow | null>(null);
+  const [returnRow, setReturnRow] = useState<DealerRow | null>(null);
 
   const source = useRecipientAgencyLedger({
     from: applied.from,
     to: applied.to,
+  });
+  const returnDocuments = useReversalDocuments({
+    from: applied.from,
+    to: applied.to,
+    enabled: returnRow !== null,
   });
   const exporter = useReportExport();
 
@@ -1305,6 +1313,16 @@ export default function RecipientAgencyReport() {
                 </span>
               </div>
             </div>
+            <button
+              type="button"
+              className="rpt07-return-dialog__back"
+              onClick={() => {
+                setReturnRow(detailRow);
+                setDetailRow(null);
+              }}
+            >
+              {tUi("reports.recipientAgency.returnOpen")}
+            </button>
             <div className="rpt07-detail-dialog__table-wrap">
               <table>
                 <thead>
@@ -1339,6 +1357,18 @@ export default function RecipientAgencyReport() {
             </div>
           </div>
         </DrillDownDialog>
+      ) : null}
+      {returnRow ? (
+        <RecipientReturnDialog
+          recipientName={returnRow.name}
+          events={returnRow.events}
+          reversalRows={Array.isArray(returnDocuments.data?.data) ? returnDocuments.data.data : []}
+          loading={returnDocuments.isPending}
+          error={returnDocuments.error instanceof Error ? returnDocuments.error : null}
+          onRetry={() => void returnDocuments.refetch()}
+          onBack={() => { setDetailRow(returnRow); setReturnRow(null); }}
+          onClose={() => setReturnRow(null)}
+        />
       ) : null}
     </Box>
   );

@@ -16,6 +16,7 @@ vi.mock("@/modules/reports/operations/report-export", () => ({
   useReportExport: () => ({ exporting: null, exportReport: vi.fn() }),
 }));
 vi.mock("./packing-label-api", () => ({
+  usePackingLabelSnapshot: () => ({ detail: null, loading: false, error: null }),
   usePackingLabelReport: () => ({
     events: [
       {
