@@ -49,7 +49,16 @@ describe("negative — vi phạm phải bị bắt", () => {
       "#aabbccdd",
     ]);
     expect(findForbiddenFonts('font-family: "Inter", sans-serif')).toContain(
-      "Inter",
+      "hardcoded Inter",
+    );
+    expect(findForbiddenFonts("font-family: Inter, sans-serif")).toContain(
+      "hardcoded Inter",
+    );
+    expect(
+      findForbiddenFonts('font-family: "Public Sans", sans-serif'),
+    ).toContain("Public Sans");
+    expect(findForbiddenFonts("font-family: var(--wms-font-family)")).toEqual(
+      [],
     );
     expect(findForbiddenFonts("font: Arial, Helvetica, sans-serif")).toContain(
       "Arial,Helvetica",

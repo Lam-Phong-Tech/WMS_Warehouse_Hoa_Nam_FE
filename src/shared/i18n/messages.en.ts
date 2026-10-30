@@ -2177,6 +2177,8 @@ export const MESSAGES_EN: MessageTree = {
       unset: "Not configured",
     },
     inventoryFlow: {
+      sortInboundNewest: "Sort inbound date: newest first",
+      sortInboundOldest: "Sort inbound date: oldest first",
       opening: "Opening",
       receipt: "Receipts",
       issue: "Product issues",

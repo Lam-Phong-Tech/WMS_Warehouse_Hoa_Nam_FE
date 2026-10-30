@@ -74,10 +74,19 @@ export function findHexLiterals(content) {
   return content.match(/#[0-9a-fA-F]{3,8}(?![\w-])/g) ?? [];
 }
 
-/** Font drift: stack cũ bị cấm sau DEC-UI-BASELINE-01. */
+/** Font drift: chỉ dùng Inter qua token chung, không khai phông riêng tại màn. */
 export function findForbiddenFonts(content) {
   const hits = [];
-  if (/["']Inter["']/.test(content)) hits.push("Inter");
+  if (
+    /(?:font-family|fontFamily)\s*:\s*(?:["']Inter["']|Inter\b)/i.test(content)
+  )
+    hits.push("hardcoded Inter");
+  if (
+    /(?:font-family|fontFamily)\s*:\s*(?:["']Public Sans["']|Public Sans\b)/i.test(
+      content,
+    )
+  )
+    hits.push("Public Sans");
   if (/Be Vietnam Pro/.test(content)) hits.push("Be Vietnam Pro");
   if (/Arial\s*,\s*Helvetica/.test(content)) hits.push("Arial,Helvetica");
   if (/fonts\.googleapis\.com/.test(content)) hits.push("google-fonts");
@@ -105,7 +114,8 @@ export function looksLikeTokenSource(content) {
   const re = /export\s+const\s+[A-Z][A-Z0-9_]+\s*[:=][\s\S]{0,2000}?;/g;
   let m;
   while ((m = re.exec(content))) {
-    if ((m[0].match(/#[0-9a-fA-F]{3,8}(?![\w-])/g) ?? []).length >= 3) return true;
+    if ((m[0].match(/#[0-9a-fA-F]{3,8}(?![\w-])/g) ?? []).length >= 3)
+      return true;
   }
   return false;
 }

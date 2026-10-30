@@ -133,7 +133,7 @@ export function PackingLabelPreviewDialog({
             borderColor: "text.primary",
             borderRadius: 1,
             bgcolor: "background.paper",
-            fontFamily: "monospace",
+            fontFamily: "var(--wms-font-family)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -184,7 +184,7 @@ export function PackingLabelPreviewDialog({
                   typography: "h6",
                   fontWeight: 800,
                   lineHeight: 1,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--wms-font-family)",
                 }}
               >
                 XK

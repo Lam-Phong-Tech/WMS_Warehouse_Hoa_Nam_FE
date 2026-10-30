@@ -6,7 +6,7 @@
  *     ngoài src/shared/ui/tokens.
  *  2. BẤT KỲ hex nào trong src/shared/ui/** ngoài thư mục tokens/ (adapter và
  *     foundation component phải literal-free).
- *  3. Font cấm quay lại (Inter/Be Vietnam Pro/Arial,Helvetica/google-fonts)
+ *  3. Font riêng ngoài token (kể cả Inter viết cứng) và họ font cũ quay lại.
  *     trong src hoặc index.html.
  *  4. Import "@/shared/design-tokens" (đã xoá) quay lại.
  *
@@ -24,7 +24,8 @@ import {
   walk,
 } from "./ui-guards-lib.mjs";
 
-const BASELINE_PATH = "docs/ui/vuexy-sync/allowlists/hardcoded-hex-baseline.json";
+const BASELINE_PATH =
+  "docs/ui/vuexy-sync/allowlists/hardcoded-hex-baseline.json";
 const TOKENS_PREFIX = "src/shared/ui/tokens/";
 const DESIGN_SYSTEM_PREFIX = "src/shared/ui/";
 const EXCLUDES = [".test.", "src/test/", "__snapshots__"];
@@ -62,7 +63,7 @@ export function checkTokens(files, contents, baseline) {
     const fonts = findForbiddenFonts(content);
     if (fonts.length > 0 && !file.startsWith(TOKENS_PREFIX)) {
       violations.push(
-        `${file}: font drift (${fonts.join(", ")}) — baseline là Public Sans qua --wms-font-family (DEC-UI-BASELINE-01)`,
+        `${file}: font drift (${fonts.join(", ")}) — dùng Inter qua --wms-font-family`,
       );
     }
 
@@ -111,9 +112,11 @@ function selfTest() {
     "src/modules/foo/BadRgba.tsx": 'const overlay = "#aabbccdd";',
     "src/shared/ui/theme/bad-adapter.ts": 'const x = "#123456";',
     "src/modules/foo/BadFont.css": 'body { font-family: "Inter", sans-serif; }',
-    "src/modules/foo/BadImport.ts": 'import { RADIUS } from "@/shared/design-tokens";',
+    "src/modules/foo/BadImport.ts":
+      'import { RADIUS } from "@/shared/design-tokens";',
     "src/modules/foo/UuidInComment.ts": `${UUID_COMMENT}\nexport const label = "POST_ISSUE";`,
-    "index.html": '<link href="https://fonts.googleapis.com/css2?family=Inter">',
+    "index.html":
+      '<link href="https://fonts.googleapis.com/css2?family=Inter">',
   };
   const violations = checkTokens(
     Object.keys(fixtures).filter((f) => f !== "index.html"),
@@ -132,7 +135,9 @@ function selfTest() {
       problems.push(`không bắt được vi phạm của fixture ${dirty}`);
     }
   }
-  if (violations.some((v) => v.startsWith("src/modules/foo/UuidInComment.ts:"))) {
+  if (
+    violations.some((v) => v.startsWith("src/modules/foo/UuidInComment.ts:"))
+  ) {
     problems.push("UUID trong comment bị tính là hex literal (false positive)");
   }
 

@@ -159,7 +159,7 @@ function CodeText({
       className="hn-inventory-code"
       sx={[
         {
-          fontFamily: "monospace",
+          fontFamily: "var(--wms-font-family)",
           fontSize: 13,
           px: 0.5,
           borderRadius: 1,
@@ -555,9 +555,7 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
   };
 
   const resolvedObject = codeTrace?.resolved_object as
-    | RawRecord
-    | null
-    | undefined;
+    RawRecord | null | undefined;
   const physicalCode = codeTrace?.physical_code as RawRecord | null | undefined;
 
   return (

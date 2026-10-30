@@ -110,6 +110,25 @@ describe("css-vars.css ↔ TS tokens parity", () => {
   });
 });
 
+describe("Inter tự lưu trong ứng dụng", () => {
+  it("mọi @font-face trỏ đến tệp WOFF2 hợp lệ", () => {
+    const css = read("src/shared/ui/tokens/css-vars.css");
+    const paths = [
+      ...css.matchAll(/url\("(\/fonts\/inter\/[^"]+\.woff2)"\)/g),
+    ].map((match) => match[1]);
+    expect(paths).toHaveLength(6);
+    for (const fontPath of paths) {
+      const bytes = fs.readFileSync(
+        path.resolve(process.cwd(), "public", fontPath.slice(1)),
+      );
+      expect(bytes.toString("ascii", 0, 4)).toBe("wOF2");
+    }
+    expect(
+      fs.existsSync(path.resolve(process.cwd(), "public/fonts/inter/OFL.txt")),
+    ).toBe(true);
+  });
+});
+
 describe("css-vars-dark.css ↔ PALETTE.dark parity", () => {
   const vars = parseCssVars(read("src/shared/ui/tokens/css-vars-dark.css"));
 

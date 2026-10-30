@@ -11,9 +11,20 @@
     <meta name="apple-mobile-web-app-title" content="Hoa Nam WMS" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/pwa-icon-192.png" />
-    <!-- Font baseline: Public Sans system-preferred (DEC-UI-BASELINE-01 D1) —
-         không tải webfont render-blocking; stack khai báo tại
-         src/shared/ui/tokens/css-vars.css (--wms-font-family). -->
+    <link
+      rel="preload"
+      href="/fonts/inter/inter-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/inter/inter-vietnamese-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <title>Hoa Nam</title>
   </head>
   <body>

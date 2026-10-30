@@ -20,7 +20,7 @@
   background:
     radial-gradient(circle at 50% 0, rgb(29 173 232 / 7%), transparent 28%),
     var(--trace-canvas);
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: var(--wms-font-family);
   font-size: 14px;
   line-height: 1.45;
 }

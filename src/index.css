@@ -6,6 +6,17 @@
   text-rendering: optimizeLegibility;
 }
 
+button,
+input,
+select,
+textarea,
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--wms-font-family);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -310,7 +321,8 @@ body {
 }
 
 .master-data-page .font-mono {
-  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-family: var(--wms-font-family);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 768px) {

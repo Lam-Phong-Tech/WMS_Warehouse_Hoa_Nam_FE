@@ -2180,6 +2180,8 @@ export const MESSAGES_VI = {
       unset: "Chưa cấu hình",
     },
     inventoryFlow: {
+      sortInboundNewest: "Sắp xếp ngày nhập: mới nhất trước",
+      sortInboundOldest: "Sắp xếp ngày nhập: cũ nhất trước",
       opening: "Tồn đầu",
       receipt: "Nhập",
       issue: "Xuất SP",

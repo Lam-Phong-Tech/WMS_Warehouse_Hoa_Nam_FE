@@ -447,6 +447,9 @@
     width: 100%;
     flex-wrap: wrap;
   }
+  .hn-inventory section[aria-labelledby="hn-page-title"] > .MuiStack-root {
+    width: 100%;
+  }
   .hn-inventory-actions > .MuiButton-root:not(.hn-row-action) {
     flex: 1;
     padding-inline: 10px;

@@ -464,7 +464,7 @@
 
 .hn-rpt02 .rpt02-field .MuiSelect-select.MuiInputBase-input {
   color: var(--ops-text);
-  font-family: Inter, "Segoe UI", Arial, sans-serif !important;
+  font-family: var(--wms-font-family) !important;
   font-size: 15px !important;
 }
 
@@ -533,7 +533,7 @@
 }
 
 .rpt02-date-popup {
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: var(--wms-font-family);
 }
 
 .rpt02-date-popup [data-date-tab][data-active="true"] {
@@ -894,7 +894,7 @@
 
 .rpt02-chart-axis {
   fill: var(--rpt02-muted);
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: var(--wms-font-family);
   font-size: 12px;
 }
 
@@ -904,7 +904,7 @@
 
 .rpt02-chart-value {
   fill: var(--rpt02-ink);
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: var(--wms-font-family);
   font-size: 12px;
   font-weight: 700;
 }
@@ -1324,7 +1324,7 @@
 }
 
 .rpt02-table-card__head .MuiInputBase-input {
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: var(--wms-font-family);
 }
 
 .rpt02-table-scroll {
