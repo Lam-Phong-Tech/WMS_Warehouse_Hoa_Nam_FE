@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
+import { AppPageHeader } from "@/app/layouts/AppPageHeader";
 import {
   Box,
   SEMANTIC_LIGHT,
@@ -611,29 +612,36 @@ export default function InventoryPage() {
 
   return (
     <div className="inventory-page hn-mvp-source-screen hn-inventory">
+      <AppPageHeader
+        showEyebrow={false}
+        showDescription={false}
+        showContextBadges={false}
+        actions={
+          <div className="hn-inventory-actions">
+            <ActionButton
+              kind="refresh"
+              className="hn-inventory-refresh"
+              loading={query.isFetching}
+              onClick={() => void query.refetch()}
+            />
+            {isBalance && canTrace ? (
+              <ActionButton
+                kind="trace"
+                className="hn-inventory-primary"
+                onClick={() => setTraceMovementId("__lookup__")}
+              >
+                {t("inventory.balance.traceCode")}
+              </ActionButton>
+            ) : null}
+          </div>
+        }
+      />
       <div className="hn-inventory-navigation">
         <UiTabs
           items={inventoryTabItems(t)}
           value={activeTab}
           onChange={setActiveTab}
         />
-        <div className="hn-inventory-actions">
-          <ActionButton
-            kind="refresh"
-            className="hn-inventory-refresh"
-            loading={query.isFetching}
-            onClick={() => void query.refetch()}
-          />
-          {isBalance && canTrace ? (
-            <ActionButton
-              kind="trace"
-              className="hn-inventory-primary"
-              onClick={() => setTraceMovementId("__lookup__")}
-            >
-              {t("inventory.balance.traceCode")}
-            </ActionButton>
-          ) : null}
-        </div>
       </div>
 
       <UiTabPanel value={activeTab} className="hn-inventory-panel">

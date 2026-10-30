@@ -66,9 +66,13 @@ function resolveScreenId(pathname: string, search: string): string | null {
 export function AppPageHeader({
   actions,
   showEyebrow = true,
+  showDescription = true,
+  showContextBadges = true,
 }: {
   actions?: ReactNode;
   showEyebrow?: boolean;
+  showDescription?: boolean;
+  showContextBadges?: boolean;
 }) {
   const location = useLocation();
   const navLabel = useNavLabel();
@@ -101,7 +105,7 @@ export function AppPageHeader({
   if (meta === UNKNOWN_SCREEN_META) return null;
 
   const contextBadges =
-    scopeLabel || roleLabel ? (
+    showContextBadges && (scopeLabel || roleLabel) ? (
       <Stack
         direction="row"
         spacing={1}
@@ -157,16 +161,18 @@ export function AppPageHeader({
         >
           {meta.title}
         </Box>
-        <Box
-          sx={{
-            mt: 0.5,
-            fontSize: TYPOGRAPHY.fontSizeSecondary,
-            lineHeight: 1.45,
-            color: S.textMedium,
-          }}
-        >
-          {meta.description}
-        </Box>
+        {showDescription ? (
+          <Box
+            sx={{
+              mt: 0.5,
+              fontSize: TYPOGRAPHY.fontSizeSecondary,
+              lineHeight: 1.45,
+              color: S.textMedium,
+            }}
+          >
+            {meta.description}
+          </Box>
+        ) : null}
       </Box>
       {actions ? (
         <Stack

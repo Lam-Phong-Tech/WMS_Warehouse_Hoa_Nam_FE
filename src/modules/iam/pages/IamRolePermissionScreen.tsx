@@ -116,7 +116,7 @@ const PERMISSION_ACTION_KEYS: Record<string, MessageKey> = {
 
 /** Kiểu chữ "mã" (thay antd Typography.Text code) — viền + nền nhẹ từ token. */
 const CODE_SX = {
-  fontFamily: "monospace",
+  fontFamily: "var(--wms-font-family)",
   fontSize: "0.85em",
   border: `1px solid ${S.border}`,
   borderRadius: "4px",

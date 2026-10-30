@@ -141,6 +141,40 @@ describe("InventoryPage (INV-01 hub)", () => {
     cleanupTestState();
   });
 
+  it("đặt nút Làm mới và Truy vết mã cạnh tiêu đề, bỏ nhãn phụ và mô tả", () => {
+    const { balanceRefetch } = mockQueries();
+    useAuthStore.setState({
+      isSuperAdmin: true,
+      currentContext: {
+        scope_type: "he_thong",
+        org_unit_name: null,
+        department_name: null,
+        warehouse_name: null,
+        role_name: "Super Admin",
+      } as never,
+    });
+    renderWithProviders(<InventoryPage />, ["/inventory?screen=INV-01"]);
+
+    const heading = screen.getByRole("heading", {
+      name: "Tra cứu tồn & đối soát",
+    });
+    const header = heading.closest("section");
+    expect(header).not.toBeNull();
+    expect(header).toContainElement(
+      screen.getByRole("button", { name: "Làm mới" }),
+    );
+    expect(header).toContainElement(
+      screen.getByRole("button", { name: "Truy vết mã" }),
+    );
+    expect(header).not.toHaveTextContent("TỒN KHO & TRUY VẾT");
+    expect(header).not.toHaveTextContent("Tra cứu tồn và đối soát.");
+    expect(header).not.toHaveTextContent("Toàn hệ thống");
+    expect(header).not.toHaveTextContent("Super Admin");
+
+    fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
+    expect(balanceRefetch).toHaveBeenCalledOnce();
+  });
+
   it("hiển thị danh sách tồn kho hiện tại với SKU, đối soát và trạng thái", async () => {
     renderWithProviders(<InventoryPage />);
 
@@ -264,7 +298,7 @@ describe("InventoryPage (INV-01 hub)", () => {
 
   it("Làm mới chỉ tải lại tab đang xem và giữ nguyên bộ lọc", async () => {
     const { balanceRefetch, movementRefetch } = mockQueries();
-    renderWithProviders(<InventoryPage />);
+    renderWithProviders(<InventoryPage />, ["/inventory?screen=INV-01"]);
 
     fireEvent.change(screen.getByRole("textbox", { name: "Tìm tồn kho" }), {
       target: { value: "SKU-001" },

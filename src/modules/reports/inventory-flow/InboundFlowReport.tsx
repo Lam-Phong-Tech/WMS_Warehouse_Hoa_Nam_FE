@@ -1,6 +1,7 @@
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import { renderSortIcon } from "@/shared/components/data-display/renderSortIcon";
 import {
   useEffect,
   useMemo,
@@ -8,8 +9,8 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import dayjs, { type Dayjs } from "dayjs";
-import { UiVuexyDateRangePicker, VuexyDemoIcon } from "@/shared/ui";
+import dayjs from "dayjs";
+import { UiVuexyDateField, VuexyDemoIcon } from "@/shared/ui";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
 import {
@@ -27,7 +28,7 @@ import {
 import "./inbound-flow-report.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE_OPTIONS = [5, 8, 10, 15] as const;
 const COMPLETE_STATUSES = new Set(["POSTED", "COMPLETED", "VALIDATED"]);
 const PROCESSING_STATUSES = new Set([
   "SCANNING",
@@ -81,13 +82,6 @@ function formatDay(value: string) {
 
 function documentDay(document: FlowDocument) {
   return document.posted_at || document.document_date;
-}
-
-function dateRangeValue(range: DateRange): [Dayjs | null, Dayjs | null] {
-  return [
-    range.from ? dayjs(range.from, ISO_DATE) : null,
-    range.to ? dayjs(range.to, ISO_DATE) : null,
-  ];
 }
 
 function rangeIsInvalid(range: DateRange) {
@@ -351,6 +345,8 @@ export default function InboundFlowReport() {
   const [appliedStatus, setAppliedStatus] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
+  const [dateSort, setDateSort] = useState<"newest" | "oldest" | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
   const [viewDocumentId, setViewDocumentId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -568,14 +564,23 @@ export default function InboundFlowReport() {
     );
   }, [filteredDocuments, query]);
 
-  const pageCount = Math.max(
-    1,
-    Math.ceil(searchedDocuments.length / PAGE_SIZE),
-  );
+  const sortedDocuments = useMemo(() => {
+    if (dateSort === null) return searchedDocuments;
+    return [...searchedDocuments].sort((left, right) => {
+      const leftDate = dayjs(documentDay(left)).valueOf();
+      const rightDate = dayjs(documentDay(right)).valueOf();
+      const difference =
+        (Number.isFinite(leftDate) ? leftDate : 0) -
+        (Number.isFinite(rightDate) ? rightDate : 0);
+      return dateSort === "newest" ? -difference : difference;
+    });
+  }, [dateSort, searchedDocuments]);
+
+  const pageCount = Math.max(1, Math.ceil(searchedDocuments.length / pageSize));
   const safePage = Math.min(page, pageCount);
-  const pageDocuments = searchedDocuments.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE,
+  const pageDocuments = sortedDocuments.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
   );
   const reportEmpty =
     !updating && error == null && filteredDocuments.length === 0;
@@ -798,27 +803,51 @@ export default function InboundFlowReport() {
         aria-label={tUi("reports.recipientAgency.filterTitle")}
       >
         <div className="inbound-filter-grid">
-          <label
-            className={`inbound-filter-field inbound-filter-field--date${invalidRange ? " is-invalid" : ""}`}
+          <div
+            className={`inbound-filter-field--date${invalidRange ? " is-invalid" : ""}`}
+            role="group"
+            aria-label={tUi("reports.packingLabel.dateRangeLabel")}
           >
-            <span>{tUi("reports.packingLabel.dateRangeLabel")}</span>
-            <UiVuexyDateRangePicker
-              className="inbound-date-range"
-              popupClassName="inbound-date-popup"
-              value={dateRangeValue(draftRange)}
-              onChange={(value) =>
-                setDraftRange({
-                  from: value?.[0]?.format(ISO_DATE) ?? "",
-                  to: value?.[1]?.format(ISO_DATE) ?? "",
-                })
-              }
-              aria-label={tUi("updatedUi.text_1c35b567e862")}
-              disabled={updating}
-            />
+            <div className="inbound-filter-field inbound-date-field">
+              <span>{tUi("shared.datePicker.fromDate")}</span>
+              <UiVuexyDateField
+                field="from"
+                value={
+                  draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null
+                }
+                onChange={(value) =>
+                  setDraftRange((current) => ({
+                    ...current,
+                    from: value?.format(ISO_DATE) ?? "",
+                  }))
+                }
+                maxDate={draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null}
+                aria-label={tUi("shared.datePicker.fromDate")}
+                disabled={updating}
+              />
+            </div>
+            <div className="inbound-filter-field inbound-date-field">
+              <span>{tUi("shared.datePicker.toDate")}</span>
+              <UiVuexyDateField
+                field="to"
+                value={draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null}
+                onChange={(value) =>
+                  setDraftRange((current) => ({
+                    ...current,
+                    to: value?.format(ISO_DATE) ?? "",
+                  }))
+                }
+                minDate={
+                  draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null
+                }
+                aria-label={tUi("shared.datePicker.toDate")}
+                disabled={updating}
+              />
+            </div>
             {invalidRange ? (
               <small>{tUi("updatedUi.text_c88aba88c1c8")}</small>
             ) : null}
-          </label>
+          </div>
           <p className="inbound-filter-note">
             <Icon name="file-clock" />
             {dayjs(appliedRange.to).diff(dayjs(appliedRange.from), "day") +
@@ -1215,8 +1244,48 @@ export default function InboundFlowReport() {
                           {tUi("updatedUi.text_aaf42c905ec0")}
                         </span>
                       </th>
-                      <th className="inbound-desktop-date">
-                        {tUi("reports.traceability.colInboundDate")}
+                      <th
+                        className="inbound-desktop-date"
+                        aria-sort={
+                          dateSort === "newest"
+                            ? "descending"
+                            : dateSort === "oldest"
+                              ? "ascending"
+                              : "none"
+                        }
+                      >
+                        <button
+                          type="button"
+                          className="hn-sortable-th"
+                          aria-label={tUi(
+                            dateSort === "newest"
+                              ? "reports.inventoryFlow.sortInboundOldest"
+                              : "reports.inventoryFlow.sortInboundNewest",
+                          )}
+                          title={tUi(
+                            dateSort === "newest"
+                              ? "reports.inventoryFlow.sortInboundOldest"
+                              : "reports.inventoryFlow.sortInboundNewest",
+                          )}
+                          onClick={() => {
+                            setDateSort((current) =>
+                              current === "newest" ? "oldest" : "newest",
+                            );
+                            setPage(1);
+                          }}
+                        >
+                          <span>
+                            {tUi("reports.traceability.colInboundDate")}
+                          </span>
+                          {renderSortIcon({
+                            sortOrder:
+                              dateSort === "newest"
+                                ? "descend"
+                                : dateSort === "oldest"
+                                  ? "ascend"
+                                  : null,
+                          })}
+                        </button>
                       </th>
                       <th>{tUi("updatedUi.text_039d667495cd")}</th>
                       <th className="is-number">
@@ -1226,11 +1295,7 @@ export default function InboundFlowReport() {
                       <th className="inbound-created-by">
                         {tUi("reverse.detail.fieldCreatedBy")}
                       </th>
-                      <th>
-                        <span className="sr-only">
-                          {tUi("outbound.detail.colAction")}
-                        </span>
-                      </th>
+                      <th>{tUi("outbound.detail.colAction")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1325,22 +1390,41 @@ export default function InboundFlowReport() {
             )}
 
             <footer className="inbound-table-footer hn-report-pagination-footer">
-              <span>
-                {searchedDocuments.length === 0
-                  ? tUi("updatedUi.text_8f31a3be9ea1", {
-                      value0: String(filteredDocuments.length),
-                    })
-                  : tUi("updatedUi.text_c9bbf7bb2223", {
-                      value0: String((safePage - 1) * PAGE_SIZE + 1),
-                      value1: String(
-                        Math.min(
-                          safePage * PAGE_SIZE,
-                          searchedDocuments.length,
+              <div className="inbound-table-summary">
+                <span>
+                  {searchedDocuments.length === 0
+                    ? tUi("updatedUi.text_8f31a3be9ea1", {
+                        value0: String(filteredDocuments.length),
+                      })
+                    : tUi("updatedUi.text_c9bbf7bb2223", {
+                        value0: String((safePage - 1) * pageSize + 1),
+                        value1: String(
+                          Math.min(
+                            safePage * pageSize,
+                            searchedDocuments.length,
+                          ),
                         ),
-                      ),
-                      value2: String(searchedDocuments.length),
-                    })}
-              </span>
+                        value2: String(searchedDocuments.length),
+                      })}
+                </span>
+                <label className="inbound-page-size">
+                  <select
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
+                    aria-label={tUi("shared.table.rowsPerPageAria")}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>
+                        {tUi("shared.table.perPage", { size: String(size) })}
+                      </option>
+                    ))}
+                  </select>
+                  <Icon name="chevron-down" />
+                </label>
+              </div>
               <div className="inbound-pagination hn-report-pagination">
                 <button
                   type="button"

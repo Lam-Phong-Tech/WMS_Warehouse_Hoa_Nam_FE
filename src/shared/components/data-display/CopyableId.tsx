@@ -44,7 +44,7 @@ export function CopyableId({ value, visibleChars = 6, sx }: CopyableIdProps) {
         component="code"
         sx={[
           {
-            fontFamily: "monospace",
+            fontFamily: "var(--wms-font-family)",
             fontSize: 13,
             px: 0.5,
             borderRadius: 1,

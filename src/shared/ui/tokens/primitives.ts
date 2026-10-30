@@ -132,11 +132,11 @@ export const RADIUS = { control: 6, card: 8, sheet: 16, pill: 999 } as const;
 
 export const TYPOGRAPHY = {
   /**
-   * [ĐO] Public Sans, system-preferred — KHÔNG tải Google Fonts render-blocking
-   * (DEC-UI-BASELINE-01 D1; cùng phương án Mini App app.scss:59).
+   * Inter tự lưu trong public/fonts/inter để mọi máy hiển thị cùng một phông.
+   * CSS mirror ở css-vars.css; font-display: swap giữ nội dung hiện ngay.
    */
   fontFamily:
-    '"Public Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    '"Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   /** [ĐO] body 15px, [ĐO] label/secondary 13px */
   fontSizeBody: 14,
   fontSizeSecondary: 13,

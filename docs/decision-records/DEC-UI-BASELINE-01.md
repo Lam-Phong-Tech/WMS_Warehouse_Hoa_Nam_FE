@@ -60,3 +60,7 @@ Sửa trong **Prompt 2 Phase C** (gỡ `renderMvpScreen`/`?screen=` khi dựng s
 - BC-02 (đổi baseline thị giác từ BA-wireframe sang Vuexy) được phê duyệt qua quyết định này trong phiên làm việc; **khuyến nghị** mirror vào Jira/biên bản BA sign-off chính thức để đủ dấu vết nghiệm thu theo quy trình dự án (exact SHA + decision record này).
 - Các tài liệu audit `docs/ui/vuexy-sync/01…09` là snapshot tại thời điểm audit (trước quyết định); trạng thái sống của blockers/conflicts theo dõi tại decision record này + gate JSON.
 - Mini App "hệ X" (`docs/ui-system-x-vuexy.md`) vẫn là **tài liệu tham khảo phụ** cho quy tắc layout desktop/motion/forbidden-patterns ở những điểm không mâu thuẫn với số đo live demo.
+
+## Cập nhật phông chữ 2026-10-30
+
+Theo yêu cầu người dùng, toàn bộ giao diện Web App dùng **Inter**. Quyết định này thay thế riêng phần chọn Public Sans ở bảng token và phần loại bỏ Inter của D3; các quyết định khác ở trên vẫn giữ nguyên. Phông Inter Variable được lưu trong `public/fonts/inter/` cùng giấy phép SIL OFL 1.1, gồm các tập ký tự Latin, Latin mở rộng và tiếng Việt cho kiểu thường và nghiêng. `TYPOGRAPHY.fontFamily` và `--wms-font-family` là hai bản tương ứng của cùng token; các màn và thư viện giao diện đọc từ token này, không khai phông riêng hoặc tải Google Fonts.

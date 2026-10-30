@@ -305,7 +305,7 @@ export function WarrantyReturnLabelDialog({
             borderColor: "text.primary",
             borderRadius: 1,
             bgcolor: "background.paper",
-            fontFamily: "monospace",
+            fontFamily: "var(--wms-font-family)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -356,7 +356,7 @@ export function WarrantyReturnLabelDialog({
                   typography: "h6",
                   fontWeight: 800,
                   lineHeight: 1,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--wms-font-family)",
                 }}
               >
                 BH

@@ -106,6 +106,6 @@ describe("UiText", () => {
 describe("theme runtime = token contract", () => {
   it("muiTheme dùng đúng semantic (chống theme drift lúc runtime)", () => {
     expect(muiTheme.palette.primary.main).toBe(S.primary);
-    expect(muiTheme.typography.fontFamily).toContain("Public Sans");
+    expect(muiTheme.typography.fontFamily).toContain("Inter");
   });
 });

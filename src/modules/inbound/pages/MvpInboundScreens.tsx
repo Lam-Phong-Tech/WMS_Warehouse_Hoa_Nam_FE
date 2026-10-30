@@ -1034,7 +1034,7 @@ export function InboundScanModal({
       header: t("inbound.detail.colCode"),
       width: 240,
       render: (entry) => (
-        <Box component="span" sx={{ fontFamily: "monospace" }}>
+        <Box component="span" sx={{ fontFamily: "var(--wms-font-family)" }}>
           {entry.itemCode ||
             entry.serialNumber ||
             entry.candidateItemUnique ||

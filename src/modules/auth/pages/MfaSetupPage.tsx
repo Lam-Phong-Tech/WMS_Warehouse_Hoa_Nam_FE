@@ -138,7 +138,7 @@ export function MfaSetupPage() {
               gap: "8px",
               listStyle: "none",
               padding: 0,
-              fontFamily: "monospace",
+              fontFamily: "var(--wms-font-family)",
             }}
           >
             {recoveryCodes.map((recoveryCode) => (
