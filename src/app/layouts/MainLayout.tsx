@@ -41,15 +41,17 @@ import { tStatic as tUi } from "@/shared/i18n/useT";
 
 /**
  * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
- * sẽ có hai tiêu đề chồng nhau. Tất cả đều là bản port 1:1 từ mockup đã chốt
+ * sẽ có hai tiêu đề chồng nhau. Phần lớn là bản port 1:1 từ mockup đã chốt
  * (Tổng quan vận hành + TRỌN BỘ 8 màn Báo cáo), header của chúng mang thêm
  * eyebrow "BÁO CÁO VẬN HÀNH · RPT-xx", chip và nút riêng.
+ * Cấu hình kho dùng AppPageHeader ngay trong trang để gắn nút lưu vào header.
  *
  * DANH SÁCH NÀY PHẢI ĐỦ CẢ 8 ROUTE `/reports/*` — liệt kê đúng thứ tự sidebar
  * để soát cho dễ. Thiếu route nào thì chính route đó hiện HAI tiêu đề chồng
  * nhau (đã xảy ra với RPT-04 và RPT-06).
  */
 const ROUTES_WITH_OWN_HEADER: string[] = [
+  ROUTES.WAREHOUSE_CONFIG,
   ROUTES.PV_PRODUCT_CATALOG,
   ROUTES.DASHBOARD,
   ROUTES.REPORTS_INVENTORY_FLOW,
