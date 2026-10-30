@@ -19,7 +19,7 @@ import {
   AuthBackLink,
 } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
-import { AUTH_UAT_FORM_SX } from "@/modules/auth/components/AuthLoginFeedback";
+import { AUTH_UAT_FORM_SX } from "@/modules/auth/components/AuthLoginFormSx";
 import { useAuthUatCopy } from "@/modules/auth/utils/auth-uat-copy";
 import { useT } from "@/shared/i18n/useT";
 import { PasswordRecoveryError } from "@/modules/auth/services/password-recovery.service";
