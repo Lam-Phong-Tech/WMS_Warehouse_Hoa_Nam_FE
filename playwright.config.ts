@@ -34,6 +34,8 @@ export default defineConfig({
     {
       name: "chromium",
       testIgnore: [
+        // Component fixtures run with their isolated Vite server/config.
+        "**/outlined-field-focus.spec.ts",
         "**/auth-role-navigation-qa2.spec.ts",
         "**/wwhn-274-a11y-browser-matrix.spec.ts",
       ],

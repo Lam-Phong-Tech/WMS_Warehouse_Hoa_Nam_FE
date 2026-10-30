@@ -167,6 +167,10 @@ function buildMuiTheme(mode: ThemeModeName) {
           root: {
             borderRadius: C.input.radius,
             "&:not(.MuiInputBase-multiline)": { minHeight: C.input.height },
+            // The notched fieldset owns focus feedback. Scoped page rules must
+            // not draw a second rectangular outline through the floating label.
+            // Keep adornment buttons and standalone native controls unaffected.
+            "&& .MuiInputBase-input:focus-visible": { outline: "none" },
           },
           input: {
             paddingTop: C.input.paddingY,
@@ -175,6 +179,9 @@ function buildMuiTheme(mode: ThemeModeName) {
           },
           notchedOutline: {
             borderColor: C.input.borderColor,
+            // Match the visible shrink label (compensated below for scale .75),
+            // so the notch also clears long Vietnamese labels and required *.
+            "& legend": { fontSize: C.input.labelFontSize },
             transition: [
               `border-color ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
               `border-width ${MOTION.duration.fast}ms ${MOTION.easing.standard}`,
