@@ -730,7 +730,7 @@ export function AlignedOutboundDetailModal({
               <Stack
                 direction="row"
                 spacing={1.5}
-                sx={{ flexWrap: "wrap", rowGap: 1 }}
+                sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "flex-end" }}
               >
                 {/* Phiếu nhiều dòng thì danh sách này dài — cho gõ mã SKU
                     để nhảy thẳng tới dòng cần quét. */}
@@ -824,7 +824,7 @@ export function AlignedOutboundDetailModal({
                 <Stack
                   direction="row"
                   spacing={1.5}
-                  sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
+                  sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "flex-end" }}
                 >
                   <UiTextField
                     sx={{ width: { xs: "100%", sm: 260 }, minWidth: 0 }}
