@@ -44,6 +44,7 @@ Chọn `HEAD` khi cần giữ nền hiện tại, chọn `origin/dev` khi bắt 
 - Giữ thay đổi nhỏ, đúng phạm vi; tránh format lại file không liên quan.
 - Với giao diện, kiểm tra desktop, tablet, mobile, hai phía breakpoint, tên/nội dung dài, overflow, bàn phím và tương tác liên quan.
 - Bổ sung kiểm tra hồi quy khi nó tái hiện được lỗi thật. Không đổi assertion hoặc tắt gate chỉ để lấy kết quả xanh.
+- Khi sửa lỗi theo TDD: viết test hành vi trước, chạy và xác nhận test đỏ vì đúng lỗi cần sửa (không phải do fixture hoặc môi trường hỏng), rồi mới sửa code. Chạy lại test đó đến xanh, review/refactor và chạy các kiểm tra liên quan. Ghi lệnh, kết quả đỏ/xanh và giới hạn kiểm chứng trong PR.
 - Chạy các lệnh dưới đây và ghi nhận exit code. `build` đã bao gồm `tsc -b`.
 
 ```powershell
@@ -64,6 +65,14 @@ node scripts/verify-dashboard-priority-layout.mjs
 ```
 
 Nếu thiếu browser, cài bằng `npx playwright install chromium`. Harness layout dùng fixture và CSS thật; không thay thế kiểm tra đăng nhập/dữ liệu trên hệ thống thật.
+
+Với lỗi viền/nhãn của ô nhập outlined, chạy thêm:
+
+```powershell
+npm run test:form-focus
+```
+
+Suite này chạy Chromium với theme, component và CSS thật trên cổng riêng 5191; kiểm tra viền focus, khoảng hở nhãn, bàn phím, sáng/tối và mobile. Không cần tài khoản hay API. Kết quả nằm trong `test-results/form-focus/`; lưu bằng chứng đỏ ra ngoài thư mục output trước khi chạy xanh vì Playwright dọn output mỗi lượt. Fixture không thay thế UAT trên trang thật.
 
 Chạy E2E liên quan nếu có spec, dữ liệu và môi trường phù hợp:
 

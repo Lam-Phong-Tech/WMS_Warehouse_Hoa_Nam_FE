@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:form-focus": "playwright test --config playwright.form-focus.config.ts",
     "wwhn-274:exact-sha": "node scripts/run-wwhn-274-exact-sha-evidence.mjs",
     "wwhn-268:verify": "node scripts/verify-wwhn-268-closure.mjs",
     "wwhn-217:evidence": "node scripts/run-wwhn-217-exact-sha-evidence.mjs",
