@@ -5,22 +5,6 @@ name: WWHN-242 FE Closure
 # đóng bằng việc ghi rõ nhánh canonical `m1` và exact SHA vào artifact.
 
 on:
-  push:
-    branches:
-      - m1
-    paths:
-      - "src/modules/reverse/**"
-      - "src/app/router/access.ts"
-      - "src/test/setup.ts"
-      - "e2e/wwhn-242-reversal-qa2.spec.ts"
-      - "scripts/verify-wwhn-242-closure.mjs"
-      - "scripts/run-wwhn-242-evidence.mjs"
-      - "docs/Task_docs_Jira/WWHN-242.md"
-      - "docs/Task_docs_Jira/WWHN-242_SCOPE_DISPOSITION.md"
-      - "docs/evidence/WWHN-242/**"
-      - "package.json"
-      - "yarn.lock"
-      - ".github/workflows/wwhn-242-fe-closure.yml"
   workflow_dispatch:
 
 permissions:

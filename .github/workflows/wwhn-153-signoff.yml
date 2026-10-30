@@ -1,21 +1,6 @@
 name: WWHN-153 Sign-off Integrity
 
 on:
-  push:
-    branches: [m1]
-    paths:
-      - "docs/Task_docs_Jira/WWHN-153.md"
-      - "docs/api-evidence/WMS_FE_CONTRACT_BASELINE.json"
-      - "docs/evidence/wwhn-153/**"
-      - "scripts/verify-wms-contract-signoff.mjs"
-      - "scripts/verify-wwhn-153-signoff.mjs"
-      - "scripts/wwhn-153-signoff-core.mjs"
-      - "scripts/test-wwhn-153-signoff-core.mjs"
-      - "scripts/run-wwhn-153-runtime-evidence.mjs"
-      - "src/shared/api/wwhn-153-final-signoff.ts"
-      - "src/test/wwhn-153-final-signoff-policy.test.ts"
-      - "package.json"
-      - ".github/workflows/wwhn-153-signoff.yml"
   workflow_dispatch:
     inputs:
       require_final:

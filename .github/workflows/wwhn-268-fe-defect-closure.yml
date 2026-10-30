@@ -7,19 +7,6 @@ name: WWHN-268 FE defect closure
 # artifact để reviewer đối chiếu thay vì tin lời DEV.
 
 on:
-  push:
-    branches: [m1]
-    paths:
-      - "src/shared/constants/ui-state.ts"
-      - "src/shared/components/**"
-      - "src/modules/**/pages/**"
-      - "e2e/wwhn-268-defect-retest.spec.ts"
-      - "scripts/verify-wwhn-268-closure.mjs"
-      - "docs/evidence/WWHN-268/**"
-      - "docs/Task_docs_Jira/WWHN-268.md"
-      - ".github/workflows/wwhn-268-fe-defect-closure.yml"
-  pull_request:
-    branches: [m1]
   workflow_dispatch:
 
 jobs:
