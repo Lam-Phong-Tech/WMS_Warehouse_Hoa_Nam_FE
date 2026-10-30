@@ -37,6 +37,7 @@ export default defineConfig({
         "**/auth-restore-session.spec.ts",
         // Component fixtures run with their isolated Vite server/config.
         "**/outlined-field-focus.spec.ts",
+        "**/warranty-table-layout.spec.ts",
         "**/auth-role-navigation-qa2.spec.ts",
         "**/wwhn-274-a11y-browser-matrix.spec.ts",
       ],
