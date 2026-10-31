@@ -881,7 +881,7 @@
   margin-right: auto;
   margin-left: 10px;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--ops-radius-control);
   background: var(--ops-pale);
   color: var(--ops-heading);
   font-size: 13px;

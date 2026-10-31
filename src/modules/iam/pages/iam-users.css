@@ -330,7 +330,7 @@
 .hn-iam-count {
   display: inline-block;
   padding: 2px 12px;
-  border-radius: 20px;
+  border-radius: var(--ops-radius-control);
   background: var(--iam-pale);
   color: var(--iam-ink);
   font-size: 12px;

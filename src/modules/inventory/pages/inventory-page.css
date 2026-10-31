@@ -266,7 +266,7 @@
   color: var(--inv-ink);
   font-weight: 600;
   background: var(--inv-pale);
-  border-radius: 20px;
+  border-radius: var(--ops-radius-control);
   font-size: 12px;
   line-height: 20px;
 }

@@ -942,7 +942,7 @@
   min-height: 34px;
   padding: 5px 9px;
   border: 0;
-  border-radius: var(--radius);
+  border-radius: var(--ops-radius-control);
   background: var(--primary-soft);
   color: var(--primary-dark);
   font-size: 15px;

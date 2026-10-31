@@ -553,7 +553,7 @@
   align-items: center;
   justify-content: center;
   padding: 2px 9px;
-  border-radius: 20px;
+  border-radius: var(--ops-radius-control);
   background: var(--primary-soft);
   font-size: 12px;
   font-weight: 700;

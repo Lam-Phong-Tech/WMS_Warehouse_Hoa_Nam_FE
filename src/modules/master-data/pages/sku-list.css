@@ -373,7 +373,7 @@
   background: var(--sku-pale);
   color: var(--sku-ink);
   padding: 2px 12px;
-  border-radius: 20px;
+  border-radius: var(--ops-radius-control);
   font-size: 12px;
   font-weight: 600;
 }

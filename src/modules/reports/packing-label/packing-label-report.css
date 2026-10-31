@@ -456,7 +456,7 @@
   min-width: 68px;
   height: 28px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--ops-radius-control);
   color: var(--pl-ink);
   background: var(--ops-pale);
   font-size: 12px;

@@ -455,7 +455,7 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
   align-items: center;
   justify-content: center;
   padding: 2px 12px;
-  border-radius: 20px;
+  border-radius: var(--ops-radius-control);
   background: var(--catalog-pale);
   color: var(--catalog-ink);
   font-size: 12px;

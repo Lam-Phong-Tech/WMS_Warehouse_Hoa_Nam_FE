@@ -312,7 +312,7 @@
   height: 17px;
   padding: 0 3px;
   border: 2px solid var(--surface);
-  border-radius: 999px;
+  border-radius: var(--ops-radius-control);
   background: var(--red);
   color: var(--hnt-white);
   font-size: 9px;

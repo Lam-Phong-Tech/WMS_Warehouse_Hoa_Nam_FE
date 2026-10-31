@@ -2180,7 +2180,12 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         {confirmDialog}
         <header className="agy-heading">
           <div>
-            <h1>{tUi("updatedUi.text_7ebd6aabc34b")}</h1>
+            <div className="agy-heading-title">
+              <h1>{tUi("updatedUi.text_7ebd6aabc34b")}</h1>
+              <span className="agy-total">
+                {query.isLoading ? "—" : pagination.total.toLocaleString("vi-VN")}
+              </span>
+            </div>
             <p>{tUi("updatedUi.text_c1caac816fec")}</p>
           </div>
           {canManage ? (
@@ -2193,12 +2198,6 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           className="agy-list-card"
           aria-label={tUi("updatedUi.text_93ff84be91ec")}
         >
-          <div className="agy-list-heading">
-            <h2>{tUi("updatedUi.text_9a8fa273e862")}</h2>
-            <span className="agy-total">
-              {query.isLoading ? "—" : pagination.total.toLocaleString("vi-VN")}
-            </span>
-          </div>
           <div className="agy-toolbar">
             <div className="agy-filter">
               <span>{tUi("reports.packingLabel.searchLabel")}</span>
