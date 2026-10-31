@@ -170,6 +170,7 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     status,
     // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
     createdBy: text(row.created_by_name ?? row.creator_name, "-"),
+    createdAt: text(row.created_at) || undefined,
     updatedAt: text(row.updated_at) || undefined,
     version: nullableApiNumber(row.version ?? row.lock_version) ?? undefined,
     sourceReference: text(row.source_reference ?? row.source_name) || undefined,
@@ -229,6 +230,20 @@ function normalizeDetail(row: RawRecord): InboundDetail {
     lines: rawLines(row).map((line) =>
       normalizeLine(line, document.id, document.status),
     ),
+    statusHistory: (Array.isArray(row.status_history) ? row.status_history : [])
+      .filter(
+        (entry): entry is RawRecord =>
+          typeof entry === "object" && entry !== null,
+      )
+      .map((entry) => ({
+        id: text(entry.id),
+        fromStatus: text(entry.from_status),
+        toStatus: text(entry.to_status),
+        action: text(entry.action),
+        changedAt: text(entry.created_at),
+        changedBy: text(entry.changed_by_name),
+        note: text(entry.note),
+      })),
   };
 }
 function assertReadOnlyScanResponse(row: RawRecord): void {

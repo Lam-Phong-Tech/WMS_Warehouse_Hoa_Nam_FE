@@ -12,7 +12,7 @@ import {
 import dayjs from "dayjs";
 import { UiVuexyDateField, VuexyDemoIcon } from "@/shared/ui";
 import { getApiErrorMessage } from "@/shared/api/api-error";
-import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
+import { InboundReportDetail } from "./InboundReportDetail";
 import {
   hasAnyWmsPermission,
   WMS_ACTION_PERMISSIONS,
@@ -348,7 +348,7 @@ export default function InboundFlowReport() {
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
   const [dateSort, setDateSort] = useState<"newest" | "oldest" | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
-  const [viewDocumentId, setViewDocumentId] = useState<string | null>(null);
+  const [viewDocument, setViewDocument] = useState<FlowDocument | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [updatePending, setUpdatePending] = useState(false);
@@ -712,7 +712,7 @@ export default function InboundFlowReport() {
 
   const openDocument = (document: FlowDocument) => {
     setSelectedDocument(document.id);
-    setViewDocumentId(document.id);
+    setViewDocument(document);
   };
 
   const toastCopy = actionNotice
@@ -723,6 +723,19 @@ export default function InboundFlowReport() {
           detail: tUi("updatedUi.text_d6c349552506"),
         }
       : null;
+
+  if (viewDocument) {
+    return (
+      <div className="hn-inbound-report" data-testid="rpt01-inbound-reference">
+        <InboundReportDetail
+          document={viewDocument}
+          range={appliedRange}
+          canExport={canExport}
+          onBack={() => setViewDocument(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="hn-inbound-report" data-testid="rpt01-inbound-reference">
@@ -1486,14 +1499,6 @@ export default function InboundFlowReport() {
             <small>{tUi("updatedUi.text_b271581f3ca5")}</small>
           </div>
         </div>
-      ) : null}
-
-      {viewDocumentId ? (
-        <InboundScanModal
-          documentId={viewDocumentId}
-          onClose={() => setViewDocumentId(null)}
-          onChanged={() => void refetch()}
-        />
       ) : null}
     </div>
   );

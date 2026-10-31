@@ -15,6 +15,7 @@ export interface InboundDocument {
   remaining: number;
   status: InboundStatus;
   createdBy: string;
+  createdAt?: string;
   updatedAt?: string;
   version?: number;
   sourceReference?: string;
@@ -82,6 +83,15 @@ export interface CompleteInboundLineSkuResult {
 export interface InboundDetail {
   document: InboundDocument & { version: number };
   lines: InboundLine[];
+  statusHistory: Array<{
+    id: string;
+    fromStatus: string;
+    toStatus: string;
+    action: string;
+    changedAt: string;
+    changedBy: string;
+    note: string;
+  }>;
 }
 
 /**
