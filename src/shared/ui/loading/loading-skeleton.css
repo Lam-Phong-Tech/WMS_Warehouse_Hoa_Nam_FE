@@ -1,7 +1,7 @@
 .hn-skeleton {
-  --hn-skeleton-fill: var(--ops-skeleton-fill, #e3e9ee);
-  --hn-skeleton-border: var(--ops-border, #e4e9ee);
-  --hn-skeleton-surface: var(--ops-card-bg, #fff);
+  --hn-skeleton-fill: var(--ops-pale, #eaf5f8);
+  --hn-skeleton-border: var(--ops-line, #d9e8ef);
+  --hn-skeleton-surface: var(--ops-surface, #fff);
   container-type: inline-size;
   width: 100%;
   min-width: 0;
