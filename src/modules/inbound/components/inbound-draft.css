@@ -41,19 +41,6 @@
   overscroll-behavior: contain;
 }
 
-.hn-inbound-draft .MuiDialogActions-root {
-  flex: none;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 16px 22px;
-  border-top: 1px solid var(--inbound-draft-border);
-  background: var(--inbound-draft-surface);
-}
-
-.hn-inbound-draft .MuiDialogActions-root > :not(style) ~ :not(style) {
-  margin-left: 0;
-}
-
 .hn-inbound-draft .MuiFormControl-root,
 .hn-inbound-draft .MuiGrid-root {
   min-width: 0;
@@ -167,14 +154,6 @@
   box-shadow: none;
 }
 
-.hn-inbound-draft .hn-inbound-draft__cancel {
-  padding: 8px 16px;
-  border: 1px solid var(--inbound-draft-border);
-  color: var(--inbound-draft-ink);
-  background: var(--inbound-draft-surface);
-}
-
-.hn-inbound-draft .hn-inbound-draft__cancel:hover,
 .hn-inbound-draft .hn-inbound-draft__dismiss:hover {
   background: var(--inbound-draft-soft);
 }
@@ -348,15 +327,5 @@
 
   .hn-inbound-draft .MuiDialogTitle-root + .MuiDialogContent-root {
     padding: 18px 16px;
-  }
-
-  .hn-inbound-draft .MuiDialogActions-root {
-    gap: 8px;
-    padding: 12px 16px;
-  }
-
-  .hn-inbound-draft .hn-inbound-draft__save {
-    flex: 1 1 auto;
-    white-space: normal;
   }
 }

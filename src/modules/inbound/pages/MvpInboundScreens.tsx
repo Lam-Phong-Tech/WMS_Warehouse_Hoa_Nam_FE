@@ -1191,16 +1191,9 @@ export function InboundScanModal({
             />
           </Stack>
         }
-        actions={
+        actions={detail && isMutable ? (
           <>
-            <ActionButton
-              kind="close"
-              disabled={working}
-              onClick={dialog.close}
-            >
-              {t("common.close")}
-            </ActionButton>
-            {detail && canCancel && isMutable ? (
+            {canCancel ? (
               <ActionButton
                 kind="cancel"
                 disabled={working}
@@ -1209,25 +1202,23 @@ export function InboundScanModal({
                 {t("inbound.cancel.trigger")}
               </ActionButton>
             ) : null}
-            {detail && isMutable ? (
-              <ActionButton
-                kind="confirm"
-                disabled={
-                  !canPost ||
-                  !hasScanned ||
-                  hasMissingSkuInfo ||
-                  detail.document.status !== "SCANNING" ||
-                  postMutation.isPending
-                }
-                onClick={() => void handlePost()}
-              >
-                {postMutation.isPending
-                  ? t("inbound.detail.posting")
-                  : t("inbound.detail.post")}
-              </ActionButton>
-            ) : null}
+            <ActionButton
+              kind="confirm"
+              disabled={
+                !canPost ||
+                !hasScanned ||
+                hasMissingSkuInfo ||
+                detail.document.status !== "SCANNING" ||
+                postMutation.isPending
+              }
+              onClick={() => void handlePost()}
+            >
+              {postMutation.isPending
+                ? t("inbound.detail.posting")
+                : t("inbound.detail.post")}
+            </ActionButton>
           </>
-        }
+        ) : undefined}
       >
         <>
           {detailQuery.isError ? (

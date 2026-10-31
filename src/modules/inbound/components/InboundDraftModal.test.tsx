@@ -98,9 +98,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent("Đang tải dữ liệu…");
     expect(screen.queryByText("Phiếu đã kết thúc và chỉ được xem")).toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Ngày chứng từ" }),
-    ).toBeDisabled();
+    expect(document.getElementById("inbound-doc-date")).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Lưu thông tin" })).toBeNull();
 
     mockDetail(dayjs().format("YYYY-MM-DD"));
@@ -120,6 +118,14 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         screen.getByRole("button", { name: "Lưu thông tin" }),
       ).toBeEnabled();
     });
+    expect(
+      screen
+        .getByRole("button", { name: "Lưu thông tin" })
+        .closest(".MuiDialogTitle-root"),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("dialog").querySelector(".MuiDialogActions-root"),
+    ).toBeNull();
     expect(screen.queryByText("Phiếu đã kết thúc và chỉ được xem")).toBeNull();
     expect(
       screen.getByRole("textbox", { name: "Nguồn / tham chiếu" }),
@@ -127,7 +133,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
     expect(update).not.toHaveBeenCalled();
   });
 
-  it("lỗi tải chi tiết không bị mô tả thành phiếu đã kết thúc", () => {
+  it("lỗi tải chi tiết không bị mô tả thành phiếu đã kết thúc", async () => {
     vi.mocked(useInboundDetail).mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -143,7 +149,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
       />,
     );
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
+    expect(await screen.findByRole("alert")).toHaveTextContent(
       "Không tải được phiếu nhập.",
     );
     expect(screen.queryByRole("status")).toBeNull();
@@ -164,7 +170,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         onSaved={onSaved}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Ngày chứng từ" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ngày chứng từ" }));
     const yesterday = dayjs().subtract(1, "day");
     fireEvent.click(
       screen.getByRole("button", { name: yesterday.format("DD/MM/YYYY") }),
@@ -192,7 +198,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         onSaved={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /: Ngày chứng từ$/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /: Ngày chứng từ$/ }));
     fireEvent.click(
       screen.getByRole("button", { name: "Tạo phiếu & quét hàng" }),
     );
@@ -204,7 +210,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
     ).toHaveAttribute("aria-invalid", "true");
   });
 
-  it("lịch không cho chọn ngày tương lai", () => {
+  it("lịch không cho chọn ngày tương lai", async () => {
     renderWithProviders(
       <InboundDraftModal
         documentId={null}
@@ -212,7 +218,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         onSaved={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Ngày chứng từ" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ngày chứng từ" }));
     expect(
       screen.getByRole("button", {
         name: dayjs().add(1, "day").format("DD/MM/YYYY"),
@@ -251,7 +257,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         onSaved={vi.fn()}
       />,
     );
-    expect(screen.getByRole("combobox", { name: /Kho nhận/ })).toBeDisabled();
+    expect(await screen.findByRole("combobox", { name: /Kho nhận/ })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Lưu thông tin" }));
     await waitFor(() => {
       expect(update).toHaveBeenCalledWith({
@@ -266,7 +272,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
     });
   });
 
-  it("phiếu kết thúc vẫn chỉ xem và không có thao tác xóa hoặc lưu", () => {
+  it("phiếu kết thúc vẫn chỉ xem và không có thao tác xóa hoặc lưu", async () => {
     mockDetail(dayjs().format("YYYY-MM-DD"), "COMPLETED");
     renderWithProviders(
       <InboundDraftModal
@@ -276,7 +282,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
       />,
     );
     expect(
-      screen.getByRole("button", { name: "Ngày chứng từ" }),
+      await screen.findByRole("button", { name: "Ngày chứng từ" }),
     ).toBeDisabled();
     expect(
       screen.queryByRole("button", { name: /: Ngày chứng từ$/ }),

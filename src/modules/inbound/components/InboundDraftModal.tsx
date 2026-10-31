@@ -145,8 +145,7 @@ export function InboundDraftModal({
   useEffect(() => {
     if (!documentId) {
       const firstWarehouse = warehousesQuery.data?.[0] as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       setFormValues({
         documentDate: localToday(),
         warehouseId: text(firstWarehouse?.id ?? firstWarehouse?.warehouse_id),
@@ -290,45 +289,44 @@ export function InboundDraftModal({
       title={
         <Stack
           direction="row"
-          sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}
+          sx={{
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 1,
+          }}
         >
           <span>
             {documentId
               ? t("inbound.draft.titleEdit")
               : t("inbound.draft.titleCreate")}
           </span>
-          <ActionIconButton
-            kind="close"
-            className="hn-inbound-draft__dismiss"
-            label={t("common.close")}
-            onClick={dialog.close}
-            disabled={saving}
-          />
-        </Stack>
-      }
-      actions={
-        <>
-          <ActionButton
-            kind="close"
-            className="hn-inbound-draft__cancel"
-            onClick={dialog.close}
+          <Stack
+            direction="row"
+            sx={{ alignItems: "center", gap: 1, ml: "auto" }}
           >
-            {t("common.close")}
-          </ActionButton>
-          {mutable && canCreate ? (
-            <ActionButton
-              kind="save"
-              className="hn-inbound-draft__save"
-              loading={saving}
-              onClick={() => void handleSave()}
+            {mutable && canCreate ? (
+              <ActionButton
+                kind="save"
+                className="hn-inbound-draft__save"
+                loading={saving}
+                onClick={() => void handleSave()}
+                disabled={saving}
+              >
+                {documentId
+                  ? t("inbound.draft.submitEdit")
+                  : t("inbound.draft.submitCreate")}
+              </ActionButton>
+            ) : null}
+            <ActionIconButton
+              kind="close"
+              className="hn-inbound-draft__dismiss"
+              label={t("common.close")}
+              onClick={dialog.close}
               disabled={saving}
-            >
-              {documentId
-                ? t("inbound.draft.submitEdit")
-                : t("inbound.draft.submitCreate")}
-            </ActionButton>
-          ) : null}
-        </>
+            />
+          </Stack>
+        </Stack>
       }
     >
       {detailQuery.isError ? (
