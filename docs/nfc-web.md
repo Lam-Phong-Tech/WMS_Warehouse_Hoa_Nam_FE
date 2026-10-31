@@ -25,6 +25,12 @@ Query NFC tách theo ngữ cảnh đăng nhập, thuộc nhóm `volatile`, khôn
 
 ## Thao tác qua app
 
+Nếu phiên chưa xác nhận kho, API NFC trả `WAREHOUSE_CONTEXT_REQUIRED` (409).
+Web đọc `available_warehouses` từ `GET /auth/me`, yêu cầu người dùng chọn kho và
+bấm **Xác nhận kho**, rồi gọi `POST /auth/switch-context` với UUID kho.
+Thao tác này cập nhật kho của phiên và tải lại NFC, không tạo ca làm việc hay ghi chip.
+Không tự chọn/xác nhận kho dù chỉ có một kho khả dụng.
+
 Gán, quét, thay và thu hồi chip chỉ mở thông báo **“Vui lòng thao tác qua app”**.
 Web không gọi prepare, confirm, release hoặc deactivate, không giữ chỗ và không thay đổi tồn.
 Chú thích chỉ hiện khi hover, focus hoặc bấm icon ⓘ.

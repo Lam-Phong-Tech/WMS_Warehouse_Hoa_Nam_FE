@@ -1,4 +1,11 @@
 export const MESSAGES_NFC_VI = {
+  confirmWarehouseTitle: "Xác nhận kho làm việc",
+  confirmWarehouseHelp:
+    "Chọn kho để xem dữ liệu NFC trong phiên đăng nhập này.",
+  workWarehouse: "Kho làm việc",
+  confirmWarehouse: "Xác nhận kho",
+  noWarehouses:
+    "Không có kho đang hoạt động trong phạm vi truy cập. Vui lòng liên hệ quản trị viên.",
   items: "Hiện vật",
   tags: "Chip đã đăng ký",
   info: "Thông tin NFC",

@@ -35,6 +35,8 @@ import { useT } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { NfcInfo } from "../components/NfcInfo";
+import { NfcWarehouseRecovery } from "../components/NfcWarehouseRecovery";
+import { normalizeError } from "@/shared/api/api-error";
 import { nfcService } from "../services/nfc.service";
 import type {
   NfcItem,
@@ -403,10 +405,20 @@ export default function NfcPage() {
         </Box>
         {query.isError ? (
           <Box sx={{ p: 3 }}>
-            <ApiErrorAlert
-              error={query.error}
-              onRetry={() => void query.refetch()}
-            />
+            {[
+              "WAREHOUSE_CONTEXT_REQUIRED",
+              "WAREHOUSE_CONTEXT_MISMATCH",
+              "WAREHOUSE_INACTIVE",
+              "WAREHOUSE_NOT_FOUND",
+              "WAREHOUSE_ACCESS_DENIED",
+            ].includes(normalizeError(query.error).code ?? "") ? (
+              <NfcWarehouseRecovery />
+            ) : (
+              <ApiErrorAlert
+                error={query.error}
+                onRetry={() => void query.refetch()}
+              />
+            )}
           </Box>
         ) : activeTab === "items" ? (
           <ResponsiveDataTable

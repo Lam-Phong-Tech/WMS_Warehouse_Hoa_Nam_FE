@@ -3,6 +3,11 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { http } from "@/shared/api/http";
 import NfcPage from "./NfcPage";
+import { authService } from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/shared/store/auth.store";
+vi.mock("@/modules/auth/services/auth.service", () => ({
+  authService: { switchContext: vi.fn() },
+}));
 
 const access = vi.hoisted(() => ({ permissions: new Set<string>() }));
 vi.mock("@/shared/components/permission", () => ({
@@ -84,6 +89,58 @@ beforeEach(() => {
 });
 
 describe("NFC web read-only", { timeout: 60000 }, () => {
+  it("recovers a missing warehouse session only after explicit confirmation, then reloads NFC", async () => {
+    useAuthStore.setState({ currentContext: null });
+    vi.mocked(http.getPage).mockRejectedValueOnce({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: {
+          message: "Xác nhận lại kho làm việc.",
+          error: { code: "WAREHOUSE_CONTEXT_REQUIRED" },
+        },
+      },
+    });
+    const warehouseId = "11111111-1111-4111-8111-111111111111";
+    vi.mocked(http.get).mockResolvedValue({
+      available_warehouses: [
+        {
+          warehouse_id: warehouseId,
+          code: "HN01",
+          name: "Kho Hoa Nam",
+          status: "ACTIVE",
+        },
+      ],
+    });
+    vi.mocked(authService.switchContext).mockResolvedValue({
+      access_token: "<confirmed-context>",
+      token_type: "bearer",
+      expires_in: 3600,
+      active_context: {
+        context_type: "WAREHOUSE",
+        context_id: warehouseId,
+        scope_ref: warehouseId,
+      },
+    });
+    renderWithProviders(<NfcPage />);
+    const confirm = await screen.findByRole("button", { name: "Xác nhận kho" });
+    expect(confirm).toBeDisabled();
+    expect(authService.switchContext).not.toHaveBeenCalled();
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "Kho làm việc" }));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "HN01 · Kho Hoa Nam" }),
+    );
+    fireEvent.click(confirm);
+    expect(await screen.findByText("SN-002")).toBeVisible();
+    expect(authService.switchContext).toHaveBeenCalledWith({
+      context_type: "WAREHOUSE",
+      context_id: warehouseId,
+      scope_ref: warehouseId,
+    });
+    expect(useAuthStore.getState().currentContext?.context_id).toBe(
+      warehouseId,
+    );
+  });
   it("all physical chip actions show the exact app notice without writing to the backend", async () => {
     renderWithProviders(<NfcPage />);
     await screen.findByText("SN-002");

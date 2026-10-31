@@ -1,4 +1,11 @@
 export const MESSAGES_NFC_EN = {
+  confirmWarehouseTitle: "Confirm working warehouse",
+  confirmWarehouseHelp:
+    "Choose a warehouse to view NFC data in this login session.",
+  workWarehouse: "Working warehouse",
+  confirmWarehouse: "Confirm warehouse",
+  noWarehouses:
+    "No active warehouse is available within your access scope. Please contact an administrator.",
   items: "Items",
   tags: "Registered chips",
   info: "NFC information",
