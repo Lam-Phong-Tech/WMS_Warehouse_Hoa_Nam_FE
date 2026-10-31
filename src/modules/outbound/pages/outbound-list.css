@@ -206,6 +206,31 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
 .hn-outbound-overview {
   padding: 12px 16px 8px;
 }
+.hn-outbound-overview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hn-outbound-overview-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--ops-radius-control);
+  background: transparent;
+  color: var(--out-primary);
+  cursor: pointer;
+}
+.hn-outbound-overview-toggle[aria-expanded="true"] i {
+  transform: rotate(180deg);
+}
+.hn-outbound-overview-toggle:focus-visible {
+  outline: 2px solid var(--out-primary);
+  outline-offset: 2px;
+}
 .hn-outbound-overview-metrics {
   display: grid;
   grid-template-columns: minmax(140px, 0.75fr) minmax(0, 4fr);

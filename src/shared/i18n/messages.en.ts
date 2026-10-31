@@ -19,6 +19,8 @@ export const MESSAGES_EN: MessageTree = {
     loadingData: "Loading data…",
     retry: "Retry",
     close: "Close",
+    collapse: "Collapse",
+    expand: "Expand",
     viewDetail: "View detail",
   },
   topbar: {

@@ -21,6 +21,8 @@ export const MESSAGES_VI = {
     loadingData: "Đang tải số liệu…",
     retry: "Thử lại",
     close: "Đóng",
+    collapse: "Thu gọn",
+    expand: "Mở rộng",
     viewDetail: "Xem chi tiết",
   },
   topbar: {

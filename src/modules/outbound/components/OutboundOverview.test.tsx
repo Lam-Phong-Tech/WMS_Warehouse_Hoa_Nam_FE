@@ -65,7 +65,12 @@ describe("OUT-01 overview · authoritative document totals", () => {
     expect(within(overview()).getByText("1.245")).toBeInTheDocument();
     expect(within(overview()).getByText("3")).toBeInTheDocument();
     expect(within(overview()).queryByText("9999")).not.toBeInTheDocument();
-    expect(within(overview()).queryByRole("button")).not.toBeInTheDocument();
+    const toggle = within(overview()).getByRole("button", { name: "Thu gọn" });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(within(overview()).queryByText("1.284")).not.toBeVisible();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(overview()).toHaveAttribute("aria-busy", "false");
   });
 
