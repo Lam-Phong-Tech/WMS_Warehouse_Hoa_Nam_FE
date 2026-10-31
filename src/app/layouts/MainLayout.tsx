@@ -185,6 +185,9 @@ export function MainLayout() {
   } as CSSProperties;
   const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
+  const hideHeaderDetails =
+    location.pathname === ROUTES.AUDIT_LOGS ||
+    location.pathname === ROUTES.PUTAWAY_TRAYS;
   const trail = getBreadcrumbTrail(location.pathname);
   const navLabel = useNavLabel();
 
@@ -258,13 +261,15 @@ export function MainLayout() {
             <AppPageHeader
               showEyebrow={
                 location.pathname !== ROUTES.IAM_USERS &&
-                location.pathname !== ROUTES.REVERSE
+                location.pathname !== ROUTES.REVERSE &&
+                !hideHeaderDetails
               }
               showDescription={
                 location.pathname !== ROUTES.IAM_USERS &&
-                location.pathname !== ROUTES.REVERSE
+                location.pathname !== ROUTES.REVERSE &&
+                !hideHeaderDetails
               }
-              showContextBadges={location.pathname !== ROUTES.REVERSE}
+              showContextBadges={location.pathname !== ROUTES.REVERSE && !hideHeaderDetails}
             />
           )}
           {/*

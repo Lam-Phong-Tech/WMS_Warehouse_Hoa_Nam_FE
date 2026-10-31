@@ -170,6 +170,12 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
 
     expect(container.querySelector('input[type="datetime-local"]')).toBeNull();
     expect(screen.getByLabelText("Lọc theo khoảng ngày")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Từ ngày" })).toHaveTextContent(
+      /^Từ ngày$/,
+    );
+    expect(screen.getByRole("button", { name: "Đến ngày" })).toHaveTextContent(
+      /^Đến ngày$/,
+    );
 
     // Chọn hôm kia → hôm nay rồi Áp dụng: khoảng gửi lên BE là TRỌN NGÀY.
     const today = dayjs().startOf("day");

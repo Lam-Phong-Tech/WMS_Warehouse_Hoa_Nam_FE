@@ -32,9 +32,7 @@ import {
   UiAlert,
   UiAutocomplete,
   UiCard,
-  UiDescriptions,
   UiDialog,
-  UiStatusBadge,
   UiText,
   UiTextField,
 } from "@/shared/ui";
@@ -322,6 +320,8 @@ export function WarehouseConfigScreen() {
       >
         <AppPageHeader
           showEyebrow={false}
+          showDescription={false}
+          showContextBadges={false}
           actions={
             <ActionButton
               className="hn-settings-primary"
@@ -357,7 +357,7 @@ export function WarehouseConfigScreen() {
           màn này nằm trong shell đó, thêm nữa là hiện hai dải giống hệt nhau chồng lên
           nhau — đã thấy tận mắt khi chụp màn hình preview.
 
-          Trạng thái hiện tại của kho vẫn đọc được ngay dưới đây ở ô "Trạng thái hiện tại".
+          Trạng thái hiện tại của kho vẫn đọc được ở ô "Trạng thái" trong form.
         */}
 
         {warehouses.length > 1 ? (
@@ -407,50 +407,6 @@ export function WarehouseConfigScreen() {
                   </Grid>
                 </Grid>
               ) : null}
-
-              <Box
-                className="hn-settings-descriptions"
-                sx={{
-                  border: 1,
-                  borderColor: "var(--settings-line)",
-                  borderRadius: "6px",
-                  bgcolor: "var(--settings-pale)",
-                  p: 2,
-                  mb: 2,
-                }}
-              >
-                <UiDescriptions
-                  columns={2}
-                  items={[
-                    {
-                      label: t("masterData.warehouse.fieldCode"),
-                      value: warehouse.code,
-                    },
-                    {
-                      label: t("masterData.warehouse.fieldCurrentStatus"),
-                      value: (
-                        <UiStatusBadge
-                          data-settings-tone={
-                            warehouse.status === "ACTIVE"
-                              ? "success"
-                              : "warning"
-                          }
-                          tone={
-                            warehouse.status === "ACTIVE"
-                              ? "success"
-                              : "warning"
-                          }
-                          label={
-                            warehouse.status === "ACTIVE"
-                              ? t("masterData.status.operating")
-                              : t("masterData.status.notOperating")
-                          }
-                        />
-                      ),
-                    },
-                  ]}
-                />
-              </Box>
 
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 6 }}>

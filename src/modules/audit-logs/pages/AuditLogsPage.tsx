@@ -248,6 +248,7 @@ export function AuditLogsPage() {
           <span className="hn-audit-filter-label">{t("audit.rangeAria")}</span>
           <UiVuexyDateRangePicker
             popupClassName="hn-settings-menu"
+            showFieldPrefixes={false}
             value={range}
             aria-label={t("audit.rangeAria")}
             maxDate={maxSelectableDate}

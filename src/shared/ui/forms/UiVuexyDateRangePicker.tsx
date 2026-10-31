@@ -48,6 +48,7 @@ export interface UiVuexyDateRangePickerProps {
   value: [Dayjs | null, Dayjs | null] | null;
   onChange: (value: [Dayjs | null, Dayjs | null] | null) => void;
   placeholder?: [string, string];
+  showFieldPrefixes?: boolean;
   format?: string;
   allowClear?: boolean;
   disabled?: boolean;
@@ -91,6 +92,7 @@ export function UiVuexyDateRangePicker({
   value,
   onChange,
   placeholder,
+  showFieldPrefixes = true,
   format = "DD/MM/YYYY",
   allowClear = true,
   disabled = false,
@@ -240,11 +242,17 @@ export function UiVuexyDateRangePicker({
           aria-haspopup="dialog"
           aria-expanded={open && activeField === "start"}
           onClick={(event) => openPicker("start", event)}
-          sx={dateFieldButtonSx(open && activeField === "start", disabled)}
+          sx={dateFieldButtonSx(
+            open && activeField === "start",
+            disabled,
+            showFieldPrefixes,
+          )}
         >
-          <Box component="span" sx={dateFieldPrefixSx}>
-            {t("shared.datePicker.from")}
-          </Box>
+          {showFieldPrefixes ? (
+            <Box component="span" sx={dateFieldPrefixSx}>
+              {t("shared.datePicker.from")}
+            </Box>
+          ) : null}
           <Box
             component="span"
             data-date-value="from"
@@ -264,11 +272,17 @@ export function UiVuexyDateRangePicker({
           aria-haspopup="dialog"
           aria-expanded={open && activeField === "end"}
           onClick={(event) => openPicker("end", event)}
-          sx={dateFieldButtonSx(open && activeField === "end", disabled)}
+          sx={dateFieldButtonSx(
+            open && activeField === "end",
+            disabled,
+            showFieldPrefixes,
+          )}
         >
-          <Box component="span" sx={dateFieldPrefixSx}>
-            {t("shared.datePicker.to")}
-          </Box>
+          {showFieldPrefixes ? (
+            <Box component="span" sx={dateFieldPrefixSx}>
+              {t("shared.datePicker.to")}
+            </Box>
+          ) : null}
           <Box
             component="span"
             data-date-value="to"
@@ -700,13 +714,19 @@ const presetButtonSx = (active: boolean) => ({
   "&:focus-visible": { outline: `2px solid ${S.primary}`, outlineOffset: 1 },
 });
 
-const dateFieldButtonSx = (active: boolean, disabled: boolean) => ({
+const dateFieldButtonSx = (
+  active: boolean,
+  disabled: boolean,
+  showFieldPrefixes: boolean,
+) => ({
   width: "100%",
   minWidth: 0,
   height: CONTROL.height,
   px: 1.25,
   display: "grid",
-  gridTemplateColumns: "auto minmax(0, 1fr) auto",
+  gridTemplateColumns: showFieldPrefixes
+    ? "auto minmax(0, 1fr) auto"
+    : "minmax(0, 1fr) auto",
   alignItems: "center",
   gap: 0.75,
   border: `1px solid ${active ? S.primary : S.borderInput}`,
