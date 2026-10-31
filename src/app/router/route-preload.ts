@@ -44,6 +44,7 @@ const LOADERS: Record<string, Preloadable> = {
   [ROUTES.WAREHOUSE_CONFIG]: R.WarehouseConfigScreen as Preloadable,
   [ROUTES.PV_PRODUCT_CATALOG]: R.PvProductCatalogPage as Preloadable,
   [ROUTES.SCAN]: R.PhysicalCodesPage as Preloadable,
+  [ROUTES.NFC]: R.NfcPage as Preloadable,
   [ROUTES.INBOUND]: R.InboundPage as Preloadable,
   [ROUTES.PUTAWAY]: R.PutawayPage as Preloadable,
   [ROUTES.PUTAWAY_TRAYS]: R.TrayOverviewPage as Preloadable,

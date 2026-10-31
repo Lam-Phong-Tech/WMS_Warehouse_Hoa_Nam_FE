@@ -85,6 +85,10 @@ export const VUEXY_NAV_ICONS = {
     ["path", { d: "M6 13h12" }],
     ["path", { d: "M6 17h12" }],
   ],
+  nfc: [
+    ["rect", { x: "3", y: "3", width: "18", height: "18", rx: "3" }],
+    ["path", { d: "M7 15V9l10 6V9M10 8v8M14 8v8" }],
+  ],
   /** Báo cáo */
   "chart-column-big": [
     ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16" }],

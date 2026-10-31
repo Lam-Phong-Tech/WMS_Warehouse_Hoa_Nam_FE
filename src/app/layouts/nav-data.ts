@@ -181,6 +181,14 @@ export const NAV_GROUPS: NavGroupData[] = [
     ],
   },
   {
+    name: "NFC",
+    icon: "nfc",
+    direct: true,
+    items: [
+      { screen: "NFC-01", path: ROUTES.NFC, label: "NFC", icon: "microchip" },
+    ],
+  },
+  {
     // 8 mục — mỗi mục là MỘT trang riêng (trước đây gộp vào 1 trang có tab
     // bar nội trang; phản hồi người dùng 2026-08-30: muốn sổ ra sidebar như
     // các nhóm khác thay vì bấm tab trong trang).
@@ -297,6 +305,7 @@ export const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.WARRANTY_COMPONENT_ISSUES]: "WAR-04",
   [ROUTES.INVENTORY]: "INV-01",
   [ROUTES.SCAN]: "TRACE-01",
+  [ROUTES.NFC]: "NFC-01",
   [ROUTES.REVERSE]: "REV-00",
   [ROUTES.REPORTS_INVENTORY_FLOW]: "RPT-01",
   [ROUTES.REPORTS_OUTBOUND_FLOW]: "RPT-01B",
@@ -413,6 +422,7 @@ export const SCREEN_META: Record<
   string,
   { title: string; description: string }
 > = {
+  "NFC-01": { title: "NFC", description: "" },
   "MAP-01": {
     title: "Tổng quan vận hành",
     description:

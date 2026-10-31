@@ -15,6 +15,8 @@ import { useLanguageStore } from "./language.store";
 
 export const NAV_LABELS_EN: Record<string, string> = {
   home: "Home",
+  nfc: "NFC",
+  "NFC-01": "NFC",
 
   // Nhóm
   "layout-dashboard": "Overview",
@@ -105,6 +107,7 @@ export interface ScreenMetaText {
  * chữ VI trong nav-data không làm rơi bản dịch.
  */
 export const SCREEN_META_EN: Record<string, ScreenMetaText> = {
+  "NFC-01": { title: "NFC", description: "" },
   "MAP-01": {
     title: "Operations overview",
     description:

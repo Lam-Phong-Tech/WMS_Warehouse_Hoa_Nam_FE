@@ -111,6 +111,7 @@ export const PvProductCatalogPage = lazyRoute(() =>
 export const PhysicalCodesPage = lazyRoute(
   () => import("@/modules/scan/pages/PhysicalCodesPage"),
 );
+export const NfcPage = lazyRoute(() => import("@/modules/nfc/pages/NfcPage"));
 export const InboundPage = lazyRoute(
   () => import("@/modules/inbound/pages/InboundPage"),
 );

@@ -31,6 +31,7 @@ export const ROUTES = {
   DEFECTS: "/master-data/defects",
   DEFECT_CREATE: "/master-data/defects/new",
   SCAN: "/scan",
+  NFC: "/nfc",
 
   // 02 · Nhập kho
   INBOUND: "/inbound",

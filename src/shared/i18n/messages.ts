@@ -1,4 +1,5 @@
 import { MESSAGES_UPDATED_VI } from "./messages.updated.vi";
+import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
 /**
  * BẢNG CHUỖI GIAO DIỆN — nguồn duy nhất cho mọi text người dùng nhìn thấy.
  *
@@ -14,6 +15,7 @@ import { MESSAGES_UPDATED_VI } from "./messages.updated.vi";
  */
 
 export const MESSAGES_VI = {
+  nfc: MESSAGES_NFC_VI,
   updatedUi: MESSAGES_UPDATED_VI,
   common: {
     loadingData: "Đang tải số liệu…",

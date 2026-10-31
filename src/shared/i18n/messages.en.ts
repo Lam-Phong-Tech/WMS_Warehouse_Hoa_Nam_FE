@@ -1,4 +1,5 @@
 import { MESSAGES_UPDATED_EN } from "./messages.updated.en";
+import { MESSAGES_NFC_EN } from "./messages.nfc.en";
 import type { MessageTree } from "./messages";
 
 /**
@@ -12,6 +13,7 @@ import type { MessageTree } from "./messages";
  * KHOÁ vẫn đỏ typecheck; thiếu khoá vẫn hợp lệ và t() rơi về tiếng Việt.
  */
 export const MESSAGES_EN: MessageTree = {
+  nfc: MESSAGES_NFC_EN,
   updatedUi: MESSAGES_UPDATED_EN,
   common: {
     loadingData: "Loading data…",

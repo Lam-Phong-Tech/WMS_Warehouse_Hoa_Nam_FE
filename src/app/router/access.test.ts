@@ -41,6 +41,12 @@ describe("WMS route access contract", () => {
       // scan.execute/scan.classify chỉ mở POST /scan/classify, không mở tab nào,
       // nên để chúng ở đây cho người vào màn rồi 403 cả ba tab.
       [ROUTES.SCAN]: ["inventory.trace", "inventory.view"],
+      [ROUTES.NFC]: [
+        "physical_code.assign_rfid",
+        "inventory.trace",
+        "item_instance.view",
+        "inventory.view",
+      ],
       [ROUTES.INBOUND]: [
         "inbound.view",
         "inbound.create",

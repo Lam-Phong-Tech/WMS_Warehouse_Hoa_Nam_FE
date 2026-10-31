@@ -25,6 +25,7 @@ vi.mock("./route-components", () => {
     "WarehouseConfigScreen",
     "PvProductCatalogPage",
     "PhysicalCodesPage",
+    "NfcPage",
     "InboundPage",
     "PutawayPage",
     "TrayOverviewPage",

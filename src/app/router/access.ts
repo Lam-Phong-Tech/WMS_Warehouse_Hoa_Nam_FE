@@ -33,6 +33,12 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     // đây. Để chúng trong danh sách vào màn khiến một vai chỉ có scan.execute vào
     // được nhưng cả ba tab đều 403; đó là lệch FE↔BE, không phải phân quyền.
     [ROUTES.SCAN]: [P.INVENTORY_TRACE, P.INVENTORY_VIEW],
+    [ROUTES.NFC]: [
+      P.PHYSICAL_CODE_ASSIGN_RFID,
+      P.INVENTORY_TRACE,
+      P.ITEM_INSTANCE_VIEW,
+      P.INVENTORY_VIEW,
+    ],
 
     [ROUTES.INBOUND]: [
       P.INBOUND_VIEW,

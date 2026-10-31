@@ -203,6 +203,7 @@ export const CACHE_POLICIES: Readonly<Record<CacheClass, CachePolicy>> = {
 export const QUERY_CACHE_REGISTRY: ReadonlyArray<
   readonly [root: string, cacheClass: CacheClass]
 > = [
+  ["nfc", "volatile"],
   // --- Dữ liệu tra cứu dùng chung toàn app (đích đến của việc gộp trùng lặp) ---
   ["ref", "reference"],
 

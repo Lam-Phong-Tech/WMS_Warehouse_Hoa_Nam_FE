@@ -38,6 +38,7 @@ import {
   PackingLabelReportPage,
   PendingEvidenceReportPage,
   PhysicalCodesPage,
+  NfcPage,
   MfaSetupPage,
   ProfilePage,
   PutawayPage,
@@ -227,6 +228,10 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.SCAN,
             element: routeEl(ROUTES.SCAN, <PhysicalCodesPage />),
+          },
+          {
+            path: ROUTES.NFC,
+            element: routeEl(ROUTES.NFC, <NfcPage />),
           },
           {
             path: ROUTES.INBOUND,
