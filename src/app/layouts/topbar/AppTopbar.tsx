@@ -450,7 +450,7 @@ export function AppTopbar({
             <span className="toggle-glyph" aria-hidden="true">
               <VuexyDemoIcon name="languages" />
             </span>
-            <span className="control-code">{language.toUpperCase()}</span>
+            <span className="control-code">{language === "vi" ? "VIE" : "ENG"}</span>
           </button>
           {openMenu === "language" ? (
             <div
@@ -471,7 +471,7 @@ export function AppTopbar({
                   aria-checked={language === code}
                   onClick={() => chooseLanguage(code)}
                 >
-                  <span className="language-symbol">{code.toUpperCase()}</span>
+                  <span className="language-symbol">{code === "vi" ? "VIE" : "ENG"}</span>
                   <span>
                     <strong>
                       {t(

@@ -108,7 +108,7 @@ export const VUEXY_DEMO_ICONS = {
   ],
   languages: [
     ["path", { d: "m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1" }],
-    ["path", { d: "m16 13 4 9M14 22l4-9 4 9M15.5 19h5" }],
+    ["path", { d: "M14 22l4-9 4 9M15.5 19h5" }],
   ],
   sun: [
     ["circle", { cx: "12", cy: "12", r: "4" }],
