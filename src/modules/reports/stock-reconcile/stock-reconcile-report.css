@@ -47,6 +47,19 @@
   border: 0;
 }
 
+.rpt02-flow-sku-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ops-link);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rpt02-flow-sku-link:hover {
+  text-decoration: underline;
+}
+
 .rpt02-contract-table {
   position: absolute;
   width: 1px;
@@ -1692,37 +1705,41 @@
 
 .rpt02-no-result {
   display: grid;
-  min-height: 260px;
-  padding: 35px 18px;
+  min-height: 350px;
+  padding: 50px 18px;
   place-content: center;
   justify-items: center;
   text-align: center;
 }
 
 .rpt02-no-result .rpt02-state__icon {
-  width: 48px;
-  height: 48px;
+  width: 70px;
+  height: 70px;
   border-radius: 14px;
 }
 
 .rpt02-no-result .rpt02-state__icon svg {
-  width: 23px;
-  height: 23px;
+  width: 34px;
+  height: 34px;
 }
 
 .rpt02-no-result h3 {
   margin-top: 11px;
-  font-size: 15px;
+  font-size: 22px;
 }
 
 .rpt02-no-result p {
   margin-top: 4px;
   color: var(--rpt02-muted);
-  font-size: 11px;
+  font-size: 14px;
 }
 
-.rpt02-no-result .rpt02-button {
-  margin-top: 15px;
+.rpt02-no-result__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .rpt02-loading {

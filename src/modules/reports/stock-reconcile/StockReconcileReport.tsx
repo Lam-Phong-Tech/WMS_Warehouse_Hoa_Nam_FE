@@ -10,7 +10,6 @@ import {
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { UiSelect, UiVuexyDateRangePicker, VuexyDemoIcon } from "@/shared/ui";
-import { exportXlsx } from "@/shared/utils/export-xlsx";
 import {
   ISO_DATE,
   sumRows,
@@ -19,7 +18,11 @@ import {
   type XntRow,
 } from "@/modules/reports/inventory-flow/inventory-flow-api";
 import { checkLabelOf } from "./stock-reconcile-labels";
-import { StockReconcileEvidenceModal } from "./StockReconcileEvidenceModal";
+import {
+  StockReconcileDrilldown,
+  type ReconcileDetailView,
+} from "./StockReconcileDrilldown";
+import { StockReconcileExportDialog } from "./StockReconcileExportDialog";
 import {
   useStockReconcileSnapshot,
   type StockReconcileRow,
@@ -47,7 +50,9 @@ type DetailRow = {
   componentOutbound: number;
   reversal: number;
   closing: number;
+  ledgerStock: number;
   actual: number;
+  available: number | null;
   delta: number;
   mismatch: boolean;
   checks: string[];
@@ -132,6 +137,7 @@ function aggregateReconciliation(rows: StockReconcileRow[]) {
       kind: string;
       balance: number;
       ledger: number;
+      available: number;
       mismatch: boolean;
       checks: Set<string>;
     }
@@ -144,11 +150,13 @@ function aggregateReconciliation(rows: StockReconcileRow[]) {
       kind: row.item_kind,
       balance: 0,
       ledger: 0,
+      available: 0,
       mismatch: false,
       checks: new Set<string>(),
     };
     current.balance += row.balance_qty;
     current.ledger += row.ledger_qty;
+    current.available += row.available_qty ?? 0;
     current.mismatch ||= row.reconciliation_status === "MISMATCH";
     row.mismatch_checks.forEach((check) => current.checks.add(check));
     bySku.set(row.sku_code, current);
@@ -180,7 +188,9 @@ function mergeRows(
       componentOutbound: row.component_issue_net,
       reversal: row.reversal_unlinked_net,
       closing: row.closing,
+      ledgerStock: system,
       actual,
+      available: check?.available ?? null,
       delta: actual - system,
       mismatch: (check?.mismatch ?? !row.matched) || actual !== system,
       checks: [...(check?.checks ?? [])],
@@ -202,7 +212,9 @@ function mergeRows(
       componentOutbound: 0,
       reversal: 0,
       closing: check.ledger,
+      ledgerStock: check.ledger,
       actual: check.balance,
+      available: check.available,
       delta: check.balance - check.ledger,
       mismatch: check.mismatch || check.balance !== check.ledger,
       checks: [...check.checks],
@@ -657,9 +669,11 @@ export default function StockReconcileReport() {
   });
   const [refreshing, setRefreshing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [selectedEvidence, setSelectedEvidence] = useState<DetailRow | null>(
     null,
   );
+  const [detailView, setDetailView] = useState<ReconcileDetailView>("quantity");
   const pageRef = useRef<HTMLElement | null>(null);
   const tableRef = useRef<HTMLElement | null>(null);
 
@@ -768,7 +782,7 @@ export default function StockReconcileReport() {
     () => allRows.filter((row) => row.mismatch),
     [allRows],
   );
-  const systemTotal = allRows.reduce((sum, row) => sum + row.closing, 0);
+  const systemTotal = allRows.reduce((sum, row) => sum + row.ledgerStock, 0);
   const actualTotal = allRows.reduce((sum, row) => sum + row.actual, 0);
   const deltaTotal = actualTotal - systemTotal;
   const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE));
@@ -804,41 +818,6 @@ export default function StockReconcileReport() {
     });
   };
 
-  const exportReport = () => {
-    if (!canExport || allRows.length === 0) return;
-    exportXlsx(
-      [
-        tUi("inbound.skuInfo.fieldCode"),
-        tUi("inventory.balance.colName"),
-        tUi("dashboard.equation.opening"),
-        tUi("updatedUi.text_1993e3247f11"),
-        tUi("dashboard.equation.issueProduct"),
-        tUi("updatedUi.text_6d28e3f5d88a"),
-        tUi("iam.role.undo"),
-        tUi("dashboard.equation.closing"),
-        tUi("updatedUi.text_8c2153f1a52b"),
-        tUi("inventory.balance.colVariance"),
-        tUi("dashboard.composition.colStatus"),
-      ],
-      allRows.map((row) => [
-        row.skuCode,
-        row.skuName,
-        row.opening,
-        row.inbound,
-        row.productOutbound,
-        row.componentOutbound,
-        row.reversal,
-        row.closing,
-        row.actual,
-        row.delta,
-        row.mismatch
-          ? tUi("reports.traceability.needsReview")
-          : tUi("reports.inventoryFlowReport.matched"),
-      ]),
-      `bao-cao-ton-kho-doi-soat-${applied.from}-${applied.to}`,
-    );
-  };
-
   const goToMismatches = () => {
     setDetailTab("reconcile");
     setOnlyReview(true);
@@ -854,6 +833,22 @@ export default function StockReconcileReport() {
 
   const home = () => navigate(ROUTES.DASHBOARD);
   const fatal = status === 403 || status === 404 || status === 503;
+
+  if (selectedEvidence) {
+    return (
+      <StockReconcileDrilldown
+        row={selectedEvidence}
+        range={{ from: applied.from, to: applied.to }}
+        asOf={reconciliation.snapshot.as_of}
+        view={detailView}
+        canExport={canExport}
+        onViewChange={setDetailView}
+        onBack={() => setSelectedEvidence(null)}
+        onOpenInventory={() => navigate(ROUTES.INVENTORY)}
+        onOpenTrace={() => navigate(ROUTES.REPORTS_TRACEABILITY)}
+      />
+    );
+  }
 
   return (
     <main className="hn-rpt02" ref={pageRef}>
@@ -929,8 +924,8 @@ export default function StockReconcileReport() {
                 <button
                   type="button"
                   className="rpt02-export"
-                  onClick={exportReport}
-                  disabled={!canExport || allRows.length === 0 || updating}
+                  onClick={() => setShowExport(true)}
+                  disabled={!canExport || filteredRows.length === 0 || updating}
                 >
                   <Icon name="arrow-right" />
                   {" " + tUi("updatedUi.text_869645273267")}
@@ -1481,20 +1476,35 @@ export default function StockReconcileReport() {
                           </span>
                           <h3>{tUi("updatedUi.text_6537d7653abe")}</h3>
                           <p>{tUi("updatedUi.text_a39e88670393")}</p>
-                          <button
-                            className="rpt02-button rpt02-button--ghost"
-                            type="button"
-                            onClick={() => {
-                              setQuery("");
-                              setOnlyReview(false);
-                              setApplied((current) => ({
-                                ...current,
-                                reconcile: "",
-                              }));
-                            }}
-                          >
-                            {tUi("updatedUi.text_816c89e8e46b")}
-                          </button>
+                          <div className="rpt02-no-result__actions">
+                            <button
+                              className="rpt02-button rpt02-button--primary"
+                              type="button"
+                              onClick={() => {
+                                setQuery("");
+                                setOnlyReview(false);
+                                setApplied((current) => ({
+                                  ...current,
+                                  reconcile: "",
+                                }));
+                              }}
+                            >
+                              {tUi("updatedUi.text_816c89e8e46b")}
+                            </button>
+                            <button
+                              className="rpt02-button rpt02-button--ghost"
+                              type="button"
+                              onClick={() =>
+                                document
+                                  .querySelector<HTMLElement>(
+                                    ".rpt02-date-range button, .rpt02-date-range input",
+                                  )
+                                  ?.click()
+                              }
+                            >
+                              Đổi khoảng thời gian
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <>
@@ -1586,7 +1596,7 @@ export default function StockReconcileReport() {
                                             </small>
                                           </td>
                                           <td className="num">
-                                            {quantity(row.closing)}
+                                            {quantity(row.ledgerStock)}
                                           </td>
                                           <td className="num">
                                             {quantity(row.actual)}
@@ -1616,9 +1626,14 @@ export default function StockReconcileReport() {
                                               type="button"
                                               className="rpt02-evidence-link"
                                               aria-label={`Xem bằng chứng ${row.skuCode}`}
-                                              onClick={() =>
-                                                setSelectedEvidence(row)
-                                              }
+                                              onClick={() => {
+                                                setDetailView(
+                                                  state === "code"
+                                                    ? "code"
+                                                    : "quantity",
+                                                );
+                                                setSelectedEvidence(row);
+                                              }}
                                             >
                                               <Icon name="chevron-right" />
                                             </button>
@@ -1629,7 +1644,16 @@ export default function StockReconcileReport() {
                                   : visibleRows.map((row) => (
                                       <tr key={row.key}>
                                         <td className="rpt02-sku-cell">
-                                          <strong>{row.skuCode}</strong>
+                                          <button
+                                            type="button"
+                                            className="rpt02-flow-sku-link"
+                                            onClick={() => {
+                                              setDetailView("flow");
+                                              setSelectedEvidence(row);
+                                            }}
+                                          >
+                                            {row.skuCode}
+                                          </button>
                                           <small>
                                             {row.skuName ||
                                               tUi(
@@ -1741,21 +1765,13 @@ export default function StockReconcileReport() {
           )}
         </>
       )}
-      {selectedEvidence ? (
-        <StockReconcileEvidenceModal
-          skuCode={selectedEvidence.skuCode}
-          skuName={selectedEvidence.skuName}
-          warehouse={selectedEvidence.warehouse}
-          opening={selectedEvidence.opening}
-          inbound={selectedEvidence.inbound}
-          productOutbound={selectedEvidence.productOutbound}
-          componentOutbound={selectedEvidence.componentOutbound}
-          reversal={selectedEvidence.reversal}
-          closing={selectedEvidence.closing}
-          actual={selectedEvidence.actual}
-          delta={selectedEvidence.delta}
-          checks={selectedEvidence.checks}
-          onClose={() => setSelectedEvidence(null)}
+      {showExport ? (
+        <StockReconcileExportDialog
+          rows={filteredRows}
+          from={applied.from}
+          to={applied.to}
+          asOf={reconciliation.snapshot.as_of}
+          onClose={() => setShowExport(false)}
         />
       ) : null}
     </main>

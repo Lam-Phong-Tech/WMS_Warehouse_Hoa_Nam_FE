@@ -290,22 +290,27 @@ export type MovementEvent = {
   qty_delta: number;
 };
 
-/** Cửa sổ trace của modal bằng chứng — đúng "mẫu trace 90 ngày" của mockup. */
+/** Cửa sổ trace mặc định của hộp bằng chứng cũ. */
 export const MOVEMENT_TRACE_DAYS = 90;
 
 /**
- * Movement của MỘT mã SKU trong 90 ngày gần nhất — nội dung khối "Movement
- * liên quan" trong modal.
+ * Movement của một SKU; màn chi tiết truyền đúng kỳ báo cáo, hộp bằng chứng cũ
+ * dùng cửa sổ mặc định 90 ngày.
  *
  * `/reports/movement-trace` không lọc theo mã SKU (`code_value` là mã VẬT LÝ
  * của kiện/serial), nên lấy trọn cửa sổ rồi lọc ở client — đúng cách mockup lọc
  * khối `movements` theo `product_code`. Lọc theo SKU chứ không theo trạng thái
  * tồn: modal mô tả cả vòng đời SKU, không riêng một bucket.
  */
-export function useSkuMovements(skuCode: string | null) {
+export function useSkuMovements(
+  skuCode: string | null,
+  range?: { from: string; to: string },
+) {
   const query = useMovementTrace({
-    from: dayjs().subtract(MOVEMENT_TRACE_DAYS, "day").format(ISO_DATE),
-    to: dayjs().format(ISO_DATE),
+    from:
+      range?.from ??
+      dayjs().subtract(MOVEMENT_TRACE_DAYS, "day").format(ISO_DATE),
+    to: range?.to ?? dayjs().format(ISO_DATE),
     enabled: skuCode !== null,
   });
 

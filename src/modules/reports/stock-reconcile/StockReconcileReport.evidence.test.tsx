@@ -25,7 +25,7 @@ import StockReconcileReport from "./StockReconcileReport";
 describe("stock reconciliation evidence navigation", () => {
   afterEach(cleanupTestState);
 
-  it("opens evidence for the chosen SKU without changing the report filter", async () => {
+  it("opens quantity detail and SKU movements, then returns to the report", async () => {
     vi.mocked(useInventoryFlowSnapshot).mockReturnValue({
       snapshot: {
         rows: [
@@ -92,12 +92,37 @@ describe("stock reconciliation evidence navigation", () => {
     );
 
     expect(
-      await screen.findByRole("dialog", { name: /HN-DRV-001/ }),
+      await screen.findByTestId("stock-reconcile-drilldown"),
     ).toBeInTheDocument();
-    expect(useSkuMovements).toHaveBeenCalledWith("HN-DRV-001");
+    expect(
+      screen.getByRole("heading", { name: "Chi tiết chênh lệch tồn" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/chưa trả danh sách mã chênh lệch/),
+    ).toBeInTheDocument();
+    expect(useSkuMovements).toHaveBeenCalledWith("HN-DRV-001", {
+      from: "2026-10-25",
+      to: "2026-10-31",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Xem phát sinh theo SKU/ }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Phát sinh theo SKU" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Quay lại báo cáo/ })[0],
+    );
+    expect(
+      screen.getByRole("tab", { name: "Đối soát tồn" }),
+    ).toBeInTheDocument();
   });
 
   it("switches detail tables and collapses the section to its title", () => {
+    vi.mocked(useSkuMovements).mockReturnValue({
+      events: [],
+      loading: false,
+    } as never);
     vi.mocked(useInventoryFlowSnapshot).mockReturnValue({
       snapshot: {
         rows: [
@@ -170,5 +195,18 @@ describe("stock reconciliation evidence navigation", () => {
         name: /Mở rộng Chi tiết tồn kho & đối soát/,
       }),
     ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Mở rộng Chi tiết tồn kho & đối soát/,
+      }),
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Đối soát tồn" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Xem bằng chứng HN-ONLY-001/ }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Chi tiết đối soát mã" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/SN-SEN-/)).not.toBeInTheDocument();
   });
 });
