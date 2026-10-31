@@ -2927,7 +2927,8 @@ export const MESSAGES_EN: MessageTree = {
       returnSource: "Related outbound document",
       returnStatus: "Status",
       returnSources: "Source outbound documents",
-      returnEmpty: "No posted return documents are linked to this recipient in the period.",
+      returnEmpty:
+        "No posted return documents are linked to this recipient in the period.",
       typeDistributor: "Distributor",
       typeAgency: "Agency",
       typeProjectCustomer: "Project customer",
@@ -3927,6 +3928,19 @@ export const MESSAGES_EN: MessageTree = {
       movementsEmpty: "No movement in the period.",
     },
     stockReconcileReport: {
+      collapseSection: "Collapse {title}",
+      expandSection: "Expand {title}",
+      detailTabsAria: "Stock detail view",
+      detailTabReconcile: "Stock reconciliation",
+      detailTabFlow: "In – Out – Stock",
+      onlyReview: "Show only SKUs needing review",
+      colLedgerStock: "Ledger stock",
+      colRecordedStock: "Recorded stock",
+      colDetail: "Detail",
+      totalRow: "Total",
+      quantityMismatch: "Quantity mismatch",
+      codeMismatch: "Code mismatch",
+      reviewRequired: "Needs review",
       matched: "Matched",
       mismatch: "Mismatched",
       notApplicable: "Not applicable",
@@ -4796,7 +4810,8 @@ export const MESSAGES_EN: MessageTree = {
       title: "Forgot password",
       subtitleEmail:
         "Enter your registered email to receive a verification code.",
-      subtitleOtp: "If {email} is eligible, you will receive an OTP. Enter the 6-digit code to continue.",
+      subtitleOtp:
+        "If {email} is eligible, you will receive an OTP. Enter the 6-digit code to continue.",
       subtitlePassword: "Set a new password for your account.",
       processing: "Processing...",
       sendOtp: "Send OTP",
@@ -4809,13 +4824,18 @@ export const MESSAGES_EN: MessageTree = {
       resendOtp: "Resend OTP",
       verify: "Confirm",
       resetFailed: "Password reset failed.",
-      recoveryUnavailable: "The connection was interrupted or the service is unavailable. Please retry manually.",
+      recoveryUnavailable:
+        "The connection was interrupted or the service is unavailable. Please retry manually.",
       recoveryOffline: "You are offline. Check your connection and try again.",
-      recoveryValidation: "The information is invalid. Please check the fields.",
+      recoveryValidation:
+        "The information is invalid. Please check the fields.",
       rateWaiting: "Please wait {seconds} seconds before trying again.",
-      rateUnknown: "Too many attempts. Please wait and reload the page to try again.",
-      resetTokenInvalid: "The password reset request is invalid or has expired. Please request a new OTP.",
-      otpNewRequired: "The OTP is invalid or has expired. Please request a new code.",
+      rateUnknown:
+        "Too many attempts. Please wait and reload the page to try again.",
+      resetTokenInvalid:
+        "The password reset request is invalid or has expired. Please request a new OTP.",
+      otpNewRequired:
+        "The OTP is invalid or has expired. Please request a new code.",
       recoveryRequestId: "Request ID: {id}",
       submitReset: "Reset password",
       resetSuccess: "Password reset successful, please sign in again",

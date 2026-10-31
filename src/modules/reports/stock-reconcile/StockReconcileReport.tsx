@@ -36,6 +36,7 @@ type Filters = DateRange & {
 
 type DetailRow = {
   key: string;
+  hasFlow: boolean;
   warehouse: string;
   skuCode: string;
   skuName: string;
@@ -52,7 +53,17 @@ type DetailRow = {
   checks: string[];
 };
 
-const PAGE_SIZE = 4;
+function reconcileState(
+  row: DetailRow,
+): "matched" | "quantity" | "code" | "review" {
+  if (row.delta !== 0) return "quantity";
+  if (!row.mismatch) return "matched";
+  if (row.checks.some((check) => /serial|container/i.test(check)))
+    return "code";
+  return "review";
+}
+
+const PAGE_SIZE = 9;
 
 function defaultRange(): DateRange {
   return {
@@ -158,6 +169,7 @@ function mergeRows(
     const system = check?.ledger ?? row.closing;
     return {
       key: `${row.warehouse_code}:${row.sku_code}`,
+      hasFlow: true,
       warehouse: row.warehouse_code,
       skuCode: row.sku_code,
       skuName: row.sku_name,
@@ -170,7 +182,7 @@ function mergeRows(
       closing: row.closing,
       actual,
       delta: actual - system,
-      mismatch: check?.mismatch ?? !row.matched,
+      mismatch: (check?.mismatch ?? !row.matched) || actual !== system,
       checks: [...(check?.checks ?? [])],
     };
   });
@@ -179,6 +191,7 @@ function mergeRows(
     if (seen.has(skuCode)) continue;
     result.push({
       key: `${check.warehouse}:${skuCode}`,
+      hasFlow: false,
       warehouse: check.warehouse,
       skuCode,
       skuName: check.skuName,
@@ -191,7 +204,7 @@ function mergeRows(
       closing: check.ledger,
       actual: check.balance,
       delta: check.balance - check.ledger,
-      mismatch: check.mismatch,
+      mismatch: check.mismatch || check.balance !== check.ledger,
       checks: [...check.checks],
     });
   }
@@ -202,6 +215,33 @@ function mergeRows(
 
 function Icon({ name }: { name: Parameters<typeof VuexyDemoIcon>[0]["name"] }) {
   return <VuexyDemoIcon name={name} />;
+}
+
+function CollapseButton({
+  title,
+  expanded,
+  onClick,
+}: {
+  title: string;
+  expanded: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="rpt02-collapse"
+      aria-label={tUi(
+        expanded
+          ? "reports.stockReconcileReport.collapseSection"
+          : "reports.stockReconcileReport.expandSection",
+        { title },
+      )}
+      aria-expanded={expanded}
+      onClick={onClick}
+    >
+      <Icon name="chevron-down" />
+    </button>
+  );
 }
 
 type KpiGlyphName = "box" | "down" | "up" | "wrench" | "undo" | "boxes";
@@ -608,9 +648,18 @@ export default function StockReconcileReport() {
   const [applied, setApplied] = useState<Filters>(defaultFilters);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [detailTab, setDetailTab] = useState<"reconcile" | "flow">("reconcile");
+  const [onlyReview, setOnlyReview] = useState(false);
+  const [expanded, setExpanded] = useState({
+    chart: true,
+    reconcile: true,
+    detail: true,
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [selectedEvidence, setSelectedEvidence] = useState<DetailRow | null>(null);
+  const [selectedEvidence, setSelectedEvidence] = useState<DetailRow | null>(
+    null,
+  );
   const pageRef = useRef<HTMLElement | null>(null);
   const tableRef = useRef<HTMLElement | null>(null);
 
@@ -689,6 +738,31 @@ export default function StockReconcileReport() {
     });
   }, [allRows, applied.reconcile, query]);
 
+  const displayRows =
+    detailTab === "flow"
+      ? filteredRows.filter((row) => row.hasFlow)
+      : onlyReview
+        ? filteredRows.filter((row) => row.mismatch)
+        : filteredRows;
+  const flowTotals = displayRows.reduce(
+    (total, row) => ({
+      opening: total.opening + row.opening,
+      inbound: total.inbound + row.inbound,
+      productOutbound: total.productOutbound + row.productOutbound,
+      componentOutbound: total.componentOutbound + row.componentOutbound,
+      reversal: total.reversal + row.reversal,
+      closing: total.closing + row.closing,
+    }),
+    {
+      opening: 0,
+      inbound: 0,
+      productOutbound: 0,
+      componentOutbound: 0,
+      reversal: 0,
+      closing: 0,
+    },
+  );
+
   const summary = useMemo(() => sumRows(scopedFlowRows), [scopedFlowRows]);
   const mismatches = useMemo(
     () => allRows.filter((row) => row.mismatch),
@@ -697,9 +771,9 @@ export default function StockReconcileReport() {
   const systemTotal = allRows.reduce((sum, row) => sum + row.closing, 0);
   const actualTotal = allRows.reduce((sum, row) => sum + row.actual, 0);
   const deltaTotal = actualTotal - systemTotal;
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const visibleRows = filteredRows.slice(
+  const visibleRows = displayRows.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
   );
@@ -766,6 +840,9 @@ export default function StockReconcileReport() {
   };
 
   const goToMismatches = () => {
+    setDetailTab("reconcile");
+    setOnlyReview(true);
+    setExpanded((current) => ({ ...current, detail: true }));
     setDraft((current) => ({ ...current, reconcile: "MISMATCH" }));
     setApplied((current) => ({ ...current, reconcile: "MISMATCH" }));
     setQuery("");
@@ -1112,330 +1189,552 @@ export default function StockReconcileReport() {
               </section>
 
               <section className="rpt02-dashboard">
-                <article className="rpt02-panel chart-card rpt02-chart-card">
+                <article
+                  className="rpt02-panel chart-card rpt02-chart-card"
+                  data-collapsed={!expanded.chart}
+                >
                   <header className="rpt02-panel__head">
                     <div>
                       <h2>{tUi("updatedUi.text_0edf72dbef9f")}</h2>
-                      <p>
-                        {dayjs(applied.from).format("DD/MM")} –{" "}
-                        {dayjs(applied.to).format("DD/MM/YYYY")}
-                        {" " + tUi("updatedUi.text_ebfa6fb72c56")}
-                      </p>
+                      {expanded.chart ? (
+                        <p>
+                          {dayjs(applied.from).format("DD/MM")} –{" "}
+                          {dayjs(applied.to).format("DD/MM/YYYY")}
+                          {" " + tUi("updatedUi.text_ebfa6fb72c56")}
+                        </p>
+                      ) : null}
                     </div>
-                    <div
-                      className="rpt02-legend"
-                      aria-label={tUi("dashboard.snapshot.chartLegendAria")}
-                    >
-                      <span>
-                        <i className="is-green" />
-                        {tUi("dashboard.snapshot.tooltipInbound")}
-                      </span>
-                      <span>
-                        <i className="is-orange" />
-                        {tUi("dashboard.flow.issueProduct")}
-                      </span>
-                      <span>
-                        <i className="is-blue" />
-                        {tUi("dashboard.snapshot.closingStock")}
-                      </span>
-                    </div>
+                    {expanded.chart ? (
+                      <div
+                        className="rpt02-legend"
+                        aria-label={tUi("dashboard.snapshot.chartLegendAria")}
+                      >
+                        <span>
+                          <i className="is-green" />
+                          {tUi("dashboard.snapshot.tooltipInbound")}
+                        </span>
+                        <span>
+                          <i className="is-orange" />
+                          {tUi("dashboard.flow.issueProduct")}
+                        </span>
+                        <span>
+                          <i className="is-blue" />
+                          {tUi("dashboard.snapshot.closingStock")}
+                        </span>
+                      </div>
+                    ) : null}
+                    <CollapseButton
+                      title={tUi("updatedUi.text_0edf72dbef9f")}
+                      expanded={expanded.chart}
+                      onClick={() =>
+                        setExpanded((current) => ({
+                          ...current,
+                          chart: !current.chart,
+                        }))
+                      }
+                    />
                   </header>
-                  <MovementChart points={flow.snapshot.daily} />
+                  {expanded.chart ? (
+                    <MovementChart points={flow.snapshot.daily} />
+                  ) : null}
                 </article>
 
-                <article className="rpt02-panel rpt02-reconcile">
+                <article
+                  className="rpt02-panel rpt02-reconcile"
+                  data-collapsed={!expanded.reconcile}
+                >
                   <header className="rpt02-panel__head">
                     <div>
                       <h2>{tUi("updatedUi.text_d76c6dc86895")}</h2>
-                      <p>{dayjs(applied.to).format("DD/MM/YYYY")}</p>
+                      {expanded.reconcile ? (
+                        <p>{dayjs(applied.to).format("DD/MM/YYYY")}</p>
+                      ) : null}
                     </div>
-                  </header>
-                  <dl className="rpt02-reconcile__totals">
-                    <div>
-                      <dt>{tUi("updatedUi.text_37a49b4e2cd9")}</dt>
-                      <dd>{quantity(systemTotal)}</dd>
-                    </div>
-                    <div>
-                      <dt>{tUi("updatedUi.text_8c2153f1a52b")}</dt>
-                      <dd>{quantity(actualTotal)}</dd>
-                    </div>
-                    <div className={deltaTotal === 0 ? "is-ok" : "is-warning"}>
-                      <dt>{tUi("inventory.balance.colVariance")}</dt>
-                      <dd>{signed(deltaTotal)}</dd>
-                    </div>
-                    <div
-                      className={
-                        mismatches.length === 0 ? "is-ok" : "is-warning"
+                    <CollapseButton
+                      title={tUi("updatedUi.text_d76c6dc86895")}
+                      expanded={expanded.reconcile}
+                      onClick={() =>
+                        setExpanded((current) => ({
+                          ...current,
+                          reconcile: !current.reconcile,
+                        }))
                       }
-                    >
-                      <dt>
-                        {mismatches.length}
-                        {" " + tUi("updatedUi.text_a0c43686230e")}
-                      </dt>
-                      <dd className="rpt02-reconcile__formula">
-                        {tUi("updatedUi.text_5b6efbe321b1")}
-                      </dd>
-                    </div>
-                  </dl>
+                    />
+                  </header>
+                  {expanded.reconcile ? (
+                    <>
+                      <dl className="rpt02-reconcile__totals">
+                        <div>
+                          <dt>{tUi("updatedUi.text_37a49b4e2cd9")}</dt>
+                          <dd>{quantity(systemTotal)}</dd>
+                        </div>
+                        <div>
+                          <dt>{tUi("updatedUi.text_8c2153f1a52b")}</dt>
+                          <dd>{quantity(actualTotal)}</dd>
+                        </div>
+                        <div
+                          className={deltaTotal === 0 ? "is-ok" : "is-warning"}
+                        >
+                          <dt>{tUi("inventory.balance.colVariance")}</dt>
+                          <dd>{signed(deltaTotal)}</dd>
+                        </div>
+                        <div
+                          className={
+                            mismatches.length === 0 ? "is-ok" : "is-warning"
+                          }
+                        >
+                          <dt>
+                            {mismatches.length}
+                            {" " + tUi("updatedUi.text_a0c43686230e")}
+                          </dt>
+                          <dd className="rpt02-reconcile__formula">
+                            {tUi("updatedUi.text_5b6efbe321b1")}
+                          </dd>
+                        </div>
+                      </dl>
 
-                  {mismatches.length > 0 ? (
-                    <div className="rpt02-contract-table" aria-hidden="true">
-                      <table
-                        aria-label={tUi(
-                          "reports.stockReconcileReport.varianceCardTitle",
-                        )}
+                      {mismatches.length > 0 ? (
+                        <div
+                          className="rpt02-contract-table"
+                          aria-hidden="true"
+                        >
+                          <table
+                            aria-label={tUi(
+                              "reports.stockReconcileReport.varianceCardTitle",
+                            )}
+                          >
+                            <thead>
+                              <tr>
+                                <th>SKU</th>
+                                <th>
+                                  {tUi(
+                                    "reports.stockReconcileReport.colMismatchAt",
+                                  )}
+                                </th>
+                                <th>{tUi("inventory.balance.colVariance")}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {mismatches.map((row) => (
+                                <tr key={`${row.key}-reason`}>
+                                  <td>{row.skuCode}</td>
+                                  <td>
+                                    {row.checks.map(checkLabelOf).join(", ")}
+                                  </td>
+                                  <td>{quantity(row.delta)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : null}
+
+                      <div className="rpt02-reconcile__list">
+                        <strong>
+                          {tUi("inventory.trace.movementDetailTitle")}
+                        </strong>
+                        <span>
+                          <i>{tUi("reports.inventoryFlow.opening")}</i>
+                          <b>{quantity(summary.opening)}</b>
+                        </span>
+                        <span>
+                          <i>{tUi("dashboard.snapshot.tooltipInbound")}</i>
+                          <b className="is-positive">
+                            {signed(summary.receiptNet)}
+                          </b>
+                        </span>
+                        <span>
+                          <i>{tUi("dashboard.flow.issueProduct")}</i>
+                          <b className="is-negative">
+                            {signed(-summary.issueNet)}
+                          </b>
+                        </span>
+                        <span>
+                          <i>{tUi("updatedUi.text_8a6c35e57da8")}</i>
+                          <b className="is-negative">
+                            {signed(-summary.componentNet)}
+                          </b>
+                        </span>
+                        <span>
+                          <i>{tUi("iam.role.undo")}</i>
+                          <b className="is-positive">
+                            {signed(summary.reversalUnlinked)}
+                          </b>
+                        </span>
+                        <span>
+                          <i>{tUi("reports.inventoryFlow.closing")}</i>
+                          <b>{quantity(summary.closing)}</b>
+                        </span>
+                      </div>
+                      <button
+                        className="rpt02-reconcile__link"
+                        type="button"
+                        onClick={goToMismatches}
                       >
-                        <thead>
-                          <tr>
-                            <th>SKU</th>
-                            <th>
-                              {tUi(
-                                "reports.stockReconcileReport.colMismatchAt",
-                              )}
-                            </th>
-                            <th>{tUi("inventory.balance.colVariance")}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mismatches.map((row) => (
-                            <tr key={`${row.key}-reason`}>
-                              <td>{row.skuCode}</td>
-                              <td>{row.checks.map(checkLabelOf).join(", ")}</td>
-                              <td>{quantity(row.delta)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        {tUi("updatedUi.text_35d391efde06") + " "}
+                        <Icon name="arrow-right" />
+                      </button>
+                    </>
                   ) : null}
-
-                  <div className="rpt02-reconcile__list">
-                    <strong>
-                      {tUi("inventory.trace.movementDetailTitle")}
-                    </strong>
-                    <span>
-                      <i>{tUi("reports.inventoryFlow.opening")}</i>
-                      <b>{quantity(summary.opening)}</b>
-                    </span>
-                    <span>
-                      <i>{tUi("dashboard.snapshot.tooltipInbound")}</i>
-                      <b className="is-positive">
-                        {signed(summary.receiptNet)}
-                      </b>
-                    </span>
-                    <span>
-                      <i>{tUi("dashboard.flow.issueProduct")}</i>
-                      <b className="is-negative">{signed(-summary.issueNet)}</b>
-                    </span>
-                    <span>
-                      <i>{tUi("updatedUi.text_8a6c35e57da8")}</i>
-                      <b className="is-negative">
-                        {signed(-summary.componentNet)}
-                      </b>
-                    </span>
-                    <span>
-                      <i>{tUi("iam.role.undo")}</i>
-                      <b className="is-positive">
-                        {signed(summary.reversalUnlinked)}
-                      </b>
-                    </span>
-                    <span>
-                      <i>{tUi("reports.inventoryFlow.closing")}</i>
-                      <b>{quantity(summary.closing)}</b>
-                    </span>
-                  </div>
-                  <button
-                    className="rpt02-reconcile__link"
-                    type="button"
-                    onClick={goToMismatches}
-                  >
-                    {tUi("updatedUi.text_35d391efde06") + " "}
-                    <Icon name="arrow-right" />
-                  </button>
                 </article>
 
                 <section
                   className="rpt02-panel rpt02-table-card"
+                  data-collapsed={!expanded.detail}
                   ref={tableRef}
                 >
                   <header className="rpt02-table-card__head">
                     <div>
                       <h2>{tUi("updatedUi.text_600fdcecb8cf")}</h2>
-                      <p>
-                        {allRows.length}
-                        {" " + tUi("updatedUi.text_df80f0002f7f")}{" "}
-                        <span>
-                          {mismatches.length}
-                          {" " + tUi("updatedUi.text_8a002dbc4912")}
-                        </span>
-                      </p>
+                      {expanded.detail ? (
+                        <p>
+                          {allRows.length}
+                          {" " + tUi("updatedUi.text_df80f0002f7f")}{" "}
+                          <span>
+                            {mismatches.length}
+                            {" " + tUi("updatedUi.text_8a002dbc4912")}
+                          </span>
+                        </p>
+                      ) : null}
                     </div>
-                    <SearchInput
-                      value={query}
-                      onChange={(value) => {
-                        setQuery(value);
-                        setPage(1);
-                      }}
-                      width="100%"
-                      aria-label={tUi("updatedUi.text_48f97b02abf5")}
-                      placeholder={tUi("updatedUi.text_902e57d8df5b")}
+                    {expanded.detail ? (
+                      <SearchInput
+                        value={query}
+                        onChange={(value) => {
+                          setQuery(value);
+                          setPage(1);
+                        }}
+                        width="100%"
+                        aria-label={tUi("updatedUi.text_48f97b02abf5")}
+                        placeholder={tUi("updatedUi.text_902e57d8df5b")}
+                      />
+                    ) : null}
+                    <CollapseButton
+                      title={tUi("updatedUi.text_600fdcecb8cf")}
+                      expanded={expanded.detail}
+                      onClick={() =>
+                        setExpanded((current) => ({
+                          ...current,
+                          detail: !current.detail,
+                        }))
+                      }
                     />
                   </header>
 
-                  {filteredRows.length === 0 ? (
-                    <div className="rpt02-no-result" role="status">
-                      <span className="rpt02-state__icon" aria-hidden="true">
-                        <Icon name="search" />
-                      </span>
-                      <h3>{tUi("updatedUi.text_6537d7653abe")}</h3>
-                      <p>{tUi("updatedUi.text_a39e88670393")}</p>
-                      <button
-                        className="rpt02-button rpt02-button--ghost"
-                        type="button"
-                        onClick={() => setQuery("")}
-                      >
-                        {tUi("updatedUi.text_816c89e8e46b")}
-                      </button>
-                    </div>
-                  ) : (
+                  {expanded.detail ? (
                     <>
-                      <div className="rpt02-table-scroll">
-                        <table className="report-table">
-                          <thead>
-                            <tr>
-                              <th>SKU</th>
-                              <th>{tUi("inventory.balance.colName")}</th>
-                              <th className="num">
-                                {tUi("reports.inventoryFlow.opening")}
-                              </th>
-                              <th className="num">
-                                {tUi("dashboard.snapshot.tooltipInbound")}
-                              </th>
-                              <th className="num">
-                                {tUi("dashboard.flow.issueProduct")}
-                              </th>
-                              <th className="num">
-                                {tUi("updatedUi.text_68330ddddb9a")}
-                              </th>
-                              <th className="num">{tUi("iam.role.undo")}</th>
-                              <th className="num">
-                                {tUi("reports.inventoryFlow.closing")}
-                              </th>
-                              <th className="num">
-                                {tUi("dashboard.trend.chipActual")}
-                              </th>
-                              <th className="num">
-                                {tUi("inventory.balance.colVariance")}
-                              </th>
-                              <th>{tUi("inventory.balance.colReconcile")}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {visibleRows.map((row) => (
-                              <tr key={row.key}>
-                                <td>
-                                  <strong>{row.skuCode}</strong>
-                                  <small>
-                                    {row.kind === "COMPONENT"
-                                      ? tUi("dashboard.skuType.component")
-                                      : tUi("dashboard.skuType.product")}
-                                  </small>
-                                </td>
-                                <td>
-                                  {row.skuName ||
-                                    tUi("updatedUi.text_056cae173528")}
-                                </td>
-                                <td className="num">{quantity(row.opening)}</td>
-                                <td className="num is-positive">
-                                  {signed(row.inbound)}
-                                </td>
-                                <td className="num is-negative">
-                                  {signed(-row.productOutbound)}
-                                </td>
-                                <td className="num is-negative">
-                                  {signed(-row.componentOutbound)}
-                                </td>
-                                <td className="num">{signed(row.reversal)}</td>
-                                <td className="num">
-                                  <strong>{quantity(row.closing)}</strong>
-                                </td>
-                                <td className="num">{quantity(row.actual)}</td>
-                                <td
-                                  className={`num${row.delta === 0 ? "" : " is-alert"}`}
-                                >
-                                  {signed(row.delta)}
-                                </td>
-                                <td>
-                                  <span
-                                    className={`rpt02-row-status${row.mismatch ? " is-warning" : ""}`}
-                                  >
-                                    {row.mismatch
-                                      ? tUi("reports.traceability.needsReview")
-                                      : tUi(
-                                          "reports.inventoryFlowReport.matched",
-                                        )}
-                                  </span>
-                                  {row.checks.length > 0 ? (
-                                    <span className="rpt02-checks">
-                                      {row.checks.map(checkLabelOf).join(", ")}
-                                    </span>
-                                  ) : null}
-                                  <button
-                                    type="button"
-                                    className="rpt02-evidence-link"
-                                    aria-label={`Xem bằng chứng ${row.skuCode}`}
-                                    onClick={() => setSelectedEvidence(row)}
-                                  >
-                                    Xem bằng chứng
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      <footer className="rpt02-pagination hn-report-pagination-footer">
-                        <span>
-                          {tUi("putaway.queue.showing") + " "}
-                          {(currentPage - 1) * PAGE_SIZE + 1}–
-                          {Math.min(
-                            currentPage * PAGE_SIZE,
-                            filteredRows.length,
-                          )}{" "}
-                          trong {filteredRows.length} SKU
-                        </span>
-                        <div className="hn-report-pagination">
+                      <div className="rpt02-detail-tabs">
+                        <div
+                          role="tablist"
+                          aria-label={tUi(
+                            "reports.stockReconcileReport.detailTabsAria",
+                          )}
+                        >
                           <button
                             type="button"
-                            aria-label={tUi(
-                              "reports.traceability.previousPage",
+                            role="tab"
+                            aria-selected={detailTab === "reconcile"}
+                            onClick={() => {
+                              setDetailTab("reconcile");
+                              setPage(1);
+                            }}
+                          >
+                            {tUi(
+                              "reports.stockReconcileReport.detailTabReconcile",
                             )}
-                            onClick={() =>
-                              setPage((value) => Math.max(1, value - 1))
-                            }
-                            disabled={currentPage === 1}
-                          >
-                            <Icon name="chevron-left" />
                           </button>
-                          <span>
-                            Trang {currentPage} / {totalPages}
-                          </span>
                           <button
                             type="button"
-                            aria-label="Trang sau"
-                            onClick={() =>
-                              setPage((value) =>
-                                Math.min(totalPages, value + 1),
-                              )
-                            }
-                            disabled={currentPage === totalPages}
+                            role="tab"
+                            aria-selected={detailTab === "flow"}
+                            onClick={() => {
+                              setDetailTab("flow");
+                              setPage(1);
+                            }}
                           >
-                            <Icon name="chevron-right" />
+                            {tUi("reports.stockReconcileReport.detailTabFlow")}
                           </button>
                         </div>
-                      </footer>
+                        {detailTab === "reconcile" ? (
+                          <label className="rpt02-detail-switch">
+                            <input
+                              type="checkbox"
+                              checked={onlyReview}
+                              onChange={(event) => {
+                                setOnlyReview(event.target.checked);
+                                setPage(1);
+                              }}
+                            />
+                            <span aria-hidden="true" />
+                            {tUi("reports.stockReconcileReport.onlyReview")}
+                          </label>
+                        ) : null}
+                      </div>
+
+                      {displayRows.length === 0 ? (
+                        <div className="rpt02-no-result" role="status">
+                          <span
+                            className="rpt02-state__icon"
+                            aria-hidden="true"
+                          >
+                            <Icon name="search" />
+                          </span>
+                          <h3>{tUi("updatedUi.text_6537d7653abe")}</h3>
+                          <p>{tUi("updatedUi.text_a39e88670393")}</p>
+                          <button
+                            className="rpt02-button rpt02-button--ghost"
+                            type="button"
+                            onClick={() => {
+                              setQuery("");
+                              setOnlyReview(false);
+                              setApplied((current) => ({
+                                ...current,
+                                reconcile: "",
+                              }));
+                            }}
+                          >
+                            {tUi("updatedUi.text_816c89e8e46b")}
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="rpt02-table-scroll">
+                            <table className="report-table">
+                              <thead>
+                                {detailTab === "reconcile" ? (
+                                  <tr>
+                                    <th>
+                                      SKU / {tUi("inventory.balance.colName")}
+                                    </th>
+                                    <th className="num">
+                                      {tUi(
+                                        "reports.stockReconcileReport.colLedgerStock",
+                                      )}
+                                    </th>
+                                    <th className="num">
+                                      {tUi(
+                                        "reports.stockReconcileReport.colRecordedStock",
+                                      )}
+                                    </th>
+                                    <th className="num">
+                                      {tUi("inventory.balance.colVariance")}
+                                    </th>
+                                    <th>
+                                      {tUi("inventory.balance.colReconcile")}
+                                    </th>
+                                    <th
+                                      aria-label={tUi(
+                                        "reports.stockReconcileReport.colDetail",
+                                      )}
+                                    />
+                                  </tr>
+                                ) : (
+                                  <tr>
+                                    <th>
+                                      SKU / {tUi("inventory.balance.colName")}
+                                    </th>
+                                    <th className="num">
+                                      {tUi("reports.inventoryFlow.opening")}
+                                    </th>
+                                    <th className="num">
+                                      {tUi("dashboard.snapshot.tooltipInbound")}
+                                    </th>
+                                    <th className="num">
+                                      {tUi("dashboard.flow.issueProduct")}
+                                    </th>
+                                    <th className="num">
+                                      {tUi("updatedUi.text_68330ddddb9a")}
+                                    </th>
+                                    <th className="num">
+                                      {tUi("iam.role.undo")}
+                                    </th>
+                                    <th className="num">
+                                      {tUi("reports.inventoryFlow.closing")}
+                                    </th>
+                                  </tr>
+                                )}
+                              </thead>
+                              <tbody>
+                                {detailTab === "reconcile"
+                                  ? visibleRows.map((row) => {
+                                      const state = reconcileState(row);
+                                      const label =
+                                        state === "quantity"
+                                          ? tUi(
+                                              "reports.stockReconcileReport.quantityMismatch",
+                                            )
+                                          : state === "code"
+                                            ? tUi(
+                                                "reports.stockReconcileReport.codeMismatch",
+                                              )
+                                            : state === "review"
+                                              ? tUi(
+                                                  "reports.stockReconcileReport.reviewRequired",
+                                                )
+                                              : tUi(
+                                                  "reports.stockReconcileReport.matched",
+                                                );
+                                      return (
+                                        <tr key={row.key}>
+                                          <td className="rpt02-sku-cell">
+                                            <strong>{row.skuCode}</strong>
+                                            <small>
+                                              {row.skuName ||
+                                                tUi(
+                                                  "updatedUi.text_056cae173528",
+                                                )}
+                                            </small>
+                                          </td>
+                                          <td className="num">
+                                            {quantity(row.closing)}
+                                          </td>
+                                          <td className="num">
+                                            {quantity(row.actual)}
+                                          </td>
+                                          <td
+                                            className={`num${row.delta === 0 ? "" : " is-alert"}`}
+                                          >
+                                            {signed(row.delta)}
+                                          </td>
+                                          <td>
+                                            <span
+                                              className={`rpt02-status-pill rpt02-status-pill--${state}`}
+                                            >
+                                              <i aria-hidden="true" />
+                                              {label}
+                                            </span>
+                                            {row.checks.length > 0 ? (
+                                              <small className="rpt02-checks">
+                                                {row.checks
+                                                  .map(checkLabelOf)
+                                                  .join(", ")}
+                                              </small>
+                                            ) : null}
+                                          </td>
+                                          <td className="rpt02-row-open">
+                                            <button
+                                              type="button"
+                                              className="rpt02-evidence-link"
+                                              aria-label={`Xem bằng chứng ${row.skuCode}`}
+                                              onClick={() =>
+                                                setSelectedEvidence(row)
+                                              }
+                                            >
+                                              <Icon name="chevron-right" />
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })
+                                  : visibleRows.map((row) => (
+                                      <tr key={row.key}>
+                                        <td className="rpt02-sku-cell">
+                                          <strong>{row.skuCode}</strong>
+                                          <small>
+                                            {row.skuName ||
+                                              tUi(
+                                                "updatedUi.text_056cae173528",
+                                              )}
+                                          </small>
+                                        </td>
+                                        <td className="num">
+                                          {quantity(row.opening)}
+                                        </td>
+                                        <td className="num is-positive">
+                                          {signed(row.inbound)}
+                                        </td>
+                                        <td className="num is-negative">
+                                          {signed(-row.productOutbound)}
+                                        </td>
+                                        <td className="num is-negative">
+                                          {signed(-row.componentOutbound)}
+                                        </td>
+                                        <td className="num">
+                                          {signed(row.reversal)}
+                                        </td>
+                                        <td className="num">
+                                          <strong>
+                                            {quantity(row.closing)}
+                                          </strong>
+                                        </td>
+                                      </tr>
+                                    ))}
+                              </tbody>
+                              {detailTab === "flow" ? (
+                                <tfoot>
+                                  <tr>
+                                    <th scope="row">
+                                      {tUi(
+                                        "reports.stockReconcileReport.totalRow",
+                                      )}
+                                    </th>
+                                    <td className="num">
+                                      {quantity(flowTotals.opening)}
+                                    </td>
+                                    <td className="num">
+                                      {quantity(flowTotals.inbound)}
+                                    </td>
+                                    <td className="num">
+                                      {quantity(flowTotals.productOutbound)}
+                                    </td>
+                                    <td className="num">
+                                      {quantity(flowTotals.componentOutbound)}
+                                    </td>
+                                    <td className="num">
+                                      {quantity(flowTotals.reversal)}
+                                    </td>
+                                    <td className="num">
+                                      {quantity(flowTotals.closing)}
+                                    </td>
+                                  </tr>
+                                </tfoot>
+                              ) : null}
+                            </table>
+                          </div>
+                          <footer className="rpt02-pagination hn-report-pagination-footer">
+                            <span>
+                              {tUi("putaway.queue.showing") + " "}
+                              {(currentPage - 1) * PAGE_SIZE + 1}–
+                              {Math.min(
+                                currentPage * PAGE_SIZE,
+                                displayRows.length,
+                              )}{" "}
+                              trong {displayRows.length} SKU
+                            </span>
+                            <div className="hn-report-pagination">
+                              <button
+                                type="button"
+                                aria-label={tUi(
+                                  "reports.traceability.previousPage",
+                                )}
+                                onClick={() =>
+                                  setPage((value) => Math.max(1, value - 1))
+                                }
+                                disabled={currentPage === 1}
+                              >
+                                <Icon name="chevron-left" />
+                              </button>
+                              <span>
+                                Trang {currentPage} / {totalPages}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label="Trang sau"
+                                onClick={() =>
+                                  setPage((value) =>
+                                    Math.min(totalPages, value + 1),
+                                  )
+                                }
+                                disabled={currentPage === totalPages}
+                              >
+                                <Icon name="chevron-right" />
+                              </button>
+                            </div>
+                          </footer>
+                        </>
+                      )}
                     </>
-                  )}
+                  ) : null}
                 </section>
               </section>
             </>

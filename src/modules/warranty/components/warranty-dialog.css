@@ -1,4 +1,174 @@
 /* Warranty dialogs and their active autocomplete portals only. */
+.hn-war-history {
+  overflow: hidden;
+  border: 1px solid var(--war-dialog-border);
+  border-radius: var(--ops-radius-card);
+  background: var(--war-dialog-surface);
+}
+.hn-war-history__heading {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--war-dialog-border);
+  color: var(--war-dialog-ink);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+}
+.hn-war-history__list {
+  position: relative;
+  margin: 0;
+  padding: 0 24px;
+  list-style: none;
+}
+.hn-war-history__list::before {
+  position: absolute;
+  top: 36px;
+  bottom: 36px;
+  left: 43px;
+  width: 2px;
+  background: var(--war-dialog-primary);
+  content: "";
+}
+.hn-war-history__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 158px 78px minmax(0, 1fr);
+  min-height: 112px;
+  padding: 18px 0;
+}
+.hn-war-history__item::before {
+  position: absolute;
+  z-index: 1;
+  top: 28px;
+  left: 11px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--war-dialog-primary);
+  content: "";
+}
+.hn-war-history__item:not(:last-child)::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 44px;
+  border-bottom: 1px solid var(--war-dialog-border);
+  content: "";
+}
+.hn-war-history__item:last-child::after {
+  position: absolute;
+  top: 37px;
+  bottom: 0;
+  left: 19px;
+  width: 2px;
+  background: var(--war-dialog-surface);
+  content: "";
+}
+.hn-war-history__date {
+  display: flex;
+  flex-direction: column;
+  grid-column: 2;
+  gap: 2px;
+  padding: 4px 16px 0 0;
+  border-right: 1px solid var(--war-dialog-border);
+  color: var(--war-dialog-primary);
+  font-size: 17px;
+  line-height: 25px;
+  white-space: nowrap;
+}
+.hn-war-history__icon {
+  display: flex;
+  grid-column: 3;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--war-dialog-soft);
+  color: var(--war-dialog-primary);
+  font-size: 26px;
+}
+.hn-war-history__details {
+  grid-column: 4;
+  min-width: 0;
+  padding: 2px 0 0 8px;
+}
+.hn-war-history__title {
+  color: var(--war-dialog-ink);
+  font-size: 18px;
+  line-height: 27px;
+  font-weight: 700;
+}
+.hn-war-history__description {
+  margin-top: 3px;
+  color: var(--war-dialog-muted);
+  font-size: 16px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+.hn-war-history__actor {
+  margin-top: 3px;
+  color: var(--war-dialog-muted);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.hn-war-history__empty {
+  padding: 24px;
+  color: var(--war-dialog-muted);
+}
+@media (max-width: 599px) {
+  .hn-war-history__heading {
+    padding: 14px 16px;
+    font-size: 18px;
+  }
+  .hn-war-history__list {
+    padding: 0 12px;
+  }
+  .hn-war-history__list::before {
+    left: 25px;
+  }
+  .hn-war-history__item {
+    grid-template-columns: 28px 96px 44px minmax(0, 1fr);
+    min-height: 100px;
+    padding: 16px 0;
+  }
+  .hn-war-history__item::before {
+    top: 25px;
+    left: 5px;
+    width: 14px;
+    height: 14px;
+  }
+  .hn-war-history__item:not(:last-child)::after {
+    left: 28px;
+  }
+  .hn-war-history__item:last-child::after {
+    top: 32px;
+    left: 13px;
+  }
+  .hn-war-history__date {
+    padding-right: 6px;
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .hn-war-history__icon {
+    width: 36px;
+    height: 36px;
+    font-size: 19px;
+  }
+  .hn-war-history__details {
+    padding-left: 4px;
+  }
+  .hn-war-history__title {
+    font-size: 14px;
+    line-height: 21px;
+  }
+  .hn-war-history__description {
+    font-size: 13px;
+    line-height: 19px;
+  }
+}
+
 .hn-war-dialog,
 .hn-war-dialog:has(.MuiAutocomplete-popupIndicatorOpen)
   ~ .MuiAutocomplete-popper {

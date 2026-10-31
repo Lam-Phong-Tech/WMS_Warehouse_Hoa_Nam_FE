@@ -291,27 +291,8 @@ export default function WarrantyPage() {
   ];
 
   const renderRowActions = (row: WarrantyCase) => (
-    <RowActionButton
-      kind={
-        !canManage ||
-        ["RETURNED", "RETURNED_TO_CUSTOMER", "CLOSED", "CANCELLED"].includes(
-          row.status,
-        )
-          ? "view"
-          : ["COMPLETED", "READY"].includes(row.status)
-            ? "complete"
-            : "edit"
-      }
-      onClick={() => setDetailId(row.id)}
-    >
-      {!canManage ||
-      ["RETURNED", "RETURNED_TO_CUSTOMER", "CLOSED", "CANCELLED"].includes(
-        row.status,
-      )
-        ? tUi("reports.importMatchReport.detail")
-        : ["COMPLETED", "READY"].includes(row.status)
-          ? tUi("updatedUi.text_532fdaffd860")
-          : tUi("updatedUi.text_5293d03c5908")}
+    <RowActionButton kind="view" onClick={() => setDetailId(row.id)}>
+      {tUi("reports.importMatchReport.detail")}
     </RowActionButton>
   );
 

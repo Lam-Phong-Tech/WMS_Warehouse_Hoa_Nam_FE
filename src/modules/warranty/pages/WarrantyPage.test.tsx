@@ -182,14 +182,25 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     expect(placeholder).toContain("sản phẩm");
   });
 
-  it("bấm Cập nhật mở modal chi tiết đúng case (WAR-03)", async () => {
+  it("mọi dòng chỉ có nút Chi tiết và mở đúng hồ sơ (WAR-03)", async () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
 
-    // Nhãn trình bày mới là "Cập nhật", vẫn mở modal chi tiết WAR-03.
-    const openButtons = await screen.findAllByRole("button", {
-      name: /Cập nhật/,
-    });
-    fireEvent.click(openButtons[0]);
+    const firstRow = (
+      await screen.findByRole("button", { name: "BH-0001" })
+    ).closest("tr")!;
+    const secondRow = screen
+      .getByRole("button", { name: "BH-0002" })
+      .closest("tr")!;
+    expect(
+      within(firstRow).getByRole("button", { name: "Chi tiết" }),
+    ).toBeInTheDocument();
+    expect(
+      within(secondRow).getByRole("button", { name: "Chi tiết" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Thao tác hồ sơ/ }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(within(firstRow).getByRole("button", { name: "Chi tiết" }));
 
     expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-1");
   });
@@ -390,25 +401,17 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-2");
   });
 
-  it("mở menu và chọn chi tiết bằng bàn phím không mở nhầm hồ sơ của dòng khác", async () => {
+  it("mở Chi tiết bằng bàn phím không nhầm hồ sơ của dòng khác", async () => {
     const user = userEvent.setup();
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
-    const menuButton = await screen.findByRole("button", {
-      name: "Thao tác hồ sơ BH-0002",
-    });
-    act(() => menuButton.focus());
-    await user.keyboard(" ");
-    const item = await screen.findByRole("menuitem", {
-      name: "Xem chi tiết hồ sơ",
-    });
+    const row = (
+      await screen.findByRole("button", { name: "BH-0002" })
+    ).closest("tr")!;
+    const detailButton = within(row).getByRole("button", { name: "Chi tiết" });
     expect(screen.queryByTestId("detail-modal")).not.toBeInTheDocument();
-    expect(menuButton).toHaveAttribute("aria-expanded", "true");
-    act(() => item.focus());
+    act(() => detailButton.focus());
     await user.keyboard("{Enter}");
     expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-2");
-    await waitFor(() =>
-      expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
-    );
   });
 
   it("hiển thị serial, hạn và tuổi hồ sơ do API cung cấp; không tự suy dữ liệu còn thiếu", async () => {

@@ -19,6 +19,7 @@ import {
   type UiTabItem,
 } from "@/shared/ui";
 import {
+  FileTextOutlined,
   HistoryOutlined,
   PaperClipOutlined,
   PlayCircleOutlined,
@@ -1434,68 +1435,75 @@ export function WarrantyDetailModal({
           ) : null}
 
           {activeTab === "history" ? (
-            <Box
-              className="hn-fade-in-up"
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: "var(--ops-radius-card)",
-                p: 2,
-              }}
-            >
-              <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-                {t("warranty.detail.historyTitle")}
+            <Box className="hn-fade-in-up hn-war-history">
+              <Box className="hn-war-history__heading">
+                {t("warranty.detail.historyTitle")} (
+                {eventsQuery.data?.length ?? 0})
               </Box>
               {(eventsQuery.data ?? []).length ? (
-                <Stack spacing={1.25}>
-                  {(eventsQuery.data ?? []).map((event, index) => (
-                    <Stack
-                      key={`${event.to_status}-${index}`}
-                      direction="row"
-                      spacing={1.25}
-                      sx={{ alignItems: "flex-start" }}
-                    >
-                      <Box
-                        sx={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          bgcolor: `${WARRANTY_STATUS_COLORS[event.to_status] ?? "primary"}.main`,
-                          mt: "6px",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <Stack spacing={0}>
-                        <Box sx={{ typography: "body2", fontWeight: 700 }}>
-                          {event.event_type === "NOTE"
-                            ? t("warranty.detail.processingNote")
-                            : businessLabel(
-                                WARRANTY_STATUS_LABELS,
-                                event.to_status,
-                              )}
-                        </Box>
+                <Box component="ol" className="hn-war-history__list">
+                  {[...(eventsQuery.data ?? [])]
+                    .sort(
+                      (a, b) =>
+                        Date.parse(a.performed_at) - Date.parse(b.performed_at),
+                    )
+                    .map((event) => {
+                      const formattedAt = formatWarrantyDateTime(
+                        event.performed_at,
+                      );
+                      const [date, time] =
+                        /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/.test(formattedAt)
+                          ? formattedAt.replaceAll("-", "/").split(" ")
+                          : [formattedAt];
+                      const isRepairOrParts =
+                        event.event_type === "REPAIR" ||
+                        event.event_type === "PARTS_ORDERED" ||
+                        event.event_type === "PARTS_RECEIVED";
+                      return (
                         <Box
-                          sx={{
-                            typography: "caption",
-                            color: "text.secondary",
-                          }}
+                          component="li"
+                          className="hn-war-history__item"
+                          key={event.id}
                         >
-                          {formatWarrantyDateTime(event.performed_at)}
-                          {event.performed_by && event.performed_by !== "-"
-                            ? t("warranty.detail.performedBy", {
-                                user: event.performed_by,
-                              })
-                            : ""}
+                          <Box className="hn-war-history__date">
+                            <span>{date}</span>
+                            {time ? <span>{time}</span> : null}
+                          </Box>
+                          <Box className="hn-war-history__icon" aria-hidden>
+                            {isRepairOrParts ? (
+                              <ToolOutlined />
+                            ) : (
+                              <FileTextOutlined />
+                            )}
+                          </Box>
+                          <Box className="hn-war-history__details">
+                            <Box className="hn-war-history__title">
+                              {event.event_type === "NOTE" ||
+                              event.event_type === "NOTE_ADDED"
+                                ? t("warranty.detail.processingNote")
+                                : businessLabel(
+                                    WARRANTY_STATUS_LABELS,
+                                    event.to_status,
+                                  )}
+                            </Box>
+                            {event.description ? (
+                              <Box className="hn-war-history__description">
+                                {event.description}
+                              </Box>
+                            ) : null}
+                            {event.performed_by &&
+                            event.performed_by !== "-" ? (
+                              <Box className="hn-war-history__actor">
+                                {event.performed_by}
+                              </Box>
+                            ) : null}
+                          </Box>
                         </Box>
-                        <Box sx={{ typography: "body2" }}>
-                          {event.description}
-                        </Box>
-                      </Stack>
-                    </Stack>
-                  ))}
-                </Stack>
+                      );
+                    })}
+                </Box>
               ) : (
-                <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                <Box className="hn-war-history__empty">
                   {t("warranty.detail.historyEmpty")}
                 </Box>
               )}

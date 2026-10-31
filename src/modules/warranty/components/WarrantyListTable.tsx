@@ -1,4 +1,4 @@
-import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import { RowActionGroup } from "@/shared/components/actions";
 import { useState } from "react";
 import { Menu, MenuItem, UiIcon } from "@/shared/ui";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
@@ -22,10 +22,6 @@ export function WarrantyListTable({
   onRowClick,
   renderRowActions,
 }: ResponsiveDataTableProps<WarrantyCase>) {
-  const [menu, setMenu] = useState<{
-    anchor: HTMLElement;
-    row: WarrantyCase;
-  } | null>(null);
   const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
   const byKey = Object.fromEntries(
     columns.map((column) => [column.key, column]),
@@ -120,13 +116,7 @@ export function WarrantyListTable({
                   </tr>
                 ))
               : sortedRows.map((row) => (
-                  <tr
-                    key={rowKey(row)}
-                    className={
-                      menu?.row.id === row.id ? "is-selected" : undefined
-                    }
-                    onClick={() => onRowClick?.(row)}
-                  >
+                  <tr key={rowKey(row)} onClick={() => onRowClick?.(row)}>
                     <td
                       className="hn-war-case-cell"
                       data-label={tUi("updatedUi.text_7f401d2e3891")}
@@ -225,17 +215,6 @@ export function WarrantyListTable({
                         onClick={(event) => event.stopPropagation()}
                       >
                         {renderRowActions?.(row)}
-                        <RowActionButton
-                          kind="more"
-                          aria-label={tUi("updatedUi.text_0f5f5be4cde4", {
-                            value0: String(row.case_code || EMPTY_TEXT),
-                          })}
-                          aria-haspopup="menu"
-                          aria-expanded={menu?.row.id === row.id}
-                          onClick={(event) =>
-                            setMenu({ anchor: event.currentTarget, row })
-                          }
-                        />
                       </RowActionGroup>
                     </td>
                   </tr>
@@ -280,21 +259,6 @@ export function WarrantyListTable({
               : ""}
           </MenuItem>
         ))}
-      </Menu>
-      <Menu
-        anchorEl={menu?.anchor ?? null}
-        open={Boolean(menu)}
-        onClose={() => setMenu(null)}
-        slotProps={{ paper: { className: "hn-war-menu" } }}
-      >
-        <MenuItem
-          onClick={() => {
-            if (menu) onRowClick?.(menu.row);
-            setMenu(null);
-          }}
-        >
-          {tUi("updatedUi.text_aeda5f69ff81")}
-        </MenuItem>
       </Menu>
     </>
   );

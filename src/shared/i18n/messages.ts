@@ -2925,7 +2925,8 @@ export const MESSAGES_VI = {
       returnSource: "Phiếu xuất liên quan",
       returnStatus: "Trạng thái",
       returnSources: "Phiếu xuất nguồn theo liên kết hoàn trả",
-      returnEmpty: "Không có phiếu hoàn trả đã ghi sổ liên kết với người nhận trong kỳ.",
+      returnEmpty:
+        "Không có phiếu hoàn trả đã ghi sổ liên kết với người nhận trong kỳ.",
       typeDistributor: "Nhà phân phối",
       typeAgency: "Đại lý",
       typeProjectCustomer: "Khách công trình",
@@ -3927,6 +3928,19 @@ export const MESSAGES_VI = {
       movementsEmpty: "Không có biến động tồn trong kỳ.",
     },
     stockReconcileReport: {
+      collapseSection: "Thu gọn {title}",
+      expandSection: "Mở rộng {title}",
+      detailTabsAria: "Chế độ xem chi tiết tồn kho",
+      detailTabReconcile: "Đối soát tồn",
+      detailTabFlow: "Nhập – Xuất – Tồn",
+      onlyReview: "Chỉ xem SKU cần kiểm tra",
+      colLedgerStock: "Tồn sổ",
+      colRecordedStock: "Tồn ghi nhận",
+      colDetail: "Chi tiết",
+      totalRow: "Tổng cộng",
+      quantityMismatch: "Lệch số lượng",
+      codeMismatch: "Lệch mã",
+      reviewRequired: "Cần kiểm tra",
       matched: "Khớp",
       mismatch: "Lệch",
       notApplicable: "Không áp dụng",
@@ -4789,7 +4803,8 @@ export const MESSAGES_VI = {
     forgotPassword: {
       title: "Quên mật khẩu",
       subtitleEmail: "Nhập email đã đăng ký để nhận mã xác thực.",
-      subtitleOtp: "Nếu email {email} hợp lệ, bạn sẽ nhận được mã OTP. Nhập mã 6 số để tiếp tục.",
+      subtitleOtp:
+        "Nếu email {email} hợp lệ, bạn sẽ nhận được mã OTP. Nhập mã 6 số để tiếp tục.",
       subtitlePassword: "Đặt mật khẩu mới cho tài khoản.",
       processing: "Đang xử lý...",
       sendOtp: "Gửi mã OTP",
@@ -4802,13 +4817,18 @@ export const MESSAGES_VI = {
       resendOtp: "Gửi lại mã OTP",
       verify: "Xác nhận",
       resetFailed: "Đặt lại mật khẩu thất bại.",
-      recoveryUnavailable: "Kết nối bị gián đoạn hoặc dịch vụ tạm thời không khả dụng. Vui lòng thử lại theo thao tác của bạn.",
+      recoveryUnavailable:
+        "Kết nối bị gián đoạn hoặc dịch vụ tạm thời không khả dụng. Vui lòng thử lại theo thao tác của bạn.",
       recoveryOffline: "Không có kết nối mạng. Kiểm tra kết nối rồi thử lại.",
-      recoveryValidation: "Thông tin chưa hợp lệ. Vui lòng kiểm tra các ô nhập.",
+      recoveryValidation:
+        "Thông tin chưa hợp lệ. Vui lòng kiểm tra các ô nhập.",
       rateWaiting: "Vui lòng chờ {seconds} giây trước khi thử lại.",
-      rateUnknown: "Bạn đã thử quá nhiều lần. Vui lòng chờ rồi tải lại trang để thử lại.",
-      resetTokenInvalid: "Yêu cầu đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã OTP mới.",
-      otpNewRequired: "Mã OTP không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã mới.",
+      rateUnknown:
+        "Bạn đã thử quá nhiều lần. Vui lòng chờ rồi tải lại trang để thử lại.",
+      resetTokenInvalid:
+        "Yêu cầu đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã OTP mới.",
+      otpNewRequired:
+        "Mã OTP không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã mới.",
       recoveryRequestId: "Mã yêu cầu: {id}",
       submitReset: "Đặt lại mật khẩu",
       resetSuccess: "Đặt lại mật khẩu thành công, vui lòng đăng nhập lại",
