@@ -46,6 +46,7 @@ export type ComponentIssueListParams = {
   keyword?: string;
   page?: number;
   per_page?: number;
+  sort_order?: "asc" | "desc";
 };
 
 export type ComponentIssuePage = {
@@ -191,6 +192,7 @@ export async function fetchComponentIssueDocuments(
       keyword: params.keyword,
       page: params.page,
       per_page: params.per_page ?? 10,
+      sort_order: params.sort_order,
     }).filter(([, value]) => value !== undefined && value !== ""),
   );
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(

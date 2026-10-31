@@ -149,7 +149,7 @@
   font-weight: 700;
 }
 .hn-war-count {
-  border-radius: 14px;
+  border-radius: var(--ops-radius-control);
   background: var(--war-pale);
   color: var(--war-ink);
   font-size: 12px;
@@ -164,19 +164,12 @@
   border: 0;
 }
 .hn-war-sort .MuiInputBase-root {
-  height: 30px;
   background: transparent;
-  color: var(--war-muted);
-  font-size: 12px;
+  color: var(--war-primary);
 }
 .hn-war-sort .MuiSelect-select {
-  padding-block: 5px;
-  padding-left: 5px;
-}
-.hn-war-sort .MuiInputBase-root::before {
-  content: var(--hn-translated-content-10, "Cập nhật ");
-  white-space: pre;
-  padding-left: 5px;
+  padding-inline: 8px 30px;
+  font-size: 14px;
 }
 .hn-war-filters {
   display: grid;

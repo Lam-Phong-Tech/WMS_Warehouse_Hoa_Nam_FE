@@ -313,8 +313,19 @@
   align-items: center;
   gap: 10px;
 }
+.hn-war04-sort .MuiOutlinedInput-notchedOutline {
+  border: 0;
+}
+.hn-war04-sort .MuiOutlinedInput-root {
+  background: transparent;
+  color: var(--war-primary);
+}
+.hn-war04-sort .MuiSelect-select {
+  padding-inline: 8px 30px;
+  font-size: 14px;
+}
 .hn-war04-count {
-  border-radius: 20px;
+  border-radius: var(--ops-radius-control);
   padding: 1px 8px;
   background: var(--war-pale);
   font-size: 12px;

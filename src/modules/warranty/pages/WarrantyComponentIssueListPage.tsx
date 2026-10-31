@@ -96,6 +96,7 @@ export default function WarrantyComponentIssueListPage() {
   const [tracking, setTracking] = useState<Tracking>("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [openTarget, setOpenTarget] = useState<OpenTarget | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [rowMenu, setRowMenu] = useState<{
@@ -131,6 +132,7 @@ export default function WarrantyComponentIssueListPage() {
       status: status || undefined,
       page,
       per_page: perPage,
+      sort_order: sortOrder,
     },
     !tracking,
   );
@@ -154,9 +156,17 @@ export default function WarrantyComponentIssueListPage() {
   const rows = useMemo(
     () =>
       tracking
-        ? (trackingQuery.data ?? []).slice((page - 1) * perPage, page * perPage)
+        ? [...(trackingQuery.data ?? [])]
+            .sort((a, b) => {
+              const left = a.posted_at || a.document_date || "";
+              const right = b.posted_at || b.document_date || "";
+              return sortOrder === "asc"
+                ? left.localeCompare(right)
+                : right.localeCompare(left);
+            })
+            .slice((page - 1) * perPage, page * perPage)
         : (listQuery.data?.data ?? []),
-    [tracking, trackingQuery.data, listQuery.data, page, perPage],
+    [tracking, trackingQuery.data, listQuery.data, page, perPage, sortOrder],
   );
   const pagination = resolveApiPagination(
     tracking
@@ -426,17 +436,21 @@ export default function WarrantyComponentIssueListPage() {
               {hasKnownTotal ? pagination.total.toLocaleString("vi-VN") : "—"}
             </span>
           </h2>
-          <button
-            type="button"
-            className="hn-war04-refresh"
-            onClick={refreshAll}
-            disabled={activeQuery.isFetching || !online}
-            title={tUi("updatedUi.text_3e8bc3252b10")}
-          >
-            {activeQuery.isFetching
-              ? tUi("updatedUi.text_f1d2b14e62c7")
-              : tUi("updatedUi.text_83ddf4187c12")}
-          </button>
+          <div className="hn-war04-sort">
+            <UiSelect
+              value={sortOrder}
+              aria-label={t("warranty.list.sortAria")}
+              menuClassName="hn-war-menu"
+              options={[
+                { value: "desc", label: t("warranty.list.sortNewest") },
+                { value: "asc", label: t("warranty.list.sortOldest") },
+              ]}
+              onChange={(value) => {
+                setSortOrder(value === "asc" ? "asc" : "desc");
+                setPage(1);
+              }}
+            />
+          </div>
         </div>
         <form
           className="hn-war04-filters"
