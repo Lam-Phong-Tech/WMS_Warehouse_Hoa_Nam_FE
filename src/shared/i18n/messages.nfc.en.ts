@@ -3,6 +3,8 @@ export const MESSAGES_NFC_EN = {
   confirmWarehouseHelp:
     "Choose a warehouse to view NFC data in this login session.",
   workWarehouse: "Working warehouse",
+  selectWarehouse: "Select a warehouse",
+  loadingWarehouses: "Loading warehouses…",
   confirmWarehouse: "Confirm warehouse",
   noWarehouses:
     "No active warehouse is available within your access scope. Please contact an administrator.",
@@ -14,6 +16,8 @@ export const MESSAGES_NFC_EN = {
     "Counts follow the search and item status filters, before filtering chip status. When server totals are unavailable, only items on the current page are counted.",
   historyHelp: "Revoked chips are retained for history lookup.",
   appRequired: "Please use the app",
+  appNoticeDescription:
+    "Use Hoa Nam Scanner to scan, assign, replace or revoke a chip. This web page shows item details, chip details and operation history.",
   understood: "Understood",
   assign: "Assign chip",
   replace: "Replace chip",
@@ -28,6 +32,7 @@ export const MESSAGES_NFC_EN = {
   uidPlaceholder: "Enter the full chip UID…",
   chipStatus: "Chip status",
   itemStatus: "Item status",
+  tableStatus: "Status",
   all: "All",
   inStock: "In stock",
   exported: "Exported",
@@ -52,7 +57,6 @@ export const MESSAGES_NFC_EN = {
   emptyTags: "No NFC chips yet",
   emptyHint: "Try changing the filters or refreshing the list.",
   detailTitle: "NFC chip details",
-  chipAndItem: "Chip & item information",
   code: "Physical code",
   serial: "Serial number",
   linkedBy: "Assigned by",

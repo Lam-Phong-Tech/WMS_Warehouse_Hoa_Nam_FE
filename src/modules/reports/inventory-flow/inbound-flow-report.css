@@ -1161,16 +1161,6 @@
   font-weight: 600;
   color: var(--ops-heading);
 }
-.inbound-table-title-row b {
-  min-width: 24px;
-  padding: 3px 6px;
-  border-radius: 10px;
-  background: var(--ops-pale);
-  color: var(--ops-link);
-  font-size: 12px;
-  text-align: center;
-}
-
 .inbound-table-search {
   position: relative;
   display: flex;

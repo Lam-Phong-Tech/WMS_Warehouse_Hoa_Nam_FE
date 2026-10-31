@@ -422,7 +422,7 @@ export const SCREEN_META: Record<
   string,
   { title: string; description: string }
 > = {
-  "NFC-01": { title: "NFC", description: "" },
+  "NFC-01": { title: "Gắn chip NFC cho hiện vật", description: "" },
   "MAP-01": {
     title: "Tổng quan vận hành",
     description:

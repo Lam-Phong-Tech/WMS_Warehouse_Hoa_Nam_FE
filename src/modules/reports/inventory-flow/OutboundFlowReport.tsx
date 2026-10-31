@@ -1152,7 +1152,6 @@ export default function OutboundFlowReport() {
               <div>
                 <span className="outbound-table-title-row">
                   <h2>{tUi("updatedUi.text_b6f8caf7b7cc")}</h2>
-                  <b>{filteredDocuments.length}</b>
                 </span>
               </div>
               <button

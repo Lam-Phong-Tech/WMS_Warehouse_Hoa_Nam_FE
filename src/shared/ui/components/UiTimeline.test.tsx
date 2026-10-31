@@ -52,4 +52,17 @@ describe("UiTimeline", () => {
     // Cột trang trí chỉ còn đúng 1 phần tử (chấm tròn), không có đường nối.
     expect(li?.firstElementChild?.childElementCount).toBe(1);
   });
+
+  it("có thể kéo dài đường dọc dưới item cuối cho lịch sử NFC", () => {
+    const { container } = renderUi(
+      <UiTimeline
+        items={[{ title: "Gán chip thành công" }]}
+        extendLastLine
+        lineColor="var(--ops-primary)"
+      />,
+    );
+    const li = container.querySelector("li");
+    expect(li?.firstElementChild?.childElementCount).toBe(2);
+    expect(emotionCss()).toContain("var(--ops-primary)");
+  });
 });

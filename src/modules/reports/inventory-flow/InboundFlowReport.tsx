@@ -1168,7 +1168,6 @@ export default function InboundFlowReport() {
               <div>
                 <span className="inbound-table-title-row">
                   <h2>{tUi("updatedUi.text_b7f7bae4ff19")}</h2>
-                  <b>{filteredDocuments.length}</b>
                 </span>
               </div>
               <label className="inbound-table-search">

@@ -107,7 +107,7 @@ export interface ScreenMetaText {
  * chữ VI trong nav-data không làm rơi bản dịch.
  */
 export const SCREEN_META_EN: Record<string, ScreenMetaText> = {
-  "NFC-01": { title: "NFC", description: "" },
+  "NFC-01": { title: "Attach NFC chip to item", description: "" },
   "MAP-01": {
     title: "Operations overview",
     description:

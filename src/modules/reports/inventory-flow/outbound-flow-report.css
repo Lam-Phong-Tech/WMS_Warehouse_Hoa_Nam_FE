@@ -1274,16 +1274,6 @@
   font-weight: 600;
   color: var(--ops-heading);
 }
-.outbound-table-title-row b {
-  min-width: 24px;
-  padding: 3px 6px;
-  border-radius: 10px;
-  background: var(--ops-pale);
-  color: var(--ops-link);
-  font-size: 12px;
-  text-align: center;
-}
-
 .outbound-table-search {
   position: relative;
   display: flex;
@@ -2865,14 +2855,6 @@
   font-size: 18px;
   line-height: 26px;
   font-weight: 600;
-}
-
-.outbound-table-title-row b {
-  min-width: 20px;
-  padding: 2px 6px;
-  background: var(--ops-pale);
-  color: var(--ops-link);
-  font-size: 12px;
 }
 
 .outbound-refresh-button {

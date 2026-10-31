@@ -3,6 +3,8 @@ export const MESSAGES_NFC_VI = {
   confirmWarehouseHelp:
     "Chọn kho để xem dữ liệu NFC trong phiên đăng nhập này.",
   workWarehouse: "Kho làm việc",
+  selectWarehouse: "Chọn kho làm việc",
+  loadingWarehouses: "Đang tải danh sách kho…",
   confirmWarehouse: "Xác nhận kho",
   noWarehouses:
     "Không có kho đang hoạt động trong phạm vi truy cập. Vui lòng liên hệ quản trị viên.",
@@ -14,6 +16,8 @@ export const MESSAGES_NFC_VI = {
     "Số liệu tính theo bộ lọc tìm kiếm và trạng thái hiện vật, trước khi lọc trạng thái chip. Nếu máy chủ không cung cấp tổng, chỉ đếm các hiện vật trong trang hiện tại.",
   historyHelp: "Chip đã thu hồi vẫn được lưu để tra cứu lịch sử.",
   appRequired: "Vui lòng thao tác qua app",
+  appNoticeDescription:
+    "Dùng Hoa Nam Scanner để quét, gán, thay hoặc thu hồi chip. Trang web này hiển thị thông tin hiện vật, chip và lịch sử thao tác.",
   understood: "Đã hiểu",
   assign: "Gán chip",
   replace: "Thay chip mới",
@@ -28,6 +32,7 @@ export const MESSAGES_NFC_VI = {
   uidPlaceholder: "Nhập đầy đủ UID chip…",
   chipStatus: "Trạng thái chip",
   itemStatus: "Trạng thái hiện vật",
+  tableStatus: "Trạng thái",
   all: "Tất cả",
   inStock: "Trong kho",
   exported: "Đã xuất kho",
@@ -52,7 +57,6 @@ export const MESSAGES_NFC_VI = {
   emptyTags: "Chưa có chip NFC",
   emptyHint: "Thử thay đổi bộ lọc hoặc làm mới danh sách.",
   detailTitle: "Chi tiết chip NFC",
-  chipAndItem: "Thông tin chip & hiện vật",
   code: "Mã vật lý",
   serial: "Số máy / Serial",
   linkedBy: "Người gán",

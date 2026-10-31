@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box,
@@ -59,6 +59,15 @@ const TAG_TONE: Record<NfcTagStatus, UiStatusTone> = {
   DAMAGED: "error",
 };
 const display = (value?: string | null) => value || "—";
+const NFC_TABLE_HEADER_STYLE: CSSProperties = {
+  backgroundColor: "var(--ops-pale)",
+  backgroundImage: "none",
+  color: "var(--ops-heading)",
+  fontSize: 12,
+  fontWeight: 600,
+  padding: "14px 12px",
+  borderBottom: "1px solid var(--ops-line)",
+};
 
 export default function NfcPage() {
   const t = useT();
@@ -150,7 +159,7 @@ export default function NfcPage() {
     },
     {
       key: "status",
-      header: t("nfc.itemStatus"),
+      header: t("nfc.tableStatus"),
       render: (row) => enumLabelOrText(ITEM_STATUS_LABELS, row.item_status),
     },
     {
@@ -403,92 +412,101 @@ export default function NfcPage() {
             <NfcInfo label={t("nfc.history")}>{t("nfc.historyHelp")}</NfcInfo>
           )}
         </Box>
-        {query.isError ? (
-          <Box sx={{ p: 3 }}>
-            {[
-              "WAREHOUSE_CONTEXT_REQUIRED",
-              "WAREHOUSE_CONTEXT_MISMATCH",
-              "WAREHOUSE_INACTIVE",
-              "WAREHOUSE_NOT_FOUND",
-              "WAREHOUSE_ACCESS_DENIED",
-            ].includes(normalizeError(query.error).code ?? "") ? (
-              <NfcWarehouseRecovery />
-            ) : (
-              <ApiErrorAlert
-                error={query.error}
-                onRetry={() => void query.refetch()}
-              />
-            )}
-          </Box>
-        ) : activeTab === "items" ? (
-          <ResponsiveDataTable
-            columns={itemColumns}
-            rows={itemRows}
-            rowKey={(row) => row.item_id}
-            loading={items.isPending}
-            maxBodyHeight="60vh"
-            emptyText={
-              <UiStateSurface
-                kind="empty"
-                title={t("nfc.emptyItems")}
-                description={t("nfc.emptyHint")}
-              />
-            }
-            renderRowActions={(row) =>
-              row.nfc_status === "ASSIGNED" ? (
-                canTags &&
-                row.nfc?.physical_code_id &&
-                row.nfc_details_available !== false ? (
+        <Box
+          sx={{
+            mx: 3,
+            pt: 2.5,
+            borderTop: "1px solid var(--ops-line)",
+            "& > div": { border: 0, borderRadius: 0 },
+          }}
+        >
+          {query.isError ? (
+            <Box sx={{ p: 3 }}>
+              {[
+                "WAREHOUSE_CONTEXT_REQUIRED",
+                "WAREHOUSE_CONTEXT_MISMATCH",
+                "WAREHOUSE_INACTIVE",
+                "WAREHOUSE_NOT_FOUND",
+                "WAREHOUSE_ACCESS_DENIED",
+              ].includes(normalizeError(query.error).code ?? "") ? (
+                <NfcWarehouseRecovery />
+              ) : (
+                <ApiErrorAlert
+                  error={query.error}
+                  onRetry={() => void query.refetch()}
+                />
+              )}
+            </Box>
+          ) : activeTab === "items" ? (
+            <ResponsiveDataTable
+              headerCellStyle={NFC_TABLE_HEADER_STYLE}
+              columns={itemColumns}
+              rows={itemRows}
+              rowKey={(row) => row.item_id}
+              loading={items.isPending}
+              emptyText={
+                <UiStateSurface
+                  kind="empty"
+                  title={t("nfc.emptyItems")}
+                  description={t("nfc.emptyHint")}
+                />
+              }
+              renderRowActions={(row) =>
+                row.nfc_status === "ASSIGNED" ? (
+                  canTags &&
+                  row.nfc?.physical_code_id &&
+                  row.nfc_details_available !== false ? (
+                    <UiButton
+                      appearance="text"
+                      color="info"
+                      onClick={() => openTag(row.nfc!.physical_code_id)}
+                    >
+                      {t("nfc.viewChip")}
+                    </UiButton>
+                  ) : (
+                    <UiText variant="caption">
+                      {t("nfc.detailsUnavailable")}
+                    </UiText>
+                  )
+                ) : canAssign ? (
                   <UiButton
                     appearance="text"
                     color="info"
-                    onClick={() => openTag(row.nfc!.physical_code_id)}
+                    onClick={showAppNotice}
                   >
-                    {t("nfc.viewChip")}
+                    {t("nfc.assign")}
                   </UiButton>
-                ) : (
-                  <UiText variant="caption">
-                    {t("nfc.detailsUnavailable")}
-                  </UiText>
-                )
-              ) : canAssign ? (
+                ) : null
+              }
+              actionColumnWidth={180}
+            />
+          ) : (
+            <ResponsiveDataTable
+              headerCellStyle={NFC_TABLE_HEADER_STYLE}
+              columns={tagColumns}
+              rows={tags.data?.data ?? []}
+              rowKey={(row) => row.physical_code_id}
+              loading={tags.isPending}
+              emptyText={
+                <UiStateSurface
+                  kind="empty"
+                  title={t("nfc.emptyTags")}
+                  description={t("nfc.emptyHint")}
+                />
+              }
+              renderRowActions={(row) => (
                 <UiButton
                   appearance="text"
                   color="info"
-                  onClick={showAppNotice}
+                  onClick={() => openTag(row.physical_code_id)}
                 >
-                  {t("nfc.assign")}
+                  {t("nfc.details")}
                 </UiButton>
-              ) : null
-            }
-            actionColumnWidth={180}
-          />
-        ) : (
-          <ResponsiveDataTable
-            columns={tagColumns}
-            rows={tags.data?.data ?? []}
-            rowKey={(row) => row.physical_code_id}
-            loading={tags.isPending}
-            maxBodyHeight="60vh"
-            emptyText={
-              <UiStateSurface
-                kind="empty"
-                title={t("nfc.emptyTags")}
-                description={t("nfc.emptyHint")}
-              />
-            }
-            renderRowActions={(row) => (
-              <UiButton
-                appearance="text"
-                color="info"
-                onClick={() => openTag(row.physical_code_id)}
-              >
-                {t("nfc.details")}
-              </UiButton>
-            )}
-            actionColumnWidth={140}
-          />
-        )}
+              )}
+              actionColumnWidth={140}
+            />
+          )}
+        </Box>
         <Box sx={{ p: 3 }}>
           <UiPagination
             page={activeTab === "items" ? itemFilters.page : tagFilters.page}
@@ -550,56 +568,53 @@ export default function NfcPage() {
             <UiStateSurface kind="loading" />
           ) : (
             selected && (
-              <>
-                <UiText variant="cardTitle">{t("nfc.chipAndItem")}</UiText>
-                <UiDescriptions
-                  columns={2}
-                  items={[
-                    {
-                      label: t("nfc.uid"),
-                      value: display(selected.hardware_uid),
-                    },
-                    { label: t("nfc.chipStatus"), value: chipBadge(selected) },
-                    {
-                      label: t("nfc.code"),
-                      value: display(selected.code_value),
-                    },
-                    {
-                      label: t("nfc.assignedAt"),
-                      value: formatDateTime(selected.assigned_at),
-                    },
-                    {
-                      label: t("nfc.serial"),
-                      value: display(selected.serial_number),
-                    },
-                    {
-                      label: t("nfc.itemStatus"),
-                      value: selected.item_status
-                        ? enumLabelOrText(
-                            ITEM_STATUS_LABELS,
-                            selected.item_status,
-                          )
-                        : "—",
-                    },
-                    {
-                      label: t("nfc.product"),
-                      value: `${display(selected.sku_name)} · ${display(selected.sku_code)}`,
-                    },
-                    {
-                      label: t("nfc.linkedBy"),
-                      value:
-                        selected.linker?.display_name || t("nfc.notRecorded"),
-                    },
-                    {
-                      label: t("nfc.warehouse"),
-                      value:
-                        selected.assigned_warehouse?.name ||
-                        selected.assigned_warehouse?.code ||
-                        t("nfc.notRecorded"),
-                    },
-                  ]}
-                />
-              </>
+              <UiDescriptions
+                columns={2}
+                items={[
+                  {
+                    label: t("nfc.uid"),
+                    value: display(selected.hardware_uid),
+                  },
+                  { label: t("nfc.chipStatus"), value: chipBadge(selected) },
+                  {
+                    label: t("nfc.code"),
+                    value: display(selected.code_value),
+                  },
+                  {
+                    label: t("nfc.assignedAt"),
+                    value: formatDateTime(selected.assigned_at),
+                  },
+                  {
+                    label: t("nfc.serial"),
+                    value: display(selected.serial_number),
+                  },
+                  {
+                    label: t("nfc.itemStatus"),
+                    value: selected.item_status
+                      ? enumLabelOrText(
+                          ITEM_STATUS_LABELS,
+                          selected.item_status,
+                        )
+                      : "—",
+                  },
+                  {
+                    label: t("nfc.product"),
+                    value: `${display(selected.sku_name)} · ${display(selected.sku_code)}`,
+                  },
+                  {
+                    label: t("nfc.linkedBy"),
+                    value:
+                      selected.linker?.display_name || t("nfc.notRecorded"),
+                  },
+                  {
+                    label: t("nfc.warehouse"),
+                    value:
+                      selected.assigned_warehouse?.name ||
+                      selected.assigned_warehouse?.code ||
+                      t("nfc.notRecorded"),
+                  },
+                ]}
+              />
             )
           )}
           <UiText variant="cardTitle">
@@ -616,6 +631,8 @@ export default function NfcPage() {
           ) : events.data?.data.length ? (
             <>
               <UiTimeline
+                extendLastLine
+                lineColor="var(--ops-primary)"
                 items={events.data.data.map((event) => ({
                   title: t(
                     event.action === "ASSIGN_ITEM_NFC"
@@ -659,13 +676,46 @@ export default function NfcPage() {
         open={appNotice}
         onClose={() => setAppNotice(false)}
         title={t("nfc.info")}
+        maxWidth="xs"
         actions={
           <UiButton onClick={() => setAppNotice(false)} autoFocus>
             {t("nfc.understood")}
           </UiButton>
         }
       >
-        <UiText>{t("nfc.appRequired")}</UiText>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 2,
+            p: 2.5,
+            border: "1px solid var(--ops-line)",
+            borderLeft: "3px solid var(--ops-primary)",
+            borderRadius: 2,
+            backgroundColor: "var(--ops-pale)",
+          }}
+        >
+          <Box
+            sx={{
+              display: "grid",
+              placeItems: "center",
+              width: 44,
+              height: 44,
+              flexShrink: 0,
+              borderRadius: 2,
+              color: "var(--ops-primary)",
+              backgroundColor: "var(--ops-surface)",
+            }}
+          >
+            <UiIcon name="mobile-button" size="lg" />
+          </Box>
+          <Stack spacing={0.75} sx={{ minWidth: 0 }}>
+            <UiText variant="cardTitle" color="var(--ops-heading)">
+              {t("nfc.appRequired")}
+            </UiText>
+            <UiText>{t("nfc.appNoticeDescription")}</UiText>
+          </Stack>
+        </Box>
       </UiDialog>
     </Stack>
   );

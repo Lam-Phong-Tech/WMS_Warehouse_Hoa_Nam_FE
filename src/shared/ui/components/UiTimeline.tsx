@@ -30,9 +30,15 @@ export interface UiTimelineItem {
 
 export interface UiTimelineProps {
   items: UiTimelineItem[];
+  extendLastLine?: boolean;
+  lineColor?: string;
 }
 
-export function UiTimeline({ items }: UiTimelineProps) {
+export function UiTimeline({
+  items,
+  extendLastLine = false,
+  lineColor = S.border,
+}: UiTimelineProps) {
   return (
     <Box
       component="ol"
@@ -66,18 +72,28 @@ export function UiTimeline({ items }: UiTimelineProps) {
                   backgroundColor: TONE_DOT[item.tone ?? "primary"],
                 }}
               />
-              {!isLast ? (
+              {!isLast || extendLastLine ? (
                 <Box
                   sx={{
                     width: LINE_WIDTH,
                     flexGrow: 1,
+                    minHeight: isLast ? 24 : 0,
                     mt: `${SPACING.xs}px`,
-                    backgroundColor: S.border,
+                    backgroundColor: lineColor,
                   }}
                 />
               ) : null}
             </Box>
-            <Box sx={{ minWidth: 0, pb: isLast ? 0 : `${SPACING.lg}px` }}>
+            <Box
+              sx={{
+                minWidth: 0,
+                pb: isLast
+                  ? extendLastLine
+                    ? `${SPACING.md}px`
+                    : 0
+                  : `${SPACING.lg}px`,
+              }}
+            >
               <Typography
                 component="div"
                 sx={{

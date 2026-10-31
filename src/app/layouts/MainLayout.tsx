@@ -17,6 +17,7 @@ import { SideNav } from "@/app/layouts/SideNav";
 import { AppTopbar } from "@/app/layouts/topbar/AppTopbar";
 import { getBreadcrumbTrail } from "@/app/layouts/nav-data";
 import { AppPageHeader } from "@/app/layouts/AppPageHeader";
+import { NfcWarehouseSelector } from "@/modules/nfc/components/NfcWarehouseSelector";
 import { WarehousePausedBanner } from "@/app/layouts/WarehousePausedBanner";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
@@ -259,9 +260,15 @@ export function MainLayout() {
           <WarehousePausedBanner />
           {ownsHeader ? null : (
             <AppPageHeader
+              actions={
+                location.pathname === ROUTES.NFC ? (
+                  <NfcWarehouseSelector />
+                ) : undefined
+              }
               showEyebrow={
                 location.pathname !== ROUTES.IAM_USERS &&
                 location.pathname !== ROUTES.REVERSE &&
+                location.pathname !== ROUTES.NFC &&
                 !hideHeaderDetails
               }
               showDescription={
@@ -269,7 +276,11 @@ export function MainLayout() {
                 location.pathname !== ROUTES.REVERSE &&
                 !hideHeaderDetails
               }
-              showContextBadges={location.pathname !== ROUTES.REVERSE && !hideHeaderDetails}
+              showContextBadges={
+                location.pathname !== ROUTES.REVERSE &&
+                location.pathname !== ROUTES.NFC &&
+                !hideHeaderDetails
+              }
             />
           )}
           {/*
