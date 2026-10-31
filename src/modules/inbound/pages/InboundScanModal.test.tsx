@@ -571,7 +571,7 @@ describe("IN-03 · quét mã hộp linh kiện (scan-driven)", () => {
     // Ô số lượng là UiNumberField (type="text" + inputMode numeric), không
     // còn là spinbutton của <input type="number">.
     fireEvent.change(
-      screen.getByRole("textbox", { name: /Số lượng linh kiện trong hộp/ }),
+      await screen.findByRole("textbox", { name: /Số lượng linh kiện trong hộp/ }),
       { target: { value: "5" } },
     );
     fireEvent.click(screen.getByRole("button", { name: /Xác nhận/ }));
