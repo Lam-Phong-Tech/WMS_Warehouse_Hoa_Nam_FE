@@ -247,6 +247,10 @@
   box-shadow: none;
   font-size: 14px;
 }
+.hn-putaway-page .ptw-search-control input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 .hn-putaway-page .ptw-search-control input::placeholder {
   color: var(--ptw-muted);
   opacity: 0.85;
@@ -412,7 +416,7 @@
   padding: 2px 9px;
   color: var(--ptw-primary);
   background: var(--ptw-pale);
-  border-radius: 12px;
+  border-radius: var(--ops-radius-control);
   font-size: 14px;
   font-weight: 600;
   line-height: 22px;

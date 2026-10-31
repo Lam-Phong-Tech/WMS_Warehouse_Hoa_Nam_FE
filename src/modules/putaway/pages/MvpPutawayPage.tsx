@@ -723,33 +723,28 @@ export default function MvpPutawayPage() {
                     })
                   : t("putaway.page.dialogTitle")}
               </span>
-              <ActionIconButton
-                kind="close"
-                label={t("common.close")}
-                onClick={closePutaway}
-              />
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <ActionButton
+                  kind="create"
+                  onClick={() => void createDraft()}
+                  disabled={
+                    !canManage ||
+                    selected?.status !== "RECEIVED_PENDING_PUTAWAY" ||
+                    !putawayForm.to_tray_id ||
+                    createMutation.isPending
+                  }
+                >
+                  {createMutation.isPending
+                    ? t("putaway.page.creating")
+                    : t("putaway.page.createDraftButton")}
+                </ActionButton>
+                <ActionIconButton
+                  kind="close"
+                  label={t("common.close")}
+                  onClick={closePutaway}
+                />
+              </Stack>
             </Stack>
-          }
-          actions={
-            <>
-              <ActionButton kind="close" onClick={closePutaway}>
-                {t("common.close")}
-              </ActionButton>
-              <ActionButton
-                kind="create"
-                onClick={() => void createDraft()}
-                disabled={
-                  !canManage ||
-                  selected?.status !== "RECEIVED_PENDING_PUTAWAY" ||
-                  !putawayForm.to_tray_id ||
-                  createMutation.isPending
-                }
-              >
-                {createMutation.isPending
-                  ? t("putaway.page.creating")
-                  : t("putaway.page.createDraftButton")}
-              </ActionButton>
-            </>
           }
         >
           <>
@@ -947,11 +942,6 @@ export default function MvpPutawayPage() {
                 onClick={() => setDetailRow(null)}
               />
             </Stack>
-          }
-          actions={
-            <ActionButton kind="close" onClick={() => setDetailRow(null)}>
-              {t("common.close")}
-            </ActionButton>
           }
         >
           {detailRow ? (
