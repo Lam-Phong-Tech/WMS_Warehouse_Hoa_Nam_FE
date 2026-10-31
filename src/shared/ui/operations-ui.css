@@ -16,6 +16,22 @@
   outline-offset: 3px;
 }
 
+/* The notched outline must be the only focus frame on MUI outlined fields.
+   A rectangular halo or input outline crosses the floating label's notch. */
+body:has(.hn-system-shell) .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: none !important;
+}
+body:has(.hn-system-shell)
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-width: 2px !important;
+}
+body:has(.hn-system-shell)
+  .MuiOutlinedInput-root
+  .MuiInputBase-input:focus-visible {
+  outline: none !important;
+}
+
 body:has(.hn-system-shell) :is(.MuiDialog-paper, .ant-modal-content) {
   border: 1px solid var(--ops-line);
   border-radius: var(--ops-radius-dialog);

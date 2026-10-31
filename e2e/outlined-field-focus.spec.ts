@@ -27,19 +27,8 @@ async function expectSingleFocus(field: Locator) {
     .evaluate((element) =>
       parseFloat(getComputedStyle(element).borderTopWidth),
     );
-  expect(borderWidth).toBeGreaterThanOrEqual(1);
-  // Catalog/SKU intentionally use a 1px border plus a focus halo; other
-  // skins use MUI's 2px focused border. Both must keep visible feedback.
-  const halos = await control.evaluate((element) => [
-    getComputedStyle(element).boxShadow,
-    getComputedStyle(element.querySelector("fieldset")!).boxShadow,
-  ]);
-  expect(
-    borderWidth >= 2 ||
-      halos.some(
-        (halo) => halo !== "none" && !halo.includes("rgba(0, 0, 0, 0)"),
-      ),
-  ).toBe(true);
+  expect(borderWidth).toBe(2);
+  await expect(control).toHaveCSS("box-shadow", "none");
 }
 
 const skins = [
