@@ -11,6 +11,8 @@ export interface MfaChallenge {
 }
 
 /** GET /auth/mfa/status */
+export const MFA_STATUS_QUERY_KEY = ["auth", "mfa", "status"] as const;
+
 export interface MfaStatus {
   enabled: boolean;
   /** Đã tạo bí mật nhưng chưa xác nhận bằng một mã hợp lệ. */

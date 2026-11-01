@@ -16,6 +16,8 @@ import {
   type ResponsiveTableColumn,
 } from "@/shared/components";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { authService } from "@/modules/auth/services/auth.service";
+import { MFA_STATUS_QUERY_KEY } from "@/modules/auth/types/mfa.types";
 import {
   auditLogService,
   type MyPermissionHistoryEntry,
@@ -117,6 +119,10 @@ export function ProfilePage() {
   const historyQuery = useQuery({
     queryKey: ["audit-logs", "me"],
     queryFn: () => auditLogService.getMyPermissionHistory({ per_page: 20 }),
+  });
+  const mfaStatus = useQuery({
+    queryKey: MFA_STATUS_QUERY_KEY,
+    queryFn: () => authService.mfaStatus(),
   });
   const historyRows = historyQuery.data?.data ?? [];
 
@@ -230,19 +236,46 @@ export function ProfilePage() {
         </Box>
       </UiCard>
 
-      {/* WWHN-SEC-08 — lối vào duy nhất tới màn đăng ký MFA.
-          Không có thẻ này thì /profile/mfa tồn tại nhưng không ai tìm thấy, và
-          "tính năng đã có" trên giấy tờ lại bằng "không ai bật" trên thực tế. */}
+      {/* Trạng thái lấy từ tài khoản hiện tại, kể cả sau khi xác nhận ở /profile/mfa. */}
       <UiCard className="hn-settings-card" title={t("auth.mfa.setupTitle")}>
         <Stack spacing="12px">
-          <UiText className="hn-settings-muted">
-            {t("auth.mfa.setupSubtitle")}
-          </UiText>
-          <Box>
-            <Link className="hn-profile-mfa-link" to={ROUTES.MFA_SETUP}>
-              {t("auth.mfa.startEnroll")}
-            </Link>
-          </Box>
+          {mfaStatus.data?.enabled === true ? (
+            <>
+              <Box>
+                <UiStatusBadge
+                  tone="success"
+                  label={t("auth.mfa.statusEnabled")}
+                />
+              </Box>
+              <UiText className="hn-settings-muted">
+                {t("auth.mfa.profileEnabledDescription")}
+              </UiText>
+              <Box>
+                <Link className="hn-profile-mfa-link" to={ROUTES.MFA_SETUP}>
+                  {t("auth.mfa.viewDetails")}
+                </Link>
+              </Box>
+            </>
+          ) : mfaStatus.isPending ? (
+            <UiText className="hn-settings-muted">
+              {t("auth.mfa.statusLoading")}
+            </UiText>
+          ) : mfaStatus.isError ? (
+            <UiText className="hn-settings-muted">
+              {t("auth.mfa.statusLoadError")}
+            </UiText>
+          ) : (
+            <>
+              <UiText className="hn-settings-muted">
+                {t("auth.mfa.setupSubtitle")}
+              </UiText>
+              <Box>
+                <Link className="hn-profile-mfa-link" to={ROUTES.MFA_SETUP}>
+                  {t("auth.mfa.startEnroll")}
+                </Link>
+              </Box>
+            </>
+          )}
         </Stack>
       </UiCard>
 

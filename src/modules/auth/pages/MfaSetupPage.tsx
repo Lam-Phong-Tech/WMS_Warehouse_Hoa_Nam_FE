@@ -5,14 +5,16 @@ import QRCode from "qrcode";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { authService } from "@/modules/auth/services/auth.service";
-import type { MfaEnrollment, MfaStatus } from "@/modules/auth/types/mfa.types";
+import {
+  MFA_STATUS_QUERY_KEY,
+  type MfaEnrollment,
+  type MfaStatus,
+} from "@/modules/auth/types/mfa.types";
 import { Box, UiAlert, UiButton, UiCard, UiTextField } from "@/shared/ui";
 import { useT } from "@/shared/i18n/useT";
 import { ROUTES } from "@/shared/constants/routes";
 import "@/shared/ui/sku-aligned-settings.css";
 import "./mfa-setup-page.css";
-
-const MFA_STATUS_QUERY_KEY = ["auth", "mfa", "status"] as const;
 
 function errorMessageOf(error: unknown, fallback: string): string {
   if (isAxiosError(error)) {
@@ -101,6 +103,14 @@ export function MfaSetupPage() {
   const confirm = useMutation({
     mutationFn: (value: string) => authService.mfaConfirm(value),
     onSuccess: (data) => {
+      queryClient.setQueryData<MfaStatus>(MFA_STATUS_QUERY_KEY, (previous) => ({
+        enabled: true,
+        pending: false,
+        required_for_role: previous?.required_for_role ?? false,
+        enforced: previous?.enforced ?? false,
+        must_enroll_now: false,
+        recovery_codes_remaining: data.recovery_codes.length,
+      }));
       setRecoveryCodes(data.recovery_codes);
       setEnrollment(null);
       setQrCode(null);
