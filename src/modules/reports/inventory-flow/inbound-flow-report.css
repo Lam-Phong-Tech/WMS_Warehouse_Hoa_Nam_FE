@@ -286,6 +286,11 @@
   align-items: end;
 }
 
+.inbound-filter-field--date > span,
+.inbound-filter-field--date > .hn-vuexy-date-range {
+  grid-column: 1 / -1;
+}
+
 .inbound-filter-field[data-filter="supplier"] {
   grid-column: 2;
   grid-row: 1;
@@ -1254,10 +1259,7 @@
 }
 .inbound-table-wrap tbody tr {
   position: relative;
-  cursor: pointer;
-  transition:
-    background 110ms ease,
-    box-shadow 110ms ease;
+  transition: background 110ms ease;
 }
 .inbound-table-wrap tbody tr:hover {
   background: var(--ops-canvas);
@@ -1267,10 +1269,6 @@
   z-index: 1;
   outline: 2px solid var(--ops-link);
   outline-offset: -2px;
-}
-.inbound-table-wrap tbody tr.is-selected {
-  background: var(--ops-pale);
-  box-shadow: inset 3px 0 var(--ops-link);
 }
 .inbound-table-wrap td strong {
   color: var(--ops-text);
@@ -2290,12 +2288,6 @@
     border-radius: 8px;
     background: var(--ops-surface);
     box-shadow: 0 2px 6px rgb(39 68 95 / 5%);
-  }
-  .inbound-table-wrap tbody tr.is-selected {
-    background: var(--ops-pale);
-    box-shadow:
-      inset 3px 0 var(--ops-link),
-      0 2px 6px rgb(39 68 95 / 5%);
   }
   .inbound-table-wrap td,
   .inbound-table-wrap td.is-number,

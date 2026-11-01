@@ -63,7 +63,12 @@ import {
 import { useAuthStore } from "@/shared/store/auth.store";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
-import { ActionButton, ActionIconButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+  RowActionGroup,
+} from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { DepartmentManagerModal } from "@/modules/iam/components/DepartmentManagerModal";
 import {
@@ -328,7 +333,7 @@ export function IamUserScreen({
   const [departmentManagerOpen, setDepartmentManagerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<IamUserStatus | "">("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(15);
+  const [perPage, setPerPage] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<IamUser | null>(null);
   const [formState, setFormState] = useState<UserFormState>(EMPTY_FORM);

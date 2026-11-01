@@ -46,7 +46,12 @@ import {
   IAM_ROLE_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
-import { ActionButton, ActionIconButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+  RowActionGroup,
+} from "@/shared/components/actions";
 
 interface RoleFormValues {
   role_code: string;
@@ -152,7 +157,7 @@ export function IamRolePermissionScreen() {
   const t = useT();
   const [keyword, setKeyword] = useState("");
   const [rolePage, setRolePage] = useState(1);
-  const [rolePerPage, setRolePerPage] = useState(15);
+  const [rolePerPage, setRolePerPage] = useState(10);
   const [selectedRoleId, setSelectedRoleId] = useState<string>();
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [roleModalOpen, setRoleModalOpen] = useState(false);

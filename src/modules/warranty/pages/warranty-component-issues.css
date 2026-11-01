@@ -471,8 +471,7 @@
   transition: background-color 140ms;
   cursor: pointer;
 }
-.hn-war04-table tbody tr:hover,
-.hn-war04-table tbody tr:focus-within {
+.hn-war04-table tbody tr:hover {
   background: color-mix(in srgb, var(--war-pale) 65%, var(--war-surface));
 }
 .hn-war04-table .hn-sortable-th {

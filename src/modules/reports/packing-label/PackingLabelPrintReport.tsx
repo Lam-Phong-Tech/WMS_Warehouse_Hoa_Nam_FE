@@ -1,14 +1,9 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import {
-  UiButton,
-  UiAlert,
-  UiDialog,
-  UiTextField,
-  UiVuexyDateRangePicker,
-} from "@/shared/ui";
+import { UiButton, UiAlert, UiDialog, UiTextField } from "@/shared/ui";
 import {
   CheckCircleOutlined,
   PrinterOutlined,
@@ -122,11 +117,20 @@ export default function PackingLabelPrintReport() {
     enabled: online,
   });
 
-  const snapshotContext = useMemo(() => ({
-    labels: report.labels,
-    printerNames: new Map(report.printerOptions.map((item) => [item.value, item.label])),
-    actorNames: new Map(report.events.filter((item) => item.actorId).map((item) => [item.actorId, item.actorName])),
-  }), [report.labels, report.printerOptions, report.events]);
+  const snapshotContext = useMemo(
+    () => ({
+      labels: report.labels,
+      printerNames: new Map(
+        report.printerOptions.map((item) => [item.value, item.label]),
+      ),
+      actorNames: new Map(
+        report.events
+          .filter((item) => item.actorId)
+          .map((item) => [item.actorId, item.actorName]),
+      ),
+    }),
+    [report.labels, report.printerOptions, report.events],
+  );
   const snapshot = usePackingLabelSnapshot(detailLabelId, snapshotContext);
 
   const draftInvalid = draftRange[0].isAfter(draftRange[1], "day");
@@ -188,9 +192,12 @@ export default function PackingLabelPrintReport() {
     pageRows[0] ??
     null;
 
-  const detailEvent = report.events.find((row) => row.labelId === detailLabelId && row.eventId === selectedEventId)
-    ?? report.events.find((row) => row.labelId === detailLabelId)
-    ?? null;
+  const detailEvent =
+    report.events.find(
+      (row) => row.labelId === detailLabelId && row.eventId === selectedEventId,
+    ) ??
+    report.events.find((row) => row.labelId === detailLabelId) ??
+    null;
 
   const applyFilters = () => {
     if (draftInvalid) return;
@@ -359,25 +366,41 @@ export default function PackingLabelPrintReport() {
   const showFullFailure = !online || Boolean(report.error);
 
   if (detailLabelId) {
-    return <><PackingLabelSnapshotScreen
-      detail={snapshot.detail}
-      loading={snapshot.loading}
-      error={snapshot.error}
-      preview={preview}
-      selectedEvent={detailEvent}
-      onBack={() => { setDetailLabelId(null); setPreview(false); setViewOutboundId(null); }}
-      onPreview={() => setPreview((current) => !current)}
-      onPrint={() => {
-        if (detailEvent) {
-          setDetailLabelId(null);
-          setPreview(false);
-          void handlePrint(detailEvent);
-        }
-      }}
-      onOpenSource={() => {
-        if (snapshot.detail?.outboundDocumentId) setViewOutboundId(snapshot.detail.outboundDocumentId);
-      }}
-    />{viewOutboundId ? <AlignedOutboundDetailModal documentId={viewOutboundId} onClose={() => setViewOutboundId(null)} onChanged={() => void report.refetch()} /> : null}</>;
+    return (
+      <>
+        <PackingLabelSnapshotScreen
+          detail={snapshot.detail}
+          loading={snapshot.loading}
+          error={snapshot.error}
+          preview={preview}
+          selectedEvent={detailEvent}
+          onBack={() => {
+            setDetailLabelId(null);
+            setPreview(false);
+            setViewOutboundId(null);
+          }}
+          onPreview={() => setPreview((current) => !current)}
+          onPrint={() => {
+            if (detailEvent) {
+              setDetailLabelId(null);
+              setPreview(false);
+              void handlePrint(detailEvent);
+            }
+          }}
+          onOpenSource={() => {
+            if (snapshot.detail?.outboundDocumentId)
+              setViewOutboundId(snapshot.detail.outboundDocumentId);
+          }}
+        />
+        {viewOutboundId ? (
+          <AlignedOutboundDetailModal
+            documentId={viewOutboundId}
+            onClose={() => setViewOutboundId(null)}
+            onChanged={() => void report.refetch()}
+          />
+        ) : null}
+      </>
+    );
   }
 
   return (
@@ -460,7 +483,7 @@ export default function PackingLabelPrintReport() {
           className={"hn-pkg-label__field " + (draftInvalid ? "has-error" : "")}
         >
           <label>{tUi("reports.packingLabel.dateRangeLabel")}</label>
-          <UiVuexyDateRangePicker
+          <ReportDateRangePicker
             value={draftRange}
             format="DD/MM/YYYY"
             allowClear={false}

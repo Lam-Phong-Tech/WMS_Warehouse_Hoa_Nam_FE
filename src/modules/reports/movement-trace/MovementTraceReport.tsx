@@ -1,3 +1,4 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { TraceModal } from "@/modules/inventory/components/TraceModal";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
@@ -18,7 +19,6 @@ import {
   UiButton,
   UiSelect,
   UiStatusBadge,
-  UiVuexyDateRangePicker,
   type UiStatusTone,
   RADIUS,
   SEMANTIC_LIGHT as S,
@@ -597,7 +597,9 @@ export default function MovementTraceReport() {
   // Lỗi khoảng ngày lúc bấm Tra cứu — hiện ngay dưới ô, không bắn query.
   const [dateError, setDateError] = useState<string | null>(null);
   const [selected, setSelected] = useState<MovementTraceRow | null>(null);
-  const [selectedPhysicalCode, setSelectedPhysicalCode] = useState<string | null>(null);
+  const [selectedPhysicalCode, setSelectedPhysicalCode] = useState<
+    string | null
+  >(null);
   const [exporting, setExporting] = useState(false);
 
   const catalog = useSkuCatalog();
@@ -1165,7 +1167,7 @@ export default function MovementTraceReport() {
             sx={fieldCellSx({ xs: 1, sm: 2, xl: 4 })}
           >
             <Box sx={FIELD_LABEL_SX}>{t("reports.traceability.dateRange")}</Box>
-            <UiVuexyDateRangePicker
+            <ReportDateRangePicker
               aria-label={t("reports.movementTrace.fieldDateRange")}
               value={[draft.fromDate, draft.toDate]}
               format="DD/MM/YYYY"

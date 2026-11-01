@@ -1,5 +1,5 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
-import { useAuthStore } from "@/shared/store/auth.store";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -10,7 +10,6 @@ import {
   UiButton,
   UiSelect,
   UiSpinner,
-  UiVuexyDateRangePicker,
 } from "@/shared/ui";
 import {
   CheckCircleOutlined,
@@ -404,9 +403,6 @@ function FailurePanel({
 
 export default function WarrantyComponentsReport() {
   const t = useT();
-  const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() ||
-    "—";
   const presets = useMemo(() => reportRangePresets(t), [t]);
   const [range, setRange] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(6, "day").startOf("day"),
@@ -646,7 +642,7 @@ export default function WarrantyComponentsReport() {
             gridTemplateColumns: {
               xs: "1fr",
               sm: "repeat(2,minmax(0,1fr))",
-              lg: "1.2fr 1.05fr .9fr 1.1fr auto auto",
+              lg: "1.2fr .9fr 1.1fr auto auto",
             },
             gap: { xs: 1, md: 1.05 },
             alignItems: "end",
@@ -656,7 +652,7 @@ export default function WarrantyComponentsReport() {
             <FilterLabel>
               {tUi("reports.packingLabel.dateRangeLabel")}
             </FilterLabel>
-            <UiVuexyDateRangePicker
+            <ReportDateRangePicker
               aria-label={tUi("reports.packingLabel.dateRangeLabel")}
               value={range}
               format="DD/MM/YYYY"
@@ -681,26 +677,6 @@ export default function WarrantyComponentsReport() {
               {invalid
                 ? tUi("dashboard.dateError.order")
                 : tUi("updatedUi.text_1af3943a0084")}
-            </Box>
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>{tUi("updatedUi.text_19c608bfa103")}</FilterLabel>
-            <Box
-              aria-label={warehouseName}
-              sx={{
-                minHeight: "var(--ops-control-height)",
-                px: 1.35,
-                display: "flex",
-                alignItems: "center",
-                gap: 0.75,
-                border: "1px solid " + C.border,
-                borderRadius: "var(--ops-radius-control)",
-                bgcolor: "var(--ops-canvas)",
-                color: C.muted,
-                fontWeight: 650,
-              }}
-            >
-              ◇ <Box component="span">{warehouseName}</Box>
             </Box>
           </Box>
           <Box sx={{ minWidth: 0 }}>

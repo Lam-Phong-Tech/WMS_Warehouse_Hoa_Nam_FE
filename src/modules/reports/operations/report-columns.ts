@@ -144,7 +144,7 @@ export function useReportColumnSort(columns: ReportColumn[], rows: Raw[]) {
  * (chart và bảng phải khớp nhau tuyệt đối, nên không thể để server cắt trang
  * cho bảng rồi chart lại tính trên tập khác).
  */
-export function useClientPagination<T>(rows: T[], defaultPerPage = 15) {
+export function useClientPagination<T>(rows: T[], defaultPerPage = 10) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(defaultPerPage);
 

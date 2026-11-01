@@ -407,7 +407,7 @@ export default function TabImportQuality() {
     skuKeyword,
   ]);
 
-  const pagination = useClientPagination(filteredBatches, 15);
+  const pagination = useClientPagination(filteredBatches, 10);
 
   const downloadErrorFile = async (batch: BatchRecord) => {
     setDownloading(batch.id);

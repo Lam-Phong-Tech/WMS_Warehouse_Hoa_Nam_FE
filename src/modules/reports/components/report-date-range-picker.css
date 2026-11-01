@@ -1,0 +1,11 @@
+.hn-report-date-range {
+  width: 100%;
+  min-width: 0;
+}
+
+.hn-report-date-range .hn-vuexy-date-field {
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 6px !important;
+  background: var(--ops-surface) !important;
+}

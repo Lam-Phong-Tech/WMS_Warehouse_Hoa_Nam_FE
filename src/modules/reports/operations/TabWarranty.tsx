@@ -540,7 +540,7 @@ export default function TabWarranty() {
     listKeyword,
   ]);
 
-  const casePagination = useClientPagination(filteredCases, 15);
+  const casePagination = useClientPagination(filteredCases, 10);
 
   const statusOptions = WARRANTY_STATUSES.map((value) => ({
     value,

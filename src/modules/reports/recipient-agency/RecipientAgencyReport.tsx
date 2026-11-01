@@ -1,11 +1,11 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import { Box, UiSelect, UiVuexyDateRangePicker } from "@/shared/ui";
+import { Box, UiSelect } from "@/shared/ui";
 import {
   CheckCircleOutlined,
-  DownOutlined,
   DownloadOutlined,
   FileTextOutlined,
   HistoryOutlined,
@@ -300,29 +300,14 @@ function DateRangeControl({
   onChange: (range: [Dayjs, Dayjs]) => void;
 }) {
   return (
-    <div className="rpt07-date-control">
-      <div className="rpt07-date-control__visual" aria-hidden="true">
-        <HistoryOutlined />
-        <span>
-          {range[0].format("DD/MM/YYYY")}–{range[1].format("DD/MM/YYYY")}
-        </span>
-        <DownOutlined />
-      </div>
-      <UiVuexyDateRangePicker
-        value={range}
-        disabled={disabled}
-        allowClear={false}
-        format="DD/MM/YYYY"
-        className="rpt07-date-proxy"
-        popupClassName="rpt07-date-popup"
-        aria-label={tUi("reports.packingLabel.dateRangeLabel")}
-        onChange={(value) => {
-          if (value?.[0] && value?.[1]) {
-            onChange([value[0], value[1]]);
-          }
-        }}
-      />
-    </div>
+    <ReportDateRangePicker
+      value={range}
+      disabled={disabled}
+      aria-label={tUi("reports.packingLabel.dateRangeLabel")}
+      onChange={(value) => {
+        if (value?.[0] && value?.[1]) onChange([value[0], value[1]]);
+      }}
+    />
   );
 }
 
@@ -1362,11 +1347,22 @@ export default function RecipientAgencyReport() {
         <RecipientReturnDialog
           recipientName={returnRow.name}
           events={returnRow.events}
-          reversalRows={Array.isArray(returnDocuments.data?.data) ? returnDocuments.data.data : []}
+          reversalRows={
+            Array.isArray(returnDocuments.data?.data)
+              ? returnDocuments.data.data
+              : []
+          }
           loading={returnDocuments.isPending}
-          error={returnDocuments.error instanceof Error ? returnDocuments.error : null}
+          error={
+            returnDocuments.error instanceof Error
+              ? returnDocuments.error
+              : null
+          }
           onRetry={() => void returnDocuments.refetch()}
-          onBack={() => { setDetailRow(returnRow); setReturnRow(null); }}
+          onBack={() => {
+            setDetailRow(returnRow);
+            setReturnRow(null);
+          }}
           onClose={() => setReturnRow(null)}
         />
       ) : null}

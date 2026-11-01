@@ -35,8 +35,8 @@ import {
 } from "./inventory-flow-api";
 import "./outbound-flow-report.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 
-const PAGE_SIZE = 5;
 const METADATA_PAGE_SIZE = 100;
 const METADATA_MAX_PAGES = 50;
 const COMPLETE_STATUSES = new Set(["POSTED", "COMPLETED", "VALIDATED"]);
@@ -141,6 +141,36 @@ function rangeIsInvalid(range: DateRange) {
 
 function Icon({ name }: { name: Parameters<typeof VuexyDemoIcon>[0]["name"] }) {
   return <VuexyDemoIcon name={name} />;
+}
+
+function CollapseButton({
+  title,
+  expanded,
+  controls,
+  onClick,
+}: {
+  title: string;
+  expanded: boolean;
+  controls: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="outbound-collapse-button"
+      aria-label={tUi(
+        expanded
+          ? "reports.stockReconcileReport.collapseSection"
+          : "reports.stockReconcileReport.expandSection",
+        { title },
+      )}
+      aria-expanded={expanded}
+      aria-controls={controls}
+      onClick={onClick}
+    >
+      <Icon name="chevron-down" />
+    </button>
+  );
 }
 
 type FilterOption = { value: string; label: string };
@@ -348,6 +378,8 @@ function KpiCard({
   value,
   note,
   empty,
+  expanded,
+  onToggle,
 }: {
   tone: "cyan" | "green" | "violet" | "amber";
   icon: Parameters<typeof VuexyDemoIcon>[0]["name"];
@@ -355,23 +387,44 @@ function KpiCard({
   value: number | string;
   note: string;
   empty: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
+  const contentId = `outbound-kpi-${tone}-content`;
   return (
-    <article className="outbound-kpi" data-tone={tone}>
+    <article
+      className="outbound-kpi"
+      data-tone={tone}
+      data-collapsed={!expanded}
+    >
       <div className="outbound-kpi__copy">
         <span>{title}</span>
-        <strong>
-          {empty
-            ? "—"
-            : typeof value === "number"
-              ? formatNumber(value)
-              : value}
-        </strong>
-        <small>{empty ? tUi("dashboard.lastUpdated.none") : note}</small>
+        <div
+          className="outbound-kpi__details"
+          id={contentId}
+          hidden={!expanded}
+        >
+          <strong>
+            {empty
+              ? "—"
+              : typeof value === "number"
+                ? formatNumber(value)
+                : value}
+          </strong>
+          <small>{empty ? tUi("dashboard.lastUpdated.none") : note}</small>
+        </div>
       </div>
-      <span className="outbound-kpi__icon" aria-hidden="true">
-        <Icon name={icon} />
-      </span>
+      <CollapseButton
+        title={title}
+        expanded={expanded}
+        controls={contentId}
+        onClick={onToggle}
+      />
+      {expanded ? (
+        <span className="outbound-kpi__icon" aria-hidden="true">
+          <Icon name={icon} />
+        </span>
+      ) : null}
     </article>
   );
 }
@@ -388,6 +441,17 @@ function KpiSkeleton() {
 }
 
 export default function OutboundFlowReport() {
+  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [chartOpen, setChartOpen] = useState(true);
+  const [progressOpen, setProgressOpen] = useState(true);
+  const [kpiOpen, setKpiOpen] = useState({
+    cyan: true,
+    green: true,
+    violet: true,
+    amber: true,
+  });
+  const toggleKpi = (tone: keyof typeof kpiOpen) =>
+    setKpiOpen((current) => ({ ...current, [tone]: !current[tone] }));
   const [draftRange, setDraftRange] = useState<DateRange>(initialRange);
   const [appliedRange, setAppliedRange] = useState<DateRange>(initialRange);
   const [draftRecipient, setDraftRecipient] = useState("");
@@ -396,7 +460,7 @@ export default function OutboundFlowReport() {
   const [appliedStatus, setAppliedStatus] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [viewDocumentId, setViewDocumentId] = useState<string | null>(null);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -663,14 +727,11 @@ export default function OutboundFlowReport() {
     });
   }, [filteredDocuments, outboundMetadataByDocument, query]);
 
-  const pageCount = Math.max(
-    1,
-    Math.ceil(searchedDocuments.length / PAGE_SIZE),
-  );
+  const pageCount = Math.max(1, Math.ceil(searchedDocuments.length / pageSize));
   const safePage = Math.min(page, pageCount);
   const pageDocuments = searchedDocuments.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE,
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
   );
   const reportEmpty =
     !updating && error == null && filteredDocuments.length === 0;
@@ -731,7 +792,6 @@ export default function OutboundFlowReport() {
     setAppliedStatus("");
     setQuery("");
     setPage(1);
-    setSelectedDocument(null);
     setShowSuccess(false);
     setActionNotice(null);
     sawUpdateLoading.current = false;
@@ -766,7 +826,6 @@ export default function OutboundFlowReport() {
     setAppliedStatus(pendingStatus);
     setQuery("");
     setPage(1);
-    setSelectedDocument(firstPending?.id ?? null);
     setActionNotice(
       firstPending
         ? tUi("updatedUi.text_02cd7d835950", { value0: String(pendingCount) })
@@ -779,7 +838,6 @@ export default function OutboundFlowReport() {
   };
 
   const openDocument = (document: FlowDocument) => {
-    setSelectedDocument(document.id);
     setViewDocumentId(document.id);
   };
 
@@ -878,53 +936,64 @@ export default function OutboundFlowReport() {
           <section
             className="outbound-reference-summary"
             aria-label={tUi("updatedUi.text_b11b59304497")}
+            data-collapsed={!summaryOpen}
           >
-            <h2>{tUi("updatedUi.text_b11b59304497")}</h2>
-            {updating ? (
-              <div
-                className="outbound-reference-summary__loading"
-                aria-hidden="true"
-              >
-                <i />
-                <i />
-                <i />
-                <i />
-                <i />
-              </div>
-            ) : (
-              <div className="outbound-reference-summary__grid">
-                <div className="outbound-reference-total">
-                  <strong>{formatNumber(filteredDocuments.length)}</strong>
-                  <span>{tUi("updatedUi.text_b825b57a8a53")}</span>
+            <div className="outbound-reference-summary__heading">
+              <h2>{tUi("updatedUi.text_b11b59304497")}</h2>
+              <CollapseButton
+                title={tUi("updatedUi.text_b11b59304497")}
+                expanded={summaryOpen}
+                controls="outbound-reference-summary-content"
+                onClick={() => setSummaryOpen((current) => !current)}
+              />
+            </div>
+            <div id="outbound-reference-summary-content" hidden={!summaryOpen}>
+              {updating ? (
+                <div
+                  className="outbound-reference-summary__loading"
+                  aria-hidden="true"
+                >
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
                 </div>
-                <div className="outbound-reference-summary__stats">
-                  <div data-tone="draft">
-                    <i />
-                    <strong>{progress.pending}</strong>
-                    <span>{tUi("outbound.detail.labelStatusDraft")}</span>
+              ) : (
+                <div className="outbound-reference-summary__grid">
+                  <div className="outbound-reference-total">
+                    <strong>{formatNumber(filteredDocuments.length)}</strong>
+                    <span>{tUi("updatedUi.text_b825b57a8a53")}</span>
                   </div>
-                  <div data-tone="scanning">
-                    <i />
-                    <strong>{progress.processing}</strong>
-                    <span>{tUi("updatedUi.text_71e1f4001cc2")}</span>
-                  </div>
-                  <div data-tone="posted">
-                    <i />
-                    <strong>{progress.complete}</strong>
-                    <span>{tUi("reports.traceability.issued")}</span>
-                  </div>
-                  <div data-tone="cancelled">
-                    <i />
-                    <strong>{progress.cancelled}</strong>
-                    <span>{tUi("warranty.status.cancelled")}</span>
+                  <div className="outbound-reference-summary__stats">
+                    <div data-tone="draft">
+                      <i />
+                      <strong>{progress.pending}</strong>
+                      <span>{tUi("outbound.detail.labelStatusDraft")}</span>
+                    </div>
+                    <div data-tone="scanning">
+                      <i />
+                      <strong>{progress.processing}</strong>
+                      <span>{tUi("updatedUi.text_71e1f4001cc2")}</span>
+                    </div>
+                    <div data-tone="posted">
+                      <i />
+                      <strong>{progress.complete}</strong>
+                      <span>{tUi("reports.traceability.issued")}</span>
+                    </div>
+                    <div data-tone="cancelled">
+                      <i />
+                      <strong>{progress.cancelled}</strong>
+                      <span>{tUi("warranty.status.cancelled")}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            <aside className="outbound-scanner-banner" role="status">
-              <Icon name="info" />
-              <span>{tUi("updatedUi.text_ef700a3a2f41")}</span>
-            </aside>
+              )}
+              <aside className="outbound-scanner-banner" role="status">
+                <Icon name="info" />
+                <span>{tUi("updatedUi.text_ef700a3a2f41")}</span>
+              </aside>
+            </div>
           </section>
 
           <section
@@ -947,6 +1016,8 @@ export default function OutboundFlowReport() {
                   value={issuedQuantity}
                   note="Trong kỳ đã chọn"
                   empty={reportEmpty}
+                  expanded={kpiOpen.cyan}
+                  onToggle={() => toggleKpi("cyan")}
                 />
                 <KpiCard
                   tone="green"
@@ -965,6 +1036,8 @@ export default function OutboundFlowReport() {
                       : tUi("dashboard.lastUpdated.none")
                   }
                   empty={reportEmpty}
+                  expanded={kpiOpen.green}
+                  onToggle={() => toggleKpi("green")}
                 />
                 <KpiCard
                   tone="violet"
@@ -973,6 +1046,8 @@ export default function OutboundFlowReport() {
                   value={recipientCount}
                   note="Có phát sinh xuất"
                   empty={reportEmpty}
+                  expanded={kpiOpen.violet}
+                  onToggle={() => toggleKpi("violet")}
                 />
                 <KpiCard
                   tone="amber"
@@ -984,161 +1059,196 @@ export default function OutboundFlowReport() {
                     value1: String(progress.processing),
                   })}
                   empty={reportEmpty}
+                  expanded={kpiOpen.amber}
+                  onToggle={() => toggleKpi("amber")}
                 />
               </>
             )}
           </section>
 
           <section className="outbound-analytics-grid">
-            <article className="outbound-panel outbound-chart-panel">
+            <article
+              className="outbound-panel outbound-chart-panel"
+              data-collapsed={!chartOpen}
+            >
               <div className="outbound-panel-heading">
                 <div>
                   <h2>{tUi("updatedUi.text_25b7ff634d6b")}</h2>
                   <p>{tUi("updatedUi.text_aa4934a59d93")}</p>
                 </div>
-                <span className="outbound-panel-total">
-                  <strong>
-                    {tUi("updatedUi.text_09caee89904d") + " "}
-                    {formatNumber(issuedQuantity)}
-                  </strong>
-                  {" " + tUi("updatedUi.text_9bfcaa70b19e")}
-                </span>
-              </div>
-              {updating ? (
-                <div className="outbound-chart-skeleton" aria-hidden="true">
-                  {Array.from({ length: 7 }, (_, index) => (
-                    <i key={index} />
-                  ))}
-                </div>
-              ) : reportEmpty ? (
-                <div className="outbound-empty-chart">
-                  <span>
-                    <Icon name="chart-column-big" />
+                <div className="outbound-panel-heading__actions">
+                  <span className="outbound-panel-total" hidden={!chartOpen}>
+                    <strong>
+                      {tUi("updatedUi.text_09caee89904d") + " "}
+                      {formatNumber(issuedQuantity)}
+                    </strong>
+                    {" " + tUi("updatedUi.text_9bfcaa70b19e")}
                   </span>
-                  <strong>{tUi("updatedUi.text_3c74df9b8416")}</strong>
-                  <small>{tUi("updatedUi.text_f6125c738589")}</small>
+                  <CollapseButton
+                    title={tUi("updatedUi.text_25b7ff634d6b")}
+                    expanded={chartOpen}
+                    controls="outbound-chart-content"
+                    onClick={() => setChartOpen((current) => !current)}
+                  />
                 </div>
-              ) : (
-                <div
-                  className="outbound-bar-chart"
-                  role="img"
-                  aria-label={tUi("updatedUi.text_518e399f02c3")}
-                >
-                  <div className="outbound-chart-y-axis" aria-hidden="true">
-                    <span>{formatNumber(chartCeiling)}</span>
-                    <span>{formatNumber(chartCeiling * 0.75)}</span>
-                    <span>{formatNumber(chartCeiling * 0.5)}</span>
-                    <span>{formatNumber(chartCeiling * 0.25)}</span>
-                    <span>0</span>
+              </div>
+              <div id="outbound-chart-content" hidden={!chartOpen}>
+                {updating ? (
+                  <div className="outbound-chart-skeleton" aria-hidden="true">
+                    {Array.from({ length: 7 }, (_, index) => (
+                      <i key={index} />
+                    ))}
                   </div>
-                  <div className="outbound-chart-scroll">
-                    <div className="outbound-chart-plot">
-                      <div
-                        className="outbound-chart-gridlines"
-                        aria-hidden="true"
-                      >
-                        <i />
-                        <i />
-                        <i />
-                        <i />
-                        <i />
-                      </div>
-                      <div className="outbound-chart-bars">
-                        {chartPoints.map((point) => (
-                          <div
-                            className="outbound-chart-bar"
-                            key={point.date}
-                            title={`${formatDay(point.date)}: ${formatNumber(point.value)}`}
-                          >
-                            <span>
-                              {point.value > 0 ? formatNumber(point.value) : ""}
-                            </span>
-                            <i
-                              style={{
-                                height: `${Math.max(2, (point.value / chartCeiling) * 100)}%`,
-                              }}
-                            />
-                            <small>{dayjs(point.date).format("DD/MM")}</small>
-                          </div>
-                        ))}
+                ) : reportEmpty ? (
+                  <div className="outbound-empty-chart">
+                    <span>
+                      <Icon name="chart-column-big" />
+                    </span>
+                    <strong>{tUi("updatedUi.text_3c74df9b8416")}</strong>
+                    <small>{tUi("updatedUi.text_f6125c738589")}</small>
+                  </div>
+                ) : (
+                  <div
+                    className="outbound-bar-chart"
+                    role="img"
+                    aria-label={tUi("updatedUi.text_518e399f02c3")}
+                  >
+                    <div className="outbound-chart-y-axis" aria-hidden="true">
+                      <span>{formatNumber(chartCeiling)}</span>
+                      <span>{formatNumber(chartCeiling * 0.75)}</span>
+                      <span>{formatNumber(chartCeiling * 0.5)}</span>
+                      <span>{formatNumber(chartCeiling * 0.25)}</span>
+                      <span>0</span>
+                    </div>
+                    <div className="outbound-chart-scroll">
+                      <div className="outbound-chart-plot">
+                        <div
+                          className="outbound-chart-gridlines"
+                          aria-hidden="true"
+                        >
+                          <i />
+                          <i />
+                          <i />
+                          <i />
+                          <i />
+                        </div>
+                        <div className="outbound-chart-bars">
+                          {chartPoints.map((point) => (
+                            <div
+                              className="outbound-chart-bar"
+                              key={point.date}
+                              title={`${formatDay(point.date)}: ${formatNumber(point.value)}`}
+                            >
+                              <span>
+                                {point.value > 0
+                                  ? formatNumber(point.value)
+                                  : ""}
+                              </span>
+                              <i
+                                style={{
+                                  height: `${Math.max(2, (point.value / chartCeiling) * 100)}%`,
+                                }}
+                              />
+                              <small>{dayjs(point.date).format("DD/MM")}</small>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </article>
 
-            <article className="outbound-panel outbound-progress-panel">
+            <article
+              className="outbound-panel outbound-progress-panel"
+              data-collapsed={!progressOpen}
+            >
               <div className="outbound-panel-heading">
                 <div>
                   <h2>{tUi("updatedUi.text_eb1594670cb4")}</h2>
                   <p>{tUi("updatedUi.text_410ce7ff86bb")}</p>
                 </div>
+                <CollapseButton
+                  title={tUi("updatedUi.text_eb1594670cb4")}
+                  expanded={progressOpen}
+                  controls="outbound-progress-content"
+                  onClick={() => setProgressOpen((current) => !current)}
+                />
               </div>
-              {updating ? (
-                <div className="outbound-progress-skeleton" aria-hidden="true">
-                  <span className="outbound-skeleton outbound-skeleton--donut" />
-                  <span>
-                    <i />
-                    <i />
-                    <i />
-                  </span>
-                </div>
-              ) : reportEmpty ? (
-                <div className="outbound-empty-chart outbound-empty-chart--compact">
+              <div
+                className="outbound-progress-panel__body"
+                id="outbound-progress-content"
+                hidden={!progressOpen}
+              >
+                {updating ? (
+                  <div
+                    className="outbound-progress-skeleton"
+                    aria-hidden="true"
+                  >
+                    <span className="outbound-skeleton outbound-skeleton--donut" />
+                    <span>
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  </div>
+                ) : reportEmpty ? (
+                  <div className="outbound-empty-chart outbound-empty-chart--compact">
+                    <span>
+                      <Icon name="file-clock" />
+                    </span>
+                    <strong>{tUi("updatedUi.text_fea159fea064")}</strong>
+                    <small>{tUi("updatedUi.text_c0a62bb8d645")}</small>
+                  </div>
+                ) : (
+                  <div className="outbound-progress-content">
+                    <div className="outbound-donut" style={donutStyle}>
+                      <span>
+                        <strong>{formatNumber(totalProgress)}</strong>
+                        <small>{tUi("updatedUi.text_2d173f0e4679")}</small>
+                      </span>
+                    </div>
+                    <ul className="outbound-progress-legend">
+                      <li data-tone="complete">
+                        <span>{tUi("iam.permissionAction.post")}</span>
+                        <strong>{progress.complete}</strong>
+                      </li>
+                      <li data-tone="processing">
+                        <span>{tUi("updatedUi.text_989a7c2159f4")}</span>
+                        <strong>{progress.processing}</strong>
+                      </li>
+                      <li data-tone="pending">
+                        <span>{tUi("dashboard.snapshot.statePending")}</span>
+                        <strong>{progress.pending}</strong>
+                      </li>
+                      <li data-tone="cancelled">
+                        <span>{tUi("warranty.status.cancelled")}</span>
+                        <strong>{progress.cancelled}</strong>
+                      </li>
+                    </ul>
+                  </div>
+                )}
+                <div className="outbound-pending-callout">
                   <span>
                     <Icon name="file-clock" />
                   </span>
-                  <strong>{tUi("updatedUi.text_fea159fea064")}</strong>
-                  <small>{tUi("updatedUi.text_c0a62bb8d645")}</small>
-                </div>
-              ) : (
-                <div className="outbound-progress-content">
-                  <div className="outbound-donut" style={donutStyle}>
-                    <span>
-                      <strong>{formatNumber(totalProgress)}</strong>
-                      <small>{tUi("updatedUi.text_2d173f0e4679")}</small>
-                    </span>
+                  <div>
+                    <strong>
+                      {pendingCount}
+                      {" " + tUi("updatedUi.text_e62d651d4a57")}
+                    </strong>
+                    <small>{tUi("updatedUi.text_7f30733ab451")}</small>
                   </div>
-                  <ul className="outbound-progress-legend">
-                    <li data-tone="complete">
-                      <span>{tUi("iam.permissionAction.post")}</span>
-                      <strong>{progress.complete}</strong>
-                    </li>
-                    <li data-tone="processing">
-                      <span>{tUi("updatedUi.text_989a7c2159f4")}</span>
-                      <strong>{progress.processing}</strong>
-                    </li>
-                    <li data-tone="pending">
-                      <span>{tUi("dashboard.snapshot.statePending")}</span>
-                      <strong>{progress.pending}</strong>
-                    </li>
-                    <li data-tone="cancelled">
-                      <span>{tUi("warranty.status.cancelled")}</span>
-                      <strong>{progress.cancelled}</strong>
-                    </li>
-                  </ul>
+                  <button
+                    type="button"
+                    onClick={scrollToPending}
+                    disabled={reportEmpty || updating}
+                  >
+                    {tUi("updatedUi.text_e07402d0ac93") + " "}
+                    <Icon name="arrow-right" />
+                  </button>
                 </div>
-              )}
-              <div className="outbound-pending-callout">
-                <span>
-                  <Icon name="file-clock" />
-                </span>
-                <div>
-                  <strong>
-                    {pendingCount}
-                    {" " + tUi("updatedUi.text_e62d651d4a57")}
-                  </strong>
-                  <small>{tUi("updatedUi.text_7f30733ab451")}</small>
-                </div>
-                <button
-                  type="button"
-                  onClick={scrollToPending}
-                  disabled={reportEmpty || updating}
-                >
-                  {tUi("updatedUi.text_e07402d0ac93") + " "}
-                  <Icon name="arrow-right" />
-                </button>
               </div>
             </article>
           </section>
@@ -1311,26 +1421,13 @@ export default function OutboundFlowReport() {
                   <tbody>
                     {pageDocuments.map((document) => {
                       const tone = statusTone(document.status);
-                      const selected = selectedDocument === document.id;
                       const metadata =
                         outboundMetadataByDocument.get(document.id) ??
                         outboundMetadataByDocument.get(document.document_no);
                       const requestNo = metadata?.requestNo?.trim() || "—";
                       const note = metadata?.note?.trim() || "—";
                       return (
-                        <tr
-                          key={document.id}
-                          tabIndex={0}
-                          aria-selected={selected}
-                          className={selected ? "is-selected" : undefined}
-                          onClick={() => setSelectedDocument(document.id)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              setSelectedDocument(document.id);
-                            }
-                          }}
-                        >
+                        <tr key={document.id}>
                           <td
                             data-label={tUi("warranty.componentList.colCode")}
                           >
@@ -1413,10 +1510,7 @@ export default function OutboundFlowReport() {
                                 title={tUi("updatedUi.text_f530867d0676", {
                                   value0: String(document.document_no),
                                 })}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  openDocument(document);
-                                }}
+                                onClick={() => openDocument(document)}
                               >
                                 {normalizeStatus(document.status) === "POSTED"
                                   ? "Xem"
@@ -1433,22 +1527,41 @@ export default function OutboundFlowReport() {
             )}
 
             <footer className="outbound-table-footer hn-report-pagination-footer">
-              <span>
-                {searchedDocuments.length === 0
-                  ? tUi("updatedUi.text_8f31a3be9ea1", {
-                      value0: String(filteredDocuments.length),
-                    })
-                  : tUi("updatedUi.text_c9bbf7bb2223", {
-                      value0: String((safePage - 1) * PAGE_SIZE + 1),
-                      value1: String(
-                        Math.min(
-                          safePage * PAGE_SIZE,
-                          searchedDocuments.length,
+              <div className="outbound-table-summary">
+                <span>
+                  {searchedDocuments.length === 0
+                    ? tUi("updatedUi.text_8f31a3be9ea1", {
+                        value0: String(filteredDocuments.length),
+                      })
+                    : tUi("updatedUi.text_c9bbf7bb2223", {
+                        value0: String((safePage - 1) * pageSize + 1),
+                        value1: String(
+                          Math.min(
+                            safePage * pageSize,
+                            searchedDocuments.length,
+                          ),
                         ),
-                      ),
-                      value2: String(searchedDocuments.length),
-                    })}
-              </span>
+                        value2: String(searchedDocuments.length),
+                      })}
+                </span>
+                <label className="outbound-page-size">
+                  <select
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
+                    aria-label={tUi("shared.table.rowsPerPageAria")}
+                  >
+                    {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>
+                        {tUi("shared.table.perPage", { size: String(size) })}
+                      </option>
+                    ))}
+                  </select>
+                  <Icon name="chevron-down" />
+                </label>
+              </div>
               <div className="outbound-pagination hn-report-pagination">
                 <button
                   type="button"

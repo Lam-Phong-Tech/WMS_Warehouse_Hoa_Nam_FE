@@ -154,7 +154,7 @@
   background: #f1faff;
 }
 #rpt08-history-report tbody tr:focus-visible,
-#rpt08-history-report tbody tr:focus-within {
+#rpt08-history-report tbody tr:has(:focus-visible) {
   outline: 0;
   background: #edf8fc;
   box-shadow: inset 3px 0 0 var(--rpt08-ocean);
@@ -386,10 +386,9 @@
 }
 #rpt08-history-report .rpt08-loading-filter__grid {
   display: grid;
-  grid-template-columns: minmax(275px, 1.24fr) minmax(220px, 1fr) minmax(
-      210px,
-      0.98fr
-    ) minmax(180px, 0.84fr) 176px 70px;
+  grid-template-columns:
+    minmax(275px, 1.24fr) minmax(220px, 1fr) minmax(210px, 0.98fr)
+    minmax(180px, 0.84fr) 176px 70px;
   gap: 16px;
   align-items: end;
 }

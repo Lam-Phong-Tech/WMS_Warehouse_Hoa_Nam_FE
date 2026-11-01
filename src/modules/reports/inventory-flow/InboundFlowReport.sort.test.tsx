@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test/test-utils";
 import type { FlowDocument, InventoryFlowSnapshot } from "./inventory-flow-api";
 
-const documents: FlowDocument[] = Array.from({ length: 6 }, (_, index) => ({
+const documents: FlowDocument[] = Array.from({ length: 11 }, (_, index) => ({
   id: `doc-${index + 1}`,
   document_no: `PN-${String(index + 1).padStart(4, "0")}`,
   doc_type: "INBOUND",
@@ -63,7 +63,7 @@ describe("RPT-01 · sắp xếp ngày nhập", () => {
     });
 
     fireEvent.click(sortButton);
-    expect(firstRow()).toHaveTextContent("PN-0006");
+    expect(firstRow()).toHaveTextContent("PN-0011");
     expect(sortButton.closest("th")).toHaveAttribute("aria-sort", "descending");
 
     fireEvent.click(sortButton);
@@ -71,7 +71,7 @@ describe("RPT-01 · sắp xếp ngày nhập", () => {
     expect(sortButton.closest("th")).toHaveAttribute("aria-sort", "ascending");
   });
 
-  it("chọn 5, 8, 10 hoặc 15 phiếu mỗi trang và quay về trang đầu", () => {
+  it("chọn 10, 20 hoặc 50 phiếu mỗi trang và quay về trang đầu", () => {
     renderWithProviders(<InboundFlowReport />, [
       "/reports/inventory-flow?screen=RPT-01",
     ]);
@@ -87,20 +87,20 @@ describe("RPT-01 · sắp xếp ngày nhập", () => {
       within(pageSize)
         .getAllByRole("option")
         .map((option) => option.getAttribute("value")),
-    ).toEqual(["5", "8", "10", "15"]);
-    expect(rows()).toHaveLength(5);
+    ).toEqual(["10", "20", "50"]);
+    expect(rows()).toHaveLength(10);
 
     fireEvent.click(screen.getByRole("button", { name: "2" }));
     expect(rows()).toHaveLength(1);
 
-    for (const size of [8, 10, 15]) {
+    for (const size of [20, 50]) {
       fireEvent.change(pageSize, { target: { value: String(size) } });
-      expect(rows()).toHaveLength(6);
+      expect(rows()).toHaveLength(11);
       expect(rows()[0]).toHaveTextContent("PN-0001");
     }
 
-    fireEvent.change(pageSize, { target: { value: "5" } });
-    expect(rows()).toHaveLength(5);
+    fireEvent.change(pageSize, { target: { value: "10" } });
+    expect(rows()).toHaveLength(10);
     expect(rows()[0]).toHaveTextContent("PN-0001");
   });
 });

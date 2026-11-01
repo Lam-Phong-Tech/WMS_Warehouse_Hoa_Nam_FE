@@ -92,6 +92,9 @@ export const MESSAGES_VI = {
     snapshot: {
       userFallback: "bạn",
       greeting: "Chào buổi sáng, {name}!",
+      greetingNoon: "Chào buổi trưa, {name}!",
+      greetingAfternoon: "Chào buổi chiều, {name}!",
+      greetingEvening: "Chào buổi tối, {name}!",
       greetingSub: "Cùng quản lý kho hiệu quả hơn mỗi ngày.",
       warehouseOpenAria: "Mở thông tin kho đang xem",
       warehouseActive: "Đang hoạt động",

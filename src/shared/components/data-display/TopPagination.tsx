@@ -1,6 +1,7 @@
 import { UiText } from "@/shared/ui";
 import { UiPagination } from "@/shared/ui/components/UiPagination";
 import { useT } from "@/shared/i18n/useT";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 
 export interface TopPaginationProps {
   /** Tổng số bản ghi */
@@ -35,7 +36,7 @@ export function TopPagination({
   current,
   pageSize,
   unitName,
-  pageSizeOptions = [10, 20, 50],
+  pageSizeOptions = [...TABLE_PAGE_SIZE_OPTIONS],
   onChange,
   placement = "top",
   showSizeChanger = true,

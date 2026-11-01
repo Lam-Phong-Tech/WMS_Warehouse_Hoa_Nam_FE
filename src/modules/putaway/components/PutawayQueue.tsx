@@ -8,6 +8,7 @@ import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { ActionDropdown } from "@/shared/components/feedback/ActionDropdown";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import type { PutawayTask } from "../services/putawayService";
 
 const SORT = {
@@ -55,7 +56,7 @@ export function PutawayQueue(props: Props) {
     receipt: "",
   });
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(7);
+  const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const baseRows = useMemo(
     () =>
@@ -594,9 +595,9 @@ export function PutawayQueue(props: Props) {
                 setPage(1);
               }}
             >
-              {[7, 10, 20, 50].map((size) => (
+              {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
                 <option key={size} value={size}>
-                  {size}
+                  {t("shared.table.perPage", { size })}
                 </option>
               ))}
             </select>

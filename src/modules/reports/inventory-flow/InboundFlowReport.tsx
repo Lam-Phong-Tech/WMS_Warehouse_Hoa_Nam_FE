@@ -10,7 +10,8 @@ import {
   type CSSProperties,
 } from "react";
 import dayjs from "dayjs";
-import { UiVuexyDateField, VuexyDemoIcon } from "@/shared/ui";
+import { VuexyDemoIcon } from "@/shared/ui";
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { InboundReportDetail } from "./InboundReportDetail";
 import {
@@ -27,8 +28,8 @@ import {
 } from "./inventory-flow-api";
 import "./inbound-flow-report.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 
-const PAGE_SIZE_OPTIONS = [5, 8, 10, 15] as const;
 const COMPLETE_STATUSES = new Set(["POSTED", "COMPLETED", "VALIDATED"]);
 const PROCESSING_STATUSES = new Set([
   "SCANNING",
@@ -345,9 +346,8 @@ export default function InboundFlowReport() {
   const [appliedStatus, setAppliedStatus] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
+  const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [dateSort, setDateSort] = useState<"newest" | "oldest" | null>(null);
-  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
   const [viewDocument, setViewDocument] = useState<FlowDocument | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
@@ -648,7 +648,6 @@ export default function InboundFlowReport() {
     setAppliedStatus("");
     setQuery("");
     setPage(1);
-    setSelectedDocument(null);
     setShowSuccess(false);
     setActionNotice(null);
     sawUpdateLoading.current = false;
@@ -698,7 +697,6 @@ export default function InboundFlowReport() {
     setAppliedStatus(pendingStatus);
     setQuery("");
     setPage(1);
-    setSelectedDocument(firstPending?.id ?? null);
     setActionNotice(
       firstPending
         ? tUi("updatedUi.text_02cd7d835950", { value0: String(pendingCount) })
@@ -711,7 +709,6 @@ export default function InboundFlowReport() {
   };
 
   const openDocument = (document: FlowDocument) => {
-    setSelectedDocument(document.id);
     setViewDocument(document);
   };
 
@@ -821,42 +818,21 @@ export default function InboundFlowReport() {
             role="group"
             aria-label={tUi("reports.packingLabel.dateRangeLabel")}
           >
-            <div className="inbound-filter-field inbound-date-field">
-              <span>{tUi("shared.datePicker.fromDate")}</span>
-              <UiVuexyDateField
-                field="from"
-                value={
-                  draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null
-                }
-                onChange={(value) =>
-                  setDraftRange((current) => ({
-                    ...current,
-                    from: value?.format(ISO_DATE) ?? "",
-                  }))
-                }
-                maxDate={draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null}
-                aria-label={tUi("shared.datePicker.fromDate")}
-                disabled={updating}
-              />
-            </div>
-            <div className="inbound-filter-field inbound-date-field">
-              <span>{tUi("shared.datePicker.toDate")}</span>
-              <UiVuexyDateField
-                field="to"
-                value={draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null}
-                onChange={(value) =>
-                  setDraftRange((current) => ({
-                    ...current,
-                    to: value?.format(ISO_DATE) ?? "",
-                  }))
-                }
-                minDate={
-                  draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null
-                }
-                aria-label={tUi("shared.datePicker.toDate")}
-                disabled={updating}
-              />
-            </div>
+            <span>{tUi("reports.packingLabel.dateRangeLabel")}</span>
+            <ReportDateRangePicker
+              value={[
+                draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null,
+                draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null,
+              ]}
+              onChange={(value) =>
+                setDraftRange({
+                  from: value?.[0]?.format(ISO_DATE) ?? "",
+                  to: value?.[1]?.format(ISO_DATE) ?? "",
+                })
+              }
+              aria-label={tUi("reports.packingLabel.dateRangeLabel")}
+              disabled={updating}
+            />
             {invalidRange ? (
               <small>{tUi("updatedUi.text_c88aba88c1c8")}</small>
             ) : null}
@@ -1313,21 +1289,8 @@ export default function InboundFlowReport() {
                   <tbody>
                     {pageDocuments.map((document) => {
                       const tone = statusTone(document.status);
-                      const selected = selectedDocument === document.id;
                       return (
-                        <tr
-                          key={document.id}
-                          tabIndex={0}
-                          aria-selected={selected}
-                          className={selected ? "is-selected" : undefined}
-                          onClick={() => setSelectedDocument(document.id)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              setSelectedDocument(document.id);
-                            }
-                          }}
-                        >
+                        <tr key={document.id}>
                           <td
                             data-label={tUi("warranty.componentList.colCode")}
                           >
@@ -1384,10 +1347,7 @@ export default function InboundFlowReport() {
                                 title={tUi("updatedUi.text_f530867d0676", {
                                   value0: String(document.document_no),
                                 })}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  openDocument(document);
-                                }}
+                                onClick={() => openDocument(document)}
                               >
                                 Xem
                               </RowActionButton>
@@ -1428,7 +1388,7 @@ export default function InboundFlowReport() {
                     }}
                     aria-label={tUi("shared.table.rowsPerPageAria")}
                   >
-                    {PAGE_SIZE_OPTIONS.map((size) => (
+                    {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
                       <option key={size} value={size}>
                         {tUi("shared.table.perPage", { size: String(size) })}
                       </option>

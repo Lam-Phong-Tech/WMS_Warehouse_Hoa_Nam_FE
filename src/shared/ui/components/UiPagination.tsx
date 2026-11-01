@@ -10,6 +10,7 @@ import Select from "@mui/material/Select";
 import { SPACING } from "@/shared/ui/tokens";
 import { UiText } from "./UiText";
 import { useT } from "@/shared/i18n/useT";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 
 export interface UiPaginationProps {
   /** Trang hiện tại (bắt đầu từ 1). */
@@ -27,15 +28,13 @@ export interface UiPaginationProps {
   disabled?: boolean;
 }
 
-const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-
 export function UiPagination({
   page,
   pageSize,
   total,
   onPageChange,
   onPageSizeChange,
-  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  pageSizeOptions = [...TABLE_PAGE_SIZE_OPTIONS],
   showTotal = true,
   disabled = false,
 }: UiPaginationProps) {

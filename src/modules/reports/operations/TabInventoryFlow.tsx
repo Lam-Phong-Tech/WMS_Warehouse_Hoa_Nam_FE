@@ -96,12 +96,7 @@ import { tStatic as tUi } from "@/shared/i18n/useT";
 
 /** Mỗi bậc waterfall ứng với đúng một movement_type để bấm vào là ra nguồn số. */
 type WaterfallKey =
-  | "OPENING"
-  | "RECEIPT"
-  | "ISSUE"
-  | "COMPONENT_ISSUE"
-  | "REVERSAL"
-  | "CLOSING";
+  "OPENING" | "RECEIPT" | "ISSUE" | "COMPONENT_ISSUE" | "REVERSAL" | "CLOSING";
 
 const waterfallSteps = (
   t: TranslateFn,
@@ -703,7 +698,7 @@ export default function TabInventoryFlow() {
     users,
   ]);
 
-  const docPagination = useClientPagination(filteredDocuments, 15);
+  const docPagination = useClientPagination(filteredDocuments, 10);
 
   const documentColumns = useMemo<ReportColumn[]>(
     () => [

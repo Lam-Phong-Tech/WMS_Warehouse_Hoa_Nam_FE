@@ -39,7 +39,6 @@ export function ReportPaginationBar({
         total={total}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
-        pageSizeOptions={[10, 15, 25, 50, 100]}
       />
     </Box>
   );

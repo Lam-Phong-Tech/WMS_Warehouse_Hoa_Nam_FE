@@ -500,8 +500,7 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
 .hn-outbound-table tbody tr {
   transition: background-color 0.15s ease;
 }
-.hn-outbound-table tbody tr:hover,
-.hn-outbound-table tbody tr:focus-within {
+.hn-outbound-table tbody tr:hover {
   background: color-mix(in srgb, var(--out-primary) 5%, var(--out-surface));
 }
 .hn-outbound-table .hn-sortable-th {

@@ -97,10 +97,13 @@ describe("PTW-00 queue interactions", () => {
 
   it("sorts the full dataset before paging and resets/clamps the current page", async () => {
     const user = userEvent.setup();
-    const rows = Array.from({ length: 9 }, (_, index) => task(9 - index));
+    const rows = Array.from({ length: 12 }, (_, index) => task(12 - index));
     const input = props(rows);
     const rendered = renderWithProviders(<PutawayQueue {...input} />);
     expect(visibleBoxes()).toEqual([
+      "BOX-12",
+      "BOX-11",
+      "BOX-10",
       "BOX-09",
       "BOX-08",
       "BOX-07",
@@ -120,20 +123,23 @@ describe("PTW-00 queue interactions", () => {
       "BOX-05",
       "BOX-06",
       "BOX-07",
+      "BOX-08",
+      "BOX-09",
+      "BOX-10",
     ]);
     await user.click(screen.getByRole("button", { name: "Go to page 2" }));
-    expect(visibleBoxes()).toEqual(["BOX-08", "BOX-09"]);
-    expect(screen.getByText("Hiển thị 8–9 / 9 BOX")).toBeInTheDocument();
+    expect(visibleBoxes()).toEqual(["BOX-11", "BOX-12"]);
+    expect(screen.getByText("Hiển thị 11–12 / 12 BOX")).toBeInTheDocument();
     rendered.rerender(<PutawayQueue {...input} tasks={[task(1), task(2)]} />);
     expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
     expect(screen.getByText("Hiển thị 1–2 / 2 BOX")).toBeInTheDocument();
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
-      "10",
+      "20",
     );
     expect(
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
-    ).toHaveValue("10");
+    ).toHaveValue("20");
   });
 
   it("opens the exact BOX and creates from a single selection without a bulk mutation", async () => {

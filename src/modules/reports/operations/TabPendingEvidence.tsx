@@ -65,7 +65,7 @@ export default function TabPendingEvidence() {
   });
 
   const rows = useMemo(() => query.data ?? [], [query.data]);
-  const pagination = useClientPagination(rows, 15);
+  const pagination = useClientPagination(rows, 10);
 
   const counts = useMemo(
     () => ({

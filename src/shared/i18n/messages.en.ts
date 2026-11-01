@@ -90,6 +90,9 @@ export const MESSAGES_EN: MessageTree = {
     snapshot: {
       userFallback: "you",
       greeting: "Good morning, {name}!",
+      greetingNoon: "Good afternoon, {name}!",
+      greetingAfternoon: "Good afternoon, {name}!",
+      greetingEvening: "Good evening, {name}!",
       greetingSub: "Keep warehouse operations efficient every day.",
       warehouseOpenAria: "Open the current warehouse information",
       warehouseActive: "Active",

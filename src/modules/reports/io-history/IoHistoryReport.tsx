@@ -1,3 +1,4 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 /** RPT-08: SystemHNWeb presentation over the existing document-history snapshot. */
@@ -49,7 +50,7 @@ import {
   IoHistoryTableState,
   type IoHistoryFeedbackState,
 } from "./IoHistoryFeedback";
-import { UiDialog, UiSelect, UiVuexyDateRangePicker } from "@/shared/ui";
+import { UiDialog, UiSelect } from "@/shared/ui";
 import { useTabView } from "@/shared/ui/use-tab-view";
 import { useT } from "@/shared/i18n/useT";
 import { useReducedMotion } from "@/shared/components/motion/useReducedMotion";
@@ -659,7 +660,7 @@ export default function IoHistoryReport() {
                         <label>
                           {tUi("reports.packingLabel.dateRangeLabel")}
                         </label>
-                        <UiVuexyDateRangePicker
+                        <ReportDateRangePicker
                           aria-label={t("reports.ioHistory.fieldDateRange")}
                           value={[dayjs(range.from), dayjs(range.to)]}
                           format="DD/MM/YYYY"

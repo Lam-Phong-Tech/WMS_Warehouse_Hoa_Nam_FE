@@ -1,3 +1,4 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -9,7 +10,7 @@ import {
 } from "@/shared/constants/wms-permissions";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { UiSelect, UiVuexyDateRangePicker, VuexyDemoIcon } from "@/shared/ui";
+import { UiSelect, VuexyDemoIcon } from "@/shared/ui";
 import {
   ISO_DATE,
   sumRows,
@@ -972,7 +973,7 @@ export default function StockReconcileReport() {
               className={`rpt02-field rpt02-field--date${invalidRange ? " is-invalid" : ""}`}
             >
               <span>{tUi("reports.packingLabel.dateRangeLabel")}</span>
-              <UiVuexyDateRangePicker
+              <ReportDateRangePicker
                 className="rpt02-date-range"
                 popupClassName="rpt02-date-popup"
                 value={datePickerValue(draft)}

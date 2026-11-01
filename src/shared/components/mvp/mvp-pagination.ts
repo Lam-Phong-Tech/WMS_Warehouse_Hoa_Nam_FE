@@ -1,8 +1,9 @@
 import type { ApiMeta } from "@/shared/types/api-response";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 
 // Tách khỏi MvpListPagination.tsx: file component chỉ được export component
 // (react-refresh/only-export-components).
-export const MVP_PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
+export const MVP_PAGE_SIZE_OPTIONS = TABLE_PAGE_SIZE_OPTIONS;
 
 export function resolveApiPagination(
   meta: ApiMeta | Record<string, unknown> | undefined,

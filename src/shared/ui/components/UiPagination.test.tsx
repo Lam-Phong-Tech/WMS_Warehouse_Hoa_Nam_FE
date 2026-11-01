@@ -57,6 +57,9 @@ describe("UiPagination", () => {
     fireEvent.mouseDown(
       screen.getByRole("combobox", { name: "Số bản ghi mỗi trang" }),
     );
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["10 / trang", "20 / trang", "50 / trang"]);
     fireEvent.click(screen.getByRole("option", { name: "20 / trang" }));
     expect(onPageSizeChange).toHaveBeenCalledWith(20);
   });

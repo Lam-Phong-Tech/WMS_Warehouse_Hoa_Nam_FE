@@ -1367,10 +1367,7 @@
 }
 .outbound-table-wrap tbody tr {
   position: relative;
-  cursor: pointer;
-  transition:
-    background 110ms ease,
-    box-shadow 110ms ease;
+  transition: background 110ms ease;
 }
 .outbound-table-wrap tbody tr:hover {
   background: var(--ops-canvas);
@@ -1380,10 +1377,6 @@
   z-index: 1;
   outline: 2px solid var(--ops-link);
   outline-offset: -2px;
-}
-.outbound-table-wrap tbody tr.is-selected {
-  background: var(--ops-pale);
-  box-shadow: inset 3px 0 var(--ops-link);
 }
 .outbound-table-wrap td strong {
   color: var(--ops-text);
@@ -1450,6 +1443,50 @@
   color: var(--ops-muted);
   color: var(--ops-heading);
   font-size: 13px;
+}
+.outbound-table-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+.outbound-page-size {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 110px;
+  height: 36px;
+  border: 1px solid var(--ops-line);
+  border-radius: 6px;
+  background: var(--ops-surface);
+  color: var(--ops-heading);
+  font-size: 13px;
+}
+.outbound-page-size select {
+  width: 100%;
+  height: 100%;
+  padding: 0 30px 0 12px;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.outbound-page-size > svg {
+  position: absolute;
+  right: 10px;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  color: var(--ops-muted);
+  pointer-events: none;
+}
+.outbound-page-size:focus-within {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 2px;
 }
 .outbound-pagination {
   display: flex;
@@ -2363,12 +2400,6 @@
     border-radius: 8px;
     background: var(--ops-surface);
     box-shadow: 0 2px 6px rgb(39 68 95 / 5%);
-  }
-  .outbound-table-wrap tbody tr.is-selected {
-    background: var(--ops-pale);
-    box-shadow:
-      inset 3px 0 var(--ops-link),
-      0 2px 6px rgb(39 68 95 / 5%);
   }
   .outbound-table-wrap td,
   .outbound-table-wrap td.is-number,
@@ -3767,4 +3798,90 @@
   .outbound-kpi__copy strong {
     font-size: 27px;
   }
+}
+
+.outbound-collapse-button {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--outbound-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-link);
+  cursor: pointer;
+}
+
+.outbound-collapse-button:hover {
+  background: var(--ops-pale);
+}
+
+.outbound-collapse-button svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 160ms ease;
+}
+
+.outbound-collapse-button[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.outbound-reference-summary__heading,
+.outbound-panel-heading__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.outbound-reference-summary__heading {
+  margin-bottom: 10px;
+}
+
+.outbound-reference-summary__heading h2 {
+  margin: 0;
+}
+
+.outbound-reference-summary[data-collapsed="true"]
+  .outbound-reference-summary__heading {
+  margin-bottom: 0;
+}
+
+.outbound-kpi__details {
+  display: grid;
+  gap: 5px;
+}
+
+.outbound-kpi__details[hidden],
+.outbound-progress-panel__body[hidden] {
+  display: none;
+}
+
+.outbound-kpi > .outbound-collapse-button {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+}
+
+.outbound-kpi[data-collapsed="true"] {
+  min-height: 56px;
+  align-self: start;
+  justify-content: flex-start;
+  padding-right: 50px;
+}
+
+.outbound-chart-panel[data-collapsed="true"],
+.outbound-progress-panel[data-collapsed="true"] {
+  height: auto;
+  min-height: 0;
+  align-self: start;
+  padding-bottom: 14px;
+}
+
+.outbound-progress-panel__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }

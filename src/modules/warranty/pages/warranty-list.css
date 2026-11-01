@@ -331,8 +331,7 @@
   cursor: pointer;
   transition: background-color 0.16s;
 }
-.hn-war-table tbody tr:hover,
-.hn-war-table tbody tr.is-selected {
+.hn-war-table tbody tr:hover {
   background: color-mix(in srgb, var(--war-pale) 65%, var(--war-surface));
 }
 .hn-war-table .hn-sortable-th {

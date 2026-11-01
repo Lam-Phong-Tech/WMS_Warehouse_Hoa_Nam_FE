@@ -1,3 +1,4 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 /**
  * MÀN "BÁO CÁO NHẬP – XUẤT – TỒN" (RPT-01) — port 1:1 mockup UI/UX đã chốt
@@ -46,7 +47,7 @@ import {
 import { useRenderWindow } from "@/shared/components/data-display/useRenderWindow";
 import { WindowedMore } from "@/shared/components/data-display/WindowedMore";
 import dayjs from "dayjs";
-import { UiSelect, UiVuexyDateRangePicker, VuexyDemoIcon } from "@/shared/ui";
+import { UiSelect, VuexyDemoIcon } from "@/shared/ui";
 import { useTabView } from "@/shared/ui/use-tab-view";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
@@ -173,12 +174,7 @@ function KpiSpark({ values }: { values: number[] }) {
 }
 
 type KpiTone =
-  | "opening"
-  | "inbound"
-  | "product"
-  | "component"
-  | "reversal"
-  | "closing";
+  "opening" | "inbound" | "product" | "component" | "reversal" | "closing";
 
 type VuexyIconName = Parameters<typeof VuexyDemoIcon>[0]["name"];
 
@@ -765,7 +761,7 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
                * trước "từ") nên bỏ được cặp maxDate/minDate của bản hai ô; kỳ
                * đảo chiều vì thế vẫn không dựng ra được (BE trả 422).
                */}
-              <UiVuexyDateRangePicker
+              <ReportDateRangePicker
                 aria-label={t("reports.inventoryFlowReport.fieldPeriod")}
                 value={[range.from, range.to]}
                 format="DD/MM/YYYY"
@@ -1480,9 +1476,13 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
                         <button
                           className="button insight-action"
                           type="button"
-                          disabled={document.doc_type === "REVERSAL" && document.drillKey === ""}
+                          disabled={
+                            document.doc_type === "REVERSAL" &&
+                            document.drillKey === ""
+                          }
                           title={
-                            document.doc_type === "REVERSAL" && document.drillKey === ""
+                            document.doc_type === "REVERSAL" &&
+                            document.drillKey === ""
                               ? t("reports.inventoryFlowReport.drillDisabled")
                               : undefined
                           }
@@ -1490,11 +1490,20 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
                             if (document.doc_type === "REVERSAL") {
                               openDrill(document.drillKey, event.currentTarget);
                             } else {
-                              setDocumentDrill({ document: document as FlowDocument & { doc_type: "INBOUND" | "OUTBOUND" }, trigger: event.currentTarget });
+                              setDocumentDrill({
+                                document: document as FlowDocument & {
+                                  doc_type: "INBOUND" | "OUTBOUND";
+                                },
+                                trigger: event.currentTarget,
+                              });
                             }
                           }}
                         >
-                          {t(document.doc_type === "REVERSAL" ? "reports.inventoryFlowReport.drillDocument" : "reports.inventoryFlowReport.detailOpen")}
+                          {t(
+                            document.doc_type === "REVERSAL"
+                              ? "reports.inventoryFlowReport.drillDocument"
+                              : "reports.inventoryFlowReport.detailOpen",
+                          )}
                           <VuexyDemoIcon name="arrow-right" />
                         </button>
                       </div>
@@ -1509,7 +1518,10 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
       </div>
 
       {documentDrill !== null ? (
-        <FlowDocumentDetailModal document={documentDrill.document} onClose={closeDocumentDrill} />
+        <FlowDocumentDetailModal
+          document={documentDrill.document}
+          onClose={closeDocumentDrill}
+        />
       ) : null}
 
       {drillRow !== null ? (

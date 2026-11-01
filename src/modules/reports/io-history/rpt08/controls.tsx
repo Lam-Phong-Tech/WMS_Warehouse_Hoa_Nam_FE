@@ -1,13 +1,11 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { SelectControl } from "./SelectControl";
 import type { Dayjs } from "dayjs";
 import { Link } from "react-router-dom";
-import { UiVuexyDateRangePicker } from "@/shared/ui";
 import {
   CloseOutlined,
-  DownOutlined,
   DownloadOutlined,
-  HistoryOutlined,
   SwapOutlined,
   UserOutlined,
   WarningOutlined,
@@ -47,24 +45,12 @@ function DateRangeControl({
 
   return (
     <div
-      className={"rpt08-date-control" + (invalid ? " is-invalid" : "")}
+      className={invalid ? "is-invalid" : undefined}
       aria-invalid={invalid || undefined}
-      tabIndex={-1}
     >
-      <div className="rpt08-date-control__visual" aria-hidden="true">
-        <HistoryOutlined />
-        <span>
-          {value[0].format("DD/MM/YYYY")} – {value[1].format("DD/MM/YYYY")}
-        </span>
-        <DownOutlined />
-      </div>
-      <UiVuexyDateRangePicker
+      <ReportDateRangePicker
         value={pickerValue}
         disabled={disabled}
-        allowClear={false}
-        format="DD/MM/YYYY"
-        className="rpt08-date-proxy"
-        popupClassName="rpt08-date-popup"
         aria-label={tUi("reports.packingLabel.dateRangeLabel")}
         onChange={(next) => {
           if (next?.[0] && next?.[1]) onChange([next[0], next[1]]);

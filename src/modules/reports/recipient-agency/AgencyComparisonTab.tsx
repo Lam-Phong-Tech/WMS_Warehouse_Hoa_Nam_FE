@@ -1,3 +1,4 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 /**
  * RPT-07 · tab "So sánh đối tượng nhận hàng".
  *
@@ -27,7 +28,6 @@ import {
   UiButton,
   UiSelect,
   UiStatusBadge,
-  UiVuexyDateRangePicker,
   RADIUS,
   SEMANTIC_LIGHT as S,
 } from "@/shared/ui";
@@ -605,7 +605,7 @@ export default function AgencyComparisonTab() {
         >
           <Box sx={{ minWidth: 0 }}>
             <FieldLabel>{t("reports.agencyComparison.fieldPeriod")}</FieldLabel>
-            <UiVuexyDateRangePicker
+            <ReportDateRangePicker
               value={range}
               presets={presets}
               maxDate={dayjs().startOf("day")}

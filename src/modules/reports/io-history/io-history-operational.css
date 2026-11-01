@@ -737,9 +737,6 @@
 .hn-rpt-io .io-history-table tr:hover {
   background: var(--ops-canvas);
 }
-.hn-rpt-io .io-history-table tr:focus-within {
-  background: var(--primary-soft);
-}
 .hn-rpt-io .io-history-table .cell,
 .hn-rpt-io .io-history-table b {
   display: block;

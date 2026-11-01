@@ -19,6 +19,7 @@ import {
 import type { CompositionRow } from "./OverviewComposition";
 import type { IssueRow } from "./OverviewOperations";
 import { SnapshotStockFlowPlot } from "./SnapshotStockFlowPlot";
+import { greetingKeyForHour } from "./greeting";
 
 export type ChartState = "ready" | "loading" | "empty" | "failed" | "forbidden";
 
@@ -467,7 +468,7 @@ export function DashboardSnapshot({
           <DashIcon name="layout-dashboard" />
         </span>
         <div>
-          <h1>{t("dashboard.snapshot.greeting", { name })}</h1>
+          <h1>{t(greetingKeyForHour(businessNow.hour()), { name })}</h1>
           <p>{t("dashboard.snapshot.greetingSub")}</p>
         </div>
         <div className="snapshot-time">

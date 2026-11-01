@@ -439,9 +439,7 @@
 .hn-putaway-page .ptw-table tbody tr {
   transition: background-color 150ms ease;
 }
-.hn-putaway-page .ptw-table tbody tr:is(:hover, :focus-within),
-.hn-putaway-page .ptw-table tbody tr.is-selected,
-.hn-putaway-page .ptw-table tbody tr[aria-selected="true"] {
+.hn-putaway-page .ptw-table tbody tr:hover {
   background: color-mix(in srgb, var(--ptw-primary) 5%, var(--ptw-card));
 }
 .hn-putaway-page .ptw-table tbody tr:last-child td {

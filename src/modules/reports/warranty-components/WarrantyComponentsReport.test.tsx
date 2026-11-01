@@ -209,6 +209,14 @@ describe("RPT-06 · Báo cáo Bảo hành & linh kiện", () => {
     cleanupTestState();
   });
 
+  it("không hiển thị ô Kho trong bộ lọc", async () => {
+    renderReport();
+    const filters = await screen.findByRole("region", {
+      name: "Bộ lọc báo cáo",
+    });
+    expect(within(filters).queryByText("Kho")).not.toBeInTheDocument();
+  });
+
   it("dựng KPI, biểu đồ và bảng đối soát từ payload báo cáo thật", async () => {
     renderReport();
 

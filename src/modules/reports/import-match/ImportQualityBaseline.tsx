@@ -1,3 +1,4 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
@@ -11,7 +12,6 @@ import {
   UiSelect,
   UiSpinner,
   UiStatusBadge,
-  UiVuexyDateRangePicker,
 } from "@/shared/ui";
 import {
   CheckCircleOutlined,
@@ -40,7 +40,10 @@ import {
 import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import { useT } from "@/shared/i18n/useT";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
-import { downloadImportQualityExport, useImportQualityBatches } from "./import-quality-api";
+import {
+  downloadImportQualityExport,
+  useImportQualityBatches,
+} from "./import-quality-api";
 import { ImportQualityIssuePanel } from "./ImportQualityIssuePanel";
 import { useClientPagination } from "@/modules/reports/operations/report-columns";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
@@ -324,7 +327,11 @@ export default function ImportQualityBaseline() {
         ...(issuesOnly ? { issues_only: "1" } : {}),
       });
     } catch (error) {
-      setExportError(error instanceof Error ? error.message : "Không thể tải báo cáo nhập liệu.");
+      setExportError(
+        error instanceof Error
+          ? error.message
+          : "Không thể tải báo cáo nhập liệu.",
+      );
     } finally {
       setExporting(false);
     }
@@ -452,7 +459,7 @@ export default function ImportQualityBaseline() {
             <FilterLabel>
               {tUi("reports.packingLabel.dateRangeLabel")}
             </FilterLabel>
-            <UiVuexyDateRangePicker
+            <ReportDateRangePicker
               aria-label={tUi("reports.packingLabel.dateRangeLabel")}
               value={range}
               format="DD/MM/YYYY"
@@ -1141,7 +1148,13 @@ export default function ImportQualityBaseline() {
               </Box>
             ))}
           </Box>
-          {openBatch.id ? <ImportQualityIssuePanel key={openBatch.id} batchId={openBatch.id} sourceFile={openBatch.sourceFile} /> : null}
+          {openBatch.id ? (
+            <ImportQualityIssuePanel
+              key={openBatch.id}
+              batchId={openBatch.id}
+              sourceFile={openBatch.sourceFile}
+            />
+          ) : null}
         </DrillDownDialog>
       ) : null}
     </Box>

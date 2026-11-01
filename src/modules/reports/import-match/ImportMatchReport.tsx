@@ -1,3 +1,4 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   useDeferredValue,
@@ -17,7 +18,6 @@ import {
   UiSelect,
   UiSpinner,
   UiStatusBadge,
-  UiVuexyDateRangePicker,
   RADIUS,
   SEMANTIC_LIGHT as S,
   TYPOGRAPHY,
@@ -845,7 +845,7 @@ export default function ImportMatchReport() {
     [t],
   );
   const logFilter = useSectionFilter(batches, logFilterConfig);
-  const pagination = useClientPagination(logFilter.rows, 15);
+  const pagination = useClientPagination(logFilter.rows, 10);
 
   const statusOptions = useMemo(
     () => [
@@ -1326,7 +1326,7 @@ export default function ImportMatchReport() {
             label={t("reports.importMatchReport.fieldDateRange")}
             span={2}
           >
-            <UiVuexyDateRangePicker
+            <ReportDateRangePicker
               aria-label={t("reports.importMatchReport.fieldDateRange")}
               value={range}
               format="DD/MM/YYYY"

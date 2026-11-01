@@ -57,6 +57,7 @@ import {
 } from "@/modules/putaway/services/putawayService";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 
 import { PutawayQueue } from "../components/PutawayQueue";
 import "./putaway-queue.css";
@@ -67,7 +68,6 @@ type PutawayFormValues = {
   note?: string;
 };
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const SEARCH_DEBOUNCE_MS = 250;
 
 const putawayKeys = {
@@ -617,7 +617,7 @@ export default function MvpPutawayPage() {
             <UiSelect
               value={historyPageSize}
               aria-label={t("putaway.page.pageSizeAria")}
-              options={PAGE_SIZE_OPTIONS.map((size) => ({
+              options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
                 value: size,
                 label: t("putaway.page.pageSizeOption", { size }),
               }))}

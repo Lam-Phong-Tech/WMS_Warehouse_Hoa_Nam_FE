@@ -1,12 +1,8 @@
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { useMemo } from "react";
 import dayjs from "dayjs";
 import { useT } from "@/shared/i18n/useT";
-import {
-  Box,
-  UiSelect,
-  UiTextField,
-  UiVuexyDateRangePicker,
-} from "@/shared/ui";
+import { Box, UiSelect, UiTextField } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 import {
   itemKindOptions,
@@ -28,7 +24,7 @@ export function PeriodFilterControls({ state }: { state: PeriodFilterState }) {
   const t = useT();
   const presets = useMemo(() => reportRangePresets(t), [t]);
   return (
-    <UiVuexyDateRangePicker
+    <ReportDateRangePicker
       value={state.range}
       aria-label={t("reports.filters.dateRangeAria")}
       format="DD/MM/YYYY"
