@@ -38,12 +38,13 @@ describe("AUTH UAT — transport banners, no diagnostic leaks and no password re
       expect(screen.queryByTestId("login-transport-diagnostic")).not.toBeInTheDocument();
       expect(authService.login).toHaveBeenCalledTimes(1);
     });
-  it("TC_VAL_01: puts the credentials banner between password and forgot password", async () => {
+  it("TC_VAL_01: puts the credentials banner above the login fields", async () => {
     vi.mocked(authService.login).mockRejectedValue(failure(401, { message: "different backend wording" }));
     renderLogin(); await fill(); await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Tên đăng nhập hoặc mật khẩu chưa đúng");
-    expect(screen.getByLabelText("Mật khẩu").compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(alert).toHaveTextContent("Không thể đăng nhập");
+    expect(alert).toHaveTextContent("Tên đăng nhập hoặc mật khẩu không đúng.");
+    expect(alert.compareDocumentPosition(screen.getByLabelText("Tên đăng nhập")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(alert.compareDocumentPosition(screen.getByRole("link", { name: /quên mật khẩu/i })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
   it("TC_UI_LOGIN_03: keeps fields and prevents double-submit while showing the pending button", async () => {
