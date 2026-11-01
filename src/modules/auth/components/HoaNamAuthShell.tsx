@@ -8,6 +8,7 @@ import desktopReference from "../assets/hoanam-auth-reference-desktop.png";
 import tabletReference from "../assets/hoanam-auth-reference-tablet.png";
 
 interface HoaNamAuthShellProps {
+  screen?: "login" | "session";
   titleId: string;
   title: ReactNode;
   subtitle: ReactNode;
@@ -25,6 +26,7 @@ const ink = "#071c57";
 const muted = "#657db3";
 
 export function HoaNamAuthShell({
+  screen = "login",
   titleId,
   title,
   subtitle,
@@ -66,7 +68,7 @@ export function HoaNamAuthShell({
   return (
     <Box
       component="main"
-      data-auth-baseline="login"
+      data-auth-baseline={screen}
       sx={{
         "--auth-ink": isDark ? "#edf5ff" : ink,
         "--auth-muted": isDark ? "#aec3e4" : muted,
@@ -473,8 +475,11 @@ export function HoaNamAuthShell({
               fontSize: { xs: 12, sm: 14 },
             }}
           >
-            Hoa Nam WMS ·{" "}
-            {language === "vi" ? "Hệ thống quản lý kho" : language === "zh" ? "仓库管理系统" : "Warehouse management system"}
+            Hoa Nam WMS
+            <Box component="span" sx={{ display: { xs: "inline", sm: screen === "session" ? "block" : "inline", xl: "inline" } }}>
+              {screen === "session" ? <Box component="span" sx={{ display: { xs: "inline", sm: "none", xl: "inline" } }}> · </Box> : " · "}
+              {language === "vi" ? "Hệ thống quản lý kho" : language === "zh" ? "仓库管理系统" : "Warehouse management system"}
+            </Box>
           </Box>
         </Box>
       </Box>

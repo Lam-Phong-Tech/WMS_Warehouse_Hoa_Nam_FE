@@ -13,11 +13,23 @@ import { getErrorCode, type ApiErrorResponse } from "@/shared/types/api-response
 import { useT } from "@/shared/i18n/useT";
 import { runtimeConfig } from "@/shared/config/env";
 import { SessionConfirmationGate } from "@/modules/auth/components/SessionConfirmationGate";
-import { AuthSessionCheck } from "@/modules/auth/components/AuthSessionCheck";
+import { AuthSessionCheck, type SessionCheckMode } from "@/modules/auth/components/AuthSessionCheck";
 import { readWorkSessionActivity } from "@/shared/lib/session-idle";
 
 /** Nhịp tự thử lại khi ở chế độ máy quét (ms). */
 const KIOSK_RETRY_MS = 5000;
+function sessionFailureMode(error: unknown): SessionCheckMode {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return "offline";
+  if (!isAxiosError<ApiErrorResponse>(error)) return "load-error";
+  const status = error.response?.status;
+  const code = (getErrorCode(error.response?.data) ?? "").toUpperCase();
+  if (status === 401) return "expired";
+  if (code === "WAREHOUSE_INACTIVE" || code === "WAREHOUSE_SUSPENDED") return "paused";
+  if (code === "ACCOUNT_DISABLED" || code === "ACCOUNT_INACTIVE") return "unavailable";
+  if (status === 403) return "denied";
+  if (!error.response) return "unknown";
+  return "load-error";
+}
 function useKioskRetry(active: boolean, retry: () => void) {
   useEffect(() => {
     if (!active) return;
@@ -64,8 +76,8 @@ export function ProtectedRoute() {
     }
     if (kiosk) return <Loading />;
     if (initialConfirmation) {
-      return <AuthSessionCheck failed={!meQuery.isFetching}
-        denied={isAxiosError(meQuery.error) && meQuery.error.response?.status === 403} onRetry={() => { void meQuery.refetch(); }} />;
+      return <AuthSessionCheck mode={meQuery.isFetching ? "checking" : sessionFailureMode(meQuery.error)}
+        user={user} contexts={contexts} onRetry={() => { void meQuery.refetch(); }} />;
     }
     return (
       <div style={{ margin: "48px auto", maxWidth: 720, padding: 24 }}>
@@ -76,11 +88,15 @@ export function ProtectedRoute() {
   }
   if (!isProfileLoaded || !isCacheReady) {
     return initialConfirmation
-      ? <AuthSessionCheck onRetry={() => { void meQuery.refetch(); }} />
+      ? <AuthSessionCheck user={user} contexts={contexts} onRetry={() => { void meQuery.refetch(); }} />
       : <Loading />;
   }
   mark("gate:open");
   if (user === null) return <Navigate to={ROUTES.LOGIN} replace />;
   if (runtimeConfig.temporaryAutoLogin) return <Outlet />;
+  if (user.status?.toUpperCase() === "INACTIVE") {
+    return <AuthSessionCheck mode="unavailable" user={user} contexts={contexts}
+      onRetry={() => { void meQuery.refetch(); }} />;
+  }
   return <SessionConfirmationGate user={user} contexts={contexts} />;
 }

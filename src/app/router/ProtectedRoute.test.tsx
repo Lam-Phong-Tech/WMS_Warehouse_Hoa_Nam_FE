@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -134,9 +134,11 @@ describe("ProtectedRoute WWHN-165", () => {
     renderProtectedRoute();
     // AuthSessionCheck can briefly render the same heading while the cache
     // loads. Wait for the actual confirmation action before asserting its UI.
-    const start = await screen.findByRole("button", {
+    await screen.findByRole("button", {
       name: "Bắt đầu làm việc",
     });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Bắt đầu làm việc" })).toBeEnabled());
+    const start = screen.getByRole("button", { name: "Bắt đầu làm việc" });
     expect(
       screen.getByRole("heading", { name: "Xác nhận phiên đăng nhập" }),
     ).toBeInTheDocument();
