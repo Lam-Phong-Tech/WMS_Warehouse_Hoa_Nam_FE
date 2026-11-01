@@ -10,7 +10,8 @@ const vi = {
   usernameInvalid: "Tên tài khoản không được chứa ký tự đặc biệt",
   emailInvalid: "Định dạng Email không hợp lệ",
   submitting: "Đang đăng nhập…",
-  invalidCredentials: "Tên đăng nhập hoặc mật khẩu chưa đúng",
+  invalidCredentials: "Tên đăng nhập hoặc mật khẩu không đúng.",
+  invalidTitle: "Không thể đăng nhập",
   invalidInput:
     "Thông tin đăng nhập chưa hợp lệ. Vui lòng kiểm tra lại tên đăng nhập và mật khẩu.",
   offlineTitle: "Không có kết nối mạng",
@@ -39,7 +40,7 @@ const vi = {
   otherAccount: "Đăng nhập tài khoản khác",
   resetTitle: "Đặt lại mật khẩu",
   resetSubtitle: "Tạo mật khẩu mới an toàn cho tài khoản của bạn.",
-  savePassword: "Lưu mật khẩu",
+  savePassword: "Lưu mật khẩu mới",
   forgotFailed: "Chưa thể gửi yêu cầu lúc này. Vui lòng thử lại sau.",
 };
 const en: Record<keyof typeof vi, string> = {
@@ -51,6 +52,7 @@ const en: Record<keyof typeof vi, string> = {
   emailInvalid: "Invalid email format",
   submitting: "Signing in…",
   invalidCredentials: "The username or password is incorrect",
+  invalidTitle: "Unable to sign in",
   invalidInput:
     "The sign-in details are invalid. Please check your username and password.",
   offlineTitle: "No internet connection",
@@ -80,7 +82,7 @@ const en: Record<keyof typeof vi, string> = {
   otherAccount: "Sign in with another account",
   resetTitle: "Reset password",
   resetSubtitle: "Create a secure new password for your account.",
-  savePassword: "Save password",
+  savePassword: "Save new password",
   forgotFailed: "Unable to send the request right now. Please try again later.",
 };
 export type AuthUatCopy = typeof en;

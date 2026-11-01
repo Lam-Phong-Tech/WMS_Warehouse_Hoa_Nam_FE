@@ -2,7 +2,7 @@ import { AUTH_BASELINE } from "@/shared/ui/tokens";
 
 /** Applied only to the login/recovery forms, never to shared fields elsewhere. */
 export const AUTH_UAT_FORM_SX = {
-  display: "flex", flexDirection: "column", gap: { xs: "16px", sm: "18px" },
+  display: "flex", flexDirection: "column", gap: { xs: "16px", sm: "28px", xl: "18px" },
   "&& label[for]": { color: AUTH_BASELINE.ink, fontWeight: 700 },
   "&& .MuiOutlinedInput-root.Mui-error .MuiInputAdornment-positionStart": {
     color: AUTH_BASELINE.danger,

@@ -223,18 +223,17 @@ export function LoginPage() {
     );
   }
 
-  const belowPassword = feedback?.kind === "invalid-credentials" || feedback?.kind === "invalid-input";
   const retry = feedback?.kind === "offline" || feedback?.kind === "service-unavailable";
   return (
-    <AuthShell baselineScreen="login" titleId="login-title" title={t("auth.login.title")} subtitle={t("auth.login.subtitle")}>
+    <AuthShell baselineScreen="login" titleId="login-title" title={t("auth.login.submit")}
+      subtitle={t("auth.login.formSubtitle")} showBaselineHeading>
       <form onSubmit={onSubmit} noValidate aria-busy={isSubmitting}>
         <Box sx={AUTH_UAT_FORM_SX} data-busy={isSubmitting ? "true" : "false"}>
-          {feedback && !belowPassword && <AuthLoginFeedback feedback={feedback} />}
+          {feedback && <AuthLoginFeedback feedback={feedback} />}
           <AuthField control={control} name="identifier" label={copy.identifierLabel} placeholder={copy.identifierPlaceholder}
             startIcon="user" autoFocus disabled={fieldsDisabled} />
           <AuthField control={control} name="password" label={t("auth.fields.password")} placeholder={t("auth.fields.passwordPlaceholder")}
             type="password" startIcon="lock" disabled={fieldsDisabled} />
-          {feedback && belowPassword && <AuthLoginFeedback feedback={feedback} />}
           {!throttled && !unavailableAccount && (
             <Box sx={{ display: "flex", justifyContent: "flex-end", fontSize: { xs: 14, sm: 15 } }}>
               {isSubmitting || unknown

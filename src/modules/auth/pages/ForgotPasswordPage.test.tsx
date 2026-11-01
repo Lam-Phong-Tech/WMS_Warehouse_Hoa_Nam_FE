@@ -25,8 +25,8 @@ const SERVER_PASSWORD_RULE = ["Server", "password", "rule"].join(" ");
 async function goToOtpStep(user: ReturnType<typeof userEvent.setup>) {
   vi.mocked(authService.forgotPassword).mockResolvedValue(null);
   await user.type(screen.getByLabelText(/email/i), EMAIL);
-  await user.click(screen.getByRole("button", { name: /gửi mã otp/i }));
-  await screen.findByLabelText(/mã otp/i);
+  await user.click(screen.getByRole("button", { name: /gửi mã xác nhận/i }));
+  await screen.findByLabelText(/^mã xác nhận \(6 chữ số\)$/i);
 }
 async function goToPasswordStep(user: ReturnType<typeof userEvent.setup>) {
   vi.mocked(authService.verifyOtp).mockResolvedValue({
@@ -34,7 +34,7 @@ async function goToPasswordStep(user: ReturnType<typeof userEvent.setup>) {
     expires_in: 600,
   });
   await goToOtpStep(user);
-  await user.type(screen.getByLabelText(/mã otp/i), "123456");
+  await user.type(screen.getByLabelText(/^mã xác nhận \(6 chữ số\)$/i), "123456");
   await user.click(screen.getByRole("button", { name: /xác nhận/i }));
   await screen.findByLabelText(/^mật khẩu mới$/i);
 }
@@ -64,7 +64,7 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
     const user = userEvent.setup();
     renderWithProviders(<ForgotPasswordPage />);
     await goToOtpStep(user);
-    await user.type(screen.getByLabelText(/mã otp/i), "000000");
+    await user.type(screen.getByLabelText(/^mã xác nhận \(6 chữ số\)$/i), "000000");
     await user.click(screen.getByRole("button", { name: /xác nhận/i }));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(screen.queryByLabelText(/^mật khẩu mới$/i)).not.toBeInTheDocument();
@@ -75,14 +75,14 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
     renderWithProviders(<ForgotPasswordPage />);
     await goToPasswordStep(user);
     expect(
-      screen.getByRole("heading", { name: "Đặt lại mật khẩu" }),
+      screen.getByRole("heading", { name: "Đặt mật khẩu mới" }),
     ).toBeInTheDocument();
     await user.type(screen.getByLabelText(/^mật khẩu mới$/i), TEST_PASSWORD);
     await user.type(
       screen.getByLabelText(/xác nhận mật khẩu mới/i),
       TEST_PASSWORD,
     );
-    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu" }));
+    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu mới" }));
     await waitFor(() =>
       expect(authService.resetPassword).toHaveBeenCalledWith({
         email: EMAIL,
@@ -91,6 +91,8 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
         new_password_confirmation: TEST_PASSWORD,
       }),
     );
+    expect(await screen.findByRole("heading", { name: "Đặt lại mật khẩu thành công" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đăng nhập bằng mật khẩu mới" })).toBeInTheDocument();
   });
   it("rejects mismatching confirmation without a reset request", async () => {
     const user = userEvent.setup();
@@ -101,7 +103,7 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
       screen.getByLabelText(/xác nhận mật khẩu mới/i),
       `${TEST_PASSWORD}different`,
     );
-    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu" }));
+    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu mới" }));
     expect(
       await screen.findByText(/mật khẩu xác nhận không khớp/i),
     ).toBeInTheDocument();
@@ -115,15 +117,15 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
     renderWithProviders(<ForgotPasswordPage />);
     await goToOtpStep(user);
     expect(
-      screen.getByRole("button", { name: /gửi lại mã otp/i }),
-    ).toBeEnabled();
+      screen.getByRole("button", { name: /gửi lại mã/i }),
+    ).toBeDisabled();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
     });
     expect(
-      await screen.findByRole("button", { name: /gửi lại mã otp/i }),
+      await screen.findByRole("button", { name: /gửi mã mới/i }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/mã otp/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^mã xác nhận \(6 chữ số\)$/i)).toBeDisabled();
   });
   it("normalizes email and uses a generic delivery notice", async () => {
     vi.mocked(authService.forgotPassword).mockResolvedValue(null);
@@ -133,10 +135,10 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
       screen.getByLabelText(/email/i),
       "  Operator@Example.TEST  ",
     );
-    await user.click(screen.getByRole("button", { name: /gửi mã otp/i }));
-    await screen.findByLabelText(/mã otp/i);
+    await user.click(screen.getByRole("button", { name: /gửi mã xác nhận/i }));
+    await screen.findByLabelText(/^mã xác nhận \(6 chữ số\)$/i);
     expect(authService.forgotPassword).toHaveBeenCalledWith({ email: EMAIL });
-    expect(screen.getByText(/nếu email .* hợp lệ/i)).toBeInTheDocument();
+    expect(screen.getByText(/nếu tài khoản hợp lệ/i)).toBeInTheDocument();
   });
   it("locks 429 until Retry-After expires without replaying the request", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -152,15 +154,16 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
     });
     renderWithProviders(<ForgotPasswordPage />);
     await user.type(screen.getByLabelText(/email/i), EMAIL);
-    await user.click(screen.getByRole("button", { name: /gửi mã otp/i }));
+    await user.click(screen.getByRole("button", { name: /gửi mã xác nhận/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "request-throttle",
     );
-    expect(screen.getByRole("button", { name: /gửi mã otp/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /gửi mã xác nhận/i })).toBeDisabled();
     await user.clear(screen.getByLabelText(/email/i));
-    expect(screen.getByRole("button", { name: /gửi mã otp/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /gửi mã xác nhận/i })).toBeDisabled();
     await act(async () => vi.advanceTimersByTimeAsync(61000));
-    expect(screen.getByRole("button", { name: /gửi mã otp/i })).toBeEnabled();
+    await user.type(screen.getByLabelText(/email/i), EMAIL);
+    expect(screen.getByRole("button", { name: /gửi mã xác nhận/i })).toBeEnabled();
     expect(authService.forgotPassword).toHaveBeenCalledTimes(1);
   });
   it("keeps an unknown 429 locked rather than inventing a timeout", async () => {
@@ -170,11 +173,11 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
     const user = userEvent.setup();
     renderWithProviders(<ForgotPasswordPage />);
     await user.type(screen.getByLabelText(/email/i), EMAIL);
-    await user.click(screen.getByRole("button", { name: /gửi mã otp/i }));
+    await user.click(screen.getByRole("button", { name: /gửi mã xác nhận/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /chờ rồi tải lại/i,
     );
-    expect(screen.getByRole("button", { name: /gửi mã otp/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /gửi mã xác nhận/i })).toBeDisabled();
   });
   it("requires a new code after five invalid OTPs and clears the previous code on resend", async () => {
     vi.mocked(authService.verifyOtp).mockRejectedValue(
@@ -183,20 +186,20 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
     const user = userEvent.setup();
     renderWithProviders(<ForgotPasswordPage />);
     await goToOtpStep(user);
-    await user.type(screen.getByLabelText(/mã otp/i), "000000");
+    await user.type(screen.getByLabelText(/^mã xác nhận \(6 chữ số\)$/i), "000000");
     for (let attempt = 1; attempt <= 5; attempt++) {
-      await user.click(screen.getByRole("button", { name: /^xác nhận$/i }));
+      await user.click(screen.getByRole("button", { name: /^xác nhận mã$/i }));
       await waitFor(() =>
         expect(authService.verifyOtp).toHaveBeenCalledTimes(attempt),
       );
     }
-    expect(screen.getByLabelText(/mã otp/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^mã xác nhận \(6 chữ số\)$/i)).toBeDisabled();
     expect(
-      screen.queryByRole("button", { name: /^xác nhận$/i }),
+      screen.queryByRole("button", { name: /^xác nhận mã$/i }),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /gửi lại mã otp/i }));
-    await waitFor(() => expect(screen.getByLabelText(/mã otp/i)).toBeEnabled());
-    expect(screen.getByLabelText(/mã otp/i)).toHaveValue("");
+    await user.click(screen.getByRole("button", { name: /gửi lại mã/i }));
+    await waitFor(() => expect(screen.getByLabelText(/^mã xác nhận \(6 chữ số\)$/i)).toBeEnabled());
+    expect(screen.getByLabelText(/^mã xác nhận \(6 chữ số\)$/i)).toHaveValue("");
     expect(authService.forgotPassword).toHaveBeenCalledTimes(2);
   });
   it("expires the reset token in memory and prevents further password submissions", async () => {
@@ -208,10 +211,11 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
     await goToPasswordStep(user);
     await user.type(screen.getByLabelText(/^mật khẩu mới$/i), TEST_PASSWORD);
     await act(async () => vi.advanceTimersByTimeAsync(601000));
-    expect(screen.getByLabelText(/^mật khẩu mới$/i)).toHaveValue("");
-    expect(screen.getByLabelText(/^mật khẩu mới$/i)).toBeDisabled();
+    expect(screen.getByRole("heading", { name: "Yêu cầu khôi phục không còn hiệu lực" })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^mật khẩu mới$/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /yêu cầu mã mới/i })).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Lưu mật khẩu" }),
+      screen.queryByRole("button", { name: "Lưu mật khẩu mới" }),
     ).not.toBeInTheDocument();
     expect(authService.resetPassword).not.toHaveBeenCalled();
   });
@@ -231,9 +235,9 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
       screen.getByLabelText(/xác nhận mật khẩu mới/i),
       TEST_PASSWORD,
     );
-    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu" }));
+    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu mới" }));
     expect(await screen.findByText(SERVER_PASSWORD_RULE)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu" }));
+    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu mới" }));
     await waitFor(() =>
       expect(authService.resetPassword).toHaveBeenCalledTimes(2),
     );
@@ -248,12 +252,12 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
     const user = userEvent.setup();
     renderWithProviders(<ForgotPasswordPage />);
     await goToOtpStep(user);
-    await user.type(screen.getByLabelText(/mã otp/i), "123456");
-    await user.click(screen.getByRole("button", { name: /^xác nhận$/i }));
+    await user.type(screen.getByLabelText(/^mã xác nhận \(6 chữ số\)$/i), "123456");
+    await user.click(screen.getByRole("button", { name: /^xác nhận mã$/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "service-request",
     );
-    expect(screen.getByLabelText(/mã otp/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^mã xác nhận \(6 chữ số\)$/i)).toBeInTheDocument();
     expect(authService.verifyOtp).toHaveBeenCalledTimes(1);
   });
   it("does not restore the reset token or OTP after remount", async () => {
@@ -289,7 +293,7 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
       screen.getByLabelText(/xác nhận mật khẩu mới/i),
       TEST_PASSWORD,
     );
-    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu" }));
+    await user.click(screen.getByRole("button", { name: "Lưu mật khẩu mới" }));
     await waitFor(() =>
       expect(useAuthStore.getState().isAuthenticated).toBe(false),
     );

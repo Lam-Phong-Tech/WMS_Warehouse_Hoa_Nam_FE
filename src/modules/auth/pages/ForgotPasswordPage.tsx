@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForgotPassword } from "@/modules/auth/hooks/use-forgot-password";
 import { useVerifyOtp } from "@/modules/auth/hooks/use-verify-otp";
@@ -14,11 +15,7 @@ import {
   type ResetPasswordFormValues,
 } from "@/modules/auth/schemas/forgot-password.schema";
 import { Box, UiButton } from "@/shared/ui";
-import {
-  AuthShell,
-  AuthNote,
-  AuthBackLink,
-} from "@/modules/auth/components/AuthShell";
+import { AuthShell, AuthNote } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { AUTH_UAT_FORM_SX } from "@/modules/auth/components/AuthLoginFormSx";
 import { useAuthUatCopy } from "@/modules/auth/utils/auth-uat-copy";
@@ -28,9 +25,9 @@ import { PasswordRecoveryError } from "@/modules/auth/services/password-recovery
 /** Existing BE contract: email -> OTP -> verified reset_token. Do not label an
  * OTP request as "send link" or invent a username/email lookup. See UAT handoff. */
 const OTP_TTL_SECONDS = 5 * 60;
-type Step = "email" | "otp" | "password";
+type Step = "email" | "otp" | "password" | "expired" | "success";
 function formatCountdown(seconds: number): string {
-  return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`;
+  return `${Math.floor(seconds / 60).toString().padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`;
 }
 function RecoveryError({ children }: { children: string }) {
   return (
@@ -53,6 +50,7 @@ function RecoveryError({ children }: { children: string }) {
 export function ForgotPasswordPage() {
   useLimitBrowserInspection();
   const t = useT();
+  const navigate = useNavigate();
   const copy = useAuthUatCopy();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -77,6 +75,7 @@ export function ForgotPasswordPage() {
     otpSentAt === null
       ? OTP_TTL_SECONDS
       : Math.max(0, OTP_TTL_SECONDS - Math.floor((now - otpSentAt) / 1000));
+  const resendSecondsLeft = otpSentAt === null ? 0 : Math.max(0, 45 - Math.floor((now - otpSentAt) / 1000));
   const forgotPassword = useForgotPassword();
   const verifyOtp = useVerifyOtp();
   const resetPassword = useResetPassword();
@@ -97,6 +96,10 @@ export function ForgotPasswordPage() {
   });
   const isBusy =
     forgotPassword.isPending || verifyOtp.isPending || resetPassword.isPending;
+  const emailValue = useWatch({ control: emailForm.control, name: "email" });
+  const otpValue = useWatch({ control: otpForm.control, name: "otp" });
+  const passwordValue = useWatch({ control: passwordForm.control, name: "newPassword" });
+  const confirmValue = useWatch({ control: passwordForm.control, name: "newPasswordConfirmation" });
   const isExpired = step === "otp" && secondsLeft <= 0;
   const resetExpired = resetExpiresAt !== null && now >= resetExpiresAt;
   const needsNewOtp =
@@ -112,6 +115,7 @@ export function ForgotPasswordPage() {
         setNow(Date.now());
         setResetToken("");
         passwordForm.reset();
+        setStep("expired");
       },
       Math.max(0, resetExpiresAt - Date.now()),
     );
@@ -136,6 +140,11 @@ export function ForgotPasswordPage() {
         : new PasswordRecoveryError("unavailable");
     setNow(Date.now());
     setFailure(recoveryError);
+    if (recoveryError.kind === "token") {
+      setResetToken("");
+      passwordForm.reset();
+      setStep("expired");
+    }
     if (recoveryError.kind === "otp") setOtpFailures((count) => count + 1);
     const fields = recoveryError.fields;
     if (fields.email) emailForm.setError("email", { message: fields.email });
@@ -240,6 +249,7 @@ export function ForgotPasswordPage() {
             otpForm.reset();
             passwordForm.reset();
             emailForm.reset();
+            setStep("success");
           },
           onError: showFailure,
           onSettled: release,
@@ -247,9 +257,6 @@ export function ForgotPasswordPage() {
       );
     })(event);
   };
-  const back = isBusy ? null : (
-    <AuthBackLink>{t("auth.forgotPassword.backToLogin")}</AuthBackLink>
-  );
   const errorMessage =
     failure?.kind === "rate-limit" && !isRateLocked(now)
       ? null
@@ -280,16 +287,19 @@ export function ForgotPasswordPage() {
       titleId="forgot-password-title"
       illustration="forgot"
       baselineScreen="login"
-      showBaselineHeading
+      showBaselineHeading={step !== "success" && step !== "expired"}
+      recoveryStep={step === "email" ? t("auth.forgotPassword.stepAccount") : step === "otp" ? t("auth.forgotPassword.stepVerify") : step === "password" ? t("auth.forgotPassword.stepPassword") : step === "success" ? t("auth.forgotPassword.stepDone") : undefined}
+      hideRecoveryBack={step === "success"}
+      showRecoveryBack={step === "expired"}
       title={
-        step === "password" ? copy.resetTitle : t("auth.forgotPassword.title")
+        step === "success" ? t("auth.forgotPassword.doneTitle") : step === "expired" ? t("auth.forgotPassword.expiredTitle") : step === "password" ? t("auth.forgotPassword.newPasswordTitle") : step === "otp" ? t("auth.forgotPassword.verifyTitle") : t("auth.forgotPassword.title")
       }
       subtitle={
         step === "email"
           ? t("auth.forgotPassword.subtitleEmail")
           : step === "otp"
             ? t("auth.forgotPassword.subtitleOtp", { email })
-            : copy.resetSubtitle
+            : step === "success" ? t("auth.forgotPassword.doneSubtitle") : step === "expired" ? t("auth.forgotPassword.expiredSubtitle") : t("auth.forgotPassword.newPasswordSubtitle")
       }
     >
       {step === "email" && (
@@ -308,7 +318,7 @@ export function ForgotPasswordPage() {
             <UiButton
               className="hn-auth-primary-cta"
               loading={isBusy}
-              disabled={blocked}
+              disabled={blocked || !emailValue.trim()}
               type="submit"
               fullWidth
             >
@@ -316,40 +326,50 @@ export function ForgotPasswordPage() {
                 ? t("auth.forgotPassword.processing")
                 : t("auth.forgotPassword.sendOtp")}
             </UiButton>
-            {back}
+            <Box role="note" sx={{ display: "flex", alignItems: "center", gap: "18px", minHeight: 80,
+              padding: "17px 22px", borderRadius: "9px", color: "#071c57", backgroundColor: "#ebf6ff", fontSize: 17 }}>
+              <Box aria-hidden="true" sx={{ color: "#0069f5", fontSize: 29, lineHeight: 1 }}>✉</Box>
+              {t("auth.forgotPassword.emailNotice")}
+            </Box>
           </Box>
         </form>
       )}
       {step === "otp" && (
         <form onSubmit={onSubmitOtp} noValidate aria-busy={isBusy}>
           <Box sx={AUTH_UAT_FORM_SX} data-busy={isBusy ? "true" : "false"}>
-            {errorBanner}
+            {failure?.kind !== "otp" && errorBanner}
             {needsNewOtp && (
               <AuthNote>{t("auth.forgotPassword.otpNewRequired")}</AuthNote>
             )}
-            <AuthField
-              control={otpForm.control}
-              name="otp"
-              label={t("auth.forgotPassword.otpLabel")}
-              placeholder={t("auth.forgotPassword.otpPlaceholder")}
-              numericOnly
-              maxLength={6}
-              startIcon="key"
-              autoFocus
-              disabled={isBusy || isExpired || needsNewOtp}
-            />
-            <AuthNote sx={{ marginTop: 0 }}>
-              {isExpired
-                ? t("auth.forgotPassword.otpExpired")
-                : t("auth.forgotPassword.otpValidFor", {
-                    time: formatCountdown(secondsLeft),
-                  })}
-            </AuthNote>
+            <Controller control={otpForm.control} name="otp" render={({ field, fieldState }) => (
+              <Box>
+                <Box component="label" htmlFor="recovery-otp" sx={{ display: "block", mb: 1 }}>
+                  {t("auth.forgotPassword.otpLabel")} (6 {t("auth.forgotPassword.digits")})
+                </Box>
+                <Box sx={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: { xs: "6px", sm: "12px" } }}>
+                  {Array.from({ length: 6 }, (_, index) => <Box key={index} className="otp-digit" aria-hidden="true"
+                    sx={{ display: "grid", placeItems: "center", height: { xs: 54, sm: 72 }, border: `1px solid ${fieldState.error || failure?.kind === "otp" ? "#f32637" : !isExpired && field.value.length === index ? "#0069f5" : "#c9dfff"}`,
+                      borderRadius: "9px", backgroundColor: "#f9fcff", fontSize: { xs: 22, sm: 27 } }}>
+                    {field.value[index] ?? ""}
+                  </Box>)}
+                  <Box component="input" id="recovery-otp" autoFocus value={field.value} ref={field.ref}
+                    onBlur={field.onBlur} onChange={(event: React.ChangeEvent<HTMLInputElement>) => field.onChange(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    disabled={isBusy || isExpired || needsNewOtp} autoComplete="one-time-code" inputMode="numeric" maxLength={6}
+                    sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "text" }} />
+                </Box>
+                {(fieldState.error || failure?.kind === "otp") && <Box role="alert" sx={{ mt: 1, color: "#ed1426", fontSize: 14 }}>
+                  {fieldState.error?.message ?? t("auth.forgotPassword.otpInvalid")}
+                </Box>}
+              </Box>
+            )} />
+            <Box sx={{ color: isExpired ? "#bd6500" : "#657db3", fontSize: 16 }}>
+              {isExpired ? t("auth.forgotPassword.otpExpired") : t("auth.forgotPassword.otpValidFor", { time: formatCountdown(secondsLeft) })}
+            </Box>
             {!isExpired && !needsNewOtp && (
               <UiButton
                 className="hn-auth-primary-cta"
                 loading={isBusy}
-                disabled={blocked}
+                disabled={blocked || otpValue.length !== 6}
                 type="submit"
                 fullWidth
               >
@@ -357,16 +377,22 @@ export function ForgotPasswordPage() {
               </UiButton>
             )}
             <UiButton
+              className="hn-auth-resend"
               type="button"
               appearance={isExpired || needsNewOtp ? "filled" : "text"}
               loading={isBusy}
-              disabled={blocked}
+              disabled={blocked || (!isExpired && !needsNewOtp && resendSecondsLeft > 0)}
               onClick={() => sendOtp(email)}
               fullWidth
             >
-              {t("auth.forgotPassword.resendOtp")}
+              {isExpired ? t("auth.forgotPassword.sendNewCode") : !needsNewOtp && resendSecondsLeft > 0
+                ? t("auth.forgotPassword.resendIn", { time: formatCountdown(resendSecondsLeft) })
+                : t("auth.forgotPassword.resendOtp")}
             </UiButton>
-            {back}
+            <UiButton type="button" appearance="text" fullWidth disabled={isBusy} onClick={() => {
+              setStep("email"); setEmail(""); setOtpSentAt(null); setOtpFailures(0); setFailure(null);
+              otpForm.reset(); emailForm.reset(); verifyOtp.reset(); forgotPassword.reset();
+            }}>{t("auth.forgotPassword.otherAccount")}</UiButton>
           </Box>
         </form>
       )}
@@ -394,13 +420,13 @@ export function ForgotPasswordPage() {
               disabled={isBusy || resetExpired}
             />
             <AuthNote sx={{ marginTop: 0 }}>
-              {t("auth.validation.passwordStrength")}
+              {t("auth.forgotPassword.passwordPolicyNotice")}
             </AuthNote>
             {!resetExpired && (
               <UiButton
                 className="hn-auth-primary-cta"
                 loading={isBusy}
-                disabled={blocked}
+                disabled={blocked || !passwordValue || !confirmValue}
                 type="submit"
                 fullWidth
               >
@@ -419,10 +445,36 @@ export function ForgotPasswordPage() {
                 {t("auth.forgotPassword.resendOtp")}
               </UiButton>
             )}
-            {back}
           </Box>
         </form>
       )}
+      {step === "success" && (
+        <Box sx={{ textAlign: "center" }}>
+          <Box aria-hidden="true" sx={{ mx: "auto", my: 4, width: 96, height: 96, display: "grid", placeItems: "center",
+            borderRadius: "50%", border: "5px solid #39bf79", color: "#098444", backgroundColor: "#ebfff3", fontSize: 54 }}>✓</Box>
+          <Box sx={{ color: "#071c57", fontSize: 36, lineHeight: 1.2, fontWeight: 800, m: 0 }}>
+            {t("auth.forgotPassword.doneTitle")}
+          </Box>
+          <Box sx={{ color: "#657db3", fontSize: 19, mt: 2, mb: 6 }}>
+            {t("auth.forgotPassword.doneSubtitle")}
+          </Box>
+          <UiButton type="button" onClick={() => navigate("/login")} fullWidth appearance="filled">
+            {t("auth.forgotPassword.doneLogin")}
+          </UiButton>
+        </Box>
+      )}
+      {step === "expired" && <Box sx={{ textAlign: "center" }}>
+        <Box aria-hidden="true" sx={{ mx: "auto", mb: 3, width: 82, height: 82, display: "grid", placeItems: "center",
+          borderRadius: "50%", border: "4px solid #ffad32", color: "#ffad32", fontSize: 46 }}>◷</Box>
+        <Box sx={{ color: "#071c57", fontSize: 36, lineHeight: 1.2, fontWeight: 800, m: 0 }}>
+          {t("auth.forgotPassword.expiredTitle")}
+        </Box>
+        <Box sx={{ color: "#657db3", fontSize: 19, mt: 2, mb: 6 }}>
+          {t("auth.forgotPassword.expiredSubtitle")}
+        </Box>
+        <UiButton className="hn-auth-primary-cta" type="button" fullWidth disabled={blocked} loading={isBusy}
+          onClick={() => sendOtp(email)}>{t("auth.forgotPassword.requestNewCode")}</UiButton>
+      </Box>}
     </AuthShell>
   );
 }

@@ -19,6 +19,7 @@ import authMaskLight from "../assets/auth-v2-mask-light.png";
 import authLoginDesktop from "../assets/systemhn-auth01-desktop.jpg";
 import authSessionDesktop from "../assets/systemhn-auth02-desktop.jpg";
 import { tStatic as tUi } from "@/shared/i18n/useT";
+import { HoaNamAuthShell } from "./HoaNamAuthShell";
 
 export interface AuthShellProps {
   /** id của h1 — section aria-labelledby trỏ về đây (giữ hợp đồng a11y cũ). */
@@ -32,6 +33,9 @@ export interface AuthShellProps {
   /** Baseline chính thức chỉ tồn tại cho AUTH-01/AUTH-02 trong SystemHNWeb. */
   baselineScreen?: "login" | "session";
   showBaselineHeading?: boolean;
+  recoveryStep?: string;
+  hideRecoveryBack?: boolean;
+  showRecoveryBack?: boolean;
   children: ReactNode;
 }
 
@@ -446,8 +450,27 @@ export function AuthShell({
   illustration = "login",
   baselineScreen,
   showBaselineHeading,
+  recoveryStep,
+  hideRecoveryBack,
+  showRecoveryBack,
   children,
 }: AuthShellProps) {
+  if (baselineScreen === "login") {
+    return (
+      <HoaNamAuthShell
+        titleId={titleId}
+        title={title}
+        subtitle={subtitle}
+        loadingText={loadingText}
+        showHeading={showBaselineHeading ?? true}
+        recoveryStep={recoveryStep}
+        hideRecoveryBack={hideRecoveryBack}
+        showRecoveryBack={showRecoveryBack}
+      >
+        {children}
+      </HoaNamAuthShell>
+    );
+  }
   if (baselineScreen) {
     return (
       <BaselineAuthShell
