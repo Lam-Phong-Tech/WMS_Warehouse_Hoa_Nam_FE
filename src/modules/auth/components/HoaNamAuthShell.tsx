@@ -260,9 +260,16 @@ export function HoaNamAuthShell({
               aria-haspopup="menu"
               aria-expanded={languageOpen}
               aria-controls={languageOpen ? "auth-language-menu" : undefined}
-              sx={{ border: 0, background: "transparent", color: "inherit", cursor: "pointer", fontSize: 18, padding: 0 }}
+              sx={{ display: "inline-flex", alignItems: "center", gap: "6px", border: 0,
+                background: "transparent", color: "inherit", cursor: "pointer", fontSize: 18,
+                lineHeight: 1, padding: 0 }}
             >
-              {language.toUpperCase()}⌄
+              <span>{language.toUpperCase()}</span>
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none"
+                style={{ flex: "0 0 16px", transform: languageOpen ? "rotate(180deg)" : undefined }}>
+                <path d="m3.5 6 4.5 4 4.5-4" stroke="currentColor" strokeWidth="1.8"
+                  strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </Box>
             {languageOpen && (
               <Box
