@@ -14,7 +14,7 @@ import {
   SkuListMutationNotice,
   type SkuListMutationNoticeValue,
 } from "@/modules/master-data/components/SkuListMutationNotice";
-import { SearchOutlined } from "@/shared/components/icons";
+import { DownOutlined, SearchOutlined } from "@/shared/components/icons";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { SkuListOverview } from "@/modules/master-data/components/SkuListOverview";
 import {
@@ -239,25 +239,23 @@ type SkuFormState = {
   maxStock: string;
 };
 
-const getEMPTY_SKU_FORM = localizedUiValue(
-  (): SkuFormState => ({
-    code: "",
-    name: "",
-    type: "PRODUCT",
-    unit: tUi("dashboard.stockMix.totalUnit"), // giá trị mặc định gửi BE, không phải nhãn hiển thị
-    brandId: "",
-    categoryId: "",
-    modelId: "",
-    powerSourceId: "",
-    packageVariantId: "",
-    versionCode: "V1",
-    serialTracked: true,
-    status: "ACTIVE",
-    publishedToApp: false,
-    minStock: "",
-    maxStock: "",
-  }),
-);
+const getEMPTY_SKU_FORM = localizedUiValue((): SkuFormState => ({
+  code: "",
+  name: "",
+  type: "PRODUCT",
+  unit: tUi("dashboard.stockMix.totalUnit"), // giá trị mặc định gửi BE, không phải nhãn hiển thị
+  brandId: "",
+  categoryId: "",
+  modelId: "",
+  powerSourceId: "",
+  packageVariantId: "",
+  versionCode: "V1",
+  serialTracked: true,
+  status: "ACTIVE",
+  publishedToApp: false,
+  minStock: "",
+  maxStock: "",
+}));
 
 /**
  * Trần độ dài ô chữ của SKU — khớp BE StoreProductRequest/UpdateProductRequest
@@ -384,6 +382,8 @@ function SkuCatalogSelect({
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
+  const [overviewOpen, setOverviewOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
   const [offline, setOffline] = useState(() => !navigator.onLine);
@@ -836,114 +836,149 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             )}
           </div>
         </header>
-        <SkuListOverview refreshKey={overviewRefreshKey} />
-        <form
-          className="hn-sku-filters"
-          onSubmit={(event) => {
-            event.preventDefault();
-            refreshList();
-          }}
-        >
-          <div className="hn-sku-filter hn-sku-filter-search">
-            <label htmlFor="sku-list-search">
-              {copy("Tìm kiếm", "Search")}
-            </label>
-            <UiTextField
-              id="sku-list-search"
-              value={keyword}
-              onChange={(event) => {
-                setKeyword(event.target.value);
-                setPage(1);
-              }}
-              placeholder={t("masterData.sku.searchPlaceholder")}
-              slotProps={{
-                htmlInput: { "aria-label": t("masterData.sku.searchAria") },
-                input: {
-                  startAdornment: (
-                    <SearchOutlined className="hn-sku-search-icon" />
-                  ),
-                },
-              }}
-              fullWidth
-            />
+        <section className="hn-sku-panel">
+          <button
+            type="button"
+            className="hn-sku-panel-toggle"
+            aria-expanded={overviewOpen}
+            aria-controls="hn-sku-overview-content"
+            onClick={() => setOverviewOpen((current) => !current)}
+          >
+            <span>{copy("Thống kê SKU", "SKU summary")}</span>
+            <DownOutlined aria-hidden="true" />
+          </button>
+          <div id="hn-sku-overview-content" hidden={!overviewOpen}>
+            <SkuListOverview refreshKey={overviewRefreshKey} />
           </div>
-          <div className="hn-sku-filter">
-            <span className="hn-sku-filter-label">
-              {t("masterData.sku.colType")}
-            </span>
-            <UiSelect
-              aria-label={t("masterData.sku.typeFilterAria")}
-              value={type}
-              onChange={(value) => {
-                setType(value as SkuType | "");
-                setPage(1);
+        </section>
+        <section className="hn-sku-panel">
+          <button
+            type="button"
+            className="hn-sku-panel-toggle"
+            aria-expanded={filtersOpen}
+            aria-controls="hn-sku-filters-content"
+            onClick={() => setFiltersOpen((current) => !current)}
+          >
+            <span>{copy("Bộ lọc tìm kiếm", "Search filters")}</span>
+            <DownOutlined aria-hidden="true" />
+          </button>
+          <div id="hn-sku-filters-content" hidden={!filtersOpen}>
+            <form
+              className="hn-sku-filters"
+              onSubmit={(event) => {
+                event.preventDefault();
+                refreshList();
               }}
-              placeholder={copy("Tất cả", "All")}
-              fullWidth
-              menuClassName="hn-sku-menu"
-              options={[
-                { value: "PRODUCT", label: t("masterData.sku.typeProduct") },
-                {
-                  value: "COMPONENT",
-                  label: t("masterData.sku.typeComponent"),
-                },
-              ]}
-            />
-          </div>
-          <div className="hn-sku-filter">
-            <span className="hn-sku-filter-label">
-              {t("masterData.sku.colBrand")}
-            </span>
-            <UiSelect
-              aria-label={t("masterData.sku.brandFilterAria")}
-              value={brandId}
-              disabled={catalogsQuery.isLoading}
-              onChange={(value) => {
-                setBrandId(value);
-                setPage(1);
-              }}
-              placeholder={copy("Tất cả", "All")}
-              fullWidth
-              menuClassName="hn-sku-menu"
-              options={brands.map((brand) => ({
-                value: brand.id,
-                label: brand.name || brand.code,
-              }))}
-            />
-          </div>
-          <div className="hn-sku-filter">
-            <span className="hn-sku-filter-label">
-              {t("masterData.status.label")}
-            </span>
-            <UiSelect
-              aria-label={t("masterData.status.filterAria")}
-              value={status}
-              onChange={(value) => {
-                setStatus(value as MasterStatus | "");
-                setPage(1);
-              }}
-              placeholder={copy("Tất cả", "All")}
-              fullWidth
-              menuClassName="hn-sku-menu"
-              options={statusOptions(t)}
-            />
-          </div>
-          <div className="hn-sku-filter-actions">
-            <ActionButton
-              kind="filter"
-              icon={<span />}
-              className="hn-sku-primary"
-              type="submit"
-              loading={query.isFetching && !query.isLoading}
-              disabled={offline}
             >
-              {copy("Áp dụng", "Apply")}
-            </ActionButton>
-            <ActionButton kind="reset" icon={<span />} onClick={resetFilters}>
-              {copy("Đặt lại", "Reset")}
-            </ActionButton>
+              <div className="hn-sku-filter hn-sku-filter-search">
+                <label htmlFor="sku-list-search">
+                  {copy("Tìm kiếm", "Search")}
+                </label>
+                <UiTextField
+                  id="sku-list-search"
+                  value={keyword}
+                  onChange={(event) => {
+                    setKeyword(event.target.value);
+                    setPage(1);
+                  }}
+                  placeholder={t("masterData.sku.searchPlaceholder")}
+                  slotProps={{
+                    htmlInput: { "aria-label": t("masterData.sku.searchAria") },
+                    input: {
+                      startAdornment: (
+                        <SearchOutlined className="hn-sku-search-icon" />
+                      ),
+                    },
+                  }}
+                  fullWidth
+                />
+              </div>
+              <div className="hn-sku-filter">
+                <span className="hn-sku-filter-label">
+                  {t("masterData.sku.colType")}
+                </span>
+                <UiSelect
+                  aria-label={t("masterData.sku.typeFilterAria")}
+                  value={type}
+                  onChange={(value) => {
+                    setType(value as SkuType | "");
+                    setPage(1);
+                  }}
+                  placeholder={copy("Tất cả", "All")}
+                  fullWidth
+                  menuClassName="hn-sku-menu"
+                  options={[
+                    {
+                      value: "PRODUCT",
+                      label: t("masterData.sku.typeProduct"),
+                    },
+                    {
+                      value: "COMPONENT",
+                      label: t("masterData.sku.typeComponent"),
+                    },
+                  ]}
+                />
+              </div>
+              <div className="hn-sku-filter">
+                <span className="hn-sku-filter-label">
+                  {t("masterData.sku.colBrand")}
+                </span>
+                <UiSelect
+                  aria-label={t("masterData.sku.brandFilterAria")}
+                  value={brandId}
+                  disabled={catalogsQuery.isLoading}
+                  onChange={(value) => {
+                    setBrandId(value);
+                    setPage(1);
+                  }}
+                  placeholder={copy("Tất cả", "All")}
+                  fullWidth
+                  menuClassName="hn-sku-menu"
+                  options={brands.map((brand) => ({
+                    value: brand.id,
+                    label: brand.name || brand.code,
+                  }))}
+                />
+              </div>
+              <div className="hn-sku-filter">
+                <span className="hn-sku-filter-label">
+                  {t("masterData.status.label")}
+                </span>
+                <UiSelect
+                  aria-label={t("masterData.status.filterAria")}
+                  value={status}
+                  onChange={(value) => {
+                    setStatus(value as MasterStatus | "");
+                    setPage(1);
+                  }}
+                  placeholder={copy("Tất cả", "All")}
+                  fullWidth
+                  menuClassName="hn-sku-menu"
+                  options={statusOptions(t)}
+                />
+              </div>
+              <div className="hn-sku-filter-actions">
+                <ActionButton
+                  kind="filter"
+                  icon={<span />}
+                  className="hn-sku-primary"
+                  type="submit"
+                  loading={query.isFetching && !query.isLoading}
+                  disabled={offline}
+                >
+                  {copy("Áp dụng", "Apply")}
+                </ActionButton>
+                <ActionButton
+                  kind="reset"
+                  icon={<span />}
+                  onClick={resetFilters}
+                >
+                  {copy("Đặt lại", "Reset")}
+                </ActionButton>
+              </div>
+            </form>
           </div>
-        </form>
+        </section>
         {hasFilters ? (
           <div
             className="hn-sku-filter-chips"
@@ -2183,7 +2218,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <div className="agy-heading-title">
               <h1>{tUi("updatedUi.text_7ebd6aabc34b")}</h1>
               <span className="agy-total">
-                {query.isLoading ? "—" : pagination.total.toLocaleString("vi-VN")}
+                {query.isLoading
+                  ? "—"
+                  : pagination.total.toLocaleString("vi-VN")}
               </span>
             </div>
             <p>{tUi("updatedUi.text_c1caac816fec")}</p>
@@ -2751,6 +2788,8 @@ const DEFECT_FORM_FIELDS = {
 
 export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
+  const [overviewOpen, setOverviewOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) => (language === "en" ? en : vi);
   const [defectSearchParams] = useSearchParams();
@@ -3176,106 +3215,134 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       </header>
       {!blockingError && (
         <>
-          <DefectOverview
-            refreshKey={refreshKey}
-            loading={busy}
-            stale={stale}
-          />
-          <form
-            className="hn-defect-filters"
-            onSubmit={(event) => {
-              event.preventDefault();
-              refresh();
-            }}
-          >
-            <div className="hn-defect-filter hn-defect-filter-search">
-              <label htmlFor="defect-list-search">
-                {copy("Tìm kiếm", "Search")}
-              </label>
-              <UiTextField
-                id="defect-list-search"
-                value={keyword}
-                disabled={busy}
-                onChange={(event) => {
-                  setKeyword(event.target.value);
-                  setPage(1);
-                }}
-                placeholder={copy(
-                  "Nhập mã hoặc tên bệnh/lỗi",
-                  "Enter defect code or name",
-                )}
-                slotProps={{
-                  htmlInput: {
-                    "aria-label": t("masterData.defect.searchAria"),
-                  },
-                  input: {
-                    startAdornment: (
-                      <DefectSymbol
-                        name="search"
-                        className="hn-defect-search-icon"
-                      />
-                    ),
-                    endAdornment: keyword ? (
-                      <button
-                        className="hn-defect-clear"
-                        type="button"
-                        onClick={() => {
-                          setKeyword("");
-                          setPage(1);
-                        }}
-                        aria-label={copy("Xóa từ khóa", "Clear keyword")}
-                      >
-                        <DefectSymbol name="close" />
-                      </button>
-                    ) : undefined,
-                  },
-                }}
-                fullWidth
+          <section className="hn-defect-panel">
+            <button
+              type="button"
+              className="hn-defect-panel-toggle"
+              aria-expanded={overviewOpen}
+              aria-controls="hn-defect-overview-content"
+              onClick={() => setOverviewOpen((current) => !current)}
+            >
+              <span>{copy("Thống kê bệnh / lỗi", "Defect summary")}</span>
+              <DownOutlined aria-hidden="true" />
+            </button>
+            <div id="hn-defect-overview-content" hidden={!overviewOpen}>
+              <DefectOverview
+                refreshKey={refreshKey}
+                loading={busy}
+                stale={stale}
               />
             </div>
-            <div className="hn-defect-filter">
-              <label htmlFor="defect-list-status">
-                {t("masterData.status.label")}
-              </label>
-              <UiSelect
-                id="defect-list-status"
-                aria-label={t("masterData.status.filterAria")}
-                value={status}
-                disabled={busy}
-                onChange={(value) => {
-                  setStatus(value as MasterStatus | "");
-                  setPage(1);
+          </section>
+          <section className="hn-defect-panel">
+            <button
+              type="button"
+              className="hn-defect-panel-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls="hn-defect-filters-content"
+              onClick={() => setFiltersOpen((current) => !current)}
+            >
+              <span>{copy("Bộ lọc tìm kiếm", "Search filters")}</span>
+              <DownOutlined aria-hidden="true" />
+            </button>
+            <div id="hn-defect-filters-content" hidden={!filtersOpen}>
+              <form
+                className="hn-defect-filters"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  refresh();
                 }}
-                fullWidth
-                displayEmpty
-                menuClassName="hn-defect-menu"
-                options={[
-                  { value: "", label: copy("Tất cả", "All") },
-                  ...statusOptions(t),
-                ]}
-              />
-            </div>
-            <div className="hn-defect-filter-actions">
-              <ActionButton
-                kind="filter"
-                icon={<span />}
-                className="hn-defect-primary"
-                type="submit"
-                disabled={busy || refreshing || offline}
               >
-                {copy("Áp dụng", "Apply")}
-              </ActionButton>
-              <ActionButton
-                kind="reset"
-                icon={<span />}
-                className="hn-defect-secondary"
-                onClick={resetFilters}
-                disabled={busy}
-              >
-                {copy("Đặt lại", "Reset")}
-              </ActionButton>
+                <div className="hn-defect-filter hn-defect-filter-search">
+                  <label htmlFor="defect-list-search">
+                    {copy("Tìm kiếm", "Search")}
+                  </label>
+                  <UiTextField
+                    id="defect-list-search"
+                    value={keyword}
+                    disabled={busy}
+                    onChange={(event) => {
+                      setKeyword(event.target.value);
+                      setPage(1);
+                    }}
+                    placeholder={copy(
+                      "Nhập mã hoặc tên bệnh/lỗi",
+                      "Enter defect code or name",
+                    )}
+                    slotProps={{
+                      htmlInput: {
+                        "aria-label": t("masterData.defect.searchAria"),
+                      },
+                      input: {
+                        startAdornment: (
+                          <DefectSymbol
+                            name="search"
+                            className="hn-defect-search-icon"
+                          />
+                        ),
+                        endAdornment: keyword ? (
+                          <button
+                            className="hn-defect-clear"
+                            type="button"
+                            onClick={() => {
+                              setKeyword("");
+                              setPage(1);
+                            }}
+                            aria-label={copy("Xóa từ khóa", "Clear keyword")}
+                          >
+                            <DefectSymbol name="close" />
+                          </button>
+                        ) : undefined,
+                      },
+                    }}
+                    fullWidth
+                  />
+                </div>
+                <div className="hn-defect-filter">
+                  <label htmlFor="defect-list-status">
+                    {t("masterData.status.label")}
+                  </label>
+                  <UiSelect
+                    id="defect-list-status"
+                    aria-label={t("masterData.status.filterAria")}
+                    value={status}
+                    disabled={busy}
+                    onChange={(value) => {
+                      setStatus(value as MasterStatus | "");
+                      setPage(1);
+                    }}
+                    fullWidth
+                    displayEmpty
+                    menuClassName="hn-defect-menu"
+                    options={[
+                      { value: "", label: copy("Tất cả", "All") },
+                      ...statusOptions(t),
+                    ]}
+                  />
+                </div>
+                <div className="hn-defect-filter-actions">
+                  <ActionButton
+                    kind="filter"
+                    icon={<span />}
+                    className="hn-defect-primary"
+                    type="submit"
+                    disabled={busy || refreshing || offline}
+                  >
+                    {copy("Áp dụng", "Apply")}
+                  </ActionButton>
+                  <ActionButton
+                    kind="reset"
+                    icon={<span />}
+                    className="hn-defect-secondary"
+                    onClick={resetFilters}
+                    disabled={busy}
+                  >
+                    {copy("Đặt lại", "Reset")}
+                  </ActionButton>
+                </div>
+              </form>
             </div>
-          </form>
+          </section>
           {!canManage && (
             <div className="hn-defect-readonly-note">
               <DefectSymbol name="info" />

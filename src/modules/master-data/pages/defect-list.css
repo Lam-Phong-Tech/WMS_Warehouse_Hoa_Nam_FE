@@ -190,11 +190,55 @@
 }
 .hn-defect-overview,
 .hn-defect-filters,
+.hn-defect-panel,
 .hn-defect-list-card,
 .hn-defect-blocking {
   border: 1px solid var(--defect-line);
   border-radius: var(--ops-radius-card);
   background: var(--defect-surface);
+}
+.hn-defect-panel {
+  min-width: 0;
+}
+.hn-defect-panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--defect-ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.hn-defect-panel-toggle:hover {
+  background: var(--defect-pale);
+}
+.hn-defect-panel-toggle > i {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  font-size: 18px;
+  line-height: 18px;
+  text-align: center;
+  transition: transform 0.16s ease;
+}
+.hn-defect-panel-toggle[aria-expanded="true"] > i {
+  transform: rotate(180deg);
+}
+.hn-defect-panel > div[hidden] {
+  display: none;
+}
+.hn-defect-panel .hn-defect-overview,
+.hn-defect-panel .hn-defect-filters {
+  border: 0;
+  border-top: 1px solid var(--defect-line);
+  border-radius: 0;
 }
 .hn-defect-overview {
   display: grid;

@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { DownOutlined } from "@/shared/components/icons";
 import { useComponentIssues } from "@/modules/warranty/hooks/use-warranty";
 import type { ComponentIssueStatus } from "@/modules/warranty/services/componentIssueService";
 import { formatQuantity } from "@/shared/utils/format-number";
@@ -55,6 +56,7 @@ function Metric({
 export function ComponentIssueOverview({
   onStatusSelect,
 }: ComponentIssueOverviewProps) {
+  const [expanded, setExpanded] = useState(true);
   const drafts = useComponentIssues({ status: "DRAFT", page: 1, per_page: 1 });
   const scanning = useComponentIssues({
     status: "SCANNING",
@@ -117,58 +119,78 @@ export function ComponentIssueOverview({
       aria-label={tUi("updatedUi.text_80df50920cc8")}
       aria-busy={busy}
     >
-      <h2>{tUi("updatedUi.text_80df50920cc8")}</h2>
-      <div className="hn-war04-overview-grid" aria-live="polite">
-        <Metric
-          className="hn-war04-overview-posted"
-          label={tUi("updatedUi.text_1c653e050dc1")}
-          onClick={onStatusSelect ? () => onStatusSelect("POSTED") : undefined}
+      <div className="hn-war04-overview-heading">
+        <h2>{tUi("updatedUi.text_80df50920cc8")}</h2>
+        <button
+          type="button"
+          className="hn-war04-overview-toggle"
+          aria-label={
+            expanded ? "Thu gọn tổng quan ghi sổ" : "Mở rộng tổng quan ghi sổ"
+          }
+          aria-expanded={expanded}
+          aria-controls="hn-war04-overview-content"
+          onClick={() => setExpanded((current) => !current)}
         >
-          <strong className="hn-war04-overview-value">
-            {displayCount(postedTotal)} / {displayCount(total)}
-          </strong>
-          <span className="hn-war04-overview-percent">{ratioLabel}</span>
-          <div
-            className="hn-war04-progress"
-            role="progressbar"
-            aria-label={tUi("updatedUi.text_4c70d526b32f")}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={ratio}
-            aria-valuetext={
-              ratio === undefined
-                ? tUi("updatedUi.text_63530aef77b4")
-                : ratioLabel
+          <DownOutlined aria-hidden="true" />
+        </button>
+      </div>
+      <div id="hn-war04-overview-content" hidden={!expanded}>
+        <div className="hn-war04-overview-grid" aria-live="polite">
+          <Metric
+            className="hn-war04-overview-posted"
+            label={tUi("updatedUi.text_1c653e050dc1")}
+            onClick={
+              onStatusSelect ? () => onStatusSelect("POSTED") : undefined
             }
           >
-            <span style={{ width: `${ratio ?? 0}%` }} />
-          </div>
-          <span>{tUi("updatedUi.text_a32e77f6dd7f")}</span>
-        </Metric>
-        {stats.map(({ status, label, count }) => (
-          <Metric
-            key={status}
-            className="hn-war04-overview-stat"
-            label={tUi("updatedUi.text_1d70ceae213e", {
-              value0: String(label.toLocaleLowerCase("vi-VN")),
-            })}
-            onClick={onStatusSelect ? () => onStatusSelect(status) : undefined}
-          >
             <strong className="hn-war04-overview-value">
-              {displayCount(count)}
+              {displayCount(postedTotal)} / {displayCount(total)}
             </strong>
-            <span>{label}</span>
+            <span className="hn-war04-overview-percent">{ratioLabel}</span>
+            <div
+              className="hn-war04-progress"
+              role="progressbar"
+              aria-label={tUi("updatedUi.text_4c70d526b32f")}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={ratio}
+              aria-valuetext={
+                ratio === undefined
+                  ? tUi("updatedUi.text_63530aef77b4")
+                  : ratioLabel
+              }
+            >
+              <span style={{ width: `${ratio ?? 0}%` }} />
+            </div>
+            <span>{tUi("updatedUi.text_a32e77f6dd7f")}</span>
           </Metric>
-        ))}
+          {stats.map(({ status, label, count }) => (
+            <Metric
+              key={status}
+              className="hn-war04-overview-stat"
+              label={tUi("updatedUi.text_1d70ceae213e", {
+                value0: String(label.toLocaleLowerCase("vi-VN")),
+              })}
+              onClick={
+                onStatusSelect ? () => onStatusSelect(status) : undefined
+              }
+            >
+              <strong className="hn-war04-overview-value">
+                {displayCount(count)}
+              </strong>
+              <span>{label}</span>
+            </Metric>
+          ))}
+        </div>
+        {hasError ? (
+          <p className="hn-war04-overview-retry" role="alert">
+            {tUi("updatedUi.text_e4689673a956")}{" "}
+            <button type="button" onClick={retry} disabled={busy}>
+              {busy ? tUi("warranty.detail.uploading") : tUi("common.retry")}
+            </button>
+          </p>
+        ) : null}
       </div>
-      {hasError ? (
-        <p className="hn-war04-overview-retry" role="alert">
-          {tUi("updatedUi.text_e4689673a956")}{" "}
-          <button type="button" onClick={retry} disabled={busy}>
-            {busy ? tUi("warranty.detail.uploading") : tUi("common.retry")}
-          </button>
-        </p>
-      ) : null}
     </section>
   );
 }

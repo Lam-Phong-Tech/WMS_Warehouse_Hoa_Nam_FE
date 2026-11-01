@@ -141,46 +141,6 @@
   padding: 9px 25px;
   min-width: 188px;
 }
-.hn-inbound-warehouse {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 46px;
-  min-width: 200px;
-  padding: 6px 14px;
-  background: var(--in-surface);
-  color: var(--in-primary);
-  border: 1px solid var(--in-line);
-  border-radius: var(--in-radius);
-  text-align: left;
-}
-.hn-inbound-warehouse > span {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-}
-.hn-inbound-warehouse strong {
-  color: var(--in-ink);
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.hn-inbound-warehouse small {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--in-success);
-  font-size: 12px;
-}
-.hn-inbound-warehouse small i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.hn-inbound-warehouse:hover {
-  border-color: var(--in-primary);
-  background: var(--in-pale);
-}
 .hn-inbound-list .hn-inbound-card,
 .hn-inbound-list .hn-inbound-list-card {
   background: var(--in-surface);
@@ -775,12 +735,10 @@
   }
   .hn-inbound-header-actions {
     width: 100%;
-  }
-  .hn-inbound-warehouse {
-    flex: 1;
+    justify-content: flex-end;
   }
   .hn-inbound-create {
-    flex: 0.6;
+    flex: 0 0 auto;
   }
   .hn-inbound-overview-metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));

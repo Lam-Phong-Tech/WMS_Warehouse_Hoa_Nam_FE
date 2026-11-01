@@ -111,24 +111,6 @@
   font-size: 14px;
   line-height: 22px;
 }
-.hn-putaway-page .ptw-warehouse {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 100%;
-  padding: 8px 14px;
-  color: var(--ptw-heading);
-  background: var(--ptw-card);
-  border: 1px solid var(--ptw-line);
-  border-radius: var(--ptw-radius);
-  font-weight: 600;
-  line-height: 22px;
-  overflow-wrap: anywhere;
-}
-.hn-putaway-page .ptw-warehouse > :first-child {
-  flex-shrink: 0;
-  color: var(--ptw-primary);
-}
 .hn-putaway-page .ptw-tabs {
   display: flex;
   align-items: stretch;
@@ -734,17 +716,6 @@
   border-color: var(--ptw-primary);
 }
 
-.hn-putaway-page .ptw-warehouse > div {
-  display: grid;
-  min-width: 0;
-  gap: 1px;
-}
-.hn-putaway-page .ptw-warehouse small {
-  color: var(--ptw-muted);
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-}
 .hn-putaway-page .ptw-list-heading h2 {
   display: flex;
   align-items: center;
@@ -923,9 +894,6 @@
   }
   .hn-putaway-page .ptw-heading > div:first-child {
     flex-basis: 100%;
-  }
-  .hn-putaway-page .ptw-warehouse {
-    padding-block: 6px;
   }
   .hn-putaway-page .ptw-stats > article {
     gap: 10px;

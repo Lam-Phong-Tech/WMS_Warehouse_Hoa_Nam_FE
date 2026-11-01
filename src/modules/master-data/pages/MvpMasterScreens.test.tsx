@@ -106,6 +106,35 @@ describe("API-backed MVP master screens", () => {
     useAuthStore.setState({ isSuperAdmin: true, permissionCodes: [] });
   });
 
+  it("thu gọn riêng thống kê và bộ lọc SKU, giữ giá trị tìm kiếm khi mở lại", () => {
+    render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
+
+    const overviewToggle = screen.getByRole("button", { name: "Thống kê SKU" });
+    const filtersToggle = screen.getByRole("button", { name: "Bộ lọc tìm kiếm" });
+    const overview = screen.getByRole("region", { name: "Danh mục SKU" });
+    const search = document.getElementById("sku-list-search") as HTMLInputElement;
+
+    fireEvent.change(search, { target: { value: "Máy khoan" } });
+    fireEvent.click(overviewToggle);
+    expect(overviewToggle).toHaveAttribute("aria-expanded", "false");
+    expect(overview).not.toBeVisible();
+    expect(search).toBeVisible();
+
+    fireEvent.click(filtersToggle);
+    expect(filtersToggle).toHaveAttribute("aria-expanded", "false");
+    expect(search).not.toBeVisible();
+
+    fireEvent.click(overviewToggle);
+    fireEvent.click(filtersToggle);
+    expect(overview).toBeVisible();
+    expect(search).toBeVisible();
+    expect(search).toHaveValue("Máy khoan");
+  });
+
   it("keeps SKU create/edit inside the list modal", async () => {
     render(
       <MemoryRouter>
@@ -150,6 +179,41 @@ describe("API-backed MVP master screens", () => {
     // REQ-001: màn master đổi nhãn "Đại lý" → "Nơi nhận".
     fireEvent.click(screen.getByRole("button", { name: /Thêm nơi nhận/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("thu gọn riêng thống kê và bộ lọc bệnh/lỗi, giữ từ khóa khi mở lại", () => {
+    render(
+      <MemoryRouter>
+        <DefectMasterScreen />
+      </MemoryRouter>,
+    );
+
+    const overviewToggle = screen.getByRole("button", {
+      name: "Thống kê bệnh / lỗi",
+    });
+    const filtersToggle = screen.getByRole("button", {
+      name: "Bộ lọc tìm kiếm",
+    });
+    const overview = screen.getByRole("region", {
+      name: "Danh mục bệnh / lỗi",
+    });
+    const search = document.getElementById("defect-list-search") as HTMLInputElement;
+
+    fireEvent.change(search, { target: { value: "motor" } });
+    fireEvent.click(overviewToggle);
+    expect(overviewToggle).toHaveAttribute("aria-expanded", "false");
+    expect(overview).not.toBeVisible();
+    expect(search).toBeVisible();
+
+    fireEvent.click(filtersToggle);
+    expect(filtersToggle).toHaveAttribute("aria-expanded", "false");
+    expect(search).not.toBeVisible();
+    expect(screen.getByText("DF-MOTOR-01")).toBeVisible();
+
+    fireEvent.click(overviewToggle);
+    fireEvent.click(filtersToggle);
+    expect(overview).toBeVisible();
+    expect(search).toHaveValue("motor");
   });
 
   it("loads defect data and supports legacy add deep link", () => {

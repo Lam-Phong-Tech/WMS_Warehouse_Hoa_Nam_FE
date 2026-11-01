@@ -10,7 +10,6 @@ const from7 = now.subtract(6, "day").format("YYYY-MM-DD");
 
 const baseProps = {
   name: "QA",
-  warehouseLabel: "Kho Hoa Nam",
   cards: [
     {
       id: "DASH-KPI-01",
@@ -91,7 +90,7 @@ describe("DashboardSnapshot MAP-01 parity", () => {
     const { container } = renderSnapshot();
 
     fireEvent.click(screen.getByRole("button", { name: /7 ngày gần nhất/i }));
-    fireEvent.click(screen.getByRole("button", { name: "Tùy chỉnh" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Tùy chỉnh" }));
 
     const fromInput = screen.getByLabelText("Từ ngày");
     const apply = screen.getByRole("button", { name: "Áp dụng" });

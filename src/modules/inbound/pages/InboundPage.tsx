@@ -31,7 +31,6 @@ import { EMPTY_TEXT } from "@/shared/constants/display";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import { useT } from "@/shared/i18n/useT";
 import { InboundDraftModal } from "@/modules/inbound/components/InboundDraftModal";
 import { InboundOverview } from "@/modules/inbound/components/InboundOverview";
@@ -70,77 +69,6 @@ function useInboundPermission(code: string) {
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   return hasAnyWmsPermission(permissionCodes, [code], isSuperAdmin);
 }
-function WarehouseContext() {
-  const query = useActiveWarehouses();
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const warehouse = query.data?.[0];
-  const name =
-    warehouse?.name == null
-      ? tUi("updatedUi.text_c948344c0d34")
-      : String(warehouse.name);
-  return (
-    <>
-      <button
-        type="button"
-        className="hn-inbound-warehouse"
-        aria-label={tUi("updatedUi.text_5e4c98466ae6")}
-        aria-haspopup="menu"
-        aria-expanded={Boolean(anchor)}
-        onClick={(event) => setAnchor(event.currentTarget)}
-      >
-        <UiIcon name="warehouse-alt" />
-        <span>
-          <strong>{name}</strong>
-          <small>
-            {query.isError ? (
-              tUi("updatedUi.text_02ed7af0bfa9")
-            ) : query.isLoading ? (
-              tUi("warranty.detail.uploading")
-            ) : warehouse ? (
-              <>
-                <i />
-                {tUi("dashboard.snapshot.warehouseActive")}
-              </>
-            ) : (
-              tUi("updatedUi.text_0dd0fb192a87")
-            )}
-          </small>
-        </span>
-        <UiIcon name="angle-small-down" size="sm" />
-      </button>
-      <Menu
-        anchorEl={anchor}
-        open={Boolean(anchor)}
-        onClose={() => setAnchor(null)}
-        slotProps={{ paper: { className: "hn-inbound-menu" } }}
-      >
-        <li className="hn-inbound-menu-information" role="presentation">
-          <strong>{name}</strong>
-          <span>{warehouse?.code == null ? "" : String(warehouse.code)}</span>
-          <span>
-            {warehouse
-              ? tUi("updatedUi.text_739b544fcdfe")
-              : tUi("updatedUi.text_d75562257216")}
-          </span>
-        </li>
-        {query.isError ? (
-          <MenuItem
-            onClick={() => {
-              void query.refetch();
-              setAnchor(null);
-            }}
-          >
-            {tUi("common.retry")}
-          </MenuItem>
-        ) : null}
-        <MenuItem onClick={() => setAnchor(null)}>
-          {tUi("common.close")}
-        </MenuItem>
-      </Menu>
-    </>
-  );
-}
-
 function InboundListScreen() {
   const t = useT();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -330,7 +258,6 @@ function InboundListScreen() {
           <p>{tUi("updatedUi.text_30519bd9682d")}</p>
         </div>
         <div className="hn-inbound-header-actions">
-          <WarehouseContext />
           {canCreate ? (
             <ActionButton
               kind="create"

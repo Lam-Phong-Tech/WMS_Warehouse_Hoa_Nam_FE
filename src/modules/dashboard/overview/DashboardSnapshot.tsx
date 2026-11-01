@@ -269,7 +269,6 @@ function MonthGrid({
 
 export function DashboardSnapshot({
   name,
-  warehouseLabel,
   cards,
   rows,
   trend,
@@ -289,7 +288,6 @@ export function DashboardSnapshot({
   onNavigate,
 }: {
   name: string;
-  warehouseLabel: string;
   cards: KpiCardModel[];
   rows: FlowRow[];
   trend: TrendRow[];
@@ -488,22 +486,6 @@ export function DashboardSnapshot({
             {businessNow.format("HH:mm")}
           </span>
         </div>
-        <button
-          type="button"
-          className="snapshot-warehouse"
-          aria-label={t("dashboard.snapshot.warehouseOpenAria")}
-          onClick={() => onNavigate("/master-data/warehouse")}
-        >
-          <DashIcon name="warehouse" />
-          <span>
-            <strong>{warehouseLabel}</strong>
-            <small>
-              <i />
-              {t("dashboard.snapshot.warehouseActive")}
-            </small>
-          </span>
-          <DashIcon name="chevron-down" />
-        </button>
       </header>
 
       {effectiveForbidden ? (

@@ -104,53 +104,6 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   align-items: stretch;
   gap: 14px;
 }
-.hn-outbound-warehouse {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 200px;
-  min-height: 48px;
-  padding: 6px 14px;
-  border: 1px solid var(--out-line);
-  border-radius: var(--ops-radius-card);
-  background: var(--out-surface);
-  color: var(--out-primary);
-  text-align: left;
-}
-.hn-outbound-warehouse > span {
-  display: grid;
-  min-width: 0;
-  flex: 1;
-}
-.hn-outbound-warehouse strong {
-  color: var(--out-ink);
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.hn-outbound-warehouse small {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--out-success);
-  font-size: 12px;
-}
-.hn-outbound-warehouse small i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.hn-outbound-warehouse:hover {
-  border-color: var(--out-primary);
-  background: var(--out-pale);
-}
-.hn-outbound-warehouse-information {
-  display: grid;
-  gap: 5px;
-  padding: 10px 16px;
-  max-width: min(340px, calc(100vw - 36px));
-  overflow-wrap: anywhere;
-}
 .hn-outbound-list .MuiButton-root:not(.hn-row-action) {
   min-height: var(--ops-control-height);
   border-radius: var(--ops-radius-control);
@@ -913,10 +866,6 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
     flex: 1;
     flex-wrap: wrap;
   }
-  .hn-outbound-warehouse {
-    flex: 1;
-    min-width: 175px;
-  }
   .hn-outbound-list .hn-outbound-intake {
     flex: 1;
   }
@@ -981,9 +930,6 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   .hn-outbound-header-actions {
     margin-top: 12px;
     width: 100%;
-  }
-  .hn-outbound-warehouse {
-    min-width: 0;
   }
   .hn-outbound-list-heading {
     align-items: flex-start;

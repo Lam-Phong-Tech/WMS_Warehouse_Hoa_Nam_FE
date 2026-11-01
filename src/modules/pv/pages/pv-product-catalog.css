@@ -139,34 +139,6 @@
   color: inherit;
 }
 
-.pv-catalog-page .pv-catalog-warehouse {
-  display: flex;
-  gap: 10px;
-  min-height: 50px;
-  padding: 6px 12px;
-  text-align: left;
-}
-
-.pv-catalog-warehouse > span:not(.MuiTouchRipple-root) {
-  min-width: 0;
-}
-
-.pv-catalog-warehouse strong,
-.pv-catalog-warehouse small {
-  display: block;
-  overflow-wrap: anywhere;
-}
-
-.pv-catalog-warehouse strong {
-  font-size: 14px;
-  font-weight: 600;
-}
-.pv-catalog-warehouse small {
-  color: var(--pv-muted);
-  font-size: 11px;
-  font-weight: 400;
-}
-
 .pv-catalog-panel {
   min-width: 0;
   padding: 16px;
@@ -794,13 +766,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
-  .pv-catalog-page .pv-catalog-warehouse {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-  }
-  .pv-catalog-warehouse > span:last-of-type:not(.MuiTouchRipple-root) {
-    margin-left: auto;
-  }
   .pv-catalog-heading-actions > .MuiButton-root {
     padding-inline: 9px;
     font-size: 12px;
@@ -970,6 +935,36 @@
 .pv-catalog-panel-heading {
   justify-content: flex-start;
 }
+.pv-catalog-panel.is-collapsed .pv-catalog-panel-heading {
+  margin-bottom: 0;
+}
+.pv-catalog-panel > div[hidden] {
+  display: none;
+}
+.pv-catalog-overview-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--pv-card);
+  color: var(--pv-blue);
+  cursor: pointer;
+}
+.pv-catalog-overview-toggle:hover {
+  background: var(--pv-pale);
+}
+.pv-catalog-overview-toggle > i {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 16px;
+  transition: transform 0.16s ease;
+}
+.pv-catalog-overview-toggle[aria-expanded="true"] > i {
+  transform: rotate(180deg);
+}
 .pv-catalog-stat {
   background: color-mix(in srgb, var(--pv-stat) 4%, var(--pv-card));
   border-color: color-mix(in srgb, var(--pv-stat) 15%, var(--pv-card));
@@ -1077,10 +1072,6 @@ body:has(.pv-catalog-pagination [aria-expanded="true"])
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.pv-catalog-page .pv-catalog-warehouse > span:not(.MuiTouchRipple-root) {
-  margin-left: 0;
-  margin-right: auto;
 }
 .pv-catalog-dialog [data-testid="pv-image-dropzone"] .MuiButton-root {
   background: var(--pv-pale);

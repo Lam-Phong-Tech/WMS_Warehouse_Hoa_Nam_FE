@@ -5,6 +5,7 @@ import {
   useInboundDetail,
   useInboundScanEntries,
 } from "@/modules/inbound/hooks/use-inbound";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { InboundReportDetail } from "./InboundReportDetail";
 import type { FlowDocument } from "./inventory-flow-api";
 
@@ -12,13 +13,16 @@ vi.mock("@/modules/inbound/hooks/use-inbound", () => ({
   useInboundDetail: vi.fn(),
   useInboundScanEntries: vi.fn(),
 }));
+vi.mock("@/shared/data/reference-queries", () => ({
+  useWarehouseDirectory: vi.fn(),
+}));
 
 const documentCard: FlowDocument = {
   id: "in-1",
   document_no: "PN-001",
   doc_type: "INBOUND",
   status: "POSTED",
-  warehouse_code: "HN01",
+  warehouse_code: "KHO-TONG-HN",
   counterpart: "Nhà cung cấp A",
   created_by_name: "Nguyễn A",
   posted_at: "2026-10-26T09:15:00+07:00",
@@ -28,6 +32,9 @@ const documentCard: FlowDocument = {
 
 describe("Chi tiết báo cáo nhập kho", () => {
   it("hiển thị thông tin phiếu, SKU, lịch sử và danh sách mã thay cho modal quét", () => {
+    vi.mocked(useWarehouseDirectory).mockReturnValue({
+      data: [{ code: "KHO-TONG-HN", name: "Kho tổng Hoa Nam" }],
+    } as unknown as ReturnType<typeof useWarehouseDirectory>);
     vi.mocked(useInboundDetail).mockReturnValue({
       data: {
         document: {
@@ -101,6 +108,11 @@ describe("Chi tiết báo cáo nhập kho", () => {
       screen.getByRole("heading", { name: "Chi tiết báo cáo nhập kho" }),
     ).toBeInTheDocument();
     expect(screen.getByText("HD-001")).toBeInTheDocument();
+    expect(screen.getByText("Kho tổng Hoa Nam")).toBeInTheDocument();
+    expect(screen.getByText(/Phạm vi báo cáo:/)).toHaveTextContent(
+      "Kho tổng Hoa Nam · Giờ Việt Nam",
+    );
+    expect(screen.queryByText("KHO-TONG-HN")).not.toBeInTheDocument();
     expect(screen.getByText("Hoàn tất")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Mở chứng từ gốc/ }),

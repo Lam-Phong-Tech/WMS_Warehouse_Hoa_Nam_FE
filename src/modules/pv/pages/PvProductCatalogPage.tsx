@@ -40,10 +40,9 @@ import { ActionButton, RowActionButton, RowActionGroup } from "@/shared/componen
 import {
   AppstoreOutlined,
   CameraOutlined,
+  DownOutlined,
   EyeOutlined,
   ReloadOutlined,
-  HomeOutlined,
-  RightOutlined,
   UnorderedListOutlined,
 } from "@/shared/components/icons";
 import {
@@ -271,11 +270,6 @@ function useCanManagePv() {
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   return {
-    canViewWarehouse: hasAnyWmsPermission(
-      permissionCodes,
-      [P.WAREHOUSE_VIEW, P.WAREHOUSE_MANAGE],
-      isSuperAdmin,
-    ),
     canManage: hasAnyWmsPermission(
       permissionCodes,
       [P.PV_MASTER_MANAGE],
@@ -405,10 +399,10 @@ function PvCatalogCard({
 export function PvProductCatalogPage() {
   const navigate = useNavigate();
   const t = useT();
-  const { canManage, canPublish, canViewWarehouse } = useCanManagePv();
+  const { canManage, canPublish } = useCanManagePv();
   const language = useLanguageStore((state) => state.language);
-  const context = useAuthStore((state) => state.currentContext);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
+  const [overviewOpen, setOverviewOpen] = useState(true);
   // Kiểu hiển thị là lựa chọn của PHIÊN LÀM VIỆC, không nằm trong bộ lọc: đổi
   // qua dạng hộp không được đụng tới trang / từ khoá đang xem.
   const [view, setView] = useState<PvCatalogView>("table");
@@ -805,29 +799,6 @@ export function PvProductCatalogPage() {
         </div>
         <div className="pv-catalog-heading-actions">
           <UiButton
-            onClick={() => navigate(ROUTES.WAREHOUSE_CONFIG)}
-            disabled={!canViewWarehouse}
-            aria-label={copy("Mở cấu hình kho", "Open warehouse settings")}
-            appearance="outlined"
-            className="pv-catalog-warehouse"
-          >
-            <HomeOutlined />
-            <span>
-              <strong>
-                {context?.warehouse_name ||
-                  (context?.scope_type === "phong_ban"
-                    ? context?.department_name
-                    : null) ||
-                  (context?.scope_type !== "he_thong"
-                    ? context?.org_unit_name
-                    : null) ||
-                  copy("Toàn hệ thống", "System-wide")}
-              </strong>
-              <small>{copy("Phạm vi hiện tại", "Current scope")}</small>
-            </span>
-            <RightOutlined />
-          </UiButton>
-          <UiButton
             onClick={() => navigate(ROUTES.PV_CATALOG)}
             appearance="outlined"
             startIcon={<EyeOutlined />}
@@ -846,7 +817,7 @@ export function PvProductCatalogPage() {
       </header>
 
       <section
-        className="pv-catalog-panel"
+        className={`pv-catalog-panel${overviewOpen ? "" : " is-collapsed"}`}
         aria-labelledby="pv-catalog-overview-title"
       >
         <div className="pv-catalog-panel-heading">
@@ -864,36 +835,55 @@ export function PvProductCatalogPage() {
               "App PV visibility does not change stock quantities.",
             )}
           />
+          <button
+            type="button"
+            className="pv-catalog-overview-toggle"
+            aria-label={
+              overviewOpen
+                ? copy(
+                    "Thu gọn tổng quan danh mục",
+                    "Collapse catalog overview",
+                  )
+                : copy("Mở rộng tổng quan danh mục", "Expand catalog overview")
+            }
+            aria-expanded={overviewOpen}
+            aria-controls="pv-catalog-overview-content"
+            onClick={() => setOverviewOpen((current) => !current)}
+          >
+            <DownOutlined />
+          </button>
         </div>
-        <div className="pv-catalog-stats" aria-busy={profiles.isFetching}>
-          {stats.map((stat) => (
-            <div
-              key={stat.icon}
-              className="pv-catalog-stat"
-              data-tone={stat.tone}
-              title={stat.detail}
-            >
-              <span className="pv-catalog-stat-icon">
-                <PvCatalogSymbol name={stat.icon} />
-              </span>
-              <div>
-                <strong>
-                  {statReady
-                    ? stat.value.toLocaleString(
-                        language === "vi" ? "vi-VN" : "en-US",
-                      )
-                    : "—"}
-                </strong>
-                <span>{stat.label}</span>
+        <div id="pv-catalog-overview-content" hidden={!overviewOpen}>
+          <div className="pv-catalog-stats" aria-busy={profiles.isFetching}>
+            {stats.map((stat) => (
+              <div
+                key={stat.icon}
+                className="pv-catalog-stat"
+                data-tone={stat.tone}
+                title={stat.detail}
+              >
+                <span className="pv-catalog-stat-icon">
+                  <PvCatalogSymbol name={stat.icon} />
+                </span>
+                <div>
+                  <strong>
+                    {statReady
+                      ? stat.value.toLocaleString(
+                          language === "vi" ? "vi-VN" : "en-US",
+                        )
+                      : "—"}
+                  </strong>
+                  <span>{stat.label}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          {!canPublish ? (
+            <p className="pv-catalog-permission-note">
+              {t("pv.admin.leadNoPublish")}
+            </p>
+          ) : null}
         </div>
-        {!canPublish ? (
-          <p className="pv-catalog-permission-note">
-            {t("pv.admin.leadNoPublish")}
-          </p>
-        ) : null}
       </section>
 
       <section

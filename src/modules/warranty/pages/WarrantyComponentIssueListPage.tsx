@@ -103,9 +103,6 @@ export default function WarrantyComponentIssueListPage() {
     anchor: HTMLElement;
     row: ComponentIssueDocument;
   } | null>(null);
-  const [warehouseAnchor, setWarehouseAnchor] = useState<HTMLElement | null>(
-    null,
-  );
   const [online, setOnline] = useState(() => navigator.onLine);
 
   useEffect(() => {
@@ -198,14 +195,6 @@ export default function WarrantyComponentIssueListPage() {
       ),
     [warehousesQuery.data],
   );
-  const activeWarehouse = (warehousesQuery.data ?? []).find(
-    (row) => row.status === "ACTIVE",
-  );
-  const warehouseName = activeWarehouse
-    ? String(
-        activeWarehouse.name ?? activeWarehouse.warehouse_name ?? "Kho Hoa Nam",
-      )
-    : "Kho Hoa Nam";
   const caseIds = useMemo(
     () => [...new Set(rows.map((row) => row.warranty_case_id).filter(Boolean))],
     [rows],
@@ -363,33 +352,6 @@ export default function WarrantyComponentIssueListPage() {
           >
             <UiIcon name="plus" size="sm" />
             {tUi("updatedUi.text_6f935d4fb7e5")}
-          </button>
-          <button
-            type="button"
-            className="hn-war04-warehouse"
-            aria-label={tUi("updatedUi.text_b1358217705d")}
-            aria-haspopup="menu"
-            aria-expanded={Boolean(warehouseAnchor)}
-            onClick={(event) => setWarehouseAnchor(event.currentTarget)}
-          >
-            <UiIcon name="warehouse-alt" />
-            <span>
-              <strong>{warehouseName}</strong>
-              <small>
-                {warehousesQuery.isLoading ? (
-                  tUi("warranty.detail.uploading")
-                ) : warehousesQuery.isError ? (
-                  tUi("updatedUi.text_e2fc06eb7f37")
-                ) : activeWarehouse ? (
-                  <>
-                    <i />
-                    {tUi("dashboard.snapshot.warehouseActive")}
-                  </>
-                ) : (
-                  tUi("updatedUi.text_5b9b6206bb97")
-                )}
-              </small>
-            </span>
           </button>
         </div>
         <p className="hn-war04-header-note">
@@ -872,34 +834,6 @@ export default function WarrantyComponentIssueListPage() {
               {rowMenu.row.cancel_reason || rowMenu.row.note || EMPTY_TEXT}
             </span>
           </li>
-        ) : null}
-      </Menu>
-      <Menu
-        anchorEl={warehouseAnchor}
-        open={Boolean(warehouseAnchor)}
-        onClose={() => setWarehouseAnchor(null)}
-        slotProps={{ paper: { className: "hn-war04-menu" } }}
-      >
-        <li className="hn-war04-menu-detail" role="presentation">
-          <strong>{warehouseName}</strong>
-          <span>
-            {activeWarehouse
-              ? String(
-                  activeWarehouse.code ?? activeWarehouse.warehouse_code ?? "",
-                )
-              : tUi("updatedUi.text_d75562257216")}
-          </span>
-          <span>{tUi("updatedUi.text_e2f1a830e8f7")}</span>
-        </li>
-        {warehousesQuery.isError ? (
-          <MenuItem
-            onClick={() => {
-              void warehousesQuery.refetch();
-              setWarehouseAnchor(null);
-            }}
-          >
-            {tUi("common.retry")}
-          </MenuItem>
         ) : null}
       </Menu>
       {createOpen ? (

@@ -5,8 +5,6 @@ import dayjs from "dayjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import {
-  Menu,
-  MenuItem,
   UiAutocomplete,
   UiIcon,
   UiPagination,
@@ -40,7 +38,6 @@ import {
 import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
-import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import { formatQuantity } from "@/shared/utils/format-number";
 import {
   fetchOutboundRecipientIndex,
@@ -72,74 +69,6 @@ function displayDate(value?: string) {
   const date = dayjs(value);
   return date.isValid() ? date.format("DD/MM/YYYY HH:mm") : value;
 }
-function WarehouseContext() {
-  const query = useActiveWarehouses();
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const warehouse = query.data?.[0];
-  const name =
-    warehouse?.name == null
-      ? tUi("updatedUi.text_b64ca6d15828")
-      : String(warehouse.name);
-  return (
-    <>
-      <button
-        type="button"
-        className="hn-outbound-warehouse"
-        aria-label={tUi("updatedUi.text_35c4166cfbd1")}
-        aria-haspopup="menu"
-        aria-expanded={Boolean(anchor)}
-        onClick={(event) => setAnchor(event.currentTarget)}
-      >
-        <UiIcon name="warehouse-alt" />
-        <span>
-          <strong>{name}</strong>
-          <small>
-            {query.isError ? (
-              tUi("updatedUi.text_02ed7af0bfa9")
-            ) : query.isLoading ? (
-              tUi("warranty.detail.uploading")
-            ) : warehouse ? (
-              <>
-                <i />
-                {tUi("dashboard.snapshot.warehouseActive")}
-              </>
-            ) : (
-              tUi("updatedUi.text_0dd0fb192a87")
-            )}
-          </small>
-        </span>
-        <UiIcon name="angle-small-down" size="sm" />
-      </button>
-      <Menu
-        anchorEl={anchor}
-        open={Boolean(anchor)}
-        onClose={() => setAnchor(null)}
-        slotProps={{ paper: { className: "hn-outbound-menu" } }}
-      >
-        <li className="hn-outbound-warehouse-information" role="presentation">
-          <strong>{name}</strong>
-          <span>{warehouse?.code == null ? "" : String(warehouse.code)}</span>
-          <span>
-            {warehouse
-              ? tUi("updatedUi.text_739b544fcdfe")
-              : tUi("updatedUi.text_d75562257216")}
-          </span>
-        </li>
-        {query.isError ? (
-          <MenuItem
-            onClick={() => {
-              void query.refetch();
-              setAnchor(null);
-            }}
-          >
-            {tUi("common.retry")}
-          </MenuItem>
-        ) : null}
-      </Menu>
-    </>
-  );
-}
-
 /** OUT-01: presentation and filtering over the existing outbound contracts. */
 export default function AlignedMvpOutboundPage() {
   const t = useT();
@@ -364,7 +293,6 @@ export default function AlignedMvpOutboundPage() {
           <p>{tUi("updatedUi.text_a7149a55bd87")}</p>
         </div>
         <div className="hn-outbound-header-actions">
-          <WarehouseContext />
           {canImport ? (
             <ActionButton
               kind="create"

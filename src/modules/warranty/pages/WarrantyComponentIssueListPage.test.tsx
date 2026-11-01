@@ -258,10 +258,9 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     expect(fetchComponentIssueDocument).toHaveBeenCalledWith("ci-1");
     expect(fetchComponentIssueDocument).toHaveBeenCalledWith("ci-2");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Thông tin kho xuất linh kiện" }),
-    );
-    expect(await screen.findByText("KHO-HCM")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Thông tin kho xuất linh kiện" }),
+    ).not.toBeInTheDocument();
   });
 
   it("bấm mã phiếu mở đúng ComponentIssueModal và đóng được", async () => {

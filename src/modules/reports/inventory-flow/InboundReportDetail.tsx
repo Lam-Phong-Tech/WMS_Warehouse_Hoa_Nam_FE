@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
+import { CANONICAL_WAREHOUSE_CODE } from "@/modules/master-data/services/warehouse.service";
 import {
   useInboundDetail,
   useInboundScanEntries,
 } from "@/modules/inbound/hooks/use-inbound";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { exportXlsx } from "@/shared/utils/export-xlsx";
 import type { FlowDocument } from "./inventory-flow-api";
 import "./inbound-report-detail.css";
@@ -41,10 +43,28 @@ export function InboundReportDetail({
 }: InboundReportDetailProps) {
   const detailQuery = useInboundDetail(document.id);
   const entriesQuery = useInboundScanEntries(document.id, "ALL");
+  const warehousesQuery = useWarehouseDirectory();
   const [tab, setTab] = useState<"codes" | "sku">("codes");
   const [search, setSearch] = useState("");
   const detail = detailQuery.data;
   const receipt = detail?.document;
+  const warehouseCode = document.warehouse_code.trim();
+  const warehouseId = String(receipt?.warehouseId ?? "").trim();
+  const warehouseRow = (warehousesQuery.data ?? []).find(
+    (row) =>
+      (warehouseCode &&
+        String(row.code ?? row.warehouse_code ?? "")
+          .trim()
+          .toUpperCase() === warehouseCode.toUpperCase()) ||
+      (!warehouseCode &&
+        warehouseId &&
+        String(row.id ?? row.warehouse_id ?? "").trim() === warehouseId),
+  );
+  const warehouseName =
+    String(warehouseRow?.name ?? warehouseRow?.warehouse_name ?? "").trim() ||
+    (warehouseCode.toUpperCase() === CANONICAL_WAREHOUSE_CODE
+      ? "Kho Hoa Nam"
+      : warehouseCode || warehouseId || "—");
   const lines = detail?.lines ?? [];
   const entries = useMemo(
     () =>
@@ -155,8 +175,8 @@ export function InboundReportDetail({
           </div>
           <div className="inbound-report-detail__actions">
             <small>
-              Phạm vi báo cáo: {range.from} – {range.to} ·{" "}
-              {document.warehouse_code || "—"} · Giờ Việt Nam
+              Phạm vi báo cáo: {range.from} – {range.to} · {warehouseName} · Giờ
+              Việt Nam
             </small>
             <div>
               <Link
@@ -228,9 +248,7 @@ export function InboundReportDetail({
               </div>
               <div>
                 <dt>Kho nhập</dt>
-                <dd>
-                  {document.warehouse_code || receipt?.warehouseId || "—"}
-                </dd>
+                <dd>{warehouseName}</dd>
               </div>
               <div>
                 <dt>Người tạo</dt>

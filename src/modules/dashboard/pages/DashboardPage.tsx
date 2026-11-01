@@ -699,7 +699,6 @@ export default function DashboardPage() {
           name={
             profile?.name ?? user?.name ?? t("dashboard.snapshot.userFallback")
           }
-          warehouseLabel={scopeLabel}
           cards={kpiCards}
           rows={mapChartRows}
           trend={mapChartTrendRows}

@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  act,
   cleanup,
   fireEvent,
   screen,
@@ -168,7 +167,7 @@ describe("MST-PV-01 · catalog interactions", () => {
     cleanupCreatedQueryClients();
   });
 
-  it("navigates internally for preview and warehouse settings while honoring warehouse access", async () => {
+  it("navigates internally to the App PV preview", async () => {
     const initialPath = "/master-data/pv-products?screen=MST-PV-01";
     const documentUrl = window.location.href;
     renderWithProviders(
@@ -181,22 +180,36 @@ describe("MST-PV-01 · catalog interactions", () => {
     await screen.findByRole("table");
 
     const location = screen.getByLabelText("Đường dẫn hiện tại");
-    const warehouse = screen.getByRole("button", { name: "Mở cấu hình kho" });
-    expect(warehouse).toBeDisabled();
-    fireEvent.click(warehouse);
-    expect(location).toHaveTextContent(initialPath);
+    expect(screen.queryByRole("button", { name: "Mở cấu hình kho" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Xem trước App PV" }));
     expect(location).toHaveTextContent(/^\/pv$/);
     expect(window.location.href).toBe(documentUrl);
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
+  });
 
-    act(() => signInWith(["pv.master.manage", "pv.publish", "warehouse.view"]));
-    expect(warehouse).toBeEnabled();
-    fireEvent.click(warehouse);
-    expect(location).toHaveTextContent(/^\/master-data\/warehouse$/);
-    expect(window.location.href).toBe(documentUrl);
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+  it("đóng mở tổng quan danh mục mà vẫn giữ danh sách sản phẩm", async () => {
+    renderWithProviders(<PvProductCatalogPage />);
+    await screen.findByRole("table");
+
+    const overview = screen.getByRole("region", { name: "Tổng quan danh mục" });
+    const stat = within(overview).getByText("Tổng sản phẩm");
+    const list = screen.getByRole("table");
+
+    fireEvent.click(
+      within(overview).getByRole("button", {
+        name: "Thu gọn tổng quan danh mục",
+      }),
+    );
+    expect(stat).not.toBeVisible();
+    expect(list).toBeVisible();
+
+    const expand = within(overview).getByRole("button", {
+      name: "Mở rộng tổng quan danh mục",
+    });
+    expect(expand).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(expand);
+    expect(stat).toBeVisible();
   });
 
   it("applies filters immediately and resets search, visibility, group and page together", async () => {

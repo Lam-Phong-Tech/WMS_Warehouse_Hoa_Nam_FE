@@ -41,7 +41,6 @@ import {
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
@@ -159,29 +158,6 @@ export default function MvpPutawayPage() {
   const queryClient = useQueryClient();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
-  const currentContext = useAuthStore((state) => state.currentContext);
-  const warehouseQuery = useWarehouseDirectory({
-    enabled: hasAnyWmsPermission(
-      permissionCodes,
-      [P.WAREHOUSE_VIEW],
-      isSuperAdmin,
-    ),
-  });
-  const warehouses = warehouseQuery.data ?? [];
-  const warehouse =
-    currentContext?.warehouse_id != null
-      ? warehouses.find(
-          (row) => String(row.id) === String(currentContext.warehouse_id),
-        )
-      : warehouses.length === 1
-        ? warehouses[0]
-        : undefined;
-  const warehouseName =
-    currentContext?.warehouse_name ||
-    (typeof warehouse?.name === "string" ? warehouse.name : undefined);
-  const warehouseStatus = String(warehouse?.status ?? "")
-    .trim()
-    .toUpperCase();
   // SRS §3: Putaway create/confirm/cancel dùng permission key `putaway.manage`
   // (NV kho = A*). BE nhận `putaway.manage|container.manage` nên FE gate đúng bộ đó;
   // gate chỉ theo container.manage sẽ ẩn nút với chính nhân viên kho được phân quyền.
@@ -535,23 +511,6 @@ export default function MvpPutawayPage() {
           <h1>{t("putaway.queue.title")}</h1>
           <p>{t("putaway.queue.subtitle")}</p>
         </div>
-        {warehouseName ? (
-          <div className="ptw-warehouse">
-            <UiIcon name="warehouse-alt" />
-            <div>
-              <strong>{warehouseName}</strong>
-              <small>
-                {t(
-                  warehouseStatus === "ACTIVE"
-                    ? "putaway.queue.warehouseActive"
-                    : warehouseStatus === "INACTIVE"
-                      ? "putaway.queue.warehouseInactive"
-                      : "putaway.queue.warehouse",
-                )}
-              </small>
-            </div>
-          </div>
-        ) : null}
       </header>
       <nav className="ptw-tabs" aria-label={t("putaway.queue.navigation")}>
         <button
