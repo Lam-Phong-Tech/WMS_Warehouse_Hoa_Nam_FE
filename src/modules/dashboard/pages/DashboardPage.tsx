@@ -12,7 +12,7 @@
  *    thái tương ứng thay vì thay bằng 0.
  */
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
@@ -42,6 +42,10 @@ import {
   DashboardSnapshot,
   type ChartState,
 } from "../overview/DashboardSnapshot";
+import {
+  DashboardSystemViews,
+  type DashboardSystemView,
+} from "../overview/DashboardSystemViews";
 import { useLazyReveal } from "../overview/use-lazy-reveal";
 import {
   PERIOD_NAME_KEYS,
@@ -54,6 +58,7 @@ import {
   countActiveWarranty,
   countSkusInStock,
   dashboardNow,
+  fmt,
   fmtDelta,
   MAP_OVERVIEW_MAX_RANGE_DAYS,
   oldestOverdueDays,
@@ -98,6 +103,7 @@ function periodDelta(
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
@@ -141,11 +147,16 @@ export default function DashboardPage() {
     };
   });
 
-  const mapSearchParams =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search)
+  const mapSearchParams = new URLSearchParams(location.search);
+  const isMapReferenceScreen = mapSearchParams.get("screen") === "MAP-01";
+  const requestedView = mapSearchParams.get("view");
+  const referenceView: DashboardSystemView | null =
+    requestedView === "work" ||
+    requestedView === "stock" ||
+    requestedView === "thresholds" ||
+    requestedView === "transaction"
+      ? requestedView
       : null;
-  const isMapReferenceScreen = mapSearchParams?.get("screen") === "MAP-01";
 
   const today = dashboardNow().format(ISO);
   const dateError = useMemo(() => {
@@ -194,7 +205,7 @@ export default function DashboardPage() {
   );
   const chartSource = useOverviewChartSource(
     range,
-    enabled && isMapReferenceScreen,
+    enabled && isMapReferenceScreen && referenceView === null,
     !offline,
   );
 
@@ -217,9 +228,11 @@ export default function DashboardPage() {
   const status = httpStatus(overview.error);
   const forbidden = (isProfileLoaded && !canViewReport) || status === 403;
   const loading = enabled && overview.isLoading;
-  const failed = overview.isError && !forbidden;
+  const failed = overview.isError && overview.data == null && !forbidden;
   const partial =
-    !failed && !forbidden && (xnt.isError || xntDaily.isError || quick.isError);
+    !failed &&
+    !forbidden &&
+    (overview.isError || xnt.isError || xntDaily.isError || quick.isError);
   /**
    * MỘT câu giải thích cho mọi widget đang lỗi, chọn theo nguyên nhân thật:
    * BE trả 422 khi khoảng ngày vượt trần (xem `MAX_RANGE_DAY_DIFF`) — đó là
@@ -692,6 +705,44 @@ export default function DashboardPage() {
             : "ready";
   const chartStateOverride = liveChartState;
 
+  // Bộ tham chiếu 01 dùng bốn KPI. Số SKU là ngữ cảnh của tồn khả dụng,
+  // không phải một thẻ tồn thứ hai. Mọi lượng ở đây đều từ API hiện hành.
+  const snapshotCards = kpiCards
+    .filter((card) => card.id !== "DASH-KPI-02")
+    .map((card) => {
+      if (card.id === "DASH-KPI-01") {
+        const split = overviewData?.kpi.on_hand;
+        return {
+          ...card,
+          note:
+            split && !xnt.isError
+              ? `${fmt(skuCounts.closing)} SKU có tồn · ${fmt(split.product)} SP · ${fmt(split.component)} LK`
+              : card.note,
+        };
+      }
+      if (card.id === "DASH-KPI-03" && overviewData) {
+        const split = overviewData.kpi.receipt_today;
+        return {
+          ...card,
+          note: `${fmt(split.product)} SP · ${fmt(split.component)} LK`,
+        };
+      }
+      return card;
+    });
+
+  if (isMapReferenceScreen && referenceView)
+    return (
+      <div className="hn-dash" data-mvp-screen="MAP-01">
+        <DashboardSystemViews
+          view={referenceView}
+          documentId={mapSearchParams.get("document") ?? undefined}
+          overview={overviewData}
+          showWarranty={canViewWarranty}
+          onNavigate={navigate}
+        />
+      </div>
+    );
+
   if (isMapReferenceScreen)
     return (
       <div className="hn-dash" data-mvp-screen="MAP-01">
@@ -699,7 +750,7 @@ export default function DashboardPage() {
           name={
             profile?.name ?? user?.name ?? t("dashboard.snapshot.userFallback")
           }
-          cards={kpiCards}
+          cards={snapshotCards}
           rows={mapChartRows}
           trend={mapChartTrendRows}
           composition={composition}
@@ -711,9 +762,12 @@ export default function DashboardPage() {
           onCustomChange={changeCustom}
           loading={loading}
           failed={failed}
+          partial={partial}
+          dataUpdatedAt={overview.dataUpdatedAt}
           forbidden={forbidden}
           chartStateOverride={chartStateOverride}
-          showWarranty={canViewWarranty}
+          liveRecent
+          liveThreshold
           onRetry={refreshAll}
           onNavigate={navigate}
         />

@@ -330,6 +330,8 @@ export interface FlowRow {
   date: string;
   label: string;
   inbound: number;
+  receiptProduct: number;
+  receiptComponent: number;
   product: number;
   component: number;
   reversal: number;
@@ -362,6 +364,8 @@ export function buildFlowRows(
           : type === "COMPONENT"
             ? num(point.receipt_component)
             : num(point.receipt_product) + num(point.receipt_component),
+      receiptProduct: type === "COMPONENT" ? 0 : num(point.receipt_product),
+      receiptComponent: type === "PRODUCT" ? 0 : num(point.receipt_component),
       product: num(point.issue_product),
       component: num(point.issue_component),
       reversal: reversalByDate.get(point.date) ?? 0,
@@ -405,6 +409,8 @@ export function sumPreviousFlow(
           : type === "COMPONENT"
             ? num(point.receipt_component)
             : num(point.receipt_product) + num(point.receipt_component),
+      receiptProduct: type === "COMPONENT" ? 0 : num(point.receipt_product),
+      receiptComponent: type === "PRODUCT" ? 0 : num(point.receipt_component),
       product: num(point.issue_product),
       component: num(point.issue_component),
       reversal: 0,

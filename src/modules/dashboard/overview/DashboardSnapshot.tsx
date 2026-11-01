@@ -19,18 +19,21 @@ import {
 import type { CompositionRow } from "./OverviewComposition";
 import type { IssueRow } from "./OverviewOperations";
 import { SnapshotStockFlowPlot } from "./SnapshotStockFlowPlot";
+import { SnapshotFlowTable } from "./SnapshotFlowTable";
+import { SnapshotRecentTransactions } from "./SnapshotRecentTransactions";
+import { SnapshotThresholdSummary } from "./SnapshotThresholdSummary";
 import { greetingKeyForHour } from "./greeting";
 
 export type ChartState = "ready" | "loading" | "empty" | "failed" | "forbidden";
 
 const ISO = "YYYY-MM-DD";
-const KPI_TONES: Array<{ icon: DashboardIconName; tone: string }> = [
-  { icon: "package-search", tone: "stock" },
-  { icon: "settings-2", tone: "value" },
-  { icon: "package-plus", tone: "in" },
-  { icon: "package-minus", tone: "out" },
-  { icon: "briefcase-medical", tone: "work" },
-];
+const KPI_TONES: Record<string, { icon: DashboardIconName; tone: string }> = {
+  "DASH-KPI-01": { icon: "package-search", tone: "stock" },
+  "DASH-KPI-02": { icon: "settings-2", tone: "value" },
+  "DASH-KPI-03": { icon: "package-plus", tone: "in" },
+  "DASH-KPI-04": { icon: "package-minus", tone: "out" },
+  "DASH-KPI-05": { icon: "briefcase-medical", tone: "work" },
+};
 
 const dateLabel = (value: string) => dayjs(value).format("DD/MM");
 
@@ -282,9 +285,12 @@ export function DashboardSnapshot({
   onCustomChange,
   loading,
   failed,
+  partial = false,
+  dataUpdatedAt = 0,
   forbidden,
   chartStateOverride,
-  showWarranty,
+  liveRecent = false,
+  liveThreshold = false,
   onRetry,
   onNavigate,
 }: {
@@ -301,14 +307,18 @@ export function DashboardSnapshot({
   onCustomChange: (value: DateRange) => void;
   loading: boolean;
   failed: boolean;
+  partial?: boolean;
+  dataUpdatedAt?: number;
   forbidden: boolean;
   chartStateOverride?: ChartState;
-  showWarranty: boolean;
+  liveRecent?: boolean;
+  liveThreshold?: boolean;
   onRetry: () => void;
   onNavigate: (route: string) => void;
 }) {
   const t = useT();
   const [filterOpen, setFilterOpen] = useState(false);
+  const [chartView, setChartView] = useState<"chart" | "table">("chart");
   const [customOpen, setCustomOpen] = useState(false);
   const [draft, setDraft] = useState(custom);
   const [rangePickMode, setRangePickMode] = useState<"from" | "to">("from");
@@ -489,6 +499,35 @@ export function DashboardSnapshot({
         </div>
       </header>
 
+      {!effectiveForbidden ? (
+        <div className="snapshot-data-bar">
+          <span>
+            {t("dashboard.snapshot.todayScope")} ·{" "}
+            {dataUpdatedAt
+              ? t("dashboard.lastUpdated.at", {
+                  time: dayjs(dataUpdatedAt).format("DD/MM/YYYY HH:mm"),
+                })
+              : t("dashboard.lastUpdated.none")}
+          </span>
+          <span>
+            {t("dashboard.snapshot.trendScope", {
+              period: periodText(period, range, t),
+            })}
+          </span>
+          <button type="button" onClick={onRetry} disabled={effectiveLoading}>
+            {t("dashboard.filters.refresh")}
+          </button>
+        </div>
+      ) : null}
+      {partial && !effectiveFailed ? (
+        <div className="snapshot-partial-alert" role="status">
+          {t("dashboard.snapshot.partialCopy")}
+          <button type="button" onClick={onRetry}>
+            {t("dashboard.snapshot.retry")}
+          </button>
+        </div>
+      ) : null}
+
       {effectiveForbidden ? (
         <section className="snapshot-page-state">
           <span>
@@ -511,13 +550,14 @@ export function DashboardSnapshot({
         </section>
       ) : (
         <>
-          {
+          {!effectiveFailed && (
             <section
-              className="snapshot-kpis"
+              className={`snapshot-kpis ${cards.length === 4 ? "is-four" : ""}`}
               aria-label={t("dashboard.snapshot.kpiAria")}
             >
-              {cards.map((card, index) => {
-                const appearance = KPI_TONES[index] ?? KPI_TONES[0];
+              {cards.map((card) => {
+                const appearance =
+                  KPI_TONES[card.id] ?? KPI_TONES["DASH-KPI-01"];
                 return (
                   <article
                     key={card.id}
@@ -547,7 +587,7 @@ export function DashboardSnapshot({
                 );
               })}
             </section>
-          }
+          )}
 
           {effectiveFailed ? (
             <section className="snapshot-page-state is-error">
@@ -565,94 +605,132 @@ export function DashboardSnapshot({
               <section className="snapshot-main-grid">
                 <article className="snapshot-card snapshot-chart-card">
                   <header>
-                    <h2>{t("dashboard.snapshot.chartTitle")}</h2>
-                    <div className="snapshot-filter" ref={filterRef}>
-                      <button
-                        ref={filterButtonRef}
-                        type="button"
-                        aria-expanded={filterOpen && !filterDisabled}
-                        aria-haspopup="menu"
-                        disabled={filterDisabled}
-                        onClick={() => {
-                          if (!filterDisabled) setFilterOpen((value) => !value);
-                        }}
+                    <h2>
+                      {t(
+                        chartView === "table"
+                          ? "dashboard.snapshot.tableTitle"
+                          : "dashboard.snapshot.chartTitle",
+                      )}
+                    </h2>
+                    <div className="snapshot-chart-controls">
+                      <div
+                        className="snapshot-view-switch"
+                        role="group"
+                        aria-label={t("dashboard.snapshot.viewAria")}
                       >
-                        {periodText(period, range, t)}
-                        <DashIcon name="chevron-down" />
-                      </button>
-                      {filterOpen && !filterDisabled ? (
-                        <div className="snapshot-filter-menu" role="menu">
-                          <span>{t("dashboard.snapshot.selectRange")}</span>
-                          <button
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={selectedPreset === 7}
-                            className={
-                              selectedPreset === 7 ? "is-selected" : ""
-                            }
-                            onClick={() => selectDays(7)}
-                          >
-                            {t("dashboard.snapshot.periodLast7")}
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={selectedPreset === 14}
-                            className={
-                              selectedPreset === 14 ? "is-selected" : ""
-                            }
-                            onClick={() => selectDays(14)}
-                          >
-                            {t("dashboard.snapshot.periodLast14")}
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={selectedPreset === 30}
-                            className={
-                              selectedPreset === 30 ? "is-selected" : ""
-                            }
-                            onClick={() => selectDays(30)}
-                          >
-                            {t("dashboard.snapshot.periodLast30")}
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={customSelected}
-                            className={customSelected ? "is-selected" : ""}
-                            onClick={() => {
-                              setDraft(custom);
-                              setRangePickMode("from");
-                              setCustomOpen(true);
-                              setFilterOpen(false);
-                            }}
-                          >
-                            {t("dashboard.snapshot.custom")}
-                          </button>
-                        </div>
-                      ) : null}
+                        <button
+                          type="button"
+                          aria-pressed={chartView === "table"}
+                          onClick={() => setChartView("table")}
+                        >
+                          {t("dashboard.snapshot.tableView")}
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={chartView === "chart"}
+                          onClick={() => setChartView("chart")}
+                        >
+                          {t("dashboard.snapshot.chartView")}
+                        </button>
+                      </div>
+                      <div className="snapshot-filter" ref={filterRef}>
+                        <button
+                          ref={filterButtonRef}
+                          type="button"
+                          aria-expanded={filterOpen && !filterDisabled}
+                          aria-haspopup="menu"
+                          disabled={filterDisabled}
+                          onClick={() => {
+                            if (!filterDisabled)
+                              setFilterOpen((value) => !value);
+                          }}
+                        >
+                          {periodText(period, range, t)}
+                          <DashIcon name="chevron-down" />
+                        </button>
+                        {filterOpen && !filterDisabled ? (
+                          <div className="snapshot-filter-menu" role="menu">
+                            <span>{t("dashboard.snapshot.selectRange")}</span>
+                            <button
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={selectedPreset === 7}
+                              className={
+                                selectedPreset === 7 ? "is-selected" : ""
+                              }
+                              onClick={() => selectDays(7)}
+                            >
+                              {t("dashboard.snapshot.periodLast7")}
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={selectedPreset === 14}
+                              className={
+                                selectedPreset === 14 ? "is-selected" : ""
+                              }
+                              onClick={() => selectDays(14)}
+                            >
+                              {t("dashboard.snapshot.periodLast14")}
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={selectedPreset === 30}
+                              className={
+                                selectedPreset === 30 ? "is-selected" : ""
+                              }
+                              onClick={() => selectDays(30)}
+                            >
+                              {t("dashboard.snapshot.periodLast30")}
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={customSelected}
+                              className={customSelected ? "is-selected" : ""}
+                              onClick={() => {
+                                setDraft(custom);
+                                setRangePickMode("from");
+                                setCustomOpen(true);
+                                setFilterOpen(false);
+                              }}
+                            >
+                              {t("dashboard.snapshot.custom")}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </header>
-                  <SnapshotChart
-                    rows={effectiveRows}
-                    trend={trend}
-                    state={chartState}
-                    onRetry={onRetry}
-                    onChangeFilter={() => setFilterOpen(true)}
-                  />
+                  {chartState === "ready" && chartView === "table" ? (
+                    <SnapshotFlowTable rows={effectiveRows} trend={trend} />
+                  ) : (
+                    <SnapshotChart
+                      rows={effectiveRows}
+                      trend={trend}
+                      state={chartState}
+                      onRetry={onRetry}
+                      onChangeFilter={() => setFilterOpen(true)}
+                    />
+                  )}
                 </article>
                 <article className="snapshot-card snapshot-priority">
                   <header>
                     <h2>{t("dashboard.snapshot.priorityTitle")}</h2>
                     <button
                       type="button"
-                      onClick={() => onNavigate("/reports/import-quality")}
+                      onClick={() =>
+                        onNavigate("/dashboard?screen=MAP-01&view=work")
+                      }
                     >
                       {t("dashboard.snapshot.viewAll")}{" "}
                       <DashIcon name="arrow-right" />
                     </button>
                   </header>
+                  <p className="snapshot-priority-note">
+                    {t("dashboard.snapshot.priorityOverlap")}
+                  </p>
                   {effectiveLoading ? (
                     <div className="snapshot-list-loading" />
                   ) : tasks.length ? (
@@ -690,79 +768,87 @@ export function DashboardSnapshot({
                       ))}
                     </div>
                   ) : (
-                    <ChartPlaceholder
-                      state="empty"
-                      onRetry={onRetry}
-                      onChangeFilter={() => setFilterOpen(true)}
-                    />
+                    <div className="snapshot-priority-empty">
+                      {t("dashboard.snapshot.priorityEmpty")}
+                    </div>
                   )}
                 </article>
-                <article className="snapshot-card snapshot-recent">
-                  <header>
-                    <h2>{t("dashboard.snapshot.recentDocsTitle")}</h2>
-                    <button
-                      type="button"
-                      onClick={() => onNavigate("/inbound")}
-                    >
-                      {t("dashboard.snapshot.viewAll")}{" "}
-                      <DashIcon name="arrow-right" />
-                    </button>
-                  </header>
-                  <div className="snapshot-empty-table">
-                    <DashIcon name="inbox" />
-                    <strong>{t("dashboard.snapshot.recentDocsEmpty")}</strong>
-                    <span>{t("dashboard.snapshot.recentDocsCopy")}</span>
-                  </div>
-                </article>
-                <article className="snapshot-card snapshot-stock">
-                  <header>
-                    <h2>{t("dashboard.snapshot.stockCompositionTitle")}</h2>
-                    <button
-                      type="button"
-                      onClick={() => onNavigate("/inventory")}
-                    >
-                      {t("dashboard.snapshot.viewDetail")}{" "}
-                      <DashIcon name="arrow-right" />
-                    </button>
-                  </header>
-                  {effectiveLoading ? (
-                    <div className="snapshot-donut-loading" />
-                  ) : total > 0 ? (
-                    <div className="snapshot-stock-body">
-                      <div
-                        className="snapshot-donut"
-                        style={{
-                          background: `conic-gradient(${donut.map((row) => `var(--snapshot-donut-${row.index}) ${row.from}% ${row.to}%`).join(",")})`,
-                        }}
+                {liveRecent ? (
+                  <SnapshotRecentTransactions onNavigate={onNavigate} />
+                ) : (
+                  <article className="snapshot-card snapshot-recent">
+                    <header>
+                      <h2>{t("dashboard.snapshot.recentDocsTitle")}</h2>
+                      <button
+                        type="button"
+                        onClick={() => onNavigate("/inbound")}
                       >
-                        <div>
-                          <strong>{fmt(total)}</strong>
-                          <span>{t("dashboard.snapshot.totalStock")}</span>
+                        {t("dashboard.snapshot.viewAll")}{" "}
+                        <DashIcon name="arrow-right" />
+                      </button>
+                    </header>
+                    <div className="snapshot-empty-table">
+                      <DashIcon name="inbox" />
+                      <strong>{t("dashboard.snapshot.recentDocsEmpty")}</strong>
+                      <span>{t("dashboard.snapshot.recentDocsCopy")}</span>
+                    </div>
+                  </article>
+                )}
+                {liveThreshold ? (
+                  <SnapshotThresholdSummary onNavigate={onNavigate} />
+                ) : (
+                  <article className="snapshot-card snapshot-stock">
+                    <header>
+                      <h2>{t("dashboard.snapshot.stockCompositionTitle")}</h2>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onNavigate("/dashboard?screen=MAP-01&view=stock")
+                        }
+                      >
+                        {t("dashboard.snapshot.viewDetail")}{" "}
+                        <DashIcon name="arrow-right" />
+                      </button>
+                    </header>
+                    {effectiveLoading ? (
+                      <div className="snapshot-donut-loading" />
+                    ) : total > 0 ? (
+                      <div className="snapshot-stock-body">
+                        <div
+                          className="snapshot-donut"
+                          style={{
+                            background: `conic-gradient(${donut.map((row) => `var(--snapshot-donut-${row.index}) ${row.from}% ${row.to}%`).join(",")})`,
+                          }}
+                        >
+                          <div>
+                            <strong>{fmt(total)}</strong>
+                            <span>{t("dashboard.snapshot.totalStock")}</span>
+                          </div>
+                        </div>
+                        <div className="snapshot-stock-list">
+                          {composition.map((row, index) => (
+                            <div key={row.status}>
+                              <i
+                                style={{
+                                  background: `var(--snapshot-donut-${index})`,
+                                }}
+                              />
+                              <span>{row.label}</span>
+                              <strong>{fmt(row.value)}</strong>
+                              <small>{row.pct}%</small>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="snapshot-stock-list">
-                        {composition.map((row, index) => (
-                          <div key={row.status}>
-                            <i
-                              style={{
-                                background: `var(--snapshot-donut-${index})`,
-                              }}
-                            />
-                            <span>{row.label}</span>
-                            <strong>{fmt(row.value)}</strong>
-                            <small>{row.pct}%</small>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <ChartPlaceholder
-                      state="empty"
-                      onRetry={onRetry}
-                      onChangeFilter={() => setFilterOpen(true)}
-                    />
-                  )}
-                </article>
+                    ) : (
+                      <ChartPlaceholder
+                        state="empty"
+                        onRetry={onRetry}
+                        onChangeFilter={() => setFilterOpen(true)}
+                      />
+                    )}
+                  </article>
+                )}
               </section>
 
               <section className="snapshot-link-cards">
@@ -783,16 +869,16 @@ export function DashboardSnapshot({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onNavigate("/reports/inventory-flow")}
+                  onClick={() =>
+                    onNavigate("/dashboard?screen=MAP-01&view=stock")
+                  }
                 >
                   <span className="is-green">
                     <DashIcon name="chart-column-big" />
                   </span>
                   <div>
-                    <strong>
-                      {t("dashboard.snapshot.todayProgressTitle")}
-                    </strong>
-                    <small>{t("dashboard.snapshot.todayProgressCopy")}</small>
+                    <strong>{t("dashboard.snapshot.stockQuickTitle")}</strong>
+                    <small>{t("dashboard.snapshot.stockQuickCopy")}</small>
                   </div>
                   <DashIcon name="arrow-right" />
                 </button>
@@ -808,68 +894,6 @@ export function DashboardSnapshot({
                   </div>
                   <DashIcon name="arrow-right" />
                 </button>
-              </section>
-              <section className="snapshot-bottom">
-                <article className="snapshot-card snapshot-actions">
-                  <h2>{t("dashboard.snapshot.warehouseTasksTitle")}</h2>
-                  <div>
-                    {[
-                      [
-                        "package-plus",
-                        t("dashboard.snapshot.actionInbound"),
-                        "/inbound",
-                      ],
-                      [
-                        "package-minus",
-                        t("dashboard.snapshot.actionOutbound"),
-                        "/outbound",
-                      ],
-                      ...(showWarranty
-                        ? [
-                            [
-                              "briefcase-medical",
-                              t("dashboard.snapshot.actionWarranty"),
-                              "/warranty",
-                            ],
-                          ]
-                        : []),
-                      ["search", t("dashboard.snapshot.actionScan"), "/scan"],
-                      [
-                        "chart-column-big",
-                        t("dashboard.snapshot.actionCheck"),
-                        "/inventory",
-                      ],
-                    ].map(([icon, label, route]) => (
-                      <button
-                        type="button"
-                        key={label}
-                        onClick={() => onNavigate(route)}
-                      >
-                        <DashIcon name={icon as DashboardIconName} />
-                        <strong>{label}</strong>
-                      </button>
-                    ))}
-                  </div>
-                </article>
-                <article className="snapshot-card snapshot-activity">
-                  <header>
-                    <h2>{t("dashboard.snapshot.recentActivityTitle")}</h2>
-                    <button
-                      type="button"
-                      onClick={() => onNavigate("/audit-logs")}
-                    >
-                      {t("dashboard.snapshot.viewAll")}{" "}
-                      <DashIcon name="arrow-right" />
-                    </button>
-                  </header>
-                  <div className="snapshot-empty-table">
-                    <DashIcon name="inbox" />
-                    <strong>
-                      {t("dashboard.snapshot.recentActivityEmpty")}
-                    </strong>
-                    <span>{t("dashboard.snapshot.recentActivityCopy")}</span>
-                  </div>
-                </article>
               </section>
             </>
           )}

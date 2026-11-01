@@ -155,6 +155,8 @@ export type SkuCatalog = {
   kindOfCode: (code: unknown) => "PRODUCT" | "COMPONENT" | undefined;
   kindOfId: (id: unknown) => "PRODUCT" | "COMPONENT" | undefined;
   loading: boolean;
+  error: unknown;
+  refetch: () => Promise<unknown>;
   options: SelectOption[];
 };
 
@@ -171,9 +173,10 @@ export function useSkuCatalog(): SkuCatalog {
     queryKey: ["ref", "sku-catalog"],
     queryFn: fetchAllSkus,
   });
+  const { data, isLoading, error, refetch } = query;
 
   return useMemo(() => {
-    const entries = query.data ?? [];
+    const entries = data ?? [];
     const byCode = new Map(entries.map((entry) => [entry.sku_code, entry]));
     const byId = new Map(entries.map((entry) => [entry.sku_id, entry]));
     return {
@@ -182,13 +185,15 @@ export function useSkuCatalog(): SkuCatalog {
       byId,
       kindOfCode: (code: unknown) => byCode.get(text(code, ""))?.sku_type,
       kindOfId: (id: unknown) => byId.get(text(id, ""))?.sku_type,
-      loading: query.isLoading,
+      loading: isLoading,
+      error,
+      refetch: () => refetch(),
       options: entries.map((entry) => ({
         value: entry.sku_id,
         label: `${entry.sku_code} · ${entry.sku_name}`,
       })),
     };
-  }, [query.data, query.isLoading]);
+  }, [data, isLoading, error, refetch]);
 }
 
 export type UserDirectoryEntry = {

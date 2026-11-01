@@ -1,4 +1,5 @@
 @import "./snapshot-main-grid.css";
+@import "./snapshot-flow-table.css";
 
 /* MAP-01 only. Do not inherit the old 760 x 238 SVG stretching rules. */
 .hn-stock-flow {

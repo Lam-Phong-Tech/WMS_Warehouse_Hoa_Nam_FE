@@ -33,6 +33,7 @@ import DashboardPage from "./DashboardPage";
 
 const today = dayjs().format("YYYY-MM-DD");
 const mockedGet = vi.mocked(http.get);
+const mockedGetPage = vi.mocked(http.getPage);
 
 const overview = {
   period: { from_date: today, to_date: today },
@@ -139,18 +140,36 @@ function routeResponses(url: string) {
   if (url === OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY)
     return Promise.resolve(xntDaily);
   if (url === API_ENDPOINTS.DASHBOARD_KPI) return Promise.resolve(quick);
+  if (
+    url === API_ENDPOINTS.REPORTS_INVENTORY_LEDGER ||
+    url === API_ENDPOINTS.INVENTORY_RECONCILIATION
+  )
+    return Promise.resolve({ rows: [] });
+  if (url === API_ENDPOINTS.SKU_LOOKUP) return Promise.resolve([]);
   return Promise.reject(new Error(`unexpected url ${url}`));
 }
 
 // Cùng một con số còn xuất hiện ở khối đối soát, biểu đồ và bảng dữ liệu thay
 // thế, nên các assertion về KPI đều thu hẹp phạm vi vào #kpi-grid.
-function renderDashboard() {
+function renderDashboard(entry = window.location.pathname + window.location.search) {
+  mockedGetPage.mockImplementation((url: string) => {
+    const meta = {
+      last_page: 1,
+      total: 0,
+      timestamp: `${today}T00:00:00+07:00`,
+    };
+    if (url === API_ENDPOINTS.REPORTS_DOCUMENT_HISTORY)
+      return Promise.resolve({ data: { rows: [] }, meta } as never);
+    if (url === API_ENDPOINTS.USERS || url === API_ENDPOINTS.REVERSAL_DOCUMENTS)
+      return Promise.resolve({ data: [], meta } as never);
+    return Promise.reject(new Error(`unexpected page url ${url}`));
+  });
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[entry]}>
         <DashboardPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -167,6 +186,7 @@ afterEach(() => {
   });
   useLanguageStore.getState().setLanguage("vi");
   window.history.pushState({}, "", "/");
+  window.location.search = "";
 });
 
 describe("DashboardPage — Tổng quan vận hành", () => {
@@ -595,27 +615,112 @@ describe("DashboardPage — biểu đồ theo kỳ KPI", () => {
 });
 
 describe("DashboardPage MAP-01 — filter chart độc lập", () => {
+  it("chuyển giữa bảng số liệu và biểu đồ với số liệu thật trong cùng kỳ", async () => {
+    window.history.pushState({}, "", "/dashboard?screen=MAP-01");
+    window.location.search = "?screen=MAP-01";
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard();
+
+    expect(
+      await screen.findByRole("img", { name: "Biểu đồ nhập xuất tồn kho" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Bảng số liệu" }));
+    expect(
+      screen.getByRole("heading", {
+        name: "Bảng số liệu nhập - xuất - tồn kho",
+      }),
+    ).toBeInTheDocument();
+
+    const table = screen.getByRole("table", {
+      name: "Bảng số liệu nhập xuất tồn kho",
+    });
+    expect(
+      screen.queryByRole("img", { name: "Biểu đồ nhập xuất tồn kho" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(table).getByRole("columnheader", { name: "Nhập SP" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("columnheader", { name: "Nhập LK" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("columnheader", { name: "Xuất SP" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("columnheader", { name: "Xuất LK BH" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("columnheader", { name: "Tồn cuối ngày" }),
+    ).toBeInTheDocument();
+    const rows = within(table).getAllByRole("row");
+    expect(rows).toHaveLength(3);
+    expect(
+      within(rows[1])
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent),
+    ).toEqual([
+      dayjs(today).format("DD/MM/YYYY"),
+      "200",
+      "100",
+      "90",
+      "30",
+      "1.234",
+    ]);
+    expect(
+      within(rows[2])
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent),
+    ).toEqual(["Tổng", "200", "100", "90", "30", "—"]);
+
+    fireEvent.click(screen.getByRole("button", { name: /7 ngày gần nhất/i }));
+    fireEvent.click(
+      screen.getByRole("menuitemradio", { name: "14 ngày gần nhất" }),
+    );
+    expect(
+      await screen.findByRole("table", {
+        name: "Bảng số liệu nhập xuất tồn kho",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /14 ngày gần nhất/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Biểu đồ" }));
+    expect(
+      screen.queryByRole("table", { name: "Bảng số liệu nhập xuất tồn kho" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Biểu đồ nhập xuất tồn kho" }),
+    ).toBeInTheDocument();
+  });
+
   it("đổi ngôn ngữ sang English thì dịch phần snapshot MAP-01", async () => {
     window.history.pushState({}, "", "/dashboard?screen=MAP-01");
+    window.location.search = "?screen=MAP-01";
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     useLanguageStore.getState().setLanguage("en");
     await ensureEnglishMessages();
 
     renderDashboard();
 
-    expect(await screen.findByText(/Good morning,/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Good (morning|afternoon|evening),/),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Inbound - outbound - stock chart"),
     ).toBeInTheDocument();
     expect(screen.getByText("Priority work")).toBeInTheDocument();
-    expect(screen.getByText("Recent documents")).toBeInTheDocument();
-    expect(screen.getByText("Stock status composition")).toBeInTheDocument();
+    expect(screen.getByText("Recent transactions")).toBeInTheDocument();
+    expect(screen.getByText("Stock threshold alerts")).toBeInTheDocument();
   });
 
   it("đổi 14 ngày chỉ tải lại chart, KPI Hôm nay và nguồn KPI không đổi", async () => {
     window.history.pushState({}, "", "/dashboard?screen=MAP-01");
+    window.location.search = "?screen=MAP-01";
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard();
+
+    await screen.findByRole("img", { name: "Biểu đồ nhập xuất tồn kho" });
 
     const kpi = await waitFor(
       () =>
@@ -626,11 +731,9 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     expect(kpi).not.toBeNull();
     const kpiBefore = kpi.textContent;
 
+    fireEvent.click(screen.getByRole("button", { name: /7 ngày gần nhất/i }));
     fireEvent.click(
-      screen.getByRole("button", { name: /7 ngày gần nhất/i }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "14 ngày gần nhất" }),
+      screen.getByRole("menuitemradio", { name: "14 ngày gần nhất" }),
     );
 
     await waitFor(() => {
@@ -674,6 +777,27 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
         ) as HTMLElement
       ).textContent,
     ).toBe(kpiBefore);
+  });
+
+  it("Xem tất cả công việc mở đúng màn chi tiết và quay lại MAP-01", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard("/dashboard?screen=MAP-01");
+
+    const priority = await waitFor(() => {
+      const element = document.querySelector(".snapshot-priority");
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    fireEvent.click(
+      within(priority).getByRole("button", { name: /Xem tất cả/i }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Việc cần xử lý" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Về tổng quan/i }));
+    expect(
+      await screen.findByText("Công việc cần ưu tiên"),
+    ).toBeInTheDocument();
   });
 });
 

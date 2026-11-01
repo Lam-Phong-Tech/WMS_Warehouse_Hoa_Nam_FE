@@ -28,6 +28,8 @@ const baseProps = {
       date: today,
       label: today,
       inbound: 10,
+      receiptProduct: 6,
+      receiptComponent: 4,
       product: 4,
       component: 1,
       reversal: 0,
@@ -46,7 +48,6 @@ const baseProps = {
   loading: false,
   failed: false,
   forbidden: false,
-  showWarranty: true,
   onRetry: vi.fn(),
   onNavigate: vi.fn(),
 };

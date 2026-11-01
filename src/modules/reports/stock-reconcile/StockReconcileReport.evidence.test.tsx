@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import dayjs from "dayjs";
 import { fireEvent, screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -101,8 +102,8 @@ describe("stock reconciliation evidence navigation", () => {
       screen.getByText(/chưa trả danh sách mã chênh lệch/),
     ).toBeInTheDocument();
     expect(useSkuMovements).toHaveBeenCalledWith("HN-DRV-001", {
-      from: "2026-10-25",
-      to: "2026-10-31",
+      from: dayjs().subtract(6, "day").format("YYYY-MM-DD"),
+      to: dayjs().format("YYYY-MM-DD"),
     });
     fireEvent.click(
       screen.getByRole("button", { name: /Xem phát sinh theo SKU/ }),

@@ -275,9 +275,9 @@ export function useStockReconcileSnapshot({
     thresholds,
     loading: source.isLoading || catalog.loading,
     fetching: source.isFetching,
-    error: source.error,
+    error: source.error ?? catalog.error,
     /** Trả PROMISE để nút "Làm mới" biết lúc nào lượt gọi lại thực sự xong. */
-    refetch: () => source.refetch(),
+    refetch: () => Promise.all([source.refetch(), catalog.refetch()]),
   };
 }
 
