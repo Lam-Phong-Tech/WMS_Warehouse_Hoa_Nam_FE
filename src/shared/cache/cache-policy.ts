@@ -229,6 +229,7 @@ export const QUERY_CACHE_REGISTRY: ReadonlyArray<
   ["putaway", "list"],
   ["scan", "list"],
   ["document-attachments", "detail"],
+  ["report-document-detail", "detail"],
   ["sku-import-report", "detail"],
 
   // --- Tồn kho ---
@@ -244,6 +245,7 @@ export const QUERY_CACHE_REGISTRY: ReadonlyArray<
   ["rpt-io-01", "report"],
   ["rpt-mov-01", "report"],
   ["rpt-05", "report"],
+  ["rpt-04", "report"],
   ["rpt-06", "report"],
 
   // --- Bảng điều khiển ---
@@ -272,6 +274,7 @@ export const QUERY_CACHE_REGISTRY: ReadonlyArray<
 export const PERSIST_DENYLIST: ReadonlyArray<readonly string[]> = [
   ["rpt-ops", "user-directory"],
   ["rpt-coverage"],
+  ["rpt-04"],
 ];
 
 /** Khoá này có bị chặn ghi đĩa theo danh sách trên không. */

@@ -136,6 +136,9 @@ describe("chính sách cache", () => {
     // Báo cáo khác cùng nhóm thì không bị chặn.
     expect(isPersistDenied(["rpt-ops", "xnt", "a", "b"])).toBe(false);
     expect(isPersistDenied(["dashboard", "overview-quick"])).toBe(false);
+    expect(isPersistDenied(["rpt-04", "sku-import-issues", "batch", 1])).toBe(
+      true,
+    );
   });
 
   it("phân loại đúng các khoá tiêu biểu", () => {
@@ -146,6 +149,10 @@ describe("chính sách cache", () => {
     );
     expect(classOfQueryKey(["auth", "me", "token"])).toBe("rbac");
     expect(classOfQueryKey(["rpt-ops", "xnt", "a", "b"])).toBe("report");
+    expect(classOfQueryKey(["rpt-04", "sku-import-batches"])).toBe("report");
+    expect(classOfQueryKey(["report-document-detail", "INBOUND", "1"])).toBe(
+      "detail",
+    );
     expect(classOfQueryKey(["dashboard", "overview-quick"])).toBe("dashboard");
     expect(classOfQueryKey(["notifications"])).toBe("realtime");
   });

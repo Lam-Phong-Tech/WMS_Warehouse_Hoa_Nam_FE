@@ -158,6 +158,11 @@ describe("CatalogMasterScreen interactions", () => {
     await waitFor(() =>
       expectListRequest("BRAND", { keyword: "dong", status: "", page: 1 }),
     );
+    expect(
+      getCatalogMasters.mock.calls
+        .filter(([kind, params]) => kind === "BRAND" && params.keyword)
+        .map(([, params]) => params.keyword),
+    ).toEqual(["dong"]);
     await user.click(
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
     );

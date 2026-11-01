@@ -46,7 +46,11 @@ import {
   MASTER_STATUS_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
-import { ActionButton, ActionIconButton, RowActionButton } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+} from "@/shared/components/actions";
 import {
   Box,
   Grid,
@@ -195,6 +199,7 @@ export function CatalogMasterScreen() {
 
   const [activeKind, setActiveKind] = useState<CatalogMasterKind>("BRAND");
   const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<MasterStatus | "">("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -209,6 +214,17 @@ export function CatalogMasterScreen() {
   const [dismissedOffline, setDismissedOffline] = useState(false);
   const [successNotice, setSuccessNotice] = useState("");
   const [dismissedNotice, setDismissedNotice] = useState<unknown>(null);
+  useEffect(() => {
+    const normalized = keyword.trim();
+    if (!normalized) {
+      setDebouncedKeyword("");
+      return;
+    }
+
+    const timer = window.setTimeout(() => setDebouncedKeyword(normalized), 300);
+    return () => window.clearTimeout(timer);
+  }, [keyword]);
+
   useEffect(() => {
     const update = () => {
       setOffline(!navigator.onLine);
@@ -226,7 +242,7 @@ export function CatalogMasterScreen() {
   const supportsBrand = catalogMasterSupportsBrand(activeKind);
 
   const listParams = {
-    keyword: keyword.trim(),
+    keyword: keyword.trim() ? debouncedKeyword : "",
     status: statusFilter,
     page,
     per_page: perPage,
@@ -235,6 +251,7 @@ export function CatalogMasterScreen() {
   const listQuery = useQuery({
     queryKey: ["catalog-master", activeKind, listParams],
     queryFn: () => getCatalogMasters(activeKind, listParams),
+    enabled: !keyword.trim() || keyword.trim() === debouncedKeyword,
   });
 
   const brandQuery = useQuery({
