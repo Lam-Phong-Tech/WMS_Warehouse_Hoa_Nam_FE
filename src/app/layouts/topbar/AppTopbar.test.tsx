@@ -7,7 +7,7 @@ import {
   screen,
   within,
 } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const markAllRead = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
@@ -50,8 +50,18 @@ function renderTopbar(isDashboard = false) {
           onOpenMenu={() => {}}
           isDashboard={isDashboard}
         />
+        <CurrentPath />
       </MemoryRouter>
     </QueryClientProvider>,
+  );
+}
+
+function CurrentPath() {
+  const location = useLocation();
+  return (
+    <span data-testid="current-path" hidden>
+      {location.pathname}
+    </span>
   );
 }
 
@@ -76,6 +86,41 @@ afterEach(() => {
 });
 
 describe("AppTopbar", () => {
+  it("chỉ giữ thông tin tài khoản, đổi mật khẩu và đăng xuất trong menu tài khoản", () => {
+    renderTopbar();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Tài khoản Super Admin/ }),
+    );
+
+    const menu = screen.getByRole("menu", { name: "Tài khoản" });
+    expect(within(menu).getByText("Super Admin")).toBeInTheDocument();
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Thông tin tài khoản", "Đổi mật khẩu"]);
+    expect(
+      within(menu).getByRole("button", { name: "Đăng xuất" }),
+    ).toBeInTheDocument();
+    expect(
+      within(menu).queryByText("Người dùng & phân quyền"),
+    ).not.toBeInTheDocument();
+    expect(within(menu).queryByText("Cấu hình kho")).not.toBeInTheDocument();
+    expect(
+      within(menu).queryByText("Nhật ký hoạt động"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(menu).getByRole("menuitem", { name: "Đổi mật khẩu" }),
+    );
+    expect(screen.getByTestId("current-path")).toHaveTextContent(
+      "/change-password",
+    );
+    expect(
+      screen.queryByRole("menu", { name: "Tài khoản" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("hiển thị menu ngôn ngữ gọn như mẫu với đúng lựa chọn đang dùng", async () => {
     useLanguageStore.getState().setLanguage("en");
     renderTopbar();

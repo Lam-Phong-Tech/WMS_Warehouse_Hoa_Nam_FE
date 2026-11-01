@@ -73,6 +73,7 @@ export const MESSAGES_EN: MessageTree = {
     notificationAll: "View all notifications",
     accountLabel: "Account",
     accountProfile: "Account details",
+    accountChangePassword: "Change password",
     accountUsers: "Users & permissions",
     accountWarehouse: "Warehouse settings",
     accountAudit: "Activity log",

@@ -626,6 +626,7 @@ export function AppTopbar({
               id="account-menu"
               className="header-menu account-menu"
               role="menu"
+              aria-label={t("topbar.accountLabel")}
             >
               <div className="account-summary">
                 <span className="avatar avatar-large">{initials}</span>
@@ -635,61 +636,41 @@ export function AppTopbar({
                   {scopeLabel ? <small>{scopeLabel}</small> : null}
                 </div>
               </div>
-              <div className="menu-separator" />
-              <button
-                className="header-menu-item"
-                type="button"
-                role="menuitem"
-                onClick={() => go(ROUTES.PROFILE)}
-              >
-                <span className="menu-item-icon" aria-hidden="true">
-                  <VuexyDemoIcon name="user-round" />
-                </span>
-                <span>{t("topbar.accountProfile")}</span>
-              </button>
-              <button
-                className="header-menu-item"
-                type="button"
-                role="menuitem"
-                onClick={() => go(ROUTES.IAM_USERS)}
-              >
-                <span className="menu-item-icon" aria-hidden="true">
-                  <VuexyDemoIcon name="settings-2" />
-                </span>
-                <span>{t("topbar.accountUsers")}</span>
-              </button>
-              <button
-                className="header-menu-item"
-                type="button"
-                role="menuitem"
-                onClick={() => go(ROUTES.WAREHOUSE_CONFIG)}
-              >
-                <span className="menu-item-icon" aria-hidden="true">
-                  <VuexyDemoIcon name="warehouse" />
-                </span>
-                <span>{t("topbar.accountWarehouse")}</span>
-              </button>
-              <button
-                className="header-menu-item"
-                type="button"
-                role="menuitem"
-                onClick={() => go(ROUTES.AUDIT_LOGS)}
-              >
-                <span className="menu-item-icon" aria-hidden="true">
-                  <VuexyDemoIcon name="file-clock" />
-                </span>
-                <span>{t("topbar.accountAudit")}</span>
-              </button>
-              <div className="menu-separator" />
-              <button
-                className="logout-button"
-                type="button"
-                disabled={logout.isPending}
-                onClick={handleLogout}
-              >
-                <VuexyDemoIcon name="log-out" />
-                <span>{t("topbar.accountLogout")}</span>
-              </button>
+              <div className="account-actions">
+                <button
+                  className="header-menu-item account-action"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => go(ROUTES.PROFILE)}
+                >
+                  <span className="menu-item-icon" aria-hidden="true">
+                    <VuexyDemoIcon name="user-round" />
+                  </span>
+                  <span>{t("topbar.accountProfile")}</span>
+                </button>
+                <button
+                  className="header-menu-item account-action"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => go(ROUTES.CHANGE_PASSWORD)}
+                >
+                  <span className="menu-item-icon" aria-hidden="true">
+                    <VuexyDemoIcon name="lock" />
+                  </span>
+                  <span>{t("topbar.accountChangePassword")}</span>
+                </button>
+              </div>
+              <div className="account-footer">
+                <button
+                  className="logout-button"
+                  type="button"
+                  disabled={logout.isPending}
+                  onClick={handleLogout}
+                >
+                  <VuexyDemoIcon name="log-out" />
+                  <span>{t("topbar.accountLogout")}</span>
+                </button>
+              </div>
             </div>
           ) : null}
         </div>

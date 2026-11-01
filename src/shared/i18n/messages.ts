@@ -75,6 +75,7 @@ export const MESSAGES_VI = {
     notificationAll: "Xem tất cả thông báo",
     accountLabel: "Tài khoản",
     accountProfile: "Thông tin tài khoản",
+    accountChangePassword: "Đổi mật khẩu",
     accountUsers: "Người dùng & phân quyền",
     accountWarehouse: "Cấu hình kho",
     accountAudit: "Nhật ký hoạt động",

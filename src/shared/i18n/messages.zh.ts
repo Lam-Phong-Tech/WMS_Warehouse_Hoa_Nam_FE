@@ -667,6 +667,7 @@ export const MESSAGES_ZH: MessageTree = {
     "notificationAll": "查看所有通知",
     "accountLabel": "帐户",
     "accountProfile": "帐户详细信息",
+    "accountChangePassword": "修改密码",
     "accountUsers": "用户和权限",
     "accountWarehouse": "仓库设置",
     "accountAudit": "活动日志",

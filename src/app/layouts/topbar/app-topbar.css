@@ -400,8 +400,10 @@
   width: 370px;
 }
 .hn-topbar .account-menu {
-  width: 290px;
-  padding-bottom: 8px;
+  width: 308px;
+  padding: 8px;
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(0, 42, 82, 0.16);
 }
 .hn-topbar .header-menu-heading {
   display: grid;
@@ -694,14 +696,19 @@
 /* ── tài khoản ──────────────────────────────────────────────────────────── */
 .hn-topbar .account-summary {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  padding: 15px 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--primary-soft);
 }
 .hn-topbar .avatar-large {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--surface);
+  font-size: 13px;
 }
 .hn-topbar .account-summary > div {
   display: grid;
@@ -711,7 +718,7 @@
 .hn-topbar .account-summary strong {
   font-size: 14px;
   line-height: 20px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .hn-topbar .account-summary span,
 .hn-topbar .account-summary small {
@@ -721,6 +728,41 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.hn-topbar .account-actions {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+}
+.hn-topbar .account-action {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 10px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.hn-topbar .account-action .menu-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-topbar .account-action .menu-item-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.hn-topbar .account-action:hover,
+.hn-topbar .account-action:focus-visible {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+.hn-topbar .account-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
 }
 .hn-topbar .menu-separator {
   height: 1px;
@@ -732,19 +774,20 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: calc(100% - 28px);
-  min-height: 38px;
-  margin: 8px 14px 2px;
-  padding: 7px 12px;
-  border: 0;
-  border-radius: 7px;
-  background: var(--red);
-  color: var(--hnt-white);
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--red-soft);
+  color: var(--red);
   font-size: 13px;
   font-weight: 600;
 }
 .hn-topbar .logout-button:hover {
-  background: var(--wms-error-dark);
+  background: var(--red);
+  color: var(--hnt-white);
 }
 .hn-topbar .logout-button:disabled {
   cursor: not-allowed;
