@@ -34,6 +34,7 @@ export interface AuthShellProps {
   baselineScreen?: "login" | "session";
   showBaselineHeading?: boolean;
   recoveryStep?: string;
+  extendIllustration?: boolean;
   hideRecoveryBack?: boolean;
   showRecoveryBack?: boolean;
   children: ReactNode;
@@ -451,6 +452,7 @@ export function AuthShell({
   baselineScreen,
   showBaselineHeading,
   recoveryStep,
+  extendIllustration,
   hideRecoveryBack,
   showRecoveryBack,
   children,
@@ -464,6 +466,7 @@ export function AuthShell({
         loadingText={loadingText}
         showHeading={showBaselineHeading ?? true}
         recoveryStep={recoveryStep}
+        extendIllustration={extendIllustration}
         hideRecoveryBack={hideRecoveryBack}
         showRecoveryBack={showRecoveryBack}
       >

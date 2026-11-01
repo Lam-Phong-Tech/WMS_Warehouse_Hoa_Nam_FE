@@ -14,6 +14,7 @@ interface HoaNamAuthShellProps {
   loadingText?: string | null;
   showHeading?: boolean;
   recoveryStep?: string;
+  extendIllustration?: boolean;
   hideRecoveryBack?: boolean;
   showRecoveryBack?: boolean;
   children: ReactNode;
@@ -30,6 +31,7 @@ export function HoaNamAuthShell({
   loadingText,
   showHeading = true,
   recoveryStep,
+  extendIllustration,
   hideRecoveryBack,
   showRecoveryBack,
   children,
@@ -175,7 +177,7 @@ export function HoaNamAuthShell({
           position: "relative",
           overflow: "hidden",
           minWidth: 0,
-          height: { xs: "clamp(240px, 57vw, 580px)", xl: "100vh" },
+          height: { xs: "clamp(240px, 57vw, 580px)", xl: extendIllustration ? "100%" : "100vh" },
           minHeight: { xl: 650 },
           backgroundColor: "#07395e",
         }}

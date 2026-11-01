@@ -289,6 +289,7 @@ export function ForgotPasswordPage() {
       baselineScreen="login"
       showBaselineHeading={step !== "success" && step !== "expired"}
       recoveryStep={step === "email" ? t("auth.forgotPassword.stepAccount") : step === "otp" ? t("auth.forgotPassword.stepVerify") : step === "password" ? t("auth.forgotPassword.stepPassword") : step === "success" ? t("auth.forgotPassword.stepDone") : undefined}
+      extendIllustration={step === "otp"}
       hideRecoveryBack={step === "success"}
       showRecoveryBack={step === "expired"}
       title={
