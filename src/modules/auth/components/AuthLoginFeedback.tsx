@@ -24,9 +24,9 @@ export function AuthLoginFeedback({ feedback, mfa = false }: { feedback: LoginFe
     default: title = copy.unavailableTitle; body = copy.unavailableBody;
   }
   const palette = {
-    error: { color: "#b0121f", backgroundColor: "#fff0f1", borderColor: "#ffc0c5" },
-    warning: { color: "#a55000", backgroundColor: "#fff0d9", borderColor: "#ffe0a9" },
-    info: { color: AUTH_BASELINE.ink, backgroundColor: "#ECF7FD", borderColor: "#c9dfff" },
+    error: { color: "var(--auth-alert-error-ink, #b0121f)", backgroundColor: "var(--auth-alert-error-bg, #fff0f1)", borderColor: "var(--auth-alert-error-border, #ffc0c5)" },
+    warning: { color: "var(--auth-alert-warning-ink, #a55000)", backgroundColor: "var(--auth-alert-warning-bg, #fff0d9)", borderColor: "var(--auth-alert-warning-border, #ffe0a9)" },
+    info: { color: `var(--auth-ink, ${AUTH_BASELINE.ink})`, backgroundColor: "var(--auth-note, #ECF7FD)", borderColor: "var(--auth-border, #c9dfff)" },
   }[tone];
   return (
     <Box role="alert" aria-live="polite" aria-atomic="true" data-login-feedback={kind}
@@ -48,7 +48,7 @@ export function AuthAccessNotice() {
   const t = useT();
   return (
     <Box role="note" sx={{ display: "flex", alignItems: "center", gap: "16px", padding: { xs: "20px 22px", sm: "26px 28px", xl: "20px 22px" },
-      borderRadius: "9px", backgroundColor: "#ebf6ff", color: "#071c57" }}>
+      borderRadius: "9px", backgroundColor: "var(--auth-note, #ebf6ff)", color: "var(--auth-ink, #071c57)" }}>
       <svg data-testid="auth-access-shield" aria-hidden="true" focusable="false" width="27" height="30"
         viewBox="0 0 28 32" style={{ flex: "0 0 27px" }}>
         <path d="M14 3C10 6 6.5 7 4.5 7.5V17c0 5.5 4 9 9.5 12 5.5-3 9.5-6.5 9.5-12V7.5C21.5 7 18 6 14 3Z"
@@ -57,7 +57,7 @@ export function AuthAccessNotice() {
       </svg>
       <Box sx={{ fontSize: { xs: 14, sm: 20, xl: 16 }, lineHeight: 1.4 }}>
         <Box sx={{ fontWeight: 700 }}>{t("auth.login.accessNoticeTitle")}</Box>
-        <Box sx={{ color: AUTH_BASELINE.muted }}>{t("auth.login.accessNoticeBody")}</Box>
+        <Box sx={{ color: `var(--auth-muted, ${AUTH_BASELINE.muted})` }}>{t("auth.login.accessNoticeBody")}</Box>
       </Box>
     </Box>
   );

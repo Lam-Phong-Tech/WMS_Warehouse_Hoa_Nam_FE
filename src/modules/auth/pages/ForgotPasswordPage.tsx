@@ -37,8 +37,8 @@ function RecoveryError({ children }: { children: string }) {
       sx={{
         borderRadius: "var(--ops-radius-card)",
         padding: "13px 15px",
-        color: "#A33348",
-        backgroundColor: "#FFF1F3",
+        color: "var(--auth-error-ink, #A33348)",
+        backgroundColor: "var(--auth-error-bg, #FFF1F3)",
         fontSize: 14,
         lineHeight: 1.45,
       }}
@@ -327,7 +327,7 @@ export function ForgotPasswordPage() {
                 : t("auth.forgotPassword.sendOtp")}
             </UiButton>
             <Box role="note" sx={{ display: "flex", alignItems: "center", gap: "18px", minHeight: 80,
-              padding: "17px 22px", borderRadius: "9px", color: "#071c57", backgroundColor: "#ebf6ff", fontSize: 17 }}>
+              padding: "17px 22px", borderRadius: "9px", color: "var(--auth-ink, #071c57)", backgroundColor: "var(--auth-note, #ebf6ff)", fontSize: 17 }}>
               <Box aria-hidden="true" sx={{ color: "#0069f5", fontSize: 29, lineHeight: 1 }}>✉</Box>
               {t("auth.forgotPassword.emailNotice")}
             </Box>
@@ -348,8 +348,8 @@ export function ForgotPasswordPage() {
                 </Box>
                 <Box sx={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: { xs: "6px", sm: "12px" } }}>
                   {Array.from({ length: 6 }, (_, index) => <Box key={index} className="otp-digit" aria-hidden="true"
-                    sx={{ display: "grid", placeItems: "center", height: { xs: 54, sm: 72 }, border: `1px solid ${fieldState.error || failure?.kind === "otp" ? "#f32637" : !isExpired && field.value.length === index ? "#0069f5" : "#c9dfff"}`,
-                      borderRadius: "9px", backgroundColor: "#f9fcff", fontSize: { xs: 22, sm: 27 } }}>
+                    sx={{ display: "grid", placeItems: "center", height: { xs: 54, sm: 72 }, border: `1px solid ${fieldState.error || failure?.kind === "otp" ? "#f32637" : !isExpired && field.value.length === index ? "#0069f5" : "var(--auth-border, #c9dfff)"}`,
+                      borderRadius: "9px", backgroundColor: "var(--auth-field, #f9fcff)", fontSize: { xs: 22, sm: 27 } }}>
                     {field.value[index] ?? ""}
                   </Box>)}
                   <Box component="input" id="recovery-otp" autoFocus value={field.value} ref={field.ref}
@@ -362,7 +362,7 @@ export function ForgotPasswordPage() {
                 </Box>}
               </Box>
             )} />
-            <Box sx={{ color: isExpired ? "#bd6500" : "#657db3", fontSize: 16 }}>
+            <Box sx={{ color: isExpired ? "#e9a75a" : "var(--auth-muted, #657db3)", fontSize: 16 }}>
               {isExpired ? t("auth.forgotPassword.otpExpired") : t("auth.forgotPassword.otpValidFor", { time: formatCountdown(secondsLeft) })}
             </Box>
             {!isExpired && !needsNewOtp && (
@@ -452,10 +452,10 @@ export function ForgotPasswordPage() {
         <Box sx={{ textAlign: "center" }}>
           <Box aria-hidden="true" sx={{ mx: "auto", my: 4, width: 96, height: 96, display: "grid", placeItems: "center",
             borderRadius: "50%", border: "5px solid #39bf79", color: "#098444", backgroundColor: "#ebfff3", fontSize: 54 }}>✓</Box>
-          <Box sx={{ color: "#071c57", fontSize: 36, lineHeight: 1.2, fontWeight: 800, m: 0 }}>
+          <Box sx={{ color: "var(--auth-ink, #071c57)", fontSize: 36, lineHeight: 1.2, fontWeight: 800, m: 0 }}>
             {t("auth.forgotPassword.doneTitle")}
           </Box>
-          <Box sx={{ color: "#657db3", fontSize: 19, mt: 2, mb: 6 }}>
+          <Box sx={{ color: "var(--auth-muted, #657db3)", fontSize: 19, mt: 2, mb: 6 }}>
             {t("auth.forgotPassword.doneSubtitle")}
           </Box>
           <UiButton type="button" onClick={() => navigate("/login")} fullWidth appearance="filled">
@@ -466,10 +466,10 @@ export function ForgotPasswordPage() {
       {step === "expired" && <Box sx={{ textAlign: "center" }}>
         <Box aria-hidden="true" sx={{ mx: "auto", mb: 3, width: 82, height: 82, display: "grid", placeItems: "center",
           borderRadius: "50%", border: "4px solid #ffad32", color: "#ffad32", fontSize: 46 }}>◷</Box>
-        <Box sx={{ color: "#071c57", fontSize: 36, lineHeight: 1.2, fontWeight: 800, m: 0 }}>
+        <Box sx={{ color: "var(--auth-ink, #071c57)", fontSize: 36, lineHeight: 1.2, fontWeight: 800, m: 0 }}>
           {t("auth.forgotPassword.expiredTitle")}
         </Box>
-        <Box sx={{ color: "#657db3", fontSize: 19, mt: 2, mb: 6 }}>
+        <Box sx={{ color: "var(--auth-muted, #657db3)", fontSize: 19, mt: 2, mb: 6 }}>
           {t("auth.forgotPassword.expiredSubtitle")}
         </Box>
         <UiButton className="hn-auth-primary-cta" type="button" fullWidth disabled={blocked} loading={isBusy}

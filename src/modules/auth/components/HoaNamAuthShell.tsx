@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Box, UiSpinner } from "@/shared/ui";
-import { useLanguageStore } from "@/shared/i18n/language.store";
+import { LANGUAGES, useLanguageStore } from "@/shared/i18n/language.store";
+import { useT } from "@/shared/i18n/useT";
 import { useThemeStore } from "@/shared/ui/theme/theme.store";
 import desktopReference from "../assets/hoanam-auth-reference-desktop.png";
 import tabletReference from "../assets/hoanam-auth-reference-tablet.png";
@@ -35,14 +36,53 @@ export function HoaNamAuthShell({
 }: HoaNamAuthShellProps) {
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
+  const t = useT();
   const themeMode = useThemeStore((state) => state.mode);
   const setThemePreference = useThemeStore((state) => state.setPreference);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const languageMenuRef = useRef<HTMLDivElement | null>(null);
+  const isDark = themeMode === "dark";
+
+  useEffect(() => {
+    if (!languageOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!languageMenuRef.current?.contains(event.target as Node)) {
+        setLanguageOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLanguageOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [languageOpen]);
 
   return (
     <Box
       component="main"
       data-auth-baseline="login"
       sx={{
+        "--auth-ink": isDark ? "#edf5ff" : ink,
+        "--auth-muted": isDark ? "#aec3e4" : muted,
+        "--auth-panel": isDark ? "#102544" : "#fff",
+        "--auth-field": isDark ? "#172f52" : "#f9fcff",
+        "--auth-border": isDark ? "#45658e" : "#c9dfff",
+        "--auth-note": isDark ? "#18385d" : "#ebf6ff",
+        "--auth-page": isDark ? "#081a32" : "#f1fbff",
+        "--auth-line": isDark ? "#385678" : "#bcd0e6",
+        "--auth-link": isDark ? "#88b8ff" : blue,
+        "--auth-error-bg": isDark ? "#492b3b" : "#fff1f3",
+        "--auth-error-ink": isDark ? "#ffd2dc" : "#a33348",
+        "--auth-alert-error-bg": isDark ? "#47283a" : "#fff0f1",
+        "--auth-alert-error-border": isDark ? "#8e5067" : "#ffc0c5",
+        "--auth-alert-error-ink": isDark ? "#ffd2dc" : "#b0121f",
+        "--auth-alert-warning-bg": isDark ? "#4a3727" : "#fff0d9",
+        "--auth-alert-warning-border": isDark ? "#8f6942" : "#ffe0a9",
+        "--auth-alert-warning-ink": isDark ? "#ffd9a7" : "#a55000",
         minHeight: "100vh",
         display: "grid",
         alignContent: "start",
@@ -50,14 +90,14 @@ export function HoaNamAuthShell({
           xs: "minmax(0, 1fr)",
           xl: "minmax(0, 1fr) minmax(0, 1fr)",
         },
-        background: "#f1fbff",
+        background: "var(--auth-page)",
         fontFamily: "var(--wms-font-family)",
-        color: ink,
+        color: "var(--auth-ink)",
         overflowX: "hidden",
-        "& a": { color: blue, textDecoration: "none" },
+        "& a": { color: "var(--auth-link)", textDecoration: "none" },
         "& a:hover": { textDecoration: "underline" },
         "& label": {
-          color: ink,
+          color: "var(--auth-ink)",
           fontWeight: 700,
           fontSize: { xs: 15, sm: 22, xl: 17 },
         },
@@ -68,9 +108,9 @@ export function HoaNamAuthShell({
             xl: "62px !important",
           },
           borderRadius: "9px",
-          backgroundColor: "#f9fcff",
-          color: ink,
-          "& .MuiOutlinedInput-notchedOutline": { borderColor: "#c9dfff" },
+          backgroundColor: "var(--auth-field)",
+          color: "var(--auth-ink)",
+          "& .MuiOutlinedInput-notchedOutline": { borderColor: "var(--auth-border)" },
           "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: blue },
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: blue,
@@ -81,12 +121,12 @@ export function HoaNamAuthShell({
           },
         },
         "& .MuiInputBase-input": {
-          color: ink,
+          color: "var(--auth-ink)",
           fontSize: { xs: 16, sm: 22, xl: 18 },
         },
-        "& .MuiInputBase-input::placeholder": { color: muted, opacity: 1 },
+        "& .MuiInputBase-input::placeholder": { color: "var(--auth-muted)", opacity: 1 },
         "& .MuiInputAdornment-root, & .MuiInputAdornment-root i": {
-          color: muted,
+          color: "var(--auth-muted)",
           fontSize: 22,
         },
         "& .MuiFormHelperText-root": { marginLeft: 0, marginTop: "5px" },
@@ -101,13 +141,13 @@ export function HoaNamAuthShell({
           fontWeight: 700,
           textTransform: "none",
           "&:hover": { backgroundColor: "#0056df", boxShadow: "none" },
-          "&.Mui-disabled": { backgroundColor: "#d4dfeb", color: muted },
+          "&.Mui-disabled": { backgroundColor: isDark ? "#334969" : "#d4dfeb", color: "var(--auth-muted)" },
         },
         "& .hn-auth-note": {
           border: 0,
           borderRadius: "9px",
-          backgroundColor: "#ebf6ff",
-          color: ink,
+          backgroundColor: "var(--auth-note)",
+          color: "var(--auth-ink)",
           padding: "17px 20px",
         },
         "& .hn-auth-primary-cta": { position: "relative" },
@@ -121,11 +161,11 @@ export function HoaNamAuthShell({
         "& .hn-auth-resend": {
           minHeight: 62,
           borderRadius: "9px",
-          backgroundColor: "#ecf3f9",
-          color: blue,
+          backgroundColor: "var(--auth-note)",
+          color: "var(--auth-link)",
           fontSize: 17,
           textTransform: "none",
-          "&.Mui-disabled": { backgroundColor: "#ecf3f9", color: "#96a9ce" },
+          "&.Mui-disabled": { backgroundColor: "var(--auth-note)", color: "var(--auth-muted)" },
         },
       }}
     >
@@ -188,39 +228,65 @@ export function HoaNamAuthShell({
             sm: "0 50px 34px",
             xl: "96px 48px 80px",
           },
-          background: "linear-gradient(135deg, #f6fdff, #effaff)",
+          background: isDark
+            ? "linear-gradient(135deg, #081a32, #0d2543)"
+            : "linear-gradient(135deg, #f6fdff, #effaff)",
         }}
       >
         <Box
           sx={{
             position: "absolute",
-            top: { xs: "-215px", sm: "-510px", xl: 28 },
-            right: { xs: 24, sm: 50, xl: 38 },
+            top: { xs: "calc(24px - clamp(240px, 57vw, 580px))", sm: "calc(44px - clamp(240px, 57vw, 580px))", xl: 28 },
+            right: { xs: 24, sm: 28, xl: 38 },
             zIndex: 2,
             display: "flex",
             alignItems: "center",
             gap: "15px",
-            opacity: { xs: 1, sm: 0, xl: 1 },
-            color: { xs: "white", xl: blue },
+            color: { xs: "white", xl: isDark ? "#a9c9ff" : blue },
+            backgroundColor: { sm: "#052b4e", xl: "transparent" },
+            borderRadius: { sm: "14px", xl: 0 },
+            padding: { sm: "9px 14px", xl: 0 },
+            minWidth: { sm: 190, xl: 0 },
+            minHeight: { sm: 72, xl: 0 },
+            justifyContent: "space-between",
           }}
         >
-          <Box
-            component="button"
-            type="button"
-            onClick={() => setLanguage(language === "vi" ? "en" : "vi")}
-            aria-label={
-              language === "vi" ? "Switch to English" : "Chuyển sang Tiếng Việt"
-            }
-            sx={{
-              border: 0,
-              background: "transparent",
-              color: "inherit",
-              cursor: "pointer",
-              fontSize: 18,
-              padding: 0,
-            }}
-          >
-            {language.toUpperCase()}⌄
+          <Box ref={languageMenuRef} sx={{ position: "relative" }}>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setLanguageOpen((open) => !open)}
+              aria-label={t("topbar.languageLabel")}
+              aria-haspopup="menu"
+              aria-expanded={languageOpen}
+              aria-controls={languageOpen ? "auth-language-menu" : undefined}
+              sx={{ border: 0, background: "transparent", color: "inherit", cursor: "pointer", fontSize: 18, padding: 0 }}
+            >
+              {language.toUpperCase()}⌄
+            </Box>
+            {languageOpen && (
+              <Box
+                id="auth-language-menu"
+                role="menu"
+                aria-label={t("topbar.languageLabel")}
+                sx={{ position: "absolute", top: "calc(100% + 12px)", right: 0, zIndex: 5,
+                  minWidth: 190, padding: "6px", border: "1px solid var(--auth-border)", borderRadius: "12px",
+                  backgroundColor: "var(--auth-panel)", color: "var(--auth-ink)",
+                  boxShadow: isDark ? "0 14px 30px rgba(0,0,0,.4)" : "0 14px 30px rgba(28,85,132,.2)" }}
+              >
+                {LANGUAGES.map(({ value, label }) => (
+                  <Box key={value} component="button" type="button" role="menuitemradio" aria-checked={language === value}
+                    onClick={() => { setLanguage(value); setLanguageOpen(false); }}
+                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+                      width: "100%", border: 0, borderRadius: "8px", padding: "10px 12px", textAlign: "left",
+                      backgroundColor: language === value ? "var(--auth-note)" : "transparent",
+                      color: "inherit", cursor: "pointer", fontSize: 15, whiteSpace: "nowrap",
+                      "&:hover": { backgroundColor: "var(--auth-note)" } }}>
+                    {label}<span aria-hidden="true">{language === value ? "✓" : ""}</span>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </Box>
           <Box
             sx={{
@@ -265,9 +331,9 @@ export function HoaNamAuthShell({
             marginTop: { xs: "-30px", sm: "-45px", xl: 0 },
             padding: { xs: "30px 23px", sm: "46px 62px", xl: "40px" },
             borderRadius: "16px",
-            border: "1px solid #cce2ff",
-            backgroundColor: "#fff",
-            boxShadow: "0 15px 38px rgba(28, 85, 132, .11)",
+            border: "1px solid var(--auth-border)",
+            backgroundColor: "var(--auth-panel)",
+            boxShadow: isDark ? "0 15px 38px rgba(0,0,0,.28)" : "0 15px 38px rgba(28, 85, 132, .11)",
             "& form [data-busy]": recoveryStep
               ? { gap: { xl: "34px" } }
               : undefined,
@@ -284,7 +350,7 @@ export function HoaNamAuthShell({
                 display: "grid",
                 placeItems: "center",
                 borderRadius: "inherit",
-                backgroundColor: "rgba(255,255,255,.88)",
+                backgroundColor: isDark ? "rgba(16,37,68,.9)" : "rgba(255,255,255,.88)",
               }}
             >
               <Box sx={{ textAlign: "center", fontWeight: 700 }}>
@@ -313,10 +379,10 @@ export function HoaNamAuthShell({
                   >
                     ←
                   </span>
-                  {language === "vi" ? "Quay lại đăng nhập" : "Back to sign in"}
+                  {t("auth.forgotPassword.backToLogin")}
                 </Link>
               )}
-              {recoveryStep && <Box sx={{ color: blue, fontSize: { xs: 16, sm: 18 }, marginBottom: "7px" }}>
+              {recoveryStep && <Box sx={{ color: "var(--auth-link)", fontSize: { xs: 16, sm: 18 }, marginBottom: "7px" }}>
                 {recoveryStep}
               </Box>}
             </>
@@ -331,7 +397,7 @@ export function HoaNamAuthShell({
                   fontSize: { xs: 32, sm: 50, xl: 40 },
                   lineHeight: 1.15,
                   fontWeight: 800,
-                  color: ink,
+                  color: "var(--auth-ink)",
                 }}
               >
                 {title}
@@ -344,7 +410,7 @@ export function HoaNamAuthShell({
                     sm: "46px",
                     xl: recoveryStep ? "75px" : "30px",
                   },
-                  color: muted,
+                  color: "var(--auth-muted)",
                   fontSize: { xs: 16, sm: 23, xl: 19 },
                   lineHeight: 1.45,
                 }}
@@ -382,12 +448,12 @@ export function HoaNamAuthShell({
             mt: { xs: "60px", sm: "130px", xl: 0 },
             position: { xl: "absolute" },
             bottom: { xl: 42 },
-            color: muted,
+            color: "var(--auth-muted)",
             "&::before, &::after": {
               content: '""',
               height: "1px",
               flex: 1,
-              backgroundColor: "#bcd0e6",
+              backgroundColor: "var(--auth-line)",
             },
           }}
         >
@@ -399,9 +465,7 @@ export function HoaNamAuthShell({
             }}
           >
             Hoa Nam WMS ·{" "}
-            {language === "vi"
-              ? "Hệ thống quản lý kho"
-              : "Warehouse management system"}
+            {language === "vi" ? "Hệ thống quản lý kho" : language === "zh" ? "仓库管理系统" : "Warehouse management system"}
           </Box>
         </Box>
       </Box>
