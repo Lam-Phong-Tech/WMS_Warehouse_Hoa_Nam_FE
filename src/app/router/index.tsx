@@ -2,6 +2,7 @@
 import { Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
+import { LoginRoute } from "@/app/router/LoginRoute";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { resolveRouteEntryPermission } from "@/app/router/access";
 import { RouteLoadingSkeleton } from "@/app/router/RouteLoadingSkeleton";
@@ -104,7 +105,10 @@ function DashboardCanonicalRoute() {
 }
 
 export const router = createBrowserRouter([
-  { path: ROUTES.LOGIN, element: withPageLoader(<LoginPage />) },
+  {
+    element: <LoginRoute />,
+    children: [{ path: ROUTES.LOGIN, element: withPageLoader(<LoginPage />) }],
+  },
   { path: ROUTES.PV_CATALOG, element: withPageLoader(<PvCatalogPage />) },
   {
     path: ROUTES.CHANGE_PASSWORD,
