@@ -308,7 +308,6 @@ function BaselineAuthShell({
             width: "100%",
             maxWidth: 600,
             marginTop: { xs: "-56px", lg: 0 },
-            minHeight: { lg: 548 },
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-start",
