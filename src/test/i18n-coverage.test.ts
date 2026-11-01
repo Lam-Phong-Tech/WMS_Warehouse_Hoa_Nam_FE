@@ -60,7 +60,12 @@ const VIETNAMESE_IS_DATA: ReadonlyMap<string, string> = new Map([
     "src/shared/i18n/messages.en.ts",
     "bảng chuỗi EN; tên ngôn ngữ giữ nguyên bản ngữ là đúng UX",
   ],
+  [
+    "src/shared/i18n/messages.zh.ts",
+    "bảng chuỗi ZH; tên Tiếng Việt giữ nguyên bản ngữ trong bộ chọn ngôn ngữ",
+  ],
   ["src/shared/i18n/nav-labels.ts", "lớp phủ EN cho menu và tiêu đề trang"],
+  ["src/shared/i18n/nav-labels.zh.ts", "lớp phủ ZH; khoá route tiếng Việt là dữ liệu đối sánh"],
   ["src/shared/i18n/language.store.ts", '"Tiếng Việt" là tên ngôn ngữ'],
   // Bảng nhãn song ngữ: cả hai thứ tiếng nằm ngay trong file.
   [

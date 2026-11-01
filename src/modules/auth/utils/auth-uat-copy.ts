@@ -1,4 +1,5 @@
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 
 /** AUTH-only UAT copy; no changes to messages used by inventory/report screens. */
 const vi = {
@@ -10,19 +11,23 @@ const vi = {
   emailInvalid: "Định dạng Email không hợp lệ",
   submitting: "Đang đăng nhập…",
   invalidCredentials: "Tên đăng nhập hoặc mật khẩu chưa đúng",
-  invalidInput: "Thông tin đăng nhập chưa hợp lệ. Vui lòng kiểm tra lại tên đăng nhập và mật khẩu.",
+  invalidInput:
+    "Thông tin đăng nhập chưa hợp lệ. Vui lòng kiểm tra lại tên đăng nhập và mật khẩu.",
   offlineTitle: "Không có kết nối mạng",
   offlineBody: "Kiểm tra kết nối rồi thử đăng nhập lại.",
   unknownTitle: "Chưa xác định được kết quả đăng nhập",
-  unknownBody: "Kết nối bị gián đoạn khi xử lý. Chưa thể kiểm tra phiên đăng nhập lúc này.",
-  unknownHelp: "Vui lòng liên hệ quản trị viên để được hỗ trợ xác minh phiên đăng nhập.",
+  unknownBody:
+    "Kết nối bị gián đoạn khi xử lý. Chưa thể kiểm tra phiên đăng nhập lúc này.",
+  unknownHelp:
+    "Vui lòng liên hệ quản trị viên để được hỗ trợ xác minh phiên đăng nhập.",
   rateTitle: "Bạn đã thử đăng nhập quá nhiều lần",
   rateBody: "Vui lòng chờ rồi thử lại.",
   rateWithoutDeadline: "Vui lòng chờ rồi tải lại trang để thử lại.",
   accountTitle: "Tài khoản hiện không thể đăng nhập",
   accountBody: "Vui lòng liên hệ quản trị viên để được hỗ trợ.",
   unavailableTitle: "Chưa thể đăng nhập lúc này",
-  unavailableBody: "Dịch vụ xác thực tạm thời không khả dụng. Vui lòng thử lại sau.",
+  unavailableBody:
+    "Dịch vụ xác thực tạm thời không khả dụng. Vui lòng thử lại sau.",
   backToLogin: "Quay lại đăng nhập",
   mfaInvalid: "Mã xác thực không đúng hoặc đã hết hạn. Vui lòng kiểm tra lại.",
   sessionTitle: "Xác nhận phiên đăng nhập",
@@ -46,21 +51,26 @@ const en: Record<keyof typeof vi, string> = {
   emailInvalid: "Invalid email format",
   submitting: "Signing in…",
   invalidCredentials: "The username or password is incorrect",
-  invalidInput: "The sign-in details are invalid. Please check your username and password.",
+  invalidInput:
+    "The sign-in details are invalid. Please check your username and password.",
   offlineTitle: "No internet connection",
   offlineBody: "Please check your connection and try again.",
   unknownTitle: "Sign-in result is unknown",
-  unknownBody: "The connection was interrupted during processing. The session cannot be checked right now.",
-  unknownHelp: "Please contact your administrator for help verifying the sign-in session.",
+  unknownBody:
+    "The connection was interrupted during processing. The session cannot be checked right now.",
+  unknownHelp:
+    "Please contact your administrator for help verifying the sign-in session.",
   rateTitle: "Too many sign-in attempts",
   rateBody: "Please wait before trying again.",
   rateWithoutDeadline: "Please wait, then reload the page to try again.",
   accountTitle: "This account cannot sign in at the moment",
   accountBody: "Please contact your administrator for assistance.",
   unavailableTitle: "Unable to sign in right now",
-  unavailableBody: "The authentication service is temporarily unavailable. Please try again later.",
+  unavailableBody:
+    "The authentication service is temporarily unavailable. Please try again later.",
   backToLogin: "Back to sign in",
-  mfaInvalid: "The verification code is incorrect or expired. Please check it and try again.",
+  mfaInvalid:
+    "The verification code is incorrect or expired. Please check it and try again.",
   sessionTitle: "Confirm sign-in session",
   sessionHelp: "Check your account and warehouse before continuing.",
   startWork: "Start work",
@@ -74,9 +84,15 @@ const en: Record<keyof typeof vi, string> = {
   forgotFailed: "Unable to send the request right now. Please try again later.",
 };
 export type AuthUatCopy = typeof en;
+const chineseCopy = (): AuthUatCopy =>
+  Object.fromEntries(
+    Object.entries(en).map(([key, value]) => [key, localizedEnglish(value)]),
+  ) as AuthUatCopy;
 export function getAuthUatCopy(): AuthUatCopy {
-  return useLanguageStore.getState().language === "en" ? en : vi;
+  const language = useLanguageStore.getState().language;
+  return language === "vi" ? vi : language === "zh" ? chineseCopy() : en;
 }
 export function useAuthUatCopy(): AuthUatCopy {
-  return useLanguageStore((state) => state.language) === "en" ? en : vi;
+  const language = useLanguageStore((state) => state.language);
+  return language === "vi" ? vi : language === "zh" ? chineseCopy() : en;
 }

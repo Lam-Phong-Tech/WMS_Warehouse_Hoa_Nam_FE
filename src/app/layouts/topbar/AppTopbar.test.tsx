@@ -143,6 +143,16 @@ describe("AppTopbar", () => {
     expect(document.documentElement.lang).toBe("en");
   });
 
+  it("chọn tiếng Trung và lưu lựa chọn", async () => {
+    renderTopbar();
+    fireEvent.click(screen.getByRole("button", { name: "Ngôn ngữ" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /简体中文/ }));
+    expect(await screen.findByPlaceholderText("搜索功能")).toBeInTheDocument();
+    expect(useLanguageStore.getState().language).toBe("zh");
+    expect(JSON.parse(localStorage.getItem("erp-language") ?? "null")?.state?.language).toBe("zh");
+    expect(document.documentElement.lang).toBe("zh-CN");
+  });
+
   it("đổi giao diện thì đặt data-theme và ghi nhớ lựa chọn", () => {
     renderTopbar();
     fireEvent.click(screen.getByRole("button", { name: "Giao diện" }));

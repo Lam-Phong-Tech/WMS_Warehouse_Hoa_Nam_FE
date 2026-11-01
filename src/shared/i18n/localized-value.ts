@@ -1,4 +1,5 @@
 import { englishMessages } from "./english-messages";
+import { chineseMessages } from "./chinese-messages";
 import { useLanguageStore } from "./language.store";
 
 /** Defer UI constants until render while preserving reference stability. */
@@ -12,7 +13,7 @@ export function localizedValue<T>(read: () => T): () => T {
     | undefined;
   return () => {
     const language = useLanguageStore.getState().language;
-    const dictionary = language === "en" ? englishMessages() : null;
+    const dictionary = language === "en" ? englishMessages() : language === "zh" ? chineseMessages() : null;
     if (!cached || cached.language !== language || cached.dictionary !== dictionary) {
       cached = { language, dictionary, value: read() };
     }

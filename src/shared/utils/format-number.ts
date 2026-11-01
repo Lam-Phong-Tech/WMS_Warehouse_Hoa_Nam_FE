@@ -1,5 +1,5 @@
 /**
- * Định dạng số DUY NHẤT của dự án (locale vi-VN, tối đa 2 chữ số thập phân).
+ * Định dạng số lượng dùng chung (vi-VN hoặc zh-CN, tối đa 2 chữ số thập phân).
  *
  * Trước đây mỗi màn tự `new Intl.NumberFormat("vi-VN")` (6 bản sao) hoặc gọi
  * `.toLocaleString("vi-VN")` inline — chỉ Dashboard giới hạn số lẻ nên cùng
@@ -7,8 +7,12 @@
  * phải dùng helper này.
  */
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 
 const QUANTITY_FORMATTER = new Intl.NumberFormat("vi-VN", {
+  maximumFractionDigits: 2,
+});
+const CHINESE_QUANTITY_FORMATTER = new Intl.NumberFormat("zh-CN", {
   maximumFractionDigits: 2,
 });
 
@@ -17,5 +21,9 @@ export function formatQuantity(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return EMPTY_TEXT;
   }
-  return QUANTITY_FORMATTER.format(value);
+  return (
+    useLanguageStore.getState().language === "zh"
+      ? CHINESE_QUANTITY_FORMATTER
+      : QUANTITY_FORMATTER
+  ).format(value);
 }

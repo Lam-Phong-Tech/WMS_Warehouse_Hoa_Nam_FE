@@ -5,36 +5,61 @@ import {
   useEnglishMessages,
   useEnglishMessagesStatus,
 } from "./english-messages";
+import {
+  ensureChineseMessages,
+  useChineseMessages,
+  useChineseMessagesStatus,
+} from "./chinese-messages";
 import "./english-language-boundary.css";
 
-/** Mount English screens only after their lazily loaded dictionary is ready. */
-export function EnglishLanguageBoundary({ children }: { children: ReactNode }) {
+/** Mount translated screens only after their lazily loaded dictionary is ready. */
+export function LanguageBoundary({ children }: { children: ReactNode }) {
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const messages = useEnglishMessages();
   const status = useEnglishMessagesStatus();
+  const chineseMessages = useChineseMessages();
+  const chineseStatus = useChineseMessagesStatus();
 
   useEffect(() => {
     if (language === "en" && !messages && status === "idle") {
       void ensureEnglishMessages();
     }
-  }, [language, messages, status]);
+    if (language === "zh" && !chineseMessages && chineseStatus === "idle") {
+      void ensureChineseMessages();
+    }
+  }, [language, messages, status, chineseMessages, chineseStatus]);
 
-  if (language !== "en" || messages) return children;
+  if (
+    language === "vi" ||
+    (language === "en" && messages) ||
+    (language === "zh" && chineseMessages)
+  )
+    return children;
+
+  const chinese = language === "zh";
+  const activeStatus = chinese ? chineseStatus : status;
+  const retry = chinese ? ensureChineseMessages : ensureEnglishMessages;
 
   // Bootstrap copy cannot depend on the dictionary that failed to download.
   return (
-    <main className="hn-language-boundary" lang="en">
+    <main className="hn-language-boundary" lang={chinese ? "zh-CN" : "en"}>
       <section aria-labelledby="hn-language-title">
-        {status === "error" ? (
+        {activeStatus === "error" ? (
           <>
             <div role="alert">
-              <h1 id="hn-language-title">Unable to load English</h1>
-              <p>Check your connection and try again.</p>
+              <h1 id="hn-language-title">
+                {chinese ? "无法加载简体中文" : "Unable to load English"}
+              </h1>
+              <p>
+                {chinese
+                  ? "请检查网络连接后重试。"
+                  : "Check your connection and try again."}
+              </p>
             </div>
             <div className="hn-language-actions">
-              <button type="button" onClick={() => void ensureEnglishMessages()}>
-                Retry
+              <button type="button" onClick={() => void retry()}>
+                {chinese ? "重试" : "Retry"}
               </button>
               <button
                 type="button"
@@ -48,11 +73,20 @@ export function EnglishLanguageBoundary({ children }: { children: ReactNode }) {
           </>
         ) : (
           <div role="status" aria-live="polite" aria-busy="true">
-            <h1 id="hn-language-title">Loading English…</h1>
-            <p>Please wait while the interface language is prepared.</p>
+            <h1 id="hn-language-title">
+              {chinese ? "正在加载简体中文…" : "Loading English…"}
+            </h1>
+            <p>
+              {chinese
+                ? "请稍候，正在准备界面语言。"
+                : "Please wait while the interface language is prepared."}
+            </p>
           </div>
         )}
       </section>
     </main>
   );
 }
+
+/** Kept for existing imports and tests. */
+export const EnglishLanguageBoundary = LanguageBoundary;

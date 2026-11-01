@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { isNoPermissionError, normalizeError } from "@/shared/api/api-error";
 import { DASHBOARD_CANONICAL } from "@/shared/constants/routes";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 import "./sku-list-feedback.css";
 
 function useSkuFeedbackText() {
-  const english = useLanguageStore((state) => state.language === "en");
-  return (vi: string, en: string) => (english ? en : vi);
+  const english = useLanguageStore((state) => state.language !== "vi");
+  return (vi: string, en: string) => (english ? localizedEnglish(en) : vi);
 }
 
 export interface SkuListFeedbackProps {

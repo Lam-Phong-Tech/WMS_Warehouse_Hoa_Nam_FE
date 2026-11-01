@@ -1,14 +1,10 @@
 import { useId, type ReactNode } from "react";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 
 export interface DefectMutationNoticeValue {
   kind:
-    | "success"
-    | "validation"
-    | "duplicate"
-    | "conflict"
-    | "failed"
-    | "unknown";
+    "success" | "validation" | "duplicate" | "conflict" | "failed" | "unknown";
   code?: string;
   name?: string;
   message?: string;
@@ -83,9 +79,10 @@ export function DefectMutationNotice({
   onReload,
   onRetry,
 }: DefectMutationNoticeProps) {
-  const english = useLanguageStore((state) => state.language === "en");
+  const english = useLanguageStore((state) => state.language !== "vi");
   const titleId = useId();
-  const text = (vi: string, en: string) => (english ? en : vi);
+  const text = (vi: string, en: string) =>
+    english ? localizedEnglish(en) : vi;
   if (!notice) return null;
 
   const titles: Record<DefectMutationNoticeValue["kind"], string> = {

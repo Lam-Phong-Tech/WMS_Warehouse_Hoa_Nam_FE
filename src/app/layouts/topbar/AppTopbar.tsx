@@ -19,7 +19,7 @@ import { UiIcon, VuexyDemoIcon, type VuexyDemoIconName } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useLogout } from "@/modules/auth/hooks/use-logout";
-import { useLanguageStore } from "@/shared/i18n/language.store";
+import { useLanguageStore, type Language } from "@/shared/i18n/language.store";
 import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { tStatic, useT } from "@/shared/i18n/useT";
 import {
@@ -37,12 +37,7 @@ import type { NotificationItem } from "@/modules/notifications/types/notificatio
 import "./app-topbar.css";
 
 type MenuId =
-  | "search"
-  | "language"
-  | "theme"
-  | "shortcut"
-  | "notification"
-  | "account";
+  "search" | "language" | "theme" | "shortcut" | "notification" | "account";
 
 /** Bỏ dấu để gõ "ton kho" vẫn ra "Tồn kho" — đúng cách demo chuẩn hoá. */
 function normalize(text: string): string {
@@ -262,7 +257,7 @@ export function AppTopbar({
   const toggleMenu = (id: MenuId) =>
     setOpenMenu((current) => (current === id ? null : id));
 
-  const chooseLanguage = (next: "vi" | "en") => {
+  const chooseLanguage = (next: Language) => {
     setLanguage(next);
     closeMenus();
     // tStatic (không phải `t` của closure): đọc NGÔN NGỮ VỪA CHỌN từ store —
@@ -450,7 +445,9 @@ export function AppTopbar({
             <span className="toggle-glyph" aria-hidden="true">
               <VuexyDemoIcon name="languages" />
             </span>
-            <span className="control-code">{language === "vi" ? "VIE" : "ENG"}</span>
+            <span className="control-code">
+              {{ vi: "VIE", en: "ENG", zh: "中文" }[language]}
+            </span>
           </button>
           {openMenu === "language" ? (
             <div
@@ -462,7 +459,7 @@ export function AppTopbar({
                 <strong>{t("topbar.languageTitle")}</strong>
                 <span>{t("topbar.languageHint")}</span>
               </div>
-              {(["vi", "en"] as const).map((code) => (
+              {(["vi", "en", "zh"] as const).map((code) => (
                 <button
                   key={code}
                   className={`header-menu-item ${language === code ? "is-active" : ""}`}
@@ -471,20 +468,26 @@ export function AppTopbar({
                   aria-checked={language === code}
                   onClick={() => chooseLanguage(code)}
                 >
-                  <span className="language-symbol">{code === "vi" ? "VIE" : "ENG"}</span>
+                  <span className="language-symbol">
+                    {{ vi: "VIE", en: "ENG", zh: "中文" }[code]}
+                  </span>
                   <span>
                     <strong>
                       {t(
                         code === "vi"
                           ? "topbar.languageVi"
-                          : "topbar.languageEn",
+                          : code === "en"
+                            ? "topbar.languageEn"
+                            : "topbar.languageZh",
                       )}
                     </strong>
                     <small>
                       {t(
                         code === "vi"
                           ? "topbar.languageViSub"
-                          : "topbar.languageEnSub",
+                          : code === "en"
+                            ? "topbar.languageEnSub"
+                            : "topbar.languageZhSub",
                       )}
                     </small>
                   </span>

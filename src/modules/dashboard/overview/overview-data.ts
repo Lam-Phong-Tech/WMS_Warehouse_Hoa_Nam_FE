@@ -118,7 +118,7 @@ export function previousRange(range: DateRange): DateRange {
  * chỗ trong lúc render, mà mọi component gọi nó đều dùng `useT()` nên đã render
  * lại sẵn khi đổi ngôn ngữ.
  */
-const NUMBER_LOCALE: Record<string, string> = { vi: "vi-VN", en: "en-US" };
+const NUMBER_LOCALE: Record<string, string> = { vi: "vi-VN", en: "en-US", zh: "zh-CN" };
 
 const numberFormats = new Map<string, Intl.NumberFormat>();
 

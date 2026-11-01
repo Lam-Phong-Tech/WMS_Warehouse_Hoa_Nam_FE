@@ -54,6 +54,7 @@ import {
   type ActionIconColorKey,
 } from "@/shared/theme/actionIconColors";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 
 /**
  * ĐĂNG KÝ HÀNH ĐỘNG CHUẨN — nguồn DUY NHẤT của toàn dự án.
@@ -156,7 +157,7 @@ function spec(
     icon,
     tone,
     get label() {
-      return useLanguageStore.getState().language === "en" ? en : vi;
+      return useLanguageStore.getState().language === "vi" ? vi : localizedEnglish(en);
     },
   };
 }

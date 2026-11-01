@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useMvpDefects } from "@/modules/master-data/hooks/use-mvp-master";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 import { useT } from "@/shared/i18n/useT";
 
 /** A one-row query probes metadata; its rows cannot establish the catalog total. */
@@ -36,7 +37,8 @@ export function DefectOverview({
 }: DefectOverviewProps) {
   const t = useT();
   const language = useLanguageStore((state) => state.language);
-  const copy = (vi: string, en: string) => (language === "en" ? en : vi);
+  const copy = (vi: string, en: string) =>
+    language === "vi" ? vi : localizedEnglish(en);
   const totalQuery = useMvpDefects({ page: 1, per_page: 1 });
   const activeQuery = useMvpDefects({ status: "ACTIVE", page: 1, per_page: 1 });
   const inactiveQuery = useMvpDefects({
@@ -72,7 +74,8 @@ export function DefectOverview({
     hasDistribution && total > 0 && count !== null
       ? (count / total) * 100
       : null;
-  const locale = language === "en" ? "en-US" : "vi-VN";
+  const locale =
+    language === "en" ? "en-US" : language === "zh" ? "zh-CN" : "vi-VN";
   const formatCount = (value: number | null) =>
     value === null ? "—" : value.toLocaleString(locale);
   const formatPercent = (value: number | null) =>

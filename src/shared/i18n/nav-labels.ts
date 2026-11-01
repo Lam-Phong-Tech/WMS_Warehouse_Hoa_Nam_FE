@@ -12,6 +12,12 @@
  */
 import { useCallback } from "react";
 import { useLanguageStore } from "./language.store";
+import {
+  NAV_LABELS_ZH,
+  NAV_FALLBACK_TITLES_ZH,
+  SCREEN_META_ZH,
+  ROUTE_META_ZH_BY_TITLE,
+} from "./nav-labels.zh";
 
 export const NAV_LABELS_EN: Record<string, string> = {
   home: "Home",
@@ -64,7 +70,7 @@ export const NAV_LABELS_EN: Record<string, string> = {
  * trong nav-data thì phải cập nhật khoá ở đây, nhưng nhóm route này rất nhỏ và
  * ổn định (profile / notifications / roles / khay).
  */
-const NAV_FALLBACK_TITLES_EN: Record<string, string> = {
+export const NAV_FALLBACK_TITLES_EN: Record<string, string> = {
   "Vai trò & phân quyền": "Roles & permissions",
   "Hồ sơ cá nhân": "My profile",
   "Tổng quan tình trạng khay": "Tray status overview",
@@ -78,6 +84,19 @@ export function navLabel(
   key: string | undefined,
   fallback: string,
 ): string {
+  if (language === "zh") {
+    if (!key)
+      return (
+        NAV_FALLBACK_TITLES_ZH[
+          fallback as keyof typeof NAV_FALLBACK_TITLES_ZH
+        ] ?? fallback
+      );
+    return (
+      NAV_LABELS_ZH[key as keyof typeof NAV_LABELS_ZH] ??
+      NAV_FALLBACK_TITLES_ZH[fallback as keyof typeof NAV_FALLBACK_TITLES_ZH] ??
+      fallback
+    );
+  }
   if (language !== "en") return fallback;
   if (!key) return NAV_FALLBACK_TITLES_EN[fallback] ?? fallback;
   return NAV_LABELS_EN[key] ?? NAV_FALLBACK_TITLES_EN[fallback] ?? fallback;
@@ -232,7 +251,7 @@ export const SCREEN_META_EN: Record<string, ScreenMetaText> = {
  * Bản EN cho các route ngoài cây menu (`ROUTE_META`), khoá theo TIÊU ĐỀ VI —
  * dùng chung bảng với breadcrumb để hai chỗ không lệch nhau.
  */
-const ROUTE_META_EN_BY_TITLE: Record<string, ScreenMetaText> = {
+export const ROUTE_META_EN_BY_TITLE: Record<string, ScreenMetaText> = {
   "Vai trò & phân quyền": {
     title: "Roles & permissions",
     description:
@@ -272,6 +291,23 @@ export function localizeScreenMeta(
   meta: ScreenMetaText,
   screenId?: string | null,
 ): ScreenMetaText {
+  if (language === "zh") {
+    if (screenId && screenId in SCREEN_META_ZH) {
+      const translated =
+        SCREEN_META_ZH[screenId as keyof typeof SCREEN_META_ZH];
+      return {
+        ...translated,
+        title:
+          NAV_LABELS_ZH[screenId as keyof typeof NAV_LABELS_ZH] ??
+          translated.title,
+      };
+    }
+    return (
+      ROUTE_META_ZH_BY_TITLE[
+        meta.title as keyof typeof ROUTE_META_ZH_BY_TITLE
+      ] ?? meta
+    );
+  }
   if (language !== "en") return meta;
   if (screenId && SCREEN_META_EN[screenId]) return SCREEN_META_EN[screenId];
   return ROUTE_META_EN_BY_TITLE[meta.title] ?? meta;

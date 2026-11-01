@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { MESSAGES_VI, type MessageKey } from "./messages";
 import { MESSAGES_EN } from "./messages.en";
+import { MESSAGES_ZH } from "./messages.zh";
 import {
   ensureEnglishMessages,
   __resetEnglishMessages,
 } from "./english-messages";
+import { ensureChineseMessages } from "./chinese-messages";
 import { translate } from "./useT";
 import { NAV_GROUPS, SCREEN_META } from "@/app/layouts/nav-data";
 import { NAV_LABELS_EN, navLabel } from "./nav-labels";
+import { INBOUND_STATUS_LABELS } from "@/shared/constants/business-labels";
+import { useLanguageStore } from "./language.store";
 
 /** Thu mọi đường dẫn `a.b.c` trỏ tới chuỗi lá trong một cây message. */
 function collectLeafPaths(tree: unknown, prefix = ""): string[] {
@@ -20,11 +24,31 @@ function collectLeafPaths(tree: unknown, prefix = ""): string[] {
 
 const VI_PATHS = collectLeafPaths(MESSAGES_VI);
 const EN_PATHS = collectLeafPaths(MESSAGES_EN);
+const ZH_PATHS = collectLeafPaths(MESSAGES_ZH);
 
 describe("catalog chuỗi giao diện", () => {
   it("bản EN không được chứa khoá lạ so với bản VI", () => {
     const viSet = new Set(VI_PATHS);
     expect(EN_PATHS.filter((path) => !viSet.has(path))).toEqual([]);
+  });
+
+  it("bản tiếng Trung phủ toàn bộ khoá và giữ đúng biến chèn", () => {
+    expect(ZH_PATHS.sort()).toEqual([...VI_PATHS].sort());
+    const placeholders = (value: string) =>
+      [...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
+    for (const path of VI_PATHS) {
+      const read = (tree: unknown) =>
+        path
+          .split(".")
+          .reduce<unknown>(
+            (node, part) => (node as Record<string, unknown>)[part],
+            tree,
+          ) as string;
+      expect(read(MESSAGES_ZH).trim(), path).not.toBe("");
+      expect(placeholders(read(MESSAGES_ZH)), path).toEqual(
+        placeholders(read(MESSAGES_VI)),
+      );
+    }
   });
 
   it("không khoá VI nào bỏ trống", () => {
@@ -61,6 +85,26 @@ describe("translate()", () => {
     expect(translate("en", "dashboard.title")).toBe("Operations overview");
   });
 
+  it("trả tiếng Trung khi ngôn ngữ là zh", async () => {
+    await ensureChineseMessages();
+    expect(translate("zh", "dashboard.title")).toBe(
+      MESSAGES_ZH.dashboard?.title,
+    );
+    expect(translate("zh", "dashboard.title")).not.toBe(
+      MESSAGES_VI.dashboard.title,
+    );
+  });
+
+  it("đổi nhãn trạng thái nghiệp vụ sang tiếng Trung", async () => {
+    await ensureChineseMessages();
+    useLanguageStore.setState({ language: "zh" });
+    try {
+      expect(INBOUND_STATUS_LABELS.DRAFT).toBe("草稿");
+    } finally {
+      useLanguageStore.setState({ language: "vi" });
+    }
+  });
+
   it("rơi về tiếng Việt khi từ điển EN CHƯA nạp xong", async () => {
     __resetEnglishMessages();
     expect(translate("en", "dashboard.title")).toBe("Tổng quan vận hành");
@@ -70,8 +114,7 @@ describe("translate()", () => {
   it("rơi về tiếng Việt khi khoá thiếu bản EN", () => {
     // `dashboard.periodName.today` có EN; dựng một khoá thiếu EN bằng cách xoá tạm.
     const branch = MESSAGES_EN.dashboard?.periodName as
-      | Record<string, string>
-      | undefined;
+      Record<string, string> | undefined;
     const saved = branch?.today;
     if (branch) delete branch.today;
     try {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateMasterDerived } from "@/shared/cache/invalidation";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 import { CatalogFeedback, CatalogNotice } from "../components/CatalogFeedback";
 import "./catalog-master.css";
 import {
@@ -191,8 +192,9 @@ function saveErrorMessage(error: unknown, t: TranslateFn): string {
 
 export function CatalogMasterScreen() {
   const t = useT();
-  const english = useLanguageStore((state) => state.language === "en");
-  const text = (vi: string, en: string) => (english ? en : vi);
+  const language = useLanguageStore((state) => state.language);
+  const english = language !== "vi";
+  const text = (vi: string, en: string) => (english ? localizedEnglish(en) : vi);
   const tabs = useMemo(() => catalogTabs(t), [t]);
   const queryClient = useQueryClient();
   const canManage = useCan(P.CATALOG_MANAGE);
@@ -785,7 +787,11 @@ export function CatalogMasterScreen() {
                 {listQuery.isLoading
                   ? "—"
                   : pagination.total.toLocaleString(
-                      english ? "en-US" : "vi-VN",
+                      language === "en"
+                        ? "en-US"
+                        : language === "zh"
+                          ? "zh-CN"
+                          : "vi-VN",
                     )}
               </span>
             </h2>
@@ -793,7 +799,11 @@ export function CatalogMasterScreen() {
               {listQuery.dataUpdatedAt > 0
                 ? text("Cập nhật: ", "Updated: ") +
                   new Date(listQuery.dataUpdatedAt).toLocaleTimeString(
-                    english ? "en-US" : "vi-VN",
+                    language === "en"
+                      ? "en-US"
+                      : language === "zh"
+                        ? "zh-CN"
+                        : "vi-VN",
                     { hour: "2-digit", minute: "2-digit" },
                   )
                 : ""}

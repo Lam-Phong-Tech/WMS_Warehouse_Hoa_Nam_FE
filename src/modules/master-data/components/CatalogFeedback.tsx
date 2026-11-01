@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { isNoPermissionError, normalizeError } from "@/shared/api/api-error";
 import { DASHBOARD_CANONICAL } from "@/shared/constants/routes";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 import "./catalog-feedback.css";
 
 export interface CatalogFeedbackProps {
@@ -133,9 +134,10 @@ export function CatalogFeedback({
   onRetry,
   onReset,
 }: CatalogFeedbackProps) {
-  const english = useLanguageStore((state) => state.language === "en");
+  const english = useLanguageStore((state) => state.language !== "vi");
   const titleId = useId();
-  const text = (vi: string, en: string) => (english ? en : vi);
+  const text = (vi: string, en: string) =>
+    english ? localizedEnglish(en) : vi;
   if (loading || hasRows) return null;
 
   let copy: FeedbackCopy = hasFilters
@@ -327,8 +329,10 @@ export function CatalogNotice({
   updatedAt,
   onDismiss,
 }: CatalogNoticeProps) {
-  const english = useLanguageStore((state) => state.language === "en");
-  const text = (vi: string, en: string) => (english ? en : vi);
+  const language = useLanguageStore((state) => state.language);
+  const english = language !== "vi";
+  const text = (vi: string, en: string) =>
+    english ? localizedEnglish(en) : vi;
   if (loading || !hasRows) return null;
   if (refreshing) {
     return (
@@ -374,17 +378,23 @@ export function CatalogNotice({
         );
   const updatedLabel =
     updatedAt && Number.isFinite(updatedAt)
-      ? new Intl.DateTimeFormat(english ? "en-US" : "vi-VN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(updatedAt) +
+      ? new Intl.DateTimeFormat(
+          language === "en" ? "en-US" : language === "zh" ? "zh-CN" : "vi-VN",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          },
+        ).format(updatedAt) +
         " · " +
-        new Intl.DateTimeFormat(english ? "en-US" : "vi-VN", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        }).format(updatedAt)
+        new Intl.DateTimeFormat(
+          language === "en" ? "en-US" : language === "zh" ? "zh-CN" : "vi-VN",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          },
+        ).format(updatedAt)
       : undefined;
   return (
     <div

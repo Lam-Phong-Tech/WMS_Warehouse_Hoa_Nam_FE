@@ -16,6 +16,7 @@ import {
 } from "@/modules/master-data/components/SkuListMutationNotice";
 import { DownOutlined, SearchOutlined } from "@/shared/components/icons";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 import { SkuListOverview } from "@/modules/master-data/components/SkuListOverview";
 import {
   SkuListNotice,
@@ -2791,7 +2792,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [overviewOpen, setOverviewOpen] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const language = useLanguageStore((state) => state.language);
-  const copy = (vi: string, en: string) => (language === "en" ? en : vi);
+  const copy = (vi: string, en: string) => (language === "vi" ? vi : localizedEnglish(en));
   const [defectSearchParams] = useSearchParams();
   const openCreateRequested =
     openCreateOnMount || defectSearchParams.get("screen") === "DEF-02";
@@ -3382,7 +3383,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 {busy
                   ? "—"
                   : pagination.total.toLocaleString(
-                      language === "en" ? "en-US" : "vi-VN",
+                      language === "en" ? "en-US" : language === "zh" ? "zh-CN" : "vi-VN",
                     )}{" "}
                 {hasFilters
                   ? copy("kết quả", "results")

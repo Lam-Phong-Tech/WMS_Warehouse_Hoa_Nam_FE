@@ -1,6 +1,6 @@
-import { useLanguageStore } from "@/shared/i18n/language.store";
 import "./sku-list-mutation-notice.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 
 export interface SkuListMutationNoticeValue {
   kind: "success" | "duplicate" | "failed" | "unknown";

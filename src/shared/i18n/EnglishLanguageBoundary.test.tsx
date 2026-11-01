@@ -7,11 +7,21 @@ const loading = vi.hoisted(() => ({
   status: "idle" as "idle" | "loading" | "ready" | "error",
   ensure: vi.fn(() => Promise.resolve()),
 }));
+const chineseLoading = vi.hoisted(() => ({
+  messages: null as Record<string, string> | null,
+  status: "idle" as "idle" | "loading" | "ready" | "error",
+  ensure: vi.fn(() => Promise.resolve()),
+}));
 
 vi.mock("./english-messages", () => ({
   useEnglishMessages: () => loading.messages,
   useEnglishMessagesStatus: () => loading.status,
   ensureEnglishMessages: loading.ensure,
+}));
+vi.mock("./chinese-messages", () => ({
+  useChineseMessages: () => chineseLoading.messages,
+  useChineseMessagesStatus: () => chineseLoading.status,
+  ensureChineseMessages: chineseLoading.ensure,
 }));
 
 import { EnglishLanguageBoundary } from "./EnglishLanguageBoundary";
@@ -29,6 +39,9 @@ describe("English language bootstrap", () => {
     loading.messages = null;
     loading.status = "idle";
     loading.ensure.mockClear();
+    chineseLoading.messages = null;
+    chineseLoading.status = "idle";
+    chineseLoading.ensure.mockClear();
     useLanguageStore.setState({ language: "vi" });
   });
 
@@ -66,13 +79,29 @@ describe("English language bootstrap", () => {
     useLanguageStore.setState({ language: "en" });
     loading.status = "error";
     render(content());
-    expect(screen.getByRole("alert")).toHaveTextContent("Unable to load English");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Unable to load English",
+    );
     expect(screen.queryByTestId("protected-page")).not.toBeInTheDocument();
     expect(loading.ensure).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(loading.ensure).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Tiếng Việt" }));
     expect(useLanguageStore.getState().language).toBe("vi");
+    expect(screen.getByTestId("protected-page")).toBeInTheDocument();
+  });
+
+  it("waits for Simplified Chinese and can retry its download", () => {
+    useLanguageStore.setState({ language: "zh" });
+    chineseLoading.status = "error";
+    const view = render(content());
+    expect(screen.getByRole("alert")).toHaveTextContent("无法加载简体中文");
+    expect(screen.queryByTestId("protected-page")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    expect(chineseLoading.ensure).toHaveBeenCalledTimes(1);
+    chineseLoading.messages = { loaded: "ready" };
+    chineseLoading.status = "ready";
+    view.rerender(content());
     expect(screen.getByTestId("protected-page")).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@ export { MESSAGES_VI, type MessageKey, type MessageTree } from "./messages";
 // (./messages.en). Re-export tĩnh sẽ kéo nó ngược vào đồ thị tải-ngay và xoá
 // sạch lợi ích của việc tách.
 export { ensureEnglishMessages } from "./english-messages";
+export { ensureChineseMessages } from "./chinese-messages";
 export {
   useT,
   translate,

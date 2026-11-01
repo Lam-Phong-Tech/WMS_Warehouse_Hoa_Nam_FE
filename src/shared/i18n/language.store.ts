@@ -3,21 +3,29 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
+import "dayjs/locale/zh-cn";
 import { ensureEnglishMessages } from "./english-messages";
+import { ensureChineseMessages } from "./chinese-messages";
 
-export type Language = "vi" | "en";
+export type Language = "vi" | "en" | "zh";
 export type AppLanguage = Language;
 
 export const LANGUAGES: ReadonlyArray<{ value: Language; label: string }> = [
   { value: "vi", label: "Tiếng Việt" },
   { value: "en", label: "English" },
+  { value: "zh", label: "简体中文" },
 ];
 
 function applyDocumentLanguage(language: Language) {
-  dayjs.locale(language);
+  dayjs.locale(language === "zh" ? "zh-cn" : language);
   if (typeof document !== "undefined") {
-    document.documentElement.lang = language;
+    document.documentElement.lang = language === "zh" ? "zh-CN" : language;
   }
+}
+
+function ensureMessages(language: Language) {
+  if (language === "en") void ensureEnglishMessages();
+  if (language === "zh") void ensureChineseMessages();
 }
 
 interface LanguageState {
@@ -31,7 +39,7 @@ export const useLanguageStore = create<LanguageState>()(
       language: "vi",
       setLanguage: (language) => {
         applyDocumentLanguage(language);
-        if (language === "en") void ensureEnglishMessages();
+        ensureMessages(language);
         set({ language });
       },
     }),
@@ -41,7 +49,7 @@ export const useLanguageStore = create<LanguageState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         applyDocumentLanguage(state.language);
-        if (state.language === "en") void ensureEnglishMessages();
+        ensureMessages(state.language);
       },
     },
   ),
@@ -51,5 +59,5 @@ export const useLanguageStore = create<LanguageState>()(
 export function initializeLanguage() {
   const { language } = useLanguageStore.getState();
   applyDocumentLanguage(language);
-  if (language === "en") void ensureEnglishMessages();
+  ensureMessages(language);
 }

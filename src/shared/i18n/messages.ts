@@ -5,7 +5,7 @@ import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
  *
  * Quy ước:
  * - `MESSAGES_VI` là bản gốc: mọi khoá phải có ở đây, và tiếng Việt là chuẩn.
- * - `MESSAGES_EN` được ràng kiểu theo `MESSAGES_VI` nên gõ sai TÊN KHOÁ sẽ đỏ
+ * - `MESSAGES_EN` và `MESSAGES_ZH` được ràng kiểu theo `MESSAGES_VI` nên gõ sai TÊN KHOÁ sẽ đỏ
  *   typecheck ngay; nhưng THIẾU khoá thì hợp lệ — `t()` tự rơi về tiếng Việt.
  *   Nhờ vậy không bao giờ có khoá thô (`dashboard.title`) lọt ra giao diện.
  * - Nhãn nghiệp vụ do BE trả về (status/severity) KHÔNG nằm ở đây; chúng thuộc
@@ -29,6 +29,7 @@ export const MESSAGES_VI = {
     language: "Ngôn ngữ",
     languageVietnamese: "Tiếng Việt",
     languageEnglish: "English",
+    languageChinese: "简体中文",
     openMenu: "Mở menu",
     menuLabel: "Mở thanh điều hướng",
     searchPlaceholder: "Tìm kiếm chức năng",
@@ -42,6 +43,8 @@ export const MESSAGES_VI = {
     languageViSub: "Mặc định",
     languageEn: "English",
     languageEnSub: "Secondary",
+    languageZh: "简体中文",
+    languageZhSub: "Tiếng Trung giản thể",
     themeLabel: "Giao diện",
     themeTitle: "Giao diện",
     themeHint: "Chọn chế độ hiển thị",

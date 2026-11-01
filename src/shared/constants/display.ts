@@ -17,7 +17,11 @@ import { useLanguageStore } from "@/shared/i18n/language.store";
  * chép giá trị này ra hằng cấp module ở nơi khác (`const X = EMPTY_TEXT`) — sẽ
  * đóng băng theo ngôn ngữ lúc import.
  */
-const EMPTY_TEXT_BY_LANGUAGE = { vi: "Chưa có", en: "None yet" } as const;
+const EMPTY_TEXT_BY_LANGUAGE = {
+  vi: "Chưa có",
+  en: "None yet",
+  zh: "暂无",
+} as const;
 
 export let EMPTY_TEXT: string =
   EMPTY_TEXT_BY_LANGUAGE[useLanguageStore.getState().language] ??

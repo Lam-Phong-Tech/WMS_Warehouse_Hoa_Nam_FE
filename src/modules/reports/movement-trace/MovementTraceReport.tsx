@@ -116,11 +116,11 @@ import "./traceability-report.css";
 function formatTraceDateTime(value: string): string {
   const parsed = dayjs(value);
   if (!value || !parsed.isValid()) return EMPTY_TEXT;
-  const english = useLanguageStore.getState().language === "en";
+  const namedMonth = useLanguageStore.getState().language !== "vi";
   return tStatic("reports.movementTrace.dateTime", {
     time: parsed.format("HH:mm"),
     day: parsed.date(),
-    month: english ? parsed.format("MMM") : parsed.month() + 1,
+    month: namedMonth ? parsed.format("MMM") : parsed.month() + 1,
     year: parsed.year(),
   });
 }

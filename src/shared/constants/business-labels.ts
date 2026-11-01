@@ -1,12 +1,13 @@
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { chineseBusinessLabel } from "@/shared/i18n/chinese-messages";
 
 /**
  * NHÃN NGHIỆP VỤ do BE trả về (status/severity/loại chứng từ...) — không nằm
  * trong messages.ts (xem đầu file đó) vì khoá là GIÁ TRỊ ENUM của BE chứ không
  * phải khoá giao diện.
  *
- * Song ngữ (yêu cầu 2026-09-03: đổi EN là đổi đủ 100%): mỗi map bọc qua
- * `bilingual(vi, en)` — một Proxy đọc ngôn ngữ hiện tại tại THỜI ĐIỂM TRUY CẬP
+ * Mỗi map bọc qua `bilingual(vi, en)` — một Proxy đọc ngôn ngữ hiện tại tại THỜI ĐIỂM TRUY CẬP.
+ * Với ZH, nhãn EN được tra tiếp trong danh mục tải cùng từ điển tiếng Trung.
  * thuộc tính. Nhờ vậy cả `businessLabel(...)` lẫn ~70 chỗ đang index thẳng
  * (`INBOUND_STATUS_LABELS[x]`, `Object.entries(...)` dựng options) đều tự đổi
  * ngôn ngữ mà KHÔNG phải sửa call site nào; App remount theo `key={language}`
@@ -16,7 +17,7 @@ import { useLanguageStore } from "@/shared/i18n/language.store";
  *  1. KHÔNG spread một map ra hằng cấp module (`const X = { ...MAP }`) — spread
  *     sao chép giá trị theo ngôn ngữ lúc import và đóng băng ở đó. Cần map gộp
  *     thì gộp phần VI/EN riêng rồi bọc `bilingual` lần nữa (xem report-labels.ts).
- *  2. Map mới thêm vào file này BẮT BUỘC đủ bản EN — thiếu khoá EN sẽ rơi về VI
+ *  2. Map mới thêm vào file này BẮT BUỘC đủ bản EN và thêm nhãn ZH tương ứng — thiếu bản dịch sẽ rơi về nhãn cũ
  *     (fail-safe cùng lối messages.ts) nhưng đó chính là "điểm chết" đã bị báo.
  */
 export function bilingual<T extends Record<string, string>>(
@@ -27,17 +28,25 @@ export function bilingual<T extends Record<string, string>>(
     get(target, prop, receiver) {
       if (
         typeof prop === "string" &&
-        useLanguageStore.getState().language === "en"
+        useLanguageStore.getState().language !== "vi"
       ) {
         const translated = (en as Record<string, string>)[prop];
-        if (translated !== undefined) return translated;
+        if (translated !== undefined) {
+          return useLanguageStore.getState().language === "zh"
+            ? chineseBusinessLabel(translated)
+            : translated;
+        }
       }
       return Reflect.get(target, prop, receiver);
     },
   }) as Readonly<T>;
 }
 
-const UNKNOWN_BY_LANGUAGE = { vi: "Chưa xác định", en: "Unknown" } as const;
+const UNKNOWN_BY_LANGUAGE = {
+  vi: "Chưa xác định",
+  en: "Unknown",
+  zh: "未知",
+} as const;
 
 /** Live binding (`export let`) — đọc tại thời điểm dùng, đổi theo ngôn ngữ. */
 export let UNKNOWN_BUSINESS_LABEL: string =

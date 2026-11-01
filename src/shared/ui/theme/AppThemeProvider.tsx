@@ -3,6 +3,7 @@ import { App as AntdApp, ConfigProvider } from "antd";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import viVN from "antd/locale/vi_VN";
 import enUS from "antd/locale/en_US";
+import zhCN from "antd/locale/zh_CN";
 import { useMemo, type ReactNode } from "react";
 import { ANTD_THEMES } from "./antd-adapter";
 import { MUI_THEMES } from "./mui-adapter";
@@ -21,7 +22,7 @@ export function AppThemeProvider({ children }: AppThemeProviderProps) {
   // Translate built-in calendar, pagination, select and modal controls as well
   // as application labels. Theme tokens and provider structure are unchanged.
   const locale = useMemo(() => {
-    const base = language === "en" ? enUS : viVN;
+    const base = language === "en" ? enUS : language === "zh" ? zhCN : viVN;
     return {
       ...base,
       Table: {

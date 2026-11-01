@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import dayjs from "dayjs";
 import { initializeLanguage, useLanguageStore } from "./language.store";
+import { formatQuantity } from "@/shared/utils/format-number";
 
 describe("Calendar and document language", () => {
   afterEach(() => useLanguageStore.getState().setLanguage("vi"));
@@ -19,5 +20,13 @@ describe("Calendar and document language", () => {
     initializeLanguage();
     expect(dayjs.locale()).toBe("en");
     expect(document.documentElement.lang).toBe("en");
+  });
+
+  it("uses Simplified Chinese for the document and calendar", () => {
+    useLanguageStore.getState().setLanguage("zh");
+    expect(dayjs.locale()).toBe("zh-cn");
+    expect(document.documentElement.lang).toBe("zh-CN");
+    expect(dayjs("2026-09-23").format("MMMM")).toBe("九月");
+    expect(formatQuantity(1234.5)).toBe("1,234.5");
   });
 });

@@ -67,14 +67,20 @@ export function SkuListOverview({ refreshKey = 0 }: { refreshKey?: number }) {
       ? (inactive / total) * 100
       : 0
     : null;
-  const locale = language === "en" ? "en-US" : "vi-VN";
+  const locale =
+    language === "en" ? "en-US" : language === "zh" ? "zh-CN" : "vi-VN";
   const formatCount = (value: number | null) =>
     value === null ? "—" : value.toLocaleString(locale);
   const formatPercent = (value: number | null) =>
     value === null
       ? "—"
       : `${value.toLocaleString(locale, { maximumFractionDigits: 1 })}%`;
-  const title = language === "en" ? "SKU catalog" : "Danh mục SKU";
+  const title =
+    language === "zh"
+      ? "SKU 目录"
+      : language === "en"
+        ? "SKU catalog"
+        : "Danh mục SKU";
   const statuses = [
     {
       key: "active",
