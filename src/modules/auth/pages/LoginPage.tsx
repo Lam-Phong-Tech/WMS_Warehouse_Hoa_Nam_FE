@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useLogin, useMfaVerify } from "@/modules/auth/hooks/use-login";
+import { useLimitBrowserInspection } from "@/modules/auth/hooks/use-limit-browser-inspection";
 import { buildLoginSchema, toLoginRequest, type LoginFormValues } from "@/modules/auth/schemas/login.schema";
 import { Box, UiButton, UiTextField } from "@/shared/ui";
 import { flatIconClass } from "@/shared/ui/icons";
@@ -104,6 +105,7 @@ function MfaOtpInput({ digits, onChange, disabled, label }: {
 }
 
 export function LoginPage() {
+  useLimitBrowserInspection();
   const t = useT();
   const copy = useAuthUatCopy();
   const navigate = useNavigate();

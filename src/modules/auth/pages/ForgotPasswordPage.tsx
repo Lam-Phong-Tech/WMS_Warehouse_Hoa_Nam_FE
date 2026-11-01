@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForgotPassword } from "@/modules/auth/hooks/use-forgot-password";
 import { useVerifyOtp } from "@/modules/auth/hooks/use-verify-otp";
 import { useResetPassword } from "@/modules/auth/hooks/use-reset-password";
+import { useLimitBrowserInspection } from "@/modules/auth/hooks/use-limit-browser-inspection";
 import {
   buildForgotPasswordEmailSchema,
   buildOtpSchema,
@@ -50,6 +51,7 @@ function RecoveryError({ children }: { children: string }) {
   );
 }
 export function ForgotPasswordPage() {
+  useLimitBrowserInspection();
   const t = useT();
   const copy = useAuthUatCopy();
   const [step, setStep] = useState<Step>("email");
