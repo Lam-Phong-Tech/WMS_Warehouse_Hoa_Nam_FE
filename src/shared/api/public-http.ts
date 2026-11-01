@@ -3,6 +3,7 @@ import { runtimeConfig } from "@/shared/config/env";
 import type { ApiMeta, ApiResponse } from "@/shared/types/api-response";
 import { tStatic } from "@/shared/i18n/useT";
 import { installRequestActivityTracker } from "@/shared/api/request-activity";
+import { installEncryptedApiJson } from "@/shared/api/encrypted-json";
 
 /**
  * WWHN-252 — client HTTP cho nhóm endpoint App PV ẩn danh.
@@ -28,6 +29,7 @@ export const publicApi = axios.create({
 });
 
 installRequestActivityTracker(publicApi);
+installEncryptedApiJson(publicApi);
 
 export interface PublicApiError extends Error {
   status?: number;

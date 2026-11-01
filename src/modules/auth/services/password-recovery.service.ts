@@ -7,6 +7,10 @@ import {
   type ApiErrorResponse,
 } from "@/shared/types/api-response";
 import { loginRetryAt } from "@/modules/auth/utils/login-feedback";
+import {
+  decryptResponse,
+  responsePublicKey,
+} from "@/shared/api/encrypted-json";
 import type {
   ForgotPasswordRequest,
   ResetPasswordRequest,
@@ -15,12 +19,7 @@ import type {
 } from "../types/auth.types";
 
 export type RecoveryFailure =
-  | "offline"
-  | "unavailable"
-  | "validation"
-  | "rate-limit"
-  | "otp"
-  | "token";
+  "offline" | "unavailable" | "validation" | "rate-limit" | "otp" | "token";
 
 // Keep only safe diagnostics, never fetch options, response bodies or credentials.
 export class PasswordRecoveryError extends Error {
@@ -80,6 +79,7 @@ async function postRecovery(
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
+          "X-WMS-Response-Key": await responsePublicKey(),
           ...(["local", "dev", "test"].includes(runtimeConfig.envName)
             ? { "X-WMS-Client-Tier": "dev-test" }
             : {}),
@@ -87,7 +87,11 @@ async function postRecovery(
         body: JSON.stringify(payload),
       },
     );
-    const body = await response.json().catch(() => null);
+    const wireBody = await response.json().catch(() => null);
+    const body =
+      response.headers.get("X-WMS-Encrypted") === "v1"
+        ? await decryptResponse(wireBody)
+        : wireBody;
     const record = body && typeof body === "object" ? body : {};
     const requestId =
       safeRequestId(response.headers.get("X-Request-ID")) ??
