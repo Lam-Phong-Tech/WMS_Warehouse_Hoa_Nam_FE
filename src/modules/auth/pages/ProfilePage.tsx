@@ -239,7 +239,7 @@ export function ProfilePage() {
           {!isEditing ? (
             <UiButton
               type="button"
-              className="hn-profile-edit-trigger"
+              className="hn-settings-primary hn-profile-edit-trigger"
               onClick={startEditing}
             >
               {t("auth.profile.editDetails")}
@@ -297,6 +297,7 @@ export function ProfilePage() {
             >
               <UiButton
                 type="submit"
+                className="hn-settings-primary"
                 loading={saveProfile.isPending}
                 disabled={saveProfile.isPending}
               >
@@ -304,6 +305,7 @@ export function ProfilePage() {
               </UiButton>
               <UiButton
                 type="button"
+                className="hn-settings-secondary"
                 disabled={saveProfile.isPending}
                 onClick={() => setIsEditing(false)}
               >
