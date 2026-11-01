@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -69,6 +70,30 @@ afterEach(() => {
 });
 
 describe("AppTopbar", () => {
+  it("hiển thị menu ngôn ngữ gọn như mẫu với đúng lựa chọn đang dùng", async () => {
+    useLanguageStore.getState().setLanguage("en");
+    renderTopbar();
+
+    const trigger = await screen.findByRole("button", { name: "Language" });
+    expect(trigger).toHaveTextContent("EN");
+    fireEvent.click(trigger);
+
+    const menu = screen.getByRole("menu", { name: "Language" });
+    const options = within(menu).getAllByRole("menuitemradio");
+    expect(options).toHaveLength(3);
+    expect(options.map((option) => option.textContent?.trim())).toEqual([
+      "Tiếng Việt",
+      "English✓",
+      "简体中文",
+    ]);
+    expect(
+      within(menu).getByRole("menuitemradio", { name: "English" }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      within(menu).queryByText("Vietnamese is the default"),
+    ).not.toBeInTheDocument();
+  });
+
   it("dựng đủ 5 điều khiển của demo", () => {
     renderTopbar();
     expect(
@@ -99,7 +124,9 @@ describe("AppTopbar", () => {
     expect(avatarStatus?.querySelector(".avatar")).not.toBeNull();
     expect(presenceDot).not.toBeNull();
     expect(presenceDot?.parentElement).toBe(avatarStatus);
-    expect(container.querySelector(".topbar-profile-summary .presence-dot")).toBeNull();
+    expect(
+      container.querySelector(".topbar-profile-summary .presence-dot"),
+    ).toBeNull();
   });
 
   it("tìm kiếm chỉ gợi ý màn mà người dùng có quyền", () => {
@@ -149,7 +176,10 @@ describe("AppTopbar", () => {
     fireEvent.click(screen.getByRole("menuitemradio", { name: /简体中文/ }));
     expect(await screen.findByPlaceholderText("搜索功能")).toBeInTheDocument();
     expect(useLanguageStore.getState().language).toBe("zh");
-    expect(JSON.parse(localStorage.getItem("erp-language") ?? "null")?.state?.language).toBe("zh");
+    expect(
+      JSON.parse(localStorage.getItem("erp-language") ?? "null")?.state
+        ?.language,
+    ).toBe("zh");
     expect(document.documentElement.lang).toBe("zh-CN");
   });
 

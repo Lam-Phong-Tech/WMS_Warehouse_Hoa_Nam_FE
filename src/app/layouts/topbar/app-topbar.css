@@ -234,10 +234,31 @@
   height: 20px;
 }
 .hn-topbar .language-toggle {
-  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
   width: auto;
-  padding-inline: 8px;
-  gap: 2px;
+  padding-inline: 6px;
+  gap: 6px;
+}
+.hn-topbar .language-current {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 500;
+}
+.hn-topbar .language-toggle .language-chevron {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 150ms ease;
+}
+.hn-topbar .language-toggle[aria-expanded="true"] .language-chevron {
+  transform: rotate(180deg);
 }
 .hn-topbar .control-code {
   min-width: 18px;
@@ -337,6 +358,38 @@
 .hn-topbar .compact-menu {
   width: 238px;
   padding-bottom: 7px;
+}
+.hn-topbar .language-menu {
+  width: 267px;
+  padding: 7px;
+  border-color: var(--map-line, var(--line));
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 42, 82, 0.12);
+}
+.hn-topbar .language-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--map-heading, var(--ink));
+  font-size: 16px;
+  line-height: 24px;
+  text-align: left;
+}
+.hn-topbar .language-option:hover,
+.hn-topbar .language-option.is-active {
+  background: var(--map-pale, var(--blue-soft));
+}
+.hn-topbar .language-option-check {
+  width: 18px;
+  color: var(--map-heading, var(--ink));
+  font-size: 18px;
+  text-align: center;
 }
 .hn-topbar .search-menu {
   right: auto;
@@ -828,7 +881,9 @@
     min-height: 36px;
   }
   .hn-topbar .language-toggle {
-    padding-inline: 0;
+    min-width: 50px;
+    width: auto;
+    padding-inline: 3px;
   }
   .hn-topbar .avatar-button {
     width: 38px;
@@ -854,6 +909,10 @@
   .hn-topbar .compact-menu,
   .hn-topbar .search-menu {
     width: auto;
+  }
+  .hn-topbar .language-menu {
+    left: auto;
+    width: min(267px, calc(100vw - 24px));
   }
   .hn-topbar .shortcut-grid button {
     min-height: 116px;

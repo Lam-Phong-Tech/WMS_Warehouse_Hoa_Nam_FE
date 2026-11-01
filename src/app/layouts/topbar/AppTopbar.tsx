@@ -19,7 +19,11 @@ import { UiIcon, VuexyDemoIcon, type VuexyDemoIconName } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useLogout } from "@/modules/auth/hooks/use-logout";
-import { useLanguageStore, type Language } from "@/shared/i18n/language.store";
+import {
+  LANGUAGES,
+  useLanguageStore,
+  type Language,
+} from "@/shared/i18n/language.store";
 import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { tStatic, useT } from "@/shared/i18n/useT";
 import {
@@ -436,60 +440,43 @@ export function AppTopbar({
           <button
             className="icon-button header-menu-toggle language-toggle"
             type="button"
+            aria-haspopup="menu"
             aria-expanded={openMenu === "language"}
             aria-controls="language-menu"
             aria-label={t("topbar.languageLabel")}
             title={t("topbar.languageLabel")}
             onClick={() => toggleMenu("language")}
           >
-            <span className="toggle-glyph" aria-hidden="true">
-              <VuexyDemoIcon name="languages" />
+            <span className="language-current" aria-hidden="true">
+              {{ vi: "VI", en: "EN", zh: "ZH" }[language]}
             </span>
-            <span className="control-code">
-              {{ vi: "VIE", en: "ENG", zh: "中文" }[language]}
-            </span>
+            <svg
+              className="language-chevron"
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+            >
+              <path d="m3.5 6 4.5 4.5 4.5-4.5" />
+            </svg>
           </button>
           {openMenu === "language" ? (
             <div
               id="language-menu"
-              className="header-menu compact-menu"
+              className="header-menu language-menu"
               role="menu"
+              aria-label={t("topbar.languageLabel")}
             >
-              <div className="header-menu-heading">
-                <strong>{t("topbar.languageTitle")}</strong>
-                <span>{t("topbar.languageHint")}</span>
-              </div>
-              {(["vi", "en", "zh"] as const).map((code) => (
+              {LANGUAGES.map(({ value, label }) => (
                 <button
-                  key={code}
-                  className={`header-menu-item ${language === code ? "is-active" : ""}`}
+                  key={value}
+                  className={`language-option ${language === value ? "is-active" : ""}`}
                   type="button"
                   role="menuitemradio"
-                  aria-checked={language === code}
-                  onClick={() => chooseLanguage(code)}
+                  aria-checked={language === value}
+                  onClick={() => chooseLanguage(value)}
                 >
-                  <span className="language-symbol">
-                    {{ vi: "VIE", en: "ENG", zh: "中文" }[code]}
-                  </span>
-                  <span>
-                    <strong>
-                      {t(
-                        code === "vi"
-                          ? "topbar.languageVi"
-                          : code === "en"
-                            ? "topbar.languageEn"
-                            : "topbar.languageZh",
-                      )}
-                    </strong>
-                    <small>
-                      {t(
-                        code === "vi"
-                          ? "topbar.languageViSub"
-                          : code === "en"
-                            ? "topbar.languageEnSub"
-                            : "topbar.languageZhSub",
-                      )}
-                    </small>
+                  <span>{label}</span>
+                  <span className="language-option-check" aria-hidden="true">
+                    {language === value ? "✓" : null}
                   </span>
                 </button>
               ))}
