@@ -752,3 +752,64 @@
   .hn-mvp-nav-btn:is(.active, :hover, :focus-visible) {
   padding-left: 42px;
 }
+
+/* The light sidebar intentionally keeps the warehouse artwork and bright
+ * selection. Dark mode uses a deeper surface and quieter accents so the
+ * navigation belongs to the dark dashboard instead of retaining that skin. */
+:root[data-theme="dark"] .hn-system-shell > [data-testid="app-sidebar"],
+:root[data-theme="dark"] .MuiDrawer-paper.hn-system-drawer {
+  border-right-color: #28475d;
+  background-color: #0a1b29;
+  background-image:
+    linear-gradient(180deg, rgb(8 25 38 / 96%), rgb(9 27 41 / 92%) 54%, rgb(8 24 37 / 90%)),
+    url("/assets/systemhn/sidebar-warehouse-generated-fixed.webp");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  box-shadow: 4px 0 18px rgb(0 8 17 / 35%);
+}
+
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-brand {
+  background: rgb(9 31 48 / 46%);
+  border-bottom-color: #28475d;
+}
+
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer)
+  :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item):not(.active):hover,
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer)
+  .hn-mvp-group[aria-expanded="true"] {
+  background: rgb(136 187 214 / 12%);
+}
+
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer)
+  :is(.hn-mvp-nav-btn.active, .hn-sidebar-system-item.active),
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer)
+  :is(.hn-mvp-nav-btn.active, .hn-sidebar-system-item.active):hover {
+  background: linear-gradient(90deg, #185676, #1c6684);
+  box-shadow: inset 0 0 0 1px rgb(158 211 233 / 16%), 0 3px 10px rgb(0 8 17 / 28%);
+  color: #f4fbff;
+}
+
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system {
+  border-top-color: #315067;
+}
+
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system-title,
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-version {
+  color: #a4bfd0;
+}
+
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-warehouse-card {
+  border-color: #355a72;
+  background: rgb(17 44 62 / 94%);
+  box-shadow: 0 4px 12px rgb(0 8 17 / 30%);
+  backdrop-filter: none;
+}
+
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-warehouse-card:hover {
+  background: #1b4861;
+}
+
+:root[data-theme="dark"] :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-warehouse-icon {
+  background: linear-gradient(135deg, #1e6b89, #174d6b);
+}
