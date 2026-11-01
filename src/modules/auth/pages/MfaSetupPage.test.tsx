@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import QRCode from "qrcode";
+import { MemoryRouter } from "react-router-dom";
 
 import { MfaSetupPage } from "@/modules/auth/pages/MfaSetupPage";
 import { authService } from "@/modules/auth/services/auth.service";
@@ -16,6 +18,9 @@ vi.mock("@/modules/auth/services/auth.service", () => ({
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("qrcode", () => ({
+  default: { toDataURL: vi.fn(async () => "data:image/png;base64,ZmFrZQ==") },
+}));
 
 const SECRET = "JBSWY3DPEHPK3PXP";
 const RECOVERY = ["AAAAA-11111", "BBBBB-22222"];
@@ -27,7 +32,9 @@ function renderPage() {
 
   return render(
     <QueryClientProvider client={client}>
-      <MfaSetupPage />
+      <MemoryRouter>
+        <MfaSetupPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -60,12 +67,24 @@ describe("MfaSetupPage", () => {
   it("đăng ký rồi xác nhận thì hiện mã khôi phục", async () => {
     renderPage();
 
+    expect(
+      screen.getByRole("link", { name: /quay lại hồ sơ/i }),
+    ).toHaveAttribute("href", "/profile");
+
     await userEvent.click(
       await screen.findByRole("button", { name: /bắt đầu đăng ký/i }),
     );
 
     // Bí mật hiển thị dạng chữ để người dùng nhập tay khi không quét được QR.
     expect(await screen.findByText(SECRET)).toBeInTheDocument();
+    const qr = await screen.findByRole("img", {
+      name: "Mã QR đăng ký xác thực hai bước",
+    });
+    expect(qr).toHaveAttribute("src", "data:image/png;base64,ZmFrZQ==");
+    expect(QRCode.toDataURL).toHaveBeenCalledWith(
+      `otpauth://totp/WMS:admin?secret=${SECRET}`,
+      { width: 220, margin: 2 },
+    );
 
     await userEvent.type(screen.getByLabelText("Mã xác thực"), "123456");
     await userEvent.click(
@@ -76,6 +95,12 @@ describe("MfaSetupPage", () => {
       expect(await screen.findByText(code)).toBeInTheDocument();
     }
     expect(authService.mfaConfirm).toHaveBeenCalledWith("123456");
+    expect(
+      screen.queryByRole("button", { name: /bắt đầu đăng ký/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("img", { name: "Mã QR đăng ký xác thực hai bước" }),
+    ).toBeNull();
   });
 
   /**
@@ -123,7 +148,6 @@ describe("MfaSetupPage", () => {
 
     vi.mocked(authService.mfaEnroll).mockResolvedValue({
       secret: SECRET,
-      // eslint-disable-next-line no-script-url
       otpauth_uri: "javascript:alert(1)",
       digits: 6,
       period: 30,
@@ -136,5 +160,9 @@ describe("MfaSetupPage", () => {
     await screen.findAllByText(SECRET);
 
     expect(document.querySelector('a[href^="javascript:"]')).toBeNull();
+    expect(
+      screen.getAllByRole("img", { name: "Mã QR đăng ký xác thực hai bước" }),
+    ).toHaveLength(1);
+    expect(QRCode.toDataURL).toHaveBeenCalledTimes(1);
   });
 });

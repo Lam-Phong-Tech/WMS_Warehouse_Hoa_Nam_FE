@@ -1,11 +1,16 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import QRCode from "qrcode";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { authService } from "@/modules/auth/services/auth.service";
 import type { MfaEnrollment, MfaStatus } from "@/modules/auth/types/mfa.types";
-import { Box, UiAlert, UiButton, UiTextField } from "@/shared/ui";
+import { Box, UiAlert, UiButton, UiCard, UiTextField } from "@/shared/ui";
 import { useT } from "@/shared/i18n/useT";
+import { ROUTES } from "@/shared/constants/routes";
+import "@/shared/ui/sku-aligned-settings.css";
+import "./mfa-setup-page.css";
 
 const MFA_STATUS_QUERY_KEY = ["auth", "mfa", "status"] as const;
 
@@ -31,12 +36,8 @@ function errorMessageOf(error: unknown, fallback: string): string {
  *
  * BA QUYẾT ĐỊNH GIAO DIỆN ĐÁNG GHI LẠI:
  *
- * 1. QR dựng bằng một service ảnh NGOÀI thì tiện — và cũng có nghĩa là gửi
- *    `otpauth://` chứa BÍ MẬT TOTP sang máy chủ của người khác. Ở đây không
- *    dùng ảnh ngoài: bí mật hiển thị dạng chữ để người dùng dán vào ứng dụng
- *    xác thực, kèm liên kết `otpauth://` để mở thẳng app trên chính thiết bị đó.
- *    Muốn có QR thật thì phải render CỤC BỘ (thư viện qr trong bundle), không
- *    bao giờ bằng URL của bên thứ ba.
+ * 1. QR được tạo ngay trong trình duyệt bằng thư viện trong bundle. Không gửi
+ *    `otpauth://` chứa bí mật TOTP tới dịch vụ tạo ảnh bên ngoài.
  *
  * 2. Mã khôi phục nằm trong state của component và KHÔNG được ghi vào
  *    localStorage/sessionStorage. Lưu lại "cho tiện" là biến 8 chìa khoá dự
@@ -51,8 +52,36 @@ export function MfaSetupPage() {
   const queryClient = useQueryClient();
 
   const [enrollment, setEnrollment] = useState<MfaEnrollment | null>(null);
+  const [qrCode, setQrCode] = useState<{ uri: string; dataUrl: string } | null>(
+    null,
+  );
+  const [qrErrorUri, setQrErrorUri] = useState<string | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
   const [code, setCode] = useState("");
+
+  useEffect(() => {
+    const uri = enrollment?.otpauth_uri;
+    if (!uri?.startsWith("otpauth://")) return;
+
+    let cancelled = false;
+    QRCode.toDataURL(uri, { width: 220, margin: 2 })
+      .then((dataUrl) => {
+        if (!cancelled) {
+          setQrCode({ uri, dataUrl });
+          setQrErrorUri(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setQrCode(null);
+          setQrErrorUri(uri);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enrollment?.otpauth_uri]);
 
   const status = useQuery<MfaStatus>({
     queryKey: MFA_STATUS_QUERY_KEY,
@@ -61,7 +90,11 @@ export function MfaSetupPage() {
 
   const enroll = useMutation({
     mutationFn: () => authService.mfaEnroll(),
-    onSuccess: (data) => setEnrollment(data),
+    onSuccess: (data) => {
+      setQrCode(null);
+      setQrErrorUri(null);
+      setEnrollment(data);
+    },
     onError: () => {},
   });
 
@@ -70,6 +103,8 @@ export function MfaSetupPage() {
     onSuccess: (data) => {
       setRecoveryCodes(data.recovery_codes);
       setEnrollment(null);
+      setQrCode(null);
+      setQrErrorUri(null);
       setCode("");
       toast.success(t("auth.mfa.enableSuccess"));
       void queryClient.invalidateQueries({ queryKey: MFA_STATUS_QUERY_KEY });
@@ -88,110 +123,158 @@ export function MfaSetupPage() {
     : confirm.isError
       ? errorMessageOf(confirm.error, t("auth.mfa.errorTitle"))
       : null;
+  const isEnabled = status.data?.enabled === true || recoveryCodes !== null;
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-        maxWidth: 640,
-      }}
-    >
-      <Box>
-        <h1 style={{ margin: 0 }}>{t("auth.mfa.setupTitle")}</h1>
-        <p style={{ marginTop: 8 }}>{t("auth.mfa.setupSubtitle")}</p>
-      </Box>
+    <Box className="hn-settings-screen hn-mfa-screen">
+      <header className="hn-mfa-header">
+        <div>
+          <Link className="hn-mfa-back-link" to={ROUTES.PROFILE}>
+            <span aria-hidden="true">←</span>
+            {t("auth.mfa.backToProfile")}
+          </Link>
+          <p className="hn-mfa-eyebrow">{t("auth.mfa.eyebrow")}</p>
+          <h1>{t("auth.mfa.setupTitle")}</h1>
+          <p className="hn-mfa-subtitle">{t("auth.mfa.setupSubtitle")}</p>
+        </div>
+        <span
+          className="hn-mfa-status"
+          data-state={
+            isEnabled ? "enabled" : enrollment !== null ? "pending" : "disabled"
+          }
+        >
+          <span className="hn-mfa-status-dot" aria-hidden="true" />
+          {isEnabled
+            ? t("auth.mfa.statusEnabled")
+            : enrollment !== null
+              ? t("auth.mfa.statusPending")
+              : t("auth.mfa.statusDisabled")}
+        </span>
+      </header>
 
       {status.data?.must_enroll_now === true && (
         <UiAlert tone="warning" title={t("auth.mfa.setupTitle")}>
           {t("auth.mfa.requiredForRole")}
         </UiAlert>
       )}
-
       {actionError && (
         <UiAlert tone="error" title={t("auth.mfa.errorTitle")}>
           {actionError}
         </UiAlert>
       )}
 
-      {status.data?.enabled === true && recoveryCodes === null && (
-        <UiAlert tone="success" title={t("auth.mfa.statusEnabled")}>
-          {t("auth.mfa.recoveryRemaining", {
-            count: String(status.data.recovery_codes_remaining),
-          })}
-        </UiAlert>
+      {isEnabled && recoveryCodes === null && (
+        <UiCard className="hn-settings-card hn-mfa-result-card">
+          <UiAlert tone="success" title={t("auth.mfa.statusEnabled")}>
+            {t("auth.mfa.recoveryRemaining", {
+              count: String(status.data?.recovery_codes_remaining ?? 0),
+            })}
+          </UiAlert>
+        </UiCard>
       )}
 
       {/* Mã khôi phục — hiển thị đúng MỘT LẦN, ngay sau khi bật. */}
       {recoveryCodes !== null && (
-        <Box>
+        <UiCard className="hn-settings-card hn-mfa-result-card">
           <UiAlert tone="warning" title={t("auth.mfa.recoveryTitle")}>
             {t("auth.mfa.recoveryHelp")}
           </UiAlert>
-          <Box
-            component="ul"
-            sx={{
-              marginTop: "12px",
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-              gap: "8px",
-              listStyle: "none",
-              padding: 0,
-              fontFamily: "var(--wms-font-family)",
-            }}
-          >
+          <ul className="hn-mfa-recovery-list">
             {recoveryCodes.map((recoveryCode) => (
               <li key={recoveryCode}>{recoveryCode}</li>
             ))}
-          </Box>
-        </Box>
+          </ul>
+        </UiCard>
       )}
 
-      {status.data?.enabled !== true && enrollment === null && (
-        <Box>
-          <UiButton
-            onClick={() => enroll.mutate()}
-            loading={enroll.isPending}
-            disabled={enroll.isPending}
-          >
-            {t("auth.mfa.startEnroll")}
-          </UiButton>
-        </Box>
+      {!isEnabled && enrollment === null && (
+        <UiCard className="hn-settings-card hn-mfa-intro-card">
+          <div className="hn-mfa-intro-copy">
+            <span className="hn-mfa-section-label">
+              {t("auth.mfa.introLabel")}
+            </span>
+            <h2>{t("auth.mfa.introTitle")}</h2>
+            <p>{t("auth.mfa.introHelp")}</p>
+            <UiButton
+              className="hn-settings-primary hn-mfa-start-button"
+              onClick={() => enroll.mutate()}
+              loading={enroll.isPending}
+              disabled={enroll.isPending}
+            >
+              {t("auth.mfa.startEnroll")}
+            </UiButton>
+          </div>
+          <ol className="hn-mfa-intro-steps">
+            <li>
+              <span>1</span>
+              {t("auth.mfa.step1")}
+            </li>
+            <li>
+              <span>2</span>
+              {t("auth.mfa.step2")}
+            </li>
+          </ol>
+        </UiCard>
       )}
 
       {enrollment !== null && (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <p style={{ margin: 0 }}>{t("auth.mfa.step1")}</p>
-          <p style={{ margin: 0 }}>{t("auth.mfa.step2")}</p>
+        <div className="hn-mfa-setup-grid">
+          <UiCard className="hn-settings-card hn-mfa-setup-card">
+            <div className="hn-mfa-card-heading">
+              <span className="hn-mfa-step-number">1</span>
+              <div>
+                <h2>{t("auth.mfa.scanTitle")}</h2>
+                <p>{t("auth.mfa.step1")}</p>
+              </div>
+            </div>
+            <div className="hn-mfa-qr-stage">
+              {qrCode?.uri === enrollment.otpauth_uri ? (
+                <img
+                  src={qrCode.dataUrl}
+                  alt={t("auth.mfa.qrCodeAlt")}
+                  width={220}
+                  height={220}
+                />
+              ) : qrErrorUri === enrollment.otpauth_uri ? (
+                <span>{t("auth.mfa.qrErrorTitle")}</span>
+              ) : (
+                <span>{t("auth.mfa.qrLoading")}</span>
+              )}
+            </div>
+            {qrErrorUri === enrollment.otpauth_uri && (
+              <UiAlert tone="warning" title={t("auth.mfa.qrErrorTitle")}>
+                {t("auth.mfa.qrErrorHelp")}
+              </UiAlert>
+            )}
+            <div className="hn-mfa-manual-key">
+              <span className="hn-mfa-manual-label">
+                {t("auth.mfa.manualKeyLabel")}
+              </span>
+              <code>{enrollment.secret}</code>
+              <span className="hn-mfa-manual-hint">
+                {t("auth.mfa.manualKeyHint")}
+              </span>
+            </div>
+            {enrollment.otpauth_uri.startsWith("otpauth://") && (
+              <a className="hn-mfa-app-link" href={enrollment.otpauth_uri}>
+                {t("auth.mfa.openApp")}
+              </a>
+            )}
+          </UiCard>
 
-          <Box>
-            <div>{t("auth.mfa.manualKeyLabel")}</div>
-            <code
-              style={{
-                display: "inline-block",
-                marginTop: 4,
-                padding: "6px 10px",
-                fontSize: 16,
-                letterSpacing: 1,
-                wordBreak: "break-all",
-              }}
+          <UiCard className="hn-settings-card hn-mfa-setup-card hn-mfa-verify-card">
+            <div className="hn-mfa-card-heading">
+              <span className="hn-mfa-step-number">2</span>
+              <div>
+                <h2>{t("auth.mfa.verifyTitle")}</h2>
+                <p>{t("auth.mfa.step2")}</p>
+              </div>
+            </div>
+            <form
+              className="hn-mfa-confirm-form"
+              onSubmit={onConfirm}
+              noValidate
             >
-              {enrollment.secret}
-            </code>
-          </Box>
-
-          {/* Liên kết otpauth:// mở thẳng ứng dụng xác thực khi người dùng đang
-              đứng trên CHÍNH thiết bị đó. Không bao giờ gửi chuỗi này ra ngoài.
-              Chỉ chấp nhận đúng scheme otpauth: — đây là URL do server trả về
-              được gắn vào href, mọi scheme khác (javascript:, http:...) bị bỏ,
-              người dùng vẫn còn mã thủ công ở trên. */}
-          {enrollment.otpauth_uri.startsWith("otpauth://") ? (
-            <a href={enrollment.otpauth_uri}>{t("auth.mfa.startEnroll")}</a>
-          ) : null}
-
-          <form onSubmit={onConfirm} noValidate>
-            <Box sx={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
               <UiTextField
                 label={t("auth.mfa.codeLabel")}
                 value={code}
@@ -200,17 +283,19 @@ export function MfaSetupPage() {
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 disabled={confirm.isPending}
+                fullWidth
               />
               <UiButton
+                className="hn-settings-primary"
                 type="submit"
                 loading={confirm.isPending}
                 disabled={confirm.isPending || code.trim() === ""}
               >
                 {t("auth.mfa.confirmSubmit")}
               </UiButton>
-            </Box>
-          </form>
-        </Box>
+            </form>
+          </UiCard>
+        </div>
       )}
     </Box>
   );

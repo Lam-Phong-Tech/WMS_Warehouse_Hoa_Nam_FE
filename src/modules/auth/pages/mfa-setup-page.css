@@ -1,0 +1,313 @@
+.hn-mfa-screen {
+  max-width: 1060px;
+  gap: 20px;
+}
+
+.hn-mfa-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0 8px;
+}
+
+.hn-mfa-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: var(--settings-link);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hn-mfa-back-link:hover {
+  text-decoration: underline;
+}
+
+.hn-mfa-eyebrow,
+.hn-mfa-section-label {
+  margin: 0 0 8px;
+  color: var(--settings-link);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hn-mfa-header h1 {
+  margin: 0;
+  color: var(--settings-ink);
+  font-size: clamp(25px, 2.3vw, 30px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.hn-mfa-subtitle {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: var(--settings-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.hn-mfa-status {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  margin-top: 25px;
+  padding: 7px 12px;
+  border: 1px solid var(--settings-line);
+  border-radius: 999px;
+  background: var(--settings-surface);
+  color: var(--settings-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hn-mfa-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--settings-inactive);
+}
+
+.hn-mfa-status[data-state="pending"] .hn-mfa-status-dot {
+  background: var(--settings-link);
+}
+
+.hn-mfa-status[data-state="enabled"] {
+  border-color: var(--settings-success-soft);
+  background: var(--settings-success-soft);
+  color: var(--settings-success);
+}
+
+.hn-mfa-status[data-state="enabled"] .hn-mfa-status-dot {
+  background: var(--settings-success);
+}
+
+.hn-mfa-intro-card > .MuiBox-root {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  align-items: center;
+  gap: 32px;
+  padding: 32px;
+}
+
+.hn-mfa-intro-copy h2,
+.hn-mfa-card-heading h2 {
+  margin: 0;
+  color: var(--settings-ink);
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.hn-mfa-intro-copy p {
+  max-width: 480px;
+  margin: 10px 0 22px;
+  color: var(--settings-muted);
+  line-height: 1.6;
+}
+
+.hn-mfa-intro-steps {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 22px;
+  border-radius: var(--ops-radius-card);
+  background: var(--settings-pale);
+  list-style: none;
+}
+
+.hn-mfa-intro-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--settings-text);
+  line-height: 1.55;
+}
+
+.hn-mfa-intro-steps li span,
+.hn-mfa-step-number {
+  display: inline-grid;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--settings-cta);
+  color: var(--wms-on-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hn-mfa-setup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 20px;
+}
+
+.hn-mfa-setup-card > .MuiBox-root {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+.hn-mfa-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hn-mfa-card-heading p {
+  margin: 6px 0 0;
+  color: var(--settings-muted);
+  line-height: 1.6;
+}
+
+.hn-mfa-qr-stage {
+  display: grid;
+  min-height: 260px;
+  place-items: center;
+  padding: 18px;
+  border: 1px dashed var(--settings-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--settings-pale);
+  color: var(--settings-muted);
+  text-align: center;
+}
+
+.hn-mfa-qr-stage img {
+  display: block;
+  width: min(220px, 100%);
+  height: auto;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.hn-mfa-manual-key {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+}
+
+.hn-mfa-manual-label {
+  color: var(--settings-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hn-mfa-manual-key code {
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--settings-line);
+  border-radius: 6px;
+  background: var(--settings-pale);
+  color: var(--settings-ink);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.hn-mfa-manual-hint {
+  color: var(--settings-muted);
+  font-size: 12px;
+}
+
+.hn-mfa-app-link {
+  align-self: flex-start;
+  color: var(--settings-link);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hn-mfa-app-link:hover {
+  text-decoration: underline;
+}
+
+.hn-mfa-confirm-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+  width: 100%;
+  max-width: 360px;
+  margin-top: 14px;
+}
+
+.hn-mfa-confirm-form .MuiTextField-root {
+  width: 100%;
+}
+
+.hn-mfa-confirm-form input {
+  font-size: 18px;
+  letter-spacing: 0.14em;
+}
+
+.hn-mfa-result-card {
+  max-width: 760px;
+}
+
+.hn-mfa-recovery-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hn-mfa-recovery-list li {
+  padding: 10px 12px;
+  border: 1px solid var(--settings-line);
+  border-radius: 6px;
+  background: var(--settings-pale);
+  color: var(--settings-ink);
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .hn-mfa-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hn-mfa-status {
+    margin-top: 0;
+  }
+
+  .hn-mfa-intro-card > .MuiBox-root,
+  .hn-mfa-setup-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hn-mfa-intro-card > .MuiBox-root,
+  .hn-mfa-setup-card > .MuiBox-root {
+    padding: 20px;
+  }
+
+  .hn-mfa-confirm-form {
+    max-width: none;
+    margin-top: 0;
+  }
+
+  .hn-mfa-confirm-form .MuiButton-root {
+    width: 100%;
+  }
+}

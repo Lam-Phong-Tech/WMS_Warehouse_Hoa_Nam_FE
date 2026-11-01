@@ -13,6 +13,10 @@
       "@/shared/ui/sku-aligned-settings.css",
       "./profile-page.css"
     ],
+    "src/modules/auth/pages/MfaSetupPage.tsx": [
+      "@/shared/ui/sku-aligned-settings.css",
+      "./mfa-setup-page.css"
+    ],
     "src/modules/audit-logs/pages/AuditLogsPage.tsx": [
       "@/shared/ui/sku-aligned-settings.css",
       "./audit-logs.css"
