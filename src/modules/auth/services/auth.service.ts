@@ -55,6 +55,7 @@ type BackendLoginResponse = {
 
 type BackendMeResponse = BackendUser & {
   status?: string;
+  version?: number;
   phone?: string | null;
   company?: MeResponse["company"];
   branch?: MeResponse["branch"];
@@ -233,6 +234,7 @@ function normalizeMeResponse(data: BackendMeResponse): MeResponse {
     email: user.email,
     code: user.code,
     status: data.status,
+    version: data.version,
     roles,
     permissions,
     warehouse_scope_ids: warehouseScopeIds,
@@ -348,6 +350,20 @@ export const authService = {
 
   async me() {
     const response = await http.get<BackendMeResponse>(API_ENDPOINTS.ME);
+    return normalizeMeResponse(response);
+  },
+
+  async updateMe(
+    changes: { display_name?: string; phone?: string | null },
+    version?: number,
+  ) {
+    const response = await http.patch<BackendMeResponse>(
+      API_ENDPOINTS.ME,
+      changes,
+      version === undefined
+        ? undefined
+        : { headers: { "If-Match": String(version) } },
+    );
     return normalizeMeResponse(response);
   },
 

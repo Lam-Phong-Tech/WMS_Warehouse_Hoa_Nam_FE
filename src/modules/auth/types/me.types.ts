@@ -37,6 +37,7 @@ export interface MeResponse {
   email: string;
   code: string;
   status?: string;
+  version?: number;
   roles: MeRoleAssignment[];
   permissions: string[];
   warehouse_scope_ids: string[];

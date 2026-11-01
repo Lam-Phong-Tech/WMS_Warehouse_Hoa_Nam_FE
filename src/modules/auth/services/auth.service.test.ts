@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getMock, postMock, refreshSessionMock } = vi.hoisted(() => ({
+const { getMock, postMock, patchMock, refreshSessionMock } = vi.hoisted(() => ({
   getMock: vi.fn(),
   postMock: vi.fn(),
+  patchMock: vi.fn(),
   refreshSessionMock: vi.fn(),
 }));
 
 vi.mock("@/shared/api/http", () => ({
-  http: { get: getMock, post: postMock },
+  http: { get: getMock, post: postMock, patch: patchMock },
 }));
 
 vi.mock("@/shared/api/axios", () => ({
@@ -179,6 +180,31 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
       context_id: "WH-HN-01",
       scope_ref: "WH-HN-01",
       warehouse_name: "WH-HN-01",
+    });
+  });
+
+  it("PATCH /auth/me sends only editable fields with the current version", async () => {
+    patchMock.mockResolvedValue({
+      ...USER,
+      display_name: "Tên mới",
+      phone: "0912345678",
+      version: 4,
+    });
+
+    const result = await authService.updateMe(
+      { display_name: "Tên mới", phone: "0912345678" },
+      3,
+    );
+
+    expect(patchMock).toHaveBeenCalledWith(
+      "/auth/me",
+      { display_name: "Tên mới", phone: "0912345678" },
+      { headers: { "If-Match": "3" } },
+    );
+    expect(result).toMatchObject({
+      display_name: "Tên mới",
+      phone: "0912345678",
+      version: 4,
     });
   });
 
