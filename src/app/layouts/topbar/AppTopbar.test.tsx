@@ -32,18 +32,24 @@ import { MESSAGES_EN } from "@/shared/i18n/messages.en";
 
 /**
  * Topbar là thứ hiện trên MỌI màn nên test ở đây khoá đúng những điều dễ vỡ:
- * đủ 5 điều khiển của demo, tìm kiếm chỉ gợi ý màn người dùng CÓ QUYỀN, và hai
+ * các điều khiển còn lại, tìm kiếm chỉ gợi ý màn người dùng CÓ QUYỀN, và hai
  * công tắc Ngôn ngữ / Giao diện phải đổi thật chứ không chỉ đổi hình.
  */
 
-function renderTopbar() {
+function renderTopbar(isDashboard = false) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        <AppTopbar showMenuButton={false} onOpenMenu={() => {}} />
+      <MemoryRouter
+        initialEntries={[isDashboard ? "/dashboard" : "/master-data/skus"]}
+      >
+        <AppTopbar
+          showMenuButton={false}
+          onOpenMenu={() => {}}
+          isDashboard={isDashboard}
+        />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -94,22 +100,34 @@ describe("AppTopbar", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("dựng đủ 5 điều khiển của demo", () => {
+  it("hiện breadcrumb và các điều khiển cần dùng, không hiện lối tắt", () => {
     renderTopbar();
     expect(
       screen.getByPlaceholderText("Tìm kiếm chức năng"),
     ).toBeInTheDocument();
-    for (const label of [
-      "Ngôn ngữ",
-      "Giao diện",
-      "Lối tắt nghiệp vụ",
-      "Thông báo",
-    ]) {
+    for (const label of ["Ngôn ngữ", "Giao diện", "Thông báo"]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
     expect(
       screen.getByRole("button", { name: /Tài khoản Super Admin/ }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Lối tắt nghiệp vụ" }),
+    ).not.toBeInTheDocument();
+    const breadcrumb = screen.getByRole("navigation", { name: "Breadcrumb" });
+    expect(breadcrumb).toHaveTextContent("Danh mục");
+    expect(breadcrumb).toHaveTextContent("Danh sách SKU");
+  });
+
+  it("giữ kiểu thanh tổng quan riêng", () => {
+    const { container } = renderTopbar(true);
+    expect(container.querySelector(".hn-topbar-content")).toBeNull();
+    expect(
+      screen.queryByRole("navigation", { name: "Breadcrumb" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Lối tắt nghiệp vụ" }),
+    ).not.toBeInTheDocument();
   });
 
   it("neo chấm trạng thái vào avatar, không vào toàn bộ nút tài khoản", () => {
@@ -196,7 +214,13 @@ describe("AppTopbar", () => {
   it("icon đánh dấu tất cả đã đọc gọi mutation và giữ bảng thông báo mở", () => {
     useNotificationStore.getState().setUnreadCount(24);
     renderTopbar();
-    fireEvent.click(screen.getByRole("button", { name: "Thông báo, 24" }));
+    const notificationButton = screen.getByRole("button", {
+      name: "Thông báo, 24",
+    });
+    expect(
+      notificationButton.querySelector(".notification-dot"),
+    ).toHaveTextContent("24");
+    fireEvent.click(notificationButton);
     const markReadButton = screen.getByRole("menuitem", {
       name: "Đánh dấu tất cả đã đọc",
     });

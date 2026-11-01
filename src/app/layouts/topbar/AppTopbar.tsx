@@ -1,10 +1,10 @@
 /**
  * THANH TOPBAR — dựng 1:1 theo demo UI/UX đã chốt
- * `10.WMS_Hoa_Nam_Trang_Tong_Quan.html`: ô tìm kiếm, và 5 điều
- * khiển bên phải (Ngôn ngữ · Giao diện · Lối tắt nghiệp vụ · Thông báo · Tài khoản).
+ * `10.WMS_Hoa_Nam_Trang_Tong_Quan.html`: ô tìm kiếm và các điều
+ * khiển bên phải (Ngôn ngữ · Giao diện · Thông báo · Tài khoản).
  *
  * KHÁC DEMO: demo chạy trên fixture cứng, ở đây mọi thứ nối vào dữ liệu THẬT —
- * tìm kiếm quét nav-data đã lọc theo RBAC, lối tắt/menu tài khoản điều hướng
+ * tìm kiếm quét nav-data đã lọc theo RBAC, menu tài khoản điều hướng
  * thật, thông báo đọc từ store thông báo, Đăng xuất gọi đúng mutation đăng xuất.
  * Vì vậy số dòng thông báo và nội dung là thật chứ không phải 3 dòng mẫu.
  *
@@ -13,7 +13,7 @@
  * ngoài thì đóng.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { UiIcon, VuexyDemoIcon, type VuexyDemoIconName } from "@/shared/ui";
 import { ROUTES } from "@/shared/constants/routes";
@@ -30,7 +30,10 @@ import {
   useThemeStore,
   type ThemePreference,
 } from "@/shared/ui/theme/theme.store";
-import { getVisibleNavGroups } from "@/app/layouts/nav-data";
+import {
+  getBreadcrumbTrail,
+  getVisibleNavGroups,
+} from "@/app/layouts/nav-data";
 import { useNotificationStore } from "@/shared/store/notification.store";
 import {
   useMarkAllNotificationsRead,
@@ -40,8 +43,7 @@ import {
 import type { NotificationItem } from "@/modules/notifications/types/notification.types";
 import "./app-topbar.css";
 
-type MenuId =
-  "search" | "language" | "theme" | "shortcut" | "notification" | "account";
+type MenuId = "search" | "language" | "theme" | "notification" | "account";
 
 /** Bỏ dấu để gõ "ton kho" vẫn ra "Tồn kho" — đúng cách demo chuẩn hoá. */
 function normalize(text: string): string {
@@ -79,62 +81,22 @@ const SEVERITY_ICON: Record<NotificationItem["severity"], VuexyDemoIconName> = {
   info: "info",
 };
 
-/** Sáu ô lối tắt của demo, trỏ vào route THẬT của dự án. */
-const SHORTCUTS = [
-  {
-    route: ROUTES.INBOUND,
-    icon: "package-plus",
-    tone: "shortcut-inbound",
-    titleKey: "topbar.shortcutInbound",
-    subKey: "topbar.shortcutInboundSub",
-  },
-  {
-    route: ROUTES.OUTBOUND,
-    icon: "package-minus",
-    tone: "shortcut-outbound",
-    titleKey: "topbar.shortcutOutbound",
-    subKey: "topbar.shortcutOutboundSub",
-  },
-  {
-    route: ROUTES.REPORTS_STOCK_RECONCILE,
-    icon: "warehouse",
-    tone: "shortcut-stock",
-    titleKey: "topbar.shortcutReconcile",
-    subKey: "topbar.shortcutReconcileSub",
-  },
-  {
-    route: ROUTES.WARRANTY,
-    icon: "briefcase-medical",
-    tone: "shortcut-warranty",
-    titleKey: "topbar.shortcutWarranty",
-    subKey: "topbar.shortcutWarrantySub",
-  },
-  {
-    route: ROUTES.INVENTORY,
-    icon: "package-search",
-    tone: "",
-    titleKey: "topbar.shortcutInventory",
-    subKey: "topbar.shortcutInventorySub",
-  },
-  {
-    route: ROUTES.REPORTS_IMPORT_QUALITY,
-    icon: "chart-column-big",
-    tone: "",
-    titleKey: "topbar.shortcutReport",
-    subKey: "topbar.shortcutReportSub",
-  },
-] as const;
-
 export function AppTopbar({
   showMenuButton,
   onOpenMenu,
+  isDashboard = false,
 }: {
   showMenuButton: boolean;
   onOpenMenu: () => void;
+  isDashboard?: boolean;
 }) {
+  const location = useLocation();
   const navigate = useNavigate();
   const t = useT();
   const navLabel = useNavLabel();
+  const breadcrumbTrail = isDashboard
+    ? []
+    : getBreadcrumbTrail(location.pathname);
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const themePreference = useThemeStore((state) => state.preference);
@@ -333,7 +295,7 @@ export function AppTopbar({
 
   return (
     <header
-      className="hn-topbar"
+      className={`hn-topbar${isDashboard ? "" : " hn-topbar-content"}`}
       ref={topbarRef}
       aria-label={t("topbar.searchTitle")}
     >
@@ -347,6 +309,48 @@ export function AppTopbar({
         >
           <VuexyDemoIcon name="menu" />
         </button>
+      ) : null}
+
+      {!isDashboard ? (
+        <nav className="topbar-breadcrumb" aria-label="Breadcrumb">
+          {breadcrumbTrail.map((entry, index) => (
+            <span
+              className="topbar-breadcrumb-step"
+              key={`${entry.label}-${index}`}
+            >
+              {index > 0 ? (
+                <span
+                  className="topbar-breadcrumb-separator"
+                  aria-hidden="true"
+                >
+                  /
+                </span>
+              ) : null}
+              {entry.path ? (
+                <button
+                  type="button"
+                  className="topbar-breadcrumb-link"
+                  onClick={() => go(entry.path!)}
+                  aria-label={navLabel(entry.i18nKey, entry.label)}
+                >
+                  {index === 0 ? (
+                    <UiIcon name="home" size="md" />
+                  ) : (
+                    navLabel(entry.i18nKey, entry.label)
+                  )}
+                </button>
+              ) : (
+                <span
+                  aria-current={
+                    index === breadcrumbTrail.length - 1 ? "page" : undefined
+                  }
+                >
+                  {navLabel(entry.i18nKey, entry.label)}
+                </span>
+              )}
+            </span>
+          ))}
+        </nav>
       ) : null}
 
       <div className="topbar-search-wrap">
@@ -530,54 +534,6 @@ export function AppTopbar({
                   <span>{t(labelKey)}</span>
                 </button>
               ))}
-            </div>
-          ) : null}
-        </div>
-
-        {/* Lối tắt nghiệp vụ */}
-        <div className="header-control">
-          <button
-            className="icon-button header-menu-toggle"
-            type="button"
-            aria-expanded={openMenu === "shortcut"}
-            aria-controls="shortcut-menu"
-            aria-label={t("topbar.shortcutLabel")}
-            title={t("topbar.shortcutLabel")}
-            onClick={() => toggleMenu("shortcut")}
-          >
-            <span className="toggle-glyph" aria-hidden="true">
-              <VuexyDemoIcon name="grid-2x2-plus" />
-            </span>
-          </button>
-          {openMenu === "shortcut" ? (
-            <div
-              id="shortcut-menu"
-              className="header-menu shortcut-menu"
-              role="menu"
-            >
-              <div className="header-menu-heading">
-                <strong>{t("topbar.shortcutTitle")}</strong>
-                <span>{t("topbar.shortcutHint")}</span>
-              </div>
-              <div className="shortcut-grid">
-                {SHORTCUTS.map((shortcut) => (
-                  <button
-                    key={shortcut.route}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => go(shortcut.route)}
-                  >
-                    <span
-                      className={`shortcut-icon ${shortcut.tone}`}
-                      aria-hidden="true"
-                    >
-                      <VuexyDemoIcon name={shortcut.icon} />
-                    </span>
-                    <strong>{t(shortcut.titleKey)}</strong>
-                    <small>{t(shortcut.subKey)}</small>
-                  </button>
-                ))}
-              </div>
             </div>
           ) : null}
         </div>

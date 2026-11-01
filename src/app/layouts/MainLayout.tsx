@@ -15,7 +15,6 @@ import { useLocation } from "react-router-dom";
 import { KeepAliveOutlet } from "@/app/layouts/KeepAliveOutlet";
 import { SideNav } from "@/app/layouts/SideNav";
 import { AppTopbar } from "@/app/layouts/topbar/AppTopbar";
-import { getBreadcrumbTrail } from "@/app/layouts/nav-data";
 import { AppPageHeader } from "@/app/layouts/AppPageHeader";
 import { NfcWarehouseSelector } from "@/modules/nfc/components/NfcWarehouseSelector";
 import { WarehousePausedBanner } from "@/app/layouts/WarehousePausedBanner";
@@ -29,13 +28,10 @@ import {
   SPACING,
   UiAppShell,
   useMediaQuery,
-  UiBreadcrumb,
   UiFooter,
 } from "@/shared/ui";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { ROUTES } from "@/shared/constants/routes";
-import { useNavigate } from "react-router-dom";
 import { queryClient } from "@/app/providers/query-client";
 import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
 import { tStatic as tUi } from "@/shared/i18n/useT";
@@ -94,7 +90,6 @@ function readStoredSidebarCollapsed() {
 
 export function MainLayout() {
   const location = useLocation();
-  const navigate = useNavigate();
   // Shell geometry is shared by every route; navigation must not resize it.
   // Below lg (980px), use the same overlay drawer on every screen.
   const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("lg"));
@@ -189,8 +184,6 @@ export function MainLayout() {
   const hideHeaderDetails =
     location.pathname === ROUTES.AUDIT_LOGS ||
     location.pathname === ROUTES.PUTAWAY_TRAYS;
-  const trail = getBreadcrumbTrail(location.pathname);
-  const navLabel = useNavLabel();
 
   if (isLoadingProfile && !isProfileLoaded) return <Loading />;
 
@@ -222,6 +215,7 @@ export function MainLayout() {
           <AppTopbar
             showMenuButton={!isDesktop}
             onOpenMenu={() => setMobileNavOpen(true)}
+            isDashboard={isMapReferenceScreen}
           />
         }
         footer={
@@ -244,14 +238,6 @@ export function MainLayout() {
               : { padding: `${SPACING.xl}px`, display: "grid", gap: 2 }
           }
         >
-          {isFullBleed ? null : (
-            <UiBreadcrumb
-              items={trail.map((entry) => ({
-                label: navLabel(entry.i18nKey, entry.label),
-                onClick: entry.path ? () => navigate(entry.path!) : undefined,
-              }))}
-            />
-          )}
           {/*
            * Đặt TRÊN header trang: kho tạm dừng là trạng thái toàn hệ thống (BE đóng
            * băng mọi thao tác ghi), nên phải thấy được ở MỌI màn — không riêng màn

@@ -2,7 +2,7 @@
  * Shared SystemHNWeb shell skin — presentation only.
  *
  * The existing SideNav/AppTopbar keep all RBAC, routing, search, theme,
- * language, notification and shortcut handlers. This file only makes that
+ * language and notification handlers. This file only makes that
  * canonical shell visually identical across protected routes.
  */
 
@@ -16,8 +16,7 @@
   isolation: isolate;
   overflow-x: hidden;
   overflow-y: auto;
-  border-right: 1px solid
-    color-mix(in srgb, var(--map-white) 12%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--map-white) 12%, transparent);
   /*
    * Đặt artwork trực tiếp lên aside/drawer thay vì pseudo-element.
    * Cách này tránh lỗi layer bị che/mất khi CSS trang Dashboard nạp sau.
@@ -34,8 +33,7 @@
   background-position: center top;
   background-size: cover;
   color: var(--map-white);
-  box-shadow: 4px 0 18px
-    color-mix(in srgb, var(--map-navy) 22%, transparent);
+  box-shadow: 4px 0 18px color-mix(in srgb, var(--map-navy) 22%, transparent);
 }
 
 /* Drawer cần containing block riêng; desktop aside đã absolute trong UiAppShell. */
@@ -91,8 +89,7 @@
   margin: 0;
   padding: 8px 22px;
   border: 0;
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--map-white) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--map-white) 10%, transparent);
   border-radius: 0;
   background: linear-gradient(90deg, var(--map-navy), var(--map-cta));
   box-shadow: none;
@@ -127,17 +124,6 @@
 .hn-system-shell .hn-topbar .topbar-search kbd {
   background: var(--map-pale);
   color: var(--map-link);
-}
-
-/*
- * 1 = Ngôn ngữ, 2 = sáng/tối/system, 3 = Lối tắt nghiệp vụ.
- * AppTopbar đã có handler thật cho cả ba; MAP-01 cũ chỉ ẩn chúng bằng CSS.
- */
-.hn-system-shell .hn-topbar .header-control:nth-child(-n + 3),
-.hn-system-shell.hn-map-shell
-  .hn-topbar
-  .header-control:nth-child(-n + 3) {
-  display: block;
 }
 
 .hn-system-shell .hn-topbar .icon-button,
@@ -220,6 +206,120 @@
   gap: 6px;
 }
 
+/* Các trang nghiệp vụ dùng thanh sáng với breadcrumb như mẫu SKU. */
+.hn-system-shell:not(.hn-map-shell) .hn-topbar {
+  gap: 20px;
+  padding-inline: 28px;
+  border-bottom: 1px solid var(--map-line);
+  background: var(--map-card);
+  color: var(--map-heading);
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--map-muted);
+  font-size: 14px;
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-breadcrumb-step {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 11px;
+}
+
+.hn-system-shell:not(.hn-map-shell)
+  .hn-topbar
+  .topbar-breadcrumb-step
+  > span[aria-current="page"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-breadcrumb-separator {
+  padding-left: 11px;
+  color: var(--map-muted);
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--map-link);
+  white-space: nowrap;
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-breadcrumb-link svg {
+  width: 21px;
+  height: 21px;
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-search-wrap {
+  flex: 0 1 365px;
+  width: min(365px, 30vw);
+  max-width: none;
+  margin-left: auto;
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-search {
+  min-height: 38px;
+  border-color: var(--map-line);
+  background: var(--map-surface);
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-actions {
+  flex: 0 0 auto;
+  gap: 8px;
+  margin-left: 0;
+}
+
+.hn-system-shell:not(.hn-map-shell)
+  .hn-topbar
+  :is(.icon-button, .avatar-button) {
+  color: var(--map-link);
+}
+
+.hn-system-shell:not(.hn-map-shell)
+  .hn-topbar
+  :is(.icon-button, .avatar-button):hover,
+.hn-system-shell:not(.hn-map-shell)
+  .hn-topbar
+  .header-menu-toggle[aria-expanded="true"] {
+  background: var(--map-pale);
+  color: var(--map-link);
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-profile-summary,
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .presence-dot {
+  display: none;
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .avatar-button {
+  min-width: 44px;
+  width: 44px;
+  padding: 0;
+}
+
+.hn-system-shell:not(.hn-map-shell) .hn-topbar .avatar-button .avatar {
+  border: 1px solid var(--map-line);
+  background: var(--map-card);
+  color: var(--map-link);
+}
+
+.hn-system-shell:not(.hn-map-shell)
+  .hn-topbar
+  :is(button, input):focus-visible {
+  outline-color: var(--map-link);
+}
+
 @media (max-width: 1279px) {
   .hn-system-shell .hn-topbar {
     padding-inline: 14px;
@@ -260,6 +360,46 @@
 @media (prefers-reduced-motion: reduce) {
   .hn-system-shell .hn-topbar .topbar-search {
     transition: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .hn-system-shell:not(.hn-map-shell) .hn-topbar {
+    gap: 12px;
+    padding-inline: 16px;
+  }
+
+  .hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-search-wrap {
+    flex-basis: 260px;
+    width: 260px;
+  }
+}
+
+@media (max-width: 767px) {
+  .hn-system-shell:not(.hn-map-shell) .hn-topbar {
+    gap: 7px;
+    padding-inline: 12px;
+  }
+
+  .hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-breadcrumb {
+    display: none;
+  }
+
+  .hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-search-wrap {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 40px;
+  }
+
+  .hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-actions {
+    gap: 2px;
+  }
+}
+
+@media (max-width: 479px) {
+  .hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-search-wrap {
+    flex: 0 0 40px;
+    width: 40px;
   }
 }
 
@@ -405,7 +545,8 @@
   background: color-mix(in srgb, var(--map-link) 34%, var(--map-navy));
 }
 
-:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-warehouse-card:focus-visible {
+:is(.hn-system-shell, .hn-system-drawer)
+  .hn-sidebar-warehouse-card:focus-visible {
   outline: 2px solid var(--map-white);
   outline-offset: 2px;
 }
@@ -534,7 +675,9 @@
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
-  :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item):not(.active):hover,
+  :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item):not(
+    .active
+  ):hover,
 :is(.hn-system-shell, .hn-system-drawer) .hn-mvp-group[aria-expanded="true"] {
   background: color-mix(in srgb, var(--map-white) 11%, transparent);
   color: var(--map-white);
@@ -549,8 +692,7 @@
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-system-item.active {
   background: linear-gradient(90deg, var(--map-link) 0%, var(--map-cta) 100%);
   color: var(--map-white);
-  box-shadow: 0 3px 10px
-    color-mix(in srgb, var(--map-navy) 28%, transparent);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--map-navy) 28%, transparent);
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
@@ -572,7 +714,12 @@
 }
 
 :is(.hn-system-shell, .hn-system-drawer)
-  :is(.hn-mvp-group, .hn-mvp-nav-btn, .hn-sidebar-system-item, .hn-mvp-aside-toggle):focus-visible {
+  :is(
+    .hn-mvp-group,
+    .hn-mvp-nav-btn,
+    .hn-sidebar-system-item,
+    .hn-mvp-aside-toggle
+  ):focus-visible {
   outline: 2px solid var(--map-white);
   outline-offset: 2px;
 }
@@ -590,9 +737,7 @@
  * trong khi marker ::before vẫn ở left≈20px => marker chồng lên ký tự đầu.
  * Khoá hình học riêng cho submenu để marker và label luôn có hai vùng độc lập.
  */
-:is(.hn-system-shell, .hn-system-drawer)
-  .hn-mvp-submenu
-  .hn-mvp-nav-btn {
+:is(.hn-system-shell, .hn-system-drawer) .hn-mvp-submenu .hn-mvp-nav-btn {
   min-height: 38px;
   padding: 7px 12px 7px 42px;
   font-size: 14px;

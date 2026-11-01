@@ -396,9 +396,6 @@
   left: 0;
   width: min(520px, calc(100vw - 32px));
 }
-.hn-topbar .shortcut-menu {
-  width: 390px;
-}
 .hn-topbar .notification-menu {
   width: 370px;
 }
@@ -568,80 +565,6 @@
   color: var(--muted);
   font-size: 13px;
   text-align: center;
-}
-
-/* ── lối tắt nghiệp vụ ──────────────────────────────────────────────────── */
-.hn-topbar .shortcut-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.hn-topbar .shortcut-grid button {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 5px;
-  min-height: 132px;
-  padding: 14px;
-  border: 0;
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink);
-  text-align: center;
-}
-.hn-topbar .shortcut-grid button:nth-child(2n) {
-  border-right: 0;
-}
-.hn-topbar .shortcut-grid button:nth-last-child(-n + 2) {
-  border-bottom: 0;
-}
-.hn-topbar .shortcut-grid button:hover {
-  background: var(--primary-soft);
-}
-.hn-topbar .shortcut-grid strong {
-  font-size: 13px;
-  line-height: 19px;
-  font-weight: 600;
-}
-.hn-topbar .shortcut-grid small {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 16px;
-}
-.hn-topbar .shortcut-icon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 2px;
-  border-radius: 50%;
-  background: var(--primary-soft);
-  color: var(--primary-dark);
-}
-.hn-topbar .shortcut-icon svg {
-  width: 21px;
-  height: 21px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.65;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.hn-topbar .shortcut-inbound {
-  background: var(--green-soft);
-  color: var(--green);
-}
-.hn-topbar .shortcut-outbound {
-  background: var(--red-soft);
-  color: var(--red);
-}
-.hn-topbar .shortcut-stock {
-  background: var(--amber-soft);
-  color: var(--amber);
-}
-.hn-topbar .shortcut-warranty {
-  background: var(--blue-soft);
-  color: var(--hnt-teal-fg);
 }
 
 /* ── thông báo ──────────────────────────────────────────────────────────── */
@@ -903,7 +826,6 @@
     max-height: calc(100vh - 96px);
     overflow: auto;
   }
-  .hn-topbar .shortcut-menu,
   .hn-topbar .notification-menu,
   .hn-topbar .account-menu,
   .hn-topbar .compact-menu,
@@ -913,9 +835,6 @@
   .hn-topbar .language-menu {
     left: auto;
     width: min(267px, calc(100vw - 24px));
-  }
-  .hn-topbar .shortcut-grid button {
-    min-height: 116px;
   }
 }
 
