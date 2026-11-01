@@ -110,8 +110,6 @@ export function ProfilePage() {
     user?.email ??
     t("auth.profile.defaultUserName");
   const email = profile?.email ?? user?.email;
-  const username = profile?.username ?? user?.username;
-  const code = profile?.code ?? user?.code;
   const phone = profile?.phone ?? user?.phone;
   const status = profile?.status ?? user?.status;
   const roleNames = isSuperAdmin
@@ -325,12 +323,12 @@ export function ProfilePage() {
             </h2>
             <dl>
               <div>
-                <dt>{t("auth.profile.username")}</dt>
-                <dd>{empty(username)}</dd>
+                <dt>{t("auth.profile.fullName")}</dt>
+                <dd>{displayName}</dd>
               </div>
               <div>
-                <dt>{t("auth.profile.employeeCode")}</dt>
-                <dd>{empty(code)}</dd>
+                <dt>{t("auth.fields.email")}</dt>
+                <dd>{empty(email)}</dd>
               </div>
               <div>
                 <dt>{t("auth.profile.phone")}</dt>

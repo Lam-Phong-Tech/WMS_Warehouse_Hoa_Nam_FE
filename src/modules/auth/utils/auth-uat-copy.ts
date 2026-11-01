@@ -3,17 +3,15 @@ import { localizedEnglish } from "@/shared/i18n/localized-english";
 
 /** AUTH-only UAT copy; no changes to messages used by inventory/report screens. */
 const vi = {
-  identifierLabel: "Tên đăng nhập",
-  identifierPlaceholder: "Nhập tên đăng nhập",
-  identifierRequired: "Vui lòng nhập tên đăng nhập.",
-  identifierTooLong: "Tên tài khoản không được vượt quá 100 ký tự.",
-  usernameInvalid: "Tên tài khoản không được chứa ký tự đặc biệt",
+  identifierLabel: "Email",
+  identifierPlaceholder: "Nhập email",
+  identifierRequired: "Vui lòng nhập email.",
   emailInvalid: "Định dạng Email không hợp lệ",
   submitting: "Đang đăng nhập…",
-  invalidCredentials: "Tên đăng nhập hoặc mật khẩu không đúng.",
+  invalidCredentials: "Email hoặc mật khẩu không đúng.",
   invalidTitle: "Không thể đăng nhập",
   invalidInput:
-    "Thông tin đăng nhập chưa hợp lệ. Vui lòng kiểm tra lại tên đăng nhập và mật khẩu.",
+    "Thông tin đăng nhập chưa hợp lệ. Vui lòng kiểm tra lại email và mật khẩu.",
   offlineTitle: "Không có kết nối mạng",
   offlineBody: "Kiểm tra kết nối rồi thử đăng nhập lại.",
   unknownTitle: "Chưa xác định được kết quả đăng nhập",
@@ -44,17 +42,15 @@ const vi = {
   forgotFailed: "Chưa thể gửi yêu cầu lúc này. Vui lòng thử lại sau.",
 };
 const en: Record<keyof typeof vi, string> = {
-  identifierLabel: "Username",
-  identifierPlaceholder: "Enter your username or email",
-  identifierRequired: "Please enter your username.",
-  identifierTooLong: "Username must not exceed 100 characters.",
-  usernameInvalid: "Username must not contain special characters",
+  identifierLabel: "Email",
+  identifierPlaceholder: "Enter your email",
+  identifierRequired: "Please enter your email.",
   emailInvalid: "Invalid email format",
   submitting: "Signing in…",
-  invalidCredentials: "The username or password is incorrect",
+  invalidCredentials: "The email or password is incorrect",
   invalidTitle: "Unable to sign in",
   invalidInput:
-    "The sign-in details are invalid. Please check your username and password.",
+    "The sign-in details are invalid. Please check your email and password.",
   offlineTitle: "No internet connection",
   offlineBody: "Please check your connection and try again.",
   unknownTitle: "Sign-in result is unknown",

@@ -3,12 +3,10 @@ import type { User } from "@/shared/types/user";
 // Contract auth bám theo Modules/Auth/AuthController.php của BE branch m1.
 
 /**
- * POST /auth/login accepts exactly one identity field: email OR username.
- * FE chooses the field from the identifier entered on the login screen.
+ * POST /auth/login identifies accounts by email.
+ * The login form sends this field after trimming and lowercasing it.
  */
-export type LoginRequest =
-  | { email: string; username?: never; password: string }
-  | { username: string; email?: never; password: string };
+export type LoginRequest = { email: string; password: string };
 
 /** Context nội bộ của FE, được suy ra từ roles[].scope_ref/warehouse_scope_ids. */
 export interface AuthContext {

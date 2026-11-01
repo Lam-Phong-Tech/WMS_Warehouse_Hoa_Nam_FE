@@ -186,9 +186,8 @@ describe("hàng rào nhập liệu — ô chữ", () => {
 
   it("8. không tự chế regex bộ ký tự mã — dùng CODE_REGEX dùng chung", () => {
     // Nhiều bản chép tay của cùng một bộ ký tự là cách "mã tạo được nhưng quét
-    // không được" xuất hiện. login.schema giữ bản riêng vì đó là USERNAME_REGEX
-    // của hợp đồng đăng nhập với BE, không phải mã nghiệp vụ.
-    const allowed = new Set(["src/modules/auth/schemas/login.schema.ts"]);
+    // không được" xuất hiện. Đăng nhập hiện chỉ dùng email.
+    const allowed = new Set<string>();
     const offenders = sources
       .filter(
         (entry) =>

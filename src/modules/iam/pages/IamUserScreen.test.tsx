@@ -108,7 +108,10 @@ describe("IamUserScreen", () => {
 
     // Nút dùng icon PlusOutlined + label (redesign "thêm icon full cho các hành động").
     fireEvent.click(screen.getByRole("button", { name: /Thêm người dùng/ }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(dialog.querySelector("#iam-email")).toBeRequired();
+    expect(dialog.querySelector("#iam-username")).toBeNull();
   });
 
   it("opens edit with server data and optimistic-lock version", () => {

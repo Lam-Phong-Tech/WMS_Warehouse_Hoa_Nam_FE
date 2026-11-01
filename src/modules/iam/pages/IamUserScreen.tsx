@@ -72,15 +72,9 @@ import {
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { DepartmentManagerModal } from "@/modules/iam/components/DepartmentManagerModal";
 import {
-  EMAIL_MAX_LENGTH,
-  validateEmail,
   validatePhone,
 } from "@/shared/constants/validation.constants";
-import {
-  PASSWORD_MAX_LENGTH,
-  USERNAME_MAX_LENGTH,
-  USERNAME_REGEX,
-} from "@/modules/auth/schemas/login.schema";
+import { isValidEmail, PASSWORD_MAX_LENGTH } from "@/modules/auth/schemas/login.schema";
 import { STRONG_PASSWORD_REGEX } from "@/modules/auth/schemas/change-password.schema";
 import {
   checkDate,
@@ -104,9 +98,10 @@ const STATUS_OPTIONS: Array<{ value: IamUserStatus; label: string }> = [
   { value: "LOCKED", label: IAM_USER_STATUS_LABELS.LOCKED },
 ];
 
+const ACCOUNT_EMAIL_MAX_LENGTH = 200;
+
 type UserFormState = {
   displayName: string;
-  username: string;
   phone: string;
   email: string;
   /** REQ-011: department_id — optional, "" nghĩa là không thuộc phòng ban nào. */
@@ -125,7 +120,6 @@ type UserFormState = {
 
 const EMPTY_FORM: UserFormState = {
   displayName: "",
-  username: "",
   phone: "",
   email: "",
   departmentId: "",
@@ -147,7 +141,6 @@ const EMPTY_FORM: UserFormState = {
  */
 const USER_FORM_FIELDS = [
   "displayName",
-  "username",
   "phone",
   "email",
   "roleId",
@@ -617,7 +610,6 @@ export function IamUserScreen({
     setEditingUser(user);
     setFormState({
       displayName: user.display_name,
-      username: user.username,
       phone: user.phone ?? "",
       email: user.email ?? "",
       departmentId: user.department_id ?? "",
@@ -671,7 +663,6 @@ export function IamUserScreen({
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     const displayName = formState.displayName.trim();
-    const username = formState.username.trim();
     const phone = formState.phone.trim();
     const email = formState.email.trim();
     const password = formState.password;
@@ -682,16 +673,6 @@ export function IamUserScreen({
       errors.displayName = t("shared.validation.textMaxLength", {
         max: DISPLAY_NAME_MAX_LENGTH,
       });
-    }
-    if (!username) {
-      errors.username = t("iam.user.errUsername");
-    } else if (username.length > USERNAME_MAX_LENGTH) {
-      errors.username = t("shared.validation.textMaxLength", {
-        max: USERNAME_MAX_LENGTH,
-      });
-    } else if (!USERNAME_REGEX.test(username)) {
-      // Cùng luật ký tự với cột `username` của BE (StoreUserRequest).
-      errors.username = t("iam.user.errUsernameFormat");
     }
     if (!formState.roleId) {
       errors.roleId = t("iam.user.errRole");
@@ -709,11 +690,15 @@ export function IamUserScreen({
         errors.phone = phoneCheck.errorMessage ?? t("iam.user.errPhone");
       }
     }
-    if (email) {
-      const emailCheck = validateEmail(email);
-      if (!emailCheck.isValid) {
-        errors.email =
-          emailCheck.errorMessage ?? t("shared.validation.emailGmailOnly");
+    if (!email) {
+      errors.email = t("auth.validation.emailRequired");
+    } else if (email.length > ACCOUNT_EMAIL_MAX_LENGTH) {
+      errors.email = t("shared.validation.emailTooLong", {
+        max: ACCOUNT_EMAIL_MAX_LENGTH,
+      });
+    } else {
+      if (!isValidEmail(email)) {
+        errors.email = t("auth.validation.emailInvalid");
       }
     }
     // Cửa sổ hiệu lực: từng mốc nằm trong cửa sổ chung, và "từ" ≤ "đến"
@@ -760,15 +745,13 @@ export function IamUserScreen({
     if (!validateForm()) return;
 
     const displayName = formState.displayName.trim();
-    const username = formState.username.trim().toLowerCase();
     const email = formState.email.trim();
     const phone = formState.phone.trim();
     const password = formState.password;
 
     const basePayload = {
       display_name: displayName,
-      username,
-      email: email || null,
+      email,
       phone: phone || null,
       // REQ-011: optional — null gỡ user khỏi phòng ban (BE Store/UpdateUserRequest nhận).
       department_id: formState.departmentId || null,
@@ -1089,7 +1072,7 @@ export function IamUserScreen({
                           maxWidth={240}
                           className="muted"
                         >
-                          {user.username}
+                          {user.email || EMPTY_TEXT}
                         </TruncatedText>
                       </td>
                       <td>{departmentLabel(user)}</td>
@@ -1227,23 +1210,6 @@ export function IamUserScreen({
                     }}
                   />
                   <UiTextField
-                    id="iam-username"
-                    label={t("iam.user.fieldUsername")}
-                    required
-                    fullWidth
-                    value={formState.username}
-                    onChange={(event) =>
-                      updateField("username", event.target.value)
-                    }
-                    autoComplete="off"
-                    disabled={isSaving}
-                    error={Boolean(fieldErrors.username)}
-                    helperText={fieldErrors.username}
-                    slotProps={{
-                      htmlInput: { maxLength: USERNAME_MAX_LENGTH },
-                    }}
-                  />
-                  <UiTextField
                     id="iam-phone"
                     label={t("iam.user.fieldPhone")}
                     fullWidth
@@ -1265,6 +1231,7 @@ export function IamUserScreen({
                     id="iam-email"
                     label="Email"
                     type="email"
+                    required
                     fullWidth
                     value={formState.email}
                     onChange={(event) =>
@@ -1274,7 +1241,7 @@ export function IamUserScreen({
                     disabled={isSaving}
                     error={Boolean(fieldErrors.email)}
                     helperText={fieldErrors.email}
-                    slotProps={{ htmlInput: { maxLength: EMAIL_MAX_LENGTH } }}
+                    slotProps={{ htmlInput: { maxLength: ACCOUNT_EMAIL_MAX_LENGTH } }}
                   />
                   <UiAutocomplete
                     menuClassName="hn-iam-menu"
@@ -1578,10 +1545,6 @@ export function IamUserScreen({
                   {
                     label: t("iam.user.fieldDisplayName"),
                     value: viewingUser.display_name,
-                  },
-                  {
-                    label: t("iam.user.fieldUsername"),
-                    value: viewingUser.username,
                   },
                   {
                     label: t("iam.user.fieldPhone"),

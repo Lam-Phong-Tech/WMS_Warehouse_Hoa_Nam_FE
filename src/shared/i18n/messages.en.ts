@@ -4269,7 +4269,7 @@ export const MESSAGES_EN: MessageTree = {
         "Please enter a reason (at least 5 characters) so the change is auditable.",
       errLoadUsers: "Could not load the user list.",
       errLoadRoles: "Could not load the role list.",
-      searchPlaceholder: "Search name / username",
+      searchPlaceholder: "Search name / email",
       searchAria: "Search users",
       roleFilterAria: "Filter by role",
       roleFilterPlaceholder: "Role: All",

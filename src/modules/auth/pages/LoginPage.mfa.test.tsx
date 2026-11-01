@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -26,8 +26,8 @@ function renderLogin() {
   </Routes></MemoryRouter></QueryClientProvider>);
 }
 async function submitCredentials() {
-  await userEvent.type(screen.getByLabelText("Tên đăng nhập"), "operator@example.test");
-  await userEvent.type(screen.getByLabelText("Mật khẩu"), ["Test", "Password", "2026"].join("-"));
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: "operator@example.test" } });
+  fireEvent.change(screen.getByLabelText("Mật khẩu"), { target: { value: ["Test", "Password", "2026"].join("-") } });
   await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
 }
 describe("Login MFA security and AUTH-02 confirmation", () => {

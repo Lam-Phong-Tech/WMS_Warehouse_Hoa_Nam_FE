@@ -14,7 +14,7 @@ function renderLogin() {
   return render(<QueryClientProvider client={client}><MemoryRouter><LoginPage /></MemoryRouter></QueryClientProvider>);
 }
 async function fill() {
-  await userEvent.type(screen.getByLabelText("Tên đăng nhập"), "operator@example.test");
+  await userEvent.type(screen.getByLabelText("Email"), "operator@example.test");
   await userEvent.type(screen.getByLabelText("Mật khẩu"), ["Test", "Password", "2026"].join("-"));
 }
 const failure = (status: number, data: unknown = {}, headers: unknown = {}) => ({
@@ -43,14 +43,14 @@ describe("AUTH UAT — transport banners, no diagnostic leaks and no password re
     renderLogin(); await fill(); await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Không thể đăng nhập");
-    expect(alert).toHaveTextContent("Tên đăng nhập hoặc mật khẩu không đúng.");
-    expect(alert.compareDocumentPosition(screen.getByLabelText("Tên đăng nhập")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(alert).toHaveTextContent("Email hoặc mật khẩu không đúng.");
+    expect(alert.compareDocumentPosition(screen.getByLabelText("Email")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(alert.compareDocumentPosition(screen.getByRole("link", { name: /quên mật khẩu/i })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
   it("TC_UI_LOGIN_03: keeps fields and prevents double-submit while showing the pending button", async () => {
     vi.mocked(authService.login).mockReturnValue(new Promise(() => {}));
     renderLogin(); await fill();
-    const field = screen.getByLabelText("Tên đăng nhập");
+    const field = screen.getByLabelText("Email");
     const form = field.closest("form")!;
     fireEvent.submit(form); fireEvent.submit(form);
     expect(await screen.findByRole("button", { name: "Đang đăng nhập…" })).toBeDisabled();
@@ -69,19 +69,19 @@ describe("AUTH UAT — transport banners, no diagnostic leaks and no password re
     vi.mocked(authService.login).mockRejectedValue({ isAxiosError: true, code: "ECONNABORTED" });
     renderLogin(); await fill(); await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Chưa xác định được kết quả đăng nhập");
-    expect(screen.getByLabelText("Tên đăng nhập")).toBeDisabled();
+    expect(screen.getByLabelText("Email")).toBeDisabled();
     expect(screen.queryByRole("button", { name: /thử lại|đăng nhập/i })).not.toBeInTheDocument();
-    fireEvent.submit(screen.getByLabelText("Tên đăng nhập").closest("form")!);
+    fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
     expect(authService.login).toHaveBeenCalledTimes(1);
   });
   it("TC_UI_LOGIN_06: changing identity and Enter cannot remove an active server lock", async () => {
     vi.mocked(authService.login).mockRejectedValue(failure(429, {}, { "Retry-After": "60" }));
     renderLogin(); await fill(); await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Bạn đã thử đăng nhập quá nhiều lần");
-    await userEvent.clear(screen.getByLabelText("Tên đăng nhập"));
-    await userEvent.type(screen.getByLabelText("Tên đăng nhập"), "other-user");
+    await userEvent.clear(screen.getByLabelText("Email"));
+    await userEvent.type(screen.getByLabelText("Email"), "other-user@example.test");
     expect(screen.getByRole("button", { name: "Đăng nhập" })).toBeDisabled();
-    fireEvent.submit(screen.getByLabelText("Tên đăng nhập").closest("form")!);
+    fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
     expect(authService.login).toHaveBeenCalledTimes(1);
   });
   it("TC_UI_LOGIN_07: clears the password and returns to a clean form without another request", async () => {
@@ -90,8 +90,8 @@ describe("AUTH UAT — transport banners, no diagnostic leaks and no password re
     expect(await screen.findByRole("alert")).toHaveTextContent("Tài khoản hiện không thể đăng nhập");
     expect(screen.getByLabelText("Mật khẩu")).toHaveValue("");
     await userEvent.click(screen.getByRole("button", { name: "Quay lại đăng nhập" }));
-    expect(screen.getByLabelText("Tên đăng nhập")).toHaveValue("");
-    expect(screen.getByLabelText("Tên đăng nhập")).toBeEnabled();
+    expect(screen.getByLabelText("Email")).toHaveValue("");
+    expect(screen.getByLabelText("Email")).toBeEnabled();
     expect(authService.login).toHaveBeenCalledTimes(1);
   });
 });

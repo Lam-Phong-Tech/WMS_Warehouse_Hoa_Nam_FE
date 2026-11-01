@@ -136,8 +136,8 @@ describe("Luồng 01 · hợp đồng API hệ thống & danh mục", () => {
     mocked.patch.mockResolvedValue({ user_id: "user-1", version: 3 });
 
     await updateIamUser("user-1", {
-      username: "nvkho01",
       display_name: "Nguyễn Văn Kho",
+      email: "nvkho01@gmail.com",
       status: "ACTIVE",
       version: 2,
     });

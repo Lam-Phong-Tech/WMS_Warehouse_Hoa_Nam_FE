@@ -94,9 +94,8 @@ export interface IamPermissionListParams {
 }
 
 export interface IamUserPayload {
-  username: string;
   display_name: string;
-  email?: string | null;
+  email: string;
   phone?: string | null;
   department_id?: string | null;
   password?: string;

@@ -30,8 +30,8 @@ export const TEXT_LIMITS = {
 } as const;
 
 /**
- * Ký tự hợp lệ của MÃ nghiệp vụ. Cùng bộ với `USERNAME_REGEX` (login.schema)
- * và luật `role_code` của màn phân quyền — dự án chỉ có duy nhất một định
+ * Ký tự hợp lệ của MÃ nghiệp vụ và luật `role_code` của màn phân quyền.
+ * Dự án chỉ có duy nhất một định
  * nghĩa "mã". Không cho khoảng trắng/dấu tiếng Việt: mã còn được in lên nhãn,
  * quét bằng máy và ghép vào mã hộp `BOX-<SKU>-<seq>`.
  */

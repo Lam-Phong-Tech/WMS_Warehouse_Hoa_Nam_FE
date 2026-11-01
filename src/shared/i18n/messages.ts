@@ -4264,7 +4264,7 @@ export const MESSAGES_VI = {
         "Vui lòng nhập lý do (tối thiểu 5 ký tự) để lưu vết thay đổi.",
       errLoadUsers: "Không tải được danh sách người dùng.",
       errLoadRoles: "Không tải được danh sách vai trò.",
-      searchPlaceholder: "Tìm tên / tên đăng nhập",
+      searchPlaceholder: "Tìm tên / email",
       searchAria: "Tìm người dùng",
       roleFilterAria: "Lọc theo vai trò",
       roleFilterPlaceholder: "Vai trò: Tất cả",
