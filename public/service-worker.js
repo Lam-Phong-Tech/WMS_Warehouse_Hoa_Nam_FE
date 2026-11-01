@@ -29,6 +29,7 @@ const APP_SHELL = [
   "/",
   "/index.html",
   "/manifest.webmanifest",
+  "/favicon.svg",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",
 ];

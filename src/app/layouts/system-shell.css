@@ -427,14 +427,6 @@
   background: transparent;
 }
 
-:is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-mark {
-  overflow: visible;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 :is(.hn-system-shell, .hn-system-drawer) .hn-sidebar-brand-title {
   padding-right: 28px;
   font-size: 14px;

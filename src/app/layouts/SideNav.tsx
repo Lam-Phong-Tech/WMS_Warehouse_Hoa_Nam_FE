@@ -23,6 +23,7 @@ import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { preloadRoute } from "@/app/router/route-preload";
 import { Box, Tooltip, UiIcon, VuexyNavIcon } from "@/shared/ui";
+import { BrandMark } from "@/shared/ui/BrandMark";
 import { COMPONENT_TOKENS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import {
   DEFAULT_SCREEN_BY_PATH,
@@ -533,17 +534,11 @@ export function SideNav({
               "&:focus-visible": focusRingSx,
             }}
           >
-            <svg
+            <BrandMark
               className="hn-sidebar-brand-mark"
-              viewBox="0 0 32 32"
-              width="30"
-              height="30"
-              fill="none"
               aria-hidden="true"
-            >
-              <path d="M11 4H7a3 3 0 0 0-3 3v4M21 4h4a3 3 0 0 1 3 3v4M11 28H7a3 3 0 0 1-3-3v-4M21 28h4a3 3 0 0 0 3-3v-4" />
-              <path d="M10 13.5 16 10l6 3.5v7L16 24l-6-3.5zM10 13.5l6 3.5 6-3.5M16 17v7" />
-            </svg>
+              size={30}
+            />
           </Box>
         </Tooltip>
 

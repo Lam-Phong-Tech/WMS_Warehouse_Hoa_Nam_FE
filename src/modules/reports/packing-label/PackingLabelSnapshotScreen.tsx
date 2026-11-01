@@ -2,6 +2,7 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import type { PackingLabelDetail, PackingLabelEvent } from "./packing-label-api";
 import { packingLabelFailureText, LABEL_SNAPSHOT_STATUS_LABELS } from "./packing-label-labels";
 import { useT } from "@/shared/i18n/useT";
+import { BrandMark } from "@/shared/ui/BrandMark";
 
 type Props = {
   detail: PackingLabelDetail | null;
@@ -72,7 +73,7 @@ export function PackingLabelSnapshotScreen({
               <span className="hn-label-detail__measure-top">100 mm</span>
               <span className="hn-label-detail__measure-side">150 mm</span>
               <article className="hn-label-detail__paper">
-                <div className="hn-label-detail__paper-brand">⬡ HOA NAM WMS</div>
+                <div className="hn-label-detail__paper-brand"><BrandMark size={22} aria-hidden="true" /> HOA NAM WMS</div>
                 <h2>NHÃN ĐÓNG GÓI</h2>
                 <dl>
                   <Field label="Mã nhãn" value={detail.labelCode} />

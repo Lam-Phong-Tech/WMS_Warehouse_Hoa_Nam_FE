@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Hoa Nam WMS">
+  <defs>
+    <linearGradient id="top" x1="5" y1="18" x2="59" y2="18" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00e6f6"/>
+      <stop offset=".5" stop-color="#02aef9"/>
+      <stop offset="1" stop-color="#075bf0"/>
+    </linearGradient>
+    <linearGradient id="left" x1="5" y1="37" x2="32" y2="47" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00c9ed"/>
+      <stop offset="1" stop-color="#03f4fb"/>
+    </linearGradient>
+    <linearGradient id="right" x1="32" y1="47" x2="59" y2="31" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00f4fb"/>
+      <stop offset="1" stop-color="#0871ed"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#left)" d="M5 18 32 33v29L5 47Z"/>
+  <path fill="url(#right)" d="M32 33 59 18v29L32 62Z"/>
+  <path fill="url(#top)" d="M32 3 59 18 32 33 5 18Z"/>
+  <path d="m12 22 20 11 20-11" fill="none" stroke="#052d51" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m8 38 6-3M32 33v28" fill="none" stroke="#063b62" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

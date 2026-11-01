@@ -1025,6 +1025,10 @@
   color: #111827;
 }
 .hn-label-detail__paper-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
   font-weight: 800;
   font-size: 19px;
