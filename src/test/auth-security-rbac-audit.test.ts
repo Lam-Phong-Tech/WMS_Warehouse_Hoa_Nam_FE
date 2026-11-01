@@ -39,7 +39,8 @@ function getRejectedHandler() {
       handlers: Array<{ rejected: (error: unknown) => Promise<never> }>;
     }
   ).handlers;
-  const handler = handlers.find((h) => h?.rejected);
+  // Auth interceptor is registered after request-activity/encrypted transport.
+  const handler = [...handlers].reverse().find((h) => h?.rejected);
   if (!handler) throw new Error("Không tìm thấy response interceptor");
   return handler.rejected;
 }
@@ -55,7 +56,7 @@ function getRequestFulfilledHandler() {
       }>;
     }
   ).handlers;
-  const handler = handlers.find((h) => h?.fulfilled);
+  const handler = [...handlers].reverse().find((h) => h?.fulfilled);
   if (!handler) throw new Error("Khong tim thay request interceptor");
   return handler.fulfilled;
 }
@@ -238,7 +239,7 @@ function setAuthStoreToken(token: string) {
 // ============================================================================
 //
 // The axios interceptor handles 403 by:
-// 1. PASSWORD_CHANGE_REQUIRED → redirect to /change-password (no _isNoPermission flag)
+// 1. PASSWORD_CHANGE_REQUIRED → giữ token và yêu cầu SPA chuyển /change-password
 // 2. Other 403 → mark error with _isNoPermission flag for UI display
 // 3. No auto-redirect for regular 403 (UI handles via NoPermissionState/ApiErrorAlert)
 //
@@ -248,6 +249,7 @@ describe("QA1.2: 403 Forbidden — Permission Denied", () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
+    useAuthStore.setState({ requiresPasswordChange: false });
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { ...originalLocation, pathname: "/employees", assign: vi.fn() },
@@ -256,25 +258,27 @@ describe("QA1.2: 403 Forbidden — Permission Denied", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    useAuthStore.setState({ requiresPasswordChange: false });
     Object.defineProperty(window, "location", {
       configurable: true,
       value: originalLocation,
     });
   });
 
-  it("403 PASSWORD_CHANGE_REQUIRED (root-level error_code) → redirect /change-password, không đánh dấu _isNoPermission", async () => {
+  it("403 PASSWORD_CHANGE_REQUIRED (root-level error_code) → giữ phiên để SPA mở trang đổi mật khẩu", async () => {
     // Bài test: BE trả 403 với error_code = PASSWORD_CHANGE_REQUIRED.
-    // FE phải redirect sang /change-password, KHÔNG đánh dấu _isNoPermission
-    // để UI không hiển thị "Bạn không có quyền" sai.
+    // FE phát tín hiệu cho router chuyển trang trong SPA, KHÔNG đánh dấu
+    // _isNoPermission và KHÔNG tải lại khiến token trong bộ nhớ bị mất.
     const rejected = getRejectedHandler();
     const error = makeError(403, { error_code: "PASSWORD_CHANGE_REQUIRED" });
 
     await expect(rejected(error)).rejects.toBe(error);
-    expect(window.location.assign).toHaveBeenCalledWith(ROUTES.CHANGE_PASSWORD);
+    expect(useAuthStore.getState().requiresPasswordChange).toBe(true);
+    expect(window.location.assign).not.toHaveBeenCalled();
     expect(error._isNoPermission).toBeUndefined();
   });
 
-  it("403 PASSWORD_CHANGE_REQUIRED (nested error.code) → redirect /change-password", async () => {
+  it("403 PASSWORD_CHANGE_REQUIRED (nested error.code) → yêu cầu đổi mật khẩu", async () => {
     // Bài test: BE có thể trả error.code dạng nested (theo API_Convention.md).
     // FE phải đọc được cả 2 dạng.
     const rejected = getRejectedHandler();
@@ -283,12 +287,11 @@ describe("QA1.2: 403 Forbidden — Permission Denied", () => {
     });
 
     await expect(rejected(error)).rejects.toBe(error);
-    expect(window.location.assign).toHaveBeenCalledWith(ROUTES.CHANGE_PASSWORD);
+    expect(useAuthStore.getState().requiresPasswordChange).toBe(true);
+    expect(window.location.assign).not.toHaveBeenCalled();
   });
 
-  it("403 PASSWORD_CHANGE_REQUIRED — không redirect lặp nếu đã ở /change-password", async () => {
-    // Bài test: Nếu user đã ở trang /change-password, không redirect nữa.
-    // Rơi xuống nhánh _isNoPermission để UI xử lý.
+  it("403 PASSWORD_CHANGE_REQUIRED — không tải lại nếu đã ở /change-password", async () => {
     Object.defineProperty(window, "location", {
       configurable: true,
       value: {
@@ -303,7 +306,7 @@ describe("QA1.2: 403 Forbidden — Permission Denied", () => {
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(window.location.assign).not.toHaveBeenCalled();
-    expect(error._isNoPermission).toBe(true);
+    expect(error._isNoPermission).toBeUndefined();
   });
 
   it("403 thường (missing permission) → đánh dấu _isNoPermission, không redirect", async () => {

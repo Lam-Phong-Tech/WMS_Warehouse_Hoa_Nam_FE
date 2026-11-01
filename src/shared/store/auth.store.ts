@@ -25,6 +25,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isBootstrapped: boolean;
   bootstrapError: unknown | null;
+  requiresPasswordChange: boolean;
 
   profile: AuthProfile | null;
   permissionCodes: string[];
@@ -43,6 +44,7 @@ interface AuthState {
   setToken: (token: string) => void;
   setCurrentContext: (context: AuthContext | null) => void;
   setProfile: (me: MeResponse) => void;
+  requirePasswordChange: () => void;
   logout: () => void;
 }
 
@@ -63,6 +65,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isBootstrapped: false,
       bootstrapError: null,
+      requiresPasswordChange: false,
 
       profile: null,
       permissionCodes: [],
@@ -78,6 +81,7 @@ export const useAuthStore = create<AuthState>()(
           currentContext: contexts[0] ?? null,
           isAuthenticated: true,
           bootstrapError: null,
+          requiresPasswordChange: false,
           profile: null,
           permissionCodes: [],
           isSuperAdmin: false,
@@ -99,6 +103,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setCurrentContext: (context) => set({ currentContext: context }),
+
+      requirePasswordChange: () => set({ requiresPasswordChange: true }),
 
       setProfile: (me) => {
         // BỎ QUA khi đúng object hồ sơ đó vừa được áp dụng.
@@ -157,6 +163,7 @@ export const useAuthStore = create<AuthState>()(
           currentContext: null,
           isAuthenticated: false,
           bootstrapError: null,
+          requiresPasswordChange: false,
           profile: null,
           permissionCodes: [],
           isSuperAdmin: false,

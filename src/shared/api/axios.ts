@@ -226,11 +226,10 @@ api.interceptors.response.use(
     }
 
     if (status === 403) {
-      if (
-        getErrorCode(data) === "PASSWORD_CHANGE_REQUIRED" &&
-        window.location.pathname !== ROUTES.CHANGE_PASSWORD
-      ) {
-        window.location.assign(ROUTES.CHANGE_PASSWORD);
+      if (getErrorCode(data) === "PASSWORD_CHANGE_REQUIRED") {
+        // Keep the in-memory access token: a full-page navigation would drop it
+        // before the user can reach the password form if refresh is unavailable.
+        useAuthStore.getState().requirePasswordChange();
         return Promise.reject(error);
       }
       error._isNoPermission = true;

@@ -86,7 +86,7 @@ for (const completeRefreshProfile of [true, false]) {
       }
     });
     await page.goto("/login");
-    await page.getByLabel(/Tên đăng nhập|Username/i).fill(user.email);
+    await page.getByLabel(/Email/i).fill(user.email);
     await page.locator('input[name="password"]').fill("Fixture#Only-2026");
     await page.getByRole("button", { name: /^Đăng nhập$|^Sign in$/i }).click();
     const confirmation = page.getByRole("heading", {
@@ -120,3 +120,80 @@ for (const completeRefreshProfile of [true, false]) {
     await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
   });
 }
+
+test("a required password change keeps the login token and stays on its form", async ({
+  page,
+}) => {
+  const user = {
+    id: "first-login-user",
+    email: "first-login@example.test",
+    display_name: "First login",
+    status: "ACTIVE",
+    roles: [
+      {
+        role_id: "role-1",
+        role_code: "STAFF",
+        role_name: "Staff",
+        scope_ref: null,
+      },
+    ],
+    permissions: [],
+    warehouse_scope_ids: [],
+  };
+  let refreshCount = 0;
+  await page.route("**/api/v1/auth/**", async (route) => {
+    const action = new URL(route.request().url()).pathname.split("/").at(-1);
+    const headers = {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    };
+    if (action === "login") {
+      await route.fulfill({
+        headers,
+        json: {
+          success: true,
+          data: {
+            access_token: "first-login-access",
+            token_type: "bearer",
+            expires_in: 3600,
+            user,
+          },
+        },
+      });
+    } else if (action === "me") {
+      await route.fulfill({
+        status: 403,
+        headers,
+        json: {
+          success: false,
+          error_code: "PASSWORD_CHANGE_REQUIRED",
+          message: "Bạn phải đổi mật khẩu trước khi tiếp tục sử dụng hệ thống.",
+        },
+      });
+    } else if (action === "refresh") {
+      refreshCount++;
+      await route.fulfill({
+        status: 422,
+        headers,
+        json: {
+          success: false,
+          error_code: "BUSINESS_RULE_ERROR",
+          message: "Missing refresh cookie",
+        },
+      });
+    } else {
+      await route.fulfill({ status: 404, headers, json: { success: false } });
+    }
+  });
+
+  await page.goto("/login");
+  await page.getByLabel(/Email/i).fill(user.email);
+  await page.locator('input[name="password"]').fill("Fixture#Only-2026");
+  await page.getByRole("button", { name: /^Đăng nhập$|^Sign in$/i }).click();
+
+  await expect(page).toHaveURL(/\/change-password$/);
+  await expect(
+    page.getByRole("heading", { name: /Đổi mật khẩu|Change password/i }),
+  ).toBeVisible();
+  expect(refreshCount).toBe(0);
+});

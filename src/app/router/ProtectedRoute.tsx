@@ -47,6 +47,7 @@ export function ProtectedRoute() {
   const isBootstrapped = useAuthStore((s) => s.isBootstrapped);
   const bootstrapError = useAuthStore((s) => s.bootstrapError);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const requiresPasswordChange = useAuthStore((s) => s.requiresPasswordChange);
   const user = useAuthStore((s) => s.user);
   const contexts = useAuthStore((s) => s.contexts);
   const isProfileLoaded = useAuthStore((s) => s.isProfileLoaded);
@@ -69,6 +70,7 @@ export function ProtectedRoute() {
     );
   }
   if (!isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+  if (requiresPasswordChange) return <Navigate to={ROUTES.CHANGE_PASSWORD} replace />;
   if (!isProfileLoaded && meQuery.isError) {
     if (isAxiosError<ApiErrorResponse>(meQuery.error) && meQuery.error.response?.status === 403 &&
       getErrorCode(meQuery.error.response.data) === "PASSWORD_CHANGE_REQUIRED") {
