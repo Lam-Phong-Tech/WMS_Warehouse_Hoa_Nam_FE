@@ -28,7 +28,13 @@ vi.mock("@/shared/i18n/nav-labels", () => ({
 vi.mock("@/app/layouts/KeepAliveOutlet", () => ({
   KeepAliveOutlet: () => null,
 }));
-vi.mock("@/app/layouts/AppPageHeader", () => ({ AppPageHeader: () => null }));
+vi.mock("@/app/layouts/AppPageHeader", () => ({
+  AppPageHeader: ({ showContextBadges }: { showContextBadges?: boolean }) => (
+    <output data-testid="page-context-badges">
+      {String(showContextBadges)}
+    </output>
+  ),
+}));
 vi.mock("@/app/layouts/WarehousePausedBanner", () => ({
   WarehousePausedBanner: () => null,
 }));
@@ -91,6 +97,7 @@ vi.mock("@/shared/ui", () => ({
     sidebar,
     topbar,
     children,
+    footer,
     collapsed = false,
     sidebarHidden = false,
     sidebarWidth = 340,
@@ -107,6 +114,7 @@ vi.mock("@/shared/ui", () => ({
       )}
       {topbar}
       {children}
+      {footer}
     </div>
   ),
 }));
@@ -170,6 +178,19 @@ afterEach(() => {
 });
 
 describe("MainLayout sidebar remains stable across navigation", () => {
+  it("removes the profile header chips and footer only on the profile route", () => {
+    setup(ROUTES.PROFILE);
+    expect(screen.getByTestId("page-context-badges")).toHaveTextContent(
+      "false",
+    );
+    expect(screen.queryByRole("contentinfo")).toBeNull();
+
+    cleanup();
+    setup(ROUTES.MASTER_DATA);
+    expect(screen.getByTestId("page-context-badges")).toHaveTextContent("true");
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
+  });
+
   it.each([980, 1280, 1440])(
     "keeps the expanded width and state on every route at %ipx",
     (width) => {

@@ -180,6 +180,7 @@ export function MainLayout() {
     "--map-card-shadow": "var(--ops-shadow-card)",
   } as CSSProperties;
   const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
+  const isProfilePage = location.pathname === ROUTES.PROFILE;
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
   const hideHeaderDetails =
     location.pathname === ROUTES.AUDIT_LOGS ||
@@ -219,16 +220,18 @@ export function MainLayout() {
           />
         }
         footer={
-          /*
-           * Không còn dòng ghi công "Icons by Flaticon" ở đây: UAT TC_UI_01
-           * (09/2026) báo người dùng kho không hiểu dòng chữ tiếng Anh này là gì.
-           * Bộ icon vẫn là Flaticon Uicons (xem src/styles/hn-icon-font.css) —
-           * điều khoản ghi công của gói cần được xác nhận lại ở cấp dự án.
-           */
-          <UiFooter>
-            Hoa Nam ©{new Date().getFullYear()}
-            {" " + tUi("updatedUi.text_f23d4edc7b6e")}
-          </UiFooter>
+          isProfilePage ? null : (
+            /*
+             * Không còn dòng ghi công "Icons by Flaticon" ở đây: UAT TC_UI_01
+             * (09/2026) báo người dùng kho không hiểu dòng chữ tiếng Anh này là gì.
+             * Bộ icon vẫn là Flaticon Uicons (xem src/styles/hn-icon-font.css) —
+             * điều khoản ghi công của gói cần được xác nhận lại ở cấp dự án.
+             */
+            <UiFooter>
+              Hoa Nam ©{new Date().getFullYear()}
+              {" " + tUi("updatedUi.text_f23d4edc7b6e")}
+            </UiFooter>
+          )
         }
       >
         <Box
@@ -265,6 +268,7 @@ export function MainLayout() {
               showContextBadges={
                 location.pathname !== ROUTES.REVERSE &&
                 location.pathname !== ROUTES.NFC &&
+                !isProfilePage &&
                 !hideHeaderDetails
               }
             />

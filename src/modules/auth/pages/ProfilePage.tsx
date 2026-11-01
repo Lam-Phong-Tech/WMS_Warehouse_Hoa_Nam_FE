@@ -1,16 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import {
-  Box,
-  Stack,
-  UiAvatar,
-  UiCard,
-  UiDescriptions,
-  UiStatusBadge,
-  UiText,
-  type UiStatusTone,
-} from "@/shared/ui";
+import { Box, UiAvatar, UiCard, UiStatusBadge, UiText } from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -45,13 +36,6 @@ function statusLabel(t: TranslateFn, status?: string) {
   if (status === "INACTIVE") return t("auth.profile.statusInactive");
   if (status === "LOCKED") return t("auth.profile.statusLocked");
   return status || EMPTY_TEXT;
-}
-
-function statusTone(status?: string): UiStatusTone {
-  if (status === "ACTIVE") return "success";
-  if (status === "LOCKED") return "error";
-  if (status === "INACTIVE") return "warning";
-  return "neutral";
 }
 
 function empty(value?: string | number | null) {
@@ -114,6 +98,21 @@ export function ProfilePage() {
   const code = profile?.code ?? user?.code;
   const phone = profile?.phone ?? user?.phone;
   const status = profile?.status ?? user?.status;
+  const roleNames = isSuperAdmin
+    ? "Super Admin"
+    : roles.length > 0
+      ? roles
+          .map((role) =>
+            role.role_code
+              ? `${role.role_name} (${role.role_code})`
+              : role.role_name,
+          )
+          .join(", ")
+      : empty(profile?.role?.name ?? currentContext?.role_name);
+  const warehouseScope =
+    warehouseScopes.length > 0
+      ? warehouseScopes.join(", ")
+      : empty(currentContext?.scope_ref ?? currentContext?.warehouse_name);
 
   /** Yêu cầu #6: lịch sử thay đổi quyền/vai trò/thông tin TRÊN chính tài khoản mình. */
   const historyQuery = useQuery({
@@ -131,169 +130,156 @@ export function ProfilePage() {
   return (
     // Tiêu đề màn do header chung của shell dựng (AppPageHeader).
     <Box className="hn-settings-screen hn-profile-settings">
-      <UiCard className="hn-settings-card">
+      <UiCard className="hn-settings-card hn-profile-overview">
         <Box className="hn-profile-identity">
-          <UiAvatar
-            className="hn-profile-avatar"
-            name={displayName}
-            size="lg"
-          />
-          <Box sx={{ minWidth: 0, overflowWrap: "anywhere" }}>
-            <UiText variant="cardTitle" className="hn-profile-name">
-              {displayName}
-            </UiText>
-            {email ? (
-              <UiText variant="secondary" className="hn-settings-muted">
-                {email}
+          <Box className="hn-profile-person">
+            <UiAvatar
+              className="hn-profile-avatar"
+              name={displayName}
+              size="lg"
+            />
+            <Box sx={{ minWidth: 0, overflowWrap: "anywhere" }}>
+              <UiText variant="cardTitle" className="hn-profile-name">
+                {displayName}
               </UiText>
-            ) : null}
+              {email ? (
+                <UiText variant="secondary" className="hn-profile-email">
+                  {email}
+                </UiText>
+              ) : null}
+            </Box>
           </Box>
+          {status ? (
+            <span
+              className="hn-profile-state"
+              data-state={status.toLowerCase()}
+            >
+              <span className="hn-profile-state-dot" aria-hidden="true" />
+              {statusLabel(t, status)}
+            </span>
+          ) : null}
         </Box>
 
-        <Box className="hn-settings-descriptions">
-          <UiDescriptions
-            columns={2}
-            items={[
-              { label: t("auth.profile.fullName"), value: displayName },
-              { label: t("auth.profile.username"), value: empty(username) },
-              { label: t("auth.profile.employeeCode"), value: empty(code) },
-              { label: t("auth.profile.phone"), value: empty(phone) },
-              { label: t("auth.fields.email"), value: empty(email) },
-              {
-                label: t("auth.profile.status"),
-                value: (
-                  <UiStatusBadge
-                    tone={statusTone(status)}
-                    data-settings-tone={statusTone(status)}
-                    label={statusLabel(t, status)}
-                  />
-                ),
-              },
-              {
-                label: t("auth.profile.roles"),
-                value: isSuperAdmin ? (
-                  <UiStatusBadge
-                    tone="warning"
-                    data-settings-tone="warning"
-                    label="Super Admin"
-                  />
-                ) : roles.length > 0 ? (
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    sx={{ flexWrap: "wrap", rowGap: 1 }}
-                  >
-                    {roles.map((role) => (
-                      <UiStatusBadge
-                        key={role.role_id}
-                        tone="neutral"
-                        data-settings-tone="neutral"
-                        label={`${role.role_name}${
-                          role.role_code ? ` (${role.role_code})` : ""
-                        }`}
-                      />
-                    ))}
-                  </Stack>
-                ) : (
-                  empty(profile?.role?.name ?? currentContext?.role_name)
-                ),
-              },
-              {
-                label: t("auth.profile.warehouseScope"),
-                value:
-                  warehouseScopes.length > 0 ? (
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{ flexWrap: "wrap", rowGap: 1 }}
-                    >
-                      {warehouseScopes.map((scope) => (
-                        <UiStatusBadge
-                          key={scope}
-                          tone="neutral"
-                          data-settings-tone="neutral"
-                          label={scope}
-                        />
-                      ))}
-                    </Stack>
-                  ) : (
-                    empty(
-                      currentContext?.scope_ref ??
-                        currentContext?.warehouse_name,
-                    )
-                  ),
-              },
-              {
-                label: t("auth.profile.currentContext"),
-                value: empty(currentContext?.role_name),
-              },
-              {
-                label: t("auth.profile.grantedPermissions"),
-                value: permissionCodes.length,
-              },
-            ]}
-          />
-        </Box>
+        <div className="hn-profile-details">
+          <section
+            className="hn-profile-detail-group"
+            aria-labelledby="hn-profile-account-heading"
+          >
+            <h2 id="hn-profile-account-heading">
+              {t("auth.profile.accountDetails")}
+            </h2>
+            <dl>
+              <div>
+                <dt>{t("auth.profile.username")}</dt>
+                <dd>{empty(username)}</dd>
+              </div>
+              <div>
+                <dt>{t("auth.profile.employeeCode")}</dt>
+                <dd>{empty(code)}</dd>
+              </div>
+              <div>
+                <dt>{t("auth.profile.phone")}</dt>
+                <dd>{empty(phone)}</dd>
+              </div>
+            </dl>
+          </section>
+          <section
+            className="hn-profile-detail-group"
+            aria-labelledby="hn-profile-access-heading"
+          >
+            <h2 id="hn-profile-access-heading">
+              {t("auth.profile.accessDetails")}
+            </h2>
+            <dl>
+              <div>
+                <dt>{t("auth.profile.roles")}</dt>
+                <dd>{roleNames}</dd>
+              </div>
+              <div>
+                <dt>{t("auth.profile.currentContext")}</dt>
+                <dd>{empty(currentContext?.role_name)}</dd>
+              </div>
+              <div>
+                <dt>{t("auth.profile.warehouseScope")}</dt>
+                <dd>{warehouseScope}</dd>
+              </div>
+              <div>
+                <dt>{t("auth.profile.grantedPermissions")}</dt>
+                <dd>{permissionCodes.length}</dd>
+              </div>
+            </dl>
+          </section>
+        </div>
       </UiCard>
 
       {/* Trạng thái lấy từ tài khoản hiện tại, kể cả sau khi xác nhận ở /profile/mfa. */}
-      <UiCard className="hn-settings-card" title={t("auth.mfa.setupTitle")}>
-        <Stack spacing="12px">
-          {mfaStatus.data?.enabled === true ? (
-            <>
-              <Box>
-                <UiStatusBadge
-                  tone="success"
-                  label={t("auth.mfa.statusEnabled")}
-                />
-              </Box>
-              <UiText className="hn-settings-muted">
-                {t("auth.mfa.profileEnabledDescription")}
-              </UiText>
-              <Box>
-                <Link className="hn-profile-mfa-link" to={ROUTES.MFA_SETUP}>
-                  {t("auth.mfa.viewDetails")}
-                </Link>
-              </Box>
-            </>
-          ) : mfaStatus.isPending ? (
-            <UiText className="hn-settings-muted">
-              {t("auth.mfa.statusLoading")}
-            </UiText>
-          ) : mfaStatus.isError ? (
-            <UiText className="hn-settings-muted">
-              {t("auth.mfa.statusLoadError")}
-            </UiText>
-          ) : (
-            <>
-              <UiText className="hn-settings-muted">
-                {t("auth.mfa.setupSubtitle")}
-              </UiText>
-              <Box>
-                <Link className="hn-profile-mfa-link" to={ROUTES.MFA_SETUP}>
-                  {t("auth.mfa.startEnroll")}
-                </Link>
-              </Box>
-            </>
-          )}
-        </Stack>
+      <UiCard
+        className="hn-settings-card hn-profile-security"
+        title={t("auth.mfa.setupTitle")}
+        action={
+          mfaStatus.data ? (
+            <span
+              className="hn-profile-security-state"
+              data-state={
+                mfaStatus.data.enabled
+                  ? "enabled"
+                  : mfaStatus.data.pending
+                    ? "pending"
+                    : "disabled"
+              }
+            >
+              <span className="hn-profile-state-dot" aria-hidden="true" />
+              {mfaStatus.data.enabled
+                ? t("auth.mfa.statusEnabled")
+                : mfaStatus.data.pending
+                  ? t("auth.mfa.statusPending")
+                  : t("auth.mfa.statusDisabled")}
+            </span>
+          ) : null
+        }
+      >
+        <div className="hn-profile-security-content">
+          <p>
+            {mfaStatus.isPending
+              ? t("auth.mfa.statusLoading")
+              : mfaStatus.isError
+                ? t("auth.mfa.statusLoadError")
+                : mfaStatus.data?.enabled
+                  ? t("auth.mfa.profileEnabledDescription")
+                  : t("auth.mfa.setupSubtitle")}
+          </p>
+          {mfaStatus.data ? (
+            <Link className="hn-profile-mfa-link" to={ROUTES.MFA_SETUP}>
+              {mfaStatus.data.enabled
+                ? t("auth.mfa.viewDetails")
+                : t("auth.mfa.startEnroll")}
+              <span aria-hidden="true">→</span>
+            </Link>
+          ) : null}
+        </div>
       </UiCard>
 
       <UiCard
-        className="hn-settings-card"
+        className="hn-settings-card hn-profile-history"
         title={t("auth.profile.historyTitle")}
       >
-        <ResponsiveDataTable<MyPermissionHistoryEntry>
-          columns={historyColumns}
-          headerCellStyle={{
-            background: "var(--settings-pale)",
-            color: "var(--settings-ink)",
-          }}
-          rows={historyRows}
-          rowKey={(row) => row.id}
-          loading={historyQuery.isLoading}
-          emptyText={t("auth.profile.historyEmpty")}
-        />
+        {historyQuery.isSuccess && historyRows.length === 0 ? (
+          <p className="hn-profile-history-empty">
+            {t("auth.profile.historyEmpty")}
+          </p>
+        ) : (
+          <ResponsiveDataTable<MyPermissionHistoryEntry>
+            columns={historyColumns}
+            headerCellStyle={{
+              background: "var(--settings-pale)",
+              color: "var(--settings-ink)",
+            }}
+            rows={historyRows}
+            rowKey={(row) => row.id}
+            loading={historyQuery.isLoading}
+            emptyText={t("auth.profile.historyEmpty")}
+          />
+        )}
       </UiCard>
     </Box>
   );

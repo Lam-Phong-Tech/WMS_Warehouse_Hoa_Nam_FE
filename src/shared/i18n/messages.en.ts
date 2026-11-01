@@ -4887,6 +4887,8 @@ export const MESSAGES_EN: MessageTree = {
     },
     profile: {
       defaultUserName: "User",
+      accountDetails: "Account details",
+      accessDetails: "Access",
       actionCreate: "Create account",
       actionUpdate: "Update information",
       actionAssignRoles: "Assign roles",
@@ -4907,7 +4909,7 @@ export const MESSAGES_EN: MessageTree = {
       warehouseScope: "Warehouse scope",
       currentContext: "Current context",
       grantedPermissions: "Granted permissions",
-      historyTitle: "Permission/role change history on my account",
+      historyTitle: "Role and permission history",
       historyEmpty: "No changes recorded yet.",
     },
     context: {

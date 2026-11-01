@@ -1,56 +1,6 @@
-/* Profile accents share the Operations Overview palette; cards remain the dominant surface. */
-.hn-profile-settings .hn-profile-identity {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.hn-profile-settings .hn-profile-avatar.MuiAvatar-root {
-  flex: none;
-  background: var(--settings-pale);
-  color: var(--settings-link);
-  border: 1px solid var(--settings-line);
-}
-
-.hn-profile-settings .hn-profile-name {
-  color: var(--settings-ink);
-  font-size: 18px;
-  line-height: 26px;
-  font-weight: 600;
-}
-
-.hn-profile-settings .hn-profile-mfa-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--ops-control-height);
-  padding: 8px 16px;
-  border: 1px solid var(--settings-line);
-  border-radius: 6px;
-  background: var(--settings-pale);
-  color: var(--settings-cta);
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
-  text-decoration: none;
-  transition:
-    background-color 0.16s ease,
-    border-color 0.16s ease;
-}
-
-.hn-profile-settings .hn-profile-mfa-link:hover {
-  border-color: var(--settings-link);
-  background: color-mix(
-    in srgb,
-    var(--settings-link) 12%,
-    var(--settings-surface)
-  );
-}
-
-.hn-profile-settings .hn-profile-mfa-link:focus-visible {
-  outline: 2px solid var(--settings-link);
-  outline-offset: 3px;
+.hn-profile-settings {
+  max-width: 1180px;
+  gap: 16px;
 }
 
 .hn-profile-settings .MuiCard-root {
@@ -61,12 +11,216 @@
   box-shadow: none;
 }
 
+.hn-profile-identity,
+.hn-profile-person {
+  display: flex;
+  align-items: center;
+}
+
+.hn-profile-identity {
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 22px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--settings-line);
+}
+
+.hn-profile-person {
+  gap: 14px;
+  min-width: 0;
+}
+
+.hn-profile-settings .hn-profile-avatar.MuiAvatar-root {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  border: 1px solid var(--settings-line);
+  background: var(--settings-pale);
+  color: var(--settings-ink);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.hn-profile-settings .hn-profile-name {
+  color: var(--settings-ink);
+  font-size: 18px;
+  line-height: 25px;
+  font-weight: 650;
+}
+
+.hn-profile-settings .hn-profile-email {
+  color: var(--settings-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.hn-profile-state,
+.hn-profile-security-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--settings-muted);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hn-profile-state-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--settings-muted);
+}
+
+.hn-profile-state[data-state="active"],
+.hn-profile-security-state[data-state="enabled"] {
+  color: var(--settings-ink);
+}
+
+.hn-profile-state[data-state="active"] .hn-profile-state-dot,
+.hn-profile-security-state[data-state="enabled"] .hn-profile-state-dot {
+  background: var(--ops-success);
+}
+
+.hn-profile-state[data-state="locked"] .hn-profile-state-dot {
+  background: var(--ops-danger);
+}
+
+.hn-profile-state[data-state="inactive"] .hn-profile-state-dot {
+  background: var(--ops-warning);
+}
+
+.hn-profile-security-state[data-state="pending"] .hn-profile-state-dot {
+  background: var(--ops-warning);
+}
+
+.hn-profile-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 40px;
+}
+
+.hn-profile-detail-group + .hn-profile-detail-group {
+  padding-left: 40px;
+  border-left: 1px solid var(--settings-line);
+}
+
+.hn-profile-detail-group h2 {
+  margin: 0 0 12px;
+  color: var(--settings-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 18px;
+  text-transform: uppercase;
+}
+
+.hn-profile-detail-group dl {
+  margin: 0;
+}
+
+.hn-profile-detail-group dl > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 38%) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 9px 0;
+}
+
+.hn-profile-detail-group dt {
+  color: var(--settings-muted);
+  font-size: 13px;
+}
+
+.hn-profile-detail-group dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--settings-ink);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.hn-profile-security > .MuiBox-root:last-child {
+  padding-top: 10px;
+}
+
+.hn-profile-security-content {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.hn-profile-security-content p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--settings-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.hn-profile-settings .hn-profile-mfa-link {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 7px;
+  color: var(--settings-cta);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hn-profile-settings .hn-profile-mfa-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hn-profile-settings .hn-profile-mfa-link:focus-visible {
+  outline: 2px solid var(--settings-link);
+  outline-offset: 4px;
+}
+
 .hn-profile-settings .MuiTypography-caption {
   color: var(--settings-muted);
   font-size: 12px;
 }
 
-.hn-profile-settings .MuiBox-root:has(> table) {
-  border-color: var(--settings-line);
-  border-radius: 6px;
+.hn-profile-history-empty {
+  margin: 0;
+  color: var(--settings-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 800px) {
+  .hn-profile-details {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .hn-profile-detail-group + .hn-profile-detail-group {
+    padding: 18px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--settings-line);
+  }
+
+  .hn-profile-security-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .hn-profile-identity {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hn-profile-detail-group dl > div {
+    grid-template-columns: minmax(100px, 42%) minmax(0, 1fr);
+  }
 }

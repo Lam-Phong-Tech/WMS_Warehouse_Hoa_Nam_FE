@@ -4880,6 +4880,8 @@ export const MESSAGES_VI = {
     },
     profile: {
       defaultUserName: "Người dùng",
+      accountDetails: "Thông tin tài khoản",
+      accessDetails: "Quyền truy cập",
       actionCreate: "Tạo tài khoản",
       actionUpdate: "Cập nhật thông tin",
       actionAssignRoles: "Gán vai trò",
@@ -4900,7 +4902,7 @@ export const MESSAGES_VI = {
       warehouseScope: "Phạm vi kho",
       currentContext: "Ngữ cảnh hiện tại",
       grantedPermissions: "Quyền được cấp",
-      historyTitle: "Lịch sử thay đổi quyền/vai trò trên tài khoản của tôi",
+      historyTitle: "Lịch sử quyền và vai trò",
       historyEmpty: "Chưa có thay đổi nào được ghi nhận.",
     },
     context: {

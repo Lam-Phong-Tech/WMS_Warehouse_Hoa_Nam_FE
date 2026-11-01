@@ -5031,6 +5031,8 @@ export const MESSAGES_ZH: MessageTree = {
     },
     "profile": {
       "defaultUserName": "用户",
+      "accountDetails": "账户信息",
+      "accessDetails": "访问权限",
       "actionCreate": "创建帐户",
       "actionUpdate": "更新信息",
       "actionAssignRoles": "分配角色",
@@ -5051,7 +5053,7 @@ export const MESSAGES_ZH: MessageTree = {
       "warehouseScope": "仓库范围",
       "currentContext": "当前上下文",
       "grantedPermissions": "已授予权限",
-      "historyTitle": "我的帐户的权限/角色更改历史记录",
+      "historyTitle": "角色与权限记录",
       "historyEmpty": "尚未记录任何更改。"
     },
     "context": {
