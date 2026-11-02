@@ -858,13 +858,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <DownOutlined aria-hidden="true" />
           </button>
           <div id="hn-sku-filters-content" hidden={!filtersOpen}>
-            <form
-              className="hn-sku-filters"
-              onSubmit={(event) => {
-                event.preventDefault();
-                refreshList();
-              }}
-            >
+            <div className="hn-sku-filters">
               <div className="hn-sku-filter hn-sku-filter-search">
                 <label htmlFor="sku-list-search">
                   {copy("Tìm kiếm", "Search")}
@@ -952,25 +946,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   options={statusOptions(t)}
                 />
               </div>
-              <div className="hn-sku-filter-actions">
-                <ActionButton
-                  kind="filter"
-                  icon={<span />}
-                  className="hn-sku-primary"
-                  type="submit"
-                  loading={query.isFetching && !query.isLoading}
-                  disabled={offline}
-                >
-                  {copy("Áp dụng", "Apply")}
-                </ActionButton>
-                <ActionButton
-                  kind="reset"
-                  icon={<span />}
-                  onClick={resetFilters}
-                >
-                  {copy("Đặt lại", "Reset")}
-                </ActionButton>
-              </div>
               <FormControlLabel
                 className="hn-sku-pending-option"
                 control={
@@ -984,7 +959,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 }
                 label={t("masterData.sku.pendingInfo")}
               />
-            </form>
+            </div>
           </div>
         </section>
         {hasFilters ? (
@@ -1436,33 +1411,33 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         </div>
                       ))}
                     </dl>
-                    {canPublish ? (
-                      <ActionButton
-                        kind={
-                          viewing.published_to_app ? "unpublish" : "publish"
-                        }
-                        className="hn-sku-detail-publish"
-                        disabled={
-                          publishMutation.isPending ||
-                          (!viewing.published_to_app &&
-                            viewing.status !== "ACTIVE")
-                        }
-                        title={
-                          !viewing.published_to_app &&
-                          viewing.status !== "ACTIVE"
-                            ? t("masterData.sku.errPublishInactive")
-                            : undefined
-                        }
-                        onClick={() => void togglePublish(viewing)}
-                      >
-                        {viewing.published_to_app
-                          ? t("masterData.sku.unpublishAction")
-                          : t("masterData.sku.publishAction")}
-                      </ActionButton>
-                    ) : null}
                   </section>
                 </div>
                 <footer className="hn-sku-detail-footer">
+                  {canPublish ? (
+                    <ActionButton
+                      kind={
+                        viewing.published_to_app ? "unpublish" : "publish"
+                      }
+                      className="hn-sku-detail-publish"
+                      disabled={
+                        publishMutation.isPending ||
+                        (!viewing.published_to_app &&
+                          viewing.status !== "ACTIVE")
+                      }
+                      title={
+                        !viewing.published_to_app &&
+                        viewing.status !== "ACTIVE"
+                          ? t("masterData.sku.errPublishInactive")
+                          : undefined
+                      }
+                      onClick={() => void togglePublish(viewing)}
+                    >
+                      {viewing.published_to_app
+                        ? t("masterData.sku.unpublishConfirm")
+                        : t("masterData.sku.publishConfirm")}
+                    </ActionButton>
+                  ) : null}
                   {canManage ? (
                     <ActionButton
                       kind="edit"

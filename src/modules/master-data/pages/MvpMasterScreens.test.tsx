@@ -128,7 +128,12 @@ describe("API-backed MVP master screens", () => {
       "sku-list-search",
     ) as HTMLInputElement;
 
+    expect(screen.queryByRole("button", { name: "Áp dụng" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Đặt lại" })).toBeNull();
     fireEvent.change(search, { target: { value: "Máy khoan" } });
+    expect(
+      screen.getByRole("button", { name: "Xóa bộ lọc: Máy khoan" }),
+    ).toBeInTheDocument();
     fireEvent.click(overviewToggle);
     expect(overviewToggle).toHaveAttribute("aria-expanded", "false");
     expect(overview).not.toBeVisible();
@@ -265,9 +270,16 @@ describe("API-backed MVP master screens", () => {
       }),
     );
     const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
+    const footer = drawer.querySelector(".hn-sku-detail-footer");
+    expect(footer).not.toBeNull();
+    expect(
+      within(footer as HTMLElement).getByRole("button", {
+        name: "Đưa lên ứng dụng",
+      }),
+    ).toBeInTheDocument();
     fireEvent.click(
       within(drawer).getByRole("button", {
-        name: "Đưa SKU lên ứng dụng phân vùng",
+        name: "Đưa lên ứng dụng",
       }),
     );
     const confirm = screen.getByRole("dialog", {

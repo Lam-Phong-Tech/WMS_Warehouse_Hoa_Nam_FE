@@ -155,6 +155,15 @@ describe("CatalogMasterScreen interactions", () => {
     renderScreen();
     await screen.findByText(RECORD.code);
 
+    expect(document.querySelector(".hn-catalog-table-heading")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách đóng gói dùng khi tạo SKU.",
+      ),
+    ).not.toBeInTheDocument();
+    const filters = screen.getByRole("region", { name: "Tìm kiếm và lọc" });
+    expect(within(filters).queryByRole("button", { name: "Cập nhật" })).toBeNull();
+    expect(within(filters).queryByRole("button", { name: "Đặt lại" })).toBeNull();
     await user.type(screen.getByRole("textbox", { name: "Tìm hãng" }), "dong");
     await waitFor(() =>
       expectListRequest("BRAND", { keyword: "dong", status: "", page: 1 }),

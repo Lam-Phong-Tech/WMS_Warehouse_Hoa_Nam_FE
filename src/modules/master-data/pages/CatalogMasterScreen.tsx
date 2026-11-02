@@ -588,12 +588,6 @@ export function CatalogMasterScreen() {
       <header className="hn-catalog-header">
         <div>
           <h1>{text("Danh mục sản phẩm", "Product catalog")}</h1>
-          <p>
-            {text(
-              "Hãng, nhóm hàng, mẫu sản phẩm, nguồn điện và quy cách đóng gói dùng khi tạo SKU.",
-              "Brands, categories, models, power sources and packaging used to create SKUs.",
-            )}
-          </p>
         </div>
         <div className="hn-catalog-header-actions">
           {canManage ? (
@@ -704,19 +698,6 @@ export function CatalogMasterScreen() {
                 ]}
               />
             </div>
-            <div className="hn-catalog-filter-actions">
-              <ActionButton
-                className="hn-catalog-primary"
-                kind="refresh"
-                loading={listQuery.isFetching}
-                onClick={() => void listQuery.refetch()}
-              >
-                {text("Cập nhật", "Refresh")}
-              </ActionButton>
-              <ActionButton kind="reset" onClick={resetFilters}>
-                {text("Đặt lại", "Reset")}
-              </ActionButton>
-            </div>
           </div>
         </section>
       )}
@@ -769,35 +750,6 @@ export function CatalogMasterScreen() {
         <CatalogFeedback {...feedback} />
       ) : (
         <UiCard disablePadding className="hn-catalog-table-card">
-          <div className="hn-catalog-table-heading">
-            <h2>
-              {activeTab.label}
-              <span className="hn-catalog-count">
-                {listQuery.isLoading
-                  ? "—"
-                  : pagination.total.toLocaleString(
-                      language === "en"
-                        ? "en-US"
-                        : language === "zh"
-                          ? "zh-CN"
-                          : "vi-VN",
-                    )}
-              </span>
-            </h2>
-            <span className="hn-catalog-updated">
-              {listQuery.dataUpdatedAt > 0
-                ? text("Cập nhật: ", "Updated: ") +
-                  new Date(listQuery.dataUpdatedAt).toLocaleTimeString(
-                    language === "en"
-                      ? "en-US"
-                      : language === "zh"
-                        ? "zh-CN"
-                        : "vi-VN",
-                    { hour: "2-digit", minute: "2-digit" },
-                  )
-                : ""}
-            </span>
-          </div>
           <div className="hn-catalog-table-wrap">
             {listQuery.isLoading && !offline ? (
               <div

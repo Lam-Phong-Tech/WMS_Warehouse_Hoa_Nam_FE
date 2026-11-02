@@ -288,8 +288,7 @@
 .hn-sku-filters {
   display: grid;
   grid-template-columns:
-    minmax(230px, 2fr) repeat(3, minmax(135px, 1fr))
-    minmax(185px, 1.2fr);
+    minmax(230px, 2fr) repeat(3, minmax(135px, 1fr));
   gap: 12px 16px;
   padding: 14px 16px;
   align-items: start;
@@ -348,23 +347,6 @@
 }
 .hn-sku-screen .MuiSelect-icon {
   color: var(--sku-muted);
-}
-.hn-sku-filter-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-.hn-sku-filter-actions .MuiButton-root {
-  flex: 1;
-}
-.hn-sku-filter-actions .MuiButton-startIcon:has(span:empty) {
-  display: none;
-}
-.hn-sku-filter-actions > .MuiButton-root:last-child {
-  background: transparent;
-}
-.hn-sku-filter-actions > .MuiButton-root:last-child:hover {
-  background: var(--sku-pale);
 }
 .hn-sku-pending-option.MuiFormControlLabel-root {
   grid-column: 1 / -1;
@@ -671,9 +653,6 @@
   .hn-sku-filter-search {
     grid-column: 1 / -1;
   }
-  .hn-sku-filter-actions {
-    margin-top: 24px;
-  }
   .hn-sku-overview {
     grid-template-columns: 230px minmax(0, 1fr);
     gap: 20px;
@@ -738,10 +717,6 @@
   .hn-sku-filters {
     gap: 10px;
     padding: 12px;
-  }
-  .hn-sku-filter-actions {
-    grid-column: 1 / -1;
-    margin-top: 0;
   }
   .hn-sku-filter:nth-child(4) {
     grid-column: 1 / -1;
@@ -951,11 +926,13 @@
   overflow-wrap: anywhere;
 }
 .hn-sku-detail-publish {
-  margin-top: 22px !important;
+  margin-right: auto !important;
 }
 .hn-sku-detail-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 16px 25px;
   border-top: 1px solid var(--sku-line);
