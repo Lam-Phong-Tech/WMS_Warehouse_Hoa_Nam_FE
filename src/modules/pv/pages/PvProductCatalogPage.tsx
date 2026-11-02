@@ -36,13 +36,16 @@ import {
 } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { SearchInput } from "@/shared/components";
-import { ActionButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import {
+  ActionButton,
+  RowActionButton,
+  RowActionGroup,
+} from "@/shared/components/actions";
 import {
   AppstoreOutlined,
   CameraOutlined,
   DownOutlined,
   EyeOutlined,
-  ReloadOutlined,
   UnorderedListOutlined,
 } from "@/shared/components/icons";
 import {
@@ -403,6 +406,7 @@ export function PvProductCatalogPage() {
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
   const [overviewOpen, setOverviewOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   // Kiểu hiển thị là lựa chọn của PHIÊN LÀM VIỆC, không nằm trong bộ lọc: đổi
   // qua dạng hộp không được đụng tới trang / từ khoá đang xem.
   const [view, setView] = useState<PvCatalogView>("table");
@@ -740,13 +744,6 @@ export function PvProductCatalogPage() {
     (row) => (row.images?.length ?? 0) === 0,
   ).length;
 
-  function resetFilters() {
-    setKeyword("");
-    setIndustryFilter(FILTER_ALL);
-    setPublishedFilter(FILTER_ALL);
-    setPage(1);
-  }
-
   const statReady = profiles.data !== undefined;
   const shown = visibleRows.filter((row) => row.published).length;
   const stats = [
@@ -790,12 +787,6 @@ export function PvProductCatalogPage() {
           <h1 id="pv-catalog-title">
             {copy("Sản phẩm trên App PV", "App PV products")}
           </h1>
-          <p>
-            {copy(
-              "Quản lý danh mục sản phẩm hiển thị trên App Preview",
-              "Manage the products displayed in App Preview",
-            )}
-          </p>
         </div>
         <div className="pv-catalog-heading-actions">
           <UiButton
@@ -825,7 +816,10 @@ export function PvProductCatalogPage() {
             {copy("Tổng quan danh mục", "Catalog overview")}
           </h2>
           <PvCatalogOverviewInfo
-            label={copy("Thông tin tổng quan danh mục", "Catalog overview information")}
+            label={copy(
+              "Thông tin tổng quan danh mục",
+              "Catalog overview information",
+            )}
             scopeText={copy(
               "Theo trạng thái hiển thị trên App PV · Thống kê trạng thái trong trang hiện tại",
               "App PV visibility · Status counts on the current page",
@@ -887,114 +881,82 @@ export function PvProductCatalogPage() {
       </section>
 
       <section
-        className="pv-catalog-panel pv-catalog-list-panel"
-        aria-labelledby="pv-catalog-list-title"
+        className="pv-catalog-panel pv-catalog-filter-panel"
+        aria-label={copy("Bộ lọc tìm kiếm", "Search filters")}
       >
-        <div className="pv-catalog-list-heading">
-          <h2 id="pv-catalog-list-title">
-            {copy("Danh sách sản phẩm", "Product list")}{" "}
-            <span className="pv-catalog-count">
-              {statReady
-                ? pagination.total.toLocaleString(
-                    language === "vi" ? "vi-VN" : "en-US",
-                  )
-                : "—"}
-            </span>
-          </h2>
-          <UiButton
-            appearance="text"
-            className="pv-catalog-refresh"
-            endIcon={<ReloadOutlined />}
-            disabled={profiles.isFetching}
-            onClick={() => void profiles.refetch()}
-            aria-label={copy(
-              "Cập nhật danh sách sản phẩm",
-              "Refresh product list",
-            )}
-          >
-            {profiles.isFetching
-              ? copy("Đang cập nhật…", "Refreshing…")
-              : copy("Cập nhật mới nhất", "Refresh")}
-          </UiButton>
-        </div>
-        <form
-          className="pv-catalog-filters"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setPage(1);
-            if (page === 1) void profiles.refetch();
-          }}
+        <button
+          type="button"
+          className="pv-catalog-filter-toggle"
+          aria-expanded={filtersOpen}
+          aria-controls="pv-catalog-filters-content"
+          onClick={() => setFiltersOpen((current) => !current)}
         >
-          <div className="pv-catalog-search">
-            <label htmlFor="pv-catalog-search-input">
-              {copy("Tìm kiếm", "Search")}
-            </label>
-            <SearchInput
-              id="pv-catalog-search-input"
-              width="100%"
-              value={keyword}
-              onChange={(next) => applyFilter(() => setKeyword(next))}
-              placeholder={copy(
-                "Tên sản phẩm, mã sản phẩm hoặc SKU...",
-                "Product name, product code or SKU...",
-              )}
-              data-testid="pv-catalog-search"
-            />
+          <span>{copy("Bộ lọc tìm kiếm", "Search filters")}</span>
+          <DownOutlined aria-hidden="true" />
+        </button>
+        <div id="pv-catalog-filters-content" hidden={!filtersOpen}>
+          <div className="pv-catalog-filters">
+            <div className="pv-catalog-search">
+              <label htmlFor="pv-catalog-search-input">
+                {copy("Tìm kiếm", "Search")}
+              </label>
+              <SearchInput
+                id="pv-catalog-search-input"
+                width="100%"
+                value={keyword}
+                onChange={(next) => applyFilter(() => setKeyword(next))}
+                placeholder={copy(
+                  "Tên sản phẩm, mã sản phẩm hoặc SKU...",
+                  "Product name, product code or SKU...",
+                )}
+                data-testid="pv-catalog-search"
+              />
+            </div>
+            <div className="pv-catalog-filter">
+              <label id="pv-catalog-industry-label">
+                {copy("Nhóm sản phẩm", "Product group")}
+              </label>
+              <UiSelect
+                value={industryFilter}
+                onChange={(next) => applyFilter(() => setIndustryFilter(next))}
+                aria-label={t("pv.admin.industryFilterAria")}
+                minWidth={0}
+                fullWidth
+                menuClassName="pv-catalog-menu"
+                options={[
+                  { value: FILTER_ALL, label: copy("Tất cả", "All") },
+                  ...industryOptions,
+                ]}
+                data-testid="pv-catalog-industry-filter"
+              />
+            </div>
+            <div className="pv-catalog-filter">
+              <label id="pv-catalog-published-label">
+                {copy("Trạng thái hiển thị", "Visibility")}
+              </label>
+              <UiSelect
+                value={publishedFilter}
+                onChange={(next) => applyFilter(() => setPublishedFilter(next))}
+                aria-label={t("pv.admin.publishedFilterAria")}
+                minWidth={0}
+                fullWidth
+                menuClassName="pv-catalog-menu"
+                options={[
+                  { value: FILTER_ALL, label: copy("Tất cả", "All") },
+                  { value: "true", label: t("pv.admin.publishedShown") },
+                  { value: "false", label: t("pv.admin.publishedHidden") },
+                ]}
+                data-testid="pv-catalog-published-filter"
+              />
+            </div>
           </div>
-          <div className="pv-catalog-filter">
-            <label id="pv-catalog-industry-label">
-              {copy("Nhóm sản phẩm", "Product group")}
-            </label>
-            <UiSelect
-              value={industryFilter}
-              onChange={(next) => applyFilter(() => setIndustryFilter(next))}
-              aria-label={t("pv.admin.industryFilterAria")}
-              minWidth={0}
-              fullWidth
-              menuClassName="pv-catalog-menu"
-              options={[
-                { value: FILTER_ALL, label: copy("Tất cả", "All") },
-                ...industryOptions,
-              ]}
-              data-testid="pv-catalog-industry-filter"
-            />
-          </div>
-          <div className="pv-catalog-filter">
-            <label id="pv-catalog-published-label">
-              {copy("Trạng thái hiển thị", "Visibility")}
-            </label>
-            <UiSelect
-              value={publishedFilter}
-              onChange={(next) => applyFilter(() => setPublishedFilter(next))}
-              aria-label={t("pv.admin.publishedFilterAria")}
-              minWidth={0}
-              fullWidth
-              menuClassName="pv-catalog-menu"
-              options={[
-                { value: FILTER_ALL, label: copy("Tất cả", "All") },
-                { value: "true", label: t("pv.admin.publishedShown") },
-                { value: "false", label: t("pv.admin.publishedHidden") },
-              ]}
-              data-testid="pv-catalog-published-filter"
-            />
-          </div>
-          <div className="pv-catalog-filter-actions">
-            <UiButton
-              type="submit"
-              className="pv-catalog-apply"
-              disabled={profiles.isFetching}
-            >
-              {copy("Áp dụng", "Apply")}
-            </UiButton>
-            <UiButton
-              appearance="text"
-              className="pv-catalog-reset"
-              onClick={resetFilters}
-            >
-              {copy("Đặt lại", "Reset")}
-            </UiButton>
-          </div>
-        </form>
+        </div>
+      </section>
+
+      <section
+        className="pv-catalog-panel pv-catalog-list-panel"
+        aria-label={copy("Danh sách sản phẩm", "Product list")}
+      >
         <div
           className="pv-catalog-view-tabs"
           role="tablist"
@@ -1115,7 +1077,9 @@ export function PvProductCatalogPage() {
                     <RowActionButton
                       kind={row.published ? "unpublish" : "publish"}
                       aria-label={`${copy(
-                        row.published ? "Ẩn khỏi App PV" : "Hiển thị trên App PV",
+                        row.published
+                          ? "Ẩn khỏi App PV"
+                          : "Hiển thị trên App PV",
                         row.published ? "Hide from App PV" : "Show in App PV",
                       )}: ${row.display_name}`}
                       disabled={!canPublish || setPublished.isPending}

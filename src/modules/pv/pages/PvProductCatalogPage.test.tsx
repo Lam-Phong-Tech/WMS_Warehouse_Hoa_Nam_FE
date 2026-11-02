@@ -108,6 +108,32 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     getMvpSkusMock.mockReset().mockResolvedValue({ data: [], meta: {} });
   });
 
+  it("keeps the product filters while omitting the marked heading, description, and buttons", async () => {
+    signInWith(["pv.master.manage", "pv.publish"]);
+    renderWithProviders(<PvProductCatalogPage />);
+
+    expect(await screen.findByTestId("pv-catalog-search")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("pv-catalog-industry-filter"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("pv-catalog-published-filter"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Quản lý danh mục sản phẩm hiển thị trên App Preview"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Danh sách sản phẩm")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Cập nhật danh sách sản phẩm" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("vẽ lưới thẻ sản phẩm kèm ảnh đại diện", async () => {
     signInWith(["pv.master.manage", "pv.publish"]);
 
@@ -208,7 +234,9 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
 
     fireEvent.click(await screen.findByTestId("pv-catalog-add"));
 
-    expect(await screen.findByTestId("pv-catalog-sku-picker")).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByTestId("pv-catalog-sku-picker")).toBeVisible(),
+    );
     expect(screen.queryByLabelText(/thứ tự hiển thị/i)).not.toBeInTheDocument();
   });
 

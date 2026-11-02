@@ -180,7 +180,9 @@ describe("MST-PV-01 · catalog interactions", () => {
     await screen.findByRole("table");
 
     const location = screen.getByLabelText("Đường dẫn hiện tại");
-    expect(screen.queryByRole("button", { name: "Mở cấu hình kho" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Mở cấu hình kho" }),
+    ).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Xem trước App PV" }));
     expect(location).toHaveTextContent(/^\/pv$/);
@@ -212,7 +214,32 @@ describe("MST-PV-01 · catalog interactions", () => {
     expect(stat).toBeVisible();
   });
 
-  it("applies filters immediately and resets search, visibility, group and page together", async () => {
+  it("shows search filters in a separate collapsible panel above the product list", async () => {
+    renderWithProviders(<PvProductCatalogPage />);
+    const table = await screen.findByRole("table");
+
+    const filters = screen.getByRole("region", { name: "Bộ lọc tìm kiếm" });
+    const list = screen.getByRole("region", { name: "Danh sách sản phẩm" });
+    const toggle = within(filters).getByRole("button", {
+      name: "Bộ lọc tìm kiếm",
+    });
+    const search = within(filters).getByTestId("pv-catalog-search");
+
+    expect(filters).not.toContainElement(list);
+    expect(list).toContainElement(table);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(search).toBeVisible();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(search).not.toBeVisible();
+    expect(table).toBeVisible();
+
+    fireEvent.click(toggle);
+    expect(search).toBeVisible();
+  });
+
+  it("applies filters immediately and returns to page 1 when filters change", async () => {
     renderWithProviders(<PvProductCatalogPage />);
     await screen.findByRole("table");
 
@@ -248,28 +275,14 @@ describe("MST-PV-01 · catalog interactions", () => {
       }),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
+    fireEvent.change(searchInput(), { target: { value: "" } });
     await waitFor(() =>
-      expect(profileCalls().at(-1)?.[1]).toEqual({
+      expect(profileCalls().at(-1)?.[1]).toMatchObject({
         keyword: "",
+        published: "true",
         page: "1",
-        per_page: "20",
       }),
     );
-    expect(searchInput()).toHaveValue("");
-    expect(
-      within(screen.getByTestId("pv-catalog-published-filter")).getByRole(
-        "combobox",
-      ),
-    ).toHaveTextContent("Tất cả");
-    expect(
-      within(screen.getByTestId("pv-catalog-industry-filter")).getByRole(
-        "combobox",
-      ),
-    ).toHaveTextContent("Tất cả");
-    expect(
-      await screen.findByText(WITHOUT_IMAGE.display_name),
-    ).toBeInTheDocument();
   });
 
   it.each([
