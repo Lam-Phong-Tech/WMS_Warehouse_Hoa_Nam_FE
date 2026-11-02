@@ -13,6 +13,7 @@ vi.mock("@/shared/api/http", () => ({
 
 vi.mock("@/shared/api/axios", () => ({
   refreshSession: refreshSessionMock,
+  withAuthSessionLock: <T>(task: () => Promise<T>) => task(),
 }));
 
 import {
@@ -62,6 +63,17 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
     expect(result.access_token).toBe("access-token");
     expect(result).not.toHaveProperty("refresh_token");
     expect(JSON.stringify(result)).not.toContain("must-not-be-kept");
+  });
+
+  it("login giữ tín hiệu backend đã đăng xuất phiên trước", async () => {
+    postMock.mockResolvedValue({ access_token: "access-token", expires_in: 3600,
+      user: USER, replaced_existing_session: true });
+
+    const result = await authService.login({ email: "qa@example.com", password: "secret" });
+
+    expect(result.kind).toBe("authenticated");
+    if (result.kind !== "authenticated") throw new Error("unreachable");
+    expect(result.replaced_existing_session).toBe(true);
   });
 
   it("login fail-closed khi thiếu access_token", async () => {

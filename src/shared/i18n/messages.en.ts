@@ -4756,6 +4756,8 @@ export const MESSAGES_EN: MessageTree = {
       forgotPassword: "Forgot password?",
       submit: "Sign in",
       success: "Signed in successfully",
+      replacedPreviousSession: "This sign-in signed out another session.",
+      replacedPreviousSessionBody: "If you do not recognize that earlier session, change your password immediately.",
       failed: "Sign-in failed",
       errorTimeout:
         "The server took too long to respond. Please try again; if the problem persists, contact your administrator.",

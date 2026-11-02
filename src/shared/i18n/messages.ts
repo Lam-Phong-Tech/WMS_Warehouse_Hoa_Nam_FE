@@ -4749,6 +4749,8 @@ export const MESSAGES_VI = {
       forgotPassword: "Quên mật khẩu?",
       submit: "Đăng nhập",
       success: "Đăng nhập thành công",
+      replacedPreviousSession: "Đăng nhập này đã đăng xuất một phiên khác.",
+      replacedPreviousSessionBody: "Nếu bạn không nhận ra phiên trước đó, vui lòng đổi mật khẩu ngay.",
       failed: "Đăng nhập thất bại",
       errorTimeout:
         "Máy chủ phản hồi quá thời gian. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",

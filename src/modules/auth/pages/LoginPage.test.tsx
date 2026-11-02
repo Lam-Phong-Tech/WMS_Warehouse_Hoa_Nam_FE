@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { StrictMode } from "react";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
@@ -9,6 +10,7 @@ import { useThemeStore } from "@/shared/ui/theme/theme.store";
 describe("LoginPage — TC_UI_LOGIN_01/02", () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     rememberLoginThrottle(null);
     useLanguageStore.getState().setLanguage("vi");
     useThemeStore.getState().setPreference("light");
@@ -48,5 +50,37 @@ describe("LoginPage — TC_UI_LOGIN_01/02", () => {
     expect(useThemeStore.getState().mode).toBe("dark");
     expect(screen.getByRole("main")).toHaveStyle("--auth-panel: #102544");
     expect(screen.getByRole("button", { name: "Bật giao diện sáng" })).toBeInTheDocument();
+  });
+
+  it("shows a replacement notice in the login form", () => {
+    sessionStorage.setItem("hn-wms.session-replaced", JSON.stringify({
+      device_label: "Chrome trên Android", signed_in_at: "2026-11-02T02:38:00Z", ip_hint: "127.0.0.xxx",
+    }));
+    renderWithProviders(<LoginPage />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Tài khoản vừa được đăng nhập trên thiết bị khác");
+    expect(screen.getByRole("alert")).toHaveTextContent("Chrome trên Android");
+    expect(screen.getByRole("alert")).toHaveTextContent("127.0.0.xxx");
+    expect(sessionStorage.getItem("hn-wms.session-replaced")).not.toBeNull();
+  });
+
+  it("keeps the replacement notice through StrictMode's double render", () => {
+    sessionStorage.setItem("hn-wms.session-replaced", "{}");
+    renderWithProviders(<StrictMode><LoginPage /></StrictMode>);
+    expect(screen.getByRole("alert")).toHaveTextContent("Tài khoản vừa được đăng nhập trên thiết bị khác");
+  });
+
+  it("keeps the notice until dismissed after login page remount", async () => {
+    sessionStorage.setItem("hn-wms.session-replaced", "{}");
+    const first = renderWithProviders(<LoginPage />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Tài khoản vừa được đăng nhập trên thiết bị khác");
+    first.unmount();
+
+    const second = renderWithProviders(<LoginPage />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Tài khoản vừa được đăng nhập trên thiết bị khác");
+    await userEvent.click(screen.getByRole("button", { name: "Đóng" }));
+    second.unmount();
+
+    renderWithProviders(<LoginPage />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

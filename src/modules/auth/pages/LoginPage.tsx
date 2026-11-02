@@ -14,7 +14,8 @@ import { flatIconClass } from "@/shared/ui/icons";
 import { AUTH_BASELINE } from "@/shared/ui/tokens";
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
-import { AuthAccessNotice, AuthLoginFeedback } from "@/modules/auth/components/AuthLoginFeedback";
+import { AuthAccessNotice, AuthLoginFeedback, AuthSessionReplacementNotice } from "@/modules/auth/components/AuthLoginFeedback";
+import { clearSessionReplacementNotice, readSessionReplacementNotice } from "@/modules/auth/utils/session-replacement-notice";
 import { AUTH_UAT_FORM_SX } from "@/modules/auth/components/AuthLoginFormSx";
 import { classifyLoginFailure, readLoginThrottle, rememberLoginThrottle, type LoginFeedback, type LoginThrottle } from "@/modules/auth/utils/login-feedback";
 import { useAuthUatCopy } from "@/modules/auth/utils/auth-uat-copy";
@@ -110,6 +111,7 @@ export function LoginPage() {
   const copy = useAuthUatCopy();
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const [replacementNotice, setReplacementNotice] = useState(() => readSessionReplacementNotice());
   const online = useSyncExternalStore(subscribeOnline, isOnline, () => true);
   useEffect(() => {
     if (runtimeConfig.temporaryAutoLogin && isAuthenticated) navigate(DASHBOARD_CANONICAL, { replace: true });
@@ -229,6 +231,10 @@ export function LoginPage() {
       subtitle={t("auth.login.formSubtitle")} showBaselineHeading>
       <form onSubmit={onSubmit} noValidate aria-busy={isSubmitting}>
         <Box sx={AUTH_UAT_FORM_SX} data-busy={isSubmitting ? "true" : "false"}>
+          {replacementNotice && <AuthSessionReplacementNotice notice={replacementNotice} onDismiss={() => {
+            clearSessionReplacementNotice();
+            setReplacementNotice(null);
+          }} />}
           {feedback && <AuthLoginFeedback feedback={feedback} />}
           <AuthField control={control} name="identifier" label={copy.identifierLabel} placeholder={copy.identifierPlaceholder}
             startIcon="user" autoFocus disabled={fieldsDisabled} />

@@ -4,6 +4,9 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { DASHBOARD_CANONICAL, ROUTES } from "@/shared/constants/routes";
 import { clearWorkSession } from "@/shared/lib/session-idle";
 import type { AuthenticatedLogin } from "@/modules/auth/types/auth.types";
+import { clearSessionReplacementNotice } from "@/modules/auth/utils/session-replacement-notice";
+import { toast } from "sonner";
+import { tStatic } from "@/shared/i18n/useT";
 
 interface LoginLocationState {
   from?: { pathname?: string; search?: string; hash?: string };
@@ -21,11 +24,17 @@ export function useAfterLogin(): (data: AuthenticatedLogin) => void {
       // Clear the previous confirmation BEFORE publishing the new identity. Only
       // the Start work action creates an activity timestamp; never an auth token.
       clearWorkSession();
+      clearSessionReplacementNotice();
       setAuth({
         token: data.access_token,
         user: data.user,
         contexts: data.available_contexts,
       });
+      if (data.replaced_existing_session) {
+        toast.warning(tStatic("auth.login.replacedPreviousSession"), {
+          description: tStatic("auth.login.replacedPreviousSessionBody"),
+        });
+      }
       const from = (location.state as LoginLocationState | null)?.from;
       const redirectParam = new URLSearchParams(location.search).get("redirect");
       const safeRedirect =

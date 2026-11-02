@@ -23,7 +23,7 @@ export function useLogin(onAuthenticated?: AuthenticatedLoginHandler) {
       // A first-factor success must NEVER establish an authenticated session.
       if (data.kind === "mfa_required") return;
       const continueLogin = () => {
-        toast.success(tStatic("auth.login.success"));
+        if (!data.replaced_existing_session) toast.success(tStatic("auth.login.success"));
         afterLogin(data);
       };
       if (onAuthenticated) onAuthenticated(data, continueLogin);
@@ -45,7 +45,7 @@ export function useMfaVerify(onAuthenticated?: AuthenticatedLoginHandler) {
     },
     onSuccess: (data) => {
       const continueLogin = () => {
-        toast.success(tStatic("auth.login.success"));
+        if (!data.replaced_existing_session) toast.success(tStatic("auth.login.success"));
         afterLogin(data);
       };
       if (onAuthenticated) onAuthenticated(data, continueLogin);

@@ -8,6 +8,8 @@ import { mark } from "@/shared/perf/marks";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { runtimeConfig } from "@/shared/config/env";
 import { startWorkSession } from "@/shared/lib/session-idle";
+import { getErrorCode, type ApiErrorResponse } from "@/shared/types/api-response";
+import { rememberSessionReplacementNotice, replacementDetailsFromResponse } from "@/modules/auth/utils/session-replacement-notice";
 
 let activeBootstrap: Promise<void> | null = null;
 
@@ -159,6 +161,10 @@ async function runBootstrap(): Promise<void> {
     }
   } catch (error) {
     if (isInvalidSession(error)) {
+      const data = (error as { response?: { data?: ApiErrorResponse } })?.response?.data;
+      if (getErrorCode(data) === "AUTH_SESSION_REPLACED") {
+        rememberSessionReplacementNotice(replacementDetailsFromResponse(data));
+      }
       await clearSessionHint();
     } else {
       // Network/5xx/contract lỗi không được giả mạo thành "chưa đăng nhập".

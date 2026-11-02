@@ -3,6 +3,46 @@ import { AUTH_BASELINE } from "@/shared/ui/tokens";
 import { useT } from "@/shared/i18n/useT";
 import { useAuthUatCopy } from "@/modules/auth/utils/auth-uat-copy";
 import type { LoginFeedback } from "@/modules/auth/utils/login-feedback";
+import type { SessionReplacementNotice } from "@/modules/auth/utils/session-replacement-notice";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+
+export function AuthSessionReplacementNotice({ notice, onDismiss }: {
+  notice: SessionReplacementNotice;
+  onDismiss: () => void;
+}) {
+  const language = useLanguageStore((state) => state.language);
+  const copy = {
+    vi: { title: "Tài khoản vừa được đăng nhập trên thiết bị khác", prefix: "Phiên làm việc trên thiết bị này đã bị đăng xuất.", device: "Thiết bị đăng nhập mới", time: "Lúc", advice: "Nếu không phải bạn thực hiện, vui lòng đổi mật khẩu ngay.", close: "Đóng" },
+    en: { title: "Your account was signed in on another device", prefix: "This device has been signed out.", device: "New sign-in device", time: "At", advice: "If this was not you, change your password immediately.", close: "Close" },
+    zh: { title: "您的账户已在另一台设备上登录", prefix: "此设备已退出登录。", device: "新登录设备", time: "时间", advice: "如果不是您本人操作，请立即更改密码。", close: "关闭" },
+  }[language];
+  const signedInAt = notice.signed_in_at
+    ? new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : language === "zh" ? "zh-CN" : "en-US", {
+      dateStyle: "short", timeStyle: "short",
+    }).format(new Date(notice.signed_in_at))
+    : null;
+
+  return (
+    <Box role="alert" aria-live="assertive" aria-atomic="true" sx={{
+      display: "flex", alignItems: "flex-start", gap: "12px", border: "1px solid",
+      borderColor: "var(--auth-alert-warning-border, #ffe0a9)", borderRadius: "9px",
+      backgroundColor: "var(--auth-alert-warning-bg, #fff0d9)", color: "var(--auth-alert-warning-ink, #a55000)",
+      padding: "17px 20px", fontSize: { xs: 13, sm: 14 }, lineHeight: 1.45,
+    }}>
+      <Box aria-hidden="true" sx={{ fontWeight: 800 }}>!</Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ fontWeight: 700 }}>{copy.title}</Box>
+        <Box sx={{ marginTop: "3px" }}>{copy.prefix}</Box>
+        {notice.device_label && <Box>{copy.device}: {notice.device_label}{notice.ip_hint ? ` (IP ${notice.ip_hint})` : ""}</Box>}
+        {signedInAt && <Box>{copy.time}: {signedInAt}</Box>}
+        <Box sx={{ marginTop: "3px" }}>{copy.advice}</Box>
+      </Box>
+      <Box component="button" type="button" onClick={onDismiss} aria-label={copy.close} sx={{
+        border: 0, background: "transparent", color: "inherit", cursor: "pointer", fontSize: 20, lineHeight: 1,
+      }}>×</Box>
+    </Box>
+  );
+}
 
 export function AuthLoginFeedback({ feedback, mfa = false }: { feedback: LoginFeedback; mfa?: boolean }) {
   const copy = useAuthUatCopy();

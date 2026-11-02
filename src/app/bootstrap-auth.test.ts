@@ -35,6 +35,7 @@ import { bootstrapAuth } from "@/app/bootstrap-auth";
 describe("bootstrapAuth persistent browser session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     rehydrateMock.mockResolvedValue(undefined);
     clearStorageMock.mockResolvedValue(undefined);
   });
@@ -68,6 +69,21 @@ describe("bootstrapAuth persistent browser session", () => {
     expect(setTokenMock).not.toHaveBeenCalled();
     expect(setStateMock).toHaveBeenCalledWith({ isBootstrapped: true });
     expect(setStateMock).not.toHaveBeenCalledWith({ bootstrapError: error });
+    expect(sessionStorage.getItem("hn-wms.session-replaced")).toBeNull();
+  });
+
+  it("F5 sau khi phiên bị thay thế giữ lý do cho trang đăng nhập", async () => {
+    refreshMock.mockRejectedValue({ response: { status: 401, data: {
+      error_code: "AUTH_SESSION_REPLACED",
+      replacement: { device_label: "Chrome trên Android", signed_in_at: "2026-11-02T02:38:00Z" },
+    } } });
+
+    await bootstrapAuth();
+
+    expect(logoutMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(sessionStorage.getItem("hn-wms.session-replaced") ?? "null")).toEqual({
+      device_label: "Chrome trên Android", signed_in_at: "2026-11-02T02:38:00Z",
+    });
   });
 
   it("422 không có refresh cookie -> anonymous bình thường", async () => {

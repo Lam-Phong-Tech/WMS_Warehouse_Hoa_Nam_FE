@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { toast } from "sonner";
 import { useLogin } from "@/modules/auth/hooks/use-login";
 import { authService } from "@/modules/auth/services/auth.service";
 import { ROUTES } from "@/shared/constants/routes";
@@ -81,6 +82,7 @@ const LOGIN_OK = {
 describe("useLogin WWHN-165", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     useAuthStore.getState().logout();
     useAuthStore.setState({ isBootstrapped: true });
   });
@@ -88,6 +90,7 @@ describe("useLogin WWHN-165", () => {
   // P1 bảo mật 10/09/2026: chỉ access token vào bộ nhớ JS; refresh token nằm trong
   // cookie HttpOnly nên FE không có gì để commit ngoài access token.
   it("khôi phục protected URL sau login và chỉ commit access token", async () => {
+    sessionStorage.setItem("hn-wms.session-replaced", "{}");
     vi.mocked(authService.login).mockResolvedValue({
       // WWHN-SEC-08: login tra ve union co discriminant.
       kind: "authenticated" as const,
@@ -109,6 +112,7 @@ describe("useLogin WWHN-165", () => {
     expect(await screen.findByText("Inbound restored")).toBeInTheDocument();
     expect(useAuthStore.getState().token).toBe("access-token");
     expect(useAuthStore.getState().currentContext).toEqual(CONTEXT);
+    expect(sessionStorage.getItem("hn-wms.session-replaced")).toBeNull();
   });
 
   it("nhiều warehouse context không tự gửi payload role_id legacy", async () => {
@@ -194,5 +198,23 @@ describe("useLogin WWHN-165", () => {
     expect(await screen.findByText("Login failed")).toBeInTheDocument();
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().token).toBeNull();
+  });
+
+  it("login thay phiên cũ hiện cảnh báo cho thiết bị vừa đăng nhập", async () => {
+    const warning = vi.spyOn(toast, "warning").mockImplementation(() => "test-toast");
+    const success = vi.spyOn(toast, "success").mockImplementation(() => "test-success");
+    vi.mocked(authService.login).mockResolvedValue({ ...LOGIN_OK, replaced_existing_session: true });
+    renderHarness(<Routes>
+      <Route path={ROUTES.LOGIN} element={<LoginHarness />} />
+      <Route path={ROUTES.INBOUND} element={<div>Inbound restored</div>} />
+    </Routes>);
+
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(await screen.findByText("Inbound restored")).toBeInTheDocument();
+    expect(warning).toHaveBeenCalledWith("Đăng nhập này đã đăng xuất một phiên khác.", expect.any(Object));
+    expect(success).not.toHaveBeenCalled();
+    warning.mockRestore();
+    success.mockRestore();
   });
 });

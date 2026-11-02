@@ -16,6 +16,7 @@ import {
 } from "@/shared/pwa/offline-policy";
 import { installRequestActivityTracker } from "@/shared/api/request-activity";
 import { installEncryptedApiJson } from "@/shared/api/encrypted-json";
+import { rememberSessionReplacementNotice, replacementDetailsFromResponse } from "@/modules/auth/utils/session-replacement-notice";
 
 declare module "axios" {
   interface AxiosError {
@@ -53,6 +54,13 @@ function responseStatus(error: unknown): number | undefined {
   return response?.status;
 }
 
+function isStaleAuthResponse(config: InternalAxiosRequestConfig | undefined): boolean {
+  const requestedToken = config?.headers?.Authorization;
+  const currentToken = memoryStorage.getToken();
+  return typeof requestedToken === "string" && currentToken !== null
+    && requestedToken !== `Bearer ${currentToken}`;
+}
+
 /** Payload của POST /auth/refresh mà FE được phép giữ — không có refresh token. */
 export interface RefreshSessionPayload {
   access_token: string;
@@ -83,6 +91,16 @@ function withCrossTabRefreshLock<T>(task: () => Promise<T>): Promise<T> {
   });
 }
 
+// Login and refresh both write the same HttpOnly cookie. Serialize their HTTP
+// responses so a late refresh Set-Cookie cannot replace a newer login cookie.
+let authSessionQueue: Promise<void> = Promise.resolve();
+
+export function withAuthSessionLock<T>(task: () => Promise<T>): Promise<T> {
+  const pending = authSessionQueue.then(() => withCrossTabRefreshLock(task));
+  authSessionQueue = pending.then(() => undefined, () => undefined);
+  return pending;
+}
+
 let refreshPromise: Promise<RefreshSessionPayload> | null = null;
 
 /**
@@ -96,7 +114,7 @@ let refreshPromise: Promise<RefreshSessionPayload> | null = null;
  */
 export function refreshSession(): Promise<RefreshSessionPayload> {
   if (!refreshPromise) {
-    refreshPromise = withCrossTabRefreshLock(() =>
+    refreshPromise = withAuthSessionLock(() =>
       api.post<{ success: boolean; data?: Partial<RefreshSessionPayload> }>(
         API_ENDPOINTS.REFRESH,
         {},
@@ -130,8 +148,12 @@ let accessTokenRefresh: Promise<string> | null = null;
 
 function refreshAccessToken(): Promise<string> {
   if (!accessTokenRefresh) {
+    const tokenBeforeRefresh = memoryStorage.getToken();
     accessTokenRefresh = refreshSession()
       .then(({ access_token }) => {
+        if (memoryStorage.getToken() !== tokenBeforeRefresh) {
+          throw new Error("AUTH_REFRESH_SUPERSEDED");
+        }
         memoryStorage.setItem(access_token);
         // setToken revokes stale permission/profile before retrying the request.
         useAuthStore.getState().setToken(access_token);
@@ -144,7 +166,8 @@ function refreshAccessToken(): Promise<string> {
   return accessTokenRefresh;
 }
 
-function redirectToLogin() {
+function redirectToLogin(replacement?: unknown) {
+  if (replacement !== undefined) rememberSessionReplacementNotice(replacement);
   useAuthStore.getState().logout();
   useAuthStore.persist.clearStorage();
   if (window.location.pathname !== ROUTES.LOGIN) {
@@ -200,13 +223,24 @@ api.interceptors.response.use(
     if (status === 401) {
       const isAuthEndpoint =
         config?.url === API_ENDPOINTS.REFRESH ||
-        config?.url === API_ENDPOINTS.LOGIN;
+        config?.url === API_ENDPOINTS.LOGIN ||
+        config?.url === API_ENDPOINTS.MFA_VERIFY;
 
-      // Caller owns login/refresh failure semantics. In particular bootstrap
-      // must distinguish expired session from network/5xx and stay fail-closed.
+      // Caller owns login/refresh/MFA failures. MFA can hold the auth lock;
+      // refreshing its 401 here would wait on that same lock forever.
       if (isAuthEndpoint) return Promise.reject(error);
 
+      // An older in-flight request can finish after this tab completed a new
+      // login. Its 401 must not clear the newer access token or show a stale notice.
+      if (isStaleAuthResponse(config)) return Promise.reject(error);
+
+      if (getErrorCode(data) === "AUTH_SESSION_REPLACED") {
+        redirectToLogin(replacementDetailsFromResponse(data));
+        return Promise.reject(error);
+      }
+
       if (config && !config._isRetryAfterRefresh) {
+        const tokenBeforeRefresh = memoryStorage.getToken();
         try {
           const token = await refreshAccessToken();
           config._isRetryAfterRefresh = true;
@@ -214,7 +248,11 @@ api.interceptors.response.use(
           return api.request(config);
         } catch (refreshError) {
           const refreshStatus = responseStatus(refreshError);
-          if (refreshStatus === 401 || refreshStatus === 403) redirectToLogin();
+          if ((refreshStatus === 401 || refreshStatus === 403)
+            && memoryStorage.getToken() === tokenBeforeRefresh) {
+            const refreshData = (refreshError as AxiosError<ApiErrorResponse>)?.response?.data;
+            redirectToLogin(getErrorCode(refreshData) === "AUTH_SESSION_REPLACED" ? replacementDetailsFromResponse(refreshData) : undefined);
+          }
           // Network/5xx must not silently destroy an otherwise recoverable
           // session; surface the actual refresh error to the UI/query layer.
           return Promise.reject(refreshError);

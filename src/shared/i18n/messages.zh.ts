@@ -4941,6 +4941,8 @@ export const MESSAGES_ZH: MessageTree = {
       "forgotPassword": "忘记密码？",
       "submit": "登录",
       "success": "登录成功",
+      "replacedPreviousSession": "此次登录已退出另一会话。",
+      "replacedPreviousSessionBody": "如果您不认识之前的会话，请立即更改密码。",
       "failed": "登录失败",
       "errorTimeout": "服务器响应时间过长。请再试一次；如果问题仍然存在，请联系您的管理员。",
       "errorNetwork": "无法访问系统。检查您的网络连接并重试；如果问题仍然存在，请联系您的管理员。",

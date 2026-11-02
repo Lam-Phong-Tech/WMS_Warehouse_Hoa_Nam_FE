@@ -1,6 +1,6 @@
 import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
-import { refreshSession } from "@/shared/api/axios";
+import { refreshSession, withAuthSessionLock } from "@/shared/api/axios";
 import type {
   ChangePasswordRequest,
   ForgotPasswordRequest,
@@ -51,6 +51,7 @@ type BackendLoginResponse = {
   token_type?: string;
   expires_in?: number;
   user?: BackendUser;
+  replaced_existing_session?: boolean;
 };
 
 type BackendMeResponse = BackendUser & {
@@ -214,6 +215,7 @@ function normalizeLoginResponse(data: BackendLoginResponse): LoginResponse {
     expires_in: requirePositiveNumber(data.expires_in, "expires_in"),
     user,
     available_contexts: deriveContexts(user),
+    replaced_existing_session: data.replaced_existing_session === true,
   };
 }
 
@@ -293,10 +295,9 @@ export function meResponseFromRefreshUser(user: unknown): MeResponse | null {
 
 export const authService = {
   async login(data: LoginRequest): Promise<LoginResult> {
-    const response = await http.post<BackendLoginResponse>(
-      API_ENDPOINTS.LOGIN,
-      data,
-    );
+    const response = await withAuthSessionLock(() => http.post<BackendLoginResponse>(
+      API_ENDPOINTS.LOGIN, data,
+    ));
 
     // WWHN-SEC-08: mat khau dung moi la yeu to thu nhat. BE dung o day va KHONG
     // phat token nao; FE phai nhan ra nhanh nay truoc khi normalize, vi
@@ -317,10 +318,9 @@ export const authService = {
    * Buoc 2 cua dang nhap. `code` co the la ma TOTP 6 chu so hoac mot ma khoi phuc.
    */
   async verifyMfa(mfaToken: string, code: string): Promise<AuthenticatedLogin> {
-    const response = await http.post<BackendLoginResponse>(
-      API_ENDPOINTS.MFA_VERIFY,
-      { mfa_token: mfaToken, code },
-    );
+    const response = await withAuthSessionLock(() => http.post<BackendLoginResponse>(
+      API_ENDPOINTS.MFA_VERIFY, { mfa_token: mfaToken, code },
+    ));
     return { kind: "authenticated", ...normalizeLoginResponse(response) };
   },
 

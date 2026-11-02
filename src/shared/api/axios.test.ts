@@ -15,7 +15,7 @@ vi.mock("@/shared/store/auth.store", () => ({
 
 const { memoryStorageMock } = vi.hoisted(() => ({
   memoryStorageMock: {
-    getToken: vi.fn(() => null),
+    getToken: vi.fn<() => string | null>(() => null),
     setItem: vi.fn(),
   },
 }));
@@ -77,6 +77,8 @@ describe("axios auth/session interceptor WWHN-165", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    memoryStorageMock.getToken.mockReturnValue(null);
+    sessionStorage.clear();
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { ...originalLocation, pathname: "/inventory", assign: vi.fn() },
@@ -95,6 +97,17 @@ describe("axios auth/session interceptor WWHN-165", () => {
 
     await expect(rejected(loginError)).rejects.toBe(loginError);
     await expect(rejected(refreshError)).rejects.toBe(refreshError);
+    expect(logoutMock).not.toHaveBeenCalled();
+    expect(window.location.assign).not.toHaveBeenCalled();
+  });
+
+  it("MFA sai mã trả 401 cho form, không refresh trong lúc giữ khóa đăng nhập", async () => {
+    const error = makeError(401, API_ENDPOINTS.MFA_VERIFY, { error_code: "MFA_CODE_INVALID" });
+    const postSpy = vi.spyOn(api, "post");
+
+    await expect(rejectedHandler()(error)).rejects.toBe(error);
+
+    expect(postSpy).not.toHaveBeenCalled();
     expect(logoutMock).not.toHaveBeenCalled();
     expect(window.location.assign).not.toHaveBeenCalled();
   });
@@ -219,11 +232,92 @@ describe("axios auth/session interceptor WWHN-165", () => {
     await expect(rejectedHandler()(originalError)).rejects.toBe(refreshError);
     expect(logoutMock).toHaveBeenCalledTimes(1);
     expect(clearStorageMock).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem("hn-wms.session-replaced")).toBeNull();
     // WWHN-165/QA2-LOGIN-001: attempted URL đi kèm ?redirect= để login xong
     // quay lại đúng màn đang làm việc.
     expect(window.location.assign).toHaveBeenCalledWith(
       `${ROUTES.LOGIN}?redirect=${encodeURIComponent("/inventory")}`,
     );
+  });
+
+  it("refresh xác nhận phiên bị thay thế giữ thông báo cho trang login", async () => {
+    sessionStorage.clear();
+    const refreshError = makeError(401, API_ENDPOINTS.REFRESH, {
+      error_code: "AUTH_SESSION_REPLACED",
+      replacement: { device_label: "Chrome trên Android", signed_in_at: "2026-11-02T02:38:00Z" },
+    });
+    vi.spyOn(api, "post").mockRejectedValue(refreshError);
+
+    await expect(rejectedHandler()(makeError(401, "/inventory-balances"))).rejects.toBe(refreshError);
+    expect(JSON.parse(sessionStorage.getItem("hn-wms.session-replaced") ?? "null")).toEqual({
+      device_label: "Chrome trên Android",
+      signed_in_at: "2026-11-02T02:38:00Z",
+    });
+  });
+
+  it("401 replacement từ API bảo vệ chuyển thẳng về login", async () => {
+    sessionStorage.clear();
+    const error = makeError(401, "/auth/me", {
+      error: { code: "AUTH_SESSION_REPLACED" },
+      data: { replacement: { device_label: "Chrome trên Android", signed_in_at: "2026-11-02T02:38:00Z" } },
+    });
+    const postSpy = vi.spyOn(api, "post");
+
+    await expect(rejectedHandler()(error)).rejects.toBe(error);
+
+    expect(postSpy).not.toHaveBeenCalled();
+    expect(window.location.assign).toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("hn-wms.session-replaced") ?? "null")).toEqual({
+      device_label: "Chrome trên Android", signed_in_at: "2026-11-02T02:38:00Z",
+    });
+  });
+
+  it("401 của phiên cũ không đăng xuất phiên mới vừa đăng nhập trong cùng tab", async () => {
+    memoryStorageMock.getToken.mockReturnValue("new-session");
+    const error = makeError(401, "/auth/me", { error_code: "AUTH_SESSION_REPLACED" });
+    error.config.headers.Authorization = "Bearer old-session";
+
+    await expect(rejectedHandler()(error)).rejects.toBe(error);
+
+    expect(logoutMock).not.toHaveBeenCalled();
+    expect(window.location.assign).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem("hn-wms.session-replaced")).toBeNull();
+  });
+
+  it("refresh phiên cũ trả replacement sau login mới không xoá phiên mới", async () => {
+    memoryStorageMock.getToken.mockReturnValue("old-session");
+    let rejectRefresh!: (error: unknown) => void;
+    vi.spyOn(api, "post").mockReturnValue(new Promise((_resolve, reject) => {
+      rejectRefresh = reject;
+    }) as never);
+    const pending = rejectedHandler()(makeError(401, "/inventory-balances"));
+    memoryStorageMock.getToken.mockReturnValue("new-session");
+    rejectRefresh(makeError(401, API_ENDPOINTS.REFRESH, { error_code: "AUTH_SESSION_REPLACED" }));
+
+    await expect(pending).rejects.toMatchObject({ response: { status: 401 } });
+    expect(logoutMock).not.toHaveBeenCalled();
+    expect(window.location.assign).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem("hn-wms.session-replaced")).toBeNull();
+  });
+
+  it("refresh cũ thành công trễ không ghi đè access token của login mới", async () => {
+    let currentToken: string | null = "old-session";
+    memoryStorageMock.getToken.mockImplementation(() => currentToken);
+    let resolveRefresh!: (value: unknown) => void;
+    vi.spyOn(api, "post").mockReturnValue(new Promise((resolve) => {
+      resolveRefresh = resolve;
+    }) as never);
+    const requestSpy = vi.spyOn(api, "request");
+    const pending = rejectedHandler()(makeError(401, "/inventory-balances"));
+    currentToken = "new-session";
+    resolveRefresh({ data: { success: true, data: {
+      access_token: "old-refreshed", token_type: "bearer", expires_in: 900,
+    } } });
+
+    await expect(pending).rejects.toThrow("AUTH_REFRESH_SUPERSEDED");
+    expect(setTokenMock).not.toHaveBeenCalled();
+    expect(requestSpy).not.toHaveBeenCalled();
+    expect(logoutMock).not.toHaveBeenCalled();
   });
 
   it("redirect login giữ cả search/hash của attempted URL", async () => {

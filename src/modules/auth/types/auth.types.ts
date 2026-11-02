@@ -36,6 +36,8 @@ export interface LoginResponse {
   user: User;
   /** FE dựng từ user.roles/user.warehouse_scope_ids vì BE m1 không trả available_contexts. */
   available_contexts: AuthContext[];
+  /** True only when this completed login displaced an active older session. */
+  replaced_existing_session?: boolean;
 }
 
 /**
