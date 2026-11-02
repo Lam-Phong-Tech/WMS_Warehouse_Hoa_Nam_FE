@@ -396,7 +396,7 @@
   color: var(--sku-muted);
 }
 .hn-sku-list-card {
-  padding: 0 16px;
+  padding: 0;
   overflow: hidden;
 }
 .hn-sku-table-scroll {
@@ -430,10 +430,10 @@
 .hn-sku-screen table.sku-table th {
   background: #f5f9fa;
   color: var(--sku-muted);
-  font-size: 11px;
-  line-height: 18px;
+  font-size: 14px;
+  line-height: 22px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 .hn-sku-screen table.sku-table th:nth-child(1) {
@@ -567,7 +567,7 @@
 }
 .hn-sku-pagination {
   border-top: 1px solid var(--sku-line);
-  padding: 14px 0;
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -718,11 +718,9 @@
   .hn-sku-overview-status {
     padding-left: 6px;
   }
-  .hn-sku-list-card {
-    padding-inline: 12px;
-  }
   .hn-sku-pagination {
     align-items: flex-start;
+    padding-inline: 12px;
   }
   .hn-sku-pagination > nav {
     margin-left: auto;
