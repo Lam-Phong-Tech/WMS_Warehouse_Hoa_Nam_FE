@@ -179,8 +179,8 @@ export function HoaNamAuthShell({
           position: "relative",
           overflow: "hidden",
           minWidth: 0,
-          height: { xs: "clamp(240px, 57vw, 580px)", xl: extendIllustration ? "100%" : "100vh" },
-          minHeight: { xl: 650 },
+          height: { xs: "clamp(240px, 57vw, 580px)", xl: extendIllustration ? "100%" : "auto" },
+          minHeight: { xl: "max(650px, 100vh)" },
           backgroundColor: "#07395e",
         }}
       >
