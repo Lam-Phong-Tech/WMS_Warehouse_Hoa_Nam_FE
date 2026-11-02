@@ -137,12 +137,16 @@
   min-height: 44px;
   padding: 10px 16px;
   border: 0;
+  border-radius: var(--ops-radius-card) var(--ops-radius-card) 0 0;
   background: transparent;
   color: var(--sku-ink);
   font: inherit;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
+}
+.hn-sku-panel-toggle[aria-expanded="false"] {
+  border-radius: var(--ops-radius-card);
 }
 .hn-sku-panel-toggle:hover {
   background: var(--sku-pale);
@@ -175,7 +179,7 @@
 .hn-sku-screen .hn-sku-panel .hn-sku-filters {
   border: 0;
   border-top: 1px solid var(--sku-line);
-  border-radius: 0;
+  border-radius: 0 0 var(--ops-radius-card) var(--ops-radius-card);
 }
 .hn-sku-overview {
   display: grid;
