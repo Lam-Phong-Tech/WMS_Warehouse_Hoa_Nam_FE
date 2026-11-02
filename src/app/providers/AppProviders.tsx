@@ -26,8 +26,10 @@ export function AppProviders({ children }: AppProvidersProps) {
             richColors
             closeButton
             expand
-            gap={12}
-            visibleToasts={5}
+            gap={10}
+            visibleToasts={4}
+            offset={{ top: 20, right: 20 }}
+            mobileOffset={{ top: 12, right: 12 }}
             // Sonner tự vẽ icon severity + nút đóng bằng bộ SVG riêng —
             // ép về Flaticon Uicons cho đồng bộ toàn app.
             icons={TOAST_ICONS}

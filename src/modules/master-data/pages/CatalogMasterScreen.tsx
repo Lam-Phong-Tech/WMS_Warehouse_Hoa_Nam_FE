@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { invalidateMasterDerived } from "@/shared/cache/invalidation";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { localizedEnglish } from "@/shared/i18n/localized-english";
@@ -214,7 +215,6 @@ export function CatalogMasterScreen() {
 
   const [offline, setOffline] = useState(() => !navigator.onLine);
   const [dismissedOffline, setDismissedOffline] = useState(false);
-  const [successNotice, setSuccessNotice] = useState("");
   const [dismissedNotice, setDismissedNotice] = useState<unknown>(null);
   useEffect(() => {
     const normalized = keyword.trim();
@@ -322,7 +322,6 @@ export function CatalogMasterScreen() {
 
   const changeTab = (kind: CatalogMasterKind) => {
     setActiveKind(kind);
-    setSuccessNotice("");
     setKeyword("");
     setStatusFilter("");
     setPage(1);
@@ -415,7 +414,7 @@ export function CatalogMasterScreen() {
         values,
         sortOrder: sortOrderCheck.ok ? sortOrderCheck.value : null,
       });
-      setSuccessNotice(
+      toast.success(
         editingRecord
           ? t("masterData.catalog.updated", { item: activeTab.itemLabel })
           : t("masterData.catalog.created", { item: activeTab.itemLabel }),
@@ -753,16 +752,6 @@ export function CatalogMasterScreen() {
               <CloseOutlined />
             </button>
           )}
-        </div>
-      )}
-      {successNotice && (
-        <div className="hn-catalog-success" role="status">
-          <span>{successNotice}</span>
-          <ActionIconButton
-            kind="close"
-            label={text("Đóng thông báo", "Dismiss notification")}
-            onClick={() => setSuccessNotice("")}
-          />
         </div>
       )}
       {(dismissedNotice !== listQuery.error ||

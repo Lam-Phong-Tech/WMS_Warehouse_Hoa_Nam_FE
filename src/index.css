@@ -40,10 +40,182 @@ body {
   color: var(--wms-text-high);
 }
 
-/* Toast (sonner): khi ẩn/kéo xuống thì trượt xuống dưới thay vì lên trên */
+/* Phản hồi thao tác chung: mọi trang dùng cùng Sonner ở góc trên bên phải. */
+.app-toaster[data-sonner-toaster][data-sonner-theme] {
+  width: min(400px, calc(100vw - 40px));
+  font-family: var(--wms-font-family);
+  --border-radius: 12px;
+  --hn-toast-heading: var(--wms-auth-navy);
+  --normal-bg: var(--wms-bg-surface);
+  --normal-border: var(--wms-auth-line);
+  --normal-text: var(--hn-toast-heading);
+  --success-bg: color-mix(
+    in srgb,
+    var(--wms-bg-surface) 91%,
+    var(--wms-success)
+  );
+  --success-border: color-mix(
+    in srgb,
+    var(--wms-bg-surface) 68%,
+    var(--wms-success)
+  );
+  --success-text: var(--hn-toast-heading);
+  --error-bg: color-mix(in srgb, var(--wms-bg-surface) 93%, var(--wms-error));
+  --error-border: color-mix(
+    in srgb,
+    var(--wms-bg-surface) 68%,
+    var(--wms-error)
+  );
+  --error-text: var(--hn-toast-heading);
+  --warning-bg: color-mix(
+    in srgb,
+    var(--wms-bg-surface) 90%,
+    var(--wms-warning)
+  );
+  --warning-border: color-mix(
+    in srgb,
+    var(--wms-bg-surface) 65%,
+    var(--wms-warning)
+  );
+  --warning-text: var(--hn-toast-heading);
+  --info-bg: color-mix(in srgb, var(--wms-bg-surface) 90%, var(--wms-info));
+  --info-border: color-mix(in srgb, var(--wms-bg-surface) 68%, var(--wms-info));
+  --info-text: var(--hn-toast-heading);
+  --toast-close-button-start: unset;
+  --toast-close-button-end: 10px;
+  --toast-close-button-transform: none;
+}
+
+:root[data-theme="dark"] .app-toaster[data-sonner-toaster] {
+  --hn-toast-heading: var(--wms-text-strong);
+  --normal-border: var(--wms-border);
+}
+
+.app-toaster [data-sonner-toast][data-styled="true"] {
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 44px 14px 14px;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 12px;
+  border-left-width: 3px;
+  box-shadow: 0 12px 32px
+    color-mix(in srgb, var(--wms-auth-navy) 14%, transparent);
+  font-size: 13px;
+}
+
+.app-toaster [data-sonner-toast][data-rich-colors="true"][data-type="success"] {
+  border-left-color: var(--wms-success);
+}
+.app-toaster [data-sonner-toast][data-rich-colors="true"][data-type="error"] {
+  border-left-color: var(--wms-error);
+}
+.app-toaster [data-sonner-toast][data-rich-colors="true"][data-type="warning"] {
+  border-left-color: var(--wms-warning);
+}
+.app-toaster [data-sonner-toast][data-rich-colors="true"][data-type="info"] {
+  border-left-color: var(--wms-info);
+}
+.app-toaster [data-sonner-toast][data-type="loading"] {
+  border-left-color: var(--wms-auth-link);
+}
+
+.app-toaster [data-sonner-toast][data-styled="true"] [data-icon] {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  justify-content: center;
+  border-radius: 9px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 18px;
+}
+
+.app-toaster [data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--wms-success-text);
+}
+.app-toaster [data-sonner-toast][data-type="error"] [data-icon] {
+  color: var(--wms-error-text);
+}
+.app-toaster [data-sonner-toast][data-type="warning"] [data-icon] {
+  color: var(--wms-warning-text);
+}
+.app-toaster [data-sonner-toast][data-type="info"] [data-icon] {
+  color: var(--wms-info-text);
+}
+.app-toaster [data-sonner-toast][data-type="loading"] [data-icon] {
+  color: var(--wms-auth-link);
+}
+
+.app-toaster [data-sonner-toast][data-styled="true"] [data-content] {
+  min-height: 32px;
+  justify-content: center;
+  gap: 3px;
+}
+
+.app-toaster [data-sonner-toast][data-styled="true"] [data-title] {
+  color: var(--hn-toast-heading);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.app-toaster [data-sonner-toast][data-styled="true"] [data-description],
+.app-toaster
+  [data-sonner-toast][data-styled="true"][data-rich-colors="true"]
+  [data-description] {
+  color: var(--wms-text-medium);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.app-toaster [data-sonner-toast][data-styled="true"] [data-close-button],
+.app-toaster
+  [data-sonner-toast][data-styled="true"][data-rich-colors="true"]
+  [data-close-button] {
+  top: 10px;
+  left: auto;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  transform: none;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--wms-text-medium);
+}
+
+.app-toaster [data-sonner-toast][data-styled="true"] [data-close-button]:hover,
+.app-toaster
+  [data-sonner-toast][data-styled="true"][data-rich-colors="true"]
+  [data-close-button]:hover {
+  background: color-mix(in srgb, var(--hn-toast-heading) 8%, transparent);
+  color: var(--hn-toast-heading);
+}
+
+.app-toaster
+  [data-sonner-toast][data-styled="true"]
+  [data-close-button]:focus-visible,
+.app-toaster
+  [data-sonner-toast][data-styled="true"]
+  [data-button]:focus-visible {
+  outline: 2px solid var(--wms-auth-link);
+  outline-offset: 2px;
+}
+
+/* Khi ẩn/kéo xuống, toast trượt xuống thay vì bay lên thanh trên. */
 .app-toaster
   [data-sonner-toast][data-y-position="top"][data-removed="true"][data-swipe-out="false"] {
   --y: translateY(100%) !important;
+}
+
+@media (max-width: 600px) {
+  .app-toaster[data-sonner-toaster][data-sonner-theme] {
+    width: calc(100vw - 24px);
+  }
+
+  .app-toaster [data-sonner-toast][data-styled="true"] {
+    width: 100%;
+  }
 }
 
 /* Thanh cuộn gọn gàng hơn */

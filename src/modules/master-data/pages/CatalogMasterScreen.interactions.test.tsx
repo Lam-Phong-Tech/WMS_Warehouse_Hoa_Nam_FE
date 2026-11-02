@@ -10,6 +10,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { CatalogMasterScreen } from "./CatalogMasterScreen";
 import { createMockAxiosError } from "@/shared/api/api-error";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -243,6 +244,7 @@ describe("CatalogMasterScreen interactions", () => {
   });
 
   it("keeps the dialog locked while saving and refreshes catalog and shared master data after success", async () => {
+    const successToast = vi.spyOn(toast, "success").mockImplementation(() => "");
     const user = userEvent.setup();
     let completeSave!: (record: CatalogMasterRecord) => void;
     createCatalogMaster.mockReturnValue(
@@ -285,6 +287,9 @@ describe("CatalogMasterScreen interactions", () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["ref"] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["mvp-master"] });
     expect(updateCatalogMaster).not.toHaveBeenCalled();
+    expect(successToast).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("status", { name: /thông báo/i })).not.toBeInTheDocument();
+    successToast.mockRestore();
   });
 
   it("attaches server validation to the field and retains the input for correction and retry", async () => {

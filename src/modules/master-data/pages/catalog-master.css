@@ -980,30 +980,6 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
   color: var(--catalog-link);
 }
 
-.hn-catalog-success {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, var(--catalog-success) 28%, transparent);
-  border-radius: var(--ops-radius-card);
-  background: var(--catalog-success-soft);
-  color: var(--catalog-success);
-  font-size: 14px;
-  line-height: 22px;
-}
-
-.hn-catalog-success > span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.hn-catalog-success .MuiIconButton-root {
-  flex-shrink: 0;
-  color: inherit;
-}
-
 .hn-catalog-skeleton {
   display: flex;
   flex-direction: column;

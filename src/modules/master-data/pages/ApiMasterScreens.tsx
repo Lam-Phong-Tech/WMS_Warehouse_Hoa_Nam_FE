@@ -708,7 +708,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       } else {
         await createMutation.mutateAsync(payload);
         toast.success(t("masterData.sku.created"));
-        setMutationNotice({ kind: "success", code });
       }
       setModalOpen(false);
       setEditing(null);
@@ -3070,12 +3069,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         await createMutation.mutateAsync(payload);
         toast.success(t("masterData.defect.created"));
       }
-      setNotice({
-        kind: "success",
-        code: payload.defect_code,
-        name: payload.defect_name,
-        editing: Boolean(editing),
-      });
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
