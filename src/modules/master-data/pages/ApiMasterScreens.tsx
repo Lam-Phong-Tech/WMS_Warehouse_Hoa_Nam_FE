@@ -382,7 +382,13 @@ function SkuCatalogSelect({
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
-  const [overviewOpen, setOverviewOpen] = useState(true);
+  const [overviewOpen, setOverviewOpen] = useState(() => {
+    try {
+      return window.sessionStorage.getItem("hn-sku-overview-open") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [filtersOpen, setFiltersOpen] = useState(true);
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
@@ -837,7 +843,18 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             className="hn-sku-panel-toggle"
             aria-expanded={overviewOpen}
             aria-controls="hn-sku-overview-content"
-            onClick={() => setOverviewOpen((current) => !current)}
+            onClick={() => {
+              const nextOpen = !overviewOpen;
+              setOverviewOpen(nextOpen);
+              try {
+                window.sessionStorage.setItem(
+                  "hn-sku-overview-open",
+                  String(nextOpen),
+                );
+              } catch {
+                // The toggle remains usable when browser storage is unavailable.
+              }
+            }}
           >
             <span>{copy("Thống kê SKU", "SKU summary")}</span>
             <DownOutlined aria-hidden="true" />

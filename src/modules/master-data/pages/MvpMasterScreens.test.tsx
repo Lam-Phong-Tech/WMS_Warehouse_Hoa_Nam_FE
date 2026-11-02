@@ -110,6 +110,7 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
 describe("API-backed MVP master screens", () => {
   beforeEach(() => {
     useAuthStore.setState({ isSuperAdmin: true, permissionCodes: [] });
+    window.sessionStorage.removeItem("hn-sku-overview-open");
   });
 
   it("thu gọn riêng thống kê và bộ lọc SKU, giữ giá trị tìm kiếm khi mở lại", () => {
@@ -123,20 +124,24 @@ describe("API-backed MVP master screens", () => {
     const filtersToggle = screen.getByRole("button", {
       name: "Bộ lọc tìm kiếm",
     });
-    const overview = screen.getByRole("region", { name: "Danh mục SKU" });
+    const overview = document.getElementById(
+      "hn-sku-overview-content",
+    ) as HTMLElement;
     const search = document.getElementById(
       "sku-list-search",
     ) as HTMLInputElement;
 
     expect(screen.queryByRole("button", { name: "Áp dụng" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Đặt lại" })).toBeNull();
+    expect(overviewToggle).toHaveAttribute("aria-expanded", "false");
+    expect(overview).not.toBeVisible();
     fireEvent.change(search, { target: { value: "Máy khoan" } });
     expect(
       screen.getByRole("button", { name: "Xóa bộ lọc: Máy khoan" }),
     ).toBeInTheDocument();
     fireEvent.click(overviewToggle);
-    expect(overviewToggle).toHaveAttribute("aria-expanded", "false");
-    expect(overview).not.toBeVisible();
+    expect(overviewToggle).toHaveAttribute("aria-expanded", "true");
+    expect(overview).toBeVisible();
     expect(search).toBeVisible();
 
     fireEvent.click(filtersToggle);
@@ -145,9 +150,43 @@ describe("API-backed MVP master screens", () => {
 
     fireEvent.click(overviewToggle);
     fireEvent.click(filtersToggle);
-    expect(overview).toBeVisible();
+    expect(overview).not.toBeVisible();
     expect(search).toBeVisible();
     expect(search).toHaveValue("Máy khoan");
+  });
+
+  it("giữ trạng thái mở thống kê SKU khi quay lại trong cùng phiên", () => {
+    const firstVisit = render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
+    const toggle = screen.getByRole("button", { name: "Thống kê SKU" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    firstVisit.unmount();
+
+    const returnVisit = render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("button", { name: "Thống kê SKU" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    returnVisit.unmount();
+
+    window.sessionStorage.removeItem("hn-sku-overview-open");
+    render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("button", { name: "Thống kê SKU" }),
+    ).toHaveAttribute("aria-expanded", "false");
   });
 
   it("can enable and clear the pending SKU filter from the search panel", () => {
