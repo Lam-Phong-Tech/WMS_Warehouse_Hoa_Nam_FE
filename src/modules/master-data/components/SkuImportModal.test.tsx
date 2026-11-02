@@ -9,7 +9,7 @@ vi.mock("@/modules/master-data/services/sku-import.service", async () => {
 });
 import {
   fetchSkuImportConstraints, importSkuExcel, normalizeSkuImportResult,
-  SkuImportConcurrencyError, SkuImportUnavailableError, type SkuImportResult,
+  SkuImportConcurrencyError, SkuImportRejectedError, SkuImportUnavailableError, type SkuImportResult,
 } from "@/modules/master-data/services/sku-import.service";
 import { SkuImportModal } from "./SkuImportModal";
 import { sha256HexSync } from "@/shared/utils/file-digest";
@@ -59,6 +59,106 @@ function arrangeConstraints() {
 function renderModal() {
   return renderWithProviders(<SkuImportModal open canImport onClose={() => {}} onImported={() => {}} />);
 }
+describe("SkuImportModal — luồng ba bước", () => {
+  beforeEach(() => {
+    arrangeConstraints();
+    vi.mocked(importSkuExcel).mockReset();
+    vi.mocked(importSkuExcel).mockResolvedValue(cleanDryRun());
+  });
+  afterEach(cleanupTestState);
+
+  it("bắt đầu ở bước chọn tệp và chỉ hiện hành động kiểm tra", async () => {
+    renderModal();
+    expect(await screen.findByRole("list", { name: "Tiến trình nhập SKU" })).toBeInTheDocument();
+    expect(screen.getByText("Chọn tệp", { selector: '[aria-current="step"]' })).toBeInTheDocument();
+    expect(dryRunButton()).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /Nhập dữ liệu/ })).not.toBeInTheDocument();
+  });
+
+  it("kiểm tra xong chuyển sang bước xem kết quả, có thể quay lại chọn tệp", async () => {
+    renderModal(); selectFile(); await runDryRun();
+    expect(screen.getByText("Kiểm tra tệp", { selector: '[aria-current="step"]' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Quay lại" }));
+    expect(screen.getByText("Chọn tệp", { selector: '[aria-current="step"]' })).toBeInTheDocument();
+    expect(screen.getByText("sku.xlsx")).toBeInTheDocument();
+  });
+
+  it("nhập thành công chuyển sang bước kết quả và làm lại trở về bước đầu", async () => {
+    vi.mocked(importSkuExcel)
+      .mockResolvedValueOnce(cleanDryRun())
+      .mockResolvedValueOnce(cleanDryRun({ dry_run: false, committed: true, transaction_mode: "ALL_OR_NOTHING", inserted_rows: 2, would_insert_rows: 0 }));
+    renderModal(); selectFile(); await runDryRun();
+    fireEvent.click(commitButton());
+    await waitFor(() => expect(screen.getByText("Kết quả nhập", { selector: '[aria-current="step"]' })).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Nhập dữ liệu/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Nhập tệp khác" }));
+    expect(screen.getByText("Chọn tệp", { selector: '[aria-current="step"]' })).toBeInTheDocument();
+    expect(screen.getByText("Chưa chọn tệp")).toBeInTheDocument();
+  });
+
+  it("tệp sai định dạng ở bước chọn tệp không chuyển bước", async () => {
+    renderModal();
+    await screen.findByRole("list", { name: "Tiến trình nhập SKU" });
+    selectFile("sku.txt");
+    expect(screen.getByText("Chọn tệp", { selector: '[aria-current="step"]' })).toBeInTheDocument();
+    expect(dryRunButton()).toBeDisabled();
+  });
+
+  it("kết quả kiểm tra có dòng lỗi ở bước hai và chặn nhập", async () => {
+    vi.mocked(importSkuExcel).mockResolvedValueOnce(cleanDryRun({
+      valid_rows: 1,
+      error_rows: 1,
+      row_errors: [{ row: 2, code: "INVALID", field: "sku_code", message: "Mã SKU trống", value: "" }],
+      error_file_available: false,
+      import_report_id: null,
+    }));
+    renderModal(); selectFile();
+    await waitFor(() => expect(dryRunButton()).toBeEnabled());
+    fireEvent.click(dryRunButton());
+    expect(await screen.findByText("Mã SKU trống")).toBeInTheDocument();
+    expect(screen.getByText("Kiểm tra tệp", { selector: '[aria-current="step"]' })).toBeInTheDocument();
+    expect(commitButton()).toBeDisabled();
+  });
+
+  it("nhập bị từ chối chuyển sang màn kết quả với trạng thái không ghi dữ liệu", async () => {
+    vi.mocked(importSkuExcel)
+      .mockResolvedValueOnce(cleanDryRun())
+      .mockRejectedValueOnce(new SkuImportRejectedError(cleanDryRun({
+        dry_run: false, committed: false, transaction_mode: "ALL_OR_NOTHING",
+        valid_rows: 1, error_rows: 1, would_insert_rows: 0,
+        row_errors: [{ row: 2, code: "INVALID", field: "sku_code", message: "Mã SKU trống", value: "" }],
+        error_file_available: false, import_report_id: null,
+      }), "Tệp có lỗi", null));
+    renderModal(); selectFile(); await runDryRun(); fireEvent.click(commitButton());
+    expect(await screen.findByText("Kết quả nhập", { selector: '[aria-current="step"]' })).toBeInTheDocument();
+    expect(screen.getByText("Không được ghi dữ liệu")).toBeInTheDocument();
+    expect(screen.getByText("Mã SKU trống")).toBeInTheDocument();
+  });
+
+  it("tệp đã nhập trước đó hiển thị kết quả xử lý trùng, không báo tạo mới", async () => {
+    vi.mocked(importSkuExcel)
+      .mockResolvedValueOnce(cleanDryRun())
+      .mockResolvedValueOnce(cleanDryRun({
+        dry_run: false, committed: false, duplicate: true,
+        transaction_mode: "ALL_OR_NOTHING", inserted_rows: 0, would_insert_rows: 0,
+      }));
+    renderModal(); selectFile(); await runDryRun(); fireEvent.click(commitButton());
+    expect(await screen.findByText("Đã xử lý trước đó")).toBeInTheDocument();
+    expect(screen.getByText("Kết quả nhập", { selector: '[aria-current="step"]' })).toBeInTheDocument();
+    expect(screen.queryByText("Đã nhập dữ liệu")).not.toBeInTheDocument();
+  });
+
+  it("đổi tùy chọn sau lần kiểm tra lỗi không giữ thông báo lỗi của lựa chọn cũ", async () => {
+    vi.mocked(importSkuExcel).mockRejectedValueOnce(new Error("Lỗi của lựa chọn cũ"));
+    renderModal(); selectFile();
+    await waitFor(() => expect(dryRunButton()).toBeEnabled());
+    fireEvent.click(dryRunButton());
+    expect(await screen.findByText("Lỗi của lựa chọn cũ")).toBeInTheDocument();
+    fireEvent.click(optionSwitch());
+    expect(screen.queryByText("Lỗi của lựa chọn cũ")).not.toBeInTheDocument();
+    expect(commitButton()).toBeDisabled();
+  });
+});
 describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01R3)", () => {
   beforeEach(() => {
     arrangeConstraints();

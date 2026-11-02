@@ -6,6 +6,9 @@
     "generated_by": "scripts/check-ui-styles.mjs --update-baseline"
   },
   "cssImports": {
+    "src/modules/master-data/components/SkuImportModal.tsx": [
+      "./sku-import-modal.css"
+    ],
     "src/modules/master-data/pages/WarehouseConfigScreen.tsx": [
       "@/shared/ui/sku-aligned-settings.css"
     ],

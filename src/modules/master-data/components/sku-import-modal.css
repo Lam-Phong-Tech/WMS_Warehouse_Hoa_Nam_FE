@@ -1,0 +1,147 @@
+.hn-sku-import-dialog .MuiDialog-paper {
+  height: fit-content;
+  max-height: calc(100dvh - 32px);
+}
+
+.hn-sku-import-dialog .MuiDialogContent-root {
+  min-height: 0;
+  padding: 20px 24px;
+}
+
+.hn-sku-import-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--ops-line);
+}
+
+.hn-sku-import-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--ops-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hn-sku-import-step:has([aria-current="step"]) {
+  color: var(--ops-heading);
+}
+
+.hn-sku-import-step-number {
+  display: inline-grid;
+  flex: 0 0 26px;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--ops-line);
+  border-radius: 50%;
+  background: var(--ops-surface);
+}
+
+.hn-sku-import-step:has([aria-current="step"]) .hn-sku-import-step-number {
+  color: var(--ops-surface);
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+}
+
+.hn-sku-import-file-card,
+.hn-sku-import-review-file,
+.hn-sku-import-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.hn-sku-import-file-card {
+  border: 1px dashed var(--ops-primary);
+  border-radius: 12px;
+  background: var(--ops-pale);
+  padding: 20px;
+}
+
+.hn-sku-import-file-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hn-sku-import-review-file > :first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hn-sku-import-file-copy strong,
+.hn-sku-import-review-file strong {
+  color: var(--ops-heading);
+}
+
+.hn-sku-import-review-file {
+  border: 1px solid var(--ops-line);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.hn-sku-import-option-row {
+  padding: 4px 0;
+}
+
+.hn-sku-import-requirements {
+  border-top: 1px solid var(--ops-line);
+  padding-top: 12px;
+}
+
+.hn-sku-import-requirements summary {
+  cursor: pointer;
+  color: var(--ops-heading);
+  font-weight: 600;
+}
+
+.hn-sku-import-requirements > :last-child {
+  display: block;
+  margin-top: 8px;
+}
+
+.hn-sku-import-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.hn-sku-import-actions [data-action-kind="back"] {
+  margin-right: auto;
+}
+
+@media (max-width: 600px) {
+  .hn-sku-import-dialog .MuiDialogContent-root {
+    padding: 16px;
+  }
+
+  .hn-sku-import-steps {
+    gap: 4px;
+    padding-bottom: 16px;
+  }
+
+  .hn-sku-import-step {
+    align-items: flex-start;
+    flex-direction: column;
+    font-size: 11px;
+  }
+
+  .hn-sku-import-file-card {
+    padding: 16px;
+  }
+
+  .hn-sku-import-file-card .MuiButton-root {
+    width: 100%;
+  }
+}

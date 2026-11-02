@@ -50,6 +50,9 @@ import {
   UiStatusBadge,
   UiText,
 } from "@/shared/ui";
+import "./sku-import-modal.css";
+
+type ImportStep = "select" | "review" | "done";
 
 interface SkuImportModalProps {
   open: boolean;
@@ -426,6 +429,8 @@ export function SkuImportModal({
   const dialog = useDialogExit(onClose);
   const t = useT();
   const [file, setFile] = useState<File | null>(null);
+  const [step, setStep] = useState<ImportStep>("select");
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [updateExisting, setUpdateExisting] = useState(false);
   const [previewResult, setPreviewResult] = useState<SkuImportResult | null>(
@@ -445,12 +450,15 @@ export function SkuImportModal({
 
   const invalidatePreview = () => {
     payloadGeneration.current += 1;
+    setPreviewError(null);
     setPreviewResult(null);
     setCommitResult(null);
   };
 
   const resetAll = () => {
     payloadGeneration.current += 1;
+    setStep("select");
+    setPreviewError(null);
     setFile(null);
     setFileInputKey((key) => key + 1);
     setUpdateExisting(false);
@@ -532,10 +540,12 @@ export function SkuImportModal({
         setPreviewResult(null);
         setCommitResult(null);
         setPreviewSignature("");
+        setPreviewError(t("masterData.import.errChecksumMismatch"));
         toast.error(t("masterData.import.errChecksumMismatch"));
         return;
       }
       setCommitResult(null);
+      setPreviewError(null);
       setPreviewResult(result);
       setPreviewSignature(signature);
       if (result.errorRows === 0) {
@@ -556,6 +566,9 @@ export function SkuImportModal({
     onError: (error, payload) => {
       if (isStaleGeneration(payload)) return;
       setCommitResult(null);
+      setPreviewError(
+        getApiErrorMessage(error, t("masterData.import.errValidate")),
+      );
       if (error instanceof SkuImportConcurrencyError) {
         toast.warning(error.message);
         return;
@@ -593,6 +606,7 @@ export function SkuImportModal({
     },
     onSuccess: (result) => {
       setCommitResult(result);
+      setStep("done");
       if (result.duplicate) {
         toast.info(t("masterData.import.alreadyImported"));
         return;
@@ -610,6 +624,7 @@ export function SkuImportModal({
         setCommitResult(null);
         setPreviewResult(null);
         setPreviewSignature("");
+        setPreviewError(t("masterData.import.errStaleShort"));
         toast.error(
           getApiErrorMessage(error, t("masterData.import.errStaleShort")),
         );
@@ -624,6 +639,7 @@ export function SkuImportModal({
       }
       if (error instanceof SkuImportRejectedError) {
         setCommitResult(error.result);
+        setStep("done");
         toast.error(
           getApiErrorMessage(error, t("masterData.import.errHasErrorRows")),
         );
@@ -669,19 +685,66 @@ export function SkuImportModal({
         {...dialog.dialogProps}
         open={open && dialog.open}
         onClose={close}
-        maxWidth={false}
+        className="hn-sku-import-dialog"
+        maxWidth={step === "select" ? "sm" : "md"}
         fullWidth
-        sx={{
-          "& .MuiDialog-container": { justifyContent: "flex-end" },
-          "& .MuiDialog-paper": {
-            m: 0,
-            width: "min(920px, 100vw)",
-            maxWidth: "100vw",
-            height: "100dvh",
-            maxHeight: "100dvh",
-            borderRadius: 0,
-          },
-        }}
+        actions={
+          <Box className="hn-sku-import-actions">
+            {step === "review" ? (
+              <ActionButton
+                kind="back"
+                onClick={() => setStep("select")}
+                disabled={previewMutation.isPending || commitMutation.isPending}
+              >
+                {t("masterData.import.back")}
+              </ActionButton>
+            ) : null}
+            {step !== "done" ? (
+              <>
+                <ActionButton
+                  kind="view"
+                  disabled={
+                    !canImport ||
+                    !fileSha256 ||
+                    digestPending ||
+                    commitMutation.isPending ||
+                    previewMutation.isPending
+                  }
+                  onClick={() => {
+                    const payload = currentPayload();
+                    if (payload) {
+                      setPreviewError(null);
+                      setStep("review");
+                      previewMutation.mutate(payload);
+                    }
+                  }}
+                >
+                  {previewMutation.isPending || digestPending
+                    ? t("masterData.import.validating")
+                    : t("masterData.import.validate")}
+                </ActionButton>
+                {step === "review" ? (
+                  <ActionButton
+                    kind="upload"
+                    disabled={!canCommit}
+                    onClick={() => {
+                      const payload = currentPayload();
+                      if (payload) commitMutation.mutate(payload);
+                    }}
+                  >
+                    {commitMutation.isPending
+                      ? t("masterData.import.committing")
+                      : t("masterData.import.commit")}
+                  </ActionButton>
+                ) : null}
+              </>
+            ) : (
+              <ActionButton kind="reset" onClick={resetAll}>
+                {t("masterData.import.importAnother")}
+              </ActionButton>
+            )}
+          </Box>
+        }
         title={
           <Box
             sx={{
@@ -734,84 +797,199 @@ export function SkuImportModal({
           </Box>
         }
       >
-        <Stack spacing={1.75}>
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ flexWrap: "wrap", rowGap: 1.5, alignItems: "center" }}
+        <Stack spacing={2} className="hn-sku-import-body">
+          <Box
+            component="ol"
+            className="hn-sku-import-steps"
+            aria-label={t("masterData.import.stepsAria")}
           >
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-              <input
-                key={fileInputKey}
-                ref={fileInputRef}
-                type="file"
-                accept={acceptAttribute(constraints)}
-                aria-label={t("masterData.import.fileAria")}
-                tabIndex={-1}
-                hidden
-                onChange={(event) => {
-                  const next = event.target.files?.[0] ?? null;
-                  const error = next ? precheckFile(next, constraints) : null;
-                  setFileError(error);
-                  if (error) {
-                    // Tệp sai đuôi/quá cỡ: không giữ lại, đổi key để input tự xoá.
-                    setFile(null);
-                    setFileInputKey((key) => key + 1);
-                  } else {
-                    setFile(next);
+            {(["select", "review", "done"] as const).map((item, index) => (
+              <Box component="li" key={item} className="hn-sku-import-step">
+                <Box
+                  component="span"
+                  className="hn-sku-import-step-number"
+                  aria-hidden="true"
+                >
+                  {index + 1}
+                </Box>
+                <Box
+                  component="span"
+                  aria-current={step === item ? "step" : undefined}
+                >
+                  {t(
+                    item === "select"
+                      ? "masterData.import.stepSelect"
+                      : item === "review"
+                        ? "masterData.import.stepReview"
+                        : "masterData.import.stepDone",
+                  )}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          <input
+            key={fileInputKey}
+            ref={fileInputRef}
+            type="file"
+            accept={acceptAttribute(constraints)}
+            aria-label={t("masterData.import.fileAria")}
+            tabIndex={-1}
+            hidden
+            onChange={(event) => {
+              const next = event.target.files?.[0] ?? null;
+              const error = next ? precheckFile(next, constraints) : null;
+              setFileError(error);
+              if (error) {
+                setFile(null);
+                setFileInputKey((key) => key + 1);
+              } else {
+                setFile(next);
+              }
+              invalidatePreview();
+            }}
+          />
+
+          {step === "select" ? (
+            <>
+              <Box className="hn-sku-import-file-card">
+                <Box className="hn-sku-import-file-copy">
+                  <Box component="strong">
+                    {t("masterData.import.fileCardTitle")}
+                  </Box>
+                  <UiText variant="secondary">
+                    {file?.name ?? t("masterData.import.noFileSelected")}
+                  </UiText>
+                </Box>
+                <ActionButton
+                  kind="upload"
+                  type="button"
+                  disabled={
+                    !canImport ||
+                    previewMutation.isPending ||
+                    commitMutation.isPending
                   }
-                  invalidatePreview();
-                }}
-              />
-              <ActionButton
-                kind="upload"
-                type="button"
-                disabled={
-                  !canImport ||
-                  previewMutation.isPending ||
-                  commitMutation.isPending
-                }
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {t("masterData.import.uploadFile")}
-              </ActionButton>
-              <Box sx={{ overflowWrap: "anywhere" }}>
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {t("masterData.import.uploadFile")}
+                </ActionButton>
+              </Box>
+              <Box className="hn-sku-import-option-row">
+                <Stack
+                  direction="row"
+                  spacing={0.75}
+                  sx={{ alignItems: "center" }}
+                >
+                  <Switch
+                    checked={updateExisting}
+                    onChange={(event) => {
+                      setUpdateExisting(event.target.checked);
+                      invalidatePreview();
+                    }}
+                    slotProps={{
+                      input: {
+                        "aria-label": t("masterData.import.allowUpdateAria"),
+                      },
+                    }}
+                  />
+                  <UiText variant="body">
+                    {t("masterData.import.allowUpdateLabel")}
+                  </UiText>
+                </Stack>
+                <ActionButton
+                  kind="download"
+                  disabled={templateMutation.isPending}
+                  onClick={() => templateMutation.mutate()}
+                >
+                  {templateMutation.isPending
+                    ? t("masterData.import.downloading")
+                    : t("masterData.import.downloadTemplate")}
+                </ActionButton>
+              </Box>
+              <Box component="details" className="hn-sku-import-requirements">
+                <Box component="summary">
+                  {t("masterData.import.requirementsTitle")}
+                </Box>
+                <UiText variant="secondary">
+                  {t("masterData.import.columnsHint")}
+                </UiText>
+              </Box>
+              {fileError ? <UiAlert tone="error">{fileError}</UiAlert> : null}
+              {digestError ? (
+                <UiAlert tone="error">{digestError}</UiAlert>
+              ) : null}
+              {digestPending ? (
+                <UiText variant="secondary">
+                  {t("masterData.import.checkingFile")}
+                </UiText>
+              ) : null}
+            </>
+          ) : null}
+
+          {step === "review" ? (
+            <>
+              <Box className="hn-sku-import-review-file">
+                <Box>
+                  <Box component="strong">
+                    {t("masterData.import.selectedFile")}
+                  </Box>
+                  <UiText variant="secondary">
+                    {file?.name ?? t("masterData.import.noFileSelected")}
+                  </UiText>
+                </Box>
+                <Stack
+                  direction="row"
+                  spacing={0.75}
+                  sx={{ alignItems: "center" }}
+                >
+                  <Switch
+                    checked={updateExisting}
+                    onChange={(event) => {
+                      setUpdateExisting(event.target.checked);
+                      invalidatePreview();
+                    }}
+                    slotProps={{
+                      input: {
+                        "aria-label": t("masterData.import.allowUpdateAria"),
+                      },
+                    }}
+                  />
+                  <UiText variant="body">
+                    {t("masterData.import.allowUpdateLabel")}
+                  </UiText>
+                </Stack>
+              </Box>
+              {previewError ? (
+                <UiAlert tone="error">{previewError}</UiAlert>
+              ) : null}
+              {previewMutation.isPending || digestPending ? (
+                <UiText variant="secondary">
+                  {t("masterData.import.validating")}
+                </UiText>
+              ) : previewSignature !== "" && !previewMatchesCurrentPayload ? (
+                <UiText variant="secondary">
+                  {t("masterData.import.changedSinceCheck")}
+                </UiText>
+              ) : !previewResult ? (
+                <UiText variant="secondary">
+                  {t("masterData.import.mustFixFirst")}
+                </UiText>
+              ) : null}
+            </>
+          ) : null}
+
+          {step === "done" ? (
+            <Box className="hn-sku-import-review-file">
+              <Box>
+                <Box component="strong">
+                  {t("masterData.import.selectedFile")}
+                </Box>
                 <UiText variant="secondary">
                   {file?.name ?? t("masterData.import.noFileSelected")}
                 </UiText>
               </Box>
-            </Stack>
-            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-              <Switch
-                checked={updateExisting}
-                onChange={(event) => {
-                  setUpdateExisting(event.target.checked);
-                  invalidatePreview();
-                }}
-                slotProps={{
-                  input: {
-                    "aria-label": t("masterData.import.allowUpdateAria"),
-                  },
-                }}
-              />
-              <UiText variant="body">
-                {t("masterData.import.allowUpdateLabel")}
-              </UiText>
-            </Stack>
-            <ActionButton
-              kind="download"
-              disabled={templateMutation.isPending}
-              onClick={() => templateMutation.mutate()}
-            >
-              {templateMutation.isPending
-                ? t("masterData.import.downloading")
-                : t("masterData.import.downloadTemplate")}
-            </ActionButton>
-          </Stack>
-
-          <UiText variant="secondary">
-            {t("masterData.import.columnsHint")}
-          </UiText>
+            </Box>
+          ) : null}
 
           {!canImport ? (
             <UiAlert tone="warning">
@@ -819,63 +997,9 @@ export function SkuImportModal({
             </UiAlert>
           ) : null}
 
-          {fileError ? <UiAlert tone="error">{fileError}</UiAlert> : null}
-          {digestError ? <UiAlert tone="error">{digestError}</UiAlert> : null}
-
-          <Stack spacing={1}>
-            <Stack
-              direction="row"
-              spacing={1.5}
-              sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
-            >
-              <ActionButton
-                kind="view"
-                disabled={
-                  !canImport ||
-                  !fileSha256 ||
-                  digestPending ||
-                  commitMutation.isPending ||
-                  previewMutation.isPending
-                }
-                onClick={() => {
-                  const payload = currentPayload();
-                  if (payload) previewMutation.mutate(payload);
-                }}
-              >
-                {previewMutation.isPending || digestPending
-                  ? t("masterData.import.validating")
-                  : t("masterData.import.validate")}
-              </ActionButton>
-              <ActionButton
-                kind="upload"
-                disabled={!canCommit}
-                onClick={() => {
-                  const payload = currentPayload();
-                  if (payload) commitMutation.mutate(payload);
-                }}
-              >
-                {commitMutation.isPending
-                  ? t("masterData.import.committing")
-                  : t("masterData.import.commit")}
-              </ActionButton>
-            </Stack>
-
-            {digestPending ? (
-              <UiText variant="secondary">
-                {t("masterData.import.checkingFile")}
-              </UiText>
-            ) : previewSignature !== "" && !previewMatchesCurrentPayload ? (
-              <UiText variant="secondary">
-                {t("masterData.import.changedSinceCheck")}
-              </UiText>
-            ) : !previewResult ? (
-              <UiText variant="secondary">
-                {t("masterData.import.mustFixFirst")}
-              </UiText>
-            ) : null}
-          </Stack>
-
-          {activeResult ? (
+          {step !== "select" &&
+          activeResult &&
+          (step === "done" || previewMatchesCurrentPayload) ? (
             <Stack spacing={1.25}>
               <ResultSummary
                 result={activeResult}
