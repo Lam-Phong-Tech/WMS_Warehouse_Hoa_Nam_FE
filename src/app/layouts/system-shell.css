@@ -206,6 +206,43 @@
   gap: 6px;
 }
 
+/* Dashboard dùng cùng nền sáng với thanh trên màn SKU. */
+.hn-system-shell.hn-map-shell .hn-topbar {
+  border-bottom: 1px solid var(--map-line);
+  background: var(--map-card);
+  color: var(--map-heading);
+}
+
+.hn-system-shell.hn-map-shell .hn-topbar .topbar-search {
+  background: var(--map-surface);
+}
+
+.hn-system-shell.hn-map-shell .hn-topbar :is(.icon-button, .avatar-button) {
+  color: var(--map-link);
+}
+
+.hn-system-shell.hn-map-shell .hn-topbar .topbar-profile-summary strong {
+  color: var(--map-heading);
+}
+
+.hn-system-shell.hn-map-shell .hn-topbar .topbar-profile-summary small {
+  color: var(--map-muted);
+}
+
+.hn-system-shell.hn-map-shell
+  .hn-topbar
+  :is(.icon-button, .avatar-button):hover,
+.hn-system-shell.hn-map-shell
+  .hn-topbar
+  .header-menu-toggle[aria-expanded="true"] {
+  background: var(--map-pale);
+  color: var(--map-link);
+}
+
+.hn-system-shell.hn-map-shell .hn-topbar :is(button, input):focus-visible {
+  outline-color: var(--map-link);
+}
+
 /* Các trang nghiệp vụ dùng thanh sáng với breadcrumb như mẫu SKU. */
 .hn-system-shell:not(.hn-map-shell) .hn-topbar {
   gap: 20px;
