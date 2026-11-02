@@ -28,13 +28,11 @@ import {
   SPACING,
   UiAppShell,
   useMediaQuery,
-  UiFooter,
 } from "@/shared/ui";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { queryClient } from "@/app/providers/query-client";
 import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
-import { tStatic as tUi } from "@/shared/i18n/useT";
 
 /**
  * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
@@ -218,20 +216,6 @@ export function MainLayout() {
             onOpenMenu={() => setMobileNavOpen(true)}
             isDashboard={isMapReferenceScreen}
           />
-        }
-        footer={
-          isProfilePage ? null : (
-            /*
-             * Không còn dòng ghi công "Icons by Flaticon" ở đây: UAT TC_UI_01
-             * (09/2026) báo người dùng kho không hiểu dòng chữ tiếng Anh này là gì.
-             * Bộ icon vẫn là Flaticon Uicons (xem src/styles/hn-icon-font.css) —
-             * điều khoản ghi công của gói cần được xác nhận lại ở cấp dự án.
-             */
-            <UiFooter>
-              Hoa Nam ©{new Date().getFullYear()}
-              {" " + tUi("updatedUi.text_f23d4edc7b6e")}
-            </UiFooter>
-          )
         }
       >
         <Box

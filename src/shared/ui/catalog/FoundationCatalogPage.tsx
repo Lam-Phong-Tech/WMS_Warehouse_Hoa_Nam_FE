@@ -41,7 +41,6 @@ import {
   UiKpiCard,
   UiPagination,
   UiAppShell,
-  UiFooter,
   UiPageContainer,
   UiSidebarNav,
   UiStateSurface,
@@ -316,7 +315,6 @@ function LayoutSection({
               }
             />
           }
-          footer={<UiFooter>{t("catalog.layout.footer")}</UiFooter>}
         >
           <UiPageContainer
             breadcrumb={

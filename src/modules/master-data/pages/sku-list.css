@@ -501,8 +501,11 @@
 .hn-sku-detail-link {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: 0;
+  border-radius: 8px;
   background: transparent;
   color: var(--sku-link);
   font: inherit;
@@ -816,7 +819,7 @@
 }
 .hn-sku-screen table.sku-table td.actions-col,
 .hn-sku-screen table.sku-table th:last-child {
-  text-align: right;
+  text-align: center;
 }
 .hn-sku-screen table.sku-table [data-testid="sku-thumbnail-empty"] {
   color: var(--sku-link);

@@ -1225,9 +1225,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           <button
                             type="button"
                             className="hn-sku-detail-link"
+                            aria-label={copy("Xem chi tiết", "View details")}
                             onClick={() => setViewing(record)}
                           >
-                            {copy("Xem chi tiết", "View details")}
                             <span aria-hidden="true">→</span>
                           </button>
                         </td>

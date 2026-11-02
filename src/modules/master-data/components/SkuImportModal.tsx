@@ -669,8 +669,19 @@ export function SkuImportModal({
         {...dialog.dialogProps}
         open={open && dialog.open}
         onClose={close}
-        maxWidth="md"
+        maxWidth={false}
         fullWidth
+        sx={{
+          "& .MuiDialog-container": { justifyContent: "flex-end" },
+          "& .MuiDialog-paper": {
+            m: 0,
+            width: "min(920px, 100vw)",
+            maxWidth: "100vw",
+            height: "100dvh",
+            maxHeight: "100dvh",
+            borderRadius: 0,
+          },
+        }}
         title={
           <Box
             sx={{
