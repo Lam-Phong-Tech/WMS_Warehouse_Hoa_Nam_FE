@@ -368,13 +368,13 @@
         white-space: nowrap;
       }
       .sample-table {
-        min-width: 670px;
+        min-width: 820px;
       }
       .sample-table th {
         background: #f5f9fa;
         color: var(--heading);
-        font-size: 14px;
-        line-height: 20px;
+        font-size: 16px;
+        line-height: 24px;
         font-weight: 600;
         letter-spacing: 0.01em;
         padding: 12px 17px;
@@ -723,10 +723,10 @@
           </article>
           <article class="card">
             <span class="tag">Tinh chỉnh</span>
-            <strong>Tiêu đề bảng 14px là phù hợp</strong>
+            <strong>Tiêu đề bảng 16px theo yêu cầu</strong>
             <p>
-              Giữ cỡ 14px vừa tăng; dùng độ đậm 600 và nhãn theo câu để bảng nhẹ
-              hơn mức 700 viết hoa toàn bộ hiện tại.
+              16px nổi bật hơn dữ liệu 14px. Nếu bảng nhiều cột trông nặng, dùng
+              độ đậm 600 và nhãn theo câu thay cho 700 viết hoa toàn bộ.
             </p>
           </article>
           <article class="card">
@@ -835,7 +835,23 @@
                 <td class="use">Body, ô nhập, dữ liệu bảng, đoạn văn ngắn</td>
               </tr>
               <tr>
-                <td class="role">Tiêu đề cột / nút</td>
+                <td class="role">Tiêu đề cột</td>
+                <td class="number">16 / 24 · 600</td>
+                <td
+                  class="sample"
+                  style="
+                    font-size: 16px;
+                    line-height: 24px;
+                    font-weight: 600;
+                    color: #003b63;
+                  "
+                >
+                  Hãng / Nhóm
+                </td>
+                <td class="use">Th; viết hoa theo nhãn thông thường</td>
+              </tr>
+              <tr>
+                <td class="role">Nút thao tác</td>
                 <td class="number">14 / 20 · 600</td>
                 <td
                   class="sample"
@@ -846,11 +862,9 @@
                     color: #003b63;
                   "
                 >
-                  Hãng / Nhóm
+                  Lưu SKU
                 </td>
-                <td class="use">
-                  Th / button; viết hoa theo nhãn thông thường
-                </td>
+                <td class="use">Button chính và phụ</td>
               </tr>
               <tr>
                 <td class="role">Nhãn form / mô tả</td>
@@ -1043,9 +1057,10 @@
               </tr>
               <tr>
                 <td>Đầu bảng SKU</td>
-                <td>Đã tăng từ 11px lên 14px; hiện 700 và uppercase.</td>
+                <td>Đã tăng từ 11px lên 16px; hiện 700 và uppercase.</td>
                 <td class="review">
-                  Giữ 14px; cân nhắc 600 và nhãn theo câu để bớt nặng.
+                  Giữ 16px; cân nhắc 600 và nhãn theo câu nếu bảng trông quá
+                  nặng.
                 </td>
               </tr>
               <tr>
@@ -1088,7 +1103,7 @@
             <h3>Bảng, form và màn nhỏ</h3>
             <ul>
               <li>
-                Bảng: 14px dữ liệu, 14px tiêu đề cột, 15px cho mã/tên chính,
+                Bảng: 14px dữ liệu, 16px tiêu đề cột, 15px cho mã/tên chính,
                 13px cho dòng phụ.
               </li>
               <li>
