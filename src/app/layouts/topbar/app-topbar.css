@@ -394,7 +394,7 @@
 .hn-topbar .search-menu {
   right: auto;
   left: 0;
-  width: min(520px, calc(100vw - 32px));
+  width: 100%;
 }
 .hn-topbar .notification-menu {
   width: 370px;
@@ -871,9 +871,15 @@
   }
   .hn-topbar .notification-menu,
   .hn-topbar .account-menu,
-  .hn-topbar .compact-menu,
-  .hn-topbar .search-menu {
+  .hn-topbar .compact-menu {
     width: auto;
+  }
+  .hn-topbar .search-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: auto;
+    left: 0;
+    width: 100%;
   }
   .hn-topbar .language-menu {
     left: auto;
