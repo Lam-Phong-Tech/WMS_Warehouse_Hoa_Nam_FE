@@ -100,7 +100,6 @@ import {
   ActionButton,
   ActionIconButton,
   RowActionButton,
-  RowActionGroup,
 } from "@/shared/components/actions";
 import {
   Box,
@@ -113,8 +112,8 @@ import {
   UiAlert,
   UiAutocomplete,
   type UiAutocompleteOption,
-  UiDescriptions,
   UiDialog,
+  Drawer,
   UiNumberField,
   UiPagination,
   UiSelect,
@@ -500,11 +499,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       skuCode: (r) => r.sku_code ?? r.code,
       type: (r) => skuTypeLabel(r.sku_type, t),
       brand: (r) => refLabel(brandIndex, r.brand_id),
-      category: (r) => refLabel(categoryIndex, r.category_id),
-      minStock: (r) => r.min_stock ?? null,
-      maxStock: (r) => r.max_stock ?? null,
       status: (r) => r.status,
-      published: (r) => (r.published_to_app ? 1 : 0),
     },
   );
 
@@ -513,6 +508,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     setPublishError(null);
     const willPublish = !record.published_to_app;
     const skuCode = record.sku_code ?? record.code;
+    const recordId = record.sku_id ?? record.id ?? "";
     const confirmed = await confirmAction({
       title: willPublish
         ? t("masterData.sku.publishTitle")
@@ -527,11 +523,16 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     if (!confirmed) return;
 
     try {
-      await publishMutation.mutateAsync({
-        id: record.sku_id ?? record.id ?? "",
+      const updatedRecord = await publishMutation.mutateAsync({
+        id: recordId,
         version: record.version,
         publishedToApp: willPublish,
       });
+      setViewing((current) =>
+        (current?.sku_id ?? current?.id) === recordId
+          ? { ...current, ...updatedRecord, published_to_app: willPublish }
+          : current,
+      );
       toast.success(
         willPublish
           ? t("masterData.sku.published")
@@ -804,12 +805,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         <header className="hn-sku-header">
           <div>
             <h1>{copy("Danh sách SKU", "SKU list")}</h1>
-            <p>
-              {copy(
-                "Quản lý thông tin định danh và trạng thái sử dụng của sản phẩm",
-                "Manage product identification and usage status",
-              )}
-            </p>
           </div>
           <div className="hn-sku-header-actions">
             {canManage ? (
@@ -977,6 +972,19 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   {copy("Đặt lại", "Reset")}
                 </ActionButton>
               </div>
+              <FormControlLabel
+                className="hn-sku-pending-option"
+                control={
+                  <Checkbox
+                    checked={pendingInfoOnly}
+                    onChange={() => {
+                      setPendingInfoOnly((current) => !current);
+                      setPage(1);
+                    }}
+                  />
+                }
+                label={t("masterData.sku.pendingInfo")}
+              />
             </form>
           </div>
         </section>
@@ -1001,6 +1009,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 value: status,
                 label: masterStatusLabel(status, t),
                 clear: () => setStatus(""),
+              },
+              {
+                value: pendingInfoOnly,
+                label: t("masterData.sku.pendingInfo"),
+                clear: () => setPendingInfoOnly(false),
               },
             ]
               .filter((filter) => Boolean(filter.value))
@@ -1077,41 +1090,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </Box>
         ) : null}
 
-        <section className="hn-sku-list-card" aria-labelledby="sku-list-title">
-          <div className="hn-sku-list-heading">
-            <h2 id="sku-list-title">
-              {copy("Danh sách SKU", "SKU list")}{" "}
-              <span className="hn-sku-count">
-                {query.isLoading
-                  ? "—"
-                  : pagination.total.toLocaleString(
-                      language === "vi" ? "vi-VN" : "en-US",
-                    )}
-              </span>
-            </h2>
-            <div className="hn-sku-list-tools">
-              <ActionButton
-                kind="filter"
-                aria-pressed={pendingInfoOnly}
-                className="hn-sku-pending-filter"
-                onClick={() => {
-                  setPendingInfoOnly((current) => !current);
-                  setPage(1);
-                }}
-                title={t("masterData.sku.pendingTooltip")}
-              >
-                {t("masterData.sku.pendingInfo")}
-              </ActionButton>
-              <ActionButton
-                kind="refresh"
-                iconOnly
-                label={copy("Làm mới danh sách SKU", "Refresh SKU list")}
-                onClick={refreshList}
-                loading={query.isFetching}
-                disabled={offline}
-              />
-            </div>
-          </div>
+        <section
+          className="hn-sku-list-card"
+          aria-label={copy("Bảng danh sách SKU", "SKU list table")}
+        >
           <div
             className="hn-sku-table-scroll"
             role="region"
@@ -1126,12 +1108,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <thead>
                 <tr>
                   <th className="stt-col">STT</th>
-                  {/* Cột ảnh: nhận diện hàng bằng hình nhanh hơn đọc mã — nhiều mã
-                    DongCheng chỉ khác nhau ở cỡ/đuôi mã máy. */}
-                  <th
-                    className="thumb-col"
-                    aria-label={t("masterData.sku.colImage")}
-                  />
                   <SortableTh
                     label="SKU"
                     sortKey="skuCode"
@@ -1145,45 +1121,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     onSort={requestSort}
                   />
                   <SortableTh
-                    label={t("masterData.sku.colBrand")}
+                    label={copy("Hãng / Nhóm", "Brand / Category")}
                     sortKey="brand"
                     sortState={sortState}
                     onSort={requestSort}
                   />
                   <SortableTh
-                    label={t("masterData.sku.colCategory")}
-                    sortKey="category"
-                    className="wrap-col"
-                    sortState={sortState}
-                    onSort={requestSort}
-                  />
-                  <SortableTh
-                    label={t("masterData.sku.colMinStock")}
-                    sortKey="minStock"
-                    className="wrap-col"
-                    sortState={sortState}
-                    onSort={requestSort}
-                    sortType="value"
-                  />
-                  <SortableTh
-                    label={t("masterData.sku.colMaxStock")}
-                    sortKey="maxStock"
-                    className="wrap-col"
-                    sortState={sortState}
-                    onSort={requestSort}
-                    sortType="value"
-                  />
-                  <SortableTh
                     label={t("masterData.status.label")}
                     sortKey="status"
-                    sortState={sortState}
-                    onSort={requestSort}
-                    sortType="value"
-                  />
-                  <SortableTh
-                    label={t("masterData.sku.colPvApp")}
-                    sortKey="published"
-                    className="wrap-col"
                     sortState={sortState}
                     onSort={requestSort}
                     sortType="value"
@@ -1196,7 +1141,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <tbody>
                 {query.isLoading ? (
                   <tr>
-                    <td colSpan={11} className="muted">
+                    <td colSpan={6} className="muted">
                       <SkuListEmptyState
                         loading
                         hasRows={false}
@@ -1212,8 +1157,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 ) : sortedRows.length > 0 ? (
                   sortedRows.map((record) => {
                     const recordId = record.sku_id ?? record.id ?? "";
-                    const isPublished = Boolean(record.published_to_app);
-                    const statusAllowsPublish = record.status === "ACTIVE";
                     return (
                       <tr
                         key={recordId}
@@ -1248,107 +1191,61 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         <td className="stt-col">
                           {mvpRowNumber(page, perPage, originalIndexOf(record))}
                         </td>
-                        <td className="thumb-col">
-                          <SkuThumbnail
-                            url={record.image_url}
-                            name={record.sku_name ?? record.name}
-                          />
-                        </td>
                         <td className="name-col">
-                          <TruncatedText lines={1} maxWidth={300}>
-                            <SkuLink
-                              id={record.sku_id ?? undefined}
-                              code={record.sku_code ?? record.code ?? ""}
+                          <div className="hn-sku-cell">
+                            <SkuThumbnail
+                              url={record.image_url}
+                              name={record.sku_name ?? record.name}
+                              size={44}
                             />
-                          </TruncatedText>
-                          <TruncatedText
-                            lines={1}
-                            maxWidth={300}
-                            className="muted"
-                          >
-                            {record.sku_name ?? record.name ?? ""}
-                          </TruncatedText>
+                            <div className="hn-sku-cell-text">
+                              <TruncatedText lines={1} maxWidth={380}>
+                                <SkuLink
+                                  id={record.sku_id ?? undefined}
+                                  code={record.sku_code ?? record.code ?? ""}
+                                />
+                              </TruncatedText>
+                              <TruncatedText
+                                lines={1}
+                                maxWidth={380}
+                                className="muted"
+                              >
+                                {record.sku_name ?? record.name ?? ""}
+                              </TruncatedText>
+                            </div>
+                          </div>
                         </td>
                         <td>{skuTypeLabel(record.sku_type, t)}</td>
-                        {/* Bỏ title={brand_id/category_id}: tooltip trước đây in
-                        nguyên UUID ra khi rê chuột. */}
-                        <td>{refLabel(brandIndex, record.brand_id)}</td>
-                        <td>{refLabel(categoryIndex, record.category_id)}</td>
-                        <td>{stockThresholdLabel(record.min_stock)}</td>
-                        <td>{stockThresholdLabel(record.max_stock)}</td>
+                        <td>
+                          <div className="hn-sku-brand-category">
+                            <span>{refLabel(brandIndex, record.brand_id)}</span>
+                            <span>
+                              {refLabel(categoryIndex, record.category_id)}
+                            </span>
+                          </div>
+                        </td>
                         <td>
                           <UiStatusBadge
                             tone={masterStatusTone(record.status)}
                             label={masterStatusLabel(record.status, t)}
                           />
                         </td>
-                        <td>
-                          <UiStatusBadge
-                            tone={isPublished ? "success" : "warning"}
-                            label={
-                              isPublished
-                                ? t("masterData.sku.publishedBadge")
-                                : t("masterData.sku.unpublishedBadge")
-                            }
-                            title={
-                              isPublished
-                                ? t("masterData.sku.publishedTooltip")
-                                : t("masterData.sku.unpublishedTooltip")
-                            }
-                          />
-                        </td>
                         <td className="actions-col">
-                          <RowActionGroup>
-                            {/* Nhãn mặc định của kind="view" đã là "Xem"/"View"
-                              song ngữ — trước đây ghi cứng "Xem" nên bản tiếng
-                              Anh vẫn ra tiếng Việt (file này được miễn quét
-                              trong i18n-coverage nên guard không bắt được). */}
-                            <RowActionButton
-                              kind="view"
-                              onClick={() => setViewing(record)}
-                            />
-                            {canManage ? (
-                              <RowActionButton
-                                kind="edit"
-                                iconOnly
-                                title={t("masterData.common.edit")}
-                                onClick={() => openEdit(record)}
-                              >
-                                {t("masterData.common.edit")}
-                              </RowActionButton>
-                            ) : null}
-                            {canPublish ? (
-                              <RowActionButton
-                                // Nút 2 trạng thái: màu phải đổi theo NGHĨA của
-                                // lần bấm sắp tới — đỏ khi sắp gỡ, xanh khi sắp đưa lên.
-                                kind={isPublished ? "unpublish" : "publish"}
-                                iconOnly
-                                disabled={
-                                  publishMutation.isPending ||
-                                  (!isPublished && !statusAllowsPublish)
-                                }
-                                title={
-                                  !isPublished && !statusAllowsPublish
-                                    ? t("masterData.sku.errPublishInactive")
-                                    : isPublished
-                                      ? t("masterData.sku.unpublishAction")
-                                      : t("masterData.sku.publishAction")
-                                }
-                                onClick={() => void togglePublish(record)}
-                              >
-                                {isPublished
-                                  ? t("masterData.sku.unpublishConfirm")
-                                  : t("masterData.sku.publishConfirm")}
-                              </RowActionButton>
-                            ) : null}
-                          </RowActionGroup>
+                          <button
+                            type="button"
+                            className="hn-sku-detail-link"
+                            onClick={() => setViewing(record)}
+                          >
+                            {copy("Xem chi tiết", "View details")}
+                            <span aria-hidden="true">→</span>
+                          </button>
                         </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={11} className="muted">
+                    <td colSpan={6} className="muted">
                       <SkuListEmptyState
                         error={query.error}
                         loading={false}
@@ -1403,155 +1300,605 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </div>
         </section>
 
-        <UiDialog
-          className="hn-sku-dialog"
+        <Drawer
+          className="hn-sku-detail-drawer"
+          anchor="right"
           open={Boolean(viewing)}
           onClose={() => setViewing(null)}
-          maxWidth="sm"
-          fullWidth
-          slotProps={{ paper: { sx: { maxWidth: 760 } } }}
-          title={
-            <>
-              {t("masterData.sku.detailTitle")}
+          slotProps={{
+            paper: {
+              "aria-label": t("masterData.sku.detailTitle"),
+            },
+          }}
+        >
+          <div className="hn-sku-detail-shell">
+            <header className="hn-sku-detail-top">
+              <strong>{t("masterData.sku.detailTitle")}</strong>
               <ActionIconButton
                 kind="close"
                 label={t("common.close")}
                 onClick={() => setViewing(null)}
-                sx={{ position: "absolute", right: 10, top: 8 }}
               />
-            </>
-          }
-        >
-          {viewing ? (
-            <Box
-              sx={{
-                border: 1,
-                borderColor: "divider",
-                borderRadius: "var(--ops-radius-card)",
-                p: 2,
-              }}
-            >
-              {/* Ảnh sản phẩm mở đầu modal: xem chi tiết một mã hàng thì thứ
-                  đầu tiên người dùng cần là nhìn thấy nó trông thế nào. */}
-              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                <SkuThumbnail
-                  url={viewing.image_url}
-                  name={viewing.sku_name ?? viewing.name}
-                  size={180}
-                />
-              </Box>
-              <UiDescriptions
-                columns={2}
-                items={[
-                  {
-                    label: t("masterData.sku.fieldCode"),
-                    value: (
-                      <SkuLink
-                        id={viewing.sku_id ?? undefined}
-                        code={viewing.sku_code ?? viewing.code ?? ""}
+            </header>
+            {viewing ? (
+              <>
+                <div className="hn-sku-detail-body">
+                  <section className="hn-sku-detail-intro">
+                    <div className="hn-sku-detail-overline">
+                      {copy("THÔNG TIN SKU", "SKU INFORMATION")}
+                    </div>
+                    <div className="hn-sku-detail-identity">
+                      <SkuThumbnail
+                        url={viewing.image_url}
+                        name={viewing.sku_name ?? viewing.name}
+                        size={52}
                       />
-                    ),
-                  },
-                  {
-                    label: t("masterData.sku.fieldName"),
-                    value: viewing.sku_name ?? viewing.name,
-                  },
-                  {
-                    label: t("masterData.sku.colType"),
-                    value: skuTypeLabel(viewing.sku_type, t),
-                  },
-                  {
-                    label: t("masterData.sku.fieldUnit"),
-                    value: viewing.unit || EMPTY_TEXT,
-                  },
-                  {
-                    label: t("masterData.sku.colBrand"),
-                    value: refLabel(brandIndex, viewing.brand_id),
-                  },
-                  {
-                    label: t("masterData.sku.colCategory"),
-                    value: refLabel(categoryIndex, viewing.category_id),
-                  },
-                  {
-                    label: "Model",
-                    value: refLabel(modelIndex, viewing.model_id),
-                  },
-                  {
-                    label: t("masterData.sku.fieldPowerSource"),
-                    value: viewing.power_source_id
-                      ? refLabel(powerSourceIndex, viewing.power_source_id)
-                      : viewing.power_or_voltage || EMPTY_TEXT,
-                  },
-                  {
-                    label: t("masterData.sku.fieldPackaging"),
-                    value: viewing.package_variant_id
-                      ? refLabel(
-                          packageVariantIndex,
-                          viewing.package_variant_id,
-                        )
-                      : viewing.package_variant || EMPTY_TEXT,
-                  },
-                  {
-                    label: t("masterData.sku.fieldVersion"),
-                    value: viewing.version_code || EMPTY_TEXT,
-                  },
-                  {
-                    label: t("masterData.sku.colMinStock"),
-                    value: stockThresholdLabel(viewing.min_stock),
-                  },
-                  {
-                    label: t("masterData.sku.colMaxStock"),
-                    value: stockThresholdLabel(viewing.max_stock),
-                  },
-                  {
-                    label: t("masterData.sku.fieldSerialTracked"),
-                    value: viewing.is_serial_tracked
-                      ? t("masterData.sku.yes")
-                      : t("masterData.sku.no"),
-                  },
-                  {
-                    label: t("masterData.status.label"),
-                    value: (
+                      <div>
+                        <h2>{viewing.sku_code ?? viewing.code}</h2>
+                        <p>{viewing.sku_name ?? viewing.name}</p>
+                      </div>
+                    </div>
+                    <div className="hn-sku-detail-badges">
                       <UiStatusBadge
                         tone={masterStatusTone(viewing.status)}
                         label={masterStatusLabel(viewing.status, t)}
                       />
-                    ),
-                  },
-                  {
-                    label: t("masterData.sku.colPvApp"),
-                    value: viewing.published_to_app
-                      ? t("masterData.sku.publishedBadge")
-                      : t("masterData.sku.unpublishedBadge"),
-                  },
-                ]}
-              />
-            </Box>
-          ) : null}
-        </UiDialog>
+                      <UiStatusBadge
+                        tone={viewing.published_to_app ? "success" : "warning"}
+                        label={
+                          viewing.published_to_app
+                            ? t("masterData.sku.publishedBadge")
+                            : t("masterData.sku.unpublishedBadge")
+                        }
+                      />
+                    </div>
+                  </section>
+                  <section className="hn-sku-detail-section">
+                    <h3>{copy("THÔNG TIN CƠ BẢN", "BASIC INFORMATION")}</h3>
+                    <dl className="hn-sku-detail-grid">
+                      {[
+                        [
+                          t("masterData.sku.colType"),
+                          skuTypeLabel(viewing.sku_type, t),
+                        ],
+                        [
+                          t("masterData.sku.fieldUnit"),
+                          viewing.unit || EMPTY_TEXT,
+                        ],
+                        [
+                          t("masterData.sku.colBrand"),
+                          refLabel(brandIndex, viewing.brand_id),
+                        ],
+                        [
+                          t("masterData.sku.colCategory"),
+                          refLabel(categoryIndex, viewing.category_id),
+                        ],
+                        ["Model", refLabel(modelIndex, viewing.model_id)],
+                        [
+                          t("masterData.sku.fieldPowerSource"),
+                          viewing.power_source_id
+                            ? refLabel(
+                                powerSourceIndex,
+                                viewing.power_source_id,
+                              )
+                            : viewing.power_or_voltage || EMPTY_TEXT,
+                        ],
+                        [
+                          t("masterData.sku.fieldPackaging"),
+                          viewing.package_variant_id
+                            ? refLabel(
+                                packageVariantIndex,
+                                viewing.package_variant_id,
+                              )
+                            : viewing.package_variant || EMPTY_TEXT,
+                        ],
+                        [
+                          t("masterData.sku.fieldVersion"),
+                          viewing.version_code || EMPTY_TEXT,
+                        ],
+                      ].map(([label, value]) => (
+                        <div key={label}>
+                          <dt>{label}</dt>
+                          <dd>{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </section>
+                  <section className="hn-sku-detail-section">
+                    <h3>
+                      {copy("QUẢN LÝ & VẬN HÀNH", "MANAGEMENT & OPERATIONS")}
+                    </h3>
+                    <dl className="hn-sku-detail-grid">
+                      {[
+                        [
+                          t("masterData.sku.colMinStock"),
+                          stockThresholdLabel(viewing.min_stock),
+                        ],
+                        [
+                          t("masterData.sku.colMaxStock"),
+                          stockThresholdLabel(viewing.max_stock),
+                        ],
+                        [
+                          t("masterData.sku.fieldSerialTracked"),
+                          viewing.is_serial_tracked
+                            ? t("masterData.sku.yes")
+                            : t("masterData.sku.no"),
+                        ],
+                        [
+                          t("masterData.sku.colPvApp"),
+                          viewing.published_to_app
+                            ? t("masterData.sku.publishedBadge")
+                            : t("masterData.sku.unpublishedBadge"),
+                        ],
+                      ].map(([label, value]) => (
+                        <div key={label}>
+                          <dt>{label}</dt>
+                          <dd>{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {canPublish ? (
+                      <ActionButton
+                        kind={
+                          viewing.published_to_app ? "unpublish" : "publish"
+                        }
+                        className="hn-sku-detail-publish"
+                        disabled={
+                          publishMutation.isPending ||
+                          (!viewing.published_to_app &&
+                            viewing.status !== "ACTIVE")
+                        }
+                        title={
+                          !viewing.published_to_app &&
+                          viewing.status !== "ACTIVE"
+                            ? t("masterData.sku.errPublishInactive")
+                            : undefined
+                        }
+                        onClick={() => void togglePublish(viewing)}
+                      >
+                        {viewing.published_to_app
+                          ? t("masterData.sku.unpublishAction")
+                          : t("masterData.sku.publishAction")}
+                      </ActionButton>
+                    ) : null}
+                  </section>
+                </div>
+                <footer className="hn-sku-detail-footer">
+                  {canManage ? (
+                    <ActionButton
+                      kind="edit"
+                      onClick={() => {
+                        setViewing(null);
+                        openEdit(viewing);
+                      }}
+                    >
+                      {copy("Chỉnh sửa", "Edit")}
+                    </ActionButton>
+                  ) : null}
+                  <ActionButton kind="close" onClick={() => setViewing(null)}>
+                    {copy("Đóng chi tiết", "Close details")}
+                  </ActionButton>
+                </footer>
+              </>
+            ) : null}
+          </div>
+        </Drawer>
 
-        <UiDialog
-          className="hn-sku-dialog"
+        <Drawer
+          className="hn-sku-form-drawer"
+          anchor="right"
           open={modalOpen}
           onClose={guardBackdropClose(close)}
-          maxWidth="md"
-          fullWidth
-          title={
-            <>
-              {editing
+          slotProps={{
+            paper: {
+              "aria-label": editing
                 ? t("masterData.sku.dialogEdit")
-                : t("masterData.sku.dialogCreate")}
+                : t("masterData.sku.dialogCreate"),
+            },
+          }}
+        >
+          <div className="hn-sku-form-shell">
+            <header className="hn-sku-form-header">
+              <strong>
+                {editing
+                  ? t("masterData.sku.dialogEdit")
+                  : t("masterData.sku.dialogCreate")}
+              </strong>
               <ActionIconButton
                 kind="close"
                 label={t("common.close")}
                 onClick={close}
                 disabled={isSaving}
-                sx={{ position: "absolute", right: 10, top: 8 }}
               />
-            </>
-          }
-          actions={
-            <>
+            </header>
+            <div className="hn-sku-form-body">
+              <form id="sku-master-form" onSubmit={submit} noValidate>
+                {formError ? (
+                  <Box sx={{ mb: "14px" }}>
+                    <UiAlert tone="error">{formError}</UiAlert>
+                  </Box>
+                ) : null}
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Box
+                      sx={{
+                        border: 1,
+                        borderColor: "divider",
+                        borderRadius: "var(--ops-radius-card)",
+                        p: 2,
+                        height: "100%",
+                      }}
+                    >
+                      <Box sx={{ fontWeight: 700, fontSize: 14, mb: 2 }}>
+                        {t("masterData.sku.sectionInfo")}
+                      </Box>
+                      <Stack spacing={2}>
+                        <UiTextField
+                          id="sku-code"
+                          slotProps={{
+                            htmlInput: { maxLength: SKU_TEXT_MAX.code },
+                          }}
+                          label={t("masterData.sku.fieldCode")}
+                          required
+                          fullWidth
+                          value={form.code}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setForm((current) => ({ ...current, code: value }));
+                            setFieldErrors((current) =>
+                              current.code ? { ...current, code: "" } : current,
+                            );
+                          }}
+                          disabled={isSaving || identityLocked}
+                          error={Boolean(fieldErrors.code)}
+                          helperText={
+                            fieldErrors.code ||
+                            (identityLocked
+                              ? t("masterData.sku.codeLockedHint")
+                              : undefined)
+                          }
+                        />
+                        <UiTextField
+                          id="sku-name"
+                          slotProps={{
+                            htmlInput: { maxLength: SKU_TEXT_MAX.name },
+                          }}
+                          label={t("masterData.sku.fieldName")}
+                          required
+                          fullWidth
+                          value={form.name}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setForm((current) => ({ ...current, name: value }));
+                            setFieldErrors((current) =>
+                              current.name ? { ...current, name: "" } : current,
+                            );
+                          }}
+                          disabled={isSaving}
+                          error={Boolean(fieldErrors.name)}
+                          helperText={fieldErrors.name}
+                        />
+                        <UiTextField
+                          id="sku-type"
+                          select
+                          label={t("masterData.sku.fieldSkuType")}
+                          fullWidth
+                          disabled={isSaving}
+                          value={form.type}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              type: event.target.value as SkuType,
+                            }))
+                          }
+                        >
+                          <MenuItem value="PRODUCT">
+                            {t("masterData.sku.typeProduct")}
+                          </MenuItem>
+                          <MenuItem value="COMPONENT">
+                            {t("masterData.sku.typeComponent")}
+                          </MenuItem>
+                        </UiTextField>
+                        <UiTextField
+                          id="sku-unit"
+                          slotProps={{
+                            htmlInput: { maxLength: SKU_TEXT_MAX.unit },
+                          }}
+                          label={t("masterData.sku.fieldUnit")}
+                          fullWidth
+                          value={form.unit}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setForm((current) => ({ ...current, unit: value }));
+                            setFieldErrors((current) =>
+                              current.unit ? { ...current, unit: "" } : current,
+                            );
+                          }}
+                          disabled={isSaving}
+                          error={Boolean(fieldErrors.unit)}
+                          helperText={fieldErrors.unit}
+                        />
+                        <UiTextField
+                          id="sku-status"
+                          select
+                          label={t("masterData.status.label")}
+                          fullWidth
+                          disabled={isSaving}
+                          value={form.status}
+                          onChange={(event) => {
+                            const nextStatus = event.target
+                              .value as MasterStatus;
+                            setForm((current) => ({
+                              ...current,
+                              status: nextStatus,
+                              publishedToApp:
+                                nextStatus === "ACTIVE"
+                                  ? current.publishedToApp
+                                  : false,
+                            }));
+                          }}
+                        >
+                          {statusOptions(t).map((option) => (
+                            <MenuItem key={option.value} value={option.value}>
+                              {option.label}
+                            </MenuItem>
+                          ))}
+                        </UiTextField>
+                        <Box>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={form.publishedToApp}
+                                onChange={(event) =>
+                                  setForm((current) => ({
+                                    ...current,
+                                    publishedToApp: event.target.checked,
+                                  }))
+                                }
+                                disabled={isSaving || form.status !== "ACTIVE"}
+                              />
+                            }
+                            label={t("masterData.sku.publishSwitchLabel")}
+                          />
+                          {form.status !== "ACTIVE" ? (
+                            <Box sx={FIELD_CAPTION_SX}>
+                              {t("masterData.sku.publishSwitchHint")}
+                            </Box>
+                          ) : null}
+                          {fieldErrors.publishedToApp ? (
+                            <Box
+                              sx={{ ...FIELD_CAPTION_SX, color: "error.main" }}
+                            >
+                              {fieldErrors.publishedToApp}
+                            </Box>
+                          ) : null}
+                        </Box>
+                      </Stack>
+                    </Box>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Box
+                      sx={{
+                        border: 1,
+                        borderColor: "divider",
+                        borderRadius: "var(--ops-radius-card)",
+                        p: 2,
+                        height: "100%",
+                      }}
+                    >
+                      <Box sx={{ fontWeight: 700, fontSize: 14, mb: 1 }}>
+                        {t("masterData.sku.sectionCatalog")}
+                      </Box>
+                      <Box sx={{ ...FIELD_CAPTION_SX, mt: 0, mb: 2 }}>
+                        {t("masterData.sku.sectionCatalogHint")}
+                      </Box>
+                      <Stack spacing={2}>
+                        <SkuCatalogSelect
+                          id="sku-brand"
+                          label={t("masterData.sku.colBrand")}
+                          required
+                          value={form.brandId}
+                          options={catalogs.brands}
+                          disabled={isSaving}
+                          error={fieldErrors.brandId}
+                          onChange={(value) => {
+                            setForm((current) => ({
+                              ...current,
+                              brandId: value,
+                            }));
+                            setFieldErrors((current) =>
+                              current.brandId
+                                ? { ...current, brandId: "" }
+                                : current,
+                            );
+                          }}
+                        />
+                        <SkuCatalogSelect
+                          id="sku-category"
+                          label={t("masterData.sku.colCategory")}
+                          required
+                          value={form.categoryId}
+                          options={catalogs.categories}
+                          disabled={isSaving}
+                          error={fieldErrors.categoryId}
+                          onChange={(value) => {
+                            setForm((current) => ({
+                              ...current,
+                              categoryId: value,
+                            }));
+                            setFieldErrors((current) =>
+                              current.categoryId
+                                ? { ...current, categoryId: "" }
+                                : current,
+                            );
+                          }}
+                        />
+                        <SkuCatalogSelect
+                          id="sku-model"
+                          label="Model"
+                          required
+                          value={form.modelId}
+                          options={catalogs.models}
+                          disabled={isSaving}
+                          error={fieldErrors.modelId}
+                          onChange={(value) => {
+                            setForm((current) => ({
+                              ...current,
+                              modelId: value,
+                            }));
+                            setFieldErrors((current) =>
+                              current.modelId
+                                ? { ...current, modelId: "" }
+                                : current,
+                            );
+                          }}
+                        />
+                        <SkuCatalogSelect
+                          id="sku-power-source"
+                          label={t("masterData.sku.fieldPowerSource")}
+                          required
+                          value={form.powerSourceId}
+                          options={catalogs.powerSources}
+                          disabled={isSaving}
+                          error={fieldErrors.powerSourceId}
+                          onChange={(value) => {
+                            setForm((current) => ({
+                              ...current,
+                              powerSourceId: value,
+                            }));
+                            setFieldErrors((current) =>
+                              current.powerSourceId
+                                ? { ...current, powerSourceId: "" }
+                                : current,
+                            );
+                          }}
+                        />
+                        <SkuCatalogSelect
+                          id="sku-package-variant"
+                          label={t("masterData.sku.fieldPackaging")}
+                          value={form.packageVariantId}
+                          options={catalogs.packageVariants}
+                          disabled={isSaving}
+                          error={fieldErrors.packageVariantId}
+                          onChange={(value) => {
+                            setForm((current) => ({
+                              ...current,
+                              packageVariantId: value,
+                            }));
+                            setFieldErrors((current) =>
+                              current.packageVariantId
+                                ? { ...current, packageVariantId: "" }
+                                : current,
+                            );
+                          }}
+                        />
+                        <UiTextField
+                          id="sku-version-code"
+                          slotProps={{
+                            htmlInput: { maxLength: SKU_TEXT_MAX.versionCode },
+                          }}
+                          label={t("masterData.sku.fieldVersion")}
+                          fullWidth
+                          value={form.versionCode}
+                          placeholder="V1"
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setForm((current) => ({
+                              ...current,
+                              versionCode: value,
+                            }));
+                            setFieldErrors((current) =>
+                              current.versionCode
+                                ? { ...current, versionCode: "" }
+                                : current,
+                            );
+                          }}
+                          disabled={isSaving}
+                          error={Boolean(fieldErrors.versionCode)}
+                          helperText={fieldErrors.versionCode}
+                        />
+                        <UiNumberField
+                          id="sku-min-stock"
+                          label={t("masterData.sku.fieldMinStock")}
+                          fullWidth
+                          value={form.minStock}
+                          rule={NUMBER_RULES.stockMin}
+                          placeholder={t("masterData.sku.thresholdPlaceholder")}
+                          helperText={
+                            fieldErrors.minStock ||
+                            t("masterData.sku.minStockHelper")
+                          }
+                          error={Boolean(fieldErrors.minStock)}
+                          onChange={(next) => {
+                            setForm((current) => ({
+                              ...current,
+                              minStock: next,
+                            }));
+                            // Lỗi "max ≤ min" gắn ở ô max nhưng sửa min cũng làm
+                            // nó hết đúng → xoá cả hai.
+                            setFieldErrors((current) =>
+                              current.minStock || current.maxStock
+                                ? { ...current, minStock: "", maxStock: "" }
+                                : current,
+                            );
+                          }}
+                          disabled={isSaving}
+                        />
+                        <UiNumberField
+                          id="sku-max-stock"
+                          label={t("masterData.sku.fieldMaxStock")}
+                          fullWidth
+                          value={form.maxStock}
+                          rule={NUMBER_RULES.stockMax}
+                          placeholder={t("masterData.sku.thresholdPlaceholder")}
+                          helperText={
+                            fieldErrors.maxStock ||
+                            t("masterData.sku.maxStockHelper")
+                          }
+                          error={Boolean(fieldErrors.maxStock)}
+                          onChange={(next) => {
+                            setForm((current) => ({
+                              ...current,
+                              maxStock: next,
+                            }));
+                            setFieldErrors((current) =>
+                              current.maxStock
+                                ? { ...current, maxStock: "" }
+                                : current,
+                            );
+                          }}
+                          disabled={isSaving}
+                        />
+                        <Box>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={form.serialTracked}
+                                onChange={(event) =>
+                                  setForm((current) => ({
+                                    ...current,
+                                    serialTracked: event.target.checked,
+                                  }))
+                                }
+                                disabled={isSaving || identityLocked}
+                              />
+                            }
+                            label={t("masterData.sku.serialSwitchLabel")}
+                          />
+                          {identityLocked ? (
+                            <Box sx={FIELD_CAPTION_SX}>
+                              {t("masterData.sku.serialLockedHint")}
+                            </Box>
+                          ) : null}
+                        </Box>
+                      </Stack>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </form>
+            </div>
+            <footer className="hn-sku-form-footer">
               <ActionButton kind="cancel" onClick={close} disabled={isSaving}>
                 {t("masterData.common.cancel")}
               </ActionButton>
@@ -1567,386 +1914,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   ? t("masterData.common.saving")
                   : t("masterData.sku.submit")}
               </ActionButton>
-            </>
-          }
-        >
-          <form id="sku-master-form" onSubmit={submit} noValidate>
-            {formError ? (
-              <Box sx={{ mb: "14px" }}>
-                <UiAlert tone="error">{formError}</UiAlert>
-              </Box>
-            ) : null}
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Box
-                  sx={{
-                    border: 1,
-                    borderColor: "divider",
-                    borderRadius: "var(--ops-radius-card)",
-                    p: 2,
-                    height: "100%",
-                  }}
-                >
-                  <Box sx={{ fontWeight: 700, fontSize: 14, mb: 2 }}>
-                    {t("masterData.sku.sectionInfo")}
-                  </Box>
-                  <Stack spacing={2}>
-                    <UiTextField
-                      id="sku-code"
-                      slotProps={{
-                        htmlInput: { maxLength: SKU_TEXT_MAX.code },
-                      }}
-                      label={t("masterData.sku.fieldCode")}
-                      required
-                      fullWidth
-                      value={form.code}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        setForm((current) => ({ ...current, code: value }));
-                        setFieldErrors((current) =>
-                          current.code ? { ...current, code: "" } : current,
-                        );
-                      }}
-                      disabled={isSaving || identityLocked}
-                      error={Boolean(fieldErrors.code)}
-                      helperText={
-                        fieldErrors.code ||
-                        (identityLocked
-                          ? t("masterData.sku.codeLockedHint")
-                          : undefined)
-                      }
-                    />
-                    <UiTextField
-                      id="sku-name"
-                      slotProps={{
-                        htmlInput: { maxLength: SKU_TEXT_MAX.name },
-                      }}
-                      label={t("masterData.sku.fieldName")}
-                      required
-                      fullWidth
-                      value={form.name}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        setForm((current) => ({ ...current, name: value }));
-                        setFieldErrors((current) =>
-                          current.name ? { ...current, name: "" } : current,
-                        );
-                      }}
-                      disabled={isSaving}
-                      error={Boolean(fieldErrors.name)}
-                      helperText={fieldErrors.name}
-                    />
-                    <UiTextField
-                      id="sku-type"
-                      select
-                      label={t("masterData.sku.fieldSkuType")}
-                      fullWidth
-                      disabled={isSaving}
-                      value={form.type}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          type: event.target.value as SkuType,
-                        }))
-                      }
-                    >
-                      <MenuItem value="PRODUCT">
-                        {t("masterData.sku.typeProduct")}
-                      </MenuItem>
-                      <MenuItem value="COMPONENT">
-                        {t("masterData.sku.typeComponent")}
-                      </MenuItem>
-                    </UiTextField>
-                    <UiTextField
-                      id="sku-unit"
-                      slotProps={{
-                        htmlInput: { maxLength: SKU_TEXT_MAX.unit },
-                      }}
-                      label={t("masterData.sku.fieldUnit")}
-                      fullWidth
-                      value={form.unit}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        setForm((current) => ({ ...current, unit: value }));
-                        setFieldErrors((current) =>
-                          current.unit ? { ...current, unit: "" } : current,
-                        );
-                      }}
-                      disabled={isSaving}
-                      error={Boolean(fieldErrors.unit)}
-                      helperText={fieldErrors.unit}
-                    />
-                    <UiTextField
-                      id="sku-status"
-                      select
-                      label={t("masterData.status.label")}
-                      fullWidth
-                      disabled={isSaving}
-                      value={form.status}
-                      onChange={(event) => {
-                        const nextStatus = event.target.value as MasterStatus;
-                        setForm((current) => ({
-                          ...current,
-                          status: nextStatus,
-                          publishedToApp:
-                            nextStatus === "ACTIVE"
-                              ? current.publishedToApp
-                              : false,
-                        }));
-                      }}
-                    >
-                      {statusOptions(t).map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </UiTextField>
-                    <Box>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={form.publishedToApp}
-                            onChange={(event) =>
-                              setForm((current) => ({
-                                ...current,
-                                publishedToApp: event.target.checked,
-                              }))
-                            }
-                            disabled={isSaving || form.status !== "ACTIVE"}
-                          />
-                        }
-                        label={t("masterData.sku.publishSwitchLabel")}
-                      />
-                      {form.status !== "ACTIVE" ? (
-                        <Box sx={FIELD_CAPTION_SX}>
-                          {t("masterData.sku.publishSwitchHint")}
-                        </Box>
-                      ) : null}
-                      {fieldErrors.publishedToApp ? (
-                        <Box sx={{ ...FIELD_CAPTION_SX, color: "error.main" }}>
-                          {fieldErrors.publishedToApp}
-                        </Box>
-                      ) : null}
-                    </Box>
-                  </Stack>
-                </Box>
-              </Grid>
-
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Box
-                  sx={{
-                    border: 1,
-                    borderColor: "divider",
-                    borderRadius: "var(--ops-radius-card)",
-                    p: 2,
-                    height: "100%",
-                  }}
-                >
-                  <Box sx={{ fontWeight: 700, fontSize: 14, mb: 1 }}>
-                    {t("masterData.sku.sectionCatalog")}
-                  </Box>
-                  <Box sx={{ ...FIELD_CAPTION_SX, mt: 0, mb: 2 }}>
-                    {t("masterData.sku.sectionCatalogHint")}
-                  </Box>
-                  <Stack spacing={2}>
-                    <SkuCatalogSelect
-                      id="sku-brand"
-                      label={t("masterData.sku.colBrand")}
-                      required
-                      value={form.brandId}
-                      options={catalogs.brands}
-                      disabled={isSaving}
-                      error={fieldErrors.brandId}
-                      onChange={(value) => {
-                        setForm((current) => ({
-                          ...current,
-                          brandId: value,
-                        }));
-                        setFieldErrors((current) =>
-                          current.brandId
-                            ? { ...current, brandId: "" }
-                            : current,
-                        );
-                      }}
-                    />
-                    <SkuCatalogSelect
-                      id="sku-category"
-                      label={t("masterData.sku.colCategory")}
-                      required
-                      value={form.categoryId}
-                      options={catalogs.categories}
-                      disabled={isSaving}
-                      error={fieldErrors.categoryId}
-                      onChange={(value) => {
-                        setForm((current) => ({
-                          ...current,
-                          categoryId: value,
-                        }));
-                        setFieldErrors((current) =>
-                          current.categoryId
-                            ? { ...current, categoryId: "" }
-                            : current,
-                        );
-                      }}
-                    />
-                    <SkuCatalogSelect
-                      id="sku-model"
-                      label="Model"
-                      required
-                      value={form.modelId}
-                      options={catalogs.models}
-                      disabled={isSaving}
-                      error={fieldErrors.modelId}
-                      onChange={(value) => {
-                        setForm((current) => ({
-                          ...current,
-                          modelId: value,
-                        }));
-                        setFieldErrors((current) =>
-                          current.modelId
-                            ? { ...current, modelId: "" }
-                            : current,
-                        );
-                      }}
-                    />
-                    <SkuCatalogSelect
-                      id="sku-power-source"
-                      label={t("masterData.sku.fieldPowerSource")}
-                      required
-                      value={form.powerSourceId}
-                      options={catalogs.powerSources}
-                      disabled={isSaving}
-                      error={fieldErrors.powerSourceId}
-                      onChange={(value) => {
-                        setForm((current) => ({
-                          ...current,
-                          powerSourceId: value,
-                        }));
-                        setFieldErrors((current) =>
-                          current.powerSourceId
-                            ? { ...current, powerSourceId: "" }
-                            : current,
-                        );
-                      }}
-                    />
-                    <SkuCatalogSelect
-                      id="sku-package-variant"
-                      label={t("masterData.sku.fieldPackaging")}
-                      value={form.packageVariantId}
-                      options={catalogs.packageVariants}
-                      disabled={isSaving}
-                      error={fieldErrors.packageVariantId}
-                      onChange={(value) => {
-                        setForm((current) => ({
-                          ...current,
-                          packageVariantId: value,
-                        }));
-                        setFieldErrors((current) =>
-                          current.packageVariantId
-                            ? { ...current, packageVariantId: "" }
-                            : current,
-                        );
-                      }}
-                    />
-                    <UiTextField
-                      id="sku-version-code"
-                      slotProps={{
-                        htmlInput: { maxLength: SKU_TEXT_MAX.versionCode },
-                      }}
-                      label={t("masterData.sku.fieldVersion")}
-                      fullWidth
-                      value={form.versionCode}
-                      placeholder="V1"
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        setForm((current) => ({
-                          ...current,
-                          versionCode: value,
-                        }));
-                        setFieldErrors((current) =>
-                          current.versionCode
-                            ? { ...current, versionCode: "" }
-                            : current,
-                        );
-                      }}
-                      disabled={isSaving}
-                      error={Boolean(fieldErrors.versionCode)}
-                      helperText={fieldErrors.versionCode}
-                    />
-                    <UiNumberField
-                      id="sku-min-stock"
-                      label={t("masterData.sku.fieldMinStock")}
-                      fullWidth
-                      value={form.minStock}
-                      rule={NUMBER_RULES.stockMin}
-                      placeholder={t("masterData.sku.thresholdPlaceholder")}
-                      helperText={
-                        fieldErrors.minStock ||
-                        t("masterData.sku.minStockHelper")
-                      }
-                      error={Boolean(fieldErrors.minStock)}
-                      onChange={(next) => {
-                        setForm((current) => ({ ...current, minStock: next }));
-                        // Lỗi "max ≤ min" gắn ở ô max nhưng sửa min cũng làm
-                        // nó hết đúng → xoá cả hai.
-                        setFieldErrors((current) =>
-                          current.minStock || current.maxStock
-                            ? { ...current, minStock: "", maxStock: "" }
-                            : current,
-                        );
-                      }}
-                      disabled={isSaving}
-                    />
-                    <UiNumberField
-                      id="sku-max-stock"
-                      label={t("masterData.sku.fieldMaxStock")}
-                      fullWidth
-                      value={form.maxStock}
-                      rule={NUMBER_RULES.stockMax}
-                      placeholder={t("masterData.sku.thresholdPlaceholder")}
-                      helperText={
-                        fieldErrors.maxStock ||
-                        t("masterData.sku.maxStockHelper")
-                      }
-                      error={Boolean(fieldErrors.maxStock)}
-                      onChange={(next) => {
-                        setForm((current) => ({ ...current, maxStock: next }));
-                        setFieldErrors((current) =>
-                          current.maxStock
-                            ? { ...current, maxStock: "" }
-                            : current,
-                        );
-                      }}
-                      disabled={isSaving}
-                    />
-                    <Box>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={form.serialTracked}
-                            onChange={(event) =>
-                              setForm((current) => ({
-                                ...current,
-                                serialTracked: event.target.checked,
-                              }))
-                            }
-                            disabled={isSaving || identityLocked}
-                          />
-                        }
-                        label={t("masterData.sku.serialSwitchLabel")}
-                      />
-                      {identityLocked ? (
-                        <Box sx={FIELD_CAPTION_SX}>
-                          {t("masterData.sku.serialLockedHint")}
-                        </Box>
-                      ) : null}
-                    </Box>
-                  </Stack>
-                </Box>
-              </Grid>
-            </Grid>
-          </form>
-        </UiDialog>
+            </footer>
+          </div>
+        </Drawer>
       </div>
     </>
   );

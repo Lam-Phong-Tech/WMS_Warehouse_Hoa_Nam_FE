@@ -2,6 +2,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from "@testing-library/react";
@@ -30,9 +31,14 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
           sku_code: "DCH-DRILL-DJZ10A-220V-V1",
           sku_name: "Máy khoan Dongcheng DJZ10A 220V",
           sku_type: "PRODUCT",
+          brand_id: "brand-1",
+          category_id: "cat-1",
           unit: "cái",
           is_serial_tracked: true,
           status: "ACTIVE",
+          min_stock: 2,
+          max_stock: 10,
+          published_to_app: false,
           version: 3,
         },
       ],
@@ -114,9 +120,13 @@ describe("API-backed MVP master screens", () => {
     );
 
     const overviewToggle = screen.getByRole("button", { name: "Thống kê SKU" });
-    const filtersToggle = screen.getByRole("button", { name: "Bộ lọc tìm kiếm" });
+    const filtersToggle = screen.getByRole("button", {
+      name: "Bộ lọc tìm kiếm",
+    });
     const overview = screen.getByRole("region", { name: "Danh mục SKU" });
-    const search = document.getElementById("sku-list-search") as HTMLInputElement;
+    const search = document.getElementById(
+      "sku-list-search",
+    ) as HTMLInputElement;
 
     fireEvent.change(search, { target: { value: "Máy khoan" } });
     fireEvent.click(overviewToggle);
@@ -135,7 +145,28 @@ describe("API-backed MVP master screens", () => {
     expect(search).toHaveValue("Máy khoan");
   });
 
-  it("keeps SKU create/edit inside the list modal", async () => {
+  it("can enable and clear the pending SKU filter from the search panel", () => {
+    render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
+    const pending = screen.getByRole("checkbox", {
+      name: "SKU chờ điền thông tin",
+    });
+    expect(pending).not.toBeChecked();
+    fireEvent.click(pending);
+    expect(pending).toBeChecked();
+    expect(
+      screen.getByRole("button", {
+        name: "Xóa bộ lọc: SKU chờ điền thông tin",
+      }),
+    ).toBeInTheDocument();
+    fireEvent.click(pending);
+    expect(pending).not.toBeChecked();
+  });
+
+  it("opens SKU create and edit forms in a right-side drawer", async () => {
     render(
       <MemoryRouter>
         <SkuMasterScreen />
@@ -144,20 +175,24 @@ describe("API-backed MVP master screens", () => {
     expect(screen.getByText("DCH-DRILL-DJZ10A-220V-V1")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Thêm SKU/ }));
-    let dialog = screen.getByRole("dialog");
+    let dialog = screen.getByRole("dialog", { name: "Thêm SKU" });
+    expect(dialog.closest(".MuiDrawer-root")).not.toBeNull();
     expect(within(dialog).getByText("Thêm SKU")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Hủy" }));
-    // MUI Dialog gỡ aria-hidden trên phần còn lại của trang sau khi hiệu ứng
-    // đóng hoàn tất — phải đợi dialog biến mất hẳn, nếu không các phần tử
-    // trong bảng phía sau vẫn bị coi là ẩn với getByRole (aria-hidden kẹt lại).
+    // Đợi drawer biến mất hẳn để bảng không còn aria-hidden.
     await waitForElementToBeRemoved(() => screen.queryByRole("dialog"));
 
     const row = screen.getByText("DCH-DRILL-DJZ10A-220V-V1").closest("tr");
     expect(row).not.toBeNull();
     fireEvent.click(
-      within(row as HTMLTableRowElement).getByRole("button", { name: "Sửa" }),
+      within(row as HTMLTableRowElement).getByRole("button", {
+        name: /Xem chi tiết/,
+      }),
     );
-    dialog = screen.getByRole("dialog");
+    const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
+    fireEvent.click(within(drawer).getByRole("button", { name: "Chỉnh sửa" }));
+    dialog = screen.getByRole("dialog", { name: "Sửa SKU" });
+    expect(dialog.closest(".MuiDrawer-root")).not.toBeNull();
     expect(within(dialog).getByText("Sửa SKU")).toBeInTheDocument();
     // Form sửa nạp đúng dòng đang bấm (version 3 chỉ còn đi ngầm trong payload
     // If-Match, không hiển thị trên UI nữa).
@@ -167,6 +202,85 @@ describe("API-backed MVP master screens", () => {
     expect(
       within(dialog).getByDisplayValue("Máy khoan Dongcheng DJZ10A 220V"),
     ).toBeInTheDocument();
+  });
+
+  it("shows a compact SKU table and opens operational fields in a side drawer", async () => {
+    render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
+
+    const table = screen.getByRole("table");
+    expect(
+      Array.from(table.querySelectorAll("thead th"), (header) =>
+        header.textContent?.trim(),
+      ),
+    ).toEqual(["STT", "SKU", "Loại", "Hãng / Nhóm", "Trạng thái", "Chi tiết"]);
+    const row = within(table)
+      .getByText("DCH-DRILL-DJZ10A-220V-V1")
+      .closest("tr");
+    expect(row).not.toBeNull();
+    expect(
+      within(row as HTMLTableRowElement).getByText("Dongcheng"),
+    ).toBeVisible();
+    expect(
+      within(row as HTMLTableRowElement).getByText("Máy khoan"),
+    ).toBeVisible();
+
+    fireEvent.click(
+      within(row as HTMLTableRowElement).getByRole("button", {
+        name: /Xem chi tiết/,
+      }),
+    );
+    const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
+    expect(drawer.closest(".MuiDrawer-root")).not.toBeNull();
+    expect(
+      within(drawer).getByText("Định mức tối thiểu").parentElement,
+    ).toHaveTextContent("2");
+    expect(
+      within(drawer).getByText("Định mức tối đa").parentElement,
+    ).toHaveTextContent("10");
+    expect(
+      within(drawer).getByText("Ứng dụng phân vùng").parentElement,
+    ).toHaveTextContent("Chưa hiển thị");
+    fireEvent.click(
+      within(drawer).getByRole("button", { name: "Đóng chi tiết" }),
+    );
+    await waitForElementToBeRemoved(() =>
+      screen.queryByRole("dialog", { name: "Chi tiết SKU" }),
+    );
+  });
+
+  it("updates the publication state shown in an open SKU drawer", async () => {
+    render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
+    const row = screen.getByText("DCH-DRILL-DJZ10A-220V-V1").closest("tr");
+    fireEvent.click(
+      within(row as HTMLTableRowElement).getByRole("button", {
+        name: "Xem chi tiết",
+      }),
+    );
+    const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
+    fireEvent.click(
+      within(drawer).getByRole("button", {
+        name: "Đưa SKU lên ứng dụng phân vùng",
+      }),
+    );
+    const confirm = screen.getByRole("dialog", {
+      name: "Đưa SKU lên ứng dụng phân vùng?",
+    });
+    fireEvent.click(
+      within(confirm).getByRole("button", { name: "Đưa lên ứng dụng" }),
+    );
+    await waitFor(() =>
+      expect(
+        within(drawer).getByText("Ứng dụng phân vùng").parentElement,
+      ).toHaveTextContent("Đang hiển thị"),
+    );
   });
 
   it("loads agency data and opens add/edit modal", () => {
@@ -197,7 +311,9 @@ describe("API-backed MVP master screens", () => {
     const overview = screen.getByRole("region", {
       name: "Danh mục bệnh / lỗi",
     });
-    const search = document.getElementById("defect-list-search") as HTMLInputElement;
+    const search = document.getElementById(
+      "defect-list-search",
+    ) as HTMLInputElement;
 
     fireEvent.change(search, { target: { value: "motor" } });
     fireEvent.click(overviewToggle);
