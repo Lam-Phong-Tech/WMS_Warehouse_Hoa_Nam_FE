@@ -147,6 +147,14 @@
 .hn-sku-panel-toggle:hover {
   background: var(--sku-pale);
 }
+.hn-sku-panel-toggle[aria-controls="hn-sku-overview-content"][aria-expanded="false"] {
+  background: var(--sku-pale);
+  color: var(--sku-muted);
+}
+.hn-sku-panel-toggle[aria-controls="hn-sku-overview-content"][aria-expanded="false"]:hover {
+  background: color-mix(in srgb, var(--sku-pale) 80%, var(--sku-surface));
+  color: var(--sku-ink);
+}
 .hn-sku-panel-toggle > i {
   display: inline-block;
   width: 18px;
