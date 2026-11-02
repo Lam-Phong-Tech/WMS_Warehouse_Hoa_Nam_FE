@@ -522,6 +522,8 @@
 }
 .hn-sku-screen table.sku-table .stt-col {
   width: 38px;
+}
+.hn-sku-screen table.sku-table td.stt-col {
   font-weight: 500;
 }
 .hn-sku-screen
