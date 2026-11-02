@@ -1298,9 +1298,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <>
                 <div className="hn-sku-detail-body">
                   <section className="hn-sku-detail-intro">
-                    <div className="hn-sku-detail-overline">
-                      {copy("THÔNG TIN SKU", "SKU INFORMATION")}
-                    </div>
                     <div className="hn-sku-detail-identity">
                       <SkuThumbnail
                         url={viewing.image_url}

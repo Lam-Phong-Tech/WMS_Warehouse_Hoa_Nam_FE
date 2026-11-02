@@ -510,9 +510,6 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.hn-sku-detail-link:hover {
-  text-decoration: underline;
-}
 .hn-sku-detail-link span {
   font-size: 18px;
 }
@@ -869,13 +866,6 @@
 }
 .hn-sku-detail-intro {
   padding: 26px 26px 24px;
-}
-.hn-sku-detail-overline {
-  margin-bottom: 14px;
-  color: var(--sku-link);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
 }
 .hn-sku-detail-identity {
   display: flex;
