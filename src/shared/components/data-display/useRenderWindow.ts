@@ -54,6 +54,7 @@ export function useRenderWindow<T>(
   // Đổi bộ lọc/sắp xếp là một tập dòng KHÁC — phải quay lại nhịp đầu, nếu không
   // người lọc còn 3 dòng vẫn đang giữ cửa sổ 3.000 dòng của lần trước.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setShown(chunk);
   }, [rows, chunk]);
 

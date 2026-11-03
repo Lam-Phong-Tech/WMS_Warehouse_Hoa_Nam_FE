@@ -44,6 +44,12 @@ function CoordinatedChart({
   const currentCycle = useRef<object | null>(null);
   const hasRendered = useRef(false);
   const cycle = useMemo(() => {
+    // A new chart input needs a fresh render acknowledgement.
+    void props.options;
+    void props.series;
+    void props.width;
+    void props.height;
+    void props.type;
     // The helper only captures this ref; it reads and writes current after commit.
     // eslint-disable-next-line react-hooks/refs
     const acknowledgement = createChartRenderCycle(controller, id, currentCycle);
@@ -117,6 +123,7 @@ export function LazyApexChart(props: ApexChartProps) {
     const node = hostRef.current;
     if (!node) return;
     if (typeof IntersectionObserver === "undefined") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setNear(true);
       return;
     }

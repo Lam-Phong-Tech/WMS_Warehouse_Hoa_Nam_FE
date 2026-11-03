@@ -230,7 +230,7 @@ export default function MvpPutawayPage() {
   });
 
   const tasks = tasksQuery.data ?? [];
-  const history = historyQuery.data ?? [];
+  const history = useMemo(() => historyQuery.data ?? [], [historyQuery.data]);
   const trays = traysQuery.data ?? [];
 
   const filteredHistory = useMemo(() => {
@@ -297,6 +297,7 @@ export default function MvpPutawayPage() {
           task.box_code === requestedBox ||
           task.box_container_id === requestedBox,
       ) ?? tasks[0];
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     if (nextSelected) openPutaway(nextSelected);
 
     const nextParams = new URLSearchParams(searchParams);

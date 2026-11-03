@@ -218,6 +218,7 @@ export function CatalogMasterScreen() {
   useEffect(() => {
     const normalized = keyword.trim();
     if (!normalized) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setDebouncedKeyword("");
       return;
     }

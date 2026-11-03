@@ -449,7 +449,7 @@ export function InboundScanModal({
   const { confirm, confirmDialog } = useUiConfirm();
 
   const detail = detailQuery.data;
-  const skuRows = skuQuery.data?.data ?? [];
+  const skuRows = useMemo(() => skuQuery.data?.data ?? [], [skuQuery.data?.data]);
   const skuById = useMemo(
     () => new Map<string, SkuRecord>(skuRows.map((sku) => [sku.sku_id, sku])),
     [skuRows],

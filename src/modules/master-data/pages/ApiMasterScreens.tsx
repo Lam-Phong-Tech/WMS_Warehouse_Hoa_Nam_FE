@@ -561,6 +561,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     if (openCreateRequested && canManage) openCreate();
     // openCreate chỉ phụ thuộc trạng thái quyền và cờ mở modal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2015,6 +2016,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     if (openCreateRequested && canManage) openCreate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canManage, openCreateRequested]);
@@ -2823,6 +2825,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     if (openCreateRequested && canManage) openCreate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canManage, openCreateRequested]);
@@ -3498,7 +3501,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         className="hn-defect-form-drawer"
         anchor="right"
         open={modalOpen}
-        onClose={guardBackdropClose(close)}
+        onClose={() => close()}
         slotProps={{
           paper: {
             "aria-label": editing

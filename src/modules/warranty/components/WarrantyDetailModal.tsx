@@ -689,6 +689,8 @@ export function WarrantyDetailModal({
   });
 
   useEffect(() => {
+    // React Hook Form's watch subscription is intentionally not memoizable.
+    // eslint-disable-next-line react-hooks/incompatible-library
     const subscription = defectForm.watch((values) => {
       const defectIds = (values.defect_ids ?? []).filter(
         (id): id is string => typeof id === "string",

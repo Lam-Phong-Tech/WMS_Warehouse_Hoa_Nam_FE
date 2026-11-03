@@ -93,6 +93,7 @@ function UiFormNumberInner<T extends FieldValues>({
   // Đồng bộ khi form value đổi từ BÊN NGOÀI (reset/setValue) — nếu text hiện
   // tại vẫn parse ra đúng giá trị form (vd "1." ↔ 1) thì giữ nguyên text đang gõ.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setText((prev) => {
       const parsed = parseNumberText(prev);
       if (parsed !== undefined && Object.is(parsed, formValue)) return prev;

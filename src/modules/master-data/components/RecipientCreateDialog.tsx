@@ -114,6 +114,7 @@ export function RecipientCreateDialog({
   // Mỗi lần mở lại: reset form và seed tên bằng từ khoá đã gõ.
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setForm({ ...EMPTY_AGENCY_FORM, agency_name: initialName });
       setFormError("");
       setFieldErrors({});

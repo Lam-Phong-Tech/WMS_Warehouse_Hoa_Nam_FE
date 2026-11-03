@@ -388,9 +388,9 @@ export function IamUserScreen({
     [warehouses],
   );
 
-  const roles = rolesQuery.data ?? [];
-  const users = usersQuery.data?.data ?? [];
-  const departments = departmentsQuery.data ?? [];
+  const roles = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data]);
+  const users = useMemo(() => usersQuery.data?.data ?? [], [usersQuery.data?.data]);
+  const departments = useMemo(() => departmentsQuery.data ?? [], [departmentsQuery.data]);
   const departmentNames = useMemo(
     () =>
       new Map(
@@ -589,6 +589,7 @@ export function IamUserScreen({
   const defaultRoleId = roles[0]?.role_id ?? "";
   useEffect(() => {
     if (!openCreateOnMount || !canManageUsers) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setEditingUser(null);
     setFormState({
       ...EMPTY_FORM,
@@ -601,6 +602,7 @@ export function IamUserScreen({
 
   useEffect(() => {
     const maxPage = Math.max(1, Math.ceil(total / perPage));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     if (page > maxPage) setPage(maxPage);
   }, [page, perPage, total]);
 

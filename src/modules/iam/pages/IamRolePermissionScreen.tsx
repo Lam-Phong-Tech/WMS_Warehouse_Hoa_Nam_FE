@@ -187,8 +187,8 @@ export function IamRolePermissionScreen() {
   const deleteRole = useDeleteIamRole();
   const syncPermissions = useSyncIamRolePermissions();
 
-  const roles = rolesQuery.data?.data ?? [];
-  const permissions = permissionsQuery.data ?? [];
+  const roles = useMemo(() => rolesQuery.data?.data ?? [], [rolesQuery.data?.data]);
+  const permissions = useMemo(() => permissionsQuery.data ?? [], [permissionsQuery.data]);
   const rolePagination = resolveApiPagination(rolesQuery.data?.meta, {
     page: rolePage,
     pageSize: rolePerPage,
@@ -208,6 +208,7 @@ export function IamRolePermissionScreen() {
 
   useEffect(() => {
     if (!selectedRoleId && roles.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setSelectedRoleId(roles[0].role_id);
     } else if (
       selectedRoleId &&
@@ -218,6 +219,7 @@ export function IamRolePermissionScreen() {
   }, [roles, selectedRoleId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setCheckedIds(
       selectedRole?.permissions?.map(
         (permission) => permission.permission_id,
@@ -239,7 +241,7 @@ export function IamRolePermissionScreen() {
         groups.set(group, [...(groups.get(group) ?? []), permission]);
       });
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, "vi"));
-  }, [permissions]);
+  }, [permissions, t]);
 
   const openEdit = (role: IamRole) => {
     if (isSystemRole(role)) {

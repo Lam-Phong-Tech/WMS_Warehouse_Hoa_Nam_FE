@@ -66,9 +66,15 @@ export function useT(): TranslateFn {
   const english = useEnglishMessages();
   const chinese = useChineseMessages();
   return useCallback(
-    (key: MessageKey, vars?: MessageVars) => translate(language, key, vars),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- từ điển chỉ là
-    // tín hiệu "bản dịch đã về"; giá trị được đọc trong translate().
+    (key: MessageKey, vars?: MessageVars) => {
+      const translated =
+        language === "en"
+          ? lookup(english, key)
+          : language === "zh"
+            ? lookup(chinese, key)
+            : undefined;
+      return interpolate(translated ?? lookup(MESSAGES_VI, key) ?? key, vars);
+    },
     [language, english, chinese],
   );
 }

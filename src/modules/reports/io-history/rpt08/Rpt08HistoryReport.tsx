@@ -140,10 +140,12 @@ export default function IoHistoryReport() {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setPage(1);
   }, [deferredSearch, applied.from, applied.to, applied.type, applied.actor]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 

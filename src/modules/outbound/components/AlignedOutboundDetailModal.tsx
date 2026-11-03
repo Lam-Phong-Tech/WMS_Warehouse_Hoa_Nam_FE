@@ -263,6 +263,7 @@ export function AlignedOutboundDetailModal({
 
   useEffect(() => {
     if (!detail) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setVersion(detail.document.version);
     if (
       lineId &&
@@ -276,12 +277,14 @@ export function AlignedOutboundDetailModal({
 
   useEffect(() => {
     postKeyRef.current = null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setPreparedLabel(null);
     setLabelWarning(null);
   }, [documentId]);
 
   useEffect(() => {
     if (!printerId && activePrinters[0]?.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setPrinterId(activePrinters[0].id);
     }
   }, [activePrinters, printerId]);

@@ -115,6 +115,8 @@ export function useVirtualRows<T>(
   const learnedSize = useRef(ESTIMATED_ROW_HEIGHT);
   const corrections = useRef(0);
 
+  // TanStack Virtual owns mutable measurements; React Compiler cannot memoize it.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: enabled ? rows.length : 0,
     getScrollElement: getScroller,

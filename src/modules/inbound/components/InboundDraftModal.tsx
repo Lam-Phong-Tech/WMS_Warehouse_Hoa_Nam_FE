@@ -146,6 +146,7 @@ export function InboundDraftModal({
     if (!documentId) {
       const firstWarehouse = warehousesQuery.data?.[0] as
         Record<string, unknown> | undefined;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setFormValues({
         documentDate: localToday(),
         warehouseId: text(firstWarehouse?.id ?? firstWarehouse?.warehouse_id),

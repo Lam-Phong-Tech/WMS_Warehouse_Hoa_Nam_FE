@@ -119,6 +119,7 @@ function InboundListScreen() {
     if (requestedScreen !== "IN-02" && requestedScreen !== "IN-03") return;
     const id = searchParams.get("id");
     if (requestedScreen === "IN-02") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setDraftDocumentId(id);
       setDraftOpen(true);
     } else if (id) setScanDocumentId(id);

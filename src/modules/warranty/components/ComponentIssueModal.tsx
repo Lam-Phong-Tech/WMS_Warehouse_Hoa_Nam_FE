@@ -214,6 +214,7 @@ export function ComponentIssueModal({
   );
   useEffect(() => {
     if (skuOptions.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setSkuLabelById((prev) => {
       let changed = false;
       const next = new Map(prev);
@@ -263,6 +264,7 @@ export function ComponentIssueModal({
       const pending = detail.lines.find(
         (line) => line.scanned_qty < line.required_qty,
       );
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setSelectedLineId((pending ?? detail.lines[0]).id);
     }
   }, [detail, selectedLineId]);

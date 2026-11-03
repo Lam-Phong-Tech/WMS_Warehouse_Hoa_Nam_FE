@@ -158,6 +158,7 @@ export default function PackingLabelPrintReport() {
   }, [report.events, report.labels, statusFilter, keyword, tableKeyword]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setPage(1);
   }, [statusFilter, keyword, tableKeyword, period.from, period.to]);
 

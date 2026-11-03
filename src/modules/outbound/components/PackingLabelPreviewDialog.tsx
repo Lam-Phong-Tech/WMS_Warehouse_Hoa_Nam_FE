@@ -35,6 +35,7 @@ export function PackingLabelPreviewDialog({
 
   useEffect(() => {
     if (!open || !label) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setQrDataUrl(null);
       return;
     }

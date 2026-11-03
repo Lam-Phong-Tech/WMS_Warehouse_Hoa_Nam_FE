@@ -188,6 +188,7 @@ export function WarehouseConfigScreen() {
 
   useEffect(() => {
     if (!warehouse) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setFormValues({
       name: warehouse.name,
       address: warehouse.address,

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import type { ResponsiveTableColumn } from "@/shared/components/data-display/ResponsiveDataTable";
 import type { ClientSortState } from "@/shared/components/data-display/useClientSort";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
@@ -147,6 +147,7 @@ export function useReportColumnSort(columns: ReportColumn[], rows: Raw[]) {
 export function useClientPagination<T>(rows: T[], defaultPerPage = 10) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(defaultPerPage);
+  const reset = useCallback(() => setPage(1), []);
 
   const total = rows.length;
   const lastPage = Math.max(1, Math.ceil(total / perPage));
@@ -165,6 +166,6 @@ export function useClientPagination<T>(rows: T[], defaultPerPage = 10) {
       setPerPage(next);
       setPage(1);
     },
-    reset: () => setPage(1),
+    reset,
   };
 }

@@ -103,6 +103,7 @@ export function MainLayout() {
   const [sidebarPeek, setSidebarPeek] = useState(false);
   // Đổi trang trên mobile → tự đóng drawer điều hướng.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setMobileNavOpen(false);
   }, [location.pathname, location.search]);
 

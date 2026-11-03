@@ -513,10 +513,12 @@ export default function RecipientAgencyReport() {
   const pageRows = tableRows.slice((visiblePage - 1) * 5, visiblePage * 5);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setPage(1);
   }, [search, applied.agency, applied.status, applied.from, applied.to]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 

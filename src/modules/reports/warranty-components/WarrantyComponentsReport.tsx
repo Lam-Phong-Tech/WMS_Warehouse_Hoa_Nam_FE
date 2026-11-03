@@ -467,14 +467,15 @@ export default function WarrantyComponentsReport() {
   const processingPct = rows.length ? (processing / rows.length) * 100 : 0;
   const waitingPct = rows.length ? (waiting / rows.length) * 100 : 0;
   const pagination = useClientPagination(filteredRows, 5);
+  const { reset: resetPagination } = pagination;
   const lastPage = Math.max(
     1,
     Math.ceil(pagination.total / pagination.perPage),
   );
 
   useEffect(() => {
-    pagination.reset();
-  }, [status, keyword]);
+    resetPagination();
+  }, [status, keyword, resetPagination]);
 
   const resetFilters = () => {
     setRange([

@@ -612,7 +612,7 @@ export default function PvAdminPage() {
     }
   }
 
-  const profileRows = profiles.data?.data ?? [];
+  const profileRows = useMemo(() => profiles.data?.data ?? [], [profiles.data?.data]);
   const isProfileFilterActive =
     profileSearch.trim() !== "" ||
     profileIndustryFilter !== "ALL" ||

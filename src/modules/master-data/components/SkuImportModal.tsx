@@ -472,6 +472,7 @@ export function SkuImportModal({
 
   useEffect(() => {
     if (!file) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setFileSha256(null);
       setDigestPending(false);
       setDigestError(null);

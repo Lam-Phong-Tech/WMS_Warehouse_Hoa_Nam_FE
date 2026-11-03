@@ -605,7 +605,7 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
       component: true,
       reversal: true,
     });
-  }, []);
+  }, [setView]);
 
   const { refreshing, refresh } = useReportRefresh({
     refetch,

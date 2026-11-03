@@ -58,6 +58,7 @@ export function CameraScanModal({
     if (!open) return;
     let disposed = false;
     detectedRef.current = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setCameraError(null);
     setCameraReady(false);
 

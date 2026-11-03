@@ -392,6 +392,7 @@ export function OutboundIntakeModal({
   useEffect(() => {
     const merged = [...skuOptions, ...skuSearchOptions];
     if (merged.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setSkuLabelById((prev) => {
       let changed = false;
       const next = new Map(prev);
@@ -433,6 +434,7 @@ export function OutboundIntakeModal({
       ...(agencySearchQuery.data?.data ?? []),
     ];
     if (merged.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setAgencyById((prev) => {
       let changed = false;
       const next = new Map(prev);

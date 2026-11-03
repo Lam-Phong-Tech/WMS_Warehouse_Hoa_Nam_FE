@@ -294,6 +294,8 @@ export function WarrantyIntakeModal({
     defaultValues: { defect_ids: [] },
   });
   useEffect(() => {
+    // React Hook Form's watch subscription is intentionally not memoizable.
+    // eslint-disable-next-line react-hooks/incompatible-library
     const subscription = defectForm.watch((values) => {
       setDefectIds(
         (values.defect_ids ?? []).filter(

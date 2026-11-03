@@ -191,7 +191,7 @@ export default function PhysicalCodesPage() {
   );
 
   const warehousesQuery = useActiveWarehouses();
-  const warehouses = warehousesQuery.data ?? [];
+  const warehouses = useMemo(() => warehousesQuery.data ?? [], [warehousesQuery.data]);
 
   useEffect(() => {
     if (!warehouseId && warehouses.length > 0) {

@@ -144,6 +144,7 @@ export function WarrantyReturnLabelDialog({
 
   useEffect(() => {
     if (!open || caseCode === "") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setQrDataUrl(null);
       return;
     }

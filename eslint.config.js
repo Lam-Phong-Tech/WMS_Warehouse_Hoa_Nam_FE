@@ -80,6 +80,12 @@ export default defineConfig([
     },
   },
   {
+    // Test hosts intentionally observe live React Hook Form values; these
+    // components are not application code compiled for memoization.
+    files: ['**/*.test.{ts,tsx}'],
+    rules: { 'react-hooks/incompatible-library': 'off' },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     ignores: PERMISSION_INTERNAL_FILES,
     rules: {
