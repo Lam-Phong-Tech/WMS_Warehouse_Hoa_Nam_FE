@@ -90,8 +90,6 @@ export function PutawayQueue(props: Props) {
   const allChecked =
     pageRows.length > 0 && pageRows.every((row) => selectedIds.has(row.id));
   const someChecked = pageRows.some((row) => selectedIds.has(row.id));
-  const totalQuantity = rows.reduce((sum, row) => sum + row.quantity, 0);
-  const skuCount = new Set(rows.map((row) => row.sku_id || row.sku_code)).size;
   const hasFilters = Boolean(
     props.search ||
     statusDraft ||
@@ -217,41 +215,6 @@ export function PutawayQueue(props: Props) {
             {t("common.retry")}
           </button>
         </div>
-      ) : null}
-      {orders ? (
-        <section
-          className="ptw-stats"
-          aria-label={t("putaway.queue.summaryAria")}
-          aria-busy={loading}
-        >
-          {[
-            {
-              icon: "cube",
-              label: t("putaway.queue.ordersTab"),
-              value: rows.length,
-            },
-            {
-              icon: "document",
-              label: t("putaway.queue.componentSkus"),
-              value: skuCount,
-            },
-            {
-              icon: "cube",
-              label: t("putaway.queue.totalQuantity"),
-              value: totalQuantity,
-            },
-          ].map((stat) => (
-            <article key={stat.label}>
-              <span className="ptw-stat-icon">
-                <UiIcon name={stat.icon} size="lg" />
-              </span>
-              <div>
-                <span>{stat.label}</span>
-                <strong>{loading || error ? "—" : number(stat.value)}</strong>
-              </div>
-            </article>
-          ))}
-        </section>
       ) : null}
       <section
         className="ptw-list"
