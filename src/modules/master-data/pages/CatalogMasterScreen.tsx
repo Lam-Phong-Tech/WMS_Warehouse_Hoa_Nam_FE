@@ -451,7 +451,7 @@ export function CatalogMasterScreen() {
       key: "stt",
       header: "STT",
       align: "center",
-      width: 56,
+      width: "6%",
       hideOnMobile: true,
       // Số lấy theo VỊ TRÍ GỐC trong trang (trước khi bảng tự sắp xếp) nên nó
       // đi theo dòng khi bấm sắp xếp cột, không thành thang 1..n đứng yên.
@@ -460,7 +460,7 @@ export function CatalogMasterScreen() {
     {
       key: "code",
       header: activeTab.codeLabel,
-      width: 200,
+      width: supportsBrand ? "16%" : "18%",
       sortAccessor: (record) => record.code,
       render: (record) => (
         <span className="hn-catalog-code">
@@ -472,6 +472,7 @@ export function CatalogMasterScreen() {
     {
       key: "name",
       header: activeTab.nameLabel,
+      width: supportsBrand ? "16%" : "18%",
       sortAccessor: (record) => record.name,
       render: (record) => record.name,
     },
@@ -480,7 +481,7 @@ export function CatalogMasterScreen() {
           {
             key: "brand",
             header: t("masterData.catalog.brand"),
-            width: 180,
+            width: "14%",
             sortAccessor: (record) =>
               brandNameById.get(record.brand_id ?? "") ?? "",
             // KHÔNG rơi xuống brand_id (UUID) khi chưa tra ra tên hãng.
@@ -502,7 +503,7 @@ export function CatalogMasterScreen() {
     {
       key: "description",
       header: t("masterData.common.description"),
-      width: 280,
+      width: supportsBrand ? "26%" : "34%",
       sortAccessor: (record) => record.description ?? "",
       // Mô tả dài trước đây xuống dòng làm hàng cao gấp đôi các hàng khác. Cắt
       // gọn trên MỘT dòng, chữ đầy đủ nằm ở tooltip title.
@@ -520,7 +521,7 @@ export function CatalogMasterScreen() {
     {
       key: "status",
       header: t("masterData.status.label"),
-      width: 140,
+      width: supportsBrand ? "14%" : "16%",
       sortType: "value",
       sortAccessor: (record) => record.status,
       render: (record) => (
@@ -540,7 +541,7 @@ export function CatalogMasterScreen() {
     {
       key: "actions",
       header: "",
-      width: 96,
+      width: "8%",
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       render: (record) =>

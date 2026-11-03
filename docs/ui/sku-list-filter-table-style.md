@@ -22,6 +22,8 @@ Nguồn chuẩn: `src/modules/master-data/pages/sku-list.css` và `ApiMasterScre
 | Rê chuột | Nền hàng pha `55% --ops-pale` với `--ops-surface`; giữ focus bàn phím dễ thấy. |
 | Trang hẹp | Bảng có chiều rộng tối thiểu và được cuộn ngang hoặc chuyển thành card theo component hiện có; không ép chữ thành cột dọc. |
 
+Các cột của mỗi bảng phải có kế hoạch chiều rộng đầy đủ, tổng tỷ lệ bằng `100%`. Cột không khai độ rộng sẽ nhận phần dư và tạo khoảng trắng lớn giữa các cột, như trường hợp `Tên hãng` trên tab Hãng.
+
 Chỉ áp dụng màu và khoảng cách trên cho phần danh sách. Mỗi tab Danh mục sản phẩm vẫn giữ cột Hãng khi cần, mô tả, sắp xếp và nút Sửa hiện có.
 
 ## Phân trang

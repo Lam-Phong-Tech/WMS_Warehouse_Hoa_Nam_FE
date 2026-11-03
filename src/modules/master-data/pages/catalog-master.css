@@ -379,7 +379,7 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
 }
 
 .hn-catalog-table-wrap table {
-  min-width: 860px;
+  min-width: 960px;
   width: 100%;
   border-collapse: collapse;
   color: var(--catalog-text);
