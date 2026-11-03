@@ -931,9 +931,9 @@
   padding: 0;
   white-space: normal;
 }
-.hn-sku-screen table.sku-table td.actions-col,
-.hn-sku-screen table.sku-table th:last-child {
-  text-align: center;
+.hn-sku-screen table.sku-table td.actions-col {
+  padding-right: clamp(24px, 3.5vw, 56px);
+  text-align: right;
 }
 .hn-sku-screen table.sku-table [data-testid="sku-thumbnail-empty"] {
   color: var(--sku-link);
