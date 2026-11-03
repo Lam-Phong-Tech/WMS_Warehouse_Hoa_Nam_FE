@@ -225,7 +225,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     // chọn option thay vì fireEvent.change trực tiếp lên value.
     fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái bảo hành"));
     fireEvent.click(
-      await screen.findByRole("option", { name: "Đang kiểm tra" }),
+      await screen.findByRole("option", { name: /Đang kiểm tra/ }),
     );
 
     await waitFor(() => {
@@ -246,7 +246,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
 
     fireEvent.mouseDown(screen.getByLabelText("Lọc loại nhận diện"));
     fireEvent.click(
-      await screen.findByRole("option", { name: "Tiếp nhận tạm" }),
+      await screen.findByRole("option", { name: /Tiếp nhận tạm/ }),
     );
 
     await waitFor(() => {
@@ -270,18 +270,19 @@ describe("WarrantyPage (WAR-01 hub)", () => {
       (option) => option.textContent,
     );
 
-    expect(options).toContain("Đã xác định");
-    expect(options).toContain("Tiếp nhận tạm");
-    expect(options).not.toContain("Đã xác định sản phẩm");
+    expect(options).toContain("Nhận diện: Đã xác định");
+    expect(options).toContain("Nhận diện: Tiếp nhận tạm");
+    expect(options).not.toContain("Nhận diện: Đã xác định sản phẩm");
   });
 
   it("lọc Bệnh/lỗi gửi defect_id của mục đã chọn và về trang 1", async () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
     await screen.findByText("BH-0001");
 
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
     fireEvent.mouseDown(screen.getByLabelText("Lọc bệnh/lỗi"));
     fireEvent.click(
-      await screen.findByRole("option", { name: "DEF-004 · Chập điện" }),
+      await screen.findByRole("option", { name: /DEF-004 · Chập điện/ }),
     );
 
     await waitFor(() => {
@@ -295,15 +296,16 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
     await screen.findByText("BH-0001");
 
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
     fireEvent.mouseDown(screen.getByLabelText("Lọc bệnh/lỗi"));
     const codes = (await screen.findAllByRole("option"))
       .map((option) => option.textContent ?? "")
-      .filter((text) => text.startsWith("DEF-"));
+      .filter((text) => text.includes("DEF-"));
 
     expect(codes).toEqual([
-      "DEF-001 · Không lên nguồn",
-      "DEF-004 · Chập điện",
-      "DEF-009 · Kêu to bất thường",
+      "Bệnh/lỗi: DEF-001 · Không lên nguồn",
+      "Bệnh/lỗi: DEF-004 · Chập điện",
+      "Bệnh/lỗi: DEF-009 · Kêu to bất thường",
     ]);
   });
 
@@ -328,8 +330,9 @@ describe("WarrantyPage (WAR-01 hub)", () => {
       expect.objectContaining({ sort_order: "desc" }),
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
     fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách bảo hành"));
-    fireEvent.click(await screen.findByRole("option", { name: "Cũ nhất" }));
+    fireEvent.click(await screen.findByRole("option", { name: /Cũ nhất/ }));
 
     await waitFor(() => {
       expect(fetchWarrantyCases).toHaveBeenCalledWith(
@@ -338,32 +341,36 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     });
   });
 
-  it("Áp dụng giữ nguyên tham số lọc API; Đặt lại chỉ xóa bộ lọc và giữ cỡ trang, thứ tự", async () => {
+  it("tự áp dụng khi nhập và Xóa lọc giữ cỡ trang", async () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
     await screen.findByText("BH-0001");
 
     fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái bảo hành"));
     fireEvent.click(
-      await screen.findByRole("option", { name: "Đang kiểm tra" }),
+      await screen.findByRole("option", { name: /Đang kiểm tra/ }),
     );
     fireEvent.mouseDown(screen.getByLabelText("Lọc loại nhận diện"));
     fireEvent.click(
-      await screen.findByRole("option", { name: "Tiếp nhận tạm" }),
+      await screen.findByRole("option", { name: /Tiếp nhận tạm/ }),
     );
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
     fireEvent.mouseDown(screen.getByLabelText("Lọc bệnh/lỗi"));
     fireEvent.click(
-      await screen.findByRole("option", { name: "DEF-004 · Chập điện" }),
+      await screen.findByRole("option", { name: /DEF-004 · Chập điện/ }),
     );
     fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách bảo hành"));
-    fireEvent.click(await screen.findByRole("option", { name: "Cũ nhất" }));
+    fireEvent.click(await screen.findByRole("option", { name: /Cũ nhất/ }));
     fireEvent.mouseDown(screen.getByLabelText("Số dòng mỗi trang"));
     fireEvent.click(await screen.findByRole("option", { name: "20 / trang" }));
 
     const search = screen.getByRole("textbox", { name: /Tìm hồ sơ bảo hành/ });
     fireEvent.change(search, { target: { value: "  BH-0001  " } });
-    const apply = screen.getByRole("button", { name: "Áp dụng" });
-    await waitFor(() => expect(apply).toBeEnabled());
-    fireEvent.click(apply);
+    expect(
+      screen.queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
     await waitFor(() =>
       expect(fetchWarrantyCases).toHaveBeenLastCalledWith({
         search: "BH-0001",
@@ -376,7 +383,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
       }),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
     await waitFor(() =>
       expect(fetchWarrantyCases).toHaveBeenLastCalledWith({
         search: undefined,
@@ -385,7 +392,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
         defect_id: undefined,
         page: 1,
         per_page: 20,
-        sort_order: "asc",
+        sort_order: "desc",
       }),
     );
     expect(search).toHaveValue("");
@@ -414,7 +421,36 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-2");
   });
 
-  it("hiển thị serial, hạn và tuổi hồ sơ do API cung cấp; không tự suy dữ liệu còn thiếu", async () => {
+  it("bỏ dòng mô tả, tiêu đề danh sách và cột tuổi hồ sơ", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByRole("button", { name: "BH-0001" });
+
+    expect(
+      screen.queryByText("Tiếp nhận, theo dõi xử lý và trả máy cho khách"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /Danh sách hồ sơ/ }),
+    ).not.toBeInTheDocument();
+    const table = screen.getByRole("table", {
+      name: "Danh sách hồ sơ bảo hành",
+    });
+    expect(
+      within(table).queryByRole("columnheader", { name: "Tuổi hồ sơ" }),
+    ).not.toBeInTheDocument();
+    expect(within(table).getAllByRole("columnheader")).toHaveLength(7);
+    expect(
+      within(table).getByRole("columnheader", { name: "STT" }),
+    ).toBeInTheDocument();
+    expect(table.querySelectorAll("tbody tr:first-child td")).toHaveLength(7);
+    expect(
+      table.querySelector("tbody tr:first-child td:first-child"),
+    ).toHaveTextContent("1");
+    expect(
+      table.querySelector("tbody tr:nth-child(2) td:first-child"),
+    ).toHaveTextContent("2");
+  });
+
+  it("hiển thị serial và hạn do API cung cấp; không tự suy dữ liệu còn thiếu", async () => {
     vi.mocked(fetchWarrantyCases).mockResolvedValue({
       data: [
         {
@@ -442,9 +478,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     expect(within(dataRow).queryByText(/ITEM-ALIAS/)).not.toBeInTheDocument();
     expect(within(dataRow).getByText("10/08/2026")).toBeInTheDocument();
     expect(within(dataRow).getByText("25/09/2026")).toBeInTheDocument();
-    expect(
-      dataRow.querySelector('[data-label="Tuổi hồ sơ"]'),
-    ).toHaveTextContent("47 ngày");
+    expect(dataRow.querySelector('[data-label="Tuổi hồ sơ"]')).toBeNull();
 
     const missingRow = screen
       .getByRole("button", { name: "BH-MISSING" })
@@ -453,16 +487,13 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     expect(
       within(missingRow).queryByText(/item-internal-uuid/),
     ).not.toBeInTheDocument();
-    expect(
-      missingRow.querySelector('[data-label="Tuổi hồ sơ"]'),
-    ).toHaveTextContent("Chưa có");
+    expect(missingRow.querySelector('[data-label="Tuổi hồ sơ"]')).toBeNull();
     expect(missingRow.querySelector('[title="Hạn xử lý"]')).toHaveTextContent(
       "Chưa có",
     );
   });
 
-  it("giữ thao tác sắp xếp Bệnh/lỗi và Nhận diện qua menu bàn phím, không gọi API khác", async () => {
-    const user = userEvent.setup();
+  it("sắp xếp Bệnh/lỗi và Nhận diện trong bộ lọc, không gọi API khác", async () => {
     vi.mocked(fetchWarrantyCases).mockResolvedValue({
       data: [
         { ...CASES[0], defect_code: "Z", defect: "Lỗi Z" },
@@ -472,31 +503,23 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     });
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
     await screen.findByRole("button", { name: "BH-0001" });
-    const sortButton = screen.getByRole("button", {
-      name: "Sắp xếp khác cho danh sách bảo hành",
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
     const rowCodes = () =>
       within(screen.getByRole("table", { name: "Danh sách hồ sơ bảo hành" }))
         .getAllByRole("button", { name: /^BH-000[12]$/ })
         .map((button) => button.textContent);
     const callsBefore = vi.mocked(fetchWarrantyCases).mock.calls.length;
 
-    act(() => sortButton.focus());
-    await user.keyboard("{Enter}");
-    const defectSort = await screen.findByRole("menuitem", {
-      name: "Sắp xếp theo bệnh/lỗi",
-    });
-    act(() => defectSort.focus());
-    await user.keyboard("{Enter}");
+    fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách bảo hành"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: /Bệnh\/lỗi A → Z/ }),
+    );
     await waitFor(() => expect(rowCodes()).toEqual(["BH-0002", "BH-0001"]));
 
-    act(() => sortButton.focus());
-    await user.keyboard("{Enter}");
-    const identificationSort = await screen.findByRole("menuitem", {
-      name: "Sắp xếp theo nhận diện",
-    });
-    act(() => identificationSort.focus());
-    await user.keyboard("{Enter}");
+    fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách bảo hành"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: /Nhận diện A → Z/ }),
+    );
     await waitFor(() => expect(rowCodes()).toEqual(["BH-0001", "BH-0002"]));
     expect(fetchWarrantyCases).toHaveBeenCalledTimes(callsBefore);
     expect(screen.queryByTestId("detail-modal")).not.toBeInTheDocument();
@@ -569,7 +592,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     await screen.findByRole("button", { name: "BH-0001" });
     fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái bảo hành"));
     fireEvent.click(
-      await screen.findByRole("option", { name: "Đang kiểm tra" }),
+      await screen.findByRole("option", { name: /Đang kiểm tra/ }),
     );
     await waitFor(() =>
       expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
@@ -583,7 +606,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     );
     fireEvent.mouseDown(screen.getByLabelText("Lọc loại nhận diện"));
     fireEvent.click(
-      await screen.findByRole("option", { name: "Tiếp nhận tạm" }),
+      await screen.findByRole("option", { name: /Tiếp nhận tạm/ }),
     );
     expect(
       await screen.findByText("Không tải được danh sách bảo hành"),

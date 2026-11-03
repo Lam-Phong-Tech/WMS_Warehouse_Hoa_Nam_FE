@@ -90,11 +90,16 @@ async function openRepairingStatusDialog() {
     name: "Cập nhật trạng thái bảo hành",
   });
   fireEvent.mouseDown(
-    within(dialog).getByRole("combobox", { name: /Trạng thái mới/ }),
+    await within(dialog).findByRole("combobox", { name: /Trạng thái mới/ }),
   );
   fireEvent.click(await screen.findByRole("option", { name: "Đang sửa chữa" }));
   fireEvent.change(within(dialog).getByLabelText(/Ngày dự kiến sửa xong/), {
-    target: { value: "2026-09-30" },
+    target: {
+      value: new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10),
+    },
+  });
+  fireEvent.change(within(dialog).getByLabelText(/Kết quả kiểm tra/), {
+    target: { value: "Đã xác nhận lỗi" },
   });
   return dialog;
 }
@@ -141,6 +146,28 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     cleanupTestState();
   });
 
+  it("mở chi tiết trong panel bên phải và vẫn có nút đóng", async () => {
+    const onClose = vi.fn();
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={onClose}
+        onOpenComponentIssue={() => {}}
+      />,
+    );
+
+    const drawer = await screen.findByRole("dialog", {
+      name: "Chi tiết bảo hành",
+    });
+    expect(drawer).toHaveClass("MuiDrawer-paper");
+    expect(drawer.closest(".MuiDrawer-root")).toHaveClass(
+      "MuiDrawer-anchorRight",
+    );
+    expect(await within(drawer).findByText("BH-0001")).toBeInTheDocument();
+    fireEvent.click(within(drawer).getByRole("button", { name: "Đóng" }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   /**
    * UAT TC_UI_10 + TC_FUNC_01 — nhánh CHECKING → COMPLETED:
    *  · hồ sơ mang sẵn ngày dự kiến ĐÃ QUA không được chặn submit âm thầm
@@ -175,7 +202,7 @@ describe("WarrantyDetailModal (WAR-03)", () => {
       name: "Cập nhật trạng thái bảo hành",
     });
     fireEvent.mouseDown(
-      within(dialog).getByRole("combobox", { name: /Trạng thái mới/ }),
+      await within(dialog).findByRole("combobox", { name: /Trạng thái mới/ }),
     );
     fireEvent.click(
       await screen.findByRole("option", { name: "Đã hoàn tất xử lý" }),

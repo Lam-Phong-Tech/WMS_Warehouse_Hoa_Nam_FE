@@ -15,7 +15,7 @@ import {
   FILTER_WIDTH,
 } from "@/shared/ui";
 import { type ResponsiveTableColumn } from "@/shared/components/data-display/ResponsiveDataTable";
-import { ToolOutlined } from "@/shared/components/icons";
+import { FilterOutlined, ToolOutlined } from "@/shared/components/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
@@ -63,6 +63,13 @@ import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const DETAIL_SCREENS = new Set(["WAR-03"]);
+type WarrantySortMode =
+  | "newest"
+  | "oldest"
+  | "defect-asc"
+  | "defect-desc"
+  | "identification-asc"
+  | "identification-desc";
 
 /** antd Tag color (WARRANTY_STATUS_COLORS) → tone soft-tint của UiStatusBadge. */
 const TAG_TONE_MAP: Record<string, UiStatusTone> = {
@@ -93,8 +100,8 @@ interface ComponentIssueTarget {
 
 /**
  * WAR-01 · Danh sách bảo hành — màn hub của luồng 04 · Bảo hành & linh kiện.
- * Tiếp nhận (WAR-02), Chi tiết (WAR-03) và Xuất linh kiện (COMP-01) đều mở
- * modal ngay trên danh sách, không chuyển trang — đồng bộ pattern luồng 02/03.
+ * Tiếp nhận (WAR-02) và Chi tiết (WAR-03) mở trong panel bên phải;
+ * Xuất linh kiện (COMP-01) mở ngay trên danh sách, không chuyển trang.
  */
 export default function WarrantyPage() {
   const t = useT();
@@ -111,9 +118,8 @@ export default function WarrantyPage() {
     WarrantyIdentificationType | ""
   >("");
   const [defectId, setDefectId] = useState("");
-  // "Sắp xếp theo" — desc = Mới nhất (hồ sơ tạo/sửa gần nhất lên đầu, mặc định),
-  // asc = Cũ nhất. BE sắp trong SQL nên đổi chiều phải quay về trang 1.
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [sortMode, setSortMode] = useState<WarrantySortMode>("newest");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [intakeOpen, setIntakeOpen] = useState(false);
@@ -131,7 +137,7 @@ export default function WarrantyPage() {
     defect_id: defectId || undefined,
     page,
     per_page: perPage,
-    sort_order: sortOrder,
+    sort_order: sortMode === "oldest" ? "asc" : "desc",
   });
   const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
 
@@ -141,6 +147,28 @@ export default function WarrantyPage() {
     pageSize: perPage,
     rowCount: rows.length,
   });
+  const hasFilters = Boolean(
+    searchInput ||
+    status ||
+    identification ||
+    defectId ||
+    sortMode !== "newest",
+  );
+  const listSort = sortMode.startsWith("defect-")
+    ? {
+        key: "defect" as const,
+        direction: sortMode.endsWith("-asc")
+          ? ("asc" as const)
+          : ("desc" as const),
+      }
+    : sortMode.startsWith("identification-")
+      ? {
+          key: "identification_type" as const,
+          direction: sortMode.endsWith("-asc")
+            ? ("asc" as const)
+            : ("desc" as const),
+        }
+      : null;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -313,10 +341,7 @@ export default function WarrantyPage() {
         ) : null}
 
         <header className="hn-war-header">
-          <div>
-            <h1>{tUi("notifications.subject.warrantyCase")}</h1>
-            <p>{tUi("updatedUi.text_35a49d741afd")}</p>
-          </div>
+          <h1>{tUi("notifications.subject.warrantyCase")}</h1>
           <div className="hn-war-header-actions">
             {" "}
             {canManage ? (
@@ -326,38 +351,12 @@ export default function WarrantyPage() {
             ) : null}
           </div>
         </header>
-        <section className="hn-war-card" aria-labelledby="hn-war-list-title">
-          <div className="hn-war-card-heading">
-            <h2 id="hn-war-list-title">
-              {tUi("updatedUi.text_49ac5ad3c77e")}{" "}
-              <span className="hn-war-count">
-                {listQuery.data
-                  ? pagination.total.toLocaleString("vi-VN")
-                  : "—"}
-              </span>
-            </h2>
-            <div className="hn-war-sort">
-              {" "}
-              <UiSelect
-                menuClassName="hn-war-menu"
-                value={sortOrder}
-                aria-label={t("warranty.list.sortAria")}
-                options={[
-                  { value: "desc", label: t("warranty.list.sortNewest") },
-                  { value: "asc", label: t("warranty.list.sortOldest") },
-                ]}
-                onChange={(value) => {
-                  setSortOrder(value === "asc" ? "asc" : "desc");
-                  setPage(1);
-                }}
-              />
-            </div>
-          </div>
-          <div className="hn-war-filters">
+        <section
+          className="hn-war-card"
+          aria-label={tUi("updatedUi.text_158cb245bd0c")}
+        >
+          <div className="hn-war-filters" role="search">
             <div className="hn-war-field hn-war-search">
-              <label htmlFor="hn-war-search">
-                {tUi("reports.packingLabel.searchLabel")}
-              </label>{" "}
               <UiTextField
                 id="hn-war-search"
                 fullWidth
@@ -382,19 +381,16 @@ export default function WarrantyPage() {
               />
             </div>
             <div className="hn-war-field">
-              <label htmlFor="hn-war-status">
-                {tUi("dashboard.composition.colStatus")}
-              </label>{" "}
               <UiSelect
                 id="hn-war-status"
                 fullWidth
                 menuClassName="hn-war-menu"
                 value={status}
                 aria-label={t("warranty.list.statusFilterAria")}
-                placeholder={tUi("dashboard.operations.filterAll")}
+                placeholder={t("warranty.list.statusFilterPlaceholder")}
                 options={WARRANTY_BASELINE_STATUSES.map((value) => ({
                   value,
-                  label: WARRANTY_STATUS_LABELS[value],
+                  label: `${t("warranty.list.colStatus")}: ${WARRANTY_STATUS_LABELS[value]}`,
                 }))}
                 onChange={(value) => {
                   setStatus(value as WarrantyCaseStatus | "");
@@ -403,23 +399,20 @@ export default function WarrantyPage() {
               />
             </div>
             <div className="hn-war-field">
-              <label htmlFor="hn-war-identification">
-                {tUi("updatedUi.text_717d850fc350")}
-              </label>{" "}
               <UiSelect
                 id="hn-war-identification"
                 fullWidth
                 menuClassName="hn-war-menu"
                 value={identification}
                 aria-label={t("warranty.list.identificationFilterAria")}
-                placeholder={tUi("dashboard.operations.filterAll")}
+                placeholder={t("warranty.list.identificationFilterPlaceholder")}
                 // UAT TC_FUNC_02: nhãn của ô lọc phải lấy từ ĐÚNG registry mà cột
                 // "Nhận diện" đang dùng. Bản trước gõ lại nhãn ở messages.ts nên ô
                 // lọc ghi "Đã xác định sản phẩm" còn cột ghi "Đã xác định" — người
                 // kiểm thử đối chiếu hai chữ khác nhau và kết luận lọc trả sai.
                 options={WARRANTY_IDENTIFICATION_TYPES.map((value) => ({
                   value,
-                  label: WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS[value],
+                  label: `${t("warranty.list.colIdentification")}: ${WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS[value]}`,
                 }))}
                 onChange={(value) => {
                   setIdentification(value as WarrantyIdentificationType | "");
@@ -427,17 +420,48 @@ export default function WarrantyPage() {
                 }}
               />
             </div>
+            <button
+              type="button"
+              className="hn-war-more-filters"
+              aria-expanded={filtersOpen}
+              aria-controls="hn-war-extra-filters"
+              onClick={() => setFiltersOpen((current) => !current)}
+            >
+              <FilterOutlined aria-hidden="true" />
+              {t("inbound.list.filterButton")}
+            </button>
+            {hasFilters ? (
+              <button
+                type="button"
+                className="hn-war-clear-filters"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearch("");
+                  setStatus("");
+                  setIdentification("");
+                  setDefectId("");
+                  setSortMode("newest");
+                  setPage(1);
+                  searchRef.current?.focus();
+                }}
+              >
+                {t("inbound.list.clearFilters")}
+              </button>
+            ) : null}
+          </div>
+          <div
+            id="hn-war-extra-filters"
+            className="hn-war-extra-filters"
+            hidden={!filtersOpen}
+          >
             <div className="hn-war-field">
-              <label htmlFor="hn-war-defect">
-                {tUi("warranty.list.colDefect")}
-              </label>{" "}
               <UiSelect
                 id="hn-war-defect"
                 fullWidth
                 menuClassName="hn-war-menu"
                 value={defectId}
                 aria-label={t("warranty.list.defectFilterAria")}
-                placeholder={tUi("dashboard.operations.filterAll")}
+                placeholder={t("warranty.list.defectFilterPlaceholder")}
                 // Nhãn lựa chọn là "DEF-013 · Chập điện / cháy mô-tơ" — ô hẹp làm
                 // menu gãy dòng giữa tên bệnh/lỗi (phản hồi người dùng 07/09/2026).
                 options={[...(defectsQuery.data?.data ?? [])]
@@ -454,7 +478,7 @@ export default function WarrantyPage() {
                     value: String(
                       defect.defect_id ?? (defect as { id?: unknown }).id ?? "",
                     ).trim(),
-                    label: `${defect.defect_code} · ${defect.defect_name}`,
+                    label: `${t("warranty.list.colDefect")}: ${defect.defect_code} · ${defect.defect_name}`,
                   }))
                   .filter((option) => option.value !== "")}
                 onChange={(value) => {
@@ -463,34 +487,38 @@ export default function WarrantyPage() {
                 }}
               />
             </div>
-            <div className="hn-war-filter-actions">
-              <button
-                type="button"
-                className="hn-war-primary"
-                disabled={listQuery.isFetching}
-                onClick={() => {
-                  setSearch(searchInput.trim());
+            <div className="hn-war-field">
+              <UiSelect
+                id="hn-war-sort"
+                fullWidth
+                menuClassName="hn-war-menu"
+                value={sortMode}
+                aria-label={t("warranty.list.sortAria")}
+                options={[
+                  {
+                    value: "newest",
+                    label: `${t("warranty.list.sortLabel")}: ${t("warranty.list.sortNewest")}`,
+                  },
+                  {
+                    value: "oldest",
+                    label: `${t("warranty.list.sortLabel")}: ${t("warranty.list.sortOldest")}`,
+                  },
+                  ...(["defect", "identification"] as const).flatMap((key) =>
+                    (["asc", "desc"] as const).map((direction) => ({
+                      value: `${key}-${direction}`,
+                      label: `${t("warranty.list.sortLabel")}: ${t(
+                        key === "defect"
+                          ? "warranty.list.colDefect"
+                          : "warranty.list.colIdentification",
+                      )} ${direction === "asc" ? "A → Z" : "Z → A"}`,
+                    })),
+                  ),
+                ]}
+                onChange={(value) => {
+                  setSortMode(value as WarrantySortMode);
                   setPage(1);
-                  void listQuery.refetch();
                 }}
-              >
-                {tUi("dashboard.snapshot.apply")}
-              </button>
-              <button
-                type="button"
-                className="hn-war-reset"
-                onClick={() => {
-                  setSearchInput("");
-                  setSearch("");
-                  setStatus("");
-                  setIdentification("");
-                  setDefectId("");
-                  setPage(1);
-                  searchRef.current?.focus();
-                }}
-              >
-                {tUi("reports.packingLabel.reset")}
-              </button>
+              />
             </div>
           </div>
           {listQuery.isError ? (
@@ -510,6 +538,8 @@ export default function WarrantyPage() {
             columns={columns}
             rows={rows}
             rowKey={(row) => row.id}
+            listSort={listSort}
+            rowNumberOffset={(pagination.current - 1) * perPage}
             loading={listQuery.isLoading || listQuery.isFetching}
             emptyText={tableEmptyText(
               listQuery.isError ? listQuery.error : null,
