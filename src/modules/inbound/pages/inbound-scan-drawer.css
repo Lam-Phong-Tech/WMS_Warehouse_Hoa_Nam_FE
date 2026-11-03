@@ -84,6 +84,19 @@
   font-variant-numeric: tabular-nums;
 }
 
+.hn-inbound-scan-table .MuiChip-root {
+  max-width: 100%;
+  height: auto;
+  min-height: 24px;
+}
+
+.hn-inbound-scan-table .MuiChip-label {
+  min-width: 0;
+  padding-block: 4px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .hn-inbound-scan-footer {
   display: flex;
   justify-content: flex-end;

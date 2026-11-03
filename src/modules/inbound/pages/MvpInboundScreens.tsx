@@ -918,7 +918,7 @@ export function InboundScanModal({
     {
       key: "stt",
       header: "STT",
-      width: 56,
+      width: 50,
       align: "center",
       render: (line) =>
         (detail?.lines
@@ -928,7 +928,8 @@ export function InboundScanModal({
     {
       key: "sku",
       header: "SKU",
-      width: 220,
+      width: 150,
+      truncate: 0,
       render: (line) => {
         // Ưu tiên mã SKU đã gắn sẵn trên dòng (BE trả product_code/product_name
         // qua quan hệ product — luôn đúng, không phụ thuộc trang nào). skuById chỉ
@@ -945,7 +946,8 @@ export function InboundScanModal({
     {
       key: "name",
       header: t("inbound.detail.colNameType"),
-      width: 250,
+      width: 260,
+      truncate: 0,
       render: (line) => {
         const sku = skuById.get(line.productId);
         const name = line.skuName || sku?.sku_name;
@@ -969,7 +971,7 @@ export function InboundScanModal({
     {
       key: "scanned",
       header: t("inbound.detail.colScannedQty"),
-      width: 140,
+      width: 130,
       align: "right",
       render: (line) => <strong>{line.scanned}</strong>,
     },
@@ -978,7 +980,7 @@ export function InboundScanModal({
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colInfo"),
-      width: 210,
+      width: 200,
       render: (line) =>
         line.infoComplete ? (
           <UiStatusBadge
@@ -1017,7 +1019,7 @@ export function InboundScanModal({
     {
       key: "stt",
       header: "STT",
-      width: 56,
+      width: 50,
       align: "center",
       render: (entry) =>
         mvpRowNumber(
@@ -1029,7 +1031,8 @@ export function InboundScanModal({
     {
       key: "code",
       header: t("inbound.detail.colCode"),
-      width: 240,
+      width: 180,
+      truncate: 0,
       render: (entry) => (
         <Box component="span" sx={{ fontFamily: "var(--wms-font-family)" }}>
           {entry.itemCode ||
@@ -1043,7 +1046,8 @@ export function InboundScanModal({
     {
       key: "sku",
       header: "SKU",
-      width: 220,
+      width: 185,
+      truncate: 0,
       render: (entry) => (
         <div>
           <div>
@@ -1058,14 +1062,15 @@ export function InboundScanModal({
     {
       key: "quantity",
       header: "SL",
-      width: 70,
+      width: 48,
       align: "right",
       render: (entry) => entry.quantity,
     },
     {
       key: "result",
       header: t("inbound.detail.colResult"),
-      width: 180,
+      width: 145,
+      truncate: 0,
       render: (entry) =>
         entry.status === "ACTIVE" ? (
           entry.candidateItemUnique && !entry.itemId ? (
@@ -1092,7 +1097,8 @@ export function InboundScanModal({
     {
       key: "source",
       header: t("inbound.detail.colSource"),
-      width: 140,
+      width: 100,
+      truncate: 0,
       render: (entry) => (
         <UiStatusBadge
           tone="neutral"
@@ -1109,7 +1115,7 @@ export function InboundScanModal({
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colAction"),
-      width: 110,
+      width: 70,
       render: (entry) =>
         entry.status === "ACTIVE" && canScan && isMutable ? (
           <RowActionButton
@@ -1505,6 +1511,7 @@ export function InboundScanModal({
               )}
 
               <Box
+                className="hn-inbound-scan-table"
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
@@ -1535,10 +1542,13 @@ export function InboundScanModal({
                   rowKey={(line) => line.id}
                   loading={detailQuery.isFetching}
                   emptyText={t("inbound.detail.receivedEmpty")}
+                  mobileBreakpoint="lg"
+                  headerCellStyle={{ whiteSpace: "normal" }}
                 />
               </Box>
 
               <Box
+                className="hn-inbound-scan-table"
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
@@ -1583,6 +1593,8 @@ export function InboundScanModal({
                       rowKey={(entry) => entry.id}
                       loading={scanEntriesQuery.isLoading}
                       emptyText={t("inbound.detail.entriesEmpty")}
+                      mobileBreakpoint="lg"
+                      headerCellStyle={{ whiteSpace: "normal" }}
                     />
                     {scanEntries.length > SCAN_ENTRY_PAGE_SIZE ? (
                       <Box sx={{ mt: 1.5 }}>
