@@ -1,17 +1,11 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import { BarChartOutlined } from "@/shared/components/icons";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import {
-  Menu,
-  MenuItem,
-  UiIcon,
-  UiPagination,
-  UiSelect,
-  UiTextField,
-} from "@/shared/ui";
+import { Menu, MenuItem, UiIcon, UiPagination, UiSelect } from "@/shared/ui";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
@@ -40,6 +34,7 @@ import {
 import { ComponentIssueModal } from "@/modules/warranty/components/ComponentIssueModal";
 import { ComponentIssueOverview } from "@/modules/warranty/components/ComponentIssueOverview";
 import { ComponentIssueCasePicker } from "@/modules/warranty/components/ComponentIssueCasePicker";
+import { ComponentIssueFilters } from "@/modules/warranty/components/ComponentIssueFilters";
 import {
   WARRANTY_STATUS_LABELS,
   warrantyPiiText,
@@ -97,6 +92,13 @@ export default function WarrantyComponentIssueListPage() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [overviewOpen, setOverviewOpen] = useState(() => {
+    try {
+      return window.sessionStorage.getItem("hn-war04-overview-open") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [openTarget, setOpenTarget] = useState<OpenTarget | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [rowMenu, setRowMenu] = useState<{
@@ -245,7 +247,9 @@ export default function WarrantyComponentIssueListPage() {
     detailQueries.some((query) => query.isError) ||
     caseQueries.some((query) => query.isError) ||
     skuIndexQuery.isError;
-  const hasFilters = Boolean(searchInput || status || tracking);
+  const hasFilters = Boolean(
+    searchInput || status || tracking || sortOrder === "asc",
+  );
   const isInitialLoading =
     activeQuery.isLoading || (activeQuery.isPending && !online);
   const refreshAll = () => {
@@ -262,13 +266,8 @@ export default function WarrantyComponentIssueListPage() {
     setSearch("");
     setStatus("");
     setTracking("");
+    setSortOrder("desc");
     setPage(1);
-  };
-  const applyFilters = () => {
-    if (search !== searchInput.trim()) {
-      setSearch(searchInput.trim());
-      setPage(1);
-    } else void activeQuery.refetch();
   };
   const trackingLabel = (document: ComponentIssueDocument) => {
     const value = resolveComponentIssueTracking(document, skuById);
@@ -320,23 +319,31 @@ export default function WarrantyComponentIssueListPage() {
     >
       <header className="hn-war04-header">
         <div className="hn-war04-heading">
-          <nav
-            className="hn-war04-breadcrumb"
-            aria-label={tUi("updatedUi.text_4b213f6974d1")}
-          >
-            <button
-              type="button"
-              onClick={() => navigate("/warranty?screen=WAR-01")}
-            >
-              {tUi("updatedUi.text_3df91fdd6362")}
-            </button>
-            <span>/</span>
-            <span>{tUi("warranty.detail.colIssueCode")}</span>
-          </nav>
           <h1>{tUi("updatedUi.text_c16cb40fc462")}</h1>
-          <p>{tUi("updatedUi.text_3d3d7084fc83")}</p>
         </div>
         <div className="hn-war04-header-actions">
+          <button
+            type="button"
+            className="hn-war04-overview-toggle"
+            aria-label={tUi("updatedUi.text_80df50920cc8")}
+            title={tUi("updatedUi.text_80df50920cc8")}
+            aria-expanded={overviewOpen}
+            aria-controls="hn-war04-overview-content"
+            onClick={() => {
+              const nextOpen = !overviewOpen;
+              setOverviewOpen(nextOpen);
+              try {
+                window.sessionStorage.setItem(
+                  "hn-war04-overview-open",
+                  String(nextOpen),
+                );
+              } catch {
+                // Keep the toggle usable when browser storage is unavailable.
+              }
+            }}
+          >
+            <BarChartOutlined aria-hidden="true" />
+          </button>
           <button
             type="button"
             className="hn-war04-button hn-war04-primary"
@@ -354,23 +361,26 @@ export default function WarrantyComponentIssueListPage() {
             {tUi("updatedUi.text_6f935d4fb7e5")}
           </button>
         </div>
-        <p className="hn-war04-header-note">
-          {tUi("updatedUi.text_538fdb6d29e5")}
-        </p>
       </header>
-      <ComponentIssueOverview
-        onStatusSelect={(value) => {
-          setStatus(value);
-          setPage(1);
-        }}
-      />
-      <aside className="hn-war04-stock-note">
-        <UiIcon name="info" size="sm" />
-        <span>
-          <strong>{tUi("updatedUi.text_9a966c0016ec")}</strong>
-          <small>{tUi("updatedUi.text_d988df33685a")}</small>
-        </span>
-      </aside>
+      <div
+        id="hn-war04-overview-content"
+        className="hn-war04-overview-panel"
+        hidden={!overviewOpen}
+      >
+        <ComponentIssueOverview
+          onStatusSelect={(value) => {
+            setStatus(value);
+            setPage(1);
+          }}
+        />
+        <aside className="hn-war04-stock-note">
+          <UiIcon name="info" size="sm" />
+          <span>
+            <strong>{tUi("updatedUi.text_9a966c0016ec")}</strong>
+            <small>{tUi("updatedUi.text_d988df33685a")}</small>
+          </span>
+        </aside>
+      </div>
       {!online ? (
         <div className="hn-war04-warning" role="status">
           <UiIcon name="wifi-slash" size="sm" />
@@ -379,128 +389,33 @@ export default function WarrantyComponentIssueListPage() {
       ) : null}
       <section
         className="hn-war04-list"
-        aria-labelledby="hn-war04-list-title"
+        aria-label={tUi("updatedUi.text_11362358afdc")}
         aria-busy={activeQuery.isFetching}
       >
-        <div className="hn-war04-list-heading">
-          <h2 id="hn-war04-list-title">
-            {tUi("updatedUi.text_e8768a710dc6")}{" "}
-            <span
-              className="hn-war04-count"
-              aria-label={
-                hasKnownTotal
-                  ? t("warranty.componentList.total", {
-                      count: pagination.total,
-                    })
-                  : tUi("updatedUi.text_b254b45a81d8")
-              }
-            >
-              {hasKnownTotal ? pagination.total.toLocaleString("vi-VN") : "—"}
-            </span>
-          </h2>
-          <div className="hn-war04-sort">
-            <UiSelect
-              value={sortOrder}
-              aria-label={t("warranty.list.sortAria")}
-              menuClassName="hn-war-menu"
-              options={[
-                { value: "desc", label: t("warranty.list.sortNewest") },
-                { value: "asc", label: t("warranty.list.sortOldest") },
-              ]}
-              onChange={(value) => {
-                setSortOrder(value === "asc" ? "asc" : "desc");
-                setPage(1);
-              }}
-            />
-          </div>
-        </div>
-        <form
-          className="hn-war04-filters"
-          onSubmit={(event) => {
-            event.preventDefault();
-            applyFilters();
+        <ComponentIssueFilters
+          search={searchInput}
+          status={status}
+          tracking={tracking}
+          sortOrder={sortOrder}
+          statusOptions={Object.entries(getSTATUS_LABELS()).map(
+            ([value, label]) => ({ value, label }),
+          )}
+          hasFilters={hasFilters}
+          onSearchChange={setSearchInput}
+          onStatusChange={(value) => {
+            setStatus(value);
+            setPage(1);
           }}
-        >
-          <div className="hn-war04-field hn-war04-search">
-            <label htmlFor="hn-war04-search">
-              {tUi("reports.packingLabel.searchLabel")}
-            </label>
-            <UiTextField
-              id="hn-war04-search"
-              value={searchInput}
-              placeholder=""
-              slotProps={{
-                htmlInput: {
-                  "aria-label": t("warranty.componentList.searchAria"),
-                },
-              }}
-              onChange={(event) => setSearchInput(event.target.value)}
-              fullWidth
-            />
-          </div>
-          <div className="hn-war04-field">
-            <label htmlFor="hn-war04-status">
-              {tUi("dashboard.composition.colStatus")}
-            </label>
-            <UiSelect
-              id="hn-war04-status"
-              value={status}
-              aria-label={t("warranty.componentList.statusFilterAria")}
-              displayEmpty
-              fullWidth
-              menuClassName="hn-war04-menu"
-              options={[
-                { value: "", label: tUi("dashboard.operations.filterAll") },
-                ...Object.entries(getSTATUS_LABELS()).map(([value, label]) => ({
-                  value,
-                  label,
-                })),
-              ]}
-              onChange={(value) => {
-                setStatus(value as ComponentIssueStatus | "");
-                setPage(1);
-              }}
-            />
-          </div>
-          <div className="hn-war04-field">
-            <label htmlFor="hn-war04-tracking">
-              {tUi("dashboard.severity.p2")}
-            </label>
-            <UiSelect
-              id="hn-war04-tracking"
-              value={tracking}
-              aria-label={tUi("updatedUi.text_a9a7bcf8d30a")}
-              displayEmpty
-              fullWidth
-              menuClassName="hn-war04-menu"
-              options={[
-                { value: "", label: tUi("dashboard.operations.filterAll") },
-                { value: "SERIAL", label: "Serial" },
-                { value: "QUANTITY", label: "Box + SL" },
-              ]}
-              onChange={(value) => {
-                setTracking(value as Tracking);
-                setPage(1);
-              }}
-            />
-          </div>
-          <div className="hn-war04-filter-actions">
-            <button
-              type="submit"
-              className="hn-war04-button hn-war04-primary"
-              disabled={activeQuery.isFetching || !online}
-            >
-              {tUi("dashboard.snapshot.apply")}
-            </button>
-            <button
-              type="button"
-              className="hn-war04-button hn-war04-reset"
-              onClick={resetFilters}
-            >
-              {tUi("reports.packingLabel.reset")}
-            </button>
-          </div>
-        </form>
+          onTrackingChange={(value) => {
+            setTracking(value);
+            setPage(1);
+          }}
+          onSortChange={(value) => {
+            setSortOrder(value);
+            setPage(1);
+          }}
+          onClear={resetFilters}
+        />
         {activeQuery.isError ? (
           <ApiErrorAlert
             error={activeQuery.error}
@@ -595,12 +510,6 @@ export default function WarrantyComponentIssueListPage() {
                   const warehouseText = warehouse
                     ? `${String(warehouse.code ?? warehouse.warehouse_code ?? "")} · ${String(warehouse.name ?? warehouse.warehouse_name ?? "")}`
                     : row.warehouse_id;
-                  const action =
-                    row.status === "DRAFT"
-                      ? tUi("updatedUi.text_7a77d7612e12")
-                      : row.status === "SCANNING"
-                        ? tUi("outbound.detail.postConfirm")
-                        : tUi("reports.importMatchReport.detail");
                   return (
                     <tr key={row.id} onClick={() => openDocument(row)}>
                       <td data-label={tUi("inbound.detail.fieldDocument")}>
@@ -690,18 +599,6 @@ export default function WarrantyComponentIssueListPage() {
                           onClick={(event) => event.stopPropagation()}
                         >
                           <RowActionButton
-                            kind={
-                              row.status === "DRAFT"
-                                ? "edit"
-                                : row.status === "SCANNING"
-                                  ? "scan"
-                                  : "view"
-                            }
-                            label={action}
-                            onClick={() => openDocument(row)}
-                            aria-label={`${action} ${row.component_issue_no || row.id}`}
-                          />
-                          <RowActionButton
                             kind="more"
                             aria-label={tUi("updatedUi.text_391ce00892b9", {
                               value0: String(row.component_issue_no || row.id),
@@ -740,30 +637,30 @@ export default function WarrantyComponentIssueListPage() {
           </div>
         )}
         <footer className="hn-war04-pagination">
-          <span>
-            {!hasKnownTotal
-              ? tUi("updatedUi.text_b254b45a81d8")
-              : tracking
-                ? tUi("updatedUi.text_1c482bfc5151", {
-                    value0: String(rows.length),
-                    value1: String(pagination.total),
-                  })
-                : tUi("updatedUi.text_4fb2cad0256d", {
-                    value0: String(
-                      rows.length
-                        ? (pagination.current - 1) * pagination.pageSize + 1
-                        : 0,
-                    ),
-                    value1: String(
-                      rows.length
-                        ? (pagination.current - 1) * pagination.pageSize +
-                            rows.length
-                        : 0,
-                    ),
-                    value2: String(pagination.total),
-                  })}
-          </span>
-          <div className="hn-war04-pagination-controls">
+          <div className="hn-war04-pagination-info">
+            <span>
+              {!hasKnownTotal
+                ? tUi("updatedUi.text_b254b45a81d8")
+                : tracking
+                  ? tUi("updatedUi.text_1c482bfc5151", {
+                      value0: String(rows.length),
+                      value1: String(pagination.total),
+                    })
+                  : tUi("updatedUi.text_4fb2cad0256d", {
+                      value0: String(
+                        rows.length
+                          ? (pagination.current - 1) * pagination.pageSize + 1
+                          : 0,
+                      ),
+                      value1: String(
+                        rows.length
+                          ? (pagination.current - 1) * pagination.pageSize +
+                              rows.length
+                          : 0,
+                      ),
+                      value2: String(pagination.total),
+                    })}
+            </span>
             <UiSelect
               value={perPage}
               aria-label={t("warranty.componentList.pageSizeAria")}
@@ -777,6 +674,8 @@ export default function WarrantyComponentIssueListPage() {
                 setPage(1);
               }}
             />
+          </div>
+          <div className="hn-war04-pagination-controls">
             {hasKnownTotal ? (
               <UiPagination
                 page={pagination.current}

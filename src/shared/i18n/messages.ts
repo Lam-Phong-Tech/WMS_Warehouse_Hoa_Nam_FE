@@ -5726,9 +5726,13 @@ export const MESSAGES_VI = {
     page: {
       subtitle:
         "Toàn bộ thông báo hệ thống liên quan tới bạn — nhập/xuất kho, bảo hành, tài khoản, bảo mật.",
+      filterLabel: "Lọc thông báo",
+      all: "Tất cả",
+      unread: "Chưa đọc",
       markAll: "Đánh dấu tất cả đã đọc",
       loading: "Đang tải thông báo...",
       emptyDescription: "Bạn chưa nhận được thông báo nào.",
+      emptyUnread: "Bạn đã đọc hết thông báo.",
       readSuffix: " · Đã đọc",
     },
     detail: {

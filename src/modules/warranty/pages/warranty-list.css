@@ -69,11 +69,6 @@
   line-height: 38px;
   letter-spacing: -0.02em;
 }
-.hn-war-header p {
-  color: var(--war-muted);
-  font-size: 14px;
-  margin-top: 3px;
-}
 .hn-war-header-actions {
   flex-shrink: 0;
   display: flex;
@@ -92,8 +87,7 @@
   outline: 2px solid var(--war-primary);
   outline-offset: 3px;
 }
-.hn-war-header-actions .MuiButton-root:not(.hn-row-action),
-.hn-war-list .hn-war-primary {
+.hn-war-header-actions .MuiButton-root:not(.hn-row-action) {
   background: var(--war-primary);
   color: var(--wms-on-primary);
   border: 1px solid var(--war-primary);
@@ -118,85 +112,36 @@
   i {
   color: inherit;
 }
-.hn-war-header-actions .MuiButton-root:not(.hn-row-action):hover,
-.hn-war-list .hn-war-primary:hover {
+.hn-war-header-actions .MuiButton-root:not(.hn-row-action):hover {
   background: var(--ops-primary-hover);
   box-shadow: 0 3px 9px color-mix(in srgb, var(--war-primary) 22%, transparent);
 }
 .hn-war-card {
-  padding: 18px 20px 8px;
+  padding: 0;
   border: 1px solid var(--war-line);
   border-radius: var(--ops-radius-card);
   background: var(--war-surface);
   min-width: 0;
   box-shadow: 0 1px 3px color-mix(in srgb, var(--war-ink) 3%, transparent);
 }
-.hn-war-card-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-.hn-war-card-heading h2 {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  color: var(--war-ink);
-  font-size: 19px;
-  line-height: 26px;
-  font-weight: 700;
-}
-.hn-war-count {
-  border-radius: var(--ops-radius-control);
-  background: var(--war-pale);
-  color: var(--war-ink);
-  font-size: 12px;
-  line-height: 20px;
-  padding: 0 10px;
-  font-weight: 700;
-}
-.hn-war-sort {
-  flex-shrink: 0;
-}
-.hn-war-sort .MuiOutlinedInput-notchedOutline {
-  border: 0;
-}
-.hn-war-sort .MuiInputBase-root {
-  background: transparent;
-  color: var(--war-primary);
-}
-.hn-war-sort .MuiSelect-select {
-  padding-inline: 8px 30px;
-  font-size: 14px;
-}
 .hn-war-filters {
   display: grid;
   grid-template-columns:
-    minmax(200px, 1.7fr) minmax(135px, 1fr) minmax(135px, 1fr)
-    minmax(160px, 1fr) auto;
+    minmax(250px, 2fr) minmax(170px, 1fr) minmax(170px, 1fr)
+    max-content max-content;
   gap: 12px;
-  align-items: end;
-  margin-bottom: 14px;
+  align-items: center;
+  padding: 16px;
 }
 .hn-war-field {
   min-width: 0;
-  display: grid;
-  gap: 4px;
-}
-.hn-war-field > label {
-  color: var(--war-ink);
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 600;
 }
 .hn-war-field .MuiFormControl-root {
   min-width: 0;
   width: 100%;
 }
 .hn-war-field .MuiInputBase-root {
-  min-height: var(--ops-control-height);
+  min-height: 48px;
   background: var(--war-surface);
   border-radius: var(--ops-radius-control);
   font-size: 14px;
@@ -207,8 +152,8 @@
   color: inherit;
 }
 .hn-war-field .MuiSelect-select {
-  padding-top: 9px;
-  padding-bottom: 9px;
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
 .hn-war-field .MuiOutlinedInput-notchedOutline {
   border-color: var(--war-line);
@@ -256,27 +201,39 @@
   min-width: 0;
   padding-left: 10px;
 }
-.hn-war-filter-actions {
-  display: flex;
+.hn-war-more-filters,
+.hn-war-clear-filters {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-}
-.hn-war-filter-actions button {
-  white-space: nowrap;
-  min-height: var(--ops-control-height);
-}
-.hn-war-reset {
+  justify-content: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 16px;
   border: 1px solid var(--war-line);
-  border-radius: 6px;
+  border-radius: var(--ops-radius-control);
+  background: var(--war-surface);
   color: var(--war-ink);
-  background: transparent;
-  padding: 8px 15px;
-  font-size: 14px;
+  font: inherit;
   font-weight: 600;
-  transition: background-color 0.16s;
+  white-space: nowrap;
 }
-.hn-war-reset:hover {
+.hn-war-more-filters:hover,
+.hn-war-more-filters[aria-expanded="true"],
+.hn-war-clear-filters:hover {
+  border-color: var(--ops-link);
   background: var(--war-pale);
+}
+.hn-war-extra-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+.hn-war-extra-filters[hidden] {
+  display: none;
+}
+.hn-war-extra-filters .hn-war-field {
+  width: min(300px, 100%);
 }
 .hn-war-table-wrap {
   min-width: 0;
@@ -290,39 +247,42 @@
   font-size: 14px;
   line-height: 22px;
 }
+.hn-war-table col.hn-war-index-col {
+  width: 5%;
+}
 .hn-war-table col.hn-war-case-col {
-  width: 17%;
+  width: 19%;
 }
 .hn-war-table col.hn-war-product-col {
-  width: 19%;
+  width: 21%;
 }
 .hn-war-table col.hn-war-customer-col {
   width: 18%;
 }
 .hn-war-table col.hn-war-date-col {
-  width: 14%;
+  width: 16%;
 }
 .hn-war-table col.hn-war-status-col {
-  width: 15%;
-}
-.hn-war-table col.hn-war-age-col {
-  width: 7%;
+  width: 12%;
 }
 .hn-war-table col.hn-war-action-col {
-  width: 10%;
+  width: 9%;
 }
 .hn-war-table th {
   text-align: left;
-  padding: 10px 9px;
-  font-weight: 600;
-  font-size: 12px;
-  line-height: 18px;
-  background: var(--war-pale);
-  color: var(--war-ink);
+  padding: 12px 18px;
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: #d2edf7;
+  color: var(--ops-muted);
   vertical-align: middle;
 }
 .hn-war-table td {
-  padding: 10px 9px;
+  padding: 12px 18px;
+  min-height: 68px;
   vertical-align: middle;
   border-bottom: 1px solid var(--war-line);
   overflow-wrap: anywhere;
@@ -332,7 +292,7 @@
   transition: background-color 0.16s;
 }
 .hn-war-table tbody tr:hover {
-  background: color-mix(in srgb, var(--war-pale) 65%, var(--war-surface));
+  background: color-mix(in srgb, var(--war-pale) 55%, var(--war-surface));
 }
 .hn-war-table .hn-sortable-th {
   display: flex;
@@ -393,7 +353,7 @@
 }
 .hn-war-product {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-start;
   min-width: 0;
 }
@@ -402,8 +362,8 @@
 }
 .hn-war-product-icon {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   color: var(--war-primary);
   display: flex;
   align-items: center;
@@ -437,9 +397,9 @@
 }
 .hn-war-status .MuiChip-root {
   max-width: 100%;
-  min-height: 22px;
+  min-height: 24px;
   height: auto;
-  border-radius: 13px;
+  border-radius: 20px;
   color: var(--war-primary);
   background: var(--war-pale);
   font-size: 11px;
@@ -486,8 +446,8 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding-top: 10px;
-  padding-bottom: 4px;
+  border-top: 1px solid var(--war-line);
+  padding: 14px 16px;
 }
 .hn-war-pagination-info {
   display: flex;
@@ -587,33 +547,30 @@
 }
 @container hn-warranty (max-width: 1250px) {
   .hn-war-filters {
-    grid-template-columns: minmax(190px, 1.5fr) repeat(2, minmax(130px, 1fr));
+    grid-template-columns:
+      minmax(200px, 2fr) repeat(2, minmax(150px, 1fr))
+      max-content max-content;
   }
-  .hn-war-filters > .hn-war-field:nth-child(4) {
-    grid-column: 1;
-  }
-  .hn-war-filter-actions {
-    grid-column: 2 / 4;
-    justify-content: flex-end;
+  .hn-war-table col.hn-war-index-col {
+    width: 7%;
   }
   .hn-war-table col.hn-war-case-col {
-    width: 18%;
+    width: 21%;
   }
   .hn-war-table col.hn-war-product-col {
-    width: 26%;
+    width: 28%;
   }
-  .hn-war-table .hn-war-customer-col,
-  .hn-war-table .hn-war-age-col {
+  .hn-war-table .hn-war-customer-col {
     display: none;
   }
   .hn-war-table col.hn-war-date-col {
-    width: 18%;
+    width: 19%;
   }
   .hn-war-table col.hn-war-status-col {
-    width: 21%;
+    width: 14%;
   }
   .hn-war-table col.hn-war-action-col {
-    width: 17%;
+    width: 11%;
   }
   .hn-war-tablet-customer {
     display: block;
@@ -630,34 +587,34 @@
 }
 @container hn-warranty (max-width: 850px) {
   .hn-war-filters {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) max-content max-content;
   }
   .hn-war-search {
     grid-column: 1 / -1;
   }
-  .hn-war-filter-actions {
-    grid-column: 2;
-  }
-  .hn-war-filter-actions button {
-    flex: 1;
-    padding-inline: 12px;
-  }
-  .hn-war-card {
-    padding-inline: 14px;
-  }
   .hn-war-table td,
   .hn-war-table th {
-    padding: 9px 6px;
+    padding: 10px 8px;
   }
   .hn-war-product {
     gap: 6px;
   }
   .hn-war-product-icon {
-    width: 23px;
-    height: 26px;
+    width: 36px;
+    height: 36px;
   }
 }
 @container hn-warranty (max-width: 630px) {
+  .hn-war-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-war-search {
+    grid-column: 1 / -1;
+  }
+  .hn-war-more-filters,
+  .hn-war-clear-filters {
+    width: 100%;
+  }
   .hn-war-header {
     align-items: flex-start;
     flex-direction: column;
@@ -668,16 +625,6 @@
   }
   .hn-war-header-actions .MuiButton-root:not(.hn-row-action) {
     min-height: var(--ops-control-height);
-  }
-  .hn-war-card {
-    padding: 14px 12px 8px;
-  }
-  .hn-war-card-heading {
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .hn-war-card-heading h2 {
-    font-size: 17px;
   }
   .hn-war-table,
   .hn-war-table tbody {
@@ -724,9 +671,6 @@
   .hn-war-tablet-customer {
     display: none;
   }
-  .hn-war-table .hn-war-age-col {
-    display: block;
-  }
   .hn-war-table td.hn-war-action-cell {
     grid-column: 1 / -1;
   }
@@ -754,12 +698,12 @@
   .hn-war-filters {
     grid-template-columns: minmax(0, 1fr);
   }
-  .hn-war-filters > .hn-war-field:nth-child(4),
-  .hn-war-filter-actions {
+  .hn-war-search {
     grid-column: 1;
   }
-  .hn-war-filter-actions {
-    justify-content: stretch;
+  .hn-war-more-filters,
+  .hn-war-clear-filters {
+    width: 100%;
   }
   .hn-war-table tbody tr {
     grid-template-columns: minmax(0, 1fr);
@@ -779,28 +723,6 @@
 .hn-war-field input:focus-visible {
   outline: none;
 }
-.hn-war-table-tools {
-  display: flex;
-  justify-content: flex-end;
-  margin: -6px 0 6px;
-}
-.hn-war-extra-sort {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  border: 0;
-  background: transparent;
-  color: var(--war-muted);
-  border-radius: 4px;
-  padding: 3px 6px;
-  font: inherit;
-  font-size: 12px;
-}
-.hn-war-extra-sort:hover {
-  background: var(--war-pale);
-  color: var(--war-primary);
-}
-
 .hn-war-list .hn-war-field .MuiSelect-select {
   font-size: 14px;
   line-height: 22px;

@@ -1,4 +1,5 @@
 import "./warranty-dialog.css";
+import "./warranty-intake-drawer.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import { useForm } from "react-hook-form";
@@ -738,7 +739,7 @@ export function WarrantyIntakeModal({
 
   return (
     <UiDialog
-      className="hn-war-dialog"
+      className="hn-war-dialog hn-war-intake-drawer"
       {...dialog.dialogProps}
       open={open && dialog.open}
       maxWidth="md"

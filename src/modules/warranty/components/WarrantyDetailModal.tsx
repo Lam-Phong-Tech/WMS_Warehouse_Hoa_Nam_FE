@@ -1,9 +1,11 @@
 import "./warranty-dialog.css";
-import { useEffect, useState, type ReactNode } from "react";
+import "./warranty-detail-drawer.css";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import {
   Box,
+  Drawer,
   Grid,
   MenuItem,
   SEMANTIC_LIGHT,
@@ -17,6 +19,7 @@ import {
   UiTextField,
   type UiStatusTone,
   type UiTabItem,
+  type DrawerProps,
 } from "@/shared/ui";
 import {
   FileTextOutlined,
@@ -609,6 +612,39 @@ interface StatusFormValues {
   defect_ids: string[];
 }
 
+/** Main case surface. Follow the SKU list's right-side drawer pattern. */
+function WarrantyDetailDrawer({
+  title,
+  actions,
+  children,
+  ...drawerProps
+}: Omit<DrawerProps, "title"> & {
+  title: ReactNode;
+  actions: ReactNode;
+  children: ReactNode;
+}) {
+  const titleId = useId();
+  return (
+    <Drawer
+      className="hn-war-dialog hn-war-detail-drawer"
+      anchor="right"
+      {...drawerProps}
+      slotProps={{
+        ...drawerProps.slotProps,
+        paper: { "aria-labelledby": titleId },
+      }}
+    >
+      <div className="hn-war-detail-shell">
+        <header className="hn-war-detail-header" id={titleId}>
+          {title}
+        </header>
+        <div className="hn-war-detail-body">{children}</div>
+        <footer className="hn-war-detail-footer">{actions}</footer>
+      </div>
+    </Drawer>
+  );
+}
+
 interface WarrantyDetailModalProps {
   caseId: string;
   onClose: () => void;
@@ -621,7 +657,7 @@ interface WarrantyDetailModalProps {
 }
 
 /**
- * WAR-03 · Chi tiết bảo hành dạng modal (mở từ danh sách WAR-01, không chuyển trang).
+ * WAR-03 · Chi tiết bảo hành trong panel bên phải (mở từ danh sách WAR-01).
  * Gồm: thông tin case (PII mask theo quyền), chẩn đoán, cập nhật trạng thái theo
  * state machine, tệp đính kèm và các phiếu xuất linh kiện gắn với case.
  */
@@ -1238,14 +1274,8 @@ export function WarrantyDetailModal({
 
   return (
     <>
-      <UiDialog
-        className="hn-war-dialog"
+      <WarrantyDetailDrawer
         {...dialog.dialogProps}
-        maxWidth="lg"
-        fullWidth
-        sx={{
-          "& .MuiDialogTitle-root": { pr: 6, position: "relative", pb: 1 },
-        }}
         title={
           <>
             <Stack
@@ -1382,9 +1412,9 @@ export function WarrantyDetailModal({
           </>
         }
       >
-        {/* Thanh tiến trình + tab ở đầu vùng nội dung (mx âm để border chạy hết
-            bề ngang dialog như khi còn nằm ngoài DialogContent). */}
+        {/* Thanh tiến trình và tab ở đầu vùng nội dung. */}
         <Box
+          className="hn-war-detail-navigation"
           sx={{
             px: 3,
             mx: -3,
@@ -1516,7 +1546,7 @@ export function WarrantyDetailModal({
             <Stack spacing={2}>
               {activeTab === "overview" ? (
                 <Grid className="hn-fade-in-up" container spacing={2}>
-                  <Grid size={{ xs: 12, lg: 6 }}>
+                  <Grid size={12}>
                     <Box
                       sx={{
                         border: "1px solid",
@@ -1591,7 +1621,7 @@ export function WarrantyDetailModal({
                     </Box>
                   </Grid>
 
-                  <Grid size={{ xs: 12, lg: 6 }}>
+                  <Grid size={12}>
                     <Box
                       sx={{
                         border: "1px solid",
@@ -2645,7 +2675,7 @@ export function WarrantyDetailModal({
             />
           </Stack>
         </UiDialog>
-      </UiDialog>
+      </WarrantyDetailDrawer>
 
       {/* Nhãn trả máy — mount NGOÀI dialog chi tiết (anh em của nó) để hộp
           thoại in không phải nằm trong vùng cuộn của modal cha. */}

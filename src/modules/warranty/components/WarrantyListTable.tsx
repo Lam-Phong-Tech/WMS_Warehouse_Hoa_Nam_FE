@@ -1,16 +1,24 @@
 import { RowActionGroup } from "@/shared/components/actions";
-import { useState } from "react";
-import { Menu, MenuItem, UiIcon } from "@/shared/ui";
+import { UiIcon } from "@/shared/ui";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import type { ResponsiveDataTableProps } from "@/shared/components/data-display/ResponsiveDataTable";
 import type { WarrantyCase } from "@/modules/warranty/types";
-import { EMPTY_TEXT } from "@/shared/constants/display";
 import { formatDate } from "@/shared/utils/format-date";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const formatListDate = (value?: string) =>
   formatDate(value).replaceAll("-", "/");
+
+export type WarrantyListSort = {
+  key: "defect" | "identification_type";
+  direction: "asc" | "desc";
+} | null;
+
+type WarrantyListTableProps = ResponsiveDataTableProps<WarrantyCase> & {
+  listSort?: WarrantyListSort;
+  rowNumberOffset?: number;
+};
 
 /** Presentation only: every cell and action keeps the page's existing callbacks. */
 export function WarrantyListTable({
@@ -21,12 +29,17 @@ export function WarrantyListTable({
   emptyText,
   onRowClick,
   renderRowActions,
-}: ResponsiveDataTableProps<WarrantyCase>) {
-  const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
+  listSort = null,
+  rowNumberOffset = 0,
+}: WarrantyListTableProps) {
   const byKey = Object.fromEntries(
     columns.map((column) => [column.key, column]),
   );
-  const { sortedRows, sortState, requestSort } = useClientSort(
+  const {
+    sortedRows: headerSortedRows,
+    sortState,
+    requestSort,
+  } = useClientSort(
     rows,
     Object.fromEntries(
       columns
@@ -34,6 +47,18 @@ export function WarrantyListTable({
         .map((column) => [column.key, column.sortAccessor!]),
     ),
   );
+  const listSortAccessor = listSort && byKey[listSort.key]?.sortAccessor;
+  const sortedRows =
+    listSort && listSortAccessor
+      ? [...rows].sort((a, b) => {
+          const comparison = String(listSortAccessor(a) ?? "").localeCompare(
+            String(listSortAccessor(b) ?? ""),
+            "vi",
+            { numeric: true, sensitivity: "base" },
+          );
+          return listSort.direction === "asc" ? comparison : -comparison;
+        })
+      : headerSortedRows;
   const cell = (key: string, row: WarrantyCase) => byKey[key]?.render(row);
   const header = (key: string, label: string, className?: string) => (
     <SortableTh
@@ -47,34 +72,23 @@ export function WarrantyListTable({
   );
   return (
     <>
-      <div className="hn-war-table-tools">
-        <button
-          type="button"
-          className="hn-war-extra-sort"
-          aria-label={tUi("updatedUi.text_0076c0b72a9b")}
-          aria-haspopup="menu"
-          aria-expanded={Boolean(sortAnchor)}
-          onClick={(event) => setSortAnchor(event.currentTarget)}
-        >
-          {tUi("updatedUi.text_4c530471a69e")}
-        </button>
-      </div>
       <div className="hn-war-table-wrap" aria-busy={loading}>
         <table
           className="hn-war-table"
           aria-label={tUi("updatedUi.text_158cb245bd0c")}
         >
           <colgroup>
+            <col className="hn-war-index-col" />
             <col className="hn-war-case-col" />
             <col className="hn-war-product-col" />
             <col className="hn-war-customer-col" />
             <col className="hn-war-date-col" />
             <col className="hn-war-status-col" />
-            <col className="hn-war-age-col" />
             <col className="hn-war-action-col" />
           </colgroup>
           <thead>
             <tr>
+              <th className="hn-war-index-col">STT</th>
               {header("case_code", tUi("updatedUi.text_7f401d2e3891"))}
               {header("sku", tUi("updatedUi.text_82730807e057"))}
               {header(
@@ -84,9 +98,6 @@ export function WarrantyListTable({
               )}
               {header("received_at", tUi("updatedUi.text_2a2f8a4381c7"))}
               {header("status", tUi("dashboard.composition.colStatus"))}
-              <th className="hn-war-age-col">
-                {tUi("updatedUi.text_9966263bb43d")}
-              </th>
               <th>{tUi("outbound.detail.colAction")}</th>
             </tr>
           </thead>
@@ -102,11 +113,7 @@ export function WarrantyListTable({
                       <td
                         key={column}
                         className={
-                          column === 2
-                            ? "hn-war-customer-col"
-                            : column === 5
-                              ? "hn-war-age-col"
-                              : undefined
+                          column === 3 ? "hn-war-customer-col" : undefined
                         }
                       >
                         <span />
@@ -115,8 +122,11 @@ export function WarrantyListTable({
                     ))}
                   </tr>
                 ))
-              : sortedRows.map((row) => (
+              : sortedRows.map((row, index) => (
                   <tr key={rowKey(row)} onClick={() => onRowClick?.(row)}>
+                    <td className="hn-war-index-col" data-label="STT">
+                      {rowNumberOffset + index + 1}
+                    </td>
                     <td
                       className="hn-war-case-cell"
                       data-label={tUi("updatedUi.text_7f401d2e3891")}
@@ -195,18 +205,6 @@ export function WarrantyListTable({
                       </span>
                     </td>
                     <td
-                      className="hn-war-age-col"
-                      data-label={tUi("updatedUi.text_9966263bb43d")}
-                    >
-                      {typeof row.case_age_days === "number"
-                        ? row.case_age_days === 0
-                          ? tUi("dashboard.snapshot.periodToday")
-                          : tUi("updatedUi.text_62f408a12e00", {
-                              value0: String(row.case_age_days),
-                            })
-                        : EMPTY_TEXT}
-                    </td>
-                    <td
                       className="hn-war-action-cell"
                       data-label={tUi("outbound.detail.colAction")}
                     >
@@ -227,39 +225,6 @@ export function WarrantyListTable({
           </div>
         ) : null}
       </div>
-      <Menu
-        anchorEl={sortAnchor}
-        open={Boolean(sortAnchor)}
-        onClose={() => setSortAnchor(null)}
-        slotProps={{ paper: { className: "hn-war-menu" } }}
-      >
-        {[
-          { key: "defect", label: tUi("warranty.list.colDefect") },
-          {
-            key: "identification_type",
-            label: tUi("warranty.list.colIdentification"),
-          },
-        ].map(({ key, label }) => (
-          <MenuItem
-            key={key}
-            aria-label={tUi("updatedUi.text_41572ca3ec9a", {
-              value0: String(label.toLowerCase()),
-            })}
-            selected={sortState.key === key}
-            onClick={() => {
-              requestSort(key);
-              setSortAnchor(null);
-            }}
-          >
-            {label}
-            {sortState.key === key
-              ? sortState.direction === "asc"
-                ? " · A → Z"
-                : " · Z → A"
-              : ""}
-          </MenuItem>
-        ))}
-      </Menu>
     </>
   );
 }

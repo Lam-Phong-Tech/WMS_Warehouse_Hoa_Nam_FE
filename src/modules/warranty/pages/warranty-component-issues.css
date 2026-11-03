@@ -150,6 +150,10 @@
 .hn-war04 .hn-war04-primary:hover:not(:disabled) {
   background: var(--ops-primary-hover);
 }
+.hn-war04-overview-panel:not([hidden]) {
+  display: grid;
+  gap: var(--ops-gap);
+}
 .hn-war04 .hn-war04-reset {
   border-color: var(--war-line);
   background: transparent;
@@ -159,6 +163,8 @@
   border: 1px solid var(--war-line);
   border-radius: var(--ops-radius-card);
   background: var(--war-surface);
+}
+.hn-war04-overview {
   padding: 14px 16px;
 }
 .hn-war04 h2 {
@@ -178,23 +184,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   flex: none;
-  border: 0;
+  border: 1px solid var(--war-line);
   border-radius: var(--ops-radius-control);
-  background: transparent;
+  background: var(--war-surface);
   color: var(--war-primary);
 }
-.hn-war04-overview-toggle:hover {
+.hn-war04-overview-toggle:hover,
+.hn-war04-overview-toggle[aria-expanded="true"] {
   background: var(--war-pale);
 }
-.hn-war04-overview-toggle > i {
-  display: inline-block;
-  transition: transform 0.16s ease;
-}
-.hn-war04-overview-toggle[aria-expanded="true"] > i {
-  transform: rotate(180deg);
+.hn-war04-overview-toggle > svg {
+  width: 20px;
+  height: 20px;
 }
 .hn-war04-overview-grid {
   display: grid;
@@ -291,37 +295,8 @@
 .hn-war04-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-.hn-war04-list-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.hn-war04-list-heading h2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.hn-war04-sort .MuiOutlinedInput-notchedOutline {
-  border: 0;
-}
-.hn-war04-sort .MuiOutlinedInput-root {
-  background: transparent;
-  color: var(--war-primary);
-}
-.hn-war04-sort .MuiSelect-select {
-  padding-inline: 8px 30px;
-  font-size: 14px;
-}
-.hn-war04-count {
-  border-radius: var(--ops-radius-control);
-  padding: 1px 8px;
-  background: var(--war-pale);
-  font-size: 12px;
-  line-height: 22px;
-  letter-spacing: 0;
+  gap: 0;
+  overflow: hidden;
 }
 .hn-war04-refresh {
   border: 0;
@@ -340,24 +315,20 @@
 }
 .hn-war04-filters {
   display: grid;
-  grid-template-columns: minmax(200px, 1.6fr) repeat(2, minmax(145px, 1fr)) auto;
-  align-items: end;
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(145px, 1fr)) auto;
+  align-items: center;
   gap: 12px;
+  padding: 16px;
 }
 .hn-war04-field {
-  display: grid;
-  gap: 6px;
   min-width: 0;
-}
-.hn-war04-field > label {
-  color: var(--war-ink);
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 600;
 }
 .hn-war04-field .MuiFormControl-root {
   min-width: 0;
   width: 100%;
+}
+.hn-war04-filters .MuiOutlinedInput-root {
+  height: 48px;
 }
 .hn-war04 .MuiOutlinedInput-root,
 .hn-war04-dialog .MuiOutlinedInput-root {
@@ -392,10 +363,19 @@
 .hn-war04 .MuiSelect-icon {
   color: var(--war-muted);
 }
-.hn-war04-filter-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.hn-war04-clear-filters {
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--war-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--war-surface);
+  color: var(--war-ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.hn-war04-clear-filters:hover {
+  border-color: var(--ops-link);
+  background: var(--war-pale);
 }
 .hn-war04-warning {
   display: flex;
@@ -418,14 +398,16 @@
 .hn-war04-table-wrap {
   min-width: 0;
   width: 100%;
+  overflow-x: auto;
 }
 .hn-war04-table {
   width: 100%;
+  min-width: 960px;
   table-layout: fixed;
   border-collapse: collapse;
   color: var(--war-text);
-  font-size: 12px;
-  line-height: 18px;
+  font-size: 14px;
+  line-height: 22px;
 }
 .hn-war04-code-col {
   width: 18%;
@@ -434,35 +416,40 @@
   width: 18%;
 }
 .hn-war04-components-col {
-  width: 22%;
+  width: 21%;
 }
 .hn-war04-tracking-col {
   width: 10%;
 }
 .hn-war04-status-col {
-  width: 11%;
+  width: 10%;
 }
 .hn-war04-date-col {
   width: 11%;
 }
 .hn-war04-actions-col {
-  width: 152px;
+  width: 12%;
 }
 .hn-war04-table th {
-  padding: 10px 8px;
-  background: var(--war-pale);
-  color: var(--war-ink);
+  padding: 12px 18px;
+  background: #d2edf7;
+  color: var(--war-muted);
   text-align: left;
-  font-size: 12px;
-  line-height: 17px;
-  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
   vertical-align: middle;
 }
 .hn-war04-table td {
-  padding: 9px 8px;
+  padding: 12px 18px;
   border-bottom: 1px solid var(--war-line);
   vertical-align: middle;
   overflow-wrap: anywhere;
+}
+.hn-war04-table tbody tr {
+  height: 68px;
 }
 .hn-war04-table tbody tr:last-child td {
   border-bottom: 0;
@@ -493,7 +480,7 @@
 }
 .hn-war04 .hn-war04-code {
   font-weight: 700;
-  font-size: 12px;
+  font-size: 14px;
 }
 .hn-war04-code:hover {
   text-decoration: underline;
@@ -551,7 +538,7 @@
   color: var(--wms-error-text);
 }
 .hn-war04-table time {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--war-muted);
 }
 .hn-war04-row-actions {
@@ -581,9 +568,16 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  padding-top: 6px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--war-line);
   color: var(--war-muted);
   font-size: 12px;
+}
+.hn-war04-pagination-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 .hn-war04-pagination-controls {
   display: flex;
@@ -760,8 +754,11 @@
   .hn-war04-filters {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
-  .hn-war04-filter-actions {
-    justify-content: flex-end;
+  .hn-war04-search {
+    grid-column: 1 / -1;
+  }
+  .hn-war04-clear-filters {
+    justify-self: start;
   }
   .hn-war04-desktop,
   .hn-war04-components-col,
@@ -828,28 +825,20 @@
   .hn-war04-header-actions > .hn-war04-button {
     flex: 1 1 220px;
   }
-  .hn-war04-overview,
-  .hn-war04-list {
+  .hn-war04-overview {
     padding: 12px;
-  }
-  .hn-war04-list-heading h2 {
-    font-size: 17px;
   }
   .hn-war04-filters {
     gap: 10px;
+    padding: 12px;
   }
   .hn-war04-search {
     grid-column: 1 / -1;
   }
-  .hn-war04-filter-actions {
-    grid-column: 1 / -1;
-  }
-  .hn-war04-filter-actions > button {
-    flex: 1;
-  }
   .hn-war04-table,
   .hn-war04-table tbody {
     display: block;
+    min-width: 0;
   }
   .hn-war04-table colgroup {
     display: none;

@@ -5831,9 +5831,13 @@ export const MESSAGES_ZH: MessageTree = {
     },
     "page": {
       "subtitle": "与您相关的所有系统通知 - 入站/出库、保修、帐户、安全。",
+      "filterLabel": "筛选通知",
+      "all": "全部",
+      "unread": "未读",
       "markAll": "将全部标记为已读",
       "loading": "正在加载通知...",
       "emptyDescription": "您尚未收到任何通知。",
+      "emptyUnread": "所有通知均已阅读。",
       "readSuffix": "·阅读"
     },
     "detail": {
