@@ -87,17 +87,16 @@
   opacity: 0.55;
 }
 .hn-putaway-page .ptw-heading {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(0, auto) 40px;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 14px 24px;
+  gap: 12px;
 }
-.hn-putaway-page .ptw-heading > div:first-child {
-  min-width: 0;
-  flex: 1 1 360px;
+.hn-putaway-page .ptw-heading:has(.ptw-tabs[hidden]) {
+  grid-template-columns: minmax(0, 1fr) 40px;
 }
 .hn-putaway-page .ptw-heading h1 {
+  min-width: 0;
   color: var(--ops-heading);
   font-size: 24px;
   font-weight: 700;
@@ -105,22 +104,41 @@
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
 }
-.hn-putaway-page .ptw-heading p {
-  margin-top: 4px;
-  color: var(--ptw-muted);
-  font-size: 14px;
-  line-height: 22px;
-}
 .hn-putaway-page .ptw-tabs {
   display: flex;
   align-items: stretch;
   gap: 0;
+  min-width: 0;
   min-height: 46px;
   background: var(--ptw-card);
   border: 1px solid var(--ptw-line);
   border-radius: var(--ptw-radius);
   overflow-x: auto;
   scrollbar-width: thin;
+}
+.hn-putaway-page .ptw-tabs[hidden] {
+  display: none;
+}
+.hn-putaway-page .ptw-tabs-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--ptw-heading);
+  background: var(--ptw-card);
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ops-radius-control);
+}
+.hn-putaway-page .ptw-tabs-toggle:hover {
+  color: var(--ptw-primary);
+  background: var(--ptw-pale);
+}
+.hn-putaway-page .ptw-tabs-toggle i {
+  transition: transform 150ms ease;
+}
+.hn-putaway-page .ptw-tabs-toggle[aria-expanded="true"] i {
+  transform: rotate(180deg);
 }
 .hn-putaway-page .ptw-tabs :is(button, a) {
   display: inline-flex;
@@ -886,12 +904,24 @@
     width: 12%;
   }
 }
+@container hn-putaway (max-width: 1100px) {
+  .hn-putaway-page .ptw-heading,
+  .hn-putaway-page .ptw-heading:has(.ptw-tabs[hidden]) {
+    grid-template-columns: minmax(0, 1fr) 40px;
+  }
+  .hn-putaway-page .ptw-tabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+  .hn-putaway-page .ptw-tabs-toggle {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
 @container hn-putaway (max-width: 760px) {
   .hn-putaway-page .ptw-heading h1 {
     font-size: 24px;
-  }
-  .hn-putaway-page .ptw-heading > div:first-child {
-    flex-basis: 100%;
   }
   .hn-putaway-page .ptw-stats > article {
     gap: 10px;
@@ -924,10 +954,6 @@
 @container hn-putaway (max-width: 520px) {
   .hn-putaway-page .ptw-heading h1 {
     font-size: 24px;
-  }
-  .hn-putaway-page .ptw-heading p {
-    font-size: 14px;
-    line-height: 22px;
   }
   .hn-putaway-page .ptw-tabs :is(button, a) {
     padding-inline: 16px;

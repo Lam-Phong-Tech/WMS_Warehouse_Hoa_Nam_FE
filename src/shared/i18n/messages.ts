@@ -5209,6 +5209,8 @@ export const MESSAGES_VI = {
       warehouseActive: "Đang hoạt động",
       warehouseInactive: "Ngừng hoạt động",
       navigation: "Điều hướng xếp khay",
+      collapseTabs: "Thu gọn các mục xếp khay",
+      expandTabs: "Hiện các mục xếp khay",
       pendingTab: "Hàng chờ",
       ordersTab: "Lệnh xếp khay",
       traysTab: "Danh sách khay",

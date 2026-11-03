@@ -168,6 +168,7 @@ export default function MvpPutawayPage() {
   );
 
   const [activeTab, setActiveTab] = useState("pending");
+  const [tabsOpen, setTabsOpen] = useState(true);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
   // Lịch sử xếp khay là bảng tra cứu/đối soát — lọc phía FE trên dữ liệu đã tải
@@ -508,43 +509,65 @@ export default function MvpPutawayPage() {
   return (
     <div className="putaway-page hn-putaway-page" data-screen="PTW-00">
       <header className="ptw-heading">
-        <div>
-          <h1>{t("putaway.queue.title")}</h1>
-        </div>
+        <h1>{t("putaway.queue.title")}</h1>
+        <nav
+          id="ptw-tabs"
+          className="ptw-tabs"
+          aria-label={t("putaway.queue.navigation")}
+          hidden={!tabsOpen}
+        >
+          <button
+            type="button"
+            className={activeTab === "pending" ? "is-active" : undefined}
+            aria-current={activeTab === "pending" ? "page" : undefined}
+            onClick={() => setActiveTab("pending")}
+          >
+            <UiIcon name="cube" />
+            <span>{t("putaway.queue.pendingTab")}</span>
+          </button>
+          <button
+            type="button"
+            className={activeTab === "orders" ? "is-active" : undefined}
+            aria-current={activeTab === "orders" ? "page" : undefined}
+            onClick={() => setActiveTab("orders")}
+          >
+            <UiIcon name="list" />
+            <span>{t("putaway.queue.ordersTab")}</span>
+          </button>
+          <RouterLink to={ROUTES.PUTAWAY_TRAYS}>
+            <UiIcon name="apps" />
+            <span>{t("putaway.queue.traysTab")}</span>
+          </RouterLink>
+          <button
+            type="button"
+            className={activeTab === "history" ? "is-active" : undefined}
+            aria-current={activeTab === "history" ? "page" : undefined}
+            onClick={() => setActiveTab("history")}
+          >
+            <UiIcon name="time-past" />
+            <span>{t("putaway.queue.historyTab")}</span>
+          </button>
+        </nav>
+        <button
+          type="button"
+          className="ptw-tabs-toggle"
+          aria-label={t(
+            tabsOpen
+              ? "putaway.queue.collapseTabs"
+              : "putaway.queue.expandTabs",
+          )}
+          title={t(
+            tabsOpen
+              ? "putaway.queue.collapseTabs"
+              : "putaway.queue.expandTabs",
+          )}
+          aria-expanded={tabsOpen}
+          aria-controls="ptw-tabs"
+          onClick={() => setTabsOpen((open) => !open)}
+        >
+          <UiIcon name="angle-small-down" size="sm" />
+        </button>
       </header>
-      <nav className="ptw-tabs" aria-label={t("putaway.queue.navigation")}>
-        <button
-          type="button"
-          className={activeTab === "pending" ? "is-active" : undefined}
-          aria-current={activeTab === "pending" ? "page" : undefined}
-          onClick={() => setActiveTab("pending")}
-        >
-          <UiIcon name="cube" />
-          <span>{t("putaway.queue.pendingTab")}</span>
-        </button>
-        <button
-          type="button"
-          className={activeTab === "orders" ? "is-active" : undefined}
-          aria-current={activeTab === "orders" ? "page" : undefined}
-          onClick={() => setActiveTab("orders")}
-        >
-          <UiIcon name="list" />
-          <span>{t("putaway.queue.ordersTab")}</span>
-        </button>
-        <RouterLink to={ROUTES.PUTAWAY_TRAYS}>
-          <UiIcon name="apps" />
-          <span>{t("putaway.queue.traysTab")}</span>
-        </RouterLink>
-        <button
-          type="button"
-          className={activeTab === "history" ? "is-active" : undefined}
-          aria-current={activeTab === "history" ? "page" : undefined}
-          onClick={() => setActiveTab("history")}
-        >
-          <UiIcon name="time-past" />
-          <span>{t("putaway.queue.historyTab")}</span>
-        </button>
-      </nav>
       {activeTab !== "history" ? (
         <PutawayQueue
           key={activeTab}
