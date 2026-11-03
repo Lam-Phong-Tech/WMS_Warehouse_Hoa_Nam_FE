@@ -128,7 +128,6 @@ import {
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { validatePhone } from "@/shared/constants/validation.constants";
 import { codeFormatError } from "@/shared/validation/text-rules";
-import { formatAddress } from "@/shared/lib/vn-address";
 import { useSearchParams } from "react-router-dom";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { agencyPlaceLabel } from "@/shared/constants/agency-place-labels";
@@ -2003,10 +2002,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       // Sắp theo CHỮ người dùng đọc: mã `CAN_THO` và nhãn 'Cần Thơ' cho ra
       // hai thứ tự khác nhau, xếp theo mã thì cột nhìn như xếp lung tung.
       market: (r) => agencyPlaceLabel(r.market) || null,
-      region: (r) => agencyPlaceLabel(r.region) || null,
       contact: (r) => r.contact_name,
-      phone: (r) => r.phone,
-      address: (r) => formatAddress(r.address),
       status: (r) => r.status,
     },
   );
@@ -2273,26 +2269,8 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     onSort={requestSort}
                   />
                   <SortableTh
-                    label={t("masterData.recipient.colRegion")}
-                    sortKey="region"
-                    sortState={sortState}
-                    onSort={requestSort}
-                  />
-                  <SortableTh
                     label={t("masterData.recipient.colContact")}
                     sortKey="contact"
-                    sortState={sortState}
-                    onSort={requestSort}
-                  />
-                  <SortableTh
-                    label={t("masterData.recipient.colPhone")}
-                    sortKey="phone"
-                    sortState={sortState}
-                    onSort={requestSort}
-                  />
-                  <SortableTh
-                    label={t("masterData.recipient.colAddress")}
-                    sortKey="address"
                     sortState={sortState}
                     onSort={requestSort}
                   />
@@ -2309,7 +2287,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <tbody>
                 {query.isLoading ? (
                   <tr>
-                    <td colSpan={11} className="muted">
+                    <td colSpan={8} className="muted">
                       {t("masterData.common.loadingData")}
                     </td>
                   </tr>
@@ -2336,14 +2314,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         )}
                       </td>
                       <td>{agencyPlaceLabel(record.market) || EMPTY_TEXT}</td>
-                      <td>{agencyPlaceLabel(record.region) || EMPTY_TEXT}</td>
                       <td>{record.contact_name || EMPTY_TEXT}</td>
-                      <td>{record.phone || EMPTY_TEXT}</td>
-                      <td style={TRUNCATE_CELL_STYLE}>
-                        <TruncatedText maxWidth={300}>
-                          {formatAddress(record.address) || EMPTY_TEXT}
-                        </TruncatedText>
-                      </td>
                       <td
                         className={
                           record.status === "ACTIVE"
@@ -2384,7 +2355,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={11} className="muted">
+                    <td colSpan={8} className="muted">
                       {t("masterData.recipient.empty")}
                     </td>
                   </tr>
