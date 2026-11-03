@@ -313,7 +313,7 @@ describe("IN-01 · preserved receipt actions", () => {
 });
 
 describe("IN-01 · filters and live states", () => {
-  it("debounces and trims keyword, applies immediately, and clears it on reset", async () => {
+  it("debounces and trims keyword, then clears it with the SKU-style filter action", async () => {
     renderPage();
     const search = screen.getByRole("textbox", { name: "Tìm phiếu nhập" });
     fireEvent.change(search, { target: { value: "  NCC A  " } });
@@ -321,9 +321,8 @@ describe("IN-01 · filters and live states", () => {
     await waitFor(() => expectLatestQuery({ search: "NCC A", page: 1 }));
 
     fireEvent.change(search, { target: { value: " PN-POSTED " } });
-    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
-    expectLatestQuery({ search: "PN-POSTED", page: 1 });
-    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
+    await waitFor(() => expectLatestQuery({ search: "PN-POSTED", page: 1 }));
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
     expect(search).toHaveValue("");
     expectLatestQuery({
       search: undefined,
@@ -339,7 +338,7 @@ describe("IN-01 · filters and live states", () => {
     fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
     expectLatestQuery({ page: 2 });
     fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái phiếu nhập"));
-    fireEvent.click(await screen.findByRole("option", { name: "Nháp" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Trạng thái: Nháp" }));
     expectLatestQuery({ status: "DRAFT", page: 1 });
 
     fireEvent.mouseDown(screen.getByLabelText("Số dòng mỗi trang"));

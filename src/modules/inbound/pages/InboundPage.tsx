@@ -17,6 +17,10 @@ import {
 } from "@/shared/components/actions";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
+import {
+  ArrowRightOutlined,
+  FilterOutlined,
+} from "@/shared/components/icons";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
 import {
@@ -76,6 +80,7 @@ function InboundListScreen() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | undefined>();
   const [pendingInfo, setPendingInfo] = useState<boolean | undefined>();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -106,7 +111,7 @@ function InboundListScreen() {
   );
   const loading = query.isLoading || query.isFetching;
   const hasFilters = Boolean(
-    searchInput || status || pendingInfo !== undefined,
+    searchInput || status || pendingInfo !== undefined || sortOrder !== "desc",
   );
 
   useEffect(() => {
@@ -204,20 +209,24 @@ function InboundListScreen() {
   const rowActions = (row: InboundDocument) => {
     const editable = row.status === "DRAFT" && canCreate;
     const tracking = row.status === "SCANNING";
+    const primaryLabel = editable
+      ? tUi("updatedUi.text_7a77d7612e12")
+      : tracking
+        ? tUi("dashboard.severity.p2")
+        : tUi("reports.importMatchReport.detail");
     return (
       <RowActionGroup className="hn-inbound-row-actions">
-        <RowActionButton
-          kind={editable ? "edit" : "view"}
+        <button
+          type="button"
+          className="hn-inbound-detail-link"
+          aria-label={primaryLabel}
+          title={primaryLabel}
           onClick={() =>
             editable ? editDocument(row.id) : openDocument(row.id)
           }
         >
-          {editable
-            ? tUi("updatedUi.text_7a77d7612e12")
-            : tracking
-              ? tUi("dashboard.severity.p2")
-              : tUi("reports.importMatchReport.detail")}
-        </RowActionButton>
+          <ArrowRightOutlined aria-hidden="true" />
+        </button>
         <RowActionButton
           kind="more"
           aria-label={tUi("updatedUi.text_3584db058a35", {
@@ -271,29 +280,9 @@ function InboundListScreen() {
       </header>
       <InboundOverview />
       <section
-        className="hn-inbound-list-card"
-        aria-labelledby="hn-inbound-list-title"
+        className="hn-inbound-search-panel"
+        aria-label={t("inbound.list.filterAria")}
       >
-        <div className="hn-inbound-list-heading">
-          <h2 id="hn-inbound-list-title">
-            {tUi("updatedUi.text_b7f7bae4ff19")}
-          </h2>
-          <div className="hn-inbound-sort">
-            <UiSelect
-              value={sortOrder}
-              aria-label={t("inbound.list.sortAria")}
-              menuClassName="hn-inbound-menu"
-              options={[
-                { value: "desc", label: tUi("updatedUi.text_83ddf4187c12") },
-                { value: "asc", label: t("inbound.list.sortOldest") },
-              ]}
-              onChange={(value) => {
-                setSortOrder(value === "asc" ? "asc" : "desc");
-                setPage(1);
-              }}
-            />
-          </div>
-        </div>
         <form
           className="hn-inbound-filters"
           onSubmit={(event) => {
@@ -302,9 +291,6 @@ function InboundListScreen() {
           }}
         >
           <div className="hn-inbound-filter hn-inbound-search">
-            <label htmlFor="hn-inbound-search">
-              {tUi("reports.packingLabel.searchLabel")}
-            </label>
             <div className="hn-inbound-search-field">
               <UiIcon name="search" />
               <UiTextField
@@ -330,20 +316,17 @@ function InboundListScreen() {
             </div>
           </div>
           <div className="hn-inbound-filter">
-            <label htmlFor="hn-inbound-status-filter">
-              {tUi("dashboard.composition.colStatus")}
-            </label>
             <UiSelect
               id="hn-inbound-status-filter"
               fullWidth
-              displayEmpty
               value={status ?? ""}
               aria-label={t("inbound.list.statusFilterAria")}
+              placeholder={t("inbound.list.statusFilterPlaceholder")}
               menuClassName="hn-inbound-menu"
-              options={[
-                { value: "", label: tUi("dashboard.operations.filterAll") },
-                ...getSTATUS_OPTIONS(),
-              ]}
+              options={getSTATUS_OPTIONS().map((option) => ({
+                ...option,
+                label: `${tUi("dashboard.composition.colStatus")}: ${option.label}`,
+              }))}
               onChange={(value) => {
                 setStatus(value || undefined);
                 setPage(1);
@@ -351,20 +334,22 @@ function InboundListScreen() {
             />
           </div>
           <div className="hn-inbound-filter">
-            <label htmlFor="hn-inbound-info-filter">
-              {tUi("inbound.detail.colInfo")}
-            </label>
             <UiSelect
               id="hn-inbound-info-filter"
               fullWidth
-              displayEmpty
               value={pendingInfo === undefined ? "" : pendingInfo ? "1" : "0"}
               aria-label={t("inbound.list.infoFilterAria")}
+              placeholder={t("inbound.list.infoFilterPlaceholder")}
               menuClassName="hn-inbound-menu"
               options={[
-                { value: "", label: tUi("dashboard.operations.filterAll") },
-                { value: "1", label: t("inbound.list.infoFilterPending") },
-                { value: "0", label: t("inbound.list.infoFilterComplete") },
+                {
+                  value: "1",
+                  label: `${tUi("inbound.detail.colInfo")}: ${t("inbound.list.infoFilterPending")}`,
+                },
+                {
+                  value: "0",
+                  label: `${tUi("inbound.detail.colInfo")}: ${t("inbound.list.infoFilterComplete")}`,
+                },
               ]}
               onChange={(value) => {
                 setPendingInfo(value === "" ? undefined : value === "1");
@@ -372,24 +357,50 @@ function InboundListScreen() {
               }}
             />
           </div>
-          <ActionButton
-            kind="filter"
-            type="submit"
-            className="hn-inbound-apply"
-            icon={<></>}
-          >
-            {tUi("dashboard.snapshot.apply")}
-          </ActionButton>
-          <ActionButton
-            kind="reset"
+          <button
             type="button"
-            className="hn-inbound-reset"
-            icon={<></>}
-            onClick={resetFilters}
+            className="hn-inbound-more-filters"
+            aria-expanded={filtersOpen}
+            aria-controls="hn-inbound-extra-filters"
+            onClick={() => setFiltersOpen((current) => !current)}
           >
-            {tUi("reports.packingLabel.reset")}
-          </ActionButton>
+            <FilterOutlined aria-hidden="true" />
+            {t("inbound.list.filterButton")}
+          </button>
+          {hasFilters ? (
+            <button
+              type="button"
+              className="hn-inbound-clear-filters"
+              onClick={resetFilters}
+            >
+              {t("inbound.list.clearFilters")}
+            </button>
+          ) : null}
         </form>
+        <div
+          id="hn-inbound-extra-filters"
+          className="hn-inbound-extra-filters"
+          hidden={!filtersOpen}
+        >
+          <UiSelect
+            value={sortOrder}
+            aria-label={t("inbound.list.sortAria")}
+            menuClassName="hn-inbound-menu"
+            options={[
+              { value: "desc", label: tUi("updatedUi.text_83ddf4187c12") },
+              { value: "asc", label: t("inbound.list.sortOldest") },
+            ]}
+            onChange={(value) => {
+              setSortOrder(value === "asc" ? "asc" : "desc");
+              setPage(1);
+            }}
+          />
+        </div>
+      </section>
+      <section
+        className="hn-inbound-list-card"
+        aria-label={tUi("updatedUi.text_b7f7bae4ff19")}
+      >
         {query.isError ? (
           <div className="hn-inbound-error">
             <ApiErrorAlert
@@ -417,6 +428,7 @@ function InboundListScreen() {
           <table className="hn-inbound-table">
             <thead>
               <tr>
+                <th className="hn-inbound-col-index">STT</th>
                 {sortHeader(
                   tUi("inbound.detail.fieldDocument"),
                   "code",
@@ -447,14 +459,18 @@ function InboundListScreen() {
                   "updatedAt",
                   "hn-inbound-desktop hn-inbound-col-date",
                 )}
-                <th className="hn-inbound-col-actions">
-                  {tUi("outbound.detail.colAction")}
-                </th>
+                <th
+                  className="hn-inbound-col-actions"
+                  aria-label={tUi("outbound.detail.colAction")}
+                />
               </tr>
             </thead>
             <tbody>
-              {sortedRows.map((row) => (
+              {sortedRows.map((row, index) => (
                 <tr key={row.id}>
+                  <td className="hn-inbound-index">
+                    {(currentPage - 1) * perPage + index + 1}
+                  </td>
                   <td className="hn-inbound-code">
                     <button
                       type="button"
@@ -547,18 +563,18 @@ function InboundListScreen() {
           ) : null}
         </div>
         <footer className="hn-inbound-pagination">
-          <span aria-live="polite">
-            {query.data
-              ? tUi("updatedUi.text_ed9314f2e7c6", {
-                  value0: String(first),
-                  value1: String(last),
-                  value2: String(formatQuantity(total)),
-                })
-              : loading
-                ? tUi("updatedUi.text_5412ced1c478")
-                : tUi("updatedUi.text_324e2c9b114d")}
-          </span>
-          <div className="hn-inbound-pagination-controls">
+          <div className="hn-inbound-page-info">
+            <span aria-live="polite">
+              {query.data
+                ? tUi("updatedUi.text_ed9314f2e7c6", {
+                    value0: String(first),
+                    value1: String(last),
+                    value2: String(formatQuantity(total)),
+                  })
+                : loading
+                  ? tUi("updatedUi.text_5412ced1c478")
+                  : tUi("updatedUi.text_324e2c9b114d")}
+            </span>
             <UiSelect
               value={perPage}
               aria-label={t("inbound.list.pageSizeAria")}
@@ -572,6 +588,8 @@ function InboundListScreen() {
                 setPage(1);
               }}
             />
+          </div>
+          <div className="hn-inbound-pagination-controls">
             <UiPagination
               page={currentPage}
               pageSize={perPage}
