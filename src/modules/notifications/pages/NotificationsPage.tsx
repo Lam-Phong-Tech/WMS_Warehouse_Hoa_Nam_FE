@@ -23,7 +23,7 @@ export default function NotificationsPage() {
   const [page, setPage] = useState(1);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [selected, setSelected] = useState<NotificationItem | null>(null);
-  const perPage = 15;
+  const perPage = 10;
   const unreadCount = useNotificationStore((s) => s.unreadCount);
 
   const { data, isLoading, isError, error, refetch } = useNotificationsQuery({
@@ -143,17 +143,15 @@ export default function NotificationsPage() {
                 </li>
               ))}
             </ul>
-            {total > perPage ? (
-              <div className="notifications-pagination">
-                <UiPagination
-                  page={page}
-                  pageSize={perPage}
-                  total={total}
-                  onPageChange={setPage}
-                  showTotal
-                />
-              </div>
-            ) : null}
+            <div className="notifications-pagination">
+              <UiPagination
+                page={page}
+                pageSize={perPage}
+                total={total}
+                onPageChange={setPage}
+                showTotal
+              />
+            </div>
           </>
         )}
       </UiCard>

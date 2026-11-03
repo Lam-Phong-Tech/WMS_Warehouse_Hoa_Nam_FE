@@ -47,6 +47,10 @@ describe("NotificationsPage", () => {
 
     renderWithProviders(<NotificationsPage />);
 
+    expect(
+      screen.getByRole("navigation", { name: "Phân trang" }),
+    ).toBeInTheDocument();
+
     fireEvent.click(
       within(screen.getByRole("group", { name: "Lọc thông báo" })).getByRole(
         "button",
@@ -55,7 +59,7 @@ describe("NotificationsPage", () => {
     );
     expect(querySpy).toHaveBeenLastCalledWith({
       page: 1,
-      per_page: 15,
+      per_page: 10,
       unread: true,
     });
 
@@ -66,5 +70,23 @@ describe("NotificationsPage", () => {
     await userEvent.keyboard("{Enter}");
     expect(screen.getByTestId("notification-detail")).toBeInTheDocument();
     expect(markReadSpy).toHaveBeenCalledWith("recipient-1");
+  });
+
+  it("shows the next page when there are more than ten notifications", () => {
+    querySpy.mockReturnValue({
+      data: { data: [item], meta: { total: 11 } },
+      isLoading: false,
+      isError: false,
+    });
+
+    renderWithProviders(<NotificationsPage />);
+
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "Phân trang" })).getByRole(
+        "button",
+        { name: /page 2$/ },
+      ),
+    );
+    expect(querySpy).toHaveBeenLastCalledWith({ page: 2, per_page: 10 });
   });
 });
