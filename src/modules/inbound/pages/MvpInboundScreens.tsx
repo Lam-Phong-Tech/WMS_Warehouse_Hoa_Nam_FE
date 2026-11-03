@@ -130,17 +130,9 @@ const SCAN_LOG_PAGE_SIZE = 8;
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <Box
-      sx={{
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: "var(--ops-radius-card)",
-        p: 1.5,
-        height: "100%",
-      }}
-    >
+    <Box className="hn-inbound-scan-stat">
       <Box sx={{ typography: "caption", color: "text.secondary" }}>{label}</Box>
-      <Box sx={{ fontSize: 22, fontWeight: 700 }}>{value}</Box>
+      <Box className="hn-inbound-scan-stat-value">{value}</Box>
     </Box>
   );
 }
@@ -1209,27 +1201,9 @@ export function InboundScanModal({
 
           {detail ? (
             <>
-              <Box
-                sx={{
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: "var(--ops-radius-card)",
-                  p: 2,
-                  mb: 2,
-                }}
-              >
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Box
-                      sx={{ typography: "caption", color: "text.secondary" }}
-                    >
-                      {t("inbound.detail.fieldDocument")}
-                    </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {detail.document.code || EMPTY_TEXT}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+              <Box className="hn-inbound-scan-summary">
+                <Grid container spacing={1.5}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
@@ -1239,7 +1213,7 @@ export function InboundScanModal({
                       {detail.document.source || EMPTY_TEXT}
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
@@ -1261,17 +1235,7 @@ export function InboundScanModal({
                       )}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Box
-                      sx={{ typography: "caption", color: "text.secondary" }}
-                    >
-                      {t("inbound.detail.fieldVersion")}
-                    </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {scanVersion ?? detail.document.version}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
@@ -1283,29 +1247,39 @@ export function InboundScanModal({
                         : detail.document.createdBy}
                     </Box>
                   </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Box
+                      sx={{ typography: "caption", color: "text.secondary" }}
+                    >
+                      {t("inbound.detail.fieldVersion")}
+                    </Box>
+                    <Box sx={{ typography: "body2" }}>
+                      {scanVersion ?? detail.document.version}
+                    </Box>
+                  </Grid>
                 </Grid>
               </Box>
 
-              <Grid container spacing={1.5} sx={{ mb: 2 }}>
-                <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid container spacing={1} className="hn-inbound-scan-stats">
+                <Grid size={{ xs: 6, sm: 3 }}>
                   <StatCard
                     label={t("inbound.detail.statValidCodes")}
                     value={totalScanned}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                   <StatCard
                     label={t("inbound.detail.statSkuLines")}
                     value={detail.lines.length}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                   <StatCard
                     label={t("inbound.detail.statRemoved")}
                     value={removedEntryCount}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                   <StatCard
                     label={t("inbound.detail.statSessionErrors")}
                     value={sessionDuplicateCount + sessionErrorCount}
@@ -1500,11 +1474,11 @@ export function InboundScanModal({
                         ? t("inbound.post.successTitle")
                         : t("inbound.post.failedTitle")}
                     </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {detail.document.status === "POSTED"
-                        ? ""
-                        : t("inbound.post.cancelledNote")}
-                    </Box>
+                    {detail.document.status !== "POSTED" ? (
+                      <Box sx={{ typography: "body2" }}>
+                        {t("inbound.post.cancelledNote")}
+                      </Box>
+                    ) : null}
                   </UiAlert>
                 </Box>
               )}
@@ -1514,8 +1488,7 @@ export function InboundScanModal({
                   border: "1px solid",
                   borderColor: "divider",
                   borderRadius: "var(--ops-radius-card)",
-                  p: 2,
-                  mt: 2,
+                  p: 1.5,
                 }}
               >
                 <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>

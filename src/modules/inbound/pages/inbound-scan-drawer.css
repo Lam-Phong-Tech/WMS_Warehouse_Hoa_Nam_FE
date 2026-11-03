@@ -38,7 +38,50 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 20px 24px 24px;
+  padding: 16px 24px 24px;
+}
+
+.hn-inbound-scan-summary {
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-pale);
+}
+
+.hn-inbound-scan-summary .MuiGrid-root > .MuiBox-root {
+  overflow-wrap: anywhere;
+}
+
+.hn-inbound-scan-stats {
+  margin-bottom: 12px;
+}
+
+.hn-inbound-scan-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 64px;
+  height: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+}
+
+.hn-inbound-scan-stat > :first-child {
+  line-height: 18px;
+}
+
+.hn-inbound-scan-stat-value {
+  flex: none;
+  color: var(--ops-heading);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .hn-inbound-scan-footer {
@@ -59,5 +102,13 @@
 
   .hn-inbound-scan-body {
     padding: 16px;
+  }
+
+  .hn-inbound-scan-summary {
+    padding: 12px;
+  }
+
+  .hn-inbound-scan-stat {
+    min-height: 68px;
   }
 }
