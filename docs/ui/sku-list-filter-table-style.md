@@ -23,3 +23,9 @@ Nguồn chuẩn: `src/modules/master-data/pages/sku-list.css` và `ApiMasterScre
 | Trang hẹp | Bảng có chiều rộng tối thiểu và được cuộn ngang hoặc chuyển thành card theo component hiện có; không ép chữ thành cột dọc. |
 
 Chỉ áp dụng màu và khoảng cách trên cho phần danh sách. Mỗi tab Danh mục sản phẩm vẫn giữ cột Hãng khi cần, mô tả, sắp xếp và nút Sửa hiện có.
+
+## Phân trang
+
+- Chân bảng có viền trên `1px solid --ops-line` và đệm `14px 16px`.
+- Thông tin `Hiển thị ...` và ô chọn số dòng/trang nằm trong cùng một nhóm bên trái, cách nhau `14px`; các nút chuyển trang nằm bên phải.
+- Nhóm bên trái được phép xuống dòng khi hẹp; điều hướng vẫn tự dồn về phải.

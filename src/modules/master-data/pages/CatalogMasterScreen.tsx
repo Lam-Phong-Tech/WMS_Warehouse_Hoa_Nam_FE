@@ -748,26 +748,28 @@ export function CatalogMasterScreen() {
             )}
           </div>
           <div className="hn-catalog-pagination">
-            <span>
-              {text("Hiển thị", "Showing")} {displayedFrom}–{displayedTo} /{" "}
-              {t("masterData.catalog.total", {
-                count: pagination.total,
-                item: activeTab.itemLabel,
-              })}
-            </span>
-            <UiSelect
-              aria-label={t("masterData.common.pageSizeAria")}
-              value={perPage}
-              menuClassName="hn-catalog-menu"
-              onChange={(value) => {
-                setPerPage(Number(value));
-                setPage(1);
-              }}
-              options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
-                value: size,
-                label: size + text(" / trang", " / page"),
-              }))}
-            />
+            <div className="hn-catalog-page-info">
+              <span>
+                {text("Hiển thị", "Showing")} {displayedFrom}–{displayedTo} /{" "}
+                {t("masterData.catalog.total", {
+                  count: pagination.total,
+                  item: activeTab.itemLabel,
+                })}
+              </span>
+              <UiSelect
+                aria-label={t("masterData.common.pageSizeAria")}
+                value={perPage}
+                menuClassName="hn-catalog-menu"
+                onChange={(value) => {
+                  setPerPage(Number(value));
+                  setPage(1);
+                }}
+                options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
+                  value: size,
+                  label: size + text(" / trang", " / page"),
+                }))}
+              />
+            </div>
             <UiPagination
               page={pagination.current}
               pageSize={perPage}
