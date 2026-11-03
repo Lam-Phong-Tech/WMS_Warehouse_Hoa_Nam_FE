@@ -219,6 +219,7 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     );
 
     expect(await screen.findByText("Mã đã quét của phiếu")).toBeInTheDocument();
+    expect(screen.getByRole("dialog").closest(".MuiDrawer-root")).not.toBeNull();
     expect(screen.getByText("ITEM-BC-000008")).toBeInTheDocument();
     expect(screen.getByText("ITEM-BC-000009")).toBeInTheDocument();
     expect(screen.getByText("Camera / mã")).toBeInTheDocument();
@@ -331,10 +332,10 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     expect(await screen.findByText("ITEM-BC-000008")).toBeInTheDocument();
     // BR-REV-01: sau Post phải đi Reversal, không được gỡ mã.
     expect(screen.queryByRole("button", { name: /Gỡ mã/ })).toBeNull();
-    // Phiếu đã nhập kho chỉ cần dấu X ở tiêu đề, không có chân hộp thoại trống.
+    // Phiếu đã nhập kho chỉ cần dấu X ở tiêu đề, không có chân ngăn trống.
     expect(screen.getByRole("button", { name: "Đóng" })).toBeInTheDocument();
     expect(
-      screen.getByRole("dialog").querySelector(".MuiDialogActions-root"),
+      screen.getByRole("dialog").querySelector(".hn-inbound-scan-footer"),
     ).toBeNull();
   });
 });

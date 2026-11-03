@@ -3,6 +3,7 @@ import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
+  Drawer,
   Grid,
   Stack,
   UiAlert,
@@ -81,6 +82,7 @@ import {
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
+import "./inbound-scan-drawer.css";
 
 /** Lý do hủy phiếu phải đủ ý — dưới ngưỡng này là "ok"/"x" vô nghĩa cho tra soát. */
 const CANCEL_REASON_MIN = 5;
@@ -1163,64 +1165,32 @@ export function InboundScanModal({
 
   return (
     <>
-      <UiDialog
+      <Drawer
         {...dialog.dialogProps}
-        maxWidth="lg"
-        fullWidth
-        title={
-          <Stack
-            direction="row"
-            sx={{
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 1,
-            }}
-          >
-            <span>
+        anchor="right"
+        className="hn-inbound-scan-drawer"
+        slotProps={{
+          ...dialog.dialogProps.slotProps,
+          paper: { "aria-label": t("inbound.detail.title") },
+        }}
+      >
+        <div className="hn-inbound-scan-shell">
+          <header className="hn-inbound-scan-header">
+            <strong>
               {detail
                 ? t("inbound.detail.titleWithCode", {
                     code: detail.document.code || t("inbound.list.noCode"),
                   })
                 : t("inbound.detail.title")}
-            </span>
+            </strong>
             <ActionIconButton
               kind="close"
               label={t("common.close")}
               onClick={dialog.close}
               disabled={working}
             />
-          </Stack>
-        }
-        actions={detail && isMutable ? (
-          <>
-            {canCancel ? (
-              <ActionButton
-                kind="cancel"
-                disabled={working}
-                onClick={() => setCancelOpen(true)}
-              >
-                {t("inbound.cancel.trigger")}
-              </ActionButton>
-            ) : null}
-            <ActionButton
-              kind="confirm"
-              disabled={
-                !canPost ||
-                !hasScanned ||
-                hasMissingSkuInfo ||
-                detail.document.status !== "SCANNING" ||
-                postMutation.isPending
-              }
-              onClick={() => void handlePost()}
-            >
-              {postMutation.isPending
-                ? t("inbound.detail.posting")
-                : t("inbound.detail.post")}
-            </ActionButton>
-          </>
-        ) : undefined}
-      >
-        <>
+          </header>
+          <div className="hn-inbound-scan-body">
           {detailQuery.isError ? (
             <Box sx={{ mb: 2 }}>
               <UiAlert tone="error">
@@ -1249,7 +1219,7 @@ export function InboundScanModal({
                 }}
               >
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
@@ -1259,7 +1229,7 @@ export function InboundScanModal({
                       {detail.document.code || EMPTY_TEXT}
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
@@ -1269,7 +1239,7 @@ export function InboundScanModal({
                       {detail.document.source || EMPTY_TEXT}
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
@@ -1291,7 +1261,7 @@ export function InboundScanModal({
                       )}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{ typography: "caption", color: "text.secondary" }}
                     >
@@ -1305,25 +1275,25 @@ export function InboundScanModal({
               </Box>
 
               <Grid container spacing={1.5} sx={{ mb: 2 }}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <StatCard
                     label={t("inbound.detail.statValidCodes")}
                     value={totalScanned}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <StatCard
                     label={t("inbound.detail.statSkuLines")}
                     value={detail.lines.length}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <StatCard
                     label={t("inbound.detail.statRemoved")}
                     value={removedEntryCount}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <StatCard
                     label={t("inbound.detail.statSessionErrors")}
                     value={sessionDuplicateCount + sessionErrorCount}
@@ -1718,8 +1688,37 @@ export function InboundScanModal({
               ) : null}
             </>
           ) : null}
-        </>
-      </UiDialog>
+          </div>
+          {detail && isMutable ? (
+            <footer className="hn-inbound-scan-footer">
+              {canCancel ? (
+                <ActionButton
+                  kind="cancel"
+                  disabled={working}
+                  onClick={() => setCancelOpen(true)}
+                >
+                  {t("inbound.cancel.trigger")}
+                </ActionButton>
+              ) : null}
+              <ActionButton
+                kind="confirm"
+                disabled={
+                  !canPost ||
+                  !hasScanned ||
+                  hasMissingSkuInfo ||
+                  detail.document.status !== "SCANNING" ||
+                  postMutation.isPending
+                }
+                onClick={() => void handlePost()}
+              >
+                {postMutation.isPending
+                  ? t("inbound.detail.posting")
+                  : t("inbound.detail.post")}
+              </ActionButton>
+            </footer>
+          ) : null}
+        </div>
+      </Drawer>
 
       <CameraScanModal
         open={cameraOpen}
