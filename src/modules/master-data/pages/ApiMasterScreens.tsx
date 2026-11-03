@@ -16,7 +16,6 @@ import {
 } from "@/modules/master-data/components/SkuListMutationNotice";
 import {
   BarChartOutlined,
-  DownOutlined,
   FilterOutlined,
   SearchOutlined,
 } from "@/shared/components/icons";
@@ -103,7 +102,6 @@ import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import {
   ActionButton,
   ActionIconButton,
-  RowActionButton,
 } from "@/shared/components/actions";
 import {
   Box,
@@ -2742,7 +2740,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       return false;
     }
   });
-  const [filtersOpen, setFiltersOpen] = useState(true);
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) =>
     language === "vi" ? vi : localizedEnglish(en);
@@ -3186,113 +3183,78 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               />
             </div>
           </section>
-          <section className="hn-defect-panel">
-            <button
-              type="button"
-              className="hn-defect-panel-toggle"
-              aria-expanded={filtersOpen}
-              aria-controls="hn-defect-filters-content"
-              onClick={() => setFiltersOpen((current) => !current)}
-            >
-              <span>{copy("Bộ lọc tìm kiếm", "Search filters")}</span>
-              <DownOutlined aria-hidden="true" />
-            </button>
-            <div id="hn-defect-filters-content" hidden={!filtersOpen}>
-              <form
-                className="hn-defect-filters"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  refresh();
+          <section
+            className="hn-defect-search-panel"
+            aria-label={copy(
+              "Tìm kiếm và lọc bệnh / lỗi",
+              "Search and filter defects",
+            )}
+          >
+            <div className="hn-defect-search-bar">
+              <UiTextField
+                id="defect-list-search"
+                value={keyword}
+                onChange={(event) => {
+                  setKeyword(event.target.value);
+                  setPage(1);
                 }}
-              >
-                <div className="hn-defect-filter hn-defect-filter-search">
-                  <label htmlFor="defect-list-search">
-                    {copy("Tìm kiếm", "Search")}
-                  </label>
-                  <UiTextField
-                    id="defect-list-search"
-                    value={keyword}
-                    disabled={busy}
-                    onChange={(event) => {
-                      setKeyword(event.target.value);
-                      setPage(1);
-                    }}
-                    placeholder={copy(
-                      "Nhập mã hoặc tên bệnh/lỗi",
-                      "Enter defect code or name",
-                    )}
-                    slotProps={{
-                      htmlInput: {
-                        "aria-label": t("masterData.defect.searchAria"),
-                      },
-                      input: {
-                        startAdornment: (
-                          <DefectSymbol
-                            name="search"
-                            className="hn-defect-search-icon"
-                          />
-                        ),
-                        endAdornment: keyword ? (
-                          <button
-                            className="hn-defect-clear"
-                            type="button"
-                            onClick={() => {
-                              setKeyword("");
-                              setPage(1);
-                            }}
-                            aria-label={copy("Xóa từ khóa", "Clear keyword")}
-                          >
-                            <DefectSymbol name="close" />
-                          </button>
-                        ) : undefined,
-                      },
-                    }}
-                    fullWidth
-                  />
-                </div>
-                <div className="hn-defect-filter">
-                  <label htmlFor="defect-list-status">
-                    {t("masterData.status.label")}
-                  </label>
-                  <UiSelect
-                    id="defect-list-status"
-                    aria-label={t("masterData.status.filterAria")}
-                    value={status}
-                    disabled={busy}
-                    onChange={(value) => {
-                      setStatus(value as MasterStatus | "");
-                      setPage(1);
-                    }}
-                    fullWidth
-                    displayEmpty
-                    menuClassName="hn-defect-menu"
-                    options={[
-                      { value: "", label: copy("Tất cả", "All") },
-                      ...statusOptions(t),
-                    ]}
-                  />
-                </div>
-                <div className="hn-defect-filter-actions">
-                  <ActionButton
-                    kind="filter"
-                    icon={<span />}
-                    className="hn-defect-primary"
-                    type="submit"
-                    disabled={busy || refreshing || offline}
-                  >
-                    {copy("Áp dụng", "Apply")}
-                  </ActionButton>
-                  <ActionButton
-                    kind="reset"
-                    icon={<span />}
-                    className="hn-defect-secondary"
-                    onClick={resetFilters}
-                    disabled={busy}
-                  >
-                    {copy("Đặt lại", "Reset")}
-                  </ActionButton>
-                </div>
-              </form>
+                placeholder={copy(
+                  "Tìm mã hoặc tên bệnh/lỗi...",
+                  "Search defect code or name...",
+                )}
+                slotProps={{
+                  htmlInput: {
+                    "aria-label": t("masterData.defect.searchAria"),
+                  },
+                  input: {
+                    startAdornment: (
+                      <DefectSymbol
+                        name="search"
+                        className="hn-defect-search-icon"
+                      />
+                    ),
+                    endAdornment: keyword ? (
+                      <button
+                        className="hn-defect-clear"
+                        type="button"
+                        onClick={() => {
+                          setKeyword("");
+                          setPage(1);
+                        }}
+                        aria-label={copy("Xóa từ khóa", "Clear keyword")}
+                      >
+                        <DefectSymbol name="close" />
+                      </button>
+                    ) : undefined,
+                  },
+                }}
+                fullWidth
+              />
+              <UiSelect
+                id="defect-list-status"
+                aria-label={t("masterData.status.filterAria")}
+                value={status}
+                onChange={(value) => {
+                  setStatus(value as MasterStatus | "");
+                  setPage(1);
+                }}
+                fullWidth
+                placeholder={copy("Trạng thái: Tất cả", "Status: All")}
+                menuClassName="hn-defect-menu"
+                options={statusOptions(t).map((option) => ({
+                  ...option,
+                  label: `${copy("Trạng thái", "Status")}: ${option.label}`,
+                }))}
+              />
+              {hasFilters && (
+                <button
+                  type="button"
+                  className="hn-defect-clear-filters"
+                  onClick={resetFilters}
+                >
+                  {copy("Xóa lọc", "Clear filters")}
+                </button>
+              )}
             </div>
           </section>
           {!canManage && (
@@ -3328,22 +3290,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           aria-label={copy("Danh sách bệnh / lỗi", "Defect list")}
         >
           {refreshing && !stale && <DefectNotice {...feedback} />}
-          {hasFilters && (
-            <div className="hn-defect-applied">
-              <DefectSymbol name="filter" />
-              <strong>{copy("Đã áp dụng", "Applied")}</strong>
-              {keyword.trim() && (
-                <span>
-                  {copy("Tìm kiếm:", "Search:")} {keyword.trim()}
-                </span>
-              )}
-              {status && (
-                <span>
-                  {t("masterData.status.label")}: {masterStatusLabel(status, t)}
-                </span>
-              )}
-            </div>
-          )}
           <div
             className="hn-defect-table-scroll"
             role="region"
@@ -3363,17 +3309,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   <th className="stt-col">STT</th>
                   <SortableTh
                     className="code-col"
-                    label={
-                      <>
-                        <span className="hn-defect-desktop-label">
-                          {t("masterData.defect.colCode")}
-                        </span>
-                        <span className="hn-defect-tablet-label">
-                          {copy("Mã / Tên lỗi, bệnh", "Code / Defect name")}
-                        </span>
-                      </>
-                    }
-                    tooltipLabel={t("masterData.defect.colCode")}
+                    label={t("masterData.defect.colCode")}
                     sortKey="code"
                     sortState={sortState}
                     onSort={requestSort}
@@ -3400,7 +3336,10 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     onSort={requestSort}
                     sortType="value"
                   />
-                  <th className="actions-col">{copy("Thao tác", "Actions")}</th>
+                  <th
+                    className="actions-col"
+                    aria-label={t("masterData.common.actionsAria")}
+                  />
                 </tr>
               </thead>
               <tbody>
@@ -3437,14 +3376,17 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       }
                     >
                       <td className="stt-col">
-                        {String(
-                          mvpRowNumber(page, perPage, originalIndexOf(record)),
-                        ).padStart(2, "0")}
+                        {mvpRowNumber(page, perPage, originalIndexOf(record))}
                       </td>
                       <td className="code-col">
-                        <span>{record.defect_code}</span>
-                        <span className="hn-defect-tablet-name">
-                          {record.defect_name}
+                        <span className="hn-defect-code-cell">
+                          <span
+                            className="hn-defect-code-icon"
+                            aria-hidden="true"
+                          >
+                            <DefectSymbol name="clipboard" />
+                          </span>
+                          <span>{record.defect_code}</span>
                         </span>
                       </td>
                       <td className="name-col">
@@ -3465,13 +3407,27 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       </td>
                       <td className="actions-col">
                         {canManage ? (
-                          <RowActionButton
-                            kind="edit"
+                          <button
+                            type="button"
+                            className="hn-defect-detail-link"
+                            aria-label={`${t("masterData.common.edit")}: ${record.defect_code}`}
                             onClick={() => openEdit(record)}
                             disabled={mutationDisabled}
                           >
-                            {t("masterData.common.edit")}
-                          </RowActionButton>
+                            <svg
+                              aria-hidden="true"
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M5 12h14m-6-6 6 6-6 6" />
+                            </svg>
+                          </button>
                         ) : (
                           <span aria-label={copy("Chỉ xem", "View only")}>
                             —
@@ -3496,20 +3452,21 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             </span>
           )}
           <div className="hn-defect-pagination">
-            <span>
-              {copy("Hiển thị", "Showing")}{" "}
-              {pagination.total === 0
-                ? 0
-                : (pagination.current - 1) * perPage + 1}
-              {pagination.total > 0
-                ? "–" + Math.min(pagination.current * perPage, pagination.total)
-                : ""}{" "}
-              / {pagination.total}{" "}
-              {hasFilters
-                ? copy("kết quả", "results")
-                : copy("hồ sơ", "records")}
-            </span>
-            <div className="hn-defect-page-controls">
+            <div className="hn-defect-page-info">
+              <span>
+                {copy("Hiển thị", "Showing")}{" "}
+                {pagination.total === 0
+                  ? 0
+                  : (pagination.current - 1) * perPage + 1}
+                {pagination.total > 0
+                  ? "–" +
+                    Math.min(pagination.current * perPage, pagination.total)
+                  : ""}{" "}
+                / {pagination.total}{" "}
+                {hasFilters
+                  ? copy("kết quả", "results")
+                  : copy("hồ sơ", "records")}
+              </span>
               <UiSelect
                 aria-label={t("masterData.common.pageSizeAria")}
                 value={perPage}
@@ -3524,6 +3481,8 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   label: t("shared.table.perPage", { size }),
                 }))}
               />
+            </div>
+            <div className="hn-defect-page-controls">
               <UiPagination
                 page={pagination.current}
                 pageSize={perPage}

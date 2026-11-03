@@ -177,7 +177,6 @@
   outline-offset: 3px;
 }
 .hn-defect-overview,
-.hn-defect-filters,
 .hn-defect-panel,
 .hn-defect-list-card,
 .hn-defect-blocking {
@@ -197,42 +196,10 @@
   color: var(--defect-ink);
   font-weight: 600;
 }
-.hn-defect-panel-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 44px;
-  padding: 10px 16px;
-  border: 0;
-  background: transparent;
-  color: var(--defect-ink);
-  font: inherit;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-}
-.hn-defect-panel-toggle:hover {
-  background: var(--defect-pale);
-}
-.hn-defect-panel-toggle > i {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  flex: none;
-  font-size: 18px;
-  line-height: 18px;
-  text-align: center;
-  transition: transform 0.16s ease;
-}
-.hn-defect-panel-toggle[aria-expanded="true"] > i {
-  transform: rotate(180deg);
-}
 .hn-defect-panel > div[hidden] {
   display: none;
 }
-.hn-defect-panel .hn-defect-overview,
-.hn-defect-panel .hn-defect-filters {
+.hn-defect-panel .hn-defect-overview {
   border: 0;
   border-top: 1px solid var(--defect-line);
   border-radius: 0;
@@ -360,27 +327,33 @@
   min-width: 48px;
   animation: hn-defect-pulse 1.4s ease-in-out infinite;
 }
-.hn-defect-filters {
+.hn-defect-search-bar {
   display: grid;
-  grid-template-columns: minmax(210px, 1fr) minmax(170px, 23%) minmax(
-      225px,
-      auto
-    );
+  grid-template-columns: minmax(260px, 2fr) minmax(190px, 1fr) auto;
   gap: 12px;
-  padding: 14px 16px;
-  align-items: end;
+  align-items: center;
 }
-.hn-defect-filter {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+.hn-defect-search-bar .MuiInputBase-root {
+  min-height: 48px;
 }
-.hn-defect-filter > label {
+.hn-defect-clear-filters {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--defect-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--defect-surface);
   color: var(--defect-ink);
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 18px;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hn-defect-clear-filters:hover {
+  border-color: var(--defect-link);
+  background: var(--defect-pale);
 }
 .hn-defect-search-icon {
   color: var(--defect-cta);
@@ -439,81 +412,47 @@
 :is(.hn-defect-screen, .hn-defect-dialog) .MuiSelect-icon {
   color: var(--defect-cta);
 }
-.hn-defect-filter-actions {
-  display: flex;
-  gap: 12px;
-}
-.hn-defect-filter-actions .MuiButton-root {
-  flex: 1;
-}
 .hn-defect-list-card {
-  padding: 16px 16px 0;
+  padding: 0;
   overflow: hidden;
-}
-.hn-defect-applied {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-  color: var(--defect-muted);
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-.hn-defect-applied > span {
-  color: var(--defect-ink);
-  border-radius: 4px;
-  background: var(--defect-pale);
-  padding: 3px 8px;
-}
-.hn-defect-applied .hn-defect-symbol {
-  width: 15px;
-  height: 15px;
 }
 .hn-defect-table-scroll {
   min-width: 0;
   max-width: 100%;
-  overflow: auto;
-  max-height: max(280px, calc(100dvh - 650px));
+  overflow-x: auto;
   scrollbar-color: var(--defect-line) transparent;
   scrollbar-width: thin;
-  overscroll-behavior: contain;
+  overscroll-behavior-inline: contain;
 }
 .hn-defect-screen table.defect-table {
   width: 100%;
-  min-width: 790px;
+  min-width: 960px;
   table-layout: fixed;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
   font-size: 14px;
   color: var(--defect-text);
 }
 .hn-defect-screen table.defect-table :is(th, td) {
-  padding: 8px 12px;
+  padding: 12px 18px;
   vertical-align: middle;
-  border: 0;
   border-bottom: 1px solid var(--defect-line);
   text-align: left;
 }
+.hn-defect-screen table.defect-table :is(th, td):first-child {
+  padding-inline: 8px;
+  text-align: center;
+}
+.hn-defect-screen table.defect-table :is(th, td):last-child {
+  padding-inline: 12px;
+}
 .hn-defect-screen table.defect-table th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--defect-pale);
-  color: var(--defect-ink);
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 500;
-  height: 36px;
-  padding-block: 6px;
-}
-.hn-defect-screen table.defect-table th:first-child {
-  border-top-left-radius: 5px;
-  border-bottom-left-radius: 5px;
-}
-.hn-defect-screen table.defect-table th:last-child {
-  border-top-right-radius: 5px;
-  border-bottom-right-radius: 5px;
+  background: #d2edf7;
+  color: var(--defect-muted);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 .hn-defect-screen table.defect-table th button {
   color: inherit;
@@ -523,37 +462,38 @@
   transition: background-color 0.14s ease;
 }
 .hn-defect-screen table.defect-table tbody tr:hover {
-  background: color-mix(in srgb, var(--defect-pale) 60%, var(--defect-surface));
+  background: color-mix(in srgb, var(--defect-pale) 55%, var(--defect-surface));
 }
 .hn-defect-screen table.defect-table .stt-col {
-  width: 48px;
-  font-size: 12px;
+  width: 6%;
   color: var(--defect-muted);
-  font-weight: 400;
+  font-weight: 500;
 }
 .hn-defect-screen table.defect-table .code-col {
-  width: 16%;
+  width: 17%;
   color: var(--defect-ink);
   overflow-wrap: anywhere;
-  font-weight: 500;
+  font-weight: 700;
 }
 .hn-defect-screen table.defect-table .name-col {
-  width: 26%;
+  width: 25%;
   color: var(--defect-ink);
-  font-weight: 500;
+  font-weight: 700;
 }
 .hn-defect-screen table.defect-table .description-col {
+  width: 29%;
   color: var(--defect-muted);
 }
 .hn-defect-screen table.defect-table .status-col {
-  width: 140px;
+  width: 15%;
+  padding-inline: 12px;
   white-space: nowrap;
 }
 .hn-defect-screen table.defect-table .status-col .MuiChip-root {
-  border-radius: 4px;
+  border-radius: 20px;
   font-size: 11px;
   font-weight: 500;
-  height: 25px;
+  height: 24px;
   color: var(--ops-success-text);
   background: var(--ops-success-soft);
 }
@@ -575,27 +515,51 @@
   background: var(--defect-pale);
 }
 .hn-defect-screen table.defect-table .actions-col {
-  position: sticky;
-  right: 0;
-  width: 92px;
+  width: 8%;
   text-align: center;
   white-space: nowrap;
-  background: var(--defect-surface);
 }
-.hn-defect-screen table.defect-table th.actions-col {
+.hn-defect-code-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hn-defect-code-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 8px;
   background: var(--defect-pale);
-  z-index: 3;
+  color: var(--defect-link);
+}
+.hn-defect-detail-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--defect-link);
+  cursor: pointer;
+}
+.hn-defect-detail-link:is(:hover, :focus-visible) {
+  background: #dff0f7;
+}
+.hn-defect-detail-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .hn-defect-screen table.defect-table td[colspan] {
   padding: 0;
   white-space: normal;
 }
-.hn-defect-tablet-label,
-.hn-defect-tablet-name {
-  display: none;
-}
 .hn-defect-pagination {
-  padding: 12px 0;
+  border-top: 1px solid var(--defect-line);
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -604,18 +568,20 @@
   color: var(--defect-muted);
   font-size: 12px;
 }
-.hn-defect-page-controls {
+.hn-defect-page-info {
   display: flex;
-  gap: 30px;
   align-items: center;
+  gap: 14px;
   flex-wrap: wrap;
 }
-.hn-defect-page-controls .MuiInputBase-root {
+.hn-defect-page-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.hn-defect-page-info .MuiInputBase-root {
   height: 32px;
   font-size: 12px;
-}
-.hn-defect-page-controls .MuiOutlinedInput-notchedOutline {
-  border: 0;
 }
 .hn-defect-page-controls .MuiPaginationItem-root {
   border-radius: 5px;
@@ -1106,40 +1072,12 @@
     gap: 12px 16px;
     padding-inline: 16px;
   }
-  .hn-defect-screen table.defect-table {
-    min-width: 660px;
-  }
-  .hn-defect-screen table.defect-table .name-col,
-  .hn-defect-desktop-label {
-    display: none;
-  }
-  .hn-defect-tablet-label {
-    display: inline;
-  }
-  .hn-defect-tablet-name {
-    display: block;
-    color: var(--defect-muted);
-    font-weight: 400;
-    padding-top: 3px;
-  }
-  .hn-defect-screen table.defect-table .code-col {
-    width: 32%;
-  }
-  .hn-defect-screen table.defect-table .status-col {
-    width: 138px;
-  }
-  .hn-defect-screen table.defect-table :is(th, td) {
-    padding-inline: 9px;
-  }
-  .hn-defect-screen table.defect-table tbody td {
-    padding-block: 10px;
-  }
 }
 @container hn-defect (max-width: 900px) {
-  .hn-defect-filters {
-    grid-template-columns: minmax(0, 1fr) minmax(225px, 0.8fr);
+  .hn-defect-search-bar {
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 0.8fr) auto;
   }
-  .hn-defect-filter-search {
+  .hn-defect-search-bar > :first-child {
     grid-column: 1 / -1;
   }
   .hn-defect-header {
@@ -1184,17 +1122,8 @@
   .hn-defect-overview-note {
     align-items: flex-start;
   }
-  .hn-defect-filters {
+  .hn-defect-search-bar {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .hn-defect-filter-actions {
-    margin-top: 4px;
-  }
-  .hn-defect-list-card {
-    padding-inline: 12px;
-  }
-  .hn-defect-screen table.defect-table .actions-col {
-    box-shadow: -4px 0 8px color-mix(in srgb, var(--defect-ink) 5%, transparent);
   }
   .hn-defect-screen table.defect-table[data-empty="true"] {
     min-width: 0;
@@ -1287,12 +1216,6 @@
   .hn-defect-dialog.hn-defect-dialog * {
     transition: none;
     animation: none;
-  }
-}
-
-@media (max-width: 1100px) {
-  .hn-defect-table-scroll {
-    max-height: 620px;
   }
 }
 
