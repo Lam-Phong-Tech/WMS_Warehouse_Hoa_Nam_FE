@@ -148,7 +148,7 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     expect(screen.getByRole("button", { name: /Xem/ })).toBeInTheDocument();
   });
 
-  it("cột Yêu cầu xuất hiện mã toa đọc được (request_no), không phải UUID thô", async () => {
+  it("keeps request number, created date and note out of the document list", async () => {
     grantOnly(["outbound.view"]);
     serviceMocks.fetchOutboundDocuments.mockResolvedValue({
       data: [
@@ -156,6 +156,7 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
           ...ROWS[0],
           outboundRequestId: "1099ed43-5208-411f-80d7-775f3dda6e81",
           requestNo: "YCX-2026-08-30-001",
+          note: "Giao gấp",
         },
         // BE lỡ chưa kèm được request_no: vẫn không được lộ UUID đầy đủ.
         {
@@ -171,7 +172,16 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     renderWithProviders(<AlignedMvpOutboundPage />);
     await screen.findByText("PX-20260820-0001");
 
-    expect(screen.getByText("YCX-2026-08-30-001")).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    for (const name of ["Mã toa yêu cầu", "Ngày tạo", "Ghi chú"]) {
+      expect(
+        within(table).queryByRole("columnheader", { name }),
+      ).not.toBeInTheDocument();
+    }
+    expect(
+      within(table).queryByText("YCX-2026-08-30-001"),
+    ).not.toBeInTheDocument();
+    expect(within(table).queryByText("Giao gấp")).not.toBeInTheDocument();
     expect(
       screen.queryByText("1099ed43-5208-411f-80d7-775f3dda6e81"),
     ).not.toBeInTheDocument();
@@ -206,9 +216,14 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     expect(serviceMocks.fetchOutboundDocuments).toHaveBeenCalledWith(
       expect.objectContaining({ sortOrder: "desc" }),
     );
+    expect(
+      screen.getByLabelText("Sắp xếp danh sách phiếu xuất").closest("form"),
+    ).toHaveClass("hn-outbound-filters");
 
     fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách phiếu xuất"));
-    fireEvent.click(await screen.findByRole("option", { name: "Cũ nhất" }));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Sắp xếp theo: Cũ nhất" }),
+    );
 
     await waitFor(() => {
       expect(serviceMocks.fetchOutboundDocuments).toHaveBeenCalledWith(
@@ -222,8 +237,96 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     renderWithProviders(<AlignedMvpOutboundPage />);
     await screen.findByText("PX-20260820-0001");
 
-    fireEvent.click(screen.getByRole("tab", { name: "Sản phẩm đã xuất & NFC" }));
-    expect(await screen.findByTestId("outbound-nfc-products-stub")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("tab", { name: "Sản phẩm đã xuất & NFC" }),
+    );
+    expect(
+      await screen.findByTestId("outbound-nfc-products-stub"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("PX-20260820-0001")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Thu gọn" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides and restores the entire overview from the button beside intake", async () => {
+    renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+
+    const intake = screen.getByRole("button", {
+      name: "Tiếp nhận yêu cầu xuất",
+    });
+    const toggle = screen.getByRole("button", { name: "Thu gọn" });
+    const overview = screen.getByRole("region", {
+      name: "Tình trạng xử lý phiếu",
+    });
+    expect(toggle.parentElement).toBe(intake.parentElement);
+    expect(toggle).toHaveAttribute("aria-controls", overview.id);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(overview).not.toBeVisible();
+    expect(screen.getByText("PX-20260820-0001")).toBeVisible();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(overview).toBeVisible();
+  });
+
+  it("numbers document rows across pages and omits the list title", async () => {
+    serviceMocks.fetchOutboundDocuments.mockImplementation(
+      ({ page, per_page }: { page: number; per_page: number }) =>
+        Promise.resolve({
+          data:
+            page === 1
+              ? ROWS
+              : [{ ...ROWS[0], id: "doc-page-2", code: "PX-PAGE-2" }],
+          meta: { current_page: page, per_page, total: 11 },
+        }),
+    );
+    renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+    const table = screen.getByRole("table");
+    expect(
+      within(table).getByRole("columnheader", { name: "STT" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table)
+        .getByRole("row", { name: /PX-20260820-0001/ })
+        .querySelector("td"),
+    ).toHaveTextContent("1");
+    expect(
+      screen.queryByRole("heading", { name: /Danh sách phiếu xuất/ }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
+    const secondPageRow = await within(table).findByRole("row", {
+      name: /PX-PAGE-2/,
+    });
+    expect(secondPageRow.querySelector("td")).toHaveTextContent("11");
+  });
+
+  it("applies typed search automatically without apply and reset buttons", async () => {
+    renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+    expect(
+      screen.queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Tìm phiếu xuất" }), {
+      target: { value: "PX-2026" },
+    });
+    expect(
+      screen.queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(serviceMocks.fetchOutboundDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({ search: "PX-2026", page: 1 }),
+      );
+    });
   });
 });

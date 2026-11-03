@@ -6,21 +6,21 @@ Nguồn chuẩn: `src/modules/master-data/pages/sku-list.css` và `ApiMasterScre
 
 - Một hàng điều khiển nằm trực tiếp trên bảng, khoảng cách giữa các ô `12px`; không có thẻ bao có viền, tiêu đề bộ lọc hoặc dải chip nhắc lại điều kiện đã chọn.
 - Ô tìm kiếm rộng hơn ô chọn, tự lọc khi nhập. Ô chọn hiển thị tên trường và giá trị ngay trong ô, ví dụ `Trạng thái: Tất cả`; không đặt nhãn ở hàng phía trên.
-- Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, bo `--ops-radius-control` (`6px`); focus dùng `--ops-link` với quầng màu link 13%. Nút `Xóa lọc` chỉ xuất hiện khi có điều kiện lọc.
+- Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, bo `--ops-radius-control` (`6px`); focus dùng `--ops-link` với quầng màu link 13%. Mọi thay đổi bộ lọc được áp dụng tự động; không có nút `Áp dụng`, `Đặt lại` hoặc `Xóa lọc`.
 - Khi container hẹp, các ô xuống hàng; ô tìm kiếm chiếm trọn hàng đầu. Không làm trang tràn ngang vì bộ lọc.
 
 ## Bảng
 
-| Thành phần | Quy cách từ SKU |
-| --- | --- |
-| Thẻ bảng | Viền `--ops-line`, bo `--ops-radius-card` (`8px`), nền `--ops-surface`; không có đệm trong bao quanh đầu bảng. |
-| Đầu bảng | Nền xanh `#d2edf7`; chữ `--ops-muted`, cỡ `16px`, đậm `800`, cao dòng `24px`, viết hoa, giãn chữ `0.02em`. |
+| Thành phần         | Quy cách từ SKU                                                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thẻ bảng           | Viền `--ops-line`, bo `--ops-radius-card` (`8px`), nền `--ops-surface`; không có đệm trong bao quanh đầu bảng.                                                |
+| Đầu bảng           | Nền xanh `#d2edf7`; chữ `--ops-muted`, cỡ `16px`, đậm `800`, cao dòng `24px`, viết hoa, giãn chữ `0.02em`.                                                    |
 | Ô đầu và ô dữ liệu | Đệm dọc `12px`, ngang `18px`; hàng dữ liệu tối thiểu khoảng `68px` khi có biểu tượng `44px`; căn giữa theo chiều dọc; đường chia hàng `1px solid --ops-line`. |
-| Chữ dữ liệu | `--ops-text`, cỡ `14px`, cao dòng `22px`; mã chính `--ops-heading`, đậm `700`. |
-| Biểu tượng mã | Nền `--ops-pale`, màu `--ops-link`, khung khoảng `44px`, cách mã `12px`. |
-| Trạng thái | Viên cao `24px`, bo `20px`, chữ `11px`, chấm `7px`; đang dùng: `--ops-success` trên `--ops-success-soft`; ngừng dùng: `--ops-muted` trên `--ops-pale`. |
-| Rê chuột | Nền hàng pha `55% --ops-pale` với `--ops-surface`; giữ focus bàn phím dễ thấy. |
-| Trang hẹp | Bảng có chiều rộng tối thiểu và được cuộn ngang hoặc chuyển thành card theo component hiện có; không ép chữ thành cột dọc. |
+| Chữ dữ liệu        | `--ops-text`, cỡ `14px`, cao dòng `22px`; mã chính `--ops-heading`, đậm `700`.                                                                                |
+| Biểu tượng mã      | Nền `--ops-pale`, màu `--ops-link`, khung khoảng `44px`, cách mã `12px`.                                                                                      |
+| Trạng thái         | Viên cao `24px`, bo `20px`, chữ `11px`, chấm `7px`; đang dùng: `--ops-success` trên `--ops-success-soft`; ngừng dùng: `--ops-muted` trên `--ops-pale`.        |
+| Rê chuột           | Nền hàng pha `55% --ops-pale` với `--ops-surface`; giữ focus bàn phím dễ thấy.                                                                                |
+| Trang hẹp          | Bảng có chiều rộng tối thiểu và được cuộn ngang hoặc chuyển thành card theo component hiện có; không ép chữ thành cột dọc.                                    |
 
 Các cột của mỗi bảng phải có kế hoạch chiều rộng đầy đủ, tổng tỷ lệ bằng `100%`. Cột không khai độ rộng sẽ nhận phần dư và tạo khoảng trắng lớn giữa các cột, như trường hợp `Tên hãng` trên tab Hãng.
 

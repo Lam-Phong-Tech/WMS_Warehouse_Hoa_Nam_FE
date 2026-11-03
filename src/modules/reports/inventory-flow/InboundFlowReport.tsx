@@ -107,6 +107,7 @@ function FilterCombobox({
   onChange,
   options,
   icon,
+  fieldLabel,
   searchPlaceholder,
   ariaLabel,
   disabled,
@@ -116,6 +117,7 @@ function FilterCombobox({
   onChange: (value: string) => void;
   options: FilterOption[];
   icon: Parameters<typeof VuexyDemoIcon>[0]["name"];
+  fieldLabel: string;
   searchPlaceholder: string;
   ariaLabel: string;
   disabled?: boolean;
@@ -197,7 +199,7 @@ function FilterCombobox({
         type="button"
         id={id}
         role="combobox"
-        aria-label={ariaLabel}
+        aria-label={`${ariaLabel}: ${current?.label ?? ""}`}
         aria-controls={`${id}-listbox`}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -211,7 +213,7 @@ function FilterCombobox({
           }
         }}
       >
-        <span>{current?.label ?? ""}</span>
+        <span>{fieldLabel}: {current?.label ?? ""}</span>
         <Icon name="chevron-down" />
       </button>
       <span className="inbound-filter-combobox__menu" aria-hidden={!open}>
@@ -339,8 +341,6 @@ function KpiSkeleton() {
 export default function InboundFlowReport() {
   const [draftRange, setDraftRange] = useState<DateRange>(initialRange);
   const [appliedRange, setAppliedRange] = useState<DateRange>(initialRange);
-  const [draftSupplier, setDraftSupplier] = useState("");
-  const [draftStatus, setDraftStatus] = useState("");
   const [appliedSupplier, setAppliedSupplier] = useState("");
   const [appliedStatus, setAppliedStatus] = useState("");
   const [query, setQuery] = useState("");
@@ -417,24 +417,24 @@ export default function InboundFlowReport() {
 
   const supplierFilterOptions = useMemo<FilterOption[]>(
     () => [
-      { value: "", label: tUi("updatedUi.text_e28dc4bb66b6") },
-      ...supplierOptions.map((supplier) => ({
+      { value: "", label: tUi("dashboard.operations.filterAll") },
+      ...[...new Set([...supplierOptions, appliedSupplier].filter(Boolean))].map((supplier) => ({
         value: supplier,
         label: supplier,
       })),
     ],
-    [supplierOptions],
+    [appliedSupplier, supplierOptions],
   );
 
   const statusFilterOptions = useMemo<FilterOption[]>(
     () => [
-      { value: "", label: tUi("reports.inventoryFlow.statusAll") },
-      ...statusOptions.map((status) => ({
+      { value: "", label: tUi("dashboard.operations.filterAll") },
+      ...[...new Set([...statusOptions, appliedStatus].filter(Boolean))].map((status) => ({
         value: status,
         label: inboundStatusLabel(status),
       })),
     ],
-    [statusOptions],
+    [appliedStatus, statusOptions],
   );
 
   const filteredDocuments = useMemo(
@@ -618,45 +618,6 @@ export default function InboundFlowReport() {
     return "";
   })();
 
-  const applyFilters = async () => {
-    if (invalidRange || updating) return;
-    setAppliedSupplier(draftSupplier);
-    setAppliedStatus(draftStatus);
-    setPage(1);
-    setQuery("");
-    setShowSuccess(false);
-    setActionNotice(null);
-    sawUpdateLoading.current = false;
-    setUpdatePending(true);
-    const rangeChanged =
-      draftRange.from !== appliedRange.from ||
-      draftRange.to !== appliedRange.to;
-    if (rangeChanged) {
-      setAppliedRange(draftRange);
-    } else {
-      await refetch();
-    }
-  };
-
-  const resetFilters = async () => {
-    const next = initialRange();
-    setDraftRange(next);
-    setDraftSupplier("");
-    setDraftStatus("");
-    setAppliedSupplier("");
-    setAppliedStatus("");
-    setQuery("");
-    setPage(1);
-    setShowSuccess(false);
-    setActionNotice(null);
-    sawUpdateLoading.current = false;
-    setUpdatePending(true);
-    const rangeChanged =
-      next.from !== appliedRange.from || next.to !== appliedRange.to;
-    if (rangeChanged) setAppliedRange(next);
-    else await refetch();
-  };
-
   const widenRange = () => {
     const next = {
       from: dayjs().subtract(29, "day").format(ISO_DATE),
@@ -664,8 +625,6 @@ export default function InboundFlowReport() {
     };
     setDraftRange(next);
     setAppliedRange(next);
-    setDraftSupplier("");
-    setDraftStatus("");
     setAppliedSupplier("");
     setAppliedStatus("");
     setUpdatePending(true);
@@ -692,7 +651,6 @@ export default function InboundFlowReport() {
       (document) => statusTone(document.status) === "pending",
     );
     const pendingStatus = firstPending?.status ?? "";
-    setDraftStatus(pendingStatus);
     setAppliedStatus(pendingStatus);
     setQuery("");
     setPage(1);
@@ -806,18 +764,24 @@ export default function InboundFlowReport() {
             role="group"
             aria-label={tUi("reports.packingLabel.dateRangeLabel")}
           >
-            <span>{tUi("reports.packingLabel.dateRangeLabel")}</span>
             <ReportDateRangePicker
+              autoApplyOnComplete
               value={[
                 draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null,
                 draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null,
               ]}
-              onChange={(value) =>
-                setDraftRange({
+              onChange={(value) => {
+                const next = {
                   from: value?.[0]?.format(ISO_DATE) ?? "",
                   to: value?.[1]?.format(ISO_DATE) ?? "",
-                })
-              }
+                };
+                setDraftRange(next);
+                if (!rangeIsInvalid(next)) {
+                  setAppliedRange(next);
+                  setPage(1);
+                  setShowSuccess(false);
+                }
+              }}
               aria-label={tUi("reports.packingLabel.dateRangeLabel")}
               disabled={updating}
             />
@@ -825,27 +789,22 @@ export default function InboundFlowReport() {
               <small>{tUi("updatedUi.text_c88aba88c1c8")}</small>
             ) : null}
           </div>
-          <p className="inbound-filter-note">
-            <Icon name="file-clock" />
-            {dayjs(appliedRange.to).diff(dayjs(appliedRange.from), "day") +
-              1}{" "}
-            {tUi("updatedUi.text_a0b12849189a")}
-          </p>
           <div
             className="inbound-filter-field"
             data-filter="supplier"
             role="group"
-            aria-labelledby="rpt01-supplier-label"
+            aria-label={tUi("updatedUi.text_039d667495cd")}
           >
-            <span id="rpt01-supplier-label">
-              {tUi("updatedUi.text_039d667495cd")}
-            </span>
             <FilterCombobox
               id="rpt01-supplier"
-              value={draftSupplier}
-              onChange={setDraftSupplier}
+              value={appliedSupplier}
+              onChange={(value) => {
+                setAppliedSupplier(value);
+                setPage(1);
+              }}
               options={supplierFilterOptions}
               icon="user-round"
+              fieldLabel={tUi("updatedUi.text_039d667495cd")}
               searchPlaceholder="Tìm nhà cung cấp..."
               ariaLabel="Chọn nhà cung cấp"
               disabled={updating}
@@ -855,39 +814,22 @@ export default function InboundFlowReport() {
             className="inbound-filter-field"
             data-filter="status"
             role="group"
-            aria-labelledby="rpt01-status-label"
+            aria-label={tUi("dashboard.composition.colStatus")}
           >
-            <span id="rpt01-status-label">
-              {tUi("dashboard.composition.colStatus")}
-            </span>
             <FilterCombobox
               id="rpt01-status"
-              value={draftStatus}
-              onChange={setDraftStatus}
+              value={appliedStatus}
+              onChange={(value) => {
+                setAppliedStatus(value);
+                setPage(1);
+              }}
               options={statusFilterOptions}
               icon="file-clock"
+              fieldLabel={tUi("dashboard.composition.colStatus")}
               searchPlaceholder="Tìm trạng thái..."
               ariaLabel="Chọn trạng thái phiếu nhập"
               disabled={updating}
             />
-          </div>
-          <div className="inbound-filter-actions">
-            <button
-              type="button"
-              className="inbound-apply-button"
-              onClick={() => void applyFilters()}
-              disabled={invalidRange || updating}
-            >
-              {tUi("dashboard.snapshot.apply")}
-            </button>
-            <button
-              type="button"
-              className="inbound-reset-button"
-              onClick={() => void resetFilters()}
-              disabled={updating}
-            >
-              {tUi("reports.packingLabel.reset")}
-            </button>
           </div>
         </div>
       </section>

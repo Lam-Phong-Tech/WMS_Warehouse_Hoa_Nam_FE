@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { createJSONStorage } from "zustand/middleware";
 
 const service = vi.hoisted(() => ({ fetchOutboundNfcItems: vi.fn() }));
 vi.mock("@/modules/outbound/services/outboundNfcService", () => ({
@@ -41,6 +44,13 @@ const unassigned = {
 
 describe("OutboundNfcProducts", () => {
   beforeEach(() => {
+    useLanguageStore.persist.setOptions({
+      storage: createJSONStorage(() => ({
+        getItem: () => null,
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      })),
+    });
     service.fetchOutboundNfcItems.mockReset().mockResolvedValue({
       data: [assigned, unassigned],
       meta: {
@@ -51,12 +61,22 @@ describe("OutboundNfcProducts", () => {
       },
     });
   });
-  afterEach(() => cleanupTestState());
+  afterEach(() => {
+    cleanup();
+    cleanupTestState();
+    useLanguageStore.setState({ language: "vi" });
+  });
 
   it("shows active UID and distinct unassigned state without chip actions", async () => {
     renderWithProviders(<OutboundNfcProducts />);
 
     expect(await screen.findByText("SP-0001")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Sản phẩm đã xuất & NFC" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Làm mới" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("04A1B2")).toBeInTheDocument();
     expect(screen.getByText("SP-0002")).toBeInTheDocument();
     expect(screen.getAllByText("Chưa gắn NFC").length).toBeGreaterThan(0);
@@ -71,7 +91,13 @@ describe("OutboundNfcProducts", () => {
     renderWithProviders(<OutboundNfcProducts documentId="doc-1" />);
     await screen.findByText("SP-0001");
 
-    fireEvent.click(screen.getByRole("button", { name: /Đã gắn NFC.*1/ }));
+    expect(
+      screen.queryByRole("group", { name: "Trạng thái chip" }),
+    ).not.toBeInTheDocument();
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: "Trạng thái chip" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: /Đã gắn NFC.*1/ }));
     await waitFor(() =>
       expect(service.fetchOutboundNfcItems).toHaveBeenLastCalledWith(
         expect.objectContaining({
@@ -81,5 +107,72 @@ describe("OutboundNfcProducts", () => {
         expect.anything(),
       ),
     );
+    expect(
+      screen.queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("filters NFC products as the search text changes without submitting", async () => {
+    renderWithProviders(<OutboundNfcProducts />);
+    await screen.findByText("SP-0001");
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Tìm sản phẩm" }), {
+      target: { value: "HN-PROD-001" },
+    });
+
+    await waitFor(() =>
+      expect(service.fetchOutboundNfcItems).toHaveBeenLastCalledWith(
+        expect.objectContaining({ keyword: "HN-PROD-001" }),
+        expect.anything(),
+      ),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the product range and changes the server page size", async () => {
+    service.fetchOutboundNfcItems.mockResolvedValue({
+      data: [assigned, unassigned],
+      meta: {
+        current_page: 1,
+        per_page: 10,
+        total: 23,
+        tab_totals: { ALL: 23, ASSIGNED: 12, UNASSIGNED: 11 },
+      },
+    });
+    renderWithProviders(<OutboundNfcProducts />);
+
+    expect(
+      await screen.findByText("Hiển thị 1–2 / 23 sản phẩm"),
+    ).toBeInTheDocument();
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "20 / trang" }));
+
+    await waitFor(() =>
+      expect(service.fetchOutboundNfcItems).toHaveBeenLastCalledWith(
+        expect.objectContaining({ perPage: 20, page: 1 }),
+        expect.anything(),
+      ),
+    );
+  });
+
+  it("localizes the page-size choices in English", async () => {
+    useLanguageStore.setState({ language: "en" });
+    await ensureEnglishMessages();
+    renderWithProviders(<OutboundNfcProducts />);
+    await screen.findByText("SP-0001");
+
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: "Rows per page" }),
+    );
+    expect(
+      screen.getByRole("option", { name: "20 / page" }),
+    ).toBeInTheDocument();
   });
 });

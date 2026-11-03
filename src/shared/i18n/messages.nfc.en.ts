@@ -10,6 +10,7 @@ export const MESSAGES_NFC_EN = {
   outboundSearch: "Search products",
   outboundSearchPlaceholder: "Item code, SKU or NFC UID...",
   outboundClear: "Clear search",
+  outboundShowing: "Showing {from}–{to} / {total} products",
   outboundNoResults: "No matching products",
   outboundEmpty: "No products yet",
   outboundDocumentEmptyHelp: "Items matched in the Scanner App will appear here.",

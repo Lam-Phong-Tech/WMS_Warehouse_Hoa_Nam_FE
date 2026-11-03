@@ -51,6 +51,8 @@ export interface UiVuexyDateRangePickerProps {
   showFieldPrefixes?: boolean;
   format?: string;
   allowClear?: boolean;
+  /** Commit the range when the second date is picked; other screens keep manual Apply. */
+  autoApplyOnComplete?: boolean;
   disabled?: boolean;
   className?: string;
   popupClassName?: string;
@@ -95,6 +97,7 @@ export function UiVuexyDateRangePicker({
   showFieldPrefixes = true,
   format = "DD/MM/YYYY",
   allowClear = true,
+  autoApplyOnComplete = false,
   disabled = false,
   className,
   popupClassName,
@@ -163,6 +166,10 @@ export function UiVuexyDateRangePicker({
 
     if (selected.valueOf() < draftStart.startOf("day").valueOf()) return;
     setDraftEnd(selected);
+    if (autoApplyOnComplete) {
+      onChange([draftStart.startOf("day"), selected]);
+      closePicker();
+    }
   };
 
   const applyRange = () => {
@@ -637,16 +644,18 @@ export function UiVuexyDateRangePicker({
             >
               {t("shared.actions.cancel")}
             </Box>
-            <Box
-              component="button"
-              type="button"
-              data-date-action="apply"
-              disabled={!draftStart || !draftEnd}
-              onClick={applyRange}
-              sx={primaryFooterButtonSx}
-            >
-              {t("shared.actions.apply")}
-            </Box>
+            {!autoApplyOnComplete ? (
+              <Box
+                component="button"
+                type="button"
+                data-date-action="apply"
+                disabled={!draftStart || !draftEnd}
+                onClick={applyRange}
+                sx={primaryFooterButtonSx}
+              >
+                {t("shared.actions.apply")}
+              </Box>
+            ) : null}
           </Box>
         </Box>
       </Popover>

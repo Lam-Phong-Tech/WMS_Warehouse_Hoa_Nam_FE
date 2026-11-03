@@ -1,0 +1,57 @@
+.hn-outbound-detail-drawer .MuiDrawer-paper {
+  width: min(1060px, 100vw);
+  max-width: 100vw;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+
+.hn-outbound-detail-drawer__shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.hn-outbound-detail-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: none;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--ops-line);
+}
+
+.hn-outbound-detail-drawer__header strong {
+  min-width: 0;
+  color: var(--ops-heading);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+}
+
+.hn-outbound-detail-drawer__body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px 24px;
+}
+
+.hn-outbound-detail-drawer__body .hn-outbound-content-tabs {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 599px) {
+  .hn-outbound-detail-drawer__header {
+    padding: 16px;
+  }
+
+  .hn-outbound-detail-drawer__body {
+    padding: 16px;
+  }
+}

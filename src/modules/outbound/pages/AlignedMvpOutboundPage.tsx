@@ -1,7 +1,6 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
-import dayjs from "dayjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -57,26 +56,19 @@ const getSTATUS_OPTIONS = localizedUiValue(() =>
 const DETAIL_SCREENS = new Set(["OUT-03", "OUT-02", "LBL-01", "RFID-01"]);
 const SORT_ACCESSORS = {
   code: (row: OutboundDocumentRecord) => row.code || "",
-  request: (row: OutboundDocumentRecord) => row.requestNo ?? "",
   recipientName: (row: OutboundDocumentRecord) => row.recipientName,
-  date: (row: OutboundDocumentRecord) => row.date || "",
-  note: (row: OutboundDocumentRecord) => row.note || "",
   match: (row: OutboundDocumentRecord) =>
     row.expected > 0 ? row.scanned / row.expected : 0,
   status: (row: OutboundDocumentRecord) => row.status,
 };
-function displayDate(value?: string) {
-  if (!value) return EMPTY_TEXT;
-  const date = dayjs(value);
-  return date.isValid() ? date.format("DD/MM/YYYY HH:mm") : value;
-}
 /** OUT-01: presentation and filtering over the existing outbound contracts. */
 export default function AlignedMvpOutboundPage() {
   const t = useT();
   const can = useHasPermission();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") === "products" ? "products" : "documents";
+  const activeTab =
+    searchParams.get("tab") === "products" ? "products" : "documents";
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<OutboundStatus | "">("");
@@ -85,6 +77,7 @@ export default function AlignedMvpOutboundPage() {
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [overviewExpanded, setOverviewExpanded] = useState(true);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const canImport =
@@ -145,7 +138,7 @@ export default function AlignedMvpOutboundPage() {
     SORT_ACCESSORS,
   );
   const loading = listQuery.isLoading || listQuery.isFetching;
-  const hasFilters = Boolean(search || status || recipient);
+  const hasFilters = Boolean(searchInput || search || status || recipient);
   const first = rows.length
     ? (pagination.current - 1) * pagination.pageSize + 1
     : 0;
@@ -154,12 +147,14 @@ export default function AlignedMvpOutboundPage() {
     : 0;
 
   useEffect(() => {
+    const nextSearch = searchInput.trim();
+    if (nextSearch === search) return;
     const timer = window.setTimeout(() => {
-      setSearch(searchInput.trim());
+      setSearch(nextSearch);
       setPage(1);
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [searchInput]);
+  }, [searchInput, search]);
   useEffect(() => {
     const screen = searchParams.get("screen");
     if (!screen || screen === "OUT-01") return;
@@ -185,34 +180,6 @@ export default function AlignedMvpOutboundPage() {
     void queryClient.invalidateQueries({ queryKey: ["mvp-outbound"] });
     void invalidateStockDerived(queryClient);
   };
-  const applyFilters = () => {
-    const nextSearch = searchInput.trim();
-    if (nextSearch === search && page === 1) void listQuery.refetch();
-    setSearch(nextSearch);
-    setPage(1);
-  };
-  const resetFilters = () => {
-    setSearchInput("");
-    setSearch("");
-    setStatus("");
-    setRecipient("");
-    setPage(1);
-    setSortOrder("desc");
-    if (!hasFilters && page === 1 && sortOrder === "desc")
-      void listQuery.refetch();
-  };
-  const requestNumber = (row: OutboundDocumentRecord) =>
-    !row.outboundRequestId ? (
-      <span className="hn-outbound-data-warning" data-tone="error">
-        {t("outbound.list.missingRequest")}
-      </span>
-    ) : (
-      row.requestNo || (
-        <span className="hn-outbound-data-warning">
-          {t("outbound.list.noRequestNo")}
-        </span>
-      )
-    );
   const progress = (row: OutboundDocumentRecord) => {
     if (row.status === "CANCELLED")
       return (
@@ -263,28 +230,13 @@ export default function AlignedMvpOutboundPage() {
     className?: string,
   ) => (
     <SortableTh
-      label={
-        key === "code" || key === "recipientName" ? (
-          <>
-            <span className="hn-outbound-desktop-label">{label}</span>
-            <span className="hn-outbound-compact-label">
-              {key === "code"
-                ? tUi("updatedUi.text_86e6f9d0c5e3")
-                : tUi("updatedUi.text_d10b557b4c80")}
-            </span>
-          </>
-        ) : (
-          label
-        )
-      }
+      label={label}
       tooltipLabel={label}
       sortKey={key}
       className={className}
       sortState={sortState}
       onSort={requestSort}
-      sortType={
-        key === "date" || key === "match" || key === "status" ? "value" : "text"
-      }
+      sortType={key === "match" || key === "status" ? "value" : "text"}
     />
   );
 
@@ -305,9 +257,27 @@ export default function AlignedMvpOutboundPage() {
               {t("outbound.list.intake")}
             </ActionButton>
           ) : null}
+          {activeTab === "documents" ? (
+            <button
+              type="button"
+              className="hn-outbound-overview-toggle"
+              aria-label={
+                overviewExpanded ? tUi("common.collapse") : tUi("common.expand")
+              }
+              aria-expanded={overviewExpanded}
+              aria-controls="hn-outbound-overview"
+              onClick={() => setOverviewExpanded((value) => !value)}
+            >
+              <UiIcon name="angle-small-down" size="sm" />
+            </button>
+          ) : null}
         </div>
       </header>
-      <div className="hn-outbound-content-tabs" role="tablist" aria-label="Xuất kho">
+      <div
+        className="hn-outbound-content-tabs"
+        role="tablist"
+        aria-label="Xuất kho"
+      >
         <button
           type="button"
           role="tab"
@@ -317,7 +287,9 @@ export default function AlignedMvpOutboundPage() {
             next.delete("tab");
             setSearchParams(next);
           }}
-        >{t("nfc.outboundDocumentsTab")}</button>
+        >
+          {t("nfc.outboundDocumentsTab")}
+        </button>
         <button
           type="button"
           role="tab"
@@ -327,337 +299,318 @@ export default function AlignedMvpOutboundPage() {
             next.set("tab", "products");
             setSearchParams(next);
           }}
-        >{t("nfc.outboundProductsTab")}</button>
+        >
+          {t("nfc.outboundProductsTab")}
+        </button>
       </div>
-      {activeTab === "documents" ? <>
-      <OutboundOverview
-        onRefresh={() => {
-          void listQuery.refetch();
-        }}
-      />
-      <section
-        className="hn-outbound-list-card"
-        aria-labelledby="hn-outbound-list-title"
-      >
-        <div className="hn-outbound-list-heading">
-          <h2 id="hn-outbound-list-title">
-            {tUi("updatedUi.text_b6f8caf7b7cc")}{" "}
-            <span>
-              {listQuery.data ? formatQuantity(pagination.total) : EMPTY_TEXT}
-            </span>
-          </h2>
-          <div className="hn-outbound-sort">
-            <UiSelect
-              value={sortOrder}
-              aria-label={t("outbound.list.sortAria")}
-              menuClassName="hn-outbound-menu"
-              options={[
-                { value: "desc", label: tUi("updatedUi.text_83ddf4187c12") },
-                { value: "asc", label: t("outbound.list.sortOldest") },
-              ]}
-              onChange={(value) => {
-                setSortOrder(value === "asc" ? "asc" : "desc");
-                setPage(1);
-              }}
-            />
-          </div>
-        </div>
-        <form
-          className="hn-outbound-filters"
-          onSubmit={(event) => {
-            event.preventDefault();
-            applyFilters();
-          }}
-        >
-          <div className="hn-outbound-filter hn-outbound-search">
-            <label htmlFor="hn-outbound-search">
-              {tUi("reports.packingLabel.searchLabel")}
-            </label>
-            <div className="hn-outbound-search-field">
-              <UiIcon name="search" />
-              <UiTextField
-                id="hn-outbound-search"
-                value={searchInput}
-                placeholder={tUi("updatedUi.text_b87f26abcd90")}
-                fullWidth
-                slotProps={{
-                  htmlInput: { "aria-label": t("outbound.list.searchAria") },
-                }}
-                onChange={(event) => setSearchInput(event.target.value)}
-              />
-              {searchInput ? (
-                <button
-                  type="button"
-                  className="hn-outbound-search-clear"
-                  aria-label={tUi("updatedUi.text_431466c48cf0")}
-                  onClick={() => setSearchInput("")}
-                >
-                  <UiIcon name="cross-small" size="sm" />
-                </button>
-              ) : null}
-            </div>
-          </div>
-          <div className="hn-outbound-filter">
-            <label htmlFor="hn-outbound-status">
-              {tUi("dashboard.composition.colStatus")}
-            </label>
-            <UiSelect
-              id="hn-outbound-status"
-              value={status}
-              fullWidth
-              displayEmpty
-              searchable={false}
-              aria-label={t("outbound.list.statusFilterAria")}
-              menuClassName="hn-outbound-menu"
-              options={[
-                { value: "", label: tUi("dashboard.operations.filterAll") },
-                ...getSTATUS_OPTIONS(),
-              ]}
-              onChange={(value) => {
-                setStatus(value as OutboundStatus | "");
-                setPage(1);
-              }}
-            />
-          </div>
-          <div
-            className="hn-outbound-filter hn-outbound-recipient"
-            onFocusCapture={() => setRecipientOptionsOpen(true)}
-            onPointerDown={() => setRecipientOptionsOpen(true)}
+      {activeTab === "documents" ? (
+        <>
+          <OutboundOverview
+            expanded={overviewExpanded}
+            onRefresh={() => {
+              void listQuery.refetch();
+            }}
+          />
+          <section
+            className="hn-outbound-list-card"
+            aria-label={tUi("updatedUi.text_b6f8caf7b7cc")}
           >
-            <label id="hn-outbound-recipient-label">
-              {tUi("outbound.list.colRecipient")}
-            </label>
-            <UiAutocomplete
-              aria-label={tUi("reports.recipientAgency.recipientAria")}
-              value={recipient || null}
-              placeholder={tUi("dashboard.operations.filterAll")}
-              options={recipientOptions}
-              loading={recipientQuery.isFetching}
-              noOptionsText={
-                recipientQuery.isError
-                  ? tUi("updatedUi.text_db79a7eae981")
-                  : tUi("updatedUi.text_c8299787a419")
-              }
-              onChange={(value) => {
-                setRecipient(value == null ? "" : String(value));
-                setPage(1);
+            <form
+              className="hn-outbound-filters"
+              onSubmit={(event) => {
+                event.preventDefault();
               }}
-            />
-            {recipientQuery.isError ? (
-              <button
-                type="button"
-                className="hn-outbound-recipient-retry"
-                onClick={() => {
-                  void recipientQuery.refetch();
-                }}
-              >
-                {tUi("updatedUi.text_aaf4e361fb1b")}
-              </button>
-            ) : null}
-          </div>
-          <ActionButton
-            kind="filter"
-            type="submit"
-            className="hn-outbound-apply"
-            icon={<></>}
-            disabled={loading}
-          >
-            {tUi("dashboard.snapshot.apply")}
-          </ActionButton>
-          <ActionButton
-            kind="reset"
-            type="button"
-            className="hn-outbound-reset"
-            icon={<></>}
-            onClick={resetFilters}
-          >
-            {tUi("reports.packingLabel.reset")}
-          </ActionButton>
-        </form>
-        {listQuery.isError ? (
-          <div className="hn-outbound-error">
-            <ApiErrorAlert
-              error={listQuery.error}
-              title={t("outbound.list.loadError")}
-              onRetry={() => listQuery.refetch()}
-            />
-          </div>
-        ) : null}
-        <div
-          className={`hn-outbound-table-region${loading ? " is-loading" : ""}`}
-          aria-busy={loading}
-        >
-          {loading ? (
-            <div
-              className="hn-outbound-loading"
-              role="status"
-              {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-table")}
             >
-              {rows.length
-                ? tUi("updatedUi.text_10db055811ab")
-                : tUi("updatedUi.text_811584ce5c49")}
-            </div>
-          ) : null}
-          <table className="hn-outbound-table">
-            <thead>
-              <tr>
-                {sortHeader(
-                  t("outbound.list.colDocument"),
-                  "code",
-                  "hn-outbound-col-code",
-                )}
-                {sortHeader(
-                  t("outbound.list.colRequestNo"),
-                  "request",
-                  "hn-outbound-col-request",
-                )}
-                {sortHeader(
-                  t("outbound.list.colRecipient"),
-                  "recipientName",
-                  "hn-outbound-col-recipient",
-                )}
-                {sortHeader(
-                  t("outbound.list.colCreated"),
-                  "date",
-                  "hn-outbound-col-date",
-                )}
-                {sortHeader(
-                  t("outbound.list.colNote"),
-                  "note",
-                  "hn-outbound-col-note",
-                )}
-                {sortHeader(
-                  t("outbound.list.colReconcile"),
-                  "match",
-                  "hn-outbound-col-match",
-                )}
-                {sortHeader(
-                  t("outbound.list.colStatus"),
-                  "status",
-                  "hn-outbound-col-status",
-                )}
-                <th className="hn-outbound-col-actions">
-                  {tUi("outbound.detail.colAction")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedRows.map((row) => (
-                <tr key={row.id}>
-                  <td className="hn-outbound-code">
-                    <strong>{row.code || EMPTY_TEXT}</strong>
-                  </td>
-                  <td className="hn-outbound-request">{requestNumber(row)}</td>
-                  <td className="hn-outbound-recipient-cell">
-                    {row.recipientName || EMPTY_TEXT}
-                  </td>
-                  <td className="hn-outbound-date">{displayDate(row.date)}</td>
-                  <td className="hn-outbound-note">{row.note || EMPTY_TEXT}</td>
-                  <td className="hn-outbound-match">{progress(row)}</td>
-                  <td className="hn-outbound-status-cell">
-                    <span
-                      className="hn-outbound-status"
-                      data-status={row.status}
+              <div className="hn-outbound-filter hn-outbound-search">
+                <label htmlFor="hn-outbound-search">
+                  {tUi("reports.packingLabel.searchLabel")}
+                </label>
+                <div className="hn-outbound-search-field">
+                  <UiIcon name="search" />
+                  <UiTextField
+                    id="hn-outbound-search"
+                    value={searchInput}
+                    placeholder={tUi("updatedUi.text_b87f26abcd90")}
+                    fullWidth
+                    slotProps={{
+                      htmlInput: {
+                        "aria-label": t("outbound.list.searchAria"),
+                      },
+                    }}
+                    onChange={(event) => setSearchInput(event.target.value)}
+                  />
+                  {searchInput ? (
+                    <button
+                      type="button"
+                      className="hn-outbound-search-clear"
+                      aria-label={tUi("updatedUi.text_431466c48cf0")}
+                      onClick={() => setSearchInput("")}
                     >
-                      {businessLabel(
-                        OUTBOUND_STATUS_LABELS,
-                        row.status,
-                        t("outbound.list.statusUnknown"),
-                      )}
-                    </span>
-                  </td>
-                  <td className="hn-outbound-actions-cell">
-                    {rowActions(row)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!rows.length && !loading ? (
+                      <UiIcon name="cross-small" size="sm" />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <div className="hn-outbound-filter">
+                <label htmlFor="hn-outbound-status">
+                  {tUi("dashboard.composition.colStatus")}
+                </label>
+                <UiSelect
+                  id="hn-outbound-status"
+                  value={status}
+                  fullWidth
+                  displayEmpty
+                  searchable={false}
+                  aria-label={t("outbound.list.statusFilterAria")}
+                  menuClassName="hn-outbound-menu"
+                  options={[
+                    {
+                      value: "",
+                      label: `${tUi("dashboard.composition.colStatus")}: ${tUi("dashboard.operations.filterAll")}`,
+                    },
+                    ...getSTATUS_OPTIONS().map((option) => ({
+                      ...option,
+                      label: `${tUi("dashboard.composition.colStatus")}: ${option.label}`,
+                    })),
+                  ]}
+                  onChange={(value) => {
+                    setStatus(value as OutboundStatus | "");
+                    setPage(1);
+                  }}
+                />
+              </div>
+              <div
+                className="hn-outbound-filter hn-outbound-recipient"
+                onFocusCapture={() => setRecipientOptionsOpen(true)}
+                onPointerDown={() => setRecipientOptionsOpen(true)}
+              >
+                <label id="hn-outbound-recipient-label">
+                  {tUi("outbound.list.colRecipient")}
+                </label>
+                <UiAutocomplete
+                  aria-label={tUi("reports.recipientAgency.recipientAria")}
+                  value={recipient || null}
+                  placeholder={`${tUi("outbound.list.colRecipient")}: ${tUi("dashboard.operations.filterAll")}`}
+                  options={recipientOptions.map((option) => ({
+                    ...option,
+                    label: `${tUi("outbound.list.colRecipient")}: ${option.label}`,
+                  }))}
+                  loading={recipientQuery.isFetching}
+                  noOptionsText={
+                    recipientQuery.isError
+                      ? tUi("updatedUi.text_db79a7eae981")
+                      : tUi("updatedUi.text_c8299787a419")
+                  }
+                  onChange={(value) => {
+                    setRecipient(value == null ? "" : String(value));
+                    setPage(1);
+                  }}
+                />
+                {recipientQuery.isError ? (
+                  <button
+                    type="button"
+                    className="hn-outbound-recipient-retry"
+                    onClick={() => {
+                      void recipientQuery.refetch();
+                    }}
+                  >
+                    {tUi("updatedUi.text_aaf4e361fb1b")}
+                  </button>
+                ) : null}
+              </div>
+              <div className="hn-outbound-sort">
+                <UiSelect
+                  value={sortOrder}
+                  fullWidth
+                  aria-label={t("outbound.list.sortAria")}
+                  menuClassName="hn-outbound-menu"
+                  options={[
+                    {
+                      value: "desc",
+                      label: `${t("outbound.list.sortLabel")}: ${tUi("updatedUi.text_83ddf4187c12")}`,
+                    },
+                    {
+                      value: "asc",
+                      label: `${t("outbound.list.sortLabel")}: ${t("outbound.list.sortOldest")}`,
+                    },
+                  ]}
+                  onChange={(value) => {
+                    setSortOrder(value === "asc" ? "asc" : "desc");
+                    setPage(1);
+                  }}
+                />
+              </div>
+            </form>
+            {listQuery.isError ? (
+              <div className="hn-outbound-error">
+                <ApiErrorAlert
+                  error={listQuery.error}
+                  title={t("outbound.list.loadError")}
+                  onRetry={() => listQuery.refetch()}
+                />
+              </div>
+            ) : null}
             <div
-              className="hn-outbound-empty"
-              role="status"
-              {...(listQuery.isError
-                ? {}
-                : uiStateProps(UI_STATE.EMPTY, "ui-state-empty-table"))}
+              className={`hn-outbound-table-region${loading ? " is-loading" : ""}`}
+              aria-busy={loading}
             >
-              <UiIcon
-                name={listQuery.isError ? "exclamation" : "document"}
-                size="lg"
-              />
-              <strong>
-                {listQuery.isError
-                  ? tUi("updatedUi.text_1761f054f161")
-                  : hasFilters
-                    ? tUi("updatedUi.text_d0a12f6ddeb3")
-                    : t("outbound.list.empty")}
-              </strong>
-              <span>
-                {listQuery.isError
-                  ? tUi("updatedUi.text_a8c4ecd17312")
-                  : hasFilters
-                    ? tUi("updatedUi.text_369f96fc8284")
-                    : tUi("updatedUi.text_d543bd203651")}
-              </span>
-              {hasFilters && !listQuery.isError ? (
-                <ActionButton kind="reset" onClick={resetFilters}>
-                  {tUi("updatedUi.text_49ced19e7f1d")}
-                </ActionButton>
+              {loading ? (
+                <div
+                  className="hn-outbound-loading"
+                  role="status"
+                  {...uiStateProps(UI_STATE.LOADING, "ui-state-loading-table")}
+                >
+                  {rows.length
+                    ? tUi("updatedUi.text_10db055811ab")
+                    : tUi("updatedUi.text_811584ce5c49")}
+                </div>
+              ) : null}
+              <table className="hn-outbound-table">
+                <thead>
+                  <tr>
+                    <th className="hn-outbound-col-index" scope="col">
+                      {t("shared.table.rowNumber")}
+                    </th>
+                    {sortHeader(
+                      t("outbound.list.colDocument"),
+                      "code",
+                      "hn-outbound-col-code",
+                    )}
+                    {sortHeader(
+                      t("outbound.list.colRecipient"),
+                      "recipientName",
+                      "hn-outbound-col-recipient",
+                    )}
+                    {sortHeader(
+                      t("outbound.list.colReconcile"),
+                      "match",
+                      "hn-outbound-col-match",
+                    )}
+                    {sortHeader(
+                      t("outbound.list.colStatus"),
+                      "status",
+                      "hn-outbound-col-status",
+                    )}
+                    <th className="hn-outbound-col-actions">
+                      {tUi("outbound.detail.colAction")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRows.map((row, index) => (
+                    <tr key={row.id}>
+                      <td className="hn-outbound-index">{first + index}</td>
+                      <td className="hn-outbound-code">
+                        <strong>{row.code || EMPTY_TEXT}</strong>
+                      </td>
+                      <td className="hn-outbound-recipient-cell">
+                        {row.recipientName || EMPTY_TEXT}
+                      </td>
+                      <td className="hn-outbound-match">{progress(row)}</td>
+                      <td className="hn-outbound-status-cell">
+                        <span
+                          className="hn-outbound-status"
+                          data-status={row.status}
+                        >
+                          {businessLabel(
+                            OUTBOUND_STATUS_LABELS,
+                            row.status,
+                            t("outbound.list.statusUnknown"),
+                          )}
+                        </span>
+                      </td>
+                      <td className="hn-outbound-actions-cell">
+                        {rowActions(row)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!rows.length && !loading ? (
+                <div
+                  className="hn-outbound-empty"
+                  role="status"
+                  {...(listQuery.isError
+                    ? {}
+                    : uiStateProps(UI_STATE.EMPTY, "ui-state-empty-table"))}
+                >
+                  <UiIcon
+                    name={listQuery.isError ? "exclamation" : "document"}
+                    size="lg"
+                  />
+                  <strong>
+                    {listQuery.isError
+                      ? tUi("updatedUi.text_1761f054f161")
+                      : hasFilters
+                        ? tUi("updatedUi.text_d0a12f6ddeb3")
+                        : t("outbound.list.empty")}
+                  </strong>
+                  <span>
+                    {listQuery.isError
+                      ? tUi("updatedUi.text_a8c4ecd17312")
+                      : hasFilters
+                        ? tUi("updatedUi.text_369f96fc8284")
+                        : tUi("updatedUi.text_d543bd203651")}
+                  </span>
+                </div>
+              ) : null}
+              {!rows.length && loading ? (
+                <div className="hn-outbound-skeleton" aria-hidden="true">
+                  {Array.from({ length: 7 }, (_, index) => (
+                    <div key={index}>
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  ))}
+                </div>
               ) : null}
             </div>
-          ) : null}
-          {!rows.length && loading ? (
-            <div className="hn-outbound-skeleton" aria-hidden="true">
-              {Array.from({ length: 7 }, (_, index) => (
-                <div key={index}>
-                  <span />
-                  <span />
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
-        <footer className="hn-outbound-pagination">
-          <span aria-live="polite">
-            {listQuery.data
-              ? tUi("updatedUi.text_ed9314f2e7c6", {
-                  value0: String(first),
-                  value1: String(last),
-                  value2: String(formatQuantity(pagination.total)),
-                })
-              : loading
-                ? tUi("updatedUi.text_5412ced1c478")
-                : tUi("updatedUi.text_324e2c9b114d")}
-          </span>
-          <div className="hn-outbound-pagination-controls">
-            <UiSelect
-              value={perPage}
-              aria-label={t("outbound.list.pageSizeAria")}
-              menuClassName="hn-outbound-menu"
-              options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
-                value: size,
-                label: `${size} / trang`,
-              }))}
-              onChange={(value) => {
-                setPerPage(Number(value));
-                setPage(1);
-              }}
-            />
-            <UiPagination
-              total={pagination.total}
-              page={pagination.current}
-              pageSize={pagination.pageSize}
-              showTotal={false}
-              disabled={loading}
-              onPageChange={setPage}
-            />
-          </div>
-        </footer>
-      </section>
-      </> : <OutboundNfcProducts onOpenDocument={setDetailId} />}
+            <footer className="hn-outbound-pagination">
+              <div className="hn-outbound-page-info">
+                <span aria-live="polite">
+                  {listQuery.data
+                    ? tUi("updatedUi.text_ed9314f2e7c6", {
+                        value0: String(first),
+                        value1: String(last),
+                        value2: String(formatQuantity(pagination.total)),
+                      })
+                    : loading
+                      ? tUi("updatedUi.text_5412ced1c478")
+                      : tUi("updatedUi.text_324e2c9b114d")}
+                </span>
+                <UiSelect
+                  value={perPage}
+                  aria-label={t("outbound.list.pageSizeAria")}
+                  menuClassName="hn-outbound-menu"
+                  options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
+                    value: size,
+                    label: `${size} / trang`,
+                  }))}
+                  onChange={(value) => {
+                    setPerPage(Number(value));
+                    setPage(1);
+                  }}
+                />
+              </div>
+              <div className="hn-outbound-pagination-controls">
+                <UiPagination
+                  total={pagination.total}
+                  page={pagination.current}
+                  pageSize={pagination.pageSize}
+                  showTotal={false}
+                  disabled={loading}
+                  onPageChange={setPage}
+                />
+              </div>
+            </footer>
+          </section>
+        </>
+      ) : (
+        <OutboundNfcProducts onOpenDocument={setDetailId} />
+      )}
       {intakeOpen ? (
         <OutboundIntakeModal
           open

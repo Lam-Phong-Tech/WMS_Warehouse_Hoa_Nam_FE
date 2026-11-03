@@ -14,6 +14,7 @@ export const MESSAGES_ZH: MessageTree = {
     "outboundSearch": "搜索产品",
     "outboundSearchPlaceholder": "产品编码、SKU 或 NFC UID...",
     "outboundClear": "清除搜索",
+    "outboundShowing": "显示 {from}–{to} / {total} 件产品",
     "outboundNoResults": "没有匹配的产品",
     "outboundEmpty": "暂无产品",
     "outboundDocumentEmptyHelp": "扫描器应用完成匹配后，产品会显示在这里。",

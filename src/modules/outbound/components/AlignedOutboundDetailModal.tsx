@@ -1,8 +1,12 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { useEffect, useMemo, useRef, useState } from "react";
+import dayjs from "dayjs";
 import "./outbound-dialog.css";
+import "./outbound-detail-drawer.css";
+import { CoordinatedLoadingBoundary } from "@/shared/ui/loading/CoordinatedLoadingBoundary";
 import {
   Box,
+  Drawer,
   Grid,
   MenuItem,
   Stack,
@@ -126,6 +130,12 @@ function makeKey(prefix: string): string {
 function short(value?: string | null): string {
   if (!value) return EMPTY_TEXT;
   return value.length > 18 ? `${value.slice(0, 14)}…` : value;
+}
+
+function displayDate(value?: string) {
+  if (!value) return EMPTY_TEXT;
+  const date = dayjs(value);
+  return date.isValid() ? date.format("DD/MM/YYYY HH:mm") : value;
 }
 
 function labelStatus(t: TranslateFn, value?: string | null): string {
@@ -634,65 +644,52 @@ export function AlignedOutboundDetailModal({
     },
   ];
 
+  const renderDrawer = (content: ReactNode) => (
+    <Drawer
+      className="hn-outbound-dialog hn-outbound-detail-drawer"
+      {...dialog.dialogProps}
+      anchor="right"
+      slotProps={{
+        ...dialog.dialogProps.slotProps,
+        paper: { "aria-label": t("outbound.detail.title") },
+      }}
+    >
+      <div className="hn-outbound-detail-drawer__shell">
+        <header className="hn-outbound-detail-drawer__header">
+          <strong>{t("outbound.detail.title")}</strong>
+          <ActionIconButton
+            kind="close"
+            label={t("common.close")}
+            onClick={dialog.close}
+          />
+        </header>
+        <div className="hn-outbound-detail-drawer__body">
+          <CoordinatedLoadingBoundary mode="drawer" active={dialog.open}>
+            {content}
+          </CoordinatedLoadingBoundary>
+        </div>
+      </div>
+    </Drawer>
+  );
+
   if (detailQuery.isLoading) {
-    return (
-      <UiDialog
-        className="hn-outbound-dialog"
-        {...dialog.dialogProps}
-        maxWidth="sm"
-        fullWidth
-        title={t("outbound.detail.title")}
-      >
-        {t("outbound.detail.loading")}
-      </UiDialog>
-    );
+    return renderDrawer(t("outbound.detail.loading"));
   }
 
   if (detailQuery.isError || !detail || !doc) {
-    return (
-      <UiDialog
-        className="hn-outbound-dialog"
-        {...dialog.dialogProps}
-        maxWidth="sm"
-        fullWidth
-        title={t("outbound.detail.title")}
-      >
-        <UiAlert tone="error">
-          {getApiErrorMessage(
-            detailQuery.error,
-            t("outbound.detail.loadError"),
-          )}
-        </UiAlert>
-      </UiDialog>
+    return renderDrawer(
+      <UiAlert tone="error">
+        {getApiErrorMessage(
+          detailQuery.error,
+          t("outbound.detail.loadError"),
+        )}
+      </UiAlert>,
     );
   }
 
   return (
     <>
-      <UiDialog
-        className="hn-outbound-dialog"
-        {...dialog.dialogProps}
-        maxWidth="lg"
-        fullWidth
-        title={
-          <Box
-            component="span"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 1,
-            }}
-          >
-            {t("outbound.detail.title")}
-            <ActionIconButton
-              kind="close"
-              label={t("common.close")}
-              onClick={dialog.close}
-            />
-          </Box>
-        }
-      >
+      {renderDrawer(<>
         <div className="hn-outbound-content-tabs" role="tablist" aria-label={t("outbound.detail.title")}>
           <button type="button" role="tab" aria-selected={detailTab === "overview"} onClick={() => setDetailTab("overview")}>
             {t("nfc.outboundOverviewTab")}
@@ -724,6 +721,30 @@ export function AlignedOutboundDetailModal({
               <DetailField
                 label={t("outbound.detail.fieldScanned")}
                 value={`${totalScanned}/${totalExpected}`}
+              />
+              <DetailField
+                label={t("outbound.list.colRequestNo")}
+                value={
+                  !doc.outboundRequestId ? (
+                    <span className="hn-outbound-data-warning" data-tone="error">
+                      {t("outbound.list.missingRequest")}
+                    </span>
+                  ) : (
+                    doc.requestNo || (
+                      <span className="hn-outbound-data-warning">
+                        {t("outbound.list.noRequestNo")}
+                      </span>
+                    )
+                  )
+                }
+              />
+              <DetailField
+                label={t("outbound.list.colCreated")}
+                value={displayDate(doc.date)}
+              />
+              <DetailField
+                label={t("outbound.list.colNote")}
+                value={doc.note || EMPTY_TEXT}
               />
             </Grid>
           </Box>
@@ -1241,7 +1262,7 @@ export function AlignedOutboundDetailModal({
             ) : null}
           </Stack>
         </UiDialog>
-      </UiDialog>
+      </>)}
 
       <PackingLabelPreviewDialog
         open={labelPreviewOpen}

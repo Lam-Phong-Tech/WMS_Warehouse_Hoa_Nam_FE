@@ -751,15 +751,6 @@
   .hn-war04-header-actions {
     margin-left: auto;
   }
-  .hn-war04-filters {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .hn-war04-search {
-    grid-column: 1 / -1;
-  }
-  .hn-war04-clear-filters {
-    justify-self: start;
-  }
   .hn-war04-desktop,
   .hn-war04-components-col,
   .hn-war04-tracking-col {
@@ -808,6 +799,17 @@
   .hn-war04-overview-stat .hn-war04-overview-value {
     font-size: 24px;
     line-height: 32px;
+  }
+}
+@container hn-war04 (max-width: 1000px) {
+  .hn-war04-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-war04-search {
+    grid-column: 1 / -1;
+  }
+  .hn-war04-clear-filters {
+    justify-self: start;
   }
 }
 @container hn-war04 (max-width: 650px) {

@@ -154,14 +154,25 @@ function renderPage(entry = "/outbound?screen=OUT-01") {
 }
 async function selectOption(label: string, name: string) {
   fireEvent.mouseDown(screen.getByLabelText(label));
-  fireEvent.click(await screen.findByRole("option", { name }));
+  fireEvent.click(
+    await screen.findByRole("option", {
+      name:
+        label === "Lọc trạng thái phiếu xuất"
+          ? `Trạng thái: ${name}`
+          : label === "Sắp xếp danh sách phiếu xuất"
+            ? `Sắp xếp theo: ${name}`
+            : name,
+    }),
+  );
 }
 async function selectRecipient(name: string) {
   const input = screen.getByRole("combobox", { name: "Lọc người nhận" });
   fireEvent.focus(input);
   fireEvent.change(input, { target: { value: name } });
   fireEvent.keyDown(input, { key: "ArrowDown" });
-  fireEvent.click(await screen.findByRole("option", { name }));
+  fireEvent.click(
+    await screen.findByRole("option", { name: `Người nhận: ${name}` }),
+  );
 }
 async function settleInitialSearchTimer() {
   await act(async () => {
@@ -190,18 +201,24 @@ afterEach(() => {
 });
 
 describe("OUT-01 · list controls and filtering", () => {
-  it("keeps sorting tooltips and the sort cycle for responsive visual column labels", async () => {
+  it("keeps sorting tooltips and the sort cycle for visible columns", async () => {
     renderPage();
     await screen.findByText("PX-001");
     const code = screen.getByRole("button", {
       name: "Nhấp để sắp xếp theo Phiếu xuất A → Z",
     });
-    expect(code).toHaveTextContent("Phiếu / Toa");
+    expect(code).toHaveTextContent("Phiếu xuất");
+    expect(code).not.toHaveTextContent("Phiếu / Toa");
     expect(
       screen.getByRole("button", {
         name: "Nhấp để sắp xếp theo Người nhận A → Z",
       }),
-    ).toHaveTextContent("Người nhận / Ngày");
+    ).toHaveTextContent("Người nhận");
+    expect(
+      screen.getByRole("button", {
+        name: "Nhấp để sắp xếp theo Người nhận A → Z",
+      }),
+    ).not.toHaveTextContent("Người nhận / Ngày");
 
     fireEvent.mouseOver(code);
     expect(await screen.findByRole("tooltip")).toHaveTextContent(
@@ -259,44 +276,21 @@ describe("OUT-01 · list controls and filtering", () => {
     );
   });
 
-  it("applies typed search immediately and allows refreshing an unchanged filter", async () => {
-    renderPage();
-    await screen.findByText("PX-001");
-    fireEvent.change(screen.getByRole("textbox", { name: "Tìm phiếu xuất" }), {
-      target: { value: "PX-023" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
-    expect(mocks.fetchOutboundDocuments).toHaveBeenLastCalledWith(
-      expect.objectContaining({ search: "PX-023", page: 1 }),
-    );
-    await screen.findByText("PX-023");
-    const beforeRefresh = mocks.fetchOutboundDocuments.mock.calls.length;
-    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
-    await waitFor(() => {
-      expect(mocks.fetchOutboundDocuments).toHaveBeenCalledTimes(
-        beforeRefresh + 1,
-      );
-    });
-  });
-
-  it("filters status and resets search, status, recipient and server ordering", async () => {
+  it("combines automatic status, recipient, search and ordering filters", async () => {
     renderPage();
     await screen.findByText("PX-001");
     await selectRecipient("Đại lý A");
     await selectOption("Lọc trạng thái phiếu xuất", "Đang quét xuất hàng");
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Áp dụng" })).toBeEnabled();
       expect(dataRows()).toHaveLength(2);
     });
     fireEvent.change(screen.getByRole("textbox", { name: "Tìm phiếu xuất" }), {
       target: { value: "giao gấp" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
     await waitFor(() => {
       expect(mocks.fetchOutboundDocuments).toHaveBeenLastCalledWith(
         expect.objectContaining({ search: "giao gấp", status: "SCANNING" }),
       );
-      expect(screen.getByRole("button", { name: "Áp dụng" })).toBeEnabled();
     });
     await selectOption("Sắp xếp danh sách phiếu xuất", "Cũ nhất");
     await waitFor(() => {
@@ -311,29 +305,11 @@ describe("OUT-01 · list controls and filtering", () => {
           per_page: 100,
         }),
       );
-      expect(screen.getByRole("button", { name: "Áp dụng" })).toBeEnabled();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
-    await screen.findByText("PX-001");
-    expect(screen.getByRole("textbox", { name: "Tìm phiếu xuất" })).toHaveValue(
-      "",
-    );
     expect(
-      screen.getByRole("combobox", { name: "Lọc người nhận" }),
-    ).toHaveValue("");
-    expect(
-      screen.getByLabelText("Lọc trạng thái phiếu xuất"),
-    ).toHaveTextContent("Tất cả");
-    expect(mocks.fetchOutboundDocuments).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        search: undefined,
-        status: undefined,
-        sortOrder: "desc",
-        page: 1,
-        per_page: 10,
-      }),
-    );
+      screen.queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
   });
 
   it("changes server pages and resets to page one when the page size changes", async () => {

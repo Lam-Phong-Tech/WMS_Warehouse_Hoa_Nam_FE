@@ -10,6 +10,7 @@ export const MESSAGES_NFC_VI = {
   outboundSearch: "Tìm sản phẩm",
   outboundSearchPlaceholder: "Mã sản phẩm, SKU hoặc UID NFC...",
   outboundClear: "Xóa tìm kiếm",
+  outboundShowing: "Hiển thị {from}–{to} / {total} sản phẩm",
   outboundNoResults: "Không có sản phẩm phù hợp",
   outboundEmpty: "Chưa có sản phẩm",
   outboundDocumentEmptyHelp: "Sản phẩm đã đối chiếu trên App Scanner sẽ xuất hiện tại đây.",
