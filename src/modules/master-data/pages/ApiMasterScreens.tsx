@@ -2164,17 +2164,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       >
         {confirmDialog}
         <header className="agy-heading">
-          <div>
-            <div className="agy-heading-title">
-              <h1>{tUi("updatedUi.text_7ebd6aabc34b")}</h1>
-              <span className="agy-total">
-                {query.isLoading
-                  ? "—"
-                  : pagination.total.toLocaleString("vi-VN")}
-              </span>
-            </div>
-            <p>{tUi("updatedUi.text_c1caac816fec")}</p>
-          </div>
+          <h1>{tUi("updatedUi.text_7ebd6aabc34b")}</h1>
           {canManage ? (
             <ActionButton kind="create" onClick={openCreate}>
               {t("masterData.recipient.create")}
