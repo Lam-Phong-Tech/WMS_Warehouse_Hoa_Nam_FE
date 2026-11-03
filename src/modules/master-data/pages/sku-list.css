@@ -455,7 +455,7 @@
   padding-inline: 12px;
 }
 .hn-sku-screen table.sku-table th {
-  background: color-mix(in srgb, var(--sku-link) 16%, var(--sku-surface));
+  background: #d2edf7;
   color: var(--sku-muted);
   font-size: 16px;
   line-height: 24px;
