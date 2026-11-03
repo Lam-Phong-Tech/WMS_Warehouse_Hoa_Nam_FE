@@ -1005,51 +1005,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             />
           </div>
         </section>
-        {hasFilters ? (
-          <div
-            className="hn-sku-filter-chips"
-            aria-label={copy("Bộ lọc đang áp dụng", "Applied filters")}
-          >
-            {[
-              { value: keyword, label: keyword, clear: () => setKeyword("") },
-              {
-                value: type,
-                label: skuTypeLabel(type, t),
-                clear: () => setType(""),
-              },
-              {
-                value: brandId,
-                label: refLabel(brandIndex, brandId),
-                clear: () => setBrandId(""),
-              },
-              {
-                value: status,
-                label: masterStatusLabel(status, t),
-                clear: () => setStatus(""),
-              },
-              {
-                value: pendingInfoOnly,
-                label: t("masterData.sku.pendingInfo"),
-                clear: () => setPendingInfoOnly(false),
-              },
-            ]
-              .filter((filter) => Boolean(filter.value))
-              .map((filter, index) => (
-                <button
-                  type="button"
-                  key={index}
-                  onClick={() => {
-                    filter.clear();
-                    setPage(1);
-                  }}
-                  aria-label={`${copy("Xóa bộ lọc", "Remove filter")}: ${filter.label}`}
-                >
-                  <span>{filter.label}</span>
-                  <span aria-hidden="true">×</span>
-                </button>
-              ))}
-          </div>
-        ) : null}
         <SkuListMutationNotice
           notice={mutationNotice}
           onDismiss={() => setMutationNotice(null)}

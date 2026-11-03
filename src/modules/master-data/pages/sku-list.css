@@ -898,36 +898,6 @@
   background: var(--sku-pale);
 }
 
-.hn-sku-filter-chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.hn-sku-filter-chips:empty {
-  display: none;
-}
-.hn-sku-filter-chips button {
-  display: inline-flex;
-  gap: 10px;
-  align-items: center;
-  max-width: 100%;
-  border: 1px solid var(--sku-line);
-  background: var(--sku-pale);
-  color: var(--sku-ink);
-  border-radius: 20px;
-  padding: 4px 12px;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-.hn-sku-filter-chips button span:first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.hn-sku-filter-chips button:hover {
-  border-color: var(--sku-link);
-}
 .hn-sku-screen table.sku-table td[colspan] {
   padding: 0;
   white-space: normal;
@@ -1089,7 +1059,6 @@ body:has(.hn-sku-form-drawer)
   line-height: 22px;
 }
 .hn-sku-screen[data-list-state="unavailable"] > .hn-sku-panel,
-.hn-sku-screen[data-list-state="unavailable"] > .hn-sku-filter-chips,
 .hn-sku-screen[data-list-state="unavailable"] .hn-sku-header-actions,
 .hn-sku-screen[data-list-state="unavailable"] .hn-sku-pagination,
 .hn-sku-screen[data-list-state="unavailable"] .sku-table thead {

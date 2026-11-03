@@ -136,7 +136,7 @@ describe("API-backed MVP master screens", () => {
     expect(overview).not.toBeVisible();
     fireEvent.change(search, { target: { value: "Máy khoan" } });
     expect(
-      screen.getByRole("button", { name: "Xóa bộ lọc: Máy khoan" }),
+      screen.getByRole("button", { name: "Xóa lọc" }),
     ).toBeInTheDocument();
     fireEvent.click(overviewToggle);
     expect(overviewToggle).toHaveAttribute("aria-expanded", "true");
@@ -203,9 +203,7 @@ describe("API-backed MVP master screens", () => {
     fireEvent.click(pending);
     expect(pending).toBeChecked();
     expect(
-      screen.getByRole("button", {
-        name: "Xóa bộ lọc: SKU chờ điền thông tin",
-      }),
+      screen.getByRole("button", { name: "Xóa lọc" }),
     ).toBeInTheDocument();
     fireEvent.click(pending);
     expect(pending).not.toBeChecked();
