@@ -77,7 +77,9 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
     fireEvent.mouseDown(
       screen.getByLabelText("Lọc phiếu theo tình trạng thông tin SKU"),
     );
-    fireEvent.click(await screen.findByText("Chờ bổ sung thông tin"));
+    fireEvent.click(
+      await screen.findByRole("option", { name: /Chờ bổ sung thông tin$/ }),
+    );
 
     await waitFor(() => {
       expect(useInboundDocuments).toHaveBeenCalledWith(
