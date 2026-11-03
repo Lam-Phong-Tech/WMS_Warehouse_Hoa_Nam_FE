@@ -110,6 +110,31 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
   min-width: 0;
 }
 
+.hn-catalog-tabs-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  padding: 0;
+  border: 1px solid var(--catalog-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--catalog-pale);
+  color: var(--catalog-ink);
+  cursor: pointer;
+}
+
+.hn-catalog-tabs-toggle:hover,
+.hn-catalog-tabs-toggle[aria-expanded="true"] {
+  background: var(--catalog-surface);
+  color: var(--catalog-link);
+}
+
+.hn-catalog-tabs-toggle > i {
+  font-size: 18px;
+  line-height: 1;
+}
+
 .hn-catalog-screen .MuiButton-root:not(.hn-row-action),
 .hn-catalog-dialog .MuiButton-root:not(.hn-row-action) {
   min-height: var(--ops-control-height);
@@ -179,6 +204,18 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
 .hn-catalog-tabs {
   padding-inline: 12px;
   overflow: hidden;
+}
+
+.hn-catalog-tabs-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--ops-control-height);
+  padding-inline: 18px;
+  color: var(--catalog-link);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
 }
 
 .hn-catalog-tabs .MuiTabs-root {

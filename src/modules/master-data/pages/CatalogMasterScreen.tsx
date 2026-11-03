@@ -199,6 +199,7 @@ export function CatalogMasterScreen() {
   const canManage = useCan(P.CATALOG_MANAGE);
 
   const [activeKind, setActiveKind] = useState<CatalogMasterKind>("BRAND");
+  const [tabsOpen, setTabsOpen] = useState(true);
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<MasterStatus | "">("");
@@ -589,6 +590,17 @@ export function CatalogMasterScreen() {
           <h1>{text("Danh mục sản phẩm", "Product catalog")}</h1>
         </div>
         <div className="hn-catalog-header-actions">
+          <button
+            type="button"
+            className="hn-catalog-tabs-toggle"
+            aria-label={text("Hiện/ẩn nhóm danh mục", "Show or hide catalog groups")}
+            title={text("Hiện/ẩn nhóm danh mục", "Show or hide catalog groups")}
+            aria-expanded={tabsOpen}
+            aria-controls="hn-catalog-tabs"
+            onClick={() => setTabsOpen((open) => !open)}
+          >
+            <AppstoreOutlined aria-hidden="true" />
+          </button>
           {canManage ? (
             <ActionButton
               className="hn-catalog-primary"
@@ -605,24 +617,31 @@ export function CatalogMasterScreen() {
         </div>
       </header>
 
-      <div className="hn-catalog-tabs">
-        <UiTabs
-          value={activeKind}
-          onChange={(key) => changeTab(key as CatalogMasterKind)}
-          aria-label={t("masterData.catalog.typeAria")}
-          items={tabs.map((tab) => ({
-            key: tab.kind,
-            label: (
-              <Box
-                component="span"
-                sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
-              >
-                {tab.icon}
-                {tab.label}
-              </Box>
-            ),
-          }))}
-        />
+      <div className="hn-catalog-tabs" id="hn-catalog-tabs">
+        {tabsOpen ? (
+          <UiTabs
+            value={activeKind}
+            onChange={(key) => changeTab(key as CatalogMasterKind)}
+            aria-label={t("masterData.catalog.typeAria")}
+            items={tabs.map((tab) => ({
+              key: tab.kind,
+              label: (
+                <Box
+                  component="span"
+                  sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </Box>
+              ),
+            }))}
+          />
+        ) : (
+          <div className="hn-catalog-tabs-summary">
+            {activeTab.icon}
+            <span>{activeTab.label}</span>
+          </div>
+        )}
       </div>
 
       {(!blockingError || hasFilters) && (
