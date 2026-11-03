@@ -2763,9 +2763,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const recoverySession = useRef(0);
   const verificationRequest = useRef(0);
   const defectFormRef = useRef<HTMLFormElement>(null);
-  const warehouseName = useAuthStore(
-    (state) => state.currentContext?.warehouse_name,
-  );
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
     window.addEventListener("online", update);
@@ -3131,16 +3128,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </p>
         </div>
         <div className="hn-defect-header-actions">
-          <div className="hn-defect-warehouse">
-            <DefectSymbol name="warehouse" />
-            <div>
-              <strong>{warehouseName || "Kho Hoa Nam"}</strong>
-              <span>
-                <i />
-                {copy("Đang hoạt động", "Active")}
-              </span>
-            </div>
-          </div>
           {canManage && (
             <ActionButton
               kind="create"
