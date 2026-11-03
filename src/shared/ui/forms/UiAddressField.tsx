@@ -289,7 +289,13 @@ export function UiAddressField({
             )}
           />
         </Grid>
-        <Grid size={wardCol}>
+        <Grid
+          size={wardCol}
+          sx={{
+            opacity: wardDisabled ? 0.5 : 1,
+            transition: "opacity 160ms ease",
+          }}
+        >
           <Autocomplete
             id={`${baseId}-ward`}
             size="small"
