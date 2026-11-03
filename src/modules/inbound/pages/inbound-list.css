@@ -438,25 +438,19 @@
   border-bottom: 1px solid var(--in-line);
 }
 .hn-inbound-table .hn-inbound-col-code {
-  width: 14%;
+  width: 20%;
 }
 .hn-inbound-table .hn-inbound-col-source {
-  width: 22%;
+  width: 25%;
 }
 .hn-inbound-table .hn-inbound-col-progress {
-  width: 14%;
-}
-.hn-inbound-table .hn-inbound-col-creator {
-  width: 12%;
+  width: 18%;
 }
 .hn-inbound-table .hn-inbound-col-status {
-  width: 14%;
-}
-.hn-inbound-table .hn-inbound-col-date {
-  width: 10%;
+  width: 18%;
 }
 .hn-inbound-table .hn-inbound-col-actions {
-  width: 14%;
+  width: 13%;
 }
 .hn-inbound-table .hn-sortable-th {
   gap: 4px;
@@ -506,17 +500,6 @@
 }
 .hn-inbound-list .hn-inbound-compact {
   display: none;
-}
-.hn-inbound-secondary,
-.hn-inbound-date small {
-  color: var(--in-muted);
-  font-size: 14px;
-}
-.hn-inbound-date {
-  font-variant-numeric: tabular-nums;
-}
-.hn-inbound-date > :is(span, small) {
-  display: block;
 }
 .hn-inbound-status-stack {
   display: flex;
@@ -1021,7 +1004,7 @@
   scrollbar-width: thin;
 }
 .hn-inbound-list table.hn-inbound-table {
-  min-width: 1000px;
+  min-width: 850px;
   color: var(--in-text);
 }
 .hn-inbound-list .hn-inbound-table :is(th, td) {
@@ -1084,13 +1067,11 @@
   gap: 4px;
 }
 .hn-inbound-table .hn-inbound-col-index { width: 6%; }
-.hn-inbound-table .hn-inbound-col-code { width: 17%; }
-.hn-inbound-table .hn-inbound-col-source { width: 20%; }
-.hn-inbound-table .hn-inbound-col-progress { width: 14%; }
-.hn-inbound-table .hn-inbound-col-creator { width: 11%; }
-.hn-inbound-table .hn-inbound-col-status { width: 13%; }
-.hn-inbound-table .hn-inbound-col-date { width: 10%; }
-.hn-inbound-table .hn-inbound-col-actions { width: 9%; }
+.hn-inbound-table .hn-inbound-col-code { width: 20%; }
+.hn-inbound-table .hn-inbound-col-source { width: 25%; }
+.hn-inbound-table .hn-inbound-col-progress { width: 18%; }
+.hn-inbound-table .hn-inbound-col-status { width: 18%; }
+.hn-inbound-table .hn-inbound-col-actions { width: 13%; }
 .hn-inbound-list .hn-inbound-table th .hn-sortable-th {
   font: inherit;
   font-weight: inherit;

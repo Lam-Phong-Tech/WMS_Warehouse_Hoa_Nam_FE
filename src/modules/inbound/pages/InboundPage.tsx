@@ -55,9 +55,7 @@ const SORT_ACCESSORS = {
   code: (row: InboundDocument) => row.code,
   source: (row: InboundDocument) => row.source,
   scanned: (row: InboundDocument) => row.scanned,
-  createdBy: (row: InboundDocument) => row.createdBy,
   status: (row: InboundDocument) => row.status,
-  updatedAt: (row: InboundDocument) => row.updatedAt ?? row.date,
 };
 
 function displayValue(value?: string) {
@@ -251,7 +249,7 @@ function InboundListScreen() {
       sortState={sortState}
       onSort={requestSort}
       className={className}
-      sortType={key === "scanned" || key === "updatedAt" ? "value" : "text"}
+      sortType={key === "scanned" ? "value" : "text"}
     />
   );
   const first = rows.length ? (currentPage - 1) * perPage + 1 : 0;
@@ -446,19 +444,9 @@ function InboundListScreen() {
                   "hn-inbound-desktop hn-inbound-col-progress",
                 )}
                 {sortHeader(
-                  tUi("reverse.detail.fieldCreatedBy"),
-                  "createdBy",
-                  "hn-inbound-desktop hn-inbound-col-creator",
-                )}
-                {sortHeader(
                   tUi("dashboard.composition.colStatus"),
                   "status",
                   "hn-inbound-col-status",
-                )}
-                {sortHeader(
-                  tUi("updatedUi.text_5293d03c5908"),
-                  "updatedAt",
-                  "hn-inbound-desktop hn-inbound-col-date",
                 )}
                 <th
                   className="hn-inbound-col-actions"
@@ -489,29 +477,11 @@ function InboundListScreen() {
                       {displayValue(row.source)}
                     </span>
                     <span className="hn-inbound-compact">{progress(row)}</span>
-                    <span className="hn-inbound-compact hn-inbound-secondary">
-                      {displayValue(row.createdBy)} ·{" "}
-                      {displayDate(row.updatedAt ?? row.date)}
-                    </span>
                   </td>
                   <td className="hn-inbound-desktop hn-inbound-progress-cell">
                     {progress(row)}
                   </td>
-                  <td
-                    className="hn-inbound-desktop hn-inbound-creator"
-                    title={displayValue(row.createdBy)}
-                  >
-                    {displayValue(row.createdBy)}
-                  </td>
                   <td className="hn-inbound-status-cell">{statusBadge(row)}</td>
-                  <td className="hn-inbound-desktop hn-inbound-date">
-                    <span>
-                      {displayDate(row.updatedAt ?? row.date, "DD/MM/YYYY")}
-                    </span>
-                    <small>
-                      {displayDate(row.updatedAt ?? row.date, "HH:mm")}
-                    </small>
-                  </td>
                   <td className="hn-inbound-actions-cell">{rowActions(row)}</td>
                 </tr>
               ))}

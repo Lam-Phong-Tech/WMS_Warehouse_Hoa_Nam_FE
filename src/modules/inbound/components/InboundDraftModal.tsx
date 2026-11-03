@@ -359,6 +359,17 @@ export function InboundDraftModal({
         </Box>
       ) : null}
 
+      {detail ? (
+        <Box sx={{ mb: 2, typography: "body2" }}>
+          <Box component="span" sx={{ color: "text.secondary", mr: 1 }}>
+            {t("reverse.detail.fieldCreatedBy")}:
+          </Box>
+          {detail.document.createdBy === "-"
+            ? "—"
+            : detail.document.createdBy}
+        </Box>
+      ) : null}
+
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, sm: 6 }}>
           <UiFormField

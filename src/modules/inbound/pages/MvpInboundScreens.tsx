@@ -1271,6 +1271,18 @@ export function InboundScanModal({
                       {scanVersion ?? detail.document.version}
                     </Box>
                   </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Box
+                      sx={{ typography: "caption", color: "text.secondary" }}
+                    >
+                      {t("reverse.detail.fieldCreatedBy")}
+                    </Box>
+                    <Box sx={{ typography: "body2" }}>
+                      {detail.document.createdBy === "-"
+                        ? EMPTY_TEXT
+                        : detail.document.createdBy}
+                    </Box>
+                  </Grid>
                 </Grid>
               </Box>
 
