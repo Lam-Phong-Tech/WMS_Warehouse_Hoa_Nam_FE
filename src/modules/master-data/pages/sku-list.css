@@ -516,22 +516,22 @@
   text-transform: uppercase;
 }
 .hn-sku-screen table.sku-table th:nth-child(1) {
-  width: 64px;
+  width: 6%;
 }
 .hn-sku-screen table.sku-table th:nth-child(2) {
-  width: 31%;
+  width: 41%;
 }
 .hn-sku-screen table.sku-table th:nth-child(3) {
-  width: 11%;
+  width: 10%;
 }
 .hn-sku-screen table.sku-table th:nth-child(4) {
-  width: 17%;
+  width: 20%;
 }
 .hn-sku-screen table.sku-table th:nth-child(5) {
-  width: 13%;
+  width: 16%;
 }
 .hn-sku-screen table.sku-table th:nth-child(6) {
-  width: 80px;
+  width: 7%;
 }
 .hn-sku-screen table.sku-table th button {
   color: inherit;
@@ -609,7 +609,7 @@
   font-size: 12px;
 }
 .hn-sku-screen table.sku-table .stt-col {
-  width: 38px;
+  width: 6%;
 }
 .hn-sku-screen table.sku-table td.stt-col {
   font-weight: 500;
