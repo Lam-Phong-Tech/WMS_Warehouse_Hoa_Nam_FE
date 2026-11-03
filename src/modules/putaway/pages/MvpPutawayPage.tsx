@@ -56,6 +56,8 @@ import {
   type PutawayTask,
 } from "@/modules/putaway/services/putawayService";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import { Drawer } from "@/shared/ui/primitives-mui";
+import { CoordinatedLoadingBoundary } from "@/shared/ui/loading/CoordinatedLoadingBoundary";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 
@@ -565,6 +567,28 @@ export default function MvpPutawayPage() {
           aria-controls="ptw-tabs"
           onClick={() => setTabsOpen((open) => !open)}
         >
+          {!tabsOpen ? (
+            <span className="ptw-tabs-current">
+              <UiIcon
+                name={
+                  activeTab === "pending"
+                    ? "cube"
+                    : activeTab === "orders"
+                      ? "list"
+                      : "time-past"
+                }
+              />
+              <span>
+                {t(
+                  activeTab === "pending"
+                    ? "putaway.queue.pendingTab"
+                    : activeTab === "orders"
+                      ? "putaway.queue.ordersTab"
+                      : "putaway.queue.historyTab",
+                )}
+              </span>
+            </span>
+          ) : null}
           <UiIcon name="angle-small-down" size="sm" />
         </button>
       </header>
@@ -683,29 +707,25 @@ export default function MvpPutawayPage() {
       )}
 
       <>
-        <UiDialog
-          className="ptw-dialog"
+        <Drawer
+          className="ptw-create-drawer"
+          anchor="right"
           open={Boolean(selected)}
           onClose={guardBackdropClose(closePutaway)}
-          maxWidth="md"
-          fullWidth
-          title={
-            <Stack
-              direction="row"
-              sx={{
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 1,
-              }}
-            >
-              <span>
+          slotProps={{
+            paper: { role: "dialog", "aria-labelledby": "ptw-create-title" },
+          }}
+        >
+          <div className="ptw-drawer-shell">
+            <header className="ptw-drawer-header">
+              <h2 id="ptw-create-title">
                 {selected
                   ? t("putaway.page.dialogTitleWithBox", {
                       code: selected.box_code,
                     })
                   : t("putaway.page.dialogTitle")}
-              </span>
-              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              </h2>
+              <div className="ptw-drawer-actions">
                 <ActionButton
                   kind="create"
                   onClick={() => void createDraft()}
@@ -725,176 +745,192 @@ export default function MvpPutawayPage() {
                   label={t("common.close")}
                   onClick={closePutaway}
                 />
-              </Stack>
-            </Stack>
-          }
-        >
-          <>
-            {selected ? (
-              <Box
-                sx={{
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: "var(--ops-radius-card)",
-                  p: 1.5,
-                  mb: 2,
-                }}
-              >
-                <Grid container spacing={2} sx={{ alignItems: "flex-start" }}>
-                  <PutawayDetailField
-                    label={t("putaway.page.colBox")}
-                    value={selected.box_code}
-                    size={{ xs: 6, sm: 3 }}
-                  />
-                  <PutawayDetailField
-                    label={t("putaway.page.colSku")}
-                    value={<SkuLink code={selected.sku_code} />}
-                    size={{ xs: 6, sm: 3 }}
-                  />
-                  <PutawayDetailField
-                    label={t("putaway.page.colQuantity")}
-                    value={selected.quantity}
-                    size={{ xs: 6, sm: 3 }}
-                  />
-                  <PutawayDetailField
-                    label={t("putaway.page.fieldReceipt")}
-                    value={selected.receipt_code || EMPTY_TEXT}
-                    size={{ xs: 6, sm: 3 }}
-                  />
-                  <Grid size={{ xs: 12, sm: 3 }}>
-                    <Box
-                      sx={{ typography: "caption", color: "text.secondary" }}
-                    >
-                      {t("putaway.page.fieldStatus")}
-                    </Box>
-                    <UiStatusBadge
-                      label={boxStatusLabel(t, selected.status)}
-                      tone={boxStatusChipColor(selected.status)}
-                      sx={{ mt: 0.25 }}
-                    />
-                  </Grid>
-                </Grid>
-              </Box>
-            ) : null}
-
-            <Box sx={{ mb: 2 }}>
-              <UiAlert tone="warning" title={t("putaway.page.draftAlertTitle")}>
-                {t("putaway.page.draftAlertBody")}
-              </UiAlert>
-            </Box>
-
-            {traysQuery.error ? (
-              <div className="ptw-error">
-                <ApiErrorAlert
-                  error={traysQuery.error}
-                  fallback={t("putaway.page.loadFailed")}
-                />
-                <button
-                  type="button"
-                  className="ptw-row-action"
-                  disabled={traysQuery.isFetching}
-                  onClick={() => {
-                    void traysQuery.refetch();
-                  }}
-                >
-                  {t("common.retry")}
-                </button>
               </div>
-            ) : null}
-            <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-              {t("putaway.page.chooseTrayTitle")}
-            </Box>
-            <Stack spacing={1.5} sx={{ mb: 2 }}>
-              <Box>
-                <Box sx={{ typography: "body2", fontWeight: 600, mb: 1 }}>
-                  {t("putaway.page.scanTrayLabel")}
-                </Box>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: "flex-start" }}
-                >
-                  <Box sx={{ flex: 1 }}>
-                    <ScanInput
-                      value={trayScanValue}
-                      placeholder={t("putaway.page.scanTrayPlaceholder")}
-                      error={trayScanError}
-                      disabled={!canManage || traysQuery.isLoading}
-                      onChange={(value) => {
-                        setTrayScanValue(value);
-                        if (trayScanError) setTrayScanError(null);
+            </header>
+            <div className="ptw-drawer-body">
+              <CoordinatedLoadingBoundary
+                mode="drawer"
+                active={Boolean(selected)}
+              >
+                <>
+                  {selected ? (
+                    <Box
+                      sx={{
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: "var(--ops-radius-card)",
+                        p: 1.5,
+                        mb: 2,
                       }}
-                      onScan={applyTrayScan}
-                    />
+                    >
+                      <Grid
+                        container
+                        spacing={2}
+                        sx={{ alignItems: "flex-start" }}
+                      >
+                        <PutawayDetailField
+                          label={t("putaway.page.colBox")}
+                          value={selected.box_code}
+                          size={{ xs: 6, sm: 3 }}
+                        />
+                        <PutawayDetailField
+                          label={t("putaway.page.colSku")}
+                          value={<SkuLink code={selected.sku_code} />}
+                          size={{ xs: 6, sm: 3 }}
+                        />
+                        <PutawayDetailField
+                          label={t("putaway.page.colQuantity")}
+                          value={selected.quantity}
+                          size={{ xs: 6, sm: 3 }}
+                        />
+                        <PutawayDetailField
+                          label={t("putaway.page.fieldReceipt")}
+                          value={selected.receipt_code || EMPTY_TEXT}
+                          size={{ xs: 6, sm: 3 }}
+                        />
+                        <Grid size={{ xs: 12, sm: 3 }}>
+                          <Box
+                            sx={{
+                              typography: "caption",
+                              color: "text.secondary",
+                            }}
+                          >
+                            {t("putaway.page.fieldStatus")}
+                          </Box>
+                          <UiStatusBadge
+                            label={boxStatusLabel(t, selected.status)}
+                            tone={boxStatusChipColor(selected.status)}
+                            sx={{ mt: 0.25 }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  ) : null}
+
+                  <Box sx={{ mb: 2 }}>
+                    <UiAlert
+                      tone="warning"
+                      title={t("putaway.page.draftAlertTitle")}
+                    >
+                      {t("putaway.page.draftAlertBody")}
+                    </UiAlert>
                   </Box>
-                </Stack>
-                <Box
-                  sx={{
-                    typography: "caption",
-                    color: "text.secondary",
-                    mt: 0.5,
-                  }}
-                >
-                  {t("putaway.page.scanTrayHint")}
-                </Box>
-              </Box>
 
-              <Box>
-                <Box sx={{ typography: "body2", fontWeight: 600, mb: 1 }}>
-                  {t("putaway.page.orPickOnGrid")}
-                </Box>
-                <TraySelectionGrid
-                  trays={trays}
-                  selectedTrayId={putawayForm.to_tray_id}
-                  pendingQuantity={selected?.quantity}
-                  onSelect={(tray) => {
-                    setPutawayForm((current) => ({
-                      ...current,
-                      to_tray_id: tray.container_id,
-                    }));
-                    setTrayScanError(null);
-                  }}
-                  loading={traysQuery.isLoading}
-                  disabled={!canManage}
-                  onRefresh={() => void traysQuery.refetch()}
-                />
-              </Box>
-            </Stack>
+                  {traysQuery.error ? (
+                    <div className="ptw-error">
+                      <ApiErrorAlert
+                        error={traysQuery.error}
+                        fallback={t("putaway.page.loadFailed")}
+                      />
+                      <button
+                        type="button"
+                        className="ptw-row-action"
+                        disabled={traysQuery.isFetching}
+                        onClick={() => {
+                          void traysQuery.refetch();
+                        }}
+                      >
+                        {t("common.retry")}
+                      </button>
+                    </div>
+                  ) : null}
+                  <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
+                    {t("putaway.page.chooseTrayTitle")}
+                  </Box>
+                  <Stack spacing={1.5} sx={{ mb: 2 }}>
+                    <Box>
+                      <Box sx={{ typography: "body2", fontWeight: 600, mb: 1 }}>
+                        {t("putaway.page.scanTrayLabel")}
+                      </Box>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: "flex-start" }}
+                      >
+                        <Box sx={{ flex: 1 }}>
+                          <ScanInput
+                            value={trayScanValue}
+                            placeholder={t("putaway.page.scanTrayPlaceholder")}
+                            error={trayScanError}
+                            disabled={!canManage || traysQuery.isLoading}
+                            onChange={(value) => {
+                              setTrayScanValue(value);
+                              if (trayScanError) setTrayScanError(null);
+                            }}
+                            onScan={applyTrayScan}
+                          />
+                        </Box>
+                      </Stack>
+                      <Box
+                        sx={{
+                          typography: "caption",
+                          color: "text.secondary",
+                          mt: 0.5,
+                        }}
+                      >
+                        {t("putaway.page.scanTrayHint")}
+                      </Box>
+                    </Box>
 
-            <Stack spacing={2}>
-              <UiTextField
-                label={t("putaway.page.locationHintLabel")}
-                fullWidth
-                value={putawayForm.location_hint ?? ""}
-                onChange={(event) =>
-                  setPutawayForm((current) => ({
-                    ...current,
-                    location_hint: event.target.value,
-                  }))
-                }
-                disabled={!canManage}
-                slotProps={{ htmlInput: { maxLength: 255 } }}
-                placeholder={t("putaway.page.locationHintPlaceholder")}
-              />
-              <UiTextField
-                label={t("putaway.page.noteLabel")}
-                fullWidth
-                multiline
-                minRows={3}
-                value={putawayForm.note ?? ""}
-                onChange={(event) =>
-                  setPutawayForm((current) => ({
-                    ...current,
-                    note: event.target.value,
-                  }))
-                }
-                disabled={!canManage}
-                helperText={`${(putawayForm.note ?? "").length}/2000`}
-                slotProps={{ htmlInput: { maxLength: 2000 } }}
-              />
-            </Stack>
-          </>
-        </UiDialog>
+                    <Box>
+                      <Box sx={{ typography: "body2", fontWeight: 600, mb: 1 }}>
+                        {t("putaway.page.orPickOnGrid")}
+                      </Box>
+                      <TraySelectionGrid
+                        trays={trays}
+                        selectedTrayId={putawayForm.to_tray_id}
+                        pendingQuantity={selected?.quantity}
+                        onSelect={(tray) => {
+                          setPutawayForm((current) => ({
+                            ...current,
+                            to_tray_id: tray.container_id,
+                          }));
+                          setTrayScanError(null);
+                        }}
+                        loading={traysQuery.isLoading}
+                        disabled={!canManage}
+                        onRefresh={() => void traysQuery.refetch()}
+                      />
+                    </Box>
+                  </Stack>
+
+                  <Stack spacing={2}>
+                    <UiTextField
+                      label={t("putaway.page.locationHintLabel")}
+                      fullWidth
+                      value={putawayForm.location_hint ?? ""}
+                      onChange={(event) =>
+                        setPutawayForm((current) => ({
+                          ...current,
+                          location_hint: event.target.value,
+                        }))
+                      }
+                      disabled={!canManage}
+                      slotProps={{ htmlInput: { maxLength: 255 } }}
+                      placeholder={t("putaway.page.locationHintPlaceholder")}
+                    />
+                    <UiTextField
+                      label={t("putaway.page.noteLabel")}
+                      fullWidth
+                      multiline
+                      minRows={3}
+                      value={putawayForm.note ?? ""}
+                      onChange={(event) =>
+                        setPutawayForm((current) => ({
+                          ...current,
+                          note: event.target.value,
+                        }))
+                      }
+                      disabled={!canManage}
+                      helperText={`${(putawayForm.note ?? "").length}/2000`}
+                      slotProps={{ htmlInput: { maxLength: 2000 } }}
+                    />
+                  </Stack>
+                </>
+              </CoordinatedLoadingBoundary>
+            </div>
+          </div>
+        </Drawer>
 
         <UiDialog
           className="ptw-dialog"

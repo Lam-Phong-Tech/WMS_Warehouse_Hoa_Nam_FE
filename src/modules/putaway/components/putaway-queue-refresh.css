@@ -1,0 +1,281 @@
+/* PTW-00 filters and tables follow the MST-01 list rhythm. */
+.hn-putaway-page form.ptw-filters {
+  grid-template-columns:
+    minmax(260px, 2fr) minmax(220px, 1fr) minmax(220px, 1fr)
+    auto;
+  grid-template-areas: "search status receipt actions";
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.hn-putaway-page .ptw-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  margin: 0;
+}
+.hn-putaway-page form.ptw-filters .ptw-search-control,
+.hn-putaway-page form.ptw-filters :is(.ptw-status-filter, .ptw-receipt-filter) {
+  min-height: 48px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+}
+.hn-putaway-page form.ptw-filters .ptw-search-control {
+  height: 48px;
+}
+.hn-putaway-page form.ptw-filters .ptw-search-control:focus-within,
+.hn-putaway-page
+  form.ptw-filters
+  :is(.ptw-status-filter, .ptw-receipt-filter):focus-within {
+  border-color: var(--ops-link);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+.hn-putaway-page form.ptw-filters :is(.ptw-status-filter, .ptw-receipt-filter) {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-left: 12px;
+}
+.hn-putaway-page form.ptw-filters .ptw-inline-label {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--ops-muted);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.hn-putaway-page
+  form.ptw-filters
+  :is(.ptw-status-filter, .ptw-receipt-filter)
+  .MuiFormControl-root {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+.hn-putaway-page
+  form.ptw-filters
+  :is(.ptw-status-filter, .ptw-receipt-filter)
+  .MuiInputBase-root {
+  min-height: 46px;
+  color: var(--ops-text);
+  background: transparent;
+  box-shadow: none;
+}
+.hn-putaway-page
+  form.ptw-filters
+  :is(.ptw-status-filter, .ptw-receipt-filter)
+  .MuiOutlinedInput-notchedOutline {
+  border: 0;
+}
+.hn-putaway-page
+  form.ptw-filters
+  :is(.ptw-status-filter, .ptw-receipt-filter)
+  .MuiSelect-select {
+  padding-left: 8px;
+}
+.hn-putaway-page form.ptw-filters .ptw-filter-actions {
+  gap: 8px;
+}
+.hn-putaway-page form.ptw-filters :is(.ptw-primary, .ptw-reset) {
+  min-height: 48px;
+}
+.hn-putaway-page .ptw-list {
+  border-color: var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+}
+.hn-putaway-page .ptw-list table.ptw-table {
+  width: 100%;
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-putaway-page .ptw-list[data-queue="pending"] table.ptw-table {
+  min-width: 960px;
+}
+.hn-putaway-page .ptw-list[data-queue="orders"] table.ptw-table {
+  min-width: 1120px;
+}
+.hn-putaway-page .ptw-list table.ptw-table :is(th, td) {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--ops-line);
+  vertical-align: middle;
+}
+.hn-putaway-page .ptw-list table.ptw-table :is(th, td):first-child {
+  padding-inline: 8px;
+  text-align: center;
+}
+.hn-putaway-page .ptw-list table.ptw-table th {
+  color: var(--ops-muted);
+  background: #d2edf7;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 24px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.hn-putaway-page .ptw-list table.ptw-table tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+.hn-putaway-page .ptw-list table.ptw-table .ptw-box-col .ptw-text-button {
+  color: var(--ops-heading);
+  font-weight: 700;
+  line-height: 22px;
+}
+.hn-putaway-page .ptw-box-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.hn-putaway-page .ptw-box-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  color: var(--ops-link);
+  background: var(--ops-pale);
+  border-radius: var(--ops-radius-control);
+}
+.hn-putaway-page .ptw-list table.ptw-table .ptw-badge {
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  color: var(--ops-warning);
+  background: var(--ops-warning-soft);
+  font-size: 11px;
+  line-height: 18px;
+}
+.hn-putaway-page .ptw-list table.ptw-table .ptw-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.hn-putaway-page .ptw-list table.ptw-table .ptw-badge.is-stored {
+  color: var(--ops-success);
+  background: var(--ops-success-soft);
+}
+.hn-putaway-page
+  .ptw-list[data-queue="pending"]
+  table.ptw-table
+  .ptw-check-col {
+  width: 4%;
+}
+.hn-putaway-page .ptw-list[data-queue="pending"] table.ptw-table .ptw-box-col {
+  width: 20%;
+}
+.hn-putaway-page .ptw-list[data-queue="pending"] table.ptw-table .ptw-name-col {
+  width: 23%;
+}
+.hn-putaway-page
+  .ptw-list[data-queue="pending"]
+  table.ptw-table
+  .ptw-receipt-col {
+  width: 18%;
+}
+.hn-putaway-page
+  .ptw-list[data-queue="pending"]
+  table.ptw-table
+  .ptw-quantity-col {
+  width: 8%;
+}
+.hn-putaway-page
+  .ptw-list[data-queue="pending"]
+  table.ptw-table
+  .ptw-status-col {
+  width: 17%;
+}
+.hn-putaway-page
+  .ptw-list[data-queue="pending"]
+  table.ptw-table
+  .ptw-action-col {
+  width: 10%;
+}
+.hn-putaway-page .ptw-list[data-queue="orders"] table.ptw-table .ptw-check-col {
+  width: 4%;
+}
+.hn-putaway-page .ptw-list[data-queue="orders"] table.ptw-table .ptw-box-col {
+  width: 18%;
+}
+.hn-putaway-page .ptw-list[data-queue="orders"] table.ptw-table .ptw-sku-col {
+  width: 10%;
+}
+.hn-putaway-page .ptw-list[data-queue="orders"] table.ptw-table .ptw-name-col {
+  width: 17%;
+}
+.hn-putaway-page
+  .ptw-list[data-queue="orders"]
+  table.ptw-table
+  .ptw-receipt-col {
+  width: 15%;
+}
+.hn-putaway-page
+  .ptw-list[data-queue="orders"]
+  table.ptw-table
+  .ptw-quantity-col {
+  width: 7%;
+}
+.hn-putaway-page
+  .ptw-list[data-queue="orders"]
+  table.ptw-table
+  .ptw-status-col {
+  width: 10%;
+}
+.hn-putaway-page
+  .ptw-list[data-queue="orders"]
+  table.ptw-table
+  .ptw-updated-col {
+  width: 10%;
+}
+.hn-putaway-page
+  .ptw-list[data-queue="orders"]
+  table.ptw-table
+  .ptw-action-col {
+  width: 9%;
+}
+.hn-putaway-page .ptw-list .ptw-footer {
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-top: 1px solid var(--ops-line);
+}
+.hn-putaway-page .ptw-footer-start {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.hn-putaway-page .ptw-footer-start .ptw-range {
+  flex: 0 0 auto;
+}
+.hn-putaway-page .ptw-list .ptw-footer nav {
+  margin-left: auto;
+}
+@container hn-putaway (max-width: 1000px) {
+  .hn-putaway-page form.ptw-filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "search search" "status receipt" "actions actions";
+  }
+}
+@container hn-putaway (max-width: 600px) {
+  .hn-putaway-page form.ptw-filters {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "search" "status" "receipt" "actions";
+  }
+  .hn-putaway-page form.ptw-filters .ptw-filter-actions {
+    justify-content: flex-start;
+  }
+}

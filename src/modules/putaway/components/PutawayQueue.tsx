@@ -1,5 +1,4 @@
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
-import dayjs from "dayjs";
 import { useT } from "@/shared/i18n/useT";
 import { useMemo, useState, type ReactNode } from "react";
 import { UiIcon, UiPagination, UiSelect } from "@/shared/ui";
@@ -7,9 +6,9 @@ import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { ActionDropdown } from "@/shared/components/feedback/ActionDropdown";
-import { formatDateTime } from "@/shared/utils/format-date";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import type { PutawayTask } from "../services/putawayService";
+import "./putaway-queue-refresh.css";
 
 const SORT = {
   box_code: (row: PutawayTask) => row.box_code,
@@ -21,13 +20,6 @@ const SORT = {
   draft: (row: PutawayTask) => row.to_tray_code,
 };
 const number = (value: number) => value.toLocaleString("vi-VN");
-
-// The task contract does not require a timestamp. Never replace missing API
-// information with the sample times from the design or the query refresh time.
-function updatedAt(row: PutawayTask) {
-  if (!("updated_at" in row) || typeof row.updated_at !== "string") return null;
-  return Number.isNaN(Date.parse(row.updated_at)) ? null : row.updated_at;
-}
 
 type Props = {
   tasks: PutawayTask[];
@@ -100,6 +92,14 @@ export function PutawayQueue(props: Props) {
   const someChecked = pageRows.some((row) => selectedIds.has(row.id));
   const totalQuantity = rows.reduce((sum, row) => sum + row.quantity, 0);
   const skuCount = new Set(rows.map((row) => row.sku_id || row.sku_code)).size;
+  const hasFilters = Boolean(
+    props.search ||
+    statusDraft ||
+    receiptDraft ||
+    filters.status ||
+    filters.receipt,
+  );
+  const columnCount = orders ? 9 : 7;
   const reset = () => {
     props.onSearch("");
     setStatusDraft("RECEIVED_PENDING_PUTAWAY");
@@ -136,7 +136,9 @@ export function PutawayQueue(props: Props) {
         }}
       >
         <div className="ptw-search">
-          <label htmlFor="ptw-search">{t("putaway.queue.search")}</label>
+          <label className="ptw-visually-hidden" htmlFor="ptw-search">
+            {t("putaway.queue.search")}
+          </label>
           <div className="ptw-search-control">
             <UiIcon name="search" />
             <input
@@ -153,7 +155,9 @@ export function PutawayQueue(props: Props) {
           </div>
         </div>
         <div className="ptw-status-filter">
-          <label htmlFor="ptw-status">{t("putaway.queue.boxStatus")}</label>
+          <label className="ptw-inline-label" htmlFor="ptw-status">
+            {t("putaway.queue.boxStatus")}:
+          </label>
           <UiSelect
             id="ptw-status"
             aria-label={t("putaway.queue.boxStatus")}
@@ -174,7 +178,9 @@ export function PutawayQueue(props: Props) {
           />
         </div>
         <div className="ptw-receipt-filter">
-          <label htmlFor="ptw-receipt">{t("putaway.queue.receipt")}</label>
+          <label className="ptw-inline-label" htmlFor="ptw-receipt">
+            {t("putaway.queue.receipt")}:
+          </label>
           <UiSelect
             id="ptw-receipt"
             aria-label={t("putaway.queue.receipt")}
@@ -193,15 +199,12 @@ export function PutawayQueue(props: Props) {
           <button className="ptw-primary" type="submit">
             {t("putaway.queue.apply")}
           </button>
-          <button className="ptw-reset" type="button" onClick={reset}>
-            {t("putaway.queue.reset")}
-          </button>
+          {hasFilters ? (
+            <button className="ptw-reset" type="button" onClick={reset}>
+              {t("putaway.queue.reset")}
+            </button>
+          ) : null}
         </div>
-        <p className="ptw-filter-hint">
-          {orders
-            ? t("putaway.queue.ordersHint")
-            : t("putaway.queue.pendingHint")}
-        </p>
       </form>
       {error ? (
         <div className="ptw-error" role="status">
@@ -252,22 +255,10 @@ export function PutawayQueue(props: Props) {
       ) : null}
       <section
         className="ptw-list"
-        aria-labelledby={orders ? "ptw-list-title" : undefined}
-        aria-label={orders ? undefined : heading}
+        data-queue={orders ? "orders" : "pending"}
+        aria-label={heading}
         aria-busy={loading || refreshing}
       >
-        {orders ? (
-          <div className="ptw-list-heading">
-            <h2 id="ptw-list-title">
-              {heading}{" "}
-              <span className="ptw-count">
-                {loading || error ? "—" : number(rows.length)}{" "}
-                {t("putaway.queue.orderUnit")}
-              </span>
-            </h2>
-            <p>{t("putaway.queue.stockNeutral")}</p>
-          </div>
-        ) : null}
         {!loading && !error && selectedRows.length ? (
           <div className="ptw-selection" role="status">
             <span>
@@ -332,13 +323,15 @@ export function PutawayQueue(props: Props) {
                   onSort={sort}
                   className="ptw-box-col"
                 />
-                <SortableTh
-                  label="SKU"
-                  sortKey="sku_code"
-                  sortState={sortState}
-                  onSort={sort}
-                  className="ptw-sku-col"
-                />
+                {orders ? (
+                  <SortableTh
+                    label="SKU"
+                    sortKey="sku_code"
+                    sortState={sortState}
+                    onSort={sort}
+                    className="ptw-sku-col"
+                  />
+                ) : null}
                 <SortableTh
                   label={t("putaway.queue.componentName")}
                   sortKey="sku_name"
@@ -376,11 +369,7 @@ export function PutawayQueue(props: Props) {
                     onSort={sort}
                     className="ptw-updated-col"
                   />
-                ) : (
-                  <th className="ptw-updated-col">
-                    {t("putaway.queue.updated")}
-                  </th>
-                )}
+                ) : null}
                 <th className="ptw-action-col">{t("putaway.queue.actions")}</th>
               </tr>
             </thead>
@@ -388,7 +377,7 @@ export function PutawayQueue(props: Props) {
               {loading ? (
                 Array.from({ length: 7 }, (_, i) => (
                   <tr className="ptw-loading" key={i} aria-hidden="true">
-                    {Array.from({ length: 9 }, (_, j) => (
+                    {Array.from({ length: columnCount }, (_, j) => (
                       <td key={j}>
                         <span />
                       </td>
@@ -397,13 +386,13 @@ export function PutawayQueue(props: Props) {
                 ))
               ) : error ? (
                 <tr>
-                  <td colSpan={9} className="ptw-empty">
+                  <td colSpan={columnCount} className="ptw-empty">
                     {t("putaway.queue.loadFailed")}
                   </td>
                 </tr>
               ) : !pageRows.length ? (
                 <tr>
-                  <td colSpan={9} className="ptw-empty">
+                  <td colSpan={columnCount} className="ptw-empty">
                     <UiIcon name="cube" size="lg" />
                     <strong>
                       {props.search ||
@@ -433,7 +422,6 @@ export function PutawayQueue(props: Props) {
                 </tr>
               ) : (
                 pageRows.map((row) => {
-                  const timestamp = updatedAt(row);
                   return (
                     <tr
                       key={row.id}
@@ -454,20 +442,27 @@ export function PutawayQueue(props: Props) {
                         />
                       </td>
                       <td className="ptw-box-col">
-                        <button
-                          type="button"
-                          className="ptw-text-button"
-                          title={t("putaway.queue.viewBox", {
-                            code: row.box_code,
-                          })}
-                          onClick={() => props.onView(row)}
-                        >
-                          {row.box_code}
-                        </button>
+                        <span className="ptw-box-cell">
+                          <span className="ptw-box-icon" aria-hidden="true">
+                            <UiIcon name="cube" />
+                          </span>
+                          <button
+                            type="button"
+                            className="ptw-text-button"
+                            title={t("putaway.queue.viewBox", {
+                              code: row.box_code,
+                            })}
+                            onClick={() => props.onView(row)}
+                          >
+                            {row.box_code}
+                          </button>
+                        </span>
                       </td>
-                      <td className="ptw-sku-col">
-                        <SkuLink code={row.sku_code} />
-                      </td>
+                      {orders ? (
+                        <td className="ptw-sku-col">
+                          <SkuLink code={row.sku_code} />
+                        </td>
+                      ) : null}
                       <td className="ptw-name-col">{row.sku_name || "—"}</td>
                       <td className="ptw-receipt-col">
                         {row.receipt_code || "—"}
@@ -484,27 +479,11 @@ export function PutawayQueue(props: Props) {
                             : t("putaway.queue.pendingStatus")}
                         </span>
                       </td>
-                      <td className="ptw-updated-col">
-                        {orders ? (
-                          row.to_tray_code || t("putaway.queue.notChosen")
-                        ) : timestamp ? (
-                          <time
-                            dateTime={timestamp}
-                            title={formatDateTime(timestamp)}
-                          >
-                            {dayjs(timestamp).isSame(dayjs(), "day")
-                              ? dayjs(timestamp).format("HH:mm")
-                              : dayjs(timestamp).isSame(
-                                    dayjs().subtract(1, "day"),
-                                    "day",
-                                  )
-                                ? t("putaway.queue.yesterday")
-                                : dayjs(timestamp).format("DD/MM")}
-                          </time>
-                        ) : (
-                          <span title={t("putaway.queue.noUpdate")}>—</span>
-                        )}
-                      </td>
+                      {orders ? (
+                        <td className="ptw-updated-col">
+                          {row.to_tray_code || t("putaway.queue.notChosen")}
+                        </td>
+                      ) : null}
                       <td className="ptw-action-col">
                         {/* MUI 9 removed system props; alignment must be in sx. */}
                         <RowActionGroup
@@ -572,14 +551,36 @@ export function PutawayQueue(props: Props) {
           </span>
         ) : null}
         <footer className="ptw-footer">
-          <span className="ptw-range">
-            {t("putaway.queue.showing")}{" "}
-            {loading || error || !rows.length
-              ? 0
-              : (safePage - 1) * pageSize + 1}
-            –{loading || error ? 0 : Math.min(safePage * pageSize, rows.length)}{" "}
-            / {loading || error ? 0 : number(rows.length)} BOX
-          </span>
+          <div className="ptw-footer-start">
+            <span className="ptw-range">
+              {t("putaway.queue.showing")}{" "}
+              {loading || error || !rows.length
+                ? 0
+                : (safePage - 1) * pageSize + 1}
+              –
+              {loading || error
+                ? 0
+                : Math.min(safePage * pageSize, rows.length)}{" "}
+              / {loading || error ? 0 : number(rows.length)} BOX
+            </span>
+            <label className="ptw-page-size">
+              <span>{t("putaway.queue.rows")}</span>
+              <select
+                aria-label={t("putaway.queue.rowsPerPage")}
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setPage(1);
+                }}
+              >
+                {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {t("shared.table.perPage", { size })}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <UiPagination
             page={safePage}
             pageSize={pageSize}
@@ -588,23 +589,6 @@ export function PutawayQueue(props: Props) {
             showTotal={false}
             disabled={loading || Boolean(error)}
           />
-          <label className="ptw-page-size">
-            <span>{t("putaway.queue.rows")}</span>
-            <select
-              aria-label={t("putaway.queue.rowsPerPage")}
-              value={pageSize}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
-                setPage(1);
-              }}
-            >
-              {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>
-                  {t("shared.table.perPage", { size })}
-                </option>
-              ))}
-            </select>
-          </label>
         </footer>
       </section>
     </>

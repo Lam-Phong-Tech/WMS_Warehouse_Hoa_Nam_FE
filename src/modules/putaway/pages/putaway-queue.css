@@ -2,6 +2,7 @@
    by their existing components. Portal dialogs repeat the scoped brand aliases. */
 .putaway-page.hn-putaway-page,
 .ptw-dialog,
+.ptw-create-drawer,
 .ptw-filter-menu {
   --ptw-heading: var(--ops-heading);
   --ptw-text: var(--ops-text);
@@ -71,7 +72,7 @@
   cursor: pointer;
 }
 .hn-putaway-page :is(button, input, select, a, [tabindex="0"]):focus-visible,
-.ptw-dialog
+:is(.ptw-dialog, .ptw-create-drawer)
   :is(
     button,
     input,
@@ -93,7 +94,7 @@
   gap: 12px;
 }
 .hn-putaway-page .ptw-heading:has(.ptw-tabs[hidden]) {
-  grid-template-columns: minmax(0, 1fr) 40px;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 .hn-putaway-page .ptw-heading h1 {
   min-width: 0;
@@ -120,8 +121,10 @@
   display: none;
 }
 .hn-putaway-page .ptw-tabs-toggle {
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 40px;
   height: 40px;
   padding: 0;
@@ -129,6 +132,18 @@
   background: var(--ptw-card);
   border: 1px solid var(--ptw-line);
   border-radius: var(--ops-radius-control);
+}
+.hn-putaway-page .ptw-heading:has(.ptw-tabs[hidden]) .ptw-tabs-toggle {
+  width: auto;
+  min-width: 40px;
+  padding-inline: 12px;
+}
+.hn-putaway-page .ptw-tabs-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  font-weight: 600;
 }
 .hn-putaway-page .ptw-tabs-toggle:hover {
   color: var(--ptw-primary);
@@ -677,6 +692,60 @@
   background: var(--ptw-card);
   color: var(--ptw-text);
 }
+.ptw-create-drawer .MuiDrawer-paper {
+  width: min(880px, 100vw);
+  max-width: 100vw;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--ptw-card);
+  color: var(--ptw-text);
+}
+.ptw-drawer-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.ptw-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--ptw-line);
+}
+.ptw-drawer-header h2 {
+  flex: 1 1 300px;
+  min-width: 0;
+  margin: 0;
+  color: var(--ops-heading);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+.ptw-drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ptw-drawer-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px 24px;
+}
+.ptw-create-drawer .MuiButton-root:not(.hn-row-action) {
+  min-height: var(--ops-control-height);
+  border-radius: var(--ops-radius-control);
+  box-shadow: none;
+}
+.ptw-create-drawer .MuiOutlinedInput-root {
+  border-radius: var(--ops-radius-control);
+}
 .ptw-dialog .MuiDialogTitle-root {
   padding: 18px 22px;
   border-bottom: 1px solid var(--ptw-line);
@@ -707,14 +776,14 @@
   font-size: 14px;
   box-shadow: none;
 }
-.ptw-dialog .MuiButton-containedPrimary {
+:is(.ptw-dialog, .ptw-create-drawer) .MuiButton-containedPrimary {
   color: var(--ops-on-primary);
   background: var(--ptw-primary);
 }
-.ptw-dialog .MuiButton-containedPrimary:hover {
+:is(.ptw-dialog, .ptw-create-drawer) .MuiButton-containedPrimary:hover {
   background: var(--ops-primary-hover);
 }
-.ptw-dialog
+:is(.ptw-dialog, .ptw-create-drawer)
   :is(
     .MuiButton-textPrimary,
     .MuiButton-outlinedPrimary,
@@ -726,7 +795,7 @@
   border-radius: var(--ops-radius-control);
   font-size: 14px;
 }
-.ptw-dialog
+:is(.ptw-dialog, .ptw-create-drawer)
   .MuiOutlinedInput-root.Mui-focused
   .MuiOutlinedInput-notchedOutline {
   border-color: var(--ptw-primary);
@@ -907,7 +976,7 @@
 @container hn-putaway (max-width: 1100px) {
   .hn-putaway-page .ptw-heading,
   .hn-putaway-page .ptw-heading:has(.ptw-tabs[hidden]) {
-    grid-template-columns: minmax(0, 1fr) 40px;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
   .hn-putaway-page .ptw-tabs {
     grid-column: 1 / -1;
@@ -1003,6 +1072,12 @@
   }
 }
 @media (max-width: 600px) {
+  .ptw-drawer-header {
+    padding: 14px 16px;
+  }
+  .ptw-drawer-body {
+    padding: 16px;
+  }
   .ptw-dialog .MuiDialog-paper {
     max-width: calc(100% - 20px);
     max-height: calc(100% - 20px);
@@ -1116,37 +1191,37 @@ body:has(.hn-putaway-page)
   }
 }
 
-.ptw-dialog .ant-input-affix-wrapper {
+:is(.ptw-dialog, .ptw-create-drawer) .ant-input-affix-wrapper {
   color: var(--ptw-text);
   border-color: var(--ptw-line);
   background: var(--ptw-card);
 }
-.ptw-dialog .ant-input-affix-wrapper:focus-within {
+:is(.ptw-dialog, .ptw-create-drawer) .ant-input-affix-wrapper:focus-within {
   border-color: var(--ptw-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ptw-primary) 15%, transparent);
 }
-.ptw-dialog .ant-input-affix-wrapper .ant-input {
+:is(.ptw-dialog, .ptw-create-drawer) .ant-input-affix-wrapper .ant-input {
   color: var(--ptw-text);
   background: transparent;
 }
-.ptw-dialog .ant-input-affix-wrapper .ant-input:focus-visible {
+:is(.ptw-dialog, .ptw-create-drawer) .ant-input-affix-wrapper .ant-input:focus-visible {
   outline: 0;
 }
 /* Match the shared action components' tonal primary variant in dialogs. */
-.ptw-dialog
+:is(.ptw-dialog, .ptw-create-drawer)
   .MuiButton-root:not(.hn-row-action).MuiButton-colorPrimary:not(
     .Mui-disabled
   ):not(.MuiButton-containedPrimary):not([data-action-kind]) {
   color: var(--ptw-primary);
   background: color-mix(in srgb, var(--ptw-primary) 12%, var(--ptw-card));
 }
-.ptw-dialog
+:is(.ptw-dialog, .ptw-create-drawer)
   .MuiButton-root:not(.hn-row-action).MuiButton-colorPrimary:not(
     .Mui-disabled
   ):not(.MuiButton-containedPrimary):not([data-action-kind]):hover {
   background: color-mix(in srgb, var(--ptw-primary) 20%, var(--ptw-card));
 }
-.ptw-dialog .MuiButton-colorPrimary .MuiButton-startIcon {
+:is(.ptw-dialog, .ptw-create-drawer) .MuiButton-colorPrimary .MuiButton-startIcon {
   color: inherit;
 }
 .hn-putaway-page table.ptw-table:has(.ptw-empty) {

@@ -123,16 +123,20 @@ export default function TrayOverviewPage() {
   }, [filtered, t]);
 
   return (
-    <Box sx={{ p: 3 }} data-testid="ptw-tray-overview">
+    <Box
+      sx={{ position: "relative", px: 3, pb: 3, pt: 0 }}
+      data-testid="ptw-tray-overview"
+    >
       <Stack
         direction="row"
         sx={{
-          // Tiêu đề + mô tả màn do header chung của shell dựng.
+          // Tiêu đề do shell dựng; đặt nút quay lại ngang hàng trên màn rộng.
           justifyContent: "flex-end",
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-          gap: 1.5,
-          mb: 2,
+          alignItems: "center",
+          position: { xs: "static", md: "absolute" },
+          top: { md: -56 },
+          right: { md: 24 },
+          mb: { xs: 1.5, md: 0 },
         }}
       >
         <RouterLink to={ROUTES.PUTAWAY} style={{ textDecoration: "none" }}>
