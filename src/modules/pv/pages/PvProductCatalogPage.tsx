@@ -40,7 +40,6 @@ import {
   ActionButton,
   ActionIconButton,
   RowActionButton,
-  RowActionGroup,
 } from "@/shared/components/actions";
 import {
   AppstoreOutlined,
@@ -298,18 +297,14 @@ function PvCatalogCard({
   industryNameById,
   canManage,
   canPublish,
-  busy,
   onEdit,
-  onTogglePublish,
   t,
 }: {
   profile: PvAdminProfile;
   industryNameById: Map<string, string>;
   canManage: boolean;
   canPublish: boolean;
-  busy: boolean;
   onEdit: () => void;
-  onTogglePublish: (next: boolean) => void;
   t: TranslateFn;
 }) {
   const industries = profile.industry_ids
@@ -368,13 +363,6 @@ function PvCatalogCard({
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <PvSwitch
-              checked={profile.published}
-              disabled={!canPublish || busy}
-              onChange={onTogglePublish}
-              aria-label={t("pv.admin.publishSwitchAria")}
-              data-testid="pv-catalog-publish-switch"
-            />
             <UiStatusBadge
               tone={profile.published ? "success" : "neutral"}
               label={
@@ -387,7 +375,7 @@ function PvCatalogCard({
           <RowActionButton
             kind="edit"
             label={t("pv.productCatalog.editAction")}
-            disabled={!canManage}
+            disabled={!canManage && !canPublish}
             onClick={onEdit}
             data-testid="pv-catalog-edit"
             // Thẻ hẹp thì hàng này xuống dòng; `space-between` chỉ căn trong MỘT
@@ -610,16 +598,22 @@ export function PvProductCatalogPage() {
 
   async function togglePublish(row: PvAdminProfile, next: boolean) {
     try {
-      await setPublished.mutateAsync({
+      const result = await setPublished.mutateAsync({
         skuId: row.sku_id,
         published: next,
         profileVersion: row.version,
       });
+      setEditing((current) =>
+        current?.id === row.id
+          ? { ...current, published: next, version: result.pv_profile_version }
+          : current,
+      );
       toast.success(next ? t("pv.admin.publishOn") : t("pv.admin.publishOff"));
     } catch (error) {
       const normalized = normalizeError(error);
       if (normalized.status === 412 || normalized.status === 428) {
         await profiles.refetch();
+        closeDialog();
         toast.error(t("pv.admin.publishStale"));
         return;
       }
@@ -629,7 +623,7 @@ export function PvProductCatalogPage() {
 
   /**
    * Cột của DẠNG NGANG — cùng bộ thông tin với thẻ, chỉ đổi cách xếp: ảnh thu
-   * nhỏ, tên + mã, công tắc công bố. Nút Sửa đi qua
+   * nhỏ, tên + mã, trạng thái hiển thị. Nút mũi tên đi qua
    * `renderRowActions` để nó hiện ở cả bảng desktop lẫn card mobile của
    * ResponsiveDataTable.
    *
@@ -683,25 +677,14 @@ export function PvProductCatalogPage() {
       sortAccessor: (row) => Number(row.published),
       truncate: 0,
       render: (row) => (
-        <button
-          type="button"
-          role="switch"
+        <span
           className="pv-catalog-status"
           data-tone={row.published ? "success" : "neutral"}
-          aria-checked={row.published}
-          aria-label={t("pv.admin.publishSwitchAria")}
-          title={copy(
-            "Bật/tắt hiển thị trên ứng dụng",
-            "Toggle app visibility",
-          )}
-          disabled={!canPublish || setPublished.isPending}
-          data-testid="pv-catalog-publish-switch"
-          onClick={() => void togglePublish(row, !row.published)}
         >
           {row.published
             ? t("pv.admin.publishedShown")
             : t("pv.admin.publishedHidden")}
-        </button>
+        </span>
       ),
     },
   ];
@@ -974,30 +957,20 @@ export function PvProductCatalogPage() {
                 rows={visibleRows}
                 rowKey={(row) => row.id}
                 mobileBreakpoint="sm"
-                actionColumnWidth={160}
+                actionColumnWidth={96}
                 renderRowActions={(row) => (
-                  <RowActionGroup sx={{ justifyContent: "flex-end" }}>
-                    <RowActionButton
-                      kind="edit"
-                      aria-label={t("pv.productCatalog.editAction")}
-                      disabled={!canManage}
-                      onClick={() => openEdit(row)}
-                      data-testid="pv-catalog-edit"
-                    >
-                      {copy("Chỉnh sửa", "Edit")}
-                    </RowActionButton>
-                    <RowActionButton
-                      kind={row.published ? "unpublish" : "publish"}
-                      aria-label={`${copy(
-                        row.published
-                          ? "Ẩn khỏi App PV"
-                          : "Hiển thị trên App PV",
-                        row.published ? "Hide from App PV" : "Show in App PV",
-                      )}: ${row.display_name}`}
-                      disabled={!canPublish || setPublished.isPending}
-                      onClick={() => void togglePublish(row, !row.published)}
-                    />
-                  </RowActionGroup>
+                  <button
+                    type="button"
+                    className="pv-catalog-detail-link"
+                    aria-label={`${t("pv.productCatalog.editAction")}: ${row.display_name}`}
+                    disabled={!canManage && !canPublish}
+                    onClick={() => openEdit(row)}
+                    data-testid="pv-catalog-edit"
+                  >
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14m-6-6 6 6-6 6" />
+                    </svg>
+                  </button>
                 )}
               />
             </Box>
@@ -1015,9 +988,7 @@ export function PvProductCatalogPage() {
                     industryNameById={industryNameById}
                     canManage={canManage}
                     canPublish={canPublish}
-                    busy={setPublished.isPending}
                     onEdit={() => openEdit(row)}
-                    onTogglePublish={(next) => void togglePublish(row, next)}
                     t={t}
                   />
                 </Grid>
@@ -1079,6 +1050,7 @@ export function PvProductCatalogPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <UiAutocomplete
                 required
+                disabled={saving || !canManage}
                 label={t("pv.productCatalog.skuField")}
                 value={form.sku_id || null}
                 options={skuOptions}
@@ -1125,6 +1097,7 @@ export function PvProductCatalogPage() {
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiTextField
               required
+              disabled={saving || !canManage}
               fullWidth
               label={t("pv.admin.displayName")}
               value={form.display_name}
@@ -1140,6 +1113,7 @@ export function PvProductCatalogPage() {
           <Grid size={12}>
             <UiTextField
               fullWidth
+              disabled={saving || !canManage}
               multiline
               minRows={2}
               label={t("pv.admin.description")}
@@ -1156,6 +1130,7 @@ export function PvProductCatalogPage() {
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiAutocomplete
               multiple
+              disabled={saving || !canManage}
               label={t("pv.admin.industry")}
               value={form.industry_ids}
               onChange={(next) => patchForm({ industry_ids: next.map(String) })}
@@ -1165,6 +1140,7 @@ export function PvProductCatalogPage() {
           <Grid size={{ xs: 12, sm: 6 }}>
             <UiAutocomplete
               multiple
+              disabled={saving || !canManage}
               label={t("pv.admin.tags")}
               value={form.tag_ids}
               onChange={(next) => patchForm({ tag_ids: next.map(String) })}
@@ -1172,11 +1148,27 @@ export function PvProductCatalogPage() {
             />
           </Grid>
 
+          {dialogMode === "edit" && editing && (
+            <Grid size={12}>
+              <Box className="pv-catalog-publish-field">
+                <span>{copy("Hiển thị trên App PV", "Visible on the PV App")}</span>
+                <PvSwitch
+                  checked={editing.published}
+                  onChange={(next) => void togglePublish(editing, next)}
+                  disabled={!canPublish || saving || setPublished.isPending}
+                  aria-label={t("pv.admin.publishSwitchAria")}
+                  data-testid="pv-catalog-publish-switch"
+                />
+                <span>{editing.published ? t("pv.admin.publishedShown") : t("pv.admin.publishedHidden")}</span>
+              </Box>
+            </Grid>
+          )}
+
           <Grid size={12}>
             <PvProductImageField
               value={form.images}
               onChange={(images) => patchForm({ images }, "images")}
-              disabled={saving}
+              disabled={saving || !canManage}
               error={errors.images}
             />
           </Grid>
@@ -1187,7 +1179,7 @@ export function PvProductCatalogPage() {
             <ActionButton kind="cancel" onClick={closeDialog} disabled={saving}>
               {t("pv.common.cancel")}
             </ActionButton>
-            <ActionButton kind="save" onClick={() => void submit()} disabled={saving} data-testid="pv-catalog-submit">
+            <ActionButton kind="save" onClick={() => void submit()} disabled={saving || !canManage || setPublished.isPending} data-testid="pv-catalog-submit">
               {saving ? t("pv.common.saving") : t("pv.common.save")}
             </ActionButton>
           </footer>

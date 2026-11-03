@@ -287,22 +287,22 @@ describe("MST-PV-01 · catalog interactions", () => {
     { permission: "pv.master.manage", canManage: true, canPublish: false },
     { permission: "pv.publish", canManage: false, canPublish: true },
   ])(
-    "keeps direct row actions gated for $permission",
+    "keeps edit and publish permissions separate for $permission",
     async ({ permission, canManage, canPublish }) => {
       signInWith([permission]);
       renderWithProviders(<PvProductCatalogPage />);
       const edit = await screen.findAllByTestId("pv-catalog-edit");
-      const publish = screen.getByRole("button", {
-        name: `Ẩn khỏi App PV: ${WITH_IMAGE.display_name}`,
-      });
-      expect(edit[0]).toHaveProperty("disabled", !canManage);
-      expect(publish).toHaveProperty("disabled", !canPublish);
+      expect(edit[0]).toBeEnabled();
       expect(
         screen.queryByRole("button", {
           name: `Thao tác với ${WITH_IMAGE.display_name}`,
         }),
       ).not.toBeInTheDocument();
 
+      fireEvent.click(edit[0]);
+      const publish = screen.getByTestId("pv-catalog-publish-switch");
+      expect(publish).toHaveProperty("disabled", !canPublish);
+      expect(screen.getByTestId("pv-catalog-submit")).toHaveProperty("disabled", !canManage);
       fireEvent.click(publish);
       if (canPublish) {
         await waitFor(() =>
@@ -320,11 +320,9 @@ describe("MST-PV-01 · catalog interactions", () => {
 
   it("shows a hidden product on App PV with one click", async () => {
     renderWithProviders(<PvProductCatalogPage />);
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: `Hiển thị trên App PV: ${WITHOUT_IMAGE.display_name}`,
-      }),
-    );
+    const editButtons = await screen.findAllByTestId("pv-catalog-edit");
+    fireEvent.click(editButtons[1]);
+    fireEvent.click(screen.getByTestId("pv-catalog-publish-switch"));
     await waitFor(() =>
       expect(setPvProductPublishedMock).toHaveBeenCalledWith(
         WITHOUT_IMAGE.sku_id,
@@ -352,9 +350,8 @@ describe("MST-PV-01 · catalog interactions", () => {
           page: "1",
         }),
       );
-      await waitFor(() =>
-        expect(screen.getByTestId("pv-catalog-publish-switch")).toBeEnabled(),
-      );
+      fireEvent.click((await screen.findAllByTestId("pv-catalog-edit"))[0]);
+      expect(screen.getByTestId("pv-catalog-publish-switch")).toBeEnabled();
       const callCount = profileCalls().length;
 
       fireEvent.click(screen.getByTestId("pv-catalog-publish-switch"));
@@ -373,10 +370,7 @@ describe("MST-PV-01 · catalog interactions", () => {
         per_page: "20",
       });
       expect(searchInput()).toHaveValue("khoan");
-      expect(screen.getByTestId("pv-catalog-publish-switch")).toHaveAttribute(
-        "aria-checked",
-        "true",
-      );
+      expect(screen.queryByTestId("pv-catalog-publish-switch")).not.toBeInTheDocument();
     },
   );
 

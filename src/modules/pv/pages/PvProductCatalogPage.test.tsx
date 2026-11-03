@@ -170,7 +170,7 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     expect(within(table).getByText("Máy khoan cầm tay HN")).toBeInTheDocument();
     expect(within(table).getByText("Máy mài góc HN")).toBeInTheDocument();
     expect(within(table).getByAltText("Ảnh chính")).toBeInTheDocument();
-    expect(screen.getAllByTestId("pv-catalog-publish-switch")).toHaveLength(2);
+    expect(screen.queryByTestId("pv-catalog-publish-switch")).not.toBeInTheDocument();
     expect(screen.getAllByTestId("pv-catalog-edit")).toHaveLength(2);
 
     fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
@@ -188,8 +188,9 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
 
     renderWithProviders(<PvProductCatalogPage />);
 
-    const toggles = await screen.findAllByTestId("pv-catalog-publish-switch");
-    expect(toggles[0]).toBeDisabled();
+    const editButtons = await screen.findAllByTestId("pv-catalog-edit");
+    fireEvent.click(editButtons[0]);
+    expect(screen.getByTestId("pv-catalog-publish-switch")).toBeDisabled();
   });
 
   it("người chỉ có pv.publish không thêm được sản phẩm", async () => {

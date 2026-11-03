@@ -524,6 +524,26 @@
 .pv-catalog-table td:last-child {
   width: 8%;
 }
+.pv-catalog-detail-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--pv-blue);
+  cursor: pointer;
+}
+.pv-catalog-detail-link:is(:hover, :focus-visible) {
+  background: #dff0f7;
+}
+.pv-catalog-detail-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .pv-catalog-table tbody { counter-reset: pv-row var(--pv-row-start, 0); }
 .pv-catalog-table tbody tr { counter-increment: pv-row; }
 .pv-catalog-row-number::before { content: counter(pv-row); }
@@ -590,7 +610,7 @@
   font: inherit;
   font-size: 12px;
   line-height: 1.4;
-  cursor: pointer;
+  cursor: default;
   transition:
     background-color 140ms ease,
     border-color 140ms ease;
@@ -600,7 +620,7 @@
   color: var(--ops-success);
 }
 .pv-catalog-status:hover:not(:disabled) {
-  border-color: currentColor;
+  border-color: transparent;
 }
 .pv-catalog-status:disabled {
   cursor: default;
@@ -715,6 +735,19 @@
   padding: 12px 24px;
   border-top: 1px solid var(--pv-line);
   background: var(--pv-card);
+}
+.pv-catalog-publish-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--ops-radius-control);
+}
+.pv-catalog-publish-field > span:first-child {
+  flex: 1;
+  color: var(--pv-heading);
+  font-weight: 600;
 }
 @media (max-width: 599.98px) {
   .pv-catalog-form-header,
