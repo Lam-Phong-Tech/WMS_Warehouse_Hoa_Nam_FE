@@ -1,20 +1,8 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { useEffect, useState } from "react";
-import dayjs from "dayjs";
 import { useSearchParams } from "react-router-dom";
-import {
-  Menu,
-  MenuItem,
-  UiIcon,
-  UiPagination,
-  UiSelect,
-  UiTextField,
-} from "@/shared/ui";
-import {
-  ActionButton,
-  RowActionButton,
-  RowActionGroup,
-} from "@/shared/components/actions";
+import { UiIcon, UiPagination, UiSelect, UiTextField } from "@/shared/ui";
+import { ActionButton } from "@/shared/components/actions";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import {
@@ -62,11 +50,6 @@ const SORT_ACCESSORS = {
 function displayValue(value?: string) {
   return !value || value === "-" ? EMPTY_TEXT : value;
 }
-function displayDate(value?: string, format = "DD/MM/YYYY HH:mm") {
-  if (!value) return EMPTY_TEXT;
-  const date = dayjs(value);
-  return date.isValid() ? date.format(format) : value;
-}
 function useInboundPermission(code: string) {
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
@@ -87,12 +70,7 @@ function InboundListScreen() {
   const [draftOpen, setDraftOpen] = useState(false);
   const [draftDocumentId, setDraftDocumentId] = useState<string | null>(null);
   const [scanDocumentId, setScanDocumentId] = useState<string | null>(null);
-  const [rowMenu, setRowMenu] = useState<{
-    anchor: HTMLElement;
-    row: InboundDocument;
-  } | null>(null);
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
-  const canScan = useInboundPermission(P.INBOUND_SCAN);
   const query = useInboundDocuments({
     search: search || undefined,
     status,
@@ -154,13 +132,12 @@ function InboundListScreen() {
     "IN-01-overlay",
   );
   const editDocument = (id: string | null) => {
+    setScanDocumentId(null);
     setDraftDocumentId(id);
     setDraftOpen(true);
-    setRowMenu(null);
   };
   const openDocument = (id: string) => {
     setScanDocumentId(id);
-    setRowMenu(null);
   };
   const resetFilters = () => {
     setSearchInput("");
@@ -208,36 +185,16 @@ function InboundListScreen() {
     </>
   );
   const rowActions = (row: InboundDocument) => {
-    const editable = row.status === "DRAFT" && canCreate;
-    const tracking = row.status === "SCANNING";
-    const primaryLabel = editable
-      ? tUi("updatedUi.text_7a77d7612e12")
-      : tracking
-        ? tUi("dashboard.severity.p2")
-        : tUi("reports.importMatchReport.detail");
     return (
-      <RowActionGroup className="hn-inbound-row-actions">
-        <button
-          type="button"
-          className="hn-inbound-detail-link"
-          aria-label={primaryLabel}
-          title={primaryLabel}
-          onClick={() =>
-            editable ? editDocument(row.id) : openDocument(row.id)
-          }
-        >
-          <ArrowRightOutlined aria-hidden="true" />
-        </button>
-        <RowActionButton
-          kind="more"
-          aria-label={tUi("updatedUi.text_3584db058a35", {
-            value0: String(displayValue(row.code)),
-          })}
-          aria-haspopup="menu"
-          aria-expanded={rowMenu?.row.id === row.id}
-          onClick={(event) => setRowMenu({ anchor: event.currentTarget, row })}
-        />
-      </RowActionGroup>
+      <button
+        type="button"
+        className="hn-inbound-detail-link"
+        aria-label={tUi("reports.importMatchReport.detail")}
+        title={tUi("reports.importMatchReport.detail")}
+        onClick={() => openDocument(row.id)}
+      >
+        <ArrowRightOutlined aria-hidden="true" />
+      </button>
     );
   };
   const sortHeader = (
@@ -586,51 +543,6 @@ function InboundListScreen() {
           </div>
         </footer>
       </section>
-      <Menu
-        anchorEl={rowMenu?.anchor}
-        open={Boolean(rowMenu)}
-        onClose={() => setRowMenu(null)}
-        slotProps={{ paper: { className: "hn-inbound-menu" } }}
-      >
-        {rowMenu ? (
-          <li className="hn-inbound-menu-information" role="presentation">
-            <strong>{displayValue(rowMenu.row.code)}</strong>
-            <span>
-              {tUi("updatedUi.text_4572c8880b00") + " "}
-              {displayDate(rowMenu.row.date)}
-            </span>
-            <span>
-              {tUi("updatedUi.text_fdae0fc430bb") + " "}
-              {displayValue(rowMenu.row.createdBy)}
-            </span>
-            <span>
-              {tUi("updatedUi.text_9b223cea940b") + " "}
-              {displayValue(rowMenu.row.note)}
-            </span>
-          </li>
-        ) : null}
-        {rowMenu ? (
-          <MenuItem onClick={() => openDocument(rowMenu.row.id)}>
-            <UiIcon name="eye" size="sm" />
-            {(rowMenu.row.status === "DRAFT" ||
-              rowMenu.row.status === "SCANNING") &&
-            canScan
-              ? rowMenu.row.status === "DRAFT"
-                ? t("inbound.list.startScan")
-                : t("inbound.list.continueScan")
-              : t("inbound.list.view")}
-          </MenuItem>
-        ) : null}
-        {rowMenu &&
-        canCreate &&
-        (rowMenu.row.status === "DRAFT" ||
-          rowMenu.row.status === "SCANNING") ? (
-          <MenuItem onClick={() => editDocument(rowMenu.row.id)}>
-            <UiIcon name="pencil" size="sm" />
-            {t("inbound.list.editInfo")}
-          </MenuItem>
-        ) : null}
-      </Menu>
       {draftOpen ? (
         <InboundDraftModal
           documentId={draftDocumentId}
@@ -643,6 +555,7 @@ function InboundListScreen() {
           documentId={scanDocumentId}
           onClose={() => setScanDocumentId(null)}
           onChanged={() => void query.refetch()}
+          onEdit={canCreate ? () => editDocument(scanDocumentId) : undefined}
         />
       ) : null}
     </div>

@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useRef, useState } from "react";
+import dayjs from "dayjs";
 import {
   Box,
   Drawer,
@@ -112,6 +113,7 @@ type InboundScanModalProps = {
   documentId: string;
   onClose: () => void;
   onChanged?: () => void;
+  onEdit?: () => void;
 };
 
 type ScanLogRow = {
@@ -389,6 +391,7 @@ export function InboundScanModal({
   documentId,
   onClose,
   onChanged,
+  onEdit,
 }: InboundScanModalProps) {
   const dialog = useDialogExit(onClose);
   const t = useT();
@@ -1257,6 +1260,24 @@ export function InboundScanModal({
                       {scanVersion ?? detail.document.version}
                     </Box>
                   </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                      {t("updatedUi.text_4572c8880b00")}
+                    </Box>
+                    <Box sx={{ typography: "body2" }}>
+                      {detail.document.date
+                        ? dayjs(detail.document.date).format("DD/MM/YYYY HH:mm")
+                        : EMPTY_TEXT}
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 9 }}>
+                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                      {t("updatedUi.text_9b223cea940b")}
+                    </Box>
+                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
+                      {detail.document.note || EMPTY_TEXT}
+                    </Box>
+                  </Grid>
                 </Grid>
               </Box>
 
@@ -1676,6 +1697,11 @@ export function InboundScanModal({
           </div>
           {detail && isMutable ? (
             <footer className="hn-inbound-scan-footer">
+              {onEdit ? (
+                <ActionButton kind="edit" disabled={working} onClick={onEdit}>
+                  {t("inbound.list.editInfo")}
+                </ActionButton>
+              ) : null}
               {canCancel ? (
                 <ActionButton
                   kind="cancel"

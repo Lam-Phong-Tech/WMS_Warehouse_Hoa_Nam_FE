@@ -53,10 +53,12 @@ vi.mock("@/modules/inbound/pages/MvpInboundScreens", () => ({
     documentId,
     onClose,
     onChanged,
+    onEdit,
   }: {
     documentId: string;
     onClose: () => void;
     onChanged: () => void;
+    onEdit?: () => void;
   }) => (
     <div role="dialog" aria-label="Nhận hàng kiểm thử">
       <span>{documentId}</span>
@@ -66,6 +68,11 @@ vi.mock("@/modules/inbound/pages/MvpInboundScreens", () => ({
       <button type="button" onClick={onChanged}>
         Cập nhật nhận hàng
       </button>
+      {onEdit ? (
+        <button type="button" onClick={onEdit}>
+          Sửa thông tin
+        </button>
+      ) : null}
     </div>
   ),
 }));
@@ -184,104 +191,56 @@ describe("IN-01 · preserved receipt actions", () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
-  it("opens DRAFT editing from its primary action and scanning from its overflow", async () => {
+  it("opens DRAFT details and reaches editing from the detail drawer", () => {
     renderPage();
-    fireEvent.click(row("DRAFT").getByRole("button", { name: "Chỉnh sửa" }));
+    fireEvent.click(row("DRAFT").getByRole("button", { name: "Chi tiết" }));
+    expect(
+      screen.getByRole("dialog", { name: "Nhận hàng kiểm thử" }),
+    ).toHaveTextContent("DRAFT");
+    fireEvent.click(screen.getByRole("button", { name: "Sửa thông tin" }));
     expect(
       screen.getByRole("dialog", { name: "Phiếu nháp kiểm thử" }),
     ).toHaveTextContent("DRAFT");
-    fireEvent.click(screen.getByRole("button", { name: "Đóng phiếu nháp" }));
-
-    fireEvent.click(
-      row("DRAFT").getByRole("button", { name: "Thao tác khác cho PN-DRAFT" }),
-    );
-    fireEvent.click(
-      await screen.findByRole("menuitem", { name: "Bắt đầu quét" }),
-    );
-    expect(
-      screen.getByRole("dialog", { name: "Nhận hàng kiểm thử" }),
-    ).toHaveTextContent("DRAFT");
   });
 
-  it("opens SCANNING tracking and keeps edit information available in overflow", async () => {
+  it("opens SCANNING details and keeps editing in the detail drawer", () => {
     renderPage();
-    fireEvent.click(row("SCANNING").getByRole("button", { name: "Theo dõi" }));
+    fireEvent.click(row("SCANNING").getByRole("button", { name: "Chi tiết" }));
     expect(
       screen.getByRole("dialog", { name: "Nhận hàng kiểm thử" }),
     ).toHaveTextContent("SCANNING");
-    fireEvent.click(screen.getByRole("button", { name: "Đóng nhận hàng" }));
-
-    fireEvent.click(
-      row("SCANNING").getByRole("button", {
-        name: "Thao tác khác cho PN-SCANNING",
-      }),
-    );
-    fireEvent.click(
-      await screen.findByRole("menuitem", { name: "Sửa thông tin" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Sửa thông tin" }));
     expect(
       screen.getByRole("dialog", { name: "Phiếu nháp kiểm thử" }),
     ).toHaveTextContent("SCANNING");
   });
 
-  it("opens POSTED details and does not offer an edit action", async () => {
+  it("opens POSTED details and does not offer an edit action", () => {
     renderPage();
     fireEvent.click(row("POSTED").getByRole("button", { name: "Chi tiết" }));
     expect(
       screen.getByRole("dialog", { name: "Nhận hàng kiểm thử" }),
     ).toHaveTextContent("POSTED");
-    fireEvent.click(screen.getByRole("button", { name: "Đóng nhận hàng" }));
-
-    fireEvent.click(
-      row("POSTED").getByRole("button", {
-        name: "Thao tác khác cho PN-POSTED",
-      }),
-    );
     expect(
-      await screen.findByRole("menuitem", { name: "Xem" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitem", { name: "Sửa thông tin" }),
+      screen.queryByRole("button", { name: "Sửa thông tin" }),
     ).not.toBeInTheDocument();
+    expect(row("POSTED").getAllByRole("button")).toHaveLength(2);
   });
 
-  it("retains view access without create/scan permissions and hides mutating actions", async () => {
+  it("retains view access without create/scan permissions and hides mutating actions", () => {
     useAuthStore.setState({ permissionCodes: [P.INBOUND_VIEW] });
     renderPage();
 
     expect(
       screen.queryByRole("button", { name: "Tạo phiếu nhập" }),
     ).not.toBeInTheDocument();
-    expect(
-      row("DRAFT").queryByRole("button", { name: "Chỉnh sửa" }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(
-      row("DRAFT").getByRole("button", { name: "Thao tác khác cho PN-DRAFT" }),
-    );
-    expect(
-      await screen.findByRole("menuitem", { name: "Xem" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitem", { name: "Bắt đầu quét" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitem", { name: "Sửa thông tin" }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("menuitem", { name: "Xem" }));
+    fireEvent.click(row("DRAFT").getByRole("button", { name: "Chi tiết" }));
     expect(
       screen.getByRole("dialog", { name: "Nhận hàng kiểm thử" }),
     ).toHaveTextContent("DRAFT");
-  });
-
-  it("makes document date, creator and note reachable from the row menu", async () => {
-    renderPage();
-    fireEvent.click(
-      row("DRAFT").getByRole("button", { name: "Thao tác khác cho PN-DRAFT" }),
-    );
-    const menu = await screen.findByRole("menu");
-    expect(menu).toHaveTextContent("Ngày tạo: 10/09/2026 09:00");
-    expect(menu).toHaveTextContent("Người tạo: Nguyễn Văn A");
-    expect(menu).toHaveTextContent("Ghi chú: Kiểm tra bao bì khi nhận");
+    expect(
+      screen.queryByRole("button", { name: "Sửa thông tin" }),
+    ).not.toBeInTheDocument();
   });
 
   it.each([
@@ -338,7 +297,9 @@ describe("IN-01 · filters and live states", () => {
     fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
     expectLatestQuery({ page: 2 });
     fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái phiếu nhập"));
-    fireEvent.click(await screen.findByRole("option", { name: "Trạng thái: Nháp" }));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Trạng thái: Nháp" }),
+    );
     expectLatestQuery({ status: "DRAFT", page: 1 });
 
     fireEvent.mouseDown(screen.getByLabelText("Số dòng mỗi trang"));
