@@ -208,29 +208,33 @@ describe("MST-PV-01 · catalog interactions", () => {
     expect(stat).toBeVisible();
   });
 
-  it("shows search filters in a separate collapsible panel above the product list", async () => {
+  it("keeps search visible and expands display options from the filter button", async () => {
     renderWithProviders(<PvProductCatalogPage />);
     const table = await screen.findByRole("table");
 
     const filters = screen.getByRole("region", { name: "Bộ lọc tìm kiếm" });
     const list = screen.getByRole("region", { name: "Danh sách sản phẩm" });
     const toggle = within(filters).getByRole("button", {
-      name: "Bộ lọc tìm kiếm",
+      name: "Bộ lọc",
     });
     const search = within(filters).getByTestId("pv-catalog-search");
+    const viewOptions = within(filters).getByTestId("pv-catalog-view-card");
 
     expect(filters).not.toContainElement(list);
     expect(list).toContainElement(table);
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(search).toBeVisible();
+    expect(viewOptions).not.toBeVisible();
 
     fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(search).not.toBeVisible();
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(viewOptions).toBeVisible();
+    expect(search).toBeVisible();
     expect(table).toBeVisible();
 
     fireEvent.click(toggle);
     expect(search).toBeVisible();
+    expect(viewOptions).not.toBeVisible();
   });
 
   it("applies filters immediately and returns to page 1 when filters change", async () => {
@@ -376,7 +380,7 @@ describe("MST-PV-01 · catalog interactions", () => {
     },
   );
 
-  it("changes view with the keyboard without changing filters and replaces failed images in both views", async () => {
+  it("changes view without changing filters and replaces failed images in both views", async () => {
     renderWithProviders(<PvProductCatalogPage />);
     fireEvent.error(await screen.findByAltText("Ảnh chính"));
     expect(
@@ -389,12 +393,11 @@ describe("MST-PV-01 · catalog interactions", () => {
     );
     const callCount = profileCalls().length;
 
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
     const tableTab = screen.getByTestId("pv-catalog-view-table");
     const cardTab = screen.getByTestId("pv-catalog-view-card");
-    tableTab.focus();
-    fireEvent.keyDown(tableTab, { key: "ArrowRight" });
-    expect(cardTab).toHaveFocus();
-    expect(cardTab).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(cardTab);
+    expect(cardTab).toHaveAttribute("aria-pressed", "true");
     expect(await screen.findAllByTestId("pv-catalog-card")).toHaveLength(2);
     fireEvent.error(screen.getByAltText("Ảnh chính"));
     expect(screen.getByText("Ảnh không tải được")).toHaveAttribute(
@@ -403,9 +406,8 @@ describe("MST-PV-01 · catalog interactions", () => {
     );
     expect(screen.queryByAltText("Ảnh chính")).not.toBeInTheDocument();
 
-    fireEvent.keyDown(cardTab, { key: "Home" });
-    expect(tableTab).toHaveFocus();
-    expect(tableTab).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(tableTab);
+    expect(tableTab).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("pv-catalog-table")).toBeInTheDocument();
     expect(searchInput()).toHaveValue("khoan");
     expect(profileCalls()).toHaveLength(callCount);

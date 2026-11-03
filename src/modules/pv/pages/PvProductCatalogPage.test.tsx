@@ -140,6 +140,7 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     renderWithProviders(<PvProductCatalogPage />);
 
     // Màn mở ra ở Dạng ngang, lưới thẻ nằm sau một cú bấm.
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
     fireEvent.click(await screen.findByTestId("pv-catalog-view-card"));
 
     const cards = await screen.findAllByTestId("pv-catalog-card");
@@ -172,6 +173,7 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     expect(screen.getAllByTestId("pv-catalog-publish-switch")).toHaveLength(2);
     expect(screen.getAllByTestId("pv-catalog-edit")).toHaveLength(2);
 
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
     fireEvent.click(screen.getByTestId("pv-catalog-view-card"));
     expect(await screen.findByTestId("pv-catalog-grid")).toBeInTheDocument();
     expect(screen.queryByTestId("pv-catalog-table")).not.toBeInTheDocument();

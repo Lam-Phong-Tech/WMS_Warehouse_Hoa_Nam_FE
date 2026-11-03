@@ -45,7 +45,7 @@ import {
 import {
   AppstoreOutlined,
   CameraOutlined,
-  DownOutlined,
+  FilterOutlined,
   EyeOutlined,
   UnorderedListOutlined,
 } from "@/shared/components/icons";
@@ -407,7 +407,7 @@ export function PvProductCatalogPage() {
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
   const [overviewOpen, setOverviewOpen] = useState(true);
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   // Đổi cách xem không làm mất trang và các điều kiện lọc đang chọn.
   const [view, setView] = useState<PvCatalogView>("table");
   const [keyword, setKeyword] = useState("");
@@ -846,25 +846,11 @@ export function PvProductCatalogPage() {
       </section>
 
       <section
-        className="pv-catalog-panel pv-catalog-filter-panel"
+        className="pv-catalog-filter-panel"
         aria-label={copy("Bộ lọc tìm kiếm", "Search filters")}
       >
-        <button
-          type="button"
-          className="pv-catalog-filter-toggle"
-          aria-expanded={filtersOpen}
-          aria-controls="pv-catalog-filters-content"
-          onClick={() => setFiltersOpen((current) => !current)}
-        >
-          <span>{copy("Bộ lọc tìm kiếm", "Search filters")}</span>
-          <DownOutlined aria-hidden="true" />
-        </button>
-        <div id="pv-catalog-filters-content" hidden={!filtersOpen}>
-          <div className="pv-catalog-filters">
+        <div className="pv-catalog-filters">
             <div className="pv-catalog-search">
-              <label htmlFor="pv-catalog-search-input">
-                {copy("Tìm kiếm", "Search")}
-              </label>
               <SearchInput
                 id="pv-catalog-search-input"
                 width="100%"
@@ -878,9 +864,6 @@ export function PvProductCatalogPage() {
               />
             </div>
             <div className="pv-catalog-filter">
-              <label id="pv-catalog-industry-label">
-                {copy("Nhóm sản phẩm", "Product group")}
-              </label>
               <UiSelect
                 value={industryFilter}
                 onChange={(next) => applyFilter(() => setIndustryFilter(next))}
@@ -888,17 +871,15 @@ export function PvProductCatalogPage() {
                 minWidth={0}
                 fullWidth
                 menuClassName="pv-catalog-menu"
+                placeholder={copy("Nhóm sản phẩm: Tất cả", "Product group: All")}
                 options={[
-                  { value: FILTER_ALL, label: copy("Tất cả", "All") },
-                  ...industryOptions,
+                  { value: FILTER_ALL, label: copy("Nhóm sản phẩm: Tất cả", "Product group: All") },
+                  ...industryOptions.map((option) => ({ ...option, label: `${copy("Nhóm sản phẩm", "Product group")}: ${option.label}` })),
                 ]}
                 data-testid="pv-catalog-industry-filter"
               />
             </div>
             <div className="pv-catalog-filter">
-              <label id="pv-catalog-published-label">
-                {copy("Trạng thái hiển thị", "Visibility")}
-              </label>
               <UiSelect
                 value={publishedFilter}
                 onChange={(next) => applyFilter(() => setPublishedFilter(next))}
@@ -906,14 +887,27 @@ export function PvProductCatalogPage() {
                 minWidth={0}
                 fullWidth
                 menuClassName="pv-catalog-menu"
+                placeholder={copy("Trạng thái: Tất cả", "Status: All")}
                 options={[
-                  { value: FILTER_ALL, label: copy("Tất cả", "All") },
-                  { value: "true", label: t("pv.admin.publishedShown") },
-                  { value: "false", label: t("pv.admin.publishedHidden") },
+                  { value: FILTER_ALL, label: copy("Trạng thái: Tất cả", "Status: All") },
+                  { value: "true", label: `${copy("Trạng thái", "Status")}: ${t("pv.admin.publishedShown")}` },
+                  { value: "false", label: `${copy("Trạng thái", "Status")}: ${t("pv.admin.publishedHidden")}` },
                 ]}
                 data-testid="pv-catalog-published-filter"
               />
             </div>
+            <button
+              type="button"
+              className="pv-catalog-filter-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls="pv-catalog-filters-content"
+              onClick={() => setFiltersOpen((current) => !current)}
+            >
+              <FilterOutlined aria-hidden="true" />
+              {copy("Bộ lọc", "Filters")}
+            </button>
+        </div>
+        <div id="pv-catalog-filters-content" className="pv-catalog-extra-filters" hidden={!filtersOpen}>
             <div className="pv-catalog-view-filter">
               <span>{copy("Cách hiển thị", "View")}</span>
               <div className="pv-catalog-view-tabs" role="group" aria-label={t("pv.productCatalog.viewTablistAria")}>
@@ -925,7 +919,6 @@ export function PvProductCatalogPage() {
                 </button>
               </div>
             </div>
-          </div>
         </div>
       </section>
 
