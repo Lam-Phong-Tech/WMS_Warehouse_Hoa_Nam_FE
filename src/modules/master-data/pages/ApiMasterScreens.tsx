@@ -72,7 +72,6 @@ import {
   normalizeError,
   resolveFormErrors,
 } from "@/shared/api/api-error";
-import { MvpPaginationFooter } from "@/shared/components/mvp/MvpListPagination";
 import {
   MVP_PAGE_SIZE_OPTIONS,
   resolveApiPagination,
@@ -1959,6 +1958,9 @@ const AGENCY_FORM_FIELDS = {
 
 export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
+  const language = useLanguageStore((state) => state.language);
+  const copy = (vi: string, en: string) =>
+    language === "vi" ? vi : localizedEnglish(en);
   const [agencySearchParams] = useSearchParams();
   const openCreateRequested =
     openCreateOnMount || agencySearchParams.get("screen") === "AGY-02";
@@ -2172,72 +2174,76 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           ) : null}
         </header>
         <section
+          className="agy-search-panel"
+          aria-label={t("masterData.recipient.searchAria")}
+        >
+          <div className="agy-toolbar">
+            <UiTextField
+              value={keyword}
+              onChange={(event) => {
+                setKeyword(event.target.value);
+                setPage(1);
+              }}
+              placeholder={t("masterData.recipient.searchPlaceholder")}
+              fullWidth
+              slotProps={{
+                htmlInput: {
+                  "aria-label": t("masterData.recipient.searchAria"),
+                },
+                input: {
+                  startAdornment: <SearchOutlined aria-hidden="true" />,
+                },
+              }}
+            />
+            <UiSelect
+              aria-label={t("masterData.recipient.typeFilterAria")}
+              value={recipientType}
+              onChange={(value) => {
+                setRecipientType(value as RecipientType | "");
+                setPage(1);
+              }}
+              placeholder={t("masterData.recipient.typeFilterPlaceholder")}
+              fullWidth
+              menuClassName="agy-select-menu"
+              options={RECIPIENT_TYPES.map((value) => ({
+                value,
+                label: `${t("masterData.recipient.colType")}: ${RECIPIENT_TYPE_LABELS[value]}`,
+              }))}
+            />
+            <UiSelect
+              aria-label={t("masterData.status.filterAria")}
+              value={status}
+              onChange={(value) => {
+                setStatus(value as MasterStatus | "");
+                setPage(1);
+              }}
+              placeholder={t("masterData.status.allPlaceholder")}
+              fullWidth
+              menuClassName="agy-select-menu"
+              options={statusOptions(t).map((option) => ({
+                ...option,
+                label: `${t("masterData.status.label")}: ${option.label}`,
+              }))}
+            />
+          </div>
+        </section>
+        <section
           className="agy-list-card"
           aria-label={tUi("updatedUi.text_93ff84be91ec")}
         >
-          <div className="agy-toolbar">
-            <div className="agy-filter">
-              <span>{tUi("reports.packingLabel.searchLabel")}</span>
-              <div className="agy-search">
-                <SearchOutlined aria-hidden="true" />
-                <UiTextField
-                  value={keyword}
-                  onChange={(event) => {
-                    setKeyword(event.target.value);
-                    setPage(1);
-                  }}
-                  placeholder={t("masterData.recipient.searchPlaceholder")}
-                  fullWidth
-                  slotProps={{
-                    htmlInput: {
-                      "aria-label": t("masterData.recipient.searchAria"),
-                    },
-                  }}
-                />
-              </div>
-            </div>
-            <div className="agy-filter">
-              <span>{tUi("updatedUi.text_000a7ce014e9")}</span>
-              <UiSelect
-                aria-label={t("masterData.recipient.typeFilterAria")}
-                value={recipientType}
-                onChange={(value) => {
-                  setRecipientType(value as RecipientType | "");
-                  setPage(1);
-                }}
-                placeholder={t("masterData.recipient.typeFilterPlaceholder")}
-                fullWidth
-                menuClassName="agy-select-menu"
-                options={RECIPIENT_TYPES.map((value) => ({
-                  value,
-                  label: RECIPIENT_TYPE_LABELS[value],
-                }))}
-              />
-            </div>
-            <div className="agy-filter">
-              <span>{tUi("dashboard.composition.colStatus")}</span>
-              <UiSelect
-                aria-label={t("masterData.status.filterAria")}
-                value={status}
-                onChange={(value) => {
-                  setStatus(value as MasterStatus | "");
-                  setPage(1);
-                }}
-                placeholder={t("masterData.status.allPlaceholder")}
-                fullWidth
-                menuClassName="agy-select-menu"
-                options={statusOptions(t)}
-              />
-            </div>
-          </div>
-
           <ApiErrorAlert
             error={query.error}
             fallback={t("masterData.recipient.errLoad")}
             onRetry={() => void query.refetch()}
           />
 
-          <Box className="agy-table-wrap" aria-busy={query.isLoading}>
+          <Box
+            className="agy-table-wrap"
+            role="region"
+            aria-label={tUi("updatedUi.text_93ff84be91ec")}
+            tabIndex={0}
+            aria-busy={query.isLoading}
+          >
             <table className="agy-table">
               <thead>
                 <tr>
@@ -2297,9 +2303,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     onSort={requestSort}
                     sortType="value"
                   />
-                  <th aria-label={t("masterData.common.actionsAria")}>
-                    {tUi("outbound.detail.colAction")}
-                  </th>
+                  <th aria-label={t("masterData.common.actionsAria")} />
                 </tr>
               </thead>
               <tbody>
@@ -2352,19 +2356,29 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           label={masterStatusLabel(record.status, t)}
                         />
                       </td>
-                      <td>
+                      <td className="agy-actions-col">
                         {canManage ? (
-                          <RowActionButton
-                            kind="edit"
+                          <button
+                            type="button"
+                            className="agy-detail-link"
+                            aria-label={`${t("masterData.common.edit")}: ${record.agency_name}`}
                             onClick={() => openEdit(record)}
                           >
-                            {t("masterData.common.edit")}
-                          </RowActionButton>
-                        ) : (
-                          <span className="muted">
-                            {t("masterData.common.viewOnly")}
-                          </span>
-                        )}
+                            <svg
+                              aria-hidden="true"
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M5 12h14m-6-6 6 6-6 6" />
+                            </svg>
+                          </button>
+                        ) : null}
                       </td>
                     </tr>
                   ))
@@ -2380,15 +2394,16 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </Box>
 
           <div className="agy-footer-row">
-            <MvpPaginationFooter
-              current={pagination.current}
-              pageSize={perPage}
-              total={pagination.total}
-              itemLabel={t("masterData.recipient.itemLabel")}
-              onChange={setPage}
-            />
-            <div className="agy-filter agy-page-size">
-              <span>{tUi("inbound.list.pageSizeAria")}</span>
+            <div className="agy-page-info">
+              <span>
+                {copy("Hiển thị", "Showing")} {" "}
+                {pagination.total ? (pagination.current - 1) * perPage + 1 : 0}–
+                {Math.min(pagination.current * perPage, pagination.total)} / {" "}
+                {pagination.total.toLocaleString(
+                  language === "vi" ? "vi-VN" : "en-US",
+                )} {" "}
+                {t("masterData.recipient.itemLabel")}
+              </span>
               <UiSelect
                 aria-label={t("masterData.common.pageSizeAria")}
                 value={perPage}
@@ -2400,10 +2415,18 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 menuClassName="agy-select-menu"
                 options={perPageOptions.map((size) => ({
                   value: size,
-                  label: `${size} / trang`,
+                  label: `${size} / ${copy("trang", "page")}`,
                 }))}
               />
             </div>
+            <UiPagination
+              page={pagination.current}
+              pageSize={perPage}
+              total={pagination.total}
+              onPageChange={setPage}
+              showTotal={false}
+              disabled={query.isLoading}
+            />
           </div>
         </section>
         <UiDialog
