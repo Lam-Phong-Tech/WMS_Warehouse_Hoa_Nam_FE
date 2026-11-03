@@ -977,6 +977,19 @@ export function PvProductCatalogPage() {
                 rowKey={(row) => row.id}
                 mobileBreakpoint="sm"
                 actionColumnWidth={96}
+                hideActionHeader
+                headerCellStyle={{
+                  backgroundColor: "#d2edf7",
+                  backgroundImage: "none",
+                  color: "var(--pv-muted)",
+                  fontSize: 16,
+                  lineHeight: "24px",
+                  fontWeight: 800,
+                  letterSpacing: "0.02em",
+                  textTransform: "uppercase",
+                  padding: "12px 18px",
+                  borderBottom: "1px solid var(--pv-line)",
+                }}
                 renderRowActions={(row) => (
                   <button
                     type="button"

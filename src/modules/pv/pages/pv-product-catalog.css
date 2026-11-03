@@ -1086,14 +1086,6 @@
 .pv-catalog-product-name {
   font-weight: 500;
 }
-.pv-catalog-page .pv-catalog-table thead th::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--pv-pale);
-  pointer-events: none;
-}
 @container pv-catalog (min-width: 850px) {
   .pv-catalog-stats {
     grid-template-columns: repeat(4, minmax(0, 1fr));
