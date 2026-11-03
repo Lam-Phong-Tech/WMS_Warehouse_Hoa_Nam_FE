@@ -142,13 +142,6 @@ export function AppTopbar({
   const roleLabel = isSuperAdmin
     ? t("topbar.accountRoleSuperAdmin")
     : t("topbar.accountRoleUser");
-  const scopeLabel = [
-    profile?.position?.name,
-    profile?.department?.name,
-    profile?.branch?.name ?? profile?.company?.name,
-  ]
-    .filter(Boolean)
-    .join(" · ");
 
   /**
    * Nguồn tìm kiếm là chính cây điều hướng ĐÃ LỌC THEO QUYỀN — không bao giờ
@@ -628,14 +621,6 @@ export function AppTopbar({
               role="menu"
               aria-label={t("topbar.accountLabel")}
             >
-              <div className="account-summary">
-                <span className="avatar avatar-large">{initials}</span>
-                <div>
-                  <strong>{displayName}</strong>
-                  <span>{roleLabel}</span>
-                  {scopeLabel ? <small>{scopeLabel}</small> : null}
-                </div>
-              </div>
               <div className="account-actions">
                 <button
                   className="header-menu-item account-action"

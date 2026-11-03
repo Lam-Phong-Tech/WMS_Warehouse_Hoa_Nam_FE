@@ -86,14 +86,16 @@ afterEach(() => {
 });
 
 describe("AppTopbar", () => {
-  it("chỉ giữ thông tin tài khoản, đổi mật khẩu và đăng xuất trong menu tài khoản", () => {
+  it("không lặp tên và vai trò trong menu khi thanh trên đã hiển thị", () => {
     renderTopbar();
-    fireEvent.click(
-      screen.getByRole("button", { name: /Tài khoản Super Admin/ }),
-    );
+    const accountButton = screen.getByRole("button", {
+      name: /Tài khoản Super Admin/,
+    });
+    expect(accountButton).toHaveTextContent("Super Admin");
+    fireEvent.click(accountButton);
 
     const menu = screen.getByRole("menu", { name: "Tài khoản" });
-    expect(within(menu).getByText("Super Admin")).toBeInTheDocument();
+    expect(within(menu).queryByText("Super Admin")).not.toBeInTheDocument();
     expect(
       within(menu)
         .getAllByRole("menuitem")
