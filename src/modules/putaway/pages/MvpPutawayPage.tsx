@@ -510,7 +510,6 @@ export default function MvpPutawayPage() {
       <header className="ptw-heading">
         <div>
           <h1>{t("putaway.queue.title")}</h1>
-          <p>{t("putaway.queue.subtitle")}</p>
         </div>
       </header>
       <nav className="ptw-tabs" aria-label={t("putaway.queue.navigation")}>

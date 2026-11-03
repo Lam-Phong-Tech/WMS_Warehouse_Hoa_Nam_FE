@@ -95,6 +95,16 @@ beforeEach(() => {
 afterEach(cleanupTestState);
 
 describe("PTW-00 page workflows", () => {
+  it("shows the page title without its descriptive subtitle", () => {
+    renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Linh kiện chờ xếp khay" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Theo dõi BOX đã nhập kho và tạo lệnh xếp khay"),
+    ).not.toBeInTheDocument();
+  });
+
   it("opens real BOX detail and creates a stock-neutral draft from a validated tray scan", async () => {
     const user = userEvent.setup();
     renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);

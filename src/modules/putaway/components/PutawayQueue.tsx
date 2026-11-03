@@ -215,56 +215,59 @@ export function PutawayQueue(props: Props) {
           </button>
         </div>
       ) : null}
-      <section
-        className="ptw-stats"
-        aria-label={t("putaway.queue.summaryAria")}
-        aria-busy={loading}
-      >
-        {[
-          {
-            icon: "cube",
-            label: orders
-              ? t("putaway.queue.ordersTab")
-              : t("putaway.queue.pendingBoxes"),
-            value: rows.length,
-          },
-          {
-            icon: "document",
-            label: t("putaway.queue.componentSkus"),
-            value: skuCount,
-          },
-          {
-            icon: "cube",
-            label: t("putaway.queue.totalQuantity"),
-            value: totalQuantity,
-          },
-        ].map((stat) => (
-          <article key={stat.label}>
-            <span className="ptw-stat-icon">
-              <UiIcon name={stat.icon} size="lg" />
-            </span>
-            <div>
-              <span>{stat.label}</span>
-              <strong>{loading || error ? "—" : number(stat.value)}</strong>
-            </div>
-          </article>
-        ))}
-      </section>
+      {orders ? (
+        <section
+          className="ptw-stats"
+          aria-label={t("putaway.queue.summaryAria")}
+          aria-busy={loading}
+        >
+          {[
+            {
+              icon: "cube",
+              label: t("putaway.queue.ordersTab"),
+              value: rows.length,
+            },
+            {
+              icon: "document",
+              label: t("putaway.queue.componentSkus"),
+              value: skuCount,
+            },
+            {
+              icon: "cube",
+              label: t("putaway.queue.totalQuantity"),
+              value: totalQuantity,
+            },
+          ].map((stat) => (
+            <article key={stat.label}>
+              <span className="ptw-stat-icon">
+                <UiIcon name={stat.icon} size="lg" />
+              </span>
+              <div>
+                <span>{stat.label}</span>
+                <strong>{loading || error ? "—" : number(stat.value)}</strong>
+              </div>
+            </article>
+          ))}
+        </section>
+      ) : null}
       <section
         className="ptw-list"
-        aria-labelledby="ptw-list-title"
+        aria-labelledby={orders ? "ptw-list-title" : undefined}
+        aria-label={orders ? undefined : heading}
         aria-busy={loading || refreshing}
       >
-        <div className="ptw-list-heading">
-          <h2 id="ptw-list-title">
-            {heading}{" "}
-            <span className="ptw-count">
-              {loading || error ? "—" : number(rows.length)}{" "}
-              {orders ? t("putaway.queue.orderUnit") : "BOX"}
-            </span>
-          </h2>
-          <p>{t("putaway.queue.stockNeutral")}</p>
-        </div>
+        {orders ? (
+          <div className="ptw-list-heading">
+            <h2 id="ptw-list-title">
+              {heading}{" "}
+              <span className="ptw-count">
+                {loading || error ? "—" : number(rows.length)}{" "}
+                {t("putaway.queue.orderUnit")}
+              </span>
+            </h2>
+            <p>{t("putaway.queue.stockNeutral")}</p>
+          </div>
+        ) : null}
         {!loading && !error && selectedRows.length ? (
           <div className="ptw-selection" role="status">
             <span>

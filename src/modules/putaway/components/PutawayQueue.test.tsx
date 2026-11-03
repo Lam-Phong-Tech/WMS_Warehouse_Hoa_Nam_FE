@@ -42,12 +42,6 @@ function props(tasks: PutawayTask[]) {
   };
 }
 
-function stat(label: string) {
-  return screen
-    .getByText(label, { selector: ".ptw-stats article span" })
-    .closest("article")!;
-}
-
 function visibleBoxes() {
   return within(screen.getByRole("table"))
     .getAllByRole("button", { name: /^BOX-/ })
@@ -66,7 +60,17 @@ async function selectFilter(
 afterEach(cleanupTestState);
 
 describe("PTW-00 queue interactions", () => {
-  it("excludes active drafts from pending, applies receipt/status together and resets actual totals", async () => {
+  it("starts the pending BOX table directly after the filters without summary cards or a list heading", () => {
+    renderWithProviders(<PutawayQueue {...props([task(1)])} />);
+    expect(document.querySelector(".ptw-stats")).not.toBeInTheDocument();
+    expect(screen.queryByText("Danh sách BOX chờ")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Tạo lệnh không làm thay đổi tồn kho"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("table")).toBeInTheDocument();
+  });
+
+  it("excludes active drafts from pending, applies receipt/status together and resets the table", async () => {
     const user = userEvent.setup();
     const input = props([
       task(1, { quantity: 1200, sku_id: "shared", receipt_code: "PN-01" }),
@@ -76,9 +80,6 @@ describe("PTW-00 queue interactions", () => {
     ]);
     renderWithProviders(<PutawayQueue {...input} />);
     expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
-    expect(stat("BOX chờ xếp khay")).toHaveTextContent("2");
-    expect(stat("SKU linh kiện")).toHaveTextContent("1");
-    expect(stat("Tổng số lượng")).toHaveTextContent("1.500");
 
     await selectFilter(user, "Phiếu nhập nguồn", "PN-02");
     await selectFilter(user, "Trạng thái BOX", "Tất cả");
@@ -87,12 +88,9 @@ describe("PTW-00 queue interactions", () => {
     await user.click(screen.getByRole("button", { name: "Áp dụng" }));
     expect(input.onApplySearch).toHaveBeenCalledOnce();
     expect(visibleBoxes()).toEqual(["BOX-02", "BOX-03"]);
-    expect(stat("SKU linh kiện")).toHaveTextContent("2");
-    expect(stat("Tổng số lượng")).toHaveTextContent("350");
     await user.click(screen.getByRole("button", { name: "Đặt lại" }));
     expect(input.onSearch).toHaveBeenLastCalledWith("");
     expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
-    expect(stat("Tổng số lượng")).toHaveTextContent("1.500");
   });
 
   it("sorts the full dataset before paging and resets/clamps the current page", async () => {
@@ -201,7 +199,6 @@ describe("PTW-00 queue interactions", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Đang tải danh sách BOX",
     );
-    expect(stat("Tổng số lượng")).toHaveTextContent("—");
     expect(
       screen.queryByText("Không có BOX chờ xếp khay"),
     ).not.toBeInTheDocument();
@@ -215,7 +212,6 @@ describe("PTW-00 queue interactions", () => {
     expect(input.onRefresh).toHaveBeenCalledOnce();
     rendered.rerender(<PutawayQueue {...input} />);
     expect(screen.getByText("Không có BOX chờ xếp khay")).toBeInTheDocument();
-    expect(stat("Tổng số lượng")).toHaveTextContent("0");
     await user.click(screen.getByRole("button", { name: "Làm mới" }));
     expect(input.onRefresh).toHaveBeenCalledTimes(2);
   });
