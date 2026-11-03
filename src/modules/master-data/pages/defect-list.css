@@ -447,49 +447,8 @@
   flex: 1;
 }
 .hn-defect-list-card {
-  padding: 0 16px;
+  padding: 16px 16px 0;
   overflow: hidden;
-}
-.hn-defect-list-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 58px;
-  gap: 14px;
-  padding: 8px 0;
-}
-.hn-defect-list-heading h2 {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  margin: 0;
-  font-size: 18px;
-  line-height: 26px;
-  color: var(--defect-ink);
-  font-weight: 600;
-}
-.hn-defect-count {
-  color: var(--defect-cta);
-  background: var(--defect-pale);
-  border-radius: var(--ops-radius-control);
-  padding: 3px 12px;
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.hn-defect-refresh.MuiButton-root {
-  min-height: 36px;
-  font-size: 13px;
-  flex: none;
-}
-.hn-defect-stale-badge {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--ops-warning-text);
-  border-radius: 4px;
-  background: var(--ops-warning-soft);
-  padding: 3px 8px;
 }
 .hn-defect-applied {
   display: flex;
@@ -1233,18 +1192,6 @@
   }
   .hn-defect-list-card {
     padding-inline: 12px;
-  }
-  .hn-defect-list-heading {
-    flex-wrap: wrap;
-    padding-block: 12px;
-    gap: 10px;
-  }
-  .hn-defect-list-heading h2 {
-    font-size: 17px;
-    gap: 10px;
-  }
-  .hn-defect-refresh.MuiButton-root {
-    margin-left: auto;
   }
   .hn-defect-screen table.defect-table .actions-col {
     box-shadow: -4px 0 8px color-mix(in srgb, var(--defect-ink) 5%, transparent);

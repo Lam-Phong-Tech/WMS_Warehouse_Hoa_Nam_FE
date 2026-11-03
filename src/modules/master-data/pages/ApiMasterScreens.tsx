@@ -3325,44 +3325,8 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       ) : (
         <section
           className="hn-defect-list-card"
-          aria-labelledby="defect-list-title"
+          aria-label={copy("Danh sách bệnh / lỗi", "Defect list")}
         >
-          <div className="hn-defect-list-heading">
-            <h2 id="defect-list-title">
-              {copy("Danh sách bệnh / lỗi", "Defect list")}
-              <span className="hn-defect-count">
-                {busy
-                  ? "—"
-                  : pagination.total.toLocaleString(
-                      language === "en"
-                        ? "en-US"
-                        : language === "zh"
-                          ? "zh-CN"
-                          : "vi-VN",
-                    )}{" "}
-                {hasFilters
-                  ? copy("kết quả", "results")
-                  : copy("hồ sơ", "records")}
-              </span>
-              {stale && (
-                <span className="hn-defect-stale-badge">
-                  {copy("Dữ liệu gần nhất", "Last available data")}
-                </span>
-              )}
-            </h2>
-            <ActionButton
-              kind="refresh"
-              icon={<DefectSymbol name="refresh" />}
-              className="hn-defect-secondary hn-defect-refresh"
-              onClick={refresh}
-              disabled={busy || offline}
-              loading={refreshing}
-            >
-              {refreshing
-                ? copy("Đang cập nhật...", "Updating...")
-                : copy("Cập nhật mới nhất", "Refresh latest")}
-            </ActionButton>
-          </div>
           {refreshing && !stale && <DefectNotice {...feedback} />}
           {hasFilters && (
             <div className="hn-defect-applied">
