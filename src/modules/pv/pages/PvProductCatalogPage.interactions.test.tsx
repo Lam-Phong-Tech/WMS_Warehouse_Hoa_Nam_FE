@@ -152,6 +152,7 @@ function LocationProbe() {
 
 describe("MST-PV-01 · catalog interactions", () => {
   beforeEach(() => {
+    window.sessionStorage.removeItem("hn-pv-catalog-overview-open");
     signInWith();
     useLanguageStore.setState({ language: "vi" });
     listPvAdminResourcesMock.mockReset().mockImplementation(listResources);
@@ -194,18 +195,33 @@ describe("MST-PV-01 · catalog interactions", () => {
     renderWithProviders(<PvProductCatalogPage />);
     await screen.findByRole("table");
 
-    const overview = screen.getByRole("region", { name: "Tổng quan danh mục" });
-    const stat = within(overview).getByText("Tổng sản phẩm");
     const list = screen.getByRole("table");
+    const toggle = screen.getByRole("button", { name: "Tổng quan danh mục" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("region", { name: "Tổng quan danh mục" }),
+    ).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Tổng quan danh mục" }));
-    expect(stat).not.toBeVisible();
+    fireEvent.click(toggle);
+    const overview = screen.getByRole("region", { name: "Tổng quan danh mục" });
+    expect(within(overview).getByText("Tổng sản phẩm")).toBeVisible();
     expect(list).toBeVisible();
+    expect(window.sessionStorage.getItem("hn-pv-catalog-overview-open")).toBe(
+      "true",
+    );
 
-    const expand = screen.getByRole("button", { name: "Tổng quan danh mục" });
-    expect(expand).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(expand);
-    expect(stat).toBeVisible();
+    cleanup();
+    renderWithProviders(<PvProductCatalogPage />);
+    await screen.findByRole("table");
+    const rememberedToggle = screen.getByRole("button", {
+      name: "Tổng quan danh mục",
+    });
+    expect(rememberedToggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(rememberedToggle);
+    expect(rememberedToggle).toHaveAttribute("aria-expanded", "false");
+    expect(window.sessionStorage.getItem("hn-pv-catalog-overview-open")).toBe(
+      "false",
+    );
   });
 
   it("keeps search visible and expands display options from the filter button", async () => {
@@ -410,6 +426,7 @@ describe("MST-PV-01 · catalog interactions", () => {
   it("distinguishes the server total from visibility and image counts on the loaded page", async () => {
     renderWithProviders(<PvProductCatalogPage />);
     await screen.findByRole("table");
+    fireEvent.click(screen.getByRole("button", { name: "Tổng quan danh mục" }));
     const overview = screen.getByRole("region", { name: "Tổng quan danh mục" });
     const total = within(overview).getByTitle(
       /^Tổng kết quả theo từ khóa và trạng thái;.*nhóm sản phẩm lọc trong trang hiện tại/,

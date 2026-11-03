@@ -394,7 +394,15 @@ export function PvProductCatalogPage() {
   const { canManage, canPublish } = useCanManagePv();
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
-  const [overviewOpen, setOverviewOpen] = useState(true);
+  const [overviewOpen, setOverviewOpen] = useState(() => {
+    try {
+      return (
+        window.sessionStorage.getItem("hn-pv-catalog-overview-open") === "true"
+      );
+    } catch {
+      return false;
+    }
+  });
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Đổi cách xem không làm mất trang và các điều kiện lọc đang chọn.
   const [view, setView] = useState<PvCatalogView>("table");
@@ -749,7 +757,18 @@ export function PvProductCatalogPage() {
             title={copy("Tổng quan danh mục", "Catalog overview")}
             aria-expanded={overviewOpen}
             aria-controls="pv-catalog-overview-content"
-            onClick={() => setOverviewOpen((current) => !current)}
+            onClick={() => {
+              const nextOpen = !overviewOpen;
+              setOverviewOpen(nextOpen);
+              try {
+                window.sessionStorage.setItem(
+                  "hn-pv-catalog-overview-open",
+                  String(nextOpen),
+                );
+              } catch {
+                // The toggle remains usable when browser storage is unavailable.
+              }
+            }}
           >
             <AppstoreOutlined aria-hidden="true" />
           </button>
