@@ -30,7 +30,7 @@ function displayCount(value: number | undefined): string {
 }
 
 /** Overview counts cover all receipts visible to the actor, across every page. */
-export function InboundOverview({ onRefresh }: { onRefresh: () => void }) {
+export function InboundOverview() {
   const all = useInboundDocuments({ page: 1, per_page: 1 });
   const drafts = useInboundDocuments({
     page: 1,
@@ -65,11 +65,6 @@ export function InboundOverview({ onRefresh }: { onRefresh: () => void }) {
       ? "—"
       : `${formatQuantity(Math.round(ratio * 10) / 10)}%`;
 
-  const refresh = () => {
-    void Promise.allSettled(queries.map((query) => query.refetch()));
-    onRefresh();
-  };
-
   return (
     <section
       className="hn-inbound-overview hn-inbound-card"
@@ -78,19 +73,6 @@ export function InboundOverview({ onRefresh }: { onRefresh: () => void }) {
     >
       <div className="hn-inbound-overview-head">
         <h2>{tUi("updatedUi.text_c4cea6eb5467")}</h2>
-        <button
-          type="button"
-          className="hn-inbound-sync"
-          onClick={refresh}
-          disabled={busy}
-        >
-          <UiIcon name="refresh" size="sm" />
-          <span>
-            {busy
-              ? tUi("updatedUi.text_34ce6b8a0c0e")
-              : tUi("updatedUi.text_13de81cea04b")}
-          </span>
-        </button>
       </div>
 
       <div className="hn-inbound-overview-metrics" aria-live="polite">
@@ -161,7 +143,7 @@ export function InboundOverview({ onRefresh }: { onRefresh: () => void }) {
 
       {hasError ? (
         <p className="hn-inbound-overview-error" role="alert">
-          {tUi("updatedUi.text_7ccd0847f18c")}
+          {tUi("inbound.list.loadError")}
         </p>
       ) : null}
       <div className="hn-inbound-overview-note">

@@ -255,7 +255,6 @@ function InboundListScreen() {
       <header className="hn-inbound-header">
         <div>
           <h1>{tUi("updatedUi.text_6e410870eb7f")}</h1>
-          <p>{tUi("updatedUi.text_30519bd9682d")}</p>
         </div>
         <div className="hn-inbound-header-actions">
           {canCreate ? (
@@ -270,19 +269,14 @@ function InboundListScreen() {
           ) : null}
         </div>
       </header>
-      <InboundOverview
-        onRefresh={() => {
-          void query.refetch();
-        }}
-      />
+      <InboundOverview />
       <section
         className="hn-inbound-list-card"
         aria-labelledby="hn-inbound-list-title"
       >
         <div className="hn-inbound-list-heading">
           <h2 id="hn-inbound-list-title">
-            {tUi("updatedUi.text_b7f7bae4ff19")}{" "}
-            <span>{query.data ? formatQuantity(total) : EMPTY_TEXT}</span>
+            {tUi("updatedUi.text_b7f7bae4ff19")}
           </h2>
           <div className="hn-inbound-sort">
             <UiSelect

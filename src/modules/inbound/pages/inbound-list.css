@@ -73,11 +73,6 @@
   line-height: 38px;
   letter-spacing: -0.02em;
 }
-.hn-inbound-header p {
-  color: var(--in-muted);
-  font-size: 14px;
-  line-height: 22px;
-}
 .hn-inbound-header-actions {
   display: flex;
   align-items: stretch;
@@ -162,24 +157,6 @@
   font-size: 18px;
   line-height: 26px;
   font-weight: 700;
-}
-.hn-inbound-sync {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 0;
-  padding: 4px 10px;
-  color: var(--in-text);
-  background: var(--in-pale);
-  border-radius: 18px;
-  font-size: 12px;
-  min-height: 30px;
-}
-.hn-inbound-sync:hover {
-  background: color-mix(in srgb, var(--in-primary) 16%, var(--in-surface));
-}
-.hn-inbound-sync:disabled {
-  opacity: 0.65;
 }
 .hn-inbound-overview-metrics {
   display: grid;
@@ -304,16 +281,6 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-}
-.hn-inbound-list-heading h2 > span {
-  display: inline-grid;
-  place-items: center;
-  min-width: 42px;
-  padding: 1px 10px;
-  font-size: 14px;
-  line-height: 26px;
-  border-radius: 20px;
-  background: var(--in-pale);
 }
 .hn-inbound-list .MuiInputBase-root {
   color: var(--in-text);
@@ -848,9 +815,6 @@
   }
   .hn-inbound-overview-head h2 {
     font-size: 18px;
-  }
-  .hn-inbound-sync {
-    font-size: 12px;
   }
   .hn-inbound-completion {
     flex-wrap: wrap;

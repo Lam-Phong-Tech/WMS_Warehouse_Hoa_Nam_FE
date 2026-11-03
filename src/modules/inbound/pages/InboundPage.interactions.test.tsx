@@ -25,11 +25,7 @@ vi.mock("@/shared/data/reference-queries", () => ({
   }),
 }));
 vi.mock("@/modules/inbound/components/InboundOverview", () => ({
-  InboundOverview: ({ onRefresh }: { onRefresh: () => void }) => (
-    <button type="button" onClick={onRefresh}>
-      Đồng bộ danh sách kiểm thử
-    </button>
-  ),
+  InboundOverview: () => <div data-testid="inbound-overview-mock" />,
 }));
 vi.mock("@/modules/inbound/components/InboundDraftModal", () => ({
   InboundDraftModal: ({
@@ -366,7 +362,7 @@ describe("IN-01 · filters and live states", () => {
     expectLatestQuery({ search: undefined, page: 1 });
   });
 
-  it("retries a failed request and connects overview sync to the same live list", () => {
+  it("retries a failed request", () => {
     queryOverrides = {
       isError: true,
       error: new Error("Network unavailable"),
@@ -376,9 +372,5 @@ describe("IN-01 · filters and live states", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     expect(refetch).toHaveBeenCalledTimes(1);
-    fireEvent.click(
-      screen.getByRole("button", { name: "Đồng bộ danh sách kiểm thử" }),
-    );
-    expect(refetch).toHaveBeenCalledTimes(2);
   });
 });
