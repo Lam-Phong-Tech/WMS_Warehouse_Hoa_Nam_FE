@@ -304,11 +304,7 @@ export function PvProductImageField({
 
       {error ? <UiAlert tone="error">{error}</UiAlert> : null}
 
-      {value.length === 0 ? (
-        <Box component="span" sx={{ fontSize: 12, color: S.textDisabled }}>
-          {t("pv.productCatalog.imageEmpty")}
-        </Box>
-      ) : (
+      {value.length > 0 && (
         <Stack spacing={1} data-testid="pv-image-list">
           {value.map((image, index) => (
             <Box

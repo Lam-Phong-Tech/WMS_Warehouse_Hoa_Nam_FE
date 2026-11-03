@@ -1181,11 +1181,6 @@ export function PvProductCatalogPage() {
             />
           </Grid>
 
-          <Grid size={12}>
-            <Box component="span" sx={{ fontSize: 12, color: S.textDisabled }}>
-              {t("pv.admin.publishHint")}
-            </Box>
-          </Grid>
         </Grid>
           </div>
           <footer className="pv-catalog-form-footer">
