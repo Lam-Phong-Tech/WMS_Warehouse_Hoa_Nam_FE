@@ -136,11 +136,14 @@ function renderPage() {
 
 async function selectOption(label: string, name: string) {
   fireEvent.mouseDown(screen.getByLabelText(label));
-  fireEvent.click(await screen.findByRole("option", { name }));
+  fireEvent.click(
+    await screen.findByRole("option", { name: new RegExp(`${name}$`) }),
+  );
 }
 
 describe("WarrantyComponentIssueListPage (WAR-04)", () => {
   beforeEach(() => {
+    window.sessionStorage.removeItem("hn-war04-overview-open");
     documents = DOCUMENTS;
     listFails = false;
     vi.mocked(fetchComponentIssueDocuments).mockReset();
@@ -231,6 +234,37 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     vi.clearAllMocks();
   });
 
+  it("chỉ giữ tiêu đề chính, mở tổng quan từ nút cạnh Tạo phiếu và dùng một thao tác mỗi dòng", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: "CI-0001" });
+
+    expect(screen.queryByText("Bảo hành & sửa chữa")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Cấp linh kiện cho hồ sơ bảo hành đang hoạt động"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Chỉ dùng cho bảo hành · Kho Hoa Nam chỉ đọc"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /Danh sách phiếu/ }),
+    ).not.toBeInTheDocument();
+
+    const overviewToggle = screen.getByRole("button", {
+      name: "Tổng quan ghi sổ",
+    });
+    expect(overviewToggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(overviewToggle);
+    expect(overviewToggle).toHaveAttribute("aria-expanded", "true");
+    expect(await screen.findByText("1 / 2")).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("button", { name: "Chi tiết CI-0002" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Thao tác khác CI-0002" }),
+    ).toBeInTheDocument();
+  });
+
   it("hiển thị mã case, kho, linh kiện và tổng quan từ dữ liệu API thực", async () => {
     renderPage();
 
@@ -244,9 +278,7 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
       await screen.findByText(/KHO-HCM · Kho Hồ Chí Minh/),
     ).toBeInTheDocument();
     expect(screen.getByText(/KHO-HN · Kho Hà Nội/)).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Tổng 2 phiếu xuất linh kiện"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Hiển thị 1–2 / 2 phiếu")).toBeInTheDocument();
     expect(await screen.findByText("1 / 2")).toBeInTheDocument();
     expect(screen.getByText("50%")).toBeInTheDocument();
     expect(
@@ -299,10 +331,13 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     ).toHaveTextContent("wc-2:ci-2");
   });
 
-  it("nút ghi nhận mở lại đúng phiếu đang quét", async () => {
+  it("menu thao tác mở lại đúng phiếu đang quét", async () => {
     renderPage();
     fireEvent.click(
-      await screen.findByRole("button", { name: "Ghi nhận CI-0001" }),
+      await screen.findByRole("button", { name: "Thao tác khác CI-0001" }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Mở phiếu xuất linh kiện" }),
     );
     expect(
       await screen.findByTestId("component-issue-modal"),
@@ -344,7 +379,7 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
         }),
       );
     });
-    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
     expect(search).toHaveValue("");
     expect(
       screen.getByLabelText("Lọc trạng thái phiếu xuất linh kiện"),
@@ -471,9 +506,7 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
       "Không tải được danh sách phiếu xuất linh kiện",
     );
     listFails = false;
-    expect(screen.getByLabelText("Chưa có tổng số phiếu")).toHaveTextContent(
-      "—",
-    );
+    expect(screen.getByText("Chưa có tổng số phiếu")).toBeInTheDocument();
     expect(
       screen.queryByLabelText("Tổng 0 phiếu xuất linh kiện"),
     ).not.toBeInTheDocument();
@@ -534,9 +567,7 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     );
     renderPage();
 
-    expect(screen.getByLabelText("Chưa có tổng số phiếu")).toHaveTextContent(
-      "—",
-    );
+    expect(screen.getByText("Chưa có tổng số phiếu")).toBeInTheDocument();
     expect(
       screen.queryByLabelText("Tổng 0 phiếu xuất linh kiện"),
     ).not.toBeInTheDocument();
@@ -547,9 +578,7 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     expect(
       await screen.findByRole("button", { name: "CI-0001" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Tổng 2 phiếu xuất linh kiện"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Hiển thị 1–2 / 2 phiếu")).toBeInTheDocument();
   });
 
   it("sắp xếp cập nhật theo ngày ghi sổ và dùng ngày lập khi chưa ghi sổ", async () => {

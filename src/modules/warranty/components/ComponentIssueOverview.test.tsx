@@ -134,21 +134,14 @@ describe("WAR-04 overview authoritative status totals", () => {
     expect(screen.getByRole("button", { name: "Đang tải…" })).toBeDisabled();
   });
 
-  it("thu gọn và mở lại số liệu tổng quan", () => {
+  it("hiển thị số liệu để trang điều khiển việc đóng mở", () => {
     renderWithProviders(<ComponentIssueOverview />);
-
-    const toggle = screen.getByRole("button", {
-      name: "Thu gọn tổng quan ghi sổ",
-    });
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Mở rộng tổng quan ghi sổ" }),
-    );
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("heading", { name: "Tổng quan ghi sổ" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Thu gọn tổng quan ghi sổ" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toBeInTheDocument();
   });
 
@@ -159,10 +152,6 @@ describe("WAR-04 overview authoritative status totals", () => {
       <ComponentIssueOverview onStatusSelect={onStatusSelect} />,
     );
 
-    await user.tab();
-    expect(
-      screen.getByRole("button", { name: "Thu gọn tổng quan ghi sổ" }),
-    ).toHaveFocus();
     await user.tab();
     expect(
       screen.getByRole("button", { name: "Lọc phiếu đã ghi sổ" }),

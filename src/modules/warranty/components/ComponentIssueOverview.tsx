@@ -1,5 +1,4 @@
-import { useState, type ReactNode } from "react";
-import { DownOutlined } from "@/shared/components/icons";
+import type { ReactNode } from "react";
 import { useComponentIssues } from "@/modules/warranty/hooks/use-warranty";
 import type { ComponentIssueStatus } from "@/modules/warranty/services/componentIssueService";
 import { formatQuantity } from "@/shared/utils/format-number";
@@ -56,7 +55,6 @@ function Metric({
 export function ComponentIssueOverview({
   onStatusSelect,
 }: ComponentIssueOverviewProps) {
-  const [expanded, setExpanded] = useState(true);
   const drafts = useComponentIssues({ status: "DRAFT", page: 1, per_page: 1 });
   const scanning = useComponentIssues({
     status: "SCANNING",
@@ -121,20 +119,8 @@ export function ComponentIssueOverview({
     >
       <div className="hn-war04-overview-heading">
         <h2>{tUi("updatedUi.text_80df50920cc8")}</h2>
-        <button
-          type="button"
-          className="hn-war04-overview-toggle"
-          aria-label={
-            expanded ? "Thu gọn tổng quan ghi sổ" : "Mở rộng tổng quan ghi sổ"
-          }
-          aria-expanded={expanded}
-          aria-controls="hn-war04-overview-content"
-          onClick={() => setExpanded((current) => !current)}
-        >
-          <DownOutlined aria-hidden="true" />
-        </button>
       </div>
-      <div id="hn-war04-overview-content" hidden={!expanded}>
+      <div>
         <div className="hn-war04-overview-grid" aria-live="polite">
           <Metric
             className="hn-war04-overview-posted"
