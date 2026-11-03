@@ -176,7 +176,7 @@ describe("CatalogMasterScreen interactions", () => {
     await user.click(
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
     );
-    await user.click(screen.getByRole("option", { name: "Ngừng sử dụng" }));
+    await user.click(screen.getByRole("option", { name: "Trạng thái: Ngừng sử dụng" }));
     await waitFor(() =>
       expectListRequest("BRAND", {
         keyword: "dong",
@@ -188,7 +188,7 @@ describe("CatalogMasterScreen interactions", () => {
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
     );
     expect(screen.getAllByRole("option", { name: "Tất cả" })).toHaveLength(1);
-    await user.click(screen.getByRole("option", { name: "Tất cả" }));
+    await user.click(screen.getByRole("option", { name: "Trạng thái: Tất cả" }));
     await waitFor(() => {
       const latestListRequest = getCatalogMasters.mock.calls
         .filter(([kind, params]) => kind === "BRAND" && params.per_page === 10)
@@ -204,7 +204,7 @@ describe("CatalogMasterScreen interactions", () => {
     await user.click(
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
     );
-    await user.click(screen.getByRole("option", { name: "Ngừng sử dụng" }));
+    await user.click(screen.getByRole("option", { name: "Trạng thái: Ngừng sử dụng" }));
 
     await user.click(screen.getByRole("button", { name: /page 2|trang 2/i }));
     await waitFor(() =>
@@ -504,7 +504,7 @@ describe("CatalogMasterScreen interactions", () => {
     ).toBeEnabled();
 
     await user.click(
-      screen.getByRole("button", { name: "Xóa bộ lọc tìm kiếm" }),
+      screen.getByRole("button", { name: "Xóa lọc" }),
     );
     expect(await screen.findByText(RECORD.code)).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Tìm hãng" })).toHaveValue("");

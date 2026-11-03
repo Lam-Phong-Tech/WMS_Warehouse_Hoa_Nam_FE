@@ -9,8 +9,6 @@ import "./catalog-master.css";
 import {
   AppstoreOutlined,
   SearchOutlined,
-  FilterOutlined,
-  CloseOutlined,
   FileTextOutlined,
   InboxOutlined,
   ShopOutlined,
@@ -631,15 +629,8 @@ export function CatalogMasterScreen() {
           className="hn-catalog-filters"
           aria-label={text("Tìm kiếm và lọc", "Search and filters")}
         >
-          <h2 className="hn-catalog-filter-title">
-            <FilterOutlined />
-            {text("Tìm kiếm và lọc", "Search and filters")}
-          </h2>
           <div className="hn-catalog-filter-grid">
             <div className="hn-catalog-search">
-              <label htmlFor="catalog-search">
-                {text("Tìm kiếm", "Search")}
-              </label>
               <UiTextField
                 id="catalog-search"
                 value={keyword}
@@ -659,19 +650,6 @@ export function CatalogMasterScreen() {
                         <SearchOutlined />
                       </span>
                     ),
-                    endAdornment: keyword ? (
-                      <span className="hn-catalog-input-clear">
-                        <ActionIconButton
-                          className="hn-catalog-clear"
-                          kind="clear"
-                          label={text("Xóa tìm kiếm", "Clear search")}
-                          onClick={() => {
-                            setKeyword("");
-                            setPage(1);
-                          }}
-                        />
-                      </span>
-                    ) : undefined,
                   },
                 }}
                 onChange={(event) => {
@@ -681,7 +659,6 @@ export function CatalogMasterScreen() {
               />
             </div>
             <div className="hn-catalog-field">
-              <span>{t("masterData.status.label")}</span>
               <UiSelect
                 aria-label={t("masterData.status.filterAria")}
                 value={statusFilter}
@@ -691,49 +668,24 @@ export function CatalogMasterScreen() {
                   setStatusFilter(value as MasterStatus | "");
                   setPage(1);
                 }}
-                displayEmpty
-                options={[
-                  { value: "", label: text("Tất cả", "All") },
-                  ...statusOptions(t),
-                ]}
+                placeholder={text("Trạng thái: Tất cả", "Status: All")}
+                options={statusOptions(t).map((option) => ({
+                  ...option,
+                  label: `${text("Trạng thái", "Status")}: ${option.label}`,
+                }))}
               />
             </div>
+            {hasFilters && (
+              <button
+                type="button"
+                className="hn-catalog-reset-filters"
+                onClick={resetFilters}
+              >
+                {text("Xóa lọc", "Clear filters")}
+              </button>
+            )}
           </div>
         </section>
-      )}
-
-      {hasFilters && (
-        <div
-          className="hn-catalog-filter-chips"
-          aria-label={text("Bộ lọc đang áp dụng", "Active filters")}
-        >
-          {keyword.trim() && (
-            <button
-              type="button"
-              onClick={() => {
-                setKeyword("");
-                setPage(1);
-              }}
-              aria-label={text("Xóa bộ lọc tìm kiếm", "Remove search filter")}
-            >
-              {keyword.trim()}
-              <CloseOutlined />
-            </button>
-          )}
-          {statusFilter && (
-            <button
-              type="button"
-              onClick={() => {
-                setStatusFilter("");
-                setPage(1);
-              }}
-              aria-label={text("Xóa bộ lọc trạng thái", "Remove status filter")}
-            >
-              {businessLabel(MASTER_STATUS_LABELS, statusFilter)}
-              <CloseOutlined />
-            </button>
-          )}
-        </div>
       )}
       {(dismissedNotice !== listQuery.error ||
         feedback.refreshing ||
@@ -774,6 +726,18 @@ export function CatalogMasterScreen() {
                 columns={columns}
                 rows={rows}
                 rowKey={(record) => record.id}
+                headerCellStyle={{
+                  backgroundColor: "#d2edf7",
+                  backgroundImage: "none",
+                  color: "var(--catalog-muted)",
+                  fontSize: 16,
+                  lineHeight: "24px",
+                  fontWeight: 800,
+                  letterSpacing: "0.02em",
+                  textTransform: "uppercase",
+                  padding: "12px 18px",
+                  borderBottom: "1px solid var(--catalog-line)",
+                }}
                 loading={false}
                 emptyText={t("masterData.catalog.empty", {
                   item: activeTab.itemLabel,
