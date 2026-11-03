@@ -15,7 +15,7 @@
  * Ảnh được tải qua API của hệ thống; danh sách URL và ảnh đại diện tiếp tục
  * đi cùng payload hồ sơ (xem PvProductImageField).
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { ROUTES } from "@/shared/constants/routes";
@@ -407,8 +407,7 @@ export function PvProductCatalogPage() {
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
   const [overviewOpen, setOverviewOpen] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(true);
-  // Kiểu hiển thị là lựa chọn của PHIÊN LÀM VIỆC, không nằm trong bộ lọc: đổi
-  // qua dạng hộp không được đụng tới trang / từ khoá đang xem.
+  // Đổi cách xem không làm mất trang và các điều kiện lọc đang chọn.
   const [view, setView] = useState<PvCatalogView>("table");
   const [keyword, setKeyword] = useState("");
   const [industryFilter, setIndustryFilter] = useState(FILTER_ALL);
@@ -638,8 +637,17 @@ export function PvProductCatalogPage() {
    */
   const tableColumns: ResponsiveTableColumn<PvAdminProfile>[] = [
     {
+      key: "row_number",
+      header: copy("STT", "No."),
+      width: "5%",
+      align: "center",
+      hideOnMobile: true,
+      render: () => <span className="pv-catalog-row-number" />,
+    },
+    {
       key: "display_name",
       header: copy("Sản phẩm", "Product"),
+      width: "28%",
       sortAccessor: (row) => row.display_name,
       truncate: 0,
       render: (row) => (
@@ -662,12 +670,14 @@ export function PvProductCatalogPage() {
     {
       key: "sku_code",
       header: copy("Mã sản phẩm / SKU", "Product code / SKU"),
+      width: "17%",
       sortAccessor: (row) => row.sku_code,
       render: (row) => <SkuLink id={row.sku_id} code={row.sku_code} />,
     },
     {
       key: "industries",
       header: copy("Nhóm sản phẩm", "Product group"),
+      width: "18%",
       sortType: "value",
       sortAccessor: (row) => row.industry_ids.length,
       render: (row) =>
@@ -679,6 +689,7 @@ export function PvProductCatalogPage() {
     {
       key: "published",
       header: copy("Trạng thái hiển thị", "Visibility"),
+      width: "14%",
       sortType: "value",
       sortAccessor: (row) => Number(row.published),
       truncate: 0,
@@ -707,6 +718,7 @@ export function PvProductCatalogPage() {
     {
       key: "updated_at",
       header: copy("Cập nhật", "Updated"),
+      width: "8%",
       render: (row) => {
         // Render only a real record timestamp if supplied; never use request time.
         const value = (row as PvAdminProfile & { updated_at?: string })
@@ -789,6 +801,17 @@ export function PvProductCatalogPage() {
           </h1>
         </div>
         <div className="pv-catalog-heading-actions">
+          <button
+            type="button"
+            className="pv-catalog-overview-header-toggle"
+            aria-label={copy("Tổng quan danh mục", "Catalog overview")}
+            title={copy("Tổng quan danh mục", "Catalog overview")}
+            aria-expanded={overviewOpen}
+            aria-controls="pv-catalog-overview-content"
+            onClick={() => setOverviewOpen((current) => !current)}
+          >
+            <AppstoreOutlined aria-hidden="true" />
+          </button>
           <UiButton
             onClick={() => navigate(ROUTES.PV_CATALOG)}
             appearance="outlined"
@@ -829,23 +852,6 @@ export function PvProductCatalogPage() {
               "App PV visibility does not change stock quantities.",
             )}
           />
-          <button
-            type="button"
-            className="pv-catalog-overview-toggle"
-            aria-label={
-              overviewOpen
-                ? copy(
-                    "Thu gọn tổng quan danh mục",
-                    "Collapse catalog overview",
-                  )
-                : copy("Mở rộng tổng quan danh mục", "Expand catalog overview")
-            }
-            aria-expanded={overviewOpen}
-            aria-controls="pv-catalog-overview-content"
-            onClick={() => setOverviewOpen((current) => !current)}
-          >
-            <DownOutlined />
-          </button>
         </div>
         <div id="pv-catalog-overview-content" hidden={!overviewOpen}>
           <div className="pv-catalog-stats" aria-busy={profiles.isFetching}>
@@ -949,6 +955,17 @@ export function PvProductCatalogPage() {
                 data-testid="pv-catalog-published-filter"
               />
             </div>
+            <div className="pv-catalog-view-filter">
+              <span>{copy("Cách hiển thị", "View")}</span>
+              <div className="pv-catalog-view-tabs" role="group" aria-label={t("pv.productCatalog.viewTablistAria")}>
+                <button type="button" aria-pressed={view === "table"} data-testid="pv-catalog-view-table" onClick={() => setView("table")}>
+                  <UnorderedListOutlined aria-hidden="true" /> {t("pv.productCatalog.viewTable")}
+                </button>
+                <button type="button" aria-pressed={view === "card"} data-testid="pv-catalog-view-card" onClick={() => setView("card")}>
+                  <AppstoreOutlined aria-hidden="true" /> {t("pv.productCatalog.viewCard")}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -957,62 +974,6 @@ export function PvProductCatalogPage() {
         className="pv-catalog-panel pv-catalog-list-panel"
         aria-label={copy("Danh sách sản phẩm", "Product list")}
       >
-        <div
-          className="pv-catalog-view-tabs"
-          role="tablist"
-          aria-label={t("pv.productCatalog.viewTablistAria")}
-        >
-          {(
-            [
-              {
-                value: "table",
-                label: t("pv.productCatalog.viewTable"),
-                icon: <UnorderedListOutlined />,
-              },
-              {
-                value: "card",
-                label: t("pv.productCatalog.viewCard"),
-                icon: <AppstoreOutlined />,
-              },
-            ] as const
-          ).map((tab) => (
-            <UiButton
-              key={tab.value}
-              role="tab"
-              appearance="text"
-              aria-selected={view === tab.value}
-              tabIndex={view === tab.value ? 0 : -1}
-              startIcon={tab.icon}
-              data-testid={`pv-catalog-view-${tab.value}`}
-              onClick={() => setView(tab.value)}
-              onKeyDown={(event) => {
-                if (
-                  !["ArrowLeft", "ArrowRight", "Home", "End"].includes(
-                    event.key,
-                  )
-                )
-                  return;
-                event.preventDefault();
-                const next =
-                  event.key === "Home"
-                    ? "table"
-                    : event.key === "End"
-                      ? "card"
-                      : view === "card"
-                        ? "table"
-                        : "card";
-                setView(next);
-                event.currentTarget.parentElement
-                  ?.querySelector<HTMLButtonElement>(
-                    `[data-testid="pv-catalog-view-${next}"]`,
-                  )
-                  ?.focus();
-              }}
-            >
-              {tab.label}
-            </UiButton>
-          ))}
-        </div>
         <div className="pv-catalog-results" aria-busy={profiles.isFetching}>
           {profiles.isLoading ? (
             <LoadingState tip={t("pv.common.loading")} />
@@ -1055,14 +1016,13 @@ export function PvProductCatalogPage() {
               />
             </Box>
           ) : view === "table" ? (
-            <Box className="pv-catalog-table" data-testid="pv-catalog-table">
+            <Box className="pv-catalog-table" data-testid="pv-catalog-table" style={{ "--pv-row-start": (pagination.current - 1) * pagination.pageSize } as CSSProperties}>
               <ResponsiveDataTable<PvAdminProfile>
                 columns={tableColumns}
                 rows={visibleRows}
                 rowKey={(row) => row.id}
                 mobileBreakpoint="sm"
                 actionColumnWidth={160}
-                maxBodyHeight="min(560px, 60vh)"
                 renderRowActions={(row) => (
                   <RowActionGroup sx={{ justifyContent: "flex-end" }}>
                     <RowActionButton

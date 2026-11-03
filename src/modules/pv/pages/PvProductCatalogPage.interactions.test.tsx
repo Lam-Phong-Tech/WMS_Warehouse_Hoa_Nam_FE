@@ -198,17 +198,11 @@ describe("MST-PV-01 · catalog interactions", () => {
     const stat = within(overview).getByText("Tổng sản phẩm");
     const list = screen.getByRole("table");
 
-    fireEvent.click(
-      within(overview).getByRole("button", {
-        name: "Thu gọn tổng quan danh mục",
-      }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Tổng quan danh mục" }));
     expect(stat).not.toBeVisible();
     expect(list).toBeVisible();
 
-    const expand = within(overview).getByRole("button", {
-      name: "Mở rộng tổng quan danh mục",
-    });
+    const expand = screen.getByRole("button", { name: "Tổng quan danh mục" });
     expect(expand).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(expand);
     expect(stat).toBeVisible();
