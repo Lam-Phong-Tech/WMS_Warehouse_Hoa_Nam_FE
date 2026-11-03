@@ -1115,11 +1115,19 @@ export function PvProductCatalogPage() {
             </Grid>
           ) : (
             <Grid size={{ xs: 12, sm: 6 }}>
-              <Box component="span" sx={{ fontSize: 12, color: S.textMedium }}>
-                {t("pv.productCatalog.skuField")}:{" "}
-                <strong>
-                  {editing?.sku_code} — {editing?.sku_name}
-                </strong>
+              <Box
+                className="pv-catalog-form-sku"
+                role="group"
+                aria-label={t("pv.productCatalog.skuField")}
+              >
+                <span>{t("pv.productCatalog.skuField")}</span>
+                <strong>{editing?.sku_code}</strong>
+                {editing?.sku_name &&
+                editing.sku_name !== editing.sku_code ? (
+                  <span className="pv-catalog-form-sku-name">
+                    {editing.sku_name}
+                  </span>
+                ) : null}
               </Box>
             </Grid>
           )}
