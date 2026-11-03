@@ -5733,9 +5733,13 @@ export const MESSAGES_EN: MessageTree = {
     page: {
       subtitle:
         "All system notifications relevant to you — inbound/outbound, warranty, accounts, security.",
+      filterLabel: "Filter notifications",
+      all: "All",
+      unread: "Unread",
       markAll: "Mark all as read",
       loading: "Loading notifications...",
       emptyDescription: "You have not received any notifications yet.",
+      emptyUnread: "You're all caught up.",
       readSuffix: " · Read",
     },
     detail: {
