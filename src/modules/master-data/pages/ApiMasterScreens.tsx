@@ -2367,12 +2367,12 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           <div className="agy-footer-row">
             <div className="agy-page-info">
               <span>
-                {copy("Hiển thị", "Showing")} {" "}
+                {copy("Hiển thị", "Showing")}{" "}
                 {pagination.total ? (pagination.current - 1) * perPage + 1 : 0}–
-                {Math.min(pagination.current * perPage, pagination.total)} / {" "}
+                {Math.min(pagination.current * perPage, pagination.total)} /{" "}
                 {pagination.total.toLocaleString(
                   language === "vi" ? "vi-VN" : "en-US",
-                )} {" "}
+                )}{" "}
                 {t("masterData.recipient.itemLabel")}
               </span>
               <UiSelect
@@ -2400,28 +2400,285 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             />
           </div>
         </section>
-        <UiDialog
-          className="agy-dialog"
+        <Drawer
+          className="agy-drawer"
+          anchor="right"
           open={modalOpen}
           onClose={guardBackdropClose(close)}
-          maxWidth="sm"
-          fullWidth
-          title={
-            <>
-              {editing
+          slotProps={{
+            paper: {
+              "aria-label": editing
                 ? t("masterData.recipient.dialogEdit")
-                : t("masterData.recipient.dialogCreate")}
+                : t("masterData.recipient.dialogCreate"),
+            },
+          }}
+        >
+          <div className="agy-drawer-shell">
+            <header className="agy-drawer-header">
+              <strong>
+                {editing
+                  ? t("masterData.recipient.dialogEdit")
+                  : t("masterData.recipient.dialogCreate")}
+              </strong>
               <ActionIconButton
                 kind="close"
                 label={t("common.close")}
                 onClick={close}
                 disabled={isSaving}
-                sx={{ position: "absolute", right: 10, top: 8 }}
               />
-            </>
-          }
-          actions={
-            <>
+            </header>
+            <div className="agy-drawer-body">
+              <form id="agency-master-form" onSubmit={submit} noValidate>
+                {formError ? (
+                  <Box sx={{ mb: "14px" }}>
+                    <UiAlert tone="error">{formError}</UiAlert>
+                  </Box>
+                ) : null}
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <UiTextField
+                      id="agency-code"
+                      slotProps={{
+                        htmlInput: { maxLength: AGENCY_TEXT_MAX.agency_code },
+                      }}
+                      label={t("masterData.recipient.fieldCode")}
+                      required
+                      fullWidth
+                      value={form.agency_code}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setForm((current) => ({
+                          ...current,
+                          agency_code: value,
+                        }));
+                        setFieldErrors((current) =>
+                          current.agency_code
+                            ? { ...current, agency_code: "" }
+                            : current,
+                        );
+                      }}
+                      disabled={isSaving}
+                      error={Boolean(fieldErrors.agency_code)}
+                      helperText={fieldErrors.agency_code}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <UiTextField
+                      id="agency-name"
+                      slotProps={{
+                        htmlInput: { maxLength: AGENCY_TEXT_MAX.agency_name },
+                      }}
+                      label={t("masterData.recipient.colName")}
+                      required
+                      fullWidth
+                      value={form.agency_name}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setForm((current) => ({
+                          ...current,
+                          agency_name: value,
+                        }));
+                        setFieldErrors((current) =>
+                          current.agency_name
+                            ? { ...current, agency_name: "" }
+                            : current,
+                        );
+                      }}
+                      disabled={isSaving}
+                      error={Boolean(fieldErrors.agency_name)}
+                      helperText={fieldErrors.agency_name}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <UiTextField
+                      id="agency-recipient-type"
+                      select
+                      label={t("masterData.recipient.colType")}
+                      required
+                      fullWidth
+                      disabled={isSaving}
+                      value={form.recipient_type}
+                      onChange={(event) => {
+                        const value = event.target.value as RecipientType | "";
+                        setForm((current) => ({
+                          ...current,
+                          recipient_type: value,
+                        }));
+                        setFieldErrors((current) =>
+                          current.recipient_type
+                            ? { ...current, recipient_type: "" }
+                            : current,
+                        );
+                      }}
+                      error={Boolean(fieldErrors.recipient_type)}
+                      helperText={fieldErrors.recipient_type}
+                      slotProps={{
+                        select: {
+                          displayEmpty: true,
+                          MenuProps: {
+                            slotProps: {
+                              paper: { className: "agy-select-menu" },
+                            },
+                          },
+                        },
+                        inputLabel: { shrink: true },
+                      }}
+                    >
+                      <MenuItem value="">
+                        {t("masterData.recipient.chooseType")}
+                      </MenuItem>
+                      {RECIPIENT_TYPES.map((value) => (
+                        <MenuItem key={value} value={value}>
+                          {RECIPIENT_TYPE_LABELS[value]}
+                        </MenuItem>
+                      ))}
+                    </UiTextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <UiTextField
+                      id="agency-market"
+                      slotProps={{
+                        htmlInput: { maxLength: AGENCY_TEXT_MAX.market },
+                      }}
+                      label={t("masterData.recipient.colMarket")}
+                      fullWidth
+                      value={form.market ?? ""}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setForm((current) => ({ ...current, market: value }));
+                        setFieldErrors((current) =>
+                          current.market ? { ...current, market: "" } : current,
+                        );
+                      }}
+                      disabled={isSaving}
+                      error={Boolean(fieldErrors.market)}
+                      helperText={fieldErrors.market}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <UiTextField
+                      id="agency-region"
+                      slotProps={{
+                        htmlInput: { maxLength: AGENCY_TEXT_MAX.region },
+                      }}
+                      label={t("masterData.recipient.colRegion")}
+                      fullWidth
+                      value={form.region ?? ""}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setForm((current) => ({ ...current, region: value }));
+                        setFieldErrors((current) =>
+                          current.region ? { ...current, region: "" } : current,
+                        );
+                      }}
+                      disabled={isSaving}
+                      error={Boolean(fieldErrors.region)}
+                      helperText={fieldErrors.region}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <UiTextField
+                      id="agency-contact-name"
+                      slotProps={{
+                        htmlInput: { maxLength: AGENCY_TEXT_MAX.contact_name },
+                      }}
+                      label={t("masterData.recipient.colContact")}
+                      fullWidth
+                      value={form.contact_name ?? ""}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setForm((current) => ({
+                          ...current,
+                          contact_name: value,
+                        }));
+                        setFieldErrors((current) =>
+                          current.contact_name
+                            ? { ...current, contact_name: "" }
+                            : current,
+                        );
+                      }}
+                      disabled={isSaving}
+                      error={Boolean(fieldErrors.contact_name)}
+                      helperText={fieldErrors.contact_name}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <UiTextField
+                      id="agency-phone"
+                      label={t("masterData.recipient.colPhone")}
+                      fullWidth
+                      value={form.phone ?? ""}
+                      onChange={(event) => {
+                        const value = event.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10);
+                        setForm((current) => ({ ...current, phone: value }));
+                        setFieldErrors((current) =>
+                          current.phone ? { ...current, phone: "" } : current,
+                        );
+                      }}
+                      disabled={isSaving}
+                      error={Boolean(fieldErrors.phone)}
+                      helperText={fieldErrors.phone}
+                      slotProps={{
+                        htmlInput: { inputMode: "numeric", maxLength: 10 },
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <UiTextField
+                      id="agency-status"
+                      slotProps={{
+                        select: {
+                          MenuProps: {
+                            slotProps: {
+                              paper: { className: "agy-select-menu" },
+                            },
+                          },
+                        },
+                      }}
+                      select
+                      label={t("masterData.status.label")}
+                      fullWidth
+                      disabled={isSaving}
+                      value={form.status}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          status: event.target.value as MasterStatus,
+                        }))
+                      }
+                    >
+                      {statusOptions(t).map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </UiTextField>
+                  </Grid>
+                  <Grid size={12}>
+                    <UiAddressField
+                      id="agency-address"
+                      data-testid="agency-address"
+                      label={t("masterData.recipient.colAddress")}
+                      value={form.address ?? ""}
+                      onChange={(value) => {
+                        setForm((current) => ({ ...current, address: value }));
+                        setFieldErrors((current) =>
+                          current.address
+                            ? { ...current, address: "" }
+                            : current,
+                        );
+                      }}
+                      disabled={isSaving}
+                      error={Boolean(fieldErrors.address)}
+                      helperText={fieldErrors.address}
+                    />
+                  </Grid>
+                </Grid>
+              </form>
+            </div>
+            <footer className="agy-drawer-footer">
               <ActionButton kind="cancel" onClick={close} disabled={isSaving}>
                 {t("masterData.common.cancel")}
               </ActionButton>
@@ -2435,253 +2692,9 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   ? t("masterData.common.saving")
                   : t("masterData.recipient.submit")}
               </ActionButton>
-            </>
-          }
-        >
-          <form id="agency-master-form" onSubmit={submit} noValidate>
-            {formError ? (
-              <Box sx={{ mb: "14px" }}>
-                <UiAlert tone="error">{formError}</UiAlert>
-              </Box>
-            ) : null}
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="agency-code"
-                  slotProps={{
-                    htmlInput: { maxLength: AGENCY_TEXT_MAX.agency_code },
-                  }}
-                  label={t("masterData.recipient.fieldCode")}
-                  required
-                  fullWidth
-                  value={form.agency_code}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setForm((current) => ({
-                      ...current,
-                      agency_code: value,
-                    }));
-                    setFieldErrors((current) =>
-                      current.agency_code
-                        ? { ...current, agency_code: "" }
-                        : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.agency_code)}
-                  helperText={fieldErrors.agency_code}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="agency-name"
-                  slotProps={{
-                    htmlInput: { maxLength: AGENCY_TEXT_MAX.agency_name },
-                  }}
-                  label={t("masterData.recipient.colName")}
-                  required
-                  fullWidth
-                  value={form.agency_name}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setForm((current) => ({
-                      ...current,
-                      agency_name: value,
-                    }));
-                    setFieldErrors((current) =>
-                      current.agency_name
-                        ? { ...current, agency_name: "" }
-                        : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.agency_name)}
-                  helperText={fieldErrors.agency_name}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="agency-recipient-type"
-                  select
-                  label={t("masterData.recipient.colType")}
-                  required
-                  fullWidth
-                  disabled={isSaving}
-                  value={form.recipient_type}
-                  onChange={(event) => {
-                    const value = event.target.value as RecipientType | "";
-                    setForm((current) => ({
-                      ...current,
-                      recipient_type: value,
-                    }));
-                    setFieldErrors((current) =>
-                      current.recipient_type
-                        ? { ...current, recipient_type: "" }
-                        : current,
-                    );
-                  }}
-                  error={Boolean(fieldErrors.recipient_type)}
-                  helperText={fieldErrors.recipient_type}
-                  slotProps={{
-                    select: {
-                      displayEmpty: true,
-                      MenuProps: {
-                        slotProps: { paper: { className: "agy-select-menu" } },
-                      },
-                    },
-                    inputLabel: { shrink: true },
-                  }}
-                >
-                  <MenuItem value="">
-                    {t("masterData.recipient.chooseType")}
-                  </MenuItem>
-                  {RECIPIENT_TYPES.map((value) => (
-                    <MenuItem key={value} value={value}>
-                      {RECIPIENT_TYPE_LABELS[value]}
-                    </MenuItem>
-                  ))}
-                </UiTextField>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="agency-market"
-                  slotProps={{
-                    htmlInput: { maxLength: AGENCY_TEXT_MAX.market },
-                  }}
-                  label={t("masterData.recipient.colMarket")}
-                  fullWidth
-                  value={form.market ?? ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setForm((current) => ({ ...current, market: value }));
-                    setFieldErrors((current) =>
-                      current.market ? { ...current, market: "" } : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.market)}
-                  helperText={fieldErrors.market}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="agency-region"
-                  slotProps={{
-                    htmlInput: { maxLength: AGENCY_TEXT_MAX.region },
-                  }}
-                  label={t("masterData.recipient.colRegion")}
-                  fullWidth
-                  value={form.region ?? ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setForm((current) => ({ ...current, region: value }));
-                    setFieldErrors((current) =>
-                      current.region ? { ...current, region: "" } : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.region)}
-                  helperText={fieldErrors.region}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="agency-contact-name"
-                  slotProps={{
-                    htmlInput: { maxLength: AGENCY_TEXT_MAX.contact_name },
-                  }}
-                  label={t("masterData.recipient.colContact")}
-                  fullWidth
-                  value={form.contact_name ?? ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setForm((current) => ({
-                      ...current,
-                      contact_name: value,
-                    }));
-                    setFieldErrors((current) =>
-                      current.contact_name
-                        ? { ...current, contact_name: "" }
-                        : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.contact_name)}
-                  helperText={fieldErrors.contact_name}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="agency-phone"
-                  label={t("masterData.recipient.colPhone")}
-                  fullWidth
-                  value={form.phone ?? ""}
-                  onChange={(event) => {
-                    const value = event.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 10);
-                    setForm((current) => ({ ...current, phone: value }));
-                    setFieldErrors((current) =>
-                      current.phone ? { ...current, phone: "" } : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.phone)}
-                  helperText={fieldErrors.phone}
-                  slotProps={{
-                    htmlInput: { inputMode: "numeric", maxLength: 10 },
-                  }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <UiTextField
-                  id="agency-status"
-                  slotProps={{
-                    select: {
-                      MenuProps: {
-                        slotProps: { paper: { className: "agy-select-menu" } },
-                      },
-                    },
-                  }}
-                  select
-                  label={t("masterData.status.label")}
-                  fullWidth
-                  disabled={isSaving}
-                  value={form.status}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      status: event.target.value as MasterStatus,
-                    }))
-                  }
-                >
-                  {statusOptions(t).map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </UiTextField>
-              </Grid>
-              <Grid size={12}>
-                <UiAddressField
-                  id="agency-address"
-                  data-testid="agency-address"
-                  label={t("masterData.recipient.colAddress")}
-                  value={form.address ?? ""}
-                  onChange={(value) => {
-                    setForm((current) => ({ ...current, address: value }));
-                    setFieldErrors((current) =>
-                      current.address ? { ...current, address: "" } : current,
-                    );
-                  }}
-                  disabled={isSaving}
-                  error={Boolean(fieldErrors.address)}
-                  helperText={fieldErrors.address}
-                />
-              </Grid>
-            </Grid>
-          </form>
-        </UiDialog>
+            </footer>
+          </div>
+        </Drawer>
       </div>
     </>
   );
@@ -2725,7 +2738,8 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [overviewOpen, setOverviewOpen] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const language = useLanguageStore((state) => state.language);
-  const copy = (vi: string, en: string) => (language === "vi" ? vi : localizedEnglish(en));
+  const copy = (vi: string, en: string) =>
+    language === "vi" ? vi : localizedEnglish(en);
   const [defectSearchParams] = useSearchParams();
   const openCreateRequested =
     openCreateOnMount || defectSearchParams.get("screen") === "DEF-02";
@@ -3310,7 +3324,11 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 {busy
                   ? "—"
                   : pagination.total.toLocaleString(
-                      language === "en" ? "en-US" : language === "zh" ? "zh-CN" : "vi-VN",
+                      language === "en"
+                        ? "en-US"
+                        : language === "zh"
+                          ? "zh-CN"
+                          : "vi-VN",
                     )}{" "}
                 {hasFilters
                   ? copy("kết quả", "results")
