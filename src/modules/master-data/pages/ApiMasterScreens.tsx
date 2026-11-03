@@ -3494,14 +3494,21 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </div>
         </section>
       )}
-      <UiDialog
-        className="hn-defect-dialog"
+      <Drawer
+        className="hn-defect-form-drawer"
+        anchor="right"
         open={modalOpen}
-        onClose={(event, reason) => guardBackdropClose(close)(event, reason)}
-        maxWidth="sm"
-        fullWidth
-        title={
-          <>
+        onClose={guardBackdropClose(close)}
+        slotProps={{
+          paper: {
+            "aria-label": editing
+              ? copy("Sửa lỗi / bệnh", "Edit defect")
+              : copy("Thêm lỗi / bệnh", "Add defect"),
+          },
+        }}
+      >
+        <div className="hn-defect-form-shell">
+          <header className="hn-defect-form-header">
             <span className="hn-defect-dialog-title">
               <span className="hn-defect-dialog-icon">
                 <DefectSymbol name={editing ? "edit" : "clipboard"} />
@@ -3511,15 +3518,10 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   ? copy("Sửa lỗi / bệnh", "Edit defect")
                   : copy("Thêm lỗi / bệnh", "Add defect")}
                 <small>
-                  {editing
-                    ? copy(
-                        "Các trường có dấu * là bắt buộc.",
-                        "Fields marked * are required.",
-                      )
-                    : copy(
-                        "Các trường có dấu * là bắt buộc.",
-                        "Fields marked * are required.",
-                      )}
+                  {copy(
+                    "Các trường có dấu * là bắt buộc.",
+                    "Fields marked * are required.",
+                  )}
                 </small>
               </span>
             </span>
@@ -3528,12 +3530,153 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               label={t("common.close")}
               onClick={close}
               disabled={isSaving}
-              sx={{ position: "absolute", right: 16, top: 20 }}
             />
-          </>
-        }
-        actions={
-          <>
+          </header>
+          <div className="hn-defect-form-body">
+            <form
+              ref={defectFormRef}
+              id="defect-master-form"
+              onSubmit={submit}
+              noValidate
+            >
+              <DefectMutationNotice
+                notice={notice}
+                placement="form"
+                onDismiss={() => setNotice(null)}
+                onCheck={checkSavedResult}
+                onReload={() => void reloadEditing()}
+                onRetry={() => defectFormRef.current?.requestSubmit()}
+                busy={isSaving || reloadingRecord || verificationCode !== null}
+              />
+              {formError && <UiAlert tone="error">{formError}</UiAlert>}
+              <div className="hn-defect-fields">
+                <UiTextField
+                  id="defect-code"
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_code },
+                  }}
+                  label={t("masterData.defect.colCode")}
+                  required
+                  fullWidth
+                  autoFocus={!editing}
+                  value={form.defect_code}
+                  placeholder={copy("Nhập mã lỗi", "Enter defect code")}
+                  onChange={(event) => {
+                    setForm((current) => ({
+                      ...current,
+                      defect_code: event.target.value,
+                    }));
+                    setFieldErrors((current) => ({
+                      ...current,
+                      defect_code: "",
+                    }));
+                  }}
+                  disabled={
+                    isSaving || reloadingRecord || notice?.kind === "unknown"
+                  }
+                  error={Boolean(fieldErrors.defect_code)}
+                  helperText={fieldErrors.defect_code}
+                />
+                <UiTextField
+                  id="defect-name"
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_name },
+                  }}
+                  label={t("masterData.defect.colName")}
+                  required
+                  fullWidth
+                  autoFocus={Boolean(editing)}
+                  value={form.defect_name}
+                  placeholder={copy("Nhập tên lỗi / bệnh", "Enter defect name")}
+                  onChange={(event) => {
+                    setForm((current) => ({
+                      ...current,
+                      defect_name: event.target.value,
+                    }));
+                    setFieldErrors((current) => ({
+                      ...current,
+                      defect_name: "",
+                    }));
+                  }}
+                  disabled={
+                    isSaving || reloadingRecord || notice?.kind === "unknown"
+                  }
+                  error={Boolean(fieldErrors.defect_name)}
+                  helperText={fieldErrors.defect_name}
+                />
+                <UiTextField
+                  id="defect-description"
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    htmlInput: { maxLength: DEFECT_TEXT_MAX.description },
+                  }}
+                  label={t("masterData.common.description")}
+                  fullWidth
+                  multiline
+                  minRows={3}
+                  value={form.description ?? ""}
+                  placeholder={copy("Nhập mô tả", "Enter description")}
+                  onChange={(event) => {
+                    setForm((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }));
+                    setFieldErrors((current) => ({
+                      ...current,
+                      description: "",
+                    }));
+                  }}
+                  disabled={
+                    isSaving || reloadingRecord || notice?.kind === "unknown"
+                  }
+                  error={Boolean(fieldErrors.description)}
+                  helperText={fieldErrors.description}
+                />
+                <UiTextField
+                  id="defect-status"
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    select: {
+                      MenuProps: {
+                        slotProps: { paper: { className: "hn-defect-menu" } },
+                      },
+                    },
+                  }}
+                  select
+                  label={t("masterData.status.label")}
+                  fullWidth
+                  disabled={
+                    isSaving || reloadingRecord || notice?.kind === "unknown"
+                  }
+                  value={form.status}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      status: event.target.value as MasterStatus,
+                    }))
+                  }
+                >
+                  {statusOptions(t).map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </UiTextField>
+              </div>
+              {isSaving && (
+                <div className="hn-defect-saving" role="status">
+                  <span className="hn-defect-loader" />
+                  {copy(
+                    "Đang lưu thông tin lỗi/bệnh...",
+                    "Saving defect information...",
+                  )}
+                </div>
+              )}
+            </form>
+          </div>
+          <footer className="hn-defect-form-footer">
             <ActionButton
               kind="cancel"
               icon={<span />}
@@ -3561,143 +3704,9 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 ? copy("Đang lưu...", "Saving...")
                 : copy("Lưu", "Save")}
             </ActionButton>
-          </>
-        }
-      >
-        <form
-          ref={defectFormRef}
-          id="defect-master-form"
-          onSubmit={submit}
-          noValidate
-        >
-          <DefectMutationNotice
-            notice={notice}
-            placement="form"
-            onDismiss={() => setNotice(null)}
-            onCheck={checkSavedResult}
-            onReload={() => void reloadEditing()}
-            onRetry={() => defectFormRef.current?.requestSubmit()}
-            busy={isSaving || reloadingRecord || verificationCode !== null}
-          />
-          {formError && <UiAlert tone="error">{formError}</UiAlert>}
-          <div className="hn-defect-fields">
-            <UiTextField
-              id="defect-code"
-              slotProps={{
-                inputLabel: { shrink: true },
-                htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_code },
-              }}
-              label={t("masterData.defect.colCode")}
-              required
-              fullWidth
-              autoFocus={!editing}
-              value={form.defect_code}
-              placeholder={copy("Nhập mã lỗi", "Enter defect code")}
-              onChange={(event) => {
-                setForm((current) => ({
-                  ...current,
-                  defect_code: event.target.value,
-                }));
-                setFieldErrors((current) => ({ ...current, defect_code: "" }));
-              }}
-              disabled={
-                isSaving || reloadingRecord || notice?.kind === "unknown"
-              }
-              error={Boolean(fieldErrors.defect_code)}
-              helperText={fieldErrors.defect_code}
-            />
-            <UiTextField
-              id="defect-name"
-              slotProps={{
-                inputLabel: { shrink: true },
-                htmlInput: { maxLength: DEFECT_TEXT_MAX.defect_name },
-              }}
-              label={t("masterData.defect.colName")}
-              required
-              fullWidth
-              autoFocus={Boolean(editing)}
-              value={form.defect_name}
-              placeholder={copy("Nhập tên lỗi / bệnh", "Enter defect name")}
-              onChange={(event) => {
-                setForm((current) => ({
-                  ...current,
-                  defect_name: event.target.value,
-                }));
-                setFieldErrors((current) => ({ ...current, defect_name: "" }));
-              }}
-              disabled={
-                isSaving || reloadingRecord || notice?.kind === "unknown"
-              }
-              error={Boolean(fieldErrors.defect_name)}
-              helperText={fieldErrors.defect_name}
-            />
-            <UiTextField
-              id="defect-description"
-              slotProps={{
-                inputLabel: { shrink: true },
-                htmlInput: { maxLength: DEFECT_TEXT_MAX.description },
-              }}
-              label={t("masterData.common.description")}
-              fullWidth
-              multiline
-              minRows={3}
-              value={form.description ?? ""}
-              placeholder={copy("Nhập mô tả", "Enter description")}
-              onChange={(event) => {
-                setForm((current) => ({
-                  ...current,
-                  description: event.target.value,
-                }));
-                setFieldErrors((current) => ({ ...current, description: "" }));
-              }}
-              disabled={
-                isSaving || reloadingRecord || notice?.kind === "unknown"
-              }
-              error={Boolean(fieldErrors.description)}
-              helperText={fieldErrors.description}
-            />
-            <UiTextField
-              id="defect-status"
-              slotProps={{
-                inputLabel: { shrink: true },
-                select: {
-                  MenuProps: {
-                    slotProps: { paper: { className: "hn-defect-menu" } },
-                  },
-                },
-              }}
-              select
-              label={t("masterData.status.label")}
-              fullWidth
-              disabled={
-                isSaving || reloadingRecord || notice?.kind === "unknown"
-              }
-              value={form.status}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  status: event.target.value as MasterStatus,
-                }))
-              }
-            >
-              {statusOptions(t).map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </UiTextField>
-          </div>
-          {isSaving && (
-            <div className="hn-defect-saving" role="status">
-              <span className="hn-defect-loader" />
-              {copy(
-                "Đang lưu thông tin lỗi/bệnh...",
-                "Saving defect information...",
-              )}
-            </div>
-          )}
-        </form>
-      </UiDialog>
+          </footer>
+        </div>
+      </Drawer>
       <UiDialog
         className="hn-defect-dialog hn-defect-discard"
         open={discardOpen}
