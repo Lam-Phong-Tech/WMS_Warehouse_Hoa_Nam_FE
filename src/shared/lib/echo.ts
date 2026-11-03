@@ -44,11 +44,11 @@ function authorizer(channel: { name: string }) {
       callback: (error: Error | null, data: ChannelAuthResponse | null) => void,
     ) {
       api
-        .post<ChannelAuthResponse>("/broadcasting/auth", {
+        .post<{ data: ChannelAuthResponse }>("/broadcasting/auth", {
           socket_id: socketId,
           channel_name: channel.name,
         })
-        .then((response) => callback(null, response.data))
+        .then((response) => callback(null, response.data.data))
         .catch((error) => callback(error, null));
     },
   };

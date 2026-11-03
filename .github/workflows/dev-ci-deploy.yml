@@ -32,7 +32,10 @@ jobs:
       VITE_STORAGE_URL: ''
       VITE_SCANNER_KIOSK_MODE: 'true'
       VITE_RUM_SAMPLE_RATE: '0'
-      VITE_REVERB_APP_KEY: ''
+      VITE_REVERB_APP_KEY: ${{ vars.DEV_REVERB_APP_KEY }}
+      VITE_REVERB_HOST: khohoanamfe.lptech.info.vn
+      VITE_REVERB_PORT: '443'
+      VITE_REVERB_SCHEME: https
       VITE_TEMP_AUTO_LOGIN: 'false'
       VITE_ENABLE_ANALYTICS: 'false'
       VITE_ENABLE_DEBUG: 'false'
@@ -50,6 +53,9 @@ jobs:
           cache: pnpm
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Require DEV Reverb public key
+        shell: bash
+        run: test -n "$VITE_REVERB_APP_KEY"
       - name: Lint
         run: pnpm lint
       - name: Typecheck

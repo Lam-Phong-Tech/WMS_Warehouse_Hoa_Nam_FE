@@ -36,7 +36,12 @@ export function useNotificationSocket(): void {
       if (cancelled || !echo) return;
 
       const channel = echo.private(`user.${userId}`);
-      channel.subscribed(() => setConnected(true));
+      channel.subscribed(() => {
+        setConnected(true);
+        // Reconnect may have missed events while offline; reconcile the badge
+        // and list with the persisted notification state.
+        void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      });
       channel.listen(".notification.created", (payload: NotificationItem) => {
         increment();
         queryClient.invalidateQueries({ queryKey: ["notifications"] });

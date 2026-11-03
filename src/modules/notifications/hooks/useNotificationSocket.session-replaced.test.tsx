@@ -91,4 +91,28 @@ describe("session replacement realtime listener", () => {
       vi.useRealTimers();
     }
   });
+
+  it("refreshes notifications after every private-channel subscription", async () => {
+    const client = new QueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children);
+    const { unmount } = renderHook(() => useNotificationSocket(), { wrapper });
+
+    await waitFor(() =>
+      expect(subscribedMock).toHaveBeenCalledWith(expect.any(Function)),
+    );
+    const onSubscribed = subscribedMock.mock.calls[0][0];
+    act(() => onSubscribed());
+    act(() => onSubscribed());
+
+    expect(invalidate).toHaveBeenCalledTimes(2);
+    expect(invalidate).toHaveBeenNthCalledWith(1, {
+      queryKey: ["notifications"],
+    });
+    expect(invalidate).toHaveBeenNthCalledWith(2, {
+      queryKey: ["notifications"],
+    });
+    unmount();
+  });
 });
