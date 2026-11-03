@@ -1069,11 +1069,24 @@ export function PvProductCatalogPage() {
       >
         <div className="pv-catalog-form-shell">
           <header className="pv-catalog-form-header">
-            <strong>
-              {dialogMode === "create"
-                ? t("pv.productCatalog.dialogCreateTitle")
-                : t("pv.productCatalog.dialogEditTitle")}
-            </strong>
+            {dialogMode === "create" ? (
+              <strong>{t("pv.productCatalog.dialogCreateTitle")}</strong>
+            ) : (
+              <Box
+                className="pv-catalog-form-sku"
+                role="group"
+                aria-label={t("pv.productCatalog.skuField")}
+              >
+                <span>{t("pv.productCatalog.skuField")}</span>
+                <strong>{editing?.sku_code}</strong>
+                {editing?.sku_name &&
+                editing.sku_name !== editing.sku_code ? (
+                  <span className="pv-catalog-form-sku-name">
+                    {editing.sku_name}
+                  </span>
+                ) : null}
+              </Box>
+            )}
             <ActionIconButton kind="close" label={t("common.close")} onClick={closeDialog} disabled={saving} />
           </header>
           <div className="pv-catalog-form-body">
@@ -1113,28 +1126,11 @@ export function PvProductCatalogPage() {
                 data-testid="pv-catalog-sku-picker"
               />
             </Grid>
-          ) : (
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Box
-                className="pv-catalog-form-sku"
-                role="group"
-                aria-label={t("pv.productCatalog.skuField")}
-              >
-                <span>{t("pv.productCatalog.skuField")}</span>
-                <strong>{editing?.sku_code}</strong>
-                {editing?.sku_name &&
-                editing.sku_name !== editing.sku_code ? (
-                  <span className="pv-catalog-form-sku-name">
-                    {editing.sku_name}
-                  </span>
-                ) : null}
-              </Box>
-            </Grid>
-          )}
+          ) : null}
 
           {/* Không có ô "Thứ tự hiển thị": xem chú thích của `sort_order` trong
               ProfileFormState. */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: dialogMode === "edit" ? 12 : 6 }}>
             <UiTextField
               required
               disabled={saving || !canManage}

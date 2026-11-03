@@ -720,6 +720,14 @@
   font-size: 18px;
   line-height: 26px;
 }
+.pv-catalog-form-header .pv-catalog-form-sku {
+  flex: 1;
+  min-width: 0;
+}
+.pv-catalog-form-header .pv-catalog-form-sku strong {
+  font-size: 15px;
+  line-height: 20px;
+}
 .pv-catalog-form-body {
   flex: 1;
   min-width: 0;
