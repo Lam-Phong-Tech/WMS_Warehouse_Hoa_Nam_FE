@@ -590,6 +590,12 @@ export function CatalogMasterScreen() {
           <h1>{text("Danh mục sản phẩm", "Product catalog")}</h1>
         </div>
         <div className="hn-catalog-header-actions">
+          {!tabsOpen && (
+            <span className="hn-catalog-active-tab">
+              {activeTab.icon}
+              {activeTab.label}
+            </span>
+          )}
           <button
             type="button"
             className="hn-catalog-tabs-toggle"
@@ -617,31 +623,24 @@ export function CatalogMasterScreen() {
         </div>
       </header>
 
-      <div className="hn-catalog-tabs" id="hn-catalog-tabs">
-        {tabsOpen ? (
-          <UiTabs
-            value={activeKind}
-            onChange={(key) => changeTab(key as CatalogMasterKind)}
-            aria-label={t("masterData.catalog.typeAria")}
-            items={tabs.map((tab) => ({
-              key: tab.kind,
-              label: (
-                <Box
-                  component="span"
-                  sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </Box>
-              ),
-            }))}
-          />
-        ) : (
-          <div className="hn-catalog-tabs-summary">
-            {activeTab.icon}
-            <span>{activeTab.label}</span>
-          </div>
-        )}
+      <div className="hn-catalog-tabs" id="hn-catalog-tabs" hidden={!tabsOpen}>
+        <UiTabs
+          value={activeKind}
+          onChange={(key) => changeTab(key as CatalogMasterKind)}
+          aria-label={t("masterData.catalog.typeAria")}
+          items={tabs.map((tab) => ({
+            key: tab.kind,
+            label: (
+              <Box
+                component="span"
+                sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}
+              >
+                {tab.icon}
+                {tab.label}
+              </Box>
+            ),
+          }))}
+        />
       </div>
 
       {(!blockingError || hasFilters) && (

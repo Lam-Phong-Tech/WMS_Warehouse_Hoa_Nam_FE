@@ -110,6 +110,17 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
   min-width: 0;
 }
 
+.hn-catalog-active-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--catalog-link);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .hn-catalog-tabs-toggle {
   display: grid;
   place-items: center;
@@ -206,16 +217,8 @@ body:has(.hn-catalog-dialog) .MuiAutocomplete-popper {
   overflow: hidden;
 }
 
-.hn-catalog-tabs-summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: var(--ops-control-height);
-  padding-inline: 18px;
-  color: var(--catalog-link);
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
+.hn-catalog-tabs[hidden] {
+  display: none;
 }
 
 .hn-catalog-tabs .MuiTabs-root {
