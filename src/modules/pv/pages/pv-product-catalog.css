@@ -652,6 +652,59 @@
   border: 0;
 }
 
+.pv-catalog-form-drawer .MuiDrawer-paper {
+  width: min(840px, 100vw);
+  max-width: 100vw;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--pv-card);
+  color: var(--pv-ink);
+}
+.pv-catalog-form-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.pv-catalog-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--pv-line);
+}
+.pv-catalog-form-header strong {
+  color: var(--pv-heading);
+  font-size: 18px;
+  line-height: 26px;
+}
+.pv-catalog-form-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px;
+}
+.pv-catalog-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--pv-line);
+  background: var(--pv-card);
+}
+@media (max-width: 599.98px) {
+  .pv-catalog-form-header,
+  .pv-catalog-form-footer {
+    padding: 14px 16px;
+  }
+  .pv-catalog-form-body {
+    padding: 18px 16px;
+  }
+}
+
 .pv-catalog-dialog .MuiDialog-paper {
   width: min(780px, calc(100% - 48px));
   max-width: 780px;

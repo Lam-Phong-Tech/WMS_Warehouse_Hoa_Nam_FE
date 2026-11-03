@@ -28,7 +28,7 @@ import {
   Grid,
   UiAutocomplete,
   UiButton,
-  UiDialog,
+  Drawer,
   UiPagination,
   UiSelect,
   UiStatusBadge,
@@ -38,6 +38,7 @@ import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { SearchInput } from "@/shared/components";
 import {
   ActionButton,
+  ActionIconButton,
   RowActionButton,
   RowActionGroup,
 } from "@/shared/components/actions";
@@ -1099,32 +1100,29 @@ export function PvProductCatalogPage() {
           </div>
         ) : null}
       </section>
-      <UiDialog
-        className="pv-catalog-dialog"
+      <Drawer
+        className="pv-catalog-dialog pv-catalog-form-drawer"
+        anchor="right"
         open={dialogMode !== null}
         onClose={guardBackdropClose(closeDialog)}
-        maxWidth="md"
-        title={
-          dialogMode === "create"
-            ? t("pv.productCatalog.dialogCreateTitle")
-            : t("pv.productCatalog.dialogEditTitle")
-        }
-        actions={
-          <>
-            <ActionButton kind="cancel" onClick={closeDialog} disabled={saving}>
-              {t("pv.common.cancel")}
-            </ActionButton>
-            <ActionButton
-              kind="save"
-              onClick={() => void submit()}
-              disabled={saving}
-              data-testid="pv-catalog-submit"
-            >
-              {saving ? t("pv.common.saving") : t("pv.common.save")}
-            </ActionButton>
-          </>
-        }
+        slotProps={{
+          paper: {
+            "aria-label": dialogMode === "create"
+              ? t("pv.productCatalog.dialogCreateTitle")
+              : t("pv.productCatalog.dialogEditTitle"),
+          },
+        }}
       >
+        <div className="pv-catalog-form-shell">
+          <header className="pv-catalog-form-header">
+            <strong>
+              {dialogMode === "create"
+                ? t("pv.productCatalog.dialogCreateTitle")
+                : t("pv.productCatalog.dialogEditTitle")}
+            </strong>
+            <ActionIconButton kind="close" label={t("common.close")} onClick={closeDialog} disabled={saving} />
+          </header>
+          <div className="pv-catalog-form-body">
         <Grid container spacing={2} sx={{ pt: 0.5 }}>
           {dialogMode === "create" ? (
             <Grid size={12}>
@@ -1238,7 +1236,17 @@ export function PvProductCatalogPage() {
             </Box>
           </Grid>
         </Grid>
-      </UiDialog>
+          </div>
+          <footer className="pv-catalog-form-footer">
+            <ActionButton kind="cancel" onClick={closeDialog} disabled={saving}>
+              {t("pv.common.cancel")}
+            </ActionButton>
+            <ActionButton kind="save" onClick={() => void submit()} disabled={saving} data-testid="pv-catalog-submit">
+              {saving ? t("pv.common.saving") : t("pv.common.save")}
+            </ActionButton>
+          </footer>
+        </div>
+      </Drawer>
     </Box>
   );
 }
