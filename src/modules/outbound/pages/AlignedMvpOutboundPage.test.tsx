@@ -41,6 +41,9 @@ vi.mock("@/modules/outbound/components/AlignedOutboundDetailModal", () => ({
 vi.mock("@/modules/outbound/components/OutboundIntakeModal", () => ({
   OutboundIntakeModal: () => <div data-testid="outbound-intake-modal-stub" />,
 }));
+vi.mock("@/modules/outbound/components/OutboundNfcProducts", () => ({
+  OutboundNfcProducts: () => <div data-testid="outbound-nfc-products-stub" />,
+}));
 
 import AlignedMvpOutboundPage from "./AlignedMvpOutboundPage";
 
@@ -212,5 +215,15 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
         expect.objectContaining({ sortOrder: "asc", page: 1 }),
       );
     });
+  });
+
+  it("moves NFC lookup into Xuất kho while keeping the document list tab", async () => {
+    grantOnly(["outbound.view"]);
+    renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Sản phẩm đã xuất & NFC" }));
+    expect(await screen.findByTestId("outbound-nfc-products-stub")).toBeInTheDocument();
+    expect(screen.queryByText("PX-20260820-0001")).toBeNull();
   });
 });

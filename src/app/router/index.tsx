@@ -39,7 +39,6 @@ import {
   PackingLabelReportPage,
   PendingEvidenceReportPage,
   PhysicalCodesPage,
-  NfcPage,
   MfaSetupPage,
   ProfilePage,
   PutawayPage,
@@ -235,7 +234,7 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.NFC,
-            element: routeEl(ROUTES.NFC, <NfcPage />),
+            element: <Navigate to={`${ROUTES.OUTBOUND}?tab=products`} replace />,
           },
           {
             path: ROUTES.INBOUND,

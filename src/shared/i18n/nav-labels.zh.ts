@@ -1,7 +1,5 @@
 export const NAV_LABELS_ZH = {
   home: "首页",
-  nfc: "NFC",
-  "NFC-01": "NFC",
   "layout-dashboard": "概述",
   "package-search": "主数据",
   "package-plus": "入库",
@@ -48,10 +46,6 @@ export const NAV_FALLBACK_TITLES_ZH = {
 };
 
 export const SCREEN_META_ZH = {
-  "NFC-01": {
-    title: "将 NFC 芯片附加到物品上",
-    description: "",
-  },
   "MAP-01": {
     title: "操作概述",
     description: "该接口范围的概述；不包括分区应用程序。",

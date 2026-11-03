@@ -30,6 +30,7 @@ import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { AlignedOutboundDetailModal } from "@/modules/outbound/components/AlignedOutboundDetailModal";
 import { OutboundIntakeModal } from "@/modules/outbound/components/OutboundIntakeModal";
 import { OutboundOverview } from "@/modules/outbound/components/OutboundOverview";
+import { OutboundNfcProducts } from "@/modules/outbound/components/OutboundNfcProducts";
 import {
   fetchOutboundDocuments,
   type OutboundDocumentRecord,
@@ -75,6 +76,7 @@ export default function AlignedMvpOutboundPage() {
   const can = useHasPermission();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") === "products" ? "products" : "documents";
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<OutboundStatus | "">("");
@@ -114,6 +116,7 @@ export default function AlignedMvpOutboundPage() {
             signal,
           )
         : fetchOutboundDocuments(listParams),
+    enabled: activeTab === "documents",
   });
   // Load all authorized pages only on demand; never offer an incomplete list
   // of recipients or filter only the currently visible page.
@@ -304,6 +307,29 @@ export default function AlignedMvpOutboundPage() {
           ) : null}
         </div>
       </header>
+      <div className="hn-outbound-content-tabs" role="tablist" aria-label="Xuất kho">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "documents"}
+          onClick={() => {
+            const next = new URLSearchParams(searchParams);
+            next.delete("tab");
+            setSearchParams(next);
+          }}
+        >{t("nfc.outboundDocumentsTab")}</button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "products"}
+          onClick={() => {
+            const next = new URLSearchParams(searchParams);
+            next.set("tab", "products");
+            setSearchParams(next);
+          }}
+        >{t("nfc.outboundProductsTab")}</button>
+      </div>
+      {activeTab === "documents" ? <>
       <OutboundOverview
         onRefresh={() => {
           void listQuery.refetch();
@@ -631,6 +657,7 @@ export default function AlignedMvpOutboundPage() {
           </div>
         </footer>
       </section>
+      </> : <OutboundNfcProducts onOpenDocument={setDetailId} />}
       {intakeOpen ? (
         <OutboundIntakeModal
           open

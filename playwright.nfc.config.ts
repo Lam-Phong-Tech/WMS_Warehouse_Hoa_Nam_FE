@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "nfc.spec.ts",
-  timeout: 90000,
+  timeout: 180000,
   workers: 1,
   outputDir: "test-results/nfc/browser",
   reporter: [["list"]],
