@@ -898,7 +898,74 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 0 20px 16px;
+  padding: 0 0 12px;
+}
+.hn-putaway-page .ptw-history {
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.hn-putaway-page .ptw-history-list {
+  overflow: hidden;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+}
+.hn-putaway-page .ptw-history-list > div:has(> table) {
+  border: 0;
+  border-radius: 0;
+}
+.hn-putaway-page .ptw-history-list > .MuiStack-root {
+  padding: 12px;
+}
+.hn-putaway-page .ptw-history-list table {
+  width: 100%;
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-putaway-page .ptw-history-list table :is(th, td) {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--ops-line);
+  vertical-align: middle;
+}
+.hn-putaway-page .ptw-history-list table :is(th, td):first-child {
+  padding-inline: 8px;
+  text-align: center;
+}
+.hn-putaway-page .ptw-history-list table tbody tr {
+  height: 68px;
+}
+.hn-putaway-page .ptw-history-list table tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+.hn-putaway-page .ptw-history-list table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.hn-putaway-page .ptw-history-list table td:nth-child(3) {
+  color: var(--ops-heading);
+  font-weight: 700;
+}
+.hn-putaway-page .ptw-history-list .MuiChip-root {
+  height: 24px;
+  border-radius: 20px;
+  color: var(--ops-success);
+  background: var(--ops-success-soft);
+  font-size: 11px;
+}
+.hn-putaway-page .ptw-history-list .MuiChip-label::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.hn-putaway-page .ptw-history-list .ptw-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--ops-line);
 }
 .hn-putaway-page .ptw-history-filters > :first-child {
   flex: 1 1 260px;
@@ -1204,7 +1271,9 @@ body:has(.hn-putaway-page)
   color: var(--ptw-text);
   background: transparent;
 }
-:is(.ptw-dialog, .ptw-create-drawer) .ant-input-affix-wrapper .ant-input:focus-visible {
+:is(.ptw-dialog, .ptw-create-drawer)
+  .ant-input-affix-wrapper
+  .ant-input:focus-visible {
   outline: 0;
 }
 /* Match the shared action components' tonal primary variant in dialogs. */
@@ -1221,7 +1290,9 @@ body:has(.hn-putaway-page)
   ):not(.MuiButton-containedPrimary):not([data-action-kind]):hover {
   background: color-mix(in srgb, var(--ptw-primary) 20%, var(--ptw-card));
 }
-:is(.ptw-dialog, .ptw-create-drawer) .MuiButton-colorPrimary .MuiButton-startIcon {
+:is(.ptw-dialog, .ptw-create-drawer)
+  .MuiButton-colorPrimary
+  .MuiButton-startIcon {
   color: inherit;
 }
 .hn-putaway-page table.ptw-table:has(.ptw-empty) {

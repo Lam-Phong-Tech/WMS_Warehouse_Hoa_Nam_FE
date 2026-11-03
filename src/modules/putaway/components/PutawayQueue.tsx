@@ -41,8 +41,6 @@ type Props = {
 export function PutawayQueue(props: Props) {
   const t = useT();
   const { tasks, orders, loading, refreshing, error, canManage } = props;
-  const [statusDraft, setStatusDraft] = useState("RECEIVED_PENDING_PUTAWAY");
-  const [receiptDraft, setReceiptDraft] = useState("");
   const [filters, setFilters] = useState({
     status: "RECEIVED_PENDING_PUTAWAY",
     receipt: "",
@@ -59,14 +57,12 @@ export function PutawayQueue(props: Props) {
     () =>
       [
         ...new Set(
-          [
-            ...baseRows.map((row) => row.receipt_code),
-            receiptDraft,
-            filters.receipt,
-          ].filter((code): code is string => Boolean(code)),
+          [...baseRows.map((row) => row.receipt_code), filters.receipt].filter(
+            (code): code is string => Boolean(code),
+          ),
         ),
       ].sort((a, b) => a.localeCompare(b, "vi", { numeric: true })),
-    [baseRows, receiptDraft, filters.receipt],
+    [baseRows, filters.receipt],
   );
   const rows = useMemo(
     () =>
@@ -90,22 +86,7 @@ export function PutawayQueue(props: Props) {
   const allChecked =
     pageRows.length > 0 && pageRows.every((row) => selectedIds.has(row.id));
   const someChecked = pageRows.some((row) => selectedIds.has(row.id));
-  const hasFilters = Boolean(
-    props.search ||
-    statusDraft ||
-    receiptDraft ||
-    filters.status ||
-    filters.receipt,
-  );
   const columnCount = orders ? 9 : 7;
-  const reset = () => {
-    props.onSearch("");
-    setStatusDraft("RECEIVED_PENDING_PUTAWAY");
-    setReceiptDraft("");
-    setFilters({ status: "RECEIVED_PENDING_PUTAWAY", receipt: "" });
-    setPage(1);
-    setSelectedIds(new Set());
-  };
   const toggle = (id: string, checked: boolean) =>
     setSelectedIds((current) => {
       const next = new Set(current);
@@ -128,9 +109,6 @@ export function PutawayQueue(props: Props) {
         onSubmit={(event) => {
           event.preventDefault();
           props.onApplySearch();
-          setFilters({ status: statusDraft, receipt: receiptDraft });
-          setPage(1);
-          setSelectedIds(new Set());
         }}
       >
         <div className="ptw-search">
@@ -163,8 +141,12 @@ export function PutawayQueue(props: Props) {
             displayEmpty
             searchable={false}
             menuClassName="ptw-filter-menu"
-            value={statusDraft}
-            onChange={setStatusDraft}
+            value={filters.status}
+            onChange={(status) => {
+              setFilters((current) => ({ ...current, status }));
+              setPage(1);
+              setSelectedIds(new Set());
+            }}
             options={[
               {
                 value: "RECEIVED_PENDING_PUTAWAY",
@@ -185,23 +167,17 @@ export function PutawayQueue(props: Props) {
             fullWidth
             displayEmpty
             menuClassName="ptw-filter-menu"
-            value={receiptDraft}
-            onChange={setReceiptDraft}
+            value={filters.receipt}
+            onChange={(receipt) => {
+              setFilters((current) => ({ ...current, receipt }));
+              setPage(1);
+              setSelectedIds(new Set());
+            }}
             options={[
               { value: "", label: t("putaway.queue.all") },
               ...receipts.map((value) => ({ value, label: value })),
             ]}
           />
-        </div>
-        <div className="ptw-filter-actions">
-          <button className="ptw-primary" type="submit">
-            {t("putaway.queue.apply")}
-          </button>
-          {hasFilters ? (
-            <button className="ptw-reset" type="button" onClick={reset}>
-              {t("putaway.queue.reset")}
-            </button>
-          ) : null}
         </div>
       </form>
       {error ? (

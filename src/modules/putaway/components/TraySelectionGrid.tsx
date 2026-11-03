@@ -473,7 +473,6 @@ export function TraySelectionGrid({
       <Box
         aria-label={t("putaway.grid.gridAria")}
         sx={{
-          maxHeight: 360,
           overflow: "auto",
           p: 1,
           border: "1px solid",

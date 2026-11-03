@@ -70,7 +70,7 @@ describe("PTW-00 queue interactions", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
-  it("excludes active drafts from pending, applies receipt/status together and resets the table", async () => {
+  it("excludes active drafts and filters receipt/status immediately", async () => {
     const user = userEvent.setup();
     const input = props([
       task(1, { quantity: 1200, sku_id: "shared", receipt_code: "PN-01" }),
@@ -82,15 +82,19 @@ describe("PTW-00 queue interactions", () => {
     expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
 
     await selectFilter(user, "Phiếu nhập nguồn", "PN-02");
+    expect(visibleBoxes()).toEqual(["BOX-02"]);
     await selectFilter(user, "Trạng thái BOX", "Tất cả");
-    // Choosing fields alone must not prematurely replace the visible result set.
-    expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
-    await user.click(screen.getByRole("button", { name: "Áp dụng" }));
-    expect(input.onApplySearch).toHaveBeenCalledOnce();
     expect(visibleBoxes()).toEqual(["BOX-02", "BOX-03"]);
-    await user.click(screen.getByRole("button", { name: "Đặt lại" }));
-    expect(input.onSearch).toHaveBeenLastCalledWith("");
+    await selectFilter(user, "Phiếu nhập nguồn", "Tất cả");
+    expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02", "BOX-03"]);
+    await selectFilter(user, "Trạng thái BOX", "Chờ xếp khay");
     expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
+    expect(
+      screen.queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
   });
 
   it("sorts the full dataset before paging and resets/clamps the current page", async () => {
@@ -223,7 +227,6 @@ describe("PTW-00 queue interactions", () => {
     ]);
     const rendered = renderWithProviders(<PutawayQueue {...input} />);
     await selectFilter(user, "Phiếu nhập nguồn", "PN-A");
-    await user.click(screen.getByRole("button", { name: "Áp dụng" }));
     expect(visibleBoxes()).toEqual(["BOX-01"]);
 
     rendered.rerender(
@@ -242,7 +245,7 @@ describe("PTW-00 queue interactions", () => {
     );
     expect(screen.getByRole("option", { name: "PN-B" })).toBeInTheDocument();
     await user.keyboard("{Escape}");
-    await user.click(screen.getByRole("button", { name: "Đặt lại" }));
+    await selectFilter(user, "Phiếu nhập nguồn", "Tất cả");
     expect(visibleBoxes()).toEqual(["BOX-02"]);
     expect(
       screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),

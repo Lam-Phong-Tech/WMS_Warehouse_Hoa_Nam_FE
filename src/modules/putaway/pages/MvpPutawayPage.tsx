@@ -624,10 +624,6 @@ export default function MvpPutawayPage() {
           className="ptw-list ptw-history"
           aria-label={t("putaway.queue.historyTitle")}
         >
-          <div className="ptw-list-heading">
-            <h2>{t("putaway.queue.historyTitle")}</h2>
-            <p>{t("putaway.queue.historySubtitle")}</p>
-          </div>
           {historyQuery.error ? (
             <div className="ptw-error">
               <ApiErrorAlert
@@ -676,33 +672,48 @@ export default function MvpPutawayPage() {
               menuClassName="ptw-filter-menu"
             />
           </div>
-          <ResponsiveDataTable<PutawayHistory>
-            columns={historyColumns}
-            rows={pagedHistory}
-            rowKey={(row) => row.id}
-            loading={historyQuery.isLoading}
-            sortState={historySort.sortState}
-            onSortChange={historySort.requestSort}
-            emptyText={
-              historySearchDraft.trim()
-                ? t("putaway.page.emptyHistoryFiltered")
-                : t("putaway.page.emptyHistory")
-            }
-          />
-          <footer className="ptw-footer">
-            <span className="ptw-range">
-              {t("putaway.page.totalRecords", {
-                count: filteredHistory.length,
-              })}
-            </span>
-            <UiPagination
-              page={safeHistoryPage}
-              pageSize={historyPageSize}
-              total={filteredHistory.length}
-              onPageChange={setHistoryPage}
-              showTotal={false}
+          <div className="ptw-history-list">
+            <ResponsiveDataTable<PutawayHistory>
+              columns={historyColumns}
+              rows={pagedHistory}
+              rowKey={(row) => row.id}
+              loading={historyQuery.isLoading}
+              sortState={historySort.sortState}
+              onSortChange={historySort.requestSort}
+              headerCellStyle={{
+                backgroundColor: "#d2edf7",
+                backgroundImage: "none",
+                borderBottom: "1px solid var(--ops-line)",
+                color: "var(--ops-muted)",
+                fontSize: 16,
+                fontWeight: 800,
+                lineHeight: "24px",
+                letterSpacing: "0.02em",
+                textTransform: "uppercase",
+                whiteSpace: "normal",
+                padding: "12px 18px",
+              }}
+              emptyText={
+                historySearchDraft.trim()
+                  ? t("putaway.page.emptyHistoryFiltered")
+                  : t("putaway.page.emptyHistory")
+              }
             />
-          </footer>
+            <footer className="ptw-footer">
+              <span className="ptw-range">
+                {t("putaway.page.totalRecords", {
+                  count: filteredHistory.length,
+                })}
+              </span>
+              <UiPagination
+                page={safeHistoryPage}
+                pageSize={historyPageSize}
+                total={filteredHistory.length}
+                onPageChange={setHistoryPage}
+                showTotal={false}
+              />
+            </footer>
+          </div>
         </section>
       )}
 

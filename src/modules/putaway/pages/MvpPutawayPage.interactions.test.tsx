@@ -216,7 +216,7 @@ describe("PTW-00 page workflows", () => {
     );
   });
 
-  it("recovers the task list through its retry button and applies the user's search to the API", async () => {
+  it("recovers the task list through its retry button and searches the API as the user types", async () => {
     const user = userEvent.setup();
     vi.mocked(fetchPutawayTasks).mockRejectedValueOnce(
       new Error("Danh sách tạm thời không khả dụng"),
@@ -227,17 +227,14 @@ describe("PTW-00 page workflows", () => {
     expect(
       vi.mocked(fetchPutawayTasks).mock.calls.length,
     ).toBeGreaterThanOrEqual(2);
-    await user.type(
-      screen.getByRole("searchbox", { name: "Tìm kiếm" }),
-      "  BOX-PENDING  ",
-    );
-    await user.click(screen.getByRole("button", { name: "Áp dụng" }));
+    const search = screen.getByRole("searchbox", { name: "Tìm kiếm" });
+    await user.type(search, "  BOX-PENDING  ");
     await waitFor(() =>
       expect(fetchPutawayTasks).toHaveBeenLastCalledWith({
         search: "BOX-PENDING",
       }),
     );
-    await user.click(screen.getByRole("button", { name: "Đặt lại" }));
+    await user.clear(search);
     await waitFor(() => expect(fetchPutawayTasks).toHaveBeenLastCalledWith({}));
   });
   it("resets receipt, status and selection when switching from pending BOX to draft orders", async () => {
@@ -254,7 +251,6 @@ describe("PTW-00 page workflows", () => {
     await user.click(screen.getByRole("option", { name: "PN-A" }));
     await user.click(screen.getByRole("combobox", { name: "Trạng thái BOX" }));
     await user.click(screen.getByRole("option", { name: "Tất cả" }));
-    await user.click(screen.getByRole("button", { name: "Áp dụng" }));
     await user.click(
       screen.getByRole("checkbox", { name: `Chọn BOX ${pending.box_code}` }),
     );

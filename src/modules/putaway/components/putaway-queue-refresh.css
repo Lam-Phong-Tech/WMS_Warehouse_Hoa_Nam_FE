@@ -1,9 +1,10 @@
 /* PTW-00 filters and tables follow the MST-01 list rhythm. */
 .hn-putaway-page form.ptw-filters {
-  grid-template-columns:
-    minmax(260px, 2fr) minmax(220px, 1fr) minmax(220px, 1fr)
-    auto;
-  grid-template-areas: "search status receipt actions";
+  grid-template-columns: minmax(260px, 2fr) minmax(220px, 1fr) minmax(
+      220px,
+      1fr
+    );
+  grid-template-areas: "search status receipt";
   align-items: center;
   gap: 12px;
   padding: 0;
@@ -82,12 +83,6 @@
   :is(.ptw-status-filter, .ptw-receipt-filter)
   .MuiSelect-select {
   padding-left: 8px;
-}
-.hn-putaway-page form.ptw-filters .ptw-filter-actions {
-  gap: 8px;
-}
-.hn-putaway-page form.ptw-filters :is(.ptw-primary, .ptw-reset) {
-  min-height: 48px;
 }
 .hn-putaway-page .ptw-list {
   border-color: var(--ops-line);
@@ -267,15 +262,12 @@
 @container hn-putaway (max-width: 1000px) {
   .hn-putaway-page form.ptw-filters {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "search search" "status receipt" "actions actions";
+    grid-template-areas: "search search" "status receipt";
   }
 }
 @container hn-putaway (max-width: 600px) {
   .hn-putaway-page form.ptw-filters {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "search" "status" "receipt" "actions";
-  }
-  .hn-putaway-page form.ptw-filters .ptw-filter-actions {
-    justify-content: flex-start;
+    grid-template-areas: "search" "status" "receipt";
   }
 }
