@@ -14,7 +14,11 @@ import {
   SkuListMutationNotice,
   type SkuListMutationNoticeValue,
 } from "@/modules/master-data/components/SkuListMutationNotice";
-import { DownOutlined, SearchOutlined } from "@/shared/components/icons";
+import {
+  BarChartOutlined,
+  DownOutlined,
+  SearchOutlined,
+} from "@/shared/components/icons";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { localizedEnglish } from "@/shared/i18n/localized-english";
 import { SkuListOverview } from "@/modules/master-data/components/SkuListOverview";
@@ -812,6 +816,28 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <h1>{copy("Danh sách SKU", "SKU list")}</h1>
           </div>
           <div className="hn-sku-header-actions">
+            <button
+              type="button"
+              className="hn-sku-overview-toggle"
+              aria-label={copy("Thống kê SKU", "SKU summary")}
+              title={copy("Thống kê SKU", "SKU summary")}
+              aria-expanded={overviewOpen}
+              aria-controls="hn-sku-overview-content"
+              onClick={() => {
+                const nextOpen = !overviewOpen;
+                setOverviewOpen(nextOpen);
+                try {
+                  window.sessionStorage.setItem(
+                    "hn-sku-overview-open",
+                    String(nextOpen),
+                  );
+                } catch {
+                  // The toggle remains usable when browser storage is unavailable.
+                }
+              }}
+            >
+              <BarChartOutlined aria-hidden="true" />
+            </button>
             {canManage ? (
               <>
                 <ActionButton
@@ -837,29 +863,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             )}
           </div>
         </header>
-        <section className="hn-sku-panel">
-          <button
-            type="button"
-            className="hn-sku-panel-toggle"
-            aria-expanded={overviewOpen}
-            aria-controls="hn-sku-overview-content"
-            onClick={() => {
-              const nextOpen = !overviewOpen;
-              setOverviewOpen(nextOpen);
-              try {
-                window.sessionStorage.setItem(
-                  "hn-sku-overview-open",
-                  String(nextOpen),
-                );
-              } catch {
-                // The toggle remains usable when browser storage is unavailable.
-              }
-            }}
-          >
-            <span>{copy("Thống kê SKU", "SKU summary")}</span>
-            <DownOutlined aria-hidden="true" />
-          </button>
-          <div id="hn-sku-overview-content" hidden={!overviewOpen}>
+        <section className="hn-sku-panel" hidden={!overviewOpen}>
+          <div className="hn-sku-panel-heading">
+            {copy("Thống kê SKU", "SKU summary")}
+          </div>
+          <div id="hn-sku-overview-content">
             <SkuListOverview refreshKey={overviewRefreshKey} />
           </div>
         </section>
