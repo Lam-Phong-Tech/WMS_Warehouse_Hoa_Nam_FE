@@ -9,7 +9,7 @@ import {
   type ChangePasswordFormValues,
 } from "@/modules/auth/schemas/change-password.schema";
 import { Box, UiAlert, UiButton } from "@/shared/ui";
-import { AuthShell, AuthNote } from "@/modules/auth/components/AuthShell";
+import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
@@ -63,7 +63,7 @@ export function ChangePasswordPage() {
       baselineScreen="login"
       showBaselineHeading
       title={t("auth.changePassword.title")}
-      subtitle={t("auth.changePassword.subtitle")}
+      subtitle={null}
       loadingText={
         changePassword.isPending ? t("auth.changePassword.updating") : null
       }
@@ -126,8 +126,6 @@ export function ChangePasswordPage() {
           </UiButton>
         </Box>
       </form>
-
-      <AuthNote>{t("auth.changePassword.note")}</AuthNote>
     </AuthShell>
   );
 }

@@ -752,7 +752,6 @@ export function SkuImportModal({
               alignItems: "center",
               flexWrap: "wrap",
               gap: 1,
-              pr: 4,
             }}
           >
             <Box component="span">{t("masterData.import.title")}</Box>
@@ -792,7 +791,6 @@ export function SkuImportModal({
               kind="close"
               label={t("common.close")}
               onClick={close}
-              sx={{ position: "absolute", right: 10, top: 8 }}
             />
           </Box>
         }

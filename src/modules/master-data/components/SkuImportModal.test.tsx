@@ -185,7 +185,8 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
     expect(screen.getByText("danh-sach.xlsx")).toBeInTheDocument();
     const reset = screen.getByRole("button", { name: "Làm lại" });
     expect(reset.closest(".MuiDialogTitle-root")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Đóng" })).toHaveLength(1);
+    const close = screen.getByRole("button", { name: "Đóng" });
+    expect(close.parentElement).toBe(reset.parentElement);
     fireEvent.click(reset);
     expect(screen.getByText("Chưa chọn tệp")).toBeInTheDocument();
   });
