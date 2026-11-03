@@ -23,17 +23,18 @@ export function AppProviders({ children }: AppProvidersProps) {
         <ErrorBoundary>
           <Toaster
             position="top-right"
+            duration={3000}
             richColors
             closeButton
             expand
             gap={10}
             visibleToasts={4}
-            offset={{ top: 20, right: 20 }}
-            mobileOffset={{ top: 12, right: 12 }}
+            offset={{ top: 84, right: 32 }}
+            mobileOffset={{ top: 74, right: 12 }}
             // Sonner tự vẽ icon severity + nút đóng bằng bộ SVG riêng —
             // ép về Flaticon Uicons cho đồng bộ toàn app.
             icons={TOAST_ICONS}
-            swipeDirections={["bottom"]}
+            swipeDirections={["right"]}
             className="app-toaster"
           />
           {children}
