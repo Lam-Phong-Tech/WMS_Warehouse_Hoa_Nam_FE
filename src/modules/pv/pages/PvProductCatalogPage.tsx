@@ -834,6 +834,7 @@ export function PvProductCatalogPage() {
       <section
         className={`pv-catalog-panel${overviewOpen ? "" : " is-collapsed"}`}
         aria-labelledby="pv-catalog-overview-title"
+        hidden={!overviewOpen}
       >
         <div className="pv-catalog-panel-heading">
           <h2 id="pv-catalog-overview-title">

@@ -154,6 +154,9 @@
   background: var(--pv-card);
   box-shadow: 0 2px 5px color-mix(in srgb, var(--pv-heading) 4%, transparent);
 }
+.pv-catalog-panel[hidden] {
+  display: none;
+}
 
 .pv-catalog-panel + .pv-catalog-panel {
   margin-top: 16px;
