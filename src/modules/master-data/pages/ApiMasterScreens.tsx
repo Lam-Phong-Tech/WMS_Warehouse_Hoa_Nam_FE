@@ -972,9 +972,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             hidden={!filtersOpen}
           >
             <div className="hn-sku-filter">
-              <span className="hn-sku-filter-label">
-                {t("masterData.sku.colBrand")}
-              </span>
               <UiSelect
                 aria-label={t("masterData.sku.brandFilterAria")}
                 value={brandId}
@@ -983,12 +980,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   setBrandId(value);
                   setPage(1);
                 }}
-                placeholder={copy("Tất cả", "All")}
+                placeholder={copy("Hãng: Tất cả", "Brand: All")}
                 fullWidth
                 menuClassName="hn-sku-menu"
                 options={brands.map((brand) => ({
                   value: brand.id,
-                  label: brand.name || brand.code,
+                  label: `${copy("Hãng", "Brand")}: ${brand.name || brand.code}`,
                 }))}
               />
             </div>
