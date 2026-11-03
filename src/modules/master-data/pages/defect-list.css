@@ -91,9 +91,31 @@
 }
 .hn-defect-header-actions {
   display: flex;
-  align-items: stretch;
-  gap: 14px;
+  align-items: center;
+  gap: 10px;
   flex: none;
+}
+.hn-defect-overview-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  padding: 0;
+  border: 1px solid var(--defect-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--defect-pale);
+  color: var(--defect-ink);
+  cursor: pointer;
+}
+.hn-defect-overview-toggle:hover,
+.hn-defect-overview-toggle[aria-expanded="true"] {
+  background: var(--defect-surface);
+  color: var(--defect-link);
+}
+.hn-defect-overview-toggle > i {
+  font-size: 18px;
+  line-height: 1;
 }
 :is(
     .hn-defect-screen,
@@ -165,6 +187,15 @@
 }
 .hn-defect-panel {
   min-width: 0;
+}
+.hn-defect-panel[hidden] {
+  display: none;
+}
+.hn-defect-panel-heading {
+  min-height: 44px;
+  padding: 10px 16px;
+  color: var(--defect-ink);
+  font-weight: 600;
 }
 .hn-defect-panel-toggle {
   display: flex;
@@ -1154,10 +1185,10 @@
   }
   .hn-defect-header {
     align-items: flex-start;
+    flex-wrap: wrap;
   }
   .hn-defect-header-actions {
-    flex-direction: column;
-    min-width: 180px;
+    flex-direction: row;
   }
   .hn-defect-overview {
     grid-template-columns: minmax(190px, 38%) minmax(0, 1fr);
@@ -1173,6 +1204,9 @@
   }
   .hn-defect-header-actions > * {
     flex: 1;
+  }
+  .hn-defect-header-actions .hn-defect-overview-toggle {
+    flex: 0 0 40px;
   }
   .hn-defect-header-actions .MuiButton-root {
     padding-inline: 12px;
@@ -1237,9 +1271,6 @@
   }
 }
 @container hn-defect (max-width: 380px) {
-  .hn-defect-header-actions {
-    flex-direction: column;
-  }
   .hn-defect-overview-legend {
     gap: 8px;
   }

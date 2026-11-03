@@ -2735,7 +2735,13 @@ const DEFECT_FORM_FIELDS = {
 
 export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
-  const [overviewOpen, setOverviewOpen] = useState(true);
+  const [overviewOpen, setOverviewOpen] = useState(() => {
+    try {
+      return window.sessionStorage.getItem("hn-defect-overview-open") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [filtersOpen, setFiltersOpen] = useState(true);
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) =>
@@ -3128,6 +3134,30 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           </p>
         </div>
         <div className="hn-defect-header-actions">
+          {!blockingError && (
+            <button
+              type="button"
+              className="hn-defect-overview-toggle"
+              aria-label={copy("Thống kê bệnh / lỗi", "Defect summary")}
+              title={copy("Thống kê bệnh / lỗi", "Defect summary")}
+              aria-expanded={overviewOpen}
+              aria-controls="hn-defect-overview-content"
+              onClick={() => {
+                const nextOpen = !overviewOpen;
+                setOverviewOpen(nextOpen);
+                try {
+                  window.sessionStorage.setItem(
+                    "hn-defect-overview-open",
+                    String(nextOpen),
+                  );
+                } catch {
+                  // The toggle remains usable when browser storage is unavailable.
+                }
+              }}
+            >
+              <BarChartOutlined aria-hidden="true" />
+            </button>
+          )}
           {canManage && (
             <ActionButton
               kind="create"
@@ -3144,18 +3174,11 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       </header>
       {!blockingError && (
         <>
-          <section className="hn-defect-panel">
-            <button
-              type="button"
-              className="hn-defect-panel-toggle"
-              aria-expanded={overviewOpen}
-              aria-controls="hn-defect-overview-content"
-              onClick={() => setOverviewOpen((current) => !current)}
-            >
-              <span>{copy("Thống kê bệnh / lỗi", "Defect summary")}</span>
-              <DownOutlined aria-hidden="true" />
-            </button>
-            <div id="hn-defect-overview-content" hidden={!overviewOpen}>
+          <section className="hn-defect-panel" hidden={!overviewOpen}>
+            <div className="hn-defect-panel-heading">
+              {copy("Thống kê bệnh / lỗi", "Defect summary")}
+            </div>
+            <div id="hn-defect-overview-content">
               <DefectOverview
                 refreshKey={refreshKey}
                 loading={busy}
