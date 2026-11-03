@@ -629,7 +629,7 @@ export function PvProductCatalogPage() {
 
   /**
    * Cột của DẠNG NGANG — cùng bộ thông tin với thẻ, chỉ đổi cách xếp: ảnh thu
-   * nhỏ, tên + mã, ngành nghề, công tắc công bố. Nút Sửa đi qua
+   * nhỏ, tên + mã, công tắc công bố. Nút Sửa đi qua
    * `renderRowActions` để nó hiện ở cả bảng desktop lẫn card mobile của
    * ResponsiveDataTable.
    *
@@ -648,7 +648,7 @@ export function PvProductCatalogPage() {
     {
       key: "display_name",
       header: copy("Sản phẩm", "Product"),
-      width: "28%",
+      width: "44%",
       sortAccessor: (row) => row.display_name,
       truncate: 0,
       render: (row) => (
@@ -671,26 +671,14 @@ export function PvProductCatalogPage() {
     {
       key: "sku_code",
       header: copy("Mã sản phẩm / SKU", "Product code / SKU"),
-      width: "17%",
+      width: "26%",
       sortAccessor: (row) => row.sku_code,
       render: (row) => <SkuLink id={row.sku_id} code={row.sku_code} />,
     },
     {
-      key: "industries",
-      header: copy("Nhóm sản phẩm", "Product group"),
-      width: "18%",
-      sortType: "value",
-      sortAccessor: (row) => row.industry_ids.length,
-      render: (row) =>
-        row.industry_ids
-          .map((id) => industryNameById.get(id))
-          .filter(Boolean)
-          .join(", ") || EMPTY_TEXT,
-    },
-    {
       key: "published",
       header: copy("Trạng thái hiển thị", "Visibility"),
-      width: "14%",
+      width: "15%",
       sortType: "value",
       sortAccessor: (row) => Number(row.published),
       truncate: 0,
@@ -715,37 +703,6 @@ export function PvProductCatalogPage() {
             : t("pv.admin.publishedHidden")}
         </button>
       ),
-    },
-    {
-      key: "updated_at",
-      header: copy("Cập nhật", "Updated"),
-      width: "8%",
-      render: (row) => {
-        // Render only a real record timestamp if supplied; never use request time.
-        const value = (row as PvAdminProfile & { updated_at?: string })
-          .updated_at;
-        const date = value ? new Date(value) : null;
-        return date && Number.isFinite(date.getTime()) ? (
-          <time dateTime={value}>
-            {date.toLocaleString(language === "vi" ? "vi-VN" : "en-GB", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </time>
-        ) : (
-          <span
-            title={copy(
-              "Chưa có thời gian cập nhật từ hệ thống",
-              "The system has not supplied an update time",
-            )}
-          >
-            —
-          </span>
-        );
-      },
     },
   ];
 

@@ -775,14 +775,6 @@
   .pv-catalog-heading-actions {
     justify-content: flex-start;
   }
-  .pv-catalog-product-sku {
-    display: block;
-  }
-  .pv-catalog-table table > colgroup > col:nth-child(3),
-  .pv-catalog-table table > thead > tr > th:nth-child(3),
-  .pv-catalog-table table > tbody > tr > td:nth-child(3) {
-    display: none;
-  }
 }
 
 @container pv-catalog (max-width: 860px) {
