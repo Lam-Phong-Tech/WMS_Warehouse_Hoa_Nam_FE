@@ -67,6 +67,7 @@ import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
+import { OutboundNfcProducts } from "@/modules/outbound/components/OutboundNfcProducts";
 import { validatePhone } from "@/shared/constants/validation.constants";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -208,6 +209,7 @@ export function AlignedOutboundDetailModal({
   const [labelWarning, setLabelWarning] = useState<string | null>(null);
   const [labelPreviewOpen, setLabelPreviewOpen] = useState(false);
   const [postConfirmOpen, setPostConfirmOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState<"overview" | "nfc">("overview");
   const postKeyRef = useRef<string | null>(null);
   // Xác nhận trước khi gỡ đối chiếu — confirmDialog PHẢI render trong cây bên dưới.
   const { confirm, confirmDialog } = useUiConfirm();
@@ -691,6 +693,15 @@ export function AlignedOutboundDetailModal({
           </Box>
         }
       >
+        <div className="hn-outbound-content-tabs" role="tablist" aria-label={t("outbound.detail.title")}>
+          <button type="button" role="tab" aria-selected={detailTab === "overview"} onClick={() => setDetailTab("overview")}>
+            {t("nfc.outboundOverviewTab")}
+          </button>
+          <button type="button" role="tab" aria-selected={detailTab === "nfc"} onClick={() => setDetailTab("nfc")}>
+            {t("nfc.outboundNfcTab")}
+          </button>
+        </div>
+        {detailTab === "nfc" ? <OutboundNfcProducts documentId={documentId} /> : (
         <Stack spacing={2}>
           <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
             <Grid container spacing={2}>
@@ -1051,6 +1062,7 @@ export function AlignedOutboundDetailModal({
             </Grid>
           </Grid>
         </Stack>
+        )}
 
         <CameraScanModal
           open={cameraOpen}
