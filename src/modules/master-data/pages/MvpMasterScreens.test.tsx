@@ -113,7 +113,7 @@ describe("API-backed MVP master screens", () => {
     window.sessionStorage.removeItem("hn-sku-overview-open");
   });
 
-  it("thu gọn riêng thống kê và bộ lọc SKU, giữ giá trị tìm kiếm khi mở lại", () => {
+  it("giữ tìm kiếm SKU khi mở bộ lọc nâng cao và thống kê", () => {
     render(
       <MemoryRouter>
         <SkuMasterScreen />
@@ -121,9 +121,7 @@ describe("API-backed MVP master screens", () => {
     );
 
     const overviewToggle = screen.getByRole("button", { name: "Thống kê SKU" });
-    const filtersToggle = screen.getByRole("button", {
-      name: "Bộ lọc tìm kiếm",
-    });
+    const filtersToggle = screen.getByRole("button", { name: "Bộ lọc" });
     const overview = document.getElementById(
       "hn-sku-overview-content",
     ) as HTMLElement;
@@ -134,6 +132,7 @@ describe("API-backed MVP master screens", () => {
     expect(screen.queryByRole("button", { name: "Áp dụng" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Đặt lại" })).toBeNull();
     expect(overviewToggle).toHaveAttribute("aria-expanded", "false");
+    expect(filtersToggle).toHaveAttribute("aria-expanded", "false");
     expect(overview).not.toBeVisible();
     fireEvent.change(search, { target: { value: "Máy khoan" } });
     expect(
@@ -145,13 +144,14 @@ describe("API-backed MVP master screens", () => {
     expect(search).toBeVisible();
 
     fireEvent.click(filtersToggle);
-    expect(filtersToggle).toHaveAttribute("aria-expanded", "false");
-    expect(search).not.toBeVisible();
+    expect(filtersToggle).toHaveAttribute("aria-expanded", "true");
+    expect(search).toBeVisible();
 
     fireEvent.click(overviewToggle);
     fireEvent.click(filtersToggle);
     expect(overview).not.toBeVisible();
     expect(search).toBeVisible();
+    expect(filtersToggle).toHaveAttribute("aria-expanded", "false");
     expect(search).toHaveValue("Máy khoan");
   });
 
@@ -195,6 +195,7 @@ describe("API-backed MVP master screens", () => {
         <SkuMasterScreen />
       </MemoryRouter>,
     );
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
     const pending = screen.getByRole("checkbox", {
       name: "SKU chờ điền thông tin",
     });
@@ -260,7 +261,7 @@ describe("API-backed MVP master screens", () => {
       Array.from(table.querySelectorAll("thead th"), (header) =>
         header.textContent?.trim(),
       ),
-    ).toEqual(["STT", "SKU", "Loại", "Hãng / Nhóm", "Trạng thái", "Chi tiết"]);
+    ).toEqual(["STT", "SKU", "Loại", "Hãng / Nhóm", "Trạng thái", ""]);
     const row = within(table)
       .getByText("DCH-DRILL-DJZ10A-220V-V1")
       .closest("tr");

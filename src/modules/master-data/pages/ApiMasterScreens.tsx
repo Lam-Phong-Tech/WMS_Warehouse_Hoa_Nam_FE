@@ -17,6 +17,7 @@ import {
 import {
   BarChartOutlined,
   DownOutlined,
+  FilterOutlined,
   SearchOutlined,
 } from "@/shared/components/icons";
 import { useLanguageStore } from "@/shared/i18n/language.store";
@@ -393,7 +394,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       return false;
     }
   });
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
   const [offline, setOffline] = useState(() => !navigator.onLine);
@@ -871,120 +872,140 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <SkuListOverview refreshKey={overviewRefreshKey} />
           </div>
         </section>
-        <section className="hn-sku-panel">
-          <button
-            type="button"
-            className="hn-sku-panel-toggle"
-            aria-expanded={filtersOpen}
-            aria-controls="hn-sku-filters-content"
-            onClick={() => setFiltersOpen((current) => !current)}
+        <section
+          className="hn-sku-search-panel"
+          aria-label={copy("Tìm kiếm và lọc SKU", "Search and filter SKUs")}
+        >
+          <div className="hn-sku-search-bar">
+            <UiTextField
+              id="sku-list-search"
+              value={keyword}
+              onChange={(event) => {
+                setKeyword(event.target.value);
+                setPage(1);
+              }}
+              placeholder={copy(
+                "Tìm mã SKU, tên hàng, thương hiệu...",
+                "Search SKU code, name, brand...",
+              )}
+              slotProps={{
+                htmlInput: { "aria-label": t("masterData.sku.searchAria") },
+                input: {
+                  startAdornment: (
+                    <SearchOutlined className="hn-sku-search-icon" />
+                  ),
+                },
+              }}
+              fullWidth
+            />
+            <UiSelect
+              aria-label={t("masterData.sku.typeFilterAria")}
+              value={type}
+              onChange={(value) => {
+                setType(value as SkuType | "");
+                setPage(1);
+              }}
+              placeholder={copy("Loại hàng: Tất cả", "Type: All")}
+              fullWidth
+              menuClassName="hn-sku-menu"
+              options={[
+                {
+                  value: "PRODUCT",
+                  label: copy("Loại hàng: Sản phẩm", "Type: Product"),
+                },
+                {
+                  value: "COMPONENT",
+                  label: copy("Loại hàng: Linh kiện", "Type: Component"),
+                },
+              ]}
+            />
+            <UiSelect
+              aria-label={t("masterData.status.filterAria")}
+              value={pendingInfoOnly ? "PENDING_INFO" : status}
+              onChange={(value) => {
+                setPendingInfoOnly(value === "PENDING_INFO");
+                setStatus(
+                  value === "PENDING_INFO" ? "" : (value as MasterStatus | ""),
+                );
+                setPage(1);
+              }}
+              placeholder={copy("Trạng thái: Tất cả", "Status: All")}
+              fullWidth
+              menuClassName="hn-sku-menu"
+              options={[
+                ...statusOptions(t).map((option) => ({
+                  ...option,
+                  label: `${copy("Trạng thái", "Status")}: ${option.label}`,
+                })),
+                {
+                  value: "PENDING_INFO",
+                  label: copy(
+                    "Trạng thái: Chờ hoàn thiện",
+                    "Status: Pending details",
+                  ),
+                },
+              ]}
+            />
+            <button
+              type="button"
+              className="hn-sku-more-filters"
+              aria-expanded={filtersOpen}
+              aria-controls="hn-sku-filters-content"
+              onClick={() => setFiltersOpen((current) => !current)}
+            >
+              <FilterOutlined aria-hidden="true" />
+              {copy("Bộ lọc", "Filters")}
+            </button>
+            {hasFilters ? (
+              <button
+                type="button"
+                className="hn-sku-clear-filters"
+                onClick={resetFilters}
+              >
+                {copy("Xóa lọc", "Clear filters")}
+              </button>
+            ) : null}
+          </div>
+          <div
+            id="hn-sku-filters-content"
+            className="hn-sku-extra-filters"
+            hidden={!filtersOpen}
           >
-            <span>{copy("Bộ lọc tìm kiếm", "Search filters")}</span>
-            <DownOutlined aria-hidden="true" />
-          </button>
-          <div id="hn-sku-filters-content" hidden={!filtersOpen}>
-            <div className="hn-sku-filters">
-              <div className="hn-sku-filter hn-sku-filter-search">
-                <label htmlFor="sku-list-search">
-                  {copy("Tìm kiếm", "Search")}
-                </label>
-                <UiTextField
-                  id="sku-list-search"
-                  value={keyword}
-                  onChange={(event) => {
-                    setKeyword(event.target.value);
-                    setPage(1);
-                  }}
-                  placeholder={t("masterData.sku.searchPlaceholder")}
-                  slotProps={{
-                    htmlInput: { "aria-label": t("masterData.sku.searchAria") },
-                    input: {
-                      startAdornment: (
-                        <SearchOutlined className="hn-sku-search-icon" />
-                      ),
-                    },
-                  }}
-                  fullWidth
-                />
-              </div>
-              <div className="hn-sku-filter">
-                <span className="hn-sku-filter-label">
-                  {t("masterData.sku.colType")}
-                </span>
-                <UiSelect
-                  aria-label={t("masterData.sku.typeFilterAria")}
-                  value={type}
-                  onChange={(value) => {
-                    setType(value as SkuType | "");
-                    setPage(1);
-                  }}
-                  placeholder={copy("Tất cả", "All")}
-                  fullWidth
-                  menuClassName="hn-sku-menu"
-                  options={[
-                    {
-                      value: "PRODUCT",
-                      label: t("masterData.sku.typeProduct"),
-                    },
-                    {
-                      value: "COMPONENT",
-                      label: t("masterData.sku.typeComponent"),
-                    },
-                  ]}
-                />
-              </div>
-              <div className="hn-sku-filter">
-                <span className="hn-sku-filter-label">
-                  {t("masterData.sku.colBrand")}
-                </span>
-                <UiSelect
-                  aria-label={t("masterData.sku.brandFilterAria")}
-                  value={brandId}
-                  disabled={catalogsQuery.isLoading}
-                  onChange={(value) => {
-                    setBrandId(value);
-                    setPage(1);
-                  }}
-                  placeholder={copy("Tất cả", "All")}
-                  fullWidth
-                  menuClassName="hn-sku-menu"
-                  options={brands.map((brand) => ({
-                    value: brand.id,
-                    label: brand.name || brand.code,
-                  }))}
-                />
-              </div>
-              <div className="hn-sku-filter">
-                <span className="hn-sku-filter-label">
-                  {t("masterData.status.label")}
-                </span>
-                <UiSelect
-                  aria-label={t("masterData.status.filterAria")}
-                  value={status}
-                  onChange={(value) => {
-                    setStatus(value as MasterStatus | "");
-                    setPage(1);
-                  }}
-                  placeholder={copy("Tất cả", "All")}
-                  fullWidth
-                  menuClassName="hn-sku-menu"
-                  options={statusOptions(t)}
-                />
-              </div>
-              <FormControlLabel
-                className="hn-sku-pending-option"
-                control={
-                  <Checkbox
-                    checked={pendingInfoOnly}
-                    onChange={() => {
-                      setPendingInfoOnly((current) => !current);
-                      setPage(1);
-                    }}
-                  />
-                }
-                label={t("masterData.sku.pendingInfo")}
+            <div className="hn-sku-filter">
+              <span className="hn-sku-filter-label">
+                {t("masterData.sku.colBrand")}
+              </span>
+              <UiSelect
+                aria-label={t("masterData.sku.brandFilterAria")}
+                value={brandId}
+                disabled={catalogsQuery.isLoading}
+                onChange={(value) => {
+                  setBrandId(value);
+                  setPage(1);
+                }}
+                placeholder={copy("Tất cả", "All")}
+                fullWidth
+                menuClassName="hn-sku-menu"
+                options={brands.map((brand) => ({
+                  value: brand.id,
+                  label: brand.name || brand.code,
+                }))}
               />
             </div>
+            <FormControlLabel
+              className="hn-sku-pending-option"
+              control={
+                <Checkbox
+                  checked={pendingInfoOnly}
+                  onChange={() => {
+                    if (!pendingInfoOnly) setStatus("");
+                    setPendingInfoOnly((current) => !current);
+                    setPage(1);
+                  }}
+                />
+              }
+              label={t("masterData.sku.pendingInfo")}
+            />
           </div>
         </section>
         {hasFilters ? (
