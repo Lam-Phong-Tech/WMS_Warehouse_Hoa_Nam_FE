@@ -5149,8 +5149,8 @@ export const MESSAGES_EN: MessageTree = {
       emptyDesc: "The catalog will appear as soon as a product is published.",
       clearFilters: "Clear filters",
       paginationAria: "Pagination",
-      prevPage: "← Previous page",
-      nextPage: "Next page →",
+      prevPage: "Previous page",
+      nextPage: "Next page",
       pageInfo: "Page {page}/{lastPage} · {total} products",
     },
     productDetail: {

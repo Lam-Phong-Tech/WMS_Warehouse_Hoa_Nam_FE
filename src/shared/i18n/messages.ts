@@ -5146,8 +5146,8 @@ export const MESSAGES_VI = {
       emptyDesc: "Danh mục sẽ hiển thị ngay khi có sản phẩm được công bố.",
       clearFilters: "Xoá bộ lọc",
       paginationAria: "Phân trang",
-      prevPage: "← Trang trước",
-      nextPage: "Trang sau →",
+      prevPage: "Trang trước",
+      nextPage: "Trang sau",
       pageInfo: "Trang {page}/{lastPage} · {total} sản phẩm",
     },
     productDetail: {

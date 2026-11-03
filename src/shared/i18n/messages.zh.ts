@@ -5275,8 +5275,8 @@ export const MESSAGES_ZH: MessageTree = {
       "emptyDesc": "产品一发布就会出现目录。",
       "clearFilters": "清除筛选器",
       "paginationAria": "分页",
-      "prevPage": "← 上一页",
-      "nextPage": "下一页 →",
+      "prevPage": "上一页",
+      "nextPage": "下一页",
       "pageInfo": "页码 {page}/{lastPage} · {total} 产品"
     },
     "productDetail": {
