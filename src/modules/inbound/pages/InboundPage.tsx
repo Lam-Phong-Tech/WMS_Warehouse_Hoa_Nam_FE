@@ -19,6 +19,7 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import {
   ArrowRightOutlined,
+  BarChartOutlined,
   FilterOutlined,
 } from "@/shared/components/icons";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
@@ -78,6 +79,7 @@ function InboundListScreen() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | undefined>();
   const [pendingInfo, setPendingInfo] = useState<boolean | undefined>();
+  const [overviewOpen, setOverviewOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
@@ -265,6 +267,17 @@ function InboundListScreen() {
           <h1>{tUi("updatedUi.text_6e410870eb7f")}</h1>
         </div>
         <div className="hn-inbound-header-actions">
+          <button
+            type="button"
+            className="hn-inbound-overview-toggle"
+            aria-label={tUi("updatedUi.text_c4cea6eb5467")}
+            title={tUi("updatedUi.text_c4cea6eb5467")}
+            aria-expanded={overviewOpen}
+            aria-controls="hn-inbound-overview-content"
+            onClick={() => setOverviewOpen((current) => !current)}
+          >
+            <BarChartOutlined aria-hidden="true" />
+          </button>
           {canCreate ? (
             <ActionButton
               kind="create"
@@ -277,7 +290,9 @@ function InboundListScreen() {
           ) : null}
         </div>
       </header>
-      <InboundOverview />
+      <div id="hn-inbound-overview-content" hidden={!overviewOpen}>
+        {overviewOpen ? <InboundOverview /> : null}
+      </div>
       <section
         className="hn-inbound-search-panel"
         aria-label={t("inbound.list.filterAria")}

@@ -79,6 +79,28 @@
   gap: 14px;
   min-width: 0;
 }
+.hn-inbound-overview-toggle {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  align-self: center;
+  padding: 0;
+  border: 1px solid var(--in-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--in-pale);
+  color: var(--in-ink);
+}
+.hn-inbound-overview-toggle:hover,
+.hn-inbound-overview-toggle[aria-expanded="true"] {
+  background: var(--in-surface);
+  color: var(--ops-link);
+}
+.hn-inbound-overview-toggle > i {
+  font-size: 18px;
+  line-height: 1;
+}
 .hn-inbound-list button {
   font: inherit;
   cursor: pointer;
@@ -790,6 +812,12 @@
   }
   .hn-inbound-header-actions > * {
     flex: 1 1 100%;
+  }
+  .hn-inbound-header-actions > .hn-inbound-overview-toggle {
+    flex: 0 0 48px;
+  }
+  .hn-inbound-header-actions > .hn-inbound-create {
+    flex: 1 1 auto;
   }
   .hn-inbound-overview-head {
     align-items: flex-start;
