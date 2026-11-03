@@ -253,6 +253,7 @@ export function MainLayout() {
               showContextBadges={
                 location.pathname !== ROUTES.REVERSE &&
                 location.pathname !== ROUTES.NFC &&
+                location.pathname !== ROUTES.NOTIFICATIONS &&
                 !isProfilePage &&
                 !hideHeaderDetails
               }

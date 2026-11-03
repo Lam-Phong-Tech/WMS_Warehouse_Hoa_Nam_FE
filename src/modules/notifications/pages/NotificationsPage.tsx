@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Box, UiCard, UiPagination, SEMANTIC_LIGHT as S } from "@/shared/ui";
-import { PageHeader, EmptyState, LoadingState } from "@/shared/components";
+import { EmptyState, LoadingState } from "@/shared/components";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { StatusTag } from "@/shared/components/data-display/StatusTag";
 import {
@@ -37,19 +37,15 @@ export default function NotificationsPage() {
 
   return (
     <div>
-      <PageHeader
-        title={t("notifications.title")}
-        subtitle={t("notifications.page.subtitle")}
-        extra={
-          <ActionButton
-            kind="confirm"
-            disabled={unreadCount === 0 || markAllRead.isPending}
-            onClick={() => markAllRead.mutate()}
-          >
-            {t("notifications.page.markAll")}
-          </ActionButton>
-        }
-      />
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+        <ActionButton
+          kind="confirm"
+          disabled={unreadCount === 0 || markAllRead.isPending}
+          onClick={() => markAllRead.mutate()}
+        >
+          {t("notifications.page.markAll")}
+        </ActionButton>
+      </Box>
 
       <UiCard>
         {isError ? (
