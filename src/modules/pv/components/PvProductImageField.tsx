@@ -230,10 +230,13 @@ export function PvProductImageField({
           border: `1px dashed ${dragOver ? S.primary : S.border}`,
           borderRadius: `${RADIUS.card}px`,
           backgroundColor: dragOver ? S.bgSubtle : "transparent",
-          padding: "16px",
-          display: "grid",
-          gap: "8px",
-          justifyItems: "center",
+          padding: "12px 14px",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "center",
+          columnGap: "14px",
+          rowGap: "6px",
           textAlign: "center",
         }}
       >

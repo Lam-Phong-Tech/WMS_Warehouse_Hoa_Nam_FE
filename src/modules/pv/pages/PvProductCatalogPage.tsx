@@ -1074,9 +1074,9 @@ export function PvProductCatalogPage() {
             <ActionIconButton kind="close" label={t("common.close")} onClick={closeDialog} disabled={saving} />
           </header>
           <div className="pv-catalog-form-body">
-        <Grid container spacing={2} sx={{ pt: 0.5 }}>
+        <Grid container spacing={1.5} sx={{ pt: 0.5 }}>
           {dialogMode === "create" ? (
-            <Grid size={12}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <UiAutocomplete
                 required
                 label={t("pv.productCatalog.skuField")}
@@ -1110,7 +1110,7 @@ export function PvProductCatalogPage() {
               />
             </Grid>
           ) : (
-            <Grid size={12}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Box component="span" sx={{ fontSize: 12, color: S.textMedium }}>
                 {t("pv.productCatalog.skuField")}:{" "}
                 <strong>
@@ -1122,7 +1122,7 @@ export function PvProductCatalogPage() {
 
           {/* Không có ô "Thứ tự hiển thị": xem chú thích của `sort_order` trong
               ProfileFormState. */}
-          <Grid size={12}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <UiTextField
               required
               fullWidth
@@ -1141,7 +1141,7 @@ export function PvProductCatalogPage() {
             <UiTextField
               fullWidth
               multiline
-              minRows={3}
+              minRows={2}
               label={t("pv.admin.description")}
               value={form.description}
               onChange={(event) =>

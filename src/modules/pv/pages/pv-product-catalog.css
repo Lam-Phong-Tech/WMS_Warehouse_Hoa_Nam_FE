@@ -692,7 +692,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 24px;
+  padding: 14px 24px;
   border-bottom: 1px solid var(--pv-line);
 }
 .pv-catalog-form-header strong {
@@ -706,13 +706,13 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 20px 24px;
+  padding: 16px 24px;
 }
 .pv-catalog-form-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 16px 24px;
+  padding: 12px 24px;
   border-top: 1px solid var(--pv-line);
   background: var(--pv-card);
 }
