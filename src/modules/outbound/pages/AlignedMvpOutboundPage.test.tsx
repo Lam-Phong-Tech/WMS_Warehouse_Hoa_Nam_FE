@@ -84,6 +84,7 @@ function grantOnly(codes: string[]) {
 
 describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
   beforeEach(() => {
+    window.localStorage.removeItem("hn-out01-overview-open");
     permissionMocks.can.mockReset().mockImplementation(() => true);
     serviceMocks.fetchOutboundDocuments.mockReset().mockResolvedValue({
       data: ROWS,
@@ -91,7 +92,10 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     });
   });
 
-  afterEach(() => cleanupTestState());
+  afterEach(() => {
+    window.localStorage.removeItem("hn-out01-overview-open");
+    cleanupTestState();
+  });
 
   it("hỏi đúng permission code Annex C, không dùng code ma", async () => {
     grantOnly(["outbound.view"]);
@@ -249,25 +253,21 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("hides and restores the entire overview from the button beside intake", async () => {
+  it("defaults to a closed overview and toggles it from the button beside intake", async () => {
     renderWithProviders(<AlignedMvpOutboundPage />);
     await screen.findByText("PX-20260820-0001");
 
     const intake = screen.getByRole("button", {
       name: "Tiếp nhận yêu cầu xuất",
     });
-    const toggle = screen.getByRole("button", { name: "Thu gọn" });
-    const overview = screen.getByRole("region", {
-      name: "Tình trạng xử lý phiếu",
-    });
+    const toggle = screen.getByRole("button", { name: "Mở rộng" });
+    const overview = document.getElementById("hn-outbound-overview");
+    expect(overview).not.toBeNull();
     expect(toggle.parentElement).toBe(intake.parentElement);
     expect(toggle.nextElementSibling).toBe(intake);
     expect(toggle.querySelector(".fi-rr-chart-histogram")).not.toBeNull();
     expect(toggle.querySelector(".fi-rr-angle-small-down")).toBeNull();
-    expect(toggle).toHaveAttribute("aria-controls", overview.id);
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-
-    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-controls", overview?.id);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(overview).not.toBeVisible();
     expect(screen.getByText("PX-20260820-0001")).toBeVisible();
@@ -275,6 +275,32 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(overview).toBeVisible();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(overview).not.toBeVisible();
+  });
+
+  it("remembers opening and closing the overview when returning to the page", async () => {
+    let view = renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+    fireEvent.click(screen.getByRole("button", { name: "Mở rộng" }));
+    view.unmount();
+
+    view = renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+    expect(
+      screen.getByRole("region", { name: "Tình trạng xử lý phiếu" }),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Thu gọn" }));
+    view.unmount();
+
+    renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+    expect(screen.getByRole("button", { name: "Mở rộng" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(document.getElementById("hn-outbound-overview")).not.toBeVisible();
   });
 
   it("numbers document rows across pages and omits the list title", async () => {

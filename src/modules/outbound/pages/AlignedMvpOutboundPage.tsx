@@ -48,6 +48,7 @@ import "./outbound-list.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const SEARCH_DEBOUNCE_MS = 250;
+const OVERVIEW_STORAGE_KEY = "hn-out01-overview-open";
 const getSTATUS_OPTIONS = localizedUiValue(() =>
   Object.entries(OUTBOUND_STATUS_LABELS).map(([value, label]) => ({
     value,
@@ -78,7 +79,13 @@ export default function AlignedMvpOutboundPage() {
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
-  const [overviewExpanded, setOverviewExpanded] = useState(true);
+  const [overviewExpanded, setOverviewExpanded] = useState(() => {
+    try {
+      return window.localStorage.getItem(OVERVIEW_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const canImport =
@@ -259,7 +266,18 @@ export default function AlignedMvpOutboundPage() {
               aria-expanded={overviewExpanded}
               title={tUi("updatedUi.text_b11b59304497")}
               aria-controls="hn-outbound-overview"
-              onClick={() => setOverviewExpanded((value) => !value)}
+              onClick={() => {
+                const expanded = !overviewExpanded;
+                setOverviewExpanded(expanded);
+                try {
+                  window.localStorage.setItem(
+                    OVERVIEW_STORAGE_KEY,
+                    String(expanded),
+                  );
+                } catch {
+                  // Keep the toggle usable when browser storage is unavailable.
+                }
+              }}
             >
               <BarChartOutlined aria-hidden="true" />
             </button>
