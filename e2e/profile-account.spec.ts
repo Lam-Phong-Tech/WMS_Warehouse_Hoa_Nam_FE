@@ -347,7 +347,7 @@ test("profile preferences persist from server and apply globally without changin
 }) => {
   await openFixture(page);
   await page
-    .getByRole("button", { name: "Tùy chọn tài khoản", exact: true })
+    .getByRole("tab", { name: "Tùy chọn tài khoản", exact: true })
     .click();
   await choose(page, "Định dạng ngày", "YYYY-MM-DD");
   await choose(page, "Múi giờ", "Asia/Tokyo");
@@ -361,6 +361,14 @@ test("profile preferences persist from server and apply globally without changin
   await savePreferences(page);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   const probe = page.getByTestId("profile-global-probe");
+  // Sample the settled theme color, rather than an intermediate transition frame.
+  await probe.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished),
+    );
+  });
   const beforeAccent = await probe
     .locator("button")
     .evaluate((node) => getComputedStyle(node).backgroundColor);
@@ -496,7 +504,7 @@ test("profile preferences persist from server and apply globally without changin
   });
   await section(page, "Hồ sơ");
   await page
-    .getByRole("button", { name: "Tùy chọn tài khoản", exact: true })
+    .getByRole("tab", { name: "Tùy chọn tài khoản", exact: true })
     .click();
   await choose(page, "Ngôn ngữ", "English");
   await savePreferences(page);
@@ -828,6 +836,11 @@ for (const { width, theme } of layouts) {
     ).toHaveCount(0);
     await expect(
       root.getByRole("button", { name: "Quản lý thiết bị" }),
+    ).toBeVisible();
+    await expect(
+      root
+        .locator(".hn-personal-detail-list dt")
+        .filter({ hasText: "Tên đăng nhập" }),
     ).toHaveCount(0);
     await page.screenshot({
       path: `${screenshotRoot}/overview-${width}-${theme}.png`,

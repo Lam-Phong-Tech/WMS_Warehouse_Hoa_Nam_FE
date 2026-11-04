@@ -31,6 +31,7 @@ import { captureAuthOwner } from "@/shared/store/auth-owner";
 import { ProfileEditorDrawer } from "../components/profile/ProfileEditorDrawer";
 import { ProfilePasswordDrawer } from "../components/profile/ProfilePasswordDrawer";
 import { ProfilePreferencesPanel } from "../components/profile/ProfilePreferencesPanel";
+import { ProfileSessionsPanel } from "../components/profile/ProfileSessionsPanel";
 import { MfaSettingsDrawer } from "../components/MfaSettingsDrawer";
 import { auditLogService } from "@/modules/audit-logs/services/audit-logs.service";
 import { auditActionLabel } from "@/modules/audit-logs/constants/audit-log-labels";
@@ -66,6 +67,7 @@ export function ProfilePage() {
   const [editor, setEditor] = useState(false);
   const [password, setPassword] = useState(false);
   const [mfa, setMfa] = useState(false);
+  const [devicesExpanded, setDevicesExpanded] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<{
     section: Section;
@@ -214,6 +216,15 @@ export function ProfilePage() {
       ),
     },
     {
+      key: "preferences",
+      label: (
+        <>
+          <UiIcon name="settings-sliders" size="sm" />
+          {t("auth.personal.preferencesTitle")}
+        </>
+      ),
+    },
+    {
       key: "security",
       label: (
         <>
@@ -252,6 +263,7 @@ export function ProfilePage() {
   ];
   const selectItems = [
     { value: "profile", label: t("auth.personal.tabsProfile") },
+    { value: "preferences", label: t("auth.personal.preferencesTitle") },
     { value: "security", label: t("auth.personal.tabsSecurity") },
     { value: "notifications", label: t("auth.personal.tabsNotifications") },
     { value: "appearance", label: t("auth.personal.tabsAppearance") },
@@ -330,28 +342,44 @@ export function ProfilePage() {
     ["notifications", "appearance", "other"].includes(section);
   return (
     <div className="hn-profile-page hn-personal-profile hn-settings-screen">
+      <header className="hn-personal-page-heading">
+        <h1>{title}</h1>
+        <p>{subtitle}</p>
+      </header>
       <nav
         className="hn-personal-desktop-nav"
         aria-label={t("auth.personal.sectionPicker")}
       >
         <UiTabs
-          value={section}
+          value={
+            section === "profile" && accountMode === "preferences"
+              ? "preferences"
+              : section
+          }
           items={tabItems}
-          onChange={(value) => navigate({ section: value as Section })}
+          onChange={(value) =>
+            value === "preferences"
+              ? navigate({ section: "profile", view: "preferences" })
+              : navigate({ section: value as Section })
+          }
         />
       </nav>
-      <header className="hn-personal-page-heading">
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </header>
       <div className="hn-personal-mobile-nav">
         <UiSelect
           label={t("auth.personal.sectionPicker")}
           aria-label={t("auth.personal.sectionPicker")}
           fullWidth
-          value={section}
+          value={
+            section === "profile" && accountMode === "preferences"
+              ? "preferences"
+              : section
+          }
           options={selectItems}
-          onChange={(value) => navigate({ section: value as Section })}
+          onChange={(value) =>
+            value === "preferences"
+              ? navigate({ section: "profile", view: "preferences" })
+              : navigate({ section: value as Section })
+          }
         />
       </div>
       {meQuery.isError ? (
@@ -365,26 +393,6 @@ export function ProfilePage() {
         <p role="status">{t("shared.table.loading")}</p>
       ) : (
         <>
-          {section === "profile" ? (
-            <div className="hn-personal-subnav">
-              <button
-                type="button"
-                aria-pressed={accountMode === "overview"}
-                onClick={() => navigate({ section: "profile" })}
-              >
-                {t("auth.personal.tabsProfile")}
-              </button>
-              <button
-                type="button"
-                aria-pressed={accountMode === "preferences"}
-                onClick={() =>
-                  navigate({ section: "profile", view: "preferences" })
-                }
-              >
-                {t("auth.personal.preferencesTitle")}
-              </button>
-            </div>
-          ) : null}
           {section === "profile" && accountMode === "overview" ? (
             <>
               <section className="hn-personal-identity-banner">
@@ -429,12 +437,6 @@ export function ProfilePage() {
                     <div>
                       <dt>{t("auth.personal.name")}</dt>
                       <dd>{me.display_name || me.name}</dd>
-                    </div>
-                    <div>
-                      <dt>{t("auth.personal.username")}</dt>
-                      <dd>
-                        {me.username || me.code || t("auth.personal.unknown")}
-                      </dd>
                     </div>
                     <div>
                       <dt>{t("auth.personal.email")}</dt>
@@ -483,6 +485,24 @@ export function ProfilePage() {
                   </p>
                 </section>
               </div>
+              {devicesExpanded ? (
+                <>
+                  <ActionButton
+                    kind="view"
+                    onClick={() => setDevicesExpanded(false)}
+                  >
+                    {t("common.collapse")}
+                  </ActionButton>
+                  <ProfileSessionsPanel key={userId} userId={userId} />
+                </>
+              ) : (
+                <ProfileSessionsPanel
+                  key={userId}
+                  userId={userId}
+                  compact
+                  onManage={() => setDevicesExpanded(true)}
+                />
+              )}
             </>
           ) : null}
           {section === "security" ? (

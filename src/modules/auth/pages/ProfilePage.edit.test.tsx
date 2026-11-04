@@ -62,8 +62,16 @@ describe("ProfilePage personal editing", () => {
       screen.queryByRole("tab", { name: "Thiết bị & phiên" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Quản lý thiết bị" }),
-    ).not.toBeInTheDocument();
+      await screen.findByRole("button", { name: "Quản lý thiết bị" }),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Quản lý thiết bị" }));
+    expect(
+      screen.getByRole("heading", { name: "Tài khoản của tôi" }),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Thu gọn" }));
+    expect(
+      screen.getByRole("button", { name: "Quản lý thiết bị" }),
+    ).toBeVisible();
   });
   it("validates phone, saves with the opening version and refreshes identity", async () => {
     const update = vi.spyOn(profileService, "updateMe").mockResolvedValue({
