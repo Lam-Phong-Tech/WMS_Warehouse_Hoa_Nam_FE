@@ -8,6 +8,46 @@ import {
 
 const screenshotRoot = "test-results/profile-account";
 
+test("profile card pairs have equal widths and stack on mobile", async ({
+  page,
+}) => {
+  await openFixture(page, { width: 1440 });
+  for (const [name, title] of [
+    ["Hồ sơ", "Tài khoản của tôi"],
+    ["Tùy chọn tài khoản", "Tùy chọn tài khoản"],
+    ["Giao diện", "Giao diện"],
+    ["Khác", "Tùy chọn khác"],
+  ]) {
+    await page.getByRole("tab", { name, exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: title, exact: true, level: 1 }),
+    ).toBeVisible();
+    const pair = page.locator(
+      name === "Hồ sơ"
+        ? ".hn-personal-overview-grid"
+        : ".hn-personal-settings-grid",
+    );
+    const cards = pair.locator(":scope > *");
+    await expect(cards).toHaveCount(2);
+    const first = await cards.nth(0).boundingBox();
+    const second = await cards.nth(1).boundingBox();
+    expect(Math.abs(first!.width - second!.width)).toBeLessThanOrEqual(1);
+    await page.screenshot({
+      path: `${screenshotRoot}/balanced-cards-${name}.png`,
+    });
+  }
+  await page.setViewportSize({ width: 390, height: 1000 });
+  const cards = page.locator(".hn-personal-settings-grid > *");
+  await expect
+    .poll(async () => {
+      const first = await cards.nth(0).boundingBox();
+      const second = await cards.nth(1).boundingBox();
+      return second!.y >= first!.y + first!.height;
+    })
+    .toBe(true);
+  await noOverflow(page);
+});
+
 test("account navigation collapses in the heading and security drawers use clear vertical layouts", async ({
   page,
 }) => {

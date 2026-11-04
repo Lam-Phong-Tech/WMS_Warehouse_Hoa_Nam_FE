@@ -876,7 +876,10 @@ for (const { width, theme } of cases) {
       .click();
     const directPermission = detail
       .locator(".hn-iam-effective-list article")
-      .filter({ hasText: "report.export" });
+      .filter({ hasText: "Xuất báo cáo" });
+    await expect(
+      detail.getByText("report.export", { exact: true }),
+    ).toHaveCount(0);
     await expect(directPermission).toContainText("Xuất báo cáo");
     await expect(directPermission).toContainText("Theo dõi báo cáo");
     await expect(directPermission).toContainText(

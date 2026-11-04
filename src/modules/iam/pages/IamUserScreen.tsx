@@ -1802,7 +1802,6 @@ export function IamUserScreen({
                           <article key={key}>
                             <div>
                               <strong>{label}</strong>
-                              <small>{key}</small>
                               <span className="muted">
                                 {roleSources
                                   .map((role) => role.role_name)
