@@ -248,10 +248,9 @@ export default function InventoryPage() {
   };
   useOverlayBackDismiss(overlayOpen, closeOverlays, "INV-01-overlay");
 
-  // Bảng nhiều cột nhất dự án (~16 cột cả 2 tab) — chuyển sang
-  // ResponsiveDataTable: desktop giữ UX bảng, mobile/tablet hẹp (<md) chuyển
-  // thành card. Các cột nghiệp vụ đều hiện trên card, gồm cả tồn hiện có và sổ cái
-  // để không mất bằng chứng đối soát ở màn hình hẹp. Chỉ STT được ẩn. Toàn bộ sorter ở đây vốn là client-side (so sánh trực tiếp
+  // ResponsiveDataTable giữ bảng trên desktop và chuyển thành card ở màn hẹp.
+  // Khả dụng, sổ cái và chênh lệch được xem trong chi tiết, không lặp ở danh sách.
+  // Chỉ STT được ẩn trên card. Sorter ở đây là client-side (so sánh trực tiếp
   // trên mảng `balances` của trang hiện tại, không có tham số sort gửi lên
   // API) nên cột nào cũng giữ được qua `sortAccessor`.
   const balanceColumns: ResponsiveTableColumn<InventoryBalanceRow>[] = [
@@ -277,7 +276,7 @@ export default function InventoryPage() {
     {
       key: "name",
       header: t("inventory.balance.colName"),
-      width: "20%",
+      width: "24%",
       sortAccessor: (row) => row.name || "",
       render: (row) => (
         <Stack>
@@ -295,7 +294,7 @@ export default function InventoryPage() {
     {
       key: "stockStatus",
       header: t("inventory.balance.colStockStatus"),
-      width: "14%",
+      width: "15%",
       sortType: "value",
       sortAccessor: (row) => row.stockStatus,
       render: (row) => (
@@ -311,18 +310,9 @@ export default function InventoryPage() {
       ),
     },
     {
-      key: "available",
-      header: t("inventory.balance.colAvailable"),
-      width: "9%",
-      align: "right",
-      sortType: "value",
-      sortAccessor: (row) => row.available,
-      render: (row) => <strong>{formatQty(row.available, row.uom)}</strong>,
-    },
-    {
       key: "onHand",
       header: t("inventory.balance.colOnHand"),
-      width: "9%",
+      width: "11%",
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.onHand,
@@ -375,7 +365,7 @@ export default function InventoryPage() {
     {
       key: "reconcile",
       header: t("inventory.balance.colReconcile"),
-      width: "8%",
+      width: "10%",
       sortType: "value",
       sortAccessor: (row) => row.reconcile,
       render: (row) => (
