@@ -44,10 +44,12 @@ export function AuditLogsTable({
   const [sortState, setSortState] = useState<ClientSortState>({
     direction: undefined,
   });
+  // Every column has a share: an unbounded action/object column absorbs
+  // spare space and squeezes the actor and module despite their content.
   const columns: ResponsiveTableColumn<AuditLog>[] = [
     {
       key: "select",
-      width: 44,
+      width: "4%",
       align: "center",
       mobileLabel: t("shared.table.selectRow"),
       header: (
@@ -73,7 +75,7 @@ export function AuditLogsTable({
     {
       key: "created_at",
       header: t("audit.colTime"),
-      width: 165,
+      width: "16%",
       sortable: true,
       sortType: "value",
       render: (row) => (
@@ -83,7 +85,7 @@ export function AuditLogsTable({
     {
       key: "actor_email",
       header: t("audit.colActor"),
-      width: 230,
+      width: "22%",
       render: (row) => (
         <div className="hn-audit-actor">
           <span className="hn-audit-actor-icon">
@@ -107,6 +109,7 @@ export function AuditLogsTable({
     {
       key: "action",
       header: t("audit.actionObject"),
+      width: "22%",
       sortable: true,
       render: (row) => (
         <div className="hn-audit-cell-lines">
@@ -135,7 +138,7 @@ export function AuditLogsTable({
     {
       key: "module",
       header: t("audit.colModule"),
-      width: 150,
+      width: "18%",
       sortable: true,
       render: (row) => (
         <span
@@ -149,7 +152,7 @@ export function AuditLogsTable({
     {
       key: "result",
       header: t("audit.colResult"),
-      width: 150,
+      width: "12%",
       render: (row) => (
         <UiStatusBadge
           className="hn-audit-result"
@@ -192,7 +195,7 @@ export function AuditLogsTable({
           : undefined
       }
       onRowClick={onView}
-      actionColumnWidth={64}
+      actionColumnWidth="6%"
       renderRowActions={
         onView
           ? (row) => (

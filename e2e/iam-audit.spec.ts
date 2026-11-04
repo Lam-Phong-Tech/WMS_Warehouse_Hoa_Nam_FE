@@ -357,7 +357,10 @@ async function closeDrawer(page: Page, drawer: Locator) {
   await noPageOverflow(page);
 }
 
-for (const { width, theme } of cases) {
+for (const { width, theme } of [
+  ...cases,
+  { width: 1440, theme: "dark" } as const,
+]) {
   test(`audit ${width} ${theme}: responsive list, result semantics and right detail`, async ({
     page,
   }) => {
@@ -382,6 +385,26 @@ for (const { width, theme } of cases) {
     ).toHaveAttribute("data-settings-tone", "neutral");
     if (width >= 768) {
       await expect(root.locator("thead th").last()).toHaveText("");
+      const layout = await root.locator("table").evaluate((table) => {
+        const width = table.getBoundingClientRect().width;
+        return {
+          mode: getComputedStyle(table).tableLayout,
+          shares: Array.from(table.querySelectorAll("thead th")).map(
+            (cell) => cell.getBoundingClientRect().width / width,
+          ),
+          modulesFit: Array.from(
+            table.querySelectorAll(".hn-audit-module"),
+          ).every((module) => module.scrollWidth <= module.clientWidth + 1),
+          resultsFit: Array.from(
+            table.querySelectorAll(".hn-audit-result .MuiChip-label"),
+          ).every((label) => label.scrollWidth <= label.clientWidth + 1),
+        };
+      });
+      expect(layout.mode).toBe("fixed");
+      expect(layout.shares[2]).toBeGreaterThanOrEqual(0.2);
+      expect(layout.shares[3]).toBeLessThanOrEqual(0.25);
+      expect(layout.modulesFit).toBe(true);
+      expect(layout.resultsFit).toBe(true);
       const style = await root
         .locator("thead th")
         .nth(1)

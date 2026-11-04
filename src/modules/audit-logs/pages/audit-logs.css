@@ -398,6 +398,7 @@
   text-transform: inherit;
 }
 .hn-audit-table table {
+  min-width: 1120px;
   background: var(--settings-surface);
 }
 .hn-audit-cell-lines > :is(strong, span) {
