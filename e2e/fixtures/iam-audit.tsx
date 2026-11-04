@@ -53,7 +53,9 @@ export function IamAuditFixture() {
             {view === "audit" ? (
               <AuditLogsPage />
             ) : view === "roles" ? (
-              <IamRolePermissionScreen />
+              <div className="hn-iam-page">
+                <IamRolePermissionScreen />
+              </div>
             ) : (
               <IamUsersGd1Page />
             )}

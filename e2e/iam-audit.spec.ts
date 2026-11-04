@@ -516,7 +516,7 @@ test("users create and profile edit preserve real assignment and If-Match contra
 });
 
 for (const { width, theme } of cases) {
-  test(`roles ${width} ${theme}: grouped permission matrix and review drawer`, async ({
+  test(`roles ${width} ${theme}: restored role cards, permission tiles and review drawer`, async ({
     page,
   }) => {
     await openFixture(page, "roles", width, theme);
@@ -529,6 +529,30 @@ for (const { width, theme } of cases) {
       exact: true,
     });
     await expect(permission).toBeVisible();
+    const roleCards = root.locator(".hn-iam-role-card");
+    await expect(roleCards.first()).toHaveAttribute("aria-pressed", "true");
+    expect(
+      await roleCards.evaluateAll((cards) =>
+        cards.every((card) => {
+          const bounds = card.getBoundingClientRect();
+          return Array.from(card.querySelectorAll("button")).every((button) => {
+            const action = button.getBoundingClientRect();
+            return action.left >= bounds.left && action.right <= bounds.right;
+          });
+        }),
+      ),
+    ).toBe(true);
+    await expect(root.locator(".hn-iam-matrix-table")).toHaveCount(0);
+    await expect(root.locator(".hn-iam-role-compact-select")).toHaveCount(0);
+    await expect(root.getByText("sku.manage", { exact: true })).toBeVisible();
+    await expect(
+      root.locator(".hn-iam-permission-cell").filter({
+        has: page.getByRole("checkbox", {
+          name: "Quản lý danh mục SKU (sku.manage)",
+          exact: true,
+        }),
+      }),
+    ).toBeVisible();
     await expect(
       root.getByRole("checkbox", {
         name: "Legacy quyền cũ không còn thực thi (legacy.permission)",
@@ -537,10 +561,26 @@ for (const { width, theme } of cases) {
     ).toBeDisabled();
     await noPageOverflow(page);
     await page.screenshot({
-      path: `${screenshotRoot}/roles-matrix-${width}-${theme}.png`,
+      path: `${screenshotRoot}/roles-cards-${width}-${theme}.png`,
+      fullPage: false,
+    });
+    await permission.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: `${screenshotRoot}/roles-tiles-${width}-${theme}.png`,
       fullPage: false,
     });
     await permission.check();
+    await roleCards.nth(1).click();
+    const discard = page.getByRole("dialog", {
+      name: "Hủy thay đổi chưa lưu?",
+      exact: true,
+    });
+    await expect(discard).toBeVisible();
+    await discard
+      .getByRole("button", { name: "Tiếp tục chỉnh sửa", exact: true })
+      .click();
+    await expect(permission).toBeChecked();
+    await expect(roleCards.first()).toHaveAttribute("aria-pressed", "true");
     await root
       .getByRole("button", { name: "Xem lại & lưu", exact: true })
       .click();

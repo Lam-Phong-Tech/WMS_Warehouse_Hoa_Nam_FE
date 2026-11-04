@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  Box,
+  Stack,
+  SEMANTIC_LIGHT as S,
+  UiCard,
+  UiSpinner,
+  UiStateSurface,
+  UiText,
   MenuItem,
   UiAlert,
   UiDrawer,
@@ -8,11 +15,18 @@ import {
   UiTextField,
   useUiConfirm,
 } from "@/shared/ui";
-import { useT } from "@/shared/i18n/useT";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import type { MessageKey } from "@/shared/i18n/messages";
+import {
+  IAM_ROLE_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
+import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import {
   ActionButton,
   ActionIconButton,
   RowActionButton,
+  RowActionGroup,
 } from "@/shared/components/actions";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { normalizeError } from "@/shared/api/api-error";
@@ -43,9 +57,91 @@ import {
   changedPermissionIds,
   changeGroupPermissions,
 } from "./iam-role-matrix";
-import { IamRoleMatrix } from "./IamRoleMatrix";
 import { IamRoleHistoryDrawer } from "./IamRoleHistoryDrawer";
+import "./iam-users.css";
 import "./iam-role-permission.css";
+
+const PERMISSION_MODULE_KEYS: Record<string, MessageKey> = {
+  iam: "iam.permissionModule.iam",
+  sku: "iam.permissionModule.sku",
+  catalog: "iam.permissionModule.catalog",
+  inbound: "iam.permissionModule.inbound",
+  outbound: "iam.permissionModule.outbound",
+  inventory: "iam.permissionModule.inventory",
+  warranty: "iam.permissionModule.warranty",
+  report: "iam.permissionModule.report",
+  reports: "iam.permissionModule.report",
+  pv: "iam.permissionModule.pv",
+  audit: "iam.permissionModule.audit",
+  container: "iam.permissionModule.container",
+  putaway: "iam.permissionModule.putaway",
+  component: "iam.permissionModule.component",
+  label: "iam.permissionModule.label",
+  scan: "iam.permissionModule.scan",
+  warehouse: "iam.permissionModule.warehouse",
+  agency: "iam.permissionModule.agency",
+  system: "iam.permissionModule.system",
+};
+
+/** RFID là từ viết tắt kỹ thuật — không dịch. */
+const PERMISSION_MODULE_LITERALS: Record<string, string> = { rfid: "RFID" };
+
+function permissionModuleLabel(
+  module: string,
+  t: TranslateFn,
+): string | undefined {
+  const key = PERMISSION_MODULE_KEYS[module];
+  if (key) return t(key);
+  return PERMISSION_MODULE_LITERALS[module];
+}
+
+const PERMISSION_ACTION_KEYS: Record<string, MessageKey> = {
+  view: "iam.permissionAction.view",
+  manage: "iam.permissionAction.manage",
+  create: "iam.permissionAction.create",
+  update: "iam.permissionAction.update",
+  delete: "iam.permissionAction.remove",
+  scan: "iam.permissionAction.scan",
+  post: "iam.permissionAction.post",
+  cancel: "iam.permissionAction.cancel",
+  import: "iam.permissionAction.import",
+  export: "iam.permissionAction.export",
+  trace: "iam.permissionAction.trace",
+  publish: "iam.permissionAction.publish",
+  issue: "iam.permissionAction.issue",
+  approve: "iam.permissionAction.approve",
+  pii: "iam.permissionAction.pii",
+};
+
+/** Kiểu chữ "mã" (thay antd Typography.Text code) — viền + nền nhẹ từ token. */
+const CODE_SX = {
+  fontFamily: "var(--wms-font-family)",
+  fontSize: "0.85em",
+  border: `1px solid ${S.border}`,
+  borderRadius: "4px",
+  backgroundColor: S.bgSubtle,
+  padding: "0 4px",
+} as const;
+
+function permissionGroup(permission: IamPermission, t: TranslateFn): string {
+  if (permission.permission_name.toLowerCase().startsWith("legacy")) {
+    return t("iam.role.legacyGroup");
+  }
+  const [module] = permission.permission_key.split(".");
+  return permissionModuleLabel(module, t) ?? t("iam.role.otherGroup");
+}
+
+function permissionLabel(permission: IamPermission, t: TranslateFn): string {
+  const parts = permission.permission_key.split(".").filter(Boolean);
+  const module =
+    permissionModuleLabel(parts[0], t) ?? t("iam.role.fallbackModule");
+  const actionKey = [...parts]
+    .reverse()
+    .map((part) => PERMISSION_ACTION_KEYS[part])
+    .find(Boolean);
+  const action = actionKey ? t(actionKey) : t("iam.role.fallbackAction");
+  return t("iam.role.permissionLabel", { action, module });
+}
 
 interface RoleForm {
   role_code: string;
@@ -185,6 +281,16 @@ export function IamRolePermissionScreen({
       ),
     [permissionSearch, permissions],
   );
+  const groupedPermissions = useMemo(() => {
+    const groups = new Map<string, IamPermission[]>();
+    visiblePermissions
+      .filter((permission) => permission.status === "ACTIVE")
+      .forEach((permission) => {
+        const group = permissionGroup(permission, t);
+        groups.set(group, [...(groups.get(group) ?? []), permission]);
+      });
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, "vi"));
+  }, [visiblePermissions, t]);
   const permissionName = (id: string) =>
     permissions.find((permission) => permission.permission_id === id)
       ?.permission_name ??
@@ -418,6 +524,236 @@ export function IamRolePermissionScreen({
       />
     </span>
   );
+  const renderRoleCard = (role: IamRole, index: number) => {
+    const selected = role.role_id === selectedRole?.role_id;
+    const active = role.status === "ACTIVE";
+    // STT theo trang hiện tại — giúp đối chiếu vị trí vai trò khi danh sách dài/phân trang.
+    const stt = mvpRowNumber(rolePage, rolePerPage, index);
+    return (
+      <Box
+        key={role.role_id}
+        className="hn-iam-role-card"
+        role="button"
+        tabIndex={0}
+        aria-pressed={selected}
+        onClick={() => {
+          if (!selected)
+            void discardBefore(() => setSelectedRoleId(role.role_id));
+        }}
+        onKeyDown={(event) => {
+          if (
+            event.target === event.currentTarget &&
+            (event.key === "Enter" || event.key === " ")
+          ) {
+            event.preventDefault();
+            if (!selected)
+              void discardBefore(() => setSelectedRoleId(role.role_id));
+          }
+        }}
+        sx={{
+          border: `1px solid ${selected ? S.primary : S.border}`,
+          backgroundColor: selected ? S.primarySoft : S.bgSurface,
+          borderRadius: "var(--ops-radius-card)",
+          padding: "10px 12px",
+          marginBottom: 1,
+          cursor: "pointer",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 1,
+        }}
+      >
+        <Stack
+          spacing={0.25}
+          sx={{ flex: 1, minWidth: 0, alignItems: "flex-start" }}
+        >
+          <Box component="span" sx={{ fontWeight: 600, color: S.textHigh }}>
+            <Box
+              component="span"
+              sx={{ color: S.textMedium, marginRight: "6px" }}
+            >
+              {stt}.
+            </Box>
+            {role.role_name}
+          </Box>
+          <UiStatusBadge
+            tone={active ? "success" : "warning"}
+            label={businessLabel(
+              IAM_ROLE_STATUS_LABELS,
+              role.status,
+              t("iam.role.statusOther"),
+            )}
+          />
+          <Box
+            component="span"
+            sx={{
+              width: "100%",
+              fontSize: 12,
+              color: S.textMedium,
+              overflowWrap: "anywhere",
+            }}
+          >
+            <Box
+              component="code"
+              sx={{ ...CODE_SX, fontSize: 11, overflowWrap: "anywhere" }}
+            >
+              {role.role_code}
+            </Box>{" "}
+            {membersLabel(role)}
+          </Box>
+        </Stack>
+        {canManage && !isSystemRole(role) && (
+          <RowActionGroup sx={{ flexShrink: 0, alignItems: "flex-start" }}>
+            <RowActionButton
+              kind="edit"
+              disabled={
+                metadataBusy ||
+                deleteRole.isPending ||
+                syncPermissions.isPending
+              }
+              label={t("iam.role.editAria", { name: role.role_name })}
+              onClick={(event) => {
+                event.stopPropagation();
+                openRoleForm(role);
+              }}
+            />
+            <RowActionButton
+              kind={active ? "deactivate" : "activate"}
+              disabled={
+                metadataBusy ||
+                deleteRole.isPending ||
+                syncPermissions.isPending
+              }
+              label={
+                active
+                  ? t("iam.role.disableAria", { name: role.role_name })
+                  : t("iam.role.enableAria", { name: role.role_name })
+              }
+              onClick={(event) => {
+                event.stopPropagation();
+                void toggleRoleStatus(role);
+              }}
+            />
+            <RowActionButton
+              kind="delete"
+              disabled={
+                metadataBusy ||
+                deleteRole.isPending ||
+                syncPermissions.isPending
+              }
+              label={t("iam.role.deleteAria", { name: role.role_name })}
+              onClick={(event) => {
+                event.stopPropagation();
+                void discardBefore(() => void removeRole(role));
+              }}
+            />
+          </RowActionGroup>
+        )}
+      </Box>
+    );
+  };
+
+  const renderPermissionCell = (permission: IamPermission) => {
+    const checked = checkedIds.includes(permission.permission_id);
+    const delegatable = canChange(permission);
+    // `is_enforced` do BE tính từ chính bảng route lúc chạy
+    // (PermissionEnforcementMap). Khi thiếu trường này — BE cũ hơn — coi như
+    // còn hiệu lực để không bôi đỏ oan.
+    const retired = permission.is_enforced === false;
+    const disabled =
+      !matrixEditable || !delegatable || retired || conflict || remoteChanged;
+    const tooltip = retired
+      ? t("iam.role.legacyHint")
+      : !delegatable
+        ? t("iam.role.noSelfGrantHint")
+        : undefined;
+    return (
+      <Box
+        key={permission.permission_id}
+        className="hn-iam-permission-cell"
+        data-checked={checked}
+        sx={{
+          border: `1px solid ${checked ? S.primaryLight : S.border}`,
+          backgroundColor: checked ? S.primarySoft : S.bgSurface,
+          borderRadius: "var(--ops-radius-card)",
+          padding: "8px 10px",
+          height: "100%",
+        }}
+      >
+        <Box
+          component="label"
+          title={tooltip}
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 1,
+            cursor: disabled ? "not-allowed" : "pointer",
+          }}
+        >
+          <Box
+            component="input"
+            type="checkbox"
+            checked={checked}
+            aria-label={t("iam.roleUi.selectPermission", {
+              name: permission.permission_name,
+              key: permission.permission_key,
+            })}
+            disabled={disabled}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              changeChecked(
+                changeGroupPermissions(
+                  checkedIds,
+                  [permission],
+                  event.target.checked,
+                  canChange,
+                ),
+              );
+            }}
+            sx={{ marginTop: "3px", accentColor: S.primary, flexShrink: 0 }}
+          />
+          <Stack spacing={0} sx={{ minWidth: 0 }}>
+            <Box
+              component="span"
+              sx={{
+                textDecoration: retired ? "line-through" : "none",
+                color: retired ? S.textMedium : S.textHigh,
+              }}
+            >
+              {permissionLabel(permission, t)}
+            </Box>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+              <Box component="span" sx={{ fontSize: 11, color: S.textMedium }}>
+                {permission.permission_key}
+              </Box>
+              <ActionIconButton
+                kind="copy"
+                label={t("iam.role.copyKeyAria", {
+                  key: permission.permission_key,
+                })}
+                sx={{ padding: "2px" }}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void navigator.clipboard?.writeText(
+                    permission.permission_key,
+                  );
+                }}
+              />
+            </Stack>
+            {retired ? (
+              <Box component="span" sx={{ fontSize: 11, color: S.warningText }}>
+                {permission.replaced_by
+                  ? t("iam.role.deprecatedWith", {
+                      replacement: permission.replaced_by,
+                    })
+                  : t("iam.role.deprecated")}
+              </Box>
+            ) : null}
+          </Stack>
+        </Box>
+      </Box>
+    );
+  };
+
   return (
     <div className="hn-iam-roles">
       <header className="hn-iam-role-page-header">
@@ -445,113 +781,59 @@ export function IamRolePermissionScreen({
         </div>
       </header>
       {navigation}
-      <div className="hn-iam-role-workspace">
-        <aside className="hn-iam-role-rail">
-          <h2>{t("iam.role.listTitle")}</h2>
-          <UiTextField
-            fullWidth
-            type="search"
-            placeholder={t("iam.role.searchPlaceholder")}
-            value={keyword}
-            slotProps={{
-              htmlInput: { "aria-label": t("iam.role.searchAria") },
-            }}
-            onChange={(event) => {
-              const value = event.target.value;
-              void discardBefore(() => {
-                setKeyword(value);
-                setRolePage(1);
-              });
-            }}
-          />
-          {rolesQuery.isError ? (
-            <ApiErrorAlert
-              error={rolesQuery.error}
-              title={t("iam.roleUi.listLoadError")}
-              onRetry={() => void rolesQuery.refetch()}
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          alignItems: "stretch",
+          gridTemplateColumns: {
+            xs: "1fr",
+            xl: "minmax(0, 9fr) minmax(0, 15fr)",
+          },
+        }}
+      >
+        <UiCard title={t("iam.role.listTitle")}>
+          <Stack spacing={1.5} sx={{ width: "100%" }}>
+            <UiTextField
+              type="search"
+              fullWidth
+              placeholder={t("iam.role.searchPlaceholder")}
+              slotProps={{
+                htmlInput: { "aria-label": t("iam.role.searchAria") },
+              }}
+              value={keyword}
+              onChange={(event) => {
+                const value = event.target.value;
+                void discardBefore(() => {
+                  setKeyword(value);
+                  setRolePage(1);
+                });
+              }}
             />
-          ) : rolesQuery.isLoading ? (
-            <p role="status">{t("common.loadingData")}</p>
-          ) : (
-            <>
-              <select
-                className="hn-iam-role-compact-select"
-                aria-label={t("iam.roleUi.chooseRole")}
-                value={selectedRole?.role_id ?? ""}
-                onChange={(event) => {
-                  const id = event.target.value;
-                  void discardBefore(() => setSelectedRoleId(id));
-                }}
-              >
-                {!roles.length ? (
-                  <option value="">{t("iam.roleUi.roleSearchEmpty")}</option>
-                ) : (
-                  roles.map((role) => (
-                    <option key={role.role_id} value={role.role_id}>
-                      {role.role_name}
-                    </option>
-                  ))
-                )}
-              </select>
-              <ul className="hn-iam-role-list">
-                {roles.map((role) => (
-                  <li key={role.role_id}>
-                    <button
-                      type="button"
-                      aria-pressed={selectedRole?.role_id === role.role_id}
-                      onClick={() => {
-                        if (selectedRole?.role_id !== role.role_id)
-                          void discardBefore(() =>
-                            setSelectedRoleId(role.role_id),
-                          );
-                      }}
-                    >
-                      <span className="hn-iam-role-avatar" aria-hidden="true">
-                        {role.role_name
-                          .split(/\s+/)
-                          .slice(0, 2)
-                          .map((part) => part[0])
-                          .join("")}
-                      </span>
-                      <span>
-                        <strong>{role.role_name}</strong>
-                        <small>{membersLabel(role)}</small>
-                        {role.status === "INACTIVE" ? (
-                          <small className="hn-iam-role-inactive">
-                            {t("iam.role.statusInactive")}
-                          </small>
-                        ) : null}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              {!roles.length ? (
-                <p>
-                  {t(
-                    keyword
-                      ? "iam.roleUi.roleSearchEmpty"
-                      : "iam.role.listEmpty",
-                  )}
-                </p>
-              ) : null}
-            </>
-          )}
-          <footer className="hn-iam-role-rail-footer">
-            <small>
-              {t("iam.role.total", { count: rolePagination.total })}
-            </small>
             <MvpPageSizeSelector
               menuClassName="hn-iam-menu"
               value={rolePerPage}
-              onChange={(size) =>
+              onChange={(value) => {
                 void discardBefore(() => {
-                  setRolePerPage(size);
+                  setRolePerPage(value);
                   setRolePage(1);
-                })
-              }
+                });
+              }}
             />
-            {rolePagination.total > rolePerPage ? (
+            {/* Tổng số + điều hướng trang đặt ngay cạnh ô tìm kiếm/số dòng mỗi
+             * trang (thay vì tách rời xuống dưới danh sách vai trò dài) để dễ tìm. */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
+              <UiText variant="secondary">
+                {t("iam.role.total", { count: rolePagination.total })}
+              </UiText>
               <UiPagination
                 page={rolePagination.current}
                 pageSize={rolePerPage}
@@ -561,153 +843,297 @@ export function IamRolePermissionScreen({
                   void discardBefore(() => setRolePage(page))
                 }
               />
-            ) : null}
-          </footer>
-        </aside>
-        <section className="hn-iam-role-matrix-panel">
-          {selectedRole ? (
-            <header className="hn-iam-role-selected-header">
-              <div>
-                <h2>{selectedRole.role_name}</h2>
-                <UiStatusBadge
-                  tone="neutral"
-                  label={t(
-                    isSystemRole(selectedRole)
-                      ? "iam.roleUi.roleTypeSystem"
-                      : "iam.roleUi.roleTypeCustom",
-                  )}
-                />
-                <button
-                  className="hn-iam-role-member-link"
-                  type="button"
-                  disabled={!onViewUsers}
-                  title={
-                    !usersComplete
-                      ? t("iam.roleUi.membersPartialHint")
-                      : undefined
-                  }
-                  onClick={() =>
-                    void discardBefore(() =>
-                      onViewUsers?.(selectedRole.role_id),
-                    )
-                  }
-                >
-                  {membersLabel(selectedRole)}
-                </button>
-              </div>
-              <RowActionButton
-                kind="view"
-                label={t("iam.roleUi.roleInfo")}
-                onClick={() => openRoleForm(selectedRole)}
+            </Box>
+            {rolesQuery.isError ? (
+              <ApiErrorAlert
+                error={rolesQuery.error}
+                title={t("iam.roleUi.listLoadError")}
+                onRetry={() => void rolesQuery.refetch()}
               />
-            </header>
-          ) : null}
-          {saveError && !reviewOpen ? (
-            <ApiErrorAlert error={saveError} />
-          ) : null}
-          {!canViewPermissions ? (
-            <UiAlert tone="warning">{t("iam.role.noViewPermission")}</UiAlert>
-          ) : permissionsQuery.isError || rolesQuery.isError ? (
-            <ApiErrorAlert
-              error={permissionsQuery.error || rolesQuery.error}
-              title={t("iam.roleUi.loadError")}
-              onRetry={() => {
-                void rolesQuery.refetch();
-                void permissionsQuery.refetch();
-              }}
-            />
-          ) : permissionsQuery.isLoading ? (
-            <p role="status">{t("common.loadingData")}</p>
-          ) : !selectedRole ? (
-            <p className="hn-iam-role-empty">{t("iam.role.pickRole")}</p>
-          ) : (
-            <>
-              {isSystemRole(selectedRole) ? (
-                <UiAlert tone="info">{t("iam.role.superAdminBody")}</UiAlert>
-              ) : null}
-              {dirty ? (
-                <span className="hn-iam-role-dirty" role="status">
-                  {t("iam.roleUi.changes", { count: changedIds.length })}
-                </span>
-              ) : null}
-              {remoteChanged || conflict ? (
-                <UiAlert tone="warning" title={t("iam.roleUi.conflictTitle")}>
-                  {t("iam.roleUi.conflictBody")}
-                </UiAlert>
-              ) : null}
-              <UiTextField
-                type="search"
-                className="hn-iam-permission-search"
-                fullWidth
-                value={permissionSearch}
-                onChange={(event) => setPermissionSearch(event.target.value)}
-                placeholder={t("iam.roleUi.searchPermission")}
-                slotProps={{
-                  htmlInput: { "aria-label": t("iam.roleUi.searchPermission") },
+            ) : rolesQuery.isLoading ? (
+              <Box sx={{ textAlign: "center", padding: 4 }}>
+                <UiSpinner size={28} />
+              </Box>
+            ) : roles.length === 0 ? (
+              <UiStateSurface kind="empty" title={t("iam.role.listEmpty")} />
+            ) : (
+              <div>
+                {roles.map((role, index) => renderRoleCard(role, index))}
+              </div>
+            )}
+          </Stack>
+        </UiCard>
+
+        <UiCard
+          title={
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              <span>{t("iam.role.matrixTitle")}</span>
+              <UiStatusBadge
+                tone="info"
+                label={t("iam.role.matrixCount", {
+                  checked: checkedIds.length,
+                  total: permissions.length,
+                })}
+              />
+            </Stack>
+          }
+          action={
+            canManage &&
+            canViewPermissions &&
+            selectedRole &&
+            !isSystemRole(selectedRole) ? (
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ flexWrap: "wrap", rowGap: 1 }}
+              >
+                <ActionButton
+                  kind="undo"
+                  disabled={
+                    !dirty || !matrixEditable || syncPermissions.isPending
+                  }
+                  onClick={() => void discardBefore(() => undefined)}
+                >
+                  {t("iam.roleUi.reset")}
+                </ActionButton>
+                <ActionButton
+                  kind="save"
+                  className="hn-iam-primary"
+                  disabled={
+                    !dirty || !matrixEditable || syncPermissions.isPending
+                  }
+                  loading={syncPermissions.isPending}
+                  onClick={() => {
+                    setPermissionReason("");
+                    setReasonError("");
+                    setShowAllMembers(false);
+                    setReviewOpen(true);
+                  }}
+                >
+                  {t("iam.roleUi.review")}
+                </ActionButton>
+              </Stack>
+            ) : null
+          }
+        >
+          <Stack spacing={2} sx={{ width: "100%" }}>
+            {selectedRole ? (
+              <header className="hn-iam-role-selected-header">
+                <div>
+                  <h2>{selectedRole.role_name}</h2>
+                  <UiStatusBadge
+                    tone="neutral"
+                    label={t(
+                      isSystemRole(selectedRole)
+                        ? "iam.roleUi.roleTypeSystem"
+                        : "iam.roleUi.roleTypeCustom",
+                    )}
+                  />
+                  <button
+                    className="hn-iam-role-member-link"
+                    type="button"
+                    disabled={!onViewUsers}
+                    title={
+                      !usersComplete
+                        ? t("iam.roleUi.membersPartialHint")
+                        : undefined
+                    }
+                    onClick={() =>
+                      void discardBefore(() =>
+                        onViewUsers?.(selectedRole.role_id),
+                      )
+                    }
+                  >
+                    {membersLabel(selectedRole)}
+                  </button>
+                </div>
+                <RowActionButton
+                  kind="view"
+                  label={t("iam.roleUi.roleInfo")}
+                  onClick={() => openRoleForm(selectedRole)}
+                />
+              </header>
+            ) : null}
+            {saveError && !reviewOpen ? (
+              <ApiErrorAlert error={saveError} />
+            ) : null}
+            {!canViewPermissions ? (
+              <UiAlert tone="warning">{t("iam.role.noViewPermission")}</UiAlert>
+            ) : permissionsQuery.isError || rolesQuery.isError ? (
+              <ApiErrorAlert
+                error={permissionsQuery.error || rolesQuery.error}
+                title={t("iam.roleUi.loadError")}
+                onRetry={() => {
+                  void rolesQuery.refetch();
+                  void permissionsQuery.refetch();
                 }}
               />
-              <IamRoleMatrix
-                permissions={visiblePermissions}
-                checkedIds={checkedIds}
-                originalIds={originalIds}
-                editable={matrixEditable && !conflict && !remoteChanged}
-                canChange={canChange}
-                onToggle={(permission, checked) =>
-                  changeChecked(
-                    changeGroupPermissions(
-                      checkedIds,
-                      [permission],
-                      checked,
-                      canChange,
-                    ),
-                  )
-                }
-                onGroup={(items, checked) =>
-                  changeChecked(
-                    changeGroupPermissions(
-                      checkedIds,
-                      items,
-                      checked,
-                      canChange,
-                    ),
-                  )
-                }
-              />
-              <footer className="hn-iam-role-save-bar">
-                <span>
-                  {dirty
-                    ? t("iam.roleUi.changedCount", { count: changedIds.length })
-                    : t("iam.roleUi.noChanges")}
-                </span>
-                {canManage && !isSystemRole(selectedRole) ? (
-                  <div>
-                    <ActionButton
-                      kind="undo"
-                      disabled={!dirty || syncPermissions.isPending}
-                      onClick={() => void discardBefore(() => undefined)}
-                    >
-                      {t("iam.roleUi.reset")}
-                    </ActionButton>
-                    <ActionButton
-                      kind="save"
-                      className="hn-iam-primary"
-                      disabled={!dirty || !matrixEditable}
-                      onClick={() => {
-                        setPermissionReason("");
-                        setReasonError("");
-                        setShowAllMembers(false);
-                        setReviewOpen(true);
+            ) : permissionsQuery.isLoading ? (
+              <Box sx={{ textAlign: "center", padding: 6 }}>
+                <UiSpinner size={28} />
+              </Box>
+            ) : !selectedRole ? (
+              <UiStateSurface kind="empty" title={t("iam.role.pickRole")} />
+            ) : (
+              <Stack spacing={2} sx={{ width: "100%" }}>
+                {isSystemRole(selectedRole) ? (
+                  <UiAlert tone="warning" title={t("iam.role.superAdminTitle")}>
+                    {t("iam.role.superAdminBody")}
+                  </UiAlert>
+                ) : (
+                  <UiAlert tone="info">
+                    {t("iam.role.settingForA")}{" "}
+                    <strong>{selectedRole.role_name}</strong>{" "}
+                    {t("iam.role.settingForB")}{" "}
+                    <Box component="code" sx={CODE_SX}>
+                      {selectedRole.role_code}
+                    </Box>
+                    {t("iam.role.settingForC")}{" "}
+                    <strong>{t("iam.roleUi.review")}</strong>{" "}
+                    {t("iam.role.settingForD")}
+                  </UiAlert>
+                )}
+                {dirty ? (
+                  <span className="hn-iam-role-dirty" role="status">
+                    {t("iam.roleUi.changes", { count: changedIds.length })}
+                  </span>
+                ) : null}
+                {remoteChanged || conflict ? (
+                  <UiAlert tone="warning" title={t("iam.roleUi.conflictTitle")}>
+                    {t("iam.roleUi.conflictBody")}
+                  </UiAlert>
+                ) : null}
+                <UiTextField
+                  type="search"
+                  className="hn-iam-permission-search"
+                  fullWidth
+                  value={permissionSearch}
+                  onChange={(event) => setPermissionSearch(event.target.value)}
+                  placeholder={t("iam.roleUi.searchPermission")}
+                  slotProps={{
+                    htmlInput: {
+                      "aria-label": t("iam.roleUi.searchPermission"),
+                    },
+                  }}
+                />
+                {groupedPermissions.map(([group, items]) => {
+                  const ids = items.map(
+                    (permission) => permission.permission_id,
+                  );
+                  const checkedCount = ids.filter((id) =>
+                    checkedIds.includes(id),
+                  ).length;
+                  const editableItems = items.filter(canChange);
+                  const editableCheckedCount = editableItems.filter(
+                    (permission) =>
+                      checkedIds.includes(permission.permission_id),
+                  ).length;
+                  const allChecked =
+                    editableItems.length > 0 &&
+                    editableCheckedCount === editableItems.length;
+                  const indeterminate = editableCheckedCount > 0 && !allChecked;
+                  return (
+                    <Box
+                      key={group}
+                      className="hn-iam-permission-group"
+                      sx={{
+                        border: `1px solid ${S.border}`,
+                        borderRadius: "var(--ops-radius-card)",
+                        overflow: "hidden",
                       }}
                     >
-                      {t("iam.roleUi.review")}
-                    </ActionButton>
-                  </div>
-                ) : null}
-              </footer>
-            </>
-          )}
-        </section>
-      </div>
+                      <Box
+                        className="hn-iam-permission-group-header"
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 1,
+                          px: 1.5,
+                          py: 1,
+                          borderBottom: `1px solid ${S.border}`,
+                          backgroundColor: S.bgSubtle,
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{ alignItems: "center" }}
+                        >
+                          {matrixEditable ? (
+                            <input
+                              type="checkbox"
+                              style={{
+                                width: 18,
+                                height: 18,
+                                margin: 4,
+                                accentColor: S.primary,
+                              }}
+                              checked={allChecked}
+                              ref={(element) => {
+                                if (element)
+                                  element.indeterminate = indeterminate;
+                              }}
+                              aria-label={t("iam.role.selectGroupAria", {
+                                group,
+                              })}
+                              aria-checked={
+                                indeterminate ? "mixed" : allChecked
+                              }
+                              disabled={
+                                !editableItems.length ||
+                                conflict ||
+                                remoteChanged
+                              }
+                              onChange={(event) =>
+                                changeChecked(
+                                  changeGroupPermissions(
+                                    checkedIds,
+                                    items,
+                                    event.target.checked,
+                                    canChange,
+                                  ),
+                                )
+                              }
+                            />
+                          ) : null}
+                          <Box component="span" sx={{ fontWeight: 600 }}>
+                            {group}
+                          </Box>
+                        </Stack>
+                        <UiStatusBadge
+                          tone={checkedCount > 0 ? "info" : "neutral"}
+                          label={t("iam.role.groupCount", {
+                            checked: checkedCount,
+                            total: items.length,
+                          })}
+                        />
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gap: "10px",
+                          p: 1.5,
+                          gridTemplateColumns: {
+                            xs: "1fr",
+                            md: "repeat(2, minmax(0, 1fr))",
+                            xl: "repeat(3, minmax(0, 1fr))",
+                          },
+                        }}
+                      >
+                        {items.map((permission) =>
+                          renderPermissionCell(permission),
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
+          </Stack>
+        </UiCard>
+      </Box>
+
       <UiDrawer
         open={roleFormOpen}
         width={640}

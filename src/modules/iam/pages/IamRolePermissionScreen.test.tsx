@@ -190,14 +190,27 @@ describe("IamRolePermissionScreen", () => {
   });
   afterEach(() => cleanupTestState());
 
-  it("renders the selected role and functional matrix while preserving delegation and retired locks", async () => {
-    renderScreen();
+  it("restores role cards and grouped permission tiles while preserving delegation and retired locks", async () => {
+    const { container } = renderScreen();
     expect(
       screen.getByRole("heading", { level: 1, name: "Vai trò & quyền" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("navigation", { name: "IAM navigation" }),
     ).toBeInTheDocument();
+    expect(container.querySelector(".hn-iam-role-card")).toHaveTextContent(
+      "WAREHOUSE_MANAGER",
+    );
+    expect(
+      container.querySelector(".hn-iam-permission-cell"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("inbound.create")).toBeVisible();
+    expect(
+      container.querySelector(".hn-iam-matrix-table"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: "Chọn vai trò" }),
+    ).not.toBeInTheDocument();
     expect(
       await screen.findByRole("checkbox", {
         name: "Quản lý người dùng (iam.user.manage)",
@@ -211,7 +224,9 @@ describe("IamRolePermissionScreen", () => {
         name: "Ghi sổ phiếu nhập (inbound.post)",
       }),
     ).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Chọn nhóm Kho vận" }));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Chọn tất cả quyền nhóm Nhập kho" }),
+    );
     expect(
       screen.getByRole("checkbox", { name: "Tạo phiếu nhập (inbound.create)" }),
     ).toBeChecked();
@@ -226,6 +241,51 @@ describe("IamRolePermissionScreen", () => {
       }),
     ).toBeChecked();
     expect(screen.getByText("1 thay đổi chưa lưu")).toBeInTheDocument();
+    const group = screen.getByRole("checkbox", {
+      name: "Chọn tất cả quyền nhóm Nhập kho",
+    });
+    expect(group).toBeChecked();
+    fireEvent.click(group);
+    expect(
+      screen.getByRole("checkbox", { name: "Tạo phiếu nhập (inbound.create)" }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "Xem phiếu nhập (inbound.view)" }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "Ghi sổ phiếu nhập (inbound.post)",
+      }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "Quản lý người dùng (iam.user.manage)",
+      }),
+    ).toBeChecked();
+  });
+
+  it("preserves granted locked permissions when clearing a restored module group", async () => {
+    mockRoles([{ ...ROLE, permissions: [VIEW, POST, LOCKED, RETIRED] }]);
+    renderScreen();
+    const group = screen.getByRole("checkbox", {
+      name: "Chọn tất cả quyền nhóm Nhập kho",
+    });
+    fireEvent.click(group);
+    fireEvent.click(group);
+    expect(
+      screen.getByRole("checkbox", { name: "Tạo phiếu nhập (inbound.create)" }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "Xem phiếu nhập (inbound.view)" }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "Ghi sổ phiếu nhập (inbound.post)",
+      }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "Quyền cũ (legacy.manage)" }),
+    ).toBeChecked();
   });
 
   it("reviews actual additions and submits sorted ids and a trimmed reason without changing locked assignments", async () => {
