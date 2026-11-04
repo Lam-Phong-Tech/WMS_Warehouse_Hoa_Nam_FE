@@ -1,7 +1,7 @@
 ---
 title: Hoa Nam WMS — Chuẩn giao diện Web thống nhất
 status: active
-version: 2.3
+version: 2.4
 updated: 2026-11-04
 owner: Frontend
 applies_to: Web Admin (desktop, tablet, mobile)
@@ -29,6 +29,8 @@ Tài liệu chốt **chuẩn cần áp dụng**, không chứng minh toàn bộ 
 **Ngoại lệ được chốt:** không áp dụng trang/mục **“10. Data table, filters & pagination”** của UI Kit. Mọi quyết định cho ba thành phần này phải theo quy cách bảng SKU ở ưu tiên 2, kể cả khi bản kit hoặc bản kiểm chứng cũ ghi số đo khác. `docs/DEV_GUIDE.md` của kit có cách đánh số mục khác; ngoại lệ ở đây chỉ nói về phần Data table, filters & pagination của bộ kit trực quan.
 
 Không chép nguyên `dist/hn-components.css` từ UI Kit vào sản phẩm: file đó chứa cả bố cục catalog. Không đổi brand, token, font hoặc icon toàn hệ thống chỉ để một màn hình giống ảnh mẫu. Nếu chủ sản phẩm chốt chuyển sang token kit, thực hiện một đợt migration riêng và cập nhật tài liệu này.
+
+Tên icon phải khớp bộ đang render: `UiIcon` nhận slug Flaticon có trong CSS/font đang nạp; tên trong `VUEXY_NAV_ICONS` chỉ dùng với `VuexyNavIcon`. Không lấy tên SVG của bộ này đưa vào font của bộ khác. Ví dụ mục Hồ sơ cá nhân ở nhóm Hệ thống dùng `user` qua `UiIcon`; kiểm tra glyph thực tế sau khi thêm menu để tránh icon trống.
 
 ## 2. Nền tảng thị giác và component
 
@@ -171,6 +173,15 @@ Form dùng label phía trên control; placeholder chỉ gợi ý. Nhãn bắt bu
 
 Chỉ một primary cho quyết định chính của vùng. Nút đang xử lý giữ kích thước, có spinner/nhãn phù hợp và chặn gửi lặp. Hành động nguy hiểm tách khỏi hành động chính và cần confirm. Nếu nút disabled, lý do phải đọc được ở gần đó. Giữ hành động quan trọng hiển thị bằng chữ; icon-only chỉ dùng khi ý nghĩa đã quen thuộc và có `aria-label`.
 
+### Tệp nhập liệu và thông báo lỗi
+
+- Kiểm tra định dạng/dung lượng ngay khi chọn tệp, trước khi đọc nội dung, tính mã kiểm tra hoặc tạo yêu cầu tải lên. Đợi hạn mức bất đồng bộ và kiểm tra lại khi hạn mức thay đổi; trước lần gửi thật cũng kiểm tra lại. Dùng giới hạn byte/KB chính xác do máy chủ công bố, không lấy số MB đã làm tròn để chặn tệp. Thông báo quá dung lượng: **“File quá lớn. Tối đa X MB”**, X lấy từ cùng giới hạn đang áp dụng.
+- Phân biệt **lỗi tệp** (sai định dạng, thiếu/lặp/cột không hỗ trợ, tệp hỏng, quá dung lượng/số dòng) và **lỗi dữ liệu từng dòng**. Lỗi tệp có thể không có danh sách dòng lỗi hay số liệu kết quả; không ép đọc `row_errors` từ loại phản hồi này. Với phản hồi thiếu/hỏng dữ liệu, không tự điền số 0 hay giả kết quả hợp lệ; hiển thị rõ chưa nhận đủ kết quả từ máy chủ.
+- Nêu lý do và cách sửa bằng ngôn ngữ đang chọn. Tiếng Việt không để lộ đường dẫn trường API, mã lỗi nội bộ, “legacy”, “dry-run”, “rollback” hoặc lỗi thư viện tiếng Anh trong thông báo. Chỉ tên cột do người dùng nhập hoặc hướng dẫn định dạng tệp mới cần giữ nguyên để họ tìm đúng cột.
+- **Một lỗi, một nơi hiển thị:** lỗi cần sửa/thử lại ngay trong hộp nhập dùng một cảnh báo tại chỗ, không bật thêm toast cùng nội dung. Kết quả kiểm tra có dòng lỗi dùng cảnh báo cùng bảng chi tiết; không lặp lại bằng toast. Lỗi hành động không có vùng hiển thị tại chỗ mới dùng toast. Chọn tệp/lựa chọn mới phải xóa lỗi cũ; kiểm tra lại thay thế thông báo hiện có.
+- Sau lỗi hoặc hết thời gian chờ, kết thúc trạng thái đang xử lý để người dùng sửa tệp/thử lại; không treo nút hoặc tự gửi lặp. Chỉ mở nhập dữ liệu sau kết quả kiểm tra hợp lệ khớp đúng tệp/lựa chọn hiện tại. Nếu kết quả lần ghi chưa xác định, giữ cơ chế kiểm tra lịch sử/chặn gửi trùng, không khẳng định dữ liệu chưa được ghi chỉ để hiển thị câu dễ hiểu.
+- Kiểm thử dưới/đúng/vượt giới hạn, hạn mức trả chậm, tệp sai/hỏng/thiếu cột, máy chủ từ chối dung lượng và timeout; tệp quá lớn không được đọc/gửi, không có thông báo trùng, không mở nhầm nút nhập. Với SKU: `npm run test:sku-import-errors` kiểm tra component/service production và Toaster thật qua transport kiểm soát.
+
 ## 8. Trạng thái màn hình và nội dung
 
 Loading giữ khung ổn định; rỗng đưa bước tiếp theo; không có kết quả lọc thì gợi ý chỉnh điều kiện đang chọn; lỗi API có cách thử lại; thiếu quyền giải thích rõ; dữ liệu một phần ghi rõ phần còn thiếu. Không dùng toast ba giây để thay cho lỗi cần người dùng sửa hoặc lỗi làm chặn tác vụ. Không hiển thị số `0` giả khi query còn tải.
@@ -189,9 +200,9 @@ Sử dụng **một** `<Toaster>` Sonner toàn ứng dụng trong `src/app/provi
 | Trạng thái  | `success`, `error`, `warning`, `info`; màu accent nhất quán với ý nghĩa, đi kèm biểu tượng và chữ.                                                              |
 | Chuyển động | Vào từ bên phải `350ms`, hiển thị `3000ms`, ra bên phải `300ms`; thanh tiến độ cao `3px` đếm ngược. `prefers-reduced-motion` bỏ chuyển động vào/ra.             |
 | Tương tác   | Có nút đóng thủ công, cho vuốt sang phải khi nền tảng hỗ trợ; toast không chặn thao tác ở vùng ngoài nó. Không tự chuyển focus sang toast.                      |
-| Truy cập    | Thông báo thường dùng `status`/live polite; lỗi cần chú ý có `alert` phù hợp. Lỗi chặn tác vụ phải tồn tại thêm trong form/banner.                              |
+| Truy cập    | Thông báo thường dùng `status`/live polite; lỗi cần chú ý có `alert` phù hợp. Lỗi chặn tác vụ hiển thị trong form/banner, không lặp bằng toast.                              |
 
-Chỉ báo thành công **sau** phản hồi thành công; tránh hai toast cho cùng một sự kiện. Nội dung ngắn, nêu kết quả và bước tiếp theo nếu cần, không lộ mã lỗi kỹ thuật. Khi drawer/dialog đang mở, kiểm tra toast không che CTA, nút đóng hoặc field quan trọng; nếu va chạm, điều chỉnh vị trí/giới hạn hiển thị của overlay đó. Kiểm tra cả light/dark và mobile.
+Chỉ báo thành công **sau** phản hồi thành công; mỗi sự kiện chỉ có một thông báo chính. Lỗi đã có cảnh báo tại chỗ không lặp bằng toast; không gọi toast cả ở service và nơi dùng service. Nội dung ngắn, nêu kết quả và bước tiếp theo nếu cần, không lộ mã lỗi kỹ thuật. Khi drawer/dialog đang mở, kiểm tra toast không che CTA, nút đóng hoặc field quan trọng; nếu va chạm, điều chỉnh vị trí/giới hạn hiển thị của overlay đó. Kiểm tra cả light/dark và mobile.
 
 ## 10. Cách thực hiện và kiểm tra màn hình mới
 

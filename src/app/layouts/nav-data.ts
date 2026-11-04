@@ -256,7 +256,7 @@ export const NAV_GROUPS: NavGroupData[] = [
         screen: "PROFILE-01",
         path: ROUTES.PROFILE,
         label: "Hồ sơ cá nhân",
-        icon: "user-circle",
+        icon: "user",
       },
       {
         screen: "IAM-01",

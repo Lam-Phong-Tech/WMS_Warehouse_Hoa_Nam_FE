@@ -2056,7 +2056,17 @@ export const MESSAGES_EN: MessageTree = {
       errFileType:
         "Only {list} files are accepted. Please choose another file.",
       errFileSize:
-        "The file exceeds the allowed size ({max} MB). Split it and choose again.",
+        "File too large. Maximum {max} MB",
+      errMissingCodeColumn: "The SKU code column is missing. Download the template and add this column.",
+      errMissingNameColumn: "The SKU name column is missing. Download the template and add this column.",
+      errInvalidWorkbook: "The Excel file is invalid or damaged. Use the template and choose the file again.",
+      errRepeatedColumn: "Column “{column}” is repeated. Remove the duplicate column and check again.",
+      errUnsupportedColumn: "Column “{column}” is not supported. Use the columns in the template.",
+      errRowsLimit: "The file exceeds {max} data rows. Split the file and choose it again.",
+      errPhysicalRowsLimit: "The sheet exceeds {max} rows, including blank rows. Remove extra blank rows and choose it again.",
+      errResultIncomplete: "The server returned an incomplete file check result. Import is blocked. Please try again.",
+      errRowsLimitUnknown: "The file has too many rows. Remove extra blank rows or split the file.",
+      errConstraintsFailed: "The file limits could not be loaded. Please try again before checking the file.",
       errReadFile:
         "The file content could not be read. It may have been moved, renamed or edited after you chose it. Please choose the file again.",
       errChecksumMismatch:

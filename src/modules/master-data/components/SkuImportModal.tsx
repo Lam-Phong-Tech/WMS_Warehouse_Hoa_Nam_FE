@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -17,19 +17,16 @@ import {
   SkuImportConcurrencyError,
   SkuImportRejectedError,
   SkuImportUnavailableError,
+  SkuImportFileInvalidError,
+  skuImportFileRule as importFileRule,
+  validateSkuImportFile as precheckFile,
   type SkuImportConstraints,
   type SkuImportResult,
   type SkuImportRowError,
 } from "@/modules/master-data/services/sku-import.service";
 import { sha256OfFile } from "@/shared/utils/file-digest";
-import {
-  FILE_RULES,
-  acceptAttribute as acceptFromRule,
-  buildFileRule,
-  checkFile,
-  describeExtensions,
-  type FileRule,
-} from "@/shared/validation/file-rules";
+import { acceptAttribute as acceptFromRule } from "@/shared/validation/file-rules";
+import { WmsContractError } from "@/shared/api/wms-contract";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, tStatic, type TranslateFn } from "@/shared/i18n/useT";
 import { formatDateTime } from "@/shared/utils/format-date";
@@ -112,7 +109,7 @@ function describeConstraints(constraints: SkuImportConstraints | null): string {
       count: constraints.maxRows.toLocaleString("vi-VN"),
     }),
     tStatic("masterData.import.constraintSize", {
-      size: constraints.maxFileSizeMb,
+      size: constraints.maxFileSizeKb / 1024,
     }),
   ];
   if (constraints.allowedExtensions.length > 0) {
@@ -147,43 +144,18 @@ function describeConstraints(constraints: SkuImportConstraints | null): string {
  * buildFileRule() chuẩn hoá "xlsx" thành ".xlsx" và rơi về luật Excel dùng
  * chung khi BE chưa trả cấu hình.
  */
-function importFileRule(constraints: SkuImportConstraints | null): FileRule {
-  return buildFileRule({
-    extensions: constraints?.allowedExtensions,
-    maxBytes:
-      constraints?.maxFileSizeMb != null && constraints.maxFileSizeMb > 0
-        ? constraints.maxFileSizeMb * 1024 * 1024
-        : null,
-    fallback: FILE_RULES.excelImport,
-  });
-}
-
 function acceptAttribute(constraints: SkuImportConstraints | null): string {
   return acceptFromRule(importFileRule(constraints));
 }
 
-/**
- * Kiểm tra sơ bộ tệp NGAY khi chọn (đuôi + dung lượng) — `accept` của input
- * chỉ là gợi ý của hộp thoại, người dùng vẫn kéo-thả/chọn "Tất cả tệp" được;
- * chặn sớm ở đây để không băm SHA-256 rồi gửi lên BE một tệp chắc chắn bị
- * từ chối. Trả về thông báo lỗi, hoặc null nếu tệp qua được.
- */
-function precheckFile(
-  file: File,
-  constraints: SkuImportConstraints | null,
-): string | null {
-  // Luật (đuôi + MIME + dung lượng) nằm ở file-rules; câu lỗi giữ nguyên chữ
-  // của màn nhập SKU nên chỉ đọc reason để chọn câu.
-  const rule = importFileRule(constraints);
-  const check = checkFile(file, rule);
-  if (check.ok) return null;
-  return check.reason === "type"
-    ? tStatic("masterData.import.errFileType", {
-        list: describeExtensions(rule),
-      })
-    : tStatic("masterData.import.errFileSize", {
-        max: Math.round(rule.maxBytes / (1024 * 1024)),
-      });
+/** A response-shape failure must not expose internal API paths to the user. */
+function importErrorMessage(error: unknown, fallback: string): string {
+  // A malformed response is not proof that the user's spreadsheet is invalid.
+  // Keep technical field paths in the underlying error, outside the UI.
+  if (error instanceof WmsContractError) {
+    return tStatic("masterData.import.errResultIncomplete");
+  }
+  return getApiErrorMessage(error, fallback);
 }
 
 function payloadSignature(fileSha256: string | null, updateExisting: boolean) {
@@ -431,6 +403,7 @@ export function SkuImportModal({
   const [file, setFile] = useState<File | null>(null);
   const [step, setStep] = useState<ImportStep>("select");
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [commitError, setCommitError] = useState<string | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [updateExisting, setUpdateExisting] = useState(false);
   const [previewResult, setPreviewResult] = useState<SkuImportResult | null>(
@@ -448,17 +421,19 @@ export function SkuImportModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const payloadGeneration = useRef(0);
 
-  const invalidatePreview = () => {
+  const invalidatePreview = useCallback(() => {
     payloadGeneration.current += 1;
     setPreviewError(null);
+    setCommitError(null);
     setPreviewResult(null);
     setCommitResult(null);
-  };
+  }, []);
 
   const resetAll = () => {
     payloadGeneration.current += 1;
     setStep("select");
     setPreviewError(null);
+    setCommitError(null);
     setFile(null);
     setFileInputKey((key) => key + 1);
     setUpdateExisting(false);
@@ -470,12 +445,39 @@ export function SkuImportModal({
     setFileError(null);
   };
 
+  const constraintsQuery = useQuery({
+    queryKey: ["sku-import-constraints"],
+    queryFn: fetchSkuImportConstraints,
+    enabled: open && canImport,
+    retry: false,
+  });
+  const constraints =
+    constraintsQuery.data?.constraints ??
+    commitResult?.constraints ??
+    previewResult?.constraints ??
+    null;
+
   useEffect(() => {
     if (!file) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setFileSha256(null);
       setDigestPending(false);
       setDigestError(null);
+      return;
+    }
+    if (constraintsQuery.isPending || constraintsQuery.isError) {
+      setFileSha256(null);
+      setDigestPending(constraintsQuery.isPending);
+      return;
+    }
+    const error = precheckFile(file, constraints);
+    if (error) {
+      setFileError(error);
+      setFile(null);
+      setFileInputKey((key) => key + 1);
+      setStep("select");
+      setDigestPending(false);
+      invalidatePreview();
       return;
     }
     let cancelled = false;
@@ -496,20 +498,13 @@ export function SkuImportModal({
     return () => {
       cancelled = true;
     };
-  }, [file]);
-
-  const constraintsQuery = useQuery({
-    queryKey: ["sku-import-constraints"],
-    queryFn: fetchSkuImportConstraints,
-    enabled: open && canImport,
-    retry: false,
-  });
-
-  const constraints =
-    constraintsQuery.data?.constraints ??
-    commitResult?.constraints ??
-    previewResult?.constraints ??
-    null;
+  }, [
+    file,
+    constraints,
+    constraintsQuery.isPending,
+    constraintsQuery.isError,
+    invalidatePreview,
+  ]);
 
   const currentPayload = (): PreviewPayload | null =>
     file && fileSha256
@@ -526,9 +521,12 @@ export function SkuImportModal({
 
   const previewMutation = useMutation({
     mutationFn: async (payload: PreviewPayload) => {
+      const fileError = precheckFile(payload.file, constraints);
+      if (fileError) throw new SkuImportFileInvalidError(fileError);
       const result = await importSkuExcel(payload.file, {
         updateExisting: payload.updateExisting,
         dryRun: true,
+        constraints,
       });
       return {
         result,
@@ -542,7 +540,6 @@ export function SkuImportModal({
         setCommitResult(null);
         setPreviewSignature("");
         setPreviewError(t("masterData.import.errChecksumMismatch"));
-        toast.error(t("masterData.import.errChecksumMismatch"));
         return;
       }
       setCommitResult(null);
@@ -557,7 +554,7 @@ export function SkuImportModal({
           }),
         );
       } else {
-        toast.warning(
+        setPreviewError(
           t("masterData.import.validateHasErrors", {
             count: result.errorRows,
           }),
@@ -567,35 +564,25 @@ export function SkuImportModal({
     onError: (error, payload) => {
       if (isStaleGeneration(payload)) return;
       setCommitResult(null);
+      setPreviewResult(null);
+      setPreviewSignature("");
       setPreviewError(
-        getApiErrorMessage(error, t("masterData.import.errValidate")),
+        importErrorMessage(error, t("masterData.import.errValidate")),
       );
-      if (error instanceof SkuImportConcurrencyError) {
-        toast.warning(error.message);
-        return;
-      }
-      if (error instanceof SkuImportUnavailableError) {
-        toast.warning(error.message);
-        return;
-      }
       if (error instanceof SkuImportRejectedError) {
         setPreviewResult(error.result);
         setPreviewSignature(
           payloadSignature(payload.fileSha256, payload.updateExisting),
         );
-        toast.warning(error.message);
         return;
       }
-      setPreviewResult(null);
-      setPreviewSignature("");
-      toast.error(
-        getApiErrorMessage(error, t("masterData.import.errValidate")),
-      );
     },
   });
 
   const commitMutation = useMutation({
     mutationFn: async (payload: PreviewPayload) => {
+      const fileError = precheckFile(payload.file, constraints);
+      if (fileError) throw new SkuImportFileInvalidError(fileError);
       const currentSha256 = await sha256OfFile(payload.file);
       if (currentSha256 !== payload.fileSha256) {
         throw new SkuImportFileChangedError();
@@ -603,9 +590,11 @@ export function SkuImportModal({
       return importSkuExcel(payload.file, {
         updateExisting: payload.updateExisting,
         dryRun: false,
+        constraints,
       });
     },
     onSuccess: (result) => {
+      setCommitError(null);
       setCommitResult(result);
       setStep("done");
       if (result.duplicate) {
@@ -621,33 +610,29 @@ export function SkuImportModal({
       onImported();
     },
     onError: (error) => {
+      setCommitError(
+        importErrorMessage(error, t("masterData.import.errCommit")),
+      );
       if (error instanceof SkuImportFileChangedError) {
+        setCommitError(null);
         setCommitResult(null);
         setPreviewResult(null);
         setPreviewSignature("");
         setPreviewError(t("masterData.import.errStaleShort"));
-        toast.error(
-          getApiErrorMessage(error, t("masterData.import.errStaleShort")),
-        );
         return;
       }
       if (
         error instanceof SkuImportConcurrencyError ||
         error instanceof SkuImportUnavailableError
       ) {
-        toast.warning(error.message);
         return;
       }
       if (error instanceof SkuImportRejectedError) {
         setCommitResult(error.result);
         setStep("done");
-        toast.error(
-          getApiErrorMessage(error, t("masterData.import.errHasErrorRows")),
-        );
         return;
       }
       setCommitResult(null);
-      toast.error(getApiErrorMessage(error, t("masterData.import.errCommit")));
     },
   });
 
@@ -666,10 +651,13 @@ export function SkuImportModal({
     previewSignature !== "" && previewSignature === currentSignature;
   const canCommit =
     canImport &&
+    !constraintsQuery.isPending &&
+    !constraintsQuery.isError &&
     Boolean(file) &&
     Boolean(fileSha256) &&
     previewMatchesCurrentPayload &&
     previewResult?.errorRows === 0 &&
+    !previewError &&
     !previewMutation.isPending &&
     !commitMutation.isPending;
   const activeResult = commitResult ?? previewResult;
@@ -706,6 +694,8 @@ export function SkuImportModal({
                   kind="view"
                   disabled={
                     !canImport ||
+                    constraintsQuery.isPending ||
+                    constraintsQuery.isError ||
                     !fileSha256 ||
                     digestPending ||
                     commitMutation.isPending ||
@@ -715,6 +705,7 @@ export function SkuImportModal({
                     const payload = currentPayload();
                     if (payload) {
                       setPreviewError(null);
+                      setCommitError(null);
                       setStep("review");
                       previewMutation.mutate(payload);
                     }
@@ -730,7 +721,10 @@ export function SkuImportModal({
                     disabled={!canCommit}
                     onClick={() => {
                       const payload = currentPayload();
-                      if (payload) commitMutation.mutate(payload);
+                      if (payload) {
+                        setCommitError(null);
+                        commitMutation.mutate(payload);
+                      }
                     }}
                   >
                     {commitMutation.isPending
@@ -840,6 +834,7 @@ export function SkuImportModal({
               const error = next ? precheckFile(next, constraints) : null;
               setFileError(error);
               if (error) {
+                setStep("select");
                 setFile(null);
                 setFileInputKey((key) => key + 1);
               } else {
@@ -848,6 +843,26 @@ export function SkuImportModal({
               invalidatePreview();
             }}
           />
+
+          {constraintsQuery.isError &&
+          !fileError &&
+          !digestError &&
+          !previewError &&
+          !commitError ? (
+            <UiAlert
+              tone="error"
+              action={
+                <ActionButton
+                  kind="refresh"
+                  onClick={() => void constraintsQuery.refetch()}
+                >
+                  {t("common.retry")}
+                </ActionButton>
+              }
+            >
+              {t("masterData.import.errConstraintsFailed")}
+            </UiAlert>
+          ) : null}
 
           {step === "select" ? (
             <>
@@ -989,6 +1004,8 @@ export function SkuImportModal({
               </Box>
             </Box>
           ) : null}
+
+          {commitError ? <UiAlert tone="error">{commitError}</UiAlert> : null}
 
           {!canImport ? (
             <UiAlert tone="warning">

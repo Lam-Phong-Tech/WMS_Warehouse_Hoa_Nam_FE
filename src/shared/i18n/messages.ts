@@ -2020,9 +2020,9 @@ export const MESSAGES_VI = {
     },
     import: {
       errDuplicateRun:
-        "Cùng file này đang được import với cùng tùy chọn; vui lòng đợi lần chạy hiện tại kết thúc rồi thử lại.",
+        "Tệp này đang được xử lý với cùng lựa chọn. Hãy đợi lần xử lý hiện tại kết thúc rồi thử lại.",
       errRolledBack:
-        "Không lưu được lần nạp dữ liệu; toàn bộ giao dịch đã hoàn tác, không có SKU nào được tạo/cập nhật. Vui lòng thử lại.",
+        "Chưa lưu được dữ liệu. Không có SKU nào được tạo hoặc cập nhật. Hãy thử lại.",
       errRejected: "Lần nạp dữ liệu bị từ chối.",
       errStaleFile:
         "Nội dung tệp đã thay đổi sau lần kiểm tra trước. Hệ thống chưa gửi dữ liệu để tránh nhập một nội dung chưa được kiểm tra. Hãy chọn lại tệp và chạy Kiểm tra trước.",
@@ -2059,7 +2059,17 @@ export const MESSAGES_VI = {
       errorFileDownloadFailed: "Không tải được tệp lỗi",
       errFileType: "Chỉ nhận tệp định dạng {list}. Hãy chọn lại tệp.",
       errFileSize:
-        "Tệp vượt quá kích thước cho phép ({max} MB). Hãy chia nhỏ tệp rồi chọn lại.",
+        "File quá lớn. Tối đa {max} MB",
+      errMissingCodeColumn: "Tệp thiếu cột Mã SKU. Hãy tải tệp mẫu và bổ sung cột này.",
+      errMissingNameColumn: "Tệp thiếu cột Tên SKU. Hãy tải tệp mẫu và bổ sung cột này.",
+      errInvalidWorkbook: "Tệp Excel không hợp lệ hoặc đã bị hỏng. Hãy dùng tệp mẫu và chọn lại.",
+      errRepeatedColumn: "Cột “{column}” bị lặp trong tệp. Hãy xóa cột trùng rồi kiểm tra lại.",
+      errUnsupportedColumn: "Cột “{column}” không được hỗ trợ. Hãy dùng đúng các cột trong tệp mẫu.",
+      errRowsLimit: "Tệp vượt quá {max} dòng dữ liệu. Hãy chia nhỏ tệp rồi chọn lại.",
+      errPhysicalRowsLimit: "Bảng tính vượt quá {max} dòng, kể cả dòng trống. Hãy xóa các dòng trống thừa rồi chọn lại.",
+      errResultIncomplete: "Máy chủ chưa trả đầy đủ kết quả kiểm tra tệp. Chưa thể nhập dữ liệu. Vui lòng thử lại.",
+      errRowsLimitUnknown: "Tệp có quá nhiều dòng. Hãy xóa dòng trống thừa hoặc chia nhỏ tệp.",
+      errConstraintsFailed: "Chưa lấy được giới hạn tệp từ máy chủ. Hãy thử lại trước khi kiểm tra tệp.",
       errReadFile:
         "Không đọc được nội dung tệp. Tệp có thể đã bị di chuyển, đổi tên hoặc sửa sau khi chọn. Hãy chọn lại tệp.",
       errChecksumMismatch:

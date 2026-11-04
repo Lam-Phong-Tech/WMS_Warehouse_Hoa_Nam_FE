@@ -10,6 +10,12 @@ import {
 import { sha256OfFile } from "@/shared/utils/file-digest";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { OFFLINE_MUTATION_CODE } from "@/shared/pwa/offline-policy";
+import {
+  FILE_RULES,
+  buildFileRule,
+  checkFile,
+  describeExtensions,
+} from "@/shared/validation/file-rules";
 
 type RawRecord = Record<string, unknown>;
 function isAxiosErrorLike(error: unknown): error is {
@@ -17,17 +23,24 @@ function isAxiosErrorLike(error: unknown): error is {
   response?: { status?: number; data?: RawRecord };
   code?: string;
 } {
-  return typeof error === "object" && error !== null &&
-    (error as RawRecord).isAxiosError === true;
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as RawRecord).isAxiosError === true
+  );
 }
 function responseBody(error: unknown): RawRecord | undefined {
-  return isAxiosErrorLike(error) ? error.response?.data
-    : error instanceof ApiEnvelopeError ? error.data as unknown as RawRecord : undefined;
+  return isAxiosErrorLike(error)
+    ? error.response?.data
+    : error instanceof ApiEnvelopeError
+      ? (error.data as unknown as RawRecord)
+      : undefined;
 }
 function getResponseDataForImport(error: unknown): RawRecord | undefined {
   const embedded = responseBody(error)?.data;
   return embedded && typeof embedded === "object" && !Array.isArray(embedded)
-    ? embedded as RawRecord : undefined;
+    ? (embedded as RawRecord)
+    : undefined;
 }
 function errorCodeOf(error: unknown): string {
   const body = responseBody(error);
@@ -39,11 +52,6 @@ function errorCodeOf(error: unknown): string {
   }
   return typeof body.error_code === "string" ? body.error_code
     : typeof body.code === "string" ? body.code : "";
-}
-function messageOf(error: unknown, fallback: string): string {
-  const body = responseBody(error);
-  return typeof body?.message === "string" && body.message !== ""
-    ? body.message : fallback;
 }
 function text(value: unknown, fallback = ""): string {
   return value === undefined || value === null ? fallback : String(value);
@@ -78,24 +86,66 @@ export interface SkuImportConstraints {
   errorFileMaxOnDiskHours: number;
   concurrentImportPolicy: string;
 }
-export function normalizeSkuImportConstraints(raw: unknown): SkuImportConstraints | null {
+/** Use the authoritative KB limit, not the rounded MB display value. */
+export function skuImportFileRule(constraints: SkuImportConstraints | null) {
+  return buildFileRule({
+    extensions: constraints?.allowedExtensions,
+    maxBytes: constraints ? constraints.maxFileSizeKb * 1024 : null,
+    fallback: FILE_RULES.excelImport,
+  });
+}
+export function validateSkuImportFile(
+  file: File,
+  constraints: SkuImportConstraints | null,
+): string | null {
+  const rule = skuImportFileRule(constraints);
+  const checked = checkFile(file, rule);
+  if (checked.ok) return null;
+  return checked.reason === "size"
+    ? tStatic("masterData.import.errFileSize", {
+        max: rule.maxBytes / (1024 * 1024),
+      })
+    : tStatic("masterData.import.errFileType", {
+        list: describeExtensions(rule),
+      });
+}
+export function normalizeSkuImportConstraints(
+  raw: unknown,
+): SkuImportConstraints | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const record = raw as RawRecord;
   const maxRows = nullableApiNumber(record.max_rows);
   const maxFileSizeKb = nullableApiNumber(record.max_file_size_kb);
-  if (maxRows === null || maxRows <= 0 || maxFileSizeKb === null || maxFileSizeKb <= 0) return null;
+  if (
+    maxRows === null ||
+    maxRows <= 0 ||
+    maxFileSizeKb === null ||
+    maxFileSizeKb <= 0
+  )
+    return null;
   return {
-    decisionRef: text(record.decision_ref), maxRows, maxFileSizeKb,
-    maxFileSizeMb: nullableApiNumber(record.max_file_size_mb) ??
-      Math.round(maxFileSizeKb / 1024 * 100) / 100,
+    decisionRef: text(record.decision_ref),
+    maxRows,
+    maxFileSizeKb,
+    maxFileSizeMb:
+      nullableApiNumber(record.max_file_size_mb) ??
+      Math.round((maxFileSizeKb / 1024) * 100) / 100,
     allowedExtensions: Array.isArray(record.allowed_extensions)
-      ? record.allowed_extensions.map(value => text(value)) : [],
+      ? record.allowed_extensions.map((value) => text(value))
+      : [],
     errorFileExpiryHours: unpublishedConstraint(record.error_file_expiry_hours),
-    idempotencyWindowHours: unpublishedConstraint(record.idempotency_window_hours),
+    idempotencyWindowHours: unpublishedConstraint(
+      record.idempotency_window_hours,
+    ),
     idempotencyIdentity: Array.isArray(record.idempotency_identity)
-      ? record.idempotency_identity.map(value => text(value)) : [],
-    maxPhysicalRowsToScan: unpublishedConstraint(record.max_physical_rows_to_scan),
-    errorFileMaxOnDiskHours: unpublishedConstraint(record.error_file_max_on_disk_hours),
+      ? record.idempotency_identity.map((value) => text(value))
+      : [],
+    maxPhysicalRowsToScan: unpublishedConstraint(
+      record.max_physical_rows_to_scan,
+    ),
+    errorFileMaxOnDiskHours: unpublishedConstraint(
+      record.error_file_max_on_disk_hours,
+    ),
     concurrentImportPolicy: text(record.concurrent_import_policy),
   };
 }
@@ -123,38 +173,61 @@ function normalizeRowError(raw: unknown): SkuImportRowError {
   };
 }
 export function normalizeSkuImportResult(payload: RawRecord): SkuImportResult {
-  const errors = requiredApiRows<unknown>(payload.row_errors, "import.row_errors");
+  const errors = requiredApiRows<unknown>(
+    payload.row_errors,
+    "import.row_errors",
+  );
   const errorRows = count(payload.error_rows, "error_rows");
   return {
     templateVersion: text(payload.template_version),
     transactionMode: text(payload.transaction_mode),
     dryRun: requiredApiBoolean(payload.dry_run, "import.dry_run"),
     committed: requiredApiBoolean(payload.committed, "import.committed"),
-    partialWrite: requiredApiBoolean(payload.partial_write, "import.partial_write"),
+    partialWrite: requiredApiBoolean(
+      payload.partial_write,
+      "import.partial_write",
+    ),
     duplicate: requiredApiBoolean(payload.duplicate, "import.duplicate"),
-    duplicateOfImportReportId: payload.duplicate_of_import_report_id != null
-      ? text(payload.duplicate_of_import_report_id) : null,
-    updateExisting: requiredApiBoolean(payload.update_existing, "import.update_existing"),
-    optionsFingerprint: payload.options_fingerprint != null
-      ? text(payload.options_fingerprint) : null,
+    duplicateOfImportReportId:
+      payload.duplicate_of_import_report_id != null
+        ? text(payload.duplicate_of_import_report_id)
+        : null,
+    updateExisting: requiredApiBoolean(
+      payload.update_existing,
+      "import.update_existing",
+    ),
+    optionsFingerprint:
+      payload.options_fingerprint != null
+        ? text(payload.options_fingerprint)
+        : null,
     constraints: normalizeSkuImportConstraints(payload.constraints),
     fileSha256: requiredApiIdentity(payload.file_sha256, "file_sha256"),
     headerMap: (payload.header_map ?? {}) as Record<string, number>,
     totalRows: count(payload.total_rows, "total_rows"),
-    validRows: count(payload.valid_rows, "valid_rows"), errorRows,
+    validRows: count(payload.valid_rows, "valid_rows"),
+    errorRows,
     insertedRows: count(payload.inserted_rows, "inserted_rows"),
     updatedRows: count(payload.updated_rows, "updated_rows"),
     wouldInsertRows: count(payload.would_insert_rows, "would_insert_rows"),
     wouldUpdateRows: count(payload.would_update_rows, "would_update_rows"),
     skippedRows: count(payload.skipped_rows, "skipped_rows"),
     rowErrors: errors.map(normalizeRowError),
-    importReportId: payload.import_report_id != null
-      ? requiredApiIdentity(payload.import_report_id, "import_report_id") : null,
+    importReportId:
+      payload.import_report_id != null
+        ? requiredApiIdentity(payload.import_report_id, "import_report_id")
+        : null,
     // The controller supplies this flag for row rejections; zero errors imply no error file.
-    errorFileAvailable: payload.error_file_available == null && errorRows === 0
-      ? false : requiredApiBoolean(payload.error_file_available, "import.error_file_available"),
-    errorFileExpiresAt: payload.error_file_expires_at != null
-      ? text(payload.error_file_expires_at) : null,
+    errorFileAvailable:
+      payload.error_file_available == null && errorRows === 0
+        ? false
+        : requiredApiBoolean(
+            payload.error_file_available,
+            "import.error_file_available",
+          ),
+    errorFileExpiresAt:
+      payload.error_file_expires_at != null
+        ? text(payload.error_file_expires_at)
+        : null,
   };
 }
 export class SkuImportRejectedError extends Error {
@@ -166,6 +239,92 @@ export class SkuImportRejectedError extends Error {
     this.result = result;
     this.cause = cause;
   }
+}
+/** File-level validation has no row counters/result to normalize. */
+export class SkuImportFileInvalidError extends Error {
+  readonly cause: unknown;
+  constructor(message: string, cause: unknown = null) {
+    super(message);
+    this.name = "SkuImportFileInvalidError";
+    this.cause = cause;
+  }
+}
+function fileRejectionMessage(
+  error: unknown,
+  constraints: SkuImportConstraints | null,
+): string {
+  const body = responseBody(error);
+  const nested = body?.error;
+  const fields =
+    body?.errors ??
+    (nested && typeof nested === "object"
+      ? (nested as RawRecord).details
+      : undefined);
+  const fileErrors =
+    fields && typeof fields === "object"
+      ? (fields as RawRecord).file
+      : undefined;
+  const reason = [
+    body?.message,
+    ...(Array.isArray(fileErrors) ? fileErrors : [fileErrors]),
+  ]
+    .filter((value) => typeof value === "string")
+    .join(" ");
+  const status = isAxiosErrorLike(error) ? error.response?.status : undefined;
+  if (
+    status === 413 ||
+    /too large|must not be greater|vượt quá.*(?:MB|kilobyte)|kích thước.*(?:quá|lớn)/i.test(
+      reason,
+    )
+  ) {
+    return tStatic("masterData.import.errFileSize", {
+      max: skuImportFileRule(constraints).maxBytes / (1024 * 1024),
+    });
+  }
+  if (errorCodeOf(error) === "SKU_IMPORT_ROW_LIMIT_EXCEEDED") {
+    const physical = /dòng trống|blank rows/i.test(reason);
+    const max = physical
+      ? constraints?.maxPhysicalRowsToScan
+      : constraints?.maxRows;
+    return max && max > 0
+      ? tStatic(
+          physical
+            ? "masterData.import.errPhysicalRowsLimit"
+            : "masterData.import.errRowsLimit",
+          { max },
+        )
+      : tStatic("masterData.import.errRowsLimitUnknown");
+  }
+  if (
+    /thiếu cột|required.*(?:header|column)|missing.*(?:header|column)/i.test(
+      reason,
+    )
+  ) {
+    if (/\b(?:sku_code|code)\b/.test(reason))
+      return tStatic("masterData.import.errMissingCodeColumn");
+    if (/\b(?:sku_name|name)\b/.test(reason))
+      return tStatic("masterData.import.errMissingNameColumn");
+  }
+  const repeated = reason.match(/Cột bị lặp:\s*([^.\n]+)/i);
+  if (repeated)
+    return tStatic("masterData.import.errRepeatedColumn", {
+      column: repeated[1].trim(),
+    });
+  const unsupported = reason.match(/Cột không hỗ trợ:\s*([^.\n]+)/i);
+  if (unsupported)
+    return tStatic("masterData.import.errUnsupportedColumn", {
+      column: unsupported[1].trim(),
+    });
+  if (
+    /file.*(?:type|format)|chỉ (?:nhận|chấp nhận)|(?:tệp|file).*định dạng/i.test(
+      reason,
+    )
+  ) {
+    return tStatic("masterData.import.errFileType", {
+      list: describeExtensions(skuImportFileRule(constraints)),
+    });
+  }
+  return tStatic("masterData.import.errInvalidWorkbook");
 }
 export class SkuImportConcurrencyError extends Error {
   readonly cause: unknown;
@@ -192,13 +351,19 @@ export class SkuImportOutcomeUnknownError extends Error {
   readonly cause: unknown;
   readonly importReportId: string | null;
   constructor(cause: unknown, importReportId: string | null = null) {
-    super("Chưa xác định được kết quả nhập SKU. Yêu cầu đã gửi; hãy kiểm tra lịch sử nhập trước khi thực hiện lại.");
+    super(
+      "Chưa xác định được kết quả nhập SKU. Yêu cầu đã gửi; hãy kiểm tra lịch sử nhập trước khi thực hiện lại.",
+    );
     this.name = "SkuImportOutcomeUnknownError";
     this.cause = cause;
     this.importReportId = importReportId;
   }
 }
-export interface SkuImportOptions { updateExisting?: boolean; dryRun?: boolean; }
+export interface SkuImportOptions {
+  updateExisting?: boolean;
+  dryRun?: boolean;
+  constraints?: SkuImportConstraints | null;
+}
 
 // Operation evidence only; never populated business records or fabricated warehouse data.
 const activeImports = new Set<string>();
@@ -222,7 +387,12 @@ function clearUnknown(key: string) {
   try { window.sessionStorage.removeItem(pendingPrefix + key); }
   catch { /* No effect on server state. */ }
 }
-export async function importSkuExcel(file: File, options: SkuImportOptions = {}): Promise<SkuImportResult> {
+export async function importSkuExcel(
+  file: File,
+  options: SkuImportOptions = {},
+): Promise<SkuImportResult> {
+  const fileError = validateSkuImportFile(file, options.constraints ?? null);
+  if (fileError) throw new SkuImportFileInvalidError(fileError);
   const dryRun = options.dryRun ?? false;
   const updateExisting = options.updateExisting ?? false;
   const digest = await sha256OfFile(file);
@@ -230,9 +400,13 @@ export async function importSkuExcel(file: File, options: SkuImportOptions = {})
   const key = `${String(actor ?? "")}:${digest}:${updateExisting ? "1" : "0"}`;
   if (!dryRun) {
     const pending = pendingReport(key);
-    if (pending !== undefined) throw new SkuImportOutcomeUnknownError(null, pending);
+    if (pending !== undefined)
+      throw new SkuImportOutcomeUnknownError(null, pending);
     if (activeImports.has(key)) {
-      throw new SkuImportConcurrencyError(tStatic("masterData.import.errDuplicateRun"), null);
+      throw new SkuImportConcurrencyError(
+        tStatic("masterData.import.errDuplicateRun"),
+        null,
+      );
     }
     activeImports.add(key);
   }
@@ -246,15 +420,22 @@ export async function importSkuExcel(file: File, options: SkuImportOptions = {})
     received = await http.post<RawRecord>(API_ENDPOINTS.SKU_IMPORT_EXCEL, body);
     successfulResponse = true;
     const result = normalizeSkuImportResult(received);
-    if (result.fileSha256 !== digest || result.updateExisting !== updateExisting ||
-        result.dryRun !== dryRun || result.partialWrite || !result.importReportId) {
+    if (
+      result.fileSha256 !== digest ||
+      result.updateExisting !== updateExisting ||
+      result.dryRun !== dryRun ||
+      result.partialWrite ||
+      !result.importReportId
+    ) {
       throw new SkuImportOutcomeUnknownError(
-        new Error("Import response does not match the request"), result.importReportId,
+        new Error("Import response does not match the request"),
+        result.importReportId,
       );
     }
     if ((dryRun && result.committed) || (!dryRun && !result.committed)) {
       throw new SkuImportOutcomeUnknownError(
-        new Error("Unconfirmed import transaction outcome"), result.importReportId,
+        new Error("Unconfirmed import transaction outcome"),
+        result.importReportId,
       );
     }
     if (!dryRun) clearUnknown(key);
@@ -264,18 +445,59 @@ export async function importSkuExcel(file: File, options: SkuImportOptions = {})
     const embedded = getResponseDataForImport(error);
     if (code === "CONCURRENCY_CONFLICT") {
       throw new SkuImportConcurrencyError(
-        messageOf(error, tStatic("masterData.import.errDuplicateRun")), error,
+        tStatic("masterData.import.errDuplicateRun"),
+        error,
       );
     }
-    if ((code === "SKU_IMPORT_REPORT_PERSISTENCE_FAILED" ||
-         code === "SKU_IMPORT_TEMP_STORAGE_FAILED") &&
-        embedded?.committed === false && embedded.partial_write === false) {
+    if (
+      (code === "SKU_IMPORT_REPORT_PERSISTENCE_FAILED" ||
+        code === "SKU_IMPORT_TEMP_STORAGE_FAILED") &&
+      embedded?.committed === false &&
+      embedded.partial_write === false
+    ) {
       throw new SkuImportUnavailableError(
-        messageOf(error, tStatic("masterData.import.errRolledBack")), error,
+        tStatic("masterData.import.errRolledBack"),
+        error,
       );
     }
     const status = isAxiosErrorLike(error) ? error.response?.status : undefined;
-    const rejectionCode = ["SKU_IMPORT_VALIDATION_FAILED", "SKU_IMPORT_DRY_RUN_REJECTED", "SKU_IMPORT_FILE_INVALID"].includes(code);
+    const body = responseBody(error);
+    const details =
+      body?.errors ??
+      (body?.error && typeof body.error === "object"
+        ? (body.error as RawRecord).details
+        : undefined);
+    const hasFileError =
+      details && typeof details === "object" && "file" in details;
+    if (
+      !successfulResponse &&
+      (status === 413 ||
+        code === "SKU_IMPORT_FILE_INVALID" ||
+        code === "INVALID_FILE_CONTENT" ||
+        code === "SKU_IMPORT_ROW_LIMIT_EXCEEDED" ||
+        (status === 422 && hasFileError))
+    ) {
+      if (embedded?.committed === true || embedded?.partial_write === true) {
+        const reportId =
+          typeof embedded.import_report_id === "string"
+            ? embedded.import_report_id
+            : null;
+        if (!dryRun) markUnknown(key, reportId);
+        throw new SkuImportOutcomeUnknownError(error, reportId);
+      }
+      const limits =
+        normalizeSkuImportConstraints(embedded?.constraints) ??
+        options.constraints ??
+        null;
+      throw new SkuImportFileInvalidError(
+        fileRejectionMessage(error, limits),
+        error,
+      );
+    }
+    const rejectionCode = [
+      "SKU_IMPORT_VALIDATION_FAILED",
+      "SKU_IMPORT_DRY_RUN_REJECTED",
+    ].includes(code);
     if (!successfulResponse && embedded && (status === 422 || rejectionCode)) {
       const result = normalizeSkuImportResult(embedded);
       if (result.committed || result.partialWrite) {
@@ -283,26 +505,41 @@ export async function importSkuExcel(file: File, options: SkuImportOptions = {})
         throw new SkuImportOutcomeUnknownError(error, result.importReportId);
       }
       throw new SkuImportRejectedError(
-        result, messageOf(error, tStatic("masterData.import.errRejected")), error,
+        result,
+        tStatic("masterData.import.validateHasErrors", {
+          count: result.errorRows,
+        }),
+        error,
       );
     }
-    const definitelyUnsent = isAxiosErrorLike(error) && error.code === OFFLINE_MUTATION_CODE;
-    if (!definitelyUnsent && (successfulResponse ||
+    const definitelyUnsent =
+      isAxiosErrorLike(error) && error.code === OFFLINE_MUTATION_CODE;
+    if (
+      !definitelyUnsent &&
+      (successfulResponse ||
         error instanceof SkuImportOutcomeUnknownError ||
-        (!dryRun && (status === undefined || status >= 500)))) {
-      const reportId = typeof received?.import_report_id === "string"
-        ? received.import_report_id
-        : error instanceof SkuImportOutcomeUnknownError ? error.importReportId : null;
+        (!dryRun && (status === undefined || status >= 500)))
+    ) {
+      const reportId =
+        typeof received?.import_report_id === "string"
+          ? received.import_report_id
+          : error instanceof SkuImportOutcomeUnknownError
+            ? error.importReportId
+            : null;
       if (!dryRun) markUnknown(key, reportId);
       throw error instanceof SkuImportOutcomeUnknownError
-        ? error : new SkuImportOutcomeUnknownError(error, reportId);
+        ? error
+        : new SkuImportOutcomeUnknownError(error, reportId);
     }
     throw error;
   } finally {
     if (!dryRun) activeImports.delete(key);
   }
 }
-export async function downloadSkuImportTemplate(): Promise<{ blob: Blob; fileName: string | null }> {
+export async function downloadSkuImportTemplate(): Promise<{
+  blob: Blob;
+  fileName: string | null;
+}> {
   return http.downloadFile(API_ENDPOINTS.SKU_IMPORT_TEMPLATE);
 }
 export interface SkuImportReportListParams {
@@ -316,50 +553,89 @@ export interface SkuImportReportRecord {
   rowErrors: SkuImportRowError[]; errorFileAvailable: boolean; errorFileExpiresAt: string | null;
   duplicateOfReplay: boolean; optionsFingerprint: string | null; createdAt: string | null;
 }
-export function normalizeSkuImportReport(raw: RawRecord): SkuImportReportRecord {
+export function normalizeSkuImportReport(
+  raw: RawRecord,
+): SkuImportReportRecord {
   return {
     id: requiredApiIdentity(raw.import_report_id ?? raw.id, "import_report_id"),
-    importType: text(raw.import_type), mode: text(raw.mode), status: text(raw.status),
+    importType: text(raw.import_type),
+    mode: text(raw.mode),
+    status: text(raw.status),
     fileName: raw.file_name != null ? text(raw.file_name) : null,
     fileSha256: text(raw.file_sha256),
-    templateVersion: raw.template_version != null ? text(raw.template_version) : null,
-    totalRows: count(raw.total_rows, "total_rows"), validRows: count(raw.valid_rows, "valid_rows"),
-    errorRows: count(raw.error_rows, "error_rows"), insertedRows: count(raw.inserted_rows, "inserted_rows"),
+    templateVersion:
+      raw.template_version != null ? text(raw.template_version) : null,
+    totalRows: count(raw.total_rows, "total_rows"),
+    validRows: count(raw.valid_rows, "valid_rows"),
+    errorRows: count(raw.error_rows, "error_rows"),
+    insertedRows: count(raw.inserted_rows, "inserted_rows"),
     updatedRows: count(raw.updated_rows, "updated_rows"),
-    rowErrors: requiredApiRows<unknown>(raw.row_errors, "import_report.row_errors").map(normalizeRowError),
-    errorFileAvailable: requiredApiBoolean(raw.error_file_available, "import_report.error_file_available"),
-    errorFileExpiresAt: raw.error_file_expires_at != null ? text(raw.error_file_expires_at) : null,
-    duplicateOfReplay: requiredApiBoolean(raw.duplicate_of_replay, "import_report.duplicate_of_replay"),
-    optionsFingerprint: raw.options_fingerprint != null ? text(raw.options_fingerprint) : null,
+    rowErrors: requiredApiRows<unknown>(
+      raw.row_errors,
+      "import_report.row_errors",
+    ).map(normalizeRowError),
+    errorFileAvailable: requiredApiBoolean(
+      raw.error_file_available,
+      "import_report.error_file_available",
+    ),
+    errorFileExpiresAt:
+      raw.error_file_expires_at != null
+        ? text(raw.error_file_expires_at)
+        : null,
+    duplicateOfReplay: requiredApiBoolean(
+      raw.duplicate_of_replay,
+      "import_report.duplicate_of_replay",
+    ),
+    optionsFingerprint:
+      raw.options_fingerprint != null ? text(raw.options_fingerprint) : null,
     createdAt: raw.created_at != null ? text(raw.created_at) : null,
   };
 }
-export async function fetchSkuImportConstraints(): Promise<{ constraints: SkuImportConstraints | null; dataScope: string | null }> {
-  const { meta } = await http.getPage<unknown>(API_ENDPOINTS.SKU_IMPORT_REPORTS, { params: { per_page: 1 } });
+export async function fetchSkuImportConstraints(): Promise<{
+  constraints: SkuImportConstraints | null;
+  dataScope: string | null;
+}> {
+  const { meta } = await http.getPage<unknown>(
+    API_ENDPOINTS.SKU_IMPORT_REPORTS,
+    { params: { per_page: 1 } },
+  );
   const raw = meta as RawRecord;
   return {
     constraints: normalizeSkuImportConstraints(raw?.constraints),
     dataScope: raw?.data_scope != null ? text(raw.data_scope) : null,
   };
 }
-export async function fetchSkuImportReport(id: string): Promise<SkuImportReportRecord> {
+export async function fetchSkuImportReport(
+  id: string,
+): Promise<SkuImportReportRecord> {
   const result = normalizeSkuImportReport(
     await http.get<RawRecord>(endpointId(API_ENDPOINTS.SKU_IMPORT_REPORT, id)),
   );
-  if (result.id === id && result.mode === "COMMIT" &&
-      (result.status === "COMMITTED" || result.status === "REJECTED")) {
+  if (
+    result.id === id &&
+    result.mode === "COMMIT" &&
+    (result.status === "COMMITTED" || result.status === "REJECTED")
+  ) {
     for (const [key, reportId] of unknownImports) {
       if (reportId === id) clearUnknown(key);
     }
     try {
       const keys = Object.keys(window.sessionStorage).filter(
-        key => key.startsWith(pendingPrefix) && window.sessionStorage.getItem(key) === id,
+        (key) =>
+          key.startsWith(pendingPrefix) &&
+          window.sessionStorage.getItem(key) === id,
       );
-      keys.forEach(key => window.sessionStorage.removeItem(key));
-    } catch { /* In-memory recovery was already applied. */ }
+      keys.forEach((key) => window.sessionStorage.removeItem(key));
+    } catch {
+      /* In-memory recovery was already applied. */
+    }
   }
   return result;
 }
-export async function downloadSkuImportErrorFile(reportId: string): Promise<{ blob: Blob; fileName: string | null }> {
-  return http.downloadFile(endpointId(API_ENDPOINTS.SKU_IMPORT_REPORT_ERROR_FILE, reportId));
+export async function downloadSkuImportErrorFile(
+  reportId: string,
+): Promise<{ blob: Blob; fileName: string | null }> {
+  return http.downloadFile(
+    endpointId(API_ENDPOINTS.SKU_IMPORT_REPORT_ERROR_FILE, reportId),
+  );
 }
