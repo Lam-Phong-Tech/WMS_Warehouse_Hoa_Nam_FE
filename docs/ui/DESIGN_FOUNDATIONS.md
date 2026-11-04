@@ -93,6 +93,7 @@ Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-ta
 ### Bộ lọc
 
 - Một hàng điều khiển nằm **trực tiếp trên bảng**, cùng lề trái/phải với bao bảng; gap `12px`. Không có card viền quanh bộ lọc, tiêu đề bộ lọc hoặc dải chip lặp lại điều kiện.
+- Sidebar mở làm giảm vùng nội dung thực; chỉ xuống hàng khi các control không còn đủ chỗ đọc. Không dùng breakpoint rộng khiến một hàng vừa đủ bị tách thành nhiều hàng. Ô tìm kiếm co giãn, hai ô chọn có tỷ lệ hợp lý, nút Bộ lọc/Xóa lọc rộng theo nội dung; kiểm tra cả lúc có và không có nút Xóa lọc. Nhãn chọn dài có thể xuống hai dòng trong ô cao 48px khi cần; không giảm cỡ chữ để ép vừa.
 - Ô tìm kiếm rộng hơn ô chọn và lọc khi nhập. Ô chọn hiển thị tên trường cùng giá trị trong ô, ví dụ `Trạng thái: Tất cả`; không thêm hàng label phía trên.
 - Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-control` (`6px`); focus dùng `--ops-link` và quầng màu link 13%.
 - Mọi thay đổi bộ lọc áp dụng tự động, không cần nút `Áp dụng`. Nút `Xóa lọc` chỉ xuất hiện khi có điều kiện lọc, theo bản quy cách SKU người dùng chỉ định. Khi hẹp, các ô xuống hàng, ô tìm kiếm chiếm trọn hàng đầu; vùng lọc không làm trang tràn ngang.
