@@ -1550,7 +1550,7 @@ export const MESSAGES_EN: MessageTree = {
       colOnHand: "On hand",
       colLedger: "Ledger stock",
       colVariance: "Variance",
-      colSuggestedLocation: "Suggested location",
+      colSuggestedLocation: "Location",
       boxPrefix: "Box {code}",
       noSuggestedLocation: "No suggested location",
       colReconcile: "Reconciliation",

@@ -2059,7 +2059,7 @@ export const MESSAGES_ZH: MessageTree = {
       "colOnHand": "手头有",
       "colLedger": "分类库存",
       "colVariance": "方差",
-      "colSuggestedLocation": "建议位置",
+      "colSuggestedLocation": "位置",
       "boxPrefix": "框 {code}",
       "noSuggestedLocation": "没有建议的位置",
       "colReconcile": "和解",

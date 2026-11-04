@@ -1544,7 +1544,7 @@ export const MESSAGES_VI = {
       colOnHand: "Tồn hiện có",
       colLedger: "Tồn theo sổ cái",
       colVariance: "Chênh lệch",
-      colSuggestedLocation: "Vị trí gợi ý",
+      colSuggestedLocation: "Vị trí",
       boxPrefix: "Hộp {code}",
       noSuggestedLocation: "Chưa có vị trí gợi ý",
       colReconcile: "Đối soát",
