@@ -9,13 +9,38 @@
 .hn-personal-profile > * {
   min-width: 0;
 }
-.hn-personal-desktop-nav .hn-ui-tabs [role="tab"] > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.hn-personal-desktop-nav {
+  padding: 0 16px;
+  border-bottom: 1px solid var(--ops-line);
+  background: var(--ops-surface);
+}
+.hn-personal-desktop-nav .MuiTabs-root {
+  min-height: 56px;
 }
 .hn-personal-desktop-nav [role="tab"] {
+  flex-direction: row;
+  align-items: center;
   gap: 8px;
+  min-height: 36px;
+  min-width: 0;
+  margin: 6px 12px 8px 0;
+  padding: 8px 14px;
+  border-radius: var(--ops-radius-control);
+  color: var(--ops-text);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.hn-personal-desktop-nav [role="tab"][aria-selected="true"] {
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  font-weight: 600;
+}
+.hn-personal-desktop-nav .MuiTabs-indicator {
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--ops-link);
 }
 .hn-personal-mobile-nav {
   display: none;
