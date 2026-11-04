@@ -8,7 +8,7 @@ import {
 
 const screenshotRoot = "test-results/profile-account";
 
-test("profile card pairs have equal widths and stack on mobile", async ({
+test("profile card pairs have equal heights and stack on mobile", async ({
   page,
 }) => {
   await openFixture(page, { width: 1440 });
@@ -31,7 +31,8 @@ test("profile card pairs have equal widths and stack on mobile", async ({
     await expect(cards).toHaveCount(2);
     const first = await cards.nth(0).boundingBox();
     const second = await cards.nth(1).boundingBox();
-    expect(Math.abs(first!.width - second!.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(first!.height - second!.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(first!.y - second!.y)).toBeLessThanOrEqual(1);
     await page.screenshot({
       path: `${screenshotRoot}/balanced-cards-${name}.png`,
     });
