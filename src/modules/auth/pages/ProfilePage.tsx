@@ -395,44 +395,21 @@ export function ProfilePage() {
         <>
           {section === "profile" && accountMode === "overview" ? (
             <>
-              <section className="hn-personal-identity-banner">
-                <div className="hn-personal-identity">
-                  <span className="hn-personal-avatar">
-                    {avatarUrl ? (
-                      <img src={avatarUrl} alt={t("auth.personal.avatar")} />
-                    ) : (
-                      (me.display_name || me.name)
-                        .trim()
-                        .split(/\s+/)
-                        .slice(-2)
-                        .map((part) => part[0])
-                        .join("")
-                        .toLocaleUpperCase()
-                    )}
-                  </span>
-                  <div>
-                    <h2>{me.display_name || me.name}</h2>
-                    <p>
-                      {me.username || me.code}
-                      <span> · </span>
-                      {me.email}
-                    </p>
-                  </div>
-                </div>
-                <ActionButton
-                  kind="edit"
-                  onClick={() => {
-                    setOverlayOwner(() => captureAuthOwner());
-                    setEditor(true);
-                  }}
-                  disabled={!canonicalMe}
-                >
-                  {t("auth.personal.editProfile")}
-                </ActionButton>
-              </section>
               <div className="hn-personal-overview-grid">
                 <section className="hn-personal-card">
-                  <h2>{t("auth.personal.personalInfo")}</h2>
+                  <div className="hn-personal-section-heading hn-personal-info-heading">
+                    <h2>{t("auth.personal.personalInfo")}</h2>
+                    <ActionButton
+                      kind="edit"
+                      onClick={() => {
+                        setOverlayOwner(() => captureAuthOwner());
+                        setEditor(true);
+                      }}
+                      disabled={!canonicalMe}
+                    >
+                      {t("auth.personal.editProfile")}
+                    </ActionButton>
+                  </div>
                   <dl className="hn-personal-detail-list">
                     <div>
                       <dt>{t("auth.personal.name")}</dt>

@@ -45,6 +45,19 @@
 .hn-personal-mobile-nav {
   display: none;
 }
+.hn-personal-section-heading.hn-personal-info-heading {
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.hn-personal-card .hn-personal-info-heading h2 {
+  margin: 0;
+}
+.hn-personal-info-heading .MuiButton-root {
+  min-height: 40px;
+  padding: 8px 14px;
+  flex-shrink: 0;
+}
 .hn-personal-browser-notifications {
   display: grid;
   align-content: start;
