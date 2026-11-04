@@ -307,7 +307,7 @@ export function ProfilePreferencesPanel({
               {t("auth.personal.notificationPolicy")}
             </p>
           </section>
-          <section className="hn-personal-card">
+          <section className="hn-personal-card hn-personal-browser-notifications">
             <h2>{t("auth.personal.browserNotifications")}</h2>
             <p className="hn-personal-muted">
               {t("auth.personal.browserNotificationHint")}

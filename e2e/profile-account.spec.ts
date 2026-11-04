@@ -682,9 +682,9 @@ test("profile edit, email reauthentication, avatar crop and discard use real loc
   });
   await edit.click();
   let editor = page.getByRole("dialog", { name: /^Chỉnh sửa hồ sơ/ });
-  await expect(
-    editor.getByLabel("Tên đăng nhập", { exact: true }),
-  ).toHaveAttribute("readonly", "");
+  await expect(editor.getByLabel("Tên đăng nhập", { exact: true })).toHaveCount(
+    0,
+  );
   await expect(editor.getByLabel("Phòng ban", { exact: true })).toHaveAttribute(
     "readonly",
     "",

@@ -233,12 +233,6 @@ export function ProfileEditorDrawer({
             slotProps={{ htmlInput: { inputMode: "tel", maxLength: 10 } }}
           />
           <UiTextField
-            label={t("auth.personal.username")}
-            value={profile.username || profile.code}
-            fullWidth
-            slotProps={{ htmlInput: { readOnly: true } }}
-          />
-          <UiTextField
             label={t("auth.personal.department")}
             value={
               profile.department?.department_name ||
