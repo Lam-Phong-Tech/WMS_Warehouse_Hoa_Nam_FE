@@ -18,6 +18,7 @@ import { useT } from "@/shared/i18n/useT";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { captureAuthOwner } from "@/shared/store/auth-owner";
 import { profileService } from "../../services/profile.service";
+import { desktopChromePlatform } from "./device-presentation";
 import {
   profileKeys,
   type ProfileDevice,
@@ -100,7 +101,12 @@ export function ProfileSessionsPanel({
   const date = (value?: string | null) =>
     value ? formatDateTime(value) : t("auth.personal.unknown");
   const deviceName = (device: ProfileDevice) =>
-    device.device_label || device.platform || t("auth.personal.unknown");
+    (desktopChromePlatform(device)
+      ? t("auth.personal.officeComputer")
+      : null) ||
+    device.device_label ||
+    device.platform ||
+    t("auth.personal.unknown");
   const icon = (device: ProfileDevice) =>
     device.client_type === "app"
       ? "mobile-notch"
@@ -226,18 +232,6 @@ export function ProfileSessionsPanel({
   return (
     <div className="hn-personal-session-panel">
       {counts}
-      <section className="hn-personal-policy">
-        <UiIcon name="shield" size="sm" />
-        <div>
-          <strong>{t("auth.personal.policy")}</strong>
-          <p>{policyLabel}</p>
-          <small>{t("auth.personal.policyManaged")}</small>
-        </div>
-      </section>
-      <p className="hn-personal-note">
-        <UiIcon name="info" size="sm" />
-        {t("auth.personal.deviceIdentityNote")}
-      </p>
       {notice ? <UiAlert tone="info">{notice}</UiAlert> : null}
       {error ? <UiAlert tone="error">{error}</UiAlert> : null}
       {uncertain ? (
@@ -266,8 +260,9 @@ export function ProfileSessionsPanel({
               <div>
                 <h2>{deviceName(device)}</h2>
                 <p className="hn-personal-muted">
-                  {device.platform || t("auth.personal.unknown")} ·{" "}
-                  {device.client_type || "—"}
+                  {device.platform ||
+                    desktopChromePlatform(device) ||
+                    t("auth.personal.unknown")}
                 </p>
                 {device.is_current ? (
                   <UiStatusBadge
@@ -431,7 +426,9 @@ export function ProfileSessionsPanel({
                       : deviceName(selectedCurrent)}
                   </h3>
                   <p>
-                    {selectedCurrent.platform || t("auth.personal.unknown")}
+                    {selectedCurrent.platform ||
+                      desktopChromePlatform(selectedCurrent) ||
+                      t("auth.personal.unknown")}
                   </p>
                 </div>
               </div>

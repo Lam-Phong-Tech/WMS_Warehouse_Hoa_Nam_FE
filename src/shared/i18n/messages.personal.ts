@@ -1,4 +1,5 @@
 export const PERSONAL_VI = {
+  officeComputer: "Máy tính văn phòng",
   unknownDevices: "{count} bản cài đặt chưa định danh",
   scopeAll: "Toàn hệ thống",
   homeDashboard: "Tổng quan hệ thống",
@@ -186,6 +187,7 @@ export const PERSONAL_VI = {
 } as const;
 
 export const PERSONAL_EN = {
+  officeComputer: "Office computer",
   unknownDevices: "{count} unidentified installations",
   scopeAll: "Entire system",
   homeDashboard: "System overview",

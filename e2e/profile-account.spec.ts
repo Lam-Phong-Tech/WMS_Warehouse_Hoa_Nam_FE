@@ -8,6 +8,43 @@ import {
 
 const screenshotRoot = "test-results/profile-account";
 
+test("desktop Chrome without installation metadata displays an office computer", async ({
+  page,
+}) => {
+  await openFixture(page);
+  const seed = await page.evaluate(() => {
+    for (const device of window.__profileState.devices) {
+      device.device_label = null;
+      device.platform = null;
+      device.client_type = null;
+      for (const session of device.sessions) {
+        session.device_label = null;
+        session.platform = null;
+        session.client_type = null;
+      }
+    }
+    return window.__profileState;
+  });
+  await page.addInitScript((state) => {
+    window.__profileSeed = state;
+  }, seed);
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Quản lý thiết bị", exact: true })
+    .click();
+  const card = page.locator(".hn-personal-device-card").first();
+  await expect(
+    card.getByRole("heading", { name: "Máy tính văn phòng", exact: true }),
+  ).toBeVisible();
+  await expect(card).toContainText("Windows");
+  await expect(card).toContainText("Chrome");
+  await expect(card).toContainText("Thiết bị hiện tại");
+  await expect(page.locator(".hn-personal-policy")).toHaveCount(0);
+  await page.screenshot({
+    path: `${screenshotRoot}/desktop-chrome-office-computer.png`,
+  });
+});
+
 test("profile MFA enrolls locally, reveals recovery codes once and disables with real credentials", async ({
   page,
 }) => {
