@@ -249,7 +249,7 @@ export default function InventoryPage() {
   useOverlayBackDismiss(overlayOpen, closeOverlays, "INV-01-overlay");
 
   // ResponsiveDataTable giữ bảng trên desktop và chuyển thành card ở màn hẹp.
-  // Khả dụng, sổ cái và chênh lệch được xem trong chi tiết, không lặp ở danh sách.
+  // Khả dụng, sổ cái, chênh lệch và vị trí được xem trong chi tiết.
   // Chỉ STT được ẩn trên card. Sorter ở đây là client-side (so sánh trực tiếp
   // trên mảng `balances` của trang hiện tại, không có tham số sort gửi lên
   // API) nên cột nào cũng giữ được qua `sortAccessor`.
@@ -265,7 +265,7 @@ export default function InventoryPage() {
     {
       key: "sku",
       header: "SKU",
-      width: "15%",
+      width: "18%",
       sortAccessor: (row) => row.sku,
       render: (row) => (
         <CodeText>
@@ -276,7 +276,7 @@ export default function InventoryPage() {
     {
       key: "name",
       header: t("inventory.balance.colName"),
-      width: "24%",
+      width: "28%",
       sortAccessor: (row) => row.name || "",
       render: (row) => (
         <Stack>
@@ -294,7 +294,7 @@ export default function InventoryPage() {
     {
       key: "stockStatus",
       header: t("inventory.balance.colStockStatus"),
-      width: "15%",
+      width: "17%",
       sortType: "value",
       sortAccessor: (row) => row.stockStatus,
       render: (row) => (
@@ -312,60 +312,16 @@ export default function InventoryPage() {
     {
       key: "onHand",
       header: t("inventory.balance.colOnHand"),
-      width: "11%",
+      width: "13%",
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.onHand,
       render: (row) => formatQty(row.onHand, row.uom),
     },
     {
-      key: "location",
-      header: t("inventory.balance.colSuggestedLocation"),
-      width: "12%",
-      sortAccessor: (row) => row.containerCode || row.trayCode || "",
-      render: (row) => {
-        // Danh sách chỉ cần 2 mã định danh để nhận ra ngay "đang ở đâu": mã hộp
-        // (container_code — có ngay sau khi nhập kho) và mã khay (tray_code —
-        // container_code của TRAY cha, chỉ có sau khi Putaway xếp hộp vào khay).
-        // Vị trí mô tả rời (location_hint) chi tiết hơn — xem ở "Xem chi tiết".
-        const parts = [
-          row.containerCode
-            ? t("inventory.balance.boxPrefix", { code: row.containerCode })
-            : null,
-          row.trayCode ? `Khay ${row.trayCode}` : null,
-        ].filter((part): part is string => Boolean(part));
-        if (parts.length === 0) {
-          return (
-            <UiText variant="secondary">
-              {t("inventory.balance.noSuggestedLocation")}
-            </UiText>
-          );
-        }
-        const text = parts.join(" · ");
-        // Độ dài container/location thất thường (có khi rất dài) — ellipsis +
-        // tooltip để tránh dòng bị dồn/cắt xấu hoặc kéo lệch chiều cao bảng
-        // (tiêu chí 2), vẫn xem được đầy đủ khi hover.
-        return (
-          <Tooltip title={text}>
-            <Box
-              sx={{
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                maxWidth: 150,
-                fontSize: 12,
-              }}
-            >
-              {text}
-            </Box>
-          </Tooltip>
-        );
-      },
-    },
-    {
       key: "reconcile",
       header: t("inventory.balance.colReconcile"),
-      width: "10%",
+      width: "11%",
       sortType: "value",
       sortAccessor: (row) => row.reconcile,
       render: (row) => (

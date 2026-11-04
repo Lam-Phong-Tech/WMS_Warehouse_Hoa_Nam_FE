@@ -227,15 +227,25 @@ describe("InventoryPage (INV-01 hub)", () => {
     expect(await screen.findByText("SKU-MV-001")).toBeInTheDocument();
   });
 
-  it("bấm Mở mở BalanceDetailModal chi tiết đúng dòng", async () => {
+  it("chỉ hiển thị vị trí trong chi tiết tồn kho của đúng dòng", async () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");
+
+    expect(
+      screen.queryByRole("columnheader", { name: /Vị trí/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/BOX-01/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/TRAY-01/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Mở/ }));
 
     expect(
       await screen.findByText(/Chi tiết tồn kho — SKU-001/),
     ).toBeInTheDocument();
+    const drawer = screen.getByRole("dialog");
+    expect(within(drawer).getByText("BOX-01")).toBeInTheDocument();
+    expect(within(drawer).getByText("TRAY-01")).toBeInTheDocument();
+    expect(within(drawer).getByText("A-01-01")).toBeInTheDocument();
   });
 
   it("nút Trace bị disable khi thiếu quyền inventory.trace (RBAC)", async () => {

@@ -307,7 +307,10 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
 }
 .hn-outbound-filters {
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(150px, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(
+      0,
+      1.5fr
+    );
   align-items: center;
   gap: 12px;
   padding: 14px 0;
@@ -377,6 +380,15 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   .MuiOutlinedInput-root {
   height: 48px;
   min-height: 48px;
+}
+.hn-outbound-list .hn-outbound-filters .MuiSelect-select {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 100%;
+  padding-block: 3px;
+  white-space: normal;
+  line-height: 20px;
 }
 .hn-outbound-list .MuiInputBase-input {
   font-size: 14px;
@@ -755,6 +767,9 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   .hn-outbound-stat {
     min-height: 72px;
   }
+}
+/* A 300px expanded sidebar still leaves room for all four filters on desktop. */
+@container hn-outbound (max-width:900px) {
   .hn-outbound-filters {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
@@ -860,6 +875,15 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
     font-size: 12px;
   }
 }
+@container hn-outbound (max-width:560px) {
+  .hn-outbound-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-outbound-search,
+  .hn-outbound-sort {
+    grid-column: auto;
+  }
+}
 @container hn-outbound (max-width:380px) {
   .hn-outbound-header h1 {
     font-size: 24px;
@@ -871,14 +895,6 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   }
   .hn-outbound-header p {
     font-size: 14px;
-  }
-  .hn-outbound-filters {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-    padding: 12px 0;
-  }
-  .hn-outbound-search {
-    grid-column: auto;
   }
   .hn-outbound-stat {
     padding-left: 30px;

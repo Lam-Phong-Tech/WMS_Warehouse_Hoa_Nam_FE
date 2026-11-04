@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { toast } from "sonner";
 import { AppProviders } from "@/app/providers/AppProviders";
@@ -58,10 +59,43 @@ http.getPage = async (url, config) => {
 };
 
 export function OutboundAudit() {
+  const [sidebarWidth, setSidebarWidth] = useState(
+    Number(new URLSearchParams(window.location.search).get("sidebar") ?? 0),
+  );
   return (
     <AppProviders>
       <MemoryRouter initialEntries={["/outbound?screen=OUT-01"]}>
-        <main style={{ padding: 24 }}>
+        {sidebarWidth > 0 ? (
+          <aside
+            aria-label="Thanh bên kiểm tra bố cục"
+            style={{
+              position: "fixed",
+              inset: "0 auto 0 0",
+              width: sidebarWidth,
+              boxSizing: "border-box",
+              padding: 12,
+              background: "var(--ops-heading)",
+              color: "var(--ops-on-primary)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setSidebarWidth((width) => (width > 100 ? 76 : 300))
+              }
+            >
+              {sidebarWidth > 100 ? "Thu gọn thanh bên" : "Mở rộng thanh bên"}
+            </button>
+          </aside>
+        ) : null}
+        <main
+          style={{
+            padding: 24,
+            boxSizing: "border-box",
+            marginLeft: sidebarWidth,
+            width: `calc(100% - ${sidebarWidth}px)`,
+          }}
+        >
           <button
             type="button"
             style={{ minHeight: 40, marginBottom: 16 }}

@@ -227,7 +227,7 @@ export default function WarrantyPage() {
       width: 190,
       sortAccessor: (row) => row.case_code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ PHIẾU bảo hành đọc được.
-      render: (row) => <strong>{row.case_code || EMPTY_TEXT}</strong>,
+      render: (row) => row.case_code || EMPTY_TEXT,
     },
     {
       key: "customer",

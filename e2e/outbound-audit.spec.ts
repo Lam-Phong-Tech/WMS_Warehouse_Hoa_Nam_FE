@@ -19,6 +19,110 @@ async function showToast(page: Page) {
   return toast;
 }
 
+for (const { width, sidebar, mode } of [
+  { width: 1920, sidebar: 300, mode: "light" },
+  { width: 1536, sidebar: 300, mode: "light" },
+  { width: 1440, sidebar: 300, mode: "light" },
+  { width: 1280, sidebar: 300, mode: "light" },
+  { width: 1440, sidebar: 300, mode: "dark" },
+  { width: 1024, sidebar: 300, mode: "light" },
+  { width: 768, sidebar: 0, mode: "light" },
+  { width: 390, sidebar: 0, mode: "light" },
+  { width: 320, sidebar: 0, mode: "light" },
+]) {
+  test(`outbound filter row ${mode} ${width}px sidebar${sidebar}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.addInitScript(
+      (theme) => localStorage.setItem("hoa-nam-theme", theme),
+      mode,
+    );
+    await page.goto(`/e2e/fixtures/outbound-audit.html?sidebar=${sidebar}`);
+    await expect(
+      page.getByText("PX-AUDIT-0001", { exact: true }),
+    ).toBeVisible();
+    const screen = page.locator(".hn-outbound-list");
+    const filters = screen.locator(".hn-outbound-filters");
+    async function checkLayout() {
+      const controls = filters.locator(".MuiOutlinedInput-root");
+      await expect(controls).toHaveCount(4);
+      const boxes = await controls.evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const box = node.getBoundingClientRect();
+          return { x: box.x, y: box.y, width: box.width, height: box.height };
+        }),
+      );
+      const contentWidth = (await screen.boundingBox())!.width;
+      for (const box of boxes)
+        expect(Math.abs(box.height - 48)).toBeLessThanOrEqual(1);
+      if (contentWidth > 900) {
+        expect(
+          Math.max(...boxes.map((box) => box.y)) -
+            Math.min(...boxes.map((box) => box.y)),
+        ).toBeLessThanOrEqual(1);
+        expect(boxes[0].width).toBeGreaterThan(boxes[1].width);
+      } else {
+        expect(boxes[1].y).toBeGreaterThan(boxes[0].y);
+      }
+      for (let index = 1; index < boxes.length; index++) {
+        const before = boxes[index - 1],
+          current = boxes[index];
+        expect(
+          Math.min(before.x + before.width, current.x + current.width) -
+            Math.max(before.x, current.x) >
+            1 &&
+            Math.min(before.y + before.height, current.y + current.height) -
+              Math.max(before.y, current.y) >
+              1,
+        ).toBe(false);
+      }
+      const table = (await screen
+        .locator(".hn-outbound-table-region")
+        .boundingBox())!;
+      const row = (await filters.boundingBox())!;
+      expect(Math.abs(row.x - table.x)).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(row.x + row.width - table.x - table.width),
+      ).toBeLessThanOrEqual(1);
+      const metrics = await filters
+        .locator(".MuiSelect-select")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => ({
+            clientWidth: node.clientWidth,
+            scrollWidth: node.scrollWidth,
+            clientHeight: node.clientHeight,
+            scrollHeight: node.scrollHeight,
+          })),
+        );
+      for (const value of metrics) {
+        expect(value.scrollWidth).toBeLessThanOrEqual(value.clientWidth + 1);
+        expect(value.scrollHeight).toBeLessThanOrEqual(value.clientHeight + 1);
+      }
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 1,
+        ),
+      ).toBe(true);
+    }
+    await checkLayout();
+    await page.screenshot({
+      path: `test-results/outbound-audit/filters-${mode}-${width}-sidebar${sidebar}.png`,
+      fullPage: true,
+    });
+    if (sidebar > 0) {
+      await page
+        .getByRole("button", { name: "Thu gọn thanh bên", exact: true })
+        .click();
+      await checkLayout();
+      await page
+        .getByRole("button", { name: "Mở rộng thanh bên", exact: true })
+        .click();
+      await checkLayout();
+    }
+  });
+}
+
 for (const width of [1440, 390]) {
   test(`outbound overview placement, toggle and aligned filters at ${width}px`, async ({
     page,
