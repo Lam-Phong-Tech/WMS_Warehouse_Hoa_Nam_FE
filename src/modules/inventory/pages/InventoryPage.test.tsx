@@ -49,6 +49,8 @@ const BALANCE_ROW = {
   uom: "cái",
   available: 10,
   onHand: 12,
+  ledgerTotal: 11,
+  variance: 1,
   serialQty: 3,
   boxQty: 1,
   containerCode: "BOX-01",
@@ -141,8 +143,8 @@ describe("InventoryPage (INV-01 hub)", () => {
     cleanupTestState();
   });
 
-  it("đặt nút Làm mới và Truy vết mã cạnh tiêu đề, bỏ nhãn phụ và mô tả", () => {
-    const { balanceRefetch } = mockQueries();
+  it("chỉ giữ Truy vết mã cạnh tiêu đề và bỏ nút Làm mới", () => {
+    mockQueries();
     useAuthStore.setState({
       isSuperAdmin: true,
       currentContext: {
@@ -160,9 +162,9 @@ describe("InventoryPage (INV-01 hub)", () => {
     });
     const header = heading.closest("section");
     expect(header).not.toBeNull();
-    expect(header).toContainElement(
-      screen.getByRole("button", { name: "Làm mới" }),
-    );
+    expect(
+      screen.queryByRole("button", { name: "Làm mới" }),
+    ).not.toBeInTheDocument();
     expect(header).toContainElement(
       screen.getByRole("button", { name: "Truy vết mã" }),
     );
@@ -170,9 +172,6 @@ describe("InventoryPage (INV-01 hub)", () => {
     expect(header).not.toHaveTextContent("Tra cứu tồn và đối soát.");
     expect(header).not.toHaveTextContent("Toàn hệ thống");
     expect(header).not.toHaveTextContent("Super Admin");
-
-    fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
-    expect(balanceRefetch).toHaveBeenCalledOnce();
   });
 
   it("hiển thị danh sách tồn kho hiện tại với SKU, đối soát và trạng thái", async () => {
@@ -186,6 +185,27 @@ describe("InventoryPage (INV-01 hub)", () => {
     const row = cell.closest('[role="row"]') ?? cell.closest("tr");
     expect(row).not.toBeNull();
     expect(within(row as HTMLElement).getByText("Khớp")).toBeInTheDocument();
+  });
+
+  it("chỉ đưa sổ cái và chênh lệch vào chi tiết, bỏ copy SKU ở bảng", async () => {
+    renderWithProviders(<InventoryPage />);
+    await screen.findByText("SKU-001");
+    expect(
+      screen.queryByRole("columnheader", { name: /Tồn theo sổ cái/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: /Chênh lệch/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Sao chép/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Tồn kho hiện tại" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Mở/ }));
+    expect(await screen.findByText("Tồn theo sổ cái")).toBeInTheDocument();
+    expect(screen.getByText("Chênh lệch")).toBeInTheDocument();
+    expect(screen.getByText("11 cái")).toBeInTheDocument();
   });
 
   // Cột checkbox "chọn nhiều" ở bảng tồn kho đã gỡ: lựa chọn không dẫn tới
@@ -273,7 +293,7 @@ describe("InventoryPage (INV-01 hub)", () => {
     await screen.findByText("SKU-001");
 
     fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái tồn"));
-    fireEvent.click(await screen.findByRole("option", { name: "Hàng lỗi" }));
+    fireEvent.click(await screen.findByRole("option", { name: /Hàng lỗi$/ }));
 
     await waitFor(() => {
       expect(useInventoryBalances).toHaveBeenLastCalledWith(
@@ -287,7 +307,7 @@ describe("InventoryPage (INV-01 hub)", () => {
     await screen.findByText("SKU-001");
 
     fireEvent.mouseDown(screen.getByLabelText("Lọc loại hàng"));
-    fireEvent.click(await screen.findByRole("option", { name: "Linh kiện" }));
+    fireEvent.click(await screen.findByRole("option", { name: /Linh kiện$/ }));
 
     await waitFor(() => {
       expect(useInventoryBalances).toHaveBeenLastCalledWith(
@@ -296,51 +316,20 @@ describe("InventoryPage (INV-01 hub)", () => {
     });
   });
 
-  it("Làm mới chỉ tải lại tab đang xem và giữ nguyên bộ lọc", async () => {
-    const { balanceRefetch, movementRefetch } = mockQueries();
-    renderWithProviders(<InventoryPage />, ["/inventory?screen=INV-01"]);
-
-    fireEvent.change(screen.getByRole("textbox", { name: "Tìm tồn kho" }), {
-      target: { value: "SKU-001" },
-    });
-    await waitFor(() => {
-      expect(useInventoryBalances).toHaveBeenLastCalledWith(
-        expect.objectContaining({ keyword: "SKU-001" }),
-      );
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
-    expect(balanceRefetch).toHaveBeenCalledTimes(1);
-    expect(movementRefetch).not.toHaveBeenCalled();
-    expect(screen.getByRole("textbox", { name: "Tìm tồn kho" })).toHaveValue(
-      "SKU-001",
-    );
-
-    fireEvent.click(screen.getByRole("tab", { name: "Lịch sử biến động" }));
-    fireEvent.change(
-      await screen.findByRole("textbox", { name: "Tìm biến động tồn kho" }),
-      { target: { value: "IN-001" } },
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
-    expect(movementRefetch).toHaveBeenCalledTimes(1);
-    expect(balanceRefetch).toHaveBeenCalledTimes(1);
-    expect(useStockMovements).toHaveBeenLastCalledWith(
-      expect.objectContaining({ search: "IN-001", keyword: "IN-001" }),
-    );
-    expect(
-      screen.getByRole("textbox", { name: "Tìm biến động tồn kho" }),
-    ).toHaveValue("IN-001");
-  });
-
   it("Đặt lại đưa bộ lọc tab hiện tại về mặc định và trang 1, giữ riêng bộ lọc và phân trang của tab còn lại", async () => {
     mockQueries({ balancesTotal: 120, movementsTotal: 120 });
     renderWithProviders(<InventoryPage />);
 
     const choose = async (label: string, option: string) => {
       fireEvent.mouseDown(screen.getByRole("combobox", { name: label }));
-      fireEvent.click(await screen.findByRole("option", { name: option }));
+      fireEvent.click(
+        await screen.findByRole("option", { name: new RegExp(option + "$") }),
+      );
     };
 
-    expect(screen.getByRole("button", { name: "Đặt lại" })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
     fireEvent.change(screen.getByRole("textbox", { name: "Tìm tồn kho" }), {
       target: { value: "  SKU-001  " },
     });
@@ -351,7 +340,7 @@ describe("InventoryPage (INV-01 hub)", () => {
     });
     await choose("Lọc loại hàng", "Linh kiện");
     await choose("Lọc trạng thái tồn", "Hàng lỗi");
-    await choose("Số dòng mỗi trang", "20");
+    await choose("Số dòng mỗi trang", "20 / trang");
     fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
     const balanceFilters = {
       keyword: "SKU-001",
@@ -368,7 +357,7 @@ describe("InventoryPage (INV-01 hub)", () => {
       { target: { value: "IN-001" } },
     );
     await choose("Lọc loại biến động", "Xuất kho");
-    await choose("Số dòng mỗi trang", "50");
+    await choose("Số dòng mỗi trang", "50 / trang");
     fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
     const movementFilters = {
       search: "IN-001",
@@ -390,7 +379,7 @@ describe("InventoryPage (INV-01 hub)", () => {
       screen.getByRole("combobox", { name: "Lọc trạng thái tồn" }),
     ).toHaveTextContent("Hàng lỗi");
     expect(useInventoryBalances).toHaveBeenLastCalledWith(balanceFilters);
-    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
     const defaultBalanceFilters = {
       keyword: undefined,
       sku_type: undefined,
@@ -404,7 +393,9 @@ describe("InventoryPage (INV-01 hub)", () => {
     expect(screen.getByRole("textbox", { name: "Tìm tồn kho" })).toHaveValue(
       "",
     );
-    expect(screen.getByRole("button", { name: "Đặt lại" })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
     expect(useStockMovements).toHaveBeenLastCalledWith(movementFilters);
 
     fireEvent.click(screen.getByRole("tab", { name: "Lịch sử biến động" }));
@@ -418,7 +409,7 @@ describe("InventoryPage (INV-01 hub)", () => {
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
     ).toHaveTextContent("50");
     expect(useStockMovements).toHaveBeenLastCalledWith(movementFilters);
-    fireEvent.click(screen.getByRole("button", { name: "Đặt lại" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
     expect(useStockMovements).toHaveBeenLastCalledWith({
       search: undefined,
       keyword: undefined,
@@ -429,7 +420,9 @@ describe("InventoryPage (INV-01 hub)", () => {
     expect(
       screen.getByRole("textbox", { name: "Tìm biến động tồn kho" }),
     ).toHaveValue("");
-    expect(screen.getByRole("button", { name: "Đặt lại" })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
     expect(useInventoryBalances).toHaveBeenLastCalledWith(
       defaultBalanceFilters,
     );

@@ -101,7 +101,9 @@ describe("ComponentIssueModal (COMP-01)", () => {
     );
 
     expect(await screen.findByText(/không còn hiệu lực/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Tạo phiếu/ })).toBeDisabled();
+    expect(
+      await screen.findByRole("button", { name: /Tạo phiếu/ }),
+    ).toBeDisabled();
   });
 
   it("SCANNING: quét serial gửi đúng line đang thiếu + If-Match version", async () => {

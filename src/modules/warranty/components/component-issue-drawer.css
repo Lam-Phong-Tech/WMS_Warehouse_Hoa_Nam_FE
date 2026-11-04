@@ -1,0 +1,50 @@
+.hn-component-issue-drawer .MuiDrawer-paper {
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+.hn-component-issue-context {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--ops-line);
+}
+.hn-component-issue-context > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hn-component-issue-context span {
+  display: block;
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+  margin-bottom: 4px;
+}
+.hn-component-issue-context strong,
+.hn-component-issue-context p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-component-issue-context__note {
+  grid-column: 1 / -1;
+}
+.hn-component-issue-context > button {
+  justify-self: start;
+  grid-column: 1 / -1;
+}
+.hn-component-issue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+.hn-component-issue-actions:empty {
+  display: none;
+}
+@media (max-width: 575px) {
+  .hn-component-issue-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -4,6 +4,7 @@ import { QueryProvider } from "@/app/providers/query-provider";
 import { AppThemeProvider } from "@/shared/ui/theme";
 import { TOAST_ICONS } from "@/shared/ui/icons";
 import { ErrorBoundary } from "@/shared/components/feedback/ErrorBoundary";
+import { useT } from "@/shared/i18n/useT";
 
 export interface AppProvidersProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ export interface AppProvidersProps {
  * providers. Production, tests và mọi shell entry point dùng chung setup này.
  */
 export function AppProviders({ children }: AppProvidersProps) {
+  const t = useT();
   return (
     <QueryProvider>
       <AppThemeProvider>
@@ -29,8 +31,10 @@ export function AppProviders({ children }: AppProvidersProps) {
             expand
             gap={10}
             visibleToasts={4}
-            offset={{ top: 84, right: 32 }}
+            offset={{ top: 84, right: "clamp(12px, 2.2vw, 32px)" }}
             mobileOffset={{ top: 74, right: 12 }}
+            containerAriaLabel={t("topbar.notificationLabel")}
+            toastOptions={{ closeButtonAriaLabel: t("common.close") }}
             // Sonner tự vẽ icon severity + nút đóng bằng bộ SVG riêng —
             // ép về Flaticon Uicons cho đồng bộ toàn app.
             icons={TOAST_ICONS}

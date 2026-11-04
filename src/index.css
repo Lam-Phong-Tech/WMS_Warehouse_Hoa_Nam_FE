@@ -46,6 +46,7 @@ body {
   font-family: var(--wms-font-family);
   --border-radius: 13px;
   --hn-toast-heading: var(--wms-auth-navy);
+  --hn-toast-description: #64748b;
   --normal-bg: var(--wms-bg-surface);
   --normal-border: #e2e8f0;
   --normal-text: var(--hn-toast-heading);
@@ -68,6 +69,7 @@ body {
 
 :root[data-theme="dark"] .app-toaster[data-sonner-toaster] {
   --hn-toast-heading: var(--wms-text-strong);
+  --hn-toast-description: var(--wms-text-medium);
   --normal-border: var(--wms-border);
 }
 
@@ -148,7 +150,7 @@ body {
 .app-toaster
   [data-sonner-toast][data-styled="true"][data-rich-colors="true"]
   [data-description] {
-  color: #64748b;
+  color: var(--hn-toast-description);
   font-size: 13px;
   line-height: 1.45;
 }

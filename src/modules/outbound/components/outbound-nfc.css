@@ -18,6 +18,7 @@
   border-bottom-color: var(--ops-link);
 }
 .hn-outbound-nfc {
+  container-type: inline-size;
   min-width: 0;
   color: var(--ops-text);
 }
@@ -277,13 +278,12 @@
 .hn-outbound-nfc-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 24px 16px;
+  padding-block: 24px;
 }
 .hn-outbound-nfc-detail-grid > div {
-  border: 1px solid var(--ops-line);
-  border-radius: 8px;
-  padding: 10px 12px;
   min-width: 0;
+  padding: 0;
 }
 .hn-outbound-nfc-detail-grid span,
 .hn-outbound-nfc-detail-grid strong,
@@ -339,4 +339,107 @@
     white-space: normal;
     flex-wrap: wrap;
   }
+}
+
+.hn-outbound-nfc-drawer .MuiDrawer-paper {
+  overflow: hidden;
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+.hn-outbound-nfc-drawer-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.hn-outbound-nfc-detail {
+  min-width: 0;
+}
+.hn-outbound-nfc-history-section {
+  padding-top: 20px;
+}
+.hn-outbound-nfc-history-section h3 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  color: var(--ops-heading);
+}
+.hn-outbound-nfc-history {
+  margin: 0;
+}
+.hn-outbound-nfc-history li {
+  padding-block: 12px;
+}
+@container (max-width: 900px) {
+  .hn-outbound-nfc-table-wrap {
+    overflow: visible;
+  }
+  .hn-outbound-nfc-table {
+    min-width: 0;
+    display: block;
+  }
+  .hn-outbound-nfc-table thead {
+    display: none;
+  }
+  .hn-outbound-nfc-table tbody {
+    display: block;
+  }
+  .hn-outbound-nfc-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    height: auto;
+    padding: 16px;
+    gap: 16px;
+    border-bottom: 1px solid var(--ops-line);
+  }
+  .hn-outbound-nfc-table :is(th, td) {
+    display: block;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+  }
+  .hn-outbound-nfc-table td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--ops-muted);
+    font-size: 12px;
+    line-height: 18px;
+    margin-bottom: 4px;
+  }
+  .hn-outbound-nfc-table td[data-field="action"] {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+  .hn-outbound-nfc-table td[data-field="action"]::before {
+    display: none;
+  }
+  .hn-outbound-nfc-uid {
+    white-space: normal;
+    flex-wrap: wrap;
+  }
+}
+@container (max-width: 440px) {
+  .hn-outbound-nfc-table tr {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-outbound-nfc-search-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.hn-outbound-nfc-identity {
+  display: grid;
+  gap: 4px;
+  padding-block: 16px;
+  overflow-wrap: anywhere;
+}
+.hn-outbound-nfc-identity strong {
+  font-size: 18px;
+  color: var(--ops-heading);
+}
+.hn-outbound-nfc-identity span {
+  font-size: 14px;
+  color: var(--ops-muted);
+}
+.hn-outbound-nfc-embedded > button {
+  margin-bottom: 8px;
 }

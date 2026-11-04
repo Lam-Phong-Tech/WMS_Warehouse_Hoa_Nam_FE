@@ -1,3 +1,4 @@
+import "./component-issue-drawer.css";
 import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   // hết vào 1 dropdown) — cùng cách OutboundIntakeModal.tsx đã làm.
   UiAutocomplete,
   UiDialog,
+  UiDrawer,
   UiNumberField,
   UiStatusBadge,
   UiText,
@@ -123,6 +125,8 @@ interface ComponentIssueModalProps {
   documentId?: string | null;
   onClose: () => void;
   onChanged?: () => void;
+  warehouseLabel?: string;
+  onViewCase?: () => void;
 }
 
 /**
@@ -138,6 +142,8 @@ export function ComponentIssueModal({
   documentId: initialDocumentId,
   onClose,
   onChanged,
+  warehouseLabel,
+  onViewCase,
 }: ComponentIssueModalProps) {
   const dialog = useDialogExit(onClose);
   const t = useT();
@@ -541,12 +547,13 @@ export function ComponentIssueModal({
   ];
 
   return (
-    <UiDialog
-      className={className}
+    <UiDrawer
+      className={`hn-component-issue-drawer ${className ?? ""}`}
       {...dialog.dialogProps}
-      maxWidth="md"
+      width={820}
       title={
         <Box
+          component="span"
           sx={{
             display: "flex",
             alignItems: "center",
@@ -570,45 +577,31 @@ export function ComponentIssueModal({
           />
         </Box>
       }
-      actions={
-        documentId && !isOpenDocument ? null : (
-          <>
-            {documentId && isOpenDocument ? (
-              <>
-                <ActionButton
-                  kind="deactivate"
-                  disabled={!canIssue || cancelMutation.isPending}
-                  onClick={() => setCancelOpen(true)}
-                >
-                  {t("warranty.componentIssue.cancelTrigger")}
-                </ActionButton>
-                <ActionButton
-                  kind="approve"
-                  disabled={
-                    !canIssue || !allLinesComplete || postMutation.isPending
-                  }
-                  onClick={() => setPostConfirmOpen(true)}
-                >
-                  {t("warranty.componentIssue.postTrigger")}
-                </ActionButton>
-              </>
-            ) : null}
-            {!documentId ? (
-              <ActionButton
-                kind="create"
-                disabled={!canIssue || !caseActive || createMutation.isPending}
-                onClick={() => void handleCreate()}
-              >
-                {createMutation.isPending
-                  ? t("warranty.componentIssue.creating")
-                  : t("warranty.componentIssue.create")}
-              </ActionButton>
-            ) : null}
-          </>
-        )
-      }
     >
       <Stack spacing={2} sx={{ mt: 0.5 }}>
+        {documentId ? (
+          <Box className="hn-component-issue-context">
+            <div>
+              <span>{t("warranty.componentIssue.caseCode")}</span>
+              <strong>{caseCode || shortId(caseId)}</strong>
+            </div>
+            <div>
+              <span>{t("warranty.componentIssue.warehouse")}</span>
+              <strong>
+                {warehouseLabel || detail?.warehouse_id || EMPTY_TEXT}
+              </strong>
+            </div>
+            <div className="hn-component-issue-context__note">
+              <span>{t("warranty.componentIssue.note")}</span>
+              <p>{detail?.note || EMPTY_TEXT}</p>
+            </div>
+            {onViewCase ? (
+              <ActionButton kind="view" onClick={onViewCase}>
+                {t("dashboard.insight.warrantyAction")}
+              </ActionButton>
+            ) : null}
+          </Box>
+        ) : null}
         {!caseActive && !documentId ? (
           <UiAlert tone="error">
             {t("warranty.componentIssue.caseInactive")}
@@ -789,7 +782,7 @@ export function ComponentIssueModal({
                   }}
                 >
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, md: 4 }}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
                       <Box>
                         <UiText variant="caption">
                           {t("warranty.componentIssue.status")}
@@ -802,7 +795,7 @@ export function ComponentIssueModal({
                         }
                       />
                     </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
                       <Box>
                         <UiText variant="caption">
                           {t("warranty.componentIssue.purpose")}
@@ -813,7 +806,7 @@ export function ComponentIssueModal({
                         label={t("warranty.componentIssue.purposeWarranty")}
                       />
                     </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
                       <Box>
                         <UiText variant="caption">
                           {t("warranty.componentIssue.documentDate")}
@@ -907,6 +900,44 @@ export function ComponentIssueModal({
         )}
       </Stack>
 
+      <Box className="hn-component-issue-actions">
+        {documentId && !isOpenDocument ? null : (
+          <>
+            {documentId && isOpenDocument ? (
+              <>
+                <ActionButton
+                  kind="deactivate"
+                  disabled={!canIssue || cancelMutation.isPending}
+                  onClick={() => setCancelOpen(true)}
+                >
+                  {t("warranty.componentIssue.cancelTrigger")}
+                </ActionButton>
+                <ActionButton
+                  kind="approve"
+                  disabled={
+                    !canIssue || !allLinesComplete || postMutation.isPending
+                  }
+                  onClick={() => setPostConfirmOpen(true)}
+                >
+                  {t("warranty.componentIssue.postTrigger")}
+                </ActionButton>
+              </>
+            ) : null}
+            {!documentId ? (
+              <ActionButton
+                kind="create"
+                disabled={!canIssue || !caseActive || createMutation.isPending}
+                onClick={() => void handleCreate()}
+              >
+                {createMutation.isPending
+                  ? t("warranty.componentIssue.creating")
+                  : t("warranty.componentIssue.create")}
+              </ActionButton>
+            ) : null}
+          </>
+        )}
+      </Box>
+
       <UiDialog
         className={className}
         open={cancelOpen}
@@ -989,7 +1020,7 @@ export function ComponentIssueModal({
         }}
         onClose={() => setCameraOpen(false)}
       />
-    </UiDialog>
+    </UiDrawer>
   );
 }
 

@@ -1,303 +1,168 @@
 ---
-title: WMS Hoa Nam - Design Foundations
+title: Hoa Nam WMS — Chuẩn giao diện Web thống nhất
 status: active
-version: 1.0
-updated: 2026-10-30
+version: 2.0
+updated: 2026-11-04
 owner: Frontend
-applies_to: Web Admin (desktop / tablet / mobile)
+applies_to: Web Admin (desktop, tablet, mobile)
 ---
 
-# 01 - Design Foundations
-
-Tài liệu này là **chuẩn nền tảng thị giác** cho mọi màn hình mới của WMS Hoa Nam.
-Mục tiêu: mọi module nhìn cùng một hệ, không mỗi trang một màu, một font, một kiểu card.
-
-> **Baseline hiện hành (30/10/2026): Operations / SystemHNWeb.**
-> Giao diện đang chạy dùng sidebar navy, primary xanh `#004E74`, topbar navy.
-> Các tài liệu Vuexy cũ (`DEC-UI-BASELINE-01`, `11-canonical-token-contract.md`)
-> chỉ còn là **lịch sử tham khảo**, không dùng để tạo màn hình mới.
-> Nếu muốn quay lại Vuexy, phải đổi token + cập nhật đồng thời 3 file thiết kế này.
-
----
-
-## 1. Thứ bậc nguồn sự thật
-
-Khi có xung đột, thứ tự ưu tiên như sau:
-
-1. **Token runtime**: `src/shared/ui/tokens/operations.ts` + `operations.css`
-2. **Semantic tokens**: `src/shared/ui/tokens/palette.ts`, `semantic-light.ts`
-3. **Component tokens**: `component-tokens.ts`
-4. **Ba tài liệu thiết kế này**
-5. Tài liệu Vuexy / audit cũ
-
-Quy tắc:
-
-- Không copy mã màu, font, spacing, radius vào page/component.
-- Luôn dùng token semantic: `var(--wms-*)`, `SEMANTIC_LIGHT`, `COMPONENT_TOKENS`.
-- Không tạo token mới trong file CSS của module.
-- Không override theme ở cấp page. Chỉ có **một** composition root:
-  `src/shared/ui/theme/AppThemeProvider.tsx`.
-
----
-
-## 2. Nguyên tắc thiết kế
-
-1. **Rõ ràng trước đẹp**: ưu tiên đọc được, quét nhanh, thao tác đúng.
-2. **Một hành động chính**: mỗi vùng chỉ có một nút primary.
-3. **Trạng thái luôn hiển thị**: loading, empty, error, no-permission, offline.
-4. **Không giấu hành động quan trọng** sau hover hoặc icon mơ hồ.
-5. **Nhất quán theo module**: cùng nghiệp vụ → cùng pattern, cùng vị trí nút.
-6. **Mobile không phải desktop thu nhỏ**: bảng chuyển card, filter xếp dọc.
-7. **Token-first**: mọi giá trị thị giác đi qua token.
-
----
-
-## 3. Màu sắc
-
-### 3.1 Light mode
-
-| Nhóm          | Token                                 | Giá trị   |
-| ------------- | ------------------------------------- | --------- |
-| Heading       | `--ops-heading` / `--wms-text-strong` | `#003B63` |
-| Primary       | `--ops-primary` / `--wms-primary`     | `#004E74` |
-| Primary hover | `--ops-primary-hover`                 | `#003B63` |
-| Text          | `--ops-text` / `--wms-text-high`      | `#12344B` |
-| Muted         | `--ops-muted` / `--wms-text-medium`   | `#627C8E` |
-| Line / border | `--ops-line` / `--wms-border`         | `#D9E8EF` |
-| Pale / subtle | `--ops-pale` / `--wms-bg-subtle`      | `#EAF5F8` |
-| Link          | `--ops-link`                          | `#086590` |
-| Surface       | `--ops-surface` / `--wms-bg-surface`  | `#FFFFFF` |
-| Canvas        | `--ops-canvas` / `--wms-bg-canvas`    | `#F5FAFC` |
-| Success       | `--ops-success`                       | `#16865B` |
-| Warning       | `--ops-warning`                       | `#B97809` |
-| Danger        | `--ops-danger`                        | `#C2413A` |
-| Inactive      | `--ops-inactive`                      | `#879BAA` |
-
-Nền trạng thái:
-
-| Tone           | Nền       | Chữ       |
-| -------------- | --------- | --------- |
-| Success        | `#E7F4ED` | `#106B48` |
-| Warning        | `#FFF4DC` | `#8F5B00` |
-| Danger         | `#FBEDEA` | `#A9322C` |
-| Info / primary | `#EAF5F8` | `#086590` |
-
-### 3.2 Dark mode
-
-| Nhóm          | Giá trị   |
-| ------------- | --------- |
-| Heading       | `#DAECF6` |
-| Primary       | `#086B92` |
-| Primary hover | `#075B7D` |
-| Text          | `#C8DDEB` |
-| Muted         | `#9DB7CA` |
-| Line          | `#344D60` |
-| Pale          | `#223D50` |
-| Link          | `#72C9EE` |
-| Surface       | `#192D3E` |
-| Canvas        | `#122332` |
-| Success       | `#68D5A4` |
-| Warning       | `#F1BF66` |
-| Danger        | `#F18E87` |
-
-### 3.3 Quy tắc dùng màu
-
-- Primary chỉ dùng cho: hành động chính, trạng thái đang chọn, link quan trọng.
-- Không dùng primary cho toàn bộ tiêu đề; tiêu đề dùng `text-strong`.
-- Màu semantic phải đi kèm **nhãn hoặc icon**, không chỉ dựa vào màu.
-- Nền soft + chữ đậm tương ứng; không dùng chữ trắng trên nền soft.
-- Trong dark mode: không hard-code `#fff`, `#000`, `rgba(...)`; dùng token.
-
----
+# Chuẩn giao diện Hoa Nam WMS
 
-## 4. Typography
+Đây là **một tài liệu thiết kế chuẩn** cho màn hình Web mới và các màn hình được chỉnh sửa. Đọc mục liên quan trước khi làm giao diện; khi thay đổi quy cách chung, cập nhật tài liệu này trong cùng thay đổi mã nguồn. Các ghi chép kiểm chứng và thiết kế cũ trong `docs/ui/` là tư liệu nguồn, không tạo thêm một bộ quy tắc song song.
 
-| Vai trò            | Size |  Weight | Ghi chú                            |
-| ------------------ | ---: | ------: | ---------------------------------- |
-| Font family        |    — |       — | `"Public Sans", system-ui, ...`    |
-| Body               | 14px |     400 | line-height 22px                   |
-| Secondary / label  | 13px | 400–600 | label form, mô tả                  |
-| Page title desktop | 24px |     700 | letter-spacing `-0.025em`          |
-| Page title mobile  | 20px |     700 | dưới `md`                          |
-| Card title         | 18px |     600 | line-height 26px                   |
-| KPI value          | 22px |     600 | line-height 30px                   |
-| Button             | 14px |     600 | không viết hoa toàn bộ             |
-| Eyebrow            | 11px |     700 | uppercase, letter-spacing `0.08em` |
+Mục tiêu là giao diện vận hành rõ thứ tự công việc, đọc nhanh, dùng hợp lý diện tích và nhất quán giữa các module. Tiếng Việt là ngôn ngữ mặc định; dữ liệu và quyền vẫn lấy từ ứng dụng thật.
 
-Quy tắc:
+## 1. Thứ tự áp dụng khi các nguồn khác nhau
 
-- Không dùng quá 3 cấp tiêu đề trong một page.
-- Không dùng font weight 800+ nếu không có lý do.
-- Số liệu KPI dùng tabular numbers nếu có.
-- Không dùng font ngoài hệ token.
+| Ưu tiên | Nguồn                                                                                           | Phạm vi quyết định                                                                                                          |
+| ------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 1       | Yêu cầu cụ thể của người dùng và nghiệp vụ/API hiện hành                                        | Kết quả cần đạt, trường dữ liệu, quyền, luồng xử lý.                                                                        |
+| 2       | [`sku-list-filter-table-style.md`](./sku-list-filter-table-style.md) và Danh sách SKU hiện hành | **Toàn bộ quy cách bộ lọc, bảng, phân trang** ở mục 5 của tài liệu này.                                                     |
+| 3       | `TOAST_REFERENCE_LOCKED_1.html` do người dùng cung cấp ngày 04/11/2026                          | Hình thức và hành vi thông báo nổi ở mục 9.                                                                                 |
+| 4       | Token, theme và component đang chạy trong `src/shared/ui/`                                      | Cách thực thi màu, font, icon, responsive và accessibility.                                                                 |
+| 5       | Hoa Nam Unified UI Kit v3.0.1, đặc biệt `docs/DEV_GUIDE.md` và `docs/COMPONENT_CONTRACTS.md`    | Bổ sung nguyên tắc về hierarchy, density, overlay, form, trạng thái. Kit còn là bản đề xuất, không tự thay toàn bộ runtime. |
+| 6       | Tài liệu Vuexy, audit và ảnh tham khảo cũ                                                       | Bối cảnh lịch sử, không làm chuẩn cho màn hình mới.                                                                         |
 
----
+**Ngoại lệ được chốt:** không áp dụng trang/mục **“10. Data table, filters & pagination”** của UI Kit. Mọi quyết định cho ba thành phần này phải theo quy cách bảng SKU ở ưu tiên 2, kể cả khi bản kit hoặc bản kiểm chứng cũ ghi số đo khác. `docs/DEV_GUIDE.md` của kit có cách đánh số mục khác; ngoại lệ ở đây chỉ nói về phần Data table, filters & pagination của bộ kit trực quan.
 
-## 5. Spacing, radius, shadow, z-index
+Không chép nguyên `dist/hn-components.css` từ UI Kit vào sản phẩm: file đó chứa cả bố cục catalog. Không đổi brand, token, font hoặc icon toàn hệ thống chỉ để một màn hình giống ảnh mẫu. Nếu chủ sản phẩm chốt chuyển sang token kit, thực hiện một đợt migration riêng và cập nhật tài liệu này.
 
-### Spacing
+## 2. Nền tảng thị giác và component
 
-`4 / 8 / 12 / 16 / 24 / 32`
+| Vai trò    | Chuẩn Web đang áp dụng                                                                                                                                           |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Font       | **Inter** từ `--wms-font-family` / `TYPOGRAPHY.fontFamily`; bản kit cũng dùng Inter.                                                                             |
+| Màu        | Operations/SystemHNWeb: `--ops-*` và các alias semantic `--wms-*`; primary `#004E74`, heading `#003B63` ở light mode.                                            |
+| Icon       | Bộ icon dùng trong ứng dụng qua `src/shared/ui/icons/` (Flaticon Uicons ở control hiện hành). Không trộn Lucide của kit vào một màn hình đang dùng bộ hiện hành. |
+| Theme      | Một `AppThemeProvider` duy nhất; dùng biến semantic cho light/dark, không hard-code màu theo trang.                                                              |
+| Thành phần | Ưu tiên `src/shared/ui`, `src/shared/components`, `ActionButton`/`RowActionButton`, `ResponsiveDataTable` và `sonner` đã có.                                     |
 
-- Khoảng cách giữa các khối lớn: `24px`.
-- Khoảng cách trong card: `16px`.
-- Khoảng cách giữa label và control: `8px`.
-- Khoảng cách giữa các nút: `8px`.
+Màu mang ý nghĩa nghiệp vụ phải có chữ hoặc icon đi kèm. Dùng success cho hoàn tất, warning cho cần kiểm tra, danger cho lỗi/hủy, info cho thông tin; không dùng một màu để biểu diễn hai ý nghĩa đối lập. Nút chính dùng primary cho **một hành động quyết định trong mỗi vùng**.
 
-### Radius
+### Chữ và kích thước
 
-| Thành phần                  | Radius |
-| --------------------------- | -----: |
-| Control (button/input)      |    6px |
-| Card                        |    8px |
-| Dialog                      |   12px |
-| Bottom sheet / mobile modal |   16px |
-| Pill / badge tròn           |  999px |
+| Vai trò                        | Cỡ / dòng         | Độ đậm                                     |
+| ------------------------------ | ----------------- | ------------------------------------------ |
+| Tiêu đề trang desktop / mobile | 24/32px · 20/28px | 700                                        |
+| Tiêu đề vùng, drawer           | 18/26px           | 600–700                                    |
+| Nội dung chính                 | 14/22px           | 400                                        |
+| Label và nội dung phụ          | 13/20px           | 400–600                                    |
+| Nút                            | 14/20px           | 600                                        |
+| Mã phiếu/SKU chính             | 14/22px           | 700                                        |
+| **Đầu bảng**                   | **16/24px**       | **800**, viết hoa, letter spacing `0.02em` |
+| **Ô dữ liệu bảng**             | **14/22px**       | 400; mã chính 700                          |
 
-### Shadow
+Hai hàng cuối là quy cách riêng của bảng SKU và có ưu tiên hơn tỷ lệ chữ bảng mặc định của kit hoặc tài liệu cũ. Không thu nhỏ chữ để nhồi thêm cột. Số liệu dùng tabular numerals; số trong cột dữ liệu được căn theo ý nghĩa (số lượng thường căn phải). Mã dài phải ngắt dòng hoặc rút gọn có cách xem/copy đầy đủ.
 
-| Token    | Giá trị                             |
-| -------- | ----------------------------------- |
-| Card     | `0 2px 8px rgba(0, 59, 99, 0.04)`   |
-| Floating | `0 10px 28px rgba(0, 59, 99, 0.14)` |
-| Dialog   | `0 20px 60px rgba(0, 59, 99, 0.22)` |
+### Khoảng cách và hình dạng
 
-Không tự tạo shadow mới. Muốn nhấn mạnh hơn, dùng border hoặc nền `pale`, không tăng shadow.
+Thang khoảng cách chính: `4 / 8 / 12 / 16 / 24 / 32px`. Trong nhóm dùng 8–16px; giữa nhóm nghiệp vụ dùng 24px. Label cách control 6–8px; helper/error nằm sát control. Căn các khối cùng cấp theo **cùng mép trái/phải** của vùng chứa; không thêm padding riêng cho bộ lọc khiến nó thụt vào so với bảng. Dùng `min-width: 0` cho con flex/grid và kiểm tra nội dung tiếng Việt dài.
 
-### Z-index
+Control thường cao 40px, vùng chạm mobile ít nhất 44px; **control bộ lọc bảng cao 48px** theo mục 5. Radius control 6px, card/bảng 8px, overlay theo component hiện hành. Không tự tạo bóng, màu hay khoảng cách rời rạc trong từng page khi đã có token.
 
-| Lớp              | Giá trị |
-| ---------------- | ------: |
-| Header           |      30 |
-| Sidebar          |      40 |
-| Dropdown / menu  |     999 |
-| PWA banner       |    2200 |
-| Blocking loading |    9999 |
+## 3. Khung trang và nhịp nội dung
 
----
+Sử dụng shell hiện hành, không dựng sidebar/topbar riêng. Trình tự trang danh sách: breadcrumb → tiêu đề và hành động chính → tab/tóm tắt nếu có → bộ lọc → bảng → phân trang. Tiêu đề và mô tả cùng một vùng; hành động chính ở bên phải khi đủ chỗ, xuống dòng có trật tự trên màn hẹp.
 
-## 6. Motion
+Trang chi tiết: tóm tắt đối tượng và trạng thái trước, tiếp đến việc người dùng cần làm, rồi dữ liệu hỗ trợ/lịch sử. Thông tin quyết định thao tác phải thấy được trước khi xác nhận. Không thêm card/viền cho từng dòng thông tin; card chỉ giúp phân biệt nhóm có ý nghĩa. Không để vùng trống lớn chỉ vì một nhóm bốn cột chứa một giá trị dài.
 
-| Token   | Thời gian |
-| ------- | --------: |
-| Instant |      90ms |
-| Fast    |     140ms |
-| Normal  |     200ms |
-| Slow    |     280ms |
+| Bề rộng      | Bố cục thường dùng                                                                                          |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| `≥1280px`    | Sidebar cố định; trang có padding khoảng 24px; nhóm dữ liệu có thể 2–4 cột khi nội dung đủ ngắn.            |
+| `980–1279px` | Sidebar theo shell hiện hành; giảm số cột theo **bề rộng vùng nội dung thực**, không chỉ viewport.          |
+| `768–979px`  | Điều hướng dạng drawer; các nhóm dài chuyển 1–2 cột.                                                        |
+| `<768px`     | Một cột cho form và bộ lọc; thao tác có vùng chạm phù hợp; bảng dùng card hoặc cuộn trong chính khung bảng. |
 
-Easing:
+Kiểm tra ở `1440`, `1024`, `768`, `390` và `320px`; kiểm tra cả `document.scrollWidth` **và** vùng bảng. Không che lỗi bằng `overflow-x: hidden` ở cấp trang. Tooltip, menu, drawer và bàn phím mobile không được làm mất hành động chính.
 
-- Standard: `cubic-bezier(0.4, 0, 0.2, 1)`
-- Out: `cubic-bezier(0.16, 1, 0.3, 1)`
-- In: `cubic-bezier(0.4, 0, 1, 1)`
+## 4. Tác vụ dài: chia thành bước có mục tiêu
 
-Quy tắc:
+Khi form/chi tiết có hơn hai nhóm nghiệp vụ hoặc người dùng phải xử lý tuần tự, dùng **các bước hoặc tab có nhãn hành động**. Mỗi lần tập trung vào một phần việc; giữ tóm tắt đối tượng, trạng thái và tiến độ ở đầu để người dùng không mất ngữ cảnh. Cho phép quay lại xem bước trước nếu nghiệp vụ cho phép, giữ dữ liệu đã nhập, và hiển thị rõ vì sao bước tiếp theo chưa thể làm. Chuyển bước không tự phát sinh mutation.
 
-- Chỉ animate `opacity`, `transform`, `width`, `margin-left` khi cần.
-- Không animate layout lớn gây giật.
-- Luôn tôn trọng `prefers-reduced-motion`.
-- Không dùng animation để che loading chậm.
+Thứ tự điển hình của phiếu xuất: **quét và đối chiếu → ghi nhận xuất kho → xem/in nhãn**. Lịch sử, chứng từ đính kèm và thông tin ít dùng có thể ở nhóm mở rộng riêng; không chen vào luồng quyết định chính. Nếu một bước vẫn rất dài, tách danh sách và bộ điều khiển bằng tiêu đề phụ có ý nghĩa; chỉ một vùng cuộn chính trong drawer. Không khóa hay ẩn trạng thái lỗi quan trọng ở một bước khác.
 
----
+## 5. Bộ lọc, bảng và phân trang — theo bảng SKU
 
-## 7. Iconography
+Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-table-style.md) và `src/modules/master-data/pages/sku-list.css`. Không sử dụng mục Data table, filters & pagination của UI Kit để thay các số đo dưới đây.
 
-- Bộ icon chính: **Flaticon Uicons** qua `@flaticon/flaticon-uicons`.
-- Kích thước chuẩn: `16 / 18 / 20px`.
-- Icon trong button phải cùng màu chữ, không tự đổi màu.
-- Icon-only button phải có `aria-label`.
-- Không trộn icon từ nhiều bộ khác nhau trong cùng một màn hình.
-- Không dùng emoji làm icon nghiệp vụ.
+### Bộ lọc
 
----
+- Một hàng điều khiển nằm **trực tiếp trên bảng**, cùng lề trái/phải với bao bảng; gap `12px`. Không có card viền quanh bộ lọc, tiêu đề bộ lọc hoặc dải chip lặp lại điều kiện.
+- Ô tìm kiếm rộng hơn ô chọn và lọc khi nhập. Ô chọn hiển thị tên trường cùng giá trị trong ô, ví dụ `Trạng thái: Tất cả`; không thêm hàng label phía trên.
+- Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-control` (`6px`); focus dùng `--ops-link` và quầng màu link 13%.
+- Chỉ hiện `Xóa lọc` khi đang có điều kiện lọc. Khi hẹp, các ô xuống hàng, ô tìm kiếm chiếm trọn hàng đầu; vùng lọc không làm trang tràn ngang.
 
-## 8. Quy tắc component nền tảng
+### Bảng
 
-### Button
+| Thành phần         | Quy cách bắt buộc                                                                                                                                                |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bao bảng           | Nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-card` (`8px`); đầu bảng chạm mép bao, không có padding bao quanh.                                   |
+| Đầu bảng           | Nền **`#d2edf7`**, chữ `--ops-muted`, **16/24px, weight 800**, uppercase, letter spacing `0.02em`. Nếu thêm token riêng cho nền này, giữ nguyên giá trị đã chốt. |
+| Ô đầu và ô dữ liệu | Padding dọc `12px`, ngang `18px`; ngoại lệ cột STT/hành động theo bảng SKU khi cần; căn giữa theo chiều dọc, đường chia `1px solid --ops-line`.                  |
+| Hàng dữ liệu       | Tối thiểu khoảng `68px` khi có biểu tượng `44px`; nội dung có thể cao hơn khi xuống dòng.                                                                        |
+| Chữ                | `--ops-text`, **14/22px**; mã chính `--ops-heading`, weight 700.                                                                                                 |
+| Biểu tượng mã      | Khung khoảng `44px`, nền `--ops-pale`, màu `--ops-link`, cách mã `12px`.                                                                                         |
+| Trạng thái         | Pill cao `24px`, radius `20px`, chữ `11px`, chấm `7px`; dùng token semantic tương ứng.                                                                           |
+| Hover/focus        | Hover pha `55% --ops-pale` với `--ops-surface`; focus bàn phím nhìn thấy rõ.                                                                                     |
 
-| Appearance | Dùng khi                       |
-| ---------- | ------------------------------ |
-| `filled`   | Hành động chính của vùng       |
-| `tonal`    | Hành động phụ, ít rủi ro       |
-| `outlined` | Hành động trung tính           |
-| `text`     | Hành động nhẹ, trong bảng/menu |
+Mỗi bảng phải có **kế hoạch độ rộng cho mọi cột**, tổng tỷ lệ `100%`. Cột bỏ trống độ rộng có thể hút toàn bộ phần dư và tạo khoảng trắng sai nhịp. Tên cột, thứ tự và nghiệp vụ của từng màn được giữ theo API, không sao chép tên cột SKU sang module khác. Cột thao tác dùng `RowActionButton`/`RowActionGroup` hiện hành; nhãn Xem/Chi tiết rõ, icon-only có accessible name, action không chỉ xuất hiện khi hover trên thiết bị chạm.
 
-- Chiều cao: `40px`; touch target tối thiểu `44px`.
-- Không có elevation mặc định.
-- Loading: disable + spinner + giữ nguyên width nếu có thể.
-- Nút destructive dùng `color="error"`, luôn có confirm.
+Khi khung hẹp, dùng `ResponsiveDataTable` chuyển card **hoặc** đặt chiều rộng tối thiểu và cuộn ngang có chủ đích trong khung bảng. Không ép chữ thành các cột dọc; không làm tràn cấp trang. Với bảng rộng trên tablet, ưu tiên cột nhận diện + thông tin quyết định; nếu cuộn, người dùng phải nhận ra vùng có thể cuộn. Sort có trạng thái và `aria-sort`; loading, rỗng, không có kết quả và lỗi tải là các trạng thái khác nhau.
 
-### Input / Form field
+### Phân trang
 
-- Label phía trên, size `13px`.
-- Control cao `40px`, radius `6px`, padding ngang `14px`.
-- Placeholder không thay thế label.
-- Lỗi hiển thị ngay dưới field, màu `--wms-error`.
-- Required có dấu `*` và `aria-required`.
-- Không đổi border/focus ring theo page.
+Chân bảng có viền trên `1px solid --ops-line`, padding `14px 16px`. Nhóm `Hiển thị ...` và chọn số dòng/trang ở bên trái, gap `14px`; nút chuyển trang ở bên phải. Khi hẹp, nhóm trái được xuống dòng và điều hướng vẫn nằm về phía phải. Giữ điều kiện lọc/sắp xếp khi vào chi tiết rồi quay lại nếu luồng hiện hành hỗ trợ.
 
-### Card
+## 6. Drawer bên phải, dialog và bố cục chi tiết
 
-- Radius `8px`, padding `16px` (mobile) / `24px` (desktop).
-- Title `18px/600`.
-- Card không lồng quá 2 cấp.
-- Card trong dashboard có thể có accent trái theo semantic, nhưng phải dùng token.
+Dùng **drawer bên phải** cho xem chi tiết, chỉnh sửa hoặc quy trình nhiều phần cần giữ ngữ cảnh trang danh sách. Dùng dialog ở giữa cho quyết định ngắn, xác nhận thao tác nguy hiểm hoặc form thật sự ngắn. Drawer điều hướng mobile là một thành phần khác, không áp kích thước drawer nghiệp vụ cho menu.
 
-### Badge / Status
+| Phần        | Quy tắc                                                                                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chiều rộng  | Edit thường khoảng `480px`, detail thường khoảng `640px` theo kit; tác vụ nhiều bước/bảng có thể mở đến khoảng `800–820px` khi có lý do. Luôn `max-width: 100vw`; trên điện thoại chiếm đủ bề ngang. |
+| Header      | Tiêu đề, định danh/trạng thái cần thiết và nút đóng có nhãn; header giữ nguyên vị trí khi cuộn.                                                                                                      |
+| Nội dung    | **Một vùng cuộn dọc chính**; padding ngang cùng lề giữa header/body/footer, khoảng cách nhóm 16–24px; metadata ngắn 2 cột, dài hoặc mobile 1 cột.                                                    |
+| Footer      | Chỉ đặt hành động cấp drawer nếu cần; giữ thấy được mà không che nội dung, tính cả safe area/bàn phím mobile. Action riêng của bước ở gần nội dung bước.                                             |
+| Dữ liệu dài | Mã, địa chỉ, tên người nhận có `min-width: 0`, wrap/copy được; không đẩy cột bên cạnh hoặc làm tràn drawer.                                                                                          |
+| Trạng thái  | Có loading, lỗi kèm thử lại khi thích hợp, rỗng và quyền truy cập; không để drawer trắng.                                                                                                            |
 
-Tone: `primary | success | warning | error | info | neutral`.
+Drawer/modal phải có tên truy cập, focus vào nội dung phù hợp khi mở, trap focus nếu modal, Escape/backdrop theo tình trạng thay đổi chưa lưu, trả focus về nút mở khi đóng. Confirm nêu **đối tượng + hành động + hậu quả**, nút xác nhận có động từ cụ thể. Không lồng nhiều drawer cùng lúc; những dialog xác nhận ngắn mở từ drawer chỉ dùng khi nghiệp vụ cần. Không để toast che nút xác nhận trong overlay.
 
-- Luôn có text, không chỉ chấm màu.
-- Nền soft, chữ đậm tương ứng.
-- Không dùng badge để thay thế button.
+## 7. Form và hành động
 
-### Dialog / Drawer
+Form dùng label phía trên control; placeholder chỉ gợi ý. Nhãn bắt buộc có `*`, lỗi nằm dưới đúng field và giữ dữ liệu đã nhập. Nhóm field theo mục tiêu nghiệp vụ; hai cột chỉ khi mỗi field còn đủ chỗ đọc. Hàng SKU động đặt **SKU, số lượng và Xóa dòng cùng một hàng điều khiển** ở desktop; căn nút theo thân input, không theo đỉnh label hoặc dòng helper. Trên mobile xếp dọc theo thứ tự nhập, nút xóa vẫn gắn rõ với dòng tương ứng.
 
-- Dialog radius `12px`; mobile sheet `16px`.
-- Title `18px/600`, footer căn phải.
-- Escape đóng, backdrop đóng được (trừ khi có thay đổi chưa lưu).
-- Focus trap + trả focus về trigger.
-- Destructive confirm phải nêu rõ đối tượng bị ảnh hưởng.
+Chỉ một primary cho quyết định chính của vùng. Nút đang xử lý giữ kích thước, có spinner/nhãn phù hợp và chặn gửi lặp. Hành động nguy hiểm tách khỏi hành động chính và cần confirm. Nếu nút disabled, lý do phải đọc được ở gần đó. Giữ hành động quan trọng hiển thị bằng chữ; icon-only chỉ dùng khi ý nghĩa đã quen thuộc và có `aria-label`.
 
-### Table
+## 8. Trạng thái màn hình và nội dung
 
-- Header nền `--wms-bg-subtle`, chữ `13px/600`.
-- Cell padding `10px`, font `13px`.
-- Sortable có icon và `aria-sort`.
-- Row action cố định bên phải nếu bảng nhiều cột.
-- Mobile: chuyển card theo `ResponsiveDataTable`, không bóp cột.
+Loading giữ khung ổn định; rỗng đưa bước tiếp theo; không có kết quả lọc cho cách xóa lọc; lỗi API có cách thử lại; thiếu quyền giải thích rõ; dữ liệu một phần ghi rõ phần còn thiếu. Không dùng toast ba giây để thay cho lỗi cần người dùng sửa hoặc lỗi làm chặn tác vụ. Không hiển thị số `0` giả khi query còn tải.
 
----
+Nhãn giao diện dịch qua i18n. **Không đưa tên cột SQL/API thô ra UI**: ví dụ `sku_code` → `Mã SKU`, `required_qty` → `Số lượng yêu cầu`, `recipient_name` → `Người nhận`. Tên cột kỹ thuật chỉ nằm trong hướng dẫn định dạng file nâng cao hoặc tài liệu tích hợp. Ngày hiển thị theo `dd/MM/yyyy` khi phù hợp nghiệp vụ; số theo locale người dùng. Kiểm tra nhãn tiếng Việt/Anh dài trước khi chốt độ rộng.
 
-## 9. Do / Don't
+## 9. Thông báo nổi toàn cục — theo HTML người dùng cung cấp
 
-### Nên
+Sử dụng **một** `<Toaster>` Sonner toàn ứng dụng trong `src/app/providers/AppProviders.tsx`, style ở `src/index.css`. Mẫu `TOAST_REFERENCE_LOCKED_1.html` chốt hình thức/hành vi; mã demo độc lập trong HTML không được chép nguyên vào React (đặc biệt không dùng `innerHTML` với dữ liệu thông báo).
 
-- Dùng `UiButton`, `UiTextField`, `UiCard`, `UiStatusBadge`, `UiDialog`.
-- Dùng `--wms-*` cho mọi màu.
-- Dùng `SPACING`, `RADIUS`, `TYPOGRAPHY` trong `sx`.
-- Kiểm tra cả light và dark mode.
-- Kiểm tra 3 viewport: 1440, 768, 390.
+| Thuộc tính  | Chuẩn                                                                                                                                                           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vị trí      | Góc **trên bên phải**; desktop `top: 84px`, `right: clamp(12px, 2.2vw, 32px)` theo vùng hiển thị; mobile `top: 74px`, `right: 12px`.                            |
+| Kích thước  | Rộng tối đa `390px`, không vượt `100vw - 24px`; khoảng cách giữa toast `10px`; toast mới ở trên.                                                                |
+| Hình thức   | Nền surface, viền nhẹ, radius `13px`, shadow nhẹ; icon trạng thái trong vòng `30px`; title `14px/700`, mô tả `13px` (mobile `12px`), nút đóng rõ và focus được. |
+| Trạng thái  | `success`, `error`, `warning`, `info`; màu accent nhất quán với ý nghĩa, đi kèm biểu tượng và chữ.                                                              |
+| Chuyển động | Vào từ bên phải `350ms`, hiển thị `3000ms`, ra bên phải `300ms`; thanh tiến độ cao `3px` đếm ngược. `prefers-reduced-motion` bỏ chuyển động vào/ra.             |
+| Tương tác   | Có nút đóng thủ công, cho vuốt sang phải khi nền tảng hỗ trợ; toast không chặn thao tác ở vùng ngoài nó. Không tự chuyển focus sang toast.                      |
+| Truy cập    | Thông báo thường dùng `status`/live polite; lỗi cần chú ý có `alert` phù hợp. Lỗi chặn tác vụ phải tồn tại thêm trong form/banner.                              |
 
-### Không nên
+Chỉ báo thành công **sau** phản hồi thành công; tránh hai toast cho cùng một sự kiện. Nội dung ngắn, nêu kết quả và bước tiếp theo nếu cần, không lộ mã lỗi kỹ thuật. Khi drawer/dialog đang mở, kiểm tra toast không che CTA, nút đóng hoặc field quan trọng; nếu va chạm, điều chỉnh vị trí/giới hạn hiển thị của overlay đó. Kiểm tra cả light/dark và mobile.
 
-- Không hard-code `#hex`, `rgb()`, `px` màu trong page.
-- Không tự tạo `ThemeProvider` thứ hai.
-- Không thêm thư viện UI mới khi chưa được duyệt.
-- Không dùng `!important` để sửa style.
-- Không tạo CSS toàn cục mới cho một module.
-- Không dùng màu Vuexy tím `#7367F0` cho màn hình mới.
+## 10. Cách thực hiện và kiểm tra màn hình mới
 
----
+1. Xác định công việc chính, đối tượng, quyền, dữ liệu quyết định, trạng thái lỗi và bề rộng nội dung thực. Chọn mẫu trang, bảng, drawer hoặc dialog theo mục 3–9.
+2. Dùng token và component hiện có. Nếu thiếu biến thể, mở rộng component chung có chủ đích; không tạo theme thứ hai, CSS toàn cục riêng cho module, hoặc thư viện icon/UI song song.
+3. Kiểm tra từng bước nghiệp vụ, loading/empty/error/no-permission, keyboard, focus, đóng overlay, nội dung dài, tiếng Việt/Anh, light/dark.
+4. Kiểm tra `1440 / 1024 / 768 / 390 / 320px`: mép lọc và bảng, bảng cuộn trong khung, drawer không tràn, footer không che input khi hiện bàn phím, toast không che CTA.
+5. Chạy kiểm tra phù hợp với phạm vi: `npm run typecheck`, kiểm thử liên quan, `npm run lint`, `npm run ui:tokens`, `npm run ui:components`, `git diff --check`. Chỉ báo đạt những kiểm tra đã thực sự chạy; nếu gate chung lỗi vì file ngoài phạm vi, nêu rõ nguyên nhân.
 
-## 10. Checklist trước khi merge UI mới
-
-- [ ] Màu lấy từ token, không có hex trong page.
-- [ ] Font, size, weight đúng bảng typography.
-- [ ] Spacing/radius/shadow đúng token.
-- [ ] Có đủ trạng thái loading / empty / error / no-permission.
-- [ ] Có keyboard focus và `aria-label` cho icon-only.
-- [ ] Kiểm tra light + dark.
-- [ ] Kiểm tra 1440 / 768 / 390, không tràn ngang cấp trang.
-- [ ] Không tạo theme provider hoặc CSS toàn cục mới.
-- [ ] `yarn ui:tokens`, `yarn ui:styles`, `yarn ui:components` pass.
+**Nguồn triển khai hiện hành:** `src/shared/ui/tokens/operations.css`, `src/shared/ui/tokens/primitives.ts`, `src/shared/ui/theme/`, `src/shared/ui/components/UiDialog.tsx`, `src/shared/components/data-display/ResponsiveDataTable.tsx`, `src/modules/master-data/pages/sku-list.css`, `src/app/providers/AppProviders.tsx`, `src/index.css`. Các nguồn này giúp tìm đúng nơi sửa code; tài liệu này chốt quy tắc thiết kế. Khi code và quy tắc lệch nhau, sửa cùng một thay đổi và ghi rõ quyết định thay thế.

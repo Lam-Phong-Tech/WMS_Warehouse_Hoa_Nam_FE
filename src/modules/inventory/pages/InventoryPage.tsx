@@ -63,17 +63,24 @@ import type {
 } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
-import {
-  ActionButton,
-  ActionIconButton,
-  RowActionButton,
-} from "@/shared/components/actions";
+import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 import "./inventory-page.css";
 
 const SEARCH_DEBOUNCE_MS = 250;
+const TABLE_HEADER_STYLE = {
+  background: "var(--inv-table-header)",
+  color: "var(--ops-muted)",
+  fontSize: 16,
+  fontWeight: 800,
+  lineHeight: "24px",
+  letterSpacing: "0.02em",
+  textTransform: "uppercase",
+  padding: "12px 18px",
+  borderBottom: "1px solid var(--ops-line)",
+} as const;
 
 function pageSizeOptions(current: number) {
   return MVP_PAGE_SIZE_OPTIONS.includes(
@@ -251,7 +258,7 @@ export default function InventoryPage() {
     {
       key: "stt",
       header: "STT",
-      width: 60,
+      width: "5%",
       hideOnMobile: true,
       render: (row) =>
         mvpRowNumber(balancePage, balancePerPage, rowIndexOf(balances, row)),
@@ -259,39 +266,18 @@ export default function InventoryPage() {
     {
       key: "sku",
       header: "SKU",
-      // Ô này chứa chip mã (mã SKU dài nhất của hệ ~17 ký tự monospace ≈ 130px)
-      // + nút sao chép (34px) + khoảng cách. 140px cũ không đủ chỗ nên nút sao
-      // chép nằm hẳn ngoài vùng cắt của `.hn-truncate`, chỉ ló ra một mẩu bo
-      // góc trông như ký tự lạ. 190px đủ cho cả hai mà không phải cắt chữ.
-      width: 190,
+      width: "15%",
       sortAccessor: (row) => row.sku,
       render: (row) => (
-        // `minWidth: 0` cho cả hàng flex lẫn chip mã: thiếu nó thì phần tử flex
-        // giữ nguyên bề ngang nội dung và đẩy nút sao chép ra khỏi ô thay vì
-        // để chip mã tự cắt bằng "…".
-        <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{ alignItems: "center", minWidth: 0 }}
-        >
-          <CodeText>
-            <SkuLink code={row.sku} />
-          </CodeText>
-          <ActionIconButton
-            kind="copy"
-            sx={{ flexShrink: 0 }}
-            onClick={(event) => {
-              event.stopPropagation();
-              void navigator.clipboard?.writeText(row.sku || EMPTY_TEXT);
-            }}
-          />
-        </Stack>
+        <CodeText>
+          <SkuLink code={row.sku} />
+        </CodeText>
       ),
     },
     {
       key: "name",
       header: t("inventory.balance.colName"),
-      width: 200,
+      width: "20%",
       sortAccessor: (row) => row.name || "",
       render: (row) => (
         <Stack>
@@ -309,7 +295,7 @@ export default function InventoryPage() {
     {
       key: "stockStatus",
       header: t("inventory.balance.colStockStatus"),
-      width: 170,
+      width: "14%",
       sortType: "value",
       sortAccessor: (row) => row.stockStatus,
       render: (row) => (
@@ -327,7 +313,7 @@ export default function InventoryPage() {
     {
       key: "available",
       header: t("inventory.balance.colAvailable"),
-      width: 110,
+      width: "9%",
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.available,
@@ -336,71 +322,16 @@ export default function InventoryPage() {
     {
       key: "onHand",
       header: t("inventory.balance.colOnHand"),
-      width: 120,
+      width: "9%",
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.onHand,
       render: (row) => formatQty(row.onHand, row.uom),
     },
     {
-      // WWHN-191: tổng theo sổ cái (sum stock_movements.qty_delta) — vế còn lại
-      // của phép đối soát. Trước đây chỉ pass-through trong service, nay hiện
-      // luôn cạnh "Tồn hiện có" để người dùng thấy cả 2 số đang so với nhau.
-      key: "ledgerTotal",
-      header: t("inventory.balance.colLedger"),
-      width: 130,
-      align: "right",
-      sortType: "value",
-      sortAccessor: (row) => row.ledgerTotal,
-      render: (row) => formatQty(row.ledgerTotal, row.uom),
-    },
-    {
-      // Chênh lệch có dấu = tồn hiện có - sổ cái. Đây là con số đứng sau tag
-      // "Đối soát" nên tô màu theo hướng lệch, 0 để mờ cho đỡ nhiễu.
-      key: "variance",
-      header: t("inventory.balance.colVariance"),
-      width: 120,
-      align: "right",
-      sortType: "value",
-      sortAccessor: (row) => row.variance,
-      render: (row) => {
-        if (row.variance === null) return EMPTY_TEXT;
-        if (row.variance === 0) {
-          return (
-            <Box
-              component="span"
-              sx={{
-                color: "var(--inv-muted)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              0
-            </Box>
-          );
-        }
-        return (
-          <Box
-            component="span"
-            sx={{
-              color:
-                row.variance > 0
-                  ? SEMANTIC_LIGHT.warningText
-                  : SEMANTIC_LIGHT.errorText,
-              fontVariantNumeric: "tabular-nums",
-              fontWeight: 600,
-            }}
-          >
-            {row.variance > 0
-              ? `+${formatQuantity(row.variance)}`
-              : formatQuantity(row.variance)}
-          </Box>
-        );
-      },
-    },
-    {
       key: "location",
       header: t("inventory.balance.colSuggestedLocation"),
-      width: 160,
+      width: "12%",
       sortAccessor: (row) => row.containerCode || row.trayCode || "",
       render: (row) => {
         // Danh sách chỉ cần 2 mã định danh để nhận ra ngay "đang ở đâu": mã hộp
@@ -444,7 +375,7 @@ export default function InventoryPage() {
     {
       key: "reconcile",
       header: t("inventory.balance.colReconcile"),
-      width: 140,
+      width: "8%",
       sortType: "value",
       sortAccessor: (row) => row.reconcile,
       render: (row) => (
@@ -481,7 +412,7 @@ export default function InventoryPage() {
     {
       key: "stt",
       header: "STT",
-      width: 60,
+      width: "5%",
       hideOnMobile: true,
       render: (row) =>
         mvpRowNumber(movementPage, movementPerPage, rowIndexOf(movements, row)),
@@ -489,7 +420,7 @@ export default function InventoryPage() {
     {
       key: "time",
       header: t("inventory.movement.colTime"),
-      width: 150,
+      width: "18%",
       sortType: "value",
       sortAccessor: (row) => row.time || "",
       render: (row) => formatDateTime(row.time),
@@ -497,7 +428,7 @@ export default function InventoryPage() {
     {
       key: "type",
       header: t("inventory.movement.colType"),
-      width: 170,
+      width: "19%",
       sortType: "value",
       sortAccessor: (row) => row.type,
       render: (row) => (
@@ -527,14 +458,14 @@ export default function InventoryPage() {
       // Mã SKU dài nhất của hệ (~17 ký tự) chiếm ~130px ở font thân bài; cộng
       // 20px padding của ô là 150px. 120px cũ khiến MỌI mã trong tab này bị cắt
       // bằng "…" dù cột kế bên còn thừa chỗ.
-      width: 160,
+      width: "18%",
       sortAccessor: (row) => row.sku,
       render: (row) => <SkuLink code={row.sku} />,
     },
     {
       key: "qty",
       header: t("inventory.movement.colQtyChange"),
-      width: 140,
+      width: "12%",
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.qty,
@@ -561,7 +492,7 @@ export default function InventoryPage() {
     {
       key: "source",
       header: t("inventory.movement.colSourceDocument"),
-      width: 180,
+      width: "18%",
       sortAccessor: (row) => row.source || "",
       render: (row) => (
         <Stack sx={{ alignItems: "flex-start" }}>
@@ -618,12 +549,6 @@ export default function InventoryPage() {
         showContextBadges={false}
         actions={
           <div className="hn-inventory-actions">
-            <ActionButton
-              kind="refresh"
-              className="hn-inventory-refresh"
-              loading={query.isFetching}
-              onClick={() => void query.refetch()}
-            />
             {isBalance && canTrace ? (
               <ActionButton
                 kind="trace"
@@ -653,13 +578,6 @@ export default function InventoryPage() {
           }
         >
           <div className="hn-inventory-field hn-inventory-search">
-            <label htmlFor="inventory-search">
-              {t(
-                isBalance
-                  ? "inventory.balance.searchAria"
-                  : "inventory.movement.searchAria",
-              )}
-            </label>
             <UiTextField
               id="inventory-search"
               fullWidth
@@ -693,13 +611,6 @@ export default function InventoryPage() {
             />
           </div>
           <div className="hn-inventory-field">
-            <label htmlFor="inventory-type">
-              {t(
-                isBalance
-                  ? "inventory.balance.typeFilterAria"
-                  : "inventory.movement.colType",
-              )}
-            </label>
             <UiSelect
               id="inventory-type"
               fullWidth
@@ -715,37 +626,53 @@ export default function InventoryPage() {
                   ? "inventory.balance.typeFilterPlaceholder"
                   : "inventory.movement.typeFilterPlaceholder",
               )}
-              options={
-                isBalance
-                  ? [
+              options={(isBalance
+                ? [
+                    {
+                      value: "PRODUCT",
+                      label: t("inventory.balance.typeProduct"),
+                    },
+                    {
+                      value: "COMPONENT",
+                      label: t("inventory.balance.typeComponent"),
+                    },
+                  ]
+                : [
+                    {
+                      value: "RECEIPT",
+                      label: t("inventory.movement.typeReceipt"),
+                    },
+                    {
+                      value: "ISSUE",
+                      label: t("inventory.movement.typeIssue"),
+                    },
+                    {
+                      value: "COMPONENT_ISSUE",
+                      label: t("inventory.movement.typeComponentIssue"),
+                    },
+                    {
+                      value: "REVERSAL",
+                      label: t("inventory.movement.typeReversal"),
+                    },
+                  ]
+              ).map((option) => ({
+                ...option,
+                label: (
+                  <>
+                    <span className="hn-inventory-filter-prefix">
                       {
-                        value: "PRODUCT",
-                        label: t("inventory.balance.typeProduct"),
-                      },
-                      {
-                        value: "COMPONENT",
-                        label: t("inventory.balance.typeComponent"),
-                      },
-                    ]
-                  : [
-                      {
-                        value: "RECEIPT",
-                        label: t("inventory.movement.typeReceipt"),
-                      },
-                      {
-                        value: "ISSUE",
-                        label: t("inventory.movement.typeIssue"),
-                      },
-                      {
-                        value: "COMPONENT_ISSUE",
-                        label: t("inventory.movement.typeComponentIssue"),
-                      },
-                      {
-                        value: "REVERSAL",
-                        label: t("inventory.movement.typeReversal"),
-                      },
-                    ]
-              }
+                        t(
+                          isBalance
+                            ? "inventory.balance.typeFilterPlaceholder"
+                            : "inventory.movement.typeFilterPlaceholder",
+                        ).split(":")[0]
+                      }
+                      :{" "}
+                    </span>
+                    {option.label}
+                  </>
+                ),
+              }))}
               onChange={(value) => {
                 if (isBalance) {
                   setSkuType(value as "PRODUCT" | "COMPONENT" | "");
@@ -759,9 +686,6 @@ export default function InventoryPage() {
           </div>
           {isBalance ? (
             <div className="hn-inventory-field">
-              <label htmlFor="inventory-status">
-                {t("inventory.balance.colStockStatus")}
-              </label>
               <UiSelect
                 id="inventory-status"
                 fullWidth
@@ -786,7 +710,17 @@ export default function InventoryPage() {
                     value: "QUARANTINE",
                     label: t("inventory.balance.statusQuarantine"),
                   },
-                ]}
+                ].map((option) => ({
+                  ...option,
+                  label: (
+                    <>
+                      <span className="hn-inventory-filter-prefix">
+                        {t("inventory.balance.colStockStatus")}:{" "}
+                      </span>
+                      {option.label}
+                    </>
+                  ),
+                }))}
                 onChange={(value) => {
                   setStockStatus(value as InventoryStockStatus | "");
                   setBalancePage(1);
@@ -794,37 +728,23 @@ export default function InventoryPage() {
               />
             </div>
           ) : null}
-          <ActionButton
-            kind="reset"
-            disabled={!hasFilters}
-            onClick={resetFilters}
-            className="hn-inventory-reset"
-          />
+          {hasFilters ? (
+            <ActionButton
+              kind="reset"
+              onClick={resetFilters}
+              className="hn-inventory-reset"
+            >
+              {t("reports.filters.clearFilters")}
+            </ActionButton>
+          ) : null}
         </div>
 
         <section
           className="hn-inventory-data"
-          aria-labelledby="inventory-table-title"
+          aria-label={t(
+            isBalance ? "inventory.tab.balances" : "inventory.tab.movements",
+          )}
         >
-          <div className="hn-inventory-data-heading">
-            <h2 id="inventory-table-title">
-              {t(
-                isBalance
-                  ? "inventory.tab.balances"
-                  : "inventory.tab.movements",
-              )}
-            </h2>
-            <span className="hn-inventory-count" aria-live="polite">
-              {t(
-                isBalance
-                  ? "inventory.balance.total"
-                  : "inventory.movement.total",
-                {
-                  count: formatQuantity(pagination.total),
-                },
-              )}
-            </span>
-          </div>
           {query.isError ? (
             <div className="hn-inventory-feedback">
               <ApiErrorAlert
@@ -842,14 +762,8 @@ export default function InventoryPage() {
           <div className="hn-inventory-table">
             {isBalance ? (
               <ResponsiveDataTable<InventoryBalanceRow>
-                headerCellStyle={{
-                  background: "var(--inv-pale)",
-                  color: "var(--inv-ink)",
-                  fontSize: 12,
-                  padding: "10px 9px",
-                  borderColor: "var(--inv-line)",
-                  borderBottom: "1px solid var(--inv-line)",
-                }}
+                headerCellStyle={TABLE_HEADER_STYLE}
+                actionColumnWidth="8%"
                 rowKey={(row) => row.id}
                 columns={balanceColumns}
                 rows={balances}
@@ -870,15 +784,8 @@ export default function InventoryPage() {
               />
             ) : (
               <ResponsiveDataTable<StockMovementRow>
-                headerCellStyle={{
-                  background: "var(--inv-pale)",
-                  color: "var(--inv-ink)",
-                  fontSize: 12,
-                  padding: "10px 9px",
-                  borderColor: "var(--inv-line)",
-                  borderBottom: "1px solid var(--inv-line)",
-                }}
-                actionColumnWidth={128}
+                headerCellStyle={TABLE_HEADER_STYLE}
+                actionColumnWidth="10%"
                 rowKey={(row) => row.id}
                 columns={movementColumns}
                 rows={movements}
@@ -895,6 +802,7 @@ export default function InventoryPage() {
                     <span>
                       <RowActionButton
                         kind="trace"
+                        iconOnly={false}
                         disabled={!canTrace || !row.id}
                         onClick={() => handleOpenTrace(String(row.id))}
                       >
@@ -908,9 +816,9 @@ export default function InventoryPage() {
           </div>
           <div className="hn-inventory-footer">
             <div className="hn-inventory-page-size">
-              <label htmlFor="inventory-page-size">
-                {t("inventory.balance.pageSizeAria")}
-              </label>
+              <span aria-live="polite">
+                {t("shared.table.totalRecords", { total: pagination.total })}
+              </span>
               <UiSelect
                 id="inventory-page-size"
                 value={perPage}
@@ -919,7 +827,7 @@ export default function InventoryPage() {
                 minWidth={76}
                 options={pageSizeOptions(perPage).map((size) => ({
                   value: size,
-                  label: String(size),
+                  label: t("shared.table.perPage", { size }),
                 }))}
                 onChange={(value) => {
                   if (isBalance) {

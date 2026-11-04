@@ -185,7 +185,10 @@ export function BalanceDetailModal({
 
   const subledgerQuery = useBalanceSubledger(String(balance.id));
   const subledger = subledgerQuery.data;
-  const [selectedBox, setSelectedBox] = useState<{ id: string; code: string } | null>(null);
+  const [selectedBox, setSelectedBox] = useState<{
+    id: string;
+    code: string;
+  } | null>(null);
 
   const movementColumns: ResponsiveTableColumn<StockMovementRow>[] = [
     {
@@ -367,7 +370,9 @@ export function BalanceDetailModal({
           >
             <CodeText>{code}</CodeText>
           </button>
-        ) : <CodeText>{code}</CodeText>;
+        ) : (
+          <CodeText>{code}</CodeText>
+        );
       },
     },
     {
@@ -423,258 +428,270 @@ export function BalanceDetailModal({
 
   return (
     <>
-    <UiDialog
-      {...dialog.dialogProps}
-      className="hn-inventory-dialog"
-      maxWidth="lg"
-      fullWidth
-      title={
-        <Box sx={{ position: "relative", pr: 6 }}>
-          {t("inventory.detail.title", { sku: balance.sku })}
-          <ActionIconButton
-            className="hn-inventory-dialog-close"
-            kind="close"
-            label={t("common.close")}
-            onClick={dialog.close}
-            sx={{ position: "absolute", right: -8, top: -4 }}
-          />
-        </Box>
-      }
-    >
-      <Stack spacing={2} className="hn-inventory-dialog-body">
-        <Box
-          className="hn-inventory-detail-panel"
-          sx={{
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: "var(--ops-radius-card)",
-            p: 2,
-          }}
-        >
-          <Grid container spacing={2}>
-            <DetailField
-              label="SKU"
-              value={
-                <Stack
-                  direction="row"
-                  spacing={0.5}
-                  useFlexGap
-                  sx={{ alignItems: "center" }}
-                >
-                  <CodeText>{balance.sku}</CodeText>
-                  <ActionIconButton
-                    kind="copy"
-                    label={t("inventory.detail.copy")}
-                    onClick={() => {
-                      void navigator.clipboard?.writeText(balance.sku);
-                    }}
-                  />
-                </Stack>
-              }
+      <UiDialog
+        {...dialog.dialogProps}
+        className="hn-inventory-dialog"
+        maxWidth="lg"
+        fullWidth
+        title={
+          <Box sx={{ position: "relative", pr: 6 }}>
+            {t("inventory.detail.title", { sku: balance.sku })}
+            <ActionIconButton
+              className="hn-inventory-dialog-close"
+              kind="close"
+              label={t("common.close")}
+              onClick={dialog.close}
+              sx={{ position: "absolute", right: -8, top: -4 }}
             />
-            <DetailField
-              label={t("inventory.detail.fieldName")}
-              value={balance.name}
-            />
-            <DetailField
-              label={tUi("updatedUi.text_19c608bfa103")}
-              value={balance.warehouse}
-            />
-            <DetailField
-              label={t("inventory.detail.fieldStockStatus")}
-              value={
-                <UiStatusBadge
-                  tone={
-                    balance.stockStatus === "AVAILABLE" ? "success" : "warning"
-                  }
-                  label={businessLabel(
-                    INVENTORY_STOCK_STATUS_LABELS,
-                    balance.stockStatus,
-                    t("inventory.fallback.status"),
-                  )}
-                />
-              }
-            />
-            <DetailField
-              label={t("inventory.detail.fieldReconcile")}
-              value={
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  useFlexGap
-                  sx={{ alignItems: "center" }}
-                >
+          </Box>
+        }
+      >
+        <Stack spacing={2} className="hn-inventory-dialog-body">
+          <Box
+            className="hn-inventory-detail-panel"
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "var(--ops-radius-card)",
+              p: 2,
+            }}
+          >
+            <Grid container spacing={2}>
+              <DetailField
+                label="SKU"
+                value={
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    useFlexGap
+                    sx={{ alignItems: "center" }}
+                  >
+                    <CodeText>{balance.sku}</CodeText>
+                    <ActionIconButton
+                      kind="copy"
+                      label={t("inventory.detail.copy")}
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(balance.sku);
+                      }}
+                    />
+                  </Stack>
+                }
+              />
+              <DetailField
+                label={t("inventory.detail.fieldName")}
+                value={balance.name}
+              />
+              <DetailField
+                label={tUi("updatedUi.text_19c608bfa103")}
+                value={balance.warehouse}
+              />
+              <DetailField
+                label={t("inventory.detail.fieldStockStatus")}
+                value={
                   <UiStatusBadge
-                    tone={reconcileColor(balance.reconcile)}
+                    tone={
+                      balance.stockStatus === "AVAILABLE"
+                        ? "success"
+                        : "warning"
+                    }
                     label={businessLabel(
-                      RECONCILE_STATUS_LABELS,
-                      balance.reconcile,
-                      t("inventory.fallback.notReconciled"),
+                      INVENTORY_STOCK_STATUS_LABELS,
+                      balance.stockStatus,
+                      t("inventory.fallback.status"),
                     )}
                   />
-                  {balance.reconcileNote ? (
-                    // UAT TC_UI_11: mã máy (BALANCE_NOT_EQUAL_…) phải qua map
-                    // nhãn tiếng Việt, không in thô ra màn nghiệp vụ.
-                    <UiText variant="caption">
-                      {enumLabelOrText(
-                        RECONCILE_REASON_LABELS,
-                        balance.reconcileNote,
+                }
+              />
+              <DetailField
+                label={t("inventory.detail.fieldReconcile")}
+                value={
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    sx={{ alignItems: "center" }}
+                  >
+                    <UiStatusBadge
+                      tone={reconcileColor(balance.reconcile)}
+                      label={businessLabel(
+                        RECONCILE_STATUS_LABELS,
+                        balance.reconcile,
+                        t("inventory.fallback.notReconciled"),
                       )}
-                    </UiText>
-                  ) : null}
-                </Stack>
-              }
-            />
-            <DetailField
-              label={t("inventory.detail.fieldUpdated")}
-              // UAT TC_UI_11: từng in nguyên chuỗi ISO 2026-09-09T04:04:25+07:00.
-              value={formatDateTime(balance.dataAsOf || balance.updatedAt)}
-            />
-            {/* DR-LOC-001: 3 mảnh thông tin vị trí độc lập, tách riêng vì mỗi
+                    />
+                    {balance.reconcileNote ? (
+                      // UAT TC_UI_11: mã máy (BALANCE_NOT_EQUAL_…) phải qua map
+                      // nhãn tiếng Việt, không in thô ra màn nghiệp vụ.
+                      <UiText variant="caption">
+                        {enumLabelOrText(
+                          RECONCILE_REASON_LABELS,
+                          balance.reconcileNote,
+                        )}
+                      </UiText>
+                    ) : null}
+                  </Stack>
+                }
+              />
+              <DetailField
+                label={t("inventory.detail.fieldUpdated")}
+                // UAT TC_UI_11: từng in nguyên chuỗi ISO 2026-09-09T04:04:25+07:00.
+                value={formatDateTime(balance.dataAsOf || balance.updatedAt)}
+              />
+              {/* DR-LOC-001: 3 mảnh thông tin vị trí độc lập, tách riêng vì mỗi
               mảnh có thời điểm xuất hiện khác nhau — mã hộp có ngay sau nhập
               kho; mã khay và vị trí chỉ có sau khi Putaway confirm, và vị trí
               (mô tả rời, có thể do người xếp khay ghi tay) không nhất thiết
               trùng mã khay. */}
-            <DetailField
-              label={t("inventory.detail.fieldBoxCode")}
-              value={balance.containerCode || t("inventory.detail.noBoxCode")}
-            />
-            <DetailField
-              label={t("inventory.detail.fieldTrayCode")}
-              value={balance.trayCode || t("inventory.detail.noTrayCode")}
-            />
-            <DetailField
-              label={t("inventory.detail.fieldLocation")}
-              value={balance.location || t("inventory.detail.noLocation")}
-            />
-            {/* BE mới chỉ trả last_movement_id (UUID), chưa có movement_no
+              <DetailField
+                label={t("inventory.detail.fieldBoxCode")}
+                value={balance.containerCode || t("inventory.detail.noBoxCode")}
+              />
+              <DetailField
+                label={t("inventory.detail.fieldTrayCode")}
+                value={balance.trayCode || t("inventory.detail.noTrayCode")}
+              />
+              <DetailField
+                label={t("inventory.detail.fieldLocation")}
+                value={balance.location || t("inventory.detail.noLocation")}
+              />
+              {/* BE mới chỉ trả last_movement_id (UUID), chưa có movement_no
               tương ứng — hiển thị rút gọn + cho sao chép thay vì in chuỗi thô.
               Khi BE bổ sung last_movement_no thì đổi sang hiện mã đó. */}
-            <DetailField
-              label={t("inventory.detail.fieldLastMovement")}
-              value={
-                balance.lastMovementId ? (
-                  <CopyableId value={balance.lastMovementId} />
-                ) : (
-                  EMPTY_TEXT
+              <DetailField
+                label={t("inventory.detail.fieldLastMovement")}
+                value={
+                  balance.lastMovementId ? (
+                    <CopyableId value={balance.lastMovementId} />
+                  ) : (
+                    EMPTY_TEXT
+                  )
+                }
+              />
+            </Grid>
+          </Box>
+
+          <Stack className="hn-inventory-stats">
+            <StatBox
+              label={t("inventory.detail.statAvailable")}
+              value={formatQty(balance.available, balance.uom)}
+            />
+            <StatBox
+              label={t("inventory.detail.statOnHand")}
+              value={formatQty(balance.onHand, balance.uom)}
+            />
+            <StatBox
+              label={t("inventory.balance.colLedger")}
+              value={formatQty(balance.ledgerTotal, balance.uom)}
+            />
+            <StatBox
+              label={t("inventory.balance.colVariance")}
+              value={formatQty(balance.variance, balance.uom)}
+            />
+            <StatBox
+              label={t("inventory.detail.statItems")}
+              value={formatQty(balance.serialQty)}
+            />
+            <StatBox
+              label={t("inventory.detail.statBoxes")}
+              value={formatQty(balance.boxQty)}
+            />
+          </Stack>
+
+          {subledgerQuery.isError ? (
+            <ApiErrorAlert
+              error={subledgerQuery.error}
+              title={t("inventory.detail.loadError")}
+              onRetry={() => subledgerQuery.refetch()}
+            />
+          ) : null}
+
+          <div>
+            <SectionTitle>
+              {t("inventory.detail.itemsTitle", {
+                count: formatQuantity(
+                  subledger?.item_count ?? balance.serialQty,
+                ),
+              })}
+            </SectionTitle>
+            <ResponsiveDataTable<RawRecord>
+              headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+              maxBodyHeight="clamp(240px, 45dvh, 520px)"
+              rows={(subledger?.items as RawRecord[]) ?? []}
+              columns={itemColumns}
+              rowKey={(row) =>
+                text(
+                  row.id ?? row.item_id ?? row.item_code,
+                  `item-row-${((subledger?.items as RawRecord[]) ?? []).indexOf(row)}`,
                 )
               }
+              loading={subledgerQuery.isLoading}
+              emptyText={t("inventory.detail.itemsEmpty")}
             />
-          </Grid>
-        </Box>
+          </div>
 
-        <Stack className="hn-inventory-stats">
-          <StatBox
-            label={t("inventory.detail.statAvailable")}
-            value={formatQty(balance.available, balance.uom)}
-          />
-          <StatBox
-            label={t("inventory.detail.statOnHand")}
-            value={formatQty(balance.onHand, balance.uom)}
-          />
-          <StatBox
-            label={t("inventory.detail.statItems")}
-            value={formatQty(balance.serialQty)}
-          />
-          <StatBox
-            label={t("inventory.detail.statBoxes")}
-            value={formatQty(balance.boxQty)}
-          />
+          <div>
+            <SectionTitle>
+              {t("inventory.detail.containersTitle", {
+                count: formatQuantity(
+                  subledger?.container_count ?? balance.boxQty,
+                ),
+              })}
+            </SectionTitle>
+            <ResponsiveDataTable<RawRecord>
+              headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+              maxBodyHeight="clamp(240px, 45dvh, 520px)"
+              rows={(subledger?.containers as RawRecord[]) ?? []}
+              columns={containerColumns}
+              rowKey={(row) =>
+                text(
+                  row.id ?? row.container_id ?? row.container_code,
+                  `container-row-${((subledger?.containers as RawRecord[]) ?? []).indexOf(row)}`,
+                )
+              }
+              loading={subledgerQuery.isLoading}
+              emptyText={t("inventory.detail.containersEmpty")}
+            />
+          </div>
+
+          <div>
+            <SectionTitle>
+              {t("inventory.detail.movementsTitle", {
+                count: movements.length,
+              })}
+            </SectionTitle>
+            <ResponsiveDataTable<StockMovementRow>
+              actionColumnWidth={128}
+              headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
+              maxBodyHeight="clamp(240px, 45dvh, 520px)"
+              rows={movements}
+              columns={movementColumns}
+              rowKey={(row) => row.id}
+              loading={movementsQuery.isLoading}
+              emptyText={t("inventory.detail.movementsEmpty")}
+              renderRowActions={
+                onTraceMovement
+                  ? (row) => (
+                      <RowActionButton
+                        kind="trace"
+                        onClick={() => onTraceMovement(String(row.id))}
+                      >
+                        {t("inventory.detail.trace")}
+                      </RowActionButton>
+                    )
+                  : undefined
+              }
+            />
+          </div>
         </Stack>
-
-        {subledgerQuery.isError ? (
-          <ApiErrorAlert
-            error={subledgerQuery.error}
-            title={t("inventory.detail.loadError")}
-            onRetry={() => subledgerQuery.refetch()}
-          />
-        ) : null}
-
-        <div>
-          <SectionTitle>
-            {t("inventory.detail.itemsTitle", {
-              count: formatQuantity(subledger?.item_count ?? balance.serialQty),
-            })}
-          </SectionTitle>
-          <ResponsiveDataTable<RawRecord>
-            headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
-            maxBodyHeight="clamp(240px, 45dvh, 520px)"
-            rows={(subledger?.items as RawRecord[]) ?? []}
-            columns={itemColumns}
-            rowKey={(row) =>
-              text(
-                row.id ?? row.item_id ?? row.item_code,
-                `item-row-${((subledger?.items as RawRecord[]) ?? []).indexOf(row)}`,
-              )
-            }
-            loading={subledgerQuery.isLoading}
-            emptyText={t("inventory.detail.itemsEmpty")}
-          />
-        </div>
-
-        <div>
-          <SectionTitle>
-            {t("inventory.detail.containersTitle", {
-              count: formatQuantity(
-                subledger?.container_count ?? balance.boxQty,
-              ),
-            })}
-          </SectionTitle>
-          <ResponsiveDataTable<RawRecord>
-            headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
-            maxBodyHeight="clamp(240px, 45dvh, 520px)"
-            rows={(subledger?.containers as RawRecord[]) ?? []}
-            columns={containerColumns}
-            rowKey={(row) =>
-              text(
-                row.id ?? row.container_id ?? row.container_code,
-                `container-row-${((subledger?.containers as RawRecord[]) ?? []).indexOf(row)}`,
-              )
-            }
-            loading={subledgerQuery.isLoading}
-            emptyText={t("inventory.detail.containersEmpty")}
-          />
-        </div>
-
-        <div>
-          <SectionTitle>
-            {t("inventory.detail.movementsTitle", {
-              count: movements.length,
-            })}
-          </SectionTitle>
-          <ResponsiveDataTable<StockMovementRow>
-            actionColumnWidth={128}
-            headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
-            maxBodyHeight="clamp(240px, 45dvh, 520px)"
-            rows={movements}
-            columns={movementColumns}
-            rowKey={(row) => row.id}
-            loading={movementsQuery.isLoading}
-            emptyText={t("inventory.detail.movementsEmpty")}
-            renderRowActions={
-              onTraceMovement
-                ? (row) => (
-                    <RowActionButton
-                      kind="trace"
-                      onClick={() => onTraceMovement(String(row.id))}
-                    >
-                      {t("inventory.detail.trace")}
-                    </RowActionButton>
-                  )
-                : undefined
-            }
-          />
-        </div>
-      </Stack>
-    </UiDialog>
-    {selectedBox && subledger?.warehouse_id ? (
-      <BoxReadDetailDialog
-        containerId={selectedBox.id}
-        warehouseId={subledger.warehouse_id}
-        code={selectedBox.code}
-        onClose={() => setSelectedBox(null)}
-      />
-    ) : null}
+      </UiDialog>
+      {selectedBox && subledger?.warehouse_id ? (
+        <BoxReadDetailDialog
+          containerId={selectedBox.id}
+          warehouseId={subledger.warehouse_id}
+          code={selectedBox.code}
+          onClose={() => setSelectedBox(null)}
+        />
+      ) : null}
     </>
   );
 }

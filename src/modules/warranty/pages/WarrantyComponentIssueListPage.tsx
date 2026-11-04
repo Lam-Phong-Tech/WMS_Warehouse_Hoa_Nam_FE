@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Menu, MenuItem, UiIcon, UiPagination, UiSelect } from "@/shared/ui";
+import { UiIcon, UiPagination, UiSelect } from "@/shared/ui";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
@@ -101,10 +101,6 @@ export default function WarrantyComponentIssueListPage() {
   });
   const [openTarget, setOpenTarget] = useState<OpenTarget | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [rowMenu, setRowMenu] = useState<{
-    anchor: HTMLElement;
-    row: ComponentIssueDocument;
-  } | null>(null);
   const [online, setOnline] = useState(() => navigator.onLine);
 
   useEffect(() => {
@@ -373,13 +369,6 @@ export default function WarrantyComponentIssueListPage() {
             setPage(1);
           }}
         />
-        <aside className="hn-war04-stock-note">
-          <UiIcon name="info" size="sm" />
-          <span>
-            <strong>{tUi("updatedUi.text_9a966c0016ec")}</strong>
-            <small>{tUi("updatedUi.text_d988df33685a")}</small>
-          </span>
-        </aside>
       </div>
       {!online ? (
         <div className="hn-war04-warning" role="status">
@@ -599,16 +588,11 @@ export default function WarrantyComponentIssueListPage() {
                           onClick={(event) => event.stopPropagation()}
                         >
                           <RowActionButton
-                            kind="more"
-                            aria-label={tUi("updatedUi.text_391ce00892b9", {
-                              value0: String(row.component_issue_no || row.id),
-                            })}
-                            aria-haspopup="menu"
-                            aria-expanded={rowMenu?.row.id === row.id}
-                            onClick={(event) =>
-                              setRowMenu({ anchor: event.currentTarget, row })
-                            }
-                          />
+                            kind="view"
+                            onClick={() => openDocument(row)}
+                          >
+                            {t("common.viewDetail")}
+                          </RowActionButton>
                         </RowActionGroup>
                       </td>
                     </tr>
@@ -692,49 +676,6 @@ export default function WarrantyComponentIssueListPage() {
       <p className="hn-war04-footer-note">
         {tUi("updatedUi.text_98a5893d0fce")}
       </p>
-      <Menu
-        anchorEl={rowMenu?.anchor ?? null}
-        open={Boolean(rowMenu)}
-        onClose={() => setRowMenu(null)}
-        slotProps={{ paper: { className: "hn-war04-menu" } }}
-      >
-        <MenuItem
-          onClick={() => {
-            if (rowMenu) openDocument(rowMenu.row);
-            setRowMenu(null);
-          }}
-        >
-          <UiIcon name="eye" size="sm" />
-          {tUi("updatedUi.text_913855b2952b")}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            if (rowMenu)
-              navigate(
-                `/warranty?screen=WAR-03&id=${encodeURIComponent(rowMenu.row.warranty_case_id)}`,
-              );
-            setRowMenu(null);
-          }}
-        >
-          <UiIcon name="document" size="sm" />
-          {tUi("dashboard.insight.warrantyAction")}
-        </MenuItem>
-        {rowMenu ? (
-          <li className="hn-war04-menu-detail" role="presentation">
-            <strong>{tUi("warranty.componentList.colWarehouse")}</strong>
-            <span>
-              {String(
-                warehouseById.get(rowMenu.row.warehouse_id)?.name ??
-                  rowMenu.row.warehouse_id,
-              )}
-            </span>
-            <strong>{tUi("inbound.list.colNote")}</strong>
-            <span>
-              {rowMenu.row.cancel_reason || rowMenu.row.note || EMPTY_TEXT}
-            </span>
-          </li>
-        ) : null}
-      </Menu>
       {createOpen ? (
         <ComponentIssueCasePicker
           onClose={() => setCreateOpen(false)}
@@ -753,6 +694,19 @@ export default function WarrantyComponentIssueListPage() {
           caseId={openTarget.caseId}
           caseCode={openTarget.caseCode}
           caseActive
+          warehouseLabel={String(
+            warehouseById.get(
+              (
+                detailById.get(openTarget.documentId ?? "") ??
+                rows.find((row) => row.id === openTarget.documentId)
+              )?.warehouse_id ?? "",
+            )?.name ?? "",
+          )}
+          onViewCase={() =>
+            navigate(
+              `/warranty?screen=WAR-03&id=${encodeURIComponent(openTarget.caseId)}`,
+            )
+          }
           documentId={openTarget.documentId}
           onClose={() => setOpenTarget(null)}
           onChanged={refreshAll}

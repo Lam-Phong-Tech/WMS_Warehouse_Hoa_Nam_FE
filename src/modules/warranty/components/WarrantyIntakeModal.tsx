@@ -372,22 +372,20 @@ export function WarrantyIntakeModal({
     }
   };
   // Web intake records explicit warehouse ownership for both identification paths.
-  // A singleton lookup is not confirmation: the operator must select and confirm it.
+  // Selecting an authorized warehouse applies its context immediately.
   const warehousesQuery = useActiveWarehouses({ enabled: open });
   const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
-  const [confirmedWarehouseId, setConfirmedWarehouseId] = useState("");
   const warehouseOptions = (warehousesQuery.data ?? []).map((row) => ({
     value: String(row.id),
     label: [row.code ?? row.warehouse_code, row.name ?? row.warehouse_name]
       .filter(Boolean)
       .join(" · "),
   }));
-  const warehouse =
-    !warehousesQuery.isError && selectedWarehouseId === confirmedWarehouseId
-      ? warehousesQuery.data?.find(
-          (row) => String(row.id) === confirmedWarehouseId,
-        )
-      : undefined;
+  const warehouse = !warehousesQuery.isError
+    ? warehousesQuery.data?.find(
+        (row) => String(row.id) === selectedWarehouseId,
+      )
+    : undefined;
   const scanResolutionVersion = useRef(0);
   const [resolvedItem, setResolvedItem] = useState<{
     skuCode?: string;
@@ -560,7 +558,6 @@ export function WarrantyIntakeModal({
   const resetForm = () => {
     toast.dismiss(INTAKE_ERROR_TOAST_ID);
     setSelectedWarehouseId("");
-    setConfirmedWarehouseId("");
     scanResolutionVersion.current++;
     setIdentificationType("IDENTIFIED");
     setItemCode("");
@@ -690,12 +687,6 @@ export function WarrantyIntakeModal({
         WARRANTY_ITEM_NOT_ELIGIBLE: t("warranty.intake.errItemNotEligible"),
         ACTIVE_WARRANTY_EXISTS: t("warranty.intake.errActiveCase"),
       };
-      if (
-        code === "WAREHOUSE_CONTEXT_REQUIRED" ||
-        code === "WAREHOUSE_CONTEXT_MISMATCH"
-      ) {
-        setConfirmedWarehouseId("");
-      }
       const errorMsg =
         intakeMessages[code ?? ""] ??
         `${getApiErrorMessage(error, t("warranty.error.createCase"))}${
@@ -729,7 +720,6 @@ export function WarrantyIntakeModal({
   const changeWarehouse = (value: string) => {
     toast.dismiss(INTAKE_ERROR_TOAST_ID);
     setSelectedWarehouseId(value);
-    setConfirmedWarehouseId("");
     setFormError(null);
     clearFieldError("warehouse");
     setResolvedItem(null);
@@ -798,25 +788,6 @@ export function WarrantyIntakeModal({
                 fieldErrors.warehouse ?? t("warranty.intake.warehouseHint")
               }
             />
-            <ActionButton
-              kind="confirm"
-              disabled={
-                busy ||
-                !selectedWarehouseId ||
-                Boolean(warehouse) ||
-                warehousesQuery.isPending ||
-                warehousesQuery.isError
-              }
-              onClick={() => {
-                setConfirmedWarehouseId(selectedWarehouseId);
-                toast.dismiss(INTAKE_ERROR_TOAST_ID);
-                setFormError(null);
-                clearFieldError("warehouse");
-              }}
-              sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
-            >
-              {t("warranty.intake.confirmWarehouse")}
-            </ActionButton>
           </Stack>
           {warehousesQuery.isPending ? (
             <UiText variant="caption">
@@ -835,16 +806,6 @@ export function WarrantyIntakeModal({
             </UiAlert>
           ) : warehouseOptions.length === 0 ? (
             <UiAlert tone="warning">{t("warranty.intake.noWarehouse")}</UiAlert>
-          ) : null}
-          {warehouse ? (
-            <UiAlert tone="success">
-              {t("warranty.intake.warehouseConfirmed", {
-                warehouse:
-                  warehouseOptions.find(
-                    (option) => option.value === confirmedWarehouseId,
-                  )?.label ?? "",
-              })}
-            </UiAlert>
           ) : null}
         </Stack>
 

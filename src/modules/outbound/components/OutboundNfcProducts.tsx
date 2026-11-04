@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { RowActionButton } from "@/shared/components/actions";
 import { UiPagination, UiSelect } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
@@ -20,6 +21,7 @@ interface Props {
 
 export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
   const t = useT();
+  const searchId = useId();
   const context = useAuthStore((state) => state.currentContext);
   const [draft, setDraft] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -68,6 +70,16 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
     { key: "UNASSIGNED", label: t("nfc.outboundUnassigned") },
   ];
 
+  if (selected && documentId)
+    return (
+      <OutboundNfcProductDetail
+        embedded
+        item={selected}
+        nfcUnknown={nfcUnknown}
+        onClose={() => setSelected(null)}
+      />
+    );
+
   return (
     <section
       className="hn-outbound-nfc"
@@ -75,10 +87,10 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
       aria-label={t("nfc.outboundProductsTitle")}
     >
       <div className="hn-outbound-nfc-search">
-        <label htmlFor="outbound-nfc-keyword">{t("nfc.outboundSearch")}</label>
+        <label htmlFor={searchId}>{t("nfc.outboundSearch")}</label>
         <div className="hn-outbound-nfc-search-controls">
           <input
-            id="outbound-nfc-keyword"
+            id={searchId}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder={t("nfc.outboundSearchPlaceholder")}
@@ -151,7 +163,9 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
                         <strong>
                           {item.item_code || item.serial_number || item.item_id}
                         </strong>
-                        {item.item_code && item.serial_number ? (
+                        {item.item_code &&
+                        item.serial_number &&
+                        item.item_code !== item.serial_number ? (
                           <small>{item.serial_number}</small>
                         ) : null}
                       </td>
@@ -215,13 +229,12 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
                         data-field="action"
                         data-label={t("outbound.detail.colAction")}
                       >
-                        <button
-                          type="button"
-                          className="hn-outbound-nfc-view"
+                        <RowActionButton
+                          kind="view"
                           onClick={() => setSelected(item)}
                         >
                           {t("nfc.details")}
-                        </button>
+                        </RowActionButton>
                       </td>
                     </tr>
                   ))}

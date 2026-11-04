@@ -1002,6 +1002,7 @@ export const MESSAGES_VI = {
       fieldStatus: "Trạng thái",
       fieldRecipient: "Nơi nhận",
       fieldScanned: "Đã quét",
+      additionalInfo: "Thông tin bổ sung",
       step1: "1 · Quét và đối chiếu hàng",
       autoSku: "Tự nhận SKU từ mã quét",
       scanField: "Quét QR/mã vạch sản phẩm",
@@ -1148,12 +1149,10 @@ export const MESSAGES_VI = {
       title: "Tiếp nhận bảo hành",
       warehouse: "Kho tiếp nhận bảo hành",
       warehousePlaceholder: "Chọn kho tiếp nhận",
-      warehouseHint:
-        "Chọn và xác nhận kho chịu trách nhiệm tiếp nhận hồ sơ này.",
+      warehouseHint: "Chọn kho chịu trách nhiệm tiếp nhận hồ sơ này.",
       confirmWarehouse: "Xác nhận kho",
       warehouseConfirmed: "Đã xác nhận kho tiếp nhận: {warehouse}.",
-      errWarehouse:
-        "Bạn chưa xác nhận kho tiếp nhận bảo hành. Vui lòng chọn kho và nhấn Xác nhận kho trước khi lưu.",
+      errWarehouse: "Vui lòng chọn kho tiếp nhận bảo hành trước khi lưu.",
       errWarehouseMismatch:
         "Kho tiếp nhận không khớp kho đang làm việc. Vui lòng chọn lại kho tiếp nhận hoặc chuyển kho làm việc trước khi lưu.",
       errItemNotFound:

@@ -1,19 +1,20 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { useEffect, useMemo, useRef, useState } from "react";
-import dayjs from "dayjs";
 import "./outbound-dialog.css";
 import "./outbound-detail-drawer.css";
-import { CoordinatedLoadingBoundary } from "@/shared/ui/loading/CoordinatedLoadingBoundary";
+import dayjs from "dayjs";
+import { OutboundNfcProducts } from "./OutboundNfcProducts";
 import {
   Box,
-  Drawer,
   Grid,
   MenuItem,
   Stack,
   UiAlert,
   UiAutocomplete,
   UiDialog,
+  UiDrawer,
   UiStatusBadge,
+  UiTabs,
   UiTextField,
   useUiConfirm,
 } from "@/shared/ui";
@@ -71,7 +72,6 @@ import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
-import { OutboundNfcProducts } from "@/modules/outbound/components/OutboundNfcProducts";
 import { validatePhone } from "@/shared/constants/validation.constants";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -121,6 +121,8 @@ interface Props {
   onChanged?: () => void;
 }
 
+type DetailPanel = "scan" | "post" | "label" | "attachments" | "nfc";
+
 function makeKey(prefix: string): string {
   const random =
     globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
@@ -130,12 +132,6 @@ function makeKey(prefix: string): string {
 function short(value?: string | null): string {
   if (!value) return EMPTY_TEXT;
   return value.length > 18 ? `${value.slice(0, 14)}…` : value;
-}
-
-function displayDate(value?: string) {
-  if (!value) return EMPTY_TEXT;
-  const date = dayjs(value);
-  return date.isValid() ? date.format("DD/MM/YYYY HH:mm") : value;
 }
 
 function labelStatus(t: TranslateFn, value?: string | null): string {
@@ -162,7 +158,7 @@ const SECTION_SX = {
 
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+    <Grid className="hn-outbound-detail__field" size={{ xs: 12, sm: 6 }}>
       <Box
         sx={{
           typography: "caption",
@@ -218,8 +214,8 @@ export function AlignedOutboundDetailModal({
   );
   const [labelWarning, setLabelWarning] = useState<string | null>(null);
   const [labelPreviewOpen, setLabelPreviewOpen] = useState(false);
+  const [selectedPanel, setSelectedPanel] = useState<DetailPanel | null>(null);
   const [postConfirmOpen, setPostConfirmOpen] = useState(false);
-  const [detailTab, setDetailTab] = useState<"overview" | "nfc">("overview");
   const postKeyRef = useRef<string | null>(null);
   // Xác nhận trước khi gỡ đối chiếu — confirmDialog PHẢI render trong cây bên dưới.
   const { confirm, confirmDialog } = useUiConfirm();
@@ -313,6 +309,7 @@ export function AlignedOutboundDetailModal({
   );
   const mutable = doc?.status === "DRAFT" || doc?.status === "SCANNING";
   const posted = doc?.status === "POSTED";
+  const activePanel: DetailPanel = selectedPanel ?? (posted ? "label" : "scan");
   // Dùng validatePhone chung (đầu số VN hợp lệ) thay vì regex 0+9 số tại chỗ.
   const customerPhoneCheck =
     customerPhone === "" ? null : validatePhone(customerPhone);
@@ -644,61 +641,64 @@ export function AlignedOutboundDetailModal({
     },
   ];
 
-  const renderDrawer = (content: ReactNode) => (
-    <Drawer
-      className="hn-outbound-dialog hn-outbound-detail-drawer"
-      {...dialog.dialogProps}
-      anchor="right"
-      slotProps={{
-        ...dialog.dialogProps.slotProps,
-        paper: { "aria-label": t("outbound.detail.title") },
+  const drawerTitle = (
+    <Box
+      component="span"
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 1,
       }}
     >
-      <div className="hn-outbound-detail-drawer__shell">
-        <header className="hn-outbound-detail-drawer__header">
-          <strong>{t("outbound.detail.title")}</strong>
-          <ActionIconButton
-            kind="close"
-            label={t("common.close")}
-            onClick={dialog.close}
-          />
-        </header>
-        <div className="hn-outbound-detail-drawer__body">
-          <CoordinatedLoadingBoundary mode="drawer" active={dialog.open}>
-            {content}
-          </CoordinatedLoadingBoundary>
-        </div>
-      </div>
-    </Drawer>
+      {t("outbound.detail.title")}
+      <ActionIconButton
+        kind="close"
+        label={t("common.close")}
+        onClick={dialog.close}
+      />
+    </Box>
   );
 
   if (detailQuery.isLoading) {
-    return renderDrawer(t("outbound.detail.loading"));
+    return (
+      <UiDrawer
+        className="hn-outbound-dialog hn-outbound-detail-drawer"
+        {...dialog.dialogProps}
+        width={820}
+        title={drawerTitle}
+      >
+        {t("outbound.detail.loading")}
+      </UiDrawer>
+    );
   }
 
   if (detailQuery.isError || !detail || !doc) {
-    return renderDrawer(
-      <UiAlert tone="error">
-        {getApiErrorMessage(
-          detailQuery.error,
-          t("outbound.detail.loadError"),
-        )}
-      </UiAlert>,
+    return (
+      <UiDrawer
+        className="hn-outbound-dialog hn-outbound-detail-drawer"
+        {...dialog.dialogProps}
+        width={820}
+        title={drawerTitle}
+      >
+        <UiAlert tone="error">
+          {getApiErrorMessage(
+            detailQuery.error,
+            t("outbound.detail.loadError"),
+          )}
+        </UiAlert>
+      </UiDrawer>
     );
   }
 
   return (
     <>
-      {renderDrawer(<>
-        <div className="hn-outbound-content-tabs" role="tablist" aria-label={t("outbound.detail.title")}>
-          <button type="button" role="tab" aria-selected={detailTab === "overview"} onClick={() => setDetailTab("overview")}>
-            {t("nfc.outboundOverviewTab")}
-          </button>
-          <button type="button" role="tab" aria-selected={detailTab === "nfc"} onClick={() => setDetailTab("nfc")}>
-            {t("nfc.outboundNfcTab")}
-          </button>
-        </div>
-        {detailTab === "nfc" ? <OutboundNfcProducts documentId={documentId} /> : (
+      <UiDrawer
+        className="hn-outbound-dialog hn-outbound-detail-drawer"
+        {...dialog.dialogProps}
+        width={820}
+        title={drawerTitle}
+      >
         <Stack spacing={2}>
           <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
             <Grid container spacing={2}>
@@ -722,368 +722,427 @@ export function AlignedOutboundDetailModal({
                 label={t("outbound.detail.fieldScanned")}
                 value={`${totalScanned}/${totalExpected}`}
               />
-              <DetailField
-                label={t("outbound.list.colRequestNo")}
-                value={
-                  !doc.outboundRequestId ? (
-                    <span className="hn-outbound-data-warning" data-tone="error">
-                      {t("outbound.list.missingRequest")}
-                    </span>
-                  ) : (
-                    doc.requestNo || (
-                      <span className="hn-outbound-data-warning">
-                        {t("outbound.list.noRequestNo")}
-                      </span>
-                    )
-                  )
-                }
-              />
-              <DetailField
-                label={t("outbound.list.colCreated")}
-                value={displayDate(doc.date)}
-              />
-              <DetailField
-                label={t("outbound.list.colNote")}
-                value={doc.note || EMPTY_TEXT}
-              />
             </Grid>
-          </Box>
-
-          <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
-            <DocumentAttachmentsPanel
-              documentType="OUTBOUND"
-              documentId={documentId}
-              disabled={!mutable}
-            />
-          </Box>
-
-          <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
-            <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-              {t("outbound.detail.step1")}
-            </Box>
-            <Stack spacing={1.5}>
-              <Stack
-                direction="row"
-                spacing={1.5}
-                sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "flex-end" }}
-              >
-                {/* Phiếu nhiều dòng thì danh sách này dài — cho gõ mã SKU
-                    để nhảy thẳng tới dòng cần quét. */}
-                <UiAutocomplete
-                  sx={{ width: { xs: "100%", sm: 300 }, minWidth: 0 }}
-                  fullWidth={false}
-                  label={t("outbound.detail.autoSku")}
-                  value={lineId || null}
-                  onChange={(next) =>
-                    setLineId(next == null ? "" : String(next))
+            <details
+              className="hn-outbound-detail__additional"
+              open={!doc.outboundRequestId || !doc.requestNo}
+            >
+              <summary>{t("outbound.detail.additionalInfo")}</summary>
+              <Grid container spacing={2}>
+                <DetailField
+                  label={t("outbound.list.colRequestNo")}
+                  value={
+                    !doc.outboundRequestId ? (
+                      <span
+                        className="hn-outbound-data-warning"
+                        data-tone="error"
+                      >
+                        {t("outbound.list.missingRequest")}
+                      </span>
+                    ) : (
+                      doc.requestNo || (
+                        <span className="hn-outbound-data-warning">
+                          {t("outbound.list.noRequestNo")}
+                        </span>
+                      )
+                    )
                   }
-                  placeholder={t("outbound.detail.autoSku")}
-                  options={detail.lines
-                    .filter((line) => line.scanned < line.expected)
-                    .map((line) => ({
-                      value: line.id,
-                      label: `${line.skuCode ?? short(line.productId)} · ${line.scanned}/${line.expected}`,
-                    }))}
                 />
-                <UiTextField
-                  sx={{ width: { xs: "100%", sm: 330 }, minWidth: 0 }}
-                  value={scanCode}
-                  label={t("outbound.detail.scanField")}
-                  placeholder={t("outbound.detail.scanField")}
-                  onChange={(event) => setScanCode(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      scanMutation.mutate({
-                        rawCode: scanCode,
-                        scanSource: "MANUAL",
-                      });
-                    }
-                  }}
-                  disabled={!mutable || !can("outbound.scan")}
+                <DetailField
+                  label={t("outbound.list.colCreated")}
+                  value={
+                    dayjs(doc.date).isValid()
+                      ? dayjs(doc.date).format("DD/MM/YYYY HH:mm")
+                      : EMPTY_TEXT
+                  }
                 />
-                <ActionButton
-                  kind="scan"
-                  disabled={
-                    !mutable ||
-                    !can("outbound.scan") ||
-                    !scanCode.trim() ||
-                    scanMutation.isPending
-                  }
-                  onClick={() =>
-                    scanMutation.mutate({
-                      rawCode: scanCode,
-                      scanSource: "MANUAL",
-                    })
-                  }
-                >
-                  {scanMutation.isPending
-                    ? t("outbound.detail.scanning")
-                    : t("outbound.detail.scanAction")}
-                </ActionButton>
-              </Stack>
-              <ResponsiveDataTable<OutboundLineRecord>
-                columns={lineColumns}
-                rows={detail.lines}
-                rowKey={(row) => row.id}
-                loading={detailQuery.isFetching}
-                emptyText={t("outbound.detail.linesEmpty")}
-              />
-              <ResponsiveDataTable<OutboundItemMatchRecord>
-                columns={matchColumns}
-                rows={activeMatches}
-                rowKey={(row) => row.id}
-                loading={detailQuery.isFetching}
-                emptyText={t("outbound.detail.scansEmpty")}
-              />
-            </Stack>
+                <DetailField
+                  label={t("outbound.list.colNote")}
+                  value={doc.note || EMPTY_TEXT}
+                />
+              </Grid>
+            </details>
           </Box>
 
-          <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
-            <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-              {t("outbound.detail.step2")}
+          <UiTabs
+            aria-label={t("outbound.detail.title")}
+            items={[
+              { key: "scan", label: t("outbound.detail.step1") },
+              { key: "post", label: t("outbound.detail.step2") },
+              { key: "label", label: t("outbound.detail.step3") },
+              { key: "attachments", label: t("shared.attachments.title") },
+              { key: "nfc", label: t("nfc.outboundNfcTab") },
+            ]}
+            value={activePanel}
+            onChange={(key) => setSelectedPanel(key as DetailPanel)}
+          />
+
+          {activePanel === "nfc" ? (
+            <OutboundNfcProducts documentId={documentId} />
+          ) : null}
+
+          {activePanel === "attachments" ? (
+            <Box
+              className="hn-outbound-dialog__section"
+              sx={SECTION_SX}
+              role="tabpanel"
+            >
+              <DocumentAttachmentsPanel
+                documentType="OUTBOUND"
+                documentId={documentId}
+                disabled={!mutable}
+              />
             </Box>
-            <Stack spacing={1.5}>
-              {shortStockLines.length ? (
-                <UiAlert
-                  tone="warning"
-                  title={t("outbound.detail.shortStockTitle")}
-                >
-                  {t("outbound.detail.shortStockBody", {
-                    skus: shortStockLines
-                      .map((line) => line.skuCode ?? short(line.productId))
-                      .join(", "),
-                  })}
-                </UiAlert>
-              ) : null}
-              {!posted ? (
+          ) : null}
+
+          {activePanel === "scan" ? (
+            <Box
+              className="hn-outbound-dialog__section"
+              sx={SECTION_SX}
+              role="tabpanel"
+            >
+              <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
+                {t("outbound.detail.step1")}
+              </Box>
+              <Stack spacing={1.5}>
                 <Stack
                   direction="row"
                   spacing={1.5}
                   sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "flex-end" }}
                 >
+                  {/* Phiếu nhiều dòng thì danh sách này dài — cho gõ mã SKU
+                    để nhảy thẳng tới dòng cần quét. */}
+                  <UiAutocomplete
+                    sx={{ width: { xs: "100%", sm: 300 }, minWidth: 0 }}
+                    fullWidth={false}
+                    label={t("outbound.detail.autoSku")}
+                    value={lineId || null}
+                    onChange={(next) =>
+                      setLineId(next == null ? "" : String(next))
+                    }
+                    placeholder={t("outbound.detail.autoSku")}
+                    options={detail.lines
+                      .filter((line) => line.scanned < line.expected)
+                      .map((line) => ({
+                        value: line.id,
+                        label: `${line.skuCode ?? short(line.productId)} · ${line.scanned}/${line.expected}`,
+                      }))}
+                  />
                   <UiTextField
-                    sx={{ width: { xs: "100%", sm: 260 }, minWidth: 0 }}
-                    value={customerPhone}
-                    label={t("outbound.detail.labelPhone")}
-                    placeholder={t("outbound.detail.labelPhone")}
-                    slotProps={{ htmlInput: { maxLength: 10 } }}
-                    onChange={(event) =>
-                      setCustomerPhone(
-                        event.target.value.replace(/\D/g, "").slice(0, 10),
-                      )
-                    }
-                    error={!customerPhoneValid}
-                    helperText={
-                      customerPhoneValid
-                        ? undefined
-                        : (customerPhoneCheck?.errorMessage ??
-                          t("outbound.detail.blockPhone"))
-                    }
+                    sx={{ width: { xs: "100%", sm: 330 }, minWidth: 0 }}
+                    value={scanCode}
+                    label={t("outbound.detail.scanField")}
+                    placeholder={t("outbound.detail.scanField")}
+                    onChange={(event) => setScanCode(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        scanMutation.mutate({
+                          rawCode: scanCode,
+                          scanSource: "MANUAL",
+                        });
+                      }
+                    }}
+                    disabled={!mutable || !can("outbound.scan")}
                   />
                   <ActionButton
-                    kind="print"
+                    kind="scan"
                     disabled={
-                      !can("outbound.post") ||
-                      !postReady ||
-                      postAndLabelMutation.isPending
+                      !mutable ||
+                      !can("outbound.scan") ||
+                      !scanCode.trim() ||
+                      scanMutation.isPending
                     }
-                    onClick={() => setPostConfirmOpen(true)}
+                    onClick={() =>
+                      scanMutation.mutate({
+                        rawCode: scanCode,
+                        scanSource: "MANUAL",
+                      })
+                    }
                   >
-                    {canPrepareLabel
-                      ? t("outbound.detail.postWithLabel")
-                      : t("outbound.detail.post")}
+                    {scanMutation.isPending
+                      ? t("outbound.detail.scanning")
+                      : t("outbound.detail.scanAction")}
                   </ActionButton>
-                  {can("outbound.cancel") && mutable ? (
-                    <ActionButton
-                      kind="cancel"
-                      onClick={() => setCancelOpen(true)}
-                    >
-                      {t("outbound.detail.cancelTrigger")}
-                    </ActionButton>
-                  ) : null}
                 </Stack>
-              ) : (
-                <UiAlert
-                  tone="success"
-                  title={t("outbound.detail.postedTitle")}
-                >
-                  {t("outbound.detail.postedBody")}
-                </UiAlert>
-              )}
-              {postBlockReason && !posted ? (
-                <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                  {postBlockReason}
-                </Box>
-              ) : null}
-              {/* Hiện mã chứng từ/biến động đọc được. KHÔNG hiện request_id ở
+                <ResponsiveDataTable<OutboundLineRecord>
+                  columns={lineColumns}
+                  rows={detail.lines}
+                  rowKey={(row) => row.id}
+                  loading={detailQuery.isFetching}
+                  emptyText={t("outbound.detail.linesEmpty")}
+                />
+                <ResponsiveDataTable<OutboundItemMatchRecord>
+                  columns={matchColumns}
+                  rows={activeMatches}
+                  rowKey={(row) => row.id}
+                  loading={detailQuery.isFetching}
+                  emptyText={t("outbound.detail.scansEmpty")}
+                />
+              </Stack>
+            </Box>
+          ) : null}
+
+          {activePanel === "post" ? (
+            <Box
+              className="hn-outbound-dialog__section"
+              sx={SECTION_SX}
+              role="tabpanel"
+            >
+              <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
+                {t("outbound.detail.step2")}
+              </Box>
+              <Stack spacing={1.5}>
+                {shortStockLines.length ? (
+                  <UiAlert
+                    tone="warning"
+                    title={t("outbound.detail.shortStockTitle")}
+                  >
+                    {t("outbound.detail.shortStockBody", {
+                      skus: shortStockLines
+                        .map((line) => line.skuCode ?? short(line.productId))
+                        .join(", "),
+                    })}
+                  </UiAlert>
+                ) : null}
+                {!posted ? (
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "flex-end" }}
+                  >
+                    <UiTextField
+                      sx={{ width: { xs: "100%", sm: 260 }, minWidth: 0 }}
+                      value={customerPhone}
+                      label={t("outbound.detail.labelPhone")}
+                      placeholder={t("outbound.detail.labelPhone")}
+                      slotProps={{ htmlInput: { maxLength: 10 } }}
+                      onChange={(event) =>
+                        setCustomerPhone(
+                          event.target.value.replace(/\D/g, "").slice(0, 10),
+                        )
+                      }
+                      error={!customerPhoneValid}
+                      helperText={
+                        customerPhoneValid
+                          ? undefined
+                          : (customerPhoneCheck?.errorMessage ??
+                            t("outbound.detail.blockPhone"))
+                      }
+                    />
+                    <ActionButton
+                      kind="print"
+                      disabled={
+                        !can("outbound.post") ||
+                        !postReady ||
+                        postAndLabelMutation.isPending
+                      }
+                      onClick={() => setPostConfirmOpen(true)}
+                    >
+                      {canPrepareLabel
+                        ? t("outbound.detail.postWithLabel")
+                        : t("outbound.detail.post")}
+                    </ActionButton>
+                    {can("outbound.cancel") && mutable ? (
+                      <ActionButton
+                        kind="cancel"
+                        onClick={() => setCancelOpen(true)}
+                      >
+                        {t("outbound.detail.cancelTrigger")}
+                      </ActionButton>
+                    ) : null}
+                  </Stack>
+                ) : (
+                  <UiAlert
+                    tone="success"
+                    title={t("outbound.detail.postedTitle")}
+                  >
+                    {t("outbound.detail.postedBody")}
+                  </UiAlert>
+                )}
+                {postBlockReason && !posted ? (
+                  <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                    {postBlockReason}
+                  </Box>
+                ) : null}
+                {/* Hiện mã chứng từ/biến động đọc được. KHÔNG hiện request_id ở
                 trạng thái thành công: đó là UUID đối chiếu log sinh cho mỗi lượt
                 gọi API, không phải chứng từ nghiệp vụ — chỉ có ích khi báo lỗi,
                 và ApiErrorAlert đã hiển thị đúng chỗ đó. */}
-              {evidence ? (
-                <Box
-                  sx={{
-                    typography: "body2",
-                    color: "text.secondary",
-                    display: "flex",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: 0.5,
-                  }}
-                >
-                  {t("outbound.detail.evidenceMovements", {
-                    count: evidence.movements.length,
-                  })}
-                  {evidence.movements.map((movement, index) => (
-                    <Box
-                      key={movement.id}
-                      component="span"
-                      sx={{ display: "inline-flex", alignItems: "center" }}
-                    >
-                      {movement.code ? (
-                        <strong>{movement.code}</strong>
-                      ) : (
-                        <CopyableId value={movement.id} />
-                      )}
-                      {index < evidence.movements.length - 1 ? "," : ""}
-                    </Box>
-                  ))}
-                </Box>
-              ) : null}
-            </Stack>
-          </Box>
+                {evidence ? (
+                  <Box
+                    sx={{
+                      typography: "body2",
+                      color: "text.secondary",
+                      display: "flex",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: 0.5,
+                    }}
+                  >
+                    {t("outbound.detail.evidenceMovements", {
+                      count: evidence.movements.length,
+                    })}
+                    {evidence.movements.map((movement, index) => (
+                      <Box
+                        key={movement.id}
+                        component="span"
+                        sx={{ display: "inline-flex", alignItems: "center" }}
+                      >
+                        {movement.code ? (
+                          <strong>{movement.code}</strong>
+                        ) : (
+                          <CopyableId value={movement.id} />
+                        )}
+                        {index < evidence.movements.length - 1 ? "," : ""}
+                      </Box>
+                    ))}
+                  </Box>
+                ) : null}
+              </Stack>
+            </Box>
+          ) : null}
 
-          <Grid container spacing={2}>
-            <Grid size={12}>
-              <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
-                <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-                  {t("outbound.detail.step3")}
-                </Box>
-                <Stack spacing={1.5}>
-                  {labelWarning ? (
-                    <UiAlert tone="warning">{labelWarning}</UiAlert>
-                  ) : null}
-                  {!posted ? (
-                    <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                      {t("outbound.detail.labelPending")}
-                    </Box>
-                  ) : packingLabel ? (
-                    <>
-                      <Grid container spacing={2}>
-                        <DetailField
-                          label={t("outbound.detail.fieldLabelCode")}
-                          value={packingLabel.labelCode}
-                        />
-                        <DetailField
-                          label={t("outbound.detail.fieldStatus")}
-                          value={labelStatus(t, packingLabel.status)}
-                        />
-                        <DetailField
-                          label={t("outbound.detail.fieldLabelRecipient")}
-                          value={
-                            packingLabel.recipientName ||
-                            doc.recipientName ||
-                            EMPTY_TEXT
-                          }
-                        />
-                        <DetailField
-                          label={t("outbound.detail.fieldItemCount")}
-                          value={packingLabel.itemCount}
-                        />
-                        <DetailField
-                          label={t("outbound.detail.fieldSkuCount")}
-                          value={packingLabel.skuCount}
-                        />
-                        <DetailField
-                          label={t("outbound.detail.fieldSourceRequest")}
-                          value={packingLabel.sourceRequestNo || EMPTY_TEXT}
-                        />
-                      </Grid>
+          {activePanel === "label" ? (
+            <Grid container spacing={2} role="tabpanel">
+              <Grid size={12}>
+                <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
+                  <Box
+                    sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}
+                  >
+                    {t("outbound.detail.step3")}
+                  </Box>
+                  <Stack spacing={1.5}>
+                    {labelWarning ? (
+                      <UiAlert tone="warning">{labelWarning}</UiAlert>
+                    ) : null}
+                    {!posted ? (
+                      <Box
+                        sx={{ typography: "body2", color: "text.secondary" }}
+                      >
+                        {t("outbound.detail.labelPending")}
+                      </Box>
+                    ) : packingLabel ? (
+                      <>
+                        <Grid container spacing={2}>
+                          <DetailField
+                            label={t("outbound.detail.fieldLabelCode")}
+                            value={packingLabel.labelCode}
+                          />
+                          <DetailField
+                            label={t("outbound.detail.fieldStatus")}
+                            value={labelStatus(t, packingLabel.status)}
+                          />
+                          <DetailField
+                            label={t("outbound.detail.fieldLabelRecipient")}
+                            value={
+                              packingLabel.recipientName ||
+                              doc.recipientName ||
+                              EMPTY_TEXT
+                            }
+                          />
+                          <DetailField
+                            label={t("outbound.detail.fieldItemCount")}
+                            value={packingLabel.itemCount}
+                          />
+                          <DetailField
+                            label={t("outbound.detail.fieldSkuCount")}
+                            value={packingLabel.skuCount}
+                          />
+                          <DetailField
+                            label={t("outbound.detail.fieldSourceRequest")}
+                            value={packingLabel.sourceRequestNo || EMPTY_TEXT}
+                          />
+                        </Grid>
+                        <Box className="hn-outbound-detail__label-actions">
+                          <ActionButton
+                            kind="view"
+                            onClick={() => setLabelPreviewOpen(true)}
+                          >
+                            {t("outbound.detail.previewLabel")}
+                          </ActionButton>
+                          <Stack
+                            className="hn-outbound-detail__printer-actions"
+                            direction="row"
+                            spacing={1.5}
+                            sx={{
+                              flexWrap: "wrap",
+                              rowGap: 1,
+                              alignItems: "flex-end",
+                            }}
+                          >
+                            {/*
+                             * CỐ Ý KHÔNG dùng <select>/<option> thuần: trình duyệt vẽ
+                             * menu theo kiểu hệ điều hành — phông và màu highlight khác
+                             * hẳn phần còn lại của app. Dropdown của design system dùng
+                             * menu React ăn theme, và cho gõ để tìm khi danh sách máy in
+                             * dài ra.
+                             */}
+                            <UiAutocomplete
+                              label={t("outbound.detail.fieldPrinter")}
+                              sx={{
+                                width: { xs: "100%", sm: 280 },
+                                minWidth: 0,
+                              }}
+                              fullWidth={false}
+                              value={printerId || null}
+                              onChange={(next) =>
+                                setPrinterId(next == null ? "" : String(next))
+                              }
+                              placeholder={t("outbound.detail.choosePrinter")}
+                              options={activePrinters.map((printer) => ({
+                                value: printer.id,
+                                label: `${printer.code} · ${printer.name}`,
+                              }))}
+                            />
+                            <ActionButton
+                              kind="print"
+                              disabled={
+                                !printerId ||
+                                (!can("packing_label.print") &&
+                                  !can("label.print") &&
+                                  !can("packing_label.reprint") &&
+                                  !can("label.reprint")) ||
+                                printMutation.isPending
+                              }
+                              onClick={() => {
+                                // In lại phải nhập lý do trước; in lần đầu thì gửi ngay.
+                                if (packingLabel.status === "PRINTED") {
+                                  setReprintReasonKey("");
+                                  setReprintReasonNote("");
+                                  setReprintOpen(true);
+                                } else {
+                                  printMutation.mutate(undefined);
+                                }
+                              }}
+                            >
+                              {printMutation.isPending
+                                ? t("outbound.detail.printing")
+                                : packingLabel.status === "PRINTED"
+                                  ? t("outbound.detail.reprint")
+                                  : t("outbound.detail.print")}
+                            </ActionButton>
+                          </Stack>
+                        </Box>
+                      </>
+                    ) : (
                       <Box>
                         <ActionButton
-                          kind="view"
-                          onClick={() => setLabelPreviewOpen(true)}
+                          kind="print"
+                          disabled={labelPrepareMutation.isPending}
+                          onClick={() => labelPrepareMutation.mutate()}
                         >
-                          {t("outbound.detail.previewLabel")}
+                          {labelPrepareMutation.isPending
+                            ? t("outbound.detail.preparing")
+                            : t("outbound.detail.prepareAgain")}
                         </ActionButton>
                       </Box>
-                      <Stack
-                        direction="row"
-                        spacing={1.5}
-                        sx={{
-                          flexWrap: "wrap",
-                          rowGap: 1,
-                          alignItems: "center",
-                        }}
-                      >
-                        {/*
-                         * CỐ Ý KHÔNG dùng <select>/<option> thuần: trình duyệt vẽ
-                         * menu theo kiểu hệ điều hành — phông và màu highlight khác
-                         * hẳn phần còn lại của app. Dropdown của design system dùng
-                         * menu React ăn theme, và cho gõ để tìm khi danh sách máy in
-                         * dài ra.
-                         */}
-                        <UiAutocomplete
-                          label={t("outbound.detail.fieldPrinter")}
-                          sx={{ width: { xs: "100%", sm: 280 }, minWidth: 0 }}
-                          fullWidth={false}
-                          value={printerId || null}
-                          onChange={(next) =>
-                            setPrinterId(next == null ? "" : String(next))
-                          }
-                          placeholder={t("outbound.detail.choosePrinter")}
-                          options={activePrinters.map((printer) => ({
-                            value: printer.id,
-                            label: `${printer.code} · ${printer.name}`,
-                          }))}
-                        />
-                        <ActionButton
-                          kind="print"
-                          disabled={
-                            !printerId ||
-                            (!can("packing_label.print") &&
-                              !can("label.print") &&
-                              !can("packing_label.reprint") &&
-                              !can("label.reprint")) ||
-                            printMutation.isPending
-                          }
-                          onClick={() => {
-                            // In lại phải nhập lý do trước; in lần đầu thì gửi ngay.
-                            if (packingLabel.status === "PRINTED") {
-                              setReprintReasonKey("");
-                              setReprintReasonNote("");
-                              setReprintOpen(true);
-                            } else {
-                              printMutation.mutate(undefined);
-                            }
-                          }}
-                        >
-                          {printMutation.isPending
-                            ? t("outbound.detail.printing")
-                            : packingLabel.status === "PRINTED"
-                              ? t("outbound.detail.reprint")
-                              : t("outbound.detail.print")}
-                        </ActionButton>
-                      </Stack>
-                    </>
-                  ) : (
-                    <Box>
-                      <ActionButton
-                        kind="print"
-                        disabled={labelPrepareMutation.isPending}
-                        onClick={() => labelPrepareMutation.mutate()}
-                      >
-                        {labelPrepareMutation.isPending
-                          ? t("outbound.detail.preparing")
-                          : t("outbound.detail.prepareAgain")}
-                      </ActionButton>
-                    </Box>
-                  )}
-                </Stack>
-              </Box>
+                    )}
+                  </Stack>
+                </Box>
+              </Grid>
             </Grid>
-          </Grid>
+          ) : null}
         </Stack>
-        )}
 
         <CameraScanModal
           open={cameraOpen}
@@ -1262,7 +1321,7 @@ export function AlignedOutboundDetailModal({
             ) : null}
           </Stack>
         </UiDialog>
-      </>)}
+      </UiDrawer>
 
       <PackingLabelPreviewDialog
         open={labelPreviewOpen}

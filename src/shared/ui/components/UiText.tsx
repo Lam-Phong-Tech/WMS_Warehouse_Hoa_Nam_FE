@@ -7,11 +7,7 @@ import type { ReactNode } from "react";
 import { SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui/tokens";
 
 export type UiTextVariant =
-  | "pageTitle"
-  | "cardTitle"
-  | "body"
-  | "secondary"
-  | "caption";
+  "pageTitle" | "cardTitle" | "body" | "secondary" | "caption";
 
 const VARIANT_SX = {
   pageTitle: {
@@ -57,6 +53,7 @@ export interface UiTextProps {
   /** Ghi đè màu bằng token (vd SEMANTIC_LIGHT.errorText) — không truyền hex. */
   color?: string;
   className?: string;
+  id?: string;
 }
 
 export function UiText({
@@ -64,11 +61,13 @@ export function UiText({
   children,
   color,
   className,
+  id,
 }: UiTextProps) {
   return (
     <Typography
       component={VARIANT_ELEMENT[variant]}
       className={className}
+      id={id}
       sx={{ margin: 0, ...VARIANT_SX[variant], ...(color ? { color } : {}) }}
     >
       {children}

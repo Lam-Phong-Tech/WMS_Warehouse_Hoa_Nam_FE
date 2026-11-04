@@ -70,7 +70,7 @@ export interface ResponsiveDataTableProps<T> {
    * phải nới cột này, nếu không chữ tràn khỏi mép cột vì ô Thao tác cố ý
    * không có lớp cắt "…" (UAT TC_UI_07).
    */
-  actionColumnWidth?: number;
+  actionColumnWidth?: number | string;
   /** Keep the action column accessible while hiding its visible heading. */
   hideActionHeader?: boolean;
   /** Breakpoint chuyển sang card list, mặc định `md` (768px, khớp mui-theme.ts). */
@@ -419,7 +419,9 @@ export function ResponsiveDataTable<T>({
     declaredColumnsWidth > 0
       ? declaredColumnsWidth +
         (rowSelection ? 44 : 0) +
-        (renderRowActions ? actionColumnWidth : 0)
+        (renderRowActions && typeof actionColumnWidth === "number"
+          ? actionColumnWidth
+          : 0)
       : undefined;
 
   /**
@@ -663,7 +665,9 @@ export function ResponsiveDataTable<T>({
               {renderRowActions && (
                 <Box
                   component="th"
-                  aria-label={hideActionHeader ? t("shared.table.actions") : undefined}
+                  aria-label={
+                    hideActionHeader ? t("shared.table.actions") : undefined
+                  }
                   sx={{
                     padding: "10px 12px",
                     fontWeight: 600,

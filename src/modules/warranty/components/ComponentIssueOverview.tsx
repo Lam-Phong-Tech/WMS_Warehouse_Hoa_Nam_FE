@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Tooltip, UiIcon } from "@/shared/ui";
 import { useComponentIssues } from "@/modules/warranty/hooks/use-warranty";
 import type { ComponentIssueStatus } from "@/modules/warranty/services/componentIssueService";
 import { formatQuantity } from "@/shared/utils/format-number";
@@ -119,6 +120,17 @@ export function ComponentIssueOverview({
     >
       <div className="hn-war04-overview-heading">
         <h2>{tUi("updatedUi.text_80df50920cc8")}</h2>
+        <Tooltip
+          title={`${tUi("updatedUi.text_9a966c0016ec")} ${tUi("updatedUi.text_d988df33685a")}`}
+        >
+          <button
+            type="button"
+            className="hn-war04-info"
+            aria-label={`${tUi("updatedUi.text_9a966c0016ec")} ${tUi("updatedUi.text_d988df33685a")}`}
+          >
+            <UiIcon name="info" size="sm" />
+          </button>
+        </Tooltip>
       </div>
       <div>
         <div className="hn-war04-overview-grid" aria-live="polite">

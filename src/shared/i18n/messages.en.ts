@@ -1006,6 +1006,7 @@ export const MESSAGES_EN: MessageTree = {
       fieldStatus: "Status",
       fieldRecipient: "Deliver to",
       fieldScanned: "Scanned",
+      additionalInfo: "Additional information",
       step1: "1 · Scan and reconcile goods",
       autoSku: "Detect SKU from the scanned code",
       scanField: "Scan product QR/barcode",
@@ -1148,12 +1149,10 @@ export const MESSAGES_EN: MessageTree = {
       title: "Receive for warranty",
       warehouse: "Warranty intake warehouse",
       warehousePlaceholder: "Select an intake warehouse",
-      warehouseHint:
-        "Select and confirm the warehouse responsible for this case.",
+      warehouseHint: "Select the warehouse responsible for this case.",
       confirmWarehouse: "Confirm warehouse",
       warehouseConfirmed: "Intake warehouse confirmed: {warehouse}.",
-      errWarehouse:
-        "The intake warehouse has not been confirmed. Select a warehouse and click Confirm warehouse before saving.",
+      errWarehouse: "Select an intake warehouse before saving.",
       errWarehouseMismatch:
         "The intake warehouse differs from your working warehouse. Select the matching warehouse or switch your working warehouse before saving.",
       errItemNotFound:

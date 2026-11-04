@@ -43,13 +43,19 @@ vi.mock("@/modules/warranty/components/ComponentIssueModal", () => ({
     caseId,
     documentId,
     onClose,
+    warehouseLabel,
+    onViewCase,
   }: {
+    warehouseLabel?: string;
+    onViewCase?: () => void;
     caseId: string;
     documentId?: string | null;
     onClose: () => void;
   }) => (
     <div data-testid="component-issue-modal">
       {caseId}:{documentId ?? "new"}
+      <span>{warehouseLabel}</span>
+      <button onClick={onViewCase}>Xem hồ sơ bảo hành</button>
       <button type="button" onClick={onClose}>
         Đóng phiếu thử nghiệm
       </button>
@@ -260,9 +266,13 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     expect(
       screen.queryByRole("button", { name: "Chi tiết CI-0002" }),
     ).not.toBeInTheDocument();
+    const row = screen.getByRole("button", { name: "CI-0002" }).closest("tr");
     expect(
-      screen.getByRole("button", { name: "Thao tác khác CI-0002" }),
+      within(row!).getByRole("button", { name: /Xem chi tiết/ }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Thao tác khác CI-0002" }),
+    ).not.toBeInTheDocument();
   });
 
   it("hiển thị mã case, kho, linh kiện và tổng quan từ dữ liệu API thực", async () => {
@@ -310,35 +320,27 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("menu dòng hiển thị đúng kho/ghi chú và mở phiếu tương ứng", async () => {
+  it("Chi tiết mở phiếu tương ứng và truyền kho vào giao diện chi tiết", async () => {
     renderPage();
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Thao tác khác CI-0002" }),
-    );
-
-    expect(
-      screen.queryByTestId("component-issue-modal"),
-    ).not.toBeInTheDocument();
-    expect(await screen.findByText("Đã thay gioăng")).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("menu")).getByText("Kho Hà Nội"),
-    ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("menuitem", { name: "Mở phiếu xuất linh kiện" }),
-    );
+    const row = (
+      await screen.findByRole("button", { name: "CI-0002" })
+    ).closest("tr");
+    fireEvent.click(within(row!).getByRole("button", { name: /Xem chi tiết/ }));
     expect(
       await screen.findByTestId("component-issue-modal"),
     ).toHaveTextContent("wc-2:ci-2");
+    expect(screen.getByTestId("component-issue-modal")).toHaveTextContent(
+      "Kho Hà Nội",
+    );
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it("menu thao tác mở lại đúng phiếu đang quét", async () => {
+  it("Chi tiết mở lại đúng phiếu đang quét", async () => {
     renderPage();
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Thao tác khác CI-0001" }),
-    );
-    fireEvent.click(
-      screen.getByRole("menuitem", { name: "Mở phiếu xuất linh kiện" }),
-    );
+    const row = (
+      await screen.findByRole("button", { name: "CI-0001" })
+    ).closest("tr");
+    fireEvent.click(within(row!).getByRole("button", { name: /Xem chi tiết/ }));
     expect(
       await screen.findByTestId("component-issue-modal"),
     ).toHaveTextContent("wc-1:ci-1");
