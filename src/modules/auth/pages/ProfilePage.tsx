@@ -6,7 +6,6 @@ import {
   UiConfirmDialog,
   UiIcon,
   UiPagination,
-  UiSelect,
   UiStatusBadge,
   UiTabs,
 } from "@/shared/ui";
@@ -67,6 +66,7 @@ export function ProfilePage() {
   const [editor, setEditor] = useState(false);
   const [password, setPassword] = useState(false);
   const [mfa, setMfa] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useState(true);
   const [dirty, setDirty] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<{
     section: Section;
@@ -260,14 +260,6 @@ export function ProfilePage() {
       ),
     },
   ];
-  const selectItems = [
-    { value: "profile", label: t("auth.personal.tabsProfile") },
-    { value: "preferences", label: t("auth.personal.preferencesTitle") },
-    { value: "security", label: t("auth.personal.tabsSecurity") },
-    { value: "notifications", label: t("auth.personal.tabsNotifications") },
-    { value: "appearance", label: t("auth.personal.tabsAppearance") },
-    { value: "other", label: t("auth.personal.tabsOther") },
-  ];
   const title =
     section === "profile"
       ? accountMode === "preferences"
@@ -342,45 +334,66 @@ export function ProfilePage() {
   return (
     <div className="hn-profile-page hn-personal-profile hn-settings-screen">
       <header className="hn-personal-page-heading">
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </header>
-      <nav
-        className="hn-personal-desktop-nav"
-        aria-label={t("auth.personal.sectionPicker")}
-      >
-        <UiTabs
-          value={
-            section === "profile" && accountMode === "preferences"
-              ? "preferences"
-              : section
-          }
-          items={tabItems}
-          onChange={(value) =>
-            value === "preferences"
-              ? navigate({ section: "profile", view: "preferences" })
-              : navigate({ section: value as Section })
-          }
-        />
-      </nav>
-      <div className="hn-personal-mobile-nav">
-        <UiSelect
-          label={t("auth.personal.sectionPicker")}
+        <div className="hn-personal-heading-text">
+          <h1>{title}</h1>
+          <p>{subtitle}</p>
+        </div>
+        <nav
+          id="hn-profile-section-nav"
+          className="hn-personal-section-nav"
           aria-label={t("auth.personal.sectionPicker")}
-          fullWidth
-          value={
-            section === "profile" && accountMode === "preferences"
-              ? "preferences"
-              : section
-          }
-          options={selectItems}
-          onChange={(value) =>
-            value === "preferences"
-              ? navigate({ section: "profile", view: "preferences" })
-              : navigate({ section: value as Section })
-          }
-        />
-      </div>
+          hidden={!navigationOpen}
+        >
+          <UiTabs
+            value={
+              section === "profile" && accountMode === "preferences"
+                ? "preferences"
+                : section
+            }
+            items={tabItems}
+            onChange={(value) =>
+              value === "preferences"
+                ? navigate({ section: "profile", view: "preferences" })
+                : navigate({ section: value as Section })
+            }
+          />
+        </nav>
+        <button
+          type="button"
+          className="hn-personal-nav-toggle"
+          aria-label={t(
+            navigationOpen
+              ? "auth.personal.collapseNavigation"
+              : "auth.personal.expandNavigation",
+          )}
+          title={t(
+            navigationOpen
+              ? "auth.personal.collapseNavigation"
+              : "auth.personal.expandNavigation",
+          )}
+          aria-expanded={navigationOpen}
+          aria-controls="hn-profile-section-nav"
+          onClick={() => setNavigationOpen((open) => !open)}
+        >
+          {!navigationOpen ? (
+            <span className="hn-personal-nav-current">
+              {
+                tabItems.find(
+                  (item) =>
+                    item.key ===
+                    (section === "profile" && accountMode === "preferences"
+                      ? "preferences"
+                      : section),
+                )?.label
+              }
+            </span>
+          ) : null}
+          <UiIcon
+            name={navigationOpen ? "angle-small-up" : "angle-small-down"}
+            size="sm"
+          />
+        </button>
+      </header>
       {meQuery.isError ? (
         <ApiErrorAlert
           error={meQuery.error}
@@ -542,14 +555,23 @@ export function ProfilePage() {
                   <table>
                     <thead>
                       <tr>
+                        <th scope="col" className="hn-personal-history-index">
+                          {t("shared.table.rowNumber")}
+                        </th>
                         <th>{t("auth.profile.colTime")}</th>
                         <th>{t("auth.profile.colAction")}</th>
                         <th>{t("auth.profile.colReason")}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {(history.data?.data ?? []).map((entry) => (
+                      {(history.data?.data ?? []).map((entry, index) => (
                         <tr key={entry.id}>
+                          <td className="hn-personal-history-index">
+                            {(historyPagination.current - 1) *
+                              historyPagination.pageSize +
+                              index +
+                              1}
+                          </td>
                           <td>{formatDateTime(entry.created_at)}</td>
                           <td>{auditActionLabel(entry.action)}</td>
                           <td>{entry.reason || "—"}</td>

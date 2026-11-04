@@ -142,7 +142,6 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
           onSubmit={submit}
           noValidate
         >
-          <p className="hn-personal-muted">{t("auth.personal.passwordHint")}</p>
           {fields.map(({ key, label, autoComplete }) => (
             <UiTextField
               key={key}

@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfilePage } from "./ProfilePage";
 import { authService } from "../services/auth.service";
@@ -73,5 +73,48 @@ describe("ProfilePage security MFA card", () => {
     expect(
       await screen.findByRole("button", { name: "Bắt đầu đăng ký" }),
     ).toBeInTheDocument();
+  });
+  it("numbers permission history across pages", async () => {
+    vi.spyOn(authService, "mfaStatus").mockResolvedValue(status);
+    vi.mocked(auditLogService.getMyPermissionHistory).mockImplementation(
+      async (params = {}) => ({
+        data: [
+          {
+            id: `entry-${params.page}`,
+            actor_id: null,
+            action: "iam.role.assign",
+            object_type: "user",
+            object_id: "u1",
+            reason: `Page ${params.page}`,
+            before_data: null,
+            after_data: null,
+            created_at: "2026-11-04T09:00:00Z",
+          },
+        ],
+        meta: {
+          total: 11,
+          per_page: 10,
+          current_page: params.page ?? 1,
+          last_page: 2,
+        },
+      }),
+    );
+    renderWithProviders(<ProfilePage />, ["/profile?section=security"]);
+    fireEvent.click(screen.getByText("Lịch sử quyền và vai trò"));
+    await screen.findByText("Page 1");
+    const table = screen.getByRole("table");
+    expect(
+      within(table).getByRole("columnheader", { name: "STT" }),
+    ).toBeVisible();
+    expect(
+      within(within(table).getAllByRole("row")[1]).getAllByRole("cell")[0],
+    ).toHaveTextContent(/^1$/);
+    fireEvent.click(screen.getByRole("button", { name: "Go to next page" }));
+    await screen.findByText("Page 2");
+    await waitFor(() =>
+      expect(
+        within(within(table).getAllByRole("row")[1]).getAllByRole("cell")[0],
+      ).toHaveTextContent(/^11$/),
+    );
   });
 });

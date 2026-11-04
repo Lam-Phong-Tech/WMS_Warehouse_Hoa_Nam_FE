@@ -8,6 +8,61 @@ import {
 
 const screenshotRoot = "test-results/profile-account";
 
+test("account navigation collapses in the heading and security drawers use clear vertical layouts", async ({
+  page,
+}) => {
+  await openFixture(page, { width: 1600 });
+  const nav = page.locator("#hn-profile-section-nav");
+  await expect(nav).toBeVisible();
+  const navBounds = await nav.boundingBox();
+  const headingBounds = await page
+    .locator(".hn-personal-heading-text")
+    .boundingBox();
+  expect(navBounds!.x).toBeGreaterThan(headingBounds!.x);
+  expect(navBounds!.y).toBeLessThan(headingBounds!.y + headingBounds!.height);
+  await page.screenshot({
+    path: `${screenshotRoot}/navigation-1600-expanded.png`,
+  });
+  await page
+    .getByRole("button", { name: "Thu gọn điều hướng", exact: true })
+    .click();
+  await expect(nav).not.toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Thông tin cá nhân", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Mở rộng điều hướng", exact: true })
+    .click();
+  await expect(nav).toBeVisible();
+  await section(page, "Bảo mật");
+  await page.getByText("Lịch sử quyền và vai trò", { exact: true }).click();
+  await expect(
+    page
+      .locator(".hn-personal-history")
+      .getByRole("columnheader", { name: "STT" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Đổi mật khẩu", exact: true }).click();
+  const password = page.getByRole("dialog", { name: /^Đổi mật khẩu/ });
+  await expect(
+    password.getByText("Nhập mật khẩu hiện tại và mật khẩu mới.", {
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await closeDrawer(page, password);
+  await page
+    .getByRole("button", { name: "Bắt đầu đăng ký", exact: true })
+    .click();
+  const mfa = page.getByRole("dialog", { name: /^Xác thực hai bước/ });
+  await expect(mfa.locator(".hn-mfa-intro-copy")).toBeVisible();
+  const intro = await mfa.locator(".hn-mfa-intro-copy").boundingBox();
+  const steps = await mfa.locator(".hn-mfa-intro-steps").boundingBox();
+  expect(steps!.y).toBeGreaterThanOrEqual(intro!.y + intro!.height + 20);
+  expect(Math.abs(steps!.x - intro!.x)).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: `${screenshotRoot}/mfa-intro-two-rows-1600.png`,
+  });
+});
+
 test("device cards show desktop, phone and tablet illustrations immediately and open sessions", async ({
   page,
 }) => {

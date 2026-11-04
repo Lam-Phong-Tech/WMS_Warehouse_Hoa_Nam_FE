@@ -25,8 +25,35 @@
 .hn-mfa-embedded .hn-mfa-setup-grid {
   grid-template-columns: minmax(0, 1fr);
 }
-.hn-mfa-embedded .hn-mfa-intro-card {
+.hn-mfa-settings-drawer .hn-mfa-embedded .hn-mfa-intro-card > .MuiBox-root {
   grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  padding: 24px;
+}
+.hn-mfa-settings-drawer .hn-mfa-intro-copy h2 {
+  max-width: none;
+  margin: 8px 0 12px;
+}
+.hn-mfa-settings-drawer .hn-mfa-intro-copy p {
+  max-width: none;
+  margin: 0 0 24px;
+  line-height: 1.7;
+}
+.hn-mfa-settings-drawer .hn-mfa-intro-steps {
+  padding: 24px;
+  gap: 24px;
+}
+.hn-mfa-settings-drawer .hn-mfa-intro-steps li {
+  gap: 16px;
+  line-height: 1.7;
+}
+@media (max-width: 600px) {
+  .hn-mfa-settings-drawer .hn-mfa-embedded .hn-mfa-intro-card > .MuiBox-root,
+  .hn-mfa-settings-drawer .hn-mfa-intro-steps {
+    padding: 16px;
+    gap: 20px;
+  }
 }
 .hn-mfa-embedded .hn-settings-card {
   box-shadow: none;

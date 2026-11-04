@@ -1,4 +1,8 @@
 export const PERSONAL_VI = {
+  browserQuietPromptHint:
+    "Nếu không thấy hộp thoại, bấm biểu tượng thông báo hoặc “Notifications blocked” cạnh địa chỉ trang để cho phép thông báo. Trình duyệt có thể đang dùng lời nhắc im lặng.",
+  collapseNavigation: "Thu gọn điều hướng",
+  expandNavigation: "Mở rộng điều hướng",
   deviceSessionCount: "Số phiên",
   deviceLastActive: "Hoạt động cuối",
   sessionsOnDevice: "Các phiên trên thiết bị",
@@ -191,6 +195,10 @@ export const PERSONAL_VI = {
 } as const;
 
 export const PERSONAL_EN = {
+  browserQuietPromptHint:
+    "If no dialog appears, select the notification icon or “Notifications blocked” beside the site address to allow notifications. Your browser may be using quiet prompts.",
+  collapseNavigation: "Collapse navigation",
+  expandNavigation: "Expand navigation",
   deviceSessionCount: "Sessions",
   deviceLastActive: "Last active",
   sessionsOnDevice: "Sessions on this device",
