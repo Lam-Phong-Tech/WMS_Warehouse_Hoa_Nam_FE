@@ -4,7 +4,6 @@ import { BarChartOutlined } from "@/shared/components/icons";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { UiIcon, UiPagination, UiSelect } from "@/shared/ui";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
@@ -64,18 +63,10 @@ const getSTATUS_LABELS = localizedUiValue(
 const EMPTY_SKU_INDEX = new Map<string, SkuRecord>();
 const SORT_ACCESSORS = {
   code: (row: ComponentIssueDocument) => row.component_issue_no || row.id,
-  date: (row: ComponentIssueDocument) =>
-    row.posted_at || row.document_date || "",
   status: (row: ComponentIssueDocument) => row.status,
 };
 type Tracking = "" | "SERIAL" | "QUANTITY";
 type OpenTarget = { documentId?: string; caseId: string; caseCode?: string };
-
-function displayDate(value?: string) {
-  if (!value) return EMPTY_TEXT;
-  const date = dayjs(value);
-  return date.isValid() ? date.format("DD/MM/YYYY · HH:mm") : EMPTY_TEXT;
-}
 
 /** WAR-04 presentation. Mutations remain owned by the existing COMP-01 modal. */
 export default function WarrantyComponentIssueListPage() {
@@ -450,16 +441,19 @@ export default function WarrantyComponentIssueListPage() {
               aria-label={tUi("updatedUi.text_11362358afdc")}
             >
               <colgroup>
+                <col className="hn-war04-index-col" />
                 <col className="hn-war04-code-col" />
                 <col className="hn-war04-case-col" />
                 <col className="hn-war04-components-col" />
                 <col className="hn-war04-tracking-col" />
                 <col className="hn-war04-status-col" />
-                <col className="hn-war04-date-col" />
                 <col className="hn-war04-actions-col" />
               </colgroup>
               <thead>
                 <tr>
+                  <th scope="col" className="hn-war04-index-cell">
+                    {t("shared.table.rowNumber")}
+                  </th>
                   <SortableTh
                     label={tUi("inbound.detail.fieldDocument")}
                     sortKey="code"
@@ -479,13 +473,6 @@ export default function WarrantyComponentIssueListPage() {
                     sortState={sortState}
                     onSort={requestSort}
                   />
-                  <SortableTh
-                    label={tUi("updatedUi.text_5293d03c5908")}
-                    sortKey="date"
-                    sortType="value"
-                    sortState={sortState}
-                    onSort={requestSort}
-                  />
                   <th
                     scope="col"
                     aria-label={tUi("outbound.detail.colAction")}
@@ -493,7 +480,7 @@ export default function WarrantyComponentIssueListPage() {
                 </tr>
               </thead>
               <tbody>
-                {sortedRows.map((row) => {
+                {sortedRows.map((row, index) => {
                   const caseInfo = caseById.get(row.warranty_case_id);
                   const caseQuery =
                     caseQueries[caseIds.indexOf(row.warranty_case_id)];
@@ -504,7 +491,18 @@ export default function WarrantyComponentIssueListPage() {
                     : row.warehouse_id;
                   return (
                     <tr key={row.id} onClick={() => openDocument(row)}>
-                      <td data-label={tUi("inbound.detail.fieldDocument")}>
+                      <td
+                        className="hn-war04-index-cell"
+                        data-label={t("shared.table.rowNumber")}
+                      >
+                        {(pagination.current - 1) * pagination.pageSize +
+                          index +
+                          1}
+                      </td>
+                      <td
+                        className="hn-war04-code-cell"
+                        data-label={tUi("inbound.detail.fieldDocument")}
+                      >
                         <button
                           type="button"
                           className="hn-war04-code"
@@ -523,6 +521,7 @@ export default function WarrantyComponentIssueListPage() {
                         </span>
                       </td>
                       <td
+                        className="hn-war04-case-cell"
                         data-label={tUi("notifications.subject.warrantyCase")}
                       >
                         <span className="hn-war04-case-code">
@@ -566,24 +565,15 @@ export default function WarrantyComponentIssueListPage() {
                       >
                         {trackingLabel(document)}
                       </td>
-                      <td data-label={tUi("dashboard.composition.colStatus")}>
+                      <td
+                        className="hn-war04-status-cell"
+                        data-label={tUi("dashboard.composition.colStatus")}
+                      >
                         <span
                           className={`hn-war04-status hn-war04-status-${row.status.toLowerCase()}`}
                         >
                           {getSTATUS_LABELS()[row.status] ?? row.status}
                         </span>
-                      </td>
-                      <td data-label={tUi("updatedUi.text_5293d03c5908")}>
-                        <time
-                          dateTime={row.posted_at || row.document_date}
-                          title={
-                            row.posted_at
-                              ? tUi("reports.inventoryFlow.colPostedAt")
-                              : tUi("updatedUi.text_a17e6038ba64")
-                          }
-                        >
-                          {displayDate(row.posted_at || row.document_date)}
-                        </time>
                       </td>
                       <td className="hn-war04-action-cell">
                         <RowActionGroup
