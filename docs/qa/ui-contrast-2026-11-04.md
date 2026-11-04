@@ -54,3 +54,13 @@ Các ca thất bại đã quan sát trong lượt rộng:
 ## Giới hạn kiểm chứng
 
 Không đăng nhập hay kiểm chứng trên website đã triển khai; không xác nhận mọi màn cũ hoặc mọi trạng thái nghiệp vụ đều đạt. Đích bàn giao là `dev` theo yêu cầu; push không tự chứng minh deployment đã cập nhật.
+
+## Bổ sung: hover/được chọn của menu topbar
+
+- Người dùng báo tiếp chữ xanh đậm ở Thông tin tài khoản khi hover và mục Tối đang chọn. Nguyên nhân riêng: topbar dùng `--wms-primary-dark` (dark là `#075B7D`) làm foreground trên nền tối; đây là màu thương hiệu, không phải màu chữ tương tác.
+- Bỏ alias foreground thương hiệu trong topbar; menu hover/focus/selected dùng nền `--wms-bg-subtle` và chữ `--wms-text-strong`, icon tài khoản kế thừa màu chữ. Bổ sung focus cho mục menu/ngôn ngữ; áp dụng cùng cách cho kết quả tìm kiếm và footer menu. Dấu ✓, `aria-checked` và màu Đăng xuất được giữ theo ý nghĩa.
+- Chuẩn chính nâng lên v2.2, ghi rõ cặp màu menu: dark `#223D50` + `#DAECF6`, light `#EAF5F8` + `#003B63`; không đổi sang chữ xanh khi hover hoặc chọn.
+- Kiểm thử trước sửa thất bại đúng triệu chứng: chữ hover tài khoản thực tế `rgb(7, 91, 125)`. Sau sửa **4/4 ca topbar đạt** ở light/dark, 1440/390px: account hover/focus, icon, theme selected/selected+hover/focus, chữ ≥4.5:1 và icon ≥3:1. Đã xem ảnh hai menu tối trong trình duyệt.
+- Lệnh kiểm chứng phần bổ sung: `npm run test:ui-contrast -- --grep topbar`; ảnh `test-results/ui-contrast/account-menu-*.png`, `theme-menu-*.png`. Fixture dùng `AppTopbar` thật và CSS shell production; giá trị alias shell lấy theo `MainLayout`.
+- Phạm vi trực quan lần bổ sung là menu tài khoản/giao diện; tìm kiếm, ngôn ngữ và footer menu chỉ được rà soát nguồn. Có rà soát độc lập, không phát hiện vấn đề cần sửa thêm.
+- `AppTopbar.test.tsx`: **15/15 đạt**, gồm mở/đóng menu, đổi giao diện/ngôn ngữ, điều hướng và thông báo. Formatting fixture/spec và `git diff --check`: đạt. Phần production chỉ đổi CSS; CSS được biên dịch và kiểm trong các ca trình duyệt trên.

@@ -1,7 +1,7 @@
 ---
 title: Hoa Nam WMS — Chuẩn giao diện Web thống nhất
 status: active
-version: 2.1
+version: 2.2
 updated: 2026-11-04
 owner: Frontend
 applies_to: Web Admin (desktop, tablet, mobile)
@@ -52,6 +52,7 @@ Tiêu đề trang/vùng/drawer và nhãn đầu bảng dùng `--ops-heading` (`-
 
 - Chọn **cặp chữ + nền theo cùng theme**: đầu bảng dùng `--ops-table-header` + `--ops-heading`; nút mũi tên dùng `--ops-link` trên nền trong suốt, hover/focus dùng `--ops-pale`. Không gán trực tiếp `#d2edf7`/`#dff0f7` vào CSS trang hoặc inline style: màu sáng chỉ được khai trong token light.
 - Chữ thường/nhãn bảng tối thiểu **4.5:1** trên nền thực; tiêu đề drawer đặt mục tiêu **7:1**; icon tương tác tối thiểu **3:1** ở trạng thái thường/hover/focus. Không dùng màu chữ phụ để làm tiêu đề dịu đi.
+- **Menu trung tính khi hover/focus/được chọn:** nền `--ops-pale` (`--wms-bg-subtle`), chữ `--ops-heading` (`--wms-text-strong`), icon và dấu ✓ kế thừa màu chữ. Dark: nền **`#223D50`**, chữ/icon sáng **`#DAECF6`**; light: nền `#EAF5F8`, chữ `#003B63`. Giữ chữ sáng khi di chuột qua mục đã chọn; nhận biết lựa chọn bằng nền + dấu ✓/`aria-checked`, không đổi chữ sang xanh thương hiệu. Không dùng `primary`, `primary-dark` hoặc giảm opacity cho chữ/icon menu trung tính; màu thương hiệu không phải token chữ trên nền hover. Áp dụng menu tài khoản, giao diện, ngôn ngữ, kết quả tìm kiếm và menu chọn dùng chung. Hành động nguy hiểm như Đăng xuất vẫn dùng màu ngữ nghĩa riêng. Kiểm tra cả hover, focus bàn phím, selected và selected+hover; `npm run test:ui-contrast` có ca topbar desktop/mobile ở hai theme.
 - `--ops-line` dành cho viền nhẹ/trang trí. Đường chia cần nhận biết giữa header/body, nhóm thông tin và footer của drawer dùng **`1px solid --ops-divider`**, tối thiểu **3:1** với surface. `UiDrawer` áp dụng token này ở header/footer; `--wms-divider`/palette `divider` giữ viền nhẹ hiện hành cho bảng và thành phần khác. Không xóa đường chia để làm giao diện phẳng; không tăng độ đậm toàn bộ viền trang trí.
 - Drawer dùng surface đặc `--ops-surface`, chữ semantic và **`background-image: none`** tại theme MUI dùng chung. Lớp phủ trắng theo elevation của MUI làm nền dark bị bạc màu và thay đổi tương phản; chỉ backdrop ngoài drawer được làm tối, không giảm opacity cả drawer hoặc tiêu đề.
 - Kiểm tra **computed style trong trình duyệt**, gồm CSS biến, inline style, selector theo trang, portal và hover/focus. Kiểm tra CSS nguồn hoặc palette riêng lẻ chưa chứng minh màu cuối cùng đúng. Chạy `npm run test:ui-contrast` khi sửa theme, bảng, mũi tên hoặc drawer; bộ hồi quy render màn SKU thật và nút mũi tên dùng chung ở light/dark, `1440/1024/768/390/320px`, đo tương phản và giữ ảnh ở `test-results/ui-contrast/`.

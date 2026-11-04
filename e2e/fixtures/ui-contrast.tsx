@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppThemeProvider } from "@/shared/ui/theme/AppThemeProvider";
@@ -9,6 +9,7 @@ import { http } from "@/shared/api/http";
 import { SkuMasterScreen } from "@/modules/master-data/pages/MvpMasterScreens";
 import { RowActionButton } from "@/shared/components/actions/RowActionButton";
 import { UiDrawer } from "@/shared/ui/components/UiDialog";
+import { AppTopbar } from "@/app/layouts/topbar/AppTopbar";
 import "@flaticon/flaticon-uicons/css/regular/rounded.css";
 import "@/shared/ui/tokens/css-vars.css";
 import "@/shared/ui/tokens/css-vars-dark.css";
@@ -20,6 +21,23 @@ import "@/shared/ui/operations-ui.css";
 
 initializeTheme();
 useAuthStore.setState({ isSuperAdmin: true, isProfileLoaded: true });
+const topbarOnly = new URLSearchParams(location.search).has("topbar");
+if (topbarOnly) {
+  await import("@/app/layouts/system-shell.css");
+  useAuthStore.setState({
+    isAuthenticated: false,
+    user: { name: "Nguyễn Khoa" } as never,
+  });
+}
+const shellStyle = {
+  "--map-card": "var(--ops-surface)",
+  "--map-surface": "var(--ops-canvas)",
+  "--map-heading": "var(--ops-heading)",
+  "--map-pale": "var(--ops-pale)",
+  "--map-line": "var(--ops-line)",
+  "--map-link": "var(--ops-link)",
+  "--map-white": "var(--ops-on-primary)",
+} as CSSProperties;
 const sku = {
   sku_id: "sku-contrast",
   sku_code: "SKU-DEMO-001",
@@ -76,13 +94,23 @@ createRoot(document.getElementById("root")!).render(
   <AppThemeProvider>
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={["/master-data/skus?screen=MST-01"]}>
-        <div className="hn-system-shell">
+        <div
+          className="hn-system-shell"
+          style={topbarOnly ? shellStyle : undefined}
+        >
+          {topbarOnly ? (
+            <AppTopbar showMenuButton={false} onOpenMenu={() => {}} />
+          ) : null}
           <main style={{ padding: 16, minHeight: "100vh" }}>
-            <div className="hn-mvp-screen">
-              <SkuMasterScreen />
-            </div>
-            <RowActionButton kind="view" label="Mũi tên dùng chung" />
-            <SharedDrawerFixture />
+            {!topbarOnly ? (
+              <>
+                <div className="hn-mvp-screen">
+                  <SkuMasterScreen />
+                </div>
+                <RowActionButton kind="view" label="Mũi tên dùng chung" />
+                <SharedDrawerFixture />
+              </>
+            ) : null}
           </main>
         </div>
       </MemoryRouter>

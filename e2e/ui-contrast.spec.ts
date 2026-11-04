@@ -1,5 +1,83 @@
 import { expect, test, type Locator } from "@playwright/test";
 
+for (const theme of ["light", "dark"]) {
+  for (const width of [1440, 390]) {
+    test(`topbar ${theme} ${width}px: neutral menu text on hover, focus and selection`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript(
+        (value) => localStorage.setItem("hoa-nam-theme", value),
+        theme,
+      );
+      await page.goto("/e2e/fixtures/ui-contrast.html?topbar=1", {
+        waitUntil: "domcontentloaded",
+      });
+      const foreground =
+        theme === "dark" ? "rgb(218, 236, 246)" : "rgb(0, 59, 99)";
+      const background =
+        theme === "dark" ? "rgb(34, 61, 80)" : "rgb(234, 245, 248)";
+      await page.getByRole("button", { name: /^Tài khoản/ }).click();
+      const profile = page.getByRole("menuitem", {
+        name: "Thông tin tài khoản",
+      });
+      for (const state of ["hover", "focus"] as const) {
+        if (state === "hover") await profile.hover();
+        else {
+          await page.mouse.move(0, 0);
+          await profile.focus();
+          await page.keyboard.press("Tab");
+          await page.keyboard.press("Shift+Tab");
+          await expect(profile).toBeFocused();
+        }
+        await expect(profile).toHaveCSS("color", foreground);
+        await expect(profile).toHaveCSS("background-color", background);
+        expect(await contrast(profile)).toBeGreaterThanOrEqual(4.5);
+        await expect(profile.locator(".menu-item-icon")).toHaveCSS(
+          "color",
+          foreground,
+        );
+        expect(
+          await contrast(profile.locator(".menu-item-icon")),
+        ).toBeGreaterThanOrEqual(3);
+      }
+      await page.screenshot({
+        path: `test-results/ui-contrast/account-menu-${theme}-${width}.png`,
+      });
+      await page.keyboard.press("Escape");
+      await page
+        .getByRole("button", { name: "Giao diện", exact: true })
+        .click();
+      const selected = page.locator("#theme-menu .is-active");
+      await expect(selected).toHaveAttribute("aria-checked", "true");
+      await expect(selected).toHaveCSS("color", foreground);
+      await expect(selected).toHaveCSS("background-color", background);
+      expect(await contrast(selected)).toBeGreaterThanOrEqual(4.5);
+      await expect(selected.locator(".menu-item-icon")).toHaveCSS(
+        "color",
+        foreground,
+      );
+      await selected.hover();
+      await expect(selected).toHaveCSS("color", foreground);
+      const other = page
+        .locator("#theme-menu .header-menu-item:not(.is-active)")
+        .first();
+      await other.hover();
+      await expect(other).toHaveCSS("color", foreground);
+      await expect(other).toHaveCSS("background-color", background);
+      await page.mouse.move(0, 0);
+      await selected.focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+      await expect(selected).toBeFocused();
+      await expect(selected).toHaveCSS("color", foreground);
+      await page.screenshot({
+        path: `test-results/ui-contrast/theme-menu-${theme}-${width}.png`,
+      });
+    });
+  }
+}
+
 // Measure the browser's resolved colors, including CSS variables and ancestors.
 async function contrast(node: Locator, property = "color") {
   return node.evaluate((element, prop) => {
