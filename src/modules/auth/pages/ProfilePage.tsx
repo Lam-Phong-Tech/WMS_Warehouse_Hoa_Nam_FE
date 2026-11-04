@@ -31,7 +31,6 @@ import { captureAuthOwner } from "@/shared/store/auth-owner";
 import { ProfileEditorDrawer } from "../components/profile/ProfileEditorDrawer";
 import { ProfilePasswordDrawer } from "../components/profile/ProfilePasswordDrawer";
 import { ProfilePreferencesPanel } from "../components/profile/ProfilePreferencesPanel";
-import { ProfileSessionsPanel } from "../components/profile/ProfileSessionsPanel";
 import { MfaSettingsDrawer } from "../components/MfaSettingsDrawer";
 import { auditLogService } from "@/modules/audit-logs/services/audit-logs.service";
 import { auditActionLabel } from "@/modules/audit-logs/constants/audit-log-labels";
@@ -39,16 +38,10 @@ import "@/shared/ui/sku-aligned-settings.css";
 import "./profile-page.css";
 
 type Section =
-  | "profile"
-  | "security"
-  | "sessions"
-  | "notifications"
-  | "appearance"
-  | "other";
+  "profile" | "security" | "notifications" | "appearance" | "other";
 const sections: Section[] = [
   "profile",
   "security",
-  "sessions",
   "notifications",
   "appearance",
   "other",
@@ -230,15 +223,6 @@ export function ProfilePage() {
       ),
     },
     {
-      key: "sessions",
-      label: (
-        <>
-          <UiIcon name="computer" size="sm" />
-          {t("auth.personal.tabsSessions")}
-        </>
-      ),
-    },
-    {
       key: "notifications",
       label: (
         <>
@@ -269,7 +253,6 @@ export function ProfilePage() {
   const selectItems = [
     { value: "profile", label: t("auth.personal.tabsProfile") },
     { value: "security", label: t("auth.personal.tabsSecurity") },
-    { value: "sessions", label: t("auth.personal.tabsSessions") },
     { value: "notifications", label: t("auth.personal.tabsNotifications") },
     { value: "appearance", label: t("auth.personal.tabsAppearance") },
     { value: "other", label: t("auth.personal.tabsOther") },
@@ -281,13 +264,11 @@ export function ProfilePage() {
         : t("auth.personal.profileTitle")
       : section === "security"
         ? t("auth.personal.securityTitle")
-        : section === "sessions"
-          ? t("auth.personal.sessionsTitle")
-          : section === "notifications"
-            ? t("auth.personal.tabsNotifications")
-            : section === "appearance"
-              ? t("auth.personal.appearanceTitle")
-              : t("auth.personal.otherTitle");
+        : section === "notifications"
+          ? t("auth.personal.tabsNotifications")
+          : section === "appearance"
+            ? t("auth.personal.appearanceTitle")
+            : t("auth.personal.otherTitle");
   const subtitle =
     section === "profile"
       ? accountMode === "preferences"
@@ -295,13 +276,11 @@ export function ProfilePage() {
         : t("auth.personal.profileSubtitle")
       : section === "security"
         ? t("auth.personal.securitySubtitle")
-        : section === "sessions"
-          ? t("auth.personal.sessionsSubtitle")
-          : section === "notifications"
-            ? t("auth.personal.notificationsSubtitle")
-            : section === "appearance"
-              ? t("auth.personal.appearanceSubtitle")
-              : t("auth.personal.otherSubtitle");
+        : section === "notifications"
+          ? t("auth.personal.notificationsSubtitle")
+          : section === "appearance"
+            ? t("auth.personal.appearanceSubtitle")
+            : t("auth.personal.otherSubtitle");
   const warehouseNames = useMemo(
     () =>
       new Map(
@@ -504,12 +483,6 @@ export function ProfilePage() {
                   </p>
                 </section>
               </div>
-              <ProfileSessionsPanel
-                key={userId}
-                userId={userId}
-                compact
-                onManage={() => navigate({ section: "sessions" })}
-              />
             </>
           ) : null}
           {section === "security" ? (
@@ -578,12 +551,6 @@ export function ProfilePage() {
                   </ActionButton>
                 )}
               </section>
-              <ProfileSessionsPanel
-                key={userId}
-                userId={userId}
-                compact
-                onManage={() => navigate({ section: "sessions" })}
-              />
               <details className="hn-personal-card hn-personal-history">
                 <summary>{t("auth.profile.historyTitle")}</summary>
                 {history.isError ? (
@@ -623,9 +590,6 @@ export function ProfilePage() {
                 />
               </details>
             </div>
-          ) : null}
-          {section === "sessions" ? (
-            <ProfileSessionsPanel key={userId} userId={userId} />
           ) : null}
           {showSettings ? (
             preferences.isError ? (

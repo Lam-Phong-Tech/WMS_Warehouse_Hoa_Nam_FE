@@ -53,6 +53,18 @@ describe("ProfilePage personal editing", () => {
       recovery_codes_remaining: 0,
     });
   });
+  it("opens the profile for the retired sessions link without device navigation", async () => {
+    renderWithProviders(<ProfilePage />, ["/profile?section=sessions"]);
+    expect(
+      await screen.findByRole("heading", { name: "Tài khoản của tôi" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("tab", { name: "Thiết bị & phiên" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Quản lý thiết bị" }),
+    ).not.toBeInTheDocument();
+  });
   it("validates phone, saves with the opening version and refreshes identity", async () => {
     const update = vi.spyOn(profileService, "updateMe").mockResolvedValue({
       ...me,

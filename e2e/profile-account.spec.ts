@@ -2,10 +2,6 @@ import { test, expect, type Page, type Locator } from "@playwright/test";
 import {
   PROFILE_NAME,
   PROFILE_PASSWORD,
-  CURRENT_DEVICE_ID,
-  OTHER_DEVICE_ID,
-  CURRENT_SESSION_ID,
-  SAME_DEVICE_SESSION_ID,
   MFA_SECRET,
   RECOVERY_CODES,
 } from "./fixtures/profile-account-values";
@@ -159,7 +155,7 @@ test("profile MFA enrolls locally, reveals recovery codes once and disables with
   ).toBe(true);
 });
 
-test("profile device and MFA load errors retry safely and required MFA cannot be disabled", async ({
+test("profile MFA load errors retry safely and required MFA cannot be disabled", async ({
   page,
 }) => {
   await openFixture(page, {
@@ -168,21 +164,6 @@ test("profile device and MFA load errors retry safely and required MFA cannot be
     mfaError: true,
     mfa: "required",
   });
-  await section(page, "Thiết bị & phiên");
-  await expect(
-    page.getByRole("heading", {
-      name: "Chưa tải được danh sách thiết bị",
-      exact: true,
-    }),
-  ).toBeVisible({ timeout: 15000 });
-  await page.screenshot({
-    path: `${screenshotRoot}/devices-load-error-390-light.png`,
-  });
-  await page.evaluate(() => {
-    window.__profileDevicesUnavailable = false;
-  });
-  await page.getByRole("button", { name: "Thử lại", exact: true }).click();
-  await expect(page.locator(".hn-personal-device-card")).toHaveCount(1);
   await section(page, "Bảo mật");
   await expect(
     page.getByText(
@@ -220,7 +201,6 @@ const layouts = [
 const sections = [
   "Hồ sơ",
   "Bảo mật",
-  "Thiết bị & phiên",
   "Thông báo",
   "Giao diện",
   "Khác",
@@ -629,213 +609,6 @@ async function confirmRevoke(page: Page) {
   await expect(confirm).not.toBeVisible();
 }
 
-test("profile devices distinguish installations and protect current family while revoking exact other targets", async ({
-  page,
-}) => {
-  await openFixture(page, { width: 390, multiple: true });
-  await section(page, "Thiết bị & phiên");
-  const panel = page.locator(".hn-personal-session-panel");
-  await expect(panel.locator(".hn-personal-device-card")).toHaveCount(3);
-  await expect(panel.locator(".hn-personal-session-counts")).toContainText(
-    "2 thiết bị",
-  );
-  await expect(panel.locator(".hn-personal-session-counts")).toContainText(
-    "4 phiên",
-  );
-  const current = panel
-    .locator(".hn-personal-device-card")
-    .filter({ hasText: "Máy tính văn phòng — Chrome và Edge" });
-  await expect(
-    current.getByRole("button", { name: "Đăng xuất thiết bị", exact: true }),
-  ).toHaveCount(0);
-  await current
-    .getByRole("button", {
-      name: "Xem chi tiết · Máy tính văn phòng — Chrome và Edge",
-      exact: true,
-    })
-    .click();
-  let detail = page.getByRole("dialog", { name: /^Chi tiết thiết bị/ });
-  await drawerGeometry(page, detail);
-  await detail
-    .getByRole("button", { name: "Chi tiết phiên · Chrome", exact: true })
-    .click();
-  detail = page.getByRole("dialog", { name: /^Chi tiết phiên/ });
-  await drawerGeometry(page, detail);
-  await expect(
-    detail.getByRole("button", { name: "Kết thúc phiên", exact: true }),
-  ).toHaveCount(0);
-  await closeDrawer(page, detail);
-  await current
-    .getByRole("button", {
-      name: "Xem chi tiết · Máy tính văn phòng — Chrome và Edge",
-      exact: true,
-    })
-    .click();
-  detail = page.getByRole("dialog", { name: /^Chi tiết thiết bị/ });
-  await detail
-    .getByRole("button", { name: "Chi tiết phiên · Edge", exact: true })
-    .click();
-  detail = page.getByRole("dialog", { name: /^Chi tiết phiên/ });
-  await drawerGeometry(page, detail);
-  await page.screenshot({
-    path: `${screenshotRoot}/session-other-390-light.png`,
-  });
-  await detail
-    .getByRole("button", { name: "Kết thúc phiên", exact: true })
-    .click();
-  await confirmRevoke(page);
-  await expect
-    .poll(() =>
-      page.evaluate(
-        (id) =>
-          window.__profileState.devices
-            .flatMap((group) => group.sessions)
-            .some((entry) => entry.session_id === id),
-        SAME_DEVICE_SESSION_ID,
-      ),
-    )
-    .toBe(false);
-  const scanner = panel
-    .locator(".hn-personal-device-card")
-    .filter({ hasText: "Máy quét kho Hoa Nam" });
-  await scanner
-    .getByRole("button", {
-      name: "Xem chi tiết · Máy quét kho Hoa Nam",
-      exact: true,
-    })
-    .click();
-  detail = page.getByRole("dialog", { name: /^Chi tiết thiết bị/ });
-  await drawerGeometry(page, detail);
-  await page.screenshot({
-    path: `${screenshotRoot}/device-scanner-390-light.png`,
-  });
-  await detail
-    .getByRole("button", { name: "Đăng xuất thiết bị", exact: true })
-    .click();
-  await confirmRevoke(page);
-  await expect
-    .poll(() =>
-      page.evaluate(
-        (id) =>
-          window.__profileState.devices.some((entry) => entry.device_id === id),
-        OTHER_DEVICE_ID,
-      ),
-    )
-    .toBe(false);
-  await panel
-    .getByRole("button", { name: "Kết thúc các phiên khác", exact: true })
-    .click();
-  await confirmRevoke(page);
-  await expect(
-    panel.getByRole("button", { name: "Kết thúc các phiên khác", exact: true }),
-  ).toBeDisabled();
-  const remaining = await page.evaluate(() =>
-    window.__profileState.devices
-      .flatMap((group) => group.sessions)
-      .map((entry) => entry.session_id),
-  );
-  expect(remaining).toEqual([CURRENT_SESSION_ID]);
-  const writes = await page.evaluate(() =>
-    window.__profileRequests.filter((entry) => entry.method !== "GET"),
-  );
-  expect(writes).toHaveLength(3);
-  expect(writes[0].url).toBe(
-    `/auth/sessions/f${SAME_DEVICE_SESSION_ID.slice(1)}`,
-  );
-  expect(writes[1].url).toBe(`/auth/devices/${OTHER_DEVICE_ID}`);
-  expect(writes[2]).toMatchObject({
-    method: "POST",
-    url: "/auth/sessions/revoke-others",
-    payload: {},
-  });
-  expect(writes.some((entry) => entry.url.includes(CURRENT_DEVICE_ID))).toBe(
-    false,
-  );
-  expect(
-    await page.evaluate(() => window.__profileGlobalSnapshot().hasToken),
-  ).toBe(true);
-});
-
-test("profile uncertain and stale session results reconcile by readback without blind retries", async ({
-  page,
-}) => {
-  await openFixture(page, { width: 1440, multiple: true });
-  await section(page, "Thiết bị & phiên");
-  const panel = page.locator(".hn-personal-session-panel");
-  await page.evaluate((id) => {
-    window.__profileFaults.push({
-      method: "DELETE",
-      url: `/auth/devices/${id}`,
-      afterCommit: true,
-    });
-  }, OTHER_DEVICE_ID);
-  await panel
-    .locator(".hn-personal-device-card")
-    .filter({ hasText: "Máy quét kho Hoa Nam" })
-    .getByRole("button", { name: "Đăng xuất thiết bị", exact: true })
-    .click();
-  await confirmRevoke(page);
-  await expect(
-    panel.getByText("Chưa xác định kết quả", { exact: true }),
-  ).toBeVisible();
-  expect(
-    await page.evaluate(
-      () =>
-        window.__profileRequests.filter((entry) => entry.method === "DELETE")
-          .length,
-    ),
-  ).toBe(1);
-  await page.screenshot({
-    path: `${screenshotRoot}/session-outcome-unknown-1440-light.png`,
-  });
-  await panel
-    .getByRole("button", { name: "Kiểm tra trạng thái", exact: true })
-    .click();
-  await expect(
-    panel.getByText("Đã kết thúc phiên được chọn.", { exact: true }),
-  ).toBeVisible();
-  expect(
-    await page.evaluate(
-      () =>
-        window.__profileRequests.filter((entry) => entry.method === "DELETE")
-          .length,
-    ),
-  ).toBe(1);
-  const current = panel
-    .locator(".hn-personal-device-card")
-    .filter({ hasText: "Máy tính văn phòng — Chrome và Edge" });
-  await current
-    .getByRole("button", {
-      name: "Xem chi tiết · Máy tính văn phòng — Chrome và Edge",
-      exact: true,
-    })
-    .click();
-  let detail = page.getByRole("dialog", { name: /^Chi tiết thiết bị/ });
-  await detail
-    .getByRole("button", { name: "Chi tiết phiên · Edge", exact: true })
-    .click();
-  detail = page.getByRole("dialog", { name: /^Chi tiết phiên/ });
-  await page.evaluate((id) => {
-    window.__profileState.devices = window.__profileState.devices
-      .map((group) => ({
-        ...group,
-        sessions: group.sessions.filter((entry) => entry.session_id !== id),
-      }))
-      .filter((group) => group.sessions.length);
-  }, SAME_DEVICE_SESSION_ID);
-  await detail
-    .getByRole("button", { name: "Kết thúc phiên", exact: true })
-    .click();
-  await confirmRevoke(page);
-  await expect(
-    detail.getByText("Phiên không còn khả dụng", { exact: true }),
-  ).toBeVisible();
-  await drawerGeometry(page, detail);
-  await page.screenshot({
-    path: `${screenshotRoot}/session-stale-1440-light.png`,
-  });
-});
-
 test("profile password validation keeps secrets local and follows existing forced relogin policy", async ({
   page,
 }) => {
@@ -1041,7 +814,7 @@ test("profile edit, email reauthentication, avatar crop and discard use real loc
 });
 
 for (const { width, theme } of layouts) {
-  test(`profile ${width} ${theme}: six responsive sections, own profile and actual server session policy`, async ({
+  test(`profile ${width} ${theme}: five responsive sections and own profile`, async ({
     page,
   }) => {
     await openFixture(page, { width, theme });
@@ -1050,6 +823,12 @@ for (const { width, theme } of layouts) {
       root.getByText(PROFILE_NAME, { exact: true }).first(),
     ).toBeVisible();
     await noOverflow(page);
+    await expect(
+      root.getByRole("tab", { name: "Thiết bị & phiên" }),
+    ).toHaveCount(0);
+    await expect(
+      root.getByRole("button", { name: "Quản lý thiết bị" }),
+    ).toHaveCount(0);
     await page.screenshot({
       path: `${screenshotRoot}/overview-${width}-${theme}.png`,
     });
@@ -1076,29 +855,6 @@ for (const { width, theme } of layouts) {
       await noOverflow(page);
       if (name === "Bảo mật")
         await expect(root.getByText(/Xác thực hai bước/).first()).toBeVisible();
-      if (name === "Thiết bị & phiên") {
-        await expect(root.locator(".hn-personal-session-counts")).toContainText(
-          "1 thiết bị",
-        );
-        await expect(root.locator(".hn-personal-session-counts")).toContainText(
-          "1 phiên",
-        );
-        await expect(
-          root.getByText(
-            "Đăng nhập hoàn tất ở nơi khác sẽ thay thế phiên đang hoạt động.",
-            { exact: true },
-          ),
-        ).toBeVisible();
-        await expect(
-          root.getByRole("button", {
-            name: "Kết thúc các phiên khác",
-            exact: true,
-          }),
-        ).toBeDisabled();
-        await expect(
-          root.getByText(/3\s*\/\s*3 thiết bị|2 phiên\/thiết bị/),
-        ).toHaveCount(0);
-      }
       if (name === "Thông báo")
         await expect(
           root.getByLabel("Hoạt động tài khoản · Trong ứng dụng", {
