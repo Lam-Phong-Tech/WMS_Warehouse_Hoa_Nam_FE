@@ -445,29 +445,31 @@ export function ProfilePreferencesPanel({
                 </button>
               ))}
             </div>
-            <h3>{t("auth.personal.motion")}</h3>
-            <label className="hn-personal-switch-row">
-              <span>
-                <strong>{t("auth.personal.reduceMotion")}</strong>
-                <small>{t("auth.personal.reduceMotionHint")}</small>
-              </span>
-              <Switch
+            <div className="hn-personal-motion-settings">
+              <h3>{t("auth.personal.motion")}</h3>
+              <label className="hn-personal-switch-row">
+                <span>
+                  <strong>{t("auth.personal.reduceMotion")}</strong>
+                  <small>{t("auth.personal.reduceMotionHint")}</small>
+                </span>
+                <Switch
+                  disabled={pending}
+                  checked={draft.reduced_motion}
+                  onChange={(_, checked) => update("reduced_motion", checked)}
+                  slotProps={{
+                    input: { "aria-label": t("auth.personal.reduceMotion") },
+                  }}
+                />
+              </label>
+              <ActionButton
+                kind="reset"
+                appearance="flat"
                 disabled={pending}
-                checked={draft.reduced_motion}
-                onChange={(_, checked) => update("reduced_motion", checked)}
-                slotProps={{
-                  input: { "aria-label": t("auth.personal.reduceMotion") },
-                }}
-              />
-            </label>
-            <ActionButton
-              kind="reset"
-              appearance="flat"
-              disabled={pending}
-              onClick={() => setReset(true)}
-            >
-              {t("auth.personal.resetDefaults")}
-            </ActionButton>
+                onClick={() => setReset(true)}
+              >
+                {t("auth.personal.resetDefaults")}
+              </ActionButton>
+            </div>
           </section>
           <PreferencePreview preferences={draft} />
         </div>

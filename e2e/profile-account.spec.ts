@@ -313,6 +313,16 @@ async function section(page: Page, label: (typeof sections)[number]) {
       .click();
     await page.getByRole("option", { name: label, exact: true }).click();
   }
+  const titles = {
+    "Hồ sơ": "Tài khoản của tôi",
+    "Bảo mật": "Bảo mật tài khoản",
+    "Thông báo": "Thông báo",
+    "Giao diện": "Giao diện",
+    Khác: "Tùy chọn khác",
+  };
+  await expect(
+    page.getByRole("heading", { name: titles[label], exact: true, level: 1 }),
+  ).toBeVisible();
 }
 async function noOverflow(page: Page) {
   expect(

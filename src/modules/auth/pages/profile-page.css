@@ -597,10 +597,32 @@
   gap: 16px;
   align-items: center;
 }
-.hn-personal-switch-row span {
+.hn-personal-switch-row > span:first-child {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
+  line-height: 22px;
+}
+.hn-personal-switch-row .MuiSwitch-root {
+  flex-shrink: 0;
+}
+.hn-personal-motion-settings {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ops-line);
+}
+.hn-personal-card .hn-personal-motion-settings h3 {
+  margin: 0;
+}
+.hn-personal-motion-settings > .MuiButton-root {
+  justify-self: start;
+  min-height: 40px;
+  margin-top: 4px;
+  padding: 8px 12px;
+  gap: 8px;
 }
 .hn-personal-switch-row small {
   color: var(--ops-muted);
