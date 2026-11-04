@@ -413,7 +413,17 @@ export function ProfilePreferencesPanel({
       {mode === "other" ? (
         <div className="hn-personal-settings-grid">
           <section className="hn-personal-card">
-            <h2>{t("auth.personal.fontSize")}</h2>
+            <div className="hn-personal-section-heading hn-personal-preferences-heading">
+              <h2>{t("auth.personal.fontSize")}</h2>
+              <ActionButton
+                kind="reset"
+                appearance="flat"
+                disabled={pending}
+                onClick={() => setReset(true)}
+              >
+                {t("auth.personal.resetDefaults")}
+              </ActionButton>
+            </div>
             <div className="hn-personal-choice-row">
               {(["medium", "large"] as const).map((size) => (
                 <button
@@ -461,14 +471,6 @@ export function ProfilePreferencesPanel({
                   }}
                 />
               </label>
-              <ActionButton
-                kind="reset"
-                appearance="flat"
-                disabled={pending}
-                onClick={() => setReset(true)}
-              >
-                {t("auth.personal.resetDefaults")}
-              </ActionButton>
             </div>
           </section>
           <PreferencePreview preferences={draft} />

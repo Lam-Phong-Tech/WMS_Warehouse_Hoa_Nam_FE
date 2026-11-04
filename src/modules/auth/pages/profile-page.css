@@ -617,10 +617,15 @@
 .hn-personal-card .hn-personal-motion-settings h3 {
   margin: 0;
 }
-.hn-personal-motion-settings > .MuiButton-root {
-  justify-self: start;
+.hn-personal-section-heading.hn-personal-preferences-heading {
+  align-items: center;
+  margin-bottom: 16px;
+}
+.hn-personal-card .hn-personal-preferences-heading h2 {
+  margin: 0;
+}
+.hn-personal-preferences-heading > .MuiButton-root {
   min-height: 40px;
-  margin-top: 4px;
   padding: 8px 12px;
   gap: 8px;
 }
