@@ -238,10 +238,23 @@ describe("RPT-01 inbound filters", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "2" }));
     expect(within(table()).getByText("PN-BETA")).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "STT" }),
+    ).toBeInTheDocument();
+    expect(
+      within(within(table()).getByText("PN-BETA").closest("tr")!).getAllByRole(
+        "cell",
+      )[0],
+    ).toHaveTextContent(/^11$/);
     fireEvent.click(
       screen.getByRole("combobox", { name: new RegExp(filterName) }),
     );
     fireEvent.click(screen.getByRole("option", { name: optionName }));
     expect(within(table()).getByText("PN-BETA")).toBeInTheDocument();
+    expect(
+      within(within(table()).getByText("PN-BETA").closest("tr")!).getAllByRole(
+        "cell",
+      )[0],
+    ).toHaveTextContent(/^1$/);
   });
 });

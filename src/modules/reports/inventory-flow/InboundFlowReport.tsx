@@ -1162,7 +1162,10 @@ export default function InboundFlowReport() {
                 <table>
                   <thead>
                     <tr>
-                      <th>
+                      <th scope="col" className="inbound-index-cell">
+                        {tUi("shared.table.rowNumber")}
+                      </th>
+                      <th className="inbound-code-cell">
                         {tUi("warranty.componentList.colCode")}{" "}
                         <span className="inbound-tablet-only">
                           {tUi("updatedUi.text_aaf42c905ec0")}
@@ -1211,23 +1214,37 @@ export default function InboundFlowReport() {
                           })}
                         </button>
                       </th>
-                      <th>{tUi("updatedUi.text_039d667495cd")}</th>
+                      <th className="inbound-supplier-cell">
+                        {tUi("updatedUi.text_039d667495cd")}
+                      </th>
                       <th className="is-number">
                         {tUi("updatedUi.text_1320fb99c374")}
                       </th>
-                      <th>{tUi("dashboard.composition.colStatus")}</th>
+                      <th className="inbound-status-cell">
+                        {tUi("dashboard.composition.colStatus")}
+                      </th>
                       <th className="inbound-created-by">
                         {tUi("reverse.detail.fieldCreatedBy")}
                       </th>
-                      <th aria-label={tUi("outbound.detail.colAction")} />
+                      <th
+                        className="inbound-action-cell"
+                        aria-label={tUi("outbound.detail.colAction")}
+                      />
                     </tr>
                   </thead>
                   <tbody>
-                    {pageDocuments.map((document) => {
+                    {pageDocuments.map((document, index) => {
                       const tone = statusTone(document.status);
                       return (
                         <tr key={document.id}>
                           <td
+                            className="inbound-index-cell"
+                            data-label={tUi("shared.table.rowNumber")}
+                          >
+                            {(safePage - 1) * pageSize + index + 1}
+                          </td>
+                          <td
+                            className="inbound-code-cell"
                             data-label={tUi("warranty.componentList.colCode")}
                           >
                             <strong>{document.document_no || "—"}</strong>
