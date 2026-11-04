@@ -922,33 +922,6 @@ export function IamUserScreen({
         className="hn-iam-users-panel"
         aria-label={t("iam.userUi.title")}
       >
-        <div className="hn-iam-user-summary">
-          <strong>
-            {usersQuery.isLoading
-              ? t("iam.user.loadingData")
-              : t("iam.userUi.accountCount", { count: total })}
-          </strong>
-          <div
-            className="hn-iam-status-tabs"
-            aria-label={t("iam.user.colStatus")}
-          >
-            {[{ value: "", label: t("iam.userUi.all") }, ...STATUS_OPTIONS].map(
-              (status) => (
-                <button
-                  key={status.value}
-                  type="button"
-                  aria-pressed={statusFilter === status.value}
-                  onClick={() => {
-                    setStatusFilter(status.value as IamUserStatus | "");
-                    setPage(1);
-                  }}
-                >
-                  {status.label}
-                </button>
-              ),
-            )}
-          </div>
-        </div>
         <div className="hn-iam-user-filters">
           <UiTextField
             value={search}
@@ -1115,9 +1088,6 @@ export function IamUserScreen({
                               {user.display_name}
                             </TruncatedText>
                           </strong>
-                          <TruncatedText lines={1} className="muted">
-                            {user.username || user.email || EMPTY_TEXT}
-                          </TruncatedText>
                           <TruncatedText
                             lines={1}
                             className="muted hn-iam-department-caption"
@@ -1645,9 +1615,6 @@ export function IamUserScreen({
                 </span>
                 <div>
                   <h2>{viewingUser.display_name}</h2>
-                  <p>
-                    {viewingUser.username || viewingUser.email || EMPTY_TEXT}
-                  </p>
                   <UiStatusBadge
                     tone={statusBadgeTone(viewingUser.status)}
                     label={statusLabel(viewingUser.status)}
@@ -1675,10 +1642,6 @@ export function IamUserScreen({
                   <UiDescriptions
                     columns={2}
                     items={[
-                      {
-                        label: t("iam.userUi.username"),
-                        value: viewingUser.username || EMPTY_TEXT,
-                      },
                       {
                         label: "Email",
                         value: viewingUser.email || EMPTY_TEXT,

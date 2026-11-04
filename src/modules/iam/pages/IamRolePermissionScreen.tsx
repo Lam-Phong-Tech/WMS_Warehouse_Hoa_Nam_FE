@@ -720,25 +720,6 @@ export function IamRolePermissionScreen({
             >
               {permissionLabel(permission, t)}
             </Box>
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-              <Box component="span" sx={{ fontSize: 11, color: S.textMedium }}>
-                {permission.permission_key}
-              </Box>
-              <ActionIconButton
-                kind="copy"
-                label={t("iam.role.copyKeyAria", {
-                  key: permission.permission_key,
-                })}
-                sx={{ padding: "2px" }}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  void navigator.clipboard?.writeText(
-                    permission.permission_key,
-                  );
-                }}
-              />
-            </Stack>
             {retired ? (
               <Box component="span" sx={{ fontSize: 11, color: S.warningText }}>
                 {permission.replaced_by
@@ -980,19 +961,7 @@ export function IamRolePermissionScreen({
                   <UiAlert tone="warning" title={t("iam.role.superAdminTitle")}>
                     {t("iam.role.superAdminBody")}
                   </UiAlert>
-                ) : (
-                  <UiAlert tone="info">
-                    {t("iam.role.settingForA")}{" "}
-                    <strong>{selectedRole.role_name}</strong>{" "}
-                    {t("iam.role.settingForB")}{" "}
-                    <Box component="code" sx={CODE_SX}>
-                      {selectedRole.role_code}
-                    </Box>
-                    {t("iam.role.settingForC")}{" "}
-                    <strong>{t("iam.roleUi.review")}</strong>{" "}
-                    {t("iam.role.settingForD")}
-                  </UiAlert>
-                )}
+                ) : null}
                 {dirty ? (
                   <span className="hn-iam-role-dirty" role="status">
                     {t("iam.roleUi.changes", { count: changedIds.length })}

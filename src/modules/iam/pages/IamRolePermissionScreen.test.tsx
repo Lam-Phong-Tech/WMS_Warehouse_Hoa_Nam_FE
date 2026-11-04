@@ -204,7 +204,7 @@ describe("IamRolePermissionScreen", () => {
     expect(
       container.querySelector(".hn-iam-permission-cell"),
     ).toBeInTheDocument();
-    expect(screen.getByText("inbound.create")).toBeVisible();
+    expect(screen.queryByText("inbound.create")).not.toBeInTheDocument();
     expect(
       container.querySelector(".hn-iam-matrix-table"),
     ).not.toBeInTheDocument();

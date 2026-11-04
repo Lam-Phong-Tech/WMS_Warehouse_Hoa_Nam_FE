@@ -172,9 +172,7 @@ test("users filters, paging and explicit status confirmation", async ({
 }) => {
   await openFixture(page, "users", 1440, "light");
   const root = page.locator(".hn-iam-screen");
-  await expect(root.locator(".hn-iam-user-summary")).toContainText(
-    "32 tài khoản",
-  );
+  await expect(root.locator(".hn-iam-user-summary")).toHaveCount(0);
   await root.locator(".hn-iam-users-pagination").getByRole("combobox").click();
   await page.getByRole("option", { name: "20 / trang", exact: true }).click();
   await expect
@@ -189,9 +187,16 @@ test("users filters, paging and explicit status confirmation", async ({
     .toMatchObject({ per_page: 20, page: 1 });
   await root.getByRole("combobox", { name: "Lọc theo trạng thái" }).click();
   await page.getByRole("option", { name: "Đã khóa", exact: true }).click();
-  await expect(root.locator(".hn-iam-user-summary")).toContainText(
-    "4 tài khoản",
-  );
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          window.__iamRequests
+            .filter((request) => request.url === "/users")
+            .at(-1)?.params,
+      ),
+    )
+    .toMatchObject({ status: "LOCKED" });
   await root.getByRole("button", { name: "Xóa lọc", exact: true }).click();
   await root.getByRole("combobox", { name: "Lọc theo vai trò" }).click();
   await page
@@ -544,7 +549,10 @@ for (const { width, theme } of cases) {
     ).toBe(true);
     await expect(root.locator(".hn-iam-matrix-table")).toHaveCount(0);
     await expect(root.locator(".hn-iam-role-compact-select")).toHaveCount(0);
-    await expect(root.getByText("sku.manage", { exact: true })).toBeVisible();
+    await expect(root.getByText("sku.manage", { exact: true })).toHaveCount(0);
+    await expect(
+      root.locator('.hn-iam-permission-cell [data-action-kind="copy"]'),
+    ).toHaveCount(0);
     await expect(
       root.locator(".hn-iam-permission-cell").filter({
         has: page.getByRole("checkbox", {
