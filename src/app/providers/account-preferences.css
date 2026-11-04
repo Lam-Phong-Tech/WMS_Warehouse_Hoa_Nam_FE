@@ -1,0 +1,34 @@
+/* Account-selected readability overrides presentation only, never status semantics or control hit targets. */
+html[data-account-font-size="large"] {
+  --account-body-size: 16px;
+  --account-caption-size: 14px;
+  --account-table-header-size: 18px;
+}
+html[data-account-font-size="small"] {
+  --account-body-size: 13px;
+  --account-caption-size: 12px;
+  --account-table-header-size: 15px;
+}
+html:is([data-account-font-size="large"], [data-account-font-size="small"])
+  :is(main, .MuiDrawer-paper)
+  :is(td, .MuiTypography-body1, .MuiTypography-body2, .MuiInputBase-input) {
+  font-size: var(--account-body-size) !important;
+}
+html:is([data-account-font-size="large"], [data-account-font-size="small"])
+  main
+  th {
+  font-size: var(--account-table-header-size) !important;
+}
+html[data-account-density="compact"] main :is(table td, table th) {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  height: auto !important;
+}
+html[data-account-reduced-motion="true"] *,
+html[data-account-reduced-motion="true"] *::before,
+html[data-account-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

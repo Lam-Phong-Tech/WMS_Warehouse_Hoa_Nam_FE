@@ -253,6 +253,12 @@ export const NAV_GROUPS: NavGroupData[] = [
     railDivider: true,
     items: [
       {
+        screen: "PROFILE-01",
+        path: ROUTES.PROFILE,
+        label: "Hồ sơ cá nhân",
+        icon: "user-circle",
+      },
+      {
         screen: "IAM-01",
         path: ROUTES.IAM_USERS,
         label: "Danh sách người dùng & phân quyền",
@@ -283,6 +289,7 @@ export const NAV_GROUPS: NavGroupData[] = [
 
 export const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.DASHBOARD]: "MAP-01",
+  [ROUTES.PROFILE]: "PROFILE-01",
   [ROUTES.IAM_USERS]: "IAM-01",
   [ROUTES.MASTER_DATA]: "MST-01",
   [ROUTES.CATALOG_MASTER]: "MST-CAT-01",

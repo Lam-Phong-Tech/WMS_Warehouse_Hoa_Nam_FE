@@ -117,16 +117,16 @@ Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-ta
 
 ### Bảng
 
-| Thành phần         | Quy cách bắt buộc                                                                                                                                                |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bao bảng           | Nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-card` (`8px`); đầu bảng chạm mép bao, không có padding bao quanh.                                   |
+| Thành phần         | Quy cách bắt buộc                                                                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bao bảng           | Nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-card` (`8px`); đầu bảng chạm mép bao, không có padding bao quanh.                                                                       |
 | Đầu bảng           | Nền `--ops-table-header` (**`#d2edf7`** ở light, nền semantic tối ở dark), chữ `--ops-heading`, **16/24px, weight 800**, uppercase, letter spacing `0.02em`. Không gán màu sáng trực tiếp tại trang. |
-| Ô đầu và ô dữ liệu | Padding dọc `12px`, ngang `18px`; ngoại lệ cột STT/hành động theo bảng SKU khi cần; căn giữa theo chiều dọc, đường chia `1px solid --ops-line`.                  |
-| Hàng dữ liệu       | Tối thiểu khoảng `68px` khi có biểu tượng `44px`; nội dung có thể cao hơn khi xuống dòng.                                                                        |
-| Chữ                | `--ops-text`, **14/22px**; mã chính `--ops-heading`, weight 700.                                                                                                 |
-| Biểu tượng mã      | Khung khoảng `44px`, nền `--ops-pale`, màu `--ops-link`, cách mã `12px`.                                                                                         |
-| Trạng thái         | Pill cao `24px`, radius `20px`, chữ `11px`, chấm `7px`; dùng token semantic tương ứng.                                                                           |
-| Hover/focus        | Hover pha `55% --ops-pale` với `--ops-surface`; focus bàn phím nhìn thấy rõ.                                                                                     |
+| Ô đầu và ô dữ liệu | Padding dọc `12px`, ngang `18px`; ngoại lệ cột STT/hành động theo bảng SKU khi cần; căn giữa theo chiều dọc, đường chia `1px solid --ops-line`.                                                      |
+| Hàng dữ liệu       | Tối thiểu khoảng `68px` khi có biểu tượng `44px`; nội dung có thể cao hơn khi xuống dòng.                                                                                                            |
+| Chữ                | `--ops-text`, **14/22px**; mã chính `--ops-heading`, weight 700.                                                                                                                                     |
+| Biểu tượng mã      | Khung khoảng `44px`, nền `--ops-pale`, màu `--ops-link`, cách mã `12px`.                                                                                                                             |
+| Trạng thái         | Pill cao `24px`, radius `20px`, chữ `11px`, chấm `7px`; dùng token semantic tương ứng.                                                                                                               |
+| Hover/focus        | Hover pha `55% --ops-pale` với `--ops-surface`; focus bàn phím nhìn thấy rõ.                                                                                                                         |
 
 Mỗi bảng phải có **kế hoạch độ rộng cho mọi cột**, tổng tỷ lệ `100%`. Cột bỏ trống độ rộng có thể hút toàn bộ phần dư và tạo khoảng trắng sai nhịp. Tên cột, thứ tự và nghiệp vụ của từng màn được giữ theo API, không sao chép tên cột SKU sang module khác.
 
@@ -203,7 +203,6 @@ Chỉ báo thành công **sau** phản hồi thành công; tránh hai toast cho 
 
 **Nguồn triển khai hiện hành:** `src/shared/ui/tokens/operations.css`, `src/shared/ui/tokens/primitives.ts`, `src/shared/ui/theme/`, `src/shared/ui/components/UiDialog.tsx`, `src/shared/components/data-display/ResponsiveDataTable.tsx`, `src/modules/master-data/pages/sku-list.css`, `src/app/providers/AppProviders.tsx`, `src/index.css`. Các nguồn này giúp tìm đúng nơi sửa code; tài liệu này chốt quy tắc thiết kế. Khi code và quy tắc lệch nhau, sửa cùng một thay đổi và ghi rõ quyết định thay thế.
 
-
 ## 11. Người dùng, phân quyền và nhật ký hệ thống
 
 Mẫu tham chiếu: `Hoa_Nam_UIUX_V2/nhatkyhethong_RBAC` (Desktop và Tablet, bộ 01–17). Áp dụng cấu trúc nội dung và thứ bậc của mẫu vào shell hiện có; không sao chép dữ liệu minh họa, thương hiệu hoặc gộp tuyến điều hướng. **Nhật ký hệ thống luôn là mục sidebar/trang riêng**, không thêm vào tab Người dùng & phân quyền.
@@ -215,3 +214,16 @@ Mẫu tham chiếu: `Hoa_Nam_UIUX_V2/nhatkyhethong_RBAC` (Desktop và Tablet, b�
 - Nhật ký: chỉ đọc; thời gian, người thực hiện, hành động/đối tượng, phân hệ, kết quả và mũi tên chi tiết. Kết quả chưa biết giữ màu trung tính, không mặc định thành công. Drawer chia thông tin sự kiện, đối chiếu trước/sau và thông tin tra soát; giữ đầy đủ số 0, giá trị rỗng, các phần tử mảng và mã dài. Không giới thiệu bộ lọc hoặc xuất toàn bộ lịch sử khi dịch vụ hiện tại chỉ hỗ trợ tìm kiếm/điều kiện hoặc xuất các dòng được chọn.
 
 Các bảng vẫn theo mục 5, đặc biệt tiêu đề 16px/24px, đậm 800, ô dữ liệu 14px/22px và cột mũi tên không có tiêu đề hiển thị. Nền surface thường cho nội dung, nền nhạt chỉ ở trạng thái chọn/nhóm, màu ngữ nghĩa dành cho kết quả hoặc cảnh báo có ý nghĩa.
+
+## 12. Hồ sơ cá nhân, bảo mật và phiên đăng nhập
+
+Tham chiếu `Hoa_Nam_UIUX_V2/phiendangnhap_nguoidung`, bộ U01–U32 Desktop/Tablet. Hồ sơ cá nhân là một mục riêng trong nhóm Hệ thống, dùng shell và token chung. Chia thành Hồ sơ / Bảo mật / Thiết bị & phiên / Thông báo / Giao diện / Tùy chọn khác. Tablet từ 900px trở xuống dùng ô chọn phần thay cho sáu tab bị cắt hoặc phải kéo ngang.
+
+- Trang hồ sơ ưu tiên danh tính, trạng thái và thông tin liên hệ; phòng ban, tài khoản và quyền là thông tin chỉ đọc. Chỉnh sửa, ảnh đại diện, đổi mật khẩu, thiết bị/phiên và xác thực hai bước dùng drawer bên phải, một vùng cuộn nội dung và nút hành động cố định. Đổi email yêu cầu mật khẩu hiện tại. Ảnh có bước cắt/thu phóng và chỉ áp dụng sau khi lưu thành công.
+- Thiết bị và phiên trình bày dạng thẻ có nhóm, không ép một bảng rộng vào drawer. Thông tin chưa biết phải ghi rõ, không suy ra thiết bị vật lý từ IP hoặc trình duyệt. Phiên hiện tại được nhận diện và bảo vệ. Số lượng và giới hạn phải lấy từ chính sách thật; không chép giới hạn 3 thiết bị/2 phiên từ dữ liệu minh họa.
+- Tùy chọn giao diện có bản xem trước. Thay đổi chưa lưu không tác động đến phần còn lại của ứng dụng; Hủy giữ cấu hình đã lưu. Màu nhấn dùng cho nút chính, liên kết và phần đang chọn; màu trạng thái vẫn giữ đúng ngữ nghĩa. Cỡ chữ/mật độ không thu nhỏ vùng chạm. Tùy chọn ngày và múi giờ không làm lệch ngày chứng từ chỉ có ngày.
+- Thông báo phân nhóm và kênh rõ ràng; cảnh báo bảo mật trong ứng dụng là bắt buộc. Quyền thông báo trình duyệt chỉ xin khi người dùng chủ động bật, có hướng dẫn khi bị chặn. Không hứa thông báo khi ứng dụng đã đóng nếu chưa triển khai Web Push.
+- Biểu mẫu giữ bản nháp khi lỗi lưu hoặc xung đột phiên bản; có bước xác nhận khi bỏ thay đổi. Lệnh thu hồi phiên mất phản hồi phải đọc lại trạng thái trước khi gửi lệnh tiếp theo. Không tự coi lỗi tải là danh sách rỗng hay thu hồi thành công.
+- Xác thực hai bước hiển thị QR tạo cục bộ; mã khôi phục chỉ nằm trong bộ nhớ của đúng tài khoản/phiên đăng nhập, không ghi vào localStorage, sessionStorage hoặc cache bền vững. Không cho đóng drawer khi đang xác nhận; mã trả về phải còn xem được nếu token làm mới khiến khung bảo vệ tải lại. Đóng sau khi xem mã cần xác nhận đã lưu mã. Đổi mật khẩu tuân theo hậu quả thật của API, kể cả yêu cầu đăng nhập lại.
+
+Kiểm tra tối thiểu desktop, tablet, mobile 320px, sáng/tối, nội dung dài, bàn phím, lỗi tải/lưu, bỏ bản nháp, thay đổi tài khoản khi có yêu cầu đang chạy và phiên bản lưu đồng thời. Các mẫu lỗi và bảo mật này là một phần của thiết kế, không chỉ là bố cục lúc tải thành công.

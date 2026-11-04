@@ -1,3 +1,4 @@
+import { AccountLandingPage } from "@/modules/auth/pages/AccountLandingPage";
 /* eslint-disable react-refresh/only-export-components */
 import { Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
@@ -9,7 +10,7 @@ import { RouteLoadingSkeleton } from "@/app/router/RouteLoadingSkeleton";
 import { PageLoadBoundary } from "@/app/router/PageLoadBoundary";
 import { PageSkeleton } from "@/shared/components/ui-states/PageSkeleton";
 import { CoordinatedLoadingBoundary } from "@/shared/ui/loading/CoordinatedLoadingBoundary";
-import { DASHBOARD_CANONICAL, ROUTES } from "@/shared/constants/routes";
+import { ROUTES } from "@/shared/constants/routes";
 // Mọi màn khai báo MỘT LẦN ở route-components.ts (router và route-preload dùng
 // chung). Chúng là `lazyRoute`: vẫn tách chunk như `React.lazy`, nhưng khi chunk
 // ĐÃ được nạp trước thì render THẲNG, không treo Suspense — xem lazy-route.tsx
@@ -127,7 +128,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Navigate to={DASHBOARD_CANONICAL} replace />,
+            element: <AccountLandingPage />,
           },
           {
             path: ROUTES.AUDIT_LOGS,
@@ -234,7 +235,9 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.NFC,
-            element: <Navigate to={`${ROUTES.OUTBOUND}?tab=products`} replace />,
+            element: (
+              <Navigate to={`${ROUTES.OUTBOUND}?tab=products`} replace />
+            ),
           },
           {
             path: ROUTES.INBOUND,

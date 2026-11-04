@@ -1,3 +1,4 @@
+import { PERSONAL_VI } from "./messages.personal";
 import { RBAC_VI } from "./messages.rbac";
 import { MESSAGES_UPDATED_VI } from "./messages.updated.vi";
 import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
@@ -4765,6 +4766,7 @@ export const MESSAGES_VI = {
     },
   },
   auth: {
+    personal: PERSONAL_VI,
     fields: {
       email: "Email",
       password: "Mật khẩu",
@@ -4790,7 +4792,8 @@ export const MESSAGES_VI = {
       submit: "Đăng nhập",
       success: "Đăng nhập thành công",
       replacedPreviousSession: "Đăng nhập này đã đăng xuất một phiên khác.",
-      replacedPreviousSessionBody: "Nếu bạn không nhận ra phiên trước đó, vui lòng đổi mật khẩu ngay.",
+      replacedPreviousSessionBody:
+        "Nếu bạn không nhận ra phiên trước đó, vui lòng đổi mật khẩu ngay.",
       failed: "Đăng nhập thất bại",
       errorTimeout:
         "Máy chủ phản hồi quá thời gian. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
@@ -4840,8 +4843,10 @@ export const MESSAGES_VI = {
       statusDisabled: "Chưa bật",
       statusPending: "Đang thiết lập",
       statusLoading: "Đang tải trạng thái xác thực...",
-      statusLoadError: "Không tải được trạng thái xác thực. Vui lòng tải lại trang.",
-      profileEnabledDescription: "Tài khoản của bạn đã đăng ký xác thực hai bước.",
+      statusLoadError:
+        "Không tải được trạng thái xác thực. Vui lòng tải lại trang.",
+      profileEnabledDescription:
+        "Tài khoản của bạn đã đăng ký xác thực hai bước.",
       viewDetails: "Xem chi tiết",
       eyebrow: "Bảo mật tài khoản",
       backToProfile: "Quay lại hồ sơ",
@@ -4965,7 +4970,8 @@ export const MESSAGES_VI = {
       cancelEdit: "Hủy",
       updateSuccess: "Thông tin cá nhân đã được cập nhật.",
       updateFailed: "Không thể cập nhật thông tin. Vui lòng thử lại.",
-      staleVersion: "Thông tin đã thay đổi ở phiên khác. Vui lòng kiểm tra lại trước khi lưu.",
+      staleVersion:
+        "Thông tin đã thay đổi ở phiên khác. Vui lòng kiểm tra lại trước khi lưu.",
       nameRequired: "Vui lòng nhập họ và tên.",
       nameTooLong: "Họ và tên không được vượt quá 255 ký tự.",
       phoneInvalid: "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.",

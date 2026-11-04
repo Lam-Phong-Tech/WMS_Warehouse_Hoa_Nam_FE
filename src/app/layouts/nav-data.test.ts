@@ -14,14 +14,32 @@
  * (đối chiếu với CSS của package đang cài) — ở đây chỉ lo tính phân biệt.
  */
 import { describe, expect, it } from "vitest";
-import { NAV_GROUPS } from "./nav-data";
+import { NAV_GROUPS, getVisibleNavGroups } from "./nav-data";
 import { ROUTES } from "@/shared/constants/routes";
 
 describe("nav-data — icon menu phải phân biệt được cấp", () => {
+  it("keeps self-service Profile in the System sidebar without granting IAM administration", () => {
+    const groups = getVisibleNavGroups([], false);
+    const items = groups.flatMap((group) => group.items);
+    expect(
+      groups
+        .find((group) => group.name === "Hệ thống")
+        ?.items.some((item) => item.path === ROUTES.PROFILE),
+    ).toBe(true);
+    expect(items.some((item) => item.path === ROUTES.IAM_USERS)).toBe(false);
+  });
   it("places NFC under Xuất kho and removes the separate NFC menu", () => {
     expect(NAV_GROUPS.some((group) => group.name === "NFC")).toBe(false);
-    expect(NAV_GROUPS.flatMap((group) => group.items).some((item) => item.path === ROUTES.NFC)).toBe(false);
-    expect(NAV_GROUPS.find((group) => group.name === "Xuất kho")?.items.some((item) => item.path === ROUTES.OUTBOUND)).toBe(true);
+    expect(
+      NAV_GROUPS.flatMap((group) => group.items).some(
+        (item) => item.path === ROUTES.NFC,
+      ),
+    ).toBe(false);
+    expect(
+      NAV_GROUPS.find((group) => group.name === "Xuất kho")?.items.some(
+        (item) => item.path === ROUTES.OUTBOUND,
+      ),
+    ).toBe(true);
   });
   it("icon trang con khác icon của nhóm cha", () => {
     const collisions = NAV_GROUPS.flatMap((group) =>

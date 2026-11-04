@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+vi.mock("@/app/providers/AccountPreferencesProvider", () => ({
+  AccountPreferencesProvider: ({ children }: { children: ReactNode }) =>
+    children,
+}));
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
@@ -185,9 +189,7 @@ describe("MainLayout sidebar remains stable across navigation", () => {
 
   it("hides profile header chips without hiding chips on other routes", () => {
     setup(ROUTES.PROFILE);
-    expect(screen.getByTestId("page-context-badges")).toHaveTextContent(
-      "false",
-    );
+    expect(screen.queryByTestId("page-context-badges")).not.toBeInTheDocument();
     expect(screen.queryByRole("contentinfo")).toBeNull();
 
     cleanup();

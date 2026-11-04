@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import QRCode from "qrcode";
@@ -7,6 +7,8 @@ import { MemoryRouter } from "react-router-dom";
 
 import { MfaSetupPage } from "@/modules/auth/pages/MfaSetupPage";
 import { authService } from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { useMfaRecoveryStore } from "@/shared/store/mfa-recovery.store";
 
 vi.mock("@/modules/auth/services/auth.service", () => ({
   authService: {
@@ -42,6 +44,19 @@ function renderPage() {
 describe("MfaSetupPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useAuthStore.setState({
+      token: "test-access",
+      user: {
+        id: "mfa-user",
+        user_id: "mfa-user",
+        name: "MFA User",
+        email: "mfa@example.com",
+        code: "MFA",
+      },
+      profile: null,
+      authEpoch: 1,
+    });
+    useMfaRecoveryStore.getState().clear();
     window.localStorage.clear();
     window.sessionStorage.clear();
 
@@ -101,6 +116,46 @@ describe("MfaSetupPage", () => {
     expect(
       screen.queryByRole("img", { name: "Mã QR đăng ký xác thực hai bước" }),
     ).toBeNull();
+  });
+
+  it("preserves one-time codes across fail-closed refresh revalidation, then clears on a new login", async () => {
+    let finish!: (data: { recovery_codes: string[] }) => void;
+    vi.mocked(authService.mfaConfirm).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const view = renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /bắt đầu đăng ký/i }),
+    );
+    await userEvent.type(await screen.findByLabelText("Mã xác thực"), "123456");
+    await userEvent.click(
+      screen.getByRole("button", { name: /xác nhận và bật/i }),
+    );
+    view.unmount();
+    await act(async () => {
+      useAuthStore.getState().setToken("rotated-access-token");
+      finish({ recovery_codes: RECOVERY });
+      await Promise.resolve();
+    });
+    renderPage();
+    expect(await screen.findByText(RECOVERY[0])).toBeInTheDocument();
+    act(() =>
+      useAuthStore.getState().setAuth({
+        token: "new-login",
+        user: {
+          id: "mfa-user",
+          user_id: "mfa-user",
+          name: "MFA User",
+          email: "mfa@example.com",
+          code: "MFA",
+        },
+      }),
+    );
+    expect(screen.queryByText(RECOVERY[0])).toBeNull();
+    expect(useMfaRecoveryStore.getState().codes).toBeNull();
   });
 
   /**

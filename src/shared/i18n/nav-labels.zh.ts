@@ -1,4 +1,5 @@
 export const NAV_LABELS_ZH = {
+  "PROFILE-01": "个人资料",
   home: "首页",
   "layout-dashboard": "概述",
   "package-search": "主数据",

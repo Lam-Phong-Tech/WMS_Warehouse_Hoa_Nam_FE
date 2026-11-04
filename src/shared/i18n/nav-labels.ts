@@ -56,6 +56,7 @@ export const NAV_LABELS_EN: Record<string, string> = {
   "RPT-06": "Warranty & components",
   "RPT-07": "Issues by recipient / agency",
   "RPT-08": "Inbound – outbound history",
+  "PROFILE-01": "My profile",
   "IAM-01": "Users & permissions",
   "PV-ADM-01": "Partition app (PV)",
   "WH-01": "Warehouse settings",

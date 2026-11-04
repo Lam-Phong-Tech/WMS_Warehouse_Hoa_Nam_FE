@@ -1,3 +1,4 @@
+import { PERSONAL_EN } from "./messages.personal";
 import { RBAC_EN } from "./messages.rbac";
 import { MESSAGES_UPDATED_EN } from "./messages.updated.en";
 import { MESSAGES_NFC_EN } from "./messages.nfc.en";
@@ -4771,6 +4772,7 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   auth: {
+    personal: PERSONAL_EN,
     fields: {
       email: "Email",
       password: "Password",
@@ -4797,7 +4799,8 @@ export const MESSAGES_EN: MessageTree = {
       submit: "Sign in",
       success: "Signed in successfully",
       replacedPreviousSession: "This sign-in signed out another session.",
-      replacedPreviousSessionBody: "If you do not recognize that earlier session, change your password immediately.",
+      replacedPreviousSessionBody:
+        "If you do not recognize that earlier session, change your password immediately.",
       failed: "Sign-in failed",
       errorTimeout:
         "The server took too long to respond. Please try again; if the problem persists, contact your administrator.",
@@ -4846,8 +4849,10 @@ export const MESSAGES_EN: MessageTree = {
       statusDisabled: "Not enabled",
       statusPending: "Setting up",
       statusLoading: "Loading authentication status...",
-      statusLoadError: "Could not load authentication status. Please reload the page.",
-      profileEnabledDescription: "Two-factor authentication is set up for your account.",
+      statusLoadError:
+        "Could not load authentication status. Please reload the page.",
+      profileEnabledDescription:
+        "Two-factor authentication is set up for your account.",
       viewDetails: "View details",
       eyebrow: "Account security",
       backToProfile: "Back to profile",
@@ -4972,7 +4977,8 @@ export const MESSAGES_EN: MessageTree = {
       cancelEdit: "Cancel",
       updateSuccess: "Your profile has been updated.",
       updateFailed: "Could not update your profile. Please try again.",
-      staleVersion: "Your profile changed in another session. Review it before saving again.",
+      staleVersion:
+        "Your profile changed in another session. Review it before saving again.",
       nameRequired: "Please enter your full name.",
       nameTooLong: "Full name must not exceed 255 characters.",
       phoneInvalid: "Phone number must have 10 digits and start with 0.",

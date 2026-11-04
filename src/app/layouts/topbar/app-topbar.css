@@ -917,3 +917,10 @@
 :root[data-theme="dark"] .hn-topbar .header-menu {
   box-shadow: 0 12px 34px rgba(12, 12, 24, 0.48);
 }
+
+.avatar-button .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}

@@ -1,3 +1,4 @@
+import { AccountPreferencesProvider } from "@/app/providers/AccountPreferencesProvider";
 /**
  * MainLayout — shell vận hành trên UiAppShell (Part 4 shell swap).
  *
@@ -45,6 +46,7 @@ import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
  * nhau (đã xảy ra với RPT-04 và RPT-06).
  */
 const ROUTES_WITH_OWN_HEADER: string[] = [
+  ROUTES.PROFILE,
   ROUTES.IAM_USERS,
   ROUTES.AUDIT_LOGS,
   ROUTES.WAREHOUSE_CONFIG,
@@ -190,7 +192,7 @@ export function MainLayout() {
   if (isLoadingProfile && !isProfileLoaded) return <Loading />;
 
   return (
-    <>
+    <AccountPreferencesProvider>
       <UiAppShell
         className={
           isMapReferenceScreen
@@ -298,6 +300,6 @@ export function MainLayout() {
           <SideNav collapsed={false} />
         </Drawer>
       ) : null}
-    </>
+    </AccountPreferencesProvider>
   );
 }

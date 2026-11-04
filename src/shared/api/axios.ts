@@ -1,3 +1,7 @@
+import {
+  browserInstallationId,
+  browserInstallationMetadata,
+} from "./client-device";
 import axios, { AxiosError } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -16,7 +20,10 @@ import {
 } from "@/shared/pwa/offline-policy";
 import { installRequestActivityTracker } from "@/shared/api/request-activity";
 import { installEncryptedApiJson } from "@/shared/api/encrypted-json";
-import { rememberSessionReplacementNotice, replacementDetailsFromResponse } from "@/modules/auth/utils/session-replacement-notice";
+import {
+  rememberSessionReplacementNotice,
+  replacementDetailsFromResponse,
+} from "@/modules/auth/utils/session-replacement-notice";
 
 declare module "axios" {
   interface AxiosError {
@@ -54,11 +61,16 @@ function responseStatus(error: unknown): number | undefined {
   return response?.status;
 }
 
-function isStaleAuthResponse(config: InternalAxiosRequestConfig | undefined): boolean {
+function isStaleAuthResponse(
+  config: InternalAxiosRequestConfig | undefined,
+): boolean {
   const requestedToken = config?.headers?.Authorization;
   const currentToken = memoryStorage.getToken();
-  return typeof requestedToken === "string" && currentToken !== null
-    && requestedToken !== `Bearer ${currentToken}`;
+  return (
+    typeof requestedToken === "string" &&
+    currentToken !== null &&
+    requestedToken !== `Bearer ${currentToken}`
+  );
 }
 
 /** Payload của POST /auth/refresh mà FE được phép giữ — không có refresh token. */
@@ -97,7 +109,10 @@ let authSessionQueue: Promise<void> = Promise.resolve();
 
 export function withAuthSessionLock<T>(task: () => Promise<T>): Promise<T> {
   const pending = authSessionQueue.then(() => withCrossTabRefreshLock(task));
-  authSessionQueue = pending.then(() => undefined, () => undefined);
+  authSessionQueue = pending.then(
+    () => undefined,
+    () => undefined,
+  );
   return pending;
 }
 
@@ -194,6 +209,14 @@ api.interceptors.request.use((config) => {
     );
   }
 
+  if (/^\/?auth(?:\/|$)/.test(config.url ?? "")) {
+    const deviceId = browserInstallationId();
+    if (deviceId) config.headers["X-Device-Id"] = deviceId;
+    config.headers["X-Client-Type"] = "web";
+    const metadata = browserInstallationMetadata();
+    config.headers["X-Device-Label"] = metadata.label;
+    config.headers["X-Client-Platform"] = metadata.platform;
+  }
   const token = memoryStorage.getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
@@ -248,10 +271,17 @@ api.interceptors.response.use(
           return api.request(config);
         } catch (refreshError) {
           const refreshStatus = responseStatus(refreshError);
-          if ((refreshStatus === 401 || refreshStatus === 403)
-            && memoryStorage.getToken() === tokenBeforeRefresh) {
-            const refreshData = (refreshError as AxiosError<ApiErrorResponse>)?.response?.data;
-            redirectToLogin(getErrorCode(refreshData) === "AUTH_SESSION_REPLACED" ? replacementDetailsFromResponse(refreshData) : undefined);
+          if (
+            (refreshStatus === 401 || refreshStatus === 403) &&
+            memoryStorage.getToken() === tokenBeforeRefresh
+          ) {
+            const refreshData = (refreshError as AxiosError<ApiErrorResponse>)
+              ?.response?.data;
+            redirectToLogin(
+              getErrorCode(refreshData) === "AUTH_SESSION_REPLACED"
+                ? replacementDetailsFromResponse(refreshData)
+                : undefined,
+            );
           }
           // Network/5xx must not silently destroy an otherwise recoverable
           // session; surface the actual refresh error to the UI/query layer.

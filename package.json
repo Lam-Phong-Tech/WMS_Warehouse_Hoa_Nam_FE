@@ -91,7 +91,8 @@
     "vn-address:check": "node scripts/gen-vn-address-data.mjs --check",
     "sec:headers": "node scripts/check-frontend-security-headers.mjs",
     "sec:headers:self-test": "node scripts/check-frontend-security-headers.mjs --self-test",
-    "sec:deps": "node scripts/audit-dependencies.mjs"
+    "sec:deps": "node scripts/audit-dependencies.mjs",
+    "test:personal-account": "vitest run src/modules/auth/components/MfaSettingsDrawer.test.tsx src/modules/auth/pages/ProfilePage.edit.test.tsx src/modules/auth/pages/ProfilePage.mfa.test.tsx src/modules/auth/pages/MfaSetupPage.test.tsx src/modules/auth/components/profile/ProfilePreferencesPanel.test.tsx src/modules/auth/hooks/use-profile-avatar-url.test.tsx src/modules/auth/hooks/use-interface-preference-shortcut.test.tsx src/modules/auth/services/profile.service.test.ts src/modules/auth/utils/preferred-homepage.test.ts src/modules/notifications/utils/browser-notification.test.ts src/shared/api/client-device.test.ts src/shared/store/auth-owner.test.ts src/shared/utils/format-date.preferences.test.ts src/app/layouts/nav-data.test.ts src/app/layouts/topbar/AppTopbar.test.tsx src/app/layouts/MainLayout.sidebar.test.tsx --maxWorkers=2"
   },
   "resolutions": {
     "nanoid": "^3.3.18",

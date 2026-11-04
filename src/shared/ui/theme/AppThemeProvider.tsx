@@ -1,3 +1,4 @@
+import { useInterfacePreferencesStore } from "@/shared/store/interface-preferences.store";
 /** Single composition root for the existing MUI and Ant Design themes. */
 import { App as AntdApp, ConfigProvider } from "antd";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
@@ -5,8 +6,8 @@ import viVN from "antd/locale/vi_VN";
 import enUS from "antd/locale/en_US";
 import zhCN from "antd/locale/zh_CN";
 import { useMemo, type ReactNode } from "react";
-import { ANTD_THEMES } from "./antd-adapter";
-import { MUI_THEMES } from "./mui-adapter";
+import { ANTD_THEMES, buildAntdTheme } from "./antd-adapter";
+import { MUI_THEMES, buildMuiTheme } from "./mui-adapter";
 import { useThemeStore } from "./theme.store";
 import { useT } from "@/shared/i18n/useT";
 import { useLanguageStore } from "@/shared/i18n/language.store";
@@ -17,6 +18,25 @@ export interface AppThemeProviderProps {
 
 export function AppThemeProvider({ children }: AppThemeProviderProps) {
   const mode = useThemeStore((state) => state.mode);
+  const preferences = useInterfacePreferencesStore(
+    (state) => state.preferences,
+  );
+  const accent = preferences?.accent;
+  const fontSize = preferences?.font_size;
+  const muiTheme = useMemo(
+    () =>
+      accent && fontSize
+        ? buildMuiTheme(mode, { accent, font_size: fontSize })
+        : MUI_THEMES[mode],
+    [mode, accent, fontSize],
+  );
+  const antdTheme = useMemo(
+    () =>
+      accent && fontSize
+        ? buildAntdTheme(mode, { accent, font_size: fontSize })
+        : ANTD_THEMES[mode],
+    [mode, accent, fontSize],
+  );
   const language = useLanguageStore((state) => state.language);
   const t = useT();
   // Translate built-in calendar, pagination, select and modal controls as well
@@ -34,8 +54,8 @@ export function AppThemeProvider({ children }: AppThemeProviderProps) {
     };
   }, [language, t]);
   return (
-    <MuiThemeProvider theme={MUI_THEMES[mode]}>
-      <ConfigProvider theme={ANTD_THEMES[mode]} locale={locale}>
+    <MuiThemeProvider theme={muiTheme}>
+      <ConfigProvider theme={antdTheme} locale={locale}>
         <AntdApp>{children}</AntdApp>
       </ConfigProvider>
     </MuiThemeProvider>

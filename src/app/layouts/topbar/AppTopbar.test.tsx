@@ -6,10 +6,37 @@ import {
   render,
   screen,
   within,
+  waitFor,
 } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const shortcutPreferences = {
+  version: 1,
+  locale: "vi",
+  timezone: "Asia/Ho_Chi_Minh",
+  date_format: "DD/MM/YYYY",
+  default_homepage: "dashboard",
+  theme: "light",
+  accent: "ocean",
+  font_size: "medium",
+  density: "comfortable",
+  reduced_motion: false,
+  notifications: { account: { in_app: true, email: false } },
+};
+vi.mock("@/modules/auth/services/profile.service", () => ({
+  profileService: {
+    getPreferences: vi.fn(async () => ({ ...shortcutPreferences })),
+    updatePreferences: vi.fn(
+      async (changes: Record<string, unknown>, version: number) => ({
+        ...shortcutPreferences,
+        ...changes,
+        version: version + 1,
+      }),
+    ),
+    getAvatar: vi.fn(),
+  },
+}));
 const markAllRead = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
 
 vi.mock("@/modules/notifications/hooks/useNotifications", () => ({
@@ -74,7 +101,13 @@ beforeEach(() => {
     isSuperAdmin: true,
     permissionCodes: [],
     isAuthenticated: true,
-    user: { name: "Super Admin" } as never,
+    token: "test-topbar-token",
+    profile: null,
+    user: {
+      id: "topbar-user",
+      user_id: "topbar-user",
+      name: "Super Admin",
+    } as never,
   });
 });
 
@@ -136,7 +169,7 @@ describe("AppTopbar", () => {
     expect(options).toHaveLength(3);
     expect(options.map((option) => option.textContent?.trim())).toEqual([
       "Tiếng Việt",
-      "English✓",
+      "English",
       "简体中文",
     ]);
     expect(
@@ -225,7 +258,9 @@ describe("AppTopbar", () => {
     expect(
       await screen.findByPlaceholderText("Search functions"),
     ).toBeInTheDocument();
-    expect(useLanguageStore.getState().language).toBe("en");
+    await waitFor(() =>
+      expect(useLanguageStore.getState().language).toBe("en"),
+    );
     // `persist` của zustand ghi cả bao JSON, không phải chuỗi trần — đọc đúng
     // hình dạng đã lưu để test không xanh giả khi khoá đổi kiểu.
     expect(
@@ -240,7 +275,9 @@ describe("AppTopbar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ngôn ngữ" }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: /简体中文/ }));
     expect(await screen.findByPlaceholderText("搜索功能")).toBeInTheDocument();
-    expect(useLanguageStore.getState().language).toBe("zh");
+    await waitFor(() =>
+      expect(useLanguageStore.getState().language).toBe("zh"),
+    );
     expect(
       JSON.parse(localStorage.getItem("erp-language") ?? "null")?.state
         ?.language,
@@ -248,12 +285,12 @@ describe("AppTopbar", () => {
     expect(document.documentElement.lang).toBe("zh-CN");
   });
 
-  it("đổi giao diện thì đặt data-theme và ghi nhớ lựa chọn", () => {
+  it("đổi giao diện thì đặt data-theme và ghi nhớ lựa chọn", async () => {
     renderTopbar();
     fireEvent.click(screen.getByRole("button", { name: "Giao diện" }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Tối" }));
 
-    expect(useThemeStore.getState().mode).toBe("dark");
+    await waitFor(() => expect(useThemeStore.getState().mode).toBe("dark"));
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(localStorage.getItem("hoa-nam-theme")).toBe("dark");
   });

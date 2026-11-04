@@ -4,6 +4,7 @@ import { cookieStorage } from "@/shared/lib/cookie-storage";
 import { memoryStorage } from "@/shared/lib/memory-storage";
 import { queryClient } from "@/app/providers/query-client";
 import { useNotificationStore } from "@/shared/store/notification.store";
+import { useMfaRecoveryStore } from "@/shared/store/mfa-recovery.store";
 import { clearPersistedQueryCache } from "@/shared/cache/query-persister";
 import { clearAllFormDrafts } from "@/shared/hooks/useFormDraft";
 import { disconnectEcho } from "@/shared/lib/echo";
@@ -18,6 +19,8 @@ export type AuthProfile = Omit<
 >;
 
 interface AuthState {
+  /** Transient login lifetime; preserved through access-token rotation. */
+  authEpoch: number;
   token: string | null;
   user: User | null;
   contexts: AuthContext[];
@@ -58,6 +61,7 @@ let lastAppliedMe: MeResponse | null = null;
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
+      authEpoch: 0,
       token: null,
       user: null,
       contexts: [],
@@ -73,8 +77,10 @@ export const useAuthStore = create<AuthState>()(
       isProfileLoaded: false,
 
       setAuth: ({ token, user, contexts = [] }) => {
+        useMfaRecoveryStore.getState().clear();
         memoryStorage.setItem(token);
         set({
+          authEpoch: get().authEpoch + 1,
           token,
           user,
           contexts,
@@ -153,10 +159,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        useMfaRecoveryStore.getState().clear();
         memoryStorage.clear();
         clearWorkSession();
         lastAppliedMe = null;
         set({
+          authEpoch: get().authEpoch + 1,
           token: null,
           user: null,
           contexts: [],
