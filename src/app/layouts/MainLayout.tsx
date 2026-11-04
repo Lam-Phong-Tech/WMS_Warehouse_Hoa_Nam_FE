@@ -45,6 +45,8 @@ import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
  * nhau (đã xảy ra với RPT-04 và RPT-06).
  */
 const ROUTES_WITH_OWN_HEADER: string[] = [
+  ROUTES.IAM_USERS,
+  ROUTES.AUDIT_LOGS,
   ROUTES.WAREHOUSE_CONFIG,
   ROUTES.INVENTORY,
   ROUTES.REVERSE,

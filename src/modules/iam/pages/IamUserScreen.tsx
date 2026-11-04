@@ -1,3 +1,4 @@
+import { applicableIamRoles } from "./iam-user-permissions";
 import { IamDateField } from "@/modules/iam/components/IamDateField";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
@@ -9,7 +10,6 @@ import {
 } from "react";
 import {
   Box,
-  Collapse,
   Grid,
   MenuItem,
   Stack,
@@ -17,6 +17,9 @@ import {
   UiAutocomplete,
   UiDescriptions,
   UiDialog,
+  UiDrawer,
+  UiPagination,
+  UiTabs,
   UiIcon,
   UiSelect,
   UiStatusBadge,
@@ -46,11 +49,7 @@ import {
   getMutationErrorMessage,
   resolveFormErrors,
 } from "@/shared/api/api-error";
-import { MvpPaginationFooter } from "@/shared/components/mvp/MvpListPagination";
-import {
-  MVP_PAGE_SIZE_OPTIONS,
-  resolveApiPagination,
-} from "@/shared/components/mvp/mvp-pagination";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
@@ -67,14 +66,14 @@ import {
   ActionButton,
   ActionIconButton,
   RowActionButton,
-  RowActionGroup,
 } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { DepartmentManagerModal } from "@/modules/iam/components/DepartmentManagerModal";
+import { validatePhone } from "@/shared/constants/validation.constants";
 import {
-  validatePhone,
-} from "@/shared/constants/validation.constants";
-import { isValidEmail, PASSWORD_MAX_LENGTH } from "@/modules/auth/schemas/login.schema";
+  isValidEmail,
+  PASSWORD_MAX_LENGTH,
+} from "@/modules/auth/schemas/login.schema";
 import { STRONG_PASSWORD_REGEX } from "@/modules/auth/schemas/change-password.schema";
 import {
   checkDate,
@@ -175,14 +174,18 @@ function passwordRuleError(
   return null;
 }
 
-function statusLabel(status: IamUserStatus) {
-  return businessLabel(IAM_USER_STATUS_LABELS, status);
+function userInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((part) => part[0])
+    .join("")
+    .toLocaleUpperCase();
 }
 
-function statusClass(status: IamUserStatus) {
-  if (status === "ACTIVE") return "pill ok";
-  if (status === "LOCKED") return "pill danger-pill";
-  return "pill warn-pill";
+function statusLabel(status: IamUserStatus) {
+  return businessLabel(IAM_USER_STATUS_LABELS, status);
 }
 
 /** Tông màu UiStatusBadge cho trạng thái người dùng trong Dialog chi tiết. */
@@ -257,72 +260,21 @@ function SectionTitle({
   );
 }
 
-/**
- * Bảng thuần trong Dialog (thay MUI Table size="small") — Dialog render qua
- * portal, ngoài phạm vi CSS `.hn-mvp-source-screen`, nên style tự đủ qua sx.
- */
-function DialogTable({
-  headers,
-  lastColRight = false,
-  hideActionHeader = false,
-  children,
-}: {
-  headers: string[];
-  lastColRight?: boolean;
-  hideActionHeader?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <Box
-      component="table"
-      className="hn-iam-dialog-table"
-      sx={(theme) => ({
-        width: "100%",
-        borderCollapse: "collapse",
-        fontSize: 13.5,
-        "& th, & td": {
-          textAlign: "left",
-          padding: "8px 12px",
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          verticalAlign: "top",
-        },
-        "& th": { fontWeight: 600, color: "text.secondary" },
-        "& tbody tr:last-of-type td": { borderBottom: "none" },
-        ...(lastColRight
-          ? {
-              "& th:last-of-type, & td:last-of-type": { textAlign: "right" },
-            }
-          : {}),
-      })}
-    >
-      <thead>
-        <tr>
-          {headers.map((header, index) => (
-            <th
-              key={header}
-              aria-label={
-                hideActionHeader && index === headers.length - 1
-                  ? header
-                  : undefined
-              }
-            >
-              {hideActionHeader && index === headers.length - 1 ? null : header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>{children}</tbody>
-    </Box>
-  );
-}
-
 export interface IamUserScreenProps {
   /** Deep-link IAM-02 mở cửa sổ tạo người dùng trên IAM-01. */
   openCreateOnMount?: boolean;
+  mode?: "users" | "effective";
+  initialRoleFilter?: string;
+  navigation?: ReactNode;
+  initialViewingUser?: IamUser | null;
 }
 
 export function IamUserScreen({
   openCreateOnMount = false,
+  mode = "users",
+  initialRoleFilter = "",
+  navigation,
+  initialViewingUser = null,
 }: IamUserScreenProps) {
   const t = useT();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
@@ -332,7 +284,7 @@ export function IamUserScreen({
     isSuperAdmin || permissionCodes.includes("iam.user.manage");
 
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState(initialRoleFilter);
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [departmentManagerOpen, setDepartmentManagerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<IamUserStatus | "">("");
@@ -343,7 +295,9 @@ export function IamUserScreen({
   const [formState, setFormState] = useState<UserFormState>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [viewingUser, setViewingUser] = useState<IamUser | null>(null);
+  const [viewingUser, setViewingUser] = useState<IamUser | null>(
+    initialViewingUser,
+  );
   const [isGrantModalOpen, setIsGrantModalOpen] = useState(false);
   const [grantPermissionId, setGrantPermissionId] = useState("");
   const [grantReason, setGrantReason] = useState("");
@@ -360,7 +314,11 @@ export function IamUserScreen({
   const [revokeError, setRevokeError] = useState("");
   const [revokeReasonError, setRevokeReasonError] = useState("");
   /** Khối "Quyền hiệu lực" trong Dialog chi tiết (thay MUI Accordion). */
-  const [isEffectiveOpen, setIsEffectiveOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState("overview");
+  const [formStep, setFormStep] = useState("account");
+  const [confirmStatusOpen, setConfirmStatusOpen] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   const usersQuery = useIamUsers({
     keyword: search.trim(),
@@ -373,7 +331,7 @@ export function IamUserScreen({
   const rolesQuery = useIamRoles({ per_page: 100 });
   const departmentsQuery = useIamDepartments({ status: "ACTIVE" });
   const warehousesQuery = useIamScopeWarehouses();
-  const permissionsQuery = useIamPermissions({ per_page: 200 });
+  const permissionsQuery = useIamPermissions({ per_page: 100 });
   const createUser = useCreateIamUser();
   const updateUser = useUpdateIamUser();
   const overridesQuery = useIamUserPermissionOverrides(viewingUser?.user_id);
@@ -400,8 +358,14 @@ export function IamUserScreen({
   );
 
   const roles = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data]);
-  const users = useMemo(() => usersQuery.data?.data ?? [], [usersQuery.data?.data]);
-  const departments = useMemo(() => departmentsQuery.data ?? [], [departmentsQuery.data]);
+  const users = useMemo(
+    () => usersQuery.data?.data ?? [],
+    [usersQuery.data?.data],
+  );
+  const departments = useMemo(
+    () => departmentsQuery.data ?? [],
+    [departmentsQuery.data],
+  );
   const departmentNames = useMemo(
     () =>
       new Map(
@@ -471,28 +435,41 @@ export function IamUserScreen({
    * (IamRolePermissionScreen cũng dựa vào đây) — ưu tiên permissions nhúng
    * trong user.roles nếu response user có, fallback tra theo role_id.
    */
+  const applicableRoles = useMemo(
+    () => applicableIamRoles(viewingUser?.roles ?? [], roles),
+    [viewingUser, roles],
+  );
   const effectivePermissionKeys = useMemo(() => {
     if (!viewingUser) return [];
     const keys = new Set<string>();
-    (viewingUser.roles ?? []).forEach((userRole) => {
+    applicableRoles.forEach((userRole) => {
       const permissions =
-        userRole.permissions ??
         roles.find((role) => role.role_id === userRole.role_id)?.permissions ??
+        userRole.permissions ??
         [];
-      permissions.forEach((permission) => keys.add(permission.permission_key));
+      permissions
+        .filter(
+          (permission) =>
+            permission.status === "ACTIVE" && permission.is_enforced !== false,
+        )
+        .forEach((permission) => keys.add(permission.permission_key));
     });
     // Yêu cầu #2/#4: quyền cấp riêng cộng thêm vào quyền theo role, nên "Quyền
     // hiệu lực" hiển thị ở đây phải là hợp của cả hai, không chỉ quyền theo role.
     overrides.forEach((override) => keys.add(override.permission_key));
     return [...keys].sort((a, b) => a.localeCompare(b));
-  }, [viewingUser, roles, overrides]);
+  }, [viewingUser, roles, overrides, applicableRoles]);
 
   const grantablePermissions = useMemo(() => {
     const grantedIds = new Set(overrides.map((o) => o.permission_id));
     return (permissionsQuery.data ?? []).filter(
-      (permission) => !grantedIds.has(permission.permission_id),
+      (permission) =>
+        permission.status === "ACTIVE" &&
+        permission.is_enforced !== false &&
+        !grantedIds.has(permission.permission_id) &&
+        !effectivePermissionKeys.includes(permission.permission_key),
     );
-  }, [permissionsQuery.data, overrides]);
+  }, [permissionsQuery.data, overrides, effectivePermissionKeys]);
 
   const openGrantModal = () => {
     setGrantPermissionId("");
@@ -591,6 +568,8 @@ export function IamUserScreen({
   const openCreate = () => {
     if (!canManageUsers) return;
     setEditingUser(null);
+    setFormDirty(false);
+    setFormStep("account");
     resetForm();
     setFormError("");
     setFieldErrors({});
@@ -602,6 +581,8 @@ export function IamUserScreen({
     if (!openCreateOnMount || !canManageUsers) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
     setEditingUser(null);
+    setFormDirty(false);
+    setFormStep("account");
     setFormState({
       ...EMPTY_FORM,
       roleId: defaultRoleId,
@@ -620,7 +601,9 @@ export function IamUserScreen({
   const openEdit = (user: IamUser) => {
     if (!canManageUsers) return;
     const primaryRole = user.roles?.[0];
+    setFormDirty(false);
     setEditingUser(user);
+    setFormStep("account");
     setFormState({
       displayName: user.display_name,
       phone: user.phone ?? "",
@@ -644,7 +627,7 @@ export function IamUserScreen({
   };
 
   const openView = (user: IamUser) => {
-    setIsEffectiveOpen(false);
+    setDetailTab(mode === "effective" ? "effective" : "overview");
     setViewingUser(user);
   };
 
@@ -654,6 +637,16 @@ export function IamUserScreen({
 
   const closeModal = () => {
     if (isSaving) return;
+    if (formDirty) {
+      setDiscardOpen(true);
+      return;
+    }
+    discardUserChanges();
+  };
+
+  const discardUserChanges = () => {
+    setDiscardOpen(false);
+    setFormDirty(false);
     setIsModalOpen(false);
     setEditingUser(null);
     setFormError("");
@@ -664,6 +657,7 @@ export function IamUserScreen({
     key: K,
     value: UserFormState[K],
   ) => {
+    setFormDirty(true);
     setFormState((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => {
       if (!current[key]) return current;
@@ -749,6 +743,15 @@ export function IamUserScreen({
       });
     }
     setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      setFormStep(
+        errors.displayName || errors.email || errors.phone
+          ? "account"
+          : errors.roleId || errors.effectiveFrom || errors.effectiveTo
+            ? "access"
+            : "review",
+      );
+    }
     return Object.keys(errors).length === 0;
   };
 
@@ -756,7 +759,20 @@ export function IamUserScreen({
     event.preventDefault();
     setFormError("");
     if (!validateForm()) return;
+    if (
+      editingUser &&
+      formState.status !== editingUser.status &&
+      formState.status !== "ACTIVE"
+    ) {
+      setConfirmStatusOpen(true);
+      return;
+    }
 
+    await saveUser();
+  };
+
+  const saveUser = async () => {
+    if (isSaving) return;
     const displayName = formState.displayName.trim();
     const email = formState.email.trim();
     const phone = formState.phone.trim();
@@ -822,8 +838,10 @@ export function IamUserScreen({
           },
         });
       }
+      setFormDirty(false);
       setIsModalOpen(false);
       setEditingUser(null);
+      setViewingUser(null);
     } catch (error) {
       // Lỗi nào gắn được vào ô nhập thì hiện ngay dưới ô đó (vd email trùng),
       // banner chỉ giữ phần không thuộc ô nào — trước đây mọi lỗi đều bị dồn
@@ -834,16 +852,20 @@ export function IamUserScreen({
       );
       setFieldErrors((current) => ({ ...current, ...serverFieldErrors }));
       setFormError(message ?? "");
+      if (Object.keys(serverFieldErrors).length)
+        setFormStep(
+          serverFieldErrors.displayName ||
+            serverFieldErrors.email ||
+            serverFieldErrors.phone
+            ? "account"
+            : serverFieldErrors.roleId ||
+                serverFieldErrors.effectiveFrom ||
+                serverFieldErrors.effectiveTo
+              ? "access"
+              : "review",
+        );
     }
   };
-
-  // Giá trị hiện tại (vd: per_page=15 do BE trả về) có thể không nằm trong
-  // các mốc chuẩn MVP_PAGE_SIZE_OPTIONS — vẫn phải liệt kê để Select hiển thị đúng.
-  const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(
-    perPage as (typeof MVP_PAGE_SIZE_OPTIONS)[number],
-  )
-    ? MVP_PAGE_SIZE_OPTIONS
-    : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   const listError = usersQuery.error
     ? getApiErrorMessage(usersQuery.error, t("iam.user.errLoadUsers"))
@@ -857,31 +879,77 @@ export function IamUserScreen({
       className="hn-mvp-source-screen hn-iam-screen"
       data-mvp-screen="IAM-01"
     >
-      <div className="hn-iam-actions">
-        {canManageUsers ? (
-          <ActionButton
-            kind="settings"
-            onClick={() => setDepartmentManagerOpen(true)}
+      <header className="hn-iam-page-heading">
+        <div>
+          <h1>
+            {t(
+              mode === "effective"
+                ? "iam.userUi.effectiveTitle"
+                : "iam.userUi.title",
+            )}
+          </h1>
+          <p>
+            {t(
+              mode === "effective"
+                ? "iam.userUi.effectiveSubtitle"
+                : "iam.userUi.subtitle",
+            )}
+          </p>
+        </div>
+        <div className="hn-iam-actions">
+          {canManageUsers && mode === "users" ? (
+            <>
+              <ActionButton
+                kind="settings"
+                onClick={() => setDepartmentManagerOpen(true)}
+              >
+                {t("iam.user.manageDepartments")}
+              </ActionButton>
+              <ActionButton
+                kind="create"
+                className="hn-iam-primary"
+                onClick={openCreate}
+                disabled={rolesQuery.isLoading || roles.length === 0}
+              >
+                {t("iam.user.create")}
+              </ActionButton>
+            </>
+          ) : null}
+        </div>
+      </header>
+      {navigation}
+      <section
+        className="hn-iam-users-panel"
+        aria-label={t("iam.userUi.title")}
+      >
+        <div className="hn-iam-user-summary">
+          <strong>
+            {usersQuery.isLoading
+              ? t("iam.user.loadingData")
+              : t("iam.userUi.accountCount", { count: total })}
+          </strong>
+          <div
+            className="hn-iam-status-tabs"
+            aria-label={t("iam.user.colStatus")}
           >
-            {t("iam.user.manageDepartments")}
-          </ActionButton>
-        ) : null}
-        {canManageUsers ? (
-          <ActionButton
-            kind="create"
-            className="hn-iam-primary"
-            onClick={openCreate}
-            disabled={rolesQuery.isLoading || roles.length === 0}
-          >
-            {t("iam.user.create")}
-          </ActionButton>
-        ) : null}
-      </div>
-      <div className="toolbar hn-iam-toolbar">
-        <div className="hn-iam-filter hn-iam-search">
-          <span className="hn-iam-filter-label">
-            {t("iam.user.searchAria")}
-          </span>
+            {[{ value: "", label: t("iam.userUi.all") }, ...STATUS_OPTIONS].map(
+              (status) => (
+                <button
+                  key={status.value}
+                  type="button"
+                  aria-pressed={statusFilter === status.value}
+                  onClick={() => {
+                    setStatusFilter(status.value as IamUserStatus | "");
+                    setPage(1);
+                  }}
+                >
+                  {status.label}
+                </button>
+              ),
+            )}
+          </div>
+        </div>
+        <div className="hn-iam-user-filters">
           <UiTextField
             value={search}
             onChange={(event) => {
@@ -891,12 +959,10 @@ export function IamUserScreen({
             placeholder={t("iam.user.searchPlaceholder")}
             slotProps={{
               htmlInput: { "aria-label": t("iam.user.searchAria") },
+              input: { startAdornment: <UiIcon name="search" size="md" /> },
             }}
             fullWidth
           />
-        </div>
-        <div className="hn-iam-filter">
-          <span className="hn-iam-filter-label">{t("iam.user.colRole")}</span>
           <UiSelect
             value={roleFilter}
             onChange={(value) => {
@@ -913,11 +979,6 @@ export function IamUserScreen({
               label: role.role_name,
             }))}
           />
-        </div>
-        <div className="hn-iam-filter">
-          <span className="hn-iam-filter-label">
-            {t("iam.user.colDepartment")}
-          </span>
           <UiSelect
             value={departmentFilter}
             onChange={(value) => {
@@ -934,9 +995,6 @@ export function IamUserScreen({
               label: department.department_name,
             }))}
           />
-        </div>
-        <div className="hn-iam-filter">
-          <span className="hn-iam-filter-label">{t("iam.user.colStatus")}</span>
           <UiSelect
             value={statusFilter}
             onChange={(value) => {
@@ -952,30 +1010,21 @@ export function IamUserScreen({
               label: status.label,
             }))}
           />
+          {search || roleFilter || departmentFilter || statusFilter ? (
+            <ActionIconButton
+              kind="clear"
+              label={t("iam.userUi.clearFilters")}
+              onClick={() => {
+                setSearch("");
+                setRoleFilter("");
+                setDepartmentFilter("");
+                setStatusFilter("");
+                setPage(1);
+              }}
+            />
+          ) : null}
         </div>
-        <div className="hn-iam-filter">
-          <span className="hn-iam-filter-label">
-            {t("iam.user.pageSizeAria")}
-          </span>
-          <UiSelect
-            value={perPage}
-            onChange={(value) => {
-              setPerPage(Number(value));
-              setPage(1);
-            }}
-            aria-label={t("iam.user.pageSizeAria")}
-            fullWidth
-            menuClassName="hn-iam-menu"
-            options={perPageOptions.map((size) => ({
-              value: size,
-              label: `${size} / trang`,
-            }))}
-          />
-        </div>
-      </div>
-
-      {listError ? (
-        <Box sx={{ marginBottom: "14px" }}>
+        {listError ? (
           <UiAlert
             tone="error"
             action={
@@ -986,46 +1035,30 @@ export function IamUserScreen({
           >
             {listError}
           </UiAlert>
-        </Box>
-      ) : null}
-      {roleError ? (
-        <Box sx={{ marginBottom: "14px" }}>
-          <UiAlert tone="error">{roleError}</UiAlert>
-        </Box>
-      ) : null}
-
-      <section
-        className="hn-iam-list-card"
-        aria-labelledby="iam-users-list-title"
-      >
-        <div className="hn-iam-list-heading">
-          <h2 id="iam-users-list-title">
-            {t("iam.tab.users")}{" "}
-            <span className="hn-iam-count">
-              {usersQuery.isLoading ? "—" : total}
-            </span>
-          </h2>
-        </div>
+        ) : null}
+        {roleError ? <UiAlert tone="error">{roleError}</UiAlert> : null}
+        {roleFilter && pagination.total > users.length ? (
+          <UiAlert tone="warning">{t("iam.userUi.roleFilterPartial")}</UiAlert>
+        ) : null}
         <div
-          className="table-wrap hn-iam-table-scroll"
+          className="hn-iam-user-table"
           role="region"
           aria-label={t("iam.tab.users")}
           tabIndex={0}
           aria-busy={usersQuery.isLoading}
         >
           <table>
+            <colgroup>
+              {[5, 25, 19, 17, 16, 12, 6].map((width, index) => (
+                <col key={index} style={{ width: `${width}%` }} />
+              ))}
+            </colgroup>
             <thead>
               <tr>
                 <th className="stt-col">STT</th>
                 <SortableTh
                   label={t("iam.user.colUser")}
                   sortKey="name"
-                  sortState={sortState}
-                  onSort={requestSort}
-                />
-                <SortableTh
-                  label={t("iam.user.colDepartment")}
-                  sortKey="department"
                   sortState={sortState}
                   onSort={requestSort}
                 />
@@ -1046,7 +1079,6 @@ export function IamUserScreen({
                   sortKey="status"
                   sortState={sortState}
                   onSort={requestSort}
-                  sortType="value"
                 />
                 <SortableTh
                   label={t("iam.user.colLastLogin")}
@@ -1061,90 +1093,109 @@ export function IamUserScreen({
             <tbody>
               {usersQuery.isLoading ? (
                 <tr>
-                  <td colSpan={8}>
-                    <span className="muted">{t("iam.user.loadingData")}</span>
-                  </td>
+                  <td colSpan={7}>{t("iam.user.loadingData")}</td>
                 </tr>
-              ) : sortedUsers.length > 0 ? (
-                sortedUsers.map((user) => {
-                  const primaryRole = user.roles?.[0];
-                  return (
-                    <tr key={user.user_id}>
-                      <td className="stt-col">
-                        {mvpRowNumber(page, perPage, originalIndexOf(user))}
-                      </td>
-                      <td
-                        className="hn-iam-user-name"
-                        style={{ maxWidth: 260 }}
-                      >
-                        <TruncatedText lines={1} maxWidth={240}>
-                          {user.display_name}
-                        </TruncatedText>
-                        <TruncatedText
-                          lines={1}
-                          maxWidth={240}
-                          className="muted"
-                        >
-                          {user.email || EMPTY_TEXT}
-                        </TruncatedText>
-                      </td>
-                      <td>{departmentLabel(user)}</td>
-                      <td>
-                        {primaryRole?.role_name ?? t("iam.user.unassigned")}
-                      </td>
-                      <td>{scopeLabel(primaryRole, warehouseNames, t)}</td>
-                      <td>
-                        <span className={statusClass(user.status)}>
-                          {statusLabel(user.status)}
+              ) : listError ? null : sortedUsers.length ? (
+                sortedUsers.map((user) => (
+                  <tr key={user.user_id}>
+                    <td className="stt-col" data-label="STT">
+                      {mvpRowNumber(page, perPage, originalIndexOf(user))}
+                    </td>
+                    <td
+                      className="hn-iam-identity-cell"
+                      data-label={t("iam.user.colUser")}
+                    >
+                      <div className="hn-iam-identity">
+                        <span className="hn-iam-avatar" aria-hidden="true">
+                          {userInitials(user.display_name)}
                         </span>
-                      </td>
-                      <td>{formatLastLogin(user.last_login_at, t)}</td>
-                      <td>
-                        <RowActionGroup>
-                          <RowActionButton
-                            kind="view"
-                            onClick={() => openView(user)}
+                        <div>
+                          <strong>
+                            <TruncatedText lines={1}>
+                              {user.display_name}
+                            </TruncatedText>
+                          </strong>
+                          <TruncatedText lines={1} className="muted">
+                            {user.username || user.email || EMPTY_TEXT}
+                          </TruncatedText>
+                          <TruncatedText
+                            lines={1}
+                            className="muted hn-iam-department-caption"
                           >
-                            Xem
-                          </RowActionButton>
-                          {canManageUsers ? (
-                            <RowActionButton
-                              kind="edit"
-                              onClick={() => openEdit(user)}
-                            >
-                              {t("iam.user.edit")}
-                            </RowActionButton>
-                          ) : null}
-                        </RowActionGroup>
-                      </td>
-                    </tr>
-                  );
-                })
+                            {departmentLabel(user)}
+                          </TruncatedText>
+                        </div>
+                      </div>
+                    </td>
+                    <td data-label={t("iam.user.colRole")}>
+                      <TruncatedText lines={1}>
+                        {user.roles?.[0]?.role_name ?? t("iam.user.unassigned")}
+                      </TruncatedText>
+                      {(user.roles?.length ?? 0) > 1 ? (
+                        <span className="muted">
+                          {t("iam.userUi.extraRoleCount", {
+                            count: (user.roles?.length ?? 1) - 1,
+                          })}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td data-label={t("iam.user.colScope")}>
+                      <TruncatedText lines={2}>
+                        {scopeLabel(user.roles?.[0], warehouseNames, t)}
+                      </TruncatedText>
+                    </td>
+                    <td data-label={t("iam.user.colStatus")}>
+                      <UiStatusBadge
+                        tone={statusBadgeTone(user.status)}
+                        label={statusLabel(user.status)}
+                      />
+                    </td>
+                    <td data-label={t("iam.user.colLastLogin")}>
+                      {formatLastLogin(user.last_login_at, t)}
+                    </td>
+                    <td className="hn-iam-row-actions">
+                      <RowActionButton
+                        kind="view"
+                        label={t("iam.user.detailTitle")}
+                        onClick={() => openView(user)}
+                      />
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
-                  <td colSpan={8}>
-                    <span className="muted">{t("iam.user.empty")}</span>
+                  <td colSpan={7}>
+                    <div className="hn-iam-empty">
+                      <UiIcon name="search" size="lg" />
+                      <strong>{t("iam.user.empty")}</strong>
+                      <span>{t("iam.userUi.emptyHint")}</span>
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-
-        <MvpPaginationFooter
-          current={page}
-          pageSize={perPage}
-          total={total}
-          itemLabel={t("iam.user.itemLabel")}
-          onChange={setPage}
-        />
+        <div className="hn-iam-users-pagination">
+          <UiPagination
+            page={page}
+            pageSize={perPage}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPerPage(size);
+              setPage(1);
+            }}
+          />
+        </div>
       </section>
 
-      <UiDialog
-        className="hn-iam-dialog"
+      <UiDrawer
+        className="hn-iam-dialog hn-iam-user-drawer"
         open={isModalOpen}
         onClose={guardBackdropClose(closeModal)}
-        maxWidth="md"
+        width={720}
+        slotProps={{ paper: { role: "dialog", "aria-modal": true } }}
         title={
           <Stack
             direction="row"
@@ -1172,18 +1223,40 @@ export function IamUserScreen({
             >
               {t("iam.user.cancel")}
             </ActionButton>
-            <ActionButton
-              kind="save"
-              className="hn-iam-primary"
-              disabled={isSaving || !formState.roleId}
-              type="submit"
-              form="iam-user-form"
-            >
-              {isSaving ? t("iam.user.saving") : t("iam.user.submit")}
-            </ActionButton>
+            {formStep !== "review" ? (
+              <ActionButton
+                kind="next"
+                onClick={() =>
+                  setFormStep(formStep === "account" ? "access" : "review")
+                }
+              >
+                {t("iam.userUi.next")}
+              </ActionButton>
+            ) : (
+              <ActionButton
+                kind="save"
+                className="hn-iam-primary"
+                disabled={isSaving}
+                type="submit"
+                form="iam-user-form"
+              >
+                {isSaving ? t("iam.user.saving") : t("iam.user.submit")}
+              </ActionButton>
+            )}
           </>
         }
       >
+        <div className="hn-iam-editor-step-tabs">
+          <UiTabs
+            value={formStep}
+            onChange={setFormStep}
+            items={[
+              { key: "account", label: t("iam.user.sectionAccount") },
+              { key: "access", label: t("iam.userUi.roleScope") },
+              { key: "review", label: t("iam.userUi.review") },
+            ]}
+          />
+        </div>
         <form id="iam-user-form" onSubmit={handleSubmit} noValidate>
           {formError ? (
             <Box sx={{ marginBottom: "14px" }}>
@@ -1191,8 +1264,8 @@ export function IamUserScreen({
             </Box>
           ) : null}
 
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
+          <Grid container spacing={2} className="hn-iam-editor-sections">
+            <Grid size={12} hidden={formStep !== "account"}>
               <Box
                 className="hn-iam-form-section"
                 sx={{
@@ -1254,7 +1327,9 @@ export function IamUserScreen({
                     disabled={isSaving}
                     error={Boolean(fieldErrors.email)}
                     helperText={fieldErrors.email}
-                    slotProps={{ htmlInput: { maxLength: ACCOUNT_EMAIL_MAX_LENGTH } }}
+                    slotProps={{
+                      htmlInput: { maxLength: ACCOUNT_EMAIL_MAX_LENGTH },
+                    }}
                   />
                   <UiAutocomplete
                     menuClassName="hn-iam-menu"
@@ -1322,7 +1397,7 @@ export function IamUserScreen({
               </Box>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid size={12} hidden={formStep !== "access"}>
               <Box
                 className="hn-iam-form-section"
                 sx={{
@@ -1448,6 +1523,39 @@ export function IamUserScreen({
                     }
                     max={EFFECTIVE_DATE_INPUT.max}
                   />
+                </Stack>
+              </Box>
+            </Grid>
+            <Grid size={12} hidden={formStep !== "review"}>
+              <section className="hn-iam-review-section">
+                <SectionTitle>{t("iam.userUi.review")}</SectionTitle>
+                <UiDescriptions
+                  columns={2}
+                  items={[
+                    {
+                      label: t("iam.user.fieldDisplayName"),
+                      value: formState.displayName || EMPTY_TEXT,
+                    },
+                    { label: "Email", value: formState.email || EMPTY_TEXT },
+                    {
+                      label: t("iam.user.colRole"),
+                      value: selectedRole?.role_name || EMPTY_TEXT,
+                    },
+                    {
+                      label: t("iam.user.fieldDataScope"),
+                      value: formState.scopeRef
+                        ? warehouseNames.get(formState.scopeRef) ||
+                          t("iam.user.unknownWarehouse")
+                        : t("iam.user.scopeAllSystem"),
+                    },
+                    {
+                      label: t("iam.user.colStatus"),
+                      value: statusLabel(formState.status),
+                    },
+                  ]}
+                />
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  {" "}
                   <UiTextField
                     id="iam-password"
                     label={
@@ -1496,305 +1604,300 @@ export function IamUserScreen({
                     }
                     slotProps={{ htmlInput: { maxLength: REASON_MAX_LENGTH } }}
                   />
-                  {editingUser ? (
-                    <Box>
-                      <FieldHint mt={0}>{t("iam.user.fieldVersion")}</FieldHint>
-                      <Box
-                        sx={{
-                          mt: 0.5,
-                          fontSize: 14,
-                          border: "1px solid",
-                          borderColor: "divider",
-                          borderRadius: "var(--ops-radius-card)",
-                          px: 1.5,
-                          py: 1,
-                        }}
-                      >
-                        {editingUser.version}
-                      </Box>
-                      <FieldHint>{t("iam.user.versionHint")}</FieldHint>
-                    </Box>
-                  ) : null}
                 </Stack>
-              </Box>
+              </section>
             </Grid>
           </Grid>
         </form>
-      </UiDialog>
+      </UiDrawer>
 
-      <UiDialog
-        className="hn-iam-dialog"
-        open={Boolean(viewingUser)}
+      <UiDrawer
+        className="hn-iam-dialog hn-iam-user-drawer"
+        open={
+          Boolean(viewingUser) &&
+          !isModalOpen &&
+          !isGrantModalOpen &&
+          !revokingPermissionId
+        }
         onClose={closeView}
-        maxWidth="sm"
-        slotProps={{ paper: { sx: { maxWidth: 760 } } }}
+        width={720}
+        slotProps={{ paper: { role: "dialog", "aria-modal": true } }}
         title={
-          <Stack
-            direction="row"
-            sx={{ alignItems: "center", justifyContent: "space-between" }}
-          >
-            <span>{t("iam.user.detailTitle")}</span>
+          <span className="hn-iam-drawer-title">
+            {t("iam.user.detailTitle")}
             <ActionIconButton
               kind="close"
               label={t("common.close")}
               onClick={closeView}
             />
-          </Stack>
+          </span>
         }
       >
         {viewingUser ? (
-          <Stack spacing={2}>
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: "var(--ops-radius-card)",
-                p: 2,
-              }}
-            >
-              <UiDescriptions
-                columns={2}
-                items={[
-                  {
-                    label: t("iam.user.fieldDisplayName"),
-                    value: viewingUser.display_name,
-                  },
-                  {
-                    label: t("iam.user.fieldPhone"),
-                    value: viewingUser.phone || EMPTY_TEXT,
-                  },
-                  { label: "Email", value: viewingUser.email || EMPTY_TEXT },
-                  {
-                    label: t("iam.user.colDepartment"),
-                    value: departmentLabel(viewingUser),
-                  },
-                  {
-                    label: t("iam.user.colStatus"),
-                    value: (
-                      <UiStatusBadge
-                        tone={statusBadgeTone(viewingUser.status)}
-                        label={statusLabel(viewingUser.status)}
-                      />
-                    ),
-                  },
-                  {
-                    label: t("iam.user.colLastLogin"),
-                    value: formatLastLogin(viewingUser.last_login_at, t),
-                  },
-                  {
-                    label: t("iam.user.fieldVersion"),
-                    value: viewingUser.version,
-                  },
-                ]}
-              />
-            </Box>
-
-            <Box>
-              <SectionTitle mb={1}>
-                {t("iam.user.rolesSection", {
-                  count: viewingUser.roles?.length ?? 0,
-                })}
-              </SectionTitle>
-              {viewingUser.roles && viewingUser.roles.length > 0 ? (
-                <Box
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: "var(--ops-radius-card)",
-                    overflow: "hidden",
-                  }}
+          <>
+            <div className="hn-iam-profile-header">
+              <div className="hn-iam-identity">
+                <span
+                  className="hn-iam-avatar hn-iam-avatar-large"
+                  aria-hidden="true"
                 >
-                  <DialogTable
-                    headers={[
-                      t("iam.user.colRoleName"),
-                      t("iam.user.colScopeName"),
-                      t("iam.user.colValidity"),
+                  {userInitials(viewingUser.display_name)}
+                </span>
+                <div>
+                  <h2>{viewingUser.display_name}</h2>
+                  <p>
+                    {viewingUser.username || viewingUser.email || EMPTY_TEXT}
+                  </p>
+                  <UiStatusBadge
+                    tone={statusBadgeTone(viewingUser.status)}
+                    label={statusLabel(viewingUser.status)}
+                  />
+                </div>
+              </div>
+              {canManageUsers ? (
+                <ActionButton kind="edit" onClick={() => openEdit(viewingUser)}>
+                  {t("iam.user.edit")}
+                </ActionButton>
+              ) : null}
+            </div>
+            <UiTabs
+              value={detailTab}
+              onChange={setDetailTab}
+              items={[
+                { key: "overview", label: t("iam.userUi.overview") },
+                { key: "effective", label: t("iam.userUi.effectiveTitle") },
+              ]}
+            />
+            {detailTab === "overview" ? (
+              <div className="hn-iam-detail-sections">
+                <section>
+                  <SectionTitle>{t("iam.user.sectionAccount")}</SectionTitle>
+                  <UiDescriptions
+                    columns={2}
+                    items={[
+                      {
+                        label: t("iam.userUi.username"),
+                        value: viewingUser.username || EMPTY_TEXT,
+                      },
+                      {
+                        label: "Email",
+                        value: viewingUser.email || EMPTY_TEXT,
+                      },
+                      {
+                        label: t("iam.user.fieldPhone"),
+                        value: viewingUser.phone || EMPTY_TEXT,
+                      },
+                      {
+                        label: t("iam.user.colDepartment"),
+                        value: departmentLabel(viewingUser),
+                      },
+                      {
+                        label: t("iam.user.colLastLogin"),
+                        value: formatLastLogin(viewingUser.last_login_at, t),
+                      },
                     ]}
-                  >
-                    {viewingUser.roles.map((role) => (
-                      <tr key={role.role_id}>
-                        <td>
-                          <Stack
-                            spacing={0.5}
-                            sx={{ alignItems: "flex-start" }}
-                          >
-                            <span>{role.role_name}</span>
-                            <UiStatusBadge
-                              tone="neutral"
-                              label={scopeTypeLabel(role.scope_type)}
-                            />
-                          </Stack>
-                        </td>
-                        <td>{scopeLabel(role, warehouseNames, t)}</td>
-                        <td>{effectiveWindowLabel(role.pivot, t)}</td>
-                      </tr>
-                    ))}
-                  </DialogTable>
-                </Box>
-              ) : (
-                <Box sx={{ fontSize: 14, color: "text.secondary" }}>
-                  {t("iam.user.noRoles")}
-                </Box>
-              )}
-            </Box>
-
-            <Box>
-              <Stack
-                direction="row"
-                sx={{
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  mb: 1,
-                }}
-              >
-                <SectionTitle mb={0}>
-                  {t("iam.user.overridesSection", { count: overrides.length })}
-                </SectionTitle>
-                {canManageUsers ? (
-                  <ActionButton kind="grant" onClick={openGrantModal}>
-                    {t("iam.user.grantOverride")}
-                  </ActionButton>
-                ) : null}
-              </Stack>
-              <FieldHint mt={0}>
-                {t("iam.user.overridesHintA")} {t("iam.user.overridesHintB")}
-              </FieldHint>
-              {overrides.length > 0 ? (
-                <Box
-                  sx={{
-                    mt: 1,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: "var(--ops-radius-card)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <DialogTable
-                    headers={[
-                      t("iam.user.colPermission"),
-                      t("iam.user.colGrantedAt"),
-                      t("iam.user.colAction"),
-                    ]}
-                    lastColRight
-                    hideActionHeader
-                  >
-                    {overrides.map((override) => (
-                      <tr key={override.user_permission_id}>
-                        <td>
-                          <Stack spacing={0.25}>
-                            <span>{override.permission_name}</span>
-                            <Box
-                              component="span"
-                              sx={{ fontSize: 12, color: "text.secondary" }}
-                            >
-                              {override.permission_key}
-                            </Box>
-                          </Stack>
-                        </td>
-                        <td>{formatDateTime(override.granted_at)}</td>
-                        <td>
-                          {canManageUsers ? (
-                            <RowActionButton
-                              kind="revoke"
-                              onClick={() =>
-                                openRevokeConfirm(override.permission_id)
-                              }
-                            >
-                              {t("iam.user.revoke")}
-                            </RowActionButton>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
-                  </DialogTable>
-                </Box>
-              ) : (
-                <Box sx={{ mt: 1, fontSize: 14, color: "text.secondary" }}>
-                  {t("iam.user.noOverrides")}
-                </Box>
-              )}
-            </Box>
-
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: "var(--ops-radius-card)",
-                overflow: "hidden",
-              }}
-            >
-              <Box
-                component="button"
-                type="button"
-                aria-expanded={isEffectiveOpen}
-                onClick={() => setIsEffectiveOpen((open) => !open)}
-                sx={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 1,
-                  px: 2,
-                  py: 1.5,
-                  background: "none",
-                  border: 0,
-                  cursor: "pointer",
-                  font: "inherit",
-                  textAlign: "left",
-                  color: "text.primary",
-                }}
-              >
-                <Box component="span" sx={{ fontWeight: 600, fontSize: 14 }}>
-                  {t("iam.user.effectiveSection", {
-                    count: effectivePermissionKeys.length,
-                  })}
-                </Box>
-                <Box
-                  component="span"
-                  sx={{
-                    display: "inline-flex",
-                    transition: "transform 0.2s",
-                    transform: isEffectiveOpen ? "rotate(180deg)" : "none",
-                  }}
-                >
-                  <UiIcon name="angle-down" size="md" />
-                </Box>
-              </Box>
-              <Collapse in={isEffectiveOpen}>
-                <Box sx={{ px: 2, pb: 2 }}>
-                  {effectivePermissionKeys.length > 0 ? (
-                    <Stack
-                      direction="row"
-                      spacing={0.75}
-                      useFlexGap
-                      sx={{ flexWrap: "wrap" }}
+                  />
+                </section>
+                <section>
+                  <div className="hn-iam-section-heading">
+                    <SectionTitle mb={0}>
+                      {t("iam.userUi.roleScope")}
+                    </SectionTitle>
+                    {canManageUsers ? (
+                      <ActionButton
+                        kind="edit"
+                        onClick={() => {
+                          openEdit(viewingUser);
+                          setFormStep("access");
+                        }}
+                      >
+                        {t("iam.userUi.adjustAssignment")}
+                      </ActionButton>
+                    ) : null}
+                  </div>
+                  <div className="hn-iam-assignment-list">
+                    {viewingUser.roles?.length ? (
+                      viewingUser.roles.map((role) => (
+                        <article
+                          key={role.role_id}
+                          className="hn-iam-assignment-card"
+                        >
+                          <strong>{role.role_name}</strong>
+                          <UiStatusBadge
+                            tone="neutral"
+                            label={scopeTypeLabel(role.scope_type)}
+                          />
+                          <dl>
+                            <div>
+                              <dt>{t("iam.user.fieldDataScope")}</dt>
+                              <dd>{scopeLabel(role, warehouseNames, t)}</dd>
+                            </div>
+                            <div>
+                              <dt>{t("iam.user.colValidity")}</dt>
+                              <dd>{effectiveWindowLabel(role.pivot, t)}</dd>
+                            </div>
+                          </dl>
+                        </article>
+                      ))
+                    ) : (
+                      <p className="muted">{t("iam.user.noRoles")}</p>
+                    )}
+                  </div>
+                </section>
+                <section>
+                  <div className="hn-iam-section-heading">
+                    <SectionTitle mb={0}>
+                      {t("iam.userUi.effectiveTitle")}
+                    </SectionTitle>
+                    <ActionButton
+                      kind="view"
+                      onClick={() => setDetailTab("effective")}
                     >
-                      {effectivePermissionKeys.map((permissionKey) => (
-                        <UiStatusBadge
-                          key={permissionKey}
-                          tone="neutral"
-                          label={permissionKey}
-                        />
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Box sx={{ fontSize: 14, color: "text.secondary" }}>
-                      {t("iam.user.noEffective")}
-                    </Box>
-                  )}
-                </Box>
-              </Collapse>
-            </Box>
-          </Stack>
+                      {t("iam.userUi.viewPermissions")}
+                    </ActionButton>
+                  </div>
+                  <p className="muted">
+                    {t("iam.userUi.permissionPreview", {
+                      count: effectivePermissionKeys.length,
+                    })}
+                  </p>
+                </section>
+              </div>
+            ) : (
+              <div className="hn-iam-detail-sections">
+                <section>
+                  <div className="hn-iam-section-heading">
+                    <SectionTitle mb={0}>
+                      {t("iam.userUi.effectiveTitle")}
+                    </SectionTitle>
+                    {canManageUsers ? (
+                      <ActionButton kind="grant" onClick={openGrantModal}>
+                        {t("iam.user.grantOverride")}
+                      </ActionButton>
+                    ) : null}
+                  </div>
+                  <p className="muted">{t("iam.userUi.effectiveHint")}</p>
+                  {overridesQuery.isLoading ? (
+                    <p>{t("iam.user.loadingData")}</p>
+                  ) : overridesQuery.error ? (
+                    <UiAlert
+                      tone="error"
+                      action={
+                        <ActionButton
+                          kind="refresh"
+                          onClick={() => overridesQuery.refetch()}
+                        >
+                          {t("iam.user.retry")}
+                        </ActionButton>
+                      }
+                    >
+                      {t("iam.userUi.permissionsLoadError")}
+                    </UiAlert>
+                  ) : null}
+                  {rolesQuery.isLoading ? (
+                    <p>{t("iam.user.loadingData")}</p>
+                  ) : roleError ? (
+                    <UiAlert tone="error">{roleError}</UiAlert>
+                  ) : null}
+                  <div className="hn-iam-effective-list">
+                    {effectivePermissionKeys.length ? (
+                      effectivePermissionKeys.map((key) => {
+                        const roleSources = applicableRoles.filter((role) =>
+                          (
+                            roles.find((item) => item.role_id === role.role_id)
+                              ?.permissions ??
+                            role.permissions ??
+                            []
+                          ).some(
+                            (permission) =>
+                              permission.permission_key === key &&
+                              permission.status === "ACTIVE" &&
+                              permission.is_enforced !== false,
+                          ),
+                        );
+                        const direct = overrides.find(
+                          (permission) => permission.permission_key === key,
+                        );
+                        const label =
+                          direct?.permission_name ||
+                          roles
+                            .flatMap((role) => role.permissions ?? [])
+                            .find(
+                              (permission) =>
+                                permission.permission_key === key &&
+                                permission.status === "ACTIVE" &&
+                                permission.is_enforced !== false,
+                            )?.permission_name ||
+                          permissionsQuery.data?.find(
+                            (permission) =>
+                              permission.permission_key === key &&
+                              permission.status === "ACTIVE" &&
+                              permission.is_enforced !== false,
+                          )?.permission_name ||
+                          key;
+                        return (
+                          <article key={key}>
+                            <div>
+                              <strong>{label}</strong>
+                              <small>{key}</small>
+                              <span className="muted">
+                                {roleSources
+                                  .map((role) => role.role_name)
+                                  .join(" · ")}
+                                {direct
+                                  ? `${roleSources.length ? " · " : ""}${t("iam.userUi.directGrant")}`
+                                  : ""}
+                              </span>
+                              {direct?.granted_at ? (
+                                <small>
+                                  {t("iam.user.colGrantedAt")}:{" "}
+                                  {formatDateTime(direct.granted_at)}
+                                </small>
+                              ) : null}
+                            </div>
+                            {direct && canManageUsers ? (
+                              <RowActionButton
+                                kind="revoke"
+                                label={t("iam.user.revoke")}
+                                onClick={() =>
+                                  openRevokeConfirm(direct.permission_id)
+                                }
+                              />
+                            ) : null}
+                          </article>
+                        );
+                      })
+                    ) : !overridesQuery.isLoading &&
+                      !overridesQuery.error &&
+                      !rolesQuery.isLoading &&
+                      !roleError ? (
+                      <p className="muted">{t("iam.user.noEffective")}</p>
+                    ) : null}
+                  </div>
+                </section>
+              </div>
+            )}
+          </>
         ) : null}
-      </UiDialog>
+      </UiDrawer>
 
-      <UiDialog
+      <UiDrawer
         className="hn-iam-dialog"
         open={isGrantModalOpen}
         onClose={closeGrantModal}
-        maxWidth="xs"
-        title={t("iam.user.grantTitle")}
+        width={560}
+        slotProps={{ paper: { role: "dialog", "aria-modal": true } }}
+        title={
+          <span className="hn-iam-drawer-title">
+            {t("iam.user.grantTitle")}
+            <ActionIconButton
+              kind="close"
+              label={t("common.close")}
+              onClick={closeGrantModal}
+              disabled={grantPermission.isPending}
+            />
+          </span>
+        }
         actions={
           <>
             <ActionButton
@@ -1859,7 +1962,7 @@ export function IamUserScreen({
             slotProps={{ htmlInput: { maxLength: REASON_MAX_LENGTH } }}
           />
         </Stack>
-      </UiDialog>
+      </UiDrawer>
 
       <UiDialog
         className="hn-iam-dialog"
@@ -1907,6 +2010,55 @@ export function IamUserScreen({
         </Stack>
       </UiDialog>
 
+      <UiDialog
+        className="hn-iam-dialog"
+        open={discardOpen}
+        onClose={() => setDiscardOpen(false)}
+        title={t("iam.roleUi.discardTitle")}
+        actions={
+          <>
+            <ActionButton kind="cancel" onClick={() => setDiscardOpen(false)}>
+              {t("iam.roleUi.keepEditing")}
+            </ActionButton>
+            <ActionButton kind="delete" onClick={discardUserChanges}>
+              {t("iam.roleUi.discard")}
+            </ActionButton>
+          </>
+        }
+      >
+        <p>{t("iam.userUi.discardBody")}</p>
+      </UiDialog>
+      <UiDialog
+        className="hn-iam-dialog"
+        open={confirmStatusOpen}
+        onClose={() => setConfirmStatusOpen(false)}
+        title={t("iam.userUi.statusConfirmTitle")}
+        actions={
+          <>
+            <ActionButton
+              kind="cancel"
+              onClick={() => setConfirmStatusOpen(false)}
+            >
+              {t("iam.user.cancel")}
+            </ActionButton>
+            <ActionButton
+              kind={formState.status === "LOCKED" ? "lock" : "deactivate"}
+              onClick={() => {
+                setConfirmStatusOpen(false);
+                void saveUser();
+              }}
+            >
+              {t("iam.userUi.acknowledgeStatus")}
+            </ActionButton>
+          </>
+        }
+      >
+        <p>
+          {t("iam.userUi.statusConfirmBody", {
+            name: editingUser?.display_name ?? "",
+          })}
+        </p>
+      </UiDialog>
       {departmentManagerOpen ? (
         <DepartmentManagerModal
           open={departmentManagerOpen}

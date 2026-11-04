@@ -1,3 +1,4 @@
+import { RBAC_VI } from "./messages.rbac";
 import { MESSAGES_UPDATED_VI } from "./messages.updated.vi";
 import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
 /**
@@ -4133,6 +4134,9 @@ export const MESSAGES_VI = {
     },
   },
   iam: {
+    roleUi: RBAC_VI.roleUi,
+    userUi: RBAC_VI.userUi,
+    effectiveUi: RBAC_VI.effectiveUi,
     tab: {
       users: "Người dùng & phân quyền",
       roles: "Vai trò & ma trận quyền",
@@ -4414,6 +4418,7 @@ export const MESSAGES_VI = {
     },
   },
   audit: {
+    ...RBAC_VI.audit,
     system: "Hệ thống",
     colTime: "Thời gian",
     colAction: "Hành động",

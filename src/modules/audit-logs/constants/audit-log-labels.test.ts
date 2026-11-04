@@ -2,11 +2,57 @@ import { describe, expect, it } from "vitest";
 import {
   auditActionLabel,
   auditDataEntries,
+  auditDataChanges,
+  auditResultTone,
   auditObjectCode,
   auditObjectTypeLabel,
   auditReasonText,
   describeAuditLog,
 } from "./audit-log-labels";
+
+describe("audit event outcome and aligned changes", () => {
+  it("does not infer success from missing or unknown outcome", () => {
+    expect(auditResultTone(null)).toBe("neutral");
+    expect(auditResultTone("NEW_UNKNOWN_OUTCOME")).toBe("neutral");
+    expect(auditResultTone("SUCCESS")).toBe("success");
+    expect(auditResultTone("DENIED")).toBe("error");
+    expect(auditResultTone("FAILED")).toBe("error");
+  });
+  it("joins before/after by field key, preserves missing, unchanged and zero values", () => {
+    const changes = auditDataChanges({
+      before_data: { status: "SCANNING", quantity: 0, removed: "old" },
+      after_data: { status: "POSTED", quantity: 0, added: "new" },
+    });
+    expect(changes.find((entry) => entry.key === "status")).toMatchObject({
+      before: "Đang quét",
+      after: "Đã ghi sổ",
+      changed: true,
+    });
+    expect(changes.find((entry) => entry.key === "quantity")).toMatchObject({
+      before: "0",
+      after: "0",
+      changed: false,
+    });
+    expect(changes.find((entry) => entry.key === "removed")).toMatchObject({
+      before: "old",
+      after: undefined,
+    });
+    expect(changes.find((entry) => entry.key === "added")).toMatchObject({
+      before: undefined,
+      after: "new",
+    });
+  });
+  it("exposes permission member changes even when before and after have the same count", () => {
+    const [change] = auditDataChanges({
+      before_data: { permissions: ["inventory.view", "outbound.view"] },
+      after_data: { permissions: ["inventory.view", "outbound.create"] },
+    });
+    expect(change.label).toBe("Quyền");
+    expect(change.before).toContain("outbound.view");
+    expect(change.after).toContain("outbound.create");
+    expect(change.changed).toBe(true);
+  });
+});
 import type { AuditLog } from "../types/audit-logs.types";
 
 /** Bản ghi thật rút từ DB dev (audit_log), chỉ giữ trường cần cho phép thử. */

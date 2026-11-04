@@ -13,7 +13,8 @@
  *
  * File này dịch cả ba thứ đó sang tiếng Việt: nhãn loại đối tượng, câu mô tả
  * tự dựng, và cặp "tên trường – giá trị" cho khối dữ liệu trước/sau thay đổi.
- * Bản JSON gốc KHÔNG bị bỏ đi — Dialog chi tiết vẫn cho bung ra để tra soát.
+ * Dữ liệu gốc được giữ ở service; phần chi tiết trình bày các trường và giá trị
+ * dễ đọc, không in JSON ra giao diện nghiệp vụ.
  *
  * Song ngữ theo đúng cơ chế chung: mọi map bọc `bilingual(vi, en)`; TUYỆT ĐỐI
  * không spread map khác vào đây (spread đóng băng ngôn ngữ lúc import) và
@@ -211,6 +212,72 @@ export function auditResultLabel(result: string | null | undefined): string {
   return enumLabelOrText(RESULT_LABELS, raw);
 }
 
+/** Result is independent of the event verb: an UPDATE can fail or be denied. */
+export function auditResultTone(
+  result: string | null | undefined,
+): UiStatusTone {
+  if (result === "SUCCESS") return "success";
+  if (result === "FAILED" || result === "DENIED") return "error";
+  return "neutral";
+}
+
+export interface AuditDataChange {
+  key: string;
+  label: string;
+  before?: string;
+  after?: string;
+  changed: boolean;
+}
+
+/** The comparison must expose changed members, not just "3 items" on both sides. */
+function comparisonValue(key: string, value: unknown): string {
+  if (Array.isArray(value)) {
+    if (!value.length) return EMPTY_TEXT;
+    return value
+      .map(
+        (item, index) =>
+          `${typeof item === "object" && item !== null ? `${index + 1}. ` : ""}${comparisonValue(key, item)}`,
+      )
+      .join("\n");
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .map(
+        ([childKey, childValue]) =>
+          `${auditDataFieldLabel(childKey)}: ${comparisonValue(childKey, childValue)}`,
+      )
+      .join("\n");
+  }
+  return formatScalar(key, value);
+}
+
+/** Join by raw field key, never translated labels (two keys can share a label). */
+export function auditDataChanges(
+  log: Pick<AuditLog, "before_data" | "after_data">,
+): AuditDataChange[] {
+  const before = auditDataEntries(log.before_data);
+  const after = auditDataEntries(log.after_data);
+  const keys = [
+    ...new Set([
+      ...before.map((entry) => entry.key),
+      ...after.map((entry) => entry.key),
+    ]),
+  ];
+  return keys.map((key) => ({
+    key,
+    label: auditDataFieldLabel(key),
+    before: Object.hasOwn(log.before_data ?? {}, key)
+      ? comparisonValue(key, log.before_data?.[key])
+      : undefined,
+    after: Object.hasOwn(log.after_data ?? {}, key)
+      ? comparisonValue(key, log.after_data?.[key])
+      : undefined,
+    changed:
+      JSON.stringify(log.before_data?.[key]) !==
+      JSON.stringify(log.after_data?.[key]),
+  }));
+}
+
 /* -------------------------------------------------------------------------- */
 /* Câu mô tả                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -349,6 +416,20 @@ const DATA_FIELD_LABELS = bilingual(
     mime_type: "Định dạng tệp",
     code: "Mã",
     quantity: "Số lượng",
+    roles: "Vai trò",
+    role_name: "Tên vai trò",
+    permission_name: "Tên quyền",
+    role_id: "Định danh vai trò",
+    role_ids: "Các vai trò được gán",
+    permissions: "Quyền",
+    permission_id: "Định danh quyền",
+    permission_ids: "Các quyền được gán",
+    scope_ref: "Phạm vi áp dụng",
+    effective_from: "Có hiệu lực từ",
+    effective_to: "Có hiệu lực đến",
+    display_name: "Tên hiển thị",
+    username: "Tên đăng nhập",
+    department_id: "Định danh bộ phận",
   },
   {
     status: "Status",
@@ -391,6 +472,20 @@ const DATA_FIELD_LABELS = bilingual(
     mime_type: "File type",
     code: "Code",
     quantity: "Quantity",
+    roles: "Roles",
+    role_name: "Role name",
+    permission_name: "Permission name",
+    role_id: "Role ID",
+    role_ids: "Assigned roles",
+    permissions: "Permissions",
+    permission_id: "Permission ID",
+    permission_ids: "Assigned permissions",
+    scope_ref: "Scope",
+    effective_from: "Effective from",
+    effective_to: "Effective until",
+    display_name: "Display name",
+    username: "Username",
+    department_id: "Department ID",
   },
 );
 

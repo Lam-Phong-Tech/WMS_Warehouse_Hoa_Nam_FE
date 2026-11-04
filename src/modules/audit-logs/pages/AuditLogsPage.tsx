@@ -7,6 +7,8 @@ import {
   UiPagination,
   UiSelect,
   UiTextField,
+  UiIcon,
+  UiStatusBadge,
   UiVuexyDateRangePicker,
 } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -174,24 +176,82 @@ export function AuditLogsPage() {
     ? MVP_PAGE_SIZE_OPTIONS
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
+  const hasFilters = Boolean(
+    searchInput || module || action || userId || range?.[0] || range?.[1],
+  );
+  const clearFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setModule("");
+    setAction("");
+    setUserId("");
+    setRange(null);
+    setPage(1);
+    selection.clear();
+  };
+
   return (
     <div className="audit-logs-page hn-mvp-source-screen hn-settings-screen hn-audit-settings">
-      <div className="hn-settings-card hn-audit-filters">
+      <header className="hn-audit-page-header">
+        <div>
+          <div className="hn-audit-title-line">
+            <h1>{t("audit.pageTitle")}</h1>
+            <UiStatusBadge
+              className="hn-audit-readonly-badge"
+              tone="neutral"
+              label={t("audit.readOnly")}
+            />
+          </div>
+          <p>{t("audit.pageDescription")}</p>
+        </div>
+        <div className="hn-audit-export">
+          <ActionButton
+            kind="exportExcel"
+            appearance="flat"
+            disabled={!selection.selectedCount}
+            title={t("audit.exportHint")}
+            onClick={exportSelected}
+          >
+            {t("audit.exportExcel", { count: selection.selectedCount })}
+          </ActionButton>
+          <span>{t("audit.exportHint")}</span>
+        </div>
+      </header>
+      <div
+        className="hn-audit-filters"
+        role="search"
+        aria-label={t("audit.pageTitle")}
+      >
         <div className="hn-audit-filter hn-audit-filter-search">
-          <label htmlFor="audit-log-search">{t("audit.searchAria")}</label>
           <UiTextField
             id="audit-log-search"
             fullWidth
             value={searchInput}
             placeholder={t("audit.searchPlaceholder")}
             slotProps={{
-              htmlInput: { "aria-label": t("audit.searchAria") },
+              htmlInput: {
+                "aria-label": t("audit.searchAria"),
+                title: t("audit.searchHint"),
+              },
+              input: { startAdornment: <UiIcon name="search" size="sm" /> },
             }}
             onChange={(event) => setSearchInput(event.target.value)}
           />
         </div>
+        <div className="hn-audit-filter hn-audit-filter-range">
+          <UiVuexyDateRangePicker
+            popupClassName="hn-settings-menu"
+            showFieldPrefixes={false}
+            value={range}
+            aria-label={t("audit.rangeAria")}
+            maxDate={maxSelectableDate}
+            onChange={(next) => {
+              setRange(next);
+              setPage(1);
+            }}
+          />
+        </div>
         <div className="hn-audit-filter">
-          <label htmlFor="audit-log-module">{t("audit.colModule")}</label>
           <UiSelect
             id="audit-log-module"
             fullWidth
@@ -208,120 +268,67 @@ export function AuditLogsPage() {
             )}
           />
         </div>
-        <div className="hn-audit-filter">
-          <label htmlFor="audit-log-action">{t("audit.colAction")}</label>
-          <UiSelect
-            id="audit-log-action"
-            fullWidth
-            menuClassName="hn-settings-menu"
-            value={action}
-            aria-label={t("audit.actionFilterAria")}
-            placeholder={t("audit.actionFilterPlaceholder")}
-            onChange={(value) => {
-              setAction(value as AuditAction | "");
-              setPage(1);
-            }}
-            options={Object.entries(AUDIT_ACTION_LABELS).map(
-              ([value, label]) => ({ value, label }),
-            )}
-          />
-        </div>
-        <div className="hn-audit-filter">
-          <span className="hn-audit-filter-label">{t("audit.colActor")}</span>
-          <UiSelect
-            fullWidth
-            menuClassName="hn-settings-menu"
-            value={userId}
-            aria-label={t("audit.actorFilterAria")}
-            placeholder={t("audit.actorFilterPlaceholder")}
-            onChange={(value) => {
-              setUserId(String(value));
-              setPage(1);
-            }}
-            options={userOptions}
-          />
-        </div>
-        {/* Lịch "Từ ngày / Đến ngày" của dự án (cùng control với bộ lọc kỳ ở
-          các màn báo cáo) — thay 2 ô `datetime-local` mà mỗi trình duyệt vẽ
-          một kiểu, tiếng Anh và định dạng dd/mm/yyyy --:-- khó đọc. */}
-        <div className="hn-audit-filter hn-audit-filter-range">
-          <span className="hn-audit-filter-label">{t("audit.rangeAria")}</span>
-          <UiVuexyDateRangePicker
-            popupClassName="hn-settings-menu"
-            showFieldPrefixes={false}
-            value={range}
-            aria-label={t("audit.rangeAria")}
-            maxDate={maxSelectableDate}
-            onChange={(next) => {
-              setRange(next);
-              setPage(1);
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="hn-settings-card hn-audit-list-card">
-        <div className="hn-audit-list-tools">
-          <div className="hn-audit-page-size">
-            <label htmlFor="audit-log-page-size">
-              {t("audit.pageSizeAria")}
-            </label>
+        <div className="hn-audit-secondary-filters">
+          <div className="hn-audit-filter">
             <UiSelect
-              id="audit-log-page-size"
+              id="audit-log-action"
+              fullWidth
               menuClassName="hn-settings-menu"
-              value={perPage}
-              aria-label={t("audit.pageSizeAria")}
-              minWidth={100}
+              value={action}
+              aria-label={t("audit.actionFilterAria")}
+              placeholder={t("audit.actionFilterPlaceholder")}
               onChange={(value) => {
-                setPerPage(Number(value));
+                setAction(value as AuditAction | "");
                 setPage(1);
               }}
-              options={perPageOptions.map((size) => ({
-                value: size,
-                label: `${size} / trang`,
-              }))}
+              options={Object.entries(AUDIT_ACTION_LABELS).map(
+                ([value, label]) => ({ value, label }),
+              )}
             />
           </div>
-          {/* Tổng số dòng đặt ngay trong toolbar (cạnh bộ lọc/số dòng mỗi trang)
-           * để dễ thấy — thay vì chỉ hiện ở phần phân trang tít dưới bảng dài. */}
-          <Box component="span" sx={TOOLBAR_TEXT_SX}>
-            {t("audit.total", { count: pagination.total })}
-          </Box>
-          <div className="hn-audit-selection-actions">
-            {selection.selectedCount > 0 ? (
-              <>
-                <Box component="span" sx={TOOLBAR_TEXT_SX}>
-                  {t("audit.selected", { count: selection.selectedCount })}
-                </Box>
-                <ActionButton
-                  className="hn-settings-secondary"
-                  kind="clear"
-                  onClick={selection.clear}
-                >
-                  {t("audit.clearSelection")}
-                </ActionButton>
-                <ActionButton
-                  className="hn-settings-primary"
-                  kind="exportExcel"
-                  onClick={exportSelected}
-                >
-                  {t("audit.exportExcel", { count: selection.selectedCount })}
-                </ActionButton>
-              </>
-            ) : null}
+          <div className="hn-audit-filter">
+            <UiSelect
+              fullWidth
+              menuClassName="hn-settings-menu"
+              value={userId}
+              aria-label={t("audit.actorFilterAria")}
+              placeholder={t("audit.actorFilterPlaceholder")}
+              onChange={(value) => {
+                setUserId(String(value));
+                setPage(1);
+              }}
+              options={userOptions}
+            />
           </div>
+          {hasFilters ? (
+            <ActionButton kind="clear" appearance="flat" onClick={clearFilters}>
+              {t("audit.filterReset")}
+            </ActionButton>
+          ) : null}
         </div>
-
-        {isError ? (
-          <Box sx={{ mb: "14px" }}>
-            <ApiErrorAlert
-              error={error}
-              title={t("audit.loadError")}
-              onRetry={refetch}
-            />
-          </Box>
+      </div>
+      <div className="hn-audit-list-card">
+        {selection.selectedCount > 0 ? (
+          <div className="hn-audit-list-tools">
+            <Box component="span" sx={TOOLBAR_TEXT_SX}>
+              {t("audit.selected", { count: selection.selectedCount })}
+            </Box>
+            <ActionButton
+              kind="clear"
+              appearance="flat"
+              onClick={selection.clear}
+            >
+              {t("audit.clearSelection")}
+            </ActionButton>
+          </div>
         ) : null}
-
+        {isError ? (
+          <ApiErrorAlert
+            error={error}
+            title={t("audit.loadError")}
+            onRetry={refetch}
+          />
+        ) : null}
         <TableLoadingBanner loading={isLoading || isFetching} />
         <div className="hn-audit-table">
           <AuditLogsTable
@@ -343,17 +350,35 @@ export function AuditLogsPage() {
           />
         </div>
         <div className="hn-audit-pagination">
-          {/* showTotal tắt: "Tổng ... bản ghi" đã hiển thị trên toolbar. */}
+          <div className="hn-audit-page-size">
+            <Box component="span" sx={TOOLBAR_TEXT_SX}>
+              {t("audit.total", { count: pagination.total })}
+            </Box>
+            <UiSelect
+              id="audit-log-page-size"
+              menuClassName="hn-settings-menu"
+              value={perPage}
+              aria-label={t("audit.pageSizeAria")}
+              minWidth={110}
+              onChange={(value) => {
+                setPerPage(Number(value));
+                setPage(1);
+              }}
+              options={perPageOptions.map((size) => ({
+                value: size,
+                label: t("shared.table.perPage", { size }),
+              }))}
+            />
+          </div>
           <UiPagination
             page={pagination.current}
             pageSize={perPage}
             total={pagination.total}
-            onPageChange={(nextPage) => setPage(nextPage)}
+            onPageChange={setPage}
             showTotal={false}
           />
         </div>
       </div>
-
       <AuditLogDetailDrawer
         open={detailOpen}
         auditLog={selectedLog}

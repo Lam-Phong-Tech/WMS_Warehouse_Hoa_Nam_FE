@@ -86,7 +86,7 @@ describe("AuditLogDetailDrawer (Chi tiết nhật ký hệ thống)", () => {
 
     expect(screen.getByText("Dữ liệu trước thay đổi")).toBeInTheDocument();
     expect(screen.getByText("Dữ liệu sau thay đổi")).toBeInTheDocument();
-    expect(screen.getAllByText("Trạng thái")).toHaveLength(2);
+    expect(screen.getAllByText("Trạng thái")).toHaveLength(1);
     expect(screen.getByText("Đang quét")).toBeInTheDocument();
     expect(screen.getByText("Đã ghi sổ")).toBeInTheDocument();
     expect(screen.getByText("Số chứng từ")).toBeInTheDocument();
@@ -97,5 +97,31 @@ describe("AuditLogDetailDrawer (Chi tiết nhật ký hệ thống)", () => {
     expect(
       screen.queryByRole("button", { name: /dữ liệu gốc/i }),
     ).not.toBeInTheDocument();
+  });
+  it("mở bên phải, giữ IP / request / lỗi để tra soát và không suy thành công từ hành động", async () => {
+    renderWithProviders(
+      <AuditLogDetailDrawer
+        open
+        onClose={vi.fn()}
+        auditLog={{
+          ...LOG,
+          result: null,
+          request_id: "request-0123456789",
+          error_code: "AUTH_DENIED",
+        }}
+      />,
+    );
+    expect(
+      document.querySelector(".MuiDrawer-anchorRight [data-ui-drawer-body]"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Chưa xác định").closest(".MuiChip-root"),
+    ).toHaveAttribute("data-settings-tone", "neutral");
+    expect(screen.getByText("127.0.0.1")).toBeInTheDocument();
+    expect(screen.getByText("AUTH_DENIED")).toBeInTheDocument();
+    expect(screen.getByTitle("request-0123456789")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("table", { name: "Nội dung thay đổi" }),
+    ).toBeInTheDocument();
   });
 });

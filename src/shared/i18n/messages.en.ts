@@ -1,3 +1,4 @@
+import { RBAC_EN } from "./messages.rbac";
 import { MESSAGES_UPDATED_EN } from "./messages.updated.en";
 import { MESSAGES_NFC_EN } from "./messages.nfc.en";
 import type { MessageTree } from "./messages";
@@ -4135,6 +4136,9 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   iam: {
+    roleUi: RBAC_EN.roleUi,
+    userUi: RBAC_EN.userUi,
+    effectiveUi: RBAC_EN.effectiveUi,
     tab: {
       users: "Users & permissions",
       roles: "Roles & permission matrix",
@@ -4420,6 +4424,7 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   audit: {
+    ...RBAC_EN.audit,
     system: "System",
     colTime: "Time",
     colAction: "Action",

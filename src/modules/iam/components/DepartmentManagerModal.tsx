@@ -5,11 +5,15 @@ import {
   MenuItem,
   Stack,
   UiAlert,
-  UiDialog,
+  UiDrawer,
   UiStatusBadge,
   UiTextField,
 } from "@/shared/ui";
-import { ActionButton, RowActionButton } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+} from "@/shared/components/actions";
 import {
   useCreateIamDepartment,
   useIamDepartments,
@@ -143,15 +147,27 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
   };
 
   return (
-    <UiDialog
+    <UiDrawer
       className="hn-iam-dialog"
       open={open}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      title={t("iam.department.title")}
+      onClose={() => {
+        if (!saving) onClose();
+      }}
+      width={640}
+      slotProps={{ paper: { role: "dialog", "aria-modal": true } }}
+      title={
+        <span className="hn-iam-drawer-title">
+          {t("iam.department.title")}
+          <ActionIconButton
+            kind="close"
+            label={t("common.close")}
+            disabled={saving}
+            onClick={onClose}
+          />
+        </span>
+      }
       actions={
-        <ActionButton kind="close" onClick={onClose}>
+        <ActionButton kind="close" disabled={saving} onClick={onClose}>
           {t("common.close")}
         </ActionButton>
       }
@@ -308,6 +324,6 @@ export function DepartmentManagerModal({ open, onClose }: Props) {
           )}
         </Box>
       </Stack>
-    </UiDialog>
+    </UiDrawer>
   );
 }

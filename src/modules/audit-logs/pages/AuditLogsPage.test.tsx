@@ -81,7 +81,7 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     cleanupTestState();
   });
 
-  it("bố cục đồng bộ các trang khác: toolbar lọc, tổng số bản ghi, STT và checkbox chọn nhiều", async () => {
+  it("giữ lọc/phân trang/chọn xuất, cột chi tiết chỉ dùng mũi tên và không có tiêu đề thao tác", async () => {
     renderWithProviders(<AuditLogsPage />);
 
     expect(await screen.findByText("Tài khoản người dùng")).toBeInTheDocument();
@@ -93,13 +93,17 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     expect(screen.getByLabelText("Số dòng mỗi trang")).toBeInTheDocument();
     expect(screen.getByText("Tổng 2 bản ghi")).toBeInTheDocument();
 
-    // STT chạy theo trang. Scope trong bảng vì UiPagination (MUI, Part 4 thay
-    // antd Pagination vốn bị stub trong test setup) cũng render nút trang "1"
-    // thật — query toàn màn sẽ trúng 2 node.
     const table = screen.getByRole("table");
-    expect(screen.getByText("STT")).toBeInTheDocument();
-    expect(within(table).getByText("1")).toBeInTheDocument();
-    expect(within(table).getByText("2")).toBeInTheDocument();
+    expect(within(table).queryByText("STT")).not.toBeInTheDocument();
+    expect(within(table).queryByText("THAO TÁC")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Xuất Excel (0)" }),
+    ).toBeDisabled();
+    expect(
+      screen
+        .getAllByRole("button", { name: "Xem chi tiết nhật ký" })[0]
+        .querySelector("i"),
+    ).toHaveClass("fi-rr-arrow-right");
 
     // Chọn nhiều: 1 checkbox header + 1 checkbox mỗi dòng.
     expect(
@@ -155,12 +159,8 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     expect(
       screen.queryByText(`TOKEN_REFRESH app_user #${LOG_ID}`),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByText("Làm mới phiên — Tài khoản người dùng 01a042…ec083f"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Tạo mới — Tệp đính kèm chứng từ f1e034…17b5df"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Làm mới phiên")).toBeInTheDocument();
+    expect(screen.getByText("Tạo mới")).toBeInTheDocument();
   });
 
   it("lọc thời gian dùng lịch 'Từ ngày / Đến ngày', không phải ô datetime của trình duyệt", async () => {
@@ -232,5 +232,35 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
       screen.getAllByRole("button", { name: "Xem chi tiết nhật ký" })[0],
     );
     expect(await screen.findByTestId("detail-drawer")).toBeInTheDocument();
+  });
+  it("xóa lọc đang dùng trả về trang 1 và không gửi bộ lọc kết quả chưa được API hỗ trợ", async () => {
+    renderWithProviders(<AuditLogsPage />);
+    await screen.findByText("Tài khoản người dùng");
+    expect(screen.queryByLabelText("Lọc kết quả")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Tìm nhật ký hệ thống"), {
+      target: { value: "stock_document" },
+    });
+    await waitFor(() =>
+      expect(auditLogService.getAuditLogs).toHaveBeenLastCalledWith(
+        expect.objectContaining({ q: "stock_document", page: 1 }),
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    await waitFor(() =>
+      expect(auditLogService.getAuditLogs).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          q: undefined,
+          module: undefined,
+          action: undefined,
+          user_id: undefined,
+          date_from: undefined,
+          date_to: undefined,
+          page: 1,
+        }),
+      ),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
   });
 });
