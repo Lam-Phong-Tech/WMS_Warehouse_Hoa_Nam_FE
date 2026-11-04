@@ -1,5 +1,4 @@
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -854,21 +853,6 @@ export default function StockReconcileReport() {
 
   return (
     <main className="hn-rpt02" ref={pageRef}>
-      <nav className="rpt02-breadcrumb" aria-label="Breadcrumb">
-        <button
-          type="button"
-          onClick={() => navigate(ROUTES.REPORTS_INVENTORY_FLOW)}
-        >
-          {tUi("reports.traceability.breadcrumbReports")}
-        </button>
-        <span>/</span>
-        <strong>
-          {status === 404
-            ? tUi("updatedUi.text_438e5cde4a92")
-            : tUi("reports.stockReconcileReport.breadcrumbCurrent")}
-        </strong>
-      </nav>
-
       {fatal ? (
         <EmptyState
           icon={
@@ -916,7 +900,7 @@ export default function StockReconcileReport() {
               </h1>
               <p>{tUi("updatedUi.text_cf3ca15cba35")}</p>
             </div>
-            <div className="rpt02-heading__actions hn-report-warehouse-actions">
+            <div className="rpt02-heading__actions">
               <span
                 className="rpt02-tooltip"
                 data-tooltip={
@@ -933,7 +917,6 @@ export default function StockReconcileReport() {
                   {" " + tUi("updatedUi.text_869645273267")}
                 </button>
               </span>
-              <ReportWarehouseCard />
             </div>
           </header>
 
@@ -970,10 +953,9 @@ export default function StockReconcileReport() {
             className="rpt02-filter"
             aria-label={tUi("reports.recipientAgency.filterTitle")}
           >
-            <label
+            <div
               className={`rpt02-field rpt02-field--date${invalidRange ? " is-invalid" : ""}`}
             >
-              <span>{tUi("reports.packingLabel.dateRangeLabel")}</span>
               <ReportDateRangePicker
                 className="rpt02-date-range"
                 popupClassName="rpt02-date-popup"
@@ -992,7 +974,7 @@ export default function StockReconcileReport() {
               {invalidRange ? (
                 <small>{tUi("updatedUi.text_3e650f641d98")}</small>
               ) : null}
-            </label>
+            </div>
 
             <div className="rpt02-field">
               <span>{tUi("updatedUi.text_19c608bfa103")}</span>
@@ -1076,14 +1058,6 @@ export default function StockReconcileReport() {
                 {tUi("reports.packingLabel.reset")}
               </button>
             </div>
-            <p className="rpt02-filter__note">
-              <Icon name="file-clock" />
-              {Math.max(
-                1,
-                dayjs(applied.to).diff(dayjs(applied.from), "day") + 1,
-              )}{" "}
-              {tUi("updatedUi.text_a0b12849189a")}
-            </p>
           </section>
 
           {loading ? (
