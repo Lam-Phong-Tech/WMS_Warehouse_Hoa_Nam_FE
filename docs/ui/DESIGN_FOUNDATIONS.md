@@ -141,6 +141,8 @@ Dùng **drawer bên phải** cho xem chi tiết, chỉnh sửa hoặc quy trình
 
 Drawer/modal phải có tên truy cập, focus vào nội dung phù hợp khi mở, trap focus nếu modal, Escape/backdrop theo tình trạng thay đổi chưa lưu, trả focus về nút mở khi đóng. Confirm nêu **đối tượng + hành động + hậu quả**, nút xác nhận có động từ cụ thể. Không lồng nhiều drawer cùng lúc; những dialog xác nhận ngắn mở từ drawer chỉ dùng khi nghiệp vụ cần. Không để toast che nút xác nhận trong overlay.
 
+**Danh sách nhiều trường trong drawer:** không bê nguyên bảng rộng ở trang danh sách vào drawer rồi bắt kéo ngang. Với chi tiết tồn kho, dùng tab **Tổng quan / Sản phẩm / Vật chứa / Biến động**; giữ SKU, tên hàng, kho và trạng thái ở phần nhận diện chung. Mỗi bản ghi sản phẩm hiện mã và trạng thái trước, các trường sê-ri, mã vật lý, NFC, vị trí và thời điểm nhận mở rộng dọc ngay trong dòng. Giữ đủ dữ liệu gốc, cho mã dài xuống dòng; metadata 2 cột khi đủ rộng và 1 cột trên mobile. Danh sách dài phân trang trong tab, cuộn theo vùng nội dung chính của drawer, không tạo thêm khung cuộn lồng nhau. Cách này là lựa chọn bố cục cho vùng hẹp; bảng thực sự vẫn theo quy cách mục 5.
+
 ## 7. Form và hành động
 
 Form dùng label phía trên control; placeholder chỉ gợi ý. Nhãn bắt buộc có `*`, lỗi nằm dưới đúng field và giữ dữ liệu đã nhập. Nhóm field theo mục tiêu nghiệp vụ; hai cột chỉ khi mỗi field còn đủ chỗ đọc. Hàng SKU động đặt **SKU, số lượng và Xóa dòng cùng một hàng điều khiển** ở desktop; căn nút theo thân input, không theo đỉnh label hoặc dòng helper. Trên mobile xếp dọc theo thứ tự nhập, nút xóa vẫn gắn rõ với dòng tương ứng.

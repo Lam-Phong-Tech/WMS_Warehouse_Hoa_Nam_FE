@@ -2107,6 +2107,11 @@ export const MESSAGES_ZH: MessageTree = {
     },
     "detail": {
       "title": "库存详情 — {sku}",
+      "overviewTab": "概览",
+      "productsTab": "产品",
+      "containersTab": "容器",
+      "movementsTab": "库存变动",
+      "recordDetails": "详细信息",
       "copy": "复制",
       "colMovementCode": "运动代码",
       "colTime": "时间",

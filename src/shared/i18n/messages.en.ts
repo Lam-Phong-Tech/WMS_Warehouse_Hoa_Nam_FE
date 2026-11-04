@@ -1599,6 +1599,11 @@ export const MESSAGES_EN: MessageTree = {
     },
     detail: {
       title: "Stock detail — {sku}",
+      overviewTab: "Overview",
+      productsTab: "Products",
+      containersTab: "Containers",
+      movementsTab: "Movements",
+      recordDetails: "Record details",
       copy: "Copy",
       colMovementCode: "Movement code",
       colTime: "Time",

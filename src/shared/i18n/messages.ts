@@ -1592,6 +1592,11 @@ export const MESSAGES_VI = {
     },
     detail: {
       title: "Chi tiết tồn kho — {sku}",
+      overviewTab: "Tổng quan",
+      productsTab: "Sản phẩm",
+      containersTab: "Vật chứa",
+      movementsTab: "Biến động",
+      recordDetails: "Thông tin chi tiết",
       copy: "Sao chép",
       colMovementCode: "Mã biến động",
       colTime: "Thời gian",
