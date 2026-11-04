@@ -298,7 +298,7 @@ export function SideNav({
 
   const systemItemLabel = (item: NavItemData) => {
     if (item.screen === "IAM-01") return tUi("topbar.accountUsers");
-    if (item.screen === "WH-01") return tUi("updatedUi.text_202e0e9b0b85");
+    if (item.screen === "WH-01") return tUi("topbar.accountWarehouse");
     if (item.screen === "AUDIT-01") return tUi("topbar.accountAudit");
     return navLabel(item.screen, item.label);
   };
