@@ -123,16 +123,16 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
 .hn-outbound-list .MuiButton-root:not(.hn-row-action) .MuiButton-startIcon i {
   color: inherit;
 }
-.hn-outbound-list .hn-outbound-intake {
+.hn-outbound-list .MuiButton-root.hn-outbound-intake {
   background: var(--out-primary);
   border: 1px solid var(--out-primary);
   color: var(--wms-on-primary);
 }
-.hn-outbound-list .hn-outbound-intake {
+.hn-outbound-list .MuiButton-root.hn-outbound-intake {
   padding: 9px 20px;
-  min-height: 48px;
+  min-height: 40px;
 }
-.hn-outbound-list .hn-outbound-intake:hover {
+.hn-outbound-list .MuiButton-root.hn-outbound-intake:hover {
   background: var(--ops-primary-hover);
   border-color: var(--ops-primary-hover);
   box-shadow: 0 2px 7px color-mix(in srgb, var(--out-primary) 20%, transparent);
@@ -174,9 +174,9 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   padding: 0;
   border: 1px solid var(--out-line);
   border-radius: var(--ops-radius-control);
@@ -184,15 +184,14 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   color: var(--out-primary);
   cursor: pointer;
 }
-.hn-outbound-overview-toggle:hover {
+.hn-outbound-overview-toggle:hover,
+.hn-outbound-overview-toggle[aria-expanded="true"] {
   background: var(--out-surface);
+  color: var(--ops-link);
 }
 .hn-outbound-overview-toggle i {
   font-size: 18px;
   line-height: 1;
-}
-.hn-outbound-overview-toggle[aria-expanded="true"] i {
-  transform: rotate(180deg);
 }
 .hn-outbound-overview-toggle:focus-visible {
   outline: 2px solid var(--out-primary);
@@ -311,7 +310,7 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(150px, 1fr));
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 14px 0;
 }
 .hn-outbound-filter {
   min-width: 0;
@@ -372,6 +371,12 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   background: var(--out-surface);
   color: var(--out-ink);
   font-size: 14px;
+}
+.hn-outbound-list.hn-mvp-source-screen
+  .hn-outbound-filters
+  .MuiOutlinedInput-root {
+  height: 48px;
+  min-height: 48px;
 }
 .hn-outbound-list .MuiInputBase-input {
   font-size: 14px;
@@ -870,7 +875,7 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   .hn-outbound-filters {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
-    padding: 12px;
+    padding: 12px 0;
   }
   .hn-outbound-search {
     grid-column: auto;

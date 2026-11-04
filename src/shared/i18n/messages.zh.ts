@@ -1502,7 +1502,18 @@ export const MESSAGES_ZH: MessageTree = {
       "validate": "验证和预览",
       "manualHint": "收件人为必填项；根据现行规则，地址/电话/请求日期是可选的——如果缺少，包装标签会将这些字段留空。",
       "fileAria": "选择问题请求 Excel 文件",
-      "fileHint": "必填列：request_no · sku_code · required_qty · 收件人名称/客户名称。可选列：请求日期·收件人地址·收件人联系电话·备注。最多 10,000 行，文件 ≤ 20MB；失败的行可以在确认之前在预览表中修复。",
+      "fileUploadTitle": "出库申请文件",
+      "fileChoose": "选择 Excel 文件",
+      "fileNone": "尚未选择文件",
+      "fileGuideTitle": "Excel 文件结构",
+      "fileRequiredTitle": "必填列",
+      "fileRequiredColumns": "申请单号 · SKU 编码 · 申请数量 · 收件人／客户名称",
+      "fileOptionalTitle": "可选列",
+      "fileOptionalColumns": "申请日期 · 收件地址 · 联系电话 · 备注",
+      "fileLimits": "最多 10,000 行，文件不超过 20 MB。可在预览表中修正错误行。",
+      "fileHeaders": "查看 Excel 列名",
+      "fileHeaderHint": "自行创建文件时，请在标题行使用以下列名：",
+      "fileHeaderNames": "request_no · sku_code · required_qty · recipient_name 或 customer_name; request_date · recipient_address · recipient_contact_phone · note",
       "uploading": "正在上传...",
       "upload": "上传并预览",
       "uploadErrorTitle": "无法验证 Excel 文件",
@@ -2014,6 +2025,7 @@ export const MESSAGES_ZH: MessageTree = {
     }
   },
   "inventory": {
+    "rangeLabel": "显示 {from}–{to} / {total} 条记录",
     "fallback": {
       "movementType": "其他运动",
       "status": "其他状态",

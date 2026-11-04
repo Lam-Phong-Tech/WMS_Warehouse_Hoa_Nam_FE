@@ -937,8 +937,22 @@ export const MESSAGES_EN: MessageTree = {
       manualHint:
         "Recipient is required; address/phone/request date are optional under current rules — when missing, the packing label leaves those fields blank.",
       fileAria: "Choose the issue request Excel file",
-      fileHint:
-        "Required columns: request_no · sku_code · required_qty · recipient_name/customer_name. Optional columns: request_date · recipient_address · recipient_contact_phone · note. Up to 10,000 rows, file ≤ 20MB; failed rows can be fixed in the preview table before confirming.",
+      fileUploadTitle: "Issue request file",
+      fileChoose: "Choose Excel file",
+      fileNone: "No file selected",
+      fileGuideTitle: "Excel file structure",
+      fileRequiredTitle: "Required columns",
+      fileRequiredColumns:
+        "Request number · SKU code · Required quantity · Recipient / customer name",
+      fileOptionalTitle: "Optional columns",
+      fileOptionalColumns:
+        "Request date · Recipient address · Contact phone · Note",
+      fileLimits:
+        "Up to 10,000 rows and 20 MB. You can fix invalid rows in the preview.",
+      fileHeaders: "View Excel column headers",
+      fileHeaderHint: "If you create your own file, use these exact headers:",
+      fileHeaderNames:
+        "request_no · sku_code · required_qty · recipient_name or customer_name; request_date · recipient_address · recipient_contact_phone · note",
       uploading: "Uploading...",
       upload: "Upload & preview",
       uploadErrorTitle: "Could not validate the Excel file",
@@ -1502,6 +1516,7 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   inventory: {
+    rangeLabel: "Showing {from}–{to} / {total} records",
     fallback: {
       movementType: "Other movement",
       status: "Other status",

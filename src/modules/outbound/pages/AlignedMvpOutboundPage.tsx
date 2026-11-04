@@ -3,6 +3,7 @@ import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-valu
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
+import { BarChartOutlined } from "@/shared/components/icons";
 import {
   UiAutocomplete,
   UiIcon,
@@ -248,15 +249,6 @@ export default function AlignedMvpOutboundPage() {
           <p>{tUi("updatedUi.text_a7149a55bd87")}</p>
         </div>
         <div className="hn-outbound-header-actions">
-          {canImport ? (
-            <ActionButton
-              kind="create"
-              className="hn-outbound-intake"
-              onClick={() => setIntakeOpen(true)}
-            >
-              {t("outbound.list.intake")}
-            </ActionButton>
-          ) : null}
           {activeTab === "documents" ? (
             <button
               type="button"
@@ -265,11 +257,21 @@ export default function AlignedMvpOutboundPage() {
                 overviewExpanded ? tUi("common.collapse") : tUi("common.expand")
               }
               aria-expanded={overviewExpanded}
+              title={tUi("updatedUi.text_b11b59304497")}
               aria-controls="hn-outbound-overview"
               onClick={() => setOverviewExpanded((value) => !value)}
             >
-              <UiIcon name="angle-small-down" size="sm" />
+              <BarChartOutlined aria-hidden="true" />
             </button>
+          ) : null}
+          {canImport ? (
+            <ActionButton
+              kind="create"
+              className="hn-outbound-intake"
+              onClick={() => setIntakeOpen(true)}
+            >
+              {t("outbound.list.intake")}
+            </ActionButton>
           ) : null}
         </div>
       </header>

@@ -933,8 +933,22 @@ export const MESSAGES_VI = {
       manualHint:
         "Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo quy định hiện hành — thiếu thì nhãn đóng gói để trống trường tương ứng.",
       fileAria: "Chọn tệp Excel yêu cầu xuất",
-      fileHint:
-        "Tên cột bắt buộc trong tệp: request_no · sku_code · required_qty · recipient_name/customer_name. Cột tùy chọn: request_date · recipient_address · recipient_contact_phone · note. Tối đa 10.000 dòng, tệp ≤ 20MB; dòng lỗi có thể được xử lý ở bảng xem trước trước khi xác nhận.",
+      fileUploadTitle: "Tệp yêu cầu xuất",
+      fileChoose: "Chọn tệp Excel",
+      fileNone: "Chưa chọn tệp",
+      fileGuideTitle: "Cấu trúc tệp Excel",
+      fileRequiredTitle: "Cột bắt buộc",
+      fileRequiredColumns:
+        "Mã phiếu yêu cầu · Mã SKU · Số lượng yêu cầu · Tên người nhận / khách hàng",
+      fileOptionalTitle: "Cột tùy chọn",
+      fileOptionalColumns:
+        "Ngày yêu cầu · Địa chỉ nhận · SĐT liên hệ · Ghi chú",
+      fileLimits:
+        "Tối đa 10.000 dòng, tệp không quá 20 MB. Có thể sửa dòng lỗi ở bảng xem trước.",
+      fileHeaders: "Xem tên cột trong Excel",
+      fileHeaderHint: "Nếu tự tạo tệp, hãy dùng đúng tên cột ở hàng tiêu đề:",
+      fileHeaderNames:
+        "request_no · sku_code · required_qty · recipient_name hoặc customer_name; request_date · recipient_address · recipient_contact_phone · note",
       uploading: "Đang tải lên...",
       upload: "Tải lên & xem trước",
       uploadErrorTitle: "Không kiểm tra được tệp Excel",
@@ -1496,6 +1510,7 @@ export const MESSAGES_VI = {
     },
   },
   inventory: {
+    rangeLabel: "Hiển thị {from}–{to} / {total} bản ghi",
     fallback: {
       movementType: "Biến động khác",
       status: "Trạng thái khác",

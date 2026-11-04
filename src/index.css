@@ -87,6 +87,7 @@ body {
   background-image: linear-gradient(var(--toast-accent), var(--toast-accent));
   background-repeat: no-repeat;
   background-position: left bottom;
+  background-size: 100% 3px;
   animation: hn-toast-count 3s linear forwards;
 }
 
@@ -219,15 +220,20 @@ body {
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .app-toaster[data-sonner-toaster][data-sonner-theme] {
-    width: calc(100vw - 24px);
+    width: min(390px, calc(100vw - 24px));
+    top: 74px;
+    right: 12px;
+    left: auto;
   }
 
   .app-toaster [data-sonner-toast][data-styled="true"] {
     width: 100%;
   }
-  .app-toaster [data-sonner-toast] [data-description] {
+  .app-toaster[data-sonner-toaster]
+    [data-sonner-toast][data-styled="true"]
+    [data-description] {
     font-size: 12px;
   }
 }
@@ -235,6 +241,12 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .app-toaster [data-sonner-toast][data-y-position="top"] {
     transition: none;
+  }
+  /* Sonner disables every animation with !important; preserve only the
+     reference's countdown bar while its slide transitions remain disabled. */
+  .app-toaster
+    [data-sonner-toast][data-styled="true"]:not([data-type="loading"]) {
+    animation: hn-toast-count 3s linear forwards !important;
   }
 }
 

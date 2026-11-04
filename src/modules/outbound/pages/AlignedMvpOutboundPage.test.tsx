@@ -261,6 +261,9 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
       name: "Tình trạng xử lý phiếu",
     });
     expect(toggle.parentElement).toBe(intake.parentElement);
+    expect(toggle.nextElementSibling).toBe(intake);
+    expect(toggle.querySelector(".fi-rr-chart-histogram")).not.toBeNull();
+    expect(toggle.querySelector(".fi-rr-angle-small-down")).toBeNull();
     expect(toggle).toHaveAttribute("aria-controls", overview.id);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
 

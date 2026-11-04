@@ -513,6 +513,15 @@ export default function InventoryPage() {
   const query = isBalance ? balanceQuery : movementQuery;
   const pagination = isBalance ? balancePagination : movementPagination;
   const perPage = isBalance ? balancePerPage : movementPerPage;
+  const visibleRowCount = isBalance ? balances.length : movements.length;
+  const rangeFrom =
+    visibleRowCount > 0 && pagination.total > 0
+      ? (pagination.current - 1) * pagination.pageSize + 1
+      : 0;
+  const rangeTo =
+    visibleRowCount > 0
+      ? Math.min(pagination.total, rangeFrom + visibleRowCount - 1)
+      : 0;
   const hasFilters = isBalance
     ? Boolean(searchInput || skuType || stockStatus)
     : Boolean(movementSearch || movementType);
@@ -817,7 +826,11 @@ export default function InventoryPage() {
           <div className="hn-inventory-footer">
             <div className="hn-inventory-page-size">
               <span aria-live="polite">
-                {t("shared.table.totalRecords", { total: pagination.total })}
+                {t("inventory.rangeLabel", {
+                  from: formatQuantity(rangeFrom),
+                  to: formatQuantity(rangeTo),
+                  total: formatQuantity(pagination.total),
+                })}
               </span>
               <UiSelect
                 id="inventory-page-size"

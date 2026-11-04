@@ -1109,18 +1109,9 @@ export function OutboundIntakeModal({
                   <AnimatedList>
                     {lines.map((line, index) => (
                       <AnimatedListItem key={line.key} gap={12}>
-                        <Stack
-                          className="hn-outbound-dialog__line"
-                          direction="row"
-                          spacing={1.5}
-                          sx={{
-                            alignItems: "flex-start",
-                            flexWrap: "wrap",
-                            rowGap: 1,
-                          }}
-                        >
+                        <Box className="hn-outbound-dialog__line">
                           <UiAutocomplete
-                            sx={{ width: { xs: "100%", sm: 380 }, minWidth: 0 }}
+                            sx={{ minWidth: 0 }}
                             options={
                               // Giữ nhãn của SKU ĐANG CHỌN kể cả khi nó rơi ra ngoài
                               // kết quả tìm kiếm hiện tại.
@@ -1184,21 +1175,21 @@ export function OutboundIntakeModal({
                               fieldErrors.lines[index]?.required_qty,
                             )}
                             helperText={fieldErrors.lines[index]?.required_qty}
-                            sx={{ width: 130 }}
+                            sx={{ minWidth: 0 }}
                           />
                           <ActionButton
                             kind="delete"
+                            className="hn-outbound-dialog__remove-line"
                             disabled={lines.length === 1}
                             onClick={() =>
                               setLines((current) =>
                                 current.filter((_, i) => i !== index),
                               )
                             }
-                            sx={{ mt: "8px" }}
                           >
                             {t("outbound.intake.removeLine")}
                           </ActionButton>
-                        </Stack>
+                        </Box>
                       </AnimatedListItem>
                     ))}
                   </AnimatedList>
@@ -1235,31 +1226,35 @@ export function OutboundIntakeModal({
                 </Stack>
               </Stack>
             ) : (
-              <Stack spacing={1.5}>
-                <input
-                  key={fileInputKey}
-                  type="file"
-                  accept={acceptAttribute(EXCEL_FILE_RULE)}
-                  aria-label={t("outbound.intake.fileAria")}
-                  aria-invalid={Boolean(fileError)}
-                  onChange={(event) => {
-                    const picked = event.target.files?.[0] ?? null;
-                    setFile(picked);
-                    setFileError(picked ? checkExcelFile(picked, t) : null);
-                  }}
-                />
-                {fileError ? (
-                  <Box
-                    role="alert"
-                    sx={{ typography: "body2", color: "error.main" }}
-                  >
-                    {fileError}
-                  </Box>
-                ) : null}
-                <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                  {t("outbound.intake.fileHint")}
-                </Box>
-                <Box>
+              <div className="hn-outbound-dialog__excel-grid">
+                <div className="hn-outbound-dialog__excel-upload">
+                  <h3>{t("outbound.intake.fileUploadTitle")}</h3>
+                  <div className="hn-outbound-dialog__excel-picker">
+                    <input
+                      key={fileInputKey}
+                      id="outbound-request-excel-file"
+                      type="file"
+                      accept={acceptAttribute(EXCEL_FILE_RULE)}
+                      aria-label={t("outbound.intake.fileAria")}
+                      aria-invalid={Boolean(fileError)}
+                      onChange={(event) => {
+                        const picked = event.target.files?.[0] ?? null;
+                        setFile(picked);
+                        setFileError(picked ? checkExcelFile(picked, t) : null);
+                      }}
+                    />
+                    <label htmlFor="outbound-request-excel-file">
+                      {t("outbound.intake.fileChoose")}
+                    </label>
+                    <span
+                      className="hn-outbound-dialog__excel-filename"
+                      title={file?.name}
+                      aria-live="polite"
+                    >
+                      {file?.name ?? t("outbound.intake.fileNone")}
+                    </span>
+                  </div>
+                  {fileError ? <p role="alert">{fileError}</p> : null}
                   <ActionButton
                     kind="upload"
                     className="hn-outbound-dialog__primary"
@@ -1275,12 +1270,33 @@ export function OutboundIntakeModal({
                       ? t("outbound.intake.uploading")
                       : t("outbound.intake.upload")}
                   </ActionButton>
-                </Box>
-                <ApiErrorAlert
-                  error={validateFileMutation.error}
-                  title={t("outbound.intake.uploadErrorTitle")}
-                />
-              </Stack>
+                  <ApiErrorAlert
+                    error={validateFileMutation.error}
+                    title={t("outbound.intake.uploadErrorTitle")}
+                  />
+                </div>
+                <div className="hn-outbound-dialog__excel-guide">
+                  <h3>{t("outbound.intake.fileGuideTitle")}</h3>
+                  <div className="hn-outbound-dialog__excel-fields">
+                    <div>
+                      <strong>{t("outbound.intake.fileRequiredTitle")}</strong>
+                      <p>{t("outbound.intake.fileRequiredColumns")}</p>
+                    </div>
+                    <div>
+                      <strong>{t("outbound.intake.fileOptionalTitle")}</strong>
+                      <p>{t("outbound.intake.fileOptionalColumns")}</p>
+                    </div>
+                  </div>
+                  <p className="hn-outbound-dialog__excel-limits">
+                    {t("outbound.intake.fileLimits")}
+                  </p>
+                  <details className="hn-outbound-dialog__excel-headers">
+                    <summary>{t("outbound.intake.fileHeaders")}</summary>
+                    <p>{t("outbound.intake.fileHeaderHint")}</p>
+                    <code>{t("outbound.intake.fileHeaderNames")}</code>
+                  </details>
+                </div>
+              </div>
             )}
 
             {preview ? (

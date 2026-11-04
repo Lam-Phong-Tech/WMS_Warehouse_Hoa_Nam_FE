@@ -88,6 +88,37 @@ afterEach(() => {
 });
 
 describe("OUT-01 request intake drawer", () => {
+  it("uses Vietnamese file controls and keeps technical headers collapsed", async () => {
+    renderIntake();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Nhập từ Excel" }),
+    );
+    expect(await screen.findByText("Chọn tệp Excel")).toBeInTheDocument();
+    expect(screen.getByText("Chưa chọn tệp")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Mã phiếu yêu cầu · Mã SKU · Số lượng yêu cầu · Tên người nhận / khách hàng",
+      ),
+    ).toBeVisible();
+    const technicalHeaders = screen.getByText(
+      /request_no · sku_code · required_qty/,
+    );
+    expect(technicalHeaders).not.toBeVisible();
+    fireEvent.change(screen.getByLabelText("Chọn tệp Excel yêu cầu xuất"), {
+      target: {
+        files: [
+          new File(["sheet"], "yeu-cau.xlsx", {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          }),
+        ],
+      },
+    });
+    expect(screen.getByText("yeu-cau.xlsx")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Tải lên & xem trước" }),
+    ).toBeEnabled();
+  });
+
   it("opens on the right and keeps both intake modes available", async () => {
     renderIntake();
 

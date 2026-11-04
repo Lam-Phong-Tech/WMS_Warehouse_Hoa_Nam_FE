@@ -286,6 +286,22 @@ describe("InventoryPage (INV-01 hub)", () => {
     ).toBeInTheDocument();
   });
 
+  it("hiển thị khoảng dòng thực tế và tổng bản ghi theo trang", async () => {
+    mockQueries({
+      balances: Array.from({ length: 5 }, (_, i) => ({
+        ...BALANCE_ROW,
+        id: `bal-${i}`,
+      })),
+      balancesTotal: 25,
+    });
+    renderWithProviders(<InventoryPage />);
+    expect(
+      await screen.findByText("Hiển thị 1–5 / 25 bản ghi"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Go to page 3" }));
+    expect(screen.getByText("Hiển thị 21–25 / 25 bản ghi")).toBeInTheDocument();
+  });
+
   // Annex D SCR-INV-01 "Filter SKU/type/status": status là stock_status theo ERD bảng 29
   // (AVAILABLE/NON_SELLABLE/DEFECTIVE/QUARANTINE), không phải định mức tồn an toàn.
   it("lọc trạng thái tồn gọi lại API với stock_status theo ERD bảng 29", async () => {

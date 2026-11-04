@@ -6,7 +6,7 @@ Nguồn chuẩn: `src/modules/master-data/pages/sku-list.css` và `ApiMasterScre
 
 - Một hàng điều khiển nằm trực tiếp trên bảng, khoảng cách giữa các ô `12px`; không có thẻ bao có viền, tiêu đề bộ lọc hoặc dải chip nhắc lại điều kiện đã chọn.
 - Ô tìm kiếm rộng hơn ô chọn, tự lọc khi nhập. Ô chọn hiển thị tên trường và giá trị ngay trong ô, ví dụ `Trạng thái: Tất cả`; không đặt nhãn ở hàng phía trên.
-- Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, bo `--ops-radius-control` (`6px`); focus dùng `--ops-link` với quầng màu link 13%. Mọi thay đổi bộ lọc được áp dụng tự động; không có nút `Áp dụng`, `Đặt lại` hoặc `Xóa lọc`.
+- Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, bo `--ops-radius-control` (`6px`); focus dùng `--ops-link` với quầng màu link 13%. Mọi thay đổi bộ lọc được áp dụng tự động; không cần nút `Áp dụng`. Nút `Xóa lọc` chỉ xuất hiện khi có điều kiện lọc.
 - Khi container hẹp, các ô xuống hàng; ô tìm kiếm chiếm trọn hàng đầu. Không làm trang tràn ngang vì bộ lọc.
 
 ## Bảng

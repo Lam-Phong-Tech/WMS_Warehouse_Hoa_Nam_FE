@@ -13,6 +13,8 @@ applies_to: Web Admin (desktop, tablet, mobile)
 
 Mục tiêu là giao diện vận hành rõ thứ tự công việc, đọc nhanh, dùng hợp lý diện tích và nhất quán giữa các module. Tiếng Việt là ngôn ngữ mặc định; dữ liệu và quyền vẫn lấy từ ứng dụng thật.
 
+Tài liệu chốt **chuẩn cần áp dụng**, không chứng minh toàn bộ giao diện cũ đã được chuyển đổi. Việc hợp nhất Markdown không tự thay font, bảng hoặc modal trong mã nguồn. Khi báo hoàn thành, phải nêu những màn hình/thành phần đã sửa, kiểm thử và đối chiếu thực tế; phần chưa kiểm tra không được coi là đã đạt chỉ vì tài liệu có trạng thái `active`.
+
 ## 1. Thứ tự áp dụng khi các nguồn khác nhau
 
 | Ưu tiên | Nguồn                                                                                           | Phạm vi quyết định                                                                                                          |
@@ -93,7 +95,7 @@ Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-ta
 - Một hàng điều khiển nằm **trực tiếp trên bảng**, cùng lề trái/phải với bao bảng; gap `12px`. Không có card viền quanh bộ lọc, tiêu đề bộ lọc hoặc dải chip lặp lại điều kiện.
 - Ô tìm kiếm rộng hơn ô chọn và lọc khi nhập. Ô chọn hiển thị tên trường cùng giá trị trong ô, ví dụ `Trạng thái: Tất cả`; không thêm hàng label phía trên.
 - Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-control` (`6px`); focus dùng `--ops-link` và quầng màu link 13%.
-- Chỉ hiện `Xóa lọc` khi đang có điều kiện lọc. Khi hẹp, các ô xuống hàng, ô tìm kiếm chiếm trọn hàng đầu; vùng lọc không làm trang tràn ngang.
+- Mọi thay đổi bộ lọc áp dụng tự động, không cần nút `Áp dụng`. Nút `Xóa lọc` chỉ xuất hiện khi có điều kiện lọc, theo bản quy cách SKU người dùng chỉ định. Khi hẹp, các ô xuống hàng, ô tìm kiếm chiếm trọn hàng đầu; vùng lọc không làm trang tràn ngang.
 
 ### Bảng
 
@@ -128,14 +130,14 @@ Chân bảng có viền trên `1px solid --ops-line`, padding `14px 16px`. Nhóm
 
 Dùng **drawer bên phải** cho xem chi tiết, chỉnh sửa hoặc quy trình nhiều phần cần giữ ngữ cảnh trang danh sách. Dùng dialog ở giữa cho quyết định ngắn, xác nhận thao tác nguy hiểm hoặc form thật sự ngắn. Drawer điều hướng mobile là một thành phần khác, không áp kích thước drawer nghiệp vụ cho menu.
 
-| Phần        | Quy tắc                                                                                                                                                                                              |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chiều rộng  | Edit thường khoảng `480px`, detail thường khoảng `640px` theo kit; tác vụ nhiều bước/bảng có thể mở đến khoảng `800–820px` khi có lý do. Luôn `max-width: 100vw`; trên điện thoại chiếm đủ bề ngang. |
-| Header      | Tiêu đề, định danh/trạng thái cần thiết và nút đóng có nhãn; header giữ nguyên vị trí khi cuộn.                                                                                                      |
-| Nội dung    | **Một vùng cuộn dọc chính**; padding ngang cùng lề giữa header/body/footer, khoảng cách nhóm 16–24px; metadata ngắn 2 cột, dài hoặc mobile 1 cột.                                                    |
-| Footer      | Chỉ đặt hành động cấp drawer nếu cần; giữ thấy được mà không che nội dung, tính cả safe area/bàn phím mobile. Action riêng của bước ở gần nội dung bước.                                             |
-| Dữ liệu dài | Mã, địa chỉ, tên người nhận có `min-width: 0`, wrap/copy được; không đẩy cột bên cạnh hoặc làm tràn drawer.                                                                                          |
-| Trạng thái  | Có loading, lỗi kèm thử lại khi thích hợp, rỗng và quyền truy cập; không để drawer trắng.                                                                                                            |
+| Phần        | Quy tắc                                                                                                                                                                                                                                                               |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chiều rộng  | Edit thường khoảng `480px`, detail thường khoảng `640px` theo kit; tác vụ nhiều bước/bảng có thể mở đến khoảng `800–820px` khi có lý do. Luôn `max-width: 100vw`; trên điện thoại chiếm đủ bề ngang.                                                                  |
+| Header      | Tiêu đề, định danh/trạng thái cần thiết và nút đóng có nhãn; header giữ nguyên vị trí khi cuộn.                                                                                                                                                                       |
+| Nội dung    | **Một vùng cuộn dọc chính**; padding ngang cùng lề giữa header/body/footer, khoảng cách nhóm 16–24px; metadata mặc định 2 cột, dài hoặc mobile 1 cột. Nhóm đúng 3 trường ngắn có thể dùng 3 cột khi vùng chứa đủ rộng, tránh một trường lẻ hàng và khoảng trống thừa. |
+| Footer      | Chỉ đặt hành động cấp drawer nếu cần; giữ thấy được mà không che nội dung, tính cả safe area/bàn phím mobile. Action riêng của bước ở gần nội dung bước.                                                                                                              |
+| Dữ liệu dài | Mã, địa chỉ, tên người nhận có `min-width: 0`, wrap/copy được; không đẩy cột bên cạnh hoặc làm tràn drawer.                                                                                                                                                           |
+| Trạng thái  | Có loading, lỗi kèm thử lại khi thích hợp, rỗng và quyền truy cập; không để drawer trắng.                                                                                                                                                                             |
 
 Drawer/modal phải có tên truy cập, focus vào nội dung phù hợp khi mở, trap focus nếu modal, Escape/backdrop theo tình trạng thay đổi chưa lưu, trả focus về nút mở khi đóng. Confirm nêu **đối tượng + hành động + hậu quả**, nút xác nhận có động từ cụ thể. Không lồng nhiều drawer cùng lúc; những dialog xác nhận ngắn mở từ drawer chỉ dùng khi nghiệp vụ cần. Không để toast che nút xác nhận trong overlay.
 
@@ -147,7 +149,7 @@ Chỉ một primary cho quyết định chính của vùng. Nút đang xử lý 
 
 ## 8. Trạng thái màn hình và nội dung
 
-Loading giữ khung ổn định; rỗng đưa bước tiếp theo; không có kết quả lọc cho cách xóa lọc; lỗi API có cách thử lại; thiếu quyền giải thích rõ; dữ liệu một phần ghi rõ phần còn thiếu. Không dùng toast ba giây để thay cho lỗi cần người dùng sửa hoặc lỗi làm chặn tác vụ. Không hiển thị số `0` giả khi query còn tải.
+Loading giữ khung ổn định; rỗng đưa bước tiếp theo; không có kết quả lọc thì gợi ý chỉnh điều kiện đang chọn; lỗi API có cách thử lại; thiếu quyền giải thích rõ; dữ liệu một phần ghi rõ phần còn thiếu. Không dùng toast ba giây để thay cho lỗi cần người dùng sửa hoặc lỗi làm chặn tác vụ. Không hiển thị số `0` giả khi query còn tải.
 
 Nhãn giao diện dịch qua i18n. **Không đưa tên cột SQL/API thô ra UI**: ví dụ `sku_code` → `Mã SKU`, `required_qty` → `Số lượng yêu cầu`, `recipient_name` → `Người nhận`. Tên cột kỹ thuật chỉ nằm trong hướng dẫn định dạng file nâng cao hoặc tài liệu tích hợp. Ngày hiển thị theo `dd/MM/yyyy` khi phù hợp nghiệp vụ; số theo locale người dùng. Kiểm tra nhãn tiếng Việt/Anh dài trước khi chốt độ rộng.
 
