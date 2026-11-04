@@ -98,13 +98,16 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
 
   afterEach(() => cleanupTestState());
 
-  it("hiển thị SL movement gốc tách khỏi SL đảo và phần còn đảo", () => {
+  it("hiển thị SL movement gốc tách khỏi SL đảo và phần còn đảo", async () => {
     mockHooks();
     renderWithProviders(
       <ReversalDetailModal documentId="rev-1" onClose={vi.fn()} />,
     );
 
+    await screen.findByRole("table");
     expect(screen.getByText("MOV-ISSUE-000882")).toBeInTheDocument();
+    expect(screen.getByText(BASE_DOC.reason)).toBeInTheDocument();
+    expect(screen.getByText("17-08-2026 07:00")).toBeInTheDocument();
 
     // Bốn cột số của Annex D SCR-REV-01: SL gốc 5 · SL đảo 2 · đã đảo 2 · còn đảo 3.
     // Trước khi sửa contract, original_qty bị BE alias trùng reversal_qty nên cột
@@ -127,7 +130,7 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
     expect(cells.filter((value) => value === "5")).toHaveLength(1);
   });
 
-  it("DRAFT/PENDING_RETURN: Confirm gửi đúng version, Post bị chặn tới khi hàng về", () => {
+  it("DRAFT/PENDING_RETURN: Confirm gửi đúng version, Post bị chặn tới khi hàng về", async () => {
     mockHooks();
     renderWithProviders(
       <ReversalDetailModal documentId="rev-1" onClose={vi.fn()} />,
@@ -135,7 +138,7 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
 
     // BR-REV-06: chưa xác nhận hàng vật lý thì không được Post.
     expect(
-      screen.getByRole("button", { name: /Hoàn tất điều chỉnh/i }),
+      await screen.findByRole("button", { name: /Hoàn tất điều chỉnh/i }),
     ).toBeDisabled();
 
     fireEvent.click(
@@ -155,7 +158,7 @@ describe("ReversalDetailModal (REV-01 lifecycle §6)", () => {
       <ReversalDetailModal documentId="rev-1" onClose={vi.fn()} />,
     );
 
-    const cancelButton = screen.getByRole("button", {
+    const cancelButton = await screen.findByRole("button", {
       name: /Hủy phiếu/i,
     });
     expect(cancelButton).toBeDisabled();

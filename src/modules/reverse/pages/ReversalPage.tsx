@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useT } from "@/shared/i18n/useT";
-import { Box, Tooltip, UiSelect, UiTextField } from "@/shared/ui";
+import { Box, UiSelect, UiTextField } from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -20,17 +20,12 @@ import {
 } from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
-import {
-  REVERSAL_REASON_LABELS,
-  REVERSAL_STATUS_LABELS,
-  enumLabelOrText,
-} from "@/shared/constants/business-labels";
+import { REVERSAL_STATUS_LABELS } from "@/shared/constants/business-labels";
 import { useReversalDocuments, reversalKeys } from "../hooks/use-reversal";
 import { ReversalCreateModal } from "../components/ReversalCreateModal";
 import { ReversalDetailModal } from "../components/ReversalDetailModal";
 import { ReversalStatusTag } from "../components/ReversalStatusTag";
 import type { ReversalDocument } from "../types";
-import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -105,7 +100,7 @@ export default function ReversalPage() {
       key: "stt",
       header: t("reverse.detail.colStt"),
       align: "center",
-      width: 48,
+      width: "5%",
       hideOnMobile: true,
       // ResponsiveDataTable không truyền index vào render (khác antd Table),
       // nên STT tính theo vị trí trong `rows` (thứ tự trang hiện tại từ API)
@@ -116,7 +111,7 @@ export default function ReversalPage() {
     {
       key: "reversal_code",
       header: t("reverse.detail.fieldCode"),
-      width: 170,
+      width: "22%",
       sortAccessor: (row) => row.reversal_code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ ĐIỀU CHỈNH đọc được.
       render: (row) => (
@@ -128,7 +123,7 @@ export default function ReversalPage() {
     {
       key: "ref",
       header: t("reverse.detail.fieldSourceDoc"),
-      width: 180,
+      width: "22%",
       sortAccessor: (row) => row.reference_document_code || "",
       render: (row) => (
         <Box
@@ -150,7 +145,7 @@ export default function ReversalPage() {
     {
       key: "total_qty",
       header: t("reverse.list.colTotalQty"),
-      width: 120,
+      width: "11%",
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.total_qty,
@@ -159,7 +154,7 @@ export default function ReversalPage() {
     {
       key: "status",
       header: t("reverse.detail.colStatus"),
-      width: 210,
+      width: "20%",
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
@@ -171,52 +166,11 @@ export default function ReversalPage() {
       ),
     },
     {
-      // Lý do là dữ liệu bắt buộc khi tạo phiếu (BR-REV: `reason` required) nên
-      // luôn có nội dung — đưa lên danh sách để không phải mở từng phiếu mới
-      // biết vì sao điều chỉnh. Độ dài thất thường → ellipsis + tooltip giữ
-      // chiều cao dòng đều nhau (cùng cách xử lý "Vị trí gợi ý" ở INV-01).
-      key: "reason",
-      header: t("reverse.create.reasonLabel"),
-      width: 240,
-      sortAccessor: (row) => row.reason || "",
-      render: (row) => (
-        <div>
-          <Tooltip title={row.reason || EMPTY_TEXT}>
-            <Box
-              className="hn-reversal-reason"
-              sx={{
-                maxWidth: 230,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {row.reason || EMPTY_TEXT}
-            </Box>
-          </Tooltip>
-          {row.reason_code ? (
-            <Box sx={{ fontSize: 12, color: "text.secondary" }}>
-              {enumLabelOrText(REVERSAL_REASON_LABELS, row.reason_code)}
-            </Box>
-          ) : null}
-        </div>
-      ),
-    },
-    {
-      key: "created_at",
-      header: t("reverse.detail.fieldCreatedAt"),
-      width: 160,
-      sortType: "value",
-      hideOnMobile: true,
-      sortAccessor: (row) => row.created_at,
-      render: (row) => formatDateTime(row.created_at),
-    },
-    {
       // reversalService chỉ nhận `created_by_name` (BE đã join tên); thiếu tên
       // thì `-`, KHÔNG rơi xuống UUID `created_by`.
       key: "created_by",
       header: t("reverse.detail.fieldCreatedBy"),
-      width: 150,
+      width: "12%",
       hideOnMobile: true,
       sortAccessor: (row) => row.created_by || "",
       render: (row) => row.created_by || EMPTY_TEXT,
@@ -343,6 +297,7 @@ export default function ReversalPage() {
               padding: "10px 9px",
               borderColor: "var(--rev-line)",
             }}
+            actionColumnWidth="8%"
             columns={columns}
             rows={rows}
             rowKey={(row) => row.id}

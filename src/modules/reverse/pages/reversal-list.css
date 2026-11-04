@@ -419,11 +419,6 @@
   max-width: 60%;
   overflow-wrap: anywhere;
 }
-.hn-reversal-screen .MuiCard-root .hn-reversal-reason {
-  white-space: normal;
-  overflow: visible;
-  max-width: 100%;
-}
 :is(.hn-reversal-screen, .hn-reversal-dialog) .MuiCard-root .MuiChip-root {
   max-width: 100%;
   height: auto;
