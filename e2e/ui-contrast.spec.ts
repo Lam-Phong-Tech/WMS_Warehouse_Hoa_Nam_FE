@@ -145,8 +145,31 @@ for (const theme of ["light", "dark"]) {
         waitUntil: "domcontentloaded",
       });
       await expect(page.locator(".sku-table tbody tr")).toHaveCount(1);
-      const header = page.locator(".sku-table th").nth(1);
-      expect(await contrast(header)).toBeGreaterThanOrEqual(4.5);
+      const headerColor =
+        theme === "light" ? "rgb(0, 59, 99)" : "rgb(218, 236, 246)";
+      const headers = page
+        .locator(".sku-table thead th")
+        .filter({ hasText: /\S/ });
+      await expect(headers).toHaveCount(5);
+      for (const header of await headers.all()) {
+        await expect(header).toHaveCSS("color", headerColor);
+        await expect(header).toHaveCSS("font-weight", "800");
+        expect(await contrast(header)).toBeGreaterThanOrEqual(7);
+        const sort = header.locator(".hn-sortable-th");
+        if (await sort.count()) {
+          await expect(sort).toHaveCSS("color", headerColor);
+          await sort.hover();
+          await expect(sort).toHaveCSS("color", headerColor);
+          expect(await contrast(sort)).toBeGreaterThanOrEqual(7);
+          await sort.click();
+          await expect(sort).toHaveAttribute("aria-sort", "ascending");
+          await expect(sort).toHaveCSS("color", headerColor);
+          await page.keyboard.press("Tab");
+          await page.keyboard.press("Shift+Tab");
+          await expect(sort).toBeFocused();
+          await expect(sort).toHaveCSS("color", headerColor);
+        }
+      }
       for (const arrow of [
         page.locator(".hn-sku-detail-link"),
         page.getByRole("button", { name: "Mũi tên dùng chung" }),

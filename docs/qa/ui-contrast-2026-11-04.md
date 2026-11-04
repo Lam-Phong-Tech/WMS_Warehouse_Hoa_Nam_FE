@@ -64,3 +64,9 @@ Không đăng nhập hay kiểm chứng trên website đã triển khai; không 
 - Lệnh kiểm chứng phần bổ sung: `npm run test:ui-contrast -- --grep topbar`; ảnh `test-results/ui-contrast/account-menu-*.png`, `theme-menu-*.png`. Fixture dùng `AppTopbar` thật và CSS shell production; giá trị alias shell lấy theo `MainLayout`.
 - Phạm vi trực quan lần bổ sung là menu tài khoản/giao diện; tìm kiếm, ngôn ngữ và footer menu chỉ được rà soát nguồn. Có rà soát độc lập, không phát hiện vấn đề cần sửa thêm.
 - `AppTopbar.test.tsx`: **15/15 đạt**, gồm mở/đóng menu, đổi giao diện/ngôn ngữ, điều hướng và thông báo. Formatting fixture/spec và `git diff --check`: đạt. Phần production chỉ đổi CSS; CSS được biên dịch và kiểm trong các ca trình duyệt trên.
+
+## Bổ sung: chốt màu tiêu đề bảng sáng
+
+- Người dùng yêu cầu đầu bảng sáng đậm hơn màu xám trong ảnh. Quy chuẩn chính v2.3 và quy cách SKU chốt rõ **#003B63** qua `--ops-heading`, nền **#D2EDF7**, **16/24px, weight 800**, tối thiểu **7:1**. STT và nhãn trong nút sắp xếp giữ cùng màu ở trạng thái thường/hover/focus/sort.
+- Mã SKU đã áp dụng màu heading từ commit `188fa005`; không sửa lặp CSS đang đúng. Kiểm tra đọc tĩnh trên máy chủ tại thời điểm làm việc: `build-manifest.json` báo SHA `188fa005526a97f8e050b2b7f2bda3f34502f838`, bản `1.0.0+dev.154`; asset `MvpMasterScreens-DTbgiJDl.css` cũng khai `color:var(--ops-heading)` và `font-weight:800` cho đầu bảng SKU. Đây là bằng chứng CSS phục vụ từ máy chủ, không phải computed style trong phiên đăng nhập của người dùng; không kết luận nguyên nhân riêng của ảnh là cache.
+- Nâng kiểm tra hồi quy từ một ô đại diện lên **cả 5 tiêu đề**, kiểm tra thêm màu/độ đậm của nút sort và các trạng thái hover/focus/sort. Lệnh `npm run test:ui-contrast -- --grep "1440px: table"`: **2/2 đạt**, light/dark desktop. Không thay đổi mã production trong lần bổ sung này; chuẩn đậm đã có được ghi rõ và khóa bằng kiểm thử.
