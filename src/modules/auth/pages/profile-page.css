@@ -477,13 +477,15 @@
   gap: 20px;
   align-items: stretch;
 }
+.hn-personal-format-preview :is(p, small) {
+  font-size: 18px;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
 .hn-personal-format-preview p {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 18px;
-  line-height: 28px;
-  overflow-wrap: anywhere;
 }
 .hn-personal-format-preview small {
   color: var(--ops-muted);

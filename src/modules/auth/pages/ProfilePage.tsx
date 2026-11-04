@@ -273,17 +273,9 @@ export function ProfilePage() {
             ? t("auth.personal.appearanceTitle")
             : t("auth.personal.otherTitle");
   const subtitle =
-    section === "profile"
-      ? accountMode === "preferences"
-        ? t("auth.personal.preferencesSubtitle")
-        : t("auth.personal.profileSubtitle")
-      : section === "security"
-        ? t("auth.personal.securitySubtitle")
-        : section === "notifications"
-          ? t("auth.personal.notificationsSubtitle")
-          : section === "appearance"
-            ? t("auth.personal.appearanceSubtitle")
-            : t("auth.personal.otherSubtitle");
+    section === "profile" && accountMode === "overview"
+      ? t("auth.personal.profileSubtitle")
+      : null;
   const warehouseNames = useMemo(
     () =>
       new Map(
@@ -336,7 +328,7 @@ export function ProfilePage() {
       <header className="hn-personal-page-heading">
         <div className="hn-personal-heading-text">
           <h1>{title}</h1>
-          <p>{subtitle}</p>
+          {subtitle && <p>{subtitle}</p>}
         </div>
         <nav
           id="hn-profile-section-nav"

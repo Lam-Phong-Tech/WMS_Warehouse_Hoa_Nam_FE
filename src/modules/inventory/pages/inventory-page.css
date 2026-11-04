@@ -527,7 +527,7 @@
   position: sticky;
   right: 0;
   z-index: 3;
-  background: var(--inv-pale);
+  background: var(--inv-table-header);
 }
 .hn-inventory-table table tbody td:last-child {
   position: sticky;
