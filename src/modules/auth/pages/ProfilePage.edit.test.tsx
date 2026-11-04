@@ -62,15 +62,12 @@ describe("ProfilePage personal editing", () => {
       screen.queryByRole("tab", { name: "Thiết bị & phiên" }),
     ).not.toBeInTheDocument();
     expect(
-      await screen.findByRole("button", { name: "Quản lý thiết bị" }),
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Quản lý thiết bị" }));
+      screen.queryByRole("button", { name: "Quản lý thiết bị" }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Tài khoản của tôi" }),
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Thu gọn" }));
-    expect(
-      screen.getByRole("button", { name: "Quản lý thiết bị" }),
+      await screen.findByRole("heading", {
+        name: "Không có phiên đăng nhập khác",
+      }),
     ).toBeVisible();
   });
   it("validates phone, saves with the opening version and refreshes identity", async () => {

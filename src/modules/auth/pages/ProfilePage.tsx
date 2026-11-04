@@ -67,7 +67,6 @@ export function ProfilePage() {
   const [editor, setEditor] = useState(false);
   const [password, setPassword] = useState(false);
   const [mfa, setMfa] = useState(false);
-  const [devicesExpanded, setDevicesExpanded] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<{
     section: Section;
@@ -462,24 +461,7 @@ export function ProfilePage() {
                   </p>
                 </section>
               </div>
-              {devicesExpanded ? (
-                <>
-                  <ActionButton
-                    kind="view"
-                    onClick={() => setDevicesExpanded(false)}
-                  >
-                    {t("common.collapse")}
-                  </ActionButton>
-                  <ProfileSessionsPanel key={userId} userId={userId} />
-                </>
-              ) : (
-                <ProfileSessionsPanel
-                  key={userId}
-                  userId={userId}
-                  compact
-                  onManage={() => setDevicesExpanded(true)}
-                />
-              )}
+              <ProfileSessionsPanel key={userId} userId={userId} />
             </>
           ) : null}
           {section === "security" ? (

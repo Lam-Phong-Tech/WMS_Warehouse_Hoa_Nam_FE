@@ -18,6 +18,7 @@ import { useT } from "@/shared/i18n/useT";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { captureAuthOwner } from "@/shared/store/auth-owner";
 import { profileService } from "../../services/profile.service";
+import { DeviceIllustration, DevicePlatformMark } from "./DeviceIllustration";
 import { desktopChromePlatform } from "./device-presentation";
 import {
   profileKeys,
@@ -31,7 +32,8 @@ type RevokeTarget =
   | { kind: "device"; device: ProfileDevice }
   | { kind: "others" };
 const sessionName = (session: ProfileSession) => {
-  if (session.client_type === "app") return "App";
+  if (session.client_type === "app")
+    return /scanner/i.test(session.user_agent || "") ? "App Scanner" : "App";
   const ua = session.user_agent || "";
   return /Edg\//i.test(ua)
     ? "Edge"
@@ -254,54 +256,103 @@ export function ProfileSessionsPanel({
             key={device.group_key}
           >
             <header>
-              <span className="hn-personal-device-icon">
-                <UiIcon name={icon(device)} />
-              </span>
+              <DeviceIllustration
+                kind={
+                  /ipad|tablet|\btab\b|SM-T/i.test(
+                    `${device.device_label} ${device.platform} ${device.sessions.map((s) => s.user_agent).join(" ")}`,
+                  )
+                    ? "tablet"
+                    : device.client_type === "app" ||
+                        /android|ios|iphone|mobile/i.test(
+                          `${device.platform} ${device.sessions.map((s) => s.user_agent).join(" ")}`,
+                        )
+                      ? "phone"
+                      : "desktop"
+                }
+              />
               <div>
                 <h2>{deviceName(device)}</h2>
                 <p className="hn-personal-muted">
+                  <DevicePlatformMark
+                    platform={
+                      device.platform || desktopChromePlatform(device) || ""
+                    }
+                  />
                   {device.platform ||
                     desktopChromePlatform(device) ||
                     t("auth.personal.unknown")}
                 </p>
                 {device.is_current ? (
                   <UiStatusBadge
-                    tone="info"
+                    tone="success"
                     label={t("auth.personal.currentDevice")}
                   />
                 ) : null}
               </div>
             </header>
-            <dl className="hn-personal-detail-list">
-              <div>
-                <dt>
-                  {t("auth.personal.sessionsCount", {
-                    count: device.sessions.length,
-                  })}
-                </dt>
-                <dd>
-                  {device.sessions
-                    .map((session) => sessionName(session))
-                    .join(" · ")}
-                </dd>
+            <div className="hn-device-facts">
+              <dl className="hn-device-metrics">
+                <div>
+                  <UiIcon name="layers" size="sm" />
+                  <dt>{t("auth.personal.deviceSessionCount")}</dt>
+                  <dd>{device.sessions.length}</dd>
+                </div>
+                <div>
+                  <UiIcon name="clock" size="sm" />
+                  <dt>{t("auth.personal.deviceLastActive")}</dt>
+                  <dd>{date(device.last_active_at)}</dd>
+                </div>
+              </dl>
+              <div className="hn-device-sessions">
+                <p>{t("auth.personal.sessionsOnDevice")}</p>
+                <ul>
+                  {device.sessions.map((session) => (
+                    <li
+                      key={session.session_id}
+                      data-current={session.is_current}
+                    >
+                      <span className="hn-device-session-dot" />
+                      <span>
+                        {sessionName(session)}
+                        {session.is_current ? (
+                          <>
+                            {" "}
+                            ·{" "}
+                            <strong>{t("auth.personal.currentSession")}</strong>
+                          </>
+                        ) : device.sessions.length > 1 &&
+                          session.last_active_at ? (
+                          <> · {date(session.last_active_at).slice(-5)}</>
+                        ) : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div>
-                <dt>{t("auth.personal.lastActive")}</dt>
-                <dd>{date(device.last_active_at)}</dd>
-              </div>
-            </dl>
+            </div>
             <footer>
-              <RowActionButton
-                kind="view"
-                aria-label={`${t("auth.personal.viewDetails")} · ${deviceName(device)}`}
+              <button
+                type="button"
+                className="hn-device-view"
+                aria-label={`${device.sessions.length > 1 ? t("auth.personal.viewDeviceSessions", { count: device.sessions.length }) : t("auth.personal.viewDetails")} · ${deviceName(device)}`}
                 onClick={() => {
                   setSelected({ device });
                   setMissing(false);
                 }}
-              />
+              >
+                {device.sessions.length > 1
+                  ? t("auth.personal.viewDeviceSessions", {
+                      count: device.sessions.length,
+                    })
+                  : t("auth.personal.viewDetails")}
+                <UiIcon name="angle-small-right" size="sm" />
+              </button>
               {device.device_id && device.can_revoke && !device.is_current ? (
                 <ActionButton
                   kind="revoke"
+                  appearance="flat"
+                  className="hn-device-revoke"
+                  icon={<UiIcon name="sign-out-alt" size="sm" />}
                   disabled={Boolean(uncertain) || mutation.isPending}
                   onClick={() => setTarget({ kind: "device", device })}
                 >

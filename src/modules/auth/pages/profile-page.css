@@ -654,8 +654,152 @@
 }
 .hn-personal-device-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
   gap: 16px;
+}
+.hn-personal-card.hn-personal-device-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ops-heading) 5%, transparent);
+}
+.hn-device-illustration {
+  display: block;
+  width: 118px;
+  height: 84px;
+  flex-shrink: 0;
+  border-radius: 14px;
+}
+.hn-personal-device-card > header {
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ops-line);
+}
+.hn-personal-device-card > header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+}
+.hn-personal-device-card > header p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-personal-device-card > header p > svg {
+  color: var(--ops-link);
+  flex-shrink: 0;
+}
+.hn-device-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 12px 0 16px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-device-metrics {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  margin: 0;
+}
+.hn-device-metrics > div {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  column-gap: 6px;
+}
+.hn-device-metrics i {
+  grid-row: span 2;
+  margin-top: 2px;
+}
+.hn-device-metrics dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.hn-device-sessions {
+  border-left: 1px solid var(--ops-line);
+  padding-left: 14px;
+  min-width: 0;
+}
+.hn-device-sessions p {
+  margin: 0 0 8px;
+}
+.hn-device-sessions ul {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.hn-device-sessions li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+.hn-device-session-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ops-muted);
+  flex-shrink: 0;
+}
+.hn-device-sessions [data-current="true"] strong {
+  color: var(--ops-link);
+}
+.hn-device-sessions [data-current="true"] .hn-device-session-dot {
+  background: var(--ops-link);
+}
+.hn-personal-card.hn-personal-device-card > footer {
+  padding: 0;
+  gap: 12px;
+  margin-top: auto;
+}
+.hn-device-view,
+.hn-personal-device-card .hn-device-revoke {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 36px;
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--ops-link);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ops-link);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+}
+.hn-device-view:hover {
+  background: var(--ops-pale);
+}
+.hn-device-view:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 3px;
+}
+.hn-personal-device-card .hn-device-revoke {
+  border-color: var(--ops-danger-text);
+  color: var(--ops-danger-text);
+}
+@media (max-width: 380px) {
+  .hn-device-illustration {
+    width: 96px;
+    height: 76px;
+  }
+  .hn-personal-device-card > footer {
+    flex-wrap: wrap;
+  }
+  .hn-personal-device-card > footer > * {
+    flex-basis: 100%;
+  }
 }
 .hn-personal-device-card header,
 .hn-personal-device-heading {

@@ -1,4 +1,8 @@
 export const PERSONAL_VI = {
+  deviceSessionCount: "Số phiên",
+  deviceLastActive: "Hoạt động cuối",
+  sessionsOnDevice: "Các phiên trên thiết bị",
+  viewDeviceSessions: "Xem {count} phiên",
   officeComputer: "Máy tính văn phòng",
   unknownDevices: "{count} bản cài đặt chưa định danh",
   scopeAll: "Toàn hệ thống",
@@ -187,6 +191,10 @@ export const PERSONAL_VI = {
 } as const;
 
 export const PERSONAL_EN = {
+  deviceSessionCount: "Sessions",
+  deviceLastActive: "Last active",
+  sessionsOnDevice: "Sessions on this device",
+  viewDeviceSessions: "View {count} sessions",
   officeComputer: "Office computer",
   unknownDevices: "{count} unidentified installations",
   scopeAll: "Entire system",

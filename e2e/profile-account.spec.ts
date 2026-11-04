@@ -8,6 +8,58 @@ import {
 
 const screenshotRoot = "test-results/profile-account";
 
+test("device cards show desktop, phone and tablet illustrations immediately and open sessions", async ({
+  page,
+}) => {
+  await openFixture(page, { multiple: true });
+  const seed = await page.evaluate(() => {
+    const [desktop, phone, tablet] = window.__profileState.devices;
+    desktop.device_label = "Máy tính văn phòng";
+    phone.device_label = "Samsung S25 Ultra";
+    tablet.device_label = "Samsung Tab S7";
+    tablet.platform = "Android";
+    tablet.client_type = "web";
+    tablet.sessions[0].user_agent =
+      "Mozilla/5.0 (Linux; Android 14; SM-T870) Chrome/130.0 Safari/537.36";
+    return window.__profileState;
+  });
+  await page.addInitScript((state) => {
+    window.__profileSeed = state;
+  }, seed);
+  await page.reload();
+  const cards = page.locator(".hn-personal-device-card");
+  await expect(cards).toHaveCount(3);
+  for (const kind of ["desktop", "phone", "tablet"]) {
+    await expect(page.locator(`[data-device-kind="${kind}"]`)).toBeVisible();
+  }
+  await expect(
+    page.getByRole("button", { name: "Quản lý thiết bị" }),
+  ).toHaveCount(0);
+  await noOverflow(page);
+  await page.screenshot({
+    path: `${screenshotRoot}/device-cards-1440-light.png`,
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", {
+      name: "Xem 2 phiên · Máy tính văn phòng",
+      exact: true,
+    })
+    .click();
+  const details = page.getByRole("dialog", { name: /Chi tiết thiết bị/ });
+  await expect(details).toBeVisible();
+  await expect(details).toContainText("Chrome");
+  await expect(details).toContainText("Edge");
+  await details.locator('button[aria-label="Đóng"]').click();
+  await expect(details).not.toBeVisible();
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await noOverflow(page);
+  await page.screenshot({
+    path: `${screenshotRoot}/device-cards-390-light.png`,
+    fullPage: true,
+  });
+});
+
 test("desktop Chrome without installation metadata displays an office computer", async ({
   page,
 }) => {
@@ -29,9 +81,6 @@ test("desktop Chrome without installation metadata displays an office computer",
     window.__profileSeed = state;
   }, seed);
   await page.reload();
-  await page
-    .getByRole("button", { name: "Quản lý thiết bị", exact: true })
-    .click();
   const card = page.locator(".hn-personal-device-card").first();
   await expect(
     card.getByRole("heading", { name: "Máy tính văn phòng", exact: true }),
@@ -883,6 +932,9 @@ for (const { width, theme } of layouts) {
     ).toHaveCount(0);
     await expect(
       root.getByRole("button", { name: "Quản lý thiết bị" }),
+    ).toHaveCount(0);
+    await expect(
+      root.locator(".hn-personal-device-card").first(),
     ).toBeVisible();
     await expect(
       root
