@@ -363,23 +363,17 @@ export function ProfileSessionsPanel({
           </article>
         ))}
       </div>
-      {!otherCount ? (
-        <section className="hn-personal-card">
-          <h2>{t("auth.personal.noOtherSessions")}</h2>
-          <p className="hn-personal-muted">
-            {t("auth.personal.noOtherSessionsHint")}
-          </p>
-        </section>
+      {otherCount > 0 ? (
+        <div className="hn-personal-actions">
+          <ActionButton
+            kind="revoke"
+            disabled={Boolean(uncertain) || mutation.isPending}
+            onClick={() => setTarget({ kind: "others" })}
+          >
+            {t("auth.personal.revokeOthers")}
+          </ActionButton>
+        </div>
       ) : null}
-      <div className="hn-personal-actions">
-        <ActionButton
-          kind="revoke"
-          disabled={!otherCount || Boolean(uncertain) || mutation.isPending}
-          onClick={() => setTarget({ kind: "others" })}
-        >
-          {t("auth.personal.revokeOthers")}
-        </ActionButton>
-      </div>
       <UiDrawer
         open={Boolean(selected)}
         onClose={() => setSelected(null)}
@@ -526,10 +520,6 @@ export function ProfileSessionsPanel({
                   </>
                 ) : null}
               </dl>
-              <p className="hn-personal-note">
-                <UiIcon name="info" size="sm" />
-                {t("auth.personal.sessionActivityNote")}
-              </p>
               {!selectedSession ? (
                 <section className="hn-personal-device-sessions">
                   <h3>{t("auth.personal.tabsSessions")}</h3>
@@ -555,12 +545,7 @@ export function ProfileSessionsPanel({
                     </article>
                   ))}
                 </section>
-              ) : selectedSession.can_revoke &&
-                !selectedSession.is_current ? null : (
-                <UiAlert tone="info">
-                  {t("auth.personal.currentProtected")}
-                </UiAlert>
-              )}
+              ) : null}
             </>
           )
         ) : null}

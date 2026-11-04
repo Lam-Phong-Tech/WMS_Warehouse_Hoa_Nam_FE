@@ -65,10 +65,11 @@ describe("ProfilePage personal editing", () => {
       screen.queryByRole("button", { name: "Quản lý thiết bị" }),
     ).not.toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", {
-        name: "Không có phiên đăng nhập khác",
-      }),
-    ).toBeVisible();
+      screen.queryByRole("heading", { name: "Không có phiên đăng nhập khác" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Kết thúc các phiên khác" }),
+    ).not.toBeInTheDocument();
   });
   it("validates phone, saves with the opening version and refreshes identity", async () => {
     const update = vi.spyOn(profileService, "updateMe").mockResolvedValue({

@@ -89,9 +89,31 @@ test("desktop Chrome without installation metadata displays an office computer",
   await expect(card).toContainText("Chrome");
   await expect(card).toContainText("Thiết bị hiện tại");
   await expect(page.locator(".hn-personal-policy")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Không có phiên đăng nhập khác" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Kết thúc các phiên khác" }),
+  ).toHaveCount(0);
   await page.screenshot({
     path: `${screenshotRoot}/desktop-chrome-office-computer.png`,
   });
+  await card
+    .getByRole("button", {
+      name: "Xem chi tiết · Máy tính văn phòng",
+      exact: true,
+    })
+    .click();
+  const deviceDetails = page.getByRole("dialog", { name: /Chi tiết thiết bị/ });
+  await deviceDetails
+    .getByRole("button", { name: "Chi tiết phiên · Chrome", exact: true })
+    .click();
+  const sessionDetails = page.getByRole("dialog", { name: /Chi tiết phiên/ });
+  await expect(sessionDetails).toBeVisible();
+  await expect(sessionDetails.locator(".hn-personal-note")).toHaveCount(0);
+  await expect(
+    sessionDetails.getByText("Phiên hiện tại được giữ lại.", { exact: true }),
+  ).toHaveCount(0);
 });
 
 test("profile MFA enrolls locally, reveals recovery codes once and disables with real credentials", async ({
