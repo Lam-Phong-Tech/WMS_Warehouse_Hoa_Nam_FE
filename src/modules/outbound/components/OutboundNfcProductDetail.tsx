@@ -99,8 +99,10 @@ export function OutboundNfcProductDetail({
         <p className="hn-outbound-nfc-note">{t("nfc.outboundHelp")}</p>
       ) : null}
       {tab === "history" ? (
-        <section className="hn-outbound-nfc-history-section">
-          <h3>{t("nfc.outboundHistoryTitle")}</h3>
+        <section
+          className="hn-outbound-nfc-history-section"
+          aria-label={t("nfc.outboundHistoryTitle")}
+        >
           {history.isLoading ? (
             <p role="status">{t("common.loadingData")}</p>
           ) : null}

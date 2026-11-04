@@ -377,11 +377,6 @@
 .hn-outbound-nfc-history-section {
   padding-top: 20px;
 }
-.hn-outbound-nfc-history-section h3 {
-  margin: 0 0 16px;
-  font-size: 16px;
-  color: var(--ops-heading);
-}
 .hn-outbound-nfc-history {
   margin: 0;
 }
