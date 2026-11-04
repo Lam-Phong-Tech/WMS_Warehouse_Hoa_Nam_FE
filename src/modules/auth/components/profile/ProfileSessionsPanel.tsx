@@ -20,6 +20,8 @@ import { captureAuthOwner } from "@/shared/store/auth-owner";
 import { profileService } from "../../services/profile.service";
 import { DeviceIllustration, DevicePlatformMark } from "./DeviceIllustration";
 import { desktopChromePlatform } from "./device-presentation";
+import { ProfileLoginHistory } from "./ProfileLoginHistory";
+import { sessionName } from "./session-presentation";
 import {
   profileKeys,
   type ProfileDevice,
@@ -31,22 +33,6 @@ type RevokeTarget =
   | { kind: "session"; session: ProfileSession }
   | { kind: "device"; device: ProfileDevice }
   | { kind: "others" };
-const sessionName = (session: ProfileSession) => {
-  if (session.client_type === "app")
-    return /scanner/i.test(session.user_agent || "") ? "App Scanner" : "App";
-  const ua = session.user_agent || "";
-  return /Edg\//i.test(ua)
-    ? "Edge"
-    : /Firefox\//i.test(ua)
-      ? "Firefox"
-      : /Chrome\//i.test(ua)
-        ? "Chrome"
-        : /Safari\//i.test(ua)
-          ? "Safari"
-          : session.client_type === "web"
-            ? "Web"
-            : "—";
-};
 
 export function ProfileSessionsPanel({
   userId,
@@ -62,6 +48,8 @@ export function ProfileSessionsPanel({
   const query = useQuery({
     queryKey: profileKeys.devices(userId),
     queryFn: profileService.getDevices,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
   const [selected, setSelected] = useState<{
     device: ProfileDevice;
@@ -128,6 +116,9 @@ export function ProfileSessionsPanel({
       setSelected(null);
       setNotice(t("auth.personal.revokeDone"));
       await client.invalidateQueries({ queryKey: profileKeys.devices(userId) });
+      await client.invalidateQueries({
+        queryKey: profileKeys.deviceHistory(userId),
+      });
     } catch (cause) {
       if (!stillCurrent()) return;
       setTarget(null);
@@ -177,6 +168,9 @@ export function ProfileSessionsPanel({
       ),
     );
     setUncertain(null);
+    await client.invalidateQueries({
+      queryKey: profileKeys.deviceHistory(userId),
+    });
   };
   const counts = (
     <div className="hn-personal-session-counts">
@@ -374,6 +368,7 @@ export function ProfileSessionsPanel({
           </ActionButton>
         </div>
       ) : null}
+      <ProfileLoginHistory key={userId} userId={userId} />
       <UiDrawer
         open={Boolean(selected)}
         onClose={() => setSelected(null)}

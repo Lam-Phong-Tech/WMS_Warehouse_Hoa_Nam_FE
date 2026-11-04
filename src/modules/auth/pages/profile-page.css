@@ -763,6 +763,34 @@
   font-weight: 700;
   line-height: 22px;
 }
+.hn-login-history {
+  margin-top: 24px;
+}
+.hn-login-history > h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--ops-heading);
+}
+.hn-login-history-card > header h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.hn-login-history-card .hn-personal-detail-list {
+  margin-bottom: 0;
+}
+.hn-login-history .hn-personal-actions {
+  align-items: center;
+}
+.hn-login-history .hn-device-view {
+  flex: 0 1 auto;
+}
+.hn-login-history .hn-device-view:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .hn-personal-device-card > header p {
   display: flex;
   align-items: center;

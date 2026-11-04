@@ -43,6 +43,10 @@ describe("ProfilePage security MFA card", () => {
       data: [],
       meta: {},
     });
+    vi.spyOn(profileService, "getDeviceHistory").mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, last_page: 1, total: 0 },
+    });
     vi.spyOn(auditLogService, "getMyPermissionHistory").mockResolvedValue({
       data: [],
       meta: {},

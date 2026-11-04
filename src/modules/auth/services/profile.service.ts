@@ -6,12 +6,26 @@ import type {
   ProfilePreferences,
   ProfileDevice,
   ProfileDevicesResponse,
+  ProfileLoginHistoryEntry,
+  ProfileLoginHistoryResponse,
 } from "../types/profile.types";
 const versionHeaders = (version?: number) =>
   version === undefined
     ? undefined
     : { headers: { "If-Match": String(version) } };
 export const profileService = {
+  async getDeviceHistory(page = 1): Promise<ProfileLoginHistoryResponse> {
+    const result = await http.getPage<ProfileLoginHistoryEntry[]>(
+      "/auth/device-history",
+      {
+        params: { page, per_page: 6 },
+      },
+    );
+    return {
+      data: result.data,
+      meta: result.meta as ProfileLoginHistoryResponse["meta"],
+    };
+  },
   async getDevices(): Promise<ProfileDevicesResponse> {
     const result = await http.getPage<ProfileDevice[]>("/auth/devices");
     return {

@@ -44,6 +44,10 @@ describe("ProfilePage personal editing", () => {
       data: [],
       meta: { account_session_policy: { enabled: true } },
     });
+    vi.spyOn(profileService, "getDeviceHistory").mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, last_page: 1, total: 0 },
+    });
     vi.spyOn(authService, "mfaStatus").mockResolvedValue({
       enabled: false,
       pending: false,

@@ -4,6 +4,7 @@ import type {
   ProfileDevice,
   ProfilePreferences,
   ProfileSession,
+  ProfileLoginHistoryEntry,
 } from "@/modules/auth/types/profile.types";
 import type { MfaStatus } from "@/modules/auth/types/mfa.types";
 
@@ -33,6 +34,7 @@ interface ProfileFixtureState {
   me: FixtureMe;
   preferences: ProfilePreferences;
   devices: ProfileDevice[];
+  loginHistory?: ProfileLoginHistoryEntry[];
   mfa: MfaStatus;
   multiple: boolean;
 }
@@ -319,6 +321,21 @@ export function installProfileTransport() {
   };
   const removeSessions = (ids: string[]) => {
     const state = window.__profileState;
+    state.loginHistory = [
+      ...state.devices
+        .flatMap((group) => group.sessions)
+        .filter(
+          (entry) => ids.includes(entry.id) || ids.includes(entry.session_id),
+        )
+        .map((entry) => ({
+          ...entry,
+          is_current: false,
+          can_revoke: false,
+          status: "SIGNED_OUT" as const,
+          ended_at: new Date().toISOString(),
+        })),
+      ...(state.loginHistory ?? []),
+    ];
     state.devices = state.devices
       .map((group) => ({
         ...group,
@@ -371,8 +388,11 @@ export function installProfileTransport() {
     }
     throw new Error(`Unexpected profile GET ${url}`);
   };
-  http.getPage = async (rawUrl) => {
+  http.getPage = async (rawUrl, config) => {
     const url = new URL(rawUrl, location.origin);
+    new URLSearchParams(config?.params).forEach((value, key) =>
+      url.searchParams.set(key, value),
+    );
     record("GET", url.pathname);
     fault("GET", url.pathname);
     const state = window.__profileState;
@@ -390,6 +410,18 @@ export function installProfileTransport() {
         ],
         meta: { total: 1, current_page: 1, per_page: 200, last_page: 1 },
       } as never;
+    if (url.pathname === "/auth/device-history") {
+      const history = state.loginHistory ?? [];
+      const page = Number(url.searchParams.get("page") || 1);
+      return {
+        data: clone(history.slice((page - 1) * 6, page * 6)),
+        meta: {
+          current_page: page,
+          last_page: Math.max(1, Math.ceil(history.length / 6)),
+          total: history.length,
+        },
+      } as never;
+    }
     if (url.pathname === "/auth/devices") {
       if (window.__profileDevicesUnavailable)
         throw apiError(

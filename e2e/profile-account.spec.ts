@@ -8,6 +8,104 @@ import {
 
 const screenshotRoot = "test-results/profile-account";
 
+test("login history refreshes after a committed revocation with a lost response", async ({
+  page,
+}) => {
+  await openFixture(page, { multiple: true });
+  await page.evaluate(() => {
+    const other = window.__profileState.devices.find(
+      (device) => device.device_id && !device.is_current,
+    )!;
+    window.__profileFaults.push({
+      method: "DELETE",
+      url: `/auth/devices/${other.device_id}`,
+      afterCommit: true,
+    });
+  });
+  await page
+    .getByRole("button", { name: "Đăng xuất thiết bị", exact: true })
+    .click();
+  await confirmRevoke(page);
+  await page
+    .getByRole("button", { name: "Kiểm tra trạng thái", exact: true })
+    .click();
+  await expect(
+    page.getByText("Đã kết thúc phiên được chọn.", { exact: true }),
+  ).toBeVisible();
+  const history = page.getByRole("region", { name: "Lịch sử đăng nhập" });
+  await expect(
+    history.getByText("Đã đăng xuất", { exact: true }),
+  ).toBeVisible();
+});
+
+for (const width of [1440, 390]) {
+  test(`login history keeps signed-out phone logins and paginates at ${width}px`, async ({
+    page,
+  }) => {
+    await openFixture(page, { width });
+    const seed = await page.evaluate(() => {
+      const current = window.__profileState.devices[0].sessions[0];
+      window.__profileState.loginHistory = Array.from(
+        { length: 7 },
+        (_, index) => ({
+          ...current,
+          id: `ended-${index}`,
+          auth_session_id: `history-${index}`,
+          session_id: `history-${index}`,
+          is_current: false,
+          can_revoke: false,
+          device_label: `Điện thoại Android ${index + 1}`,
+          user_agent: "Chrome/140 Android Mobile",
+          platform: "Android",
+          client_type: "web",
+          status: index === 1 ? "EXPIRED" : "SIGNED_OUT",
+          ended_at: "2026-11-04T16:00:00Z",
+        }),
+      );
+      return window.__profileState;
+    });
+    await page.addInitScript((state) => {
+      window.__profileSeed = state;
+    }, seed);
+    await page.reload();
+    const history = page.getByRole("region", { name: "Lịch sử đăng nhập" });
+    await expect(
+      history.getByRole("heading", { name: "Lịch sử đăng nhập" }),
+    ).toBeVisible();
+    await expect(history.locator("article")).toHaveCount(6);
+    await expect(
+      history.getByText("Đã đăng xuất", { exact: true }),
+    ).toHaveCount(5);
+    await expect(history.getByText("Hết hạn", { exact: true })).toBeVisible();
+    await expect(
+      history.getByRole("button", { name: /Đăng xuất/ }),
+    ).toHaveCount(0);
+    await expect(page.locator(".hn-personal-session-counts")).toContainText(
+      "1 phiên đăng nhập",
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBe(true);
+    for (const card of await history.locator("article").all())
+      expect(
+        await card.evaluate((node) => node.scrollWidth <= node.clientWidth + 1),
+      ).toBe(true);
+    await page.screenshot({
+      path: `${screenshotRoot}/login-history-${width}.png`,
+      fullPage: true,
+    });
+    await history.getByRole("button", { name: "Trang sau" }).click();
+    await expect(
+      history.getByText("Điện thoại Android 7", { exact: true }),
+    ).toBeVisible();
+    await expect(history.locator("article")).toHaveCount(1);
+    await history.getByRole("button", { name: "Trang trước" }).click();
+    await expect(history.locator("article")).toHaveCount(6);
+  });
+}
+
 test("profile card pairs have equal heights and stack on mobile", async ({
   page,
 }) => {

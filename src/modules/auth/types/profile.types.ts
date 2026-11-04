@@ -36,6 +36,8 @@ export type ProfilePreferenceChanges = Partial<
 export const profileKeys = {
   preferences: (userId: string) => ["auth", "preferences", userId] as const,
   devices: (userId: string) => ["auth", "devices", userId] as const,
+  deviceHistory: (userId: string) =>
+    ["auth", "device-history", userId] as const,
   avatar: (userId: string, updatedAt?: string) =>
     ["auth", "avatar", userId, updatedAt] as const,
 };
@@ -74,6 +76,14 @@ export interface ProfileDevice {
   can_revoke: boolean;
   session_count: number;
   sessions: ProfileSession[];
+}
+export interface ProfileLoginHistoryEntry extends ProfileSession {
+  status: "SIGNED_OUT" | "EXPIRED";
+  ended_at: string;
+}
+export interface ProfileLoginHistoryResponse {
+  data: ProfileLoginHistoryEntry[];
+  meta: { current_page: number; last_page: number; total: number };
 }
 export interface ProfileDevicesMeta {
   current_session_id?: string;

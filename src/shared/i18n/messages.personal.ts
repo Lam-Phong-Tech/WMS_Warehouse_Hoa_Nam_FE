@@ -1,4 +1,15 @@
 export const PERSONAL_VI = {
+  loginHistory: "Lịch sử đăng nhập",
+  loginHistoryLoading: "Đang tải lịch sử đăng nhập…",
+  loginHistoryError: "Chưa tải được lịch sử đăng nhập.",
+  loginSignedOut: "Đã đăng xuất",
+  loginExpired: "Hết hạn",
+  loginStarted: "Đăng nhập",
+  loginEnded: "Kết thúc",
+  phoneDevice: "Điện thoại",
+  tabletDevice: "Máy tính bảng",
+  historyPrevious: "Trang trước",
+  historyNext: "Trang sau",
   browserQuietPromptHint:
     "Nếu không thấy hộp thoại, bấm biểu tượng thông báo hoặc “Notifications blocked” cạnh địa chỉ trang để cho phép thông báo. Trình duyệt có thể đang dùng lời nhắc im lặng.",
   collapseNavigation: "Thu gọn điều hướng",
@@ -195,6 +206,17 @@ export const PERSONAL_VI = {
 } as const;
 
 export const PERSONAL_EN = {
+  loginHistory: "Login history",
+  loginHistoryLoading: "Loading login history…",
+  loginHistoryError: "Could not load login history.",
+  loginSignedOut: "Signed out",
+  loginExpired: "Expired",
+  loginStarted: "Signed in",
+  loginEnded: "Ended",
+  phoneDevice: "Phone",
+  tabletDevice: "Tablet",
+  historyPrevious: "Previous page",
+  historyNext: "Next page",
   browserQuietPromptHint:
     "If no dialog appears, select the notification icon or “Notifications blocked” beside the site address to allow notifications. Your browser may be using quiet prompts.",
   collapseNavigation: "Collapse navigation",
