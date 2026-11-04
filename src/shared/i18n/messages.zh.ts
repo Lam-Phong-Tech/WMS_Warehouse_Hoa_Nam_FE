@@ -5713,6 +5713,11 @@ export const MESSAGES_ZH: MessageTree = {
       "returnUnknown": "物理返回状态未确定"
     },
     "create": {
+      "helpLabel": "创建冲销单说明",
+      "stepsAria": "创建冲销单步骤",
+      "chooseStep": "选择交易",
+      "adjustStep": "输入调整",
+      "chooseMovement": "选择交易 {code}",
       "title": "创建库存冲销",
       "confirmTitle": "创建库存冲销？",
       "selectedCount": "{count} 已选择项目",

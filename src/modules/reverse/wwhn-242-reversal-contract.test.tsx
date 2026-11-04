@@ -264,11 +264,11 @@ describe("WWHN-242 · REV-00/REV-01 contract", () => {
       <ReversalCreateModal onClose={vi.fn()} onCreated={vi.fn()} />,
     );
 
-    // onRow.onClick gắn trên phần tử dòng, không phải trên ô chữ.
-    const cell = screen.getByText("MOV-RECEIPT-000123");
-    const row = cell.closest('[role="row"]') ?? cell.closest("tr");
-    expect(row).not.toBeNull();
-    fireEvent.click(row!);
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Chọn giao dịch MOV-RECEIPT-000123",
+      }),
+    );
 
     expect(
       await screen.findByText(/Điều chỉnh từ MOV-RECEIPT-000123/i),

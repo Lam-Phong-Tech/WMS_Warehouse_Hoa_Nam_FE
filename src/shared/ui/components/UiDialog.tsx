@@ -42,11 +42,13 @@ export function UiDialog({ title, actions, children, ...rest }: UiDialogProps) {
 export interface UiDrawerProps extends Omit<DrawerProps, "title"> {
   title?: ReactNode;
   width?: number;
+  actions?: ReactNode;
 }
 
 export function UiDrawer({
   title,
   width = 420,
+  actions,
   children,
   ...rest
 }: UiDrawerProps) {
@@ -94,6 +96,7 @@ export function UiDrawer({
           </Box>
         ) : null}
         <Box
+          data-ui-drawer-body
           sx={{
             flex: 1,
             minHeight: 0,
@@ -106,6 +109,21 @@ export function UiDrawer({
             {children}
           </CoordinatedLoadingBoundary>
         </Box>
+        {actions ? (
+          <Box
+            data-ui-drawer-actions
+            sx={{
+              flex: "none",
+              px: { xs: 2, sm: 3 },
+              py: 2,
+              borderTop: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.paper",
+            }}
+          >
+            {actions}
+          </Box>
+        ) : null}
       </Box>
     </Drawer>
   );

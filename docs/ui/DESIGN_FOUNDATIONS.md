@@ -145,6 +145,8 @@ Drawer/modal phải có tên truy cập, focus vào nội dung phù hợp khi m�
 
 ## 7. Form và hành động
 
+Với form nhiều dòng trong drawer (ví dụ tạo phiếu đảo), tách bước **chọn giao dịch → nhập điều chỉnh**; dùng từng khối SKU gồm số lượng gốc/đã điều chỉnh/còn lại và các ô nhập liên quan, thay cho bảng rộng phải kéo ngang. Chuyển bước phải giữ dữ liệu đang nhập. Đặt tổng và nút tạo/lưu qua `actions` của `UiDrawer` để chân drawer nằm ngoài vùng cuộn chính. Chú thích giải thích chung có thể thu vào icon **i** có tooltip khi hover/focus; lỗi, điều kiện chặn và ảnh hưởng tồn kho cần ra quyết định vẫn hiện trực tiếp.
+
 Form dùng label phía trên control; placeholder chỉ gợi ý. Nhãn bắt buộc có `*`, lỗi nằm dưới đúng field và giữ dữ liệu đã nhập. Nhóm field theo mục tiêu nghiệp vụ; hai cột chỉ khi mỗi field còn đủ chỗ đọc. Hàng SKU động đặt **SKU, số lượng và Xóa dòng cùng một hàng điều khiển** ở desktop; căn nút theo thân input, không theo đỉnh label hoặc dòng helper. Trên mobile xếp dọc theo thứ tự nhập, nút xóa vẫn gắn rõ với dòng tương ứng.
 
 Chỉ một primary cho quyết định chính của vùng. Nút đang xử lý giữ kích thước, có spinner/nhãn phù hợp và chặn gửi lặp. Hành động nguy hiểm tách khỏi hành động chính và cần confirm. Nếu nút disabled, lý do phải đọc được ở gần đó. Giữ hành động quan trọng hiển thị bằng chữ; icon-only chỉ dùng khi ý nghĩa đã quen thuộc và có `aria-label`.

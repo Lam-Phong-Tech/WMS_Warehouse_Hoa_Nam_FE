@@ -5591,6 +5591,11 @@ export const MESSAGES_EN: MessageTree = {
       returnUnknown: "Physical return status not determined",
     },
     create: {
+      helpLabel: "About creating a reversal",
+      stepsAria: "Reversal creation steps",
+      chooseStep: "Select transaction",
+      adjustStep: "Enter adjustment",
+      chooseMovement: "Select transaction {code}",
       title: "Create inventory reversal",
       confirmTitle: "Create inventory reversal?",
       selectedCount: "{count} items selected",

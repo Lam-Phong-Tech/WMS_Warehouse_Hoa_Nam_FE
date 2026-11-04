@@ -5584,6 +5584,11 @@ export const MESSAGES_VI = {
       returnUnknown: "Chưa xác định tình trạng hàng về kho",
     },
     create: {
+      helpLabel: "Thông tin tạo phiếu đảo",
+      stepsAria: "Các bước tạo phiếu đảo",
+      chooseStep: "Chọn giao dịch",
+      adjustStep: "Nhập điều chỉnh",
+      chooseMovement: "Chọn giao dịch {code}",
       title: "Tạo phiếu đảo",
       confirmTitle: "Tạo phiếu đảo?",
       selectedCount: "Đã chọn {count} sản phẩm",
