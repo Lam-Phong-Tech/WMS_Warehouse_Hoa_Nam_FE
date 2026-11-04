@@ -14,6 +14,7 @@ import {
   UiDialog,
   UiDrawer,
   UiStatusBadge,
+  type UiStatusTone,
   UiTabs,
   UiTextField,
   useUiConfirm,
@@ -80,6 +81,13 @@ const CANCEL_REASON_MIN = 5;
 const CANCEL_REASON_MAX = 1000;
 /** Ghi chú lý do in lại nhãn — trần BE `reason` max:500. */
 const REPRINT_NOTE_MAX = 500;
+
+const OUTBOUND_STATUS_TONES: Record<string, UiStatusTone> = {
+  DRAFT: "neutral",
+  SCANNING: "info",
+  POSTED: "success",
+  CANCELLED: "error",
+};
 
 /**
  * Lý do in lại nhãn thường gặp (mục 9) + "Khác" cho phép nhập tay.
@@ -710,6 +718,7 @@ export function AlignedOutboundDetailModal({
                 label={t("outbound.detail.fieldStatus")}
                 value={
                   <UiStatusBadge
+                    tone={OUTBOUND_STATUS_TONES[doc.status] ?? "neutral"}
                     label={businessLabel(OUTBOUND_STATUS_LABELS, doc.status)}
                   />
                 }

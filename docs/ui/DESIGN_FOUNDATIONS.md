@@ -40,6 +40,8 @@ Không chép nguyên `dist/hn-components.css` từ UI Kit vào sản phẩm: fil
 
 Màu mang ý nghĩa nghiệp vụ phải có chữ hoặc icon đi kèm. Dùng success cho hoàn tất, warning cho cần kiểm tra, danger cho lỗi/hủy, info cho thông tin; không dùng một màu để biểu diễn hai ý nghĩa đối lập. Nút chính dùng primary cho **một hành động quyết định trong mỗi vùng**.
 
+Với trạng thái phiếu xuất: `DRAFT` → `neutral`, `SCANNING` → `info`, `POSTED` → `success`, `CANCELLED` → `error` (đỏ). Khi dùng `UiStatusBadge`, phải truyền `tone` theo mã trạng thái; chỉ truyền nhãn sẽ dùng màu trung tính mặc định và có thể làm sai ý nghĩa nghiệp vụ.
+
 ### Chữ và kích thước
 
 | Vai trò                        | Cỡ / dòng         | Độ đậm                                     |

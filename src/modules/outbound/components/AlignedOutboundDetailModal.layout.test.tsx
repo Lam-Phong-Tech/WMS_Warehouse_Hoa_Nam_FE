@@ -85,6 +85,28 @@ beforeEach(() => {
 
 afterEach(() => cleanupTestState());
 
+it.each([
+  ["CANCELLED", "Đã hủy", "error"],
+  ["POSTED", "Đã xuất kho", "success"],
+  ["SCANNING", "Đang quét xuất hàng", "info"],
+  ["DRAFT", "Nháp", "secondary"],
+])("uses the semantic status color for %s", async (status, label, color) => {
+  const detail = await services.fetchOutboundDetail();
+  services.fetchOutboundDetail.mockResolvedValue({
+    ...detail,
+    document: { ...detail.document, status },
+  });
+  renderWithProviders(
+    <AlignedOutboundDetailModal documentId="OUT-1" onClose={vi.fn()} />,
+  );
+
+  const badge = (await screen.findByText(label)).closest(".MuiChip-root");
+  expect(badge).toHaveStyle({
+    backgroundColor: `var(--wms-${color}-soft)`,
+    color: `var(--wms-${color === "secondary" ? "secondary-dark" : `${color}-text`})`,
+  });
+});
+
 it("opens the outbound detail as a right panel with grouped label actions", async () => {
   renderWithProviders(
     <AlignedOutboundDetailModal documentId="OUT-1" onClose={vi.fn()} />,
