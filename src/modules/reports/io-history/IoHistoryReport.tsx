@@ -998,7 +998,11 @@ export default function IoHistoryReport() {
                                 {tUi("dashboard.stockMix.colQuantity")}
                               </th>
                               <th>{tUi("inventory.trace.colPerformedBy")}</th>
-                              <th>{tUi("reports.importMatchReport.detail")}</th>
+                              <th
+                                aria-label={tUi(
+                                  "reports.importMatchReport.detail",
+                                )}
+                              />
                             </tr>
                           </thead>
                           <tbody>

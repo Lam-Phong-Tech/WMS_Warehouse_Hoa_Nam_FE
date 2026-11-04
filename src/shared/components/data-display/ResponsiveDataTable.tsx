@@ -29,6 +29,8 @@ const DEFAULT_CELL_MAX_WIDTH = 280;
 export interface ResponsiveTableColumn<T> {
   key: string;
   header: ReactNode;
+  /** Cột chứa nút điều khiển: giữ tên truy cập, không hiện tiêu đề cột/nhãn card. */
+  isAction?: boolean;
   render: (row: T) => ReactNode;
   /** Nhãn hiển thị trên card ở mobile — mặc định dùng `header` nếu không truyền. */
   mobileLabel?: ReactNode;
@@ -124,7 +126,7 @@ export function ResponsiveDataTable<T>({
   onRowClick,
   renderRowActions,
   actionColumnWidth = 96,
-  hideActionHeader = false,
+  hideActionHeader = true,
   mobileBreakpoint = "md",
   sortState: controlledSortState,
   onSortChange: controlledOnSortChange,
@@ -356,18 +358,22 @@ export function ResponsiveDataTable<T>({
                     key={column.key}
                     sx={{
                       display: "flex",
-                      justifyContent: "space-between",
+                      justifyContent: column.isAction
+                        ? "flex-end"
+                        : "space-between",
                       alignItems: "flex-start",
                       gap: 2,
                     }}
                   >
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ flexShrink: 0, pt: "2px" }}
-                    >
-                      {column.mobileLabel ?? column.header}
-                    </Typography>
+                    {!column.isAction ? (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ flexShrink: 0, pt: "2px" }}
+                      >
+                        {column.mobileLabel ?? column.header}
+                      </Typography>
+                    ) : null}
                     <Box sx={{ textAlign: "right", minWidth: 0 }}>
                       {column.render(row)}
                     </Box>
@@ -655,10 +661,13 @@ export function ResponsiveDataTable<T>({
                   <Box
                     component="th"
                     key={column.key}
+                    aria-label={
+                      column.isAction ? t("shared.table.actions") : undefined
+                    }
                     sx={headerCellStyle}
                     data-align={column.align ?? "left"}
                   >
-                    {column.header}
+                    {column.isAction ? null : column.header}
                   </Box>
                 );
               })}

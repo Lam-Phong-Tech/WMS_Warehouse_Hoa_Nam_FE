@@ -140,8 +140,9 @@ export default function TabPendingEvidence() {
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("reports.pendingEvidence.colAction"),
+      isAction: true,
       align: "center",
-      width: 130,
+      width: 80,
       render: (row) => {
         const meta = DOC_META[row.document_type];
         return meta && row.document_id ? (

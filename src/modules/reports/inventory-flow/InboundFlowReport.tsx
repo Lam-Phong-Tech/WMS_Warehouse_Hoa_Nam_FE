@@ -213,7 +213,9 @@ function FilterCombobox({
           }
         }}
       >
-        <span>{fieldLabel}: {current?.label ?? ""}</span>
+        <span>
+          {fieldLabel}: {current?.label ?? ""}
+        </span>
         <Icon name="chevron-down" />
       </button>
       <span className="inbound-filter-combobox__menu" aria-hidden={!open}>
@@ -418,7 +420,9 @@ export default function InboundFlowReport() {
   const supplierFilterOptions = useMemo<FilterOption[]>(
     () => [
       { value: "", label: tUi("dashboard.operations.filterAll") },
-      ...[...new Set([...supplierOptions, appliedSupplier].filter(Boolean))].map((supplier) => ({
+      ...[
+        ...new Set([...supplierOptions, appliedSupplier].filter(Boolean)),
+      ].map((supplier) => ({
         value: supplier,
         label: supplier,
       })),
@@ -429,10 +433,12 @@ export default function InboundFlowReport() {
   const statusFilterOptions = useMemo<FilterOption[]>(
     () => [
       { value: "", label: tUi("dashboard.operations.filterAll") },
-      ...[...new Set([...statusOptions, appliedStatus].filter(Boolean))].map((status) => ({
-        value: status,
-        label: inboundStatusLabel(status),
-      })),
+      ...[...new Set([...statusOptions, appliedStatus].filter(Boolean))].map(
+        (status) => ({
+          value: status,
+          label: inboundStatusLabel(status),
+        }),
+      ),
     ],
     [appliedStatus, statusOptions],
   );
@@ -1213,7 +1219,7 @@ export default function InboundFlowReport() {
                       <th className="inbound-created-by">
                         {tUi("reverse.detail.fieldCreatedBy")}
                       </th>
-                      <th>{tUi("outbound.detail.colAction")}</th>
+                      <th aria-label={tUi("outbound.detail.colAction")} />
                     </tr>
                   </thead>
                   <tbody>
@@ -1266,7 +1272,7 @@ export default function InboundFlowReport() {
                           >
                             {document.created_by_name || "—"}
                           </td>
-                          <td data-label={tUi("outbound.detail.colAction")}>
+                          <td>
                             <RowActionGroup>
                               <RowActionButton
                                 kind="view"

@@ -410,10 +410,10 @@
   line-height: 22px;
 }
 .hn-war04-code-col {
-  width: 18%;
+  width: 20%;
 }
 .hn-war04-case-col {
-  width: 18%;
+  width: 20%;
 }
 .hn-war04-components-col {
   width: 21%;
@@ -428,7 +428,7 @@
   width: 11%;
 }
 .hn-war04-actions-col {
-  width: 12%;
+  width: 8%;
 }
 .hn-war04-table th {
   padding: 12px 18px;
@@ -542,7 +542,7 @@
   color: var(--war-muted);
 }
 .hn-war04-row-actions {
-  justify-content: flex-end;
+  justify-content: center;
 }
 .hn-war04-compact {
   display: none;
@@ -760,10 +760,10 @@
     display: block;
   }
   .hn-war04-code-col {
-    width: 20%;
+    width: 26%;
   }
   .hn-war04-case-col {
-    width: 29%;
+    width: 33%;
   }
   .hn-war04-status-col {
     width: 16%;
@@ -772,7 +772,7 @@
     width: 17%;
   }
   .hn-war04-actions-col {
-    width: 144px;
+    width: 8%;
   }
   .hn-war04-compact .hn-war04-component-summary {
     font-size: 10px;

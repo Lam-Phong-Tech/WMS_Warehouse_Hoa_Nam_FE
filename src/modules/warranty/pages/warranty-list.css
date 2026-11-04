@@ -251,7 +251,7 @@
   width: 5%;
 }
 .hn-war-table col.hn-war-case-col {
-  width: 19%;
+  width: 21%;
 }
 .hn-war-table col.hn-war-product-col {
   width: 21%;
@@ -266,7 +266,10 @@
   width: 12%;
 }
 .hn-war-table col.hn-war-action-col {
-  width: 9%;
+  width: 7%;
+}
+.hn-war-row-actions {
+  justify-content: center;
 }
 .hn-war-table th {
   text-align: left;
@@ -555,7 +558,7 @@
     width: 7%;
   }
   .hn-war-table col.hn-war-case-col {
-    width: 21%;
+    width: 23%;
   }
   .hn-war-table col.hn-war-product-col {
     width: 28%;
@@ -570,7 +573,7 @@
     width: 14%;
   }
   .hn-war-table col.hn-war-action-col {
-    width: 11%;
+    width: 9%;
   }
   .hn-war-tablet-customer {
     display: block;

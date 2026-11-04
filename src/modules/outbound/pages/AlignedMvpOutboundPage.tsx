@@ -491,9 +491,11 @@ export default function AlignedMvpOutboundPage() {
                       "status",
                       "hn-outbound-col-status",
                     )}
-                    <th className="hn-outbound-col-actions">
-                      {tUi("outbound.detail.colAction")}
-                    </th>
+                    <th
+                      className="hn-outbound-col-actions"
+                      scope="col"
+                      aria-label={tUi("outbound.detail.colAction")}
+                    />
                   </tr>
                 </thead>
                 <tbody>

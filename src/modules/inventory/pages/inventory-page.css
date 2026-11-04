@@ -662,18 +662,15 @@
   background: currentColor;
   vertical-align: middle;
 }
-.hn-inventory.hn-mvp-source-screen .hn-inventory-table .hn-row-action {
+.hn-inventory.hn-mvp-source-screen
+  .hn-inventory-table
+  .hn-row-action:not([data-row-action="view"]) {
   border: 0;
   background: transparent;
   box-shadow: none;
   color: var(--ops-link);
 }
 
-.hn-inventory-table
-  .hn-row-action[data-row-action="view"]
-  .MuiButton-startIcon {
-  display: none;
-}
 .hn-inventory-table
   .MuiCardContent-root
   > .MuiBox-root:last-child:has(.hn-row-action) {

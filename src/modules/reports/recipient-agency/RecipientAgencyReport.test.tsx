@@ -194,12 +194,14 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     await user.click(
       screen.getByRole("button", { name: /Đặt lại tìm kiếm/ }),
     );
-    expect(screen.getByText("Đại lý An Phát")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("table")).getByText("Đại lý An Phát"),
+    ).toBeInTheDocument();
   });
 
   it("quyền report.export điều khiển đúng nút Xuất báo cáo", async () => {
     renderReport();
-    await screen.findByText("Đại lý An Phát");
+    await within(await screen.findByRole("table")).findByText("Đại lý An Phát");
     expect(
       screen.getByRole("button", { name: "Xuất báo cáo" }),
     ).toBeEnabled();

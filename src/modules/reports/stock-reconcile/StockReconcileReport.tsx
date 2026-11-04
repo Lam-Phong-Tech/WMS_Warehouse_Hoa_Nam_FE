@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { RowActionButton } from "@/shared/components/actions";
 import {
   hasAnyWmsPermission,
   WMS_ACTION_PERMISSIONS,
@@ -1623,9 +1624,8 @@ export default function StockReconcileReport() {
                                             ) : null}
                                           </td>
                                           <td className="rpt02-row-open">
-                                            <button
-                                              type="button"
-                                              className="rpt02-evidence-link"
+                                            <RowActionButton
+                                              kind="view"
                                               aria-label={`Xem bằng chứng ${row.skuCode}`}
                                               onClick={() => {
                                                 setDetailView(
@@ -1635,9 +1635,7 @@ export default function StockReconcileReport() {
                                                 );
                                                 setSelectedEvidence(row);
                                               }}
-                                            >
-                                              <Icon name="chevron-right" />
-                                            </button>
+                                            />
                                           </td>
                                         </tr>
                                       );

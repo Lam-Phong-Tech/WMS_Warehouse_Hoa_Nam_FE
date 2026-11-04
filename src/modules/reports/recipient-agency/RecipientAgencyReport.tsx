@@ -1095,7 +1095,7 @@ export default function RecipientAgencyReport() {
                     </th>
                     <th>{tUi("updatedUi.text_e59478450504")}</th>
                     <th>{tUi("updatedUi.text_4c5b6a1284da")}</th>
-                    <th>{tUi("reports.importMatchReport.detail")}</th>
+                    <th aria-label={tUi("reports.importMatchReport.detail")} />
                   </tr>
                 </thead>
                 <tbody>
@@ -1223,9 +1223,7 @@ export default function RecipientAgencyReport() {
                           <td data-label={tUi("updatedUi.text_4c5b6a1284da")}>
                             {formatDate(row.latestAt)}
                           </td>
-                          <td
-                            data-label={tUi("reports.importMatchReport.detail")}
-                          >
+                          <td>
                             <RowActionGroup>
                               <RowActionButton
                                 kind="view"

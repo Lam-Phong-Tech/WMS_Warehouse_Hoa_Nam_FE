@@ -789,7 +789,7 @@ export default function PackingLabelPrintReport() {
                       <br />
                       in
                     </th>
-                    <th>{tUi("outbound.detail.colAction")}</th>
+                    <th aria-label={tUi("outbound.detail.colAction")} />
                   </tr>
                 </thead>
                 <tbody>

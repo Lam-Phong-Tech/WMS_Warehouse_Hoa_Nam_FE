@@ -264,10 +264,12 @@ function SectionTitle({
 function DialogTable({
   headers,
   lastColRight = false,
+  hideActionHeader = false,
   children,
 }: {
   headers: string[];
   lastColRight?: boolean;
+  hideActionHeader?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -295,8 +297,17 @@ function DialogTable({
     >
       <thead>
         <tr>
-          {headers.map((header) => (
-            <th key={header}>{header}</th>
+          {headers.map((header, index) => (
+            <th
+              key={header}
+              aria-label={
+                hideActionHeader && index === headers.length - 1
+                  ? header
+                  : undefined
+              }
+            >
+              {hideActionHeader && index === headers.length - 1 ? null : header}
+            </th>
           ))}
         </tr>
       </thead>
@@ -1665,6 +1676,7 @@ export function IamUserScreen({
                       t("iam.user.colAction"),
                     ]}
                     lastColRight
+                    hideActionHeader
                   >
                     {overrides.map((override) => (
                       <tr key={override.user_permission_id}>

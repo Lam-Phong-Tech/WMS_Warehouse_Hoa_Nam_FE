@@ -1748,7 +1748,8 @@ export default function MovementTraceReport() {
               },
               {
                 key: "open",
-                header: "",
+                header: t("common.viewDetail"),
+                isAction: true,
                 width: 80,
                 align: "center",
                 render: (row) => (

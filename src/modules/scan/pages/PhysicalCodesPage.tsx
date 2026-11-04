@@ -62,7 +62,7 @@ import type {
   ScanEvent,
 } from "../types";
 import type { ReactNode } from "react";
-import { ActionButton } from "@/shared/components/actions";
+import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
@@ -191,7 +191,10 @@ export default function PhysicalCodesPage() {
   );
 
   const warehousesQuery = useActiveWarehouses();
-  const warehouses = useMemo(() => warehousesQuery.data ?? [], [warehousesQuery.data]);
+  const warehouses = useMemo(
+    () => warehousesQuery.data ?? [],
+    [warehousesQuery.data],
+  );
 
   useEffect(() => {
     if (!warehouseId && warehouses.length > 0) {
@@ -598,9 +601,11 @@ export default function PhysicalCodesPage() {
     {
       key: "drilldown",
       header: t("scan.physical.colDetail"),
+      isAction: true,
+      width: 80,
       align: "center",
       render: (row) => (
-        <ActionButton
+        <RowActionButton
           kind="view"
           label={t("scan.physical.viewLines")}
           onClick={() => {

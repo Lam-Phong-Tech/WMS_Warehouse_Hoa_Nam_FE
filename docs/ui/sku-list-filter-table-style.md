@@ -31,3 +31,10 @@ Chỉ áp dụng màu và khoảng cách trên cho phần danh sách. Mỗi tab 
 - Chân bảng có viền trên `1px solid --ops-line` và đệm `14px 16px`.
 - Thông tin `Hiển thị ...` và ô chọn số dòng/trang nằm trong cùng một nhóm bên trái, cách nhau `14px`; các nút chuyển trang nằm bên phải.
 - Nhóm bên trái được phép xuống dòng khi hẹp; điều hướng vẫn tự dồn về phải.
+
+## Nút mở chi tiết — chuẩn chung ngày 04/11/2026
+
+- Cột cuối dành cho mở bản ghi không hiện tiêu đề “Thao tác”/“Chi tiết”; giữ ô `th` với `aria-label` để truy cập được.
+- Nút mở chi tiết chỉ hiện mũi tên phải `→` như Danh sách SKU, không hiện chữ Xem/Mở hoặc icon mắt. Dùng `RowActionButton kind="view"`/`kind="detail"`, có nhãn truy cập và tooltip mô tả bản ghi.
+- Nền trong suốt, màu `--ops-link`, hover nền `--ops-pale`; khung nút `40px`, vùng chạm `44px`, focus rõ. Cột chỉ một mũi tên nên gọn khoảng `64–96px`; giữ kế hoạch tổng độ rộng cột `100%`.
+- Áp dụng tương tự cho card mobile và bảng trong drawer. Hành động sửa/xóa/in giữ biểu tượng nghiệp vụ riêng; cột dữ liệu nhật ký “Hành động” vẫn có tiêu đề.

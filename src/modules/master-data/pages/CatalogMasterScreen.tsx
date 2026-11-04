@@ -543,6 +543,7 @@ export function CatalogMasterScreen() {
     {
       key: "actions",
       header: "",
+      isAction: true,
       width: "8%",
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,

@@ -153,7 +153,10 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
                     {!documentId ? <th>{t("nfc.outboundDocument")}</th> : null}
                     <th>{t("nfc.uid")}</th>
                     <th>{t("nfc.chipStatus")}</th>
-                    <th>{t("outbound.detail.colAction")}</th>
+                    <th
+                      scope="col"
+                      aria-label={t("outbound.detail.colAction")}
+                    />
                   </tr>
                 </thead>
                 <tbody>
@@ -225,10 +228,7 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
                               : t("nfc.outboundUnassigned")}
                         </span>
                       </td>
-                      <td
-                        data-field="action"
-                        data-label={t("outbound.detail.colAction")}
-                      >
+                      <td data-field="action">
                         <RowActionButton
                           kind="view"
                           onClick={() => setSelected(item)}

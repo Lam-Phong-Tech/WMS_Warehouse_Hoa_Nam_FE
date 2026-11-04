@@ -1400,11 +1400,7 @@ export default function OutboundFlowReport() {
                         {tUi("outbound.list.colReconcile")}
                       </th>
                       <th>{tUi("dashboard.composition.colStatus")}</th>
-                      <th>
-                        <span className="sr-only">
-                          {tUi("outbound.detail.colAction")}
-                        </span>
-                      </th>
+                      <th aria-label={tUi("outbound.detail.colAction")} />
                     </tr>
                   </thead>
                   <tbody>
@@ -1488,7 +1484,7 @@ export default function OutboundFlowReport() {
                               {outboundStatusLabel(document.status)}
                             </span>
                           </td>
-                          <td data-label={tUi("outbound.detail.colAction")}>
+                          <td>
                             <RowActionGroup>
                               <RowActionButton
                                 kind="view"

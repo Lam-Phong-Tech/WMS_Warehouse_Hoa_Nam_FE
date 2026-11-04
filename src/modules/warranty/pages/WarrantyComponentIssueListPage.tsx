@@ -486,7 +486,10 @@ export default function WarrantyComponentIssueListPage() {
                     sortState={sortState}
                     onSort={requestSort}
                   />
-                  <th>{tUi("outbound.detail.colAction")}</th>
+                  <th
+                    scope="col"
+                    aria-label={tUi("outbound.detail.colAction")}
+                  />
                 </tr>
               </thead>
               <tbody>
@@ -582,7 +585,7 @@ export default function WarrantyComponentIssueListPage() {
                           {displayDate(row.posted_at || row.document_date)}
                         </time>
                       </td>
-                      <td data-label={tUi("outbound.detail.colAction")}>
+                      <td className="hn-war04-action-cell">
                         <RowActionGroup
                           className="hn-war04-row-actions"
                           onClick={(event) => event.stopPropagation()}

@@ -3,6 +3,7 @@ import { useIoHistorySnapshot } from "@/modules/reports/io-history/io-history-ap
 import { DashIcon } from "../components/DashIcon";
 import { dashboardNow, fmt } from "./overview-data";
 import { useT } from "@/shared/i18n/useT";
+import { RowActionButton } from "@/shared/components/actions";
 import "./dashboard-system-views.css";
 
 export function SnapshotRecentTransactions({
@@ -66,7 +67,7 @@ export function SnapshotRecentTransactions({
                 <th>Loại</th>
                 <th>Đối tác</th>
                 <th>Số lượng</th>
-                <th />
+                <th aria-label={t("common.viewDetail")} />
               </tr>
             </thead>
             <tbody>
@@ -91,8 +92,8 @@ export function SnapshotRecentTransactions({
                         : `${document.qty > 0 ? "+" : ""}${fmt(document.qty)}`}
                     </td>
                     <td>
-                      <button
-                        type="button"
+                      <RowActionButton
+                        kind="view"
                         aria-label={`Xem ${document.documentNo}`}
                         onClick={() =>
                           onNavigate(
@@ -101,7 +102,7 @@ export function SnapshotRecentTransactions({
                         }
                       >
                         Xem
-                      </button>
+                      </RowActionButton>
                     </td>
                   </tr>
                 );

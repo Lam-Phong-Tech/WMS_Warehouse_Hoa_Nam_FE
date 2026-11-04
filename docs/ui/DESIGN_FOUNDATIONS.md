@@ -108,7 +108,15 @@ Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-ta
 | Trạng thái         | Pill cao `24px`, radius `20px`, chữ `11px`, chấm `7px`; dùng token semantic tương ứng.                                                                           |
 | Hover/focus        | Hover pha `55% --ops-pale` với `--ops-surface`; focus bàn phím nhìn thấy rõ.                                                                                     |
 
-Mỗi bảng phải có **kế hoạch độ rộng cho mọi cột**, tổng tỷ lệ `100%`. Cột bỏ trống độ rộng có thể hút toàn bộ phần dư và tạo khoảng trắng sai nhịp. Tên cột, thứ tự và nghiệp vụ của từng màn được giữ theo API, không sao chép tên cột SKU sang module khác. Cột thao tác dùng `RowActionButton`/`RowActionGroup` hiện hành; nhãn Xem/Chi tiết rõ, icon-only có accessible name, action không chỉ xuất hiện khi hover trên thiết bị chạm.
+Mỗi bảng phải có **kế hoạch độ rộng cho mọi cột**, tổng tỷ lệ `100%`. Cột bỏ trống độ rộng có thể hút toàn bộ phần dư và tạo khoảng trắng sai nhịp. Tên cột, thứ tự và nghiệp vụ của từng màn được giữ theo API, không sao chép tên cột SKU sang module khác.
+
+### Mở chi tiết trong bảng — chuẩn mũi tên SKU (04/11/2026)
+
+- Mọi nút **Xem / Mở / Chi tiết** dùng để mở bản ghi từ bảng hoặc card mobile hiển thị **một mũi tên phải `→`** theo mẫu Danh sách SKU. Dùng `RowActionButton kind="view"` hoặc `kind="detail"`; nhãn được giữ trong `aria-label` và tooltip, không hiển thị chữ hay icon mắt bên cạnh mũi tên.
+- Cột điều khiển nằm cuối bảng, **không có tiêu đề hiển thị** như “Thao tác”, “Chi tiết”, “Xem”. Giữ ô `<th aria-label="Thao tác">` trống cho công nghệ hỗ trợ. Với `ResponsiveDataTable`, `renderRowActions` mặc định ẩn tiêu đề; cột nút tự khai trong `columns` phải có `isAction: true`. Trên card mobile không lặp nhãn cột điều khiển.
+- Mũi tên dùng `--ops-link`, nền mặc định trong suốt, hover nền `--ops-pale`, focus có viền rõ. Nút khoảng `40×40px`, vùng chạm `44×44px`; cột một mũi tên thường rộng `64–96px`, căn gọn ở bên phải. Phân bổ lại phần rộng dư cho cột dữ liệu.
+- Mũi tên luôn có thể thấy và dùng bằng bàn phím/chạm. Giữ nguyên quyền, hành vi mở, trạng thái khóa/loading; khi xử lý dùng spinner trong cùng khung nút.
+- Các hành động sửa, xóa, in, tải file vẫn dùng icon đúng nghĩa. Cột “Hành động” chứa **dữ liệu sự kiện** trong nhật ký vẫn có tiêu đề; chỉ cột chứa nút điều khiển áp dụng quy tắc header trống.
 
 Khi khung hẹp, dùng `ResponsiveDataTable` chuyển card **hoặc** đặt chiều rộng tối thiểu và cuộn ngang có chủ đích trong khung bảng. Không ép chữ thành các cột dọc; không làm tràn cấp trang. Với bảng rộng trên tablet, ưu tiên cột nhận diện + thông tin quyết định; nếu cuộn, người dùng phải nhận ra vùng có thể cuộn. Sort có trạng thái và `aria-sort`; loading, rỗng, không có kết quả và lỗi tải là các trạng thái khác nhau.
 

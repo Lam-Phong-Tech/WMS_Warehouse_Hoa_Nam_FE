@@ -113,7 +113,10 @@ describe("RPT-08 shared report presentation", () => {
   );
   it("keeps row details and search callbacks unchanged", () => {
     const { container, onOpenRow, onSearch } = mountTable();
-    fireEvent.click(container.querySelector(".rpt08-view-button")!);
+    expect(
+      screen.getByRole("columnheader", { name: "Chi tiết" }),
+    ).toBeEmptyDOMElement();
+    fireEvent.click(screen.getAllByRole("button", { name: "Xem" })[0]);
     expect(onOpenRow).toHaveBeenCalledWith(rows[0]);
     fireEvent.change(container.querySelector(".rpt08-search-box input")!, {
       target: { value: "PN-001" },

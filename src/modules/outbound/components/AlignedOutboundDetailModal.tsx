@@ -629,11 +629,12 @@ export function AlignedOutboundDetailModal({
     },
     {
       key: "actions",
+      isAction: true,
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: "",
       mobileLabel: t("outbound.detail.colAction"),
-      width: 190,
+      width: 80,
       render: (match) => (
         <RowActionGroup>
           {mutable && can("outbound.scan") ? (

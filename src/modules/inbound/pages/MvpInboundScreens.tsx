@@ -1112,6 +1112,7 @@ export function InboundScanModal({
     },
     {
       key: "actions",
+      isAction: true,
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colAction"),

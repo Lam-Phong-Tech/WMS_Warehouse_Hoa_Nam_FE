@@ -18,6 +18,7 @@ import {
   percent,
 } from "./model";
 import { tStatic as tUi } from "@/shared/i18n/useT";
+import { RowActionButton } from "@/shared/components/actions";
 
 export function OverviewCard({
   total,
@@ -518,7 +519,7 @@ export function HistoryTable({
                 {tUi("dashboard.stockMix.colQuantity")}
               </th>
               <th>{tUi("inventory.trace.colPerformedBy")}</th>
-              <th>{tUi("reports.importMatchReport.detail")}</th>
+              <th aria-label={tUi("reports.importMatchReport.detail")} />
             </tr>
           </thead>
           <tbody>
@@ -556,14 +557,11 @@ export function HistoryTable({
                     </td>
                     <td>{row.actor}</td>
                     <td>
-                      <button
-                        type="button"
-                        className="rpt08-view-button"
+                      <RowActionButton
+                        kind="view"
+                        label={tUi("reports.ioHistory.view")}
                         onClick={() => onOpenRow(row)}
-                      >
-                        {tUi("reports.ioHistory.view")}{" "}
-                        <span aria-hidden="true">›</span>
-                      </button>
+                      />
                     </td>
                   </tr>
                 ))

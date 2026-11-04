@@ -18,6 +18,44 @@ const COLUMNS: ResponsiveTableColumn<Row>[] = [
   { key: "code", header: "Phiếu", render: (row) => row.code },
 ];
 
+it("keeps the action column accessible with no visible heading by default", () => {
+  render(
+    <ResponsiveDataTable
+      columns={COLUMNS}
+      rows={ROWS}
+      rowKey={(row) => row.id}
+      renderRowActions={() => <button>Chi tiết</button>}
+    />,
+  );
+  expect(
+    screen.getByRole("columnheader", { name: "Thao tác" }),
+  ).toBeEmptyDOMElement();
+});
+
+it("hides an explicit control column heading without hiding business action data", () => {
+  render(
+    <ResponsiveDataTable
+      columns={[
+        { key: "action", header: "Hành động", render: () => "Đăng nhập" },
+        {
+          key: "controls",
+          header: "Thao tác",
+          isAction: true,
+          render: () => <button>Chi tiết</button>,
+        },
+      ]}
+      rows={ROWS}
+      rowKey={(row) => row.id}
+    />,
+  );
+  expect(
+    screen.getByRole("columnheader", { name: "Hành động" }),
+  ).toHaveTextContent("Hành động");
+  expect(
+    screen.getByRole("columnheader", { name: "Thao tác" }),
+  ).toBeEmptyDOMElement();
+});
+
 /** Bọc hook chọn dòng đúng như các trang danh sách đang dùng. */
 function Harness({ onRowClick }: { onRowClick?: (row: Row) => void }) {
   const rowSelection = useRowSelection(ROWS, (row) => row.id);

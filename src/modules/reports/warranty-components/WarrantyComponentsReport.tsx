@@ -1220,9 +1220,10 @@ export default function WarrantyComponentsReport() {
                       <th style={{ width: 155 }}>
                         {tUi("dashboard.composition.colStatus")}
                       </th>
-                      <th style={{ width: 92 }}>
-                        {tUi("reports.importMatchReport.detail")}
-                      </th>
+                      <th
+                        style={{ width: 92 }}
+                        aria-label={tUi("reports.importMatchReport.detail")}
+                      />
                     </tr>
                   </thead>
                   <tbody>
@@ -1271,7 +1272,7 @@ export default function WarrantyComponentsReport() {
                             <SkeletonLine width="80%" height={22} />
                           </td>
                           <td>
-                            <Box sx={{ color: C.muted }}>Xem&nbsp;&nbsp;›</Box>
+                            <SkeletonLine width="40px" height={20} />
                           </td>
                         </tr>
                       ))
