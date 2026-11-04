@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 import { useLanguageStore } from "@/shared/i18n/language.store";
@@ -11,7 +17,11 @@ vi.mock("@/modules/outbound/services/outboundNfcService", () => ({
   fetchOutboundNfcItems: service.fetchOutboundNfcItems,
 }));
 vi.mock("./OutboundNfcProductDetail", () => ({
-  OutboundNfcProductDetail: () => <div>Chi tiết NFC thử nghiệm</div>,
+  OutboundNfcProductDetail: ({ item }: { item: typeof assigned }) => (
+    <div>
+      Chi tiết NFC thử nghiệm <span>{item.nfc?.hardware_uid}</span>
+    </div>
+  ),
 }));
 
 import { OutboundNfcProducts } from "./OutboundNfcProducts";
@@ -67,7 +77,7 @@ describe("OutboundNfcProducts", () => {
     useLanguageStore.setState({ language: "vi" });
   });
 
-  it("shows active UID and distinct unassigned state without chip actions", async () => {
+  it("numbers rows and keeps UID in detail rather than the product list", async () => {
     renderWithProviders(<OutboundNfcProducts />);
 
     expect(await screen.findByText("SP-0001")).toBeInTheDocument();
@@ -77,13 +87,47 @@ describe("OutboundNfcProducts", () => {
     expect(
       screen.queryByRole("button", { name: "Làm mới" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("04A1B2")).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "STT" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "UID chip" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("04A1B2")).not.toBeInTheDocument();
+    expect(
+      within(screen.getAllByRole("row")[1]).getAllByRole("cell")[0],
+    ).toHaveTextContent("1");
     expect(screen.getByText("SP-0002")).toBeInTheDocument();
     expect(screen.getAllByText("Chưa gắn NFC").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Gán chip" })).toBeNull();
     expect(service.fetchOutboundNfcItems).toHaveBeenCalledWith(
       expect.objectContaining({ documentId: undefined }),
       expect.anything(),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Xem chi tiết" })[0]);
+    expect(await screen.findByText("04A1B2")).toBeInTheDocument();
+  });
+
+  it("continues row numbering across pages and preserves the full product-name tooltip", async () => {
+    const name =
+      "Máy khoan/vặn vít dùng pin không chổi than – DCJZ23-10 (EK/Z) với tên sản phẩm dài";
+    service.fetchOutboundNfcItems.mockResolvedValue({
+      data: [{ ...assigned, sku_name: name }],
+      meta: { total: 23 },
+    });
+    renderWithProviders(<OutboundNfcProducts />);
+    expect(await screen.findByText(name)).toHaveAttribute("title", name);
+    fireEvent.click(screen.getByRole("button", { name: /Go to page 2/ }));
+    await waitFor(() =>
+      expect(service.fetchOutboundNfcItems).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 2 }),
+        expect.anything(),
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        within(screen.getAllByRole("row")[1]).getAllByRole("cell")[0],
+      ).toHaveTextContent(/^11$/),
     );
   });
 

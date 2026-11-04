@@ -53,7 +53,10 @@ http.getPage = async (url) => {
       document_no: "PX-20261103-0001",
       document_status: "POSTED",
       sku_code: "DCPL02-8",
-      sku_name: "Máy khoan pin 20V",
+      sku_name:
+        index === 0
+          ? "Máy khoan/vặn vít dùng pin không chổi than – DCJZ23-10 (EK/Z), bộ sản phẩm với mô tả chi tiết dài cần được rút gọn trong bảng danh sách"
+          : "Máy khoan pin 20V",
       nfc_status: index === 0 ? "ASSIGNED" : "UNASSIGNED",
       nfc: index === 0 ? tag : null,
     })),

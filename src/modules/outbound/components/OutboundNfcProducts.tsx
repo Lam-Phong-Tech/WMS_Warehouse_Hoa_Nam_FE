@@ -148,10 +148,10 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
               >
                 <thead>
                   <tr>
+                    <th scope="col">{t("shared.table.rowNumber")}</th>
                     <th>{t("nfc.item")}</th>
                     <th>{t("nfc.product")}</th>
                     {!documentId ? <th>{t("nfc.outboundDocument")}</th> : null}
-                    <th>{t("nfc.uid")}</th>
                     <th>{t("nfc.chipStatus")}</th>
                     <th
                       scope="col"
@@ -160,8 +160,14 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((item) => (
+                  {rows.map((item, index) => (
                     <tr key={`${item.document_id}:${item.item_id}`}>
+                      <td
+                        data-field="ordinal"
+                        data-label={t("shared.table.rowNumber")}
+                      >
+                        {first + index}
+                      </td>
                       <td data-field="item" data-label={t("nfc.item")}>
                         <strong>
                           {item.item_code || item.serial_number || item.item_id}
@@ -173,13 +179,16 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
                         ) : null}
                       </td>
                       <td data-field="product" data-label={t("nfc.product")}>
-                        <strong>{item.sku_code}</strong>
-                        <small>{item.sku_name}</small>
+                        <strong title={item.sku_code}>{item.sku_code}</strong>
+                        <small title={item.sku_name ?? undefined}>
+                          {item.sku_name}
+                        </small>
                       </td>
                       {!documentId ? (
                         <td
                           data-field="document"
                           data-label={t("nfc.outboundDocument")}
+                          title={item.document_no}
                         >
                           {onOpenDocument ? (
                             <button
@@ -194,28 +203,6 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
                           )}
                         </td>
                       ) : null}
-                      <td data-field="uid" data-label={t("nfc.uid")}>
-                        {nfcUnknown ? (
-                          t("nfc.outboundUnknown")
-                        ) : item.nfc?.hardware_uid ? (
-                          <span className="hn-outbound-nfc-uid">
-                            <code>{item.nfc.hardware_uid}</code>
-                            <button
-                              type="button"
-                              aria-label={t("nfc.outboundCopyUid")}
-                              onClick={() =>
-                                void navigator.clipboard?.writeText(
-                                  item.nfc!.hardware_uid!,
-                                )
-                              }
-                            >
-                              {t("nfc.outboundCopy")}
-                            </button>
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
                       <td data-field="status" data-label={t("nfc.chipStatus")}>
                         <span
                           className="hn-outbound-nfc-badge"

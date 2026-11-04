@@ -22,7 +22,22 @@ for (const mode of ["light", "dark"])
       await expect(
         page.getByRole("combobox", { name: "Trạng thái chip" }),
       ).toBeVisible();
-      await expect(page.getByText("04A1B2C3D4E5F6")).toBeVisible();
+      await expect(page.locator("thead th").first()).toHaveText("STT");
+      await expect(page.locator('td[data-field="ordinal"]').first()).toHaveText(
+        "1",
+      );
+      await expect(page.locator('td[data-field="uid"]')).toHaveCount(0);
+      await expect(page.getByText("04A1B2C3D4E5F6")).toHaveCount(0);
+      const productName = page
+        .locator('td[data-field="product"] small')
+        .first();
+      await expect(productName).toHaveCSS("text-overflow", "ellipsis");
+      await expect(productName).toHaveCSS("white-space", "nowrap");
+      expect(
+        await productName.evaluate(
+          (node) => node.scrollWidth > node.clientWidth,
+        ),
+      ).toBe(true);
       await expect(page.getByRole("button", { name: "Gán chip" })).toHaveCount(
         0,
       );
@@ -30,13 +45,18 @@ for (const mode of ["light", "dark"])
         const firstRow = await page.locator("tbody tr").nth(0).boundingBox();
         const secondRow = await page.locator("tbody tr").nth(1).boundingBox();
         expect(firstRow!.height).toBeGreaterThan(120);
-        expect(secondRow!.y).toBeGreaterThanOrEqual(firstRow!.y + firstRow!.height - 1);
+        expect(secondRow!.y).toBeGreaterThanOrEqual(
+          firstRow!.y + firstRow!.height - 1,
+        );
       }
       await page.screenshot({
         path: `test-results/nfc/items-${mode}-${width}.png`,
         fullPage: true,
       });
       await page.getByRole("button", { name: "Xem chi tiết" }).first().click();
+      await expect(
+        page.getByRole("dialog").getByText("04A1B2C3D4E5F6", { exact: true }),
+      ).toBeVisible();
       await page.getByRole("tab", { name: "Lịch sử liên kết NFC" }).click();
       await expect(
         page.getByRole("listitem").filter({ hasText: "Nguyễn Văn Nam" }),
