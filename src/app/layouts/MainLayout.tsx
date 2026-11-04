@@ -245,6 +245,7 @@ export function MainLayout() {
                 !hideHeaderDetails
               }
               showContextBadges={
+                location.pathname !== ROUTES.IAM_USERS &&
                 location.pathname !== ROUTES.REVERSE &&
                 location.pathname !== ROUTES.NOTIFICATIONS &&
                 !isProfilePage &&
