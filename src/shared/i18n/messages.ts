@@ -5731,6 +5731,8 @@ export const MESSAGES_VI = {
       empty: "Không có phiếu điều chỉnh theo bộ lọc hiện tại",
       open: "Mở",
       unitName: "phiếu điều chỉnh",
+      rangeLabel: "Hiển thị {from}–{to} / {total} phiếu đảo",
+      clearFilters: "Xóa lọc",
     },
   },
   notifications: {

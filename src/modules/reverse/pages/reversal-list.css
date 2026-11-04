@@ -39,34 +39,20 @@
   ) {
   background: var(--ops-canvas);
 }
-/* The existing shared header keeps its real scope/role and translated copy. */
-.hn-system-shell
-  main:has(
-    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
-        [style*="display:none"]
-      )
-      .hn-reversal-screen
-  )
-  section[aria-labelledby="hn-page-title"]
-  h1 {
+/* Page owns the shared header so its action stays with the title. */
+.hn-reversal-screen section[aria-labelledby="hn-page-title"] {
+  align-items: center;
+}
+.hn-reversal-screen section[aria-labelledby="hn-page-title"] h1 {
   color: var(--ops-heading);
   font-size: 24px;
-  line-height: 38px;
-  letter-spacing: -0.02em;
+  line-height: 32px;
 }
-.hn-system-shell
-  main:has(
-    .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
-        [style*="display:none"]
-      )
-      .hn-reversal-screen
-  )
-  section[aria-labelledby="hn-page-title"]
-  h1
-  + div {
-  color: var(--rev-muted);
-  font-size: 14px;
-  line-height: 21px;
+.hn-reversal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 .hn-mvp-screen:has(.hn-reversal-screen) {
   min-width: 0;
@@ -89,7 +75,6 @@
   min-width: 0;
   max-width: 100%;
 }
-.hn-reversal-filters,
 .hn-reversal-list-card {
   border: 1px solid var(--rev-line);
   border-radius: var(--ops-radius-card);
@@ -97,35 +82,31 @@
 }
 .hn-reversal-filters {
   display: grid;
-  grid-template-columns:
-    minmax(240px, 2fr) minmax(170px, 1fr) minmax(125px, 0.6fr)
-    auto;
-  gap: 12px 16px;
-  padding: 14px 16px;
-  align-items: end;
+  grid-template-columns: minmax(240px, 2fr) minmax(210px, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.hn-reversal-filters-has-reset {
+  grid-template-columns: minmax(240px, 2fr) minmax(210px, 1fr) auto;
 }
 .hn-reversal-filter {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   min-width: 0;
 }
-.hn-reversal-filter > label {
-  color: var(--rev-ink);
-  font-size: 12px;
-  line-height: 20px;
-  font-weight: 600;
+.hn-reversal-filters .MuiInputBase-root {
+  height: 48px;
+  min-height: 48px;
+}
+.hn-reversal-screen .hn-reversal-filters > .MuiButton-root:not(.hn-row-action) {
+  min-height: 48px;
+}
+.hn-reversal-menu .hn-reversal-filter-prefix {
+  display: none;
 }
 .hn-reversal-search-icon {
   color: var(--rev-link);
   margin-right: 10px;
   font-size: 18px;
   flex: none;
-}
-.hn-reversal-filter-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
 }
 :is(.hn-reversal-screen, .hn-reversal-dialog)
   .MuiButton-root:not(.hn-row-action) {
@@ -204,8 +185,60 @@
   color: var(--rev-text);
 }
 .hn-reversal-list-card {
-  padding: 16px;
+  padding: 0;
   overflow: hidden;
+}
+.hn-reversal-screen .MuiBox-root:has(> table) {
+  border: 0;
+  border-radius: 0;
+}
+.hn-reversal-screen table {
+  min-width: 960px;
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-reversal-screen table :is(th, td) {
+  padding: 12px 18px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--rev-line);
+}
+.hn-reversal-screen table th {
+  background: var(--ops-table-header);
+  color: var(--rev-muted);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.hn-reversal-screen .hn-sortable-th {
+  max-width: 100%;
+  white-space: normal;
+  text-transform: inherit;
+}
+.hn-reversal-screen .hn-sortable-th > span:first-child {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: normal;
+  text-align: inherit;
+}
+.hn-reversal-screen table :is(th, td):first-child {
+  padding-inline: 8px;
+  text-align: center;
+}
+.hn-reversal-screen table :is(th, td):last-child {
+  padding-inline: 12px;
+}
+.hn-reversal-screen table tbody tr {
+  height: 68px;
+}
+.hn-reversal-screen table td {
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-reversal-screen table td .MuiTypography-root {
+  font-size: 14px;
+  line-height: 22px;
 }
 :is(.hn-reversal-screen, .hn-reversal-dialog) .MuiBox-root:has(> table) {
   border-color: var(--rev-line);
@@ -223,11 +256,11 @@
   vertical-align: middle;
   border-color: var(--rev-line);
 }
-:is(.hn-reversal-screen, .hn-reversal-dialog) table td {
+.hn-reversal-dialog table td {
   padding: 10px 9px;
   border-bottom: 1px solid var(--rev-line);
 }
-:is(.hn-reversal-screen, .hn-reversal-dialog) table th {
+.hn-reversal-dialog table th {
   background: var(--rev-pale);
   color: var(--rev-ink);
   font-size: 12px;
@@ -251,16 +284,18 @@
   box-shadow: -4px 0 8px color-mix(in srgb, var(--rev-ink) 5%, transparent);
 }
 .hn-reversal-screen table th:last-child {
-  background: var(--rev-pale);
+  background: var(--ops-table-header);
 }
 .hn-reversal-code {
   color: var(--rev-ink);
-  font-weight: 600;
+  font-weight: 700;
 }
 .hn-reversal-screen .hn-reversal-source-code {
   color: var(--rev-link);
   background: var(--rev-pale);
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 22px;
+  font-family: inherit;
 }
 :is(.hn-reversal-screen, .hn-reversal-dialog) .MuiChip-root {
   border-radius: 20px;
@@ -288,7 +323,29 @@
   background: currentColor;
 }
 .hn-reversal-pagination {
-  padding-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--rev-line);
+  color: var(--rev-muted);
+  font-size: 12px;
+}
+.hn-reversal-page-size {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  min-width: 0;
+}
+.hn-reversal-pagination > nav {
+  margin-left: auto;
+}
+.hn-reversal-pagination .MuiInputBase-root {
+  min-height: 32px;
+  font-size: 12px;
 }
 .hn-reversal-pagination .MuiTypography-root {
   color: var(--rev-muted);
@@ -427,63 +484,21 @@
   white-space: normal;
   padding-block: 3px;
 }
-@container hn-reversal (max-width: 1000px) {
-  .hn-reversal-filters {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 0.8fr);
-  }
-  .hn-reversal-filter-actions {
-    grid-column: 1 / -1;
-  }
-}
 @container hn-reversal (max-width: 700px) {
   .hn-reversal-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-reversal-filters-has-reset {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
   .hn-reversal-filter-search {
     grid-column: 1 / -1;
   }
-  .hn-reversal-list-card {
-    padding: 12px;
-  }
-}
-@container hn-reversal (max-width: 440px) {
-  .hn-reversal-filters {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-    padding: 12px;
-  }
-  .hn-reversal-filter-actions .MuiButton-root:not(.hn-row-action) {
-    width: 100%;
-    padding-inline: 10px;
-  }
-  .hn-reversal-pagination nav {
-    margin-left: auto;
-  }
 }
 @media (max-width: 600px) {
-  .hn-system-shell
-    main:has(
-      .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
-          [style*="display:none"]
-        )
-        .hn-reversal-screen
-    )
-    section[aria-labelledby="hn-page-title"]
-    h1 {
-    font-size: 24px;
-    line-height: 38px;
-  }
-  .hn-system-shell
-    main:has(
-      .hn-mvp-screen:not([hidden]):not([style*="display: none"]):not(
-          [style*="display:none"]
-        )
-        .hn-reversal-screen
-    )
-    section[aria-labelledby="hn-page-title"]
-    h1
-    + div {
-    font-size: 12px;
+  .hn-reversal-screen section[aria-labelledby="hn-page-title"] h1 {
+    font-size: 20px;
+    line-height: 28px;
   }
   .hn-reversal-dialog .MuiDialog-paper {
     margin: 12px;

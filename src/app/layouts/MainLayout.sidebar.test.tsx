@@ -178,7 +178,12 @@ afterEach(() => {
 });
 
 describe("MainLayout sidebar remains stable across navigation", () => {
-  it("removes the profile header chips and footer only on the profile route", () => {
+  it("lets the reversal page own its header and creation action", () => {
+    setup(ROUTES.REVERSE);
+    expect(screen.queryByTestId("page-context-badges")).not.toBeInTheDocument();
+  });
+
+  it("hides profile header chips without hiding chips on other routes", () => {
     setup(ROUTES.PROFILE);
     expect(screen.getByTestId("page-context-badges")).toHaveTextContent(
       "false",
@@ -188,7 +193,7 @@ describe("MainLayout sidebar remains stable across navigation", () => {
     cleanup();
     setup(ROUTES.MASTER_DATA);
     expect(screen.getByTestId("page-context-badges")).toHaveTextContent("true");
-    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
+    expect(screen.queryByRole("contentinfo")).toBeNull();
   });
 
   it.each([980, 1280, 1440])(

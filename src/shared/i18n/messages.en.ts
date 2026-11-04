@@ -5738,6 +5738,8 @@ export const MESSAGES_EN: MessageTree = {
       empty: "No stock adjustment documents match the current filters",
       open: "Open",
       unitName: "adjustment documents",
+      rangeLabel: "Showing {from}–{to} / {total} reversals",
+      clearFilters: "Clear filters",
     },
   },
   notifications: {

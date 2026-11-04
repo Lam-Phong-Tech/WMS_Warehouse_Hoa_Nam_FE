@@ -38,7 +38,7 @@ import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
  * sẽ có hai tiêu đề chồng nhau. Phần lớn là bản port 1:1 từ mockup đã chốt
  * (Tổng quan vận hành + TRỌN BỘ 8 màn Báo cáo), header của chúng mang thêm
  * eyebrow "BÁO CÁO VẬN HÀNH · RPT-xx", chip và nút riêng.
- * Cấu hình kho và tồn kho dùng AppPageHeader ngay trong trang để gắn nút thao tác vào header.
+ * Cấu hình kho, tồn kho và phiếu đảo dùng AppPageHeader ngay trong trang để gắn nút thao tác vào header.
  *
  * DANH SÁCH NÀY PHẢI ĐỦ CẢ 8 ROUTE `/reports/*` — liệt kê đúng thứ tự sidebar
  * để soát cho dễ. Thiếu route nào thì chính route đó hiện HAI tiêu đề chồng
@@ -47,6 +47,7 @@ import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
 const ROUTES_WITH_OWN_HEADER: string[] = [
   ROUTES.WAREHOUSE_CONFIG,
   ROUTES.INVENTORY,
+  ROUTES.REVERSE,
   ROUTES.PV_PRODUCT_CATALOG,
   ROUTES.DASHBOARD,
   ROUTES.REPORTS_INVENTORY_FLOW,

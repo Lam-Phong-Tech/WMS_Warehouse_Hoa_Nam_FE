@@ -5836,7 +5836,9 @@ export const MESSAGES_ZH: MessageTree = {
       "loadError": "无法加载库存调整列表",
       "empty": "没有与当前过滤器匹配的库存调整文档",
       "open": "打开",
-      "unitName": "调整文件"
+      "unitName": "调整文件",
+      "rangeLabel": "显示 {from}–{to} / {total} 张冲销单",
+      "clearFilters": "清除筛选"
     }
   },
   "notifications": {

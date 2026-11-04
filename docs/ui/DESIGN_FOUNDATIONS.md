@@ -102,7 +102,7 @@ Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-ta
 | Thành phần         | Quy cách bắt buộc                                                                                                                                                |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Bao bảng           | Nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-card` (`8px`); đầu bảng chạm mép bao, không có padding bao quanh.                                   |
-| Đầu bảng           | Nền **`#d2edf7`**, chữ `--ops-muted`, **16/24px, weight 800**, uppercase, letter spacing `0.02em`. Nếu thêm token riêng cho nền này, giữ nguyên giá trị đã chốt. |
+| Đầu bảng           | Nền **`#d2edf7`**, chữ `--ops-muted`, **16/24px, weight 800**, uppercase, letter spacing `0.02em`. Token dùng chung `--ops-table-header` giữ màu này ở light mode và dùng nền semantic tối ở dark mode. |
 | Ô đầu và ô dữ liệu | Padding dọc `12px`, ngang `18px`; ngoại lệ cột STT/hành động theo bảng SKU khi cần; căn giữa theo chiều dọc, đường chia `1px solid --ops-line`.                  |
 | Hàng dữ liệu       | Tối thiểu khoảng `68px` khi có biểu tượng `44px`; nội dung có thể cao hơn khi xuống dòng.                                                                        |
 | Chữ                | `--ops-text`, **14/22px**; mã chính `--ops-heading`, weight 700.                                                                                                 |
