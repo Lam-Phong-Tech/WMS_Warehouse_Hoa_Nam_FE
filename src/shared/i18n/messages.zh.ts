@@ -2157,6 +2157,10 @@ export const MESSAGES_ZH: MessageTree = {
       "trace": "跟踪"
     },
     "trace": {
+      "tabsAria": "追溯部分",
+      "tabRelated": "相关记录",
+      "tabHistory": "历史与调整",
+      "relatedEmpty": "暂无相关记录。",
       "barcode": "条形码",
       "undetermined": "未确定",
       "copy": "复制",

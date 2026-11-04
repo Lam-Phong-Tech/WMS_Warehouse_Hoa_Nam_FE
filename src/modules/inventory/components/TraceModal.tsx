@@ -1,11 +1,10 @@
 import { nullableApiNumber } from "@/shared/api/api-read-values";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Box,
-  Grid,
-  SEMANTIC_LIGHT,
   Stack,
-  UiDialog,
+  UiDrawer,
+  UiTabs,
   UiStatusBadge,
   UiText,
   UiTextField,
@@ -17,9 +16,9 @@ import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import {
-  ResponsiveDataTable,
-  type ResponsiveTableColumn,
-} from "@/shared/components";
+  InventoryRecordList,
+  type InventoryRecordField,
+} from "./InventoryRecordList";
 import {
   WARRANTY_STATUS_COLORS,
   WARRANTY_STATUS_LABELS,
@@ -55,6 +54,8 @@ import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import "./inventory-dialog.css";
+import "./balance-detail.css";
+import "./trace-drawer.css";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -63,14 +64,6 @@ interface Props {
   initialCode?: string;
   onClose: () => void;
 }
-
-const INVENTORY_DIALOG_TABLE_HEADER_STYLE: CSSProperties = {
-  background: "var(--invd-pale)",
-  color: "var(--invd-heading)",
-  fontSize: 12,
-  padding: "10px 9px",
-  borderBottom: "1px solid var(--invd-line)",
-};
 
 type RawRecord = Record<string, unknown>;
 
@@ -107,11 +100,11 @@ const TAG_COLOR_TONES: Record<string, UiStatusTone> = {
 };
 
 function quantityColor(value: number | null): string | undefined {
-  return value === null
+  return value === null || value === 0
     ? undefined
     : value >= 0
-      ? SEMANTIC_LIGHT.successText
-      : SEMANTIC_LIGHT.errorText;
+      ? "var(--ops-success)"
+      : "var(--ops-danger)";
 }
 function text(value: unknown, fallback = "-"): string {
   return value === undefined || value === null ? fallback : String(value);
@@ -127,9 +120,15 @@ function nested(
     : undefined;
 }
 
-function statusLabel(value: unknown, t: TranslateFn): string {
+function statusLabel(value: unknown, t: TranslateFn, sourceType = ""): string {
   const raw = text(value, "");
   if (!raw) return t("inventory.trace.undetermined");
+  const source = sourceType.toUpperCase();
+  if (["ISSUE", "OUTBOUND", "COMPONENT_ISSUE"].includes(source)) {
+    const label =
+      OUTBOUND_STATUS_LABELS[raw as keyof typeof OUTBOUND_STATUS_LABELS];
+    if (label) return label;
+  }
   return (
     INBOUND_STATUS_LABELS[raw as keyof typeof INBOUND_STATUS_LABELS] ??
     OUTBOUND_STATUS_LABELS[raw as keyof typeof OUTBOUND_STATUS_LABELS] ??
@@ -141,11 +140,32 @@ function statusLabel(value: unknown, t: TranslateFn): string {
   );
 }
 
+function statusTone(value: unknown): UiStatusTone {
+  const status = text(value, "");
+  if (["POSTED", "CLOSED", "ACTIVE", "OK", "VALID"].includes(status))
+    return "success";
+  if (["CANCELLED", "REVERSED", "INVALID"].includes(status)) return "error";
+  if (["SCANNING", "PROCESSING"].includes(status)) return "info";
+  if (["PENDING", "CHECKING"].includes(status)) return "warning";
+  return "neutral";
+}
+
+function sourceLabel(value: string, t: TranslateFn): string {
+  const source = value.toUpperCase();
+  const key =
+    source === "OUTBOUND" ? "ISSUE" : source === "INBOUND" ? "RECEIPT" : value;
+  return businessLabel(
+    SOURCE_DOCUMENT_TYPE_LABELS,
+    key,
+    t("inventory.fallback.source"),
+  );
+}
+
 function withRowKey(row: RawRecord, rowKey: string) {
   return { ...row, __rowKey: rowKey } as KeyedRecord;
 }
 
-/** Thay AntTypography.Text `code`: chữ monospace nền soft từ token. */
+/** Identifiers have weight; backgrounds remain reserved for statuses. */
 function CodeText({
   children,
   sx,
@@ -163,8 +183,8 @@ function CodeText({
           fontSize: 13,
           px: 0.5,
           borderRadius: 1,
-          backgroundColor: SEMANTIC_LIGHT.secondarySoft,
-          color: SEMANTIC_LIGHT.textHigh,
+          backgroundColor: "transparent",
+          color: "var(--ops-heading)",
         },
         ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
       ]}
@@ -179,6 +199,7 @@ function CopyableCode({ value }: { value: string }) {
   const t = useT();
   return (
     <Stack
+      className="hn-trace-copy"
       direction="row"
       spacing={0.5}
       useFlexGap
@@ -201,16 +222,10 @@ function CopyableCode({ value }: { value: string }) {
 
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Grid size={{ xs: 12, md: 6 }} className="hn-inventory-detail-field">
-      <Box sx={{ display: "block" }}>
-        <UiText variant="caption" color={SEMANTIC_LIGHT.textMedium}>
-          {label}
-        </UiText>
-      </Box>
-      <UiText variant="body" className="hn-inventory-detail-value">
-        {value}
-      </UiText>
-    </Grid>
+    <div className="hn-trace-field">
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
   );
 }
 
@@ -222,129 +237,76 @@ function DescriptionsBlock({
   children: ReactNode;
 }) {
   return (
-    <Box
-      className="hn-inventory-detail-panel"
-      sx={{
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: "var(--ops-radius-card)",
-        p: 2,
-      }}
-    >
-      <Box
-        component="h6"
-        className="hn-inventory-section-title"
-        sx={{
-          m: 0,
-          mb: 1.5,
-          fontSize: 14,
-          fontWeight: 700,
-          color: SEMANTIC_LIGHT.textHigh,
-        }}
-      >
-        {title}
-      </Box>
-      <Grid container spacing={2}>
-        {children}
-      </Grid>
-    </Box>
+    <section className="hn-trace-section">
+      <h3>{title}</h3>
+      <dl className="hn-trace-fields">{children}</dl>
+    </section>
   );
 }
 
 function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <Box
-      component="h6"
-      className="hn-inventory-section-title"
-      sx={{
-        m: 0,
-        mb: 1,
-        fontSize: 14,
-        fontWeight: 700,
-        color: SEMANTIC_LIGHT.textHigh,
-      }}
-    >
-      {children}
-    </Box>
-  );
+  return <h3 className="hn-trace-section-title">{children}</h3>;
 }
 
 const containerItemColumns = (
   t: TranslateFn,
-): ResponsiveTableColumn<KeyedRecord>[] => [
+): InventoryRecordField<KeyedRecord>[] => [
   {
     key: "container",
     header: t("inventory.trace.colContainer"),
-    width: 160,
     render: (row) => text(row.container_code),
   },
   {
     key: "type",
     header: t("inventory.trace.colType"),
-    width: 120,
-    render: (row) => (
-      <UiStatusBadge
-        tone="neutral"
-        label={businessLabel(
-          CONTAINER_TYPE_LABELS,
-          text(row.container_type, ""),
-          t("inventory.fallback.container"),
-        )}
-      />
-    ),
+    render: (row) =>
+      businessLabel(
+        CONTAINER_TYPE_LABELS,
+        text(row.container_type, ""),
+        t("inventory.fallback.container"),
+      ),
   },
   {
     key: "quantity",
     header: t("inventory.trace.colQty"),
-    width: 100,
-    align: "right",
     render: (row) => formatQuantity(nullableApiNumber(row.quantity)),
   },
   {
     key: "status",
     header: t("inventory.trace.colStatus"),
-    width: 140,
     render: (row) => (
-      <UiStatusBadge tone="neutral" label={statusLabel(row.status, t)} />
+      <UiStatusBadge
+        tone={statusTone(row.status)}
+        label={statusLabel(row.status, t)}
+      />
     ),
   },
 ];
 
-const movementColumns = (
-  t: TranslateFn,
-): ResponsiveTableColumn<RawRecord>[] => [
+const movementColumns = (t: TranslateFn): InventoryRecordField<RawRecord>[] => [
   {
     key: "movement_no",
     header: t("inventory.trace.colMovementCode"),
-    width: 150,
     render: (row) => <CodeText>{text(row.movement_no)}</CodeText>,
   },
   {
     key: "type",
     header: t("inventory.trace.colType"),
-    width: 150,
-    render: (row) => (
-      <UiStatusBadge
-        tone="neutral"
-        label={businessLabel(
-          MOVEMENT_TYPE_LABELS,
-          text(row.movement_type, ""),
-          t("inventory.fallback.movementType"),
-        )}
-      />
-    ),
+    render: (row) =>
+      businessLabel(
+        MOVEMENT_TYPE_LABELS,
+        text(row.movement_type, ""),
+        t("inventory.fallback.movementType"),
+      ),
   },
   {
     key: "sku",
     header: "SKU",
-    width: 100,
     render: (row) => text(row.product_code),
   },
   {
     key: "quantity",
     header: t("inventory.trace.colQty"),
-    width: 100,
-    align: "right",
     render: (row) => {
       const qty = nullableApiNumber(row.qty_delta ?? row.quantity);
       return (
@@ -365,13 +327,11 @@ const movementColumns = (
   {
     key: "doc",
     header: t("inventory.trace.colDocument"),
-    width: 130,
     render: (row) => <CodeText>{text(row.doc_no)}</CodeText>,
   },
   {
     key: "time",
     header: t("inventory.trace.colTime"),
-    width: 150,
     render: (row) =>
       formatDateTime(text(row.occurred_at ?? row.created_at, "") || null),
   },
@@ -379,11 +339,11 @@ const movementColumns = (
 
 const traceLineColumns = (
   t: TranslateFn,
-): ResponsiveTableColumn<KeyedRecord>[] => [
+  sourceType: string,
+): InventoryRecordField<KeyedRecord>[] => [
   {
     key: "sku",
     header: "SKU",
-    width: 130,
     render: (row) => {
       const product = nested(row, "product");
       return (
@@ -406,7 +366,6 @@ const traceLineColumns = (
   {
     key: "name",
     header: t("inventory.trace.colName"),
-    width: 180,
     render: (row) => {
       const product = nested(row, "product");
       return text(
@@ -421,8 +380,6 @@ const traceLineColumns = (
   {
     key: "quantity",
     header: t("inventory.trace.colQty"),
-    width: 100,
-    align: "right",
     render: (row) =>
       formatQuantity(
         nullableApiNumber(row.quantity ?? row.qty ?? row.qty_actual),
@@ -431,11 +388,10 @@ const traceLineColumns = (
   {
     key: "status",
     header: t("inventory.trace.colStatus"),
-    width: 130,
     render: (row) => (
       <UiStatusBadge
-        tone="neutral"
-        label={statusLabel(row.status ?? row.line_status, t)}
+        tone={statusTone(row.status ?? row.line_status)}
+        label={statusLabel(row.status ?? row.line_status, t, sourceType)}
       />
     ),
   },
@@ -443,26 +399,10 @@ const traceLineColumns = (
 
 const chainColumns = (
   t: TranslateFn,
-): ResponsiveTableColumn<CorrectionChainNode>[] => [
-  {
-    key: "role",
-    header: t("inventory.trace.colRole"),
-    width: 140,
-    render: (row) => (
-      <UiStatusBadge
-        tone={row.role === "ORIGINAL" ? "info" : "error"}
-        label={businessLabel(
-          MOVEMENT_ROLE_LABELS,
-          row.role,
-          t("inventory.fallback.movementRole"),
-        )}
-      />
-    ),
-  },
+): InventoryRecordField<CorrectionChainNode>[] => [
   {
     key: "movement_no",
     header: t("inventory.trace.colMovementCode"),
-    width: 170,
     render: (row) =>
       row.movement_no ? (
         <CodeText
@@ -478,9 +418,18 @@ const chainColumns = (
       ),
   },
   {
+    key: "role",
+    header: t("inventory.trace.colRole"),
+    render: (row) =>
+      businessLabel(
+        MOVEMENT_ROLE_LABELS,
+        row.role,
+        t("inventory.fallback.movementRole"),
+      ),
+  },
+  {
     key: "type",
     header: t("inventory.trace.colType"),
-    width: 150,
     render: (row) =>
       businessLabel(
         MOVEMENT_TYPE_LABELS,
@@ -491,8 +440,6 @@ const chainColumns = (
   {
     key: "qty_delta",
     header: t("inventory.trace.colQtyChange"),
-    width: 110,
-    align: "right",
     render: (row) => (
       <Box
         component="span"
@@ -508,13 +455,11 @@ const chainColumns = (
   {
     key: "occurred_at",
     header: t("inventory.trace.colMoment"),
-    width: 160,
     render: (row) => formatDateTime(text(row.occurred_at, "") || null),
   },
   {
     key: "actor",
     header: t("inventory.trace.colPerformedBy"),
-    width: 150,
     render: (row) => text(row.actor),
   },
   {
@@ -535,6 +480,7 @@ const chainColumns = (
 export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
   const t = useT();
   const dialog = useDialogExit(onClose);
+  const [activeTab, setActiveTab] = useState("overview");
   const [lookupCode, setLookupCode] = useState(initialCode);
   const [submittedCode, setSubmittedCode] = useState<string | null>(
     initialCode.trim() || null,
@@ -552,6 +498,7 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
     const trimmed = lookupCode.trim();
     if (!trimmed) return;
     setSubmittedCode(trimmed);
+    setActiveTab("overview");
   };
 
   const resolvedObject = codeTrace?.resolved_object as
@@ -559,26 +506,27 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
   const physicalCode = codeTrace?.physical_code as RawRecord | null | undefined;
 
   return (
-    <UiDialog
+    <UiDrawer
       {...dialog.dialogProps}
-      className="hn-inventory-dialog"
-      maxWidth="lg"
-      fullWidth
+      className="hn-inventory-dialog hn-trace-drawer"
+      width={720}
+      slotProps={{
+        ...dialog.dialogProps.slotProps,
+        paper: { role: "dialog", "aria-modal": true },
+      }}
       title={
-        <Box sx={{ position: "relative", pr: 6 }}>
-          {t("inventory.trace.title")}
+        <Box className="hn-trace-drawer-title">
+          <span>{t("inventory.trace.title")}</span>
           <ActionIconButton
-            className="hn-inventory-dialog-close"
             kind="close"
             label={t("common.close")}
             onClick={dialog.close}
-            sx={{ position: "absolute", right: 10, top: 8 }}
           />
         </Box>
       }
     >
-      <Stack spacing={2} className="hn-inventory-dialog-body">
-        <Stack className="hn-inventory-lookup">
+      <Stack spacing={2} className="hn-inventory-dialog-body hn-trace-body">
+        <Stack className="hn-inventory-lookup hn-trace-lookup">
           <UiTextField
             placeholder={t("inventory.trace.searchPlaceholder")}
             value={lookupCode}
@@ -636,142 +584,141 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
           </Box>
         ) : null}
 
+        {movementQuery.isLoading ? (
+          <p className="hn-trace-state" role="status">
+            {t("common.loadingData")}
+          </p>
+        ) : null}
+        {movement || trace || codeTrace ? (
+          <UiTabs
+            aria-label={t("inventory.trace.tabsAria")}
+            value={activeTab}
+            onChange={setActiveTab}
+            items={[
+              { key: "overview", label: t("inventory.detail.overviewTab") },
+              { key: "related", label: t("inventory.trace.tabRelated") },
+              { key: "history", label: t("inventory.trace.tabHistory") },
+            ]}
+          />
+        ) : null}
         {codeTrace ? (
           <>
-            <DescriptionsBlock title={t("inventory.trace.resultTitle")}>
-              <DetailField
-                label={t("inventory.trace.fieldPhysicalCode")}
-                value={<CopyableCode value={text(physicalCode?.code_value)} />}
-              />
-              <DetailField
-                label={t("inventory.trace.fieldCodeType")}
-                value={
-                  <UiStatusBadge
-                    tone="neutral"
-                    label={carrierLabel(
-                      text(physicalCode?.carrier_type, ""),
-                      t,
-                    )}
-                  />
-                }
-              />
-              <DetailField
-                label={t("inventory.trace.fieldBoundObject")}
-                value={
-                  <UiStatusBadge
-                    tone="info"
-                    label={businessLabel(
-                      SCAN_CLASSIFICATION_LABELS,
-                      codeTrace.resolved_type,
-                      t("inventory.fallback.object"),
-                    )}
-                  />
-                }
-              />
-              <DetailField
-                label={t("inventory.trace.fieldStatus")}
-                value={
-                  <UiStatusBadge
-                    tone={
-                      text(physicalCode?.status, "") === "ACTIVE"
-                        ? "success"
-                        : "neutral"
-                    }
-                    label={statusLabel(physicalCode?.status, t)}
-                  />
-                }
-              />
+            {activeTab === "overview" ? (
+              <DescriptionsBlock title={t("inventory.trace.resultTitle")}>
+                <DetailField
+                  label={t("inventory.trace.fieldPhysicalCode")}
+                  value={
+                    <CopyableCode value={text(physicalCode?.code_value)} />
+                  }
+                />
+                <DetailField
+                  label={t("inventory.trace.fieldCodeType")}
+                  value={carrierLabel(text(physicalCode?.carrier_type, ""), t)}
+                />
+                <DetailField
+                  label={t("inventory.trace.fieldBoundObject")}
+                  value={businessLabel(
+                    SCAN_CLASSIFICATION_LABELS,
+                    codeTrace.resolved_type,
+                    t("inventory.fallback.object"),
+                  )}
+                />
+                <DetailField
+                  label={t("inventory.trace.fieldStatus")}
+                  value={
+                    <UiStatusBadge
+                      tone={
+                        text(physicalCode?.status, "") === "ACTIVE"
+                          ? "success"
+                          : "neutral"
+                      }
+                      label={statusLabel(physicalCode?.status, t)}
+                    />
+                  }
+                />
 
-              {codeTrace.resolved_type === "ITEM" && resolvedObject ? (
-                <>
-                  <DetailField
-                    label="SKU"
-                    value={
-                      <>
+                {codeTrace.resolved_type === "ITEM" && resolvedObject ? (
+                  <>
+                    <DetailField
+                      label="SKU"
+                      value={
+                        <>
+                          <CodeText>
+                            <SkuLink
+                              id={text(resolvedObject.sku_id) || undefined}
+                              code={text(resolvedObject.sku_code)}
+                            />
+                          </CodeText>{" "}
+                          {text(resolvedObject.sku_name)}
+                        </>
+                      }
+                    />
+                    <DetailField
+                      label={t("inventory.trace.fieldItemStatus")}
+                      value={businessLabel(
+                        ITEM_STATUS_LABELS,
+                        text(
+                          resolvedObject.status ?? resolvedObject.item_status,
+                          "",
+                        ),
+                        t("inventory.fallback.status"),
+                      )}
+                    />
+                  </>
+                ) : null}
+
+                {codeTrace.resolved_type === "CONTAINER" && resolvedObject ? (
+                  <>
+                    <DetailField
+                      label={t("inventory.trace.fieldContainerCode")}
+                      value={
+                        <CodeText>
+                          {text(resolvedObject.container_code)}
+                        </CodeText>
+                      }
+                    />
+                    <DetailField
+                      label={t("inventory.trace.fieldContainerType")}
+                      value={businessLabel(
+                        CONTAINER_TYPE_LABELS,
+                        text(resolvedObject.container_type, ""),
+                        t("inventory.fallback.container"),
+                      )}
+                    />
+                  </>
+                ) : null}
+
+                {codeTrace.resolved_type === "SKU" && resolvedObject ? (
+                  <>
+                    <DetailField
+                      label={t("inventory.trace.fieldSkuCode")}
+                      value={
                         <CodeText>
                           <SkuLink
                             id={text(resolvedObject.sku_id) || undefined}
                             code={text(resolvedObject.sku_code)}
                           />
-                        </CodeText>{" "}
-                        {text(resolvedObject.sku_name)}
-                      </>
-                    }
-                  />
-                  <DetailField
-                    label={t("inventory.trace.fieldItemStatus")}
-                    value={
-                      <UiStatusBadge
-                        tone="neutral"
-                        label={businessLabel(
-                          ITEM_STATUS_LABELS,
-                          text(
-                            resolvedObject.status ?? resolvedObject.item_status,
-                            "",
-                          ),
-                          t("inventory.fallback.status"),
-                        )}
-                      />
-                    }
-                  />
-                </>
-              ) : null}
+                        </CodeText>
+                      }
+                    />
+                    <DetailField
+                      label={t("inventory.trace.fieldSkuName")}
+                      value={text(resolvedObject.sku_name)}
+                    />
+                  </>
+                ) : null}
+              </DescriptionsBlock>
+            ) : null}
 
-              {codeTrace.resolved_type === "CONTAINER" && resolvedObject ? (
-                <>
-                  <DetailField
-                    label={t("inventory.trace.fieldContainerCode")}
-                    value={
-                      <CodeText>{text(resolvedObject.container_code)}</CodeText>
-                    }
-                  />
-                  <DetailField
-                    label={t("inventory.trace.fieldContainerType")}
-                    value={
-                      <UiStatusBadge
-                        tone="neutral"
-                        label={businessLabel(
-                          CONTAINER_TYPE_LABELS,
-                          text(resolvedObject.container_type, ""),
-                          t("inventory.fallback.container"),
-                        )}
-                      />
-                    }
-                  />
-                </>
-              ) : null}
-
-              {codeTrace.resolved_type === "SKU" && resolvedObject ? (
-                <>
-                  <DetailField
-                    label={t("inventory.trace.fieldSkuCode")}
-                    value={
-                      <CodeText>
-                        <SkuLink
-                          id={text(resolvedObject.sku_id) || undefined}
-                          code={text(resolvedObject.sku_code)}
-                        />
-                      </CodeText>
-                    }
-                  />
-                  <DetailField
-                    label={t("inventory.trace.fieldSkuName")}
-                    value={text(resolvedObject.sku_name)}
-                  />
-                </>
-              ) : null}
-            </DescriptionsBlock>
-
-            {codeTrace.container_items.length > 0 ? (
+            {activeTab === "related" && codeTrace.container_items.length > 0 ? (
               <div>
                 <SectionLabel>
                   {t("inventory.trace.containerItemsTitle", {
                     count: codeTrace.container_items.length,
                   })}
                 </SectionLabel>
-                <ResponsiveDataTable
-                  headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
-                  maxBodyHeight="clamp(240px, 45dvh, 520px)"
+                <InventoryRecordList
+                  summaryKeys={["quantity", "status"]}
                   rows={codeTrace.container_items.map((row, index) =>
                     withRowKey(
                       row,
@@ -779,23 +726,22 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
                     ),
                   )}
                   rowKey={(row) => row.__rowKey}
-                  columns={containerItemColumns(t)}
+                  fields={containerItemColumns(t)}
                   loading={physicalCodeQuery.isFetching}
                   emptyText={t("inventory.trace.containerItemsEmpty")}
                 />
               </div>
             ) : null}
 
-            {codeTrace.movements.length > 0 ? (
+            {activeTab === "related" && codeTrace.movements.length > 0 ? (
               <div>
                 <SectionLabel>
                   {t("inventory.trace.movementsTitle", {
                     count: codeTrace.movements.length,
                   })}
                 </SectionLabel>
-                <ResponsiveDataTable
-                  headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
-                  maxBodyHeight="clamp(240px, 45dvh, 520px)"
+                <InventoryRecordList
+                  summaryKeys={["type", "quantity", "status"]}
                   rows={codeTrace.movements.map((row, index) =>
                     withRowKey(
                       row,
@@ -803,14 +749,15 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
                     ),
                   )}
                   rowKey={(row) => text(row.__rowKey)}
-                  columns={movementColumns(t)}
+                  fields={movementColumns(t)}
                   loading={physicalCodeQuery.isFetching}
                   emptyText={t("inventory.trace.movementsEmpty")}
                 />
               </div>
             ) : null}
 
-            {(codeTrace.warranty_history ?? []).length > 0 ? (
+            {activeTab === "history" &&
+            (codeTrace.warranty_history ?? []).length > 0 ? (
               <div>
                 <SectionLabel>
                   {t("inventory.trace.warrantyTitle", {
@@ -852,14 +799,11 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
                               t("inventory.fallback.status")
                             }
                           />
-                          <UiText
-                            variant="caption"
-                            color={SEMANTIC_LIGHT.textMedium}
-                          >
+                          <UiText variant="caption" color={"var(--ops-muted)"}>
                             {formatDateTime(text(wc.received_at, "") || null)}
                           </UiText>
                         </Stack>
-                        <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
+                        <dl className="hn-trace-fields">
                           <DetailField
                             label={t("inventory.trace.fieldCustomer")}
                             value={t("inventory.trace.customerValue", {
@@ -871,7 +815,7 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
                             label={t("inventory.trace.fieldDefect")}
                             value={text(wc.defect_name ?? wc.confirmed_defect)}
                           />
-                        </Grid>
+                        </dl>
                         {events.length > 0 ? (
                           <Stack spacing={0.5} sx={{ mt: 1 }}>
                             {events.map((event, eventIndex) => (
@@ -881,7 +825,7 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
                                   String(eventIndex),
                                 )}
                                 variant="caption"
-                                color={SEMANTIC_LIGHT.textMedium}
+                                color={"var(--ops-muted)"}
                               >
                                 {formatDateTime(
                                   text(event.event_at, "") || null,
@@ -915,7 +859,7 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
           </>
         ) : null}
 
-        {movement ? (
+        {activeTab === "overview" && movement ? (
           <DescriptionsBlock title={t("inventory.trace.movementDetailTitle")}>
             <DetailField
               label={t("inventory.trace.fieldMovementCode")}
@@ -942,16 +886,11 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
             />
             <DetailField
               label={t("inventory.trace.fieldMovementType")}
-              value={
-                <UiStatusBadge
-                  tone="neutral"
-                  label={businessLabel(
-                    MOVEMENT_TYPE_LABELS,
-                    text(movement.movement_type ?? movement.source_type, ""),
-                    t("inventory.fallback.movementType"),
-                  )}
-                />
-              }
+              value={businessLabel(
+                MOVEMENT_TYPE_LABELS,
+                text(movement.movement_type ?? movement.source_type, ""),
+                t("inventory.fallback.movementType"),
+              )}
             />
             <DetailField
               label="SKU"
@@ -1010,10 +949,9 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
             />
             <DetailField
               label={t("inventory.trace.fieldSourceDocument")}
-              value={`${businessLabel(
-                SOURCE_DOCUMENT_TYPE_LABELS,
+              value={`${sourceLabel(
                 text(movement.document_type ?? movement.source_type, ""),
-                t("inventory.fallback.source"),
+                t,
               )} — ${text(
                 movement.document_code ??
                   movement.doc_no ??
@@ -1034,64 +972,49 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
 
         {trace ? (
           <>
-            <DescriptionsBlock title={t("inventory.trace.sourceTitle")}>
-              <DetailField
-                label={t("inventory.trace.fieldSourceType")}
-                value={
-                  <UiStatusBadge
-                    tone="neutral"
-                    label={businessLabel(
-                      SOURCE_DOCUMENT_TYPE_LABELS,
-                      trace.sourceType,
-                      t("inventory.fallback.source"),
-                    )}
-                  />
-                }
-              />
-              <DetailField
-                label={t("inventory.trace.fieldDocumentCode")}
-                value={<CopyableCode value={trace.sourceCode} />}
-              />
-              <DetailField
-                label={t("inventory.trace.fieldStatus")}
-                value={
-                  <UiStatusBadge
-                    tone={
-                      trace.status === "POSTED" || trace.status === "CLOSED"
-                        ? "success"
-                        : trace.status === "CANCELLED" ||
-                            trace.status === "REVERSED"
-                          ? "error"
-                          : "info"
-                    }
-                    label={statusLabel(trace.status, t)}
-                  />
-                }
-              />
-              <DetailField
-                label={t("inventory.trace.fieldRecordedAt")}
-                value={formatDateTime(trace.postedAt || null)}
-              />
-              <DetailField
-                label={t("inventory.trace.fieldOperator")}
-                value={trace.actor || EMPTY_TEXT}
-              />
-              {/* Không hiện request_id: đó là mã đối chiếu log kỹ thuật, không
+            {activeTab === "overview" ? (
+              <DescriptionsBlock title={t("inventory.trace.sourceTitle")}>
+                <DetailField
+                  label={t("inventory.trace.fieldSourceType")}
+                  value={sourceLabel(trace.sourceType, t)}
+                />
+                <DetailField
+                  label={t("inventory.trace.fieldDocumentCode")}
+                  value={<CopyableCode value={trace.sourceCode} />}
+                />
+                <DetailField
+                  label={t("inventory.trace.fieldStatus")}
+                  value={
+                    <UiStatusBadge
+                      tone={statusTone(trace.status)}
+                      label={statusLabel(trace.status, t, trace.sourceType)}
+                    />
+                  }
+                />
+                <DetailField
+                  label={t("inventory.trace.fieldRecordedAt")}
+                  value={formatDateTime(trace.postedAt || null)}
+                />
+                <DetailField
+                  label={t("inventory.trace.fieldOperator")}
+                  value={trace.actor || EMPTY_TEXT}
+                />
+                {/* Không hiện request_id: đó là mã đối chiếu log kỹ thuật, không
                 mang nghĩa nghiệp vụ — người dùng kho coi mọi chuỗi mã máy là lỗi
                 hiển thị (phản ánh 10/09/2026). Mã chứng từ nguồn ở trên đã đủ
                 để tra. */}
-            </DescriptionsBlock>
+              </DescriptionsBlock>
+            ) : null}
 
-            {trace.lines.length > 0 ? (
+            {activeTab === "related" && trace.lines.length > 0 ? (
               <div>
                 <SectionLabel>
                   {t("inventory.trace.linesTitle", {
                     count: trace.lines.length,
                   })}
                 </SectionLabel>
-                <ResponsiveDataTable
-                  headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
-                  maxBodyHeight="clamp(240px, 45dvh, 520px)"
+                <InventoryRecordList
+                  summaryKeys={["type", "quantity", "status"]}
                   rows={trace.lines.map((row, index) =>
                     withRowKey(
                       row,
@@ -1099,27 +1022,22 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
                     ),
                   )}
                   rowKey={(row) => row.__rowKey}
-                  columns={traceLineColumns(t)}
+                  fields={traceLineColumns(t, trace.sourceType)}
                   loading={traceQuery.isFetching}
                   emptyText={t("inventory.trace.linesEmpty")}
                 />
               </div>
             ) : null}
 
-            {trace.netEffect ? (
+            {activeTab === "overview" && trace.netEffect ? (
               <DescriptionsBlock title={t("inventory.trace.netEffectTitle")}>
                 <DetailField
                   label={t("inventory.trace.fieldOriginalMovement")}
-                  value={
-                    <UiStatusBadge
-                      tone="neutral"
-                      label={businessLabel(
-                        MOVEMENT_TYPE_LABELS,
-                        trace.netEffect.originalMovementType,
-                        t("inventory.fallback.movementType"),
-                      )}
-                    />
-                  }
+                  value={businessLabel(
+                    MOVEMENT_TYPE_LABELS,
+                    trace.netEffect.originalMovementType,
+                    t("inventory.fallback.movementType"),
+                  )}
                 />
                 <DetailField
                   label={t("inventory.trace.fieldOriginalQty")}
@@ -1134,7 +1052,7 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
                         color:
                           trace.netEffect.reversedQty !== null &&
                           trace.netEffect.reversedQty > 0
-                            ? SEMANTIC_LIGHT.errorText
+                            ? "var(--ops-danger)"
                             : undefined,
                         fontWeight: 600,
                       }}
@@ -1179,7 +1097,7 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
               </DescriptionsBlock>
             ) : null}
 
-            {(trace.chain ?? []).length > 0 ? (
+            {activeTab === "history" && (trace.chain ?? []).length > 0 ? (
               <div>
                 <SectionLabel>
                   {t("inventory.trace.chainTitle", {
@@ -1192,70 +1110,89 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
                         ml: 1,
                         fontSize: 12,
                         fontWeight: 400,
-                        color: SEMANTIC_LIGHT.error,
+                        color: "var(--ops-danger)",
                       }}
                     >
                       {t("inventory.trace.chainTruncated")}
                     </Box>
                   ) : null}
                 </SectionLabel>
-                <ResponsiveDataTable
-                  headerCellStyle={INVENTORY_DIALOG_TABLE_HEADER_STYLE}
-                  maxBodyHeight="clamp(240px, 45dvh, 520px)"
+                <InventoryRecordList
+                  summaryKeys={["role", "type", "qty_delta"]}
                   rows={trace.chain ?? []}
                   rowKey={(row) => row.id}
-                  columns={chainColumns(t)}
+                  fields={chainColumns(t)}
                   loading={traceQuery.isFetching}
                   emptyText={t("inventory.trace.chainEmpty")}
                 />
               </div>
             ) : null}
 
-            <div className="hn-inventory-timeline">
-              <SectionLabel>{t("inventory.trace.timelineTitle")}</SectionLabel>
-              {trace.timeline.length > 0 ? (
-                <UiTimeline
-                  items={trace.timeline.map((item, index) => {
-                    const from = item.from_status
-                      ? statusLabel(item.from_status, t)
-                      : "";
-                    const to = item.to_status
-                      ? statusLabel(item.to_status, t)
-                      : "";
-                    const label =
-                      from && to
-                        ? `${from} → ${to}`
-                        : text(
-                            item.title ??
-                              item.event ??
-                              item.movement_no ??
-                              item.code,
-                            t("inventory.trace.timelineStep", {
-                              index: index + 1,
-                            }),
-                          );
-                    const time = item.created_at ?? item.changed_at;
-                    const formattedTime = time
-                      ? formatDateTime(String(time))
-                      : EMPTY_TEXT;
-                    return {
-                      title: label,
-                      time:
-                        formattedTime === EMPTY_TEXT
-                          ? undefined
-                          : formattedTime,
-                    };
-                  })}
-                />
-              ) : (
-                <UiText variant="secondary">
-                  {t("inventory.trace.timelineEmpty")}
-                </UiText>
-              )}
-            </div>
+            {activeTab === "history" ? (
+              <div className="hn-inventory-timeline">
+                <SectionLabel>
+                  {t("inventory.trace.timelineTitle")}
+                </SectionLabel>
+                {trace.timeline.length > 0 ? (
+                  <UiTimeline
+                    items={trace.timeline.map((item, index) => {
+                      const from = item.from_status
+                        ? statusLabel(item.from_status, t, trace.sourceType)
+                        : "";
+                      const to = item.to_status
+                        ? statusLabel(item.to_status, t, trace.sourceType)
+                        : "";
+                      const label =
+                        from && to
+                          ? `${from} → ${to}`
+                          : text(
+                              item.title ??
+                                item.event ??
+                                item.movement_no ??
+                                item.code,
+                              t("inventory.trace.timelineStep", {
+                                index: index + 1,
+                              }),
+                            );
+                      const time = item.created_at ?? item.changed_at;
+                      const formattedTime = time
+                        ? formatDateTime(String(time))
+                        : EMPTY_TEXT;
+                      return {
+                        title: label,
+                        time:
+                          formattedTime === EMPTY_TEXT
+                            ? undefined
+                            : formattedTime,
+                      };
+                    })}
+                  />
+                ) : (
+                  <UiText variant="secondary">
+                    {t("inventory.trace.timelineEmpty")}
+                  </UiText>
+                )}
+              </div>
+            ) : null}
           </>
         ) : null}
+        {activeTab === "related" &&
+        (movement || trace || codeTrace) &&
+        !(
+          trace?.lines.length ||
+          codeTrace?.container_items.length ||
+          codeTrace?.movements.length
+        ) ? (
+          <p className="hn-trace-state">{t("inventory.trace.relatedEmpty")}</p>
+        ) : null}
+        {activeTab === "history" &&
+        !trace &&
+        (movement || codeTrace) &&
+        !traceQuery.isLoading &&
+        !(codeTrace?.warranty_history ?? []).length ? (
+          <p className="hn-trace-state">{t("inventory.trace.timelineEmpty")}</p>
+        ) : null}
       </Stack>
-    </UiDialog>
+    </UiDrawer>
   );
 }

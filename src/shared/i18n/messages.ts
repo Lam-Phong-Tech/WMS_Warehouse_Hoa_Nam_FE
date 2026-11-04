@@ -1642,6 +1642,10 @@ export const MESSAGES_VI = {
       trace: "Truy vết",
     },
     trace: {
+      tabsAria: "Các phần truy vết",
+      tabRelated: "Dữ liệu liên quan",
+      tabHistory: "Lịch sử & điều chỉnh",
+      relatedEmpty: "Chưa có dữ liệu liên quan để hiển thị.",
       barcode: "Mã vạch",
       undetermined: "Chưa xác định",
       copy: "Sao chép",

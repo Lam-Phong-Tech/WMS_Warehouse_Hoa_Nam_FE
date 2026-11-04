@@ -1649,6 +1649,10 @@ export const MESSAGES_EN: MessageTree = {
       trace: "Trace",
     },
     trace: {
+      tabsAria: "Trace sections",
+      tabRelated: "Related records",
+      tabHistory: "History & adjustments",
+      relatedEmpty: "No related records to display.",
       barcode: "Barcode",
       undetermined: "Not determined",
       copy: "Copy",
