@@ -86,7 +86,7 @@ export function UiDrawer({
               px: { xs: 2, sm: 3 },
               py: { xs: 1.75, sm: 2.25 },
               borderBottom: "1px solid",
-              borderColor: "divider",
+              borderColor: "var(--ops-divider)",
               bgcolor: "background.paper",
             }}
           >
@@ -117,7 +117,7 @@ export function UiDrawer({
               px: { xs: 2, sm: 3 },
               py: 2,
               borderTop: "1px solid",
-              borderColor: "divider",
+              borderColor: "var(--ops-divider)",
               bgcolor: "background.paper",
             }}
           >

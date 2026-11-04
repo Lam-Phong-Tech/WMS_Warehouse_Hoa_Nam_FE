@@ -432,8 +432,8 @@
 }
 .hn-war04-table th {
   padding: 12px 18px;
-  background: #d2edf7;
-  color: var(--war-muted);
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
   text-align: left;
   font-size: 16px;
   line-height: 24px;

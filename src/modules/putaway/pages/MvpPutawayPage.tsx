@@ -681,10 +681,10 @@ export default function MvpPutawayPage() {
               sortState={historySort.sortState}
               onSortChange={historySort.requestSort}
               headerCellStyle={{
-                backgroundColor: "#d2edf7",
+                backgroundColor: "var(--ops-table-header)",
                 backgroundImage: "none",
                 borderBottom: "1px solid var(--ops-line)",
-                color: "var(--ops-muted)",
+                color: "var(--ops-heading)",
                 fontSize: 16,
                 fontWeight: 800,
                 lineHeight: "24px",

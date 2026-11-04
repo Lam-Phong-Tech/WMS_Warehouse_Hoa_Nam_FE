@@ -979,9 +979,9 @@ export function PvProductCatalogPage() {
                 actionColumnWidth={96}
                 hideActionHeader
                 headerCellStyle={{
-                  backgroundColor: "#d2edf7",
+                  backgroundColor: "var(--ops-table-header)",
                   backgroundImage: "none",
-                  color: "var(--pv-muted)",
+                  color: "var(--ops-heading)",
                   fontSize: 16,
                   lineHeight: "24px",
                   fontWeight: 800,

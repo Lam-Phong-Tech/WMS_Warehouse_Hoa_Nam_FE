@@ -299,7 +299,7 @@ export default function ReversalPage() {
           <ResponsiveDataTable<ReversalDocument>
             headerCellStyle={{
               background: "var(--ops-table-header)",
-              color: "var(--rev-muted)",
+              color: "var(--ops-heading)",
               fontSize: 16,
               lineHeight: "24px",
               fontWeight: 800,

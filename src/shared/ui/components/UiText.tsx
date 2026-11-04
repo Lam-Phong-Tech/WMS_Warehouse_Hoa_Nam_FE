@@ -14,13 +14,13 @@ const VARIANT_SX = {
     fontSize: TYPOGRAPHY.heading.fontSize,
     fontWeight: TYPOGRAPHY.heading.fontWeight,
     lineHeight: TYPOGRAPHY.heading.lineHeight,
-    color: S.textHigh,
+    color: S.textStrong,
   },
   cardTitle: {
     fontSize: TYPOGRAPHY.cardTitle.fontSize,
     fontWeight: TYPOGRAPHY.cardTitle.fontWeight,
     lineHeight: TYPOGRAPHY.cardTitle.lineHeight,
-    color: S.textHigh,
+    color: S.textStrong,
   },
   body: {
     fontSize: TYPOGRAPHY.fontSizeBody,

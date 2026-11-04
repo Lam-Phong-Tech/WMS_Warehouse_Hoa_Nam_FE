@@ -72,7 +72,7 @@ import "./inventory-page.css";
 const SEARCH_DEBOUNCE_MS = 250;
 const TABLE_HEADER_STYLE = {
   background: "var(--inv-table-header)",
-  color: "var(--ops-muted)",
+  color: "var(--ops-heading)",
   fontSize: 16,
   fontWeight: 800,
   lineHeight: "24px",

@@ -456,8 +456,8 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   font-size: 14px;
 }
 .hn-outbound-table th {
-  background: #d2edf7;
-  color: var(--out-muted);
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;

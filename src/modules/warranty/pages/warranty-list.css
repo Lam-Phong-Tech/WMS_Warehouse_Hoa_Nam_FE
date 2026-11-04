@@ -279,8 +279,8 @@
   line-height: 24px;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background: #d2edf7;
-  color: var(--ops-muted);
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
   vertical-align: middle;
 }
 .hn-war-table td {

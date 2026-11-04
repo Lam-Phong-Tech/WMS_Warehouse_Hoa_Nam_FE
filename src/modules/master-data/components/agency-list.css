@@ -122,8 +122,8 @@
   text-align: center;
 }
 .hn-agency-screen .agy-table th {
-  background: #d2edf7;
-  color: var(--agy-muted);
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
@@ -211,7 +211,7 @@
 }
 .hn-agency-screen .agy-table tbody tr:hover .agy-detail-link,
 .hn-agency-screen .agy-table .agy-detail-link:is(:hover, :focus-visible) {
-  background: #dff0f7;
+  background: var(--ops-pale);
 }
 .hn-agency-screen .agy-table td[colspan] {
   height: auto;

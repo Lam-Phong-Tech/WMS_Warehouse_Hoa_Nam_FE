@@ -1,7 +1,7 @@
 ---
 title: Hoa Nam WMS — Chuẩn giao diện Web thống nhất
 status: active
-version: 2.0
+version: 2.1
 updated: 2026-11-04
 owner: Frontend
 applies_to: Web Admin (desktop, tablet, mobile)
@@ -45,6 +45,21 @@ Màu mang ý nghĩa nghiệp vụ phải có chữ hoặc icon đi kèm. Dùng s
 Với trạng thái phiếu xuất: `DRAFT` → `neutral`, `SCANNING` → `info`, `POSTED` → `success`, `CANCELLED` → `error` (đỏ). Khi dùng `UiStatusBadge`, phải truyền `tone` theo mã trạng thái; chỉ truyền nhãn sẽ dùng màu trung tính mặc định và có thể làm sai ý nghĩa nghiệp vụ.
 
 ### Chữ và kích thước
+
+Tiêu đề trang/vùng/drawer và nhãn đầu bảng dùng `--ops-heading` (`--wms-text-strong`), không dùng màu muted/disabled hoặc giảm opacity. `--ops-muted` dành cho thông tin phụ. Áp dụng quy tắc tương phản dưới đây cho cả light và dark.
+
+### Độ tương phản và đường chia — phòng lỗi ngày 04/11/2026
+
+- Chọn **cặp chữ + nền theo cùng theme**: đầu bảng dùng `--ops-table-header` + `--ops-heading`; nút mũi tên dùng `--ops-link` trên nền trong suốt, hover/focus dùng `--ops-pale`. Không gán trực tiếp `#d2edf7`/`#dff0f7` vào CSS trang hoặc inline style: màu sáng chỉ được khai trong token light.
+- Chữ thường/nhãn bảng tối thiểu **4.5:1** trên nền thực; tiêu đề drawer đặt mục tiêu **7:1**; icon tương tác tối thiểu **3:1** ở trạng thái thường/hover/focus. Không dùng màu chữ phụ để làm tiêu đề dịu đi.
+- `--ops-line` dành cho viền nhẹ/trang trí. Đường chia cần nhận biết giữa header/body, nhóm thông tin và footer của drawer dùng **`1px solid --ops-divider`**, tối thiểu **3:1** với surface. `UiDrawer` áp dụng token này ở header/footer; `--wms-divider`/palette `divider` giữ viền nhẹ hiện hành cho bảng và thành phần khác. Không xóa đường chia để làm giao diện phẳng; không tăng độ đậm toàn bộ viền trang trí.
+- Drawer dùng surface đặc `--ops-surface`, chữ semantic và **`background-image: none`** tại theme MUI dùng chung. Lớp phủ trắng theo elevation của MUI làm nền dark bị bạc màu và thay đổi tương phản; chỉ backdrop ngoài drawer được làm tối, không giảm opacity cả drawer hoặc tiêu đề.
+- Kiểm tra **computed style trong trình duyệt**, gồm CSS biến, inline style, selector theo trang, portal và hover/focus. Kiểm tra CSS nguồn hoặc palette riêng lẻ chưa chứng minh màu cuối cùng đúng. Chạy `npm run test:ui-contrast` khi sửa theme, bảng, mũi tên hoặc drawer; bộ hồi quy render màn SKU thật và nút mũi tên dùng chung ở light/dark, `1440/1024/768/390/320px`, đo tương phản và giữ ảnh ở `test-results/ui-contrast/`.
+- `npm run ui:tokens` cấm hai màu light cũ `#d2edf7`/`#dff0f7` ngoài thư mục token **kể cả khi baseline cũ còn cho phép hex trong file**. Chạy thêm `node scripts/check-ui-tokens.mjs --self-test` khi thay guard. Không tăng baseline để bỏ qua lỗi mới.
+
+Lỗi gốc đã ghi nhận: bảng/hover dùng màu light cố định trong khi chữ đổi sang dark; tiêu đề dùng màu phụ; divider quá nhạt; MUI Drawer elevation thêm gradient trắng. Khi gặp lỗi tương tự, kiểm tra token và cascade tại component dùng chung trước, rồi sửa các override cùng mẫu trong module. Phạm vi kiểm chứng từng màn phải được báo riêng, không suy ra toàn bộ hệ thống đã đạt chỉ từ bộ hồi quy SKU.
+
+### Thang chữ
 
 | Vai trò                        | Cỡ / dòng         | Độ đậm                                     |
 | ------------------------------ | ----------------- | ------------------------------------------ |
@@ -103,7 +118,7 @@ Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-ta
 | Thành phần         | Quy cách bắt buộc                                                                                                                                                |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Bao bảng           | Nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-card` (`8px`); đầu bảng chạm mép bao, không có padding bao quanh.                                   |
-| Đầu bảng           | Nền **`#d2edf7`**, chữ `--ops-muted`, **16/24px, weight 800**, uppercase, letter spacing `0.02em`. Token dùng chung `--ops-table-header` giữ màu này ở light mode và dùng nền semantic tối ở dark mode. |
+| Đầu bảng           | Nền `--ops-table-header` (**`#d2edf7`** ở light, nền semantic tối ở dark), chữ `--ops-heading`, **16/24px, weight 800**, uppercase, letter spacing `0.02em`. Không gán màu sáng trực tiếp tại trang. |
 | Ô đầu và ô dữ liệu | Padding dọc `12px`, ngang `18px`; ngoại lệ cột STT/hành động theo bảng SKU khi cần; căn giữa theo chiều dọc, đường chia `1px solid --ops-line`.                  |
 | Hàng dữ liệu       | Tối thiểu khoảng `68px` khi có biểu tượng `44px`; nội dung có thể cao hơn khi xuống dòng.                                                                        |
 | Chữ                | `--ops-text`, **14/22px**; mã chính `--ops-heading`, weight 700.                                                                                                 |

@@ -508,8 +508,8 @@
   padding-inline: 12px;
 }
 .hn-sku-screen table.sku-table th {
-  background: #d2edf7;
-  color: var(--sku-muted);
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
@@ -603,7 +603,7 @@
 }
 .hn-sku-screen table.sku-table tbody tr[data-clickable="true"]:hover .hn-sku-detail-link,
 .hn-sku-detail-link:is(:hover, :focus-visible) {
-  background: #dff0f7;
+  background: var(--ops-pale);
 }
 .hn-sku-screen table.sku-table .muted {
   color: var(--sku-muted);
@@ -939,11 +939,12 @@
   justify-content: space-between;
   gap: 16px;
   padding: 18px 25px;
-  border-bottom: 1px solid var(--sku-line);
+  border-bottom: 1px solid var(--ops-divider);
 }
 .hn-sku-detail-top strong {
-  color: var(--sku-muted);
-  font-size: 13px;
+  color: var(--sku-ink);
+  font-size: 18px;
+  line-height: 26px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -982,12 +983,12 @@
   margin-top: 22px;
 }
 .hn-sku-detail-section {
-  border-top: 1px solid var(--sku-line);
+  border-top: 1px solid var(--ops-divider);
   padding: 24px 26px 26px;
 }
 .hn-sku-detail-section h3 {
   margin: 0 0 20px;
-  color: var(--sku-muted);
+  color: var(--sku-ink);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -1023,7 +1024,7 @@
   flex-wrap: wrap;
   gap: 10px;
   padding: 16px 25px;
-  border-top: 1px solid var(--sku-line);
+  border-top: 1px solid var(--ops-divider);
   background: var(--sku-surface);
 }
 .hn-sku-detail-footer .MuiButton-root:last-child {

@@ -492,8 +492,8 @@
 }
 .pv-catalog-page .pv-catalog-table thead th {
   padding: 12px 18px;
-  color: var(--pv-muted);
-  background-color: #d2edf7;
+  color: var(--ops-heading);
+  background-color: var(--ops-table-header);
   background-image: none;
   border-bottom-color: var(--pv-line);
   font-size: 16px;
@@ -503,7 +503,7 @@
   text-transform: uppercase;
 }
 .pv-catalog-page .pv-catalog-table thead th button {
-  color: var(--pv-muted);
+  color: inherit;
   font: inherit;
 }
 .pv-catalog-page .pv-catalog-table tbody td {
@@ -538,7 +538,7 @@
   cursor: pointer;
 }
 .pv-catalog-detail-link:is(:hover, :focus-visible) {
-  background: #dff0f7;
+  background: var(--ops-pale);
 }
 .pv-catalog-detail-link:disabled {
   opacity: 0.5;

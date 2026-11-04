@@ -13,7 +13,7 @@
   --inv-muted: var(--ops-muted);
   --inv-line: var(--ops-line);
   --inv-card: var(--ops-surface);
-  --inv-table-header: #d2edf7;
+  --inv-table-header: var(--ops-table-header);
   --inv-pale: var(--ops-pale);
   --inv-cta: var(--ops-primary);
   --inv-accent: var(--ops-link);
@@ -304,7 +304,7 @@
 }
 .hn-inventory-table table th,
 .hn-inventory-table .hn-sortable-th {
-  color: var(--inv-muted);
+  color: var(--ops-heading);
   font-size: 16px;
   font-weight: 800;
 }

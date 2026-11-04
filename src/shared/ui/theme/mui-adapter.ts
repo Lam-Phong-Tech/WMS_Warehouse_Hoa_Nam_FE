@@ -250,6 +250,13 @@ function buildMuiTheme(mode: ThemeModeName) {
             exit: MOTION.duration.normal,
           },
         },
+        styleOverrides: {
+          paper: {
+            backgroundColor: S.bgSurface,
+            backgroundImage: "none",
+            color: S.textHigh,
+          },
+        },
       },
       MuiTableRow: {
         styleOverrides: {

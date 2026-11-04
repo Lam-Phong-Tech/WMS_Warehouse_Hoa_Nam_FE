@@ -204,7 +204,7 @@
 }
 .hn-reversal-screen table th {
   background: var(--ops-table-header);
-  color: var(--rev-muted);
+  color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;

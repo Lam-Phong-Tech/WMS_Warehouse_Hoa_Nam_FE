@@ -455,8 +455,8 @@
   padding-inline: 12px;
 }
 .hn-defect-screen table.defect-table th {
-  background: #d2edf7;
-  color: var(--defect-muted);
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
@@ -556,7 +556,7 @@
   cursor: pointer;
 }
 .hn-defect-detail-link:is(:hover, :focus-visible) {
-  background: #dff0f7;
+  background: var(--ops-pale);
 }
 .hn-defect-detail-link:disabled {
   opacity: 0.5;

@@ -118,7 +118,7 @@
 }
 .hn-effective-table th {
   background: var(--ops-table-header);
-  color: var(--ops-muted);
+  color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
@@ -290,7 +290,7 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
-  color: var(--ops-muted);
+  color: var(--ops-heading);
   background: var(--ops-table-header);
   text-transform: uppercase;
 }

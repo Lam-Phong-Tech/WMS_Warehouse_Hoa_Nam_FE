@@ -288,7 +288,7 @@
 .hn-iam-roles .hn-iam-matrix-table thead th {
   padding: 12px 8px;
   background: var(--ops-table-header);
-  color: var(--ops-muted);
+  color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
@@ -544,7 +544,7 @@
 .hn-iam-role-review-head {
   background: var(--ops-table-header);
   border-radius: 8px 8px 0 0;
-  color: var(--ops-muted);
+  color: var(--ops-heading);
   font-weight: 800;
 }
 .hn-iam-role-drawer .hn-iam-role-review-head {

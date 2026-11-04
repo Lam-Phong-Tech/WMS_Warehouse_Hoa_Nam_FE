@@ -1057,8 +1057,8 @@
 .hn-inbound-list .hn-inbound-table th {
   padding-block: 12px;
   border-radius: 0;
-  background: #d2edf7;
-  color: var(--in-muted);
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
@@ -1089,7 +1089,7 @@
 }
 .hn-inbound-detail-link:hover,
 .hn-inbound-detail-link:focus-visible {
-  background: #dff0f7;
+  background: var(--ops-pale);
 }
 .hn-inbound-detail-link > svg {
   font-size: 18px;

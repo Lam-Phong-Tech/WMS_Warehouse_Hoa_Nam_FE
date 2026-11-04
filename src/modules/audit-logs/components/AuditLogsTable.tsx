@@ -165,7 +165,7 @@ export function AuditLogsTable({
     <ResponsiveDataTable
       headerCellStyle={{
         backgroundColor: "var(--ops-table-header)",
-        color: "var(--ops-muted)",
+        color: "var(--ops-heading)",
         fontSize: 16,
         fontWeight: 800,
         lineHeight: "24px",
