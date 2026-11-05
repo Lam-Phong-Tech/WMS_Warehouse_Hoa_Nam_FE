@@ -1,3 +1,7 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
@@ -15,7 +19,6 @@ import {
 } from "@/shared/ui";
 import {
   CheckCircleOutlined,
-  DownloadOutlined,
   FileTextOutlined,
   WarningOutlined,
 } from "@/shared/components/icons";
@@ -315,23 +318,32 @@ export default function ImportQualityBaseline() {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const exportXlsx = async () => {
+  const exportXlsx = async (choice: ReportExportChoice) => {
     setExporting(true);
     setExportError("");
     try {
-      await downloadImportQualityExport({
-        from_date: from,
-        to_date: to,
-        ...(result ? { result } : {}),
-        ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
-        ...(issuesOnly ? { issues_only: "1" } : {}),
-      });
+      await downloadImportQualityExport(
+        {
+          from_date: from,
+          to_date: to,
+          ...(result ? { result } : {}),
+          ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
+          ...(issuesOnly ? { issues_only: "1" } : {}),
+        },
+        reportWorkbookOptions(
+          choice,
+          ["Mã lần nhập", "Import ID", "ID"],
+          filteredRows.map((row) => row.id),
+          pagination.pageRows.map((row) => row.id),
+        ),
+      );
     } catch (error) {
       setExportError(
         error instanceof Error
           ? error.message
           : "Không thể tải báo cáo nhập liệu.",
       );
+      throw error;
     } finally {
       setExporting(false);
     }
@@ -424,15 +436,29 @@ export default function ImportQualityBaseline() {
             justifyContent: { xs: "flex-start", md: "flex-end" },
           }}
         >
-          <UiButton
-            appearance="filled"
-            startIcon={<DownloadOutlined />}
+          <ReportExportAction
+            title={t("reportExport.importQuality")}
+            fileStem={"BaoCaoNhapLieu_" + from + "-" + to}
+            total={filteredRows.length}
+            currentCount={pagination.pageRows.length}
+            sections={reportExportSections(
+              t("reportExport.importDocuments"),
+              "none",
+            )}
+            context={[
+              [
+                t("reportExport.period"),
+                range[0].format("DD/MM/YYYY") +
+                  " – " +
+                  range[1].format("DD/MM/YYYY"),
+              ],
+            ]}
+            disabled={
+              invalid || source.isLoading || source.isFetching || source.isError
+            }
             loading={exporting}
-            disabled={invalid || source.isLoading || kind !== "all"}
-            onClick={() => void exportXlsx()}
-          >
-            {tUi("reports.traceability.exportReport")}
-          </UiButton>
+            onExport={exportXlsx}
+          />
 
           <ReportWarehouseCard />
         </Stack>

@@ -577,10 +577,15 @@ export default function TabImportQuality() {
         hint={`${fmt(filteredBatches.length)} batch`}
         actions={
           <ExportButtons
+            total={filteredBatches.length}
             exporting={exporter.exporting}
             disabled={period.invalid || loading}
-            onExport={(format) =>
-              void exporter.exportReport(format, {
+            onExport={(format, choice) =>
+              exporter.exportReport(format, {
+                workbook: {
+                  filename: choice.filename,
+                  sectionIds: choice.sectionIds,
+                },
                 reportCode: "import-match",
                 fileStem: "import-scan-batch",
                 fileSuffix: `-${period.from}-${period.to}`,

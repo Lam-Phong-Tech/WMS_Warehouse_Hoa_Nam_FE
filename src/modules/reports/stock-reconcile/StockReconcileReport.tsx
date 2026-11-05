@@ -1,3 +1,4 @@
+import { ReportExportButton } from "../components/ReportExportAction";
 import { ReportFilterCombobox } from "../components/ReportFilterCombobox";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
@@ -890,15 +891,10 @@ export default function StockReconcileReport() {
                   !canExport ? tUi("updatedUi.text_b363686f3815") : undefined
                 }
               >
-                <button
-                  type="button"
-                  className="rpt02-export"
+                <ReportExportButton
                   onClick={() => setShowExport(true)}
-                  disabled={!canExport || filteredRows.length === 0 || updating}
-                >
-                  <Icon name="arrow-right" />
-                  {" " + tUi("updatedUi.text_869645273267")}
-                </button>
+                  disabled={!canExport || displayRows.length === 0 || updating}
+                />
               </span>
             </div>
           </header>
@@ -1761,7 +1757,8 @@ export default function StockReconcileReport() {
       )}
       {showExport ? (
         <StockReconcileExportDialog
-          rows={filteredRows}
+          rows={displayRows}
+          pageRows={visibleRows}
           from={applied.from}
           to={applied.to}
           asOf={reconciliation.snapshot.as_of}

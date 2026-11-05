@@ -1253,10 +1253,15 @@ export default function ImportMatchReport() {
             sx={{ flexWrap: "wrap", gap: 0.75, alignItems: "center" }}
           >
             <ExportButtons
+              total={batches.length}
               exporting={exporter.exporting}
               disabled={invalid || loading}
-              onExport={(format) =>
-                void exporter.exportReport(format, {
+              onExport={(format, choice) =>
+                exporter.exportReport(format, {
+                  workbook: {
+                    filename: choice.filename,
+                    sectionIds: choice.sectionIds,
+                  },
                   reportCode: "import-match",
                   fileStem:
                     context === "IMPORT"

@@ -1,3 +1,7 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
@@ -13,7 +17,6 @@ import {
 } from "@/shared/ui";
 import {
   CheckCircleOutlined,
-  DownloadOutlined,
   FileTextOutlined,
   InboxOutlined,
   ReloadOutlined,
@@ -487,16 +490,20 @@ export default function WarrantyComponentsReport() {
     pagination.reset();
   };
 
-  const exportXlsx = () => {
-    void exporter.exportReport("xlsx", {
+  const exportXlsx = (choice: ReportExportChoice) => {
+    return exporter.exportReport(choice.format, {
+      workbook: reportWorkbookOptions(
+        choice,
+        ["Case"],
+        filteredRows.map((row) => row.caseNo),
+        pagination.pageRows.map((row) => row.caseNo),
+      ),
       reportCode: "warranty-defects",
       fileStem: "bao-cao-bao-hanh",
       fileSuffix: "-" + from + "-" + to,
       filters: {
         from_date: from,
         to_date: to,
-        ...(status ? { status } : {}),
-        ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
       },
     });
   };
@@ -612,17 +619,39 @@ export default function WarrantyComponentsReport() {
             justifyContent: { xs: "flex-start", md: "flex-end" },
           }}
         >
-          <UiButton
-            appearance="filled"
-            startIcon={<DownloadOutlined />}
+          <ReportExportAction
+            title={tUi("reportExport.warranty")}
+            fileStem={"BaoCaoBaoHanh_" + from + "-" + to}
+            total={filteredRows.length}
+            currentCount={pagination.pageRows.length}
+            sections={reportExportSections(
+              tUi("reportExport.warrantyDocuments"),
+              "components",
+            )}
+            context={[
+              [
+                tUi("reportExport.period"),
+                range[0].format("DD/MM/YYYY") +
+                  " – " +
+                  range[1].format("DD/MM/YYYY"),
+              ],
+              [
+                tUi("reportExport.filters"),
+                [status, keyword].filter(Boolean).join(" · ") ||
+                  tUi("dashboard.operations.filterAll"),
+              ],
+            ]}
+            disabled={
+              invalid ||
+              loading ||
+              offline ||
+              hardError ||
+              partial ||
+              refreshing
+            }
             loading={exporting}
-            disabled={invalid || loading || offline}
-            onClick={exportXlsx}
-          >
-            {exporting
-              ? tUi("outbound.detail.preparing")
-              : tUi("reports.traceability.exportReport")}
-          </UiButton>
+            onExport={exportXlsx}
+          />
 
           <ReportWarehouseCard />
         </Stack>

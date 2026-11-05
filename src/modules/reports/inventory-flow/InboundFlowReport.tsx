@@ -1,3 +1,7 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { renderSortIcon } from "@/shared/components/data-display/renderSortIcon";
@@ -637,9 +641,15 @@ export default function InboundFlowReport() {
     sawUpdateLoading.current = false;
   };
 
-  const runExport = () => {
-    if (exportReason) return;
-    void exporter.exportReport("xlsx", {
+  const runExport = (choice: ReportExportChoice) => {
+    if (exportReason) return false;
+    return exporter.exportReport(choice.format, {
+      workbook: reportWorkbookOptions(
+        choice,
+        ["Mã phiếu"],
+        searchedDocuments.map((row) => row.document_no),
+        pageDocuments.map((row) => row.document_no),
+      ),
       reportCode: "document-history",
       fileStem: "bao-cao-nhap-kho",
       fileSuffix: `-${appliedRange.from}-${appliedRange.to}`,
@@ -733,17 +743,35 @@ export default function InboundFlowReport() {
             className="inbound-tooltip"
             data-tooltip={exportReason || undefined}
           >
-            <button
-              type="button"
-              className="inbound-export-button"
+            <ReportExportAction
+              title={tUi("reportExport.inbound")}
+              fileStem={
+                "BaoCaoNhapKho_" + appliedRange.from + "-" + appliedRange.to
+              }
+              total={searchedDocuments.length}
+              currentCount={pageDocuments.length}
+              sections={reportExportSections(
+                tUi("reportExport.inboundDocuments"),
+              )}
+              context={[
+                [
+                  tUi("reportExport.period"),
+                  dayjs(appliedRange.from).format("DD/MM/YYYY") +
+                    " – " +
+                    dayjs(appliedRange.to).format("DD/MM/YYYY"),
+                ],
+                [
+                  tUi("reportExport.filters"),
+                  [appliedSupplier, appliedStatus, query]
+                    .filter(Boolean)
+                    .join(" · ") || tUi("dashboard.operations.filterAll"),
+                ],
+              ]}
               disabled={Boolean(exportReason)}
-              onClick={runExport}
-            >
-              <Icon name="arrow-right" />
-              {exporter.exporting
-                ? tUi("updatedUi.text_f218a6c991e2")
-                : tUi("updatedUi.text_869645273267")}
-            </button>
+              loading={Boolean(exporter.exporting)}
+              disabledReason={exportReason || undefined}
+              onExport={runExport}
+            />
           </span>
         </div>
       </header>

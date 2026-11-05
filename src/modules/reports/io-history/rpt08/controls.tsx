@@ -1,3 +1,4 @@
+import { ReportExportButton } from "../../components/ReportExportAction";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { SelectControl } from "./SelectControl";
@@ -5,7 +6,6 @@ import type { Dayjs } from "dayjs";
 import { Link } from "react-router-dom";
 import {
   CloseOutlined,
-  DownloadOutlined,
   SwapOutlined,
   UserOutlined,
   WarningOutlined,
@@ -86,22 +86,11 @@ export function HeaderActions({
           {tUi("masterData.common.viewOnly")}
         </span>
       ) : (
-        <button
-          type="button"
-          className="rpt08-export-button"
+        <ReportExportButton
           disabled={exportDisabled}
-          aria-busy={exportState === "exporting" || undefined}
+          loading={exportState === "exporting"}
           onClick={onExport}
-        >
-          {exportState === "exporting" ? (
-            <span className="rpt08-spinner" aria-hidden="true" />
-          ) : (
-            <DownloadOutlined />
-          )}
-          {exportState === "exporting"
-            ? tUi("updatedUi.text_f218a6c991e2")
-            : tUi("reports.traceability.exportReport")}
-        </button>
+        />
       )}
     </div>
   );

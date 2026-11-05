@@ -1,3 +1,7 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
@@ -341,8 +345,14 @@ export default function PackingLabelPrintReport() {
     }
   };
 
-  const exportXlsx = () => {
-    void exporter.exportReport("xlsx", {
+  const exportXlsx = (choice: ReportExportChoice) => {
+    return exporter.exportReport(choice.format, {
+      workbook: reportWorkbookOptions(
+        choice,
+        ["Packing Label"],
+        filteredRows.map((row) => row.labelCode),
+        pageRows.map((row) => row.labelCode),
+      ),
       reportCode: "label-log",
       fileStem: "packing-label-log",
       fileSuffix: "-" + period.from + "-" + period.to,
@@ -418,17 +428,34 @@ export default function PackingLabelPrintReport() {
           <p>{t("reports.packingLabel.description")}</p>
         </div>
         <div className="hn-pkg-label__header-actions hn-report-warehouse-actions">
-          <UiButton
-            appearance="outlined"
+          <ReportExportAction
+            title={tUi("reportExport.labels")}
+            fileStem={"BaoCaoInNhan_" + period.from + "-" + period.to}
+            total={new Set(filteredRows.map((row) => row.labelCode)).size}
+            currentCount={new Set(pageRows.map((row) => row.labelCode)).size}
+            sections={reportExportSections(
+              tUi("reportExport.labelDocuments"),
+              "none",
+            )}
+            context={[
+              [tUi("reportExport.period"), period.from + " – " + period.to],
+              [
+                tUi("reportExport.filters"),
+                [statusFilter, keyword, tableKeyword]
+                  .filter(Boolean)
+                  .join(" · ") || tUi("dashboard.operations.filterAll"),
+              ],
+            ]}
             disabled={
-              Boolean(exporter.exporting) || showFullFailure || draftInvalid
+              Boolean(exporter.exporting) ||
+              showFullFailure ||
+              draftInvalid ||
+              report.loading ||
+              !online
             }
-            onClick={exportXlsx}
-          >
-            {exporter.exporting
-              ? tUi("updatedUi.text_3de340210fb9")
-              : tUi("reports.traceability.exportReport")}
-          </UiButton>
+            loading={Boolean(exporter.exporting)}
+            onExport={exportXlsx}
+          />
           <UiButton
             appearance="tonal"
             startIcon={<PrinterOutlined />}

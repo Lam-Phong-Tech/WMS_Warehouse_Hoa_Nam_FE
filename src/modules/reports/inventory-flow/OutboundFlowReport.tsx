@@ -1,3 +1,7 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import { useReportExport } from "@/modules/reports/operations/report-export";
 import { ReportDateRangePicker } from "../components/ReportDateRangePicker";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
@@ -441,6 +445,7 @@ function KpiSkeleton() {
 }
 
 export default function OutboundFlowReport() {
+  const exporter = useReportExport();
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [chartOpen, setChartOpen] = useState(true);
   const [progressOpen, setProgressOpen] = useState(true);
@@ -880,6 +885,56 @@ export default function OutboundFlowReport() {
           </h1>
         </div>
         <div className="outbound-heading-actions">
+          <ReportExportAction
+            title={tUi("reportExport.outbound")}
+            fileStem={
+              "BaoCaoXuatKho_" + appliedRange.from + "-" + appliedRange.to
+            }
+            total={searchedDocuments.length}
+            currentCount={pageDocuments.length}
+            sections={reportExportSections(
+              tUi("reportExport.outboundDocuments"),
+            )}
+            context={[
+              [
+                tUi("reportExport.period"),
+                formatDay(appliedRange.from) +
+                  " – " +
+                  formatDay(appliedRange.to),
+              ],
+              [
+                tUi("reportExport.filters"),
+                [appliedRecipient, appliedStatus, query]
+                  .filter(Boolean)
+                  .join(" · ") || tUi("dashboard.operations.filterAll"),
+              ],
+            ]}
+            disabled={
+              updating ||
+              invalidRange ||
+              Boolean(error) ||
+              outboundMetadataQuery.isError
+            }
+            loading={Boolean(exporter.exporting)}
+            onExport={(choice) =>
+              exporter.exportReport(choice.format, {
+                reportCode: "document-history",
+                fileStem: "bao-cao-xuat-kho",
+                filters: {
+                  from_date: appliedRange.from,
+                  to_date: appliedRange.to,
+                  doc_type: "outbound",
+                  ...(appliedStatus ? { status: appliedStatus } : {}),
+                },
+                workbook: reportWorkbookOptions(
+                  choice,
+                  ["Mã phiếu"],
+                  searchedDocuments.map((row) => row.document_no),
+                  pageDocuments.map((row) => row.document_no),
+                ),
+              })
+            }
+          />
           {canImport ? (
             <button
               type="button"

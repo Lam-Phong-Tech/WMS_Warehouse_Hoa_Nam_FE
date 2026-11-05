@@ -1,3 +1,7 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportFilterCombobox } from "../components/ReportFilterCombobox";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { TraceModal } from "@/modules/inventory/components/TraceModal";
@@ -26,7 +30,6 @@ import { reportRangePresets } from "@/modules/reports/operations/report-range-pr
 import {
   CheckCircleOutlined,
   CloseOutlined,
-  DownloadOutlined,
   FileTextOutlined,
   HomeOutlined,
   InboxOutlined,
@@ -899,10 +902,16 @@ export default function MovementTraceReport() {
     readError: () => report.error,
   });
 
-  const exportXlsx = async () => {
+  const exportXlsx = async (choice: ReportExportChoice) => {
     setExporting(true);
     try {
-      const rowCount = await runReportExport("xlsx", {
+      const rowCount = await runReportExport(choice.format, {
+        workbook: reportWorkbookOptions(
+          choice,
+          ["Movement ID"],
+          ledgerFilter.rows.map((row) => row.id),
+          ledgerRows.map((row) => row.id),
+        ),
         reportCode: MOVEMENT_TRACE_REPORT_CODE,
         fileStem: "movement-trace",
         fileSuffix: fromDate && toDate ? `-${fromDate}-${toDate}` : "",
@@ -923,6 +932,7 @@ export default function MovementTraceReport() {
       toast.error(
         getApiErrorMessage(error, t("reports.movementTrace.exportFailed")),
       );
+      return false;
     } finally {
       setExporting(false);
     }
@@ -980,20 +990,29 @@ export default function MovementTraceReport() {
           spacing={0.75}
           sx={{ alignItems: "center", flexWrap: "wrap", rowGap: "6px" }}
         >
-          <UiButton
-            className="trace-export-button"
-            type="button"
-            size="small"
-            startIcon={<DownloadOutlined />}
-            loading={exporting}
-            disabled={!canExport}
-            title={
-              canExport ? undefined : t("reports.movementTrace.exportDenied")
+          <ReportExportAction
+            title={t("reportExport.trace")}
+            fileStem={
+              "BaoCaoTruyVet_" + (fromDate ?? "") + "-" + (toDate ?? "")
             }
-            onClick={() => void exportXlsx()}
-          >
-            {t("reports.traceability.exportReport")}
-          </UiButton>
+            total={ledgerFilter.rows.length}
+            currentCount={ledgerRows.length}
+            sections={reportExportSections(t("reportExport.movements"))}
+            context={[
+              [
+                t("reportExport.period"),
+                (fromDate ?? "—") + " – " + (toDate ?? "—"),
+              ],
+            ]}
+            disabled={
+              !canExport ||
+              report.isLoading ||
+              report.isFetching ||
+              report.isError
+            }
+            loading={exporting}
+            onExport={exportXlsx}
+          />
         </Stack>
       </Box>
 

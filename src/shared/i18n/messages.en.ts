@@ -1,3 +1,4 @@
+import { REPORT_EXPORT_EN } from "./messages.report-export";
 import { PERSONAL_EN } from "./messages.personal";
 import { RBAC_EN } from "./messages.rbac";
 import { MESSAGES_UPDATED_EN } from "./messages.updated.en";
@@ -15,6 +16,7 @@ import type { MessageTree } from "./messages";
  * KHOÁ vẫn đỏ typecheck; thiếu khoá vẫn hợp lệ và t() rơi về tiếng Việt.
  */
 export const MESSAGES_EN: MessageTree = {
+  reportExport: REPORT_EXPORT_EN,
   nfc: MESSAGES_NFC_EN,
   updatedUi: MESSAGES_UPDATED_EN,
   common: {

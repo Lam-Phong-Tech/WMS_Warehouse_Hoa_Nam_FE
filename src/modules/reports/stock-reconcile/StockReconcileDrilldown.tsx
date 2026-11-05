@@ -1,8 +1,14 @@
+import { ReportExportAction } from "../components/ReportExportAction";
+import { reportExportSections } from "../components/report-export-sections";
+import {
+  exportLocalReport,
+  type ReportExportChoice,
+} from "../components/report-export-workbook";
+import { tStatic as tExport } from "@/shared/i18n/useT";
 import { useMemo } from "react";
 import dayjs from "dayjs";
 import { VuexyDemoIcon } from "@/shared/ui";
 import { formatDateTime } from "@/shared/utils/format-date";
-import { exportXlsx } from "@/shared/utils/export-xlsx";
 import { checkLabelOf } from "./stock-reconcile-labels";
 import { useSkuMovements } from "./stock-reconcile-api";
 import "./stock-reconcile-drilldown.css";
@@ -115,8 +121,8 @@ export function StockReconcileDrilldown({
   const status = view === "code" ? "Lệch mã" : "Lệch số lượng";
   const asOfText = asOf ? formatDateTime(asOf) : date(range.to);
 
-  const exportMovements = () =>
-    exportXlsx(
+  const exportMovements = (choice: ReportExportChoice) =>
+    exportLocalReport(
       ["Thời gian", "Chứng từ", "Loại", "Tăng", "Giảm", "Tồn sổ sau"],
       running.map(({ event, stock }) => [
         formatDateTime(event.occurred_at),
@@ -126,7 +132,7 @@ export function StockReconcileDrilldown({
         Math.max(0, -event.qty_delta),
         stock,
       ]),
-      `phat-sinh-${row.skuCode}-${range.from}-${range.to}`,
+      choice,
     );
 
   return (
@@ -170,14 +176,18 @@ export function StockReconcileDrilldown({
             ‹ Quay lại báo cáo
           </button>
           {view === "flow" && canExport ? (
-            <button
-              type="button"
-              className="rpt02-button rpt02-button--primary"
-              onClick={exportMovements}
-              disabled={running.length === 0}
-            >
-              Xuất chi tiết
-            </button>
+            <ReportExportAction
+              title={tExport("reportExport.stock")}
+              fileStem={
+                "PhatSinh_" + row.skuCode + "_" + range.from + "-" + range.to
+              }
+              total={running.length}
+              sections={reportExportSections(
+                tExport("reportExport.movements"),
+                "none",
+              )}
+              onExport={exportMovements}
+            />
           ) : null}
         </div>
       </header>

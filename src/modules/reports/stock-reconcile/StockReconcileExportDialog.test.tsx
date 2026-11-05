@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -13,6 +14,7 @@ import { StockReconcileExportDialog } from "./StockReconcileExportDialog";
 
 describe("StockReconcileExportDialog", () => {
   afterEach(cleanupTestState);
+  beforeEach(() => useAuthStore.setState({ isSuperAdmin: true }));
 
   it("exports only review SKUs and the selected sheets", async () => {
     const onClose = vi.fn();
@@ -81,6 +83,6 @@ describe("StockReconcileExportDialog", () => {
     );
     expect(exported.flat()).toContain("A");
     expect(exported.flat()).not.toContain("B");
-    expect(onClose).toHaveBeenCalledOnce();
+    await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
   });
 });

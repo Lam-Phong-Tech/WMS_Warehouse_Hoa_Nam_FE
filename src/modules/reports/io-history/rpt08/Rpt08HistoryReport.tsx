@@ -1,3 +1,7 @@
+import { ReportExportDrawer } from "../../components/ReportExportAction";
+import { reportExportSections } from "../../components/report-export-sections";
+import { reportWorkbookOptions } from "../../components/report-export-options";
+import type { ReportExportChoice } from "../../components/report-export-workbook";
 import {
   useCallback,
   useDeferredValue,
@@ -80,6 +84,7 @@ export default function IoHistoryReport() {
   const [manualRefreshing, setManualRefreshing] = useState(false);
   const [staleDismissed, setStaleDismissed] = useState(false);
   const [exportState, setExportState] = useState<ExportState>("idle");
+  const [showExport, setShowExport] = useState(false);
 
   const sourceType: IoTypeFilter = applied.type === "ALL" ? "" : applied.type;
   const source = useIoHistorySnapshot({
@@ -247,39 +252,53 @@ export default function IoHistoryReport() {
     }
   }, [source]);
 
-  const exportReport = useCallback(async () => {
-    if (exportDisabled) return;
-    setExportState("exporting");
-    try {
-      await runReportExport("xlsx", {
-        reportCode: IO_HISTORY_EXPORT_CODE,
-        fileStem: "lich-su-nhap-xuat-kho",
-        fileSuffix: `-${applied.from}-${applied.to}`,
-        filters: {
-          from_date: applied.from,
-          to_date: applied.to,
-          doc_type:
-            applied.type === "INBOUND"
-              ? "inbound"
-              : applied.type === "OUTBOUND"
-                ? "outbound"
-                : "all",
-          ...(applied.actor ? { actor: applied.actor } : {}),
-          ...(search.trim() ? { keyword: search.trim() } : {}),
-        },
-      });
-      setExportState("idle");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setExportState(
-        /timeout|time\s*out|hết thời gian|quá thời gian|chưa xác định/i.test(
-          message,
-        )
-          ? "unknown"
-          : "failed",
-      );
-    }
-  }, [applied, exportDisabled, search]);
+  const exportReport = useCallback(
+    async (choice?: ReportExportChoice) => {
+      if (exportDisabled) return false;
+      setExportState("exporting");
+      try {
+        await runReportExport("xlsx", {
+          reportCode: IO_HISTORY_EXPORT_CODE,
+          ...(choice
+            ? {
+                workbook: reportWorkbookOptions(
+                  choice,
+                  ["Mã phiếu"],
+                  searchedRows.map((row) => row.documentNo),
+                  visibleRows.map((row) => row.documentNo),
+                ),
+              }
+            : {}),
+          fileStem: "lich-su-nhap-xuat-kho",
+          fileSuffix: `-${applied.from}-${applied.to}`,
+          filters: {
+            from_date: applied.from,
+            to_date: applied.to,
+            doc_type:
+              applied.type === "INBOUND"
+                ? "inbound"
+                : applied.type === "OUTBOUND"
+                  ? "outbound"
+                  : "all",
+            ...(applied.actor ? { actor: applied.actor } : {}),
+            ...(search.trim() ? { keyword: search.trim() } : {}),
+          },
+        });
+        setExportState("idle");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setExportState(
+          /timeout|time\s*out|hết thời gian|quá thời gian|chưa xác định/i.test(
+            message,
+          )
+            ? "unknown"
+            : "failed",
+        );
+        return false;
+      }
+    },
+    [applied, exportDisabled, search, searchedRows, visibleRows],
+  );
 
   return (
     <main
@@ -312,7 +331,7 @@ export default function IoHistoryReport() {
           readonly={readonly}
           exportState={exportState}
           exportDisabled={exportDisabled}
-          onExport={() => void exportReport()}
+          onExport={() => setShowExport(true)}
         />
       </header>
 
@@ -470,6 +489,33 @@ export default function IoHistoryReport() {
             </dl>
           </div>
         </DrillDownDialog>
+      ) : null}
+      {showExport ? (
+        <ReportExportDrawer
+          title={tUi("reportExport.history")}
+          fileStem={"LichSuNhapXuat_" + applied.from + "-" + applied.to}
+          context={[
+            [tUi("reportExport.period"), applied.from + " – " + applied.to],
+          ]}
+          sections={reportExportSections(tUi("reportExport.documents"))}
+          scopes={[
+            {
+              id: "all",
+              label: tUi("reportExport.all", { count: searchedRows.length }),
+              description: tUi("reportExport.allHint"),
+              count: searchedRows.length,
+            },
+            {
+              id: "page",
+              label: tUi("reportExport.page", { count: visibleRows.length }),
+              description: tUi("reportExport.pageHint"),
+              count: visibleRows.length,
+            },
+          ]}
+          unavailable={exportDisabled}
+          onClose={() => setShowExport(false)}
+          onExport={exportReport}
+        />
       ) : null}
     </main>
   );
