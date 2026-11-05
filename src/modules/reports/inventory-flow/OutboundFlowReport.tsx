@@ -782,25 +782,6 @@ export default function OutboundFlowReport() {
     }
   };
 
-  const resetFilters = async () => {
-    const next = initialRange();
-    setDraftRange(next);
-    setDraftRecipient("");
-    setDraftStatus("");
-    setAppliedRecipient("");
-    setAppliedStatus("");
-    setQuery("");
-    setPage(1);
-    setShowSuccess(false);
-    setActionNotice(null);
-    sawUpdateLoading.current = false;
-    setUpdatePending(true);
-    const rangeChanged =
-      next.from !== appliedRange.from || next.to !== appliedRange.to;
-    if (rangeChanged) setAppliedRange(next);
-    else await refetchReport();
-  };
-
   const widenRange = () => {
     const next = {
       from: dayjs().subtract(29, "day").format(ISO_DATE),
@@ -907,12 +888,17 @@ export default function OutboundFlowReport() {
               draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null,
               draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null,
             ]}
-            onChange={(value) =>
-              setDraftRange({
+            onChange={(value) => {
+              const next = {
                 from: value?.[0]?.format(ISO_DATE) ?? "",
                 to: value?.[1]?.format(ISO_DATE) ?? "",
-              })
-            }
+              };
+              setDraftRange(next);
+              if (!rangeIsInvalid(next)) {
+                setAppliedRange(next);
+                setPage(1);
+              }
+            }}
             aria-label={tUi("reports.packingLabel.dateRangeLabel")}
             disabled={updating}
           />
@@ -920,7 +906,11 @@ export default function OutboundFlowReport() {
         <FilterCombobox
           id="rpt01b-recipient"
           value={draftRecipient}
-          onChange={setDraftRecipient}
+          onChange={(value) => {
+            setDraftRecipient(value);
+            setAppliedRecipient(value);
+            setPage(1);
+          }}
           options={recipientFilterOptions}
           icon="user-round"
           searchPlaceholder="Tìm người nhận..."
@@ -930,31 +920,17 @@ export default function OutboundFlowReport() {
         <FilterCombobox
           id="rpt01b-status"
           value={draftStatus}
-          onChange={setDraftStatus}
+          onChange={(value) => {
+            setDraftStatus(value);
+            setAppliedStatus(value);
+            setPage(1);
+          }}
           options={statusFilterOptions}
           icon="file-clock"
           searchPlaceholder="Tìm trạng thái..."
           ariaLabel="Chọn trạng thái phiếu xuất"
           disabled={updating}
         />
-        <div className="outbound-top-filters__actions">
-          <button
-            type="button"
-            className="outbound-apply-button"
-            onClick={() => void applyFilters()}
-            disabled={invalidRange || updating}
-          >
-            {tUi("dashboard.snapshot.apply")}
-          </button>
-          <button
-            type="button"
-            className="outbound-reset-button"
-            onClick={() => void resetFilters()}
-            disabled={updating}
-          >
-            {tUi("reports.packingLabel.reset")}
-          </button>
-        </div>
       </section>
 
       {invalidRange ? (

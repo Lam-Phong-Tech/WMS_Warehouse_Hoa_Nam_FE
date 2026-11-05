@@ -1,5 +1,4 @@
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -666,7 +665,6 @@ export default function RecipientAgencyReport() {
           <p>{tUi("updatedUi.text_6440ff9ad26f")}</p>
         </div>
         <div className="rpt07-head-actions hn-report-warehouse-actions">
-          <ReportWarehouseCard />
           <div className="rpt07-export-wrap">
             {readonly ? (
               <div className="rpt07-readonly-note">

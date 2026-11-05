@@ -1,0 +1,98 @@
+/* RPT-04 report filters follow the SKU list control conventions. */
+[data-report-screen="RPT-04"] .rpt04-filters {
+  container: rpt04-filters / inline-size;
+  min-width: 0;
+}
+.rpt04-filters__row {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.5fr) minmax(320px, 1.7fr) repeat(
+      2,
+      minmax(170px, 1fr)
+    );
+  align-items: center;
+  gap: 12px;
+}
+.rpt04-filters__row:has(.rpt04-filters__clear) {
+  grid-template-columns:
+    minmax(240px, 1.5fr) minmax(320px, 1.7fr) repeat(2, minmax(170px, 1fr))
+    auto;
+}
+.rpt04-filters__row > *,
+.rpt04-filters__search,
+.rpt04-filters__dates {
+  min-width: 0;
+}
+[data-report-screen="RPT-04"] .rpt04-filters .MuiInputBase-root {
+  height: 48px;
+  min-height: 48px;
+  background: var(--ops-surface);
+  border-radius: var(--ops-radius-control);
+  color: var(--ops-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 22px;
+}
+[data-report-screen="RPT-04"] .rpt04-filters .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-line);
+}
+[data-report-screen="RPT-04"]
+  .rpt04-filters
+  .MuiInputBase-root:hover
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-link);
+}
+[data-report-screen="RPT-04"] .rpt04-filters .MuiInputBase-root.Mui-focused {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+[data-report-screen="RPT-04"]
+  .rpt04-filters
+  .MuiInputBase-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-link);
+  border-width: 1px;
+}
+[data-report-screen="RPT-04"] .rpt04-filters .hn-vuexy-date-field {
+  height: 48px !important;
+  min-height: 48px !important;
+  border-color: var(--ops-line);
+  font-size: 14px;
+}
+[data-report-screen="RPT-04"] .rpt04-filters .hn-vuexy-date-field:hover,
+[data-report-screen="RPT-04"] .rpt04-filters .hn-vuexy-date-field:focus-visible,
+[data-report-screen="RPT-04"]
+  .rpt04-filters
+  .hn-vuexy-date-field[aria-expanded="true"] {
+  border-color: var(--ops-link);
+}
+[data-report-screen="RPT-04"] .rpt04-filters .hn-vuexy-date-field:focus-visible,
+[data-report-screen="RPT-04"]
+  .rpt04-filters
+  .hn-vuexy-date-field[aria-expanded="true"] {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+[data-report-screen="RPT-04"] .rpt04-filters__clear {
+  min-height: 48px;
+  padding-inline: 12px;
+  color: var(--ops-link);
+  white-space: nowrap;
+}
+@container rpt04-filters (max-width: 1120px) {
+  .rpt04-filters__row,
+  .rpt04-filters__row:has(.rpt04-filters__clear) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rpt04-filters__search,
+  .rpt04-filters__dates {
+    grid-column: 1 / -1;
+  }
+  .rpt04-filters__clear {
+    justify-self: start;
+  }
+}
+@container rpt04-filters (max-width: 540px) {
+  .rpt04-filters__row,
+  .rpt04-filters__row:has(.rpt04-filters__clear) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

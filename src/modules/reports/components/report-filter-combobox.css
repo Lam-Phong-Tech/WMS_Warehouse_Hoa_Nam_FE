@@ -5,6 +5,19 @@
   z-index: 4;
 }
 
+/* These icons must also render correctly outside the inbound report. */
+.inbound-filter-select__icon > svg,
+.inbound-filter-combobox__trigger > svg,
+.inbound-filter-combobox__search > svg {
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
 .inbound-filter-combobox[data-open="true"] {
   z-index: 30;
 }
