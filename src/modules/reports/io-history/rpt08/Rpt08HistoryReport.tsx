@@ -15,7 +15,7 @@ import {
 import type { Dayjs } from "dayjs";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
-import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
+import { TransactionDetailDrawer } from "./TransactionDetailDrawer";
 import { runReportExport } from "@/modules/reports/operations/report-export";
 import {
   IO_HISTORY_EXPORT_CODE,
@@ -27,9 +27,7 @@ import {
   PAGE_SIZE,
   buildDaily,
   displayAsOf,
-  displayStamp,
   mapLiveRow,
-  number,
   type AppliedFilters,
   type DailyMovement,
   type ExportState,
@@ -49,7 +47,6 @@ import {
   HistoryTable,
   OverviewCard,
   ProductCard,
-  TypePill,
 } from "./widgets";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -416,54 +413,10 @@ export default function IoHistoryReport() {
       )}
 
       {detailRow ? (
-        <DrillDownDialog
-          title={tUi("updatedUi.text_11e692fd1ec1", {
-            value0: String(detailRow.documentNo),
-          })}
-          subtitle={tUi("updatedUi.text_3244b982398e")}
-          maxWidth="md"
+        <TransactionDetailDrawer
+          row={detailRow}
           onClose={() => setDetailRow(null)}
-        >
-          <div className="rpt08-detail-grid">
-            <dl>
-              <div>
-                <dt>{tUi("updatedUi.text_94c1cbc6d405")}</dt>
-                <dd>
-                  <TypePill type={detailRow.type} />
-                </dd>
-              </div>
-              <div>
-                <dt>{tUi("inventory.movement.colTime")}</dt>
-                <dd>{displayStamp(detailRow.timestamp)}</dd>
-              </div>
-              <div>
-                <dt>{tUi("audit.colObject")}</dt>
-                <dd>
-                  {detailRow.objectPrimary} · {detailRow.objectSecondary}
-                </dd>
-              </div>
-              <div>
-                <dt>{tUi("dashboard.stockMix.colQuantity")}</dt>
-                <dd>
-                  {detailRow.quantity === null
-                    ? "—"
-                    : number(detailRow.quantity)}
-                </dd>
-              </div>
-              <div>
-                <dt>{tUi("inventory.trace.colPerformedBy")}</dt>
-                <dd>{detailRow.actor}</dd>
-              </div>
-              <div>
-                <dt>{tUi("dashboard.composition.colStatus")}</dt>
-                <dd>
-                  {detailRow.source?.status ||
-                    tUi("warranty.componentIssueStatus.posted")}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </DrillDownDialog>
+        />
       ) : null}
       {showExport ? (
         <ReportExportDrawer
