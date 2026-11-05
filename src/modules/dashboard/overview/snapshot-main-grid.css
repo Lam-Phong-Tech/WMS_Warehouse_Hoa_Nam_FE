@@ -11,6 +11,7 @@
 .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-chart-card {
   grid-column: 1;
   grid-row: 1 / 3;
+  align-self: stretch;
 }
 .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-priority {
   grid-column: 2;
@@ -26,6 +27,7 @@
 .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-stock {
   grid-column: 2;
   grid-row: 2;
+  align-self: stretch;
 }
 /* The legacy shimmer is absolute. Give it a real slot when the fixed card
  * minimum is removed, rather than covering the heading or collapsing the card.
