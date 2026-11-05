@@ -1383,11 +1383,6 @@ export default function MovementTraceReport() {
           >
             {t("reports.traceability.listTitle")}
           </Box>
-          <Box className="trace-ledger-count" component="span" sx={CAPTION_SX}>
-            {t("reports.traceability.itemsCount", {
-              count: formatQuantity(ledgerFilter.rows.length),
-            })}
-          </Box>
         </Box>
         <Box sx={{ px: 3, pb: 2 }}>
           <div
@@ -1435,6 +1430,17 @@ export default function MovementTraceReport() {
         </Box>
         <Box sx={{ p: 0 }}>
           <ResponsiveDataTable<MovementTraceRow>
+            headerCellStyle={{
+              padding: "12px 18px",
+              backgroundColor: "var(--ops-table-header)",
+              backgroundImage: "none",
+              color: "var(--ops-heading)",
+              fontSize: 16,
+              fontWeight: 800,
+              lineHeight: "24px",
+              letterSpacing: "0.02em",
+              textTransform: "none",
+            }}
             columns={[
               {
                 key: "index",

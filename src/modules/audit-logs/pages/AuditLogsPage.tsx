@@ -9,7 +9,6 @@ import {
   UiSelect,
   UiTextField,
   UiIcon,
-  UiStatusBadge,
   UiVuexyDateRangePicker,
 } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
@@ -202,11 +201,6 @@ export function AuditLogsPage() {
         <div>
           <div className="hn-audit-title-line">
             <h1>{t("audit.pageTitle")}</h1>
-            <UiStatusBadge
-              className="hn-audit-readonly-badge"
-              tone="neutral"
-              label={t("audit.readOnly")}
-            />
           </div>
           <p>{t("audit.pageDescription")}</p>
         </div>

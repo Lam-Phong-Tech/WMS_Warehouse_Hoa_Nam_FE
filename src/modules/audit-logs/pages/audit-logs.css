@@ -313,8 +313,7 @@
   background: var(--wms-error-soft);
   color: var(--wms-error-text);
 }
-.hn-audit-result[data-settings-tone="neutral"],
-.hn-audit-readonly-badge {
+.hn-audit-result[data-settings-tone="neutral"] {
   background: var(--settings-pale);
   color: var(--settings-muted);
 }

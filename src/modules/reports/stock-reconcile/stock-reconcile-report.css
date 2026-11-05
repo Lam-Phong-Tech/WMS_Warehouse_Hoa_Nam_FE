@@ -1430,7 +1430,7 @@
   min-width: 680px;
 }
 
-.rpt02-table-scroll td.rpt02-sku-cell:first-child {
+.rpt02-table-scroll td.rpt02-sku-cell {
   min-width: 180px;
 }
 
@@ -1539,16 +1539,16 @@
   min-width: 80px;
 }
 
-.rpt02-table-scroll td:first-child strong,
-.rpt02-table-scroll td:first-child small {
+.rpt02-table-scroll .rpt02-sku-cell strong,
+.rpt02-table-scroll .rpt02-sku-cell small {
   display: block;
 }
 
-.rpt02-table-scroll td:first-child strong {
+.rpt02-table-scroll .rpt02-sku-cell strong {
   color: var(--ops-text);
 }
 
-.rpt02-table-scroll td:first-child small {
+.rpt02-table-scroll .rpt02-sku-cell small {
   margin-top: 2px;
   color: var(--rpt02-muted);
   font-size: 11px;
@@ -2207,7 +2207,7 @@
 
   .rpt02-table-scroll th,
   .rpt02-table-scroll td,
-  .rpt02-table-scroll td:first-child strong,
+  .rpt02-table-scroll .rpt02-sku-cell strong,
   .rpt02-row-status {
     font-size: 14px;
   }
@@ -2464,7 +2464,7 @@
 
 .rpt02-table-scroll th,
 .rpt02-table-scroll td,
-.rpt02-table-scroll td:first-child strong,
+.rpt02-table-scroll .rpt02-sku-cell strong,
 .rpt02-row-status {
   font-size: 13px;
 }
@@ -2659,4 +2659,159 @@
 }
 .hn-rpt02 .rpt02-filter .inbound-filter-combobox {
   font-weight: 600;
+}
+
+/* Detail lists follow docs/ui/sku-list-filter-table-style.md. */
+.hn-rpt02 .rpt02-table-card {
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+  overflow: hidden;
+}
+.hn-rpt02 .rpt02-table-card__head {
+  justify-content: flex-start;
+  gap: 12px;
+}
+.hn-rpt02 .rpt02-table-card__head > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hn-rpt02 .rpt02-table-card__head h2,
+.hn-rpt02 .rpt02-table-card__head p {
+  margin: 0;
+  white-space: nowrap;
+}
+.hn-rpt02 .rpt02-table-card__head > .rpt02-collapse {
+  margin-left: auto;
+}
+.hn-rpt02 .rpt02-table-card__head .MuiInputBase-root {
+  height: 48px;
+  min-height: 48px;
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+}
+.hn-rpt02 .rpt02-table-card__head .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-line);
+}
+.hn-rpt02 .rpt02-table-card__head .MuiInputBase-root.Mui-focused {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+.hn-rpt02
+  .rpt02-table-card__head
+  .Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-link);
+}
+.hn-rpt02 .rpt02-table-scroll table {
+  min-width: 1100px;
+  table-layout: fixed;
+}
+.hn-rpt02 .rpt02-table-scroll th,
+.hn-rpt02 .rpt02-table-scroll td {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--ops-line);
+  vertical-align: middle;
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-rpt02 .rpt02-table-scroll thead th {
+  height: auto;
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.hn-rpt02 .rpt02-table-scroll tbody td {
+  height: 68px;
+  color: var(--ops-text);
+}
+.hn-rpt02 .rpt02-table-scroll .rpt02-stt {
+  min-width: 0;
+  padding-inline: 8px;
+  text-align: center;
+}
+.hn-rpt02 .rpt02-sku-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.hn-rpt02 .rpt02-sku-identity > div {
+  min-width: 0;
+}
+.hn-rpt02 .rpt02-sku-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  height: 44px;
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-pale);
+  color: var(--ops-link);
+}
+.hn-rpt02 .rpt02-sku-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hn-rpt02 .rpt02-sku-cell strong,
+.hn-rpt02 .rpt02-sku-cell .rpt02-flow-sku-link {
+  color: var(--ops-heading);
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.hn-rpt02 .rpt02-sku-cell small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ops-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.hn-rpt02 .rpt02-table-scroll .is-positive {
+  color: var(--ops-success);
+}
+.hn-rpt02 .rpt02-table-scroll .is-negative,
+.hn-rpt02 .rpt02-table-scroll .is-alert {
+  color: var(--ops-danger);
+}
+.hn-rpt02 .rpt02-table-scroll tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+.hn-rpt02 .rpt02-status-pill {
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  line-height: 20px;
+}
+.hn-rpt02 .rpt02-status-pill i {
+  width: 7px;
+  height: 7px;
+}
+.hn-rpt02 .rpt02-pagination {
+  padding: 14px 16px;
+}
+.hn-rpt02 .rpt02-pagination-summary {
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.hn-rpt02 .rpt02-pagination-summary .rpt02-page-size {
+  margin-left: 0;
+}
+.hn-rpt02 .rpt02-pagination > .hn-report-pagination {
+  margin-left: auto;
+}
+@container hn-rpt02 (max-width: 1000px) {
+  .hn-rpt02 .rpt02-table-card__head,
+  .hn-rpt02 .rpt02-table-card__head > div:first-child {
+    flex-wrap: wrap;
+  }
 }

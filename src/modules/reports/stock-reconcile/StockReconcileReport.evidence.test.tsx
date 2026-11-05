@@ -254,6 +254,13 @@ describe("stock reconciliation evidence navigation", () => {
     expect(
       screen.getByRole("button", { name: /Xem bằng chứng PAGE-11/ }),
     ).toBeInTheDocument();
+    expect(
+      within(
+        screen
+          .getByRole("button", { name: /Xem bằng chứng PAGE-11/ })
+          .closest("tr")!,
+      ).getAllByRole("cell")[0],
+    ).toHaveTextContent(/^11$/);
     fireEvent.change(pageSize, { target: { value: "20" } });
     expect(
       screen.getByRole("button", { name: /Xem bằng chứng PAGE-01/ }),

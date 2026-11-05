@@ -1419,10 +1419,27 @@ export default function StockReconcileReport() {
                       ) : (
                         <>
                           <div className="rpt02-table-scroll">
-                            <table className="report-table">
+                            <table
+                              className="report-table"
+                              data-detail-tab={detailTab}
+                            >
+                              <colgroup>
+                                {(detailTab === "reconcile"
+                                  ? [6, 34, 13, 16, 13, 14, 4]
+                                  : [6, 28, 11, 10, 11, 12, 11, 11]
+                                ).map((width, index) => (
+                                  <col
+                                    key={index}
+                                    style={{ width: `${width}%` }}
+                                  />
+                                ))}
+                              </colgroup>
                               <thead>
                                 {detailTab === "reconcile" ? (
                                   <tr>
+                                    <th className="rpt02-stt" scope="col">
+                                      STT
+                                    </th>
                                     <th>
                                       SKU / {tUi("inventory.balance.colName")}
                                     </th>
@@ -1450,6 +1467,9 @@ export default function StockReconcileReport() {
                                   </tr>
                                 ) : (
                                   <tr>
+                                    <th className="rpt02-stt" scope="col">
+                                      STT
+                                    </th>
                                     <th>
                                       SKU / {tUi("inventory.balance.colName")}
                                     </th>
@@ -1476,7 +1496,7 @@ export default function StockReconcileReport() {
                               </thead>
                               <tbody>
                                 {detailTab === "reconcile"
-                                  ? visibleRows.map((row) => {
+                                  ? visibleRows.map((row, index) => {
                                       const state = reconcileState(row);
                                       const label =
                                         state === "quantity"
@@ -1496,14 +1516,29 @@ export default function StockReconcileReport() {
                                                 );
                                       return (
                                         <tr key={row.key}>
+                                          <td className="rpt02-stt">
+                                            {(currentPage - 1) * pageSize +
+                                              index +
+                                              1}
+                                          </td>
                                           <td className="rpt02-sku-cell">
-                                            <strong>{row.skuCode}</strong>
-                                            <small>
-                                              {row.skuName ||
-                                                tUi(
-                                                  "updatedUi.text_056cae173528",
-                                                )}
-                                            </small>
+                                            <div className="rpt02-sku-identity">
+                                              <span
+                                                className="rpt02-sku-icon"
+                                                aria-hidden="true"
+                                              >
+                                                <Icon name="package-search" />
+                                              </span>
+                                              <div>
+                                                <strong>{row.skuCode}</strong>
+                                                <small>
+                                                  {row.skuName ||
+                                                    tUi(
+                                                      "updatedUi.text_056cae173528",
+                                                    )}
+                                                </small>
+                                              </div>
+                                            </div>
                                           </td>
                                           <td className="num">
                                             {quantity(row.ledgerStock)}
@@ -1534,6 +1569,7 @@ export default function StockReconcileReport() {
                                           <td className="rpt02-row-open">
                                             <RowActionButton
                                               kind="view"
+                                              className="rpt02-evidence-link"
                                               aria-label={`Xem bằng chứng ${row.skuCode}`}
                                               onClick={() => {
                                                 setDetailView(
@@ -1548,25 +1584,40 @@ export default function StockReconcileReport() {
                                         </tr>
                                       );
                                     })
-                                  : visibleRows.map((row) => (
+                                  : visibleRows.map((row, index) => (
                                       <tr key={row.key}>
+                                        <td className="rpt02-stt">
+                                          {(currentPage - 1) * pageSize +
+                                            index +
+                                            1}
+                                        </td>
                                         <td className="rpt02-sku-cell">
-                                          <button
-                                            type="button"
-                                            className="rpt02-flow-sku-link"
-                                            onClick={() => {
-                                              setDetailView("flow");
-                                              setSelectedEvidence(row);
-                                            }}
-                                          >
-                                            {row.skuCode}
-                                          </button>
-                                          <small>
-                                            {row.skuName ||
-                                              tUi(
-                                                "updatedUi.text_056cae173528",
-                                              )}
-                                          </small>
+                                          <div className="rpt02-sku-identity">
+                                            <span
+                                              className="rpt02-sku-icon"
+                                              aria-hidden="true"
+                                            >
+                                              <Icon name="package-search" />
+                                            </span>
+                                            <div>
+                                              <button
+                                                type="button"
+                                                className="rpt02-flow-sku-link"
+                                                onClick={() => {
+                                                  setDetailView("flow");
+                                                  setSelectedEvidence(row);
+                                                }}
+                                              >
+                                                {row.skuCode}
+                                              </button>
+                                              <small>
+                                                {row.skuName ||
+                                                  tUi(
+                                                    "updatedUi.text_056cae173528",
+                                                  )}
+                                              </small>
+                                            </div>
+                                          </div>
                                         </td>
                                         <td className="num">
                                           {quantity(row.opening)}
@@ -1594,7 +1645,7 @@ export default function StockReconcileReport() {
                               {detailTab === "flow" ? (
                                 <tfoot>
                                   <tr>
-                                    <th scope="row">
+                                    <th scope="row" colSpan={2}>
                                       {tUi(
                                         "reports.stockReconcileReport.totalRow",
                                       )}
@@ -1623,33 +1674,37 @@ export default function StockReconcileReport() {
                             </table>
                           </div>
                           <footer className="rpt02-pagination hn-report-pagination-footer">
-                            <span>
-                              {tUi("putaway.queue.showing") + " "}
-                              {(currentPage - 1) * pageSize + 1}–
-                              {Math.min(
-                                currentPage * pageSize,
-                                displayRows.length,
-                              )}{" "}
-                              trong {displayRows.length} SKU
-                            </span>
-                            <label className="rpt02-page-size">
-                              <select
-                                value={pageSize}
-                                aria-label={tUi("shared.table.rowsPerPageAria")}
-                                onChange={(event) => {
-                                  setPageSize(Number(event.target.value));
-                                  setPage(1);
-                                }}
-                              >
-                                {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                                  <option key={size} value={size}>
-                                    {tUi("shared.table.perPage", {
-                                      size: String(size),
-                                    })}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
+                            <div className="rpt02-pagination-summary">
+                              <span>
+                                {tUi("putaway.queue.showing") + " "}
+                                {(currentPage - 1) * pageSize + 1}–
+                                {Math.min(
+                                  currentPage * pageSize,
+                                  displayRows.length,
+                                )}{" "}
+                                trong {displayRows.length} SKU
+                              </span>
+                              <label className="rpt02-page-size">
+                                <select
+                                  value={pageSize}
+                                  aria-label={tUi(
+                                    "shared.table.rowsPerPageAria",
+                                  )}
+                                  onChange={(event) => {
+                                    setPageSize(Number(event.target.value));
+                                    setPage(1);
+                                  }}
+                                >
+                                  {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                                    <option key={size} value={size}>
+                                      {tUi("shared.table.perPage", {
+                                        size: String(size),
+                                      })}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            </div>
                             <div className="hn-report-pagination">
                               <button
                                 type="button"

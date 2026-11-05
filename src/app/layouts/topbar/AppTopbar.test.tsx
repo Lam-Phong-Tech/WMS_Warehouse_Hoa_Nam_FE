@@ -88,6 +88,7 @@ function CurrentPath() {
   return (
     <span data-testid="current-path" hidden>
       {location.pathname}
+      {location.search}
     </span>
   );
 }
@@ -149,7 +150,7 @@ describe("AppTopbar", () => {
       within(menu).getByRole("menuitem", { name: "Đổi mật khẩu" }),
     );
     expect(screen.getByTestId("current-path")).toHaveTextContent(
-      "/change-password",
+      "/profile?section=security",
     );
     expect(
       screen.queryByRole("menu", { name: "Tài khoản" }),

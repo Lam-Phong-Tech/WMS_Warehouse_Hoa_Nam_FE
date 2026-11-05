@@ -22,7 +22,6 @@ import {
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { usePeriodFilter } from "../operations/report-period";
 import { useReportExport } from "../operations/report-export";
 import {
@@ -608,7 +607,6 @@ export default function PackingLabelPrintReport() {
             loading={Boolean(exporter.exporting)}
             onExport={doExport}
           />
-          <ReportWarehouseCard />
         </div>
       </header>
       {notice && !detailId && (

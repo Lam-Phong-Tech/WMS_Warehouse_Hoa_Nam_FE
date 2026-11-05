@@ -4,10 +4,11 @@ import { reportExportSections } from "@/modules/reports/components/report-export
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
 import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
+import { ReportFilterCombobox } from "@/modules/reports/components/ReportFilterCombobox";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import { Box, UiSelect } from "@/shared/ui";
+import { Box } from "@/shared/ui";
 import {
   CheckCircleOutlined,
   FileTextOutlined,
@@ -134,10 +135,6 @@ function LoadingBar({
       style={{ width, height }}
     />
   );
-}
-
-function FilterLabel({ children }: { children: ReactNode }) {
-  return <div className="rpt07-filter-label">{children}</div>;
 }
 
 function MetricCard({
@@ -296,6 +293,7 @@ function DateRangeControl({
 }) {
   return (
     <ReportDateRangePicker
+      autoApplyOnComplete
       value={range}
       disabled={disabled}
       aria-label={tUi("reports.packingLabel.dateRangeLabel")}
@@ -317,8 +315,6 @@ export default function RecipientAgencyReport() {
   );
 
   const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>(initialRange);
-  const [draftAgency, setDraftAgency] = useState("");
-  const [draftStatus, setDraftStatus] = useState<StatusFilter>("ALL");
   const [applied, setApplied] = useState<AppliedFilters>({
     from: initialRange[0].format("YYYY-MM-DD"),
     to: initialRange[1].format("YYYY-MM-DD"),
@@ -578,20 +574,20 @@ export default function RecipientAgencyReport() {
       .sort((left, right) => Date.parse(right.date) - Date.parse(left.date));
   }, [detailRow, incompleteDocumentIds]);
 
-  const applyFilters = () => {
-    setApplied({
-      from: draftRange[0].format("YYYY-MM-DD"),
-      to: draftRange[1].format("YYYY-MM-DD"),
-      agency: draftAgency,
-      status: draftStatus,
-    });
+  const changeRange = (range: [Dayjs, Dayjs]) => {
+    setDraftRange(range);
+    if (range[0].startOf("day").isAfter(range[1].startOf("day"))) return;
+    setApplied((current) => ({
+      ...current,
+      from: range[0].format("YYYY-MM-DD"),
+      to: range[1].format("YYYY-MM-DD"),
+    }));
+    setPage(1);
   };
 
   const resetFilters = () => {
     const nextRange = currentSevenDayRange();
     setDraftRange(nextRange);
-    setDraftAgency("");
-    setDraftStatus("ALL");
     setApplied({
       from: nextRange[0].format("YYYY-MM-DD"),
       to: nextRange[1].format("YYYY-MM-DD"),
@@ -699,55 +695,59 @@ export default function RecipientAgencyReport() {
       >
         <div className="rpt07-filter-grid">
           <div className="rpt07-filter-field rpt07-filter-field--date">
-            <FilterLabel>
-              {tUi("reports.packingLabel.dateRangeLabel")}
-            </FilterLabel>
             <DateRangeControl
               range={draftRange}
               disabled={controlsBusy}
-              onChange={setDraftRange}
+              onChange={changeRange}
             />
-            <div className="rpt07-filter-helper">
-              {tUi("updatedUi.text_e0958e093414")}
-            </div>
           </div>
 
           <div className="rpt07-filter-field">
-            <FilterLabel>{tUi("updatedUi.text_19c608bfa103")}</FilterLabel>
             <div
               className="rpt07-readonly-field"
               aria-label={tUi("updatedUi.text_19c608bfa103")}
             >
               <StockOutlined />
-              <span>{warehouseName}</span>
+              <span>
+                {tUi("updatedUi.text_19c608bfa103")}: {warehouseName}
+              </span>
             </div>
           </div>
 
           <div className="rpt07-filter-field rpt07-select">
-            <FilterLabel>
-              {tUi("reports.recipientAgency.typeAgency")}
-            </FilterLabel>
-            <UiSelect
-              fullWidth
-              searchable={false}
+            <ReportFilterCombobox
+              id="rpt07-agency"
               disabled={controlsBusy}
-              value={draftAgency}
-              onChange={setDraftAgency}
-              options={agencyOptions}
-              placeholder={tUi("reports.recipientAgency.agencyAll")}
-              aria-label={tUi("reports.recipientAgency.typeAgency")}
-              menuClassName="rpt07-select-menu"
+              value={applied.agency}
+              onChange={(agency) => {
+                setApplied((current) => ({ ...current, agency }));
+                setPage(1);
+              }}
+              options={[
+                { value: "", label: tUi("reports.recipientAgency.agencyAll") },
+                ...agencyOptions,
+              ].map((option) => ({
+                ...option,
+                label: `${tUi("reports.recipientAgency.typeAgency")}: ${option.label}`,
+              }))}
+              icon="user-round"
+              searchPlaceholder={tUi("reports.recipientAgency.typeAgency")}
+              ariaLabel={tUi("reports.recipientAgency.typeAgency")}
             />
           </div>
 
           <div className="rpt07-filter-field rpt07-select">
-            <FilterLabel>{tUi("dashboard.composition.colStatus")}</FilterLabel>
-            <UiSelect
-              fullWidth
-              searchable={false}
+            <ReportFilterCombobox
+              id="rpt07-status"
               disabled={controlsBusy}
-              value={draftStatus}
-              onChange={(value) => setDraftStatus(value as StatusFilter)}
+              value={applied.status}
+              onChange={(value) => {
+                setApplied((current) => ({
+                  ...current,
+                  status: value as StatusFilter,
+                }));
+                setPage(1);
+              }}
               options={[
                 { value: "ALL", label: tUi("dashboard.operations.filterAll") },
                 {
@@ -758,33 +758,14 @@ export default function RecipientAgencyReport() {
                   value: "INCOMPLETE",
                   label: tUi("updatedUi.text_0e27d3ce9670"),
                 },
-              ]}
-              aria-label={tUi("dashboard.composition.colStatus")}
-              menuClassName="rpt07-select-menu"
+              ].map((option) => ({
+                ...option,
+                label: `${tUi("dashboard.composition.colStatus")}: ${option.label}`,
+              }))}
+              icon="file-clock"
+              searchPlaceholder={tUi("dashboard.composition.colStatus")}
+              ariaLabel={tUi("dashboard.composition.colStatus")}
             />
-          </div>
-
-          <div className="rpt07-filter-action">
-            <button
-              type="button"
-              className="rpt07-apply"
-              disabled={initialLoading}
-              onClick={applyFilters}
-            >
-              {controlsBusy ? <span className="rpt07-spinner" /> : null}
-              {initialLoading
-                ? tUi("dashboard.insight.loadingTitle")
-                : tUi("dashboard.snapshot.apply")}
-            </button>
-          </div>
-          <div className="rpt07-filter-reset">
-            <button
-              type="button"
-              onClick={resetFilters}
-              disabled={initialLoading}
-            >
-              {tUi("reports.packingLabel.reset")}
-            </button>
           </div>
 
           {refreshing ? (

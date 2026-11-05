@@ -169,6 +169,28 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     expect(within(table).getByText("0/1")).toBeInTheDocument();
   });
 
+  it("tự áp dụng trạng thái và lịch ngày mà không cần nút Áp dụng", async () => {
+    const user = userEvent.setup();
+    renderReport();
+    await within(await screen.findByRole("table")).findByText("Đại lý An Phát");
+    expect(
+      screen.queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Trạng thái" }));
+    await user.click(screen.getByRole("option", { name: /Đã hoàn tất$/ }));
+    expect(
+      within(screen.getByRole("table")).queryByText("Đại lý An Phát"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("table")).getByText("Chưa có dữ liệu trong kỳ"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Từ ngày" }));
+    const panel = await screen.findByRole("dialog");
+    expect(
+      within(panel).queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("nút Xem mở chi tiết thật của đại lý, không còn action chết", async () => {
     const user = userEvent.setup();
     renderReport();

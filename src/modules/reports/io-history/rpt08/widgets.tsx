@@ -506,7 +506,7 @@ export function HistoryTable({
       <div className="rpt08-table-scroll">
         <table>
           <colgroup>
-            {[5, 16, 10, 18, 24, 8, 14, 5].map((width, index) => (
+            {[5, 16, 10, 18, 22, 10, 14, 5].map((width, index) => (
               <col key={index} style={{ width: `${width}%` }} />
             ))}
           </colgroup>
@@ -530,7 +530,10 @@ export function HistoryTable({
                 {tUi("dashboard.stockMix.colQuantity")}
               </th>
               <th>{tUi("inventory.trace.colPerformedBy")}</th>
-              <th aria-label={tUi("reports.importMatchReport.detail")} />
+              <th
+                className="rpt08-actions-cell"
+                aria-label={tUi("reports.importMatchReport.detail")}
+              />
             </tr>
           </thead>
           <tbody>
@@ -576,7 +579,7 @@ export function HistoryTable({
                       {row.quantity === null ? "—" : number(row.quantity)}
                     </td>
                     <td>{row.actor}</td>
-                    <td>
+                    <td className="rpt08-actions-cell">
                       <RowActionButton
                         kind="view"
                         label={tUi("reports.ioHistory.view")}

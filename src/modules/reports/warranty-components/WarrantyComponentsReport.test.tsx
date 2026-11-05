@@ -217,6 +217,16 @@ describe("RPT-06 · Báo cáo Bảo hành & linh kiện", () => {
     expect(within(filters).queryByText("Kho")).not.toBeInTheDocument();
   });
 
+  it("lịch tự áp dụng và không hiện nút Áp dụng", async () => {
+    const user = userEvent.setup();
+    renderReport();
+    await user.click(screen.getByRole("button", { name: "Từ ngày" }));
+    const panel = await screen.findByRole("dialog");
+    expect(
+      within(panel).queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("dựng KPI, biểu đồ và bảng đối soát từ payload báo cáo thật", async () => {
     renderReport();
 

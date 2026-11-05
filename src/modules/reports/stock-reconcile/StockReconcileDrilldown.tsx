@@ -6,6 +6,9 @@ import {
 } from "../components/report-export-workbook";
 import { tStatic as tExport } from "@/shared/i18n/useT";
 import { useMemo } from "react";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { CANONICAL_WAREHOUSE_CODE } from "@/modules/master-data/services/warehouse.service";
 import dayjs from "dayjs";
 import { UiButton, UiDrawer, VuexyDemoIcon } from "@/shared/ui";
 import { ActionIconButton } from "@/shared/components/actions";
@@ -91,6 +94,21 @@ export function StockReconcileDrilldown({
   onOpenTrace,
 }: Props) {
   useDateTimePreferences();
+  const context = useAuthStore((state) => state.currentContext);
+  const authenticated = useAuthStore((state) => state.isAuthenticated);
+  const directory = useWarehouseDirectory({ enabled: authenticated });
+  const warehouseCode = row.warehouse.trim().toUpperCase();
+  const warehouse = (directory.data ?? []).find(
+    (item) =>
+      String(item.warehouse_code ?? item.code ?? "")
+        .trim()
+        .toUpperCase() === warehouseCode,
+  );
+  const warehouseName =
+    String(warehouse?.warehouse_name ?? warehouse?.name ?? "").trim() ||
+    (warehouseCode === CANONICAL_WAREHOUSE_CODE
+      ? context?.warehouse_name?.trim() || "Kho Hoa Nam"
+      : "—");
   const drawer = useDialogExit(onBack);
   const movements = useSkuMovements(row.skuCode, range);
   const events = useMemo(
@@ -172,7 +190,7 @@ export function StockReconcileDrilldown({
       >
         <div className="rpt02-drill-context">
           <p>
-            Kho: {row.warehouse || "—"} · Kỳ báo cáo: {date(range.from)} –{" "}
+            Kho: {warehouseName} · Kỳ báo cáo: {date(range.from)} –{" "}
             {date(range.to)} · Mốc dữ liệu: {asOfText}
           </p>
           {view !== "flow" ? (
@@ -370,7 +388,7 @@ export function StockReconcileDrilldown({
                 </div>
                 <div>
                   <dt>Kho</dt>
-                  <dd>{row.warehouse || "—"}</dd>
+                  <dd>{warehouseName}</dd>
                 </div>
                 <div>
                   <dt>Loại hàng</dt>

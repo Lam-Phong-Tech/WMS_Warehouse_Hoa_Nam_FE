@@ -28,6 +28,12 @@ Nguồn chuẩn: `src/modules/master-data/pages/sku-list.css` và `ApiMasterScre
 
 Các cột của mỗi bảng phải có kế hoạch chiều rộng đầy đủ, tổng tỷ lệ bằng `100%`. Cột không khai độ rộng sẽ nhận phần dư và tạo khoảng trắng lớn giữa các cột, như trường hợp `Tên hãng` trên tab Hãng.
 
+### Cột có sắp xếp và bảng dùng component chung
+
+- Với `ResponsiveDataTable`, truyền quy cách đầu bảng qua `headerCellStyle` để cả ô thường và `SortableTh` nhận cùng font, màu và nền. Dùng `backgroundColor: "var(--ops-table-header)"` và `backgroundImage: "none"`; lớp gradient mặc định có thể làm riêng cột sắp xếp bị đậm hơn. Không dùng màu light cố định vì sẽ sai tương phản ở dark mode.
+- Nút sắp xếp bên trong `th` phải kế thừa `color`, `font`, `text-transform` và `letter-spacing`. CSS `thead th` đơn thuần không ghi đè được style trực tiếp của ô sắp xếp.
+- Đối chiếu ô thường, ô sắp xếp và đầu bảng khi cuộn: nền phải liên tục, nhãn cùng màu và độ đậm ở cả hai theme.
+
 Chỉ áp dụng màu và khoảng cách trên cho phần danh sách. Mỗi tab Danh mục sản phẩm vẫn giữ cột Hãng khi cần, mô tả, sắp xếp và nút Sửa hiện có.
 
 ## Phân trang

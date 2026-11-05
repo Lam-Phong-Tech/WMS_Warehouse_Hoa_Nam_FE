@@ -1,14 +1,9 @@
 import { ReportExportButton } from "../../components/ReportExportAction";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { SelectControl } from "./SelectControl";
+import { ReportFilterCombobox } from "../../components/ReportFilterCombobox";
 import type { Dayjs } from "dayjs";
 import { Link } from "react-router-dom";
-import {
-  CloseOutlined,
-  SwapOutlined,
-  UserOutlined,
-  WarningOutlined,
-} from "@/shared/components/icons";
+import { CloseOutlined, WarningOutlined } from "@/shared/components/icons";
 import type { ExportState, TransactionFilter } from "./model";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 function Skeleton({
@@ -48,6 +43,7 @@ function DateRangeControl({
       aria-invalid={invalid || undefined}
     >
       <ReportDateRangePicker
+        autoApplyOnComplete
         value={pickerValue}
         disabled={disabled}
         aria-label={tUi("reports.packingLabel.dateRangeLabel")}
@@ -246,12 +242,11 @@ export function FilterCard({
 }) {
   return (
     <section
-      className="rpt08-card rpt08-filter-card"
+      className="rpt08-filter-card"
       aria-label={tUi("reports.recipientAgency.filterTitle")}
     >
       <div className="rpt08-filter-grid">
         <div className="rpt08-filter-field rpt08-filter-field--date">
-          <label>{tUi("reports.packingLabel.dateRangeLabel")}</label>
           <DateRangeControl
             value={range}
             invalid={invalid}
@@ -261,28 +256,36 @@ export function FilterCard({
         </div>
 
         <div className="rpt08-filter-field">
-          <label>{tUi("updatedUi.text_94c1cbc6d405")}</label>
-          <SelectControl
+          <ReportFilterCombobox
+            id="rpt08-transaction-type"
             ariaLabel={tUi("updatedUi.text_94c1cbc6d405")}
             value={type}
             options={[
               { value: "ALL", label: tUi("dashboard.operations.filterAll") },
               { value: "INBOUND", label: tUi("dashboard.snapshot.inbound") },
               { value: "OUTBOUND", label: tUi("dashboard.snapshot.outbound") },
-            ]}
-            icon={<SwapOutlined />}
+            ].map((option) => ({
+              ...option,
+              label: `${tUi("updatedUi.text_94c1cbc6d405")}: ${option.label}`,
+            }))}
+            icon="file-clock"
+            searchPlaceholder={tUi("updatedUi.text_94c1cbc6d405")}
             disabled={busy}
-            onChange={onTypeChange}
+            onChange={(value) => onTypeChange(value as TransactionFilter)}
           />
         </div>
 
         <div className="rpt08-filter-field">
-          <label>{tUi("inventory.trace.colPerformedBy")}</label>
-          <SelectControl
+          <ReportFilterCombobox
+            id="rpt08-actor"
             ariaLabel={tUi("inventory.trace.colPerformedBy")}
             value={actor}
-            options={actorOptions}
-            icon={<UserOutlined />}
+            options={actorOptions.map((option) => ({
+              ...option,
+              label: `${tUi("inventory.trace.colPerformedBy")}: ${option.label}`,
+            }))}
+            icon="user-round"
+            searchPlaceholder={tUi("inventory.trace.colPerformedBy")}
             disabled={busy}
             onChange={onActorChange}
           />

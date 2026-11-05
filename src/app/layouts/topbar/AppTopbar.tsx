@@ -647,7 +647,7 @@ export function AppTopbar({
                   className="header-menu-item account-action"
                   type="button"
                   role="menuitem"
-                  onClick={() => go(ROUTES.CHANGE_PASSWORD)}
+                  onClick={() => go(`${ROUTES.PROFILE}?section=security`)}
                 >
                   <span className="menu-item-icon" aria-hidden="true">
                     <VuexyDemoIcon name="lock" />

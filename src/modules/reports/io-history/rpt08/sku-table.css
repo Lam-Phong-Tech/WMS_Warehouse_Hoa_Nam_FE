@@ -44,13 +44,21 @@
   border-bottom: 1px solid var(--ops-line);
 }
 #rpt08-history-report .rpt08-table-card table th {
-  background: #d2edf7;
-  color: var(--ops-muted);
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
   font-size: 16px;
   font-weight: 800;
   line-height: 24px;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  white-space: normal;
+  text-overflow: clip;
+}
+#rpt08-history-report .rpt08-table-card table .rpt08-actions-cell {
+  padding-inline: 6px;
+  overflow: visible;
+  text-align: center;
+  text-overflow: clip;
 }
 #rpt08-history-report .rpt08-table-card table tbody tr {
   height: 68px;

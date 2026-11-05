@@ -870,17 +870,6 @@
   line-height: 26px;
 }
 
-#traceability-rpt03 .trace-ledger-count {
-  margin-right: auto;
-  margin-left: 10px;
-  padding: 3px 10px;
-  border-radius: var(--ops-radius-control);
-  background: var(--ops-pale);
-  color: var(--ops-heading);
-  font-size: 13px;
-  font-weight: 700;
-}
-
 #traceability-rpt03 .trace-ledger-card > .MuiBox-root:nth-child(2) {
   position: static;
   grid-column: 2;
@@ -1614,7 +1603,7 @@
 #traceability-rpt03 .trace-report-filters__grid {
   display: grid;
   grid-template-columns:
-    minmax(320px, 2fr) minmax(320px, 1.8fr) repeat(2, minmax(160px, 1fr))
+    minmax(280px, 1fr) minmax(320px, 1.8fr) repeat(2, minmax(160px, 1fr))
     auto;
   align-items: start;
   gap: 12px;
@@ -1756,13 +1745,19 @@
 }
 #traceability-rpt03 .trace-ledger-card thead th {
   padding: 12px 18px;
-  background: #d2edf7;
-  color: var(--ops-muted);
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
   font-size: 16px;
   font-weight: 800;
   line-height: 24px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.02em;
+}
+#traceability-rpt03 .trace-ledger-card thead th button {
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
 }
 #traceability-rpt03 .trace-ledger-card tbody td {
   height: 68px;
