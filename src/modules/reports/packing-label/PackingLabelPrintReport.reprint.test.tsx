@@ -319,7 +319,7 @@ describe("packing-label reprint reason dialog", () => {
       name: /^Chi tiết nhãn đóng gói/,
     });
     await user.click(
-      await within(drawer).findByRole("button", { name: "In lại…" }),
+      await within(drawer).findByRole("button", { name: "In lại nhãn" }),
     );
     const confirm = await screen.findByRole("dialog", { name: "In lại nhãn" });
     await user.type(
@@ -340,7 +340,7 @@ describe("packing-label reprint reason dialog", () => {
       }),
     ).toBeEnabled();
     expect(
-      within(drawer).getByRole("button", { name: "In lại…" }),
+      within(drawer).getByRole("button", { name: "In lại nhãn" }),
     ).toBeDisabled();
   });
 });

@@ -88,7 +88,7 @@ export function PackingLabelSnapshotScreen({
   const success = detail.attempts.filter((a) => a.result === "PRINTED").length;
   const reprints = detail.attempts.filter((a) => a.action === "REPRINT").length;
   const target = selectedEvent ?? latest;
-  const printText = gate.action === "REPRINT" ? "In lại…" : "In nhãn";
+  const printText = gate.action === "REPRINT" ? "In lại nhãn" : "In nhãn";
   const printButton = (
     <UiButton
       appearance="filled"
