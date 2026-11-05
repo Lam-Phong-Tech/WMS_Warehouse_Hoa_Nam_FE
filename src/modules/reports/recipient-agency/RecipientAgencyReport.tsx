@@ -16,15 +16,12 @@ import {
   LockOutlined,
   ReloadOutlined,
   SearchOutlined,
-  ShopOutlined,
   StockOutlined,
   TeamOutlined,
   WarningOutlined,
 } from "@/shared/components/icons";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
-import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import { useReportExport } from "@/modules/reports/operations/report-export";
-import { useReversalDocuments } from "@/modules/reports/operations/report-data";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -32,7 +29,10 @@ import {
   useRecipientAgencyLedger,
   type RecipientAgencyLedgerEvent,
 } from "./recipient-agency-api";
-import { RecipientReturnDialog } from "./RecipientReturnDialog";
+import {
+  RecipientDetailDrawer,
+  type RecipientDetailDocument as DetailDocument,
+} from "./RecipientDetailDrawer";
 import "./recipient-agency-report.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -59,14 +59,6 @@ type DealerRow = {
   productQuantity: number;
   latestAt: string;
   events: RecipientAgencyLedgerEvent[];
-};
-
-type DetailDocument = {
-  id: string;
-  no: string;
-  date: string;
-  quantity: number;
-  incomplete: boolean;
 };
 
 const COLORS = {
@@ -336,16 +328,10 @@ export default function RecipientAgencyReport() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [detailRow, setDetailRow] = useState<DealerRow | null>(null);
-  const [returnRow, setReturnRow] = useState<DealerRow | null>(null);
 
   const source = useRecipientAgencyLedger({
     from: applied.from,
     to: applied.to,
-  });
-  const returnDocuments = useReversalDocuments({
-    from: applied.from,
-    to: applied.to,
-    enabled: returnRow !== null,
   });
   const exporter = useReportExport();
 
@@ -1293,91 +1279,14 @@ export default function RecipientAgencyReport() {
       )}
 
       {detailRow ? (
-        <DrillDownDialog
-          title={tUi("updatedUi.text_264600c191dc") + " " + detailRow.name}
-          maxWidth="md"
+        <RecipientDetailDrawer
+          recipientName={detailRow.name}
+          receiver={detailRow.receiver}
+          documents={detailDocuments}
+          events={detailRow.events}
+          range={{ from: applied.from, to: applied.to }}
+          formatDocumentDate={formatDate}
           onClose={() => setDetailRow(null)}
-        >
-          <div className="rpt07-detail-dialog">
-            <div className="rpt07-detail-dialog__summary">
-              <ShopOutlined />
-              <div>
-                <strong>{detailRow.name}</strong>
-                <span>
-                  {detailRow.receiver === "—"
-                    ? tUi("updatedUi.text_7e49f04ad717")
-                    : tUi("updatedUi.text_1339766f6a53") +
-                      " " +
-                      detailRow.receiver}
-                </span>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="rpt07-return-dialog__back"
-              onClick={() => {
-                setReturnRow(detailRow);
-                setDetailRow(null);
-              }}
-            >
-              {tUi("reports.recipientAgency.returnOpen")}
-            </button>
-            <div className="rpt07-detail-dialog__table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{tUi("warranty.componentList.colCode")}</th>
-                    <th>{tUi("reports.warranty.colIssueDate")}</th>
-                    <th>{tUi("outbound.detail.fieldItemCount")}</th>
-                    <th>{tUi("dashboard.composition.colStatus")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detailDocuments.map((document) => (
-                    <tr key={document.id}>
-                      <td>{document.no}</td>
-                      <td>{formatDate(document.date)}</td>
-                      <td>{formatNumber(document.quantity)}</td>
-                      <td>
-                        <span
-                          className={
-                            document.incomplete ? "is-pending" : "is-complete"
-                          }
-                        >
-                          {document.incomplete
-                            ? tUi("updatedUi.text_0e27d3ce9670")
-                            : tUi("iam.permissionAction.post")}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </DrillDownDialog>
-      ) : null}
-      {returnRow ? (
-        <RecipientReturnDialog
-          recipientName={returnRow.name}
-          events={returnRow.events}
-          reversalRows={
-            Array.isArray(returnDocuments.data?.data)
-              ? returnDocuments.data.data
-              : []
-          }
-          loading={returnDocuments.isPending}
-          error={
-            returnDocuments.error instanceof Error
-              ? returnDocuments.error
-              : null
-          }
-          onRetry={() => void returnDocuments.refetch()}
-          onBack={() => {
-            setDetailRow(returnRow);
-            setReturnRow(null);
-          }}
-          onClose={() => setReturnRow(null)}
         />
       ) : null}
     </Box>
