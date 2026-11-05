@@ -1887,6 +1887,7 @@ export const MESSAGES_VI = {
       published: "Đã đưa SKU lên ứng dụng phân vùng",
       unpublished: "Đã gỡ SKU khỏi ứng dụng phân vùng",
       errCode: "Mã SKU là bắt buộc.",
+      errDuplicateCode: "Mã SKU đã tồn tại trong hệ thống",
       errName: "Tên SKU là bắt buộc.",
       errBrand: "Vui lòng chọn Hãng.",
       errCategory: "Vui lòng chọn Nhóm hàng.",

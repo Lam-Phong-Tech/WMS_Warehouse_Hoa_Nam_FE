@@ -68,6 +68,7 @@ import type {
 import {
   getApiErrorMessage,
   getMutationErrorMessage,
+  extractFieldErrorsRaw,
   normalizeError,
   resolveFormErrors,
 } from "@/shared/api/api-error";
@@ -693,8 +694,50 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
+      const normalized = normalizeError(error);
+      const rawFieldErrors = extractFieldErrorsRaw(error);
+      const codeError =
+        rawFieldErrors?.code ??
+        rawFieldErrors?.sku_code ??
+        rawFieldErrors?.skuCode;
+      const duplicateCode =
+        /^(SKU_CODE_DUPLICATE|SKU_CODE_ALREADY_EXISTS|SKU_ALREADY_EXISTS|DUPLICATE_CODE)$/i.test(
+          normalized.code ?? "",
+        ) ||
+        (normalized.status === 422 &&
+          Boolean(
+            codeError &&
+            /tồn tại|trùng|already.*(?:exist|taken)|unique|已存在|重复|已被.*(?:使用|占用)/i.test(
+              codeError,
+            ),
+          ));
+      if (duplicateCode) {
+        const validation =
+          normalized.status === 422 && codeError
+            ? resolveFormErrors(error, [
+                ...SKU_FORM_FIELDS,
+                "sku_code",
+                "skuCode",
+              ])
+            : { fieldErrors: {}, message: null };
+        const otherFieldErrors = Object.fromEntries(
+          Object.entries(validation.fieldErrors).filter(
+            ([field]) => !["code", "sku_code", "skuCode"].includes(field),
+          ),
+        );
+        setMutationNotice(null);
+        setFormError(validation.message ?? "");
+        setFieldErrors((current) => ({
+          ...current,
+          ...otherFieldErrors,
+          code: t("masterData.sku.errDuplicateCode"),
+        }));
+        requestAnimationFrame(() =>
+          document.getElementById("sku-code")?.focus(),
+        );
+        return;
+      }
       if (!editing) {
-        const normalized = normalizeError(error);
         const transportCode =
           typeof error === "object" && error !== null && "code" in error
             ? String(error.code)

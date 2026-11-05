@@ -1884,6 +1884,7 @@ export const MESSAGES_EN: MessageTree = {
       published: "SKU published to the zoning app",
       unpublished: "SKU removed from the zoning app",
       errCode: "The SKU code is required.",
+      errDuplicateCode: "SKU code already exists in the system",
       errName: "The SKU name is required.",
       errBrand: "Please choose a brand.",
       errCategory: "Please choose a category.",

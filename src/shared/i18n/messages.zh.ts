@@ -2373,6 +2373,7 @@ export const MESSAGES_ZH: MessageTree = {
       "published": "SKU 已发布到分区应用程序",
       "unpublished": "SKU 已从分区应用程序中删除",
       "errCode": "SKU 代码为必填项。",
+      "errDuplicateCode": "SKU 编码已存在于系统中",
       "errName": "SKU 名称为必填项。",
       "errBrand": "请选择品牌。",
       "errCategory": "请选择一个类别。",
