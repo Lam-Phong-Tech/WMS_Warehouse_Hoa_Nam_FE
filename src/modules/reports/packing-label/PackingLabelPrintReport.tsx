@@ -3,7 +3,6 @@ import { reportExportSections } from "@/modules/reports/components/report-export
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
 import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -204,25 +203,6 @@ export default function PackingLabelPrintReport() {
     report.events.find((row) => row.labelId === detailLabelId) ??
     null;
 
-  const applyFilters = () => {
-    if (draftInvalid) return;
-    period.setRange(draftRange);
-    setPage(1);
-  };
-
-  const resetFilters = () => {
-    const next: [Dayjs, Dayjs] = [
-      dayjs().startOf("month"),
-      dayjs().endOf("day"),
-    ];
-    setDraftRange(next);
-    period.setRange(next);
-    setStatusFilter("");
-    setKeyword("");
-    setTableKeyword("");
-    setPage(1);
-  };
-
   const refresh = () => {
     setNotice(null);
     report.refetch();
@@ -416,10 +396,6 @@ export default function PackingLabelPrintReport() {
 
   return (
     <div className="hn-pkg-label" data-testid="rpt-tab-packing-label">
-      <div className="hn-pkg-label__crumb">
-        {tUi("updatedUi.text_3b63f8aabf97")}
-      </div>
-
       <header className="hn-pkg-label__header">
         <div>
           <h1 className="hn-report-page-title">
@@ -466,8 +442,6 @@ export default function PackingLabelPrintReport() {
               ? tUi("updatedUi.text_8b96ca57d2f4")
               : tUi("outbound.detail.print")}
           </UiButton>
-
-          <ReportWarehouseCard />
         </div>
       </header>
 
@@ -520,17 +494,19 @@ export default function PackingLabelPrintReport() {
             className="hn-vuexy-date-range"
             popupClassName="hn-packing-label-date-popup"
             onChange={(value) => {
-              if (value?.[0] && value?.[1]) setDraftRange([value[0], value[1]]);
+              if (value?.[0] && value?.[1]) {
+                const next: [Dayjs, Dayjs] = [value[0], value[1]];
+                setDraftRange(next);
+                if (!next[0].isAfter(next[1], "day")) {
+                  period.setRange(next);
+                  setPage(1);
+                }
+              }
             }}
           />
           {draftInvalid ? (
             <small>{tUi("updatedUi.text_ed929e076375")}</small>
           ) : null}
-        </div>
-
-        <div className="hn-pkg-label__field">
-          <label>{tUi("updatedUi.text_19c608bfa103")}</label>
-          <div className="hn-pkg-label__readonly">◇&nbsp;&nbsp;Kho Hoa Nam</div>
         </div>
 
         <div className="hn-pkg-label__field">
@@ -572,22 +548,6 @@ export default function PackingLabelPrintReport() {
             {period.to.split("-").reverse().join("/")}
           </span>
           <span>{tUi("updatedUi.text_bebd46bc068a")}</span>
-        </div>
-        <div className="hn-pkg-label__filter-actions">
-          <UiButton
-            appearance="tonal"
-            disabled={draftInvalid || !online}
-            onClick={applyFilters}
-          >
-            {tUi("dashboard.snapshot.apply")}
-          </UiButton>
-          <UiButton
-            appearance="outlined"
-            sx={{ borderColor: "var(--ops-line)" }}
-            onClick={resetFilters}
-          >
-            {tUi("reports.packingLabel.reset")}
-          </UiButton>
         </div>
       </section>
       <UiDialog

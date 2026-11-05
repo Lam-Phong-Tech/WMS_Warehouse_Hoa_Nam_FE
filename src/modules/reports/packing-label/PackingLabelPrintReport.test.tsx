@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 /**
  * RPT-05 "Nhãn đóng gói · In / In lại" dùng endpoint thật qua
  * `packing-label-api` và màn chi tiết/xem trước theo UIUX V2.
@@ -12,7 +13,7 @@
  *  · lọc trạng thái, mở chi tiết bản lưu, lịch sử in và xem trước nhãn từ đúng ID.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -26,7 +27,9 @@ vi.mock("@/shared/api/http", () => ({
   },
 }));
 vi.mock("@/modules/outbound/components/AlignedOutboundDetailModal", () => ({
-  AlignedOutboundDetailModal: ({ documentId }: { documentId: string }) => <div data-testid="outbound-source-id">{documentId}</div>,
+  AlignedOutboundDetailModal: ({ documentId }: { documentId: string }) => (
+    <div data-testid="outbound-source-id">{documentId}</div>
+  ),
 }));
 
 import { http } from "@/shared/api/http";
@@ -219,6 +222,25 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     cleanupTestState();
   });
 
+  it("tự áp dụng khoảng ngày khi chọn mà không cần nút Áp dụng", async () => {
+    renderReport();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Từ ngày" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Hôm qua" }));
+    const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+    await waitFor(() =>
+      expect(http.get).toHaveBeenCalledWith(
+        "/reports/label-log",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            from_date: yesterday,
+            to_date: yesterday,
+          }),
+        }),
+      ),
+    );
+  });
+
   it("dựng một dòng cho mỗi lần in, ghép đủ nhãn / máy in / người thao tác", async () => {
     renderReport();
 
@@ -237,8 +259,12 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(table).not.toHaveTextContent(LABEL_1);
     expect(table).not.toHaveTextContent(LABEL_2);
     const user = userEvent.setup();
-    await user.click(within(table).getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0]);
-    expect((await screen.findAllByText(/Zebra ZD421 · Nguyễn Kho Vận/)).length).toBe(2);
+    await user.click(
+      within(table).getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0],
+    );
+    expect(
+      (await screen.findAllByText(/Zebra ZD421 · Nguyễn Kho Vận/)).length,
+    ).toBe(2);
     expect(screen.getByText("Nhãn đầu bị nhòe khi dán")).toBeInTheDocument();
     expect(screen.getByText("In lại")).toBeInTheDocument();
   });
@@ -277,10 +303,16 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     renderReport();
 
     const table = await screen.findByRole("table");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Trạng thái" }), "PRINT_FAILED");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Trạng thái" }),
+      "PRINT_FAILED",
+    );
     expect(within(table).getAllByRole("row")).toHaveLength(2);
     expect(within(table).getByText("Lỗi in")).toBeInTheDocument();
-    await user.selectOptions(screen.getByRole("combobox", { name: "Trạng thái" }), "");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Trạng thái" }),
+      "",
+    );
     expect(within(table).getAllByRole("row")).toHaveLength(5);
   });
 
@@ -298,28 +330,43 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(within(detail).getByText("Đã in")).toBeInTheDocument();
     expect(detail).not.toHaveTextContent(LABEL_1);
     expect(within(detail).getByText("SKU-A x2, SKU-B x1")).toBeInTheDocument();
-    expect(within(detail).getByText("Nhãn đầu bị nhòe khi dán")).toBeInTheDocument();
+    expect(
+      within(detail).getByText("Nhãn đầu bị nhòe khi dán"),
+    ).toBeInTheDocument();
   });
 
   it("mở trang chi tiết và bản xem trước từ đúng bản lưu nhãn", async () => {
     const user = userEvent.setup();
     vi.mocked(http.get).mockImplementation(async (url: unknown) =>
       String(url) === "/reports/label-log"
-        ? ({ rows: LABEL_LOG_ROWS.map((row) => ({ ...row, outbound_date: "2026-10-29", created_at: "2026-10-29 08:00:00" })), summary: {} } as never)
+        ? ({
+            rows: LABEL_LOG_ROWS.map((row) => ({
+              ...row,
+              outbound_date: "2026-10-29",
+              created_at: "2026-10-29 08:00:00",
+            })),
+            summary: {},
+          } as never)
         : ((PAYLOAD[String(url)] ?? { rows: [] }) as never),
     );
     renderReport();
     await screen.findAllByText("PL-PX-0001");
 
-    await user.click(screen.getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0]);
-    expect(await screen.findByRole("heading", { name: "Chi tiết nhãn đóng gói" })).toBeInTheDocument();
+    await user.click(
+      screen.getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0],
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Chi tiết nhãn đóng gói" }),
+    ).toBeInTheDocument();
     expect(http.get).toHaveBeenCalledWith("/label-snapshots/ls-1");
     expect(screen.getByText("SKU-A x2, SKU-B x1")).toBeInTheDocument();
     expect(screen.getByText("Lịch sử in nhãn")).toBeInTheDocument();
     expect(screen.queryByText("Công ty Tân Phát")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Xem trước nhãn" }));
-    expect(await screen.findByRole("heading", { name: "Xem trước nhãn" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Xem trước nhãn" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("100 mm")).toBeInTheDocument();
     expect(screen.getByText("150 mm")).toBeInTheDocument();
     expect(screen.getAllByText("PL-PX-0001")).toHaveLength(2);
@@ -329,10 +376,14 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     const user = userEvent.setup();
     renderReport();
     await screen.findAllByRole("button", { name: /Xem chi tiết nhãn/ });
-    await user.click(screen.getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0]);
+    await user.click(
+      screen.getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0],
+    );
     await screen.findByTestId("packing-label-detail");
     await user.click(screen.getByRole("button", { name: "Mở phiếu xuất" }));
-    expect(screen.getByTestId("outbound-source-id")).toHaveTextContent("outbound-1");
+    expect(screen.getByTestId("outbound-source-id")).toHaveTextContent(
+      "outbound-1",
+    );
   });
 
   /**
@@ -376,10 +427,17 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(dialog).not.toHaveTextContent("PRINTED");
   });
 
-  it("cho xuất báo cáo khi có quyền REPORT_EXPORT", async () => {
+  it("cho chọn xuất báo cáo sau khi dữ liệu và quyền REPORT_EXPORT đã sẵn sàng", async () => {
+    const user = userEvent.setup();
     renderReport();
-
-    await screen.findByRole("table");
-    expect(screen.getByRole("button", { name: /Xuất báo cáo/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Xuất báo cáo/ })).toBeDisabled();
+    await screen.findAllByRole("button", { name: /Xem chi tiết nhãn/ });
+    const trigger = screen.getByRole("button", { name: /Xuất báo cáo/ });
+    expect(trigger).toBeEnabled();
+    await user.click(trigger);
+    expect(
+      await screen.findByRole("radio", { name: /Tất cả kết quả/ }),
+    ).toBeChecked();
+    expect(http.post).not.toHaveBeenCalled();
   });
 });

@@ -2,6 +2,8 @@ import { ReportExportAction } from "@/modules/reports/components/ReportExportAct
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
 import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
+
 import { ReportFilterCombobox } from "../components/ReportFilterCombobox";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { TraceModal } from "@/modules/inventory/components/TraceModal";
@@ -835,7 +837,9 @@ export default function MovementTraceReport() {
       };
     });
   };
-  const ledgerPageSize = 5;
+  const [ledgerPageSize, setLedgerPageSize] = useState<number>(
+    TABLE_PAGE_SIZE_OPTIONS[0],
+  );
   const ledgerPageCount = Math.max(
     1,
     Math.ceil(ledgerFilter.rows.length / ledgerPageSize),
@@ -1448,19 +1452,63 @@ export default function MovementTraceReport() {
           </Box>
         </Box>
         <Box sx={{ px: 3, pb: 2 }}>
-          <SectionFilterBar
-            state={ledgerFilter}
-            label={t("reports.traceability.listTitle")}
+          <div
+            className="trace-list-filters"
+            role="group"
+            aria-label={t("reports.traceability.listTitle")}
             data-testid="movement-trace-ledger-filter"
-          />
+          >
+            <SearchInput
+              value={ledgerFilter.keyword}
+              onChange={ledgerFilter.setKeyword}
+              placeholder={ledgerFilter.config.searchPlaceholder}
+              aria-label={t("reports.filters.sectionSearchAria", {
+                label: t("reports.traceability.listTitle"),
+              })}
+            />
+            {ledgerFilter.resolvedSelects.map((select) => (
+              <ReportFilterCombobox
+                key={select.key}
+                id={`trace-ledger-${select.key}`}
+                value={ledgerFilter.values[select.key] ?? ""}
+                onChange={(value) => ledgerFilter.setValue(select.key, value)}
+                options={[
+                  { value: "", label: select.placeholder },
+                  ...select.options,
+                ].map((option) => ({
+                  ...option,
+                  label: `${select.key === "actor" ? "Người thực hiện" : "Loại biến động"}: ${option.label}`,
+                }))}
+                icon={select.key === "actor" ? "user-round" : "file-clock"}
+                searchPlaceholder={select.placeholder}
+                ariaLabel={select.ariaLabel ?? select.placeholder}
+              />
+            ))}
+            {ledgerFilter.active ? (
+              <button
+                type="button"
+                className="trace-list-clear"
+                onClick={ledgerFilter.clear}
+              >
+                Xóa lọc
+              </button>
+            ) : null}
+          </div>
         </Box>
         <Box sx={{ p: 0 }}>
           <ResponsiveDataTable<MovementTraceRow>
             columns={[
               {
+                key: "index",
+                header: "STT",
+                width: "6%",
+                align: "center",
+                render: (row) => rowIndexOf(ledgerFilter.rows, row) + 1,
+              },
+              {
                 key: "product",
                 header: t("reports.traceability.colProduct"),
-                width: 210,
+                width: "29%",
                 render: (row) => (
                   <span className="trace-product-cell">
                     <strong>{row.productCode || EMPTY_TEXT}</strong>
@@ -1469,62 +1517,25 @@ export default function MovementTraceReport() {
                 ),
               },
               {
-                key: "trace_code",
-                header: t("reports.traceability.colTraceCode"),
-                width: 270,
-                render: (row) => (
-                  <span className="trace-code-cell">
-                    {row.physicalCode ||
-                      row.containerId ||
-                      row.itemId ||
-                      EMPTY_TEXT}
-                    <small>{documentCodeOf(row) || EMPTY_TEXT}</small>
-                  </span>
-                ),
-              },
-              {
-                key: "current_status",
-                header: t("reports.traceability.colCurrentStatus"),
-                width: 150,
-                render: (row) => {
-                  const kind = movementKindOf(row);
-                  const status = traceStatusOf(row);
-                  return (
-                    <>
-                      <UiStatusBadge
-                        tone={status.tone}
-                        label={t(status.labelKey)}
-                      />
-                      <span className="trace-sr-only">
-                        {MOVEMENT_KIND_LABELS[kind]}
-                      </span>
-                    </>
-                  );
-                },
-              },
-              {
-                key: "location",
-                header: t("reports.traceability.colLocation"),
-                width: 175,
-                render: (row) =>
-                  row.warehouseCode || t("reports.traceability.warehouseName"),
-              },
-              {
                 key: "latest_event",
                 header: t("reports.traceability.colLatestEvent"),
-                width: 165,
+                width: "27%",
                 render: (row) => (
                   <span className="trace-event-cell">
                     {movementSourceLabel(row.sourceType) ||
                       MOVEMENT_KIND_LABELS[movementKindOf(row)]}
+                    <small>{documentCodeOf(row) || EMPTY_TEXT}</small>
                     <small>Δ {row.qtyDelta}</small>
+                    <span className="trace-sr-only">
+                      {MOVEMENT_KIND_LABELS[movementKindOf(row)]}
+                    </span>
                   </span>
                 ),
               },
               {
                 key: "updated_at",
                 header: t("reports.traceability.colUpdatedAt"),
-                width: 170,
+                width: "19%",
                 sortType: "value",
                 sortAccessor: (row) => row.occurredAt,
                 render: (row) => formatTraceDateTime(row.occurredAt),
@@ -1532,7 +1543,7 @@ export default function MovementTraceReport() {
               {
                 key: "completeness",
                 header: t("reports.traceability.colCompleteness"),
-                width: 118,
+                width: "11%",
                 align: "center",
                 render: (row) => {
                   const status = traceStatusOf(row);
@@ -1549,7 +1560,7 @@ export default function MovementTraceReport() {
                 key: "open",
                 header: t("common.viewDetail"),
                 isAction: true,
-                width: 80,
+                width: "8%",
                 align: "center",
                 render: (row) => (
                   <>
@@ -1586,21 +1597,40 @@ export default function MovementTraceReport() {
           />
         </Box>
         <Box className="trace-pagination hn-report-pagination-footer">
-          <span>
-            {t("reports.traceability.showingItems", {
-              from:
-                ledgerFilter.rows.length === 0
-                  ? "0"
-                  : formatQuantity((safeLedgerPage - 1) * ledgerPageSize + 1),
-              to: formatQuantity(
-                Math.min(
-                  safeLedgerPage * ledgerPageSize,
-                  ledgerFilter.rows.length,
+          <div className="trace-pagination-summary">
+            <span>
+              {t("reports.traceability.showingItems", {
+                from:
+                  ledgerFilter.rows.length === 0
+                    ? "0"
+                    : formatQuantity((safeLedgerPage - 1) * ledgerPageSize + 1),
+                to: formatQuantity(
+                  Math.min(
+                    safeLedgerPage * ledgerPageSize,
+                    ledgerFilter.rows.length,
+                  ),
                 ),
-              ),
-              total: formatQuantity(ledgerFilter.rows.length),
-            })}
-          </span>
+                total: formatQuantity(ledgerFilter.rows.length),
+              })}
+            </span>
+            <label className="trace-page-size">
+              Số dòng/trang{" "}
+              <select
+                aria-label="Số dòng mỗi trang"
+                value={ledgerPageSize}
+                onChange={(event) => {
+                  setLedgerPageSize(Number(event.target.value));
+                  setLedgerPage(1);
+                }}
+              >
+                {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <nav
             className="hn-report-pagination"
             aria-label={t("reports.traceability.paginationAria")}
@@ -1743,6 +1773,31 @@ export default function MovementTraceReport() {
                   <EvidenceField
                     label="SKU"
                     value={selected.productCode || EMPTY_TEXT}
+                  />
+                  <EvidenceField
+                    label={t("reports.traceability.colTraceCode")}
+                    value={
+                      selected.physicalCode ||
+                      selected.containerId ||
+                      selected.itemId ||
+                      EMPTY_TEXT
+                    }
+                  />
+                  <EvidenceField
+                    label={t("reports.traceability.colCurrentStatus")}
+                    value={
+                      <UiStatusBadge
+                        tone={traceStatusOf(selected).tone}
+                        label={t(traceStatusOf(selected).labelKey)}
+                      />
+                    }
+                  />
+                  <EvidenceField
+                    label={t("reports.traceability.colLocation")}
+                    value={
+                      selected.warehouseCode ||
+                      t("reports.traceability.warehouseName")
+                    }
                   />
                   <EvidenceField
                     label={t("reports.movementTrace.colQtyDelta")}
