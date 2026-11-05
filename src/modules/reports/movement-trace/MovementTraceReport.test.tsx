@@ -264,9 +264,7 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
       within(drawer).getByText(/OUT-2026-00018 · Phiếu xuất kho/),
     ).toBeInTheDocument();
     expect(within(drawer).getByText("vanhanh.hn")).toBeInTheDocument();
-    expect(
-      within(drawer).getByText(/Chi tiết chứng từ là read-only/),
-    ).toBeInTheDocument();
+    expect(within(drawer).getByText(/Thông tin chỉ xem/)).toBeInTheDocument();
     // Chuỗi bút toán đảo đọc bằng MÃ biến động, không phải correction_chain_id;
     // "Mã yêu cầu" (meta.request_id của lần gọi báo cáo) không còn hiện
     // (phản ánh 10/09/2026).

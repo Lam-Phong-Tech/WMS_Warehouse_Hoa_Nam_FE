@@ -3740,10 +3740,12 @@ export const MESSAGES_ZH: MessageTree = {
       "drawerEyebrow": "调节细节",
       "drawerTitle": "运动证据",
       "drawerClose": "关闭证据",
+      "evidenceDetails": "记录详情",
+      "tracePhysicalCode": "追踪实物编码",
       "fieldSourceDoc": "源文件",
       "fieldReversalChain": "反转入场链",
       "reversedBy": "由 {codes} 反转",
-      "readonlyNote": "文档详细信息是只读的；移动分类帐是仅追加的，因此此屏幕永远不会编辑或删除任何行。"
+      "readonlyNote": "信息仅供查看。更正将单独记录，以保留完整的库存变动历史。"
     },
     "warrantyReport": {
       "eyebrow": "运营报告",
