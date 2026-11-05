@@ -1535,9 +1535,6 @@ export default function MovementTraceReport() {
             loading={report.isLoading}
             onRowClick={(row) => setSelected(row)}
             emptyText={t("reports.movementTrace.timelineEmpty")}
-            // Sổ ledger không cắt trang (xem ghi chú đầu movement-trace-api.ts)
-            // nên bảng dài tự cuộn trong khung, tiêu đề cột được ghim lại.
-            maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
           />
         </Box>
         <Box className="trace-pagination hn-report-pagination-footer">

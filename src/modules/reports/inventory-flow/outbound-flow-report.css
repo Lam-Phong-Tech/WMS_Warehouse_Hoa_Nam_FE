@@ -4016,11 +4016,11 @@
 .hn-outbound-report .outbound-report-table th {
   height: auto;
   background: #d2edf7;
-  color: var(--ops-muted);
+  color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.02em;
 }
 .hn-outbound-report .outbound-report-table td {

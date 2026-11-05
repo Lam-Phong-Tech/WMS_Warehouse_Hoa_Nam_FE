@@ -2707,6 +2707,11 @@
   min-width: 1100px;
   table-layout: fixed;
 }
+
+.hn-rpt02 .rpt02-table-scroll [data-detail-tab="reconcile"] .num {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 .hn-rpt02 .rpt02-table-scroll th,
 .hn-rpt02 .rpt02-table-scroll td {
   padding: 12px 18px;

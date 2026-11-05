@@ -1425,7 +1425,7 @@ export default function StockReconcileReport() {
                             >
                               <colgroup>
                                 {(detailTab === "reconcile"
-                                  ? [6, 34, 13, 16, 13, 14, 4]
+                                  ? [6, 28, 14, 16, 14, 18, 4]
                                   : [6, 28, 11, 10, 11, 12, 11, 11]
                                 ).map((width, index) => (
                                   <col
