@@ -48,9 +48,8 @@ import {
   downloadImportQualityExport,
   useImportQualityBatches,
 } from "./import-quality-api";
-import { ImportQualityIssuePanel } from "./ImportQualityIssuePanel";
+import { ImportQualityBatchDrawer } from "./ImportQualityBatchDrawer";
 import { useClientPagination } from "@/modules/reports/operations/report-columns";
-import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import {
   buildImportBatches,
   filterBatches,
@@ -1034,78 +1033,10 @@ export default function ImportQualityBaseline() {
       </Box>
 
       {openBatch ? (
-        <DrillDownDialog
-          title={tUi("updatedUi.text_ecd76b3f0e22", {
-            value0: String(
-              openBatch.batchNo || tUi("updatedUi.text_3c28fe9f81e1"),
-            ),
-          })}
-          subtitle={tUi("updatedUi.text_8227ce3f3753")}
+        <ImportQualityBatchDrawer
+          batch={openBatch}
           onClose={() => setOpenBatch(null)}
-        >
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, minmax(0, 1fr))",
-              },
-              gap: 1,
-            }}
-          >
-            {[
-              [tUi("updatedUi.text_f235d93f10dd"), openBatch.batchNo || "—"],
-              [
-                tUi("audit.colObject"),
-                openBatch.caption || openBatch.sourceFile || "—",
-              ],
-              [tUi("updatedUi.text_fe86ff7f56fe"), fmt(openBatch.total)],
-              [
-                tUi("reports.inventoryFlowReport.matched"),
-                fmt(openBatch.success),
-              ],
-              [tUi("inventory.balance.colVariance"), fmt(openBatch.duplicate)],
-              [tUi("updatedUi.text_e557e75b43a7"), fmt(openBatch.failed)],
-              [
-                tUi("updatedUi.text_0a3f7deb0656"),
-                pct(openBatch.success, openBatch.total),
-              ],
-              [
-                tUi("updatedUi.text_5293d03c5908"),
-                openBatch.at ? fmtDateTime(openBatch.at) : "—",
-              ],
-            ].map(([label, value]) => (
-              <Box
-                key={label}
-                sx={{
-                  p: 1.25,
-                  borderRadius: "var(--ops-radius-card)",
-                  bgcolor: C.bg,
-                  border: `1px solid ${C.border}`,
-                }}
-              >
-                <Box sx={{ color: C.muted, fontSize: 11.5 }}>{label}</Box>
-                <Box
-                  sx={{
-                    mt: 0.25,
-                    color: C.navy,
-                    fontWeight: 700,
-                    overflowWrap: "anywhere",
-                  }}
-                >
-                  {value}
-                </Box>
-              </Box>
-            ))}
-          </Box>
-          {openBatch.id ? (
-            <ImportQualityIssuePanel
-              key={openBatch.id}
-              batchId={openBatch.id}
-              sourceFile={openBatch.sourceFile}
-            />
-          ) : null}
-        </DrillDownDialog>
+        />
       ) : null}
     </Box>
   );
