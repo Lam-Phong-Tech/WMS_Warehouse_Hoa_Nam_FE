@@ -993,3 +993,46 @@ for (const { width, theme } of cases) {
     ).toEqual([]);
   });
 }
+
+for (const width of [1440, 390]) {
+  test(`audit account preferences Vietnamese labels at ${width}px`, async ({
+    page,
+  }) => {
+    await openFixture(page, "audit", width, "light");
+    await page.goto(`${page.url()}&profilePreferences=1`);
+    await expect(
+      page.getByText("Cập nhật tùy chọn tài khoản", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Xem chi tiết nhật ký", exact: true })
+      .first()
+      .click();
+    const drawer = page.getByRole("dialog", {
+      name: /^Chi tiết nhật ký hệ thống/,
+    });
+    await drawerGeometry(page, drawer);
+    await expect(
+      drawer.getByRole("heading", {
+        name: "Cập nhật tùy chọn tài khoản",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      drawer.getByText("Các trường thay đổi", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      drawer.getByText("Chế độ giao diện", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      drawer.getByText("Màu chủ đạo", { exact: false }),
+    ).toBeVisible();
+    await expect(drawer).not.toContainText("Update Profile Preferences");
+    await expect(drawer).not.toContainText("Changed Fields");
+    await expect(drawer.getByText("theme", { exact: true })).toHaveCount(0);
+    await expect(drawer.getByText("accent", { exact: true })).toHaveCount(0);
+    await page.screenshot({
+      path: `${screenshotRoot}/audit-preferences-vi-${width}.png`,
+      fullPage: false,
+    });
+  });
+}

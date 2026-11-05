@@ -208,6 +208,19 @@ function apiError(status: number, message: string) {
   });
 }
 export function installIamAuditTransport() {
+  if (new URLSearchParams(location.search).has("profilePreferences")) {
+    Object.assign(logs[0], {
+      action: "UPDATE_PROFILE_PREFERENCES",
+      object_type: "app_user",
+      object_code: "account@example.test",
+      reason: null,
+      description: "Update Profile Preferences",
+      result: "SUCCESS",
+      error_code: null,
+      before_data: null,
+      after_data: { version: 7, changed_fields: ["theme", "accent"] },
+    });
+  }
   window.__iamRequests = [];
   window.__iamConflictNext = false;
   window.__iamFailRoles = new URLSearchParams(location.search).has("loadError");
