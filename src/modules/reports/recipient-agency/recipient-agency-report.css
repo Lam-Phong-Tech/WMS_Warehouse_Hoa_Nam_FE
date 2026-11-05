@@ -1846,10 +1846,7 @@
   box-shadow: none;
 }
 #recipient-agency-rpt07 .rpt07-filter-grid {
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr) repeat(
-      2,
-      minmax(0, 1fr)
-    );
+  grid-template-columns: minmax(400px, 1.5fr) repeat(2, minmax(0, 1fr));
   grid-template-rows: auto;
   gap: 12px;
   align-items: center;

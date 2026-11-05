@@ -18,7 +18,6 @@ import {
   LockOutlined,
   ReloadOutlined,
   SearchOutlined,
-  StockOutlined,
   TeamOutlined,
   WarningOutlined,
 } from "@/shared/components/icons";
@@ -26,7 +25,6 @@ import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { useReportExport } from "@/modules/reports/operations/report-export";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
-import { useAuthStore } from "@/shared/store/auth.store";
 import {
   useRecipientAgencyLedger,
   type RecipientAgencyLedgerEvent,
@@ -307,9 +305,6 @@ function DateRangeControl({
 
 export default function RecipientAgencyReport() {
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
-  const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() ||
-    "—";
   const initialRange = useMemo<[Dayjs, Dayjs]>(
     () => currentSevenDayRange(),
     [],
@@ -705,18 +700,6 @@ export default function RecipientAgencyReport() {
               disabled={controlsBusy}
               onChange={changeRange}
             />
-          </div>
-
-          <div className="rpt07-filter-field">
-            <div
-              className="rpt07-readonly-field"
-              aria-label={tUi("updatedUi.text_19c608bfa103")}
-            >
-              <StockOutlined />
-              <span>
-                {tUi("updatedUi.text_19c608bfa103")}: {warehouseName}
-              </span>
-            </div>
           </div>
 
           <div className="rpt07-filter-field rpt07-select">
