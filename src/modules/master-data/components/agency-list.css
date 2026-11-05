@@ -257,11 +257,21 @@
   outline: 2px solid var(--agy-blue);
   outline-offset: 3px;
 }
-.agy-drawer .MuiInputBase-root {
-  font-size: 14px;
+.agy-drawer {
+  --agy-form-control-height: clamp(56px, calc(12dvh - 28px), 80px);
+  --agy-form-row-gap: clamp(16px, 2.7dvh, 24px);
+}
+.agy-drawer #agency-master-form .MuiInputBase-root {
+  min-height: var(--agy-form-control-height);
+  font-size: 16px;
+  line-height: 24px;
   color: var(--agy-ink);
   border-radius: var(--ops-radius-control);
   background-color: var(--agy-surface);
+}
+.agy-drawer #agency-master-form .MuiInputBase-input {
+  font-size: 16px;
+  line-height: 24px;
 }
 .agy-drawer .MuiOutlinedInput-notchedOutline {
   border-color: var(--agy-line);
@@ -309,6 +319,13 @@
   overscroll-behavior: contain;
   padding: 24px;
 }
+.agy-drawer-body #agency-master-form > .MuiGrid-container {
+  --Grid-rowSpacing: var(--agy-form-row-gap);
+  row-gap: var(--agy-form-row-gap);
+}
+.agy-drawer-body #agency-master-form > .MuiGrid-container > .MuiGrid-root {
+  min-width: 0;
+}
 .agy-drawer-footer {
   display: flex;
   justify-content: flex-end;
@@ -320,6 +337,11 @@
 .agy-drawer .MuiInputLabel-root {
   color: var(--agy-ink);
   font-size: 14px;
+  line-height: 20px;
+}
+.agy-drawer .MuiInputLabel-root:not(.MuiInputLabel-shrink) {
+  transform: translate(14px, calc((var(--agy-form-control-height) - 20px) / 2))
+    scale(1);
 }
 .agy-drawer .MuiInputLabel-root.Mui-focused {
   color: var(--agy-blue);
@@ -387,5 +409,11 @@
   .agy-drawer * {
     animation-duration: 0.01ms;
     transition-duration: 0.01ms;
+  }
+}
+@media (max-width: 599px) {
+  .agy-drawer {
+    --agy-form-control-height: 56px;
+    --agy-form-row-gap: 16px;
   }
 }
