@@ -145,6 +145,34 @@ for (const theme of ["light", "dark"]) {
         waitUntil: "domcontentloaded",
       });
       await expect(page.locator(".sku-table tbody tr")).toHaveCount(1);
+      const usageFilter = page.getByRole("combobox", {
+        name: "Lọc theo trạng thái",
+      });
+      const informationFilter = page.getByRole("combobox", {
+        name: "Lọc mức độ hoàn thiện thông tin",
+      });
+      for (const filter of [usageFilter, informationFilter]) {
+        await expect(filter).toBeVisible();
+        const bounds = await filter.boundingBox();
+        expect(bounds!.x).toBeGreaterThanOrEqual(0);
+        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+      }
+      const statusCell = page.locator(".sku-table tbody td").nth(4);
+      await expect(statusCell).toContainText("Thiếu: Hãng, Nhóm hàng, Model");
+      const badges = statusCell.locator(".MuiChip-root");
+      const usageColor = await badges
+        .nth(0)
+        .evaluate((el) => getComputedStyle(el).color);
+      const pendingColor = await badges
+        .nth(1)
+        .evaluate((el) => getComputedStyle(el).color);
+      expect(pendingColor).not.toBe(usageColor);
+      for (const label of await badges.locator(".MuiChip-label").all()) {
+        expect(
+          await label.evaluate((el) => el.scrollWidth <= el.clientWidth),
+        ).toBe(true);
+      }
+      expect(await contrast(badges.nth(1))).toBeGreaterThanOrEqual(4.5);
       const headerColor =
         theme === "light" ? "rgb(0, 59, 99)" : "rgb(218, 236, 246)";
       const headers = page
