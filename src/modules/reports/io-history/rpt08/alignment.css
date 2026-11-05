@@ -307,7 +307,7 @@
   order: 1;
   margin-inline-start: auto;
 }
-@container hn-rpt08-layout (max-width: 1280px) {
+@container hn-rpt08-layout (max-width: 760px) {
   #rpt08-history-report .rpt08-page-header {
     grid-template-columns: minmax(0, 1fr);
   }
