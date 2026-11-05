@@ -1328,7 +1328,7 @@ export default function WarrantyComponentsReport() {
                                   flex: "0 0 44px",
                                   height: 44,
                                   borderRadius: "var(--ops-radius-control)",
-                                  bgcolor: "var(--ops-pale)",
+                                  bgcolor: "transparent",
                                   color: "var(--ops-link)",
                                   fontSize: 22,
                                 }}

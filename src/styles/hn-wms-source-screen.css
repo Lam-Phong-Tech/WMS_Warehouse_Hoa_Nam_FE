@@ -899,7 +899,6 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
 }
 
 [data-report-screen="RPT-06"] .warranty-sku-cell > *,
-[data-report-screen="RPT-06"] .warranty-case-cell > *,
 [data-report-screen="RPT-06"] .warranty-component-cell {
   display: block;
   width: 100%;
