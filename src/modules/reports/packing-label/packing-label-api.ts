@@ -1,3 +1,8 @@
+import {
+  snapshotMissing,
+  snapshotPayload,
+  snapshotItems,
+} from "./packing-label-view";
 import { useMemo } from "react";
 import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { useQuery } from "@tanstack/react-query";
@@ -103,6 +108,10 @@ export type PackingLabelDetail = {
   appliedAt: string;
   createdAt: string;
   content: string;
+  snapshotRecipient: string;
+  missingFields: string[];
+  items: { code: string; name: string; quantity: number; unit: string }[];
+  sourceNo: string;
   attempts: PackingLabelEvent[];
 };
 
@@ -143,6 +152,7 @@ export type PackingLabelDimension = {
   skuCount: number;
   skuSummary: string;
   applied: boolean;
+  totalAttempts?: number;
 };
 
 type RawEvent = {
@@ -158,6 +168,26 @@ type RawEvent = {
   reasonCode: string;
   reasonNote: string;
 };
+
+function compareRawEvents(left: RawEvent, right: RawEvent): number {
+  const a = Date.parse(left.attemptedAt),
+    b = Date.parse(right.attemptedAt);
+  return (
+    (Number.isFinite(a) && Number.isFinite(b)
+      ? a - b
+      : left.attemptedAt.localeCompare(right.attemptedAt)) ||
+    left.attemptNo - right.attemptNo ||
+    left.eventId.localeCompare(right.eventId)
+  );
+}
+function numberAttempts(events: RawEvent[]): RawEvent[] {
+  const counts = new Map<string, number>();
+  return [...events].sort(compareRawEvents).map((event) => {
+    const next = (counts.get(event.labelId) ?? 0) + 1;
+    counts.set(event.labelId, next);
+    return { ...event, attemptNo: event.attemptNo || next };
+  });
+}
 
 function readRawEvent(row: Raw): RawEvent {
   const metadata = objectOf(row.metadata);
@@ -201,9 +231,7 @@ function resolveActions(events: RawEvent[]): Map<string, PackingLabelAction> {
   const actions = new Map<string, PackingLabelAction>();
   for (const bucket of byLabel.values()) {
     let successSoFar = 0;
-    for (const event of [...bucket].sort((left, right) =>
-      left.attemptedAt.localeCompare(right.attemptedAt),
-    )) {
+    for (const event of [...bucket].sort(compareRawEvents)) {
       if (event.result === "PRINTED") successSoFar += 1;
       const derived: PackingLabelAction =
         event.eventType === "REPRINT" || successSoFar > 1 ? "REPRINT" : "PRINT";
@@ -304,15 +332,16 @@ export function usePackingLabelReport({
         skuCount: n(row.sku_count),
         skuSummary: text(row.sku_summary, ""),
         applied: row.applied === true,
+        totalAttempts: n(row.total_attempts),
       });
     }
     return map;
   }, [labelLog.data]);
 
   const events = useMemo(() => {
-    const raw = listOf(eventLog.data?.rows)
-      .map(readRawEvent)
-      .filter((event) => event.eventId !== "" && event.labelId !== "");
+    const raw = numberAttempts(
+      listOf(eventLog.data?.rows).map(readRawEvent),
+    ).filter((event) => event.eventId !== "" && event.labelId !== "");
     // Chỉ giữ lần in của các nhãn thuộc kỳ đang xem — cùng tập dòng mà
     // `/reports/export` sẽ xuất ra cho report_code `label-log`.
     const inPeriod = raw.filter((event) => labels.has(event.labelId));
@@ -422,8 +451,10 @@ export function usePackingLabelSnapshot(
     const label = context.labels.get(labelId);
     if (!row && !label) return null;
 
-    const payload = objectOf(row?.label_payload);
-    const rawAttempts = listOf(row?.print_events).map(readRawEvent);
+    const payload = snapshotPayload(row?.label_payload);
+    const rawAttempts = numberAttempts(
+      listOf(row?.print_events).map(readRawEvent),
+    );
     const actions = resolveActions(rawAttempts);
     const attempts = rawAttempts
       .map((event) => ({
@@ -461,11 +492,14 @@ export function usePackingLabelSnapshot(
     // chỉ có snapshot thô thì rơi về số hiện vật đếm được trong payload.
     const itemIds = listOf(payload.item_ids);
     const content =
-      text(payload.sku_summary, "") ||
-      listOf(payload.items).map((item) => {
-        const code = text(item.sku_code, "");
-        return code ? `${code} x${n(item.quantity, 1)}` : "";
-      }).filter(Boolean).join(", ") ||
+      (typeof payload.sku_summary === "string" ? payload.sku_summary : "") ||
+      snapshotItems(payload)
+        .map((item) => {
+          const code = text(item.sku_code, "");
+          return code ? `${code} x${n(item.quantity, 1)}` : "";
+        })
+        .filter(Boolean)
+        .join(", ") ||
       label?.skuSummary ||
       (itemIds.length > 0
         ? tStatic("reports.packingLabel.itemCountShort", {
@@ -479,12 +513,29 @@ export function usePackingLabelSnapshot(
       labelCode: text(payload.label_code, label?.labelCode ?? ""),
       outboundNo: text(payload.outbound_no, label?.outboundNo ?? ""),
       outboundDate: label?.outboundDate ?? "",
-      recipient: label?.recipient ?? "",
+      recipient: text(payload.recipient_name ?? payload.customer_name, ""),
       status: text(row?.status, label?.status ?? ""),
       version: row?.version === undefined ? "" : `v${n(row.version)}`,
       appliedAt: text(row?.applied_at, ""),
       createdAt: text(row?.created_at, label?.createdAt ?? ""),
       content,
+      snapshotRecipient: text(
+        payload.recipient_name ?? payload.customer_name,
+        "",
+      ),
+      missingFields: snapshotMissing(payload),
+      sourceNo: text(
+        payload.source_request_no ??
+          payload.outbound_request_no ??
+          payload.request_no,
+        "",
+      ),
+      items: listOf(payload.items).map((item) => ({
+        code: text(item.sku_code, ""),
+        name: text(item.sku_name, ""),
+        quantity: n(item.quantity),
+        unit: text(item.unit, ""),
+      })),
       attempts,
     };
   }, [labelId, query.data, context]);
