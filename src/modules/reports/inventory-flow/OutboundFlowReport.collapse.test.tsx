@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+import { useInventoryFlowSnapshot } from "./inventory-flow-api";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
@@ -25,13 +27,13 @@ const snapshot: InventoryFlowSnapshot = {
 
 vi.mock("./inventory-flow-api", () => ({
   ISO_DATE: "YYYY-MM-DD",
-  useInventoryFlowSnapshot: () => ({
+  useInventoryFlowSnapshot: vi.fn(() => ({
     snapshot,
     loading: false,
     fetching: false,
     error: null,
     refetch: vi.fn(),
-  }),
+  })),
 }));
 vi.mock("@/modules/reports/components/ReportWarehouseCard", () => ({
   ReportWarehouseCard: () => null,
@@ -113,7 +115,9 @@ describe("RPT-01B · phân trang phiếu xuất", () => {
 
     const rows = () =>
       within(
-        document.querySelector(".outbound-table-wrap tbody")!,
+        document.querySelector<HTMLTableSectionElement>(
+          ".outbound-table-wrap tbody",
+        )!,
       ).getAllByRole("row");
     const pageSize = screen.getByRole("combobox", {
       name: "Số dòng mỗi trang",
@@ -128,6 +132,7 @@ describe("RPT-01B · phân trang phiếu xuất", () => {
     ).toEqual(["10", "20", "50"]);
     fireEvent.click(screen.getByRole("button", { name: "2" }));
     expect(rows()).toHaveLength(1);
+    expect(within(rows()[0]).getAllByRole("cell")[0]).toHaveTextContent(/^11$/);
 
     for (const size of [20, 50]) {
       fireEvent.change(pageSize, { target: { value: String(size) } });
@@ -138,4 +143,113 @@ describe("RPT-01B · phân trang phiếu xuất", () => {
     fireEvent.change(pageSize, { target: { value: "10" } });
     expect(rows()).toHaveLength(10);
   });
+});
+
+describe("RPT-01B · bộ lọc báo cáo", () => {
+  it("lọc từ thanh đầu trang theo người nhận và trạng thái rồi đặt lại", async () => {
+    snapshot.documents = [
+      {
+        id: "a",
+        document_no: "PX-A",
+        doc_type: "OUTBOUND",
+        status: "POSTED",
+        warehouse_code: "HN",
+        counterpart: "Đại lý A",
+        created_by_name: "Admin",
+        posted_at: "2026-10-30",
+        document_date: "2026-10-30",
+        drillKey: "",
+      },
+      {
+        id: "b",
+        document_no: "PX-B",
+        doc_type: "OUTBOUND",
+        status: "DRAFT",
+        warehouse_code: "HN",
+        counterpart: "Đại lý B",
+        created_by_name: "Admin",
+        posted_at: "",
+        document_date: "2026-10-30",
+        drillKey: "",
+      },
+    ];
+    renderWithProviders(<OutboundFlowReport />);
+    const filters = screen.getByRole("region", {
+      name: "Bộ lọc báo cáo xuất kho",
+    });
+    const recipient = within(filters).getByRole("combobox", {
+      name: "Chọn người nhận",
+    });
+    await waitFor(() => expect(recipient).toBeEnabled());
+    fireEvent.click(recipient);
+    fireEvent.click(within(filters).getByRole("option", { name: "Đại lý B" }));
+    fireEvent.click(
+      within(filters).getByRole("combobox", {
+        name: "Chọn trạng thái phiếu xuất",
+      }),
+    );
+    fireEvent.click(within(filters).getByRole("option", { name: "Nháp" }));
+    fireEvent.click(within(filters).getByRole("button", { name: "Áp dụng" }));
+    const table = () =>
+      document.querySelector<HTMLTableSectionElement>(
+        ".outbound-table-wrap tbody",
+      )!;
+    await waitFor(() =>
+      expect(within(table()).getAllByRole("row")).toHaveLength(1),
+    );
+    expect(table()).toHaveTextContent("PX-B");
+    expect(table()).not.toHaveTextContent("PX-A");
+    await waitFor(() =>
+      expect(
+        within(filters).getByRole("button", { name: "Đặt lại" }),
+      ).toBeEnabled(),
+    );
+    fireEvent.click(within(filters).getByRole("button", { name: "Đặt lại" }));
+    await waitFor(() =>
+      expect(within(table()).getAllByRole("row")).toHaveLength(2),
+    );
+    const toolbar = screen.getByRole("region", {
+      name: "Bộ lọc danh sách phiếu xuất",
+    });
+    expect(
+      within(toolbar).queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        within(toolbar).getByRole("combobox", { name: "Lọc người nhận" }),
+      ).toBeEnabled(),
+    );
+    fireEvent.click(
+      within(toolbar).getByRole("combobox", { name: "Lọc người nhận" }),
+    );
+    fireEvent.click(
+      within(toolbar).getByRole("option", { name: "Người nhận: Đại lý A" }),
+    );
+    await waitFor(() =>
+      expect(within(table()).getAllByRole("row")).toHaveLength(1),
+    );
+    expect(table()).toHaveTextContent("PX-A");
+    expect(within(table()).getAllByRole("cell")[0]).toHaveTextContent(/^1$/);
+    fireEvent.click(within(toolbar).getByRole("button", { name: "Xóa lọc" }));
+    expect(within(table()).getAllByRole("row")).toHaveLength(2);
+  });
+});
+
+it("áp dụng khoảng ngày được chọn ở đầu báo cáo vào truy vấn dữ liệu", async () => {
+  renderWithProviders(<OutboundFlowReport />);
+  const filters = screen.getByRole("region", {
+    name: "Bộ lọc báo cáo xuất kho",
+  });
+  const from = within(filters).getByRole("button", { name: "Từ ngày" });
+  await waitFor(() => expect(from).toBeEnabled());
+  fireEvent.click(from);
+  fireEvent.click(await screen.findByRole("button", { name: "Hôm qua" }));
+  fireEvent.click(within(filters).getByRole("button", { name: "Áp dụng" }));
+  const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+  await waitFor(() =>
+    expect(useInventoryFlowSnapshot).toHaveBeenLastCalledWith({
+      from: yesterday,
+      to: yesterday,
+    }),
+  );
 });

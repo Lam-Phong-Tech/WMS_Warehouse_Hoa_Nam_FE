@@ -210,4 +210,58 @@ describe("stock reconciliation evidence navigation", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/SN-SEN-/)).not.toBeInTheDocument();
   });
+  it("keeps pagination valid when changing page size and filtering", () => {
+    const rows = Array.from({ length: 25 }, (_, index) => ({
+      warehouse_code: "HN01",
+      sku_code: `PAGE-${String(index + 1).padStart(2, "0")}`,
+      sku_name: "Hàng phân trang",
+      sku_type: index === 24 ? "COMPONENT" : "PRODUCT",
+      opening: 1,
+      receipt_net: 0,
+      issue_net: 0,
+      component_issue_net: 0,
+      reversal_unlinked_net: 0,
+      closing: 1,
+      matched: true,
+    }));
+    vi.mocked(useInventoryFlowSnapshot).mockReturnValue({
+      snapshot: { rows, daily: [], ledger: [], documents: [] },
+      loading: false,
+      fetching: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    vi.mocked(useStockReconcileSnapshot).mockReturnValue({
+      snapshot: { rows: [] },
+      loading: false,
+      fetching: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    renderWithProviders(<StockReconcileReport />);
+    const pageSize = screen.getByRole("combobox", {
+      name: "Số dòng mỗi trang",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
+    expect(
+      screen.getByRole("button", { name: /Xem bằng chứng PAGE-11/ }),
+    ).toBeInTheDocument();
+    fireEvent.change(pageSize, { target: { value: "20" } });
+    expect(
+      screen.getByRole("button", { name: /Xem bằng chứng PAGE-01/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Xem bằng chứng PAGE-20/ }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Chọn nhóm hàng / SKU" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "Linh kiện" }));
+    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
+    expect(
+      screen.getByRole("button", { name: /Xem bằng chứng PAGE-25/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Trang sau" })).toBeDisabled();
+  });
 });

@@ -992,7 +992,7 @@
 }
 
 .rpt02-chart-table .chart-table__body {
-  max-height: 210px;
+  max-height: clamp(280px, 55vh, 560px);
   overflow: auto;
   border-top: 1px solid var(--rpt02-line);
 }
@@ -2574,4 +2574,93 @@
   .rpt02-evidence__metrics {
     grid-template-columns: 1fr;
   }
+}
+
+/* Keep chart data aligned with its content instead of stretching below the scroll area. */
+.hn-rpt02 .rpt02-chart-card {
+  align-self: start;
+}
+.hn-rpt02 .rpt02-chart-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ops-surface);
+}
+
+/* Use the same date / icon-filter arrangement as the inbound report. */
+.hn-rpt02 .rpt02-filter {
+  grid-template-columns: minmax(360px, 1.5fr) minmax(240px, 1fr) minmax(
+      240px,
+      1fr
+    );
+  gap: 12px;
+  padding: 16px 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.hn-rpt02 .rpt02-filter > .rpt02-field {
+  grid-column: auto;
+  grid-row: auto;
+  min-width: 0;
+}
+.hn-rpt02 .rpt02-field--date {
+  grid-column: 1;
+}
+.hn-rpt02 .rpt02-field .rpt02-date-range {
+  width: 100%;
+}
+.hn-rpt02 .rpt02-field .rpt02-date-range .hn-vuexy-date-field {
+  min-height: 48px;
+  font-weight: 500;
+}
+.hn-rpt02 .rpt02-filter__actions {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+}
+.hn-rpt02 .rpt02-filter__note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.hn-rpt02 .rpt02-pagination {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.hn-rpt02 .rpt02-page-size {
+  margin-left: auto;
+}
+.hn-rpt02 .rpt02-page-size select {
+  min-height: 36px;
+  padding: 0 30px 0 12px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  color: var(--ops-text);
+  background: var(--ops-surface);
+  font: inherit;
+}
+@container hn-rpt02 (max-width: 1000px) {
+  .hn-rpt02 .rpt02-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-rpt02 .rpt02-filter > .rpt02-field--date {
+    grid-column: 1 / -1;
+  }
+}
+@container hn-rpt02 (max-width: 560px) {
+  .hn-rpt02 .rpt02-filter {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-rpt02 .rpt02-filter > .rpt02-field {
+    grid-column: 1;
+  }
+  .hn-rpt02 .rpt02-filter__actions {
+    display: flex;
+  }
+}
+
+.hn-rpt02 .rpt02-filter .inbound-filter-combobox__trigger {
+  height: 44px;
+}
+.hn-rpt02 .rpt02-filter .inbound-filter-combobox {
+  font-weight: 600;
 }

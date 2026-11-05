@@ -1,3 +1,5 @@
+import { ReportFilterCombobox } from "../components/ReportFilterCombobox";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -10,7 +12,7 @@ import {
 } from "@/shared/constants/wms-permissions";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { UiSelect, VuexyDemoIcon } from "@/shared/ui";
+import { VuexyDemoIcon } from "@/shared/ui";
 import {
   ISO_DATE,
   sumRows,
@@ -33,7 +35,6 @@ import { tStatic as tUi } from "@/shared/i18n/useT";
 
 type DateRange = { from: string; to: string };
 type Filters = DateRange & {
-  warehouse: string;
   kind: string;
   reconcile: string;
 };
@@ -69,8 +70,6 @@ function reconcileState(
   return "review";
 }
 
-const PAGE_SIZE = 9;
-
 function defaultRange(): DateRange {
   return {
     from: dayjs().subtract(6, "day").format(ISO_DATE),
@@ -79,7 +78,7 @@ function defaultRange(): DateRange {
 }
 
 function defaultFilters(): Filters {
-  return { ...defaultRange(), warehouse: "", kind: "", reconcile: "" };
+  return { ...defaultRange(), kind: "", reconcile: "" };
 }
 
 function scrollOwnerOf(element: HTMLElement | null): HTMLElement | null {
@@ -661,6 +660,7 @@ export default function StockReconcileReport() {
   const [applied, setApplied] = useState<Filters>(defaultFilters);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [detailTab, setDetailTab] = useState<"reconcile" | "flow">("reconcile");
   const [onlyReview, setOnlyReview] = useState(false);
   const [expanded, setExpanded] = useState({
@@ -706,37 +706,20 @@ export default function StockReconcileReport() {
     scrollReportToTop(pageRef.current);
   }, [location.key]);
 
-  const warehouseOptions = useMemo(() => {
-    const values = new Set<string>();
-    flow.snapshot.rows.forEach(
-      (row) => row.warehouse_code && values.add(row.warehouse_code),
-    );
-    reconciliation.snapshot.rows.forEach(
-      (row) => row.warehouse_code && values.add(row.warehouse_code),
-    );
-    return [...values].sort((left, right) => left.localeCompare(right, "vi"));
-  }, [flow.snapshot.rows, reconciliation.snapshot.rows]);
-
   const scopedFlowRows = useMemo(
     () =>
       flow.snapshot.rows.filter(
-        (row) =>
-          (applied.warehouse === "" ||
-            row.warehouse_code === applied.warehouse) &&
-          (applied.kind === "" || row.sku_type === applied.kind),
+        (row) => applied.kind === "" || row.sku_type === applied.kind,
       ),
-    [applied.kind, applied.warehouse, flow.snapshot.rows],
+    [applied.kind, flow.snapshot.rows],
   );
 
   const scopedReconciliationRows = useMemo(
     () =>
       reconciliation.snapshot.rows.filter(
-        (row) =>
-          (applied.warehouse === "" ||
-            row.warehouse_code === applied.warehouse) &&
-          (applied.kind === "" || row.item_kind === applied.kind),
+        (row) => applied.kind === "" || row.item_kind === applied.kind,
       ),
-    [applied.kind, applied.warehouse, reconciliation.snapshot.rows],
+    [applied.kind, reconciliation.snapshot.rows],
   );
 
   const allRows = useMemo(
@@ -786,11 +769,11 @@ export default function StockReconcileReport() {
   const systemTotal = allRows.reduce((sum, row) => sum + row.ledgerStock, 0);
   const actualTotal = allRows.reduce((sum, row) => sum + row.actual, 0);
   const deltaTotal = actualTotal - systemTotal;
-  const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(displayRows.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const visibleRows = displayRows.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
   );
 
   const applyFilters = () => {
@@ -957,7 +940,6 @@ export default function StockReconcileReport() {
               className={`rpt02-field rpt02-field--date${invalidRange ? " is-invalid" : ""}`}
             >
               <ReportDateRangePicker
-                className="rpt02-date-range"
                 popupClassName="rpt02-date-popup"
                 value={datePickerValue(draft)}
                 onChange={(value) =>
@@ -976,32 +958,21 @@ export default function StockReconcileReport() {
               ) : null}
             </div>
 
-            <div className="rpt02-field">
-              <span>{tUi("updatedUi.text_19c608bfa103")}</span>
-              <UiSelect
-                fullWidth
-                aria-label={tUi("updatedUi.text_19c608bfa103")}
-                value={draft.warehouse}
-                placeholder={tUi("reports.inventoryFlow.warehouseAll")}
-                options={warehouseOptions.map((warehouse) => ({
-                  value: warehouse,
-                  label: warehouse,
-                }))}
-                onChange={(warehouse) =>
-                  setDraft((current) => ({ ...current, warehouse }))
-                }
-                disabled={updating || refreshing}
-              />
-            </div>
-
-            <div className="rpt02-field">
-              <span>{tUi("updatedUi.text_4967fc6e0793")}</span>
-              <UiSelect
-                fullWidth
-                aria-label={tUi("updatedUi.text_4967fc6e0793")}
+            <div className="rpt02-field rpt02-field--kind">
+              <ReportFilterCombobox
+                id="rpt02-kind"
                 value={draft.kind}
-                placeholder={tUi("reports.stockReconcile.categoryAll")}
+                ariaLabel="Chọn nhóm hàng / SKU"
+                icon="package-search"
+                searchPlaceholder="Tìm nhóm hàng..."
                 options={[
+                  {
+                    value: "",
+                    label:
+                      tUi("updatedUi.text_4967fc6e0793") +
+                      ": " +
+                      tUi("reports.stockReconcile.categoryAll"),
+                  },
                   { value: "PRODUCT", label: tUi("dashboard.skuType.product") },
                   {
                     value: "COMPONENT",
@@ -1014,15 +985,21 @@ export default function StockReconcileReport() {
                 disabled={updating || refreshing}
               />
             </div>
-
-            <div className="rpt02-field">
-              <span>{tUi("dashboard.equation.statusLabel")}</span>
-              <UiSelect
-                fullWidth
-                aria-label={tUi("dashboard.equation.statusLabel")}
+            <div className="rpt02-field rpt02-field--status">
+              <ReportFilterCombobox
+                id="rpt02-status"
                 value={draft.reconcile}
-                placeholder={tUi("reports.inventoryFlow.statusAll")}
+                ariaLabel="Chọn trạng thái đối soát"
+                icon="file-clock"
+                searchPlaceholder="Tìm trạng thái..."
                 options={[
+                  {
+                    value: "",
+                    label:
+                      tUi("dashboard.equation.statusLabel") +
+                      ": " +
+                      tUi("reports.inventoryFlow.statusAll"),
+                  },
                   {
                     value: "MATCH",
                     label: tUi("reports.inventoryFlowReport.matched"),
@@ -1691,13 +1668,31 @@ export default function StockReconcileReport() {
                           <footer className="rpt02-pagination hn-report-pagination-footer">
                             <span>
                               {tUi("putaway.queue.showing") + " "}
-                              {(currentPage - 1) * PAGE_SIZE + 1}–
+                              {(currentPage - 1) * pageSize + 1}–
                               {Math.min(
-                                currentPage * PAGE_SIZE,
+                                currentPage * pageSize,
                                 displayRows.length,
                               )}{" "}
                               trong {displayRows.length} SKU
                             </span>
+                            <label className="rpt02-page-size">
+                              <select
+                                value={pageSize}
+                                aria-label={tUi("shared.table.rowsPerPageAria")}
+                                onChange={(event) => {
+                                  setPageSize(Number(event.target.value));
+                                  setPage(1);
+                                }}
+                              >
+                                {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                                  <option key={size} value={size}>
+                                    {tUi("shared.table.perPage", {
+                                      size: String(size),
+                                    })}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
                             <div className="hn-report-pagination">
                               <button
                                 type="button"
@@ -1711,9 +1706,35 @@ export default function StockReconcileReport() {
                               >
                                 <Icon name="chevron-left" />
                               </button>
-                              <span>
-                                Trang {currentPage} / {totalPages}
-                              </span>
+                              {Array.from(
+                                { length: Math.min(3, totalPages) },
+                                (_, index) => {
+                                  const first = Math.min(
+                                    Math.max(currentPage - 1, 1),
+                                    Math.max(1, totalPages - 2),
+                                  );
+                                  const number = first + index;
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={number}
+                                      aria-current={
+                                        number === currentPage
+                                          ? "page"
+                                          : undefined
+                                      }
+                                      className={
+                                        number === currentPage
+                                          ? "is-active"
+                                          : undefined
+                                      }
+                                      onClick={() => setPage(number)}
+                                    >
+                                      {number}
+                                    </button>
+                                  );
+                                },
+                              )}
                               <button
                                 type="button"
                                 aria-label="Trang sau"
