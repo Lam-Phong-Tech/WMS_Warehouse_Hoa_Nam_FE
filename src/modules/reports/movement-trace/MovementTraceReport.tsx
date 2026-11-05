@@ -1023,20 +1023,6 @@ export default function MovementTraceReport() {
             onChange={(value) => updateFilters({ traceBy: value as TraceBy })}
           />
           <ReportFilterCombobox
-            id="trace-warehouse"
-            value="hoa-nam"
-            ariaLabel={t("reports.traceability.warehouse")}
-            icon="warehouse"
-            searchPlaceholder={t("reports.traceability.warehouse")}
-            options={[
-              {
-                value: "hoa-nam",
-                label: `${t("reports.traceability.warehouse")}: ${t("reports.traceability.warehouseName")}`,
-              },
-            ]}
-            onChange={() => undefined}
-          />
-          <ReportFilterCombobox
             id="trace-movement-type"
             value={draft.movementType}
             ariaLabel={t("reports.traceability.status")}

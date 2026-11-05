@@ -1614,7 +1614,7 @@
 #traceability-rpt03 .trace-report-filters__grid {
   display: grid;
   grid-template-columns:
-    minmax(320px, 2fr) minmax(320px, 1.8fr) repeat(3, minmax(160px, 1fr))
+    minmax(320px, 2fr) minmax(320px, 1.8fr) repeat(2, minmax(160px, 1fr))
     auto;
   align-items: start;
   gap: 12px;
