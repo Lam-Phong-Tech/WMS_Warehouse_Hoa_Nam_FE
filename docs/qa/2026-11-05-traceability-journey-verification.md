@@ -27,3 +27,7 @@ Frontend: 13 UI behavior tests and 7 API contract tests pass before final integr
 - Final production build (TypeScript + Vite + manifest): passed; existing large-chunk warning remains.
 - Scoped ESLint and git diff --check: passed.
 - Inventory lookup opens the authorized inventory module in a separate tab; report filters remain mounted. Source warranty/reversal deep links use verified routes.
+
+## User-requested interface rollback
+
+The user requested the earlier traceability interface after reviewing the lifecycle views. The traceability route now uses MovementTraceReport again, including the already-approved unframed 48px filters, automatic filtering and removed heading description/refresh/warehouse card. Outbound and stock report changes remain. The lifecycle API and components are retained but are not loaded by this route.

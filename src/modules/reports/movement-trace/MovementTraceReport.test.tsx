@@ -14,7 +14,7 @@
  * Fixture dưới đây vì thế mang `source_no`, và hai payload phụ đã bỏ.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, within } from "@testing-library/react";
+import { screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -110,7 +110,11 @@ const PAGE_PAYLOAD: Record<string, unknown> = {
 // phân trang — xem fetchAllSkus); cùng dòng dữ liệu với "/products" ở trên.
 PAYLOAD["/skus/lookup"] = PAGE_PAYLOAD["/products"];
 PAYLOAD["/stock-movements/trace-by-code"] = {
-  physical_code: { code_value: "RFID-BOX-1", carrier_type: "RFID", status: "ACTIVE" },
+  physical_code: {
+    code_value: "RFID-BOX-1",
+    carrier_type: "RFID",
+    status: "ACTIVE",
+  },
   resolved_type: "CONTAINER",
   resolved_id: "box-1",
   resolved_object: { container_code: "BOX-1", container_type: "BOX" },
@@ -197,24 +201,26 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     expect(screen.getByText("Phiếu đảo cho phiếu xuất")).toBeInTheDocument();
   });
 
-  it("lọc theo Actor rồi Đặt lại đưa ledger về đủ ba dòng", async () => {
+  it("tự lọc theo người thực hiện và chỉ hiện Xóa lọc khi có điều kiện", async () => {
     const user = userEvent.setup();
     renderReport();
     await screen.findByRole("table");
 
-    const resetButton = screen.getByRole("button", { name: "Đặt lại" });
-    expect(resetButton).toBeDisabled();
+    const filters = within(
+      document.querySelector<HTMLFormElement>("form.trace-report-filters")!,
+    );
+    expect(
+      filters.queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Người thực hiện"), "thukho");
-    await user.click(screen.getByRole("button", { name: /Tra cứu/ }));
 
-    expect(
-      within(await screen.findByRole("table"))
-        .getAllByRole("row")
-        .slice(1),
-    ).toHaveLength(1);
-
-    expect(resetButton).toBeEnabled();
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("table")).getAllByRole("row").slice(1),
+      ).toHaveLength(1),
+    );
+    const resetButton = filters.getByRole("button", { name: "Xóa lọc" });
     await user.click(resetButton);
     expect(
       within(await screen.findByRole("table"))
@@ -278,10 +284,9 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     expect(await screen.findByLabelText("Tra cứu mã vật lý")).toHaveValue(
       "RFID-BOX-1",
     );
-    expect(http.get).toHaveBeenCalledWith(
-      "/stock-movements/trace-by-code",
-      { params: { code: "RFID-BOX-1" } },
-    );
+    expect(http.get).toHaveBeenCalledWith("/stock-movements/trace-by-code", {
+      params: { code: "RFID-BOX-1" },
+    });
   });
 
   it("cột chuỗi phiếu đảo hiện mã biến động thay cho định danh chuỗi nội bộ", async () => {

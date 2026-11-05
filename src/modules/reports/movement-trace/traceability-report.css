@@ -104,14 +104,7 @@
   white-space: nowrap;
 }
 
-#traceability-rpt03 .trace-head-actions > .MuiButton-root:first-child {
-  border-color: transparent;
-  background: var(--ops-pale);
-  color: var(--ops-link);
-  box-shadow: none;
-}
-
-#traceability-rpt03 .trace-head-actions > .MuiButton-root:nth-child(2) {
+#traceability-rpt03 .trace-head-actions > .trace-export-button {
   min-width: 162px;
   background: var(--ops-primary);
   color: white;
@@ -1381,7 +1374,7 @@
 
   #traceability-rpt03 .trace-head-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   #traceability-rpt03 .trace-head-actions > .MuiButton-root {
@@ -1617,5 +1610,143 @@
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
+  }
+}
+
+/* Shared table filter rules: unframed, inline field names, 48px controls. */
+#traceability-rpt03 .trace-report-filters {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#traceability-rpt03 .trace-report-filters__grid {
+  display: grid;
+  grid-template-columns:
+    minmax(320px, 2fr) minmax(320px, 1.8fr) repeat(3, minmax(160px, 1fr))
+    auto;
+  align-items: start;
+  gap: 12px;
+}
+#traceability-rpt03 .trace-report-filters__grid > *,
+#traceability-rpt03 .trace-report-filters__advanced-grid > * {
+  min-width: 0;
+}
+#traceability-rpt03 .trace-report-filters .MuiInputBase-root,
+#traceability-rpt03 .trace-report-filters .inbound-filter-combobox__trigger {
+  height: 48px;
+  min-height: 48px;
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-text);
+  font-size: 14px;
+  font-weight: 400;
+  box-shadow: none;
+}
+#traceability-rpt03 .trace-report-filters .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-line);
+}
+#traceability-rpt03 .trace-report-filters .inbound-filter-combobox__trigger {
+  border: 1px solid var(--ops-line);
+}
+#traceability-rpt03 .trace-report-filters .MuiInputBase-root.Mui-focused,
+#traceability-rpt03
+  .trace-report-filters
+  .inbound-filter-combobox__trigger:focus-visible,
+#traceability-rpt03
+  .trace-report-filters
+  .inbound-filter-combobox[data-open="true"]
+  .inbound-filter-combobox__trigger {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+#traceability-rpt03
+  .trace-report-filters
+  .Mui-focused
+  .MuiOutlinedInput-notchedOutline,
+#traceability-rpt03
+  .trace-report-filters
+  .inbound-filter-combobox[data-open="true"]
+  .inbound-filter-combobox__trigger {
+  border-color: var(--ops-link);
+}
+#traceability-rpt03 .trace-report-filters .hn-report-date-range {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+#traceability-rpt03
+  .trace-report-filters
+  .hn-report-date-range
+  .hn-vuexy-date-field {
+  height: 48px !important;
+  min-height: 48px !important;
+  border: 1px solid var(--ops-line);
+}
+#traceability-rpt03 .trace-report-filters__clear {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ops-radius-control);
+  background: transparent;
+  color: var(--ops-link);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#traceability-rpt03 .trace-report-filters__clear:focus-visible,
+#traceability-rpt03 .trace-report-filters summary:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 2px;
+}
+#traceability-rpt03 .trace-report-filters__error {
+  margin-top: 8px;
+  color: var(--ops-danger);
+  font-size: 13px;
+}
+#traceability-rpt03 .trace-report-filters__advanced {
+  position: static;
+  margin-top: 12px;
+  color: var(--ops-muted);
+  font-size: 13px;
+}
+#traceability-rpt03 .trace-report-filters__advanced summary {
+  width: fit-content;
+  cursor: pointer;
+}
+#traceability-rpt03 .trace-report-filters__advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+@media (max-width: 1599px) {
+  #traceability-rpt03 .trace-report-filters__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  #traceability-rpt03 .trace-report-filters__search {
+    grid-column: 1 / -1;
+  }
+  #traceability-rpt03 .trace-report-filters__date {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 1023px) {
+  #traceability-rpt03 .trace-report-filters__grid,
+  #traceability-rpt03 .trace-report-filters__advanced-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  #traceability-rpt03 .trace-report-filters__grid,
+  #traceability-rpt03 .trace-report-filters__advanced-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #traceability-rpt03 .trace-report-filters__date {
+    grid-column: 1;
+  }
+  #traceability-rpt03 .trace-report-filters__clear {
+    justify-self: end;
   }
 }
