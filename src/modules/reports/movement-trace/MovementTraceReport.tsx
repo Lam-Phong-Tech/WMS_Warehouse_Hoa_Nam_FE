@@ -20,9 +20,7 @@ import { checkDateRange, pastDateBounds } from "@/shared/validation/date-rules";
 import { toast } from "sonner";
 import {
   Box,
-  Drawer,
   Stack,
-  UiButton,
   UiStatusBadge,
   type UiStatusTone,
   RADIUS,
@@ -31,7 +29,6 @@ import {
 import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import {
   CheckCircleOutlined,
-  CloseOutlined,
   FileTextOutlined,
   HomeOutlined,
   InboxOutlined,
@@ -57,10 +54,7 @@ import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
 import { useReportRangeAdvice } from "@/modules/reports/operations/report-coverage";
 import { movementTraceCoverageProbe } from "@/modules/reports/operations/report-probes";
 import { ReportRangeAdviceBanner } from "@/modules/reports/operations/ReportRangeAdviceBanner";
-import {
-  RPT_CONTROL_MOTION_SX,
-  RPT_SCROLL_MAX_HEIGHT,
-} from "@/modules/reports/operations/report-tokens";
+import { RPT_SCROLL_MAX_HEIGHT } from "@/modules/reports/operations/report-tokens";
 import { runReportExport } from "@/modules/reports/operations/report-export";
 import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
 import {
@@ -90,6 +84,7 @@ import {
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
 import { VirtualList } from "@/shared/components/data-display/VirtualList";
 import "./traceability-report.css";
+import { MovementEvidenceDrawer } from "./MovementEvidenceDrawer";
 
 /**
  * RPT-MOV-01 — "Truy vết hàng hóa" (/reports/traceability).
@@ -489,51 +484,6 @@ function TraceAnalytics({ rows }: { rows: MovementTraceRow[] }) {
         </span>
       </section>
     </div>
-  );
-}
-
-/**
- * Ô "SL thay đổi" dạng viên.
- *
- * NGOÀI MOCKUP (yêu cầu người dùng 2026-09-03): trước đây in số trần. Dùng
- * ĐÚNG `UiStatusBadge` mà cột "Loại biến động" ngay cạnh đang dùng, nên hai
- * cột cùng hình dạng và cùng bảng màu: tăng = xanh, giảm = đỏ, không đổi =
- * trung tính (0 không phải tăng cũng không phải giảm).
- */
-function QtyDeltaBadge({ value }: { value: number }) {
-  const tone: UiStatusTone =
-    value > 0 ? "success" : value < 0 ? "error" : "neutral";
-  return <UiStatusBadge tone={tone} label={String(value)} />;
-}
-
-function EvidenceField({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <Box
-      sx={{
-        p: "14px",
-        border: `1px solid ${S.border}`,
-        borderRadius: `${RADIUS.sheet / 2}px`,
-        bgcolor: S.bgSurface,
-      }}
-    >
-      <Box
-        component="span"
-        sx={{
-          display: "block",
-          mb: "6px",
-          color: S.textMedium,
-          fontSize: 12,
-        }}
-      >
-        {label}
-      </Box>
-      <Box
-        component="strong"
-        sx={{ display: "block", overflowWrap: "anywhere", fontSize: 13 }}
-      >
-        {value}
-      </Box>
-    </Box>
   );
 }
 
@@ -1686,182 +1636,25 @@ export default function MovementTraceReport() {
         </Box>
       </Box>
 
-      <Drawer
-        anchor="right"
-        open={selected !== null}
-        onClose={() => setSelected(null)}
-      >
-        <Box
-          role="dialog"
-          aria-label={
-            selected
-              ? t("reports.movementTrace.drawerAria", {
-                  code: selected.movementNo || EMPTY_TEXT,
-                })
-              : undefined
+      {selected && selectedKind ? (
+        <MovementEvidenceDrawer
+          row={selected}
+          movementLabel={MOVEMENT_KIND_LABELS[selectedKind]}
+          occurredAtLabel={formatTraceDateTime(selected.occurredAt)}
+          currentStatus={{
+            tone: traceStatusOf(selected).tone,
+            label: t(traceStatusOf(selected).labelKey),
+          }}
+          sourceDocument={
+            [documentCodeOf(selected), movementSourceLabel(selected.sourceType)]
+              .filter(Boolean)
+              .join(" · ") || EMPTY_TEXT
           }
-          sx={{ width: 470, maxWidth: "100vw" }}
-        >
-          {selected && selectedKind ? (
-            <>
-              <Box
-                component="header"
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 2,
-                  p: 3,
-                  borderBottom: `1px solid ${S.border}`,
-                  bgcolor: S.bgSubtle,
-                }}
-              >
-                <Box sx={{ minWidth: 0 }}>
-                  <Box component="span" sx={SECTION_EYEBROW_SX}>
-                    {t("reports.movementTrace.drawerEyebrow")}
-                  </Box>
-                  <Box
-                    component="h2"
-                    sx={{
-                      my: "6px",
-                      fontSize: 20,
-                      fontWeight: 600,
-                      color: S.textHigh,
-                    }}
-                  >
-                    {t("reports.movementTrace.drawerTitle")} ·{" "}
-                    {selected.movementNo || EMPTY_TEXT}
-                  </Box>
-                  <Box sx={{ m: 0, color: S.textMedium, fontSize: 13 }}>
-                    {`${MOVEMENT_KIND_LABELS[selectedKind]} · ${formatTraceDateTime(selected.occurredAt)}`}
-                  </Box>
-                </Box>
-                <Box
-                  component="button"
-                  type="button"
-                  aria-label={t("reports.movementTrace.drawerClose")}
-                  onClick={() => setSelected(null)}
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    flexShrink: 0,
-                    display: "grid",
-                    placeItems: "center",
-                    border: 0,
-                    borderRadius: `${RADIUS.control}px`,
-                    bgcolor: "transparent",
-                    color: S.textMedium,
-                    fontSize: 16,
-                    cursor: "pointer",
-                    ...RPT_CONTROL_MOTION_SX,
-                    "&:hover": { bgcolor: S.secondarySoft },
-                  }}
-                >
-                  <CloseOutlined />
-                </Box>
-              </Box>
-              <Box sx={{ p: 3 }}>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(2, minmax(0, 1fr))",
-                    },
-                    gap: 1.5,
-                  }}
-                >
-                  <EvidenceField
-                    label="SKU"
-                    value={selected.productCode || EMPTY_TEXT}
-                  />
-                  <EvidenceField
-                    label={t("reports.traceability.colTraceCode")}
-                    value={
-                      selected.physicalCode ||
-                      selected.containerId ||
-                      selected.itemId ||
-                      EMPTY_TEXT
-                    }
-                  />
-                  <EvidenceField
-                    label={t("reports.traceability.colCurrentStatus")}
-                    value={
-                      <UiStatusBadge
-                        tone={traceStatusOf(selected).tone}
-                        label={t(traceStatusOf(selected).labelKey)}
-                      />
-                    }
-                  />
-                  <EvidenceField
-                    label={t("reports.traceability.colLocation")}
-                    value={
-                      selected.warehouseCode ||
-                      t("reports.traceability.warehouseName")
-                    }
-                  />
-                  <EvidenceField
-                    label={t("reports.movementTrace.colQtyDelta")}
-                    value={<QtyDeltaBadge value={selected.qtyDelta} />}
-                  />
-                  <EvidenceField
-                    label={t("reports.movementTrace.fieldSourceDoc")}
-                    value={
-                      [
-                        documentCodeOf(selected),
-                        movementSourceLabel(selected.sourceType),
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || EMPTY_TEXT
-                    }
-                  />
-                  <EvidenceField
-                    label={t("reports.movementTrace.actor")}
-                    value={selected.actor || EMPTY_TEXT}
-                  />
-                  <EvidenceField
-                    label={t("reports.movementTrace.fieldReversalChain")}
-                    value={reversalChainText(selected)}
-                  />
-                  {selected.physicalCode ? (
-                    <EvidenceField
-                      label="Mã vật lý"
-                      value={
-                        <Stack spacing={1} sx={{ alignItems: "flex-start" }}>
-                          <span>{selected.physicalCode}</span>
-                          <UiButton
-                            size="small"
-                            appearance="outlined"
-                            onClick={() =>
-                              setSelectedPhysicalCode(selected.physicalCode)
-                            }
-                          >
-                            Truy vết mã vật lý
-                          </UiButton>
-                        </Stack>
-                      }
-                    />
-                  ) : null}
-                  {/* Không có ô "Mã yêu cầu": giá trị cũ là meta.request_id của
-                    CHÍNH lần gọi báo cáo — giống nhau cho mọi dòng, chỉ là mã
-                    đối chiếu log, không phải bằng chứng của biến động này. */}
-                </Box>
-                <Box
-                  sx={{
-                    mt: 2.5,
-                    p: 1.5,
-                    borderRadius: `${RADIUS.control}px`,
-                    bgcolor: S.primarySoft,
-                    color: S.primaryDark,
-                    fontSize: 13,
-                  }}
-                >
-                  {t("reports.movementTrace.readonlyNote")}
-                </Box>
-              </Box>
-            </>
-          ) : null}
-        </Box>
-      </Drawer>
+          reversalChain={reversalChainText(selected)}
+          onClose={() => setSelected(null)}
+          onTrace={() => setSelectedPhysicalCode(selected.physicalCode)}
+        />
+      ) : null}
       {selectedPhysicalCode ? (
         <TraceModal
           movementId={null}

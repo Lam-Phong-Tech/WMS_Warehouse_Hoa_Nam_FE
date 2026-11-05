@@ -3431,11 +3431,13 @@ export const MESSAGES_VI = {
       drawerEyebrow: "CHI TIẾT ĐỐI SOÁT",
       drawerTitle: "Bằng chứng biến động",
       drawerClose: "Đóng bằng chứng",
+      evidenceDetails: "Thông tin ghi nhận",
+      tracePhysicalCode: "Truy vết mã vật lý",
       fieldSourceDoc: "Chứng từ nguồn",
       fieldReversalChain: "Chuỗi bút toán đảo",
       reversedBy: "bị đảo bởi {codes}",
       readonlyNote:
-        "Chi tiết chứng từ là read-only; sổ biến động là append-only nên màn này không sửa/xóa bất kỳ dòng nào.",
+        "Thông tin chỉ xem. Mọi điều chỉnh được ghi nhận riêng để giữ đầy đủ lịch sử biến động.",
     },
     warrantyReport: {
       eyebrow: "BÁO CÁO VẬN HÀNH",

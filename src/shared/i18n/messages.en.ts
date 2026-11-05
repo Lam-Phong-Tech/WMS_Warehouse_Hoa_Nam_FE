@@ -3431,11 +3431,13 @@ export const MESSAGES_EN: MessageTree = {
       drawerEyebrow: "RECONCILIATION DETAIL",
       drawerTitle: "Movement evidence",
       drawerClose: "Close evidence",
+      evidenceDetails: "Record details",
+      tracePhysicalCode: "Trace physical code",
       fieldSourceDoc: "Source document",
       fieldReversalChain: "Reversal entry chain",
       reversedBy: "reversed by {codes}",
       readonlyNote:
-        "Document details are read-only; the movement ledger is append-only, so this screen never edits or deletes any row.",
+        "View only. Corrections are recorded separately to preserve the full movement history.",
     },
     warrantyReport: {
       eyebrow: "OPERATIONS REPORT",
