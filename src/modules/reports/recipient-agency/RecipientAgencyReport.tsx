@@ -1034,21 +1034,6 @@ export default function RecipientAgencyReport() {
                 <h2 id="rpt07-table-title">
                   {tUi("updatedUi.text_3a0b9ba89a40")}
                 </h2>
-                {initialLoading ? (
-                  <LoadingBar width="42px" height={22} />
-                ) : (
-                  <span>
-                    {partial
-                      ? "—"
-                      : noSearchResult
-                        ? tUi("updatedUi.text_f3674c04b5e8") +
-                          " " +
-                          dealers.length +
-                          " " +
-                          tUi("updatedUi.text_9fe632fd6866")
-                        : dealers.length}
-                  </span>
-                )}
               </div>
               <div className="rpt07-search-wrap">
                 <SearchInput
