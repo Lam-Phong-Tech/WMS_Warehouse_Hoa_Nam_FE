@@ -506,8 +506,16 @@ export function HistoryTable({
       <div className="rpt08-table-scroll">
         <table>
           <colgroup>
-            {[5, 16, 10, 18, 22, 10, 14, 5].map((width, index) => (
-              <col key={index} style={{ width: `${width}%` }} />
+            {[
+              "64px",
+              "190px",
+              "120px",
+              "calc(50% - 263px)",
+              "calc(50% - 263px)",
+              "88px",
+              "64px",
+            ].map((width, index) => (
+              <col key={index} style={{ width }} />
             ))}
           </colgroup>
           <thead>
@@ -526,10 +534,12 @@ export function HistoryTable({
                 {tUi("warranty.componentList.colCode")}
               </th>
               <th>{tUi("audit.colObject")}</th>
-              <th className="is-number">
-                {tUi("dashboard.stockMix.colQuantity")}
+              <th
+                className="is-number"
+                aria-label={tUi("dashboard.stockMix.colQuantity")}
+              >
+                SL
               </th>
-              <th>{tUi("inventory.trace.colPerformedBy")}</th>
               <th
                 className="rpt08-actions-cell"
                 aria-label={tUi("reports.importMatchReport.detail")}
@@ -578,7 +588,6 @@ export function HistoryTable({
                     <td className="is-number">
                       {row.quantity === null ? "—" : number(row.quantity)}
                     </td>
-                    <td>{row.actor}</td>
                     <td className="rpt08-actions-cell">
                       <RowActionButton
                         kind="view"

@@ -29,7 +29,7 @@
   margin: 0;
 }
 #rpt08-history-report .rpt08-table-card table {
-  min-width: 1440px;
+  min-width: 1180px;
   color: var(--ops-text);
   font-size: 14px;
   line-height: 22px;

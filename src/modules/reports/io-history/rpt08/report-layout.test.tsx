@@ -76,6 +76,14 @@ describe("RPT-08 shared report presentation", () => {
     expect(
       screen.getByRole("columnheader", { name: "STT" }),
     ).toBeInTheDocument();
+    expect(screen.getAllByRole("columnheader")).toHaveLength(7);
+    expect(
+      screen.getByRole("columnheader", { name: "Số lượng" }),
+    ).toHaveTextContent(/^SL$/);
+    expect(
+      screen.queryByRole("columnheader", { name: "Người thực hiện" }),
+    ).not.toBeInTheDocument();
+    expect(container.querySelector("tbody")).not.toHaveTextContent("Test User");
     expect(
       [...container.querySelectorAll("tbody .rpt08-sequence")].map(
         (cell) => cell.textContent,
