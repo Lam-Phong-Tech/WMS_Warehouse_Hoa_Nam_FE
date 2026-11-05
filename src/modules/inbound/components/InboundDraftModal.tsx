@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import {
@@ -54,9 +55,7 @@ export interface InboundDraftModalProps {
 }
 
 function localToday(): string {
-  const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 10);
+  return businessToday().format("YYYY-MM-DD");
 }
 
 function text(value: unknown): string {
@@ -207,7 +206,7 @@ export function InboundDraftModal({
           parsed.isValid() &&
           parsed.format("YYYY-MM-DD") === formValues.documentDate;
         errors.documentDate =
-          wellFormed && parsed.isAfter(dayjs(), "day")
+          wellFormed && parsed.isAfter(businessToday(), "day")
             ? t("inbound.draft.errDocumentDateFuture")
             : dateCheck.message;
       }
@@ -364,9 +363,7 @@ export function InboundDraftModal({
           <Box component="span" sx={{ color: "text.secondary", mr: 1 }}>
             {t("reverse.detail.fieldCreatedBy")}:
           </Box>
-          {detail.document.createdBy === "-"
-            ? "—"
-            : detail.document.createdBy}
+          {detail.document.createdBy === "-" ? "—" : detail.document.createdBy}
         </Box>
       ) : null}
 

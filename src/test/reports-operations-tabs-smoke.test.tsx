@@ -429,9 +429,14 @@ describe("Báo cáo vận hành · 9 trang render được với payload thật"
     });
     vi.mocked(http.getPage).mockImplementation(async (url: unknown) => {
       const key = String(url);
+      const data = PAGE_PAYLOAD[key] ?? PAYLOAD[key] ?? [];
       return {
-        data: (PAGE_PAYLOAD[key] ?? PAYLOAD[key] ?? []) as never,
-        meta: { current_page: 1, last_page: 1, total: 1 },
+        data: data as never,
+        meta: {
+          current_page: 1,
+          last_page: 1,
+          total: Array.isArray(data) ? data.length : 1,
+        },
       };
     });
     useAuthStore.setState({

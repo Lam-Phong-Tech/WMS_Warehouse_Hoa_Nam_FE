@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import "./component-issue-drawer.css";
 import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useState } from "react";
@@ -54,7 +55,6 @@ import { createRowKey } from "@/shared/components/motion/row-key";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useActiveWarehouses } from "@/shared/data/reference-queries";
-import dayjs from "dayjs";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { useT } from "@/shared/i18n/useT";
@@ -348,7 +348,7 @@ export function ComponentIssueModal({
       const created = await createMutation.mutateAsync({
         warehouse_id: String(warehouse.id),
         warranty_case_id: caseId,
-        document_date: dayjs().format("YYYY-MM-DD"),
+        document_date: businessToday().format("YYYY-MM-DD"),
         note: draftNote.trim() || undefined,
         // Gửi số đã parse từ checkNumber (validateDraftLines đã chặn dòng sai).
         lines: draftLines

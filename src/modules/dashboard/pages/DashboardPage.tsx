@@ -1,3 +1,4 @@
+import { parseDateTime } from "@/shared/utils/date-time";
 /**
  * MÀN "TỔNG QUAN VẬN HÀNH" (MAP-01) — dựng theo demo UI/UX đã chốt
  * `10.WMS_Hoa_Nam_Trang_Tong_Quan.html`: cùng cấu trúc khối, cùng class, cùng
@@ -521,7 +522,7 @@ export default function DashboardPage() {
   }, [overviewData, quick.data, canViewWarranty, t]);
 
   const lastUpdatedAt = overview.dataUpdatedAt
-    ? dayjs(overview.dataUpdatedAt)
+    ? parseDateTime(overview.dataUpdatedAt)
     : null;
   const lastUpdatedLabel = lastUpdatedAt
     ? t("dashboard.lastUpdated.at", { time: lastUpdatedAt.format("HH:mm") })

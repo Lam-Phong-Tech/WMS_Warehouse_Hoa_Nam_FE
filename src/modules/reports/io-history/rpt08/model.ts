@@ -1,3 +1,4 @@
+import { parseDateTime, BUSINESS_TIMEZONE } from "@/shared/utils/date-time";
 import dayjs from "dayjs";
 import type { IoDocType, IoHistoryRow } from "../io-history-api";
 import { ISO_DATE } from "../io-history-api";
@@ -44,18 +45,18 @@ export function percent(value: number): string {
 }
 
 export function displayStamp(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   if (!parsed.isValid()) return "—";
   return parsed.format("DD/MM/YYYY · HH:mm");
 }
 
 export function displayDay(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   return parsed.isValid() ? parsed.format("DD/MM/YYYY") : "—";
 }
 
 export function displayAsOf(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   return parsed.isValid()
     ? parsed.format("DD/MM/YYYY · HH:mm")
     : tUi("updatedUi.text_b495069027b3");
@@ -129,7 +130,9 @@ export function buildDaily(
   for (const key of keys) counts.set(key, { inbound: 0, outbound: 0 });
 
   for (const row of rows) {
-    const key = dayjs(row.timestamp).format(ISO_DATE);
+    const key = parseDateTime(row.timestamp, BUSINESS_TIMEZONE).format(
+      ISO_DATE,
+    );
     const day = counts.get(key);
     if (!day) continue;
     if (row.type === "INBOUND") day.inbound += 1;

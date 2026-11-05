@@ -1,7 +1,7 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { Fragment, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
 import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
 import Box from "@mui/material/Box";
 import Popover from "@mui/material/Popover";
 import { CalendarIcon, NextIcon, PrevIcon } from "@/shared/ui/icons";
@@ -120,7 +120,7 @@ export function UiVuexyDateRangePicker({
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [activeField, setActiveField] = useState<"start" | "end">("start");
   const [panelMonth, setPanelMonth] = useState(() =>
-    (value?.[0] ?? dayjs()).startOf("month"),
+    (value?.[0] ?? businessToday()).startOf("month"),
   );
   const [draftStart, setDraftStart] = useState<Dayjs | null>(
     value?.[0] ?? null,
@@ -139,7 +139,9 @@ export function UiVuexyDateRangePicker({
     setDraftEnd(value?.[1] ?? null);
     setActiveField(field);
     setPanelMonth(
-      ((field === "end" ? value?.[1] : value?.[0]) ?? dayjs()).startOf("month"),
+      ((field === "end" ? value?.[1] : value?.[0]) ?? businessToday()).startOf(
+        "month",
+      ),
     );
     setAnchorEl(event.currentTarget);
   };
@@ -399,7 +401,9 @@ export function UiVuexyDateRangePicker({
                 data-active={activeField === "start"}
                 onClick={() => {
                   setActiveField("start");
-                  setPanelMonth((draftStart ?? dayjs()).startOf("month"));
+                  setPanelMonth(
+                    (draftStart ?? businessToday()).startOf("month"),
+                  );
                 }}
                 sx={pickerFieldTabSx(activeField === "start")}
               >
@@ -417,7 +421,9 @@ export function UiVuexyDateRangePicker({
                 onClick={() => {
                   setActiveField("end");
                   setPanelMonth(
-                    (draftEnd ?? draftStart ?? dayjs()).startOf("month"),
+                    (draftEnd ?? draftStart ?? businessToday()).startOf(
+                      "month",
+                    ),
                   );
                 }}
                 sx={pickerFieldTabSx(activeField === "end")}

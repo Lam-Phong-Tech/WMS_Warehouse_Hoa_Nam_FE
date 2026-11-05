@@ -1,5 +1,11 @@
 import { create } from "zustand";
 
+/** Subscribe timestamp-only views as account settings arrive after the data. */
+export function useDateTimePreferences() {
+  useInterfacePreferencesStore((state) => state.preferences?.timezone);
+  useInterfacePreferencesStore((state) => state.preferences?.date_format);
+}
+
 export type InterfaceAccent = "ocean" | "teal" | "indigo" | "graphite";
 export type InterfaceFontSize = "small" | "medium" | "large";
 export interface InterfacePreferences {

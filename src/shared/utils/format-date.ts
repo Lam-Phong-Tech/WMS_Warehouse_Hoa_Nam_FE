@@ -1,9 +1,12 @@
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 import { useInterfacePreferencesStore } from "@/shared/store/interface-preferences.store";
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { parseDateTime } from "./date-time";
+export {
+  BUSINESS_TIMEZONE,
+  businessToday,
+  getDisplayTimezone,
+  parseDateTime,
+  dateFilterBoundary,
+} from "./date-time";
 
 import { EMPTY_TEXT } from "@/shared/constants/display";
 
@@ -24,7 +27,7 @@ const DATE_TIME_FORMAT = "DD-MM-YYYY HH:mm";
  */
 export function formatDate(dateString?: string | null): string {
   if (!dateString) return EMPTY_TEXT;
-  const parsed = dayjs(dateString);
+  const parsed = parseDateTime(dateString);
   return parsed.isValid()
     ? parsed.format(
         useInterfacePreferencesStore.getState().preferences?.date_format ??
@@ -41,14 +44,7 @@ export function formatDate(dateString?: string | null): string {
 export function formatDateTime(dateString?: string | null): string {
   if (!dateString) return EMPTY_TEXT;
   const preferences = useInterfacePreferencesStore.getState().preferences;
-  let parsed = dayjs(dateString);
-  if (preferences?.timezone && parsed.isValid()) {
-    try {
-      parsed = parsed.tz(preferences.timezone);
-    } catch {
-      /* Invalid persisted zones retain the existing safe formatter. */
-    }
-  }
+  const parsed = parseDateTime(dateString);
   return parsed.isValid()
     ? parsed.format(
         preferences ? `${preferences.date_format} HH:mm` : DATE_TIME_FORMAT,

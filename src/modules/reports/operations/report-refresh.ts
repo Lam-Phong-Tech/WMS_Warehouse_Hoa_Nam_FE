@@ -1,7 +1,8 @@
+import { parseDateTime } from "@/shared/utils/date-time";
 /** Shared report refresh: real read lifetime, one screen gate, no cosmetic delay. */
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import dayjs from "dayjs";
+
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { useT } from "@/shared/i18n/useT";
 import { useForegroundRead } from "@/shared/ui/loading/useForegroundRead";
@@ -71,7 +72,9 @@ export function useReportRefresh({
         }
         toast.success(
           successMessage ??
-            t("reports.common.refreshOk", { time: dayjs().format("HH:mm") }),
+            t("reports.common.refreshOk", {
+              time: parseDateTime().format("HH:mm"),
+            }),
         );
       } catch (error) {
         if (mountedRef.current) {

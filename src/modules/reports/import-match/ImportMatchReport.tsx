@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
@@ -1341,7 +1342,7 @@ export default function ImportMatchReport() {
               ]}
               allowClear={false}
               // Dữ liệu chỉ có trong quá khứ: khoá ngày tương lai (mốc dưới giữ mặc định 2000).
-              maxDate={dayjs().endOf("day")}
+              maxDate={businessToday().endOf("day")}
               presets={periodPresets}
               className="hn-vuexy-date-range"
               popupClassName="hn-vuexy-date-popup"

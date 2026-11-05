@@ -192,8 +192,8 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     await waitFor(() => {
       expect(auditLogService.getAuditLogs).toHaveBeenCalledWith(
         expect.objectContaining({
-          date_from: `${from.format("YYYY-MM-DD")} 00:00:00`,
-          date_to: `${today.format("YYYY-MM-DD")} 23:59:59`,
+          date_from: `${from.format("YYYY-MM-DD")}T00:00:00+07:00`,
+          date_to: `${today.format("YYYY-MM-DD")}T23:59:59.999999+07:00`,
         }),
       );
     });

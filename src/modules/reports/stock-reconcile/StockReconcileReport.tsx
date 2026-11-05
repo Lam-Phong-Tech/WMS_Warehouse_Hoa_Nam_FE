@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportButton } from "../components/ReportExportAction";
 import { ReportFilterCombobox } from "../components/ReportFilterCombobox";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
@@ -73,8 +74,8 @@ function reconcileState(
 
 function defaultRange(): DateRange {
   return {
-    from: dayjs().subtract(6, "day").format(ISO_DATE),
-    to: dayjs().format(ISO_DATE),
+    from: businessToday().subtract(6, "day").format(ISO_DATE),
+    to: businessToday().format(ISO_DATE),
   };
 }
 
@@ -929,7 +930,7 @@ export default function StockReconcileReport() {
                     to: value?.[1]?.format(ISO_DATE) ?? "",
                   })
                 }
-                maxDate={dayjs().startOf("day")}
+                maxDate={businessToday().startOf("day")}
                 aria-label={tUi("updatedUi.text_27bfb01971ac")}
                 disabled={updating || refreshing}
               />

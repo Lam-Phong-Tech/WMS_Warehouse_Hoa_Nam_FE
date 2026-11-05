@@ -1,7 +1,7 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { useMemo, useState } from "react";
 import type { MouseEvent } from "react";
 import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
 import Box from "@mui/material/Box";
 import Popover from "@mui/material/Popover";
 import { CalendarIcon, NextIcon, PrevIcon } from "@/shared/ui/icons";
@@ -84,13 +84,13 @@ export function UiVuexyDateField({
   const resolvedPlaceholder = placeholder ?? t("shared.datePicker.selectDate");
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [panelMonth, setPanelMonth] = useState(() =>
-    (value ?? dayjs()).startOf("month"),
+    (value ?? businessToday()).startOf("month"),
   );
 
   const open = Boolean(anchorEl);
   const days = useMemo(() => buildCalendarDays(panelMonth), [panelMonth]);
   const selectedValue = value?.startOf("day").valueOf() ?? null;
-  const todayValue = dayjs().startOf("day").valueOf();
+  const todayValue = businessToday().startOf("day").valueOf();
   const minValue = minDate.startOf("day").valueOf();
   const maxValue = maxDate.startOf("day").valueOf();
   const canGoPrevMonth = panelMonth.startOf("month").isAfter(minDate, "month");
@@ -98,7 +98,7 @@ export function UiVuexyDateField({
 
   const openPicker = (event: MouseEvent<HTMLElement>) => {
     if (disabled) return;
-    setPanelMonth((value ?? dayjs()).startOf("month"));
+    setPanelMonth((value ?? businessToday()).startOf("month"));
     setAnchorEl(event.currentTarget);
   };
 

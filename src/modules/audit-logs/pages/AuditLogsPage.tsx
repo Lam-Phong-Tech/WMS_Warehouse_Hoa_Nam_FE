@@ -20,6 +20,7 @@ import {
 } from "@/shared/components/mvp/mvp-pagination";
 import { useRowSelection } from "@/shared/hooks/useRowSelection";
 import { exportXlsx } from "@/shared/utils/export-xlsx";
+import { dateFilterBoundary } from "@/shared/utils/date-time";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { AuditLogsTable } from "@/modules/audit-logs/components/AuditLogsTable";
 import { AuditLogDetailDrawer } from "@/modules/audit-logs/components/AuditLogDetailDrawer";
@@ -46,9 +47,6 @@ import "@/shared/ui/sku-aligned-settings.css";
 import "./audit-logs.css";
 
 const SEARCH_DEBOUNCE_MS = 250;
-
-/** Định dạng BE nhận cho `date_from`/`date_to` (`Y-m-d H:i:s`). */
-const API_DATE_TIME = "YYYY-MM-DD HH:mm:ss";
 
 /** Chữ phụ trên toolbar (thay MUI Typography body2 color text.secondary). */
 const TOOLBAR_TEXT_SX = {
@@ -98,10 +96,13 @@ export function AuditLogsPage() {
       : user.display_name,
   }));
 
-  // Trọn ngày: "từ" lấy 00:00:00, "đến" lấy 23:59:59 — chọn cùng một ngày ở
-  // hai đầu vẫn ra đủ bản ghi của ngày đó.
-  const dateFromParam = range?.[0]?.startOf("day").format(API_DATE_TIME);
-  const dateToParam = range?.[1]?.endOf("day").format(API_DATE_TIME);
+  // Calendar dates are in the account zone; never let the DB session infer it.
+  const dateFromParam = range?.[0]
+    ? dateFilterBoundary(range[0].format("YYYY-MM-DD"), false)
+    : undefined;
+  const dateToParam = range?.[1]
+    ? dateFilterBoundary(range[1].format("YYYY-MM-DD"), true)
+    : undefined;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

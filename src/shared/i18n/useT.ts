@@ -8,7 +8,8 @@
  * Nguyên tắc fail-safe: khoá nào chưa có bản EN/ZH thì rơi về tiếng Việt. Không
  * bao giờ trả về chính tên khoá — người dùng không được nhìn thấy `a.b.c`.
  */
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import { useInterfacePreferencesStore } from "@/shared/store/interface-preferences.store";
 import { MESSAGES_VI, type MessageKey } from "./messages";
 import { englishMessages, useEnglishMessages } from "./english-messages";
 import { chineseMessages, useChineseMessages } from "./chinese-messages";
@@ -62,19 +63,31 @@ export function tStatic(key: MessageKey, vars?: MessageVars): string {
 
 export function useT(): TranslateFn {
   const language = useLanguageStore((state) => state.language);
+  const timezone = useInterfacePreferencesStore(
+    (state) => state.preferences?.timezone,
+  );
+  const dateFormat = useInterfacePreferencesStore(
+    (state) => state.preferences?.date_format,
+  );
+  // Localized labels often memoize formatted time placeholders with `t` as a
+  // dependency. Date preferences are part of that locale, including async loads.
+  const locale = useMemo(
+    () => ({ language, timezone, dateFormat }),
+    [language, timezone, dateFormat],
+  );
   // Subscribe để render lại khi bản dịch tải xong.
   const english = useEnglishMessages();
   const chinese = useChineseMessages();
   return useCallback(
     (key: MessageKey, vars?: MessageVars) => {
       const translated =
-        language === "en"
+        locale.language === "en"
           ? lookup(english, key)
-          : language === "zh"
+          : locale.language === "zh"
             ? lookup(chinese, key)
             : undefined;
       return interpolate(translated ?? lookup(MESSAGES_VI, key) ?? key, vars);
     },
-    [language, english, chinese],
+    [locale, english, chinese],
   );
 }

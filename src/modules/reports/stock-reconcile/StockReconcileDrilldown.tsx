@@ -11,6 +11,7 @@ import { UiButton, UiDrawer, VuexyDemoIcon } from "@/shared/ui";
 import { ActionIconButton } from "@/shared/components/actions";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { formatDateTime } from "@/shared/utils/format-date";
+import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
 import { checkLabelOf } from "./stock-reconcile-labels";
 import { useSkuMovements } from "./stock-reconcile-api";
 import "./stock-reconcile-drilldown.css";
@@ -89,6 +90,7 @@ export function StockReconcileDrilldown({
   onOpenInventory,
   onOpenTrace,
 }: Props) {
+  useDateTimePreferences();
   const drawer = useDialogExit(onBack);
   const movements = useSkuMovements(row.skuCode, range);
   const events = useMemo(

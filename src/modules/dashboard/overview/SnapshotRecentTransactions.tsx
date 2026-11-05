@@ -1,4 +1,5 @@
-import dayjs from "dayjs";
+import { parseDateTime } from "@/shared/utils/date-time";
+
 import { useIoHistorySnapshot } from "@/modules/reports/io-history/io-history-api";
 import { DashIcon } from "../components/DashIcon";
 import { dashboardNow, fmt } from "./overview-data";
@@ -74,7 +75,9 @@ export function SnapshotRecentTransactions({
               {documents.map((document) => {
                 return (
                   <tr key={document.id}>
-                    <td>{dayjs(document.postedAt).format("DD/MM HH:mm")}</td>
+                    <td>
+                      {parseDateTime(document.postedAt).format("DD/MM HH:mm")}
+                    </td>
                     <td>
                       <strong>{document.documentNo}</strong>
                     </td>

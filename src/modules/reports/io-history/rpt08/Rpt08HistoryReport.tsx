@@ -1,3 +1,6 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { parseDateTime, BUSINESS_TIMEZONE } from "@/shared/utils/date-time";
+import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
 import { ReportExportDrawer } from "../../components/ReportExportAction";
 import { reportExportSections } from "../../components/report-export-sections";
 import { reportWorkbookOptions } from "../../components/report-export-options";
@@ -9,7 +12,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import dayjs, { type Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
@@ -51,11 +54,12 @@ import {
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
 function currentSevenDayRange(): [Dayjs, Dayjs] {
-  const end = dayjs().startOf("day");
+  const end = businessToday().startOf("day");
   return [end.subtract(6, "day"), end];
 }
 
 export default function IoHistoryReport() {
+  useDateTimePreferences();
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const initialRange = useMemo<[Dayjs, Dayjs]>(
     () => currentSevenDayRange(),
@@ -111,7 +115,9 @@ export default function IoHistoryReport() {
 
   const reportRows = useMemo(() => {
     return allRows.filter((row) => {
-      const day = dayjs(row.timestamp).format(ISO_DATE);
+      const day = parseDateTime(row.timestamp, BUSINESS_TIMEZONE).format(
+        ISO_DATE,
+      );
       if (day < applied.from || day > applied.to) return false;
       if (applied.type !== "ALL" && row.type !== applied.type) return false;
       if (applied.actor && row.actor !== applied.actor) return false;

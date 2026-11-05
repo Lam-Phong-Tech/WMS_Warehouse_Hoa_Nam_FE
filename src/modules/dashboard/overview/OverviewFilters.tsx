@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 /**
  * Thẻ bộ lọc của demo: Kỳ KPI (kèm khoảng ngày tùy chọn + lịch tự vẽ), Loại hàng
  * và khối Làm mới. Lịch dựng lại đúng bố cục demo (6 hàng × 7 cột, chặn ngày
@@ -296,7 +297,7 @@ export function OverviewFilters({
 }) {
   const [openPicker, setOpenPicker] = useState<"from" | "to" | null>(null);
   const t = useT();
-  const today = dayjs().format(ISO);
+  const today = businessToday().format(ISO);
 
   return (
     <section className="filter-card" aria-label={t("dashboard.filters.region")}>

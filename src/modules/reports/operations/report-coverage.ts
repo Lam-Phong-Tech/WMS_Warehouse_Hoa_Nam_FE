@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 /**
  * DÒ "DỮ LIỆU THẬT NẰM Ở ĐÂU" cho gợi ý bộ lọc kỳ (`report-range-advice.ts`).
  *
@@ -18,7 +19,6 @@
  *    trống hoặc lác đác. Người dùng bình thường không phải trả thêm request nào.
  */
 import { useMemo } from "react";
-import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
 import { http } from "@/shared/api/http";
@@ -42,7 +42,10 @@ export const COVERAGE_LOOKBACK_MONTHS = 12;
  * Cửa sổ dò, tính TẠI THỜI ĐIỂM GỌI (cùng lý do với `presetRange`: một tab mở
  * qua nửa đêm không được giữ cửa sổ của hôm qua).
  */
-export function coverageWindow(now = dayjs()): { from: string; to: string } {
+export function coverageWindow(now = businessToday()): {
+  from: string;
+  to: string;
+} {
   const today = now.startOf("day");
   return {
     from: today.subtract(COVERAGE_WINDOW_DAYS - 1, "day").format(API_DATE),

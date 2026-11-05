@@ -1,3 +1,4 @@
+import { parseDateTime, BUSINESS_TIMEZONE } from "@/shared/utils/date-time";
 import { useEffect, useRef, useState } from "react";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import dayjs from "dayjs";
@@ -485,6 +486,7 @@ export function DashboardSnapshot({
           <span>
             <DashIcon name="calendar-days" />
             {businessNow.toDate().toLocaleDateString(activeLocale(), {
+              timeZone: BUSINESS_TIMEZONE,
               weekday: "long",
               day: "2-digit",
               month: "long",
@@ -505,7 +507,7 @@ export function DashboardSnapshot({
             {t("dashboard.snapshot.todayScope")} ·{" "}
             {dataUpdatedAt
               ? t("dashboard.lastUpdated.at", {
-                  time: dayjs(dataUpdatedAt).format("DD/MM/YYYY HH:mm"),
+                  time: parseDateTime(dataUpdatedAt).format("DD/MM/YYYY HH:mm"),
                 })
               : t("dashboard.lastUpdated.none")}
           </span>

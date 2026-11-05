@@ -1,9 +1,9 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
 import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import dayjs from "dayjs";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   UiAlert,
@@ -269,8 +269,8 @@ export default function PackingLabelPrintReport() {
     printer ||
     actor ||
     action ||
-    !period.range[0].isSame(dayjs().startOf("month"), "day") ||
-    !period.range[1].isSame(dayjs(), "day"),
+    !period.range[0].isSame(businessToday().startOf("month"), "day") ||
+    !period.range[1].isSame(businessToday(), "day"),
   );
   const failure = !online || Boolean(report.error);
   const partial = Boolean(report.eventsError);
@@ -299,7 +299,10 @@ export default function PackingLabelPrintReport() {
     setPrinter("");
     setActor("");
     setAction("");
-    period.setRange([dayjs().startOf("month"), dayjs().endOf("day")]);
+    period.setRange([
+      businessToday().startOf("month"),
+      businessToday().endOf("day"),
+    ]);
     setPage(1);
   };
   const refresh = () => {

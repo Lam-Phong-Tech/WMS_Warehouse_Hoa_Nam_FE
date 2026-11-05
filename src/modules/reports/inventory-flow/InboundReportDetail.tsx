@@ -1,3 +1,5 @@
+import { parseDateTime } from "@/shared/utils/date-time";
+import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
 import { ReportExportAction } from "../components/ReportExportAction";
 import { reportExportSections } from "../components/report-export-sections";
 import {
@@ -7,7 +9,7 @@ import {
 import { tStatic as tExport } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import dayjs from "dayjs";
+
 import { CANONICAL_WAREHOUSE_CODE } from "@/modules/master-data/services/warehouse.service";
 import {
   useInboundDetail,
@@ -33,7 +35,7 @@ const statusNames: Record<string, string> = {
 
 function formatDateTime(value?: string) {
   if (!value) return "—";
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   return parsed.isValid() ? parsed.format("DD/MM/YYYY HH:mm") : value;
 }
 
@@ -47,6 +49,7 @@ export function InboundReportDetail({
   canExport,
   onBack,
 }: InboundReportDetailProps) {
+  useDateTimePreferences();
   const detailQuery = useInboundDetail(document.id);
   const entriesQuery = useInboundScanEntries(document.id, "ALL");
   const warehousesQuery = useWarehouseDirectory();

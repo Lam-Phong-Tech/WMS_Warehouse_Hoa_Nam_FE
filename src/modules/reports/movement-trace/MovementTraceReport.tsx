@@ -1,3 +1,5 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { parseDateTime } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
@@ -108,7 +110,7 @@ import { MovementEvidenceDrawer } from "./MovementEvidenceDrawer";
  * chỉ đổi thứ tự — vì hàng rào i18n đòi bộ placeholder EN khớp bản VI.
  */
 function formatTraceDateTime(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   if (!value || !parsed.isValid()) return EMPTY_TEXT;
   const namedMonth = useLanguageStore.getState().language !== "vi";
   return tStatic("reports.movementTrace.dateTime", {
@@ -121,7 +123,7 @@ function formatTraceDateTime(value: string): string {
 
 /** Mốc chốt số liệu: "Chốt 10:00 02-09". */
 function formatCutOff(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   if (!value || !parsed.isValid()) return "";
   return tStatic("reports.movementTrace.cutOff", {
     time: parsed.format("HH:mm DD-MM"),
@@ -1000,7 +1002,7 @@ export default function MovementTraceReport() {
               value={[draft.fromDate, draft.toDate]}
               aria-label={t("reports.movementTrace.fieldDateRange")}
               placeholder={["—", "—"]}
-              maxDate={dayjs().endOf("day")}
+              maxDate={businessToday().endOf("day")}
               presets={periodPresets}
               onChange={(value) =>
                 updateFilters({

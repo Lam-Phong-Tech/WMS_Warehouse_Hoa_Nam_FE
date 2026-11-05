@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import dayjs from "dayjs";
 import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import { tStatic } from "@/shared/i18n/useT";
@@ -9,11 +10,7 @@ dayjs.extend(quarterOfYear);
  * tiết theo ngày/tháng/khoảng ngày tuỳ ý thuộc về Báo cáo, không phải Dashboard.
  */
 export type DashboardPeriodPreset =
-  | "today"
-  | "week"
-  | "month"
-  | "quarter"
-  | "year";
+  "today" | "week" | "month" | "quarter" | "year";
 
 // Getter để `label` đọc theo ngôn ngữ HIỆN TẠI mỗi lần truy cập (API mảng
 // {value, label} giữ nguyên cho caller cũ; file thuần TS không gọi được hook).
@@ -70,7 +67,7 @@ export function getPresetRange(preset: DashboardPeriodPreset): {
   to_date: string;
 } {
   const unit = PRESET_UNIT[preset] as dayjs.OpUnitType;
-  const now = dayjs();
+  const now = businessToday();
   return {
     from_date: now.startOf(unit).format("YYYY-MM-DD"),
     to_date: now.endOf(unit).format("YYYY-MM-DD"),

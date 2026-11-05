@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 /**
  * ADAPTER dữ liệu cho RPT-02 (bản port 1:1 mockup 8.2 "Tồn kho & đối soát").
  *
@@ -207,7 +208,7 @@ export function useStockReconcileSnapshot({
   asOf: string;
 }): StockReconcileSnapshotResult {
   const catalog = useSkuCatalog();
-  const today = dayjs().format(ISO_DATE);
+  const today = businessToday().format(ISO_DATE);
   const pointInTime = asOf !== "" && asOf < today;
 
   const balance = useInventoryBalance({
@@ -309,8 +310,8 @@ export function useSkuMovements(
   const query = useMovementTrace({
     from:
       range?.from ??
-      dayjs().subtract(MOVEMENT_TRACE_DAYS, "day").format(ISO_DATE),
-    to: range?.to ?? dayjs().format(ISO_DATE),
+      businessToday().subtract(MOVEMENT_TRACE_DAYS, "day").format(ISO_DATE),
+    to: range?.to ?? businessToday().format(ISO_DATE),
     enabled: skuCode !== null,
   });
 

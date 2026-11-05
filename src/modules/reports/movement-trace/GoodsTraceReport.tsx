@@ -1,3 +1,6 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { parseDateTime } from "@/shared/utils/date-time";
+import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
 import { saveStyledReportWorkbook } from "@/shared/utils/report-excel-style";
 import { useRef, useState, type ReactNode } from "react";
 import dayjs from "dayjs";
@@ -53,8 +56,8 @@ const empty = "—";
 const text = (value: unknown) =>
   value === null || value === undefined || value === "" ? empty : String(value);
 const time = (value: string) =>
-  value && dayjs(value).isValid()
-    ? dayjs(value).format("DD/MM/YYYY HH:mm")
+  value && parseDateTime(value).isValid()
+    ? parseDateTime(value).format("DD/MM/YYYY HH:mm")
     : empty;
 const number = (value: number | null | undefined) =>
   value == null ? empty : value.toLocaleString("vi-VN");
@@ -107,10 +110,11 @@ function Facts({ rows }: { rows: [string, ReactNode][] }) {
   );
 }
 export default function GoodsTraceReport() {
+  useDateTimePreferences();
   const [query, setQuery] = useState<GoodsTraceQuery>({
     code_type: "all",
-    from_date: dayjs().subtract(6, "day").format("YYYY-MM-DD"),
-    to_date: dayjs().format("YYYY-MM-DD"),
+    from_date: businessToday().subtract(6, "day").format("YYYY-MM-DD"),
+    to_date: businessToday().format("YYYY-MM-DD"),
   });
   const [profile, setProfile] = useState<GoodsTraceEntity | null>(null);
   const [tab, setTab] = useState("timeline");

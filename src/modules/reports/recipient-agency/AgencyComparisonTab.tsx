@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 /**
  * RPT-07 · tab "So sánh đối tượng nhận hàng".
@@ -160,7 +161,7 @@ type DrillScope = {
  */
 function comparisonRangePresets(t: TranslateFn) {
   const rollingMonths = (count: number) => () => {
-    const today = dayjs().startOf("day");
+    const today = businessToday().startOf("day");
     return [today.subtract(count - 1, "month").startOf("month"), today] as [
       dayjs.Dayjs,
       dayjs.Dayjs,
@@ -193,7 +194,7 @@ function comparisonRangePresets(t: TranslateFn) {
 export default function AgencyComparisonTab() {
   const t = useT();
   const [range, setRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>(() => {
-    const today = dayjs().startOf("day");
+    const today = businessToday().startOf("day");
     return [today.subtract(2, "month").startOf("month"), today];
   });
   const [recipientTypes, setRecipientTypes] = useState<string[]>([]);
@@ -608,7 +609,7 @@ export default function AgencyComparisonTab() {
             <ReportDateRangePicker
               value={range}
               presets={presets}
-              maxDate={dayjs().startOf("day")}
+              maxDate={businessToday().startOf("day")}
               aria-label={t("reports.agencyComparison.fieldPeriod")}
               onChange={(next) => {
                 if (next?.[0] && next?.[1]) setRange([next[0], next[1]]);

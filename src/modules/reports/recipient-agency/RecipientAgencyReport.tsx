@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
@@ -36,7 +37,7 @@ import "./recipient-agency-report.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
 function currentSevenDayRange(): [Dayjs, Dayjs] {
-  const end = dayjs().startOf("day");
+  const end = businessToday().startOf("day");
   return [end.subtract(6, "day"), end];
 }
 

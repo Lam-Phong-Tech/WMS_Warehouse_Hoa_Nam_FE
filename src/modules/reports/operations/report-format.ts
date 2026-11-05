@@ -2,6 +2,11 @@ import type { MessageKey } from "@/shared/i18n/messages";
 import type { TranslateFn } from "@/shared/i18n/useT";
 import dayjs, { type Dayjs } from "dayjs";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import {
+  parseDateTime,
+  BUSINESS_TIMEZONE,
+  businessToday,
+} from "@/shared/utils/date-time";
 import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 
@@ -36,7 +41,8 @@ export function pct(part: number, total: number): string {
 export function dayKey(value: unknown): string {
   const raw = text(value, "");
   if (raw === "") return "";
-  return raw.slice(0, 10);
+  const parsed = parseDateTime(raw, BUSINESS_TIMEZONE);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD") : "";
 }
 
 /** Giờ:phút của một mốc thời gian, dùng cho bộ lọc khung giờ. */
@@ -44,7 +50,8 @@ export function minuteOfDay(value: unknown): number | null {
   const raw = text(value, "");
   const match = /[T ](\d{2}):(\d{2})/u.exec(raw);
   if (!match) return null;
-  return Number(match[1]) * 60 + Number(match[2]);
+  const parsed = parseDateTime(raw, BUSINESS_TIMEZONE);
+  return parsed.isValid() ? parsed.hour() * 60 + parsed.minute() : null;
 }
 
 export function parseHourMinute(value: string): number | null {
@@ -151,7 +158,7 @@ export const periodPresetOptions = (
  * luôn tổng; nơi gọi tự giữ khoảng người dùng đã chọn.
  */
 export function presetRange(preset: PeriodPreset): [Dayjs, Dayjs] {
-  const today = dayjs().startOf("day");
+  const today = businessToday().startOf("day");
   switch (preset) {
     case "today":
       return [today, today];

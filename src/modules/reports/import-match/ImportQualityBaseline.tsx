@@ -1,4 +1,5 @@
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
+import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
@@ -9,7 +10,7 @@ import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRa
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useMemo, useState, type ReactNode } from "react";
-import dayjs, { type Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
 import {
   Box,
   Stack,
@@ -295,8 +296,8 @@ export default function ImportQualityBaseline() {
     result !== "" ||
     keyword !== "" ||
     issuesOnly ||
-    !range[0].isSame(dayjs().startOf("month"), "day") ||
-    !range[1].isSame(dayjs(), "day");
+    !range[0].isSame(businessToday().startOf("month"), "day") ||
+    !range[1].isSame(businessToday(), "day");
   const clearFilters = () => {
     setRange(presetRange("this-month"));
     setKind("all");
@@ -470,7 +471,7 @@ export default function ImportQualityBaseline() {
               value={range}
               format="DD/MM/YYYY"
               allowClear={false}
-              maxDate={dayjs().endOf("day")}
+              maxDate={businessToday().endOf("day")}
               presets={presets}
               popupClassName="hn-vuexy-date-popup"
               onChange={(value) => {

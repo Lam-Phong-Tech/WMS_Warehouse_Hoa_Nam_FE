@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
@@ -57,8 +58,8 @@ type ProgressTone = "complete" | "processing" | "pending";
 
 function initialRange(): DateRange {
   return {
-    from: dayjs().subtract(6, "day").format(ISO_DATE),
-    to: dayjs().format(ISO_DATE),
+    from: businessToday().subtract(6, "day").format(ISO_DATE),
+    to: businessToday().format(ISO_DATE),
   };
 }
 
@@ -789,8 +790,8 @@ export default function OutboundFlowReport() {
 
   const widenRange = () => {
     const next = {
-      from: dayjs().subtract(29, "day").format(ISO_DATE),
-      to: dayjs().format(ISO_DATE),
+      from: businessToday().subtract(29, "day").format(ISO_DATE),
+      to: businessToday().format(ISO_DATE),
     };
     setDraftRange(next);
     setAppliedRange(next);

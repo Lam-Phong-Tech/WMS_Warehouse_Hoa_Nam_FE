@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useRef, useState } from "react";
-import dayjs from "dayjs";
+import { parseDateTime } from "@/shared/utils/date-time";
 import {
   Box,
   Drawer,
@@ -1273,7 +1273,7 @@ export function InboundScanModal({
                     </Box>
                     <Box sx={{ typography: "body2" }}>
                       {detail.document.date
-                        ? dayjs(detail.document.date).format("DD/MM/YYYY HH:mm")
+                        ? parseDateTime(detail.document.date).format("DD/MM/YYYY HH:mm")
                         : EMPTY_TEXT}
                     </Box>
                   </Grid>

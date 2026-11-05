@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
@@ -106,10 +107,12 @@ function normalizeRows(payload: unknown): UiRow[] {
         status !== "complete" &&
         dueDate &&
         dayjs(dueDate).isValid() &&
-        dayjs(dueDate).isBefore(dayjs(), "day")
+        dayjs(dueDate).isBefore(businessToday(), "day")
           ? Math.max(
               1,
-              dayjs().startOf("day").diff(dayjs(dueDate).startOf("day"), "day"),
+              businessToday()
+                .startOf("day")
+                .diff(dayjs(dueDate).startOf("day"), "day"),
             )
           : 0;
       return {
@@ -407,8 +410,8 @@ export default function WarrantyComponentsReport() {
   const t = useT();
   const presets = useMemo(() => reportRangePresets(t), [t]);
   const [range, setRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(6, "day").startOf("day"),
-    dayjs().startOf("day"),
+    businessToday().subtract(6, "day").startOf("day"),
+    businessToday().startOf("day"),
   ]);
   const [status, setStatus] = useState("");
   const [keyword, setKeyword] = useState("");

@@ -1,3 +1,4 @@
+import { parseDateTime } from "@/shared/utils/date-time";
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./outbound-dialog.css";
@@ -762,7 +763,7 @@ export function AlignedOutboundDetailModal({
                   label={t("outbound.list.colCreated")}
                   value={
                     dayjs(doc.date).isValid()
-                      ? dayjs(doc.date).format("DD/MM/YYYY HH:mm")
+                      ? parseDateTime(doc.date).format("DD/MM/YYYY HH:mm")
                       : EMPTY_TEXT
                   }
                 />

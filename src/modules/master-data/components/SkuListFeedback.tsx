@@ -1,3 +1,4 @@
+import { getDisplayTimezone } from "@/shared/utils/date-time";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { isNoPermissionError, normalizeError } from "@/shared/api/api-error";
@@ -152,12 +153,14 @@ export function SkuListNotice({
   const updatedLabel =
     updatedAt && Number.isFinite(updatedAt)
       ? new Intl.DateTimeFormat(text("vi-VN", "en-US"), {
+          timeZone: getDisplayTimezone(),
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
         }).format(updatedAt) +
         " · " +
         new Intl.DateTimeFormat(text("vi-VN", "en-US"), {
+          timeZone: getDisplayTimezone(),
           hour: "2-digit",
           minute: "2-digit",
           hour12: false,

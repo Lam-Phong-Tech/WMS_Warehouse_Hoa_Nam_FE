@@ -1,3 +1,4 @@
+import { getDisplayTimezone } from "@/shared/utils/date-time";
 import { useId, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -440,6 +441,7 @@ export function DefectNotice({
   const updatedLabel =
     !accessError && updatedAt && Number.isFinite(updatedAt)
       ? new Intl.DateTimeFormat(text("vi-VN", "en-US"), {
+          timeZone: getDisplayTimezone(),
           day: "2-digit",
           month: "2-digit",
           year: "numeric",

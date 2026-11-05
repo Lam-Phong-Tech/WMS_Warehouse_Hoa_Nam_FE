@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/shared/utils/format-date";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { UiDrawer, UiPagination, UiTabs } from "@/shared/ui";
@@ -85,7 +86,7 @@ export function OutboundNfcProductDetail({
             <span>{t("nfc.assignedAt")}</span>
             <strong>
               {item.nfc?.assigned_at
-                ? new Date(item.nfc.assigned_at).toLocaleString("vi-VN")
+                ? formatDateTime(item.nfc.assigned_at)
                 : "—"}
             </strong>
           </div>
@@ -126,9 +127,7 @@ export function OutboundNfcProductDetail({
                       : t("nfc.outboundRevoked")}
                   </strong>
                   <span>
-                    {event.created_at
-                      ? new Date(event.created_at).toLocaleString("vi-VN")
-                      : "—"}
+                    {event.created_at ? formatDateTime(event.created_at) : "—"}
                   </span>
                   <span>
                     {event.hardware_uid || "—"} ·{" "}

@@ -1,3 +1,5 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { parseDateTime } from "@/shared/utils/date-time";
 import { ReportExportAction } from "../components/ReportExportAction";
 import { reportExportSections } from "../components/report-export-sections";
 import { reportWorkbookOptions } from "../components/report-export-options";
@@ -73,11 +75,11 @@ function absOrEmpty(value: number | null): string {
   return value === null ? EMPTY_TEXT : fmt(Math.abs(value));
 }
 function fmtDay(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   return parsed.isValid() ? parsed.format("DD/MM/YYYY") : EMPTY_TEXT;
 }
 function fmtStamp(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   return !value || !parsed.isValid()
     ? EMPTY_TEXT
     : parsed.format(value.length <= 10 ? "DD/MM/YYYY" : "DD/MM/YYYY HH:mm");
@@ -586,7 +588,7 @@ export default function IoHistoryReport() {
                           value={[dayjs(range.from), dayjs(range.to)]}
                           format="DD/MM/YYYY"
                           allowClear={false}
-                          maxDate={dayjs()}
+                          maxDate={businessToday()}
                           presets={periodPresets}
                           className="hn-rpt-io-date-range"
                           popupClassName="hn-rpt-io-date-popup"

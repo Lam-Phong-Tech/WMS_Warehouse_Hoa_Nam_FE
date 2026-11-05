@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
@@ -187,7 +188,7 @@ export default function TabWarranty() {
   const defects = useDefectOptions();
   const exporter = useReportExport();
   const hasPermission = useHasPermission();
-  const today = useMemo(() => dayjs(), []);
+  const today = useMemo(() => businessToday(), []);
 
   // §13.8 WWHN-258: PII khách hàng luôn hiển thị ở dạng ĐÃ CHE trừ khi actor có
   // `warranty.pii.view`; tệp xuất chỉ mang PII thô khi actor có

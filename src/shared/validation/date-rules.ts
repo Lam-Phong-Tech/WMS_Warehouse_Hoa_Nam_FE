@@ -1,3 +1,4 @@
+import { businessToday } from "@/shared/utils/date-time";
 /**
  * LUẬT NGÀY DÙNG CHUNG — giới hạn tuyệt đối cho mọi ô chọn ngày.
  *
@@ -30,7 +31,7 @@ export interface DateBounds {
 }
 
 /** Cửa sổ mặc định cho MỌI ô ngày: 01-01-2000 → hôm nay + 10 năm. */
-export function defaultDateBounds(now: Dayjs = dayjs()): DateBounds {
+export function defaultDateBounds(now: Dayjs = businessToday()): DateBounds {
   return {
     minDate: dayjs(`${DATE_LIMITS.businessMinYear}-01-01`).startOf("day"),
     maxDate: now.add(DATE_LIMITS.futureMaxYears, "year").endOf("day"),
@@ -38,7 +39,7 @@ export function defaultDateBounds(now: Dayjs = dayjs()): DateBounds {
 }
 
 /** Ngày ĐÃ XẢY RA (ngày chứng từ, ngày mua, ngày nhận, bộ lọc lịch sử): ≤ hôm nay. */
-export function pastDateBounds(now: Dayjs = dayjs()): DateBounds {
+export function pastDateBounds(now: Dayjs = businessToday()): DateBounds {
   return {
     minDate: dayjs(`${DATE_LIMITS.businessMinYear}-01-01`).startOf("day"),
     maxDate: now.endOf("day"),
@@ -46,7 +47,7 @@ export function pastDateBounds(now: Dayjs = dayjs()): DateBounds {
 }
 
 /** Ngày sinh: 1900 → đủ tuổi lao động tính đến hôm nay. */
-export function birthDateBounds(now: Dayjs = dayjs()): DateBounds {
+export function birthDateBounds(now: Dayjs = businessToday()): DateBounds {
   return {
     minDate: dayjs(`${DATE_LIMITS.birthMinYear}-01-01`).startOf("day"),
     maxDate: now.subtract(DATE_LIMITS.minWorkingAge, "year").endOf("day"),
@@ -54,7 +55,7 @@ export function birthDateBounds(now: Dayjs = dayjs()): DateBounds {
 }
 
 /** Ngày HẠN/kế hoạch (hạn bảo hành, ngày dự kiến): hôm nay → +10 năm. */
-export function futureDateBounds(now: Dayjs = dayjs()): DateBounds {
+export function futureDateBounds(now: Dayjs = businessToday()): DateBounds {
   return {
     minDate: now.startOf("day"),
     maxDate: now.add(DATE_LIMITS.futureMaxYears, "year").endOf("day"),
@@ -62,8 +63,7 @@ export function futureDateBounds(now: Dayjs = dayjs()): DateBounds {
 }
 
 export type DateCheck =
-  | { ok: true; value: Dayjs | null }
-  | { ok: false; message: string };
+  { ok: true; value: Dayjs | null } | { ok: false; message: string };
 
 export interface DateRule extends Partial<DateBounds> {
   required?: boolean;

@@ -1,9 +1,9 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "../components/ReportExportAction";
 import { reportExportSections } from "../components/report-export-sections";
 import type { ReportExportChoice } from "../components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { useMemo } from "react";
-import dayjs from "dayjs";
 import { useT } from "@/shared/i18n/useT";
 import { Box, UiSelect, UiTextField } from "@/shared/ui";
 import {
@@ -32,7 +32,7 @@ export function PeriodFilterControls({ state }: { state: PeriodFilterState }) {
       format="DD/MM/YYYY"
       allowClear={false}
       // Báo cáo vận hành chỉ có dữ liệu ĐÃ XẢY RA: không cho chọn ngày tương lai.
-      maxDate={dayjs().endOf("day")}
+      maxDate={businessToday().endOf("day")}
       presets={presets}
       className="hn-vuexy-date-range"
       popupClassName="hn-vuexy-date-popup"
