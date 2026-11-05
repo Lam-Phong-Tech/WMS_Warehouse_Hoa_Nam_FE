@@ -777,11 +777,12 @@ export default function StockReconcileReport() {
     currentPage * pageSize,
   );
 
-  const applyFilters = () => {
-    if (invalidRange) return;
-    setApplied({ ...draft });
+  const updateFilters = (changes: Partial<Filters>) => {
+    const next = { ...draft, ...changes };
+    setDraft(next);
+    if (!next.from || !next.to || next.from > next.to) return;
+    setApplied(next);
     setPage(1);
-    setShowSuccess(true);
   };
 
   const resetFilters = () => {
@@ -923,11 +924,10 @@ export default function StockReconcileReport() {
                 popupClassName="rpt02-date-popup"
                 value={datePickerValue(draft)}
                 onChange={(value) =>
-                  setDraft((current) => ({
-                    ...current,
+                  updateFilters({
                     from: value?.[0]?.format(ISO_DATE) ?? "",
                     to: value?.[1]?.format(ISO_DATE) ?? "",
-                  }))
+                  })
                 }
                 maxDate={dayjs().startOf("day")}
                 aria-label={tUi("updatedUi.text_27bfb01971ac")}
@@ -959,9 +959,7 @@ export default function StockReconcileReport() {
                     label: tUi("dashboard.skuType.component"),
                   },
                 ]}
-                onChange={(kind) =>
-                  setDraft((current) => ({ ...current, kind }))
-                }
+                onChange={(kind) => updateFilters({ kind })}
                 disabled={updating || refreshing}
               />
             </div>
@@ -989,31 +987,9 @@ export default function StockReconcileReport() {
                     label: tUi("reports.traceability.needsReview"),
                   },
                 ]}
-                onChange={(reconcile) =>
-                  setDraft((current) => ({ ...current, reconcile }))
-                }
+                onChange={(reconcile) => updateFilters({ reconcile })}
                 disabled={updating || refreshing}
               />
-            </div>
-
-            <div className="rpt02-filter__actions">
-              <button
-                className="rpt02-button rpt02-button--primary"
-                type="button"
-                onClick={applyFilters}
-                disabled={invalidRange || updating || refreshing}
-              >
-                <Icon name={refreshing ? "loader-circle" : "search"} />
-                {tUi("dashboard.snapshot.apply")}
-              </button>
-              <button
-                className="rpt02-button rpt02-button--ghost"
-                type="button"
-                onClick={resetFilters}
-                disabled={updating || refreshing}
-              >
-                {tUi("reports.packingLabel.reset")}
-              </button>
             </div>
           </section>
 

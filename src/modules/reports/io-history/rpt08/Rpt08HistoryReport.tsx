@@ -72,6 +72,7 @@ export default function IoHistoryReport() {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [detailRow, setDetailRow] = useState<HistoryRow | null>(null);
   const [manualRefreshing, setManualRefreshing] = useState(false);
   const [staleDismissed, setStaleDismissed] = useState(false);
@@ -129,11 +130,11 @@ export default function IoHistoryReport() {
     );
   }, [deferredSearch, reportRows]);
 
-  const totalPages = Math.max(1, Math.ceil(searchedRows.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(searchedRows.length / pageSize));
   const visiblePage = Math.min(page, totalPages);
   const visibleRows = searchedRows.slice(
-    (visiblePage - 1) * PAGE_SIZE,
-    visiblePage * PAGE_SIZE,
+    (visiblePage - 1) * pageSize,
+    visiblePage * pageSize,
   );
 
   useEffect(() => {
@@ -385,6 +386,11 @@ export default function IoHistoryReport() {
             total={searchedRows.length}
             search={search}
             page={visiblePage}
+            pageSize={pageSize}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
             empty={reportEmpty}
             noResult={noSearchResult}
             range={applied}

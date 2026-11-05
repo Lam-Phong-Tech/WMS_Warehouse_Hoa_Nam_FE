@@ -266,10 +266,33 @@ describe("stock reconciliation evidence navigation", () => {
       screen.getByRole("combobox", { name: "Chọn nhóm hàng / SKU" }),
     );
     fireEvent.click(screen.getByRole("option", { name: "Linh kiện" }));
-    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
+
     expect(
       screen.getByRole("button", { name: /Xem bằng chứng PAGE-25/ }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Trang sau" })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Chọn trạng thái đối soát" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "Cần kiểm tra" }));
+    expect(
+      screen.queryByRole("button", { name: /Xem bằng chứng PAGE-25/ }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Từ ngày" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hôm qua" }));
+    const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+    expect(useInventoryFlowSnapshot).toHaveBeenLastCalledWith({
+      from: yesterday,
+      to: yesterday,
+    });
+    expect(useStockReconcileSnapshot).toHaveBeenLastCalledWith({
+      asOf: yesterday,
+    });
   });
 });

@@ -1,3 +1,4 @@
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
@@ -265,7 +266,10 @@ export default function ImportQualityBaseline() {
 
   const totals = useMemo(() => totalsOf(filteredRows), [filteredRows]);
   const trend = useMemo(() => trendByDay(filteredRows), [filteredRows]);
-  const pagination = useClientPagination(filteredRows, 5);
+  const pagination = useClientPagination(
+    filteredRows,
+    TABLE_PAGE_SIZE_OPTIONS[0],
+  );
   const lastPage = Math.max(
     1,
     Math.ceil(pagination.total / pagination.perPage),
@@ -875,41 +879,71 @@ export default function ImportQualityBaseline() {
           </Box>
         </Stack>
 
-        <Box sx={{ px: { xs: 1, md: 1.25 } }}>
+        <Box className="rpt04-results-table">
           <ResponsiveDataTable<ImportMatchBatch>
+            actionColumnWidth="5%"
+            hideActionHeader
+            headerCellStyle={{
+              background: "#d2edf7",
+              color: "var(--ops-muted)",
+              padding: "12px 18px",
+              fontSize: 16,
+              fontWeight: 800,
+              lineHeight: "24px",
+              textTransform: "uppercase",
+              letterSpacing: "0.02em",
+            }}
             columns={[
               {
+                key: "sequence",
+                header: "STT",
+                width: "7%",
+                align: "center",
+                render: (row) =>
+                  (pagination.page - 1) * pagination.perPage +
+                  pagination.pageRows.indexOf(row) +
+                  1,
+              },
+              {
                 key: "reference",
+                width: "37%",
                 header: tUi("updatedUi.text_cbd08c7c8080"),
                 render: (row) => (
-                  <Box sx={{ minWidth: 0 }}>
-                    <Box
-                      sx={{
-                        fontWeight: 800,
-                        color: C.navy,
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      {row.batchNo || "—"}
-                    </Box>
-                    <Box
-                      sx={{
-                        mt: 0.15,
-                        color: C.muted,
-                        fontSize: 11.5,
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      {row.caption || row.sourceFile || "—"}
+                  <Box className="rpt04-reference">
+                    <span className="rpt04-reference__icon">
+                      <FileTextOutlined />
+                    </span>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Box
+                        className="rpt04-reference__code"
+                        sx={{
+                          fontWeight: 700,
+                          color: C.navy,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {row.batchNo || "—"}
+                      </Box>
+                      <Box
+                        sx={{
+                          mt: 0.15,
+                          color: C.muted,
+                          fontSize: 11.5,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {row.caption || row.sourceFile || "—"}
+                      </Box>
                     </Box>
                   </Box>
                 ),
               },
               {
                 key: "comparison",
+                width: "21%",
                 header: tUi("updatedUi.text_d8451df71267"),
                 render: (row) => (
-                  <Box sx={{ fontSize: 12.5, whiteSpace: "normal" }}>
+                  <Box sx={{ fontSize: 14, whiteSpace: "normal" }}>
                     {fmt(row.total)}
                     {" " + tUi("updatedUi.text_da71bc75ab04") + " "}
                     {fmt(row.success)}
@@ -920,9 +954,10 @@ export default function ImportQualityBaseline() {
               {
                 key: "result",
                 header: tUi("inbound.detail.colResult"),
-                width: 135,
+                width: "14%",
                 render: (row) => (
                   <UiStatusBadge
+                    className={`rpt04-result-badge rpt04-result-badge--${resultTone(row)}`}
                     tone={resultTone(row)}
                     label={resultLabel(row)}
                   />
@@ -931,7 +966,7 @@ export default function ImportQualityBaseline() {
               {
                 key: "updated",
                 header: tUi("updatedUi.text_5293d03c5908"),
-                width: 170,
+                width: "16%",
                 render: (row) => (row.at ? fmtDateTime(row.at) : "—"),
               },
             ]}
@@ -971,14 +1006,31 @@ export default function ImportQualityBaseline() {
             gap: 1,
           }}
         >
-          <Box sx={{ fontSize: 12.5, color: C.text }}>
-            {tUi("putaway.queue.showing")}{" "}
-            {pagination.total === 0
-              ? 0
-              : (pagination.page - 1) * pagination.perPage + 1}
-            –{Math.min(pagination.page * pagination.perPage, pagination.total)}{" "}
-            / {fmt(pagination.total)}
-            {" " + tUi("updatedUi.text_3c28fe9f81e1")}
+          <Box className="rpt04-pagination-summary">
+            <Box sx={{ fontSize: 14, color: C.text }}>
+              {tUi("putaway.queue.showing")}{" "}
+              {pagination.total === 0
+                ? 0
+                : (pagination.page - 1) * pagination.perPage + 1}
+              –
+              {Math.min(pagination.page * pagination.perPage, pagination.total)}{" "}
+              / {fmt(pagination.total)}
+              {" " + tUi("updatedUi.text_3c28fe9f81e1")}
+            </Box>
+            <select
+              className="rpt04-page-size"
+              aria-label={tUi("shared.table.rowsPerPageAria")}
+              value={pagination.perPage}
+              onChange={(event) =>
+                pagination.setPerPage(Number(event.target.value))
+              }
+            >
+              {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {tUi("shared.table.perPage", { size: String(size) })}
+                </option>
+              ))}
+            </select>
           </Box>
           <Stack
             className="hn-report-pagination"

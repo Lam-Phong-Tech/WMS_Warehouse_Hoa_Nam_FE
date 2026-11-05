@@ -2576,10 +2576,6 @@
   }
 }
 
-/* Keep chart data aligned with its content instead of stretching below the scroll area. */
-.hn-rpt02 .rpt02-chart-card {
-  align-self: start;
-}
 .hn-rpt02 .rpt02-chart-table thead {
   position: sticky;
   top: 0;

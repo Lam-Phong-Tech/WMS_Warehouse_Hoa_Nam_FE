@@ -70,6 +70,23 @@ describe("RPT-08 shared report presentation", () => {
       "hn-report-pagination",
     );
   });
+  it("numbers rows continuously for the selected page size and forwards size changes", () => {
+    const onPageSizeChange = vi.fn();
+    const { container } = mountTable(2, 42, { pageSize: 10, onPageSizeChange });
+    expect(
+      screen.getByRole("columnheader", { name: "STT" }),
+    ).toBeInTheDocument();
+    expect(
+      [...container.querySelectorAll("tbody .rpt08-sequence")].map(
+        (cell) => cell.textContent,
+      ),
+    ).toEqual(rows.map((_, index) => String(11 + index)));
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
+      { target: { value: "20" } },
+    );
+    expect(onPageSizeChange).toHaveBeenCalledWith(20);
+  });
   it("keeps page numbers functional and disables previous on page one", () => {
     const { container, onPageChange } = mountTable();
     const previous = container.querySelector(
