@@ -275,12 +275,11 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     await user.click(
       within(table).getAllByRole("button", { name: /Xem chi tiết nhãn/ })[0],
     );
-    expect(
-      (await screen.findAllByText(/Zebra ZD421 · Nguyễn Kho Vận/)).length,
-    ).toBe(2);
-    const detail = screen.getByTestId("packing-label-detail");
+    const detail = await screen.findByTestId("packing-label-detail");
+    expect(within(detail).getAllByText("PRN-01 · Zebra ZD421")).toHaveLength(1);
+    expect(within(detail).getAllByText("Nguyễn Kho Vận")).toHaveLength(1);
     expect(detail).toHaveTextContent("Máy in");
-    expect(detail).toHaveTextContent("Người thực hiện");
+    expect(detail).toHaveTextContent("Người in");
     expect(detail).toHaveTextContent("Lượt in");
     expect(
       within(detail).getAllByText("Nhãn đầu bị nhòe khi dán").length,
@@ -385,6 +384,13 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(screen.getByTestId("packing-label-detail")).not.toHaveTextContent(
       "Công ty Tân Phát",
     );
+    const detail = within(screen.getByTestId("packing-label-detail"));
+    expect(detail.getAllByText("PL-PX-0001")).toHaveLength(1);
+    expect(detail.getAllByText("PX-0001")).toHaveLength(1);
+    expect(
+      detail.queryByText("Chi tiết lượt in đang xem"),
+    ).not.toBeInTheDocument();
+    expect(detail.getAllByText("Nhãn đầu bị nhòe khi dán")).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: "Xem trước nhãn" }));
     expect(
@@ -396,7 +402,12 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
       within(screen.getByTestId("packing-label-preview")).getAllByText(
         "PL-PX-0001",
       ),
-    ).toHaveLength(3);
+    ).toHaveLength(1);
+    expect(
+      within(screen.getByTestId("packing-label-preview")).queryByText(
+        "Lịch sử in nhãn",
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it("mở phiếu xuất nguồn từ ID của bản lưu nhãn", async () => {

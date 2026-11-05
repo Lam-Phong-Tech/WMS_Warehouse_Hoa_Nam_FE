@@ -17,6 +17,7 @@ import "@/shared/ui/operations-ui.css";
 initializeTheme();
 useAuthStore.setState({ isSuperAdmin: true });
 const scenario = new URLSearchParams(location.search).get("state");
+const audit = new URLSearchParams(location.search).get("audit");
 const labels = Array.from({ length: 8 }, (_, i) => ({
   id: "label-" + i,
   label_code: "PL-20261105-" + String(i + 1).padStart(4, "0"),
@@ -42,8 +43,13 @@ const events = labels.flatMap((l, i) =>
     : Array.from({ length: i < 3 ? 2 : 1 }, (_, j) => ({
         id: "event-" + i + "-" + j,
         label_snapshot_id: l.id,
-        printer_config_id: i % 2 ? "printer-b" : "printer-a",
-        created_by: "actor-1",
+        printer_config_id:
+          audit === "mixed" && j
+            ? "printer-b"
+            : i % 2
+              ? "printer-b"
+              : "printer-a",
+        created_by: audit && j ? "actor-2" : "actor-1",
         status: i === 5 ? "SENT" : i === 3 || i === 4 ? "FAILED" : "PRINTED",
         event_type: j ? "REPRINT" : "PRINT",
         attempt_no: j + 1,
@@ -97,7 +103,9 @@ http.getPage = (async (url: string) => ({
         ? [
             {
               id: "printer-a",
-              printer_name: "Zebra ZT411-01",
+              printer_name: audit
+                ? "Máy in đóng gói chi nhánh Hoa Nam với tên dài cần đọc đầy đủ trên màn hình nhỏ"
+                : "Zebra ZT411-01",
               printer_code: "ZEBRA-01",
             },
             {
@@ -107,7 +115,14 @@ http.getPage = (async (url: string) => ({
             },
           ]
         : url === "/users"
-          ? [{ user_id: "actor-1", display_name: "Nguyễn Thanh Quang" }]
+          ? [
+              { user_id: "actor-1", display_name: "Nguyễn Thanh Quang" },
+              {
+                user_id: "actor-2",
+                display_name:
+                  "Phạm Quốc Bảo — Quản trị hệ thống chi nhánh Hoa Nam",
+              },
+            ]
           : [],
   meta: { current_page: 1, last_page: 1 },
 })) as typeof http.getPage;

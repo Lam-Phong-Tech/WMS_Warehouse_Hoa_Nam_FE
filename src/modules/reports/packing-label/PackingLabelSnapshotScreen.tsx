@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { UiAlert, UiButton } from "@/shared/ui";
+import {
+  ResponsiveDataTable,
+  type ResponsiveTableColumn,
+} from "@/shared/components/data-display/ResponsiveDataTable";
 import type {
   PackingLabelDetail,
   PackingLabelEvent,
@@ -82,12 +86,10 @@ export function PackingLabelSnapshotScreen({
         </UiButton>
       </div>
     );
-  const latest = detail.attempts[0];
   const missing = detail.missingFields ?? [];
   const gate = printGate(detail.status, detail.attempts, missing);
   const success = detail.attempts.filter((a) => a.result === "PRINTED").length;
   const reprints = detail.attempts.filter((a) => a.action === "REPRINT").length;
-  const target = selectedEvent ?? latest;
   const printText = gate.action === "REPRINT" ? "In lại nhãn" : "In nhãn";
   const printButton = (
     <UiButton
@@ -113,11 +115,103 @@ export function PackingLabelSnapshotScreen({
     </UiButton>
   );
   const items = detail.items ?? [];
+  const showSourceNo =
+    (detail.sourceNo ?? "").trim() !== detail.outboundNo.trim();
+  const firstAttempt = detail.attempts[0];
+  const commonPrinter =
+    firstAttempt?.printerName.trim() &&
+    detail.attempts.every(
+      (attempt) =>
+        attempt.printerName.trim() === firstAttempt.printerName.trim(),
+    )
+      ? firstAttempt.printerName
+      : "";
+  const commonActor =
+    firstAttempt?.actorName.trim() &&
+    detail.attempts.every(
+      (attempt) => attempt.actorName.trim() === firstAttempt.actorName.trim(),
+    )
+      ? firstAttempt.actorName
+      : "";
+  const showContext = !commonPrinter || !commonActor;
+  const historyColumns: ResponsiveTableColumn<PackingLabelEvent>[] = [
+    {
+      key: "attempt",
+      header: t("reports.packingLabel.colPrintCount"),
+      width: showContext ? "18%" : "24%",
+      truncate: 0,
+      render: (attempt) => (
+        <div
+          className="hn-label-detail__attempt"
+          aria-current={
+            attempt.eventId === selectedEvent?.eventId ? "true" : undefined
+          }
+        >
+          <strong>{attempt.attemptNo || "—"}</strong>
+          <span>
+            {attempt.action === "REPRINT" ? "In lại" : "In lần đầu / thử lại"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "time",
+      header: t("reports.packingLabel.colTime"),
+      width: showContext ? "22%" : "32%",
+      truncate: 0,
+      render: (attempt) =>
+        attempt.attemptedAt ? formatDateTime(attempt.attemptedAt) : "—",
+    },
+    ...(showContext
+      ? [
+          {
+            key: "context",
+            header: [
+              !commonPrinter && t("reports.packingLabel.colPrinter"),
+              !commonActor && t("reports.packingLabel.colOperator"),
+            ]
+              .filter(Boolean)
+              .join(" / "),
+            width: "32%",
+            truncate: 0,
+            render: (attempt: PackingLabelEvent) => (
+              <div className="hn-label-detail__attempt">
+                {!commonPrinter && <span>{display(attempt.printerName)}</span>}
+                {!commonActor && <span>{display(attempt.actorName)}</span>}
+              </div>
+            ),
+          },
+        ]
+      : []),
+    {
+      key: "result",
+      header: `${t("reports.packingLabel.colResult")} / ${t("reports.packingLabel.colReason")}`,
+      width: showContext ? "28%" : "44%",
+      truncate: 0,
+      render: (attempt) => {
+        const reason = packingLabelFailureText(
+          attempt.reasonNote || attempt.errorCode || attempt.reasonCode,
+          t,
+        );
+        return (
+          <div className="hn-label-detail__attempt">
+            <span
+              className="hn-label-detail__result"
+              data-result={attempt.result}
+            >
+              {resultLabel(attempt.result)}
+            </span>
+            {reason && <span>{reason}</span>}
+          </div>
+        );
+      },
+    },
+  ];
   const info = (
     <dl>
       <Field label="Mã nhãn" value={detail.labelCode} />
       <Field label="Phiếu xuất" value={detail.outboundNo} />
-      <Field label="Toa xuất" value={detail.sourceNo} />
+      {showSourceNo && <Field label="Toa xuất" value={detail.sourceNo} />}
       <Field label="Bản lưu nhãn" value={detail.version} />
       <Field
         label="Nơi nhận"
@@ -132,12 +226,6 @@ export function PackingLabelSnapshotScreen({
       data-testid={preview ? "packing-label-preview" : "packing-label-detail"}
     >
       <header className="hn-label-detail__heading">
-        <div>
-          <strong>{detail.labelCode}</strong>
-          <p>
-            {detail.outboundNo} · {detail.version || "Chưa có phiên bản"}
-          </p>
-        </div>
         <div className="hn-label-detail__actions">
           {preview ? (
             <UiButton appearance="outlined" onClick={onPreview}>
@@ -235,17 +323,6 @@ export function PackingLabelSnapshotScreen({
               </article>
             </div>
           </section>
-          <section className="hn-label-detail__card">
-            <h2>Thông tin nhãn</h2>
-            {info}
-            <UiAlert tone="success">
-              Đủ dữ liệu bắt buộc trong bản lưu {detail.version}.
-            </UiAlert>
-            <UiAlert tone="info">
-              Bản xem trước dùng đúng nội dung bất biến của nhãn. In lại giữ
-              nguyên mã nhãn; không tạo phiếu xuất hoặc trừ tồn.
-            </UiAlert>
-          </section>
         </div>
       ) : (
         !preview && (
@@ -254,10 +331,6 @@ export function PackingLabelSnapshotScreen({
               className="hn-label-detail__summary"
               aria-label="Tóm tắt nhãn"
             >
-              <div>
-                <strong>1</strong>
-                <span>Nhãn duy nhất</span>
-              </div>
               <div>
                 <strong>{detail.attempts.length}</strong>
                 <span>Lượt in</span>
@@ -271,58 +344,6 @@ export function PackingLabelSnapshotScreen({
                 <span>In lại</span>
               </div>
             </section>
-            {target && (
-              <section className="hn-label-detail__card">
-                <h2>
-                  {selectedEvent
-                    ? "Chi tiết lượt in đang xem"
-                    : "Lượt in gần nhất"}
-                </h2>
-                <dl className="hn-label-detail__metadata">
-                  <Field
-                    label="Lượt in"
-                    value={
-                      String(target.attemptNo || "—") +
-                      " · " +
-                      (target.action === "REPRINT"
-                        ? "In lại"
-                        : "In lần đầu / thử lại")
-                    }
-                  />
-                  <Field
-                    label="Thời gian"
-                    value={
-                      target.attemptedAt
-                        ? formatDateTime(target.attemptedAt)
-                        : ""
-                    }
-                  />
-                  <Field label="Máy in" value={target.printerName} />
-                  <Field label="Người thực hiện" value={target.actorName} />
-                  <Field
-                    label="Kết quả lượt này"
-                    value={resultLabel(target.result)}
-                  />
-                  <Field
-                    label="Phản hồi / lý do"
-                    value={packingLabelFailureText(
-                      target.reasonNote ||
-                        target.errorCode ||
-                        target.reasonCode,
-                      t,
-                    )}
-                  />
-                </dl>
-                {latest &&
-                  selectedEvent &&
-                  latest.eventId !== selectedEvent.eventId && (
-                    <UiAlert tone="info">
-                      Đây là lượt in lịch sử. Kết quả gần nhất của nhãn:{" "}
-                      {resultLabel(latest.result)}.
-                    </UiAlert>
-                  )}
-              </section>
-            )}
             <section className="hn-label-detail__card">
               <h2>Thông tin nhãn đóng gói</h2>
               <dl className="hn-label-detail__metadata">
@@ -342,7 +363,9 @@ export function PackingLabelSnapshotScreen({
                   label="Đơn vị nhận hàng"
                   value={detail.snapshotRecipient || detail.recipient}
                 />
-                <Field label="Toa xuất" value={detail.sourceNo} />
+                {showSourceNo && (
+                  <Field label="Toa xuất" value={detail.sourceNo} />
+                )}
                 <Field
                   label="Ngày tạo nhãn"
                   value={
@@ -384,81 +407,38 @@ export function PackingLabelSnapshotScreen({
           </>
         )
       )}
-      <section className="hn-label-detail__card hn-label-detail__history">
-        <h2>Lịch sử in nhãn</h2>
-        <div
-          className="hn-label-detail__table-wrap"
-          tabIndex={0}
-          role="region"
-          aria-label="Lịch sử in, cuộn ngang để xem đầy đủ"
+      {!preview && (
+        <section
+          className="hn-label-detail__card hn-label-detail__history"
+          aria-label="Lịch sử in nhãn"
         >
-          <table>
-            <colgroup>
-              {[9, 15, 20, 24, 13, 19].map((w, i) => (
-                <col key={i} style={{ width: w + "%" }} />
-              ))}
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Lượt</th>
-                <th>Loại in</th>
-                <th>Thời gian</th>
-                <th>Máy in / Người in</th>
-                <th>Kết quả</th>
-                <th>Ghi chú</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detail.attempts.length ? (
-                detail.attempts.map((attempt) => (
-                  <tr
-                    key={attempt.eventId}
-                    className={
-                      attempt.eventId === selectedEvent?.eventId
-                        ? "is-selected"
-                        : ""
-                    }
-                  >
-                    <td>{attempt.attemptNo || "—"}</td>
-                    <td>
-                      {attempt.action === "REPRINT"
-                        ? "In lại"
-                        : "In lần đầu / thử lại"}
-                    </td>
-                    <td>
-                      {attempt.attemptedAt
-                        ? formatDateTime(attempt.attemptedAt)
-                        : "—"}
-                    </td>
-                    <td>
-                      {display(
-                        [attempt.printerName, attempt.actorName]
-                          .filter(Boolean)
-                          .join(" · "),
-                      )}
-                    </td>
-                    <td>{resultLabel(attempt.result)}</td>
-                    <td>
-                      {display(
-                        packingLabelFailureText(
-                          attempt.reasonNote ||
-                            attempt.errorCode ||
-                            attempt.reasonCode,
-                          t,
-                        ),
-                      )}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6}>Chưa có lịch sử in.</td>
-                </tr>
+          <h2>Lịch sử in nhãn</h2>
+          {(commonPrinter || commonActor) && (
+            <dl className="hn-label-detail__history-context hn-label-detail__metadata">
+              {commonPrinter && (
+                <Field
+                  label={t("reports.packingLabel.colPrinter")}
+                  value={commonPrinter}
+                />
               )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              {commonActor && (
+                <Field
+                  label={t("reports.packingLabel.colOperator")}
+                  value={commonActor}
+                />
+              )}
+            </dl>
+          )}
+          <div className="hn-label-detail__history-rows">
+            <ResponsiveDataTable
+              rows={detail.attempts}
+              rowKey={(attempt) => attempt.eventId}
+              columns={historyColumns}
+              emptyText="Chưa có lịch sử in."
+            />
+          </div>
+        </section>
+      )}
       <UiAlert tone="info">
         In lại giữ nguyên mã nhãn và bản lưu nội dung; chỉ tạo thêm lượt in.
         Không thay đổi tồn kho.

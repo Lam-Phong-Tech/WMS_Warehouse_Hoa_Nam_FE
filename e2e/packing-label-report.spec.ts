@@ -46,6 +46,23 @@ test("report, detail, preview and confirmation fit desktop, tablet and mobile", 
     expect(
       await drawer.evaluate((node) => node.scrollWidth <= node.clientWidth + 1),
     ).toBe(true);
+    await expect(
+      drawer.getByText("PL-20261105-0001", { exact: true }),
+    ).toHaveCount(1);
+    const history = drawer.locator(".hn-label-detail__history");
+    expect(
+      await history.evaluate((root) =>
+        [root, ...root.querySelectorAll("*")]
+          .filter(
+            (node) =>
+              node.clientWidth > 0 && node.scrollWidth > node.clientWidth + 1,
+          )
+          .map((node) => node.className),
+      ),
+    ).toEqual([]);
+    await expect(
+      history.getByText("Nhãn cũ bị rách, cần thay thế", { exact: true }),
+    ).toHaveCount(1);
     await page.screenshot({
       path: "test-results/packing-label/detail-" + width + ".png",
       fullPage: false,
@@ -55,6 +72,12 @@ test("report, detail, preview and confirmation fit desktop, tablet and mobile", 
       .click();
     const preview = page.getByRole("dialog", { name: /^Xem trước nhãn/ });
     await expect(preview.getByText("100 mm", { exact: true })).toBeVisible();
+    await expect(
+      preview.getByText("PL-20261105-0001", { exact: true }),
+    ).toHaveCount(1);
+    await expect(
+      preview.getByText("Lịch sử in nhãn", { exact: true }),
+    ).toHaveCount(0);
     await expect(
       preview.getByText("Máy khoan dùng pin 20V").first(),
     ).toBeVisible();
@@ -67,7 +90,7 @@ test("report, detail, preview and confirmation fit desktop, tablet and mobile", 
       path: "test-results/packing-label/preview-" + width + ".png",
       fullPage: false,
     });
-    await preview.getByRole("button", { name: "In lại…", exact: true }).click();
+    await preview.getByRole("button", { name: "In lại nhãn", exact: true }).click();
     const confirm = page.getByRole("dialog", { name: "In lại nhãn" });
     await expect(
       confirm.getByRole("textbox", { name: /Lý do in lại nhãn/ }),
@@ -143,3 +166,70 @@ test("empty and error states preserve filters and disable export", async ({
     page.getByRole("button", { name: "Thử lại", exact: true }),
   ).toBeEnabled();
 });
+
+for (const theme of ["light", "dark"]) {
+  test(`${theme}: varied print audits fit without horizontal scrolling or repeated fields`, async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      (value) => localStorage.setItem("hoa-nam-theme", value),
+      theme,
+    );
+    for (const audit of ["mixed", "partial"]) {
+      await page.goto(`/e2e/fixtures/packing-label-report.html?audit=${audit}`);
+      await page
+        .getByRole("button", { name: "Xem chi tiết nhãn PL-20261105-0001" })
+        .first()
+        .click();
+      const drawer = page.getByRole("dialog", {
+        name: /^Chi tiết nhãn đóng gói/,
+      });
+      const history = drawer.getByRole("region", { name: "Lịch sử in nhãn" });
+      await expect(
+        history.getByText("Nguyễn Thanh Quang", { exact: true }),
+      ).toHaveCount(1);
+      await expect(
+        history.getByText(
+          "Phạm Quốc Bảo — Quản trị hệ thống chi nhánh Hoa Nam",
+          { exact: true },
+        ),
+      ).toHaveCount(1);
+      for (const width of [1440, 1024, 768, 390, 320]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await expect(drawer).toHaveCSS("transform", "none");
+        const bounds = await drawer.boundingBox();
+        expect(Math.abs(bounds!.x + bounds!.width - width)).toBeLessThanOrEqual(
+          1,
+        );
+        expect(
+          await history.evaluate((root) =>
+            [root, ...root.querySelectorAll("*")]
+              .filter(
+                (node) =>
+                  node.clientWidth > 0 &&
+                  node.scrollWidth > node.clientWidth + 1,
+              )
+              .map((node) => node.className),
+          ),
+        ).toEqual([]);
+        await expect(history.locator('[aria-current="true"]')).toHaveCount(1);
+        const close = drawer.getByRole("button", {
+          name: "Đóng chi tiết nhãn",
+        });
+        const top = await close.evaluate(
+          (node) => node.getBoundingClientRect().top,
+        );
+        await history.scrollIntoViewIfNeeded();
+        expect(
+          await close.evaluate((node) => node.getBoundingClientRect().top),
+        ).toBe(top);
+        if (width === 1440 || width === 390)
+          await history.screenshot({
+            path: `test-results/packing-label/${theme}-${audit}-history-${width}.png`,
+          });
+      }
+      await page.keyboard.press("Escape");
+      await expect(drawer).toBeHidden();
+    }
+  });
+}
