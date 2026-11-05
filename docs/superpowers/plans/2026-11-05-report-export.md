@@ -29,3 +29,9 @@ Empty results; unknown workbook headers fail closed; page scope with multiple li
 - Independent review found duplicate import aggregation, missing actual issued quantities and unknown-state retry protection; regression tests failed before fixes and passed afterward.
 - Broad report/UI checks surfaced failures in unchanged comparison/warehouse/locale/icon/address tests and report tests with older screen assumptions or runtime timeouts. Broad runs were stopped after these failures; no claim of a green full suite. ui:tokens reports 30 pre-existing violations outside the new shared styles.
 - Ruling: preserve the original dirty dev checkout; integrate this isolated branch into remote dev without rewriting local uncommitted work.
+
+### Wider checks that did not pass
+
+The broad runs reported failures in AgencyComparisonTab.test.tsx, IoHistoryReport.test.tsx, reports-api-only.test.ts, IoHistoryFeedback.locale.test.tsx, WarrantyComponentsReport.test.tsx, ReportWarehouseCard.test.tsx, vuexy-nav-icons.test.tsx and UiAddressField.test.tsx. Several report interaction cases hit the 20-second timeout under heavy host load. The four history export cases all passed separately with a suitable timeout. The API-adapter assertion still expects useSkuImportReports although the base implementation uses useImportQualityBatches. Icon, address, warehouse and old report-layout assumptions were not changed by this feature. These broad runs were stopped after failures and are not represented as passing.
+
+The merged source was rechecked: all 13 shared export tests passed again.
