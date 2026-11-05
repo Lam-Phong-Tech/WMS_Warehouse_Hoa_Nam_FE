@@ -888,7 +888,7 @@ export default function PackingLabelPrintReport() {
               >
                 <table className="hn-pkg-label__table">
                   <colgroup>
-                    {[18, 20, 15, 15, 12, 6, 14].map((width, i) => (
+                    {[22, 30, 18, 18, 12].map((width, i) => (
                       <col key={i} style={{ width: width + "%" }} />
                     ))}
                   </colgroup>
@@ -901,16 +901,14 @@ export default function PackingLabelPrintReport() {
                           Thời gian {descending ? "↓" : "↑"}
                         </button>
                       </th>
-                      <th>Máy in / Người in</th>
                       <th>Kết quả</th>
-                      <th>Lượt in</th>
                       <th>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     {report.loading ? (
                       <tr>
-                        <td colSpan={7}>
+                        <td colSpan={5}>
                           <div className="hn-pkg-label__state" role="status">
                             Đang tải dữ liệu…
                           </div>
@@ -918,7 +916,7 @@ export default function PackingLabelPrintReport() {
                       </tr>
                     ) : visibleRows.length === 0 ? (
                       <tr>
-                        <td colSpan={7}>
+                        <td colSpan={5}>
                           <div className="hn-pkg-label__state">
                             <PrinterOutlined />
                             <h2>
@@ -938,105 +936,96 @@ export default function PackingLabelPrintReport() {
                         </td>
                       </tr>
                     ) : (
-                      visibleRows.map(
-                        ({ target, label, latest, total, key }) => {
-                          const currentAttempts = report.events.filter(
-                            (e) => e.labelId === target.labelId,
-                          );
-                          const gate = printGate(
-                            label?.status || "",
-                            currentAttempts,
-                          );
-                          const allowed =
-                            gate.action === "REPRINT" ? canReprint : canPrint;
-                          return (
-                            <tr key={key}>
-                              <td>
-                                <strong>{target.labelCode || "—"}</strong>
-                                <span>{target.outboundNo || "—"}</span>
-                              </td>
-                              <td>
-                                <strong>
-                                  {label?.skuSummary || "Chưa có nội dung SKU"}
-                                </strong>
-                                <span>
-                                  {label?.recipient || "Chưa có nơi nhận"}
+                      visibleRows.map(({ target, label, latest, key }) => {
+                        const currentAttempts = report.events.filter(
+                          (e) => e.labelId === target.labelId,
+                        );
+                        const gate = printGate(
+                          label?.status || "",
+                          currentAttempts,
+                        );
+                        const allowed =
+                          gate.action === "REPRINT" ? canReprint : canPrint;
+                        return (
+                          <tr key={key}>
+                            <td>
+                              <strong>{target.labelCode || "—"}</strong>
+                              <span>{target.outboundNo || "—"}</span>
+                            </td>
+                            <td>
+                              <strong>
+                                {label?.skuSummary || "Chưa có nội dung SKU"}
+                              </strong>
+                              <span>
+                                {label?.recipient || "Chưa có nơi nhận"}
+                              </span>
+                            </td>
+                            <td>
+                              {latest?.attemptedAt
+                                ? formatDateTime(latest.attemptedAt)
+                                : "Chưa có lượt in"}
+                              <span>
+                                {latest
+                                  ? latest.action === "REPRINT"
+                                    ? "In lại"
+                                    : "In lần đầu / thử lại"
+                                  : "Chờ in lần đầu"}
+                              </span>
+                            </td>
+                            <td>
+                              {latest ? (
+                                <PrintStatus result={latest.result} />
+                              ) : (
+                                <span className="hn-pkg-label__status is-neutral">
+                                  {LABEL_SNAPSHOT_STATUS_LABELS[
+                                    label?.status || ""
+                                  ] || "Chưa in"}
                                 </span>
-                              </td>
-                              <td>
-                                {latest?.attemptedAt
-                                  ? formatDateTime(latest.attemptedAt)
-                                  : "Chưa có lượt in"}
-                                <span>
-                                  {latest
-                                    ? latest.action === "REPRINT"
-                                      ? "In lại"
-                                      : "In lần đầu / thử lại"
-                                    : "Chờ in lần đầu"}
+                              )}
+                              {latest && failureText(latest) && (
+                                <span className="hn-pkg-label__reason">
+                                  {failureText(latest)}
                                 </span>
-                              </td>
-                              <td>
-                                <strong>{latest?.printerName || "—"}</strong>
-                                <span>{latest?.actorName || "—"}</span>
-                              </td>
-                              <td>
-                                {latest ? (
-                                  <PrintStatus result={latest.result} />
-                                ) : (
-                                  <span className="hn-pkg-label__status is-neutral">
-                                    {LABEL_SNAPSHOT_STATUS_LABELS[
-                                      label?.status || ""
-                                    ] || "Chưa in"}
-                                  </span>
-                                )}
-                                {latest && failureText(latest) && (
-                                  <span className="hn-pkg-label__reason">
-                                    {failureText(latest)}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="is-center">
-                                {total || (latest ? "—" : 0)}
-                              </td>
-                              <td>
-                                <RowActionGroup>
+                              )}
+                            </td>
+                            <td>
+                              <RowActionGroup>
+                                <RowActionButton
+                                  kind="view"
+                                  aria-label={
+                                    "Xem chi tiết nhãn " + target.labelCode
+                                  }
+                                  onClick={() => openDetail(target, latest)}
+                                >
+                                  Chi tiết
+                                </RowActionButton>
+                                {gate.action && allowed && (
                                   <RowActionButton
-                                    kind="view"
-                                    aria-label={
-                                      "Xem chi tiết nhãn " + target.labelCode
+                                    kind="print"
+                                    disabled={
+                                      busy || Boolean(uncertain) || !online
                                     }
-                                    onClick={() => openDetail(target, latest)}
+                                    onClick={() => void preparePrint(target)}
                                   >
-                                    Chi tiết
+                                    {gate.action === "REPRINT"
+                                      ? "In lại"
+                                      : "In nhãn"}
                                   </RowActionButton>
-                                  {gate.action && allowed && (
-                                    <RowActionButton
-                                      kind="print"
-                                      disabled={
-                                        busy || Boolean(uncertain) || !online
-                                      }
-                                      onClick={() => void preparePrint(target)}
-                                    >
-                                      {gate.action === "REPRINT"
-                                        ? "In lại"
-                                        : "In nhãn"}
-                                    </RowActionButton>
-                                  )}
-                                  {!gate.action && (
-                                    <small>
-                                      {currentAttempts.some(
-                                        (e) => e.result === "PENDING_PRINT",
-                                      )
-                                        ? "Chờ phản hồi"
-                                        : "Chưa sẵn sàng"}
-                                    </small>
-                                  )}
-                                </RowActionGroup>
-                              </td>
-                            </tr>
-                          );
-                        },
-                      )
+                                )}
+                                {!gate.action && (
+                                  <small>
+                                    {currentAttempts.some(
+                                      (e) => e.result === "PENDING_PRINT",
+                                    )
+                                      ? "Chờ phản hồi"
+                                      : "Chưa sẵn sàng"}
+                                  </small>
+                                )}
+                              </RowActionGroup>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

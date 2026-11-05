@@ -256,6 +256,12 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     ).toBeInTheDocument();
 
     const table = await screen.findByRole("table");
+    expect(within(table).getAllByRole("columnheader")).toHaveLength(5);
+    for (const name of ["Máy in / Người in", "Lượt in"]) {
+      expect(
+        within(table).queryByRole("columnheader", { name }),
+      ).not.toBeInTheDocument();
+    }
     // 4 lần in của 2 nhãn — không gộp về mức nhãn.
     expect(within(table).getAllByRole("row")).toHaveLength(5); // 1 header + 4
     expect(within(table).getAllByText("PL-PX-0001")).toHaveLength(2);
@@ -273,6 +279,9 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
       (await screen.findAllByText(/Zebra ZD421 · Nguyễn Kho Vận/)).length,
     ).toBe(2);
     const detail = screen.getByTestId("packing-label-detail");
+    expect(detail).toHaveTextContent("Máy in");
+    expect(detail).toHaveTextContent("Người thực hiện");
+    expect(detail).toHaveTextContent("Lượt in");
     expect(
       within(detail).getAllByText("Nhãn đầu bị nhòe khi dán").length,
     ).toBeGreaterThan(0);
