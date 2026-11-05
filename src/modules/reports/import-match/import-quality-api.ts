@@ -1,3 +1,7 @@
+import {
+  downloadSelectedWorkbook,
+  type ExportWorkbookOptions,
+} from "../components/report-export-workbook";
 import { useQuery } from "@tanstack/react-query";
 import { http } from "@/shared/api/http";
 import { fetchAllPages } from "@/shared/api/paginate-all";
@@ -20,7 +24,10 @@ export type ImportQualityIssue = {
 
 export async function fetchImportQualityBatches(): Promise<Raw[]> {
   const pages = await fetchAllPages(
-    (page) => http.getPage<Raw[]>(IMPORT_REPORTS, { params: { page, per_page: PAGE_SIZE } }),
+    (page) =>
+      http.getPage<Raw[]>(IMPORT_REPORTS, {
+        params: { page, per_page: PAGE_SIZE },
+      }),
     (result) => {
       const lastPage = n(result.meta?.last_page, 1);
       if (!Number.isInteger(lastPage) || lastPage < 1 || lastPage > 100) {
@@ -30,19 +37,28 @@ export async function fetchImportQualityBatches(): Promise<Raw[]> {
     },
     100,
   );
-  const rows = pages.flatMap((page) => Array.isArray(page.data) ? page.data : []);
+  const rows = pages.flatMap((page) =>
+    Array.isArray(page.data) ? page.data : [],
+  );
   const reportedTotal = pages[0]?.meta?.total;
   if (reportedTotal !== undefined && rows.length !== n(reportedTotal, -1)) {
-    throw new Error("Import report history changed during loading. Refresh the report.");
+    throw new Error(
+      "Import report history changed during loading. Refresh the report.",
+    );
   }
   return rows;
 }
 
 export async function fetchImportQualityIssues(batchId: string, page: number) {
-  const response = await http.getPage<Raw[]>(`${IMPORT_REPORTS}/${encodeURIComponent(batchId)}/rows`, {
-    params: { page, per_page: ISSUE_PAGE_SIZE },
-  });
-  const rows: ImportQualityIssue[] = (Array.isArray(response.data) ? response.data : []).map((row) => ({
+  const response = await http.getPage<Raw[]>(
+    `${IMPORT_REPORTS}/${encodeURIComponent(batchId)}/rows`,
+    {
+      params: { page, per_page: ISSUE_PAGE_SIZE },
+    },
+  );
+  const rows: ImportQualityIssue[] = (
+    Array.isArray(response.data) ? response.data : []
+  ).map((row) => ({
     rowNo: n(row.row_no),
     field: text(row.field, ""),
     code: text(row.error_code, ""),
@@ -51,7 +67,11 @@ export async function fetchImportQualityIssues(batchId: string, page: number) {
     severity: text(row.severity, "ERROR"),
     suggestedAction: text(row.suggested_action, ""),
   }));
-  return { rows, total: n(response.meta?.total, rows.length), lastPage: n(response.meta?.last_page, 1) };
+  return {
+    rows,
+    total: n(response.meta?.total, rows.length),
+    lastPage: n(response.meta?.last_page, 1),
+  };
 }
 
 export function useImportQualityBatches(enabled: boolean) {
@@ -72,8 +92,18 @@ export function useImportQualityIssues(batchId: string | null, page: number) {
   });
 }
 
-export async function downloadImportQualityExport(filters: Record<string, string>) {
-  const { blob, fileName } = await http.downloadFile(`${IMPORT_REPORTS}/export-excel`, { params: filters });
+export async function downloadImportQualityExport(
+  filters: Record<string, string>,
+  workbook?: ExportWorkbookOptions,
+) {
+  const { blob, fileName } = await http.downloadFile(
+    `${IMPORT_REPORTS}/export-excel`,
+    { params: filters },
+  );
+  if (workbook) {
+    await downloadSelectedWorkbook(blob, workbook);
+    return;
+  }
   const url = URL.createObjectURL(blob);
   try {
     const link = document.createElement("a");

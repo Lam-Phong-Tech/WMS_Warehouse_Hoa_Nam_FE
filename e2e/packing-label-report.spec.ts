@@ -79,6 +79,23 @@ test("report, detail, preview and confirmation fit desktop, tablet and mobile", 
     ).toBe(true);
     await confirm.getByRole("button", { name: "Hủy", exact: true }).click();
     await preview.getByRole("button", { name: "Đóng chi tiết nhãn" }).click();
+    await page
+      .getByRole("button", { name: "Xuất báo cáo", exact: true })
+      .click();
+    const exportDrawer = page.getByRole("dialog", {
+      name: /^Xuất báo cáo nhãn đóng gói/,
+    });
+    await expect(
+      exportDrawer.getByRole("radio", { name: /Tất cả kết quả/ }),
+    ).toBeChecked();
+    expect(
+      await exportDrawer.evaluate(
+        (node) => node.scrollWidth <= node.clientWidth + 1,
+      ),
+    ).toBe(true);
+    await exportDrawer
+      .getByRole("button", { name: "Hủy", exact: true })
+      .click();
   }
   expect(errors).toEqual([]);
 });

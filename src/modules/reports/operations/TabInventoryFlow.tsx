@@ -1092,10 +1092,15 @@ export default function TabInventoryFlow() {
         })}
         actions={
           <ExportButtons
+            total={filteredDocuments.length}
             exporting={exporter.exporting}
             disabled={docPeriod.invalid || documents.isLoading}
-            onExport={(format) =>
-              void exporter.exportReport(format, {
+            onExport={(format, choice) =>
+              exporter.exportReport(format, {
+                workbook: {
+                  filename: choice.filename,
+                  sectionIds: choice.sectionIds,
+                },
                 reportCode: "document-history",
                 fileStem: "lich-su-chung-tu",
                 fileSuffix: `-${docPeriod.from}-${docPeriod.to}`,

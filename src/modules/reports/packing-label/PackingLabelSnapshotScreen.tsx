@@ -27,6 +27,7 @@ type Props = {
   canPrint: boolean;
   canReprint: boolean;
   busy: boolean;
+  locked?: boolean;
 };
 const display = (value: string | undefined) => value?.trim() || "—";
 const resultLabel = (result: string) =>
@@ -58,6 +59,7 @@ export function PackingLabelSnapshotScreen({
   canPrint,
   canReprint,
   busy,
+  locked = false,
 }: Props) {
   const t = useT();
   const [zoom, setZoom] = useState("fit");
@@ -93,7 +95,8 @@ export function PackingLabelSnapshotScreen({
       disabled={
         !gate.action ||
         !(gate.action === "REPRINT" ? canReprint : canPrint) ||
-        busy
+        busy ||
+        locked
       }
       onClick={onPrint}
     >
@@ -174,7 +177,7 @@ export function PackingLabelSnapshotScreen({
           </p>
         </section>
       )}
-      {gate.reason && missing.length === 0 && (
+      {gate.reason && missing.length === 0 && !locked && (
         <div className="hn-label-detail__validation">
           <UiAlert tone="warning">{gate.reason}</UiAlert>
           <UiButton appearance="outlined" disabled={busy} onClick={onRetry}>

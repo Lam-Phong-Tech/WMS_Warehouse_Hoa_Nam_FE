@@ -15,12 +15,12 @@ Backend commit a96a292b tạo bộ PLRPT-20261105: 10 nhãn, 13 lượt (7 thàn
 
 ## Kiểm chứng
 
-- 28 kiểm tra frontend qua Vitest.
+- 30 kiểm tra frontend của màn nhãn và 9 kiểm tra xuất báo cáo dùng chung qua Vitest.
 - 21 kiểm tra backend / 92 assertions qua PHPUnit, chạy lại độc lập bởi agent chính.
-- 3 bài kiểm tra Chromium: danh sách/chi tiết/xem trước/xác nhận tại 1440, 1024, 768, 390, 320px; không tràn ngang cấp trang/drawer; bảng cuộn riêng; tình huống chưa xác định, thiếu dữ liệu, rỗng và lỗi tải.
+- 3 bài kiểm tra Chromium: danh sách/chi tiết/xem trước/xác nhận tại 1440, 1024, 768, 390, 320px; không tràn ngang cấp trang/drawer; bảng cuộn riêng; tình huống chưa xác định, thiếu dữ liệu, rỗng và lỗi tải; drawer xuất báo cáo được kiểm tra ở cả năm kích thước.
 - TypeScript và lint đạt; build Vite cùng manifest được kiểm tra trong container Node 22 tách biệt.
 - Ảnh kiểm chứng tại evidence/packing-label-20261105/.
 
 ## Khác biệt với ảnh và giới hạn
 
-Theo chuẩn hiện hành, chi tiết dùng drawer bên phải. Export giữ API được kiểm toán hiện tại: XLSX/PDF tổng hợp theo nhãn (20 cột), không xuất từng lượt/CSV như bản minh họa; hộp xác nhận giải thích rõ phạm vi và gửi đầy đủ bộ lọc. Mỗi lần xác nhận gửi một lượt, theo API hiện hành. Barcode trong xem trước là minh họa có nhãn cảnh báo, không dùng quét. Chưa kiểm thử với máy in vật lý; kiểm thử giao diện dùng fixture, không gửi lệnh tới thiết bị. Không chạy xong toàn bộ suite backend ngoài phạm vi thay đổi.
+Theo chuẩn hiện hành, chi tiết dùng drawer bên phải. Export giữ API được kiểm toán hiện tại: XLSX/PDF tổng hợp theo nhãn (20 cột), không xuất từng lượt/CSV như bản minh họa; drawer xuất báo cáo dùng chung giải thích rõ phạm vi, chọn tất cả/trang hiện tại, tóm tắt/chi tiết, đổi tên file và gửi đầy đủ bộ lọc. Mỗi lần xác nhận gửi một lượt, theo API hiện hành. Barcode trong xem trước là minh họa có nhãn cảnh báo, không dùng quét. Chưa kiểm thử với máy in vật lý; kiểm thử giao diện dùng fixture, không gửi lệnh tới thiết bị. Không chạy xong toàn bộ suite backend ngoài phạm vi thay đổi.

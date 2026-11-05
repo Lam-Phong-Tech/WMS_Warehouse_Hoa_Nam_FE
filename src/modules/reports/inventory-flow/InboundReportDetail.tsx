@@ -1,3 +1,10 @@
+import { ReportExportAction } from "../components/ReportExportAction";
+import { reportExportSections } from "../components/report-export-sections";
+import {
+  exportLocalReport,
+  type ReportExportChoice,
+} from "../components/report-export-workbook";
+import { tStatic as tExport } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
@@ -7,7 +14,6 @@ import {
   useInboundScanEntries,
 } from "@/modules/inbound/hooks/use-inbound";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
-import { exportXlsx } from "@/shared/utils/export-xlsx";
 import type { FlowDocument } from "./inventory-flow-api";
 import "./inbound-report-detail.css";
 
@@ -98,9 +104,9 @@ export function InboundReportDetail({
     a.changedAt.localeCompare(b.changedAt),
   );
 
-  const exportDetail = () => {
+  const exportDetail = (choice: ReportExportChoice) => {
     if (!detail || !canExport) return;
-    exportXlsx(
+    exportLocalReport(
       [
         "Mã phiếu nhập",
         "Mã quét / serial",
@@ -142,7 +148,7 @@ export function InboundReportDetail({
             statusName(receipt?.status ?? document.status),
             formatDateTime(document.posted_at),
           ]),
-      `chi-tiet-nhap-kho-${receipt?.code ?? document.document_no}`,
+      choice,
     );
   };
 
@@ -186,14 +192,18 @@ export function InboundReportDetail({
                 Mở chứng từ gốc ↗
               </Link>
               {canExport ? (
-                <button
-                  type="button"
-                  className="inbound-report-detail__export"
-                  disabled={!detail}
-                  onClick={exportDetail}
-                >
-                  Xuất chi tiết
-                </button>
+                <ReportExportAction
+                  title={tExport("reportExport.inbound")}
+                  fileStem={
+                    "ChiTietNhapKho_" + (receipt?.code ?? document.document_no)
+                  }
+                  total={entries.length || lines.length}
+                  sections={reportExportSections(
+                    tExport("reportExport.detail"),
+                  )}
+                  disabled={!detail || !canExport}
+                  onExport={exportDetail}
+                />
               ) : null}
             </div>
           </div>

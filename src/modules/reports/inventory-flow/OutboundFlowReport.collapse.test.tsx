@@ -146,7 +146,7 @@ describe("RPT-01B · phân trang phiếu xuất", () => {
 });
 
 describe("RPT-01B · bộ lọc báo cáo", () => {
-  it("lọc từ thanh đầu trang theo người nhận và trạng thái rồi đặt lại", async () => {
+  it("tự lọc từ thanh đầu trang và xóa lọc từ danh sách", async () => {
     snapshot.documents = [
       {
         id: "a",
@@ -189,7 +189,12 @@ describe("RPT-01B · bộ lọc báo cáo", () => {
       }),
     );
     fireEvent.click(within(filters).getByRole("option", { name: "Nháp" }));
-    fireEvent.click(within(filters).getByRole("button", { name: "Áp dụng" }));
+    expect(
+      within(filters).queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(filters).queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
     const table = () =>
       document.querySelector<HTMLTableSectionElement>(
         ".outbound-table-wrap tbody",
@@ -199,18 +204,13 @@ describe("RPT-01B · bộ lọc báo cáo", () => {
     );
     expect(table()).toHaveTextContent("PX-B");
     expect(table()).not.toHaveTextContent("PX-A");
-    await waitFor(() =>
-      expect(
-        within(filters).getByRole("button", { name: "Đặt lại" }),
-      ).toBeEnabled(),
-    );
-    fireEvent.click(within(filters).getByRole("button", { name: "Đặt lại" }));
-    await waitFor(() =>
-      expect(within(table()).getAllByRole("row")).toHaveLength(2),
-    );
     const toolbar = screen.getByRole("region", {
       name: "Bộ lọc danh sách phiếu xuất",
     });
+    fireEvent.click(within(toolbar).getByRole("button", { name: "Xóa lọc" }));
+    await waitFor(() =>
+      expect(within(table()).getAllByRole("row")).toHaveLength(2),
+    );
     expect(
       within(toolbar).queryByRole("button", { name: "Xóa lọc" }),
     ).not.toBeInTheDocument();
@@ -244,7 +244,6 @@ it("áp dụng khoảng ngày được chọn ở đầu báo cáo vào truy v�
   await waitFor(() => expect(from).toBeEnabled());
   fireEvent.click(from);
   fireEvent.click(await screen.findByRole("button", { name: "Hôm qua" }));
-  fireEvent.click(within(filters).getByRole("button", { name: "Áp dụng" }));
   const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
   await waitFor(() =>
     expect(useInventoryFlowSnapshot).toHaveBeenLastCalledWith({

@@ -2,7 +2,7 @@
 title: Hoa Nam WMS — Chuẩn giao diện Web thống nhất
 status: active
 version: 2.4
-updated: 2026-11-04
+updated: 2026-11-05
 owner: Frontend
 applies_to: Web Admin (desktop, tablet, mobile)
 ---
@@ -167,6 +167,12 @@ Drawer/modal phải có tên truy cập, focus vào nội dung phù hợp khi m�
 
 **Truy vết chứng từ:** chia **Tổng quan / Dữ liệu liên quan / Lịch sử & điều chỉnh**; dùng danh sách mở rộng dọc cho dòng chứng từ, vật chứa, biến động và chuỗi điều chỉnh. Nhóm metadata dùng nền surface thường, ngăn nhóm bằng khoảng cách/đường chia nhẹ; không phủ nền xanh cho mọi khối hay đóng khung từng mã. Nhấn đậm mã nhận diện và số liệu cần đọc; dùng màu thành công/nguy hiểm cho biến động tăng/giảm, số 0 và dữ liệu thiếu giữ màu thường. Chỉ trạng thái có ý nghĩa nghiệp vụ dùng pill màu; loại giao dịch, loại mã và loại nguồn là chữ thường. Nhãn trạng thái phải theo đúng loại chứng từ (phiếu xuất `POSTED` là **Đã xuất kho**, không dùng nhãn nhập kho). Lỗi và nút thử lại luôn nằm trên vùng tab.
 
+### Xuất báo cáo dùng chung
+
+Mọi nút **Xuất báo cáo** dùng ReportExportButton / ReportExportAction: cùng màu primary từ token, icon tải xuống, cao tối thiểu 44px, font 14/20px và trạng thái loading/disabled. Không thêm màu/kiểu riêng theo module. Khi nhấn, mở ReportExportDrawer bên phải rộng 560px, tối đa 100vw; header và footer cố định, thân có một vùng cuộn.
+
+Drawer hiển thị điều kiện đang áp dụng, phạm vi toàn bộ kết quả/trang hiện tại (và SKU cần kiểm tra khi đối soát), các nội dung thực sự được nguồn dữ liệu hỗ trợ, tóm tắt và tên tệp có thể sửa. Các lựa chọn phải ảnh hưởng đến file thực tế. Với Excel từ máy chủ, giữ luồng kiểm quyền/audit/job/mask và tùy biến workbook sau khi tải thành công; phạm vi chọn theo định danh để giữ đủ dòng hàng của phiếu. PDF chỉ hiện lựa chọn toàn bộ chi tiết khi API hỗ trợ. Báo lỗi trong drawer, giữ lựa chọn để thử lại, khóa gửi lặp và đóng khi đang xuất. Không tự tải file ngay khi mở drawer.
+
 ## 7. Form và hành động
 
 Với form nhiều dòng trong drawer (ví dụ tạo phiếu đảo), tách bước **chọn giao dịch → nhập điều chỉnh**; dùng từng khối SKU gồm số lượng gốc/đã điều chỉnh/còn lại và các ô nhập liên quan, thay cho bảng rộng phải kéo ngang. Chuyển bước phải giữ dữ liệu đang nhập. Đặt tổng và nút tạo/lưu qua `actions` của `UiDrawer` để chân drawer nằm ngoài vùng cuộn chính. Chú thích giải thích chung có thể thu vào icon **i** có tooltip khi hover/focus; lỗi, điều kiện chặn và ảnh hưởng tồn kho cần ra quyết định vẫn hiện trực tiếp.
@@ -202,7 +208,7 @@ Sử dụng **một** `<Toaster>` Sonner toàn ứng dụng trong `src/app/provi
 | Trạng thái  | `success`, `error`, `warning`, `info`; màu accent nhất quán với ý nghĩa, đi kèm biểu tượng và chữ.                                                              |
 | Chuyển động | Vào từ bên phải `350ms`, hiển thị `3000ms`, ra bên phải `300ms`; thanh tiến độ cao `3px` đếm ngược. `prefers-reduced-motion` bỏ chuyển động vào/ra.             |
 | Tương tác   | Có nút đóng thủ công, cho vuốt sang phải khi nền tảng hỗ trợ; toast không chặn thao tác ở vùng ngoài nó. Không tự chuyển focus sang toast.                      |
-| Truy cập    | Thông báo thường dùng `status`/live polite; lỗi cần chú ý có `alert` phù hợp. Lỗi chặn tác vụ hiển thị trong form/banner, không lặp bằng toast.                              |
+| Truy cập    | Thông báo thường dùng `status`/live polite; lỗi cần chú ý có `alert` phù hợp. Lỗi chặn tác vụ hiển thị trong form/banner, không lặp bằng toast.                 |
 
 Chỉ báo thành công **sau** phản hồi thành công; mỗi sự kiện chỉ có một thông báo chính. Lỗi đã có cảnh báo tại chỗ không lặp bằng toast; không gọi toast cả ở service và nơi dùng service. Nội dung ngắn, nêu kết quả và bước tiếp theo nếu cần, không lộ mã lỗi kỹ thuật. Khi drawer/dialog đang mở, kiểm tra toast không che CTA, nút đóng hoặc field quan trọng; nếu va chạm, điều chỉnh vị trí/giới hạn hiển thị của overlay đó. Kiểm tra cả light/dark và mobile.
 

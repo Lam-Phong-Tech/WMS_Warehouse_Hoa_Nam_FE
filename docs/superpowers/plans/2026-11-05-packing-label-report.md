@@ -19,4 +19,4 @@
 - [x] 2. Implement view projections, refreshed table/filters, accurate period metrics, export confirmation, print state handling; make tests green.
 - [x] 3. Complete immutable snapshot detail/preview inside shared drawer, add retry and missing data checks; run behavior tests.
 - [x] 4. Run typecheck, focused lint, build, relevant report regression tests and responsive inspection at 1440/1024/768/390/320.
-- [ ] 5. Review FE and independent backend fixtures, fix material findings, commit, push and integrate latest dev without touching original work.
+- [x] 5. Review FE and independent backend fixtures, fix material findings, commit, push and integrate latest dev without touching original work.

@@ -1,3 +1,4 @@
+import { REPORT_EXPORT_VI } from "./messages.report-export";
 import { PERSONAL_VI } from "./messages.personal";
 import { RBAC_VI } from "./messages.rbac";
 import { MESSAGES_UPDATED_VI } from "./messages.updated.vi";
@@ -17,6 +18,7 @@ import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
  */
 
 export const MESSAGES_VI = {
+  reportExport: REPORT_EXPORT_VI,
   nfc: MESSAGES_NFC_VI,
   updatedUi: MESSAGES_UPDATED_VI,
   common: {

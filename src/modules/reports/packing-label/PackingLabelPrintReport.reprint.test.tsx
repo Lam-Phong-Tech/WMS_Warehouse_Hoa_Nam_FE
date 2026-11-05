@@ -9,6 +9,7 @@ import { cleanupTestState } from "@/test/setup";
 const mocks = vi.hoisted(() => ({
   snapshotGet: vi.fn(),
   rowResult: "PRINTED",
+  detail: null as unknown,
   printLabelSnapshot: vi.fn(),
   reprintLabelSnapshot: vi.fn(),
   refetch: vi.fn(),
@@ -21,7 +22,7 @@ vi.mock("@/modules/reports/operations/report-export", () => ({
 }));
 vi.mock("./packing-label-api", () => ({
   usePackingLabelSnapshot: () => ({
-    detail: null,
+    detail: mocks.detail,
     loading: false,
     error: null,
   }),
@@ -76,6 +77,7 @@ describe("packing-label reprint reason dialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.rowResult = "PRINTED";
+    mocks.detail = null;
     useAuthStore.setState({
       permissionCodes: ["label.print", "label.reprint"],
       isSuperAdmin: false,
@@ -281,5 +283,64 @@ describe("packing-label reprint reason dialog", () => {
         expect.objectContaining({ ifMatch: 9 }),
       ),
     );
+  });
+  it("keeps uncertain-result feedback and reconciliation reachable inside the detail drawer", async () => {
+    mocks.detail = {
+      labelId: "label-1",
+      outboundDocumentId: "outbound-1",
+      labelCode: "PL-001",
+      outboundNo: "PX-001",
+      status: "PRINTED",
+      version: "v7",
+      attempts: [
+        {
+          eventId: "previous",
+          result: "PRINTED",
+          action: "PRINT",
+          attemptedAt: "2026-11-05T08:00:00+07:00",
+          attemptNo: 1,
+          printerId: "printer-1",
+          printerName: "Máy in kho",
+          actorName: "Thủ kho",
+        },
+      ],
+      missingFields: [],
+      items: [{ code: "SKU-001", quantity: 1, name: "Máy khoan", unit: "cái" }],
+    };
+    mocks.reprintLabelSnapshot.mockRejectedValueOnce(
+      new Error("Network timeout"),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PackingLabelPrintReport />);
+    await user.click(
+      screen.getByRole("button", { name: "Xem chi tiết nhãn PL-001" }),
+    );
+    const drawer = await screen.findByRole("dialog", {
+      name: /^Chi tiết nhãn đóng gói/,
+    });
+    await user.click(
+      await within(drawer).findByRole("button", { name: "In lại…" }),
+    );
+    const confirm = await screen.findByRole("dialog", { name: "In lại nhãn" });
+    await user.type(
+      await within(confirm).findByRole("textbox", {
+        name: /Lý do in lại nhãn/,
+      }),
+      "Nhãn hỏng",
+    );
+    await user.click(
+      within(confirm).getByRole("button", { name: "Xác nhận in lại" }),
+    );
+    expect(
+      await within(drawer).findByText(/Chưa xác định kết quả gửi lệnh/),
+    ).toBeInTheDocument();
+    expect(
+      await within(drawer).findByRole("button", {
+        name: "Kiểm tra trạng thái",
+      }),
+    ).toBeEnabled();
+    expect(
+      within(drawer).getByRole("button", { name: "In lại…" }),
+    ).toBeDisabled();
   });
 });

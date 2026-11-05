@@ -1,12 +1,14 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { Box, UiSelect } from "@/shared/ui";
 import {
   CheckCircleOutlined,
-  DownloadOutlined,
   FileTextOutlined,
   HistoryOutlined,
   InboxOutlined,
@@ -612,12 +614,20 @@ export default function RecipientAgencyReport() {
     setSearch("");
   };
 
-  const exportReport = () => {
+  const exportReport = (choice: ReportExportChoice) => {
     const selectedRecipientId = applied.agency
       ? (baseEvents.find((event) => dealerKey(event) === applied.agency)
           ?.recipient.id ?? "")
       : "";
-    void exporter.exportReport("xlsx", {
+    return exporter.exportReport(choice.format, {
+      workbook: reportWorkbookOptions(
+        choice,
+        ["Phiếu xuất"],
+        tableRows.flatMap((row) =>
+          row.events.map((event) => event.outbound_no),
+        ),
+        pageRows.flatMap((row) => row.events.map((event) => event.outbound_no)),
+      ),
       reportCode: "outbound-by-agency",
       fileStem: "xuat-theo-nguoi-nhan-dai-ly",
       fileSuffix: "-" + applied.from + "-" + applied.to,
@@ -666,7 +676,6 @@ export default function RecipientAgencyReport() {
           <p>{tUi("updatedUi.text_6440ff9ad26f")}</p>
         </div>
         <div className="rpt07-head-actions hn-report-warehouse-actions">
-          <ReportWarehouseCard />
           <div className="rpt07-export-wrap">
             {readonly ? (
               <div className="rpt07-readonly-note">
@@ -674,21 +683,25 @@ export default function RecipientAgencyReport() {
                 {tUi("updatedUi.text_5fea0a9ca57b")}
               </div>
             ) : null}
-            <button
-              type="button"
-              className="rpt07-export-button"
+            <ReportExportAction
+              title={tUi("reportExport.recipient")}
+              fileStem={"BaoCaoNoiNhan_" + applied.from + "-" + applied.to}
+              total={tableRows.length}
+              currentCount={pageRows.length}
+              sections={reportExportSections(tUi("reportExport.recipients"))}
+              context={[
+                [tUi("reportExport.period"), applied.from + " – " + applied.to],
+                [
+                  tUi("reportExport.filters"),
+                  [applied.agency, applied.status, search]
+                    .filter(Boolean)
+                    .join(" · "),
+                ],
+              ]}
               disabled={exportDisabled}
-              onClick={exportReport}
-            >
-              {exporting ? (
-                <span className="rpt07-spinner" />
-              ) : (
-                <DownloadOutlined />
-              )}
-              {exporting
-                ? tUi("updatedUi.text_f218a6c991e2")
-                : tUi("reports.traceability.exportReport")}
-            </button>
+              loading={exporting}
+              onExport={exportReport}
+            />
           </div>
         </div>
       </header>

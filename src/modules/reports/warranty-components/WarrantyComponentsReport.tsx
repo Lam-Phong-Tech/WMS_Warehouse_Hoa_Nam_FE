@@ -1,5 +1,8 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -13,7 +16,6 @@ import {
 } from "@/shared/ui";
 import {
   CheckCircleOutlined,
-  DownloadOutlined,
   FileTextOutlined,
   InboxOutlined,
   ReloadOutlined,
@@ -477,26 +479,21 @@ export default function WarrantyComponentsReport() {
     resetPagination();
   }, [status, keyword, resetPagination]);
 
-  const resetFilters = () => {
-    setRange([
-      dayjs().subtract(6, "day").startOf("day"),
-      dayjs().startOf("day"),
-    ]);
-    setStatus("");
-    setKeyword("");
-    pagination.reset();
-  };
+  const exportXlsx = (choice: ReportExportChoice) => {
+    return exporter.exportReport(choice.format, {
+      workbook: reportWorkbookOptions(
+        choice,
+        ["Case"],
+        filteredRows.map((row) => row.caseNo),
+        pagination.pageRows.map((row) => row.caseNo),
+      ),
 
-  const exportXlsx = () => {
-    void exporter.exportReport("xlsx", {
       reportCode: "warranty-defects",
       fileStem: "bao-cao-bao-hanh",
       fileSuffix: "-" + from + "-" + to,
       filters: {
         from_date: from,
         to_date: to,
-        ...(status ? { status } : {}),
-        ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
       },
     });
   };
@@ -574,9 +571,6 @@ export default function WarrantyComponentsReport() {
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Box sx={{ color: C.muted, fontSize: 12, fontWeight: 600 }}>
-            {tUi("updatedUi.text_a274c3357d1a")}
-          </Box>
           <Box
             component="h1"
             className="hn-report-page-title"
@@ -612,19 +606,39 @@ export default function WarrantyComponentsReport() {
             justifyContent: { xs: "flex-start", md: "flex-end" },
           }}
         >
-          <UiButton
-            appearance="filled"
-            startIcon={<DownloadOutlined />}
+          <ReportExportAction
+            title={tUi("reportExport.warranty")}
+            fileStem={"BaoCaoBaoHanh_" + from + "-" + to}
+            total={filteredRows.length}
+            currentCount={pagination.pageRows.length}
+            sections={reportExportSections(
+              tUi("reportExport.warrantyDocuments"),
+              "components",
+            )}
+            context={[
+              [
+                tUi("reportExport.period"),
+                range[0].format("DD/MM/YYYY") +
+                  " – " +
+                  range[1].format("DD/MM/YYYY"),
+              ],
+              [
+                tUi("reportExport.filters"),
+                [status, keyword].filter(Boolean).join(" · ") ||
+                  tUi("dashboard.operations.filterAll"),
+              ],
+            ]}
+            disabled={
+              invalid ||
+              loading ||
+              offline ||
+              hardError ||
+              partial ||
+              refreshing
+            }
             loading={exporting}
-            disabled={invalid || loading || offline}
-            onClick={exportXlsx}
-          >
-            {exporting
-              ? tUi("outbound.detail.preparing")
-              : tUi("reports.traceability.exportReport")}
-          </UiButton>
-
-          <ReportWarehouseCard />
+            onExport={exportXlsx}
+          />
         </Stack>
       </Stack>
 
@@ -643,7 +657,7 @@ export default function WarrantyComponentsReport() {
             gridTemplateColumns: {
               xs: "1fr",
               sm: "repeat(2,minmax(0,1fr))",
-              lg: "1.2fr .9fr 1.1fr auto auto",
+              lg: "1.2fr .9fr 1.1fr",
             },
             gap: { xs: 1, md: 1.05 },
             alignItems: "end",
@@ -710,20 +724,6 @@ export default function WarrantyComponentsReport() {
               onChange={(value) => setKeyword(value)}
             />
           </Box>
-          <UiButton
-            appearance="filled"
-            disabled={invalid || loading}
-            onClick={() => pagination.reset()}
-          >
-            {tUi("dashboard.snapshot.apply")}
-          </UiButton>
-          <UiButton
-            appearance="outlined"
-            sx={{ borderColor: "var(--ops-line)" }}
-            onClick={resetFilters}
-          >
-            {tUi("reports.packingLabel.reset")}
-          </UiButton>
         </Box>
 
         {exporting ? (

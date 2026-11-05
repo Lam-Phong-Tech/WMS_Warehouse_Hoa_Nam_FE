@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 /**
  * RPT-05 "Nhãn đóng gói · In / In lại" dùng endpoint thật qua
  * `packing-label-api` và màn chi tiết/xem trước theo UIUX V2.
@@ -12,7 +13,7 @@
  *  · lọc trạng thái, mở chi tiết bản lưu, lịch sử in và xem trước nhãn từ đúng ID.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, within, waitFor } from "@testing-library/react";
+import { fireEvent, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -228,6 +229,25 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     cleanupTestState();
   });
 
+  it("tự áp dụng khoảng ngày khi chọn mà không cần nút Áp dụng", async () => {
+    renderReport();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Từ ngày" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Hôm qua" }));
+    const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+    await waitFor(() =>
+      expect(http.get).toHaveBeenCalledWith(
+        "/reports/label-log",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            from_date: yesterday,
+            to_date: yesterday,
+          }),
+        }),
+      ),
+    );
+  });
+
   it("dựng một dòng cho mỗi lần in, ghép đủ nhãn / máy in / người thao tác", async () => {
     renderReport();
 
@@ -427,15 +447,18 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(dialog).not.toHaveTextContent("PRINTED");
   });
 
-  it("cho xuất báo cáo khi có quyền REPORT_EXPORT", async () => {
+  it("cho chọn xuất báo cáo sau khi dữ liệu và quyền REPORT_EXPORT đã sẵn sàng", async () => {
+    const user = userEvent.setup();
     renderReport();
-
-    await screen.findByRole("table");
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Xuất báo cáo/ }),
-      ).toBeEnabled(),
-    );
+    expect(screen.getByRole("button", { name: /Xuất báo cáo/ })).toBeDisabled();
+    await screen.findAllByRole("button", { name: /Xem chi tiết nhãn/ });
+    const trigger = screen.getByRole("button", { name: /Xuất báo cáo/ });
+    expect(trigger).toBeEnabled();
+    await user.click(trigger);
+    expect(
+      await screen.findByRole("radio", { name: /Tất cả kết quả/ }),
+    ).toBeChecked();
+    expect(http.post).not.toHaveBeenCalled();
   });
   it("groups attempts into unique labels and preserves labels that have never been printed", async () => {
     vi.mocked(http.get).mockImplementation(async (url: unknown) =>
@@ -525,12 +548,14 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     );
     await user.click(screen.getByRole("button", { name: "Xuất báo cáo" }));
     const dialog = screen.getByRole("dialog", {
-      name: "Xuất báo cáo nhãn đóng gói",
+      name: /^Xuất báo cáo nhãn đóng gói/,
     });
-    expect(dialog).toHaveTextContent("Tổng hợp theo nhãn");
+    expect(
+      await within(dialog).findByText(/Tổng hợp theo nhãn/),
+    ).toBeInTheDocument();
     expect(dialog).toHaveTextContent("Zebra ZD421");
     expect(
-      within(dialog).getByRole("button", { name: "Tải XLSX" }),
+      within(dialog).getByRole("button", { name: /Tải|Xuất/ }),
     ).toBeEnabled();
   });
 });

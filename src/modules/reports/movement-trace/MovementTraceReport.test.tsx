@@ -172,6 +172,20 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     await screen.findByText("IN-2026-00031");
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows).toHaveLength(3);
+    expect(
+      within(table).getByRole("columnheader", { name: "STT" }),
+    ).toBeInTheDocument();
+    for (const name of [
+      "Serial / Lô / Pallet",
+      "Trạng thái hiện tại",
+      "Vị trí",
+    ]) {
+      expect(
+        within(table).queryByRole("columnheader", { name }),
+      ).not.toBeInTheDocument();
+    }
+    expect(within(rows[0]).getAllByRole("cell")[0]).toHaveTextContent(/^1$/);
+
     expect(within(rows[0]).getByText("IN-2026-00031")).toBeInTheDocument();
     // Hai dòng cùng posted_at 14:30 xếp tiếp theo movement_id tăng dần.
     expect(within(rows[1]).getByText("REV-2026-00007")).toBeInTheDocument();

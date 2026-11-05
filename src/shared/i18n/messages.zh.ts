@@ -1,7 +1,9 @@
+import { REPORT_EXPORT_ZH } from "./messages.report-export";
 import type { MessageTree } from "./messages";
 
 /** Simplified Chinese interface catalog. */
 export const MESSAGES_ZH: MessageTree = {
+  reportExport: REPORT_EXPORT_ZH,
   "nfc": {
     "outboundProductsTitle": "已出库产品与 NFC",
     "outboundInDocument": "单据产品与 NFC",

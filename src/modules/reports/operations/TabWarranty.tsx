@@ -1013,10 +1013,15 @@ export default function TabWarranty() {
         })}
         actions={
           <ExportButtons
+            total={filteredCases.length}
             exporting={exporter.exporting}
             disabled={exportBlocked}
-            onExport={(format) =>
-              void exporter.exportReport(format, {
+            onExport={(format, choice) =>
+              exporter.exportReport(format, {
+                workbook: {
+                  filename: choice.filename,
+                  sectionIds: choice.sectionIds,
+                },
                 reportCode: "warranty-defects",
                 fileStem: "bao-cao-bao-hanh",
                 fileSuffix: `-${period.from}-${period.to}`,

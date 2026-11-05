@@ -1,3 +1,7 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import { useReportExport } from "@/modules/reports/operations/report-export";
 import { ReportDateRangePicker } from "../components/ReportDateRangePicker";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
@@ -441,6 +445,7 @@ function KpiSkeleton() {
 }
 
 export default function OutboundFlowReport() {
+  const exporter = useReportExport();
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [chartOpen, setChartOpen] = useState(true);
   const [progressOpen, setProgressOpen] = useState(true);
@@ -782,25 +787,6 @@ export default function OutboundFlowReport() {
     }
   };
 
-  const resetFilters = async () => {
-    const next = initialRange();
-    setDraftRange(next);
-    setDraftRecipient("");
-    setDraftStatus("");
-    setAppliedRecipient("");
-    setAppliedStatus("");
-    setQuery("");
-    setPage(1);
-    setShowSuccess(false);
-    setActionNotice(null);
-    sawUpdateLoading.current = false;
-    setUpdatePending(true);
-    const rangeChanged =
-      next.from !== appliedRange.from || next.to !== appliedRange.to;
-    if (rangeChanged) setAppliedRange(next);
-    else await refetchReport();
-  };
-
   const widenRange = () => {
     const next = {
       from: dayjs().subtract(29, "day").format(ISO_DATE),
@@ -880,6 +866,56 @@ export default function OutboundFlowReport() {
           </h1>
         </div>
         <div className="outbound-heading-actions">
+          <ReportExportAction
+            title={tUi("reportExport.outbound")}
+            fileStem={
+              "BaoCaoXuatKho_" + appliedRange.from + "-" + appliedRange.to
+            }
+            total={searchedDocuments.length}
+            currentCount={pageDocuments.length}
+            sections={reportExportSections(
+              tUi("reportExport.outboundDocuments"),
+            )}
+            context={[
+              [
+                tUi("reportExport.period"),
+                formatDay(appliedRange.from) +
+                  " – " +
+                  formatDay(appliedRange.to),
+              ],
+              [
+                tUi("reportExport.filters"),
+                [appliedRecipient, appliedStatus, query]
+                  .filter(Boolean)
+                  .join(" · ") || tUi("dashboard.operations.filterAll"),
+              ],
+            ]}
+            disabled={
+              updating ||
+              invalidRange ||
+              Boolean(error) ||
+              outboundMetadataQuery.isError
+            }
+            loading={Boolean(exporter.exporting)}
+            onExport={(choice) =>
+              exporter.exportReport(choice.format, {
+                reportCode: "document-history",
+                fileStem: "bao-cao-xuat-kho",
+                filters: {
+                  from_date: appliedRange.from,
+                  to_date: appliedRange.to,
+                  doc_type: "outbound",
+                  ...(appliedStatus ? { status: appliedStatus } : {}),
+                },
+                workbook: reportWorkbookOptions(
+                  choice,
+                  ["Mã phiếu"],
+                  searchedDocuments.map((row) => row.document_no),
+                  pageDocuments.map((row) => row.document_no),
+                ),
+              })
+            }
+          />
           {canImport ? (
             <button
               type="button"
@@ -907,12 +943,17 @@ export default function OutboundFlowReport() {
               draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null,
               draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null,
             ]}
-            onChange={(value) =>
-              setDraftRange({
+            onChange={(value) => {
+              const next = {
                 from: value?.[0]?.format(ISO_DATE) ?? "",
                 to: value?.[1]?.format(ISO_DATE) ?? "",
-              })
-            }
+              };
+              setDraftRange(next);
+              if (!rangeIsInvalid(next)) {
+                setAppliedRange(next);
+                setPage(1);
+              }
+            }}
             aria-label={tUi("reports.packingLabel.dateRangeLabel")}
             disabled={updating}
           />
@@ -920,7 +961,11 @@ export default function OutboundFlowReport() {
         <FilterCombobox
           id="rpt01b-recipient"
           value={draftRecipient}
-          onChange={setDraftRecipient}
+          onChange={(value) => {
+            setDraftRecipient(value);
+            setAppliedRecipient(value);
+            setPage(1);
+          }}
           options={recipientFilterOptions}
           icon="user-round"
           searchPlaceholder="Tìm người nhận..."
@@ -930,31 +975,17 @@ export default function OutboundFlowReport() {
         <FilterCombobox
           id="rpt01b-status"
           value={draftStatus}
-          onChange={setDraftStatus}
+          onChange={(value) => {
+            setDraftStatus(value);
+            setAppliedStatus(value);
+            setPage(1);
+          }}
           options={statusFilterOptions}
           icon="file-clock"
           searchPlaceholder="Tìm trạng thái..."
           ariaLabel="Chọn trạng thái phiếu xuất"
           disabled={updating}
         />
-        <div className="outbound-top-filters__actions">
-          <button
-            type="button"
-            className="outbound-apply-button"
-            onClick={() => void applyFilters()}
-            disabled={invalidRange || updating}
-          >
-            {tUi("dashboard.snapshot.apply")}
-          </button>
-          <button
-            type="button"
-            className="outbound-reset-button"
-            onClick={() => void resetFilters()}
-            disabled={updating}
-          >
-            {tUi("reports.packingLabel.reset")}
-          </button>
-        </div>
       </section>
 
       {invalidRange ? (

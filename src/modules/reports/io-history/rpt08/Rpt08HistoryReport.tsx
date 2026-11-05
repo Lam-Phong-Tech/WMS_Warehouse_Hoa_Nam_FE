@@ -1,3 +1,7 @@
+import { ReportExportDrawer } from "../../components/ReportExportAction";
+import { reportExportSections } from "../../components/report-export-sections";
+import { reportWorkbookOptions } from "../../components/report-export-options";
+import type { ReportExportChoice } from "../../components/report-export-workbook";
 import {
   useCallback,
   useDeferredValue,
@@ -6,10 +10,8 @@ import {
   useState,
 } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import { HomeOutlined } from "@/shared/components/icons";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
-import { useAuthStore } from "@/shared/store/auth.store";
 import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import { runReportExport } from "@/modules/reports/operations/report-export";
 import {
@@ -29,7 +31,6 @@ import {
   type DailyMovement,
   type ExportState,
   type HistoryRow,
-  type TransactionFilter,
 } from "./model";
 import {
   FilterCard,
@@ -55,9 +56,6 @@ function currentSevenDayRange(): [Dayjs, Dayjs] {
 }
 
 export default function IoHistoryReport() {
-  const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() ||
-    "—";
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const initialRange = useMemo<[Dayjs, Dayjs]>(
     () => currentSevenDayRange(),
@@ -65,8 +63,6 @@ export default function IoHistoryReport() {
   );
 
   const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>(initialRange);
-  const [draftType, setDraftType] = useState<TransactionFilter>("ALL");
-  const [draftActor, setDraftActor] = useState("");
   const [applied, setApplied] = useState<AppliedFilters>({
     from: initialRange[0].format(ISO_DATE),
     to: initialRange[1].format(ISO_DATE),
@@ -80,6 +76,7 @@ export default function IoHistoryReport() {
   const [manualRefreshing, setManualRefreshing] = useState(false);
   const [staleDismissed, setStaleDismissed] = useState(false);
   const [exportState, setExportState] = useState<ExportState>("idle");
+  const [showExport, setShowExport] = useState(false);
 
   const sourceType: IoTypeFilter = applied.type === "ALL" ? "" : applied.type;
   const source = useIoHistorySnapshot({
@@ -207,33 +204,14 @@ export default function IoHistoryReport() {
     Boolean(source.error) ||
     exportState === "unknown" ||
     exportState === "exporting";
-  const defaultDraftRange =
-    draftRange[0].isSame(initialRange[0], "day") &&
-    draftRange[1].isSame(initialRange[1], "day");
-
-  const applyFilters = useCallback(() => {
-    if (invalidRange) return;
-    setApplied({
-      from: draftRange[0].format(ISO_DATE),
-      to: draftRange[1].format(ISO_DATE),
-      type: draftType,
-      actor: draftActor,
-    });
-    setPage(1);
-  }, [draftActor, draftRange, draftType, invalidRange]);
-
-  const resetFilters = useCallback(() => {
-    const nextRange = currentSevenDayRange();
-    setDraftRange(nextRange);
-    setDraftType("ALL");
-    setDraftActor("");
-    setApplied({
-      from: nextRange[0].format(ISO_DATE),
-      to: nextRange[1].format(ISO_DATE),
-      type: "ALL",
-      actor: "",
-    });
-    setSearch("");
+  const changeRange = useCallback((next: [Dayjs, Dayjs]) => {
+    setDraftRange(next);
+    if (next[0].startOf("day").isAfter(next[1].startOf("day"))) return;
+    setApplied((current) => ({
+      ...current,
+      from: next[0].format(ISO_DATE),
+      to: next[1].format(ISO_DATE),
+    }));
     setPage(1);
   }, []);
 
@@ -247,39 +225,53 @@ export default function IoHistoryReport() {
     }
   }, [source]);
 
-  const exportReport = useCallback(async () => {
-    if (exportDisabled) return;
-    setExportState("exporting");
-    try {
-      await runReportExport("xlsx", {
-        reportCode: IO_HISTORY_EXPORT_CODE,
-        fileStem: "lich-su-nhap-xuat-kho",
-        fileSuffix: `-${applied.from}-${applied.to}`,
-        filters: {
-          from_date: applied.from,
-          to_date: applied.to,
-          doc_type:
-            applied.type === "INBOUND"
-              ? "inbound"
-              : applied.type === "OUTBOUND"
-                ? "outbound"
-                : "all",
-          ...(applied.actor ? { actor: applied.actor } : {}),
-          ...(search.trim() ? { keyword: search.trim() } : {}),
-        },
-      });
-      setExportState("idle");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setExportState(
-        /timeout|time\s*out|hết thời gian|quá thời gian|chưa xác định/i.test(
-          message,
-        )
-          ? "unknown"
-          : "failed",
-      );
-    }
-  }, [applied, exportDisabled, search]);
+  const exportReport = useCallback(
+    async (choice?: ReportExportChoice) => {
+      if (exportDisabled) return false;
+      setExportState("exporting");
+      try {
+        await runReportExport("xlsx", {
+          reportCode: IO_HISTORY_EXPORT_CODE,
+          ...(choice
+            ? {
+                workbook: reportWorkbookOptions(
+                  choice,
+                  ["Mã phiếu"],
+                  searchedRows.map((row) => row.documentNo),
+                  visibleRows.map((row) => row.documentNo),
+                ),
+              }
+            : {}),
+          fileStem: "lich-su-nhap-xuat-kho",
+          fileSuffix: `-${applied.from}-${applied.to}`,
+          filters: {
+            from_date: applied.from,
+            to_date: applied.to,
+            doc_type:
+              applied.type === "INBOUND"
+                ? "inbound"
+                : applied.type === "OUTBOUND"
+                  ? "outbound"
+                  : "all",
+            ...(applied.actor ? { actor: applied.actor } : {}),
+            ...(search.trim() ? { keyword: search.trim() } : {}),
+          },
+        });
+        setExportState("idle");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setExportState(
+          /timeout|time\s*out|hết thời gian|quá thời gian|chưa xác định/i.test(
+            message,
+          )
+            ? "unknown"
+            : "failed",
+        );
+        return false;
+      }
+    },
+    [applied, exportDisabled, search, searchedRows, visibleRows],
+  );
 
   return (
     <main
@@ -293,26 +285,16 @@ export default function IoHistoryReport() {
     >
       <header className="rpt08-page-header">
         <div className="rpt08-heading">
-          <div
-            className="rpt08-breadcrumb"
-            aria-label={tUi("updatedUi.text_610f66b336f3")}
-          >
-            <HomeOutlined />
-            <span>{tUi("reports.traceability.breadcrumbReports")}</span>
-            <span aria-hidden="true">/</span>
-            <span>{tUi("updatedUi.text_8814615e6de0")}</span>
-          </div>
           <h1 className="hn-report-page-title">
             {tUi("updatedUi.text_cedbc7cfb228")}
           </h1>
           <p>{tUi("updatedUi.text_5c09481fb555")}</p>
         </div>
         <HeaderActions
-          warehouse={warehouseName}
           readonly={readonly}
           exportState={exportState}
           exportDisabled={exportDisabled}
-          onExport={() => void exportReport()}
+          onExport={() => setShowExport(true)}
         />
       </header>
 
@@ -324,18 +306,18 @@ export default function IoHistoryReport() {
         <>
           <FilterCard
             range={draftRange}
-            type={draftType}
-            actor={draftActor}
+            type={applied.type}
+            actor={applied.actor}
             actorOptions={actorOptions}
-            warehouse={warehouseName}
             invalid={invalidRange}
             busy={controlsBusy}
-            isDefaultRange={defaultDraftRange}
-            onRangeChange={setDraftRange}
-            onTypeChange={setDraftType}
-            onActorChange={setDraftActor}
-            onApply={applyFilters}
-            onReset={resetFilters}
+            onRangeChange={changeRange}
+            onTypeChange={(type) =>
+              setApplied((current) => ({ ...current, type }))
+            }
+            onActorChange={(actor) =>
+              setApplied((current) => ({ ...current, actor }))
+            }
           />
 
           {refreshing ? <RefreshStrip /> : null}
@@ -410,7 +392,7 @@ export default function IoHistoryReport() {
             onPageChange={setPage}
             onOpenRow={setDetailRow}
             onAdjustRange={() => {
-              setDraftRange(currentSevenDayRange());
+              changeRange(currentSevenDayRange());
               window.requestAnimationFrame(() => {
                 document
                   .querySelector<HTMLElement>(".rpt08-date-control")
@@ -470,6 +452,33 @@ export default function IoHistoryReport() {
             </dl>
           </div>
         </DrillDownDialog>
+      ) : null}
+      {showExport ? (
+        <ReportExportDrawer
+          title={tUi("reportExport.history")}
+          fileStem={"LichSuNhapXuat_" + applied.from + "-" + applied.to}
+          context={[
+            [tUi("reportExport.period"), applied.from + " – " + applied.to],
+          ]}
+          sections={reportExportSections(tUi("reportExport.documents"))}
+          scopes={[
+            {
+              id: "all",
+              label: tUi("reportExport.all", { count: searchedRows.length }),
+              description: tUi("reportExport.allHint"),
+              count: searchedRows.length,
+            },
+            {
+              id: "page",
+              label: tUi("reportExport.page", { count: visibleRows.length }),
+              description: tUi("reportExport.pageHint"),
+              count: visibleRows.length,
+            },
+          ]}
+          unavailable={exportDisabled}
+          onClose={() => setShowExport(false)}
+          onExport={exportReport}
+        />
       ) : null}
     </main>
   );

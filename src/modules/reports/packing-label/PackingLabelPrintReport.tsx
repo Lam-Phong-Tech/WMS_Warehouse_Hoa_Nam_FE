@@ -1,3 +1,7 @@
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { useQueryClient } from "@tanstack/react-query";
@@ -114,11 +118,6 @@ export default function PackingLabelPrintReport() {
     WMS_ACTION_PERMISSIONS.PACKING_LABEL_REPRINT,
     superAdmin,
   );
-  const canExport = hasAnyWmsPermission(
-    permissions,
-    ["report.export", "REPORT_EXPORT"],
-    superAdmin,
-  );
   const [view, setView] = useState<"events" | "labels">("events");
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("");
@@ -146,8 +145,6 @@ export default function PackingLabelPrintReport() {
     tone: "success" | "warning" | "error";
     text: string;
   } | null>(null);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [exportFormat, setExportFormat] = useState<"xlsx" | "pdf">("xlsx");
   const [online, setOnline] = useState(navigator.onLine);
   useEffect(() => {
     const on = () => setOnline(true),
@@ -348,6 +345,9 @@ export default function PackingLabelPrintReport() {
       );
       if (!gate.action) {
         setNotice({ tone: "warning", text: gate.reason });
+        void queryClient.invalidateQueries({
+          queryKey: ["rpt-05", "label-snapshot", target.labelId],
+        });
         openDetail(target, null);
         return;
       }
@@ -519,8 +519,43 @@ export default function PackingLabelPrintReport() {
       setBusy(false);
     }
   };
-  const doExport = async () => {
-    await exporter.exportReport(exportFormat, {
+  const exportContext: [string, string][] = [
+    [
+      "Kỳ tạo nhãn",
+      period.range[0].format("DD/MM/YYYY") +
+        " – " +
+        period.range[1].format("DD/MM/YYYY"),
+    ],
+    ["Phạm vi", "Tổng hợp theo nhãn · mỗi nhãn một dòng"],
+    ["Kết quả", status ? resultText(status) : "Tất cả"],
+    [
+      "Máy in",
+      report.printerOptions.find((p) => p.value === printer)?.label || "Tất cả",
+    ],
+    [
+      "Người in",
+      (report.actorOptions ?? []).find((p) => p.value === actor)?.label ||
+        "Tất cả",
+    ],
+    [
+      "Loại lượt",
+      action
+        ? action === "REPRINT"
+          ? "In lại"
+          : "In lần đầu / thử lại"
+        : "Tất cả",
+    ],
+    ["Từ khóa", keyword.trim() || "Tất cả"],
+  ];
+  const doExport = (choice: ReportExportChoice) => {
+    return exporter.exportReport(choice.format, {
+      workbook: reportWorkbookOptions(
+        choice,
+        ["Label Snapshot"],
+        filteredLabels.map((row) => row.labelId),
+        [...new Set(visibleRows.map((row) => row.target.labelId))],
+        exportContext,
+      ),
       reportCode: "label-log",
       fileStem: "bao-cao-nhan-dong-goi",
       fileSuffix: "-" + period.from + "-" + period.to,
@@ -547,23 +582,33 @@ export default function PackingLabelPrintReport() {
           </p>
         </div>
         <div className="hn-pkg-label__header-actions">
-          <UiButton
-            appearance="outlined"
+          <ReportExportAction
+            title="Xuất báo cáo nhãn đóng gói"
+            fileStem={"BaoCaoNhanDongGoi_" + period.from + "-" + period.to}
+            total={filteredLabels.length}
+            currentCount={
+              new Set(visibleRows.map((row) => row.target.labelId)).size
+            }
+            formats={["xlsx", "pdf"]}
+            sections={reportExportSections("Chi tiết theo nhãn", "none")}
+            context={exportContext}
             disabled={
-              !canExport ||
               failure ||
               report.loading ||
-              Boolean(exporter.exporting) ||
-              filteredLabels.length === 0
+              Boolean(report.capped && (status || printer || actor || action))
             }
-            onClick={() => setExportOpen(true)}
-          >
-            Xuất báo cáo
-          </UiButton>
+            disabledReason={
+              report.capped
+                ? "Lịch sử lượt in chưa đầy đủ để xuất theo bộ lọc lượt in."
+                : undefined
+            }
+            loading={Boolean(exporter.exporting)}
+            onExport={doExport}
+          />
           <ReportWarehouseCard />
         </div>
       </header>
-      {notice && (
+      {notice && !detailId && (
         <div className="hn-pkg-label__notice" role="status">
           <UiAlert tone={notice.tone}>{notice.text}</UiAlert>
           {uncertain && (
@@ -1063,6 +1108,20 @@ export default function PackingLabelPrintReport() {
           </span>
         }
       >
+        {notice && (
+          <div className="hn-pkg-label__notice" role="status">
+            <UiAlert tone={notice.tone}>{notice.text}</UiAlert>
+            {uncertain && (
+              <UiButton
+                appearance="outlined"
+                disabled={busy || !online}
+                onClick={() => void reconcile()}
+              >
+                Kiểm tra trạng thái
+              </UiButton>
+            )}
+          </div>
+        )}
         <PackingLabelSnapshotScreen
           detail={snapshot.detail}
           loading={snapshot.loading}
@@ -1089,7 +1148,8 @@ export default function PackingLabelPrintReport() {
           }}
           canPrint={canPrint}
           canReprint={canReprint}
-          busy={busy || Boolean(uncertain) || !online}
+          busy={busy || !online}
+          locked={Boolean(uncertain)}
         />
       </UiDrawer>
       {sourceId && (
@@ -1195,76 +1255,6 @@ export default function PackingLabelPrintReport() {
           Giữ nguyên mã nhãn và bản lưu nội dung. Chỉ tạo thêm lượt in; không
           thay đổi tồn kho. Chưa gửi lệnh cho đến khi bạn xác nhận.
         </UiAlert>
-      </UiDialog>
-      <UiDialog
-        open={exportOpen}
-        onClose={() => {
-          if (!exporter.exporting) setExportOpen(false);
-        }}
-        title="Xuất báo cáo nhãn đóng gói"
-        actions={
-          <>
-            <UiButton
-              appearance="outlined"
-              disabled={Boolean(exporter.exporting)}
-              onClick={() => setExportOpen(false)}
-            >
-              Hủy
-            </UiButton>
-            <UiButton
-              appearance="filled"
-              loading={Boolean(exporter.exporting)}
-              disabled={!canExport || failure}
-              onClick={() => void doExport()}
-            >
-              Tải {exportFormat.toUpperCase()}
-            </UiButton>
-          </>
-        }
-      >
-        <div className="hn-pkg-label__confirm">
-          <span>
-            Kỳ tạo nhãn: {period.range[0].format("DD/MM/YYYY")} –{" "}
-            {period.range[1].format("DD/MM/YYYY")}
-          </span>
-          <strong>
-            Tổng hợp theo nhãn · {filteredLabels.length} nhãn đang hiển thị
-          </strong>
-          <span>
-            Kết quả: {status ? resultText(status) : "Tất cả"} · Máy in:{" "}
-            {report.printerOptions.find((p) => p.value === printer)?.label ||
-              "Tất cả"}
-          </span>
-          {keyword && <span>Từ khóa: {keyword}</span>}
-          {actor && (
-            <span>
-              Người in:{" "}
-              {report.actorOptions.find((p) => p.value === actor)?.label}
-            </span>
-          )}
-          {action && (
-            <span>
-              Loại lượt:{" "}
-              {action === "REPRINT" ? "In lại" : "In lần đầu / thử lại"}
-            </span>
-          )}
-        </div>
-        <UiAlert tone="info">
-          File báo cáo gộp mỗi nhãn thành một dòng, kèm tổng lượt in, lỗi và in
-          lại theo bộ lọc hiện tại. Số dòng có thể khác tab Lượt in. Xuất báo
-          cáo không gửi lệnh in.
-        </UiAlert>
-        <label className="hn-pkg-label__form-label">
-          Định dạng file
-          <select
-            aria-label="Định dạng file"
-            value={exportFormat}
-            onChange={(e) => setExportFormat(e.target.value as "xlsx" | "pdf")}
-          >
-            <option value="xlsx">XLSX (Microsoft Excel)</option>
-            <option value="pdf">PDF</option>
-          </select>
-        </label>
       </UiDialog>
     </div>
   );

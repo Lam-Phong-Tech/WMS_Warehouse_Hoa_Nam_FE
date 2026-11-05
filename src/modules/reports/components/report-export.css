@@ -1,0 +1,245 @@
+/* Shared report export controls; use the application brand in every module. */
+button.hn-report-export-button.MuiButton-root {
+  min-height: 44px;
+  padding: 10px 16px;
+  gap: 4px;
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  text-transform: none;
+  white-space: nowrap;
+  box-shadow: none;
+}
+button.hn-report-export-button.MuiButton-root:hover {
+  background: var(--ops-primary-hover);
+  box-shadow: none;
+}
+button.hn-report-export-button.MuiButton-root.Mui-disabled {
+  background: var(--ops-pale);
+  color: var(--ops-muted);
+}
+button.hn-report-export-button.MuiButton-root:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 3px;
+}
+.hn-report-export-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+}
+.hn-report-export-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ops-radius-control);
+  background: transparent;
+  color: var(--ops-muted);
+  cursor: pointer;
+}
+.hn-report-export-close:hover {
+  background: var(--ops-pale);
+  color: var(--ops-heading);
+}
+.hn-report-export-close:focus-visible {
+  outline: 2px solid var(--ops-link);
+}
+.hn-report-export-body {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  font-family: var(--wms-font-family);
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-report-export-body *,
+.hn-report-export-body *::before,
+.hn-report-export-body *::after {
+  box-sizing: border-box;
+}
+.hn-report-export-context {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+}
+.hn-report-export-context:empty {
+  display: none;
+}
+.hn-report-export-context div {
+  min-width: 0;
+}
+.hn-report-export-context dt {
+  color: var(--ops-muted);
+  font-size: 13px;
+}
+.hn-report-export-context dd {
+  margin: 2px 0 0;
+  color: var(--ops-heading);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.hn-report-export-body fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.hn-report-export-body legend,
+.hn-report-export-body h3 {
+  margin: 0 0 8px;
+  padding: 0;
+  color: var(--ops-heading);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 700;
+}
+.hn-report-export-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+}
+.hn-report-export-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  cursor: pointer;
+}
+.hn-report-export-option input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 3px 0;
+  accent-color: var(--ops-link);
+}
+.hn-report-export-option input:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 3px;
+}
+.hn-report-export-option strong {
+  display: block;
+  color: var(--ops-heading);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.hn-report-export-option small {
+  display: block;
+  margin-top: 3px;
+  color: var(--ops-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.hn-report-export-option:has(input:disabled) {
+  cursor: default;
+  opacity: 0.6;
+}
+.hn-report-export-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.hn-report-export-summary > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-pale);
+}
+.hn-report-export-summary strong {
+  display: block;
+  color: var(--ops-heading);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.hn-report-export-summary small {
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+.hn-report-export-file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 12px;
+}
+.hn-report-export-file label {
+  min-width: 0;
+  color: var(--ops-heading);
+  font-size: 13px;
+  font-weight: 600;
+}
+.hn-report-export-file label > span {
+  display: block;
+  margin-bottom: 6px;
+}
+.hn-report-export-file input,
+.hn-report-export-file select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-text);
+  font: inherit;
+}
+.hn-report-export-file input:focus,
+.hn-report-export-file select:focus {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 1px;
+}
+.hn-report-export-hint {
+  margin: 0;
+  color: var(--ops-muted);
+  font-size: 13px;
+}
+.hn-report-export-error {
+  padding: 12px;
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger);
+}
+.hn-report-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (max-width: 479px) {
+  .hn-report-export-options {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px;
+  }
+  .hn-report-export-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-report-export-file {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-report-export-actions > button {
+    flex: 1;
+  }
+}
