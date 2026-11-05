@@ -1,3 +1,4 @@
+import { saveStyledReportWorkbook } from "@/shared/utils/report-excel-style";
 import { useRef, useState, type ReactNode } from "react";
 import dayjs from "dayjs";
 import {
@@ -313,7 +314,7 @@ export default function GoodsTraceReport() {
           "Mã liên quan": new Set(events.map((e) => e.code)).size,
         },
       ]);
-      XLSX.writeFile(
+      await saveStyledReportWorkbook(
         workbook,
         `${filename.replace(/[<>:"/\\|?*]/g, "_").replace(/\.xlsx$/i, "") || "BaoCaoTruyVet"}.xlsx`,
       );

@@ -106,7 +106,7 @@ export function InboundReportDetail({
 
   const exportDetail = (choice: ReportExportChoice) => {
     if (!detail || !canExport) return;
-    exportLocalReport(
+    return exportLocalReport(
       [
         "Mã phiếu nhập",
         "Mã quét / serial",

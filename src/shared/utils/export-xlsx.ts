@@ -1,3 +1,4 @@
+import { saveStyledReportWorkbook } from "./report-excel-style";
 import * as XLSX from "xlsx";
 
 /**
@@ -6,11 +7,11 @@ import * as XLSX from "xlsx";
  * @param rows     Dữ liệu (mỗi hàng là mảng string/number)
  * @param filename Tên file (không cần đuôi .xlsx)
  */
-export function exportXlsx(
+export async function exportXlsx(
   headers: string[],
   rows: (string | number | null | undefined)[][],
   filename: string,
-): void {
+): Promise<void> {
   const data = [headers, ...rows.map((r) => r.map((v) => v ?? ""))];
   const ws = XLSX.utils.aoa_to_sheet(data);
 
@@ -30,5 +31,5 @@ export function exportXlsx(
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  await saveStyledReportWorkbook(wb, `${filename}.xlsx`);
 }

@@ -1,3 +1,4 @@
+import { downloadStyledReportBlob } from "@/shared/utils/report-excel-style";
 import {
   downloadSelectedWorkbook,
   type ExportWorkbookOptions,
@@ -101,18 +102,14 @@ export async function downloadImportQualityExport(
     { params: filters },
   );
   if (workbook) {
-    await downloadSelectedWorkbook(blob, workbook);
+    await downloadSelectedWorkbook(blob, workbook, {
+      reportCode: "import-match",
+    });
     return;
   }
-  const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName || "doi-chieu-du-lieu-nhap.xlsx";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  await downloadStyledReportBlob(
+    blob,
+    fileName || "doi-chieu-du-lieu-nhap.xlsx",
+    { reportCode: "import-match" },
+  );
 }

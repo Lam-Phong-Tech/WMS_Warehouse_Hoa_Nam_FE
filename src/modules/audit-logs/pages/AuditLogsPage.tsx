@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useT } from "@/shared/i18n/useT";
 import { useEffect, useState } from "react";
 import type { Dayjs } from "dayjs";
@@ -137,37 +138,41 @@ export function AuditLogsPage() {
   const selection = useRowSelection(auditLogs, (log) => log.id);
   const selectedLogs = auditLogs.filter((log) => selection.isSelected(log.id));
 
-  const exportSelected = () => {
-    exportXlsx(
-      [
-        t("audit.colTime"),
-        t("audit.colAction"),
-        t("audit.colModule"),
-        t("audit.colObject"),
-        t("audit.colObjectId"),
-        t("audit.colActor"),
-        t("audit.colIp"),
-        t("audit.colResult"),
-        t("audit.colDescription"),
-      ],
-      // File Excel là bản in ra cho người đọc: dùng đúng nhãn/câu chữ đang
-      // hiện trên bảng, không xuất enum thô của BE.
-      selectedLogs.map((log) => [
-        formatDateTime(log.created_at),
-        auditActionLabel(log.action),
-        AUDIT_MODULE_LABELS[log.module] || log.module,
-        auditObjectTypeLabel(log.object_type),
-        // Cột "Mã đối tượng": số phiếu / mã hồ sơ / serial do BE tra ngược. Chỉ
-        // loại đối tượng không có mã mới giữ định danh nội bộ để quản trị còn
-        // tra soát được trong file.
-        auditObjectCode(log) ?? log.object_id ?? "",
-        log.actor?.email || log.actor?.display_name || t("audit.system"),
-        log.ip_address ?? "",
-        auditResultLabel(log.result),
-        describeAuditLog(log),
-      ]),
-      `nhat-ky-he-thong-trang-${pagination.current}`,
-    );
+  const exportSelected = async () => {
+    try {
+      await exportXlsx(
+        [
+          t("audit.colTime"),
+          t("audit.colAction"),
+          t("audit.colModule"),
+          t("audit.colObject"),
+          t("audit.colObjectId"),
+          t("audit.colActor"),
+          t("audit.colIp"),
+          t("audit.colResult"),
+          t("audit.colDescription"),
+        ],
+        // File Excel là bản in ra cho người đọc: dùng đúng nhãn/câu chữ đang
+        // hiện trên bảng, không xuất enum thô của BE.
+        selectedLogs.map((log) => [
+          formatDateTime(log.created_at),
+          auditActionLabel(log.action),
+          AUDIT_MODULE_LABELS[log.module] || log.module,
+          auditObjectTypeLabel(log.object_type),
+          // Cột "Mã đối tượng": số phiếu / mã hồ sơ / serial do BE tra ngược. Chỉ
+          // loại đối tượng không có mã mới giữ định danh nội bộ để quản trị còn
+          // tra soát được trong file.
+          auditObjectCode(log) ?? log.object_id ?? "",
+          log.actor?.email || log.actor?.display_name || t("audit.system"),
+          log.ip_address ?? "",
+          auditResultLabel(log.result),
+          describeAuditLog(log),
+        ]),
+        `nhat-ky-he-thong-trang-${pagination.current}`,
+      );
+    } catch {
+      toast.error(t("reportExport.failed"));
+    }
   };
 
   const perPageOptions = MVP_PAGE_SIZE_OPTIONS.includes(

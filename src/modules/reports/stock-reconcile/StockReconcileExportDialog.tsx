@@ -1,3 +1,4 @@
+import { saveStyledReportWorkbook } from "@/shared/utils/report-excel-style";
 import { ReportExportDrawer } from "../components/ReportExportAction";
 import {
   safeExportFilename,
@@ -60,7 +61,7 @@ export function StockReconcileExportDialog({
   onClose,
 }: Props) {
   const t = useT();
-  const submit = (choice: ReportExportChoice) => {
+  const submit = async (choice: ReportExportChoice) => {
     const scope = choice.scope;
     const selected =
       scope === "review"
@@ -170,7 +171,11 @@ export function StockReconcileExportDialog({
       .trim()
       .replace(/[\\/:*?"<>|]/g, "-")
       .replace(/\.xlsx$/i, "");
-    XLSX.writeFile(workbook, safeExportFilename(safeName, "xlsx"));
+    await saveStyledReportWorkbook(
+      workbook,
+      safeExportFilename(safeName, "xlsx"),
+      { title: "HOA NAM — BÁO CÁO TỒN KHO & ĐỐI SOÁT" },
+    );
   };
 
   return (

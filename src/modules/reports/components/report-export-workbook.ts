@@ -1,3 +1,7 @@
+import {
+  saveStyledReportWorkbook,
+  type ReportExcelOptions,
+} from "@/shared/utils/report-excel-style";
 import * as XLSX from "xlsx";
 import { tStatic as t } from "@/shared/i18n/useT";
 
@@ -209,14 +213,23 @@ export function selectExportWorkbook(
 export async function downloadSelectedWorkbook(
   blob: Blob,
   options: ExportWorkbookOptions,
+  styleOptions: ReportExcelOptions = {},
 ) {
   const buffer = await blob.arrayBuffer();
-  const source = XLSX.read(buffer, { type: "array" });
+  const source = XLSX.read(buffer, {
+    type: "array",
+    cellDates: false,
+    cellNF: true,
+  });
   const selected = selectExportWorkbook(source, options);
-  XLSX.writeFile(selected, safeExportFilename(options.filename, "xlsx"));
+  await saveStyledReportWorkbook(
+    selected,
+    safeExportFilename(options.filename, "xlsx"),
+    styleOptions,
+  );
 }
 
-export function exportLocalReport(
+export async function exportLocalReport(
   headers: string[],
   rows: (string | number | null | undefined)[][],
   choice: ReportExportChoice,
@@ -230,7 +243,7 @@ export function exportLocalReport(
     ]),
     "Source",
   );
-  XLSX.writeFile(
+  await saveStyledReportWorkbook(
     selectExportWorkbook(source, {
       filename: choice.filename,
       sectionIds: choice.sectionIds,

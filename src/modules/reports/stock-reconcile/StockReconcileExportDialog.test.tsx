@@ -4,10 +4,10 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
-vi.mock("xlsx", async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  writeFile: vi.fn(),
+vi.mock("@/shared/utils/report-excel-style", () => ({
+  saveStyledReportWorkbook: vi.fn().mockResolvedValue(undefined),
 }));
+import { saveStyledReportWorkbook } from "@/shared/utils/report-excel-style";
 
 import * as XLSX from "xlsx";
 import { StockReconcileExportDialog } from "./StockReconcileExportDialog";
@@ -73,8 +73,9 @@ describe("StockReconcileExportDialog", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Xuất Excel" }));
 
-    expect(XLSX.writeFile).toHaveBeenCalledOnce();
-    const [workbook, filename] = vi.mocked(XLSX.writeFile).mock.calls[0];
+    expect(saveStyledReportWorkbook).toHaveBeenCalledOnce();
+    const [workbook, filename] = vi.mocked(saveStyledReportWorkbook).mock
+      .calls[0];
     expect(filename).toBe("DoiSoat-CanKiemTra.xlsx");
     expect(workbook.SheetNames).toEqual(["Chi tiết đối soát"]);
     const exported = XLSX.utils.sheet_to_json<string[]>(

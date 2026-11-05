@@ -246,3 +246,9 @@ Tham chiếu `Hoa_Nam_UIUX_V2/phiendangnhap_nguoidung`, bộ U01–U32 Desktop/T
 - Xác thực hai bước hiển thị QR tạo cục bộ; mã khôi phục chỉ nằm trong bộ nhớ của đúng tài khoản/phiên đăng nhập, không ghi vào localStorage, sessionStorage hoặc cache bền vững. Không cho đóng drawer khi đang xác nhận; mã trả về phải còn xem được nếu token làm mới khiến khung bảo vệ tải lại. Đóng sau khi xem mã cần xác nhận đã lưu mã. Đổi mật khẩu tuân theo hậu quả thật của API, kể cả yêu cầu đăng nhập lại.
 
 Kiểm tra tối thiểu desktop, tablet, mobile 320px, sáng/tối, nội dung dài, bàn phím, lỗi tải/lưu, bỏ bản nháp, thay đổi tài khoản khi có yêu cầu đang chạy và phiên bản lưu đồng thời. Các mẫu lỗi và bảo mật này là một phần của thiết kế, không chỉ là bố cục lúc tải thành công.
+
+## 13. Định dạng báo cáo Excel
+
+Tất cả luồng tải báo cáo XLSX trong ứng dụng dùng bộ định dạng chung tại `src/shared/utils/report-excel-style.ts`, sau bước chọn phạm vi/nội dung và kiểm tra quyền hiện có. Nền tài liệu luôn sáng: tiêu đề và đầu bảng xanh đậm `004E74`, chữ trắng; dữ liệu chữ `12344B`, hàng xen kẽ `EAF5F8`, viền nhẹ `D9E8EF`. Calibri 11, tiêu đề 18 đậm, cột đủ rộng, nội dung dài xuống dòng; trạng thái dùng màu ngữ nghĩa. Cố định hàng tiêu đề/cột nhận diện, bật lọc và lặp đầu bảng khi in ngang A4.
+
+Giữ nguyên mã, số 0 đầu, giá trị số, trạng thái nguồn, dữ liệu che và nội dung đã chọn. Ngày thuần giữ ngày chứng từ; timestamp có múi giờ hiển thị theo Việt Nam UTC+7 dưới dạng ngày giờ Excel. Không dịch chuyển ô trong workbook có công thức. Thư viện ghi file chỉ tải khi người dùng xuất báo cáo.

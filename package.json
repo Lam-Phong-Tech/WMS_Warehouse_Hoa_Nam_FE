@@ -123,6 +123,7 @@
     "apexcharts": "^7.0.0",
     "axios": "^1.18.0",
     "dayjs": "^1.11.21",
+    "exceljs": "4.4.0",
     "js-cookie": "^3.0.8",
     "jsbarcode": "^3.12.3",
     "laravel-echo": "^2.4.0",

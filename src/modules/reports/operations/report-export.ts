@@ -1,3 +1,4 @@
+import { downloadStyledReportBlob } from "@/shared/utils/report-excel-style";
 import {
   downloadSelectedWorkbook,
   safeExportFilename,
@@ -157,7 +158,15 @@ export async function runReportExport(
     { timeout: REPORT_EXPORT_REQUEST_TIMEOUT_MS },
   );
   if (request.workbook && format === "xlsx") {
-    await downloadSelectedWorkbook(blob, request.workbook);
+    await downloadSelectedWorkbook(blob, request.workbook, {
+      reportCode: request.reportCode,
+    });
+  } else if (format === "xlsx") {
+    await downloadStyledReportBlob(
+      blob,
+      fileName ?? `${request.fileStem}${request.fileSuffix ?? ""}.xlsx`,
+      { reportCode: request.reportCode },
+    );
   } else
     handleBlobDownload(
       blob,

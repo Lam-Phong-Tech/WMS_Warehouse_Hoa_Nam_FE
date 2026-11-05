@@ -18,6 +18,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
  * phải mang timeout riêng, và không được nhỏ hơn hạn chót của cả vòng poll.
  */
 describe("WWHN-347 · timeout riêng cho luồng export báo cáo", () => {
+  const styleMock = vi.fn();
   const getMock = vi.fn();
   const downloadMock = vi.fn();
   const postMock = vi.fn();
@@ -27,7 +28,11 @@ describe("WWHN-347 · timeout riêng cho luồng export báo cáo", () => {
     getMock.mockReset();
     downloadMock.mockReset();
     postMock.mockReset();
+    styleMock.mockReset().mockResolvedValue(undefined);
 
+    vi.doMock("@/shared/utils/report-excel-style", () => ({
+      downloadStyledReportBlob: styleMock,
+    }));
     vi.doMock("@/shared/api/http", () => ({
       http: { get: getMock, post: postMock, downloadFile: downloadMock },
     }));
@@ -42,6 +47,7 @@ describe("WWHN-347 · timeout riêng cho luồng export báo cáo", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.doUnmock("@/shared/utils/report-excel-style");
     vi.doUnmock("@/shared/api/http");
     vi.doUnmock("@/shared/api/wms-action-permission");
   });
@@ -113,5 +119,13 @@ describe("WWHN-347 · timeout riêng cho luồng export báo cáo", () => {
         filters: {},
       }),
     ).rejects.toThrow(/tối đa 800 dòng/);
+  });
+  it("formats server-generated Excel before saving even without drawer customization", async () => {
+    await runOnce();
+    expect(styleMock).toHaveBeenCalledWith(
+      expect.any(Blob),
+      "lich-su-phieu.xlsx",
+      { reportCode: "document-history" },
+    );
   });
 });

@@ -9,12 +9,15 @@ import {
 } from "@testing-library/react";
 import GoodsTraceReport from "./GoodsTraceReport";
 const workbook = vi.hoisted(() => ({
-  writeFile: vi.fn(),
+  saveStyledReportWorkbook: vi.fn().mockResolvedValue(undefined),
   book_new: vi.fn(() => ({})),
   json_to_sheet: vi.fn((v) => v),
   book_append_sheet: vi.fn(),
 }));
-vi.mock("xlsx", () => ({ writeFile: workbook.writeFile, utils: workbook }));
+vi.mock("xlsx", () => ({ utils: workbook }));
+vi.mock("@/shared/utils/report-excel-style", () => ({
+  saveStyledReportWorkbook: workbook.saveStyledReportWorkbook,
+}));
 const query = vi.hoisted(() => ({
   data: undefined as unknown,
   isPending: false,
@@ -253,7 +256,7 @@ describe("GoodsTraceReport", () => {
     });
     fireEvent.click(within(dialog).getByRole("button", { name: "Xuất Excel" }));
     await waitFor(() =>
-      expect(workbook.writeFile).toHaveBeenCalledWith(
+      expect(workbook.saveStyledReportWorkbook).toHaveBeenCalledWith(
         expect.anything(),
         "Trace-selected.xlsx",
       ),
@@ -381,7 +384,9 @@ describe("GoodsTraceReport", () => {
       fireEvent.click(
         within(dialog).getByRole("button", { name: "Xuất Excel" }),
       );
-      await waitFor(() => expect(workbook.writeFile).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(workbook.saveStyledReportWorkbook).toHaveBeenCalled(),
+      );
       expect(workbook.json_to_sheet).toHaveBeenCalledWith([
         expect.objectContaining({ "Sự kiện": "Xếp khay", Mã: "BOX-1" }),
       ]);
@@ -488,7 +493,9 @@ describe("GoodsTraceReport", () => {
         name: "Xuất Excel",
       }),
     );
-    await waitFor(() => expect(workbook.writeFile).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(workbook.saveStyledReportWorkbook).toHaveBeenCalled(),
+    );
     expect(workbook.json_to_sheet).toHaveBeenCalledWith([
       expect.objectContaining({
         "Biến động tồn mã đang xem": null,

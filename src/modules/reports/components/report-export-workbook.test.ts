@@ -1,8 +1,13 @@
-import { describe, it, expect } from "vitest";
+vi.mock("@/shared/utils/report-excel-style", () => ({
+  saveStyledReportWorkbook: vi.fn().mockResolvedValue(undefined),
+}));
+import { saveStyledReportWorkbook } from "@/shared/utils/report-excel-style";
+import { describe, it, expect, vi } from "vitest";
 import * as XLSX from "xlsx";
 import {
   selectExportWorkbook,
   safeExportFilename,
+  downloadSelectedWorkbook,
 } from "./report-export-workbook";
 function source() {
   const b = XLSX.utils.book_new();
@@ -104,4 +109,31 @@ it("includes actual issued quantities in recipient SKU summaries", () => {
   expect(
     XLSX.utils.sheet_to_json(selected.Sheets[selected.SheetNames[0]]),
   ).toEqual([{ "Mã SKU": "A", "Tên SKU": "Pin", "Yêu cầu": 12, "Đã xuất": 7 }]);
+});
+
+it("styles the chosen worksheet scope with the requested filename", async () => {
+  const buffer = XLSX.write(source(), { type: "array", bookType: "xlsx" });
+  const blob = { arrayBuffer: async () => buffer } as Blob;
+  await downloadSelectedWorkbook(
+    blob,
+    {
+      filename: "ChonPhieu",
+      sectionIds: ["detail"],
+      match: { columns: ["Mã phiếu"], values: ["PX1"] },
+    },
+    { reportCode: "document-history" },
+  );
+  expect(saveStyledReportWorkbook).toHaveBeenCalledWith(
+    expect.objectContaining({ SheetNames: ["Danh sách chi tiết"] }),
+    "ChonPhieu.xlsx",
+    { reportCode: "document-history" },
+  );
+  const book = vi.mocked(saveStyledReportWorkbook).mock.calls.at(-1)![0];
+  expect(
+    XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { header: 1 }),
+  ).toEqual([
+    ["Mã phiếu", "Mã SKU", "Tên SKU", "Đã post"],
+    ["PX1", "A", "Pin", 2],
+    ["PX1", "B", "Máy", 3],
+  ]);
 });
