@@ -131,6 +131,55 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     cleanupTestState();
   });
 
+  it("đánh số STT liên tục qua trang và đổi số dòng mỗi trang", async () => {
+    const user = userEvent.setup();
+    vi.mocked(http.get).mockImplementation(async (url: unknown) => {
+      if (String(url) === "/reports/outbound-by-recipient") {
+        return {
+          rows: Array.from({ length: 12 }, (_, index) => ({
+            ...OUTBOUND_ROWS[0],
+            document_id: `doc-${index}`,
+            outbound_no: `PX-${index}`,
+            agency_id: `ag-${index}`,
+            agency_name: `Đại lý ${String(index).padStart(2, "0")}`,
+            recipient_id: `receiver-${index}`,
+          })),
+          pagination: { current_page: 1, last_page: 1, total: 12 },
+        } as never;
+      }
+      return (PAYLOAD[String(url)] ?? { rows: [] }) as never;
+    });
+    renderReport();
+    const table = await screen.findByRole("table");
+    await within(table).findByText("Đại lý 00");
+    expect(
+      within(table).getByRole("columnheader", { name: "STT" }),
+    ).toBeInTheDocument();
+    const numbers = () =>
+      within(table)
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => within(row).getAllByRole("cell")[0].textContent);
+    expect(numbers()).toEqual(
+      Array.from({ length: 10 }, (_, i) => String(i + 1)),
+    );
+    const section = table.closest("section")!;
+    await user.click(within(section).getByRole("button", { name: "2" }));
+    expect(numbers()).toEqual(["11", "12"]);
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
+      "20",
+    );
+    expect(numbers()).toEqual(
+      Array.from({ length: 12 }, (_, i) => String(i + 1)),
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
+      "50",
+    );
+    expect(numbers()).toHaveLength(12);
+  });
+
   it("dựng đúng cấu trúc baseline, cộng số lượng thuần và tiến độ chứng từ", async () => {
     renderReport();
 

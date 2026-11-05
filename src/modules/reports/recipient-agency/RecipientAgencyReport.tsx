@@ -1,4 +1,5 @@
 import { businessToday } from "@/shared/utils/date-time";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
 import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
@@ -323,6 +324,7 @@ export default function RecipientAgencyReport() {
   });
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [detailRow, setDetailRow] = useState<DealerRow | null>(null);
 
   const source = useRecipientAgencyLedger({
@@ -493,9 +495,12 @@ export default function RecipientAgencyReport() {
     !noSearchResult &&
     dealers.length === 0;
 
-  const totalPages = Math.max(1, Math.ceil(tableRows.length / 5));
+  const totalPages = Math.max(1, Math.ceil(tableRows.length / pageSize));
   const visiblePage = Math.min(page, totalPages);
-  const pageRows = tableRows.slice((visiblePage - 1) * 5, visiblePage * 5);
+  const pageRows = tableRows.slice(
+    (visiblePage - 1) * pageSize,
+    visiblePage * pageSize,
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
@@ -1045,13 +1050,30 @@ export default function RecipientAgencyReport() {
                   aria-label={tUi("updatedUi.text_4d0f6cce1add")}
                   placeholder={tUi("updatedUi.text_a54b781eab7e")}
                 />
+                {search.trim() ? (
+                  <button
+                    type="button"
+                    className="rpt07-search-clear"
+                    onClick={() => setSearch("")}
+                  >
+                    Xóa lọc
+                  </button>
+                ) : null}
               </div>
             </div>
 
             <div className="rpt07-table-scroll">
               <table className="rpt07-table">
+                <colgroup>
+                  {[6, 30, 10, 12, 18, 18, 6].map((width, index) => (
+                    <col key={index} style={{ width: `${width}%` }} />
+                  ))}
+                </colgroup>
                 <thead>
                   <tr>
+                    <th scope="col" className="rpt07-stt">
+                      STT
+                    </th>
                     <th>{tUi("updatedUi.text_61d6c9f042ea")}</th>
                     <th className="is-number">
                       {tUi("reports.pendingEvidence.colDocNo")}
@@ -1068,6 +1090,9 @@ export default function RecipientAgencyReport() {
                   {initialLoading ? (
                     Array.from({ length: 5 }).map((_, index) => (
                       <tr key={"loading-" + index}>
+                        <td className="rpt07-stt">
+                          <LoadingBar width="24px" />
+                        </td>
                         <td>
                           <LoadingBar width="78%" />
                           <LoadingBar width="55%" height={9} />
@@ -1091,13 +1116,13 @@ export default function RecipientAgencyReport() {
                     ))
                   ) : partial ? (
                     <tr className="rpt07-empty-row">
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <PanelEmpty partial />
                       </td>
                     </tr>
                   ) : noSearchResult ? (
                     <tr className="rpt07-empty-row">
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="rpt07-search-empty">
                           <div className="rpt07-search-empty__icon">
                             <SearchOutlined />
@@ -1117,7 +1142,7 @@ export default function RecipientAgencyReport() {
                     </tr>
                   ) : reportEmpty ? (
                     <tr className="rpt07-empty-row">
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="rpt07-table-empty">
                           <div className="rpt07-panel-empty__icon">
                             <InboxOutlined />
@@ -1136,26 +1161,39 @@ export default function RecipientAgencyReport() {
                       </td>
                     </tr>
                   ) : (
-                    pageRows.map((row) => {
+                    pageRows.map((row, index) => {
                       const progress =
                         row.totalDocuments > 0
                           ? (row.completedDocuments / row.totalDocuments) * 100
                           : 0;
                       return (
                         <tr key={row.key}>
+                          <td data-label="STT" className="rpt07-stt">
+                            {(visiblePage - 1) * pageSize + index + 1}
+                          </td>
                           <td data-label={tUi("updatedUi.text_61d6c9f042ea")}>
-                            <strong
-                              className="rpt07-dealer-name"
-                              title={row.name}
-                            >
-                              {row.name}
-                            </strong>
-                            <span
-                              className="rpt07-receiver-name"
-                              title={row.receiver}
-                            >
-                              {row.receiver}
-                            </span>
+                            <div className="rpt07-recipient-identity">
+                              <span
+                                className="rpt07-recipient-icon"
+                                aria-hidden="true"
+                              >
+                                <TeamOutlined />
+                              </span>
+                              <div>
+                                <strong
+                                  className="rpt07-dealer-name"
+                                  title={row.name}
+                                >
+                                  {row.name}
+                                </strong>
+                                <span
+                                  className="rpt07-receiver-name"
+                                  title={row.receiver}
+                                >
+                                  {row.receiver}
+                                </span>
+                              </div>
+                            </div>
                           </td>
                           <td
                             data-label={tUi("reports.pendingEvidence.colDocNo")}
@@ -1194,6 +1232,7 @@ export default function RecipientAgencyReport() {
                               <RowActionButton
                                 kind="view"
                                 type="button"
+                                aria-label={`Xem chi tiết ${row.name}`}
                                 onClick={() => setDetailRow(row)}
                               >
                                 Xem
@@ -1221,12 +1260,29 @@ export default function RecipientAgencyReport() {
                 ) : (
                   <span>
                     {tUi("putaway.queue.showing") + " "}
-                    {(visiblePage - 1) * 5 + 1}–
-                    {Math.min(visiblePage * 5, tableRows.length)} /{" "}
+                    {(visiblePage - 1) * pageSize + 1}–
+                    {Math.min(visiblePage * pageSize, tableRows.length)} /{" "}
                     {tableRows.length}
                     {" " + tUi("updatedUi.text_9fe632fd6866")}
                   </span>
                 )}
+                <label className="rpt07-page-size">
+                  Số dòng/trang
+                  <select
+                    aria-label="Số dòng mỗi trang"
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
+                  >
+                    {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
               <div className="rpt07-table-footer__meta">
                 {fromDisplay}–{toDisplay}
