@@ -9,6 +9,7 @@ import {
 } from "@/modules/reports/inventory-flow/inventory-flow-api";
 import type { DashboardOverview } from "../types";
 import { buildDashboardThresholds } from "./dashboard-threshold-model";
+import { ThresholdSkuList } from "./ThresholdSkuList";
 import "./dashboard-system-views.css";
 
 export type DashboardSystemView =
@@ -37,14 +38,16 @@ function Frame({
   description,
   onNavigate,
   children,
+  className = "",
 }: {
+  className?: string;
   title: string;
   description: string;
   onNavigate: Props["onNavigate"];
   children: ReactNode;
 }) {
   return (
-    <div className="dashboard-system-view">
+    <div className={`dashboard-system-view ${className}`}>
       <nav className="system-view-breadcrumb" aria-label="Điều hướng">
         <button type="button" onClick={() => onNavigate(home)}>
           Tổng quan
@@ -190,7 +193,9 @@ function WorkView({
                 Mở đối soát <DashIcon name="arrow-right" />
               </button>
             </header>
-            {source.loading || (source.error && !hasSnapshot) || mismatches.length === 0 ? (
+            {source.loading ||
+            (source.error && !hasSnapshot) ||
+            mismatches.length === 0 ? (
               <DataState
                 loading={source.loading}
                 error={hasSnapshot ? null : source.error}
@@ -461,25 +466,14 @@ function ThresholdView({ onNavigate }: Omit<Props, "view">) {
   const source = useStockReconcileSnapshot({ asOf: "" });
   const hasSnapshot =
     Boolean(source.snapshot.as_of) && source.thresholds.size > 0;
-  const [filter, setFilter] = useState<"alerts" | "low" | "high" | "all">(
-    "alerts",
-  );
-  const [selectedSku, setSelectedSku] = useState("");
   const summary = buildDashboardThresholds(
     source.snapshot.rows,
     source.thresholds,
   );
-  const rows = summary.rows;
-  const visible = rows.filter(
-    (row) =>
-      filter === "all" ||
-      (filter === "alerts" && row.state !== "ok") ||
-      filter === row.state,
-  );
-  const selected = visible.find((row) => row.sku === selectedSku) ?? visible[0];
   const { configured, unconfigured } = summary;
   return (
     <Frame
+      className="dashboard-threshold-view"
       title="Cảnh báo định mức tồn"
       description="Chỉ SKU đã đặt min hoặc max mới được đánh giá; chưa cấu hình khác với min = 0."
       onNavigate={onNavigate}
@@ -514,140 +508,7 @@ function ThresholdView({ onNavigate }: Omit<Props, "view">) {
               <strong>{fmt(summary.above)}</strong>
             </div>
           </div>
-          <div className="system-view-split">
-            <section className="system-view-card">
-              <header>
-                <h2>Danh sách SKU</h2>
-                <select
-                  aria-label="Lọc trạng thái định mức"
-                  value={filter}
-                  onChange={(event) =>
-                    setFilter(event.target.value as typeof filter)
-                  }
-                >
-                  <option value="alerts">Đang cảnh báo</option>
-                  <option value="low">Dưới min</option>
-                  <option value="high">Trên max</option>
-                  <option value="all">Tất cả đã cấu hình</option>
-                </select>
-              </header>
-              {visible.length ? (
-                <div className="system-view-table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>SKU</th>
-                        <th>Tên</th>
-                        <th>Khả dụng</th>
-                        <th>Min</th>
-                        <th>Max</th>
-                        <th>Trạng thái</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visible.map((row) => (
-                        <tr
-                          key={row.sku}
-                          className={row === selected ? "is-selected" : ""}
-                        >
-                          <td>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedSku(row.sku)}
-                            >
-                              {row.sku}
-                            </button>
-                          </td>
-                          <td>{row.name || "—"}</td>
-                          <td>{fmt(row.available)}</td>
-                          <td>{row.min === null ? "—" : fmt(row.min)}</td>
-                          <td>{row.max === null ? "—" : fmt(row.max)}</td>
-                          <td>
-                            <span
-                              className={`system-view-status is-${row.state}`}
-                            >
-                              {row.state === "low"
-                                ? "Dưới min"
-                                : row.state === "high"
-                                  ? "Trên max"
-                                  : "Trong ngưỡng"}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <DataState
-                  loading={false}
-                  error={null}
-                  onRetry={() => void source.refetch()}
-                  empty="Không có SKU trong bộ lọc này."
-                />
-              )}
-            </section>
-            <section className="system-view-card system-view-detail">
-              <h2>Chi tiết định mức</h2>
-              {selected ? (
-                <>
-                  <strong className="system-view-code">{selected.sku}</strong>
-                  <p>{selected.name || "Chưa có tên SKU"}</p>
-                  <dl>
-                    <div>
-                      <dt>Loại hàng</dt>
-                      <dd>
-                        {selected.kind === "PRODUCT"
-                          ? "Sản phẩm"
-                          : selected.kind === "COMPONENT"
-                            ? "Linh kiện"
-                            : "—"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Tồn khả dụng</dt>
-                      <dd>{fmt(selected.available)}</dd>
-                    </div>
-                    <div>
-                      <dt>Định mức min</dt>
-                      <dd>
-                        {selected.min === null ? "Chưa đặt" : fmt(selected.min)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Định mức max</dt>
-                      <dd>
-                        {selected.max === null ? "Chưa đặt" : fmt(selected.max)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Mức cần kiểm tra</dt>
-                      <dd>
-                        {selected.state === "low"
-                          ? `Thiếu ${fmt((selected.min ?? 0) - selected.available)}`
-                          : selected.state === "high"
-                            ? `Vượt ${fmt(selected.available - (selected.max ?? 0))}`
-                            : "Trong ngưỡng"}
-                      </dd>
-                    </div>
-                  </dl>
-                  <p className="system-view-note">
-                    Kiểm tra nhu cầu và số tồn trước khi điều chuyển hoặc nhập
-                    thêm.
-                  </p>
-                  <button
-                    className="system-view-primary"
-                    type="button"
-                    onClick={() => onNavigate("/inventory")}
-                  >
-                    Xem tồn kho
-                  </button>
-                </>
-              ) : (
-                <p>Chọn SKU để xem chi tiết.</p>
-              )}
-            </section>
-          </div>
+          <ThresholdSkuList rows={summary.rows} onNavigate={onNavigate} />
         </>
       )}
     </Frame>

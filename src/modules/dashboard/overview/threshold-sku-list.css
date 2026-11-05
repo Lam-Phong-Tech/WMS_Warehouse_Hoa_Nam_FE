@@ -1,0 +1,369 @@
+.dashboard-system-view.dashboard-threshold-view {
+  --system-ink: var(--ops-heading);
+  --system-line: var(--ops-line);
+  min-width: 0;
+  color: var(--ops-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 22px;
+  container: threshold-view / inline-size;
+}
+.dashboard-threshold-view .system-view-heading h1 {
+  color: var(--ops-heading);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  letter-spacing: normal;
+}
+.dashboard-threshold-view
+  :is(
+    .system-view-heading p,
+    .system-view-breadcrumb,
+    .system-view-metrics span
+  ) {
+  color: var(--ops-muted);
+}
+.dashboard-threshold-view .system-view-breadcrumb button {
+  color: var(--ops-link);
+}
+.dashboard-threshold-view .system-view-heading > button {
+  color: var(--ops-link);
+  font-weight: 600;
+}
+.dashboard-threshold-view
+  :is(.system-view-heading > button, .system-view-metrics > div) {
+  background: var(--ops-surface);
+  border-color: var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  box-shadow: none;
+}
+.dashboard-threshold-view .system-view-metrics strong {
+  color: var(--ops-heading);
+  font-size: 28px;
+  line-height: 36px;
+  font-variant-numeric: tabular-nums;
+}
+.dashboard-threshold-view .system-view-state {
+  background: var(--ops-pale);
+  color: var(--ops-muted);
+}
+.dashboard-threshold-view .system-view-state.is-error {
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger-text);
+}
+.threshold-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  min-width: 0;
+}
+.threshold-list {
+  min-width: 0;
+}
+.threshold-list > h2,
+.threshold-detail h2 {
+  margin: 0 0 16px;
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+}
+.threshold-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+.threshold-filters .threshold-search {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.threshold-filters .MuiInputBase-root,
+.threshold-filters > select,
+.threshold-filters > button {
+  height: 48px;
+  min-height: 48px;
+  background: var(--ops-surface);
+  border-radius: var(--ops-radius-control);
+}
+.threshold-filters > select {
+  max-width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--ops-line);
+  color: var(--ops-text);
+  font: inherit;
+}
+.threshold-filters .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-line);
+}
+.threshold-filters .Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-link);
+}
+.threshold-filters .Mui-focused {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+.threshold-filters .MuiInputBase-input {
+  color: var(--ops-text);
+  font-size: 14px;
+}
+.threshold-filters .MuiInputBase-input::placeholder {
+  color: var(--ops-muted);
+  opacity: 1;
+}
+.threshold-table {
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+  min-width: 0;
+}
+.threshold-table > .MuiBox-root:has(> table) {
+  border: 0;
+  border-radius: var(--ops-radius-card) var(--ops-radius-card) 0 0;
+}
+.threshold-table table {
+  font-size: 14px;
+  line-height: 22px;
+}
+.threshold-table :is(th, td) {
+  padding: 12px 18px;
+  vertical-align: middle;
+  border-color: var(--ops-line);
+  overflow-wrap: anywhere;
+}
+.threshold-table table :is(th, td):is(:first-child, :last-child) {
+  padding-inline: 6px;
+}
+.threshold-table :is(th, td):nth-child(n + 4):nth-child(-n + 6) {
+  padding-inline: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.threshold-table td {
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+}
+.threshold-table table tr:has([aria-pressed="true"]),
+.threshold-table .MuiCard-root:has([aria-pressed="true"]) {
+  background: var(--ops-pale);
+  box-shadow: inset 3px 0 var(--ops-link);
+}
+.threshold-table table tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+.dashboard-threshold-view .threshold-sku {
+  display: inline;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ops-heading);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.threshold-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  max-width: 100%;
+  min-height: 24px;
+  border-radius: 20px;
+  font-size: 11px;
+  line-height: 20px;
+  font-weight: 600;
+  background: var(--ops-success-soft);
+  color: var(--ops-success-text);
+}
+.threshold-status::before {
+  content: "";
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  border-radius: 50%;
+}
+.threshold-status[data-state="low"] {
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger-text);
+}
+.threshold-status[data-state="high"] {
+  background: var(--ops-warning-soft);
+  color: var(--ops-warning-text);
+}
+.threshold-table > .MuiStack-root {
+  padding: 16px;
+}
+.threshold-table .MuiCard-root {
+  background: var(--ops-surface);
+  color: var(--ops-text);
+  border-color: var(--ops-line);
+}
+.threshold-table .MuiCardContent-root {
+  font-size: 14px;
+  line-height: 22px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.threshold-table .MuiCardContent-root > .MuiBox-root > .MuiTypography-root {
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.threshold-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  border-top: 1px solid var(--ops-line);
+  padding: 14px 16px;
+}
+.threshold-pagination-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  min-width: 0;
+}
+.threshold-pagination select {
+  height: 40px;
+  max-width: 100%;
+  padding: 0 10px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+.threshold-pagination > nav {
+  margin-left: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.threshold-pagination .MuiPagination-ul {
+  justify-content: flex-end;
+  row-gap: 4px;
+}
+.threshold-pagination .MuiPaginationItem-root {
+  color: var(--ops-text);
+  min-width: 36px;
+  height: 36px;
+}
+.threshold-pagination .MuiPaginationItem-root.Mui-selected {
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+}
+.threshold-detail {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+  grid-row: 1;
+  overflow-wrap: anywhere;
+}
+.threshold-detail > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.threshold-detail h2 {
+  margin: 0 0 16px;
+}
+.threshold-detail header button {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+}
+.threshold-detail-code {
+  display: block;
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+}
+.threshold-detail > p {
+  margin: 4px 0 16px;
+  color: var(--ops-muted);
+}
+.threshold-detail dl {
+  margin: 16px 0;
+}
+.threshold-detail dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ops-line);
+}
+.threshold-detail dt {
+  color: var(--ops-muted);
+}
+.threshold-detail dd {
+  margin: 0;
+  color: var(--ops-text);
+  text-align: right;
+  font-weight: 600;
+}
+.threshold-detail .threshold-detail-note {
+  padding: 12px;
+  margin-bottom: 16px;
+  background: var(--ops-pale);
+  border-left: 3px solid var(--ops-link);
+  color: var(--ops-text);
+}
+.dashboard-threshold-view .MuiButton-root.MuiButton-outlined {
+  color: var(--ops-link);
+  border-color: var(--ops-link);
+}
+.dashboard-threshold-view .MuiButton-root {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.dashboard-threshold-view :is(button, select):focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 2px;
+}
+@container threshold-view (min-width: 1180px) {
+  .threshold-layout.has-selection {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+  .threshold-detail {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+@container threshold-view (max-width: 560px) {
+  .threshold-filters .threshold-search {
+    flex-basis: 100%;
+  }
+  .threshold-filters > select {
+    flex: 1;
+    min-width: 0;
+  }
+  .threshold-table .MuiCardContent-root > .MuiBox-root {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .threshold-table .MuiCardContent-root > .MuiBox-root > .MuiBox-root {
+    text-align: left;
+    max-width: 100%;
+  }
+  .threshold-pagination .MuiPaginationItem-root {
+    min-width: 40px;
+    height: 44px;
+  }
+  .threshold-detail {
+    padding: 16px;
+  }
+  .dashboard-threshold-view .system-view-heading h1 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+}
