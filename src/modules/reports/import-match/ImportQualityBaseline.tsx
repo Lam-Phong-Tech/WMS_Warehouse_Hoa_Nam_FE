@@ -852,19 +852,6 @@ export default function ImportQualityBaseline() {
             >
               {tUi("updatedUi.text_ff603e37b9df")}
             </Box>
-            <Box
-              sx={{
-                px: 1,
-                py: 0.25,
-                borderRadius: 999,
-                bgcolor: C.cyanSoft,
-                color: C.navy,
-                fontWeight: 800,
-                fontSize: 12.5,
-              }}
-            >
-              {fmt(pagination.total)}
-            </Box>
           </Stack>
           <Box sx={{ width: { xs: "100%", sm: 290, md: 330 } }}>
             <SearchInput
@@ -885,13 +872,14 @@ export default function ImportQualityBaseline() {
             actionColumnWidth="5%"
             hideActionHeader
             headerCellStyle={{
-              background: "#d2edf7",
-              color: "var(--ops-muted)",
+              backgroundColor: "#d2edf7",
+              backgroundImage: "none",
+              color: "var(--ops-heading)",
               padding: "12px 18px",
               fontSize: 16,
               fontWeight: 800,
               lineHeight: "24px",
-              textTransform: "uppercase",
+              textTransform: "none",
               letterSpacing: "0.02em",
             }}
             columns={[
