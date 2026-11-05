@@ -22,7 +22,12 @@ export function SnapshotThresholdSummary({
   return (
     <article className="snapshot-card snapshot-stock snapshot-thresholds">
       <header>
-        <h2>{t("dashboard.snapshot.thresholdSummaryTitle")}</h2>
+        <div>
+          <h2>{t("dashboard.snapshot.thresholdSummaryTitle")}</h2>
+          <p className="snapshot-threshold-note">
+            Chỉ SKU có min hoặc max mới được đánh giá.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => onNavigate("/dashboard?screen=MAP-01&view=thresholds")}
@@ -81,7 +86,6 @@ export function SnapshotThresholdSummary({
               <strong>{fmt(above)}</strong>
             </button>
           </div>
-          <p>Chỉ SKU có min hoặc max mới được đánh giá.</p>
         </>
       )}
     </article>

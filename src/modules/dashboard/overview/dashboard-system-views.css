@@ -455,6 +455,10 @@
 }
 .snapshot-thresholds > header {
   margin-bottom: 0;
+  align-items: flex-start;
+}
+.snapshot-thresholds > header > div {
+  min-width: 0;
 }
 .snapshot-threshold-totals {
   display: grid;
@@ -504,10 +508,11 @@
 .snapshot-threshold-alerts strong {
   font-size: 20px;
 }
-.snapshot-thresholds > p {
-  margin: 0;
-  color: #6c8797;
+.snapshot-thresholds .snapshot-threshold-note {
+  margin: 4px 0 0;
+  color: var(--ops-muted);
   font-size: 12px;
+  line-height: 18px;
 }
 .snapshot-threshold-state {
   display: grid;
