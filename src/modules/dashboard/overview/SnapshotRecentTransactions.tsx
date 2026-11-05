@@ -59,8 +59,18 @@ export function SnapshotRecentTransactions({
           <span>Tồn kho hiện tại vẫn được giữ theo ảnh chụp mới nhất.</span>
         </div>
       ) : (
-        <div className="snapshot-recent-table">
+        <div
+          className="snapshot-recent-table"
+          role="region"
+          aria-label={t("dashboard.snapshot.recentDocsTitle")}
+          tabIndex={0}
+        >
           <table>
+            <colgroup>
+              {[14, 27, 10, 29, 12, 8].map((width, index) => (
+                <col key={index} style={{ width: `${width}%` }} />
+              ))}
+            </colgroup>
             <thead>
               <tr>
                 <th>Ghi sổ</th>
