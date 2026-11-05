@@ -1,4 +1,5 @@
 import type { NotificationItem } from "../types/notification.types";
+import { getNotificationText } from "./notification-text";
 const delivered = new Set<string>();
 export function browserNotificationCategory(
   event: string,
@@ -37,8 +38,9 @@ export function deliverBrowserNotification(
   )
     return false;
   try {
-    const notification = new Notification(item.title, {
-      body: item.body,
+    const copy = getNotificationText(item);
+    const notification = new Notification(copy.title, {
+      body: copy.body,
       tag: `hoa-nam-${item.id}`,
     });
     notification.onclick = () => {

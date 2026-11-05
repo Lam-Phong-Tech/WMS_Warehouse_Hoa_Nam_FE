@@ -1,3 +1,4 @@
+import { NOTIFICATION_CONTENT_ZH } from "./messages.notification-content";
 import { REPORT_EXPORT_ZH } from "./messages.report-export";
 import type { MessageTree } from "./messages";
 
@@ -5865,6 +5866,7 @@ export const MESSAGES_ZH: MessageTree = {
     }
   },
   "notifications": {
+    content: NOTIFICATION_CONTENT_ZH,
     "title": "通知",
     "loadError": "无法加载通知",
     "empty": "还没有通知",

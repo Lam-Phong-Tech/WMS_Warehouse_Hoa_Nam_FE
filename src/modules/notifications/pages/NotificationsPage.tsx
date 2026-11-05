@@ -1,3 +1,4 @@
+import { useNotificationText } from "@/modules/notifications/utils/notification-text";
 import { useState } from "react";
 import { UiCard, UiPagination } from "@/shared/ui";
 import { EmptyState, LoadingState } from "@/shared/components";
@@ -20,6 +21,7 @@ import "./notifications-page.css";
 
 export default function NotificationsPage() {
   const t = useT();
+  const notificationText = useNotificationText();
   const [page, setPage] = useState(1);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [selected, setSelected] = useState<NotificationItem | null>(null);
@@ -92,7 +94,10 @@ export default function NotificationsPage() {
           </div>
         ) : isLoading && items.length === 0 ? (
           <div className="notifications-state">
-            <LoadingState tip={t("notifications.page.loading")} minHeight={260} />
+            <LoadingState
+              tip={t("notifications.page.loading")}
+              minHeight={260}
+            />
           </div>
         ) : !isLoading && items.length === 0 ? (
           <div className="notifications-state">
@@ -119,10 +124,17 @@ export default function NotificationsPage() {
                       setSelected(item);
                     }}
                   >
-                    <span className="notifications-indicator" aria-hidden="true" />
+                    <span
+                      className="notifications-indicator"
+                      aria-hidden="true"
+                    />
                     <span className="notifications-copy">
-                      <span className="notifications-title">{item.title}</span>
-                      <span className="notifications-body">{item.body}</span>
+                      <span className="notifications-title">
+                        {notificationText(item).title}
+                      </span>
+                      <span className="notifications-body">
+                        {notificationText(item).body}
+                      </span>
                       <span className="notifications-visually-hidden">
                         {item.read_at
                           ? t("notifications.page.readSuffix")

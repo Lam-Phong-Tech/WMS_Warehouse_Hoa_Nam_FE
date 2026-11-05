@@ -1,4 +1,5 @@
 import { deliverBrowserNotification } from "../utils/browser-notification";
+import { getNotificationText } from "../utils/notification-text";
 import {
   profileKeys,
   type ProfilePreferences,
@@ -57,7 +58,8 @@ export function useNotificationSocket(): void {
         increment();
         queryClient.invalidateQueries({ queryKey: ["notifications"] });
         if (payload.severity === "warning" || payload.severity === "critical") {
-          toast.warning(payload.title, { description: payload.body });
+          const copy = getNotificationText(payload);
+          toast.warning(copy.title, { description: copy.body });
         }
       });
       channel.listen(".auth.session-replaced", () => {

@@ -1,0 +1,179 @@
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { translate } from "@/shared/i18n/useT";
+import type { NotificationItem } from "../types/notification.types";
+import { localizeNotification, useNotificationText } from "./notification-text";
+
+const item: NotificationItem = {
+  id: "recipient-1",
+  notification_id: "notification-1",
+  event_key: "outbound.posted",
+  title: "Đã hoàn tất xuất kho",
+  body: "Phiếu xuất PX-20261105-ABC đã Post Issue thành công; tồn kho đã được trừ.",
+  severity: "info",
+  source_module: "warehouse",
+  subject_type: "stock_document",
+  subject_id: "doc-1",
+  actor_id: "user-1",
+  actor_name: "Nguyễn Văn A",
+  payload: { doc_no: "PX-20261105-ABC" },
+  read_at: null,
+  created_at: "2026-11-05T10:00:00+07:00",
+};
+beforeAll(async () => {
+  await Promise.all([ensureEnglishMessages(), ensureChineseMessages()]);
+});
+afterEach(() => {
+  act(() => useLanguageStore.setState({ language: "vi" }));
+});
+describe("notification content locale", () => {
+  it("translates the same cached notification immediately when switching VI → EN → ZH", () => {
+    useLanguageStore.setState({ language: "vi" });
+    const { result } = renderHook(() => useNotificationText()(item));
+    expect(result.current.title).toBe(item.title);
+    act(() => useLanguageStore.setState({ language: "en" }));
+    expect(result.current.title).toBe("Outbound completed");
+    expect(result.current.body).toContain("PX-20261105-ABC");
+    expect(result.current.body).not.toMatch(/Phiếu|đã|kho/);
+    act(() => useLanguageStore.setState({ language: "zh" }));
+    expect(result.current.title).toBe("出库已完成");
+    expect(result.current.body).toContain("PX-20261105-ABC");
+    expect(item.title).toBe("Đã hoàn tất xuất kho");
+    expect(item.actor_name).toBe("Nguyễn Văn A");
+  });
+  it.each(["en", "zh"] as const)(
+    "localizes stock lifecycle notifications in %s",
+    (language) => {
+      for (const event_key of [
+        "inbound.created",
+        "inbound.scan_started",
+        "inbound.completed",
+        "inbound.cancelled",
+        "outbound.created",
+        "outbound.scan_started",
+        "outbound.posted",
+        "outbound.cancelled",
+      ]) {
+        const copy = localizeNotification(
+          { ...item, event_key },
+          language,
+          (key, vars) => translate(language, key, vars),
+        );
+        expect(copy.title).not.toBe(item.title);
+        expect(copy.body).toContain("PX-20261105-ABC");
+        expect(copy.body).not.toMatch(/Phiếu|đã|thành công/);
+        expect(copy.body).not.toMatch(/\{\w+\}/);
+      }
+    },
+  );
+  it("keeps custom events and Vietnamese content intact and resolves legacy document numbers", () => {
+    const t = (
+      key: Parameters<typeof translate>[1],
+      vars?: Parameters<typeof translate>[2],
+    ) => translate("en", key, vars);
+    expect(
+      localizeNotification({ ...item, event_key: "custom.message" }, "en", t),
+    ).toEqual({ title: item.title, body: item.body });
+    expect(
+      localizeNotification({ ...item, event_key: "constructor" }, "en", t),
+    ).toEqual({ title: item.title, body: item.body });
+    expect(localizeNotification(item, "vi", t)).toEqual({
+      title: item.title,
+      body: item.body,
+    });
+    expect(
+      localizeNotification({ ...item, payload: null }, "en", t).body,
+    ).toContain("PX-20261105-ABC");
+    for (const [event_key, payload] of [
+      ["user.account_changed", { action: "FUTURE_ACTION" }],
+      ["security.alert_raised", { reason_code: "CUSTOM_REASON" }],
+    ] as const) {
+      expect(
+        localizeNotification({ ...item, event_key, payload }, "en", t),
+      ).toEqual({ title: item.title, body: item.body });
+    }
+    const security = localizeNotification(
+      {
+        ...item,
+        event_key: "security.alert_raised",
+        body: "Tài khoản nguyen van a bị từ chối đăng nhập vì đang ở trạng thái LOCKED.",
+        payload: { reason_code: "LOGIN_DENIED", user_id: "internal-user-id" },
+      },
+      "en",
+      t,
+    );
+    expect(security.body).toContain("nguyen van a");
+    expect(security.body).toContain("Locked");
+    expect(security.body).not.toContain("internal-user-id");
+    expect(
+      localizeNotification(
+        {
+          ...item,
+          event_key: "warranty.case_created",
+          body: "Case bảo hành WC-OLD-01 vừa được tiếp nhận.",
+          payload: null,
+        },
+        "en",
+        t,
+      ).body,
+    ).toContain("WC-OLD-01");
+  });
+  it.each(["en", "zh"] as const)(
+    "covers warranty, account, security and inventory events in %s",
+    (language) => {
+      const t = (
+        key: Parameters<typeof translate>[1],
+        vars?: Parameters<typeof translate>[2],
+      ) => translate(language, key, vars);
+      for (const [event_key, payload] of [
+        [
+          "inbound.sku_info_pending",
+          { doc_no: "PN-1", sku_codes: ["SKU-1", "SKU-2"] },
+        ],
+        ["reversal.created", { reversal_no: "RV-1" }],
+        ["reversal.posted", { doc_no: "RV-1" }],
+        ["reversal.cancelled", { doc_no: "RV-1" }],
+        [
+          "stock.shortage_detected",
+          { document_id: "doc-1", product_code: "SKU-1" },
+        ],
+        ["role.permissions_changed", { role_code: "WAREHOUSE" }],
+        ["user.account_changed", { action: "CREATE" }],
+        ["user.account_changed", { action: "UPDATE" }],
+        ["user.account_changed", { action: "AUTO_LOCK" }],
+        ["warranty.case_created", { case_code: "WC-1" }],
+        [
+          "warranty.status_changed",
+          { from_status: "RECEIVED", to_status: "REPAIRING" },
+        ],
+        ["security.alert_raised", { reason_code: "LOGIN_THROTTLED" }],
+        [
+          "security.alert_raised",
+          { reason_code: "LOGIN_DENIED", username: "admin", status: "LOCKED" },
+        ],
+      ] as const) {
+        const copy = localizeNotification(
+          { ...item, event_key, payload },
+          language,
+          t,
+        );
+        expect(copy.title).not.toBe(item.title);
+        expect(copy.body).not.toMatch(/Phiếu|đã|thành công|\{\w+\}/);
+        expect(copy.title).not.toContain("notifications.");
+      }
+      const copy = localizeNotification(
+        {
+          ...item,
+          event_key: "warranty.status_changed",
+          payload: { from_status: "RECEIVED", to_status: "REPAIRING" },
+        },
+        language,
+        t,
+      );
+      expect(copy.body).not.toMatch(/RECEIVED|REPAIRING/);
+    },
+  );
+});

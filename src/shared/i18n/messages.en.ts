@@ -1,3 +1,4 @@
+import { NOTIFICATION_CONTENT_EN } from "./messages.notification-content";
 import { REPORT_EXPORT_EN } from "./messages.report-export";
 import { PERSONAL_EN } from "./messages.personal";
 import { RBAC_EN } from "./messages.rbac";
@@ -5777,6 +5778,7 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   notifications: {
+    content: NOTIFICATION_CONTENT_EN,
     title: "Notifications",
     loadError: "Could not load notifications",
     empty: "No notifications yet",

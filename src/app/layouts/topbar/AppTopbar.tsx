@@ -1,3 +1,4 @@
+import { useNotificationText } from "@/modules/notifications/utils/notification-text";
 import { useInterfacePreferenceShortcut } from "@/modules/auth/hooks/use-interface-preference-shortcut";
 import { useProfileAvatarUrl } from "@/modules/auth/hooks/use-profile-avatar-url";
 /**
@@ -95,6 +96,7 @@ export function AppTopbar({
   const location = useLocation();
   const navigate = useNavigate();
   const t = useT();
+  const notificationText = useNotificationText();
   const navLabel = useNavLabel();
   const breadcrumbTrail = isDashboard
     ? []
@@ -282,8 +284,8 @@ export function AppTopbar({
           <VuexyDemoIcon name={SEVERITY_ICON[item.severity]} />
         </span>
         <span>
-          <strong>{item.title}</strong>
-          <small>{item.body}</small>
+          <strong>{notificationText(item).title}</strong>
+          <small>{notificationText(item).body}</small>
         </span>
         <time dateTime={item.created_at}>{shortAge(item.created_at)}</time>
       </button>

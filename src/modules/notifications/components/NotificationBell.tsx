@@ -1,3 +1,4 @@
+import { useNotificationText } from "@/modules/notifications/utils/notification-text";
 import { useState } from "react";
 import {
   Badge,
@@ -37,6 +38,7 @@ import { useT } from "@/shared/i18n/useT";
  */
 export function NotificationBell() {
   const t = useT();
+  const notificationText = useNotificationText();
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isDropdownOpen = useNotificationStore((s) => s.isDropdownOpen);
@@ -163,7 +165,7 @@ export function NotificationBell() {
                         component="strong"
                         sx={{ fontSize: 13, color: S.textHigh }}
                       >
-                        {item.title}
+                        {notificationText(item).title}
                       </Box>
                       <StatusTag
                         status={item.severity}
@@ -173,7 +175,7 @@ export function NotificationBell() {
                       />
                     </Box>
                     <Box sx={{ fontSize: 12, color: S.textMedium }}>
-                      {item.body}
+                      {notificationText(item).body}
                     </Box>
                     <Box sx={{ mt: "2px", fontSize: 11, color: S.textMedium }}>
                       {formatDateTime(item.created_at)}

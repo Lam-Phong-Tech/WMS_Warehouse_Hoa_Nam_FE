@@ -10,6 +10,9 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { NotificationItem } from "@/modules/notifications/types/notification.types";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
 
 const shortcutPreferences = {
   version: 1,
@@ -38,12 +41,15 @@ vi.mock("@/modules/auth/services/profile.service", () => ({
   },
 }));
 const markAllRead = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
+const notificationData = vi.hoisted(() => ({
+  items: [] as NotificationItem[],
+}));
 
 vi.mock("@/modules/notifications/hooks/useNotifications", () => ({
   useMarkAllNotificationsRead: () => markAllRead,
   useUnreadCountQuery: vi.fn(),
   useNotificationsQuery: () => ({
-    data: { data: [] },
+    data: { data: notificationData.items },
     isLoading: false,
     isError: false,
   }),
@@ -96,6 +102,7 @@ function CurrentPath() {
 beforeEach(() => {
   vi.clearAllMocks();
   markAllRead.isPending = false;
+  notificationData.items = [];
   useNotificationStore.getState().reset();
   useAuthStore.setState({
     isProfileLoaded: true,
@@ -120,6 +127,44 @@ afterEach(() => {
 });
 
 describe("AppTopbar", () => {
+  it("updates cached notification titles and bodies when the language changes", async () => {
+    await Promise.all([ensureEnglishMessages(), ensureChineseMessages()]);
+    useLanguageStore.setState({ language: "vi" });
+    notificationData.items = [
+      {
+        id: "translated-notification",
+        notification_id: "translated-notification-event",
+        event_key: "inbound.completed",
+        source_module: "warehouse",
+        title: "Đã hoàn tất nhập kho",
+        body: "Phiếu nhập PN-TEST-01 đã Post Receipt thành công.",
+        payload: { doc_no: "PN-TEST-01" },
+        subject_type: "stock_document",
+        subject_id: "doc-locale-1",
+        actor_id: null,
+        actor_name: null,
+        read_at: null,
+        severity: "info",
+        created_at: new Date().toISOString(),
+      },
+    ];
+    renderTopbar();
+    fireEvent.click(screen.getByRole("button", { name: "Thông báo" }));
+    expect(screen.getByText("Đã hoàn tất nhập kho")).toBeInTheDocument();
+    act(() => useLanguageStore.setState({ language: "en" }));
+    expect(screen.getByText("Inbound completed")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Inbound document PN-TEST-01 was successfully received into stock.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Đã hoàn tất nhập kho")).not.toBeInTheDocument();
+    act(() => useLanguageStore.setState({ language: "zh" }));
+    expect(screen.getByText("入库已完成")).toBeInTheDocument();
+    expect(
+      screen.getByText("入库单 PN-TEST-01 已成功登记入库。"),
+    ).toBeInTheDocument();
+  });
   it("không lặp tên và vai trò trong menu khi thanh trên đã hiển thị", () => {
     renderTopbar();
     const accountButton = screen.getByRole("button", {

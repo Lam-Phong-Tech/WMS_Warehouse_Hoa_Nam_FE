@@ -1,3 +1,4 @@
+import { useNotificationText } from "@/modules/notifications/utils/notification-text";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -53,6 +54,7 @@ export function NotificationDetailModal({
   onNavigate,
 }: NotificationDetailModalProps) {
   const t = useT();
+  const notificationText = useNotificationText();
   const navigate = useNavigate();
   const payloadEntries = Object.entries(item?.payload ?? {}).filter(
     ([, value]) => value !== null && value !== undefined && value !== "",
@@ -193,10 +195,10 @@ export function NotificationDetailModal({
               color: S.textHigh,
             }}
           >
-            {item.title}
+            {notificationText(item).title}
           </Box>
           <Box component="p" sx={{ m: 0, mb: 2, color: S.textMedium }}>
-            {item.body}
+            {notificationText(item).body}
           </Box>
 
           <Box

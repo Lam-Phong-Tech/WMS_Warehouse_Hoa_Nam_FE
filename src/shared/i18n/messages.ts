@@ -1,3 +1,4 @@
+import { NOTIFICATION_CONTENT_VI } from "./messages.notification-content";
 import { REPORT_EXPORT_VI } from "./messages.report-export";
 import { PERSONAL_VI } from "./messages.personal";
 import { RBAC_VI } from "./messages.rbac";
@@ -5770,6 +5771,7 @@ export const MESSAGES_VI = {
     },
   },
   notifications: {
+    content: NOTIFICATION_CONTENT_VI,
     title: "Thông báo",
     loadError: "Không tải được thông báo",
     empty: "Chưa có thông báo",
