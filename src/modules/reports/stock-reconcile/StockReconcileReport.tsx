@@ -819,22 +819,6 @@ export default function StockReconcileReport() {
   const home = () => navigate(ROUTES.DASHBOARD);
   const fatal = status === 403 || status === 404 || status === 503;
 
-  if (selectedEvidence) {
-    return (
-      <StockReconcileDrilldown
-        row={selectedEvidence}
-        range={{ from: applied.from, to: applied.to }}
-        asOf={reconciliation.snapshot.as_of}
-        view={detailView}
-        canExport={canExport}
-        onViewChange={setDetailView}
-        onBack={() => setSelectedEvidence(null)}
-        onOpenInventory={() => navigate(ROUTES.INVENTORY)}
-        onOpenTrace={() => navigate(ROUTES.REPORTS_TRACEABILITY)}
-      />
-    );
-  }
-
   return (
     <main className="hn-rpt02" ref={pageRef}>
       {fatal ? (
@@ -1763,6 +1747,19 @@ export default function StockReconcileReport() {
           to={applied.to}
           asOf={reconciliation.snapshot.as_of}
           onClose={() => setShowExport(false)}
+        />
+      ) : null}
+      {selectedEvidence ? (
+        <StockReconcileDrilldown
+          row={selectedEvidence}
+          range={{ from: applied.from, to: applied.to }}
+          asOf={reconciliation.snapshot.as_of}
+          view={detailView}
+          canExport={canExport}
+          onViewChange={setDetailView}
+          onBack={() => setSelectedEvidence(null)}
+          onOpenInventory={() => navigate(ROUTES.INVENTORY)}
+          onOpenTrace={() => navigate(ROUTES.REPORTS_TRACEABILITY)}
         />
       ) : null}
     </main>

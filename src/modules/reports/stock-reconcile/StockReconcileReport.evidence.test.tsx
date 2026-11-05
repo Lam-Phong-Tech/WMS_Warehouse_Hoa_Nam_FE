@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import dayjs from "dayjs";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -80,6 +80,7 @@ describe("stock reconciliation evidence navigation", () => {
     } as never);
 
     renderWithProviders(<StockReconcileReport />);
+    const reportPage = screen.getByRole("main");
     expect(screen.getByRole("tab", { name: "Đối soát tồn" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -95,8 +96,13 @@ describe("stock reconciliation evidence navigation", () => {
     expect(
       await screen.findByTestId("stock-reconcile-drilldown"),
     ).toBeInTheDocument();
+    const drawer = screen.getByRole("dialog", {
+      name: /Chi tiết chênh lệch tồn/,
+    });
+    expect(drawer.closest(".MuiDrawer-root")).toBeInTheDocument();
+    expect(reportPage).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Chi tiết chênh lệch tồn" }),
+      within(drawer).getByRole("heading", { name: /Chi tiết chênh lệch tồn/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/chưa trả danh sách mã chênh lệch/),
@@ -106,10 +112,12 @@ describe("stock reconciliation evidence navigation", () => {
       to: dayjs().format("YYYY-MM-DD"),
     });
     fireEvent.click(
-      screen.getByRole("button", { name: /Xem phát sinh theo SKU/ }),
+      await within(drawer).findByRole("button", {
+        name: /Xem phát sinh theo SKU/,
+      }),
     );
     expect(
-      screen.getByRole("heading", { name: "Phát sinh theo SKU" }),
+      screen.getByRole("heading", { name: /Phát sinh theo SKU/ }),
     ).toBeInTheDocument();
     fireEvent.click(
       screen.getAllByRole("button", { name: /Quay lại báo cáo/ })[0],
@@ -206,7 +214,7 @@ describe("stock reconciliation evidence navigation", () => {
       screen.getByRole("button", { name: /Xem bằng chứng HN-ONLY-001/ }),
     );
     expect(
-      screen.getByRole("heading", { name: "Chi tiết đối soát mã" }),
+      screen.getByRole("heading", { name: /Chi tiết đối soát mã/ }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/SN-SEN-/)).not.toBeInTheDocument();
   });
