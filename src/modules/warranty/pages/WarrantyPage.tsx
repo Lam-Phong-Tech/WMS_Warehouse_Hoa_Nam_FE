@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Box,
@@ -108,6 +108,8 @@ export default function WarrantyPage() {
   const can = useHasPermission();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const overdueRequested = searchParams.get("overdue") === "1";
 
   const searchRef = useRef<HTMLInputElement>(null);
   const [searchInput, setSearchInput] = useState("");
@@ -119,7 +121,8 @@ export default function WarrantyPage() {
   >("");
   const [defectId, setDefectId] = useState("");
   const [sortMode, setSortMode] = useState<WarrantySortMode>("newest");
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [overdueOnly, setOverdueOnly] = useState(overdueRequested);
+  const [filtersOpen, setFiltersOpen] = useState(overdueRequested);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [intakeOpen, setIntakeOpen] = useState(false);
@@ -138,6 +141,7 @@ export default function WarrantyPage() {
     page,
     per_page: perPage,
     sort_order: sortMode === "oldest" ? "asc" : "desc",
+    overdue: overdueOnly || undefined,
   });
   const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
 
@@ -152,6 +156,7 @@ export default function WarrantyPage() {
     status ||
     identification ||
     defectId ||
+    overdueOnly ||
     sortMode !== "newest",
   );
   const listSort = sortMode.startsWith("defect-")
@@ -177,6 +182,26 @@ export default function WarrantyPage() {
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
+
+  useEffect(() => {
+    if (!overdueRequested) return;
+    setOverdueOnly(true);
+    setFiltersOpen(true);
+    setSearchInput("");
+    setSearch("");
+    setStatus("");
+    setIdentification("");
+    setDefectId("");
+    setSortMode("newest");
+    setPage(1);
+  }, [overdueRequested, location.key]);
+
+  const clearOverdueLink = () => {
+    if (!searchParams.has("overdue")) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("overdue");
+    setSearchParams(next, { replace: true });
+  };
 
   // Deep-link các màn wireframe: ?screen=WAR-02 mở tiếp nhận, ?screen=WAR-03&id=...
   // mở chi tiết, ?screen=COMP-01&id=<caseId> mở xuất linh kiện. URL trở về WAR-01.
@@ -441,6 +466,8 @@ export default function WarrantyPage() {
                   setIdentification("");
                   setDefectId("");
                   setSortMode("newest");
+                  setOverdueOnly(false);
+                  clearOverdueLink();
                   setPage(1);
                   searchRef.current?.focus();
                 }}
@@ -517,6 +544,24 @@ export default function WarrantyPage() {
                 onChange={(value) => {
                   setSortMode(value as WarrantySortMode);
                   setPage(1);
+                }}
+              />
+            </div>
+            <div className="hn-war-field">
+              <UiSelect
+                id="hn-war-overdue"
+                fullWidth
+                menuClassName="hn-war-menu"
+                value={overdueOnly ? "1" : ""}
+                aria-label={t("warranty.list.overdueFilterAria")}
+                placeholder={t("warranty.list.overdueFilterPlaceholder")}
+                options={[
+                  { value: "1", label: t("warranty.list.overdueFilterOnly") },
+                ]}
+                onChange={(value) => {
+                  setOverdueOnly(value === "1");
+                  setPage(1);
+                  clearOverdueLink();
                 }}
               />
             </div>

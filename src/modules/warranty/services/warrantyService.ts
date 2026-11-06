@@ -196,6 +196,7 @@ export async function fetchWarrantyCases(params: WarrantyListParams = {}): Promi
     defect_ids: params.defect_ids,
     keyword: params.search ?? params.keyword,
     sort_order: params.sort_order,
+    overdue: params.overdue ? 1 : undefined,
   };
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(API_ENDPOINTS.WARRANTY_CASES, { params: clean(mappedParams) });
   return {

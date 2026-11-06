@@ -1137,6 +1137,9 @@ export const MESSAGES_VI = {
       // WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS (business-labels.ts).
       defectFilterAria: "Lọc bệnh/lỗi",
       defectFilterPlaceholder: "Bệnh/lỗi: Tất cả",
+      overdueFilterAria: "Lọc hồ sơ quá hạn",
+      overdueFilterPlaceholder: "Hồ sơ: Tất cả",
+      overdueFilterOnly: "Hồ sơ: Quá hạn",
       sortLabel: "Sắp xếp theo",
       sortAria: "Sắp xếp danh sách bảo hành",
       sortNewest: "Mới nhất",

@@ -93,3 +93,6 @@ export const ROUTES = {
 
 /** URL chuẩn duy nhất của màn Tổng quan MAP-01. */
 export const DASHBOARD_CANONICAL = `${ROUTES.DASHBOARD}?screen=MAP-01` as const;
+
+/** Open the warranty list with its overdue filter active. */
+export const WARRANTY_OVERDUE_ROUTE = `${ROUTES.WARRANTY}?overdue=1` as const;

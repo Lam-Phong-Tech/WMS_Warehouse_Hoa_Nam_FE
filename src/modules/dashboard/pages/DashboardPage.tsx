@@ -16,7 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { ROUTES } from "@/shared/constants/routes";
+import { ROUTES, WARRANTY_OVERDUE_ROUTE } from "@/shared/constants/routes";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT } from "@/shared/i18n/useT";
 import { checkDate, pastDateBounds } from "@/shared/validation/date-rules";
@@ -452,7 +452,7 @@ export default function DashboardPage() {
               detail: t("dashboard.issue.warrantyDetail", { count: overdue }),
               technical: "Active / overdue",
               count: source.warranty_overdue,
-              route: ROUTES.WARRANTY,
+              route: WARRANTY_OVERDUE_ROUTE,
             },
           ]
         : []),
@@ -507,7 +507,7 @@ export default function DashboardPage() {
           days: oldestOverdueDays(overviewData),
         }),
         action: t("dashboard.signal.warrantyAction"),
-        route: ROUTES.WARRANTY,
+        route: WARRANTY_OVERDUE_ROUTE,
       });
     const belowMin = quick.data?.below_min_stock_count ?? 0;
     if (belowMin > 0)

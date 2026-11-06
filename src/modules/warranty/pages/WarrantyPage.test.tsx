@@ -7,6 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Link, useLocation } from "react-router-dom";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -65,6 +66,11 @@ vi.mock("@/modules/warranty/components/ComponentIssueModal", () => ({
 import { fetchWarrantyCases } from "@/modules/warranty/services/warrantyService";
 import { useAuthStore } from "@/shared/store/auth.store";
 import WarrantyPage from "./WarrantyPage";
+
+function CurrentWarrantyLocation() {
+  const location = useLocation();
+  return <output data-testid="warranty-location">{location.search}</output>;
+}
 
 const CASES = [
   {
@@ -203,6 +209,63 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     fireEvent.click(within(firstRow).getByRole("button", { name: "Chi tiết" }));
 
     expect(await screen.findByTestId("detail-modal")).toHaveTextContent("wc-1");
+  });
+
+  it("opens overdue cases from the dashboard link and clears the link with Clear filters", async () => {
+    renderWithProviders(
+      <>
+        <WarrantyPage />
+        <CurrentWarrantyLocation />
+      </>,
+      ["/warranty?overdue=1"],
+    );
+    await screen.findByText("BH-0001");
+    expect(fetchWarrantyCases).toHaveBeenCalledWith(
+      expect.objectContaining({ overdue: true, page: 1 }),
+    );
+    expect(screen.getByRole("button", { name: "Bộ lọc" })).toHaveAttribute(
+      "aria-expanded", "true",
+    );
+    expect(screen.getByRole("combobox", { name: "Lọc hồ sơ quá hạn" }))
+      .toHaveTextContent("Hồ sơ: Quá hạn");
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    await waitFor(() => expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ overdue: undefined, page: 1 }),
+    ));
+    expect(screen.getByTestId("warranty-location")).not.toHaveTextContent("overdue");
+    const overdueFilter = screen.getByRole("combobox", {
+      name: "Lọc hồ sơ quá hạn",
+    });
+    fireEvent.mouseDown(overdueFilter);
+    expect(screen.getAllByRole("option")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("option", { name: "Hồ sơ: Quá hạn" }));
+    await waitFor(() => expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ overdue: true, page: 1 }),
+    ));
+    fireEvent.mouseDown(overdueFilter);
+    fireEvent.click(screen.getByRole("option", { name: "Hồ sơ: Tất cả" }));
+    await waitFor(() => expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ overdue: undefined, page: 1 }),
+    ));
+  });
+
+  it("activates a fresh overdue view on navigation to an already mounted warranty list", async () => {
+    renderWithProviders(
+      <>
+        <Link to="/warranty?overdue=1">Open overdue cases</Link>
+        <WarrantyPage />
+      </>,
+      ["/warranty"],
+    );
+    await screen.findByText("BH-0001");
+    fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái bảo hành"));
+    fireEvent.click(await screen.findByRole("option", { name: /Đang kiểm tra/ }));
+    fireEvent.click(screen.getByRole("link", { name: "Open overdue cases" }));
+    await waitFor(() => expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ overdue: true, status: undefined, page: 1 }),
+    ));
+    expect(screen.getByRole("combobox", { name: "Lọc hồ sơ quá hạn" }))
+      .toHaveTextContent("Hồ sơ: Quá hạn");
   });
 
   it("deep-link ?screen=WAR-02 mở modal tiếp nhận", async () => {
@@ -360,6 +423,8 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     );
     fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách bảo hành"));
     fireEvent.click(await screen.findByRole("option", { name: /Cũ nhất/ }));
+    fireEvent.mouseDown(screen.getByLabelText("Lọc hồ sơ quá hạn"));
+    fireEvent.click(await screen.findByRole("option", { name: "Hồ sơ: Quá hạn" }));
     fireEvent.mouseDown(screen.getByLabelText("Số dòng mỗi trang"));
     fireEvent.click(await screen.findByRole("option", { name: "20 / trang" }));
 
@@ -377,6 +442,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
         status: "CHECKING",
         identification_status: "TEMP_ONLY",
         defect_id: "defect-4",
+        overdue: true,
         page: 1,
         per_page: 20,
         sort_order: "asc",
@@ -390,6 +456,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
         status: undefined,
         identification_status: undefined,
         defect_id: undefined,
+        overdue: undefined,
         page: 1,
         per_page: 20,
         sort_order: "desc",
@@ -624,6 +691,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
       status: "CHECKING",
       identification_status: "TEMP_ONLY",
       defect_id: undefined,
+      overdue: undefined,
       page: 1,
       per_page: 10,
       sort_order: "desc",

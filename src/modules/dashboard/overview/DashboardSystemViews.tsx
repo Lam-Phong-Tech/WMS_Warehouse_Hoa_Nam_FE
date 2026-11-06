@@ -7,6 +7,7 @@ import { useInventoryFlowSnapshot } from "@/modules/reports/inventory-flow/inven
 import type { DashboardOverview } from "../types";
 import { buildDashboardThresholds } from "./dashboard-threshold-model";
 import { ThresholdSkuList } from "./ThresholdSkuList";
+import { WARRANTY_OVERDUE_ROUTE } from "@/shared/constants/routes";
 import "./dashboard-system-views.css";
 
 export type DashboardSystemView = "work" | "stock" | "thresholds";
@@ -144,7 +145,7 @@ function WorkView({
             id: "warranty",
             label: "Bảo hành quá hạn",
             count: overview?.warranty.overdue_count ?? null,
-            route: "/warranty",
+            route: WARRANTY_OVERDUE_ROUTE,
           },
         ]
       : []),
