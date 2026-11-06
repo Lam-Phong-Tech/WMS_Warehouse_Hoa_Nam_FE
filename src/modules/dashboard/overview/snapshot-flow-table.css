@@ -41,9 +41,19 @@
   outline-offset: 2px;
 }
 
+.snapshot-flow-table-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
 .snapshot-flow-table-scroll {
+  flex: 1;
+  min-height: 0;
   margin: 8px 14px 16px;
-  overflow-x: auto;
+  overflow: auto;
   border: 1px solid var(--snapshot-line);
   border-radius: 8px;
 }
@@ -92,6 +102,46 @@
 
 .snapshot-flow-table tfoot td {
   border-bottom: 0;
+}
+
+.snapshot-flow-table-pagination {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--snapshot-line);
+  color: var(--ops-text);
+  font-size: 13px;
+}
+
+.snapshot-flow-table-page-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.snapshot-flow-table-page-info select {
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--snapshot-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-text);
+  font: inherit;
+}
+
+.snapshot-flow-table-pagination > nav {
+  margin-left: auto;
+}
+
+@container hn-dash (max-width: 900px) {
+  .snapshot-flow-table-scroll {
+    max-height: 420px;
+  }
 }
 
 @container hn-dash (max-width: 700px) {

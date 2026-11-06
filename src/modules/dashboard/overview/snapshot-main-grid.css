@@ -13,6 +13,19 @@
   grid-row: 1 / 3;
   align-self: stretch;
 }
+/* In table mode the right-hand cards determine the shared row height.
+ * Pagination stays visible; larger page sizes scroll inside the table only. */
+.hn-dashboard-snapshot
+  .snapshot-main-grid
+  > .snapshot-chart-card[data-flow-view="table"] {
+  contain: size;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.snapshot-chart-card[data-flow-view="table"] > header {
+  flex: none;
+}
 .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-priority {
   grid-column: 2;
   grid-row: 1;
@@ -52,6 +65,11 @@
     grid-column: auto;
     grid-row: auto;
   }
+  .hn-dashboard-snapshot
+    .snapshot-main-grid
+    > .snapshot-chart-card[data-flow-view="table"] {
+    contain: none;
+  }
 }
 /* Also safe in an uncontained embed or a browser without container queries. */
 @media (max-width: 900px) {
@@ -62,5 +80,10 @@
   .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-card {
     grid-column: auto;
     grid-row: auto;
+  }
+  .hn-dashboard-snapshot
+    .snapshot-main-grid
+    > .snapshot-chart-card[data-flow-view="table"] {
+    contain: none;
   }
 }

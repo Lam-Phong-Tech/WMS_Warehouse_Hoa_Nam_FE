@@ -605,7 +605,10 @@ export function DashboardSnapshot({
           ) : (
             <>
               <section className="snapshot-main-grid">
-                <article className="snapshot-card snapshot-chart-card">
+                <article
+                  className="snapshot-card snapshot-chart-card"
+                  data-flow-view={chartState === "ready" ? chartView : "chart"}
+                >
                   <header>
                     <h2>
                       {t(
@@ -706,7 +709,11 @@ export function DashboardSnapshot({
                     </div>
                   </header>
                   {chartState === "ready" && chartView === "table" ? (
-                    <SnapshotFlowTable rows={effectiveRows} trend={trend} />
+                    <SnapshotFlowTable
+                      key={`${range.from}:${range.to}`}
+                      rows={effectiveRows}
+                      trend={trend}
+                    />
                   ) : (
                     <SnapshotChart
                       rows={effectiveRows}

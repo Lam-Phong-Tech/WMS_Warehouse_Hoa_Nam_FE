@@ -64,6 +64,28 @@ afterEach(() => {
 });
 
 describe("DashboardSnapshot MAP-01 parity", () => {
+  it("returns the daily table to page one when the reporting period changes", () => {
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      ...baseProps.rows[0],
+      date: now.subtract(30 - index, "day").format("YYYY-MM-DD"),
+    }));
+    const trend = rows.map((row) => ({ ...baseProps.trend[0], date: row.date }));
+    const { rerender } = renderSnapshot({ rows, trend });
+    fireEvent.click(screen.getByRole("button", { name: "Bảng số liệu" }));
+    fireEvent.click(screen.getByRole("button", { name: /page 2/i }));
+    expect(screen.getByText("Hiển thị 6–10 / 12 bản ghi")).toBeInTheDocument();
+
+    rerender(
+      <DashboardSnapshot
+        {...baseProps}
+        rows={rows}
+        trend={trend}
+        range={{ from: rows[0].date, to: rows[11].date }}
+      />,
+    );
+    expect(screen.getByText("Hiển thị 1–5 / 12 bản ghi")).toBeInTheDocument();
+  });
+
   it("khóa filter và dùng skeleton khi chart đang loading", () => {
     renderSnapshot({ chartStateOverride: "loading" });
 
