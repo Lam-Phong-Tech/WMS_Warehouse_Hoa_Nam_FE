@@ -1564,6 +1564,8 @@ export const MESSAGES_VI = {
       typeComponent: "Linh kiện",
       statusFilterAria: "Lọc trạng thái tồn",
       statusFilterPlaceholder: "Trạng thái tồn: Tất cả",
+      reconcileFilterAria: "Lọc đối soát",
+      reconcileFilterPlaceholder: "Đối soát: Tất cả",
       statusAvailable: "Khả dụng",
       statusNonSellable: "Không thể bán/xuất",
       statusDefective: "Hàng lỗi",

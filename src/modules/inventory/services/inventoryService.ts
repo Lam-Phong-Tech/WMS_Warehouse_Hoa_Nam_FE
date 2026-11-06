@@ -19,6 +19,8 @@ export type InventoryStockStatus =
   | "DEFECTIVE"
   | "QUARANTINE";
 
+export type InventoryReconciliationStatus = "MATCH" | "MISMATCH";
+
 export type InventoryBalanceFilters = {
   page?: number;
   per_page?: number;
@@ -26,6 +28,7 @@ export type InventoryBalanceFilters = {
   sku_id?: string;
   sku_type?: "PRODUCT" | "COMPONENT";
   stock_status?: InventoryStockStatus;
+  reconciliation_status?: InventoryReconciliationStatus;
   keyword?: string;
 };
 

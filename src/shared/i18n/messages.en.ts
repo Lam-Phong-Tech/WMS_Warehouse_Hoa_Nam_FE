@@ -1570,6 +1570,8 @@ export const MESSAGES_EN: MessageTree = {
       typeComponent: "Components",
       statusFilterAria: "Filter stock status",
       statusFilterPlaceholder: "Stock status: All",
+      reconcileFilterAria: "Filter reconciliation",
+      reconcileFilterPlaceholder: "Reconciliation: All",
       statusAvailable: "Available",
       statusNonSellable: "Non-sellable",
       statusDefective: "Defective",

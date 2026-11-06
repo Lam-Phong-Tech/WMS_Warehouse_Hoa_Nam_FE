@@ -58,6 +58,7 @@ import { BalanceDetailModal } from "../components/BalanceDetailModal";
 import { TraceModal } from "../components/TraceModal";
 import type {
   InventoryBalanceRow,
+  InventoryReconciliationStatus,
   InventoryStockStatus,
   StockMovementRow,
 } from "../services/inventoryService";
@@ -163,6 +164,9 @@ export default function InventoryPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [stockStatus, setStockStatus] = useState<InventoryStockStatus | "">("");
+  const [reconciliationStatus, setReconciliationStatus] = useState<
+    InventoryReconciliationStatus | ""
+  >("");
   const [skuType, setSkuType] = useState<"PRODUCT" | "COMPONENT" | "">("");
   const [movementSearch, setMovementSearch] = useState("");
   const [movementType, setMovementType] = useState("");
@@ -180,6 +184,7 @@ export default function InventoryPage() {
   const balanceQuery = useInventoryBalances({
     keyword: search || undefined,
     stock_status: stockStatus || undefined,
+    reconciliation_status: reconciliationStatus || undefined,
     sku_type: skuType || undefined,
     page: balancePage,
     per_page: balancePerPage,
@@ -469,7 +474,7 @@ export default function InventoryPage() {
       ? Math.min(pagination.total, rangeFrom + visibleRowCount - 1)
       : 0;
   const hasFilters = isBalance
-    ? Boolean(searchInput || skuType || stockStatus)
+    ? Boolean(searchInput || skuType || stockStatus || reconciliationStatus)
     : Boolean(movementSearch || movementType);
   const resetFilters = () => {
     if (isBalance) {
@@ -477,6 +482,7 @@ export default function InventoryPage() {
       setSearch("");
       setSkuType("");
       setStockStatus("");
+      setReconciliationStatus("");
       setBalancePage(1);
     } else {
       setMovementSearch("");
@@ -678,6 +684,35 @@ export default function InventoryPage() {
                 }))}
                 onChange={(value) => {
                   setStockStatus(value as InventoryStockStatus | "");
+                  setBalancePage(1);
+                }}
+              />
+            </div>
+          ) : null}
+          {isBalance ? (
+            <div className="hn-inventory-field">
+              <UiSelect
+                id="inventory-reconciliation"
+                fullWidth
+                menuClassName="hn-inventory-menu"
+                value={reconciliationStatus}
+                aria-label={t("inventory.balance.reconcileFilterAria")}
+                placeholder={t("inventory.balance.reconcileFilterPlaceholder")}
+                options={(["MATCH", "MISMATCH"] as const).map((value) => ({
+                  value,
+                  label: (
+                    <>
+                      <span className="hn-inventory-filter-prefix">
+                        {t("inventory.balance.colReconcile")}:{" "}
+                      </span>
+                      {businessLabel(RECONCILE_STATUS_LABELS, value)}
+                    </>
+                  ),
+                }))}
+                onChange={(value) => {
+                  setReconciliationStatus(
+                    value as InventoryReconciliationStatus | "",
+                  );
                   setBalancePage(1);
                 }}
               />

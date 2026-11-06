@@ -342,6 +342,38 @@ describe("InventoryPage (INV-01 hub)", () => {
     });
   });
 
+  it("filters reconciliation across pages and lets All clear the selection without duplicate options", async () => {
+    mockQueries({ balancesTotal: 30 });
+    renderWithProviders(<InventoryPage />);
+    await screen.findByText("SKU-001");
+    fireEvent.click(screen.getByRole("button", { name: "Go to page 3" }));
+    const reconciliation = screen.getByRole("combobox", {
+      name: "Lọc đối soát",
+    });
+    fireEvent.mouseDown(reconciliation);
+    expect(screen.getAllByRole("option")).toHaveLength(3);
+    expect(
+      screen.getAllByRole("option", { name: "Đối soát: Tất cả" }),
+    ).toHaveLength(1);
+    fireEvent.click(screen.getByRole("option", { name: /Có chênh lệch$/ }));
+    expect(useInventoryBalances).toHaveBeenLastCalledWith(
+      expect.objectContaining({ reconciliation_status: "MISMATCH", page: 1 }),
+    );
+    fireEvent.mouseDown(reconciliation);
+    fireEvent.click(screen.getByRole("option", { name: /Khớp$/ }));
+    expect(useInventoryBalances).toHaveBeenLastCalledWith(
+      expect.objectContaining({ reconciliation_status: "MATCH", page: 1 }),
+    );
+    fireEvent.mouseDown(reconciliation);
+    fireEvent.click(screen.getByRole("option", { name: "Đối soát: Tất cả" }));
+    expect(useInventoryBalances).toHaveBeenLastCalledWith(
+      expect.objectContaining({ reconciliation_status: undefined, page: 1 }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("Đặt lại đưa bộ lọc tab hiện tại về mặc định và trang 1, giữ riêng bộ lọc và phân trang của tab còn lại", async () => {
     mockQueries({ balancesTotal: 120, movementsTotal: 120 });
     renderWithProviders(<InventoryPage />);
@@ -366,18 +398,23 @@ describe("InventoryPage (INV-01 hub)", () => {
     });
     await choose("Lọc loại hàng", "Linh kiện");
     await choose("Lọc trạng thái tồn", "Hàng lỗi");
+    await choose("Lọc đối soát", "Có chênh lệch");
     await choose("Số dòng mỗi trang", "20 / trang");
     fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
     const balanceFilters = {
       keyword: "SKU-001",
       sku_type: "COMPONENT",
       stock_status: "DEFECTIVE",
+      reconciliation_status: "MISMATCH",
       page: 2,
       per_page: 20,
     };
     expect(useInventoryBalances).toHaveBeenLastCalledWith(balanceFilters);
 
     fireEvent.click(screen.getByRole("tab", { name: "Lịch sử biến động" }));
+    expect(
+      screen.queryByRole("combobox", { name: "Lọc đối soát" }),
+    ).not.toBeInTheDocument();
     fireEvent.change(
       await screen.findByRole("textbox", { name: "Tìm biến động tồn kho" }),
       { target: { value: "IN-001" } },
@@ -410,6 +447,7 @@ describe("InventoryPage (INV-01 hub)", () => {
       keyword: undefined,
       sku_type: undefined,
       stock_status: undefined,
+      reconciliation_status: undefined,
       page: 1,
       per_page: 20,
     };
