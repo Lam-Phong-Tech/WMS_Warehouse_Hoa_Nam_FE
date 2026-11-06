@@ -90,7 +90,7 @@ import type {
 } from "@/modules/pv/types/pv.types";
 
 /** Trần mô tả — BE không chặn nên FE tự đặt theo mức chung của dự án. */
-const DESCRIPTION_MAX = 2000;
+const DESCRIPTION_MAX = 500;
 
 /** Cỡ danh sách master đổ vào ô chọn: đủ phủ danh mục của kho, không phân trang. */
 const OPTION_PAGE_SIZE = 100;

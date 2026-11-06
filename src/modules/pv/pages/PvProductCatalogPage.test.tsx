@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { useAuthStore } from "@/shared/store/auth.store";
 import type { PvAdminProfile } from "@/modules/pv/types/pv.types";
@@ -108,6 +109,35 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     getMvpSkusMock.mockReset().mockResolvedValue({ data: [], meta: {} });
   });
 
+  it.each([false, true])(
+    "caps name at 255 and description at 500 characters (editing: %s)",
+    async (editing) => {
+      const user = userEvent.setup();
+      signInWith(["pv.master.manage", "pv.publish"]);
+      renderWithProviders(<PvProductCatalogPage />);
+      if (editing)
+        await user.click((await screen.findAllByTestId("pv-catalog-edit"))[0]);
+      else await user.click(screen.getByTestId("pv-catalog-add"));
+      const name = await screen.findByRole("textbox", {
+        name: /^Tên hiển thị/,
+      });
+      expect(name).toHaveAttribute("maxlength", "255");
+      await user.clear(name);
+      await user.click(name);
+      await user.paste("N".repeat(256));
+      expect(name).toHaveValue("N".repeat(255));
+      const description = screen.getByRole("textbox", {
+        name: "Mô tả",
+        exact: true,
+      });
+      expect(description).toHaveAttribute("maxlength", "500");
+      await user.clear(description);
+      await user.click(description);
+      await user.paste("D".repeat(501));
+      expect(description).toHaveValue("D".repeat(500));
+    },
+  );
+
   it("keeps the product filters while omitting the marked heading, description, and buttons", async () => {
     signInWith(["pv.master.manage", "pv.publish"]);
     renderWithProviders(<PvProductCatalogPage />);
@@ -170,7 +200,9 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     expect(within(table).getByText("Máy khoan cầm tay HN")).toBeInTheDocument();
     expect(within(table).getByText("Máy mài góc HN")).toBeInTheDocument();
     expect(within(table).getByAltText("Ảnh chính")).toBeInTheDocument();
-    expect(screen.queryByTestId("pv-catalog-publish-switch")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pv-catalog-publish-switch"),
+    ).not.toBeInTheDocument();
     expect(screen.getAllByTestId("pv-catalog-edit")).toHaveLength(2);
 
     fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
