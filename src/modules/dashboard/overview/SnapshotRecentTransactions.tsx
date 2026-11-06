@@ -28,27 +28,27 @@ export function SnapshotRecentTransactions({
       </header>
       {source.error && documents.length > 0 ? (
         <div className="snapshot-partial-alert" role="status">
-          Giao dịch có thể đã cũ.{" "}
+          {t("dashboardSnapshot.transactionsStale")}{" "}
           <button type="button" onClick={() => void source.refetch()}>
-            Thử lại
+            {t("common.retry")}
           </button>
         </div>
       ) : null}
       {source.loading ? (
         <div className="snapshot-recent-state" role="status">
-          Đang tải giao dịch…
+          {t("dashboardSnapshot.transactionsLoading")}
         </div>
       ) : source.error && documents.length === 0 ? (
         <div className="snapshot-recent-state" role="alert">
-          Không tải được giao dịch.{" "}
+          {t("dashboardSnapshot.transactionsFailed")}{" "}
           <button type="button" onClick={() => void source.refetch()}>
-            Thử lại
+            {t("common.retry")}
           </button>
         </div>
       ) : documents.length === 0 ? (
         <div className="snapshot-recent-state">
-          <strong>Chưa có giao dịch trong 7 ngày gần nhất</strong>
-          <span>Tồn kho hiện tại vẫn được giữ theo ảnh chụp mới nhất.</span>
+          <strong>{t("dashboardSnapshot.transactionsEmpty")}</strong>
+          <span>{t("dashboardSnapshot.transactionsEmptyCopy")}</span>
         </div>
       ) : (
         <div
@@ -59,17 +59,17 @@ export function SnapshotRecentTransactions({
         >
           <table>
             <colgroup>
-              {[14, 27, 10, 29, 12, 8].map((width, index) => (
+              {[14, 26, 14, 24, 14, 8].map((width, index) => (
                 <col key={index} style={{ width: `${width}%` }} />
               ))}
             </colgroup>
             <thead>
               <tr>
-                <th>Ghi sổ</th>
-                <th>Chứng từ</th>
-                <th>Loại</th>
-                <th>Đối tác</th>
-                <th>Số lượng</th>
+                <th>{t("dashboardSnapshot.posted")}</th>
+                <th>{t("dashboardSnapshot.document")}</th>
+                <th>{t("dashboardSnapshot.type")}</th>
+                <th>{t("dashboardSnapshot.partner")}</th>
+                <th>{t("dashboardSnapshot.quantity")}</th>
                 <th aria-label={t("common.viewDetail")} />
               </tr>
             </thead>
@@ -91,10 +91,10 @@ export function SnapshotRecentTransactions({
                     </td>
                     <td>
                       {document.type === "INBOUND"
-                        ? "Nhập"
+                        ? t("dashboard.snapshot.tooltipInbound")
                         : document.type === "OUTBOUND"
-                          ? "Xuất"
-                          : "Hoàn tác"}
+                          ? t("dashboard.snapshot.tooltipOutbound")
+                          : t("dashboardSnapshot.reversal")}
                     </td>
                     <td>{document.party || "—"}</td>
                     <td>
@@ -105,10 +105,12 @@ export function SnapshotRecentTransactions({
                     <td>
                       <RowActionButton
                         kind="view"
-                        aria-label={`Xem ${document.documentNo}`}
+                        aria-label={t("dashboardSnapshot.viewDocument", {
+                          document: document.documentNo,
+                        })}
                         onClick={() => onNavigate(detailRoute)}
                       >
-                        Xem
+                        {t("dashboardSnapshot.view")}
                       </RowActionButton>
                     </td>
                   </tr>

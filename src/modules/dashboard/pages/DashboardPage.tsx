@@ -720,7 +720,11 @@ export default function DashboardPage() {
           ...card,
           note:
             split && !xnt.isError
-              ? `${fmt(skuCounts.closing)} SKU có tồn · ${fmt(split.product)} SP · ${fmt(split.component)} LK`
+              ? t("dashboardSnapshot.stockContext", {
+                  skus: fmt(skuCounts.closing),
+                  products: fmt(split.product),
+                  components: fmt(split.component),
+                })
               : card.note,
         };
       }
@@ -728,7 +732,10 @@ export default function DashboardPage() {
         const split = overviewData.kpi.receipt_today;
         return {
           ...card,
-          note: `${fmt(split.product)} SP · ${fmt(split.component)} LK`,
+          note: t("dashboardSnapshot.receiptContext", {
+            products: fmt(split.product),
+            components: fmt(split.component),
+          }),
         };
       }
       return card;

@@ -14,7 +14,9 @@
  * Fixture dưới đây vì thế mang `source_no`, và hai payload phụ đã bỏ.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, within, waitFor } from "@testing-library/react";
+import { act, screen, within, waitFor } from "@testing-library/react";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -157,7 +159,31 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
   });
 
   afterEach(() => {
+    act(() => useLanguageStore.getState().setLanguage("vi"));
     cleanupTestState();
+  });
+
+  it("i18n: localizes ledger filter prefixes and options while mounted", async () => {
+    renderReport();
+    await screen.findByText("IN-2026-00031");
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    const ledger = within(document.getElementById("trace-ledger") as HTMLElement);
+    const movement = ledger.getByRole("combobox", { name: "Any movement type" });
+    expect(movement).toHaveTextContent("Movement type: Any movement type");
+    expect(ledger.getByRole("combobox", { name: "Anyone" }))
+      .toHaveTextContent("Performed by: Anyone");
+    await userEvent.click(movement);
+    expect(within(document.getElementById("trace-ledger-kind-listbox") as HTMLElement)
+      .getAllByRole("option").every((option) =>
+      option.textContent?.trim().startsWith("Movement type:"),
+    )).toBe(true);
+    await userEvent.keyboard("{Escape}");
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(ledger.getByRole("combobox", { name: "Mọi loại biến động" }))
+      .toHaveTextContent("Loại biến động:");
   });
 
   it("dựng KPI, timeline và ledger từ payload thật, có mốc chốt của máy chủ", async () => {

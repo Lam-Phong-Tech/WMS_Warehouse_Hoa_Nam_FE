@@ -4,6 +4,8 @@ import { PERSONAL_VI } from "./messages.personal";
 import { RBAC_VI } from "./messages.rbac";
 import { MESSAGES_UPDATED_VI } from "./messages.updated.vi";
 import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
+import { DASHBOARD_SNAPSHOT_VI } from "./messages.dashboard-snapshot";
+import { PACKING_LABEL_REPORT_VI } from "./messages.packing-label-report";
 /**
  * BẢNG CHUỖI GIAO DIỆN — nguồn duy nhất cho mọi text người dùng nhìn thấy.
  *
@@ -19,10 +21,13 @@ import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
  */
 
 export const MESSAGES_VI = {
+  dashboardSnapshot: DASHBOARD_SNAPSHOT_VI,
+  packingLabelReport: PACKING_LABEL_REPORT_VI,
   reportExport: REPORT_EXPORT_VI,
   nfc: MESSAGES_NFC_VI,
   updatedUi: MESSAGES_UPDATED_VI,
   common: {
+    pieces: "cái",
     loadingData: "Đang tải số liệu…",
     retry: "Thử lại",
     close: "Đóng",
@@ -2529,6 +2534,8 @@ export const MESSAGES_VI = {
       colPhysicalSerial: "Mã vật lý / serial",
     },
     importQuality: {
+      cannotReconcile: "Không thể đối chiếu",
+      viewRecords: "Xem {count} bản ghi",
       sourceAll: "Tất cả nguồn xử lý",
       outcomeSuccess: "Thành công",
       outcomeFailed: "Lỗi",

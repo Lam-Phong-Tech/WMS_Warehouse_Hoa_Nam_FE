@@ -1,8 +1,17 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DashboardSnapshot } from "./DashboardSnapshot";
 import { dashboardNow } from "./overview-data";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 
 const now = dashboardNow();
 const today = now.format("YYYY-MM-DD");
@@ -61,15 +70,48 @@ function renderSnapshot(
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  useLanguageStore.getState().setLanguage("vi");
 });
 
 describe("DashboardSnapshot MAP-01 parity", () => {
+  it("updates priority row actions in both languages without changing the selected route", async () => {
+    renderSnapshot({
+      issues: [
+        {
+          id: "issue",
+          severity: "P1",
+          title: "Pending evidence",
+          detail: "2 documents",
+          count: 2,
+          technical: "PENDING",
+          route: "/reports/pending-evidence?screen=RPT-08",
+        },
+      ],
+    });
+    const row = screen.getByRole("button", { name: /Pending evidence/ });
+    expect(within(row).getByText("Xem")).toBeInTheDocument();
+    await act(async () => {
+      useLanguageStore.getState().setLanguage("en");
+      await ensureEnglishMessages();
+    });
+    expect(within(row).getByText("View")).toBeInTheDocument();
+    fireEvent.click(row);
+    expect(baseProps.onNavigate).toHaveBeenCalledWith(
+      "/reports/pending-evidence?screen=RPT-08",
+    );
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(within(row).getByText("Xem")).toBeInTheDocument();
+  });
+
   it("returns the daily table to page one when the reporting period changes", () => {
     const rows = Array.from({ length: 12 }, (_, index) => ({
       ...baseProps.rows[0],
       date: now.subtract(30 - index, "day").format("YYYY-MM-DD"),
     }));
-    const trend = rows.map((row) => ({ ...baseProps.trend[0], date: row.date }));
+    const trend = rows.map((row) => ({
+      ...baseProps.trend[0],
+      date: row.date,
+    }));
     const { rerender } = renderSnapshot({ rows, trend });
     fireEvent.click(screen.getByRole("button", { name: "Bảng số liệu" }));
     fireEvent.click(screen.getByRole("button", { name: /page 2/i }));

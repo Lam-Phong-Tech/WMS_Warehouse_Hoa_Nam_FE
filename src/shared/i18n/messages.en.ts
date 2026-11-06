@@ -4,6 +4,8 @@ import { PERSONAL_EN } from "./messages.personal";
 import { RBAC_EN } from "./messages.rbac";
 import { MESSAGES_UPDATED_EN } from "./messages.updated.en";
 import { MESSAGES_NFC_EN } from "./messages.nfc.en";
+import { DASHBOARD_SNAPSHOT_EN } from "./messages.dashboard-snapshot";
+import { PACKING_LABEL_REPORT_EN } from "./messages.packing-label-report";
 import type { MessageTree } from "./messages";
 
 /**
@@ -17,10 +19,13 @@ import type { MessageTree } from "./messages";
  * KHOÁ vẫn đỏ typecheck; thiếu khoá vẫn hợp lệ và t() rơi về tiếng Việt.
  */
 export const MESSAGES_EN: MessageTree = {
+  dashboardSnapshot: DASHBOARD_SNAPSHOT_EN,
+  packingLabelReport: PACKING_LABEL_REPORT_EN,
   reportExport: REPORT_EXPORT_EN,
   nfc: MESSAGES_NFC_EN,
   updatedUi: MESSAGES_UPDATED_EN,
   common: {
+    pieces: "pcs",
     loadingData: "Loading data…",
     retry: "Retry",
     close: "Close",
@@ -2528,6 +2533,8 @@ export const MESSAGES_EN: MessageTree = {
       colPhysicalSerial: "Physical code / serial",
     },
     importQuality: {
+      cannotReconcile: "Cannot reconcile",
+      viewRecords: "View {count} records",
       sourceAll: "All processing sources",
       outcomeSuccess: "Success",
       outcomeFailed: "Failed",

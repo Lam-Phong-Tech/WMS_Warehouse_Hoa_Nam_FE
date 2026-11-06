@@ -3,6 +3,8 @@ import dayjs from "dayjs";
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 vi.mock("react-apexcharts", () => ({ default: () => <div /> }));
 vi.mock("@/modules/reports/operations/report-data", () => ({
   useSkuCatalog: () => ({ kindOfCode: () => "PRODUCT" }),
@@ -26,6 +28,22 @@ vi.mock("./import-quality-api", async (original) => ({
 }));
 import ImportQualityBaseline from "./ImportQualityBaseline";
 afterEach(cleanupTestState);
+it("i18n: switches all three KPI hints without remounting", async () => {
+  renderWithProviders(<ImportQualityBaseline />);
+  expect(await screen.findByText("Trong kỳ báo cáo")).toBeVisible();
+  await act(async () => {
+    await ensureEnglishMessages();
+    useLanguageStore.getState().setLanguage("en");
+  });
+  expect(screen.getByText("In reporting period")).toBeVisible();
+  expect(screen.getByText("Needs review")).toBeVisible();
+  expect(screen.getByText("Cannot reconcile")).toBeVisible();
+  expect(screen.getByRole("button", { name: "View 0 records" })).toBeVisible();
+  expect(screen.queryByText("Trong kỳ báo cáo")).not.toBeInTheDocument();
+  act(() => useLanguageStore.getState().setLanguage("vi"));
+  expect(screen.getByText("Không thể đối chiếu")).toBeVisible();
+});
+
 it("numbers records across pages and resets numbering after filtering or changing page size", async () => {
   await act(async () => {
     renderWithProviders(<ImportQualityBaseline />);

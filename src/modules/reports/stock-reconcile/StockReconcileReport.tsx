@@ -33,7 +33,7 @@ import {
   type StockReconcileRow,
 } from "./stock-reconcile-api";
 import "./stock-reconcile-report.css";
-import { tStatic as tUi } from "@/shared/i18n/useT";
+import { tStatic as tUi, useT } from "@/shared/i18n/useT";
 
 type DateRange = { from: string; to: string };
 type Filters = DateRange & {
@@ -656,6 +656,7 @@ function MovementChart({ points }: { points: FlowDailyPoint[] }) {
 }
 
 export default function StockReconcileReport() {
+  const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
   const [draft, setDraft] = useState<Filters>(defaultFilters);
@@ -1052,42 +1053,42 @@ export default function StockReconcileReport() {
                 <KpiCard
                   label={tUi("dashboard.equation.opening")}
                   value={quantity(summary.opening)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="box"
                   tone="blue"
                 />
                 <KpiCard
                   label={tUi("updatedUi.text_1993e3247f11")}
                   value={signed(summary.receiptNet)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="down"
                   tone="green"
                 />
                 <KpiCard
                   label={tUi("dashboard.equation.issueProduct")}
                   value={signed(-summary.issueNet)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="up"
                   tone="red"
                 />
                 <KpiCard
                   label={tUi("updatedUi.text_6d28e3f5d88a")}
                   value={signed(-summary.componentNet)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="wrench"
                   tone="orange"
                 />
                 <KpiCard
                   label={tUi("iam.role.undo")}
                   value={signed(summary.reversalUnlinked)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="undo"
                   tone="green"
                 />
                 <KpiCard
                   label={tUi("dashboard.equation.closing")}
                   value={quantity(summary.closing)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="boxes"
                   tone="blue"
                 />
@@ -1697,7 +1698,7 @@ export default function StockReconcileReport() {
                                   currentPage * pageSize,
                                   displayRows.length,
                                 )}{" "}
-                                trong {displayRows.length} SKU
+                                / {displayRows.length} SKU
                               </span>
                               <label className="rpt02-page-size">
                                 <select

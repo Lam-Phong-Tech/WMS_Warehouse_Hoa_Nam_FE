@@ -23,7 +23,7 @@ import {
   usePrinterOptions,
   useUserDirectory,
 } from "@/modules/reports/operations/report-data";
-import { tStatic } from "@/shared/i18n/useT";
+import { useT } from "@/shared/i18n/useT";
 
 /**
  * NGUỒN DỮ LIỆU CỦA RPT-05 — Nhãn đóng gói · Print / Reprint.
@@ -297,6 +297,7 @@ export function usePackingLabelReport({
   to: string;
   enabled?: boolean;
 }): PackingLabelReport {
+  const t = useT();
   const labelLog = useLabelLog({ from, to, enabled });
   const eventLog = useLabelPrintEvents(enabled);
   const printers = usePrinterOptions();
@@ -358,13 +359,13 @@ export function usePackingLabelReport({
           : "";
         const auditMissing: string[] = [];
         if (event.attemptedAt === "")
-          auditMissing.push(tStatic("reports.packingLabel.colMoment"));
+          auditMissing.push(t("reports.packingLabel.colMoment"));
         if (event.printerId === "")
-          auditMissing.push(tStatic("reports.packingLabel.colPrinter"));
+          auditMissing.push(t("reports.packingLabel.colPrinter"));
         if (event.actorId === "")
-          auditMissing.push(tStatic("reports.packingLabel.colActor"));
+          auditMissing.push(t("reports.packingLabel.colActor"));
         if (event.result === "PENDING_PRINT")
-          auditMissing.push(tStatic("reports.packingLabel.outcomeAria"));
+          auditMissing.push(t("reports.packingLabel.outcomeAria"));
 
         return {
           eventId: event.eventId,
@@ -389,7 +390,7 @@ export function usePackingLabelReport({
         } satisfies PackingLabelEvent;
       })
       .sort((left, right) => right.attemptedAt.localeCompare(left.attemptedAt));
-  }, [eventLog.data, labels, printerNames, actorNames]);
+  }, [eventLog.data, labels, printerNames, actorNames, t]);
 
   const actorOptions = useMemo(() => {
     const seen = new Map<string, string>();
@@ -437,6 +438,7 @@ export function usePackingLabelSnapshot(
     actorNames: Map<string, string>;
   },
 ) {
+  const t = useT();
   const query = useQuery({
     queryKey: ["rpt-05", "label-snapshot", labelId],
     queryFn: () =>
@@ -502,7 +504,7 @@ export function usePackingLabelSnapshot(
         .join(", ") ||
       label?.skuSummary ||
       (itemIds.length > 0
-        ? tStatic("reports.packingLabel.itemCountShort", {
+        ? t("reports.packingLabel.itemCountShort", {
             count: itemIds.length,
           })
         : "");
@@ -523,7 +525,7 @@ export function usePackingLabelSnapshot(
         payload.recipient_name ?? payload.customer_name,
         "",
       ),
-      missingFields: snapshotMissing(payload),
+      missingFields: snapshotMissing(payload, t),
       sourceNo: text(
         payload.source_request_no ??
           payload.outbound_request_no ??
@@ -538,7 +540,7 @@ export function usePackingLabelSnapshot(
       })),
       attempts,
     };
-  }, [labelId, query.data, context]);
+  }, [labelId, query.data, context, t]);
 
   return {
     detail,

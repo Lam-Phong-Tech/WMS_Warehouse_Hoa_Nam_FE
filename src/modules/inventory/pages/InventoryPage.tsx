@@ -64,6 +64,7 @@ import type {
 } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
+import { localizedUnitLabel } from "@/shared/utils/format-unit";
 import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
@@ -91,10 +92,10 @@ function pageSizeOptions(current: number) {
     : [...MVP_PAGE_SIZE_OPTIONS, current].sort((a, b) => a - b);
 }
 
-function formatQty(value: number | null | undefined, uom = "") {
+function formatQty(value: number | null | undefined, uom: string, t: TranslateFn) {
   const formatted = formatQuantity(value);
   if (formatted === EMPTY_TEXT) return EMPTY_TEXT;
-  return `${formatted}${uom ? ` ${uom}` : ""}`;
+  return `${formatted}${uom ? ` ${localizedUnitLabel(uom, t)}` : ""}`;
 }
 
 function reconcileColor(status: string): "success" | "error" | "warning" {
@@ -321,7 +322,7 @@ export default function InventoryPage() {
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.onHand,
-      render: (row) => formatQty(row.onHand, row.uom),
+      render: (row) => formatQty(row.onHand, row.uom, t),
     },
     {
       key: "reconcile",

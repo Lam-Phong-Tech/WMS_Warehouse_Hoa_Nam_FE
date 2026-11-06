@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -151,6 +153,25 @@ describe("BalanceDetailModal", () => {
 
   afterEach(() => {
     cleanupTestState();
+  });
+
+  it("i18n: switches quantity units with the language and preserves custom units", async () => {
+    const { rerender } = renderWithProviders(
+      <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
+    );
+    expect(screen.getAllByText("12 cái")).toHaveLength(2);
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    expect(screen.getAllByText("12 pcs")).toHaveLength(2);
+    expect(screen.getByText("10 pcs")).toBeVisible();
+    expect(screen.getByText("0 pcs")).toBeVisible();
+    rerender(<BalanceDetailModal balance={{ ...BALANCE, uom: "kiện đặc biệt" }} onClose={() => {}} />);
+    expect(screen.getAllByText("12 kiện đặc biệt")).toHaveLength(2);
+    rerender(<BalanceDetailModal balance={BALANCE} onClose={() => {}} />);
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(screen.getAllByText("12 cái")).toHaveLength(2);
   });
 
   it("hiển thị chi tiết tồn kho: SKU, đối soát, item subledger, container subledger, movement liên quan", async () => {

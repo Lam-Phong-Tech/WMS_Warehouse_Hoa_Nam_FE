@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 
 const mocks = vi.hoisted(() => ({
   snapshotGet: vi.fn(),
@@ -96,7 +98,66 @@ describe("packing-label reprint reason dialog", () => {
     });
     mocks.reprintLabelSnapshot.mockResolvedValue({});
   });
-  afterEach(cleanupTestState);
+  afterEach(() => {
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    cleanupTestState();
+  });
+
+  it("switches an open confirmation and its validation to English while preserving the entered reason", async () => {
+    const user = userEvent.setup();
+    const dialog = await openReprint(user);
+    const reason = await within(dialog).findByRole("textbox", {
+      name: /Lý do in lại nhãn/,
+    });
+    await user.type(reason, "Nhãn bị nhòe");
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    expect(
+      screen.getByRole("dialog", { name: "Reprint label" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("textbox", { name: /Label reprint reason/ }),
+    ).toHaveValue("Nhãn bị nhòe");
+    expect(
+      within(dialog).getByRole("combobox", { name: "Command printer" }),
+    ).toHaveTextContent("Máy in kho");
+    expect(dialog).toHaveTextContent("Outbound: PX-001");
+    expect(dialog).toHaveTextContent(
+      "Recorded attempts: 1 · Send 1 more attempt",
+    );
+    expect(dialog).toHaveTextContent("Maximum 500 characters.");
+    await user.clear(reason);
+    await user.click(
+      within(dialog).getByRole("button", { name: "Confirm reprint" }),
+    );
+    expect(
+      within(dialog).getByText("Enter a reason for reprinting the label."),
+    ).toBeInTheDocument();
+    await user.type(reason, " Nhãn bị nhòe ");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Confirm reprint" }),
+    );
+    expect(
+      await screen.findByText(
+        "Print request received. Follow the result in the history.",
+      ),
+    ).toBeInTheDocument();
+    expect(mocks.reprintLabelSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reason: "Nhãn bị nhòe",
+        ifMatch: 7,
+        printerConfigId: "printer-1",
+      }),
+    );
+    await act(async () => useLanguageStore.getState().setLanguage("vi"));
+    expect(
+      screen.getByText(
+        "Đã tiếp nhận yêu cầu in. Theo dõi kết quả trong lịch sử.",
+      ),
+    ).toBeInTheDocument();
+  });
 
   it("cancels after checking the chosen snapshot without sending a print command", async () => {
     const user = userEvent.setup();

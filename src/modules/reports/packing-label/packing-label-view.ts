@@ -2,6 +2,7 @@ import type {
   PackingLabelDimension,
   PackingLabelEvent,
 } from "./packing-label-api";
+import { tStatic, type TranslateFn } from "@/shared/i18n/useT";
 
 export function labelRows(
   labels: Map<string, PackingLabelDimension>,
@@ -41,25 +42,26 @@ export function printGate(
   status: string,
   attempts: PackingLabelEvent[],
   missing: string[] = [],
+  t: TranslateFn = tStatic,
 ): { action: "PRINT" | "REPRINT" | null; reason: string } {
   if (missing.length)
     return {
       action: null,
-      reason: `Bản lưu nhãn thiếu dữ liệu: ${missing.join(", ")}. Mở phiếu xuất để đối chiếu.`,
+      reason: t("packingLabelReport.missingSnapshot", {
+        fields: missing.join(", "),
+      }),
     };
   if (attempts.some((e) => e.result === "PENDING_PRINT"))
     return {
       action: null,
-      reason:
-        "Chưa có phản hồi cuối cùng từ máy in. Kiểm tra trạng thái trước khi gửi lại.",
+      reason: t("packingLabelReport.pendingGate"),
     };
   if (status === "PRINTED") return { action: "REPRINT", reason: "" };
   if (status === "READY_TO_PRINT" || status === "PRINT_FAILED")
     return { action: "PRINT", reason: "" };
   return {
     action: null,
-    reason:
-      "Nhãn chưa sẵn sàng in. Mở phiếu xuất để kiểm tra và chuẩn bị bản lưu.",
+    reason: t("packingLabelReport.notReadyGate"),
   };
 }
 
@@ -92,11 +94,15 @@ export function snapshotItems(
     : [];
 }
 
-export function snapshotMissing(payload: Record<string, unknown>) {
+export function snapshotMissing(
+  payload: Record<string, unknown>,
+  t: TranslateFn = tStatic,
+) {
   const missing: string[] = [];
   if (!String(payload.recipient_name ?? payload.customer_name ?? "").trim())
-    missing.push("Nơi nhận");
-  if (!String(payload.outbound_no ?? "").trim()) missing.push("Phiếu xuất");
+    missing.push(t("packingLabelReport.missingRecipient"));
+  if (!String(payload.outbound_no ?? "").trim())
+    missing.push(t("packingLabelReport.missingOutbound"));
   const items = snapshotItems(payload);
   if (
     !items.length ||
@@ -105,6 +111,6 @@ export function snapshotMissing(payload: Record<string, unknown>) {
         !String(item.sku_code ?? "").trim() || !(Number(item.quantity) > 0),
     )
   )
-    missing.push("SKU / số lượng");
+    missing.push(t("packingLabelReport.missingSkuQuantity"));
   return missing;
 }

@@ -1,7 +1,17 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useStockReconcileSnapshot } from "@/modules/reports/stock-reconcile/stock-reconcile-api";
 import { DashboardSystemViews } from "./DashboardSystemViews";
+import { SnapshotThresholdSummary } from "./SnapshotThresholdSummary";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 
 vi.mock("@/modules/reports/stock-reconcile/stock-reconcile-api", () => ({
   useStockReconcileSnapshot: vi.fn(),
@@ -39,6 +49,75 @@ const source = (error: unknown = null) => ({
   fetching: false,
   error,
   refetch: retry,
+});
+
+afterEach(() => {
+  cleanup();
+  useLanguageStore.getState().setLanguage("vi");
+});
+
+describe("snapshot threshold localization", () => {
+  it("updates notes, counts and detail links while mounted", async () => {
+    mockedSource.mockReturnValue(source() as never);
+    const navigate = vi.fn();
+    render(<SnapshotThresholdSummary onNavigate={navigate} />);
+    expect(screen.getByText("SKU đã cấu hình")).toBeInTheDocument();
+    await act(async () => {
+      useLanguageStore.getState().setLanguage("en");
+      await ensureEnglishMessages();
+    });
+    for (const label of [
+      "Only SKUs with a minimum or maximum are evaluated.",
+      "Configured SKUs",
+      "Unconfigured SKUs",
+    ]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+    for (const name of [
+      /^Below threshold\s*1$/,
+      /^Above threshold\s*1$/,
+      "View detail",
+    ]) {
+      fireEvent.click(screen.getByRole("button", { name }));
+      expect(navigate).toHaveBeenLastCalledWith(
+        "/reports/stock-reconcile?screen=RPT-02",
+      );
+    }
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(screen.getByText("SKU đã cấu hình")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^Dưới định mức\s*1$/ }),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["loading", "Đang tải định mức…", "Loading stock thresholds…"],
+    ["error", "Không tải được định mức.", "Could not load stock thresholds."],
+    ["stale", "Định mức có thể đã cũ.", "Stock thresholds may be out of date."],
+  ])(
+    "updates the %s message and retry control while mounted",
+    async (state, vietnamese, english) => {
+      retry.mockReset();
+      mockedSource.mockReturnValue({
+        ...source(state === "loading" ? null : new Error("offline")),
+        loading: state === "loading",
+        thresholds: state === "error" ? new Map() : source().thresholds,
+      } as never);
+      render(<SnapshotThresholdSummary onNavigate={vi.fn()} />);
+      expect(screen.getByText(vietnamese)).toBeInTheDocument();
+      await act(async () => {
+        useLanguageStore.getState().setLanguage("en");
+        await ensureEnglishMessages();
+      });
+      expect(screen.getByText(english)).toBeInTheDocument();
+      if (state !== "loading") {
+        fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+        expect(retry).toHaveBeenCalledOnce();
+      }
+      act(() => useLanguageStore.getState().setLanguage("vi"));
+      expect(screen.getByText(vietnamese)).toBeInTheDocument();
+    },
+  );
 });
 
 describe("DashboardSystemViews — định mức tồn", () => {

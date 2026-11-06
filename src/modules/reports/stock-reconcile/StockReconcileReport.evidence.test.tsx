@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import dayjs from "dayjs";
-import { fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -80,6 +82,15 @@ describe("stock reconciliation evidence navigation", () => {
     } as never);
 
     renderWithProviders(<StockReconcileReport />);
+    expect(document.querySelectorAll(".rpt02-kpi-grid").length).toBeGreaterThan(0);
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    const kpis = document.querySelector(".rpt02-kpi-grid") as HTMLElement;
+    expect(within(kpis).getAllByText("Products")).toHaveLength(6);
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(within(kpis).getAllByText("Sản phẩm")).toHaveLength(6);
     const reportPage = screen.getByRole("main");
     expect(screen.getByRole("tab", { name: "Đối soát tồn" })).toHaveAttribute(
       "aria-selected",

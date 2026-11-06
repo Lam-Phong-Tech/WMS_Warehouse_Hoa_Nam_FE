@@ -32,6 +32,7 @@ import { useStockMovements, useBalanceSubledger } from "../hooks/use-inventory";
 import type { StockMovementRow } from "../services/inventoryService";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
+import { localizedUnitLabel } from "@/shared/utils/format-unit";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { ActionIconButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -41,10 +42,10 @@ import { BoxReadDetailDialog } from "./BoxReadDetailDialog";
 
 type RawRecord = Record<string, unknown>;
 
-function formatQty(value: number | null | undefined, uom = "") {
+function formatQty(value: number | null | undefined, uom: string, t: TranslateFn) {
   const formatted = formatQuantity(value);
   if (formatted === EMPTY_TEXT) return EMPTY_TEXT;
-  return `${formatted}${uom ? ` ${uom}` : ""}`;
+  return `${formatted}${uom ? ` ${localizedUnitLabel(uom, t)}` : ""}`;
 }
 
 function text(val: unknown, fallback = EMPTY_TEXT) {
@@ -428,19 +429,19 @@ export function BalanceDetailModal({
                 <dl className="hn-balance-stats">
                   <StatBox
                     label={t("inventory.detail.statAvailable")}
-                    value={formatQty(balance.available, balance.uom)}
+                    value={formatQty(balance.available, balance.uom, t)}
                   />
                   <StatBox
                     label={t("inventory.detail.statOnHand")}
-                    value={formatQty(balance.onHand, balance.uom)}
+                    value={formatQty(balance.onHand, balance.uom, t)}
                   />
                   <StatBox
                     label={t("inventory.balance.colLedger")}
-                    value={formatQty(balance.ledgerTotal, balance.uom)}
+                    value={formatQty(balance.ledgerTotal, balance.uom, t)}
                   />
                   <StatBox
                     label={t("inventory.balance.colVariance")}
-                    value={formatQty(balance.variance, balance.uom)}
+                    value={formatQty(balance.variance, balance.uom, t)}
                   />
                 </dl>
                 <dl className="hn-balance-fields hn-balance-overview-fields">
@@ -504,13 +505,13 @@ export function BalanceDetailModal({
                   />
                   <DetailField
                     label={t("inventory.detail.statItems")}
-                    value={formatQty(
+                    value={formatQuantity(
                       subledger?.item_count ?? balance.serialQty,
                     )}
                   />
                   <DetailField
                     label={t("inventory.detail.statBoxes")}
-                    value={formatQty(
+                    value={formatQuantity(
                       subledger?.container_count ?? balance.boxQty,
                     )}
                   />

@@ -60,7 +60,7 @@ import {
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
-import { useT } from "@/shared/i18n/useT";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import "./packing-label-report.css";
 
 type Target = {
@@ -76,13 +76,14 @@ type PrintContext = Target & {
   attempts: number;
   eventIds: string[];
 };
-const resultText = (result: string) =>
+const resultText = (result: string, t: TranslateFn) =>
   result === "PRINTED"
-    ? "In thành công"
+    ? t("packingLabelReport.printSuccessful")
     : result === "PRINT_FAILED"
-      ? "Lỗi in"
-      : "Chưa xác định";
+      ? t("packingLabelReport.printFailed")
+      : t("packingLabelReport.undetermined");
 export function PrintStatus({ result }: { result: string }) {
+  const t = useT();
   return (
     <span
       className={
@@ -95,7 +96,7 @@ export function PrintStatus({ result }: { result: string }) {
       }
     >
       <b />
-      {resultText(result)}
+      {resultText(result, t)}
     </span>
   );
 }
@@ -142,7 +143,7 @@ export default function PackingLabelPrintReport() {
   } | null>(null);
   const [notice, setNotice] = useState<{
     tone: "success" | "warning" | "error";
-    text: string;
+    text: (translate: TranslateFn) => string;
   } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   useEffect(() => {
@@ -279,7 +280,6 @@ export default function PackingLabelPrintReport() {
   const selectedEvent =
     report.events.find((e) => e.eventId === eventId) ?? null;
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Paging follows the applied report filters.
     setPage(1);
   }, [
     view,
@@ -343,10 +343,20 @@ export default function PackingLabelPrintReport() {
       const gate = printGate(
         String(raw.status),
         pending,
-        snapshotMissing(payload),
+        snapshotMissing(payload, t),
+        t,
       );
       if (!gate.action) {
-        setNotice({ tone: "warning", text: gate.reason });
+        setNotice({
+          tone: "warning",
+          text: (translate) =>
+            printGate(
+              String(raw.status),
+              pending,
+              snapshotMissing(payload, translate),
+              translate,
+            ).reason,
+        });
         void queryClient.invalidateQueries({
           queryKey: ["rpt-05", "label-snapshot", target.labelId],
         });
@@ -356,7 +366,8 @@ export default function PackingLabelPrintReport() {
       if (!(gate.action === "REPRINT" ? canReprint : canPrint)) {
         setNotice({
           tone: "warning",
-          text: "Bạn chưa có quyền thực hiện thao tác in này.",
+          text: (translate) =>
+            translate("packingLabelReport.noPrintPermission"),
         });
         return;
       }
@@ -366,7 +377,7 @@ export default function PackingLabelPrintReport() {
         raw.version == null ||
         !Number.isFinite(version)
       )
-        throw new Error("Thiếu thông tin phiên bản hoặc phiếu xuất.");
+        throw new Error(t("packingLabelReport.missingVersion"));
       setPrintContext({
         ...target,
         documentId: String(raw.outbound_document_id),
@@ -381,10 +392,14 @@ export default function PackingLabelPrintReport() {
     } catch (error) {
       setNotice({
         tone: "error",
-        text: getApiErrorMessage(
-          error,
-          "Không tải được bản lưu nhãn. Vui lòng thử lại.",
-        ),
+        text: (translate) =>
+          error instanceof Error &&
+          error.message === t("packingLabelReport.missingVersion")
+            ? translate("packingLabelReport.missingVersion")
+            : getApiErrorMessage(
+                error,
+                translate("packingLabelReport.loadSnapshotError"),
+              ),
       });
     } finally {
       actionLock.current = false;
@@ -424,12 +439,12 @@ export default function PackingLabelPrintReport() {
           result === "PRINT_FAILED" || result === "FAILED"
             ? "error"
             : "success",
-        text:
+        text: (translate) =>
           result === "PRINTED"
-            ? "Máy in đã xác nhận in thành công."
+            ? translate("packingLabelReport.printerConfirmed")
             : result === "PRINT_FAILED" || result === "FAILED"
-              ? "Máy in báo lỗi. Kiểm tra lịch sử trước khi thử lại."
-              : "Đã tiếp nhận yêu cầu in. Theo dõi kết quả trong lịch sử.",
+              ? translate("packingLabelReport.printerFailed")
+              : translate("packingLabelReport.printAccepted"),
       });
       report.refetch();
       await queryClient.invalidateQueries({
@@ -453,7 +468,7 @@ export default function PackingLabelPrintReport() {
         setPrintContext(null);
         setNotice({
           tone: "warning",
-          text: "Chưa xác định kết quả gửi lệnh. Kiểm tra trạng thái trước khi in tiếp để tránh nhãn trùng.",
+          text: (translate) => translate("packingLabelReport.printUncertain"),
         });
       } else {
         setPrintContext(null);
@@ -462,10 +477,11 @@ export default function PackingLabelPrintReport() {
         });
         setNotice({
           tone: "error",
-          text: getApiErrorMessage(
-            error,
-            "Không gửi được lệnh in. Vui lòng kiểm tra bản lưu.",
-          ),
+          text: (translate) =>
+            getApiErrorMessage(
+              error,
+              translate("packingLabelReport.submitPrintError"),
+            ),
         });
       }
       report.refetch();
@@ -498,23 +514,24 @@ export default function PackingLabelPrintReport() {
       )
         setNotice({
           tone: "warning",
-          text: "Chưa có kết quả cuối cùng. Tiếp tục kiểm tra với máy in trước khi gửi lại.",
+          text: (translate) => translate("packingLabelReport.noFinalResult"),
         });
       else {
         setUncertain(null);
         setNotice({
           tone: "success",
-          text: "Đã tải kết quả mới nhất. Đối chiếu thời gian trong lịch sử với lệnh vừa gửi trước khi in tiếp.",
+          text: (translate) => translate("packingLabelReport.reconciled"),
         });
         refresh();
       }
     } catch (error) {
       setNotice({
         tone: "error",
-        text: getApiErrorMessage(
-          error,
-          "Chưa kiểm tra được trạng thái. Vui lòng thử lại.",
-        ),
+        text: (translate) =>
+          getApiErrorMessage(
+            error,
+            translate("packingLabelReport.reconcileError"),
+          ),
       });
     } finally {
       actionLock.current = false;
@@ -523,31 +540,38 @@ export default function PackingLabelPrintReport() {
   };
   const exportContext: [string, string][] = [
     [
-      "Kỳ tạo nhãn",
+      t("packingLabelReport.creationPeriod"),
       period.range[0].format("DD/MM/YYYY") +
         " – " +
         period.range[1].format("DD/MM/YYYY"),
     ],
-    ["Phạm vi", "Tổng hợp theo nhãn · mỗi nhãn một dòng"],
-    ["Kết quả", status ? resultText(status) : "Tất cả"],
+    [t("packingLabelReport.scope"), t("packingLabelReport.exportScope")],
     [
-      "Máy in",
-      report.printerOptions.find((p) => p.value === printer)?.label || "Tất cả",
+      t("packingLabelReport.result"),
+      status ? resultText(status, t) : t("packingLabelReport.all"),
     ],
     [
-      "Người in",
+      t("packingLabelReport.printer"),
+      report.printerOptions.find((p) => p.value === printer)?.label ||
+        t("packingLabelReport.all"),
+    ],
+    [
+      t("packingLabelReport.printedBy"),
       (report.actorOptions ?? []).find((p) => p.value === actor)?.label ||
-        "Tất cả",
+        t("packingLabelReport.all"),
     ],
     [
-      "Loại lượt",
+      t("packingLabelReport.attemptType"),
       action
         ? action === "REPRINT"
-          ? "In lại"
-          : "In lần đầu / thử lại"
-        : "Tất cả",
+          ? t("packingLabelReport.reprint")
+          : t("packingLabelReport.firstPrintRetry")
+        : t("packingLabelReport.all"),
     ],
-    ["Từ khóa", keyword.trim() || "Tất cả"],
+    [
+      t("packingLabelReport.keyword"),
+      keyword.trim() || t("packingLabelReport.all"),
+    ],
   ];
   const doExport = (choice: ReportExportChoice) => {
     return exporter.exportReport(choice.format, {
@@ -575,24 +599,32 @@ export default function PackingLabelPrintReport() {
 
   return (
     <div className="hn-pkg-label" data-testid="rpt-tab-packing-label">
-      <div className="hn-pkg-label__crumb">Báo cáo / Nhãn đóng gói</div>
+      <div className="hn-pkg-label__crumb">
+        {t("packingLabelReport.breadcrumb")}
+      </div>
       <header className="hn-pkg-label__header">
         <div>
-          <h1>Báo cáo nhãn đóng gói – In / In lại</h1>
-          <p>
-            Theo dõi bản lưu nhãn, từng lượt in và kết quả phản hồi từ máy in.
-          </p>
+          <h1>{t("packingLabelReport.title")}</h1>
+          <p>{t("packingLabelReport.subtitle")}</p>
         </div>
         <div className="hn-pkg-label__header-actions">
           <ReportExportAction
-            title="Xuất báo cáo nhãn đóng gói"
-            fileStem={"BaoCaoNhanDongGoi_" + period.from + "-" + period.to}
+            title={t("packingLabelReport.exportTitle")}
+            fileStem={
+              t("packingLabelReport.exportFileStem") +
+              period.from +
+              "-" +
+              period.to
+            }
             total={filteredLabels.length}
             currentCount={
               new Set(visibleRows.map((row) => row.target.labelId)).size
             }
             formats={["xlsx", "pdf"]}
-            sections={reportExportSections("Chi tiết theo nhãn", "none")}
+            sections={reportExportSections(
+              t("packingLabelReport.exportSection"),
+              "none",
+            )}
             context={exportContext}
             disabled={
               failure ||
@@ -601,7 +633,7 @@ export default function PackingLabelPrintReport() {
             }
             disabledReason={
               report.capped
-                ? "Lịch sử lượt in chưa đầy đủ để xuất theo bộ lọc lượt in."
+                ? t("packingLabelReport.exportIncomplete")
                 : undefined
             }
             loading={Boolean(exporter.exporting)}
@@ -611,55 +643,57 @@ export default function PackingLabelPrintReport() {
       </header>
       {notice && !detailId && (
         <div className="hn-pkg-label__notice" role="status">
-          <UiAlert tone={notice.tone}>{notice.text}</UiAlert>
+          <UiAlert tone={notice.tone}>{notice.text(t)}</UiAlert>
           {uncertain && (
             <UiButton
               appearance="outlined"
               disabled={busy || !online}
               onClick={() => void reconcile()}
             >
-              Kiểm tra trạng thái
+              {t("packingLabelReport.checkStatus")}
             </UiButton>
           )}
         </div>
       )}
       {!online && (
-        <UiAlert tone="warning">
-          Mất kết nối mạng. Bộ lọc được giữ nguyên; kết nối lại để tải báo cáo.
-        </UiAlert>
+        <UiAlert tone="warning">{t("packingLabelReport.offline")}</UiAlert>
       )}
       {!failure && (
         <>
           <section
             className="hn-pkg-label__kpis"
-            aria-label="Tổng quan in nhãn"
+            aria-label={t("packingLabelReport.overview")}
           >
             {[
               {
-                label: "Nhãn duy nhất",
+                label: t("packingLabelReport.uniqueLabels"),
                 value: metrics.labels,
-                note: metrics.total + " lượt in trong kỳ",
+                note: t("packingLabelReport.attemptsInPeriod", {
+                  count: formatQuantity(metrics.total),
+                }),
                 icon: <PrinterOutlined />,
                 tone: "blue",
               },
               {
-                label: "Lượt in thành công",
+                label: t("packingLabelReport.successfulAttempts"),
                 value: metrics.printed,
-                note: rate.toLocaleString("vi-VN") + "% tổng lượt in",
+                note: t("packingLabelReport.successRate", {
+                  rate: formatQuantity(rate),
+                }),
                 icon: <CheckCircleOutlined />,
                 tone: "green",
               },
               {
-                label: "Lượt in lỗi",
+                label: t("packingLabelReport.failedAttempts"),
                 value: metrics.failed,
-                note: "Cần kiểm tra phản hồi máy in",
+                note: t("packingLabelReport.checkPrinter"),
                 icon: <WarningOutlined />,
                 tone: "red",
               },
               {
-                label: "Lượt in lại",
+                label: t("packingLabelReport.reprintAttempts"),
                 value: metrics.reprinted,
-                note: "Giữ nguyên mã nhãn và nội dung",
+                note: t("packingLabelReport.keepContent"),
                 icon: <UndoOutlined />,
                 tone: "blue",
               },
@@ -683,22 +717,23 @@ export default function PackingLabelPrintReport() {
           {!report.loading && !partial && !report.capped && (
             <section
               className="hn-pkg-label__health"
-              aria-label="Tình trạng in nhãn"
+              aria-label={t("packingLabelReport.printingStatus")}
             >
               <div className="hn-pkg-label__health-heading">
-                <h2>Tình trạng in nhãn</h2>
-                <span>{metrics.pending} lượt chưa xác định</span>
+                <h2>{t("packingLabelReport.printingStatus")}</h2>
+                <span>
+                  {t("packingLabelReport.pendingAttempts", {
+                    count: metrics.pending,
+                  })}
+                </span>
               </div>
               <div
                 className="hn-pkg-label__bar"
-                aria-label={
-                  metrics.printed +
-                  " thành công, " +
-                  metrics.failed +
-                  " lỗi, " +
-                  metrics.pending +
-                  " chưa xác định"
-                }
+                aria-label={t("packingLabelReport.statusSummary", {
+                  printed: metrics.printed,
+                  failed: metrics.failed,
+                  pending: metrics.pending,
+                })}
               >
                 {metrics.total > 0 && (
                   <>
@@ -722,14 +757,22 @@ export default function PackingLabelPrintReport() {
               </div>
               <div className="hn-pkg-label__legend">
                 <span>
-                  <b className="is-green-dot" /> {metrics.printed} thành công
+                  <b className="is-green-dot" />{" "}
+                  {t("packingLabelReport.successfulCount", {
+                    count: metrics.printed,
+                  })}
                 </span>
                 <span>
-                  <b className="is-red-dot" /> {metrics.failed} lỗi
+                  <b className="is-red-dot" />{" "}
+                  {t("packingLabelReport.failedCount", {
+                    count: metrics.failed,
+                  })}
                 </span>
                 <span>
-                  <b className="is-pending-dot" /> {metrics.pending} chưa xác
-                  định
+                  <b className="is-pending-dot" />{" "}
+                  {t("packingLabelReport.pendingCount", {
+                    count: metrics.pending,
+                  })}
                 </span>
               </div>
             </section>
@@ -738,12 +781,12 @@ export default function PackingLabelPrintReport() {
       )}
       <section
         className="hn-pkg-label__workspace"
-        aria-label="Danh sách nhãn và lượt in"
+        aria-label={t("packingLabelReport.workspace")}
       >
         <div
           className="hn-pkg-label__tabs"
           role="tablist"
-          aria-label="Phạm vi dữ liệu"
+          aria-label={t("packingLabelReport.dataScope")}
         >
           <button
             id="packing-events-tab"
@@ -752,7 +795,8 @@ export default function PackingLabelPrintReport() {
             aria-controls="packing-report-panel"
             onClick={() => setView("events")}
           >
-            Lượt in <span>{report.events.length}</span>
+            {t("packingLabelReport.attempts")}{" "}
+            <span>{report.events.length}</span>
           </button>
           <button
             id="packing-labels-tab"
@@ -761,21 +805,26 @@ export default function PackingLabelPrintReport() {
             aria-controls="packing-report-panel"
             onClick={() => setView("labels")}
           >
-            Nhãn <span>{report.labels.size}</span>
+            {t("packingLabelReport.labels")} <span>{report.labels.size}</span>
           </button>
           <span className="hn-pkg-label__asof">
             {report.asOf
-              ? "Lượt gần nhất: " + formatDateTime(report.asOf)
-              : "Chưa có lượt in trong kỳ"}
+              ? t("packingLabelReport.latestAttempt", {
+                  time: formatDateTime(report.asOf),
+                })
+              : t("packingLabelReport.noAttemptsInPeriod")}
           </span>
         </div>
-        <div className="hn-pkg-label__filters" aria-label="Bộ lọc báo cáo">
+        <div
+          className="hn-pkg-label__filters"
+          aria-label={t("packingLabelReport.filters")}
+        >
           <SearchInput
             id="rpt-05-q"
             width="100%"
             value={keyword}
-            placeholder="Tìm mã nhãn, phiếu xuất, SKU, nơi nhận…"
-            aria-label="Tìm trong danh sách nhãn"
+            placeholder={t("packingLabelReport.searchPlaceholder")}
+            aria-label={t("packingLabelReport.searchLabel")}
             onChange={setKeyword}
           />
           <ReportDateRangePicker
@@ -786,58 +835,68 @@ export default function PackingLabelPrintReport() {
             }}
           />
           <select
-            aria-label="Trạng thái"
+            aria-label={t("packingLabelReport.statusFilter")}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
-            <option value="">Kết quả: Tất cả</option>
-            <option value="PRINTED">Kết quả: Thành công</option>
-            <option value="PRINT_FAILED">Kết quả: Lỗi</option>
-            <option value="PENDING_PRINT">Kết quả: Chưa xác định</option>
+            <option value="">{t("packingLabelReport.resultAll")}</option>
+            <option value="PRINTED">
+              {t("packingLabelReport.resultSuccessful")}
+            </option>
+            <option value="PRINT_FAILED">
+              {t("packingLabelReport.resultFailed")}
+            </option>
+            <option value="PENDING_PRINT">
+              {t("packingLabelReport.resultPending")}
+            </option>
           </select>
           <select
-            aria-label="Máy in"
+            aria-label={t("packingLabelReport.printer")}
             value={printer}
             onChange={(e) => setPrinter(e.target.value)}
           >
-            <option value="">Máy in: Tất cả</option>
+            <option value="">{t("packingLabelReport.printerAll")}</option>
             {report.printerOptions.map((p) => (
               <option key={p.value} value={p.value}>
-                Máy in: {p.label}
+                {t("packingLabelReport.printerOption", { name: p.label })}
               </option>
             ))}
           </select>
           <select
-            aria-label="Người thực hiện"
+            aria-label={t("packingLabelReport.operator")}
             value={actor}
             onChange={(e) => setActor(e.target.value)}
           >
-            <option value="">Người in: Tất cả</option>
+            <option value="">{t("packingLabelReport.actorAll")}</option>
             {(report.actorOptions ?? []).map((p) => (
               <option key={p.value} value={p.value}>
-                Người in: {p.label}
+                {t("packingLabelReport.actorOption", { name: p.label })}
               </option>
             ))}
           </select>
           <select
-            aria-label="Loại lượt in"
+            aria-label={t("packingLabelReport.printAttemptType")}
             value={action}
             onChange={(e) => setAction(e.target.value)}
           >
-            <option value="">Loại lượt: Tất cả</option>
-            <option value="PRINT">Loại lượt: In lần đầu / thử lại</option>
-            <option value="REPRINT">Loại lượt: In lại</option>
+            <option value="">{t("packingLabelReport.actionAll")}</option>
+            <option value="PRINT">{t("packingLabelReport.actionPrint")}</option>
+            <option value="REPRINT">
+              {t("packingLabelReport.actionReprint")}
+            </option>
           </select>
           {filtered && (
             <UiButton appearance="outlined" onClick={clear}>
-              Xóa lọc
+              {t("packingLabelReport.clearFilters")}
             </UiButton>
           )}
         </div>
         <div className="hn-pkg-label__scope">
           <span>
-            Kỳ tạo nhãn: {period.range[0].format("DD/MM/YYYY")} –{" "}
-            {period.range[1].format("DD/MM/YYYY")} · Giờ Việt Nam
+            {t("packingLabelReport.periodCaption", {
+              from: period.range[0].format("DD/MM/YYYY"),
+              to: period.range[1].format("DD/MM/YYYY"),
+            })}
           </span>
           <UiButton
             appearance="text"
@@ -845,13 +904,12 @@ export default function PackingLabelPrintReport() {
             disabled={report.fetching || !online}
             onClick={refresh}
           >
-            Làm mới
+            {t("packingLabelReport.refresh")}
           </UiButton>
         </div>
         {report.capped && (
           <UiAlert tone="warning">
-            Lịch sử vượt giới hạn tải 2.000 lượt. Số liệu lượt in chưa đầy đủ;
-            mở chi tiết từng nhãn để đối chiếu.
+            {t("packingLabelReport.historyCapped")}
           </UiAlert>
         )}
         <div
@@ -864,18 +922,18 @@ export default function PackingLabelPrintReport() {
           {failure || (partial && view === "events") ? (
             <div className="hn-pkg-label__state" role="alert">
               <WarningOutlined />
-              <h2>Chưa thể tải lịch sử in</h2>
+              <h2>{t("packingLabelReport.historyError")}</h2>
               <p>
                 {partial
-                  ? "Không tải được dữ liệu từng lượt in. Bạn vẫn có thể xem thông tin ở tab Nhãn."
-                  : "Bộ lọc được giữ nguyên. Vui lòng thử lại."}
+                  ? t("packingLabelReport.partialHistory")
+                  : t("packingLabelReport.retryHistory")}
               </p>
               <UiButton
                 appearance="filled"
                 onClick={refresh}
                 disabled={!online}
               >
-                Thử lại
+                {t("common.retry")}
               </UiButton>
             </div>
           ) : (
@@ -884,7 +942,7 @@ export default function PackingLabelPrintReport() {
                 className="hn-pkg-label__table-wrap"
                 tabIndex={0}
                 role="region"
-                aria-label="Bảng báo cáo nhãn, cuộn ngang để xem đầy đủ"
+                aria-label={t("packingLabelReport.tableRegion")}
               >
                 <table className="hn-pkg-label__table">
                   <colgroup>
@@ -894,15 +952,16 @@ export default function PackingLabelPrintReport() {
                   </colgroup>
                   <thead>
                     <tr>
-                      <th>Nhãn / Phiếu xuất</th>
-                      <th>SKU / Nơi nhận</th>
+                      <th>{t("packingLabelReport.colLabelOutbound")}</th>
+                      <th>{t("packingLabelReport.colSkuRecipient")}</th>
                       <th aria-sort={descending ? "descending" : "ascending"}>
                         <button onClick={() => setDescending(!descending)}>
-                          Thời gian {descending ? "↓" : "↑"}
+                          {t("packingLabelReport.time")}{" "}
+                          {descending ? "↓" : "↑"}
                         </button>
                       </th>
-                      <th>Kết quả</th>
-                      <th>Thao tác</th>
+                      <th>{t("packingLabelReport.result")}</th>
+                      <th>{t("packingLabelReport.actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -910,7 +969,7 @@ export default function PackingLabelPrintReport() {
                       <tr>
                         <td colSpan={5}>
                           <div className="hn-pkg-label__state" role="status">
-                            Đang tải dữ liệu…
+                            {t("packingLabelReport.loading")}
                           </div>
                         </td>
                       </tr>
@@ -921,15 +980,15 @@ export default function PackingLabelPrintReport() {
                             <PrinterOutlined />
                             <h2>
                               {filtered
-                                ? "Không có kết quả phù hợp"
-                                : "Chưa có " +
-                                  (view === "events" ? "lượt in" : "nhãn") +
-                                  " trong kỳ"}
+                                ? t("packingLabelReport.noMatches")
+                                : view === "events"
+                                  ? t("packingLabelReport.noAttemptsInPeriod")
+                                  : t("packingLabelReport.noLabelsInPeriod")}
                             </h2>
-                            <p>Thử thay đổi từ khóa hoặc khoảng thời gian.</p>
+                            <p>{t("packingLabelReport.emptyHint")}</p>
                             {filtered && (
                               <UiButton appearance="outlined" onClick={clear}>
-                                Xóa lọc
+                                {t("packingLabelReport.clearFilters")}
                               </UiButton>
                             )}
                           </div>
@@ -954,22 +1013,24 @@ export default function PackingLabelPrintReport() {
                             </td>
                             <td>
                               <strong>
-                                {label?.skuSummary || "Chưa có nội dung SKU"}
+                                {label?.skuSummary ||
+                                  t("packingLabelReport.noSku")}
                               </strong>
                               <span>
-                                {label?.recipient || "Chưa có nơi nhận"}
+                                {label?.recipient ||
+                                  t("packingLabelReport.noRecipient")}
                               </span>
                             </td>
                             <td>
                               {latest?.attemptedAt
                                 ? formatDateTime(latest.attemptedAt)
-                                : "Chưa có lượt in"}
+                                : t("packingLabelReport.noAttempts")}
                               <span>
                                 {latest
                                   ? latest.action === "REPRINT"
-                                    ? "In lại"
-                                    : "In lần đầu / thử lại"
-                                  : "Chờ in lần đầu"}
+                                    ? t("packingLabelReport.reprint")
+                                    : t("packingLabelReport.firstPrintRetry")
+                                  : t("packingLabelReport.awaitingFirstPrint")}
                               </span>
                             </td>
                             <td>
@@ -979,7 +1040,7 @@ export default function PackingLabelPrintReport() {
                                 <span className="hn-pkg-label__status is-neutral">
                                   {LABEL_SNAPSHOT_STATUS_LABELS[
                                     label?.status || ""
-                                  ] || "Chưa in"}
+                                  ] || t("packingLabelReport.unprinted")}
                                 </span>
                               )}
                               {latest && failureText(latest) && (
@@ -992,12 +1053,13 @@ export default function PackingLabelPrintReport() {
                               <RowActionGroup>
                                 <RowActionButton
                                   kind="view"
-                                  aria-label={
-                                    "Xem chi tiết nhãn " + target.labelCode
-                                  }
+                                  aria-label={t(
+                                    "packingLabelReport.viewDetails",
+                                    { code: target.labelCode },
+                                  )}
                                   onClick={() => openDetail(target, latest)}
                                 >
-                                  Chi tiết
+                                  {t("packingLabelReport.details")}
                                 </RowActionButton>
                                 {gate.action && allowed && (
                                   <RowActionButton
@@ -1008,8 +1070,8 @@ export default function PackingLabelPrintReport() {
                                     onClick={() => void preparePrint(target)}
                                   >
                                     {gate.action === "REPRINT"
-                                      ? "In lại"
-                                      : "In nhãn"}
+                                      ? t("packingLabelReport.reprint")
+                                      : t("packingLabelReport.printLabel")}
                                   </RowActionButton>
                                 )}
                                 {!gate.action && (
@@ -1017,8 +1079,8 @@ export default function PackingLabelPrintReport() {
                                     {currentAttempts.some(
                                       (e) => e.result === "PENDING_PRINT",
                                     )
-                                      ? "Chờ phản hồi"
-                                      : "Chưa sẵn sàng"}
+                                      ? t("packingLabelReport.awaitingResponse")
+                                      : t("packingLabelReport.notReady")}
                                   </small>
                                 )}
                               </RowActionGroup>
@@ -1033,20 +1095,26 @@ export default function PackingLabelPrintReport() {
               <div className="hn-pkg-label__list-footer">
                 <div className="hn-pkg-label__page-info">
                   <span>
-                    Hiển thị {rows.length ? (safePage - 1) * pageSize + 1 : 0}–
-                    {Math.min(safePage * pageSize, rows.length)} / {rows.length}{" "}
-                    {view === "events" ? "lượt in" : "nhãn"}
+                    {t("packingLabelReport.rowsCaption", {
+                      from: rows.length ? (safePage - 1) * pageSize + 1 : 0,
+                      to: Math.min(safePage * pageSize, rows.length),
+                      total: rows.length,
+                      unit:
+                        view === "events"
+                          ? t("packingLabelReport.attemptUnit")
+                          : t("packingLabelReport.labelUnit"),
+                    })}
                   </span>
                   <label>
-                    Số dòng{" "}
+                    {t("packingLabelReport.rows")}{" "}
                     <select
-                      aria-label="Số dòng mỗi trang"
+                      aria-label={t("packingLabelReport.rowsPerPage")}
                       value={pageSize}
                       onChange={(e) => setPageSize(Number(e.target.value))}
                     >
                       {[10, 20, 50].map((n) => (
                         <option key={n} value={n}>
-                          {n} / trang
+                          {t("packingLabelReport.perPage", { count: n })}
                         </option>
                       ))}
                     </select>
@@ -1054,20 +1122,23 @@ export default function PackingLabelPrintReport() {
                 </div>
                 <nav
                   className="hn-pkg-label__pagination"
-                  aria-label="Phân trang"
+                  aria-label={t("packingLabelReport.pagination")}
                 >
                   <button
-                    aria-label="Trang trước"
+                    aria-label={t("packingLabelReport.previousPage")}
                     disabled={safePage === 1}
                     onClick={() => setPage(safePage - 1)}
                   >
                     ‹
                   </button>
                   <span>
-                    Trang {safePage} / {totalPages}
+                    {t("packingLabelReport.pageCaption", {
+                      page: safePage,
+                      total: totalPages,
+                    })}
                   </span>
                   <button
-                    aria-label="Trang sau"
+                    aria-label={t("packingLabelReport.nextPage")}
                     disabled={safePage === totalPages}
                     onClick={() => setPage(safePage + 1)}
                   >
@@ -1079,9 +1150,7 @@ export default function PackingLabelPrintReport() {
           )}
         </div>
         <p className="hn-pkg-label__footnote">
-          Mỗi dòng ở tab Lượt in là một lần gửi lệnh. Kết quả máy in không đồng
-          nghĩa nhãn đã dán hoặc hàng đã giao. In / in lại không thay đổi tồn
-          kho.
+          {t("packingLabelReport.footnote")}
         </p>
       </section>
       <UiDrawer
@@ -1091,8 +1160,15 @@ export default function PackingLabelPrintReport() {
         onClose={closeDetail}
         title={
           <span className="hn-pkg-label__drawer-title">
-            <span>{preview ? "Xem trước nhãn" : "Chi tiết nhãn đóng gói"}</span>
-            <button aria-label="Đóng chi tiết nhãn" onClick={closeDetail}>
+            <span>
+              {preview
+                ? t("packingLabelReport.previewLabel")
+                : t("packingLabelReport.detailTitle")}
+            </span>
+            <button
+              aria-label={t("packingLabelReport.closeDetail")}
+              onClick={closeDetail}
+            >
               ×
             </button>
           </span>
@@ -1100,14 +1176,14 @@ export default function PackingLabelPrintReport() {
       >
         {notice && (
           <div className="hn-pkg-label__notice" role="status">
-            <UiAlert tone={notice.tone}>{notice.text}</UiAlert>
+            <UiAlert tone={notice.tone}>{notice.text(t)}</UiAlert>
             {uncertain && (
               <UiButton
                 appearance="outlined"
                 disabled={busy || !online}
                 onClick={() => void reconcile()}
               >
-                Kiểm tra trạng thái
+                {t("packingLabelReport.checkStatus")}
               </UiButton>
             )}
           </div>
@@ -1144,7 +1220,11 @@ export default function PackingLabelPrintReport() {
       </UiDrawer>
       {sourceId && (
         <Suspense
-          fallback={<UiAlert tone="info">Đang tải phiếu xuất…</UiAlert>}
+          fallback={
+            <UiAlert tone="info">
+              {t("packingLabelReport.loadingOutbound")}
+            </UiAlert>
+          }
         >
           <AlignedOutboundDetailModal
             documentId={sourceId}
@@ -1160,8 +1240,8 @@ export default function PackingLabelPrintReport() {
         }}
         title={
           printContext?.action === "REPRINT"
-            ? "In lại nhãn"
-            : "Xác nhận in nhãn"
+            ? t("packingLabelReport.reprintLabel")
+            : t("packingLabelReport.confirmPrint")
         }
         actions={
           <>
@@ -1170,7 +1250,7 @@ export default function PackingLabelPrintReport() {
               disabled={busy}
               onClick={() => setPrintContext(null)}
             >
-              Hủy
+              {t("packingLabelReport.cancel")}
             </UiButton>
             <UiButton
               appearance="filled"
@@ -1179,26 +1259,32 @@ export default function PackingLabelPrintReport() {
               onClick={() => void submitPrint()}
             >
               {printContext?.action === "REPRINT"
-                ? "Xác nhận in lại"
-                : "Xác nhận in nhãn"}
+                ? t("packingLabelReport.confirmReprint")
+                : t("packingLabelReport.confirmPrint")}
             </UiButton>
           </>
         }
       >
         <div className="hn-pkg-label__confirm">
           <strong>{printContext?.labelCode}</strong>
-          <span>Phiếu xuất: {printContext?.outboundNo}</span>
           <span>
-            Lượt đã ghi nhận: {printContext?.attempts} · Gửi thêm 1 lượt
+            {t("packingLabelReport.outboundCaption", {
+              number: printContext?.outboundNo ?? "",
+            })}
+          </span>
+          <span>
+            {t("packingLabelReport.attemptsRecorded", {
+              count: printContext?.attempts ?? 0,
+            })}
           </span>
         </div>
         {notice && notice.tone !== "success" && (
-          <UiAlert tone={notice.tone}>{notice.text}</UiAlert>
+          <UiAlert tone={notice.tone}>{notice.text(t)}</UiAlert>
         )}
         <label className="hn-pkg-label__form-label">
-          Máy in *
+          {t("packingLabelReport.printer")} *
           <select
-            aria-label="Máy in nhận lệnh"
+            aria-label={t("packingLabelReport.commandPrinter")}
             value={printerId}
             disabled={busy}
             onChange={(e) => {
@@ -1206,7 +1292,7 @@ export default function PackingLabelPrintReport() {
               setReasonError(false);
             }}
           >
-            <option value="">Chọn máy in</option>
+            <option value="">{t("packingLabelReport.choosePrinter")}</option>
             {report.printerOptions.map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
@@ -1216,7 +1302,7 @@ export default function PackingLabelPrintReport() {
         </label>
         {reasonError && !printerId && (
           <p role="alert" className="hn-pkg-label__error-text">
-            Chọn máy in nhận lệnh.
+            {t("packingLabelReport.choosePrinterError")}
           </p>
         )}
         {printContext?.action === "REPRINT" && (
@@ -1225,15 +1311,15 @@ export default function PackingLabelPrintReport() {
             required
             multiline
             minRows={3}
-            label="Lý do in lại nhãn"
+            label={t("packingLabelReport.reprintReason")}
             value={reason}
             error={reasonError && !reason.trim()}
             disabled={busy}
             slotProps={{ htmlInput: { maxLength: 500 } }}
             helperText={
               reasonError && !reason.trim()
-                ? "Nhập lý do in lại nhãn."
-                : "Ví dụ: Nhãn cũ bị rách, cần thay thế. Tối đa 500 ký tự."
+                ? t("packingLabelReport.reasonRequired")
+                : t("packingLabelReport.reasonHint")
             }
             onChange={(e) => {
               setReason(e.target.value);
@@ -1241,10 +1327,7 @@ export default function PackingLabelPrintReport() {
             }}
           />
         )}
-        <UiAlert tone="info">
-          Giữ nguyên mã nhãn và bản lưu nội dung. Chỉ tạo thêm lượt in; không
-          thay đổi tồn kho. Chưa gửi lệnh cho đến khi bạn xác nhận.
-        </UiAlert>
+        <UiAlert tone="info">{t("packingLabelReport.confirmHint")}</UiAlert>
       </UiDialog>
     </div>
   );

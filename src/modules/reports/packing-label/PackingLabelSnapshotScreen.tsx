@@ -14,7 +14,7 @@ import {
   LABEL_SNAPSHOT_STATUS_LABELS,
 } from "./packing-label-labels";
 import { printGate } from "./packing-label-view";
-import { useT } from "@/shared/i18n/useT";
+import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { BrandMark } from "@/shared/ui/BrandMark";
 
 type Props = {
@@ -34,12 +34,12 @@ type Props = {
   locked?: boolean;
 };
 const display = (value: string | undefined) => value?.trim() || "—";
-const resultLabel = (result: string) =>
+const resultLabel = (result: string, t: TranslateFn) =>
   result === "PRINTED"
-    ? "Thành công"
+    ? t("packingLabelReport.successful")
     : result === "PRINT_FAILED"
-      ? "Lỗi"
-      : "Chưa xác định";
+      ? t("packingLabelReport.failed")
+      : t("packingLabelReport.undetermined");
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="hn-label-detail__field">
@@ -70,27 +70,30 @@ export function PackingLabelSnapshotScreen({
   if (loading)
     return (
       <div className="hn-label-detail__state" role="status">
-        Đang tải bản lưu nhãn…
+        {t("packingLabelReport.loadingSnapshot")}
       </div>
     );
   if (error || !detail)
     return (
       <div className="hn-label-detail__state" role="alert">
-        <h2>Không tải được bản lưu nhãn</h2>
-        <p>Danh sách và bộ lọc của bạn được giữ nguyên.</p>
+        <h2>{t("packingLabelReport.snapshotError")}</h2>
+        <p>{t("packingLabelReport.listPreserved")}</p>
         <UiButton appearance="filled" onClick={onRetry}>
-          Thử lại
+          {t("common.retry")}
         </UiButton>
         <UiButton appearance="outlined" onClick={onBack}>
-          Quay lại danh sách
+          {t("packingLabelReport.backToList")}
         </UiButton>
       </div>
     );
   const missing = detail.missingFields ?? [];
-  const gate = printGate(detail.status, detail.attempts, missing);
+  const gate = printGate(detail.status, detail.attempts, missing, t);
   const success = detail.attempts.filter((a) => a.result === "PRINTED").length;
   const reprints = detail.attempts.filter((a) => a.action === "REPRINT").length;
-  const printText = gate.action === "REPRINT" ? "In lại nhãn" : "In nhãn";
+  const printText =
+    gate.action === "REPRINT"
+      ? t("packingLabelReport.reprintLabel")
+      : t("packingLabelReport.printLabel");
   const printButton = (
     <UiButton
       appearance="filled"
@@ -111,7 +114,7 @@ export function PackingLabelSnapshotScreen({
       disabled={!detail.outboundDocumentId}
       onClick={onOpenSource}
     >
-      Mở phiếu xuất
+      {t("packingLabelReport.openOutbound")}
     </UiButton>
   );
   const items = detail.items ?? [];
@@ -149,7 +152,9 @@ export function PackingLabelSnapshotScreen({
         >
           <strong>{attempt.attemptNo || "—"}</strong>
           <span>
-            {attempt.action === "REPRINT" ? "In lại" : "In lần đầu / thử lại"}
+            {attempt.action === "REPRINT"
+              ? t("packingLabelReport.reprint")
+              : t("packingLabelReport.firstPrintRetry")}
           </span>
         </div>
       ),
@@ -199,7 +204,7 @@ export function PackingLabelSnapshotScreen({
               className="hn-label-detail__result"
               data-result={attempt.result}
             >
-              {resultLabel(attempt.result)}
+              {resultLabel(attempt.result, t)}
             </span>
             {reason && <span>{reason}</span>}
           </div>
@@ -209,12 +214,23 @@ export function PackingLabelSnapshotScreen({
   ];
   const info = (
     <dl>
-      <Field label="Mã nhãn" value={detail.labelCode} />
-      <Field label="Phiếu xuất" value={detail.outboundNo} />
-      {showSourceNo && <Field label="Toa xuất" value={detail.sourceNo} />}
-      <Field label="Bản lưu nhãn" value={detail.version} />
       <Field
-        label="Nơi nhận"
+        label={t("packingLabelReport.labelCode")}
+        value={detail.labelCode}
+      />
+      <Field
+        label={t("packingLabelReport.outbound")}
+        value={detail.outboundNo}
+      />
+      {showSourceNo && (
+        <Field
+          label={t("packingLabelReport.sourceRequest")}
+          value={detail.sourceNo}
+        />
+      )}
+      <Field label={t("packingLabelReport.snapshot")} value={detail.version} />
+      <Field
+        label={t("packingLabelReport.recipient")}
         value={detail.snapshotRecipient || detail.recipient}
       />
     </dl>
@@ -229,7 +245,7 @@ export function PackingLabelSnapshotScreen({
         <div className="hn-label-detail__actions">
           {preview ? (
             <UiButton appearance="outlined" onClick={onPreview}>
-              Quay lại chi tiết nhãn
+              {t("packingLabelReport.backToDetails")}
             </UiButton>
           ) : (
             <UiButton
@@ -237,7 +253,7 @@ export function PackingLabelSnapshotScreen({
               disabled={missing.length > 0}
               onClick={onPreview}
             >
-              Xem trước nhãn
+              {t("packingLabelReport.previewLabel")}
             </UiButton>
           )}
           {printButton}
@@ -247,29 +263,25 @@ export function PackingLabelSnapshotScreen({
       {missing.length > 0 && (
         <section className="hn-label-detail__validation" role="alert">
           <UiAlert tone="error">
-            Bản lưu nhãn thiếu dữ liệu bắt buộc. Không thể xem trước hoặc in cho
-            đến khi dữ liệu được bổ sung qua luồng phiếu xuất.
+            {t("packingLabelReport.missingValidation")}
           </UiAlert>
-          <h2>Các lỗi kiểm tra dữ liệu</h2>
+          <h2>{t("packingLabelReport.validationErrors")}</h2>
           <ul>
             {missing.map((field) => (
               <li key={field}>
                 <strong>{field}</strong>
-                <span>Thiếu trong bản lưu nhãn</span>
+                <span>{t("packingLabelReport.missingInSnapshot")}</span>
               </li>
             ))}
           </ul>
-          <p>
-            Đối chiếu với dữ liệu nguồn và tạo lại bản lưu qua luồng được cấp
-            quyền. Không chỉnh sửa dữ liệu tại báo cáo.
-          </p>
+          <p>{t("packingLabelReport.validationHint")}</p>
         </section>
       )}
       {gate.reason && missing.length === 0 && !locked && (
         <div className="hn-label-detail__validation">
           <UiAlert tone="warning">{gate.reason}</UiAlert>
           <UiButton appearance="outlined" disabled={busy} onClick={onRetry}>
-            Kiểm tra trạng thái
+            {t("packingLabelReport.checkStatus")}
           </UiButton>
         </div>
       )}
@@ -277,17 +289,17 @@ export function PackingLabelSnapshotScreen({
         <div className="hn-label-detail__preview-grid">
           <section
             className="hn-label-detail__preview-stage"
-            aria-label="Bản xem trước nhãn"
+            aria-label={t("packingLabelReport.previewRegion")}
           >
             <div className="hn-label-detail__preview-toolbar">
               <label>
-                Phóng to{" "}
+                {t("packingLabelReport.zoom")}{" "}
                 <select
-                  aria-label="Phóng to bản xem trước"
+                  aria-label={t("packingLabelReport.zoomPreview")}
                   value={zoom}
                   onChange={(e) => setZoom(e.target.value)}
                 >
-                  <option value="fit">Vừa khung</option>
+                  <option value="fit">{t("packingLabelReport.fit")}</option>
                   <option value="80">80%</option>
                   <option value="100">100%</option>
                 </select>
@@ -301,7 +313,7 @@ export function PackingLabelSnapshotScreen({
                 <div className="hn-label-detail__paper-brand">
                   <BrandMark size={22} aria-hidden="true" /> HOA NAM WMS
                 </div>
-                <h2>NHÃN ĐÓNG GÓI</h2>
+                <h2>{t("packingLabelReport.paperTitle")}</h2>
                 {info}
                 <div className="hn-label-detail__paper-items">
                   {items.map((item, i) => (
@@ -315,11 +327,16 @@ export function PackingLabelSnapshotScreen({
                   ))}
                 </div>
                 <p>
-                  Tổng: {items.length} SKU /{" "}
-                  {items.reduce((sum, item) => sum + item.quantity, 0)} sản phẩm
+                  {t("packingLabelReport.paperTotal", {
+                    skus: items.length,
+                    quantity: items.reduce(
+                      (sum, item) => sum + item.quantity,
+                      0,
+                    ),
+                  })}
                 </p>
                 <div className="hn-label-detail__barcode" aria-hidden="true" />
-                <small>Mã minh họa · không dùng quét</small>
+                <small>{t("packingLabelReport.barcodeHint")}</small>
               </article>
             </div>
           </section>
@@ -329,61 +346,70 @@ export function PackingLabelSnapshotScreen({
           <>
             <section
               className="hn-label-detail__summary"
-              aria-label="Tóm tắt nhãn"
+              aria-label={t("packingLabelReport.labelSummary")}
             >
               <div>
                 <strong>{detail.attempts.length}</strong>
-                <span>Lượt in</span>
+                <span>{t("packingLabelReport.attempts")}</span>
               </div>
               <div>
                 <strong>{success}</strong>
-                <span>Thành công</span>
+                <span>{t("packingLabelReport.successful")}</span>
               </div>
               <div>
                 <strong>{reprints}</strong>
-                <span>In lại</span>
+                <span>{t("packingLabelReport.reprint")}</span>
               </div>
             </section>
             <section className="hn-label-detail__card">
-              <h2>Thông tin nhãn đóng gói</h2>
+              <h2>{t("packingLabelReport.labelInformation")}</h2>
               <dl className="hn-label-detail__metadata">
-                <Field label="Mã nhãn" value={detail.labelCode} />
                 <Field
-                  label="Mã phiếu xuất (nguồn)"
+                  label={t("packingLabelReport.labelCode")}
+                  value={detail.labelCode}
+                />
+                <Field
+                  label={t("packingLabelReport.sourceOutbound")}
                   value={detail.outboundNo}
                 />
-                <Field label="Phiên bản nội dung" value={detail.version} />
                 <Field
-                  label="Trạng thái bản lưu"
+                  label={t("packingLabelReport.contentVersion")}
+                  value={detail.version}
+                />
+                <Field
+                  label={t("packingLabelReport.snapshotStatus")}
                   value={
                     LABEL_SNAPSHOT_STATUS_LABELS[detail.status] || detail.status
                   }
                 />
                 <Field
-                  label="Đơn vị nhận hàng"
+                  label={t("packingLabelReport.receivingParty")}
                   value={detail.snapshotRecipient || detail.recipient}
                 />
                 {showSourceNo && (
-                  <Field label="Toa xuất" value={detail.sourceNo} />
+                  <Field
+                    label={t("packingLabelReport.sourceRequest")}
+                    value={detail.sourceNo}
+                  />
                 )}
                 <Field
-                  label="Ngày tạo nhãn"
+                  label={t("packingLabelReport.createdDate")}
                   value={
                     detail.createdAt ? formatDateTime(detail.createdAt) : ""
                   }
                 />
                 <Field
-                  label="Đã xác nhận dán nhãn"
+                  label={t("packingLabelReport.applied")}
                   value={
                     detail.appliedAt
                       ? formatDateTime(detail.appliedAt)
-                      : "Chưa ghi nhận"
+                      : t("packingLabelReport.notRecorded")
                   }
                 />
               </dl>
             </section>
             <section className="hn-label-detail__card">
-              <h2>Thông tin sản phẩm trên nhãn</h2>
+              <h2>{t("packingLabelReport.products")}</h2>
               {items.length ? (
                 <div className="hn-label-detail__products">
                   {items.map((item, i) => (
@@ -399,9 +425,7 @@ export function PackingLabelSnapshotScreen({
                   ))}
                 </div>
               ) : (
-                <p>
-                  {detail.content || "Chưa có dữ liệu sản phẩm trong bản lưu"}
-                </p>
+                <p>{detail.content || t("packingLabelReport.noProducts")}</p>
               )}
             </section>
           </>
@@ -410,9 +434,9 @@ export function PackingLabelSnapshotScreen({
       {!preview && (
         <section
           className="hn-label-detail__card hn-label-detail__history"
-          aria-label="Lịch sử in nhãn"
+          aria-label={t("packingLabelReport.printHistory")}
         >
-          <h2>Lịch sử in nhãn</h2>
+          <h2>{t("packingLabelReport.printHistory")}</h2>
           {(commonPrinter || commonActor) && (
             <dl className="hn-label-detail__history-context hn-label-detail__metadata">
               {commonPrinter && (
@@ -434,15 +458,12 @@ export function PackingLabelSnapshotScreen({
               rows={detail.attempts}
               rowKey={(attempt) => attempt.eventId}
               columns={historyColumns}
-              emptyText="Chưa có lịch sử in."
+              emptyText={t("packingLabelReport.noHistory")}
             />
           </div>
         </section>
       )}
-      <UiAlert tone="info">
-        In lại giữ nguyên mã nhãn và bản lưu nội dung; chỉ tạo thêm lượt in.
-        Không thay đổi tồn kho.
-      </UiAlert>
+      <UiAlert tone="info">{t("packingLabelReport.reprintHint")}</UiAlert>
     </div>
   );
 }

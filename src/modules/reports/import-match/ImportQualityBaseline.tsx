@@ -555,7 +555,7 @@ export default function ImportQualityBaseline() {
         <MetricCard
           label={tUi("updatedUi.text_fe86ff7f56fe")}
           value={fmt(totals.total)}
-          hint="Trong kỳ báo cáo"
+          hint={t("reports.traceability.periodReport")}
           tone="primary"
           icon={<FileTextOutlined />}
         />
@@ -576,7 +576,7 @@ export default function ImportQualityBaseline() {
         <MetricCard
           label={tUi("inventory.balance.colVariance")}
           value={fmt(totals.duplicate)}
-          hint="Cần kiểm tra"
+          hint={t("reports.traceability.needsReview")}
           tone="warning"
           icon={<WarningOutlined />}
           onClick={() => {
@@ -588,7 +588,7 @@ export default function ImportQualityBaseline() {
         <MetricCard
           label={tUi("updatedUi.text_e557e75b43a7")}
           value={fmt(totals.failed)}
-          hint="Không thể đối chiếu"
+          hint={t("reports.importQuality.cannotReconcile")}
           tone="error"
           icon={<WarningOutlined />}
           onClick={() => {
@@ -819,8 +819,7 @@ export default function ImportQualityBaseline() {
                   ?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
-              Xem {fmt(issueCount)}
-              {" " + tUi("updatedUi.text_3c28fe9f81e1")}
+              {t("reports.importQuality.viewRecords", { count: fmt(issueCount) })}
             </UiButton>
           </Stack>
         </Box>

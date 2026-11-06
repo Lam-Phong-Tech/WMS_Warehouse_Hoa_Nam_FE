@@ -297,8 +297,8 @@
 }
 .hn-pkg-label__table th {
   padding: 12px 18px;
-  color: var(--ops-muted);
-  background: #d2edf7;
+  color: var(--ops-heading);
+  background: var(--ops-table-header);
   font-size: 16px;
   font-weight: 800;
   line-height: 24px;

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -726,14 +727,20 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     ).toBeInTheDocument();
   });
 
-  it("đổi ngôn ngữ sang English thì dịch phần snapshot MAP-01", async () => {
+  it("updates snapshot labels and KPI context when switching Vietnamese to English and back", async () => {
     window.history.pushState({}, "", "/dashboard?screen=MAP-01");
     window.location.search = "?screen=MAP-01";
     mockedGet.mockImplementation((url: string) => routeResponses(url));
-    useLanguageStore.getState().setLanguage("en");
-    await ensureEnglishMessages();
-
     renderDashboard();
+
+    expect(
+      await screen.findByText("2 SKU có tồn · 800 SP · 434 LK"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("200 SP · 100 LK")).toBeInTheDocument();
+    await act(async () => {
+      useLanguageStore.getState().setLanguage("en");
+      await ensureEnglishMessages();
+    });
 
     expect(
       await screen.findByText(/Good (morning|afternoon|evening),/),
@@ -744,6 +751,18 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     expect(screen.getByText("Priority work")).toBeInTheDocument();
     expect(screen.getByText("Recent transactions")).toBeInTheDocument();
     expect(screen.getByText("Stock threshold alerts")).toBeInTheDocument();
+    expect(
+      screen.getByText("2 SKUs in stock · 800 products · 434 components"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("200 products · 100 components"),
+    ).toBeInTheDocument();
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(
+      screen.getByText("2 SKU có tồn · 800 SP · 434 LK"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("200 SP · 100 LK")).toBeInTheDocument();
+    expect(screen.getByText("Giao dịch gần đây")).toBeInTheDocument();
   });
 
   it("đổi 14 ngày chỉ tải lại chart, KPI Hôm nay và nguồn KPI không đổi", async () => {

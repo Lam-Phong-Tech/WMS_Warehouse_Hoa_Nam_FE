@@ -28,33 +28,30 @@ export function SnapshotThresholdSummary({
         <div>
           <h2>{t("dashboard.snapshot.thresholdSummaryTitle")}</h2>
           <p className="snapshot-threshold-note">
-            Chỉ SKU có min hoặc max mới được đánh giá.
+            {t("dashboardSnapshot.thresholdNote")}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => onNavigate(stockReportRoute)}
-        >
-          Xem chi tiết <DashIcon name="arrow-right" />
+        <button type="button" onClick={() => onNavigate(stockReportRoute)}>
+          {t("common.viewDetail")} <DashIcon name="arrow-right" />
         </button>
       </header>
       {source.error && hasCompleteSnapshot ? (
         <div className="snapshot-partial-alert" role="status">
-          Định mức có thể đã cũ.{" "}
+          {t("dashboardSnapshot.thresholdStale")}{" "}
           <button type="button" onClick={() => void source.refetch()}>
-            Thử lại
+            {t("common.retry")}
           </button>
         </div>
       ) : null}
       {source.loading ? (
         <div className="snapshot-threshold-state" role="status">
-          Đang tải định mức…
+          {t("dashboardSnapshot.thresholdLoading")}
         </div>
       ) : source.error && !hasCompleteSnapshot ? (
         <div className="snapshot-threshold-state" role="alert">
-          Không tải được định mức.{" "}
+          {t("dashboardSnapshot.thresholdFailed")}{" "}
           <button type="button" onClick={() => void source.refetch()}>
-            Thử lại
+            {t("common.retry")}
           </button>
         </div>
       ) : (
@@ -62,26 +59,20 @@ export function SnapshotThresholdSummary({
           <div className="snapshot-threshold-totals">
             <div>
               <strong>{fmt(configured)}</strong>
-              <span>SKU đã cấu hình</span>
+              <span>{t("dashboardSnapshot.configuredSkus")}</span>
             </div>
             <div>
               <strong>{fmt(unconfigured)}</strong>
-              <span>SKU chưa cấu hình</span>
+              <span>{t("dashboardSnapshot.unconfiguredSkus")}</span>
             </div>
           </div>
           <div className="snapshot-threshold-alerts">
-            <button
-              type="button"
-              onClick={() => onNavigate(stockReportRoute)}
-            >
-              <span>Dưới định mức</span>
+            <button type="button" onClick={() => onNavigate(stockReportRoute)}>
+              <span>{t("dashboardSnapshot.belowThreshold")}</span>
               <strong>{fmt(below)}</strong>
             </button>
-            <button
-              type="button"
-              onClick={() => onNavigate(stockReportRoute)}
-            >
-              <span>Vượt định mức</span>
+            <button type="button" onClick={() => onNavigate(stockReportRoute)}>
+              <span>{t("dashboardSnapshot.aboveThreshold")}</span>
               <strong>{fmt(above)}</strong>
             </button>
           </div>

@@ -13,7 +13,13 @@ import dayjs from "dayjs";
  *  · lọc trạng thái, mở chi tiết bản lưu, lịch sử in và xem trước nhãn từ đúng ID.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, within, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  screen,
+  within,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -36,6 +42,8 @@ import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import PackingLabelPrintReport from "./PackingLabelPrintReport";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 
 const PRINTER_A = "pc-a";
 const PRINTER_B = "pc-b";
@@ -226,7 +234,131 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
   });
 
   afterEach(() => {
+    act(() => useLanguageStore.getState().setLanguage("vi"));
     cleanupTestState();
+  });
+
+  it("switches the report, filters, status counts and open drawer from Vietnamese to English", async () => {
+    const user = userEvent.setup();
+    renderReport();
+    expect(
+      await screen.findByRole("heading", {
+        name: "Báo cáo nhãn đóng gói – In / In lại",
+      }),
+    ).toBeInTheDocument();
+    await screen.findByText("4 lượt in trong kỳ");
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Packing label report – Print / Reprint",
+      }),
+    ).toBeInTheDocument();
+    const kpis = screen.getByRole("region", {
+      name: "Label printing overview",
+    });
+    for (const text of [
+      "Unique labels",
+      "4 print attempts in period",
+      "75% of all print attempts",
+      "Check the printer response",
+      "Keep the label code and content",
+    ]) {
+      expect(kpis).toHaveTextContent(text);
+    }
+    const health = screen.getByRole("region", {
+      name: "Label printing status",
+    });
+    for (const text of ["3 successful", "1 failed", "0 undetermined"]) {
+      expect(within(health).getByText(text)).toBeInTheDocument();
+    }
+    expect(
+      within(health).getByLabelText("3 successful, 1 failed, 0 undetermined"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("tab", { name: "Print attempts 4" }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Labels 2" })).toBeInTheDocument();
+    expect(screen.getByText(/Latest attempt:/)).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(
+        "Search label code, outbound, SKU, recipient…",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Status" })).toHaveTextContent(
+      "Result: AllResult: SuccessfulResult: FailedResult: Undetermined",
+    );
+    expect(screen.getByRole("combobox", { name: "Printer" })).toHaveTextContent(
+      "Printer: All",
+    );
+    expect(
+      screen.getByRole("combobox", { name: "Operator" }),
+    ).toHaveTextContent("Printed by: All");
+    expect(
+      screen.getByRole("combobox", { name: "Print attempt type" }),
+    ).toHaveTextContent("Attempt type: First print / retry");
+    expect(
+      screen.getByText(/Label creation period:.*Vietnam time/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Refresh" })).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    for (const name of [
+      "Label / Outbound",
+      "SKU / Recipient",
+      "Time ↓",
+      "Result",
+      "Actions",
+    ]) {
+      expect(
+        within(table).getByRole("columnheader", { name }),
+      ).toBeInTheDocument();
+    }
+    expect(within(table).getByText("Print failed")).toBeInTheDocument();
+    expect(within(table).getAllByText("First print / retry")).toHaveLength(3);
+    expect(within(table).getAllByText("Đại lý An Phát")).toHaveLength(2);
+    expect(
+      within(table).getByText("Nhãn đầu bị nhòe khi dán"),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(table).getAllByRole("button", { name: /View label details/ })[0],
+    );
+    const detail = await screen.findByTestId("packing-label-detail");
+    expect(detail).toHaveTextContent("Packing label information");
+    expect(detail).toHaveTextContent("Snapshot statusPrinted");
+    expect(
+      await within(detail).findByRole("heading", {
+        name: "Label print history",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(detail).getByRole("button", { name: "Preview label" }),
+    ).toBeInTheDocument();
+    expect(detail).toHaveTextContent("Máy khoan");
+    expect(detail).toHaveTextContent("Nhãn đầu bị nhòe khi dán");
+    await user.click(
+      within(detail).getByRole("button", { name: "Preview label" }),
+    );
+    const preview = await screen.findByTestId("packing-label-preview");
+    expect(
+      within(preview).getByRole("heading", { name: "PACKING LABEL" }),
+    ).toBeInTheDocument();
+    expect(
+      within(preview).getByRole("combobox", { name: "Zoom label preview" }),
+    ).toHaveTextContent("Fit to frame");
+    expect(preview).toHaveTextContent("Total: 2 SKUs / 3 items");
+    await user.click(
+      within(preview).getByRole("button", { name: "Back to label details" }),
+    );
+    await act(async () => useLanguageStore.getState().setLanguage("vi"));
+    expect(
+      within(screen.getByTestId("packing-label-detail")).getByRole("heading", {
+        name: "Thông tin nhãn đóng gói",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("tự áp dụng khoảng ngày khi chọn mà không cần nút Áp dụng", async () => {
@@ -246,6 +378,40 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
         }),
       ),
     );
+  });
+
+  it("localizes labels with no attempts and preserves their ready-to-print status", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      rows: [{ id: "ready", label_code: "PL-READY", status: "READY_TO_PRINT" }],
+    } as never);
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, last_page: 1, total: 0 },
+    } as never);
+    renderReport();
+    await screen.findByRole("heading", { name: "Chưa có lượt in trong kỳ" });
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    expect(
+      screen.getByRole("heading", { name: "No print attempts in period" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Try a different keyword or date range."),
+    ).toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Labels 1" }));
+    const table = screen.getByRole("table");
+    for (const text of [
+      "No SKU content",
+      "No recipient",
+      "No print attempts",
+      "Awaiting first print",
+      "Ready to print",
+    ]) {
+      expect(within(table).getByText(text)).toBeInTheDocument();
+    }
   });
 
   it("dựng một dòng cho mỗi lần in, ghép đủ nhãn / máy in / người thao tác", async () => {
@@ -544,6 +710,18 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(
       within(detail).getByRole("button", { name: "In nhãn" }),
     ).toBeDisabled();
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    expect(within(detail).getByText("Recipient")).toBeInTheDocument();
+    expect(within(detail).getByText("SKU / quantity")).toBeInTheDocument();
+    expect(
+      within(detail).getByRole("heading", { name: "Data validation errors" }),
+    ).toBeInTheDocument();
+    expect(
+      within(detail).getByRole("button", { name: "Preview label" }),
+    ).toBeDisabled();
   });
   it("preserves filters when loading fails and retries the same period", async () => {
     vi.mocked(http.get).mockRejectedValue(new Error("report unavailable"));
@@ -557,6 +735,17 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Thử lại" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Xuất báo cáo" })).toBeDisabled();
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    expect(
+      screen.getByRole("heading", { name: "Unable to load print history" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Filters are preserved. Please try again."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
   });
   it("confirms aggregate export scope and includes every selected filter", async () => {
     const user = userEvent.setup();

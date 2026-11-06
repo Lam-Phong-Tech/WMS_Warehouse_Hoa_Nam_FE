@@ -1400,7 +1400,7 @@ export default function MovementTraceReport() {
                   ...select.options,
                 ].map((option) => ({
                   ...option,
-                  label: `${select.key === "actor" ? "Người thực hiện" : "Loại biến động"}: ${option.label}`,
+                  label: `${t(select.key === "actor" ? "reports.movementTrace.actor" : "reports.movementTrace.movementType")}: ${option.label}`,
                 }))}
                 icon={select.key === "actor" ? "user-round" : "file-clock"}
                 searchPlaceholder={select.placeholder}
@@ -1413,7 +1413,7 @@ export default function MovementTraceReport() {
                 className="trace-list-clear"
                 onClick={ledgerFilter.clear}
               >
-                Xóa lọc
+                {t("inbound.list.clearFilters")}
               </button>
             ) : null}
           </div>

@@ -763,7 +763,7 @@ export function DashboardSnapshot({
                             <small>{task.detail}</small>
                           </span>
                           <b>{fmt(task.count)}</b>
-                          <i>Xem</i>
+                          <i>{t("dashboardSnapshot.view")}</i>
                         </button>
                       ))}
                     </div>
