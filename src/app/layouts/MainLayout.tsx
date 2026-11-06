@@ -20,6 +20,7 @@ import { AppPageHeader } from "@/app/layouts/AppPageHeader";
 import { WarehousePausedBanner } from "@/app/layouts/WarehousePausedBanner";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
+import { useWarehouseRealtime } from "@/shared/realtime/use-warehouse-realtime";
 import { Loading } from "@/shared/components";
 import {
   AUTH_BASELINE,
@@ -100,6 +101,7 @@ export function MainLayout() {
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
   const { isLoading: isLoadingProfile } = useMe();
   useNotificationSocket();
+  useWarehouseRealtime();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     readStoredSidebarCollapsed,
   );

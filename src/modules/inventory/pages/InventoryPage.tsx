@@ -200,6 +200,24 @@ export default function InventoryPage() {
   });
 
   const balances = balanceQuery.data?.rows ?? [];
+  const matchingBalanceDetail = balanceDetailRow
+    ? balances.find((row) => String(row.id) === String(balanceDetailRow.id))
+    : undefined;
+  const balanceDetailMissing = Boolean(
+    balanceDetailRow &&
+      balanceQuery.isSuccess &&
+      !balanceQuery.isFetching &&
+      !matchingBalanceDetail,
+  );
+  const currentBalanceDetail = balanceDetailMissing
+    ? null
+    : matchingBalanceDetail ?? balanceDetailRow;
+  useEffect(() => {
+    if (balanceDetailMissing) {
+      // A settled filtered read no longer contains this balance.
+      setBalanceDetailRow(null);
+    }
+  }, [balanceDetailMissing]);
   const balanceMeta = balanceQuery.data?.meta;
   const movements = movementQuery.data?.rows ?? [];
   const movementMeta = movementQuery.data?.meta;
@@ -847,9 +865,9 @@ export default function InventoryPage() {
           </div>
         </section>
       </UiTabPanel>
-      {balanceDetailRow ? (
+      {currentBalanceDetail ? (
         <BalanceDetailModal
-          balance={balanceDetailRow}
+          balance={currentBalanceDetail}
           onClose={() => setBalanceDetailRow(null)}
           onTraceMovement={canTrace ? handleOpenTrace : undefined}
         />

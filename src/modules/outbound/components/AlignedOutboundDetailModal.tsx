@@ -273,7 +273,15 @@ export function AlignedOutboundDetailModal({
       ) ?? null,
     [documentId, labelQuery.data],
   );
-  const packingLabel = preparedLabel ?? serverLabel;
+  // Local preparation can finish ahead of the list response. Keep that newer
+  // revision, then return to the server row once it catches up or replaces it.
+  const packingLabel =
+    preparedLabel &&
+    (!serverLabel ||
+      (serverLabel.id === preparedLabel.id &&
+        serverLabel.version < preparedLabel.version))
+      ? preparedLabel
+      : serverLabel;
   const activePrinters = (printerQuery.data ?? []).filter(
     (printer) => printer.status === "ACTIVE",
   );

@@ -50,7 +50,7 @@ export function InboundReportDetail({
   onBack,
 }: InboundReportDetailProps) {
   useDateTimePreferences();
-  const detailQuery = useInboundDetail(document.id);
+  const detailQuery = useInboundDetail(document.id, { readOnly: true });
   const entriesQuery = useInboundScanEntries(document.id, "ALL");
   const warehousesQuery = useWarehouseDirectory();
   const [tab, setTab] = useState<"codes" | "sku">("codes");

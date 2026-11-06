@@ -87,7 +87,7 @@ function InboundListScreen() {
     rows,
     SORT_ACCESSORS,
   );
-  const loading = query.isLoading || query.isFetching;
+  const loading = query.isLoading;
   const hasFilters = Boolean(
     searchInput || status || pendingInfo !== undefined || sortOrder !== "desc",
   );
@@ -383,7 +383,7 @@ function InboundListScreen() {
         ) : null}
         <div
           className={`hn-inbound-table-region${loading ? " is-loading" : ""}`}
-          aria-busy={loading}
+          aria-busy={query.isFetching}
         >
           {loading ? (
             <div

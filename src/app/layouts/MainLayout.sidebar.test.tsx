@@ -19,6 +19,9 @@ vi.mock("@/modules/auth/hooks/use-me", () => ({
 vi.mock("@/modules/notifications/hooks/useNotificationSocket", () => ({
   useNotificationSocket: () => {},
 }));
+vi.mock("@/shared/realtime/use-warehouse-realtime", () => ({
+  useWarehouseRealtime: () => {},
+}));
 vi.mock("@/shared/store/auth.store", () => ({
   useAuthStore: (select: (state: { isProfileLoaded: boolean }) => unknown) =>
     select({ isProfileLoaded: true }),

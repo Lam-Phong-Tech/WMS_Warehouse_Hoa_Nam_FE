@@ -108,6 +108,7 @@ function mockQueries(
       },
     },
     isLoading: overrides.balancesLoading ?? false,
+    isSuccess: !(overrides.balancesError || overrides.balancesLoading),
     isFetching: false,
     isError: overrides.balancesError ?? false,
     error: overrides.balancesError ? new Error("boom") : null,
@@ -246,6 +247,27 @@ describe("InventoryPage (INV-01 hub)", () => {
     expect(within(drawer).getByText("BOX-01")).toBeInTheDocument();
     expect(within(drawer).getByText("TRAY-01")).toBeInTheDocument();
     expect(within(drawer).getByText("A-01-01")).toBeInTheDocument();
+  });
+
+  it("keeps an open read drawer on the latest balance row and closes it when the row leaves the result", async () => {
+    const view = renderWithProviders(<InventoryPage />);
+    await screen.findByText("SKU-001");
+    fireEvent.click(screen.getByRole("button", { name: /Mở/ }));
+    const drawer = await screen.findByRole("dialog");
+    expect(within(drawer).getByText("A-01-01")).toBeInTheDocument();
+    mockQueries({
+      balances: [{ ...BALANCE_ROW, location: "A-UPDATED", available: 7 }],
+    });
+    view.rerender(<InventoryPage />);
+    expect(within(drawer).getByText("A-UPDATED")).toBeInTheDocument();
+    mockQueries({ balances: [] });
+    view.rerender(<InventoryPage />);
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    mockQueries();
+    view.rerender(<InventoryPage />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("nút Trace bị disable khi thiếu quyền inventory.trace (RBAC)", async () => {

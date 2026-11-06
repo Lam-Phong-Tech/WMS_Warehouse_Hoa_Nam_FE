@@ -45,6 +45,13 @@ Chỉ áp dụng màu và khoảng cách trên cho phần danh sách. Mỗi tab 
 - Thông tin `Hiển thị ...` và ô chọn số dòng/trang nằm trong cùng một nhóm bên trái, cách nhau `14px`; các nút chuyển trang nằm bên phải.
 - Nhóm bên trái được phép xuống dòng khi hẹp; điều hướng vẫn tự dồn về phải.
 
+### Đồng bộ dữ liệu nghiệp vụ
+
+- Bảng nhập/xuất, tồn kho, tổng quan và báo cáo dùng chung luồng `useWarehouseRealtime` tại shell. Khi có thay đổi đã lưu thành công, làm mới các query đọc đang được sử dụng; bảng chưa mở được đánh dấu cũ để tải lại khi quay về.
+- Giữ nguyên từ khóa, bộ lọc, cách sắp xếp, tab và trang hiện tại. Giữ dữ liệu đang có trong lúc tải ngầm, không phủ trạng thái tải toàn bảng ở mỗi sự kiện.
+- Không ghi đè nội dung biểu mẫu hoặc phiên bản dữ liệu đã chụp khi bắt đầu sửa. Chi tiết báo cáo chỉ đọc dùng query riêng; nếu bản ghi không còn trong danh sách đã tải thành công, đóng chi tiết chỉ đọc thay vì tiếp tục hiển thị bản chụp cũ.
+- Không dùng chuông thông báo làm nguồn duy nhất để đồng bộ bảng: tùy chọn thông báo và việc loại trừ người thao tác không được ngăn cập nhật dữ liệu. Khi kết nối trở lại hoặc quay về trang, tự đối chiếu dữ liệu; chu kỳ dự phòng chỉ chạy khi đang đăng nhập, trực tuyến và trang đang hiển thị.
+
 ## Nút mở chi tiết — chuẩn chung ngày 04/11/2026
 
 Tuân thủ quy tắc độ tương phản/đường chia trong [chuẩn giao diện thống nhất](./DESIGN_FOUNDATIONS.md). Màu chữ và nền phải đổi cùng theme, kể cả hover/focus; không dùng màu light cố định cho đầu bảng hoặc nền mũi tên. Chạy `npm run test:ui-contrast` để kiểm tra hồi quy SKU trên hai theme.

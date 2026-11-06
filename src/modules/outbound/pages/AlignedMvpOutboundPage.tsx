@@ -145,7 +145,7 @@ export default function AlignedMvpOutboundPage() {
     rows,
     SORT_ACCESSORS,
   );
-  const loading = listQuery.isLoading || listQuery.isFetching;
+  const loading = listQuery.isLoading;
   const hasFilters = Boolean(searchInput || search || status || recipient);
   const first = rows.length
     ? (pagination.current - 1) * pagination.pageSize + 1
@@ -472,7 +472,7 @@ export default function AlignedMvpOutboundPage() {
             ) : null}
             <div
               className={`hn-outbound-table-region${loading ? " is-loading" : ""}`}
-              aria-busy={loading}
+              aria-busy={listQuery.isFetching}
             >
               {loading ? (
                 <div

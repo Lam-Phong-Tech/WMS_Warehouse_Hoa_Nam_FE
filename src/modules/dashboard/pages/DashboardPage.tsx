@@ -205,12 +205,10 @@ export default function DashboardPage() {
   const { overview, xnt, xntDaily, quick, hasPrevious } = useOverviewSource(
     dashboardRange,
     enabled,
-    !offline,
   );
   const chartSource = useOverviewChartSource(
     range,
     enabled && isMapReferenceScreen && referenceView === null,
-    !offline,
   );
 
   // Vùng aria-live: mỗi thao tác đổi dữ liệu được xướng thành lời.
@@ -249,27 +247,7 @@ export default function DashboardPage() {
       ? t("dashboard.alert.failedRange")
       : t("dashboard.alert.failed");
 
-  /**
-   * "Đang bận" tính trên CẢ BỐN nguồn, không riêng nguồn chính.
-   *
-   * Bản trước chỉ nhìn `overview.isFetching`: nút Làm mới sáng lại ngay khi
-   * nguồn chính về, trong lúc ba nguồn kia còn đang bay — bấm phát nữa là nhân
-   * đôi request.
-   */
-  const busy =
-    overview.isFetching ||
-    xnt.isFetching ||
-    xntDaily.isFetching ||
-    quick.isFetching;
-
-  /**
-   * Làm mới thủ công phải NHÌN THẤY được. Bản trước chỉ hiện banner "Đang thử
-   * lại" khi đã có lỗi từ trước, nên bấm Làm mới trên trang khoẻ mạnh thì
-   * ngoài việc nút xám đi là không có phản hồi nào.
-   *
-   * Vòng tự làm mới 60 giây thì KHÔNG hiện banner — nó chạy ngầm, nhấp nháy
-   * mỗi phút chỉ gây nhiễu.
-   */
+  // Recovery requests expose progress; shell-driven background reads stay quiet.
   const [manualRefresh, setManualRefresh] = useState(false);
   const retrying = (overview.isError && overview.isFetching) || manualRefresh;
 
@@ -789,7 +767,6 @@ export default function DashboardPage() {
           loading={loading}
           failed={failed}
           partial={partial}
-          dataUpdatedAt={overview.dataUpdatedAt}
           forbidden={forbidden}
           chartStateOverride={chartStateOverride}
           liveRecent
@@ -852,9 +829,6 @@ export default function DashboardPage() {
               dateError={dateError}
               type={type}
               onTypeChange={changeType}
-              lastUpdatedLabel={lastUpdatedLabel}
-              refreshing={busy || manualRefresh}
-              onRefresh={refreshAll}
             />
 
             {pageAlert ? (
@@ -863,7 +837,17 @@ export default function DashboardPage() {
                 role="status"
                 aria-live="polite"
               >
-                {pageAlert?.copy}
+                <span>{pageAlert.copy}</span>
+                {failed || partial ? (
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={refreshAll}
+                    disabled={manualRefresh}
+                  >
+                    {t("dashboard.filters.refresh")}
+                  </button>
+                ) : null}
               </div>
             ) : null}
 

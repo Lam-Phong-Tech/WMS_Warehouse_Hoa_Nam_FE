@@ -1,4 +1,4 @@
-import { parseDateTime, BUSINESS_TIMEZONE } from "@/shared/utils/date-time";
+import { BUSINESS_TIMEZONE } from "@/shared/utils/date-time";
 import { useEffect, useRef, useState } from "react";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import dayjs from "dayjs";
@@ -287,7 +287,6 @@ export function DashboardSnapshot({
   loading,
   failed,
   partial = false,
-  dataUpdatedAt = 0,
   forbidden,
   chartStateOverride,
   liveRecent = false,
@@ -309,7 +308,6 @@ export function DashboardSnapshot({
   loading: boolean;
   failed: boolean;
   partial?: boolean;
-  dataUpdatedAt?: number;
   forbidden: boolean;
   chartStateOverride?: ChartState;
   liveRecent?: boolean;
@@ -501,26 +499,6 @@ export function DashboardSnapshot({
         </div>
       </header>
 
-      {!effectiveForbidden ? (
-        <div className="snapshot-data-bar">
-          <span>
-            {t("dashboard.snapshot.todayScope")} ·{" "}
-            {dataUpdatedAt
-              ? t("dashboard.lastUpdated.at", {
-                  time: parseDateTime(dataUpdatedAt).format("DD/MM/YYYY HH:mm"),
-                })
-              : t("dashboard.lastUpdated.none")}
-          </span>
-          <span>
-            {t("dashboard.snapshot.trendScope", {
-              period: periodText(period, range, t),
-            })}
-          </span>
-          <button type="button" onClick={onRetry} disabled={effectiveLoading}>
-            {t("dashboard.filters.refresh")}
-          </button>
-        </div>
-      ) : null}
       {partial && !effectiveFailed ? (
         <div className="snapshot-partial-alert" role="status">
           {t("dashboard.snapshot.partialCopy")}

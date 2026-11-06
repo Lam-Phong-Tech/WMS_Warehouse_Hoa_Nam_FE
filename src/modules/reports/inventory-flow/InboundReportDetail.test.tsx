@@ -103,6 +103,7 @@ describe("Chi tiết báo cáo nhập kho", () => {
       />,
       ["/reports/inventory-flow?screen=RPT-01"],
     );
+    expect(useInboundDetail).toHaveBeenCalledWith("in-1", { readOnly: true });
 
     expect(
       screen.getByRole("heading", { name: "Chi tiết báo cáo nhập kho" }),

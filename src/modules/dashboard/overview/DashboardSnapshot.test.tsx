@@ -74,6 +74,44 @@ afterEach(() => {
 });
 
 describe("DashboardSnapshot MAP-01 parity", () => {
+  it.each([{ failed: true }, { partial: true }])(
+    "retains recovery actions for failed or partial data (%j)",
+    (state) => {
+      renderSnapshot(state);
+      fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+      expect(baseProps.onRetry).toHaveBeenCalledOnce();
+      expect(
+        screen.queryByRole("button", { name: "Làm mới" }),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(["vi", "en"] as const)(
+    "keeps the healthy %s overview focused on greeting, KPIs and period selection",
+    async (language) => {
+      await act(async () => {
+        if (language === "en") await ensureEnglishMessages();
+        useLanguageStore.getState().setLanguage(language);
+      });
+      const { container } = renderSnapshot();
+      expect(container.querySelector(".snapshot-data-bar")).toBeNull();
+      expect(
+        screen.queryByText(/Chỉ số hôm nay|Today's figures/),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/Xu hướng:|Trend:/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Làm mới|Refresh/ }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("QA");
+      expect(container.querySelector(".snapshot-kpis")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: language === "vi" ? /7 ngày gần nhất/ : /Last 7 days/,
+        }),
+      ).toBeInTheDocument();
+    },
+  );
+
   it("updates priority row actions in both languages without changing the selected route", async () => {
     renderSnapshot({
       issues: [

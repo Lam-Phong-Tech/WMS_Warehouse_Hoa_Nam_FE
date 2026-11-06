@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useEffect } from "react";
 import {
+  act,
   cleanup,
   fireEvent,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 import { useLanguageStore } from "@/shared/i18n/language.store";
@@ -51,6 +54,15 @@ const unassigned = {
   nfc_status: "UNASSIGNED",
   nfc: null,
 };
+
+let liveClient: QueryClient;
+function CaptureQueryClient() {
+  const client = useQueryClient();
+  useEffect(() => {
+    liveClient = client;
+  }, [client]);
+  return null;
+}
 
 describe("OutboundNfcProducts", () => {
   beforeEach(() => {
@@ -106,6 +118,51 @@ describe("OutboundNfcProducts", () => {
     );
     fireEvent.click(screen.getAllByRole("button", { name: "Xem chi tiết" })[0]);
     expect(await screen.findByText("04A1B2")).toBeInTheDocument();
+  });
+
+  it("updates a selected read-only NFC detail when its list row changes", async () => {
+    renderWithProviders(
+      <>
+        <CaptureQueryClient />
+        <OutboundNfcProducts />
+      </>,
+    );
+    await screen.findByText("SP-0001");
+    fireEvent.click(screen.getAllByRole("button", { name: "Xem chi tiết" })[0]);
+    await screen.findByText("04A1B2");
+    await act(async () => {
+      liveClient.setQueriesData(
+        { queryKey: ["outbound-nfc"] },
+        {
+          data: [
+            {
+              ...assigned,
+              nfc: { ...assigned.nfc, hardware_uid: "UPDATED-UID" },
+            },
+            unassigned,
+          ],
+          meta: { total: 2 },
+        },
+      );
+    });
+    expect(await screen.findByText("UPDATED-UID")).toBeInTheDocument();
+    expect(screen.queryByText("04A1B2")).not.toBeInTheDocument();
+    await act(async () => {
+      liveClient.setQueriesData(
+        { queryKey: ["outbound-nfc"] },
+        { data: [], meta: { total: 0 } },
+      );
+    });
+    await waitFor(() =>
+      expect(screen.queryByText("UPDATED-UID")).not.toBeInTheDocument(),
+    );
+    await act(async () => {
+      liveClient.setQueriesData(
+        { queryKey: ["outbound-nfc"] },
+        { data: [assigned], meta: { total: 1 } },
+      );
+    });
+    expect(screen.queryByText("04A1B2")).not.toBeInTheDocument();
   });
 
   it("continues row numbering across pages and preserves the full product-name tooltip", async () => {

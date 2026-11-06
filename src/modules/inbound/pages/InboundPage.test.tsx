@@ -95,6 +95,20 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
       expect.objectContaining({ pendingProductInfo: undefined }),
     );
   });
+
+  it("keeps existing rows interactive during a background data refresh", () => {
+    vi.mocked(useInboundDocuments).mockReturnValue({
+      data: { data: ROWS, meta: { current_page: 1, last_page: 1, total: 2 } },
+      isLoading: false,
+      isFetching: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useInboundDocuments>);
+    const { container } = renderWithProviders(<InboundPage />);
+    expect(screen.getByText("PN-MINI-001")).toBeVisible();
+    expect(container.querySelector(".hn-inbound-loading")).toBeNull();
+  });
 });
 
 describe("IN-01 · Sắp xếp theo", () => {

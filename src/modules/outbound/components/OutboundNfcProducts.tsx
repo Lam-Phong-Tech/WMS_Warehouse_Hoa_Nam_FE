@@ -55,6 +55,25 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
       ),
   });
   const rows = query.data?.data ?? [];
+  const matchingSelectedItem = selected
+    ? rows.find(
+        (row) =>
+          row.document_id === selected.document_id &&
+          row.item_id === selected.item_id,
+      )
+    : undefined;
+  const selectionMissing = Boolean(
+    selected && query.isSuccess && !query.isFetching && !matchingSelectedItem,
+  );
+  const selectedItem = selectionMissing
+    ? null
+    : (matchingSelectedItem ?? selected);
+  useEffect(() => {
+    if (selectionMissing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- A settled filter result no longer contains this read-only item.
+      setSelected(null);
+    }
+  }, [selectionMissing]);
   const totals = query.data?.meta.tab_totals;
   const loadFailed = query.isError && !query.data;
   const nfcUnknown = query.isError && !!query.data;
@@ -70,11 +89,11 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
     { key: "UNASSIGNED", label: t("nfc.outboundUnassigned") },
   ];
 
-  if (selected && documentId)
+  if (selectedItem && documentId)
     return (
       <OutboundNfcProductDetail
         embedded
-        item={selected}
+        item={selectedItem}
         nfcUnknown={nfcUnknown}
         onClose={() => setSelected(null)}
       />
@@ -258,9 +277,9 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
           </div>
         </div>
       ) : null}
-      {selected ? (
+      {selectedItem ? (
         <OutboundNfcProductDetail
-          item={selected}
+          item={selectedItem}
           nfcUnknown={nfcUnknown}
           onClose={() => setSelected(null)}
         />
