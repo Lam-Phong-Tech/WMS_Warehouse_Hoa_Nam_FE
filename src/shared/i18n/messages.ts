@@ -5086,6 +5086,7 @@ export const MESSAGES_VI = {
       imageEmpty:
         "Chưa có ảnh nào. Sản phẩm không ảnh vẫn lên được ứng dụng nhưng thẻ sẽ để trống.",
       imageAltLabel: "Mô tả ảnh",
+      imagePreview: "Phóng to ảnh {number}",
       imageSetPrimary: "Đặt làm ảnh đại diện",
       imageIsPrimary: "Ảnh đại diện",
       imageMoveUp: "Đưa lên trước",

@@ -137,7 +137,9 @@ function searchInput() {
 
 async function chooseFilter(testId: string, label: string) {
   fireEvent.mouseDown(within(screen.getByTestId(testId)).getByRole("combobox"));
-  fireEvent.click(await screen.findByRole("option", { name: label }));
+  fireEvent.click(await screen.findByRole("option", {
+    name: (name) => name === label || name.endsWith(`: ${label}`),
+  }));
 }
 
 function LocationProbe() {
@@ -385,8 +387,10 @@ describe("MST-PV-01 · catalog interactions", () => {
         page: "1",
         per_page: "20",
       });
-      expect(searchInput()).toHaveValue("khoan");
-      expect(screen.queryByTestId("pv-catalog-publish-switch")).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(searchInput()).toHaveValue("khoan");
+        expect(screen.queryByTestId("pv-catalog-publish-switch")).not.toBeInTheDocument();
+      });
     },
   );
 

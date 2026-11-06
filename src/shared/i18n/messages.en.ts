@@ -5089,6 +5089,7 @@ export const MESSAGES_EN: MessageTree = {
       imageEmpty:
         "No images yet. A product without images can still be published, but its card will be blank.",
       imageAltLabel: "Image description",
+      imagePreview: "Enlarge image {number}",
       imageSetPrimary: "Set as cover image",
       imageIsPrimary: "Cover image",
       imageMoveUp: "Move earlier",

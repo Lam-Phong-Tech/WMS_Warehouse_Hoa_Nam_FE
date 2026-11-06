@@ -5242,6 +5242,7 @@ export const MESSAGES_ZH: MessageTree = {
       "imageUploading": "正在上传 {count} 图片…",
       "imageEmpty": "还没有图像。没有图像的产品仍然可以发布，但其卡片将为空白。",
       "imageAltLabel": "图片说明",
+      "imagePreview": "放大图片 {number}",
       "imageSetPrimary": "设置为封面图片",
       "imageIsPrimary": "封面图片",
       "imageMoveUp": "提前移动",

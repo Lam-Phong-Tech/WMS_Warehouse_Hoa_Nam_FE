@@ -12,8 +12,8 @@
  *
  * Vẫn giữ ô DÁN URL bên cạnh nút tải lên, cho ảnh đã nằm sẵn trên CDN khác.
  */
-import { useEffect, useRef, useState, type DragEvent } from "react";
-import { Box, Stack, UiAlert, UiTextField } from "@/shared/ui";
+import { useEffect, useId, useRef, useState, type DragEvent } from "react";
+import { Box, Stack, UiAlert, UiDialog, UiTextField } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
@@ -74,6 +74,8 @@ export function PvProductImageField({
   const [dragOver, setDragOver] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
   const [manualError, setManualError] = useState("");
+  const [previewImage, setPreviewImage] = useState<PvImage | null>(null);
+  const previewTitleId = useId();
 
   // Đóng hộp thoại giữa lúc upload: huỷ request đang bay, nếu không thì
   // `setUploading` chạy trên component đã unmount và tệp vẫn lặng lẽ lên bucket.
@@ -323,22 +325,45 @@ export function PvProductImageField({
               }}
             >
               <Box
-                component="img"
-                src={image.url}
-                alt={image.alt_text ?? ""}
-                loading="lazy"
+                component="button"
+                type="button"
+                aria-label={t("pv.productCatalog.imagePreview", {
+                  number: index + 1,
+                })}
+                onClick={() => setPreviewImage(image)}
                 sx={{
                   width: 72,
                   height: 72,
                   flexShrink: 0,
-                  // `contain`: ô xem trước phải cho thấy ĐÚNG tấm ảnh sẽ lên App
-                  // PV. `cover` cắt cụt ảnh dọc/ảnh ngang nên người dùng duyệt
-                  // nhầm một tấm mà họ chưa từng nhìn thấy trọn vẹn.
-                  objectFit: "contain",
+                  padding: 0,
+                  border: 0,
                   borderRadius: `${RADIUS.control}px`,
                   backgroundColor: S.bgSubtle,
+                  cursor: "zoom-in",
+                  "&:focus-visible": {
+                    outline: "2px solid var(--ops-link)",
+                    outlineOffset: 2,
+                  },
                 }}
-              />
+              >
+                <Box
+                  component="img"
+                  src={image.url}
+                  alt={image.alt_text ?? ""}
+                  loading="lazy"
+                  sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "block",
+                    // `contain`: ô xem trước phải cho thấy ĐÚNG tấm ảnh sẽ lên App
+                    // PV. `cover` cắt cụt ảnh dọc/ảnh ngang nên người dùng duyệt
+                    // nhầm một tấm mà họ chưa từng nhìn thấy trọn vẹn.
+                    objectFit: "contain",
+                    borderRadius: `${RADIUS.control}px`,
+                    backgroundColor: S.bgSubtle,
+                  }}
+                />
+              </Box>
               <Box sx={{ flex: 1, minWidth: 0, display: "grid", gap: "6px" }}>
                 <UiTextField
                   fullWidth
@@ -402,6 +427,46 @@ export function PvProductImageField({
           ))}
         </Stack>
       )}
+      <UiDialog
+        open={previewImage !== null}
+        aria-labelledby={previewTitleId}
+        onClose={() => setPreviewImage(null)}
+        maxWidth="lg"
+        title={
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 2,
+            }}
+          >
+            <span id={previewTitleId}>
+              {t("pv.productCatalog.imagesLabel")}
+            </span>
+            <ActionIconButton
+              kind="close"
+              label={t("common.close")}
+              onClick={() => setPreviewImage(null)}
+            />
+          </Box>
+        }
+      >
+        {previewImage ? (
+          <Box
+            component="img"
+            src={previewImage.url}
+            alt={previewImage.alt_text || t("pv.productCatalog.imagesLabel")}
+            sx={{
+              display: "block",
+              width: "100%",
+              height: "auto",
+              maxHeight: "70dvh",
+              objectFit: "contain",
+            }}
+          />
+        ) : null}
+      </UiDialog>
     </Stack>
   );
 }
