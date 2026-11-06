@@ -329,7 +329,8 @@
 
 .pv-catalog-filters {
   display: grid;
-  grid-template-columns: minmax(260px, 2fr) repeat(2, minmax(190px, 1fr)) auto;
+  grid-template-columns:
+    minmax(260px, 2fr) minmax(260px, 1fr) minmax(190px, 1fr) auto;
   align-items: center;
   gap: 12px;
   min-width: 0;
