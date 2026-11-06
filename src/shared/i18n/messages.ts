@@ -741,6 +741,7 @@ export const MESSAGES_VI = {
       posting: "Đang xử lý...",
       fieldDocument: "Phiếu",
       fieldSource: "Mã chứng từ",
+      fieldWarehouse: "Kho",
       fieldStatus: "Trạng thái",
       fieldVersion: "Phiên bản dữ liệu",
       statValidCodes: "Mã hợp lệ",

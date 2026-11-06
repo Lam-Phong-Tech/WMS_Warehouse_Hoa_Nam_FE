@@ -3,6 +3,15 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
+vi.mock("@/shared/data/reference-queries", () => ({
+  useWarehouseDirectory: vi.fn(() => ({
+    data: [
+      { id: "WH-OTHER", name: "Kho khác" },
+      { id: "WH-1", name: "Kho tổng Hoa Nam" },
+    ],
+  })),
+}));
+
 vi.mock("@/modules/inbound/hooks/use-inbound", () => ({
   useInboundDetail: vi.fn(),
   useInboundScanEntries: vi.fn(),
@@ -228,6 +237,25 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     expect(screen.getByText("Hợp lệ")).toBeInTheDocument();
     expect(screen.getByText("Đã gỡ")).toBeInTheDocument();
   });
+
+  it.each(["SCANNING", "POSTED"] as const)(
+    "hiển thị tên kho của phiếu %s theo đúng mã kho",
+    async (status) => {
+      mockHooks();
+      vi.mocked(useInboundDetail).mockReturnValue({
+        data: { ...DETAIL, document: { ...DETAIL.document, status } },
+        isLoading: false,
+        isError: false,
+      } as never);
+
+      renderWithProviders(
+        <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+      );
+
+      expect(await screen.findByText("Kho tổng Hoa Nam")).toBeInTheDocument();
+      expect(screen.queryByText("Kho khác")).not.toBeInTheDocument();
+    },
+  );
 
   it("đếm số mã đã gỡ ở mức phiếu chứ không theo phiên thao tác", async () => {
     mockHooks([ACTIVE_ENTRY, REMOVED_ENTRY]);

@@ -745,6 +745,7 @@ export const MESSAGES_EN: MessageTree = {
       fieldSource: "Source",
       fieldStatus: "Status",
       fieldVersion: "Data version",
+      fieldWarehouse: "Warehouse",
       statValidCodes: "Valid codes",
       statSkuLines: "Received SKU lines",
       statRemoved: "Removed codes",

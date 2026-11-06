@@ -1326,6 +1326,7 @@ export const MESSAGES_ZH: MessageTree = {
       "fieldSource": "来源",
       "fieldStatus": "状态",
       "fieldVersion": "数据版本",
+      "fieldWarehouse": "仓库",
       "statValidCodes": "有效代码",
       "statSkuLines": "已收到 SKU 行",
       "statRemoved": "删除代码",

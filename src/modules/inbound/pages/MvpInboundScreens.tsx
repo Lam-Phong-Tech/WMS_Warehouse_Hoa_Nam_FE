@@ -55,6 +55,7 @@ import {
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import { InboundSkuInfoModal } from "@/modules/inbound/components/InboundSkuInfoModal";
 import type { SkuRecord } from "@/modules/master-data/types/mvp-master.types";
@@ -396,6 +397,7 @@ export function InboundScanModal({
   const dialog = useDialogExit(onClose);
   const t = useT();
   const detailQuery = useInboundDetail(documentId);
+  const warehousesQuery = useWarehouseDirectory({ enabled: Boolean(documentId) });
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
   const scanEntriesQuery = useInboundScanEntries(documentId, "ALL");
   const scanMutation = useScanInbound();
@@ -444,6 +446,12 @@ export function InboundScanModal({
   const { confirm, confirmDialog } = useUiConfirm();
 
   const detail = detailQuery.data;
+  const warehouse = warehousesQuery.data?.find(
+    (row) => String(row.id ?? row.warehouse_id) === detail?.document.warehouseId,
+  );
+  const warehouseName = String(
+    warehouse?.name ?? warehouse?.warehouse_name ?? "",
+  ).trim();
   const skuRows = useMemo(() => skuQuery.data?.data ?? [], [skuQuery.data?.data]);
   const skuById = useMemo(
     () => new Map<string, SkuRecord>(skuRows.map((sku) => [sku.sku_id, sku])),
@@ -1277,7 +1285,15 @@ export function InboundScanModal({
                         : EMPTY_TEXT}
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 6, sm: 9 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                      {t("inbound.detail.fieldWarehouse")}
+                    </Box>
+                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
+                      {warehouseName || EMPTY_TEXT}
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box sx={{ typography: "caption", color: "text.secondary" }}>
                       {t("updatedUi.text_9b223cea940b")}
                     </Box>
