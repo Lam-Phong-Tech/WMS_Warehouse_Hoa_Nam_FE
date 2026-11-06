@@ -1204,11 +1204,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         </td>
                         <td className="name-col">
                           <div className="hn-sku-cell">
-                            <SkuThumbnail
-                              url={record.image_url}
-                              name={record.sku_name ?? record.name}
-                              size={44}
-                            />
                             <div className="hn-sku-cell-text">
                               <TruncatedText lines={1} maxWidth={380}>
                                 <SkuLink
@@ -3448,12 +3443,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       </td>
                       <td className="code-col">
                         <span className="hn-defect-code-cell">
-                          <span
-                            className="hn-defect-code-icon"
-                            aria-hidden="true"
-                          >
-                            <DefectSymbol name="clipboard" />
-                          </span>
                           <span>{record.defect_code}</span>
                         </span>
                       </td>

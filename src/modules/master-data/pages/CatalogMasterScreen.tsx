@@ -482,7 +482,6 @@ export function CatalogMasterScreen() {
       sortAccessor: (record) => record.code,
       render: (record) => (
         <span className="hn-catalog-code">
-          <span aria-hidden="true">{activeTab.icon}</span>
           <strong>{record.code}</strong>
         </span>
       ),
