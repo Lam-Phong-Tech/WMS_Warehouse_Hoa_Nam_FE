@@ -3,7 +3,10 @@ import { DashIcon } from "../components/DashIcon";
 import { fmt } from "./overview-data";
 import { useT } from "@/shared/i18n/useT";
 import { buildDashboardThresholds } from "./dashboard-threshold-model";
+import { ROUTES } from "@/shared/constants/routes";
 import "./dashboard-system-views.css";
+
+const stockReportRoute = `${ROUTES.REPORTS_STOCK_RECONCILE}?screen=RPT-02`;
 
 export function SnapshotThresholdSummary({
   onNavigate,
@@ -30,7 +33,7 @@ export function SnapshotThresholdSummary({
         </div>
         <button
           type="button"
-          onClick={() => onNavigate("/dashboard?screen=MAP-01&view=thresholds")}
+          onClick={() => onNavigate(stockReportRoute)}
         >
           Xem chi tiết <DashIcon name="arrow-right" />
         </button>
@@ -69,18 +72,14 @@ export function SnapshotThresholdSummary({
           <div className="snapshot-threshold-alerts">
             <button
               type="button"
-              onClick={() =>
-                onNavigate("/dashboard?screen=MAP-01&view=thresholds")
-              }
+              onClick={() => onNavigate(stockReportRoute)}
             >
               <span>Dưới định mức</span>
               <strong>{fmt(below)}</strong>
             </button>
             <button
               type="button"
-              onClick={() =>
-                onNavigate("/dashboard?screen=MAP-01&view=thresholds")
-              }
+              onClick={() => onNavigate(stockReportRoute)}
             >
               <span>Vượt định mức</span>
               <strong>{fmt(above)}</strong>
