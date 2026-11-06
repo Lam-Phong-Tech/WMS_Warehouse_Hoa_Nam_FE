@@ -781,15 +781,24 @@
 .hn-login-history-card .hn-personal-detail-list {
   margin-bottom: 0;
 }
-.hn-login-history .hn-personal-actions {
+.hn-login-history-pagination,
+.hn-login-history-summary {
+  display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
 }
-.hn-login-history .hn-device-view {
-  flex: 0 1 auto;
+.hn-login-history-pagination {
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+  color: var(--ops-muted);
 }
-.hn-login-history .hn-device-view:disabled {
-  opacity: 0.5;
-  cursor: default;
+.hn-login-history-pagination > nav {
+  margin-left: auto;
 }
 .hn-personal-device-card > header p {
   display: flex;

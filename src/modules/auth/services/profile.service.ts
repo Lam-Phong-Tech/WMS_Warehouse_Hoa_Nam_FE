@@ -14,11 +14,11 @@ const versionHeaders = (version?: number) =>
     ? undefined
     : { headers: { "If-Match": String(version) } };
 export const profileService = {
-  async getDeviceHistory(page = 1): Promise<ProfileLoginHistoryResponse> {
+  async getDeviceHistory(page = 1, perPage = 6): Promise<ProfileLoginHistoryResponse> {
     const result = await http.getPage<ProfileLoginHistoryEntry[]>(
       "/auth/device-history",
       {
-        params: { page, per_page: 6 },
+        params: { page, per_page: perPage },
       },
     );
     return {

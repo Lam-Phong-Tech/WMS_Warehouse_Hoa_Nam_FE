@@ -10,6 +10,7 @@ export const PERSONAL_VI = {
   tabletDevice: "Máy tính bảng",
   historyPrevious: "Trang trước",
   historyNext: "Trang sau",
+  historyRange: "Hiển thị {from}–{to} / {total} phiên đăng nhập",
   browserQuietPromptHint:
     "Nếu không thấy hộp thoại, bấm biểu tượng thông báo hoặc “Notifications blocked” cạnh địa chỉ trang để cho phép thông báo. Trình duyệt có thể đang dùng lời nhắc im lặng.",
   collapseNavigation: "Thu gọn điều hướng",
@@ -217,6 +218,7 @@ export const PERSONAL_EN = {
   tabletDevice: "Tablet",
   historyPrevious: "Previous page",
   historyNext: "Next page",
+  historyRange: "Showing {from}–{to} / {total} logins",
   browserQuietPromptHint:
     "If no dialog appears, select the notification icon or “Notifications blocked” beside the site address to allow notifications. Your browser may be using quiet prompts.",
   collapseNavigation: "Collapse navigation",

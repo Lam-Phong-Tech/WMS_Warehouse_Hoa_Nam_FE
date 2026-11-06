@@ -14,6 +14,15 @@ vi.mock("@/shared/api/http", () => ({
 }));
 afterEach(() => vi.clearAllMocks());
 describe("private profile transport", () => {
+  it("requests the selected page and page size for login history", async () => {
+    const response = { data: [], meta: { current_page: 2, per_page: 12, last_page: 3, total: 30 } };
+    vi.mocked(http.getPage).mockResolvedValue(response);
+    expect(await profileService.getDeviceHistory(2, 12)).toEqual(response);
+    expect(http.getPage).toHaveBeenCalledWith("/auth/device-history", {
+      params: { page: 2, per_page: 12 },
+    });
+  });
+
   it("sends the captured preference version and accepts only canonical server results", async () => {
     const response = { version: 7, theme: "dark" };
     vi.mocked(http.patch).mockResolvedValue(response);

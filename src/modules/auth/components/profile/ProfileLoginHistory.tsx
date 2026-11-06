@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButton } from "@/shared/components/actions";
-import { UiStatusBadge } from "@/shared/ui";
+import { UiPagination, UiSelect, UiStatusBadge } from "@/shared/ui";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useT } from "@/shared/i18n/useT";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { profileService } from "../../services/profile.service";
@@ -13,14 +14,25 @@ import { sessionName } from "./session-presentation";
 export function ProfileLoginHistory({ userId }: { userId: string }) {
   const t = useT();
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(6);
   const query = useQuery({
-    queryKey: [...profileKeys.deviceHistory(userId), page],
-    queryFn: () => profileService.getDeviceHistory(page),
+    queryKey: [...profileKeys.deviceHistory(userId), page, pageSize],
+    queryFn: () => profileService.getDeviceHistory(page, pageSize),
     staleTime: 0,
     refetchOnWindowFocus: true,
     retry: false,
   });
-  if (query.isPending)
+  const pagination = resolveApiPagination(query.data?.meta, {
+    page, pageSize, rowCount: query.data?.data.length ?? 0,
+  });
+  const lastPage = Math.max(1, Math.ceil(pagination.total / pagination.pageSize));
+  const correctingPage = query.isSuccess && page > lastPage;
+  useEffect(() => {
+    if (!correctingPage || query.isFetching) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Token pruning can remove the requested page on a server refetch.
+    setPage(lastPage);
+  }, [correctingPage, lastPage, query.isFetching]);
+  if (query.isPending || correctingPage)
     return <p role="status">{t("auth.personal.loginHistoryLoading")}</p>;
   if (query.isError)
     return (
@@ -109,32 +121,38 @@ export function ProfileLoginHistory({ userId }: { userId: string }) {
           );
         })}
       </div>
-      {query.data.meta.last_page > 1 || page > 1 ? (
-        <nav
-          className="hn-personal-actions"
-          aria-label={t("auth.personal.loginHistory")}
-        >
-          <button
-            type="button"
-            className="hn-device-view"
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-          >
-            {t("auth.personal.historyPrevious")}
-          </button>
+      <div className="hn-login-history-pagination">
+        <div className="hn-login-history-summary">
           <span>
-            {page} / {Math.max(page, query.data.meta.last_page)}
+            {t("auth.personal.historyRange", {
+              from: pagination.total ? (pagination.current - 1) * pagination.pageSize + 1 : 0,
+              to: Math.min(pagination.current * pagination.pageSize, pagination.total),
+              total: pagination.total,
+            })}
           </span>
-          <button
-            type="button"
-            className="hn-device-view"
-            disabled={page >= query.data.meta.last_page}
-            onClick={() => setPage(page + 1)}
-          >
-            {t("auth.personal.historyNext")}
-          </button>
-        </nav>
-      ) : null}
+          <UiSelect
+            aria-label={t("shared.table.perPageAria")}
+            value={pagination.pageSize}
+            disabled={query.isFetching}
+            options={[6, 12, 24].map((size) => ({
+              value: size,
+              label: t("shared.table.perPage", { size }),
+            }))}
+            onChange={(value) => {
+              setPageSize(Number(value));
+              setPage(1);
+            }}
+          />
+        </div>
+        <UiPagination
+          page={pagination.current}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          showTotal={false}
+          disabled={query.isFetching}
+          onPageChange={setPage}
+        />
+      </div>
     </section>
   );
 }

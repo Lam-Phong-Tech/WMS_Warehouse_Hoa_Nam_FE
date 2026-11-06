@@ -83,7 +83,7 @@ export interface ProfileLoginHistoryEntry extends ProfileSession {
 }
 export interface ProfileLoginHistoryResponse {
   data: ProfileLoginHistoryEntry[];
-  meta: { current_page: number; last_page: number; total: number };
+  meta: { current_page: number; per_page?: number; last_page: number; total: number };
 }
 export interface ProfileDevicesMeta {
   current_session_id?: string;
