@@ -201,6 +201,7 @@ export function ProfilePage() {
     setProfile(updated);
     client.setQueryData(["auth", "me", currentToken], updated);
     void client.invalidateQueries({ queryKey: ["auth", "avatar", userId] });
+    void client.invalidateQueries({ queryKey: ["iam", "users"] });
     void client.invalidateQueries({ queryKey: ["audit-logs", "me"] });
     toast.success(t("auth.personal.saved"));
   };

@@ -1,3 +1,5 @@
+import type { ProfileAvatar } from "@/modules/auth/types/profile.types";
+
 export type IamUserStatus = "ACTIVE" | "INACTIVE" | "LOCKED";
 export type IamRoleStatus = "ACTIVE" | "INACTIVE";
 export type IamRoleScopeType = "SYSTEM" | "WAREHOUSE" | "FUNCTION";
@@ -51,6 +53,7 @@ export interface IamDepartmentListParams {
 }
 
 export interface IamUser {
+  avatar?: ProfileAvatar | null;
   user_id: string;
   username: string;
   display_name: string;

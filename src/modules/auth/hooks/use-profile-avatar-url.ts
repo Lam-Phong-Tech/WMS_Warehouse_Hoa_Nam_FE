@@ -7,10 +7,11 @@ import { profileKeys, type ProfileAvatar } from "../types/profile.types";
 export function useProfileAvatarUrl(
   userId: string,
   avatar?: ProfileAvatar | null,
+  loadAvatar: () => Promise<Blob> = profileService.getAvatar,
 ) {
   const photo = useQuery({
     queryKey: profileKeys.avatar(userId, avatar?.updated_at),
-    queryFn: profileService.getAvatar,
+    queryFn: loadAvatar,
     enabled: Boolean(userId && avatar),
     staleTime: 300000,
     retry: false,

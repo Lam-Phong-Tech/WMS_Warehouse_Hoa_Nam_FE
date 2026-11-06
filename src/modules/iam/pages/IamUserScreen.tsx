@@ -1,4 +1,5 @@
 import { applicableIamRoles } from "./iam-user-permissions";
+import { IamUserAvatar } from "@/modules/iam/components/IamUserAvatar";
 import { IamDateField } from "@/modules/iam/components/IamDateField";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
@@ -174,15 +175,6 @@ function passwordRuleError(
   return null;
 }
 
-function userInitials(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(-2)
-    .map((part) => part[0])
-    .join("")
-    .toLocaleUpperCase();
-}
 
 function statusLabel(status: IamUserStatus) {
   return businessLabel(IAM_USER_STATUS_LABELS, status);
@@ -1079,9 +1071,7 @@ export function IamUserScreen({
                       data-label={t("iam.user.colUser")}
                     >
                       <div className="hn-iam-identity">
-                        <span className="hn-iam-avatar" aria-hidden="true">
-                          {userInitials(user.display_name)}
-                        </span>
+                        <IamUserAvatar user={user} />
                         <div>
                           <strong>
                             <TruncatedText lines={1}>
@@ -1607,12 +1597,7 @@ export function IamUserScreen({
           <>
             <div className="hn-iam-profile-header">
               <div className="hn-iam-identity">
-                <span
-                  className="hn-iam-avatar hn-iam-avatar-large"
-                  aria-hidden="true"
-                >
-                  {userInitials(viewingUser.display_name)}
-                </span>
+                <IamUserAvatar user={viewingUser} large />
                 <div>
                   <h2>{viewingUser.display_name}</h2>
                   <UiStatusBadge
@@ -1861,7 +1846,7 @@ export function IamUserScreen({
           </span>
         }
         actions={
-          <Stack direction="row" spacing={1.5} useFlexGap flexWrap="wrap">
+          <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: "wrap" }}>
             <ActionButton
               kind="cancel"
               onClick={closeGrantModal}
