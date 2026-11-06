@@ -7,7 +7,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import dayjs from "dayjs";
 
@@ -151,6 +151,15 @@ function routeResponses(url: string) {
 
 // Cùng một con số còn xuất hiện ở khối đối soát, biểu đồ và bảng dữ liệu thay
 // thế, nên các assertion về KPI đều thu hẹp phạm vi vào #kpi-grid.
+function CurrentLocation() {
+  const location = useLocation();
+  return (
+    <output data-testid="current-location">
+      {location.pathname + location.search + location.hash}
+    </output>
+  );
+}
+
 function renderDashboard(entry = window.location.pathname + window.location.search) {
   mockedGetPage.mockImplementation((url: string) => {
     const meta = {
@@ -171,6 +180,7 @@ function renderDashboard(entry = window.location.pathname + window.location.sear
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[entry]}>
         <DashboardPage />
+        <CurrentLocation />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -190,6 +200,28 @@ afterEach(() => {
 });
 
 describe("DashboardPage — Tổng quan vận hành", () => {
+  it.each(["", "&document=retired-document"])(
+    "returns retired transaction links to the dashboard (%s)",
+    async (documentQuery) => {
+      mockedGet.mockImplementation((url: string) => routeResponses(url));
+      renderDashboard(
+        `/dashboard?screen=MAP-01&view=transaction${documentQuery}&keep=1#recent`,
+      );
+
+      await waitFor(() =>
+        expect(screen.getByTestId("current-location").textContent).toBe(
+          "/dashboard?screen=MAP-01&keep=1#recent",
+        ),
+      );
+      expect(
+        screen.queryByRole("heading", { name: "Chi tiết giao dịch" }),
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByText("Công việc cần ưu tiên"),
+      ).toBeInTheDocument();
+    },
+  );
+
   it("đổi bộ lọc Loại hàng thì KPI đọc đúng nhánh và ẩn thẻ không còn nghĩa", async () => {
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard();

@@ -13,7 +13,7 @@ import { parseDateTime } from "@/shared/utils/date-time";
  *    thái tương ứng thay vì thay bằng 0.
  */
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
@@ -154,8 +154,7 @@ export default function DashboardPage() {
   const referenceView: DashboardSystemView | null =
     requestedView === "work" ||
     requestedView === "stock" ||
-    requestedView === "thresholds" ||
-    requestedView === "transaction"
+    requestedView === "thresholds"
       ? requestedView
       : null;
 
@@ -731,12 +730,27 @@ export default function DashboardPage() {
       return card;
     });
 
+  if (requestedView === "transaction") {
+    const search = new URLSearchParams(location.search);
+    search.delete("view");
+    search.delete("document");
+    return (
+      <Navigate
+        replace
+        to={{
+          pathname: location.pathname,
+          search: search.size ? `?${search.toString()}` : "",
+          hash: location.hash,
+        }}
+      />
+    );
+  }
+
   if (isMapReferenceScreen && referenceView)
     return (
       <div className="hn-dash" data-mvp-screen="MAP-01">
         <DashboardSystemViews
           view={referenceView}
-          documentId={mapSearchParams.get("document") ?? undefined}
           overview={overviewData}
           showWarranty={canViewWarranty}
           onNavigate={navigate}

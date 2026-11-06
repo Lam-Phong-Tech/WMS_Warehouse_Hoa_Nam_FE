@@ -15,7 +15,7 @@ describe("recent transaction report links", () => {
     ["OUTBOUND", "/reports/outbound-flow?screen=RPT-01B&document=selected-id"],
     [
       "REVERSAL",
-      "/dashboard?screen=MAP-01&view=transaction&document=selected-id",
+      "/reports/pending-evidence?screen=RPT-08",
     ],
   ])("opens the selected %s document in its matching view", (type, route) => {
     vi.mocked(useIoHistorySnapshot).mockReturnValue({

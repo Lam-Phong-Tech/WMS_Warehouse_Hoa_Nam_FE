@@ -80,7 +80,7 @@ export function SnapshotRecentTransactions({
                     ? `${ROUTES.REPORTS_INVENTORY_FLOW}?screen=RPT-01&document=${encodeURIComponent(document.id)}`
                     : document.type === "OUTBOUND"
                       ? `${ROUTES.REPORTS_OUTBOUND_FLOW}?screen=RPT-01B&document=${encodeURIComponent(document.id)}`
-                      : `/dashboard?screen=MAP-01&view=transaction&document=${encodeURIComponent(document.id)}`;
+                      : `${ROUTES.REPORTS_PENDING_EVIDENCE}?screen=RPT-08`;
                 return (
                   <tr key={document.id}>
                     <td>
