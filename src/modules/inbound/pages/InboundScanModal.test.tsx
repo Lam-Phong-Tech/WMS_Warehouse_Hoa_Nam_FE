@@ -220,6 +220,50 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     cleanupTestState();
   });
 
+  it("hiển thị thời điểm tạo thực tế theo giờ Việt Nam thay vì ngày chứng từ", async () => {
+    mockHooks();
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: {
+        ...DETAIL,
+        document: {
+          ...DETAIL.document,
+          date: "2026-11-05T17:00:00.000000Z",
+          createdAt: "2026-11-06T04:51:15.000000Z",
+        },
+      },
+      isLoading: false,
+      isError: false,
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    const field = (await screen.findByText("Ngày tạo:")).parentElement;
+    expect(field).toHaveTextContent("06/11/2026 11:51");
+    expect(field).not.toHaveTextContent("00:00");
+  });
+
+  it.each([undefined, ""])(
+    "không dựng giờ 00:00 từ ngày chứng từ khi thiếu thời điểm tạo (%s)",
+    async (createdAt) => {
+      mockHooks();
+      vi.mocked(useInboundDetail).mockReturnValue({
+        data: { ...DETAIL, document: { ...DETAIL.document, createdAt } },
+        isLoading: false,
+        isError: false,
+      } as never);
+
+      renderWithProviders(
+        <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+      );
+
+      const field = (await screen.findByText("Ngày tạo:")).parentElement;
+      expect(field).toHaveTextContent("Chưa có");
+      expect(field).not.toHaveTextContent("00:00");
+    },
+  );
+
   it("hiển thị bảng mã đã quét đọc từ server, kèm SKU và nguồn quét", async () => {
     mockHooks([ACTIVE_ENTRY, REMOVED_ENTRY]);
 

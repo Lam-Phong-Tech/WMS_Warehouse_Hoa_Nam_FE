@@ -1280,8 +1280,10 @@ export function InboundScanModal({
                       {t("updatedUi.text_4572c8880b00")}
                     </Box>
                     <Box sx={{ typography: "body2" }}>
-                      {detail.document.date
-                        ? parseDateTime(detail.document.date).format("DD/MM/YYYY HH:mm")
+                      {detail.document.createdAt
+                        ? parseDateTime(detail.document.createdAt).format(
+                            "DD/MM/YYYY HH:mm",
+                          )
                         : EMPTY_TEXT}
                     </Box>
                   </Grid>
