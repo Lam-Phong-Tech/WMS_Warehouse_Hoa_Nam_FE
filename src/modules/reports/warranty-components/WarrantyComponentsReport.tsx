@@ -1156,7 +1156,7 @@ export default function WarrantyComponentsReport() {
                   component="table"
                   sx={{
                     width: "100%",
-                    minWidth: 1440,
+                    minWidth: 1200,
                     borderCollapse: "collapse",
                     tableLayout: "fixed",
                     color: "var(--ops-text)",
@@ -1208,34 +1208,31 @@ export default function WarrantyComponentsReport() {
                           )}
                         />
                       </th>
-                      <th style={{ width: "19%" }}>
+                      <th style={{ width: "24%" }}>
                         {tUi("updatedUi.text_922013da333f")}
                       </th>
-                      <th style={{ width: "20%" }}>
+                      <th style={{ width: "27%" }}>
                         {tUi("updatedUi.text_100237901dd9")}
-                      </th>
-                      <th style={{ width: "17%" }}>
-                        {tUi("updatedUi.text_6a91c6be24df")}
                       </th>
                       <th
                         className="warranty-desktop-only"
-                        style={{ width: "11%" }}
+                        style={{ width: "13%" }}
                       >
                         {tUi("warranty.detail.fieldReceivedAt")}
                       </th>
                       <th
                         className="warranty-desktop-only"
-                        style={{ width: "11%" }}
+                        style={{ width: "13%" }}
                       >
                         {tUi("updatedUi.text_61151ea4d85c")}
                       </th>
                       <th
                         className="warranty-tablet-only"
-                        style={{ width: "22%" }}
+                        style={{ width: "26%" }}
                       >
                         {tUi("updatedUi.text_2a2f8a4381c7")}
                       </th>
-                      <th style={{ width: "13%" }}>
+                      <th style={{ width: "14%" }}>
                         {tUi("dashboard.composition.colStatus")}
                       </th>
                       <th
@@ -1271,9 +1268,6 @@ export default function WarrantyComponentsReport() {
                               <SkeletonLine width="65%" height={9} />
                             </Box>
                           </td>
-                          <td>
-                            <SkeletonLine width="68%" />
-                          </td>
                           <td className="warranty-desktop-only">
                             <SkeletonLine width="64%" />
                           </td>
@@ -1296,7 +1290,7 @@ export default function WarrantyComponentsReport() {
                       ))
                     ) : filteredRows.length === 0 ? (
                       <tr>
-                        <td colSpan={9} style={{ borderRight: 0 }}>
+                        <td colSpan={8} style={{ borderRight: 0 }}>
                           <EmptyState noResult={rows.length > 0} />
                         </td>
                       </tr>
@@ -1394,22 +1388,6 @@ export default function WarrantyComponentsReport() {
                               }}
                             >
                               {row.skuName}
-                            </Box>
-                          </td>
-                          <td>
-                            <Box
-                              className="warranty-component-cell"
-                              title={row.component}
-                              sx={{
-                                display: "block",
-                                width: "100%",
-                                maxWidth: "100%",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {row.component}
                             </Box>
                           </td>
                           <td className="warranty-desktop-only">
