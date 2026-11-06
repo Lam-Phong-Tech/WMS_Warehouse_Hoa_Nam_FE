@@ -847,9 +847,10 @@
   border: 1px solid var(--pv-line);
   border-radius: var(--ops-radius-card);
   background: var(--pv-card);
-  color: var(--pv-blue);
+  color: var(--pv-heading);
 }
 .pv-catalog-menu .MuiMenuItem-root {
+  color: var(--pv-heading);
   min-height: var(--ops-control-height);
   font-size: 14px;
 }
@@ -1141,9 +1142,9 @@ body:has(.pv-catalog-page [role="combobox"][aria-expanded="true"])
 body:has(.pv-catalog-dialog [role="combobox"][aria-expanded="true"])
   .MuiAutocomplete-popper,
 body:has(.pv-catalog-pagination [aria-expanded="true"]) .MuiMenu-paper {
-  --pv-popover-blue: light-dark(var(--wms-auth-link), var(--wms-info-text));
-  --pv-popover-pale: light-dark(var(--wms-auth-pale), var(--wms-info-soft));
-  color: var(--pv-popover-blue);
+  --pv-popover-ink: var(--ops-heading);
+  --pv-popover-pale: var(--ops-pale);
+  color: var(--pv-popover-ink);
 }
 body:has(.pv-catalog-page [role="combobox"][aria-expanded="true"])
   .MuiAutocomplete-popper
