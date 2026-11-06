@@ -1861,7 +1861,7 @@ export function IamUserScreen({
           </span>
         }
         actions={
-          <>
+          <Stack direction="row" spacing={1.5} useFlexGap flexWrap="wrap">
             <ActionButton
               kind="cancel"
               onClick={closeGrantModal}
@@ -1876,7 +1876,7 @@ export function IamUserScreen({
             >
               {t("iam.user.grantConfirm")}
             </ActionButton>
-          </>
+          </Stack>
         }
       >
         <Stack spacing={2} sx={{ mt: 0.5 }}>
