@@ -128,7 +128,6 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
       expect(name).toHaveValue("N".repeat(255));
       const description = screen.getByRole("textbox", {
         name: "Mô tả",
-        exact: true,
       });
       expect(description).toHaveAttribute("maxlength", "500");
       await user.clear(description);
