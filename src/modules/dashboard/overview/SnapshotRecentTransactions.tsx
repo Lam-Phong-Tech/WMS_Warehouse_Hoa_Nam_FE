@@ -5,6 +5,7 @@ import { DashIcon } from "../components/DashIcon";
 import { dashboardNow, fmt } from "./overview-data";
 import { useT } from "@/shared/i18n/useT";
 import { RowActionButton } from "@/shared/components/actions";
+import { ROUTES } from "@/shared/constants/routes";
 import "./dashboard-system-views.css";
 
 export function SnapshotRecentTransactions({
@@ -83,6 +84,12 @@ export function SnapshotRecentTransactions({
             </thead>
             <tbody>
               {documents.map((document) => {
+                const detailRoute =
+                  document.type === "INBOUND"
+                    ? `${ROUTES.REPORTS_INVENTORY_FLOW}?screen=RPT-01&document=${encodeURIComponent(document.id)}`
+                    : document.type === "OUTBOUND"
+                      ? `${ROUTES.REPORTS_OUTBOUND_FLOW}?screen=RPT-01B&document=${encodeURIComponent(document.id)}`
+                      : `/dashboard?screen=MAP-01&view=transaction&document=${encodeURIComponent(document.id)}`;
                 return (
                   <tr key={document.id}>
                     <td>
@@ -108,11 +115,7 @@ export function SnapshotRecentTransactions({
                       <RowActionButton
                         kind="view"
                         aria-label={`Xem ${document.documentNo}`}
-                        onClick={() =>
-                          onNavigate(
-                            `/dashboard?screen=MAP-01&view=transaction&document=${encodeURIComponent(document.id)}`,
-                          )
-                        }
+                        onClick={() => onNavigate(detailRoute)}
                       >
                         Xem
                       </RowActionButton>

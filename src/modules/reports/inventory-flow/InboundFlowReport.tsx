@@ -14,6 +14,7 @@ import {
   type CSSProperties,
 } from "react";
 import dayjs from "dayjs";
+import { useSearchParams } from "react-router-dom";
 import { VuexyDemoIcon } from "@/shared/ui";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { getApiErrorMessage } from "@/shared/api/api-error";
@@ -346,6 +347,7 @@ function KpiSkeleton() {
 }
 
 export default function InboundFlowReport() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [draftRange, setDraftRange] = useState<DateRange>(initialRange);
   const [appliedRange, setAppliedRange] = useState<DateRange>(initialRange);
   const [appliedSupplier, setAppliedSupplier] = useState("");
@@ -695,14 +697,47 @@ export default function InboundFlowReport() {
         }
       : null;
 
-  if (viewDocument) {
+  const linkedDocumentId = searchParams.get("document");
+  const activeDocument: FlowDocument | null = linkedDocumentId
+    ? (snapshot.documents.find(
+        (document) =>
+          document.id === linkedDocumentId && document.doc_type === "INBOUND",
+      ) ?? {
+        // Detail fetches the exact ID even outside the report's current period.
+        id: linkedDocumentId,
+        doc_type: "INBOUND",
+        document_no: "",
+        status: "",
+        warehouse_code: "",
+        counterpart: "",
+        created_by_name: "",
+        posted_at: "",
+        document_date: "",
+        drillKey: "",
+      })
+    : viewDocument;
+
+  if (activeDocument) {
     return (
       <div className="hn-inbound-report" data-testid="rpt01-inbound-reference">
         <InboundReportDetail
-          document={viewDocument}
+          key={activeDocument.id}
+          document={activeDocument}
           range={appliedRange}
           canExport={canExport}
-          onBack={() => setViewDocument(null)}
+          onBack={() => {
+            setViewDocument(null);
+            if (linkedDocumentId) {
+              setSearchParams(
+                (current) => {
+                  const next = new URLSearchParams(current);
+                  next.delete("document");
+                  return next;
+                },
+                { replace: true },
+              );
+            }
+          }}
         />
       </div>
     );

@@ -14,6 +14,7 @@ import {
   type CSSProperties,
 } from "react";
 import dayjs from "dayjs";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { VuexyDemoIcon } from "@/shared/ui";
 import { getApiErrorMessage } from "@/shared/api/api-error";
@@ -446,6 +447,7 @@ function KpiSkeleton() {
 }
 
 export default function OutboundFlowReport() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const exporter = useReportExport();
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [chartOpen, setChartOpen] = useState(true);
@@ -468,6 +470,8 @@ export default function OutboundFlowReport() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [viewDocumentId, setViewDocumentId] = useState<string | null>(null);
+  const linkedDocumentId = searchParams.get("document");
+  const activeDocumentId = linkedDocumentId || viewDocumentId;
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
@@ -1696,10 +1700,23 @@ export default function OutboundFlowReport() {
         />
       ) : null}
 
-      {viewDocumentId ? (
+      {activeDocumentId ? (
         <AlignedOutboundDetailModal
-          documentId={viewDocumentId}
-          onClose={() => setViewDocumentId(null)}
+          key={activeDocumentId}
+          documentId={activeDocumentId}
+          onClose={() => {
+            setViewDocumentId(null);
+            if (linkedDocumentId) {
+              setSearchParams(
+                (current) => {
+                  const next = new URLSearchParams(current);
+                  next.delete("document");
+                  return next;
+                },
+                { replace: true },
+              );
+            }
+          }}
           onChanged={() => void refetchReport()}
         />
       ) : null}
