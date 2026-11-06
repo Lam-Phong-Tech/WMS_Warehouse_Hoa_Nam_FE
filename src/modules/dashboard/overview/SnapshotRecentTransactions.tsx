@@ -1,7 +1,6 @@
 import { parseDateTime } from "@/shared/utils/date-time";
 
 import { useIoHistorySnapshot } from "@/modules/reports/io-history/io-history-api";
-import { DashIcon } from "../components/DashIcon";
 import { dashboardNow, fmt } from "./overview-data";
 import { useT } from "@/shared/i18n/useT";
 import { RowActionButton } from "@/shared/components/actions";
@@ -26,14 +25,6 @@ export function SnapshotRecentTransactions({
     <article className="snapshot-card snapshot-recent">
       <header>
         <h2>{t("dashboard.snapshot.recentDocsTitle")}</h2>
-        <button
-          type="button"
-          onClick={() =>
-            onNavigate("/dashboard?screen=MAP-01&view=transaction")
-          }
-        >
-          Xem tất cả <DashIcon name="arrow-right" />
-        </button>
       </header>
       {source.error && documents.length > 0 ? (
         <div className="snapshot-partial-alert" role="status">
