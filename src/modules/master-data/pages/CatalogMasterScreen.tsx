@@ -193,7 +193,8 @@ export function CatalogMasterScreen() {
   const t = useT();
   const language = useLanguageStore((state) => state.language);
   const english = language !== "vi";
-  const text = (vi: string, en: string) => (english ? localizedEnglish(en) : vi);
+  const text = (vi: string, en: string) =>
+    english ? localizedEnglish(en) : vi;
   const tabs = useMemo(() => catalogTabs(t), [t]);
   const queryClient = useQueryClient();
   const canManage = useCan(P.CATALOG_MANAGE);
@@ -396,7 +397,10 @@ export function CatalogMasterScreen() {
     setFormError("");
     const values: CatalogFormValues = {
       ...formValues,
-      code: formValues.code.trim(),
+      code:
+        activeKind === "BRAND" && !editingRecord
+          ? formValues.code.trim().toUpperCase().replace(/\s+/g, "_")
+          : formValues.code.trim(),
       name: formValues.name.trim(),
     };
     const errors = validateForm(values);
@@ -601,7 +605,10 @@ export function CatalogMasterScreen() {
           <button
             type="button"
             className="hn-catalog-tabs-toggle"
-            aria-label={text("Hiện/ẩn nhóm danh mục", "Show or hide catalog groups")}
+            aria-label={text(
+              "Hiện/ẩn nhóm danh mục",
+              "Show or hide catalog groups",
+            )}
             title={text("Hiện/ẩn nhóm danh mục", "Show or hide catalog groups")}
             aria-expanded={tabsOpen}
             aria-controls="hn-catalog-tabs"
@@ -864,7 +871,10 @@ export function CatalogMasterScreen() {
               placeholder={activeTab.codePlaceholder}
               value={formValues.code}
               onChange={(event) => {
-                const value = event.target.value;
+                const value =
+                  activeKind === "BRAND" && !editingRecord
+                    ? event.target.value.toUpperCase()
+                    : event.target.value;
                 setFormValues((current) => ({ ...current, code: value }));
                 setFieldErrors((current) =>
                   current.code ? { ...current, code: "" } : current,
