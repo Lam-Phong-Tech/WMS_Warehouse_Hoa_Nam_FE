@@ -843,7 +843,7 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     );
   });
 
-  it("Xem tất cả công việc mở đúng màn chi tiết và quay lại MAP-01", async () => {
+  it("khối Công việc cần ưu tiên không còn nút Xem tất cả", async () => {
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard("/dashboard?screen=MAP-01");
 
@@ -852,16 +852,9 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
       expect(element).not.toBeNull();
       return element as HTMLElement;
     });
-    fireEvent.click(
-      within(priority).getByRole("button", { name: /Xem tất cả/i }),
-    );
     expect(
-      await screen.findByRole("heading", { name: "Việc cần xử lý" }),
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Về tổng quan/i }));
-    expect(
-      await screen.findByText("Công việc cần ưu tiên"),
-    ).toBeInTheDocument();
+      within(priority).queryByRole("button", { name: /Xem tất cả/i }),
+    ).not.toBeInTheDocument();
   });
 });
 

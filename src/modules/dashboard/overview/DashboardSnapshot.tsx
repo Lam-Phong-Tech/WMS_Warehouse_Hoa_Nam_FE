@@ -727,15 +727,6 @@ export function DashboardSnapshot({
                 <article className="snapshot-card snapshot-priority">
                   <header>
                     <h2>{t("dashboard.snapshot.priorityTitle")}</h2>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onNavigate("/dashboard?screen=MAP-01&view=work")
-                      }
-                    >
-                      {t("dashboard.snapshot.viewAll")}{" "}
-                      <DashIcon name="arrow-right" />
-                    </button>
                   </header>
                   <p className="snapshot-priority-note">
                     {t("dashboard.snapshot.priorityOverlap")}
