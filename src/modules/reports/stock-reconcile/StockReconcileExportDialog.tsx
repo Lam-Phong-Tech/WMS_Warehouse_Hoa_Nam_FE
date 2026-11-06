@@ -1,4 +1,5 @@
 import { saveStyledReportWorkbook } from "@/shared/utils/report-excel-style";
+import { BUSINESS_TIMEZONE, parseDateTime } from "@/shared/utils/date-time";
 import { ReportExportDrawer } from "../components/ReportExportAction";
 import {
   safeExportFilename,
@@ -61,6 +62,10 @@ export function StockReconcileExportDialog({
   onClose,
 }: Props) {
   const t = useT();
+  const parsedAsOf = asOf ? parseDateTime(asOf, BUSINESS_TIMEZONE) : null;
+  const displayedAsOf = parsedAsOf?.isValid()
+    ? parsedAsOf.format("DD/MM/YYYY HH:mm:ss [(UTC+7)]")
+    : to;
   const submit = async (choice: ReportExportChoice) => {
     const scope = choice.scope;
     const selected =
@@ -186,7 +191,7 @@ export function StockReconcileExportDialog({
       onExport={submit}
       context={[
         [t("reportExport.period"), from + " – " + to],
-        [t("reportExport.filters"), asOf || to],
+        [t("reportExport.filters"), displayedAsOf],
       ]}
       scopes={[
         {

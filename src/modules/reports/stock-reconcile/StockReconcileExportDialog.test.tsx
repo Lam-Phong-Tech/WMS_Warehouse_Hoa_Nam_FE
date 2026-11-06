@@ -16,6 +16,30 @@ describe("StockReconcileExportDialog", () => {
   afterEach(cleanupTestState);
   beforeEach(() => useAuthStore.setState({ isSuperAdmin: true }));
 
+  it.each([
+    ["2026-11-06T03:49:55.937Z", "06/11/2026 10:49:55 (UTC+7)"],
+    ["2026-11-05T20:30:00Z", "06/11/2026 03:30:00 (UTC+7)"],
+    ["2026-11-06T10:49:55+07:00", "06/11/2026 10:49:55 (UTC+7)"],
+    ["2026-11-06 10:49:55", "06/11/2026 10:49:55 (UTC+7)"],
+    ["", "2026-11-06"],
+    ["invalid", "2026-11-06"],
+  ])(
+    "displays data timestamp %s in Vietnam time or the report end date",
+    (asOf, expected) => {
+      renderWithProviders(
+        <StockReconcileExportDialog
+          rows={[]}
+          from="2026-10-31"
+          to="2026-11-06"
+          asOf={asOf}
+          onClose={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText(expected, { exact: true })).toBeInTheDocument();
+    },
+  );
+
   it("exports only review SKUs and the selected sheets", async () => {
     const onClose = vi.fn();
     renderWithProviders(
