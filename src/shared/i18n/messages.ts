@@ -1849,7 +1849,7 @@ export const MESSAGES_VI = {
         "Mẫu sản phẩm chỉ được gắn với hãng đang sử dụng. Hãy chọn hãng khác hoặc kích hoạt lại hãng trước.",
       errSave: "Không lưu được danh mục.",
       errCodeRequired: "Nhập {label}.",
-      errCodeLength: "Mã tối đa 80 ký tự.",
+      errCodeLength: "Mã tối đa {max} ký tự.",
       errNameRequired: "Nhập {label}.",
       errNameLength: "Tên tối đa 200 ký tự.",
       errDescriptionLength: "Mô tả tối đa 2000 ký tự.",

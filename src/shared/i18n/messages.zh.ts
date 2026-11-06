@@ -2338,7 +2338,7 @@ export const MESSAGES_ZH: MessageTree = {
       "errBrandInactive": "模型只能链接到正在使用的品牌。选择其他品牌，或先重新激活该品牌。",
       "errSave": "无法保存目录条目。",
       "errCodeRequired": "输入 {label}。",
-      "errCodeLength": "代码最多 80 个字符。",
+      "errCodeLength": "代码最多 {max} 个字符。",
       "errNameRequired": "输入 {label}。",
       "errNameLength": "名称最多 200 个字符。",
       "errDescriptionLength": "描述最多 2000 个字符。",

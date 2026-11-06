@@ -266,6 +266,59 @@ describe("CatalogMasterScreen interactions", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
+  it("allows renaming a legacy brand without changing its long code", async () => {
+    const user = userEvent.setup();
+    const legacyCode = "L".repeat(51);
+    getCatalogMasters.mockResolvedValue({
+      data: [{ ...RECORD, code: legacyCode }],
+      meta: { total: 1 },
+    });
+    renderScreen();
+    await user.click(
+      await screen.findByRole("button", { name: `Sửa ${legacyCode}` }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    const name = await within(dialog).findByRole("textbox", {
+      name: /^Tên hãng/,
+    });
+    await user.clear(name);
+    await user.click(name);
+    await user.paste("Renamed brand");
+    await user.click(within(dialog).getByRole("button", { name: /^Lưu$/ }));
+    await waitFor(() =>
+      expect(updateCatalogMaster).toHaveBeenCalledWith(
+        "BRAND",
+        RECORD.id,
+        expect.objectContaining({ code: legacyCode, name: "Renamed brand" }),
+        RECORD.version,
+      ),
+    );
+  });
+
+  it.each([false, true])(
+    "limits brand code input to 50 characters (editing: %s)",
+    async (editing) => {
+      const user = userEvent.setup();
+      renderScreen();
+      if (editing) {
+        await user.click(
+          await screen.findByRole("button", { name: "Sửa DONGCHENG" }),
+        );
+      } else {
+        await openCreate(user);
+      }
+      const dialog = await screen.findByRole("dialog");
+      const code = await within(dialog).findByRole("textbox", {
+        name: /^Mã hãng/,
+      });
+      expect(code).toHaveAttribute("maxlength", "50");
+      await user.clear(code);
+      await user.click(code);
+      await user.paste("A".repeat(51));
+      expect(code).toHaveValue("A".repeat(50));
+    },
+  );
+
   it.each([
     ["makita_japan", "MAKITA_JAPAN"],
     ["makita", "MAKITA"],
@@ -421,7 +474,7 @@ describe("CatalogMasterScreen interactions", () => {
     );
     const dialog = await screen.findByRole("dialog");
     expect(
-      within(dialog).getByRole("textbox", { name: /^Mã hãng/ }),
+      await within(dialog).findByRole("textbox", { name: /^Mã hãng/ }),
     ).toHaveValue(RECORD.code);
     const name = within(dialog).getByRole("textbox", { name: /^Tên hãng/ });
     expect(name).toHaveValue(RECORD.name);

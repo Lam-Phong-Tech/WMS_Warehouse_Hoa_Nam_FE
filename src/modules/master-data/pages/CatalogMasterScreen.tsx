@@ -243,6 +243,7 @@ export function CatalogMasterScreen() {
 
   const activeTab = tabs.find((tab) => tab.kind === activeKind) ?? tabs[0];
   const supportsBrand = catalogMasterSupportsBrand(activeKind);
+  const codeMaxLength = activeKind === "BRAND" ? 50 : 80;
 
   const listParams = {
     keyword: keyword.trim() ? debouncedKeyword : "",
@@ -367,8 +368,13 @@ export function CatalogMasterScreen() {
       errors.code = t("masterData.catalog.errCodeRequired", {
         label: activeTab.codeLabel,
       });
-    else if (code.length > 80)
-      errors.code = t("masterData.catalog.errCodeLength");
+    else if (
+      code.length > codeMaxLength &&
+      !(activeKind === "BRAND" && editingRecord?.code === code)
+    )
+      errors.code = t("masterData.catalog.errCodeLength", {
+        max: codeMaxLength,
+      });
     else {
       // Mã danh mục cũng đi vào mã SKU/nhãn in — cùng bộ ký tự với mọi mã khác.
       const codeError = codeFormatError(code, editingRecord?.code);
@@ -888,7 +894,7 @@ export function CatalogMasterScreen() {
                   ? t("masterData.catalog.codeLockedHint")
                   : undefined)
               }
-              slotProps={{ htmlInput: { maxLength: 80 } }}
+              slotProps={{ htmlInput: { maxLength: codeMaxLength } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>

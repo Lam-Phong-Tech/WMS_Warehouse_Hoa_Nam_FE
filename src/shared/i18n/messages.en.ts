@@ -1847,7 +1847,7 @@ export const MESSAGES_EN: MessageTree = {
         "A model can only be linked to a brand that is in use. Choose another brand, or reactivate the brand first.",
       errSave: "Could not save the catalogue entry.",
       errCodeRequired: "Enter the {label}.",
-      errCodeLength: "The code is at most 80 characters.",
+      errCodeLength: "The code is at most {max} characters.",
       errNameRequired: "Enter the {label}.",
       errNameLength: "The name is at most 200 characters.",
       errDescriptionLength: "The description is at most 2000 characters.",
