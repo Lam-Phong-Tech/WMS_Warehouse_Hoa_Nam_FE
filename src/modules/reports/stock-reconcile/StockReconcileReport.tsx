@@ -1424,14 +1424,29 @@ export default function StockReconcileReport() {
                               data-detail-tab={detailTab}
                             >
                               <colgroup>
+                                {/* Keep status/actions compact; widths total 100%. */}
                                 {(detailTab === "reconcile"
-                                  ? [6, 28, 14, 16, 14, 18, 4]
-                                  : [6, 28, 11, 10, 11, 12, 11, 11]
+                                  ? [
+                                      "6%",
+                                      "calc(50% - 240px)",
+                                      "14%",
+                                      "16%",
+                                      "14%",
+                                      "160px",
+                                      "80px",
+                                    ]
+                                  : [
+                                      "6%",
+                                      "28%",
+                                      "11%",
+                                      "10%",
+                                      "11%",
+                                      "12%",
+                                      "11%",
+                                      "11%",
+                                    ]
                                 ).map((width, index) => (
-                                  <col
-                                    key={index}
-                                    style={{ width: `${width}%` }}
-                                  />
+                                  <col key={index} style={{ width }} />
                                 ))}
                               </colgroup>
                               <thead>
