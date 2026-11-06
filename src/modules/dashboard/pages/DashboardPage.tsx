@@ -16,7 +16,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { ROUTES, WARRANTY_OVERDUE_ROUTE } from "@/shared/constants/routes";
+import {
+  ROUTES,
+  SKU_PENDING_INFO_ROUTE,
+  WARRANTY_OVERDUE_ROUTE,
+} from "@/shared/constants/routes";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT } from "@/shared/i18n/useT";
 import { checkDate, pastDateBounds } from "@/shared/validation/date-rules";
@@ -481,7 +485,7 @@ export default function DashboardPage() {
         detail: t("dashboard.issue.skuDetail"),
         technical: "PENDING_ENRICHMENT / no PII",
         count: source.sku_pending_info,
-        route: ROUTES.MASTER_DATA,
+        route: SKU_PENDING_INFO_ROUTE,
       },
     ];
     // Demo chỉ liệt kê việc CÓ số lượng — không dựng dòng rỗng cho vui mắt.

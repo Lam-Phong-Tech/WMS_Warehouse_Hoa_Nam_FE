@@ -126,7 +126,7 @@ import {
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { validatePhone } from "@/shared/constants/validation.constants";
 import { codeFormatError } from "@/shared/validation/text-rules";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { agencyPlaceLabel } from "@/shared/constants/agency-place-labels";
 import { tStatic as tUi } from "@/shared/i18n/useT";
@@ -386,7 +386,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     };
   }, []);
   // Deep-link ?screen=MST-02 (mo modal tao) — page tu xu ly sau khi go bypass layout.
-  const [skuSearchParams] = useSearchParams();
+  const [skuSearchParams, setSkuSearchParams] = useSearchParams();
+  const skuLocation = useLocation();
   const openCreateRequested =
     openCreateOnMount || skuSearchParams.get("screen") === "MST-02";
   // Deep-link ?filter=pending_info — Dashboard "Vấn đề cần xử lý" trỏ thẳng vào
@@ -415,7 +416,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     setType("");
     setBrandId("");
     setPage(1);
-  }, [pendingInfoRequested]);
+    setFiltersOpen(true);
+  }, [pendingInfoRequested, skuLocation.key]);
+  const clearPendingInfoLink = () => {
+    if (skuSearchParams.get("filter") !== "pending_info") return;
+    const next = new URLSearchParams(skuSearchParams);
+    next.delete("filter");
+    setSkuSearchParams(next, { replace: true });
+  };
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SkuRecord | null>(null);
   const [viewing, setViewing] = useState<SkuRecord | null>(null);
@@ -797,6 +805,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     setType("");
     setBrandId("");
     setInformationStatus("");
+    clearPendingInfoLink();
     setPage(1);
   };
   const refreshList = () => {
@@ -818,6 +827,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       value={informationStatus}
       onChange={(value) => {
         setInformationStatus(value as "PENDING" | "COMPLETE" | "");
+        clearPendingInfoLink();
         setPage(1);
       }}
       placeholder={copy("Thông tin: Tất cả", "Information: All")}

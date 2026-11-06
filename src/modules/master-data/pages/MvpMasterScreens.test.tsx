@@ -7,7 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter, Link } from "react-router-dom";
+import { MemoryRouter, Link, useLocation } from "react-router-dom";
 import {
   AgencyMasterScreen,
   DefectMasterScreen,
@@ -15,6 +15,7 @@ import {
 } from "@/modules/master-data/pages/MvpMasterScreens";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
+import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 
 const { mutation } = vi.hoisted(() => ({
   mutation: () => ({
@@ -24,7 +25,7 @@ const { mutation } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
-  useMvpSkus: () => ({
+  useMvpSkus: vi.fn(() => ({
     data: {
       data: [
         {
@@ -48,7 +49,7 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
     isLoading: false,
     error: null,
     refetch: vi.fn(),
-  }),
+  })),
   useMvpAgencies: () => ({
     data: {
       data: [
@@ -107,6 +108,10 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useCreateMvpDefect: mutation,
   useUpdateMvpDefect: mutation,
 }));
+
+function CurrentSkuLocation() {
+  return <output data-testid="sku-location">{useLocation().search}</output>;
+}
 
 describe("API-backed MVP master screens", () => {
   beforeEach(() => {
@@ -279,8 +284,13 @@ describe("API-backed MVP master screens", () => {
 
   it("opens dashboard pending link with active usage and pending information", () => {
     render(
-      <MemoryRouter initialEntries={["/master-data/skus?filter=pending_info"]}>
-        <SkuMasterScreen />
+      <MemoryRouter
+        initialEntries={["/master-data/skus?filter=pending_info&keep=1"]}
+      >
+        <PinnedSidebarContext.Provider value={true}>
+          <SkuMasterScreen />
+        </PinnedSidebarContext.Provider>
+        <CurrentSkuLocation />
       </MemoryRouter>,
     );
     expect(
@@ -289,6 +299,19 @@ describe("API-backed MVP master screens", () => {
     expect(
       screen.getByRole("combobox", { name: "Lọc mức độ hoàn thiện thông tin" }),
     ).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    expect(screen.getByRole("button", { name: "Bộ lọc" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(
+      vi.mocked(useMvpSkus).mock.calls
+        .filter(([params]) => params?.per_page === 10).at(-1)?.[0],
+    ).toEqual(expect.objectContaining({
+      status: "ACTIVE", information_status: "PENDING", page: 1,
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    expect(screen.getByTestId("sku-location")).toHaveTextContent("?keep=1");
+    expect(screen.getByTestId("sku-location")).not.toHaveTextContent("pending_info");
   });
 
   it("applies dashboard filters when navigating to the same mounted SKU screen", () => {
@@ -298,6 +321,7 @@ describe("API-backed MVP master screens", () => {
           Dashboard pending SKUs
         </Link>
         <SkuMasterScreen />
+        <CurrentSkuLocation />
       </MemoryRouter>,
     );
     fireEvent.click(
@@ -309,6 +333,27 @@ describe("API-backed MVP master screens", () => {
     expect(
       screen.getByRole("combobox", { name: "Lọc mức độ hoàn thiện thông tin" }),
     ).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    const usage = screen.getByRole("combobox", { name: "Lọc theo trạng thái" });
+    fireEvent.mouseDown(usage);
+    fireEvent.click(screen.getByRole("option", {
+      name: "Trạng thái: Ngừng sử dụng",
+    }));
+    fireEvent.click(screen.getByRole("link", { name: "Dashboard pending SKUs" }));
+    expect(usage).toHaveTextContent("Trạng thái: Đang sử dụng");
+    const information = screen.getByRole("combobox", {
+      name: "Lọc mức độ hoàn thiện thông tin",
+    });
+    fireEvent.mouseDown(information);
+    fireEvent.click(screen.getByRole("option", { name: "Thông tin: Đầy đủ" }));
+    expect(screen.getByTestId("sku-location")).not.toHaveTextContent("pending_info");
+    fireEvent.click(screen.getByRole("link", { name: "Dashboard pending SKUs" }));
+    expect(information).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    expect(
+      vi.mocked(useMvpSkus).mock.calls
+        .filter(([params]) => params?.per_page === 10).at(-1)?.[0],
+    ).toEqual(expect.objectContaining({
+      status: "ACTIVE", information_status: "PENDING", page: 1,
+    }));
     fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
     expect(
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),

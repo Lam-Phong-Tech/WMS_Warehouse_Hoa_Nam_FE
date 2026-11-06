@@ -827,6 +827,22 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     );
   });
 
+  it("opens the SKU priority action with pending information selected", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard("/dashboard?screen=MAP-01");
+    const priority = await waitFor(() => {
+      const element = document.querySelector(".snapshot-priority");
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    fireEvent.click(await within(priority).findByRole("button", {
+      name: /Sản phẩm chờ bổ sung thông tin/,
+    }));
+    expect(screen.getByTestId("current-location").textContent).toBe(
+      "/master-data/skus?filter=pending_info",
+    );
+  });
+
   it("Xem tất cả công việc mở đúng màn chi tiết và quay lại MAP-01", async () => {
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard("/dashboard?screen=MAP-01");
