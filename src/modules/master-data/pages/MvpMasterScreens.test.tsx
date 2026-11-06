@@ -14,6 +14,7 @@ import {
   SkuMasterScreen,
 } from "@/modules/master-data/pages/MvpMasterScreens";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 
 const { mutation } = vi.hoisted(() => ({
   mutation: () => ({
@@ -151,6 +152,52 @@ describe("API-backed MVP master screens", () => {
     expect(search).toBeVisible();
     expect(filtersToggle).toHaveAttribute("aria-expanded", "false");
     expect(search).toHaveValue("Máy khoan");
+  });
+
+  it("moves the information filter into extra filters when pinned and preserves its value", () => {
+    const content = (pinned: boolean) => (
+      <MemoryRouter>
+        <PinnedSidebarContext.Provider value={pinned}>
+          <SkuMasterScreen />
+        </PinnedSidebarContext.Provider>
+      </MemoryRouter>
+    );
+    const { rerender } = render(content(false));
+    const information = screen.getByRole("combobox", {
+      name: "Lọc mức độ hoàn thiện thông tin",
+    });
+    fireEvent.mouseDown(information);
+    fireEvent.click(
+      screen.getByRole("option", { name: "Thông tin: Chờ hoàn thiện" }),
+    );
+
+    rerender(content(true));
+    expect(
+      screen.queryByRole("combobox", {
+        name: "Lọc mức độ hoàn thiện thông tin",
+      }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
+    const panel = document.getElementById("hn-sku-filters-content")!;
+    expect(
+      within(panel).getByRole("combobox", {
+        name: "Lọc mức độ hoàn thiện thông tin",
+      }),
+    ).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+
+    rerender(content(false));
+    const restored = screen.getByRole("combobox", {
+      name: "Lọc mức độ hoàn thiện thông tin",
+    });
+    expect(restored).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    expect(restored.closest(".hn-sku-search-bar")).not.toBeNull();
+    expect(
+      within(panel).queryByRole("combobox", {
+        name: "Lọc mức độ hoàn thiện thông tin",
+      }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    expect(restored).toHaveTextContent("Thông tin: Tất cả");
   });
 
   it("giữ trạng thái mở thống kê SKU khi quay lại trong cùng phiên", () => {

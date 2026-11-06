@@ -29,6 +29,7 @@ import {
 import "./sku-list.css";
 import "./defect-list.css";
 import {
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -94,6 +95,7 @@ import {
   type RecipientType,
 } from "@/shared/constants/recipient-types";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { SkuThumbnail } from "@/shared/components/data-display/SkuThumbnail";
@@ -361,6 +363,7 @@ function SkuCatalogSelect({
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
+  const sidebarPinned = useContext(PinnedSidebarContext);
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
   const [overviewOpen, setOverviewOpen] = useState(() => {
     try {
@@ -806,6 +809,33 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     ? normalizeError(query.error).status
     : undefined;
 
+  const informationFilter = (
+    <UiSelect
+      aria-label={copy(
+        "Lọc mức độ hoàn thiện thông tin",
+        "Filter information completeness",
+      )}
+      value={informationStatus}
+      onChange={(value) => {
+        setInformationStatus(value as "PENDING" | "COMPLETE" | "");
+        setPage(1);
+      }}
+      placeholder={copy("Thông tin: Tất cả", "Information: All")}
+      fullWidth
+      menuClassName="hn-sku-menu"
+      options={[
+        {
+          value: "PENDING",
+          label: copy("Thông tin: Chờ hoàn thiện", "Information: Pending details"),
+        },
+        {
+          value: "COMPLETE",
+          label: copy("Thông tin: Đầy đủ", "Information: Complete"),
+        },
+      ]}
+    />
+  );
+
   return (
     <>
       <div
@@ -889,7 +919,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           className="hn-sku-search-panel"
           aria-label={copy("Tìm kiếm và lọc SKU", "Search and filter SKUs")}
         >
-          <div className="hn-sku-search-bar">
+          <div
+            className="hn-sku-search-bar"
+            data-information-in-panel={sidebarPinned || undefined}
+          >
             <UiTextField
               id="sku-list-search"
               value={keyword}
@@ -949,33 +982,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 })),
               ]}
             />
-            <UiSelect
-              aria-label={copy(
-                "Lọc mức độ hoàn thiện thông tin",
-                "Filter information completeness",
-              )}
-              value={informationStatus}
-              onChange={(value) => {
-                setInformationStatus(value as "PENDING" | "COMPLETE" | "");
-                setPage(1);
-              }}
-              placeholder={copy("Thông tin: Tất cả", "Information: All")}
-              fullWidth
-              menuClassName="hn-sku-menu"
-              options={[
-                {
-                  value: "PENDING",
-                  label: copy(
-                    "Thông tin: Chờ hoàn thiện",
-                    "Information: Pending details",
-                  ),
-                },
-                {
-                  value: "COMPLETE",
-                  label: copy("Thông tin: Đầy đủ", "Information: Complete"),
-                },
-              ]}
-            />
+            {!sidebarPinned ? informationFilter : null}
             <button
               type="button"
               className="hn-sku-more-filters"
@@ -1001,6 +1008,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             className="hn-sku-extra-filters"
             hidden={!filtersOpen}
           >
+            {sidebarPinned ? (
+              <div className="hn-sku-filter">{informationFilter}</div>
+            ) : null}
             <div className="hn-sku-filter">
               <UiSelect
                 aria-label={t("masterData.sku.brandFilterAria")}

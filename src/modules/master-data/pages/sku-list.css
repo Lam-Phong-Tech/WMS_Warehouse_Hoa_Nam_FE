@@ -771,6 +771,16 @@
   padding: 16px 24px;
   background: var(--sku-surface);
 }
+@container hn-sku (min-width:701px) {
+  .hn-sku-search-bar[data-information-in-panel="true"] {
+    grid-template-columns:
+      minmax(180px, 2fr) repeat(2, minmax(130px, 1fr)) max-content;
+  }
+  .hn-sku-search-bar[data-information-in-panel="true"]:has(.hn-sku-clear-filters) {
+    grid-template-columns:
+      minmax(180px, 2fr) repeat(2, minmax(130px, 1fr)) max-content max-content;
+  }
+}
 @container hn-sku (max-width:1200px) {
   .hn-sku-search-bar {
     grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(160px, 1fr));

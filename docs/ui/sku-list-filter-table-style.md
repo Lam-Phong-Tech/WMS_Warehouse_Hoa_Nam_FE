@@ -10,6 +10,7 @@ Nguồn chuẩn: `src/modules/master-data/pages/sku-list.css` và `ApiMasterScre
 - Khi sửa bộ lọc dùng chung, kiểm tra dropdown thường và dropdown có tìm kiếm, giao diện sáng/tối; chọn một giá trị rồi chọn lại `Tất cả` phải trả đúng giá trị bỏ lọc của màn hình. Không để mất khả năng bỏ lọc hoặc tạo hai mục cùng giá trị rỗng.
 - Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, bo `--ops-radius-control` (`6px`); focus dùng `--ops-link` với quầng màu link 13%. Mọi thay đổi bộ lọc được áp dụng tự động; không cần nút `Áp dụng`. Nút `Xóa lọc` chỉ xuất hiện khi có điều kiện lọc.
 - Khi container hẹp, các ô xuống hàng; ô tìm kiếm chiếm trọn hàng đầu. Không làm trang tràn ngang vì bộ lọc.
+- Riêng Danh sách SKU: khi ghim mở sidebar trên desktop, chuyển ô `Thông tin` vào vùng mở bằng nút `Bộ lọc`; hàng chính giữ tìm kiếm, loại hàng, trạng thái và các nút lọc. Khi thu sidebar hoặc dùng menu dạng lớp phủ trên mobile, giữ `Thông tin` ở hàng chính. Chuyển trạng thái sidebar phải giữ nguyên giá trị lọc, chỉ render một ô `Thông tin`.
 
 ## Bảng
 

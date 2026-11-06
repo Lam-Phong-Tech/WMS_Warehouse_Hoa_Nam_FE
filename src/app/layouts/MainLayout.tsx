@@ -33,6 +33,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { queryClient } from "@/app/providers/query-client";
 import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
+import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 
 /**
  * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
@@ -265,10 +266,12 @@ export function MainLayout() {
            * được giữ ẩn, quay lại là hiện ngay; display:none→block tự chạy lại
            * animation chuyển màn nên không mất hiệu ứng.
            */}
-          <KeepAliveOutlet
-            transitionKey={`${location.pathname}|${requestedScreen ?? ""}`}
-            className="hn-mvp-screen hn-page-transition"
-          />
+          <PinnedSidebarContext.Provider value={isDesktop && !sidebarCollapsed}>
+            <KeepAliveOutlet
+              transitionKey={`${location.pathname}|${requestedScreen ?? ""}`}
+              className="hn-mvp-screen hn-page-transition"
+            />
+          </PinnedSidebarContext.Provider>
         </Box>
       </UiAppShell>
       {!isDesktop ? (

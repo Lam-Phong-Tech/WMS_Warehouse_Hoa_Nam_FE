@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 vi.mock("@/app/providers/AccountPreferencesProvider", () => ({
   AccountPreferencesProvider: ({ children }: { children: ReactNode }) =>
     children,
@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import type { UiAppShellProps } from "@/shared/ui/layout/UiAppShell";
 import { ROUTES } from "@/shared/constants/routes";
+import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 
 const viewport = vi.hoisted(() => ({ width: 1440 }));
 
@@ -30,7 +31,11 @@ vi.mock("@/shared/i18n/nav-labels", () => ({
   useNavLabel: () => (_key: string, fallback: string) => fallback,
 }));
 vi.mock("@/app/layouts/KeepAliveOutlet", () => ({
-  KeepAliveOutlet: () => null,
+  KeepAliveOutlet: () => (
+    <output data-testid="sidebar-pinned">
+      {String(useContext(PinnedSidebarContext))}
+    </output>
+  ),
 }));
 vi.mock("@/app/layouts/AppPageHeader", () => ({
   AppPageHeader: ({ showContextBadges }: { showContextBadges?: boolean }) => (
@@ -182,6 +187,15 @@ afterEach(() => {
 });
 
 describe("MainLayout sidebar remains stable across navigation", () => {
+  it("shares the actual desktop pin state with page filters", () => {
+    setup(ROUTES.MASTER_DATA);
+    expect(screen.getByTestId("sidebar-pinned")).toHaveTextContent("true");
+    fireEvent.click(screen.getByRole("button", { name: "Toggle sidebar" }));
+    expect(screen.getByTestId("sidebar-pinned")).toHaveTextContent("false");
+    fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
+    expect(screen.getByTestId("sidebar-pinned")).toHaveTextContent("true");
+  });
+
   it("lets the reversal page own its header and creation action", () => {
     setup(ROUTES.REVERSE);
     expect(screen.queryByTestId("page-context-badges")).not.toBeInTheDocument();
@@ -203,6 +217,7 @@ describe("MainLayout sidebar remains stable across navigation", () => {
     (width) => {
       viewport.width = width;
       setup();
+      expect(screen.getByTestId("sidebar-pinned")).toHaveTextContent("true");
       for (const path of ROUTE_SEQUENCE) {
         navigateTo(path);
         expect(screen.getByTestId("shell-sidebar")).toHaveStyle({
@@ -258,6 +273,7 @@ describe("MainLayout sidebar remains stable across navigation", () => {
     (width) => {
       viewport.width = width;
       setup();
+      expect(screen.getByTestId("sidebar-pinned")).toHaveTextContent("false");
       for (const path of ROUTE_SEQUENCE) {
         navigateTo(path);
         expect(screen.queryByTestId("shell-sidebar")).not.toBeInTheDocument();
