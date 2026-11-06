@@ -160,7 +160,7 @@ describe("PTW-00 page workflows", () => {
     );
     await user.click(screen.getByRole("button", { name: "Tạo lệnh" }));
     dialog = await screen.findByRole("dialog");
-    const note = within(dialog).getByRole("textbox", { name: "Ghi chú" });
+    const note = await within(dialog).findByRole("textbox", { name: "Ghi chú" });
     await user.type(note, "Unsaved note");
     await act(async () => {
       liveClient.setQueryData(
