@@ -296,7 +296,7 @@ describe("CatalogMasterScreen interactions", () => {
   });
 
   it.each([false, true])(
-    "limits brand code input to 50 characters (editing: %s)",
+    "limits brand code, name and description inputs (editing: %s)",
     async (editing) => {
       const user = userEvent.setup();
       renderScreen();
@@ -316,6 +316,20 @@ describe("CatalogMasterScreen interactions", () => {
       await user.click(code);
       await user.paste("A".repeat(51));
       expect(code).toHaveValue("A".repeat(50));
+      const name = within(dialog).getByRole("textbox", { name: /^Tên hãng/ });
+      expect(name).toHaveAttribute("maxlength", "150");
+      await user.clear(name);
+      await user.click(name);
+      await user.paste("N".repeat(151));
+      expect(name).toHaveValue("N".repeat(150));
+      const description = within(dialog).getByRole("textbox", {
+        name: "Mô tả",
+      });
+      expect(description).toHaveAttribute("maxlength", "500");
+      await user.clear(description);
+      await user.click(description);
+      await user.paste("D".repeat(501));
+      expect(description).toHaveValue("D".repeat(500));
     },
   );
 

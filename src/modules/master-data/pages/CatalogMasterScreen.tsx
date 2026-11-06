@@ -244,6 +244,8 @@ export function CatalogMasterScreen() {
   const activeTab = tabs.find((tab) => tab.kind === activeKind) ?? tabs[0];
   const supportsBrand = catalogMasterSupportsBrand(activeKind);
   const codeMaxLength = activeKind === "BRAND" ? 50 : 80;
+  const nameMaxLength = activeKind === "BRAND" ? 150 : 200;
+  const descriptionMaxLength = activeKind === "BRAND" ? 500 : 2000;
 
   const listParams = {
     keyword: keyword.trim() ? debouncedKeyword : "",
@@ -384,10 +386,14 @@ export function CatalogMasterScreen() {
       errors.name = t("masterData.catalog.errNameRequired", {
         label: activeTab.nameLabel,
       });
-    else if (name.length > 200)
-      errors.name = t("masterData.catalog.errNameLength");
-    if ((values.description ?? "").length > 2000)
-      errors.description = t("masterData.catalog.errDescriptionLength");
+    else if (name.length > nameMaxLength)
+      errors.name = t("masterData.catalog.errNameLength", {
+        max: nameMaxLength,
+      });
+    if ((values.description ?? "").length > descriptionMaxLength)
+      errors.description = t("masterData.catalog.errDescriptionLength", {
+        max: descriptionMaxLength,
+      });
     // Thứ tự hiển thị: nguyên 0…9999 (BE chỉ có integer|min:0 — trần lấy từ
     // NUMBER_RULES để không nhận số vô nghĩa).
     const sortOrderCheck = checkNumber(
@@ -915,7 +921,7 @@ export function CatalogMasterScreen() {
               disabled={saveMutation.isPending}
               error={Boolean(fieldErrors.name)}
               helperText={fieldErrors.name}
-              slotProps={{ htmlInput: { maxLength: 200 } }}
+              slotProps={{ htmlInput: { maxLength: nameMaxLength } }}
             />
           </Grid>
           {supportsBrand ? (
@@ -970,7 +976,7 @@ export function CatalogMasterScreen() {
               disabled={saveMutation.isPending}
               error={Boolean(fieldErrors.description)}
               helperText={fieldErrors.description}
-              slotProps={{ htmlInput: { maxLength: 2000 } }}
+              slotProps={{ htmlInput: { maxLength: descriptionMaxLength } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
