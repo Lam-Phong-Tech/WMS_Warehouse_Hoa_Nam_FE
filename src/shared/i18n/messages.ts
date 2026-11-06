@@ -740,7 +740,7 @@ export const MESSAGES_VI = {
       post: "Ghi nhận nhập",
       posting: "Đang xử lý...",
       fieldDocument: "Phiếu",
-      fieldSource: "Nguồn",
+      fieldSource: "Mã chứng từ",
       fieldStatus: "Trạng thái",
       fieldVersion: "Phiên bản dữ liệu",
       statValidCodes: "Mã hợp lệ",
