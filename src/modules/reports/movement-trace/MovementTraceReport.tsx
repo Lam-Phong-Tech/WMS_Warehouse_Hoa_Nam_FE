@@ -1014,24 +1014,6 @@ export default function MovementTraceReport() {
             }))}
             onChange={(value) => updateFilters({ traceBy: value as TraceBy })}
           />
-          <ReportFilterCombobox
-            id="trace-movement-type"
-            value={draft.movementType}
-            ariaLabel={t("reports.traceability.status")}
-            icon="file-clock"
-            searchPlaceholder={t("reports.traceability.status")}
-            options={[
-              {
-                value: "",
-                label: `${t("reports.traceability.status")}: ${t("reports.movementTrace.movementTypeAll")}`,
-              },
-              ...MOVEMENT_TYPE_FILTER_OPTIONS.map((option) => ({
-                ...option,
-                label: `${t("reports.traceability.status")}: ${option.label}`,
-              })),
-            ]}
-            onChange={(movementType) => updateFilters({ movementType })}
-          />
           {canClear ? (
             <button
               type="button"
@@ -1050,6 +1032,24 @@ export default function MovementTraceReport() {
         <details className="trace-report-filters__advanced">
           <summary>{t("reports.traceability.advancedFilters")}</summary>
           <div className="trace-report-filters__advanced-grid">
+            <ReportFilterCombobox
+              id="trace-movement-type"
+              value={draft.movementType}
+              ariaLabel={t("reports.traceability.status")}
+              icon="file-clock"
+              searchPlaceholder={t("reports.traceability.status")}
+              options={[
+                {
+                  value: "",
+                  label: `${t("reports.traceability.status")}: ${t("reports.movementTrace.movementTypeAll")}`,
+                },
+                ...MOVEMENT_TYPE_FILTER_OPTIONS.map((option) => ({
+                  ...option,
+                  label: `${t("reports.traceability.status")}: ${option.label}`,
+                })),
+              ]}
+              onChange={(movementType) => updateFilters({ movementType })}
+            />
             <SearchInput
               width="100%"
               value={draft.source}

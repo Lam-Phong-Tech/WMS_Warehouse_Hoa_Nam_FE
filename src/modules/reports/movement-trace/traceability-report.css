@@ -1565,6 +1565,7 @@
 
 /* Shared table filter rules: unframed, inline field names, 48px controls. */
 #traceability-rpt03 .trace-report-filters {
+  container: trace-report-filters / inline-size;
   margin: 0;
   padding: 0;
   min-width: 0;
@@ -1576,10 +1577,13 @@
 #traceability-rpt03 .trace-report-filters__grid {
   display: grid;
   grid-template-columns:
-    minmax(280px, 1fr) minmax(320px, 1.8fr) repeat(2, minmax(160px, 1fr))
+    minmax(0, 1.7fr) repeat(2, minmax(0, 1fr)) minmax(230px, 1.3fr)
     auto;
   align-items: start;
   gap: 12px;
+}
+#traceability-rpt03 .trace-report-filters__date {
+  grid-column: span 2;
 }
 #traceability-rpt03 .trace-report-filters__grid > *,
 #traceability-rpt03 .trace-report-filters__advanced-grid > * {
@@ -1642,6 +1646,7 @@
   background: transparent;
   color: var(--ops-link);
   font: inherit;
+  justify-self: start;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -1667,7 +1672,7 @@
 }
 #traceability-rpt03 .trace-report-filters__advanced-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(320px, 1.3fr) repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-top: 12px;
 }
@@ -1786,29 +1791,30 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 1599px) {
-  #traceability-rpt03 .trace-report-filters__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  #traceability-rpt03 .trace-report-filters__search {
-    grid-column: 1 / -1;
-  }
-  #traceability-rpt03 .trace-report-filters__date {
-    grid-column: span 2;
-  }
-}
-@media (max-width: 1023px) {
-  #traceability-rpt03 .trace-report-filters__grid,
+@container trace-report-filters (max-width: 1199px) {
   #traceability-rpt03 .trace-report-filters__advanced-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 767px) {
+@container trace-report-filters (max-width: 959px) {
+  #traceability-rpt03 .trace-report-filters__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  }
+  #traceability-rpt03 .trace-report-filters__search,
+  #traceability-rpt03 .trace-report-filters__date {
+    grid-column: 1 / -1;
+  }
+  #traceability-rpt03 .trace-report-filters__grid > .inbound-filter-combobox {
+    grid-column: span 2;
+  }
+}
+@container trace-report-filters (max-width: 479px) {
   #traceability-rpt03 .trace-report-filters__grid,
   #traceability-rpt03 .trace-report-filters__advanced-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  #traceability-rpt03 .trace-report-filters__date {
+  #traceability-rpt03 .trace-report-filters__date,
+  #traceability-rpt03 .trace-report-filters__grid > .inbound-filter-combobox {
     grid-column: 1;
   }
   #traceability-rpt03 .trace-report-filters__clear {
