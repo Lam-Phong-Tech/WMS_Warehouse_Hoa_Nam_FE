@@ -32,7 +32,6 @@ import { reportRangePresets } from "@/modules/reports/operations/report-range-pr
 import {
   CheckCircleOutlined,
   FileTextOutlined,
-  HomeOutlined,
   InboxOutlined,
   RightOutlined,
   StockOutlined,
@@ -916,15 +915,6 @@ export default function MovementTraceReport() {
         }}
       >
         <Box className="trace-page-heading" sx={{ minWidth: 0 }}>
-          <Box
-            className="trace-breadcrumb"
-            sx={{ mb: "3.2px", ...SECTION_EYEBROW_SX }}
-          >
-            <HomeOutlined aria-hidden="true" />
-            <span>{t("reports.traceability.breadcrumbReports")}</span>
-            <span aria-hidden="true">/</span>
-            <strong>{t("reports.movementTrace.title")}</strong>
-          </Box>
           <Box
             component="h1"
             className="hn-report-page-title"

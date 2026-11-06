@@ -69,27 +69,6 @@
   font-weight: 700;
 }
 
-#traceability-rpt03 .trace-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ops-link);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-#traceability-rpt03 .trace-breadcrumb svg {
-  width: 13px;
-  height: 13px;
-}
-
-#traceability-rpt03 .trace-breadcrumb strong {
-  color: var(--ops-link);
-  font-weight: 650;
-}
-
 #traceability-rpt03 .trace-head-actions {
   gap: 10px;
   flex-wrap: nowrap;
@@ -1420,12 +1399,6 @@
   #traceability-rpt03.hn-trace-report {
     padding: 12px;
     gap: 10px;
-  }
-
-  #traceability-rpt03 .trace-breadcrumb {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   #traceability-rpt03 .trace-page-heading h1 {
