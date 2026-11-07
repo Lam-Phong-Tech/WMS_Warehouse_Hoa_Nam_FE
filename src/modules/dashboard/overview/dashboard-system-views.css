@@ -454,7 +454,12 @@
 .snapshot-recent-table tbody tr:hover {
   background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
 }
-.snapshot-recent-table :is(th, td):nth-child(5) {
+.snapshot-recent-table :is(th, td):first-child {
+  padding-inline: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+.snapshot-recent-table :is(th, td):nth-child(6) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }

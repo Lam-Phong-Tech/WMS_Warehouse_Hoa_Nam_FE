@@ -59,12 +59,13 @@ export function SnapshotRecentTransactions({
         >
           <table>
             <colgroup>
-              {[14, 26, 14, 24, 14, 8].map((width, index) => (
+              {[6, 14, 24, 12, 24, 12, 8].map((width, index) => (
                 <col key={index} style={{ width: `${width}%` }} />
               ))}
             </colgroup>
             <thead>
               <tr>
+                <th scope="col">{t("shared.table.rowNumber")}</th>
                 <th>{t("dashboardSnapshot.posted")}</th>
                 <th>{t("dashboardSnapshot.document")}</th>
                 <th>{t("dashboardSnapshot.type")}</th>
@@ -74,7 +75,7 @@ export function SnapshotRecentTransactions({
               </tr>
             </thead>
             <tbody>
-              {documents.map((document) => {
+              {documents.map((document, index) => {
                 const detailRoute =
                   document.type === "INBOUND"
                     ? `${ROUTES.REPORTS_INVENTORY_FLOW}?screen=RPT-01&document=${encodeURIComponent(document.id)}`
@@ -83,6 +84,7 @@ export function SnapshotRecentTransactions({
                       : `${ROUTES.REPORTS_PENDING_EVIDENCE}?screen=RPT-08`;
                 return (
                   <tr key={document.id}>
+                    <td>{index + 1}</td>
                     <td>
                       {parseDateTime(document.postedAt).format("DD/MM HH:mm")}
                     </td>
