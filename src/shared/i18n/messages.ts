@@ -766,7 +766,7 @@ export const MESSAGES_VI = {
       sessionEmpty:
         "Chưa có lượt quét nào trong phiên này — kết quả từng lượt quét sẽ hiện ở đây.",
       colNameType: "Tên / loại",
-      colScannedQty: "Số lượng đã quét",
+      colScannedQty: "SL",
       colCode: "Mã",
       colResult: "Kết quả",
       colSource: "Nguồn",
