@@ -60,6 +60,7 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
 
   it("gắn nhãn ngay trên danh sách để không phải mở từng phiếu mới biết", async () => {
     renderWithProviders(<InboundPage />);
+    expect(screen.getByRole("columnheader", { name: /Mã chứng từ bên ngoài/ })).toBeInTheDocument();
 
     // Phiếu Mini App có SKU mới: nhãn kèm số SKU đang thiếu.
     expect(

@@ -1168,7 +1168,7 @@ export const MESSAGES_ZH: MessageTree = {
     "list": {
       "statusUnknown": "未确定",
       "colDocument": "入库单",
-      "colSource": "来源/参考",
+      "colSource": "外部单据编号",
       "colCreated": "创建于",
       "colNote": "注意",
       "colScannedQty": "扫描数量",
@@ -1177,7 +1177,7 @@ export const MESSAGES_ZH: MessageTree = {
       "startScan": "开始扫描",
       "continueScan": "继续扫描",
       "editInfo": "编辑详细信息",
-      "searchPlaceholder": "搜索注释代码/源...",
+      "searchPlaceholder": "搜索入库单或外部单据编号...",
       "searchAria": "搜索入库单备注",
       "statusFilterAria": "过滤入库单状态",
       "statusFilterPlaceholder": "状态：全部",
@@ -1219,8 +1219,8 @@ export const MESSAGES_ZH: MessageTree = {
       "documentDateHelper": "格式：日/月/年",
       "warehouse": "收货仓库",
       "warehousePlaceholder": "选择收货仓库",
-      "sourceRef": "来源/参考",
-      "sourceRefPlaceholder": "运输文件/供应商（可选）",
+      "sourceRef": "外部单据编号",
+      "sourceRefPlaceholder": "送货单、发票或采购订单编号（可选）",
       "note": "注意"
     },
     "camera": {
@@ -1323,7 +1323,7 @@ export const MESSAGES_ZH: MessageTree = {
       "post": "邮寄入库单",
       "posting": "处理中...",
       "fieldDocument": "注意",
-      "fieldSource": "来源",
+      "fieldSource": "外部单据编号",
       "fieldStatus": "状态",
       "fieldVersion": "数据版本",
       "fieldWarehouse": "仓库",

@@ -128,7 +128,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
     ).toBeNull();
     expect(screen.queryByText("Phiếu đã kết thúc và chỉ được xem")).toBeNull();
     expect(
-      screen.getByRole("textbox", { name: "Nguồn / tham chiếu" }),
+      screen.getByRole("textbox", { name: "Mã chứng từ bên ngoài" }),
     ).toHaveValue("Nguồn A");
     expect(update).not.toHaveBeenCalled();
   });
@@ -170,6 +170,9 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         onSaved={onSaved}
       />,
     );
+    const reference = await screen.findByRole("textbox", { name: "Mã chứng từ bên ngoài" });
+    expect(reference).not.toBeRequired();
+    expect(reference).toHaveValue("");
     fireEvent.click(await screen.findByRole("button", { name: "Ngày chứng từ" }));
     const yesterday = dayjs().subtract(1, "day");
     fireEvent.click(

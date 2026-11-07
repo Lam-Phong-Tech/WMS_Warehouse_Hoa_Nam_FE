@@ -237,7 +237,7 @@ export function InboundReportDetail({
                 <dd>{receipt?.code || "—"}</dd>
               </div>
               <div>
-                <dt>Số chứng từ nguồn</dt>
+                <dt>{tExport("inbound.draft.sourceRef")}</dt>
                 <dd>{receipt?.sourceReference || "—"}</dd>
               </div>
               <div>

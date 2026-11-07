@@ -267,7 +267,7 @@ function InboundListScreen() {
               <UiTextField
                 id="hn-inbound-search"
                 value={searchInput}
-                placeholder={tUi("updatedUi.text_16bb8e8dabab")}
+                placeholder={t("inbound.list.searchPlaceholder")}
                 fullWidth
                 slotProps={{
                   htmlInput: { "aria-label": t("inbound.list.searchAria") },
@@ -406,7 +406,7 @@ function InboundListScreen() {
                   "hn-inbound-col-code",
                 )}
                 {sortHeader(
-                  tUi("updatedUi.text_766b3eccf90f"),
+                  t("inbound.list.colSource"),
                   "source",
                   "hn-inbound-col-source",
                 )}
