@@ -31,6 +31,7 @@ import { useInboundDocuments } from "@/modules/inbound/hooks/use-inbound";
 import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
 import type { InboundDocument } from "@/modules/inbound/types";
 import { formatQuantity } from "@/shared/utils/format-number";
+import { formatDateTime } from "@/shared/utils/format-date";
 import "./inbound-list.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -422,6 +423,9 @@ function InboundListScreen() {
                   "status",
                   "hn-inbound-col-status",
                 )}
+                <th className="hn-inbound-col-created">
+                  {t("reverse.detail.fieldCreatedBy")}
+                </th>
                 <th
                   className="hn-inbound-col-actions"
                   aria-label={tUi("outbound.detail.colAction")}
@@ -456,6 +460,12 @@ function InboundListScreen() {
                     {progress(row)}
                   </td>
                   <td className="hn-inbound-status-cell">{statusBadge(row)}</td>
+                  <td className="hn-inbound-created-cell">
+                    <span>{displayValue(row.createdBy)}</span>
+                    <time dateTime={row.createdAt || undefined}>
+                      {formatDateTime(row.createdAt)}
+                    </time>
+                  </td>
                   <td className="hn-inbound-actions-cell">{rowActions(row)}</td>
                 </tr>
               ))}
