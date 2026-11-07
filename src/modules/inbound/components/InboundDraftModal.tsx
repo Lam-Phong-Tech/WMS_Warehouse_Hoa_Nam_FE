@@ -20,6 +20,12 @@ import {
 } from "@/shared/api/api-error";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { useT } from "@/shared/i18n/useT";
+import { uploadDocumentAttachment } from "@/shared/api/documentAttachmentService";
+import { checkFile, FILE_RULES } from "@/shared/validation/file-rules";
+import {
+  InboundCreateAttachments,
+  type PendingInboundAttachment,
+} from "./InboundCreateAttachments";
 import { DocumentAttachmentsPanel } from "@/shared/components/DocumentAttachmentsPanel";
 import {
   hasAnyWmsPermission,
@@ -52,6 +58,7 @@ export interface InboundDraftModalProps {
   documentId: string | null;
   onClose: () => void;
   onSaved: (documentId: string) => void;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 function localToday(): string {
@@ -106,7 +113,18 @@ export function InboundDraftModal({
   documentId,
   onClose,
   onSaved,
+  onBusyChange,
 }: InboundDraftModalProps) {
+  const submittingRef = useRef(false);
+  const createdReceiptRef = useRef<{ id: string; code?: string } | null>(null);
+  const [createdReceipt, setCreatedReceipt] = useState<{
+    id: string;
+    code?: string;
+  } | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<PendingInboundAttachment[]>(
+    [],
+  );
+  const [submitting, setSubmitting] = useState(false);
   const dialog = useDialogExit(onClose);
   const t = useT();
   const [formValues, setFormValues] = useState<FormValues>(EMPTY_FORM);
@@ -123,7 +141,9 @@ export function InboundDraftModal({
   const detail = detailQuery.data;
   const status = detail?.document.status;
   const mutable = !documentId || status === "DRAFT" || status === "SCANNING";
-  const saving = createMutation.isPending || updateMutation.isPending;
+  const saving =
+    submitting || createMutation.isPending || updateMutation.isPending;
+  const headerLocked = saving || Boolean(createdReceipt);
   const documentDateBounds = pastDateBounds();
   const parsedDocumentDate = dayjs(formValues.documentDate);
   // Preserve malformed server values for submit validation without allowing
@@ -143,9 +163,9 @@ export function InboundDraftModal({
 
   useEffect(() => {
     if (!documentId) {
+      if (createdReceiptRef.current) return;
       const firstWarehouse = warehousesQuery.data?.[0] as
         Record<string, unknown> | undefined;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
       setFormValues({
         documentDate: localToday(),
         warehouseId: text(firstWarehouse?.id ?? firstWarehouse?.warehouse_id),
@@ -218,9 +238,26 @@ export function InboundDraftModal({
     return Object.keys(errors).length === 0;
   };
 
+  const selectFiles = (files: File[]) => {
+    if (submittingRef.current || createdReceiptRef.current) return;
+    const accepted: PendingInboundAttachment[] = [];
+    for (const file of files) {
+      const result = checkFile(file, FILE_RULES.documentAttachment);
+      if (!result.ok) {
+        toast.error(result.message);
+        continue;
+      }
+      accepted.push({ id: crypto.randomUUID(), file, status: "selected" });
+    }
+    setPendingFiles((current) => [...current, ...accepted]);
+  };
+
   const handleSave = async () => {
-    if (!validateForm()) return;
-    if (!canCreate || !mutable) return;
+    if (submittingRef.current || !canCreate || !mutable) return;
+    if (!createdReceiptRef.current && !validateForm()) return;
+    submittingRef.current = true;
+    onBusyChange?.(true);
+    setSubmitting(true);
     try {
       if (documentId) {
         if (!detail) return;
@@ -245,9 +282,54 @@ export function InboundDraftModal({
         source_reference: formValues.sourceName?.trim() || null,
         note: formValues.note?.trim() || null,
       };
-      const created = await createMutation.mutateAsync(payload);
-      toast.success(t("inbound.draft.created"));
-      onSaved(created.id);
+      let created = createdReceiptRef.current;
+      if (!created) {
+        created = await createMutation.mutateAsync(payload);
+        // Retain identity before any upload; retries must never create a second receipt.
+        createdReceiptRef.current = created;
+        setCreatedReceipt(created);
+        toast.success(t("inbound.draft.created"));
+      }
+      let failed = false;
+      for (const entry of pendingFiles) {
+        if (entry.status === "uploaded") continue;
+        setPendingFiles((current) =>
+          current.map((item) =>
+            item.id === entry.id
+              ? { ...item, status: "uploading", error: undefined }
+              : item,
+          ),
+        );
+        try {
+          await uploadDocumentAttachment({
+            documentType: "INBOUND",
+            documentId: created.id,
+            file: entry.file,
+          });
+          setPendingFiles((current) =>
+            current.map((item) =>
+              item.id === entry.id ? { ...item, status: "uploaded" } : item,
+            ),
+          );
+        } catch (error) {
+          failed = true;
+          setPendingFiles((current) =>
+            current.map((item) =>
+              item.id === entry.id
+                ? {
+                    ...item,
+                    status: "failed",
+                    error: getApiErrorMessage(
+                      error,
+                      t("shared.attachments.uploadError"),
+                    ),
+                  }
+                : item,
+            ),
+          );
+        }
+      }
+      if (!failed) onSaved(created.id);
     } catch (error) {
       // Lỗi nhập liệu từ server phải hiện ngay dưới ô sai, không dồn hết vào
       // một câu tổng chung chung; `message` là phần còn lại không gắn được vào
@@ -278,12 +360,19 @@ export function InboundDraftModal({
         initializedRef.current = null;
         await detailQuery.refetch();
       }
+    } finally {
+      submittingRef.current = false;
+      onBusyChange?.(false);
+      setSubmitting(false);
     }
   };
 
   return (
     <UiDialog
       {...dialog.dialogProps}
+      onClose={(event, reason) => {
+        if (!submittingRef.current) dialog.dialogProps.onClose(event, reason);
+      }}
       maxWidth="sm"
       className="hn-inbound-draft"
       title={
@@ -315,7 +404,11 @@ export function InboundDraftModal({
               >
                 {documentId
                   ? t("inbound.draft.submitEdit")
-                  : t("inbound.draft.submitCreate")}
+                  : createdReceipt
+                    ? pendingFiles.some((entry) => entry.status !== "uploaded")
+                      ? t("inbound.draft.retryAttachments")
+                      : t("inbound.draft.continueScanning")
+                    : t("inbound.draft.submitCreate")}
               </ActionButton>
             ) : null}
             <ActionIconButton
@@ -398,9 +491,9 @@ export function InboundDraftModal({
                 }
                 minDate={documentDateBounds.minDate}
                 maxDate={documentDateBounds.maxDate}
-                disabled={!mutable}
+                disabled={!mutable || headerLocked}
               />
-              {formValues.documentDate && mutable ? (
+              {formValues.documentDate && mutable && !headerLocked ? (
                 <ActionIconButton
                   kind="close"
                   className="hn-inbound-draft__date-clear"
@@ -430,7 +523,7 @@ export function InboundDraftModal({
                 }));
               }
             }}
-            disabled={!mutable || Boolean(documentId)}
+            disabled={!mutable || headerLocked || Boolean(documentId)}
             error={Boolean(fieldErrors.warehouseId)}
             helperText={fieldErrors.warehouseId}
             placeholder={t("inbound.draft.warehousePlaceholder")}
@@ -459,7 +552,7 @@ export function InboundDraftModal({
                 }));
               }
             }}
-            disabled={!mutable}
+            disabled={!mutable || headerLocked}
             slotProps={{ htmlInput: { maxLength: 200 } }}
             error={Boolean(fieldErrors.sourceName)}
             helperText={fieldErrors.sourceName}
@@ -482,7 +575,7 @@ export function InboundDraftModal({
                 setFieldErrors((current) => ({ ...current, note: "" }));
               }
             }}
-            disabled={!mutable}
+            disabled={!mutable || headerLocked}
             // Lỗi server (vd quá độ dài) chiếm chỗ helperText đếm ký tự —
             // báo sai ở đâu quan trọng hơn số ký tự còn lại.
             error={Boolean(fieldErrors.note)}
@@ -492,12 +585,44 @@ export function InboundDraftModal({
         </Grid>
       </Grid>
 
+      {!documentId ? (
+        <>
+          {createdReceipt ? (
+            <Box sx={{ mt: 2 }}>
+              <UiAlert
+                tone={
+                  pendingFiles.some((entry) => entry.status === "failed")
+                    ? "warning"
+                    : "info"
+                }
+              >
+                {t("inbound.draft.attachmentsReceiptCreated", {
+                  code: createdReceipt.code || createdReceipt.id,
+                })}
+              </UiAlert>
+            </Box>
+          ) : null}
+          <InboundCreateAttachments
+            files={pendingFiles}
+            busy={saving}
+            receiptCreated={Boolean(createdReceipt)}
+            onSelect={selectFiles}
+            onRemove={(id) => {
+              if (!submittingRef.current)
+                setPendingFiles((current) =>
+                  current.filter((entry) => entry.id !== id),
+                );
+            }}
+          />
+        </>
+      ) : null}
+
       {documentId ? (
         <Grid size={12} sx={{ mt: 2 }}>
           <DocumentAttachmentsPanel
             documentType="INBOUND"
             documentId={documentId}
-            disabled={!mutable}
+            disabled={!mutable || headerLocked}
           />
         </Grid>
       ) : null}

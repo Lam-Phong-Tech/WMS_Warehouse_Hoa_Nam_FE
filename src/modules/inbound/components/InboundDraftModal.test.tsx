@@ -3,9 +3,16 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import dayjs from "dayjs";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
+import { uploadDocumentAttachment } from "@/shared/api/documentAttachmentService";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 
+vi.mock("@/shared/api/documentAttachmentService", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/shared/api/documentAttachmentService")
+  >()),
+  uploadDocumentAttachment: vi.fn(),
+}));
 vi.mock("@/modules/inbound/hooks/use-inbound", () => ({
   useCreateInbound: vi.fn(),
   useInboundDetail: vi.fn(),
@@ -49,6 +56,9 @@ function mockDetail(date: string, status = "DRAFT") {
 }
 
 beforeEach(() => {
+  vi.mocked(uploadDocumentAttachment)
+    .mockReset()
+    .mockResolvedValue({} as never);
   useAuthStore.setState({
     isSuperAdmin: false,
     permissionCodes: [P.INBOUND_CREATE],
@@ -170,10 +180,14 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         onSaved={onSaved}
       />,
     );
-    const reference = await screen.findByRole("textbox", { name: "Mã chứng từ bên ngoài" });
+    const reference = await screen.findByRole("textbox", {
+      name: "Mã chứng từ bên ngoài",
+    });
     expect(reference).not.toBeRequired();
     expect(reference).toHaveValue("");
-    fireEvent.click(await screen.findByRole("button", { name: "Ngày chứng từ" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ngày chứng từ" }),
+    );
     const yesterday = dayjs().subtract(1, "day");
     fireEvent.click(
       screen.getByRole("button", { name: yesterday.format("DD/MM/YYYY") }),
@@ -201,7 +215,9 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         onSaved={vi.fn()}
       />,
     );
-    fireEvent.click(await screen.findByRole("button", { name: /: Ngày chứng từ$/ }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /: Ngày chứng từ$/ }),
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Tạo phiếu & quét hàng" }),
     );
@@ -221,7 +237,9 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         onSaved={vi.fn()}
       />,
     );
-    fireEvent.click(await screen.findByRole("button", { name: "Ngày chứng từ" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ngày chứng từ" }),
+    );
     expect(
       screen.getByRole("button", {
         name: dayjs().add(1, "day").format("DD/MM/YYYY"),
@@ -260,7 +278,9 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         onSaved={vi.fn()}
       />,
     );
-    expect(await screen.findByRole("combobox", { name: /Kho nhận/ })).toBeDisabled();
+    expect(
+      await screen.findByRole("combobox", { name: /Kho nhận/ }),
+    ).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Lưu thông tin" }));
     await waitFor(() => {
       expect(update).toHaveBeenCalledWith({
@@ -291,5 +311,146 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
       screen.queryByRole("button", { name: /: Ngày chứng từ$/ }),
     ).toBeNull();
     expect(screen.queryByRole("button", { name: "Lưu thông tin" })).toBeNull();
+  });
+});
+
+describe("IN-01 · attachments during creation", () => {
+  async function setup(files: File[]) {
+    const onSaved = vi.fn();
+    const onClose = vi.fn();
+    const onBusyChange = vi.fn();
+    renderWithProviders(
+      <InboundDraftModal
+        documentId={null}
+        onSaved={onSaved}
+        onClose={onClose}
+        onBusyChange={onBusyChange}
+      />,
+    );
+    const input = await screen.findByLabelText("Chọn chứng từ đính kèm");
+    fireEvent.change(input, { target: { files } });
+    return { onSaved, onClose, onBusyChange };
+  }
+
+  it("keeps selected files local and discards them when closed before creation", async () => {
+    const { onClose } = await setup([
+      new File(["image"], "delivery.png", { type: "image/png" }),
+    ]);
+    expect(screen.getByText("delivery.png")).toBeInTheDocument();
+    expect(screen.getByText("Đã chọn · Chưa tải lên")).toBeInTheDocument();
+    expect(create).not.toHaveBeenCalled();
+    expect(uploadDocumentAttachment).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+  });
+
+  it("uploads only after create resolves and locks duplicate submissions while uploading", async () => {
+    const file = new File(["image"], "delivery.png", { type: "image/png" });
+    let finishCreate!: (value: { id: string; code: string }) => void;
+    let finishUpload!: () => void;
+    create.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishCreate = resolve;
+        }),
+    );
+    vi.mocked(uploadDocumentAttachment).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishUpload = () => resolve({} as never);
+        }),
+    );
+    const { onSaved, onBusyChange } = await setup([file]);
+    const submit = screen.getByRole("button", {
+      name: "Tạo phiếu & quét hàng",
+    });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+    expect(uploadDocumentAttachment).not.toHaveBeenCalled();
+    finishCreate({ id: "IN-NEW", code: "PN-20261107-0001" });
+    await waitFor(() =>
+      expect(uploadDocumentAttachment).toHaveBeenCalledWith({
+        documentType: "INBOUND",
+        documentId: "IN-NEW",
+        file,
+      }),
+    );
+    expect(create).toHaveBeenCalledOnce();
+    expect(onBusyChange).toHaveBeenLastCalledWith(true);
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Đóng" })).toBeDisabled();
+    finishUpload();
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith("IN-NEW"));
+    expect(onBusyChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("retries failed files on the same receipt without uploading successful files again", async () => {
+    const first = new File(["one"], "one.png", { type: "image/png" });
+    const second = new File(["two"], "two.pdf", { type: "application/pdf" });
+    vi.mocked(uploadDocumentAttachment)
+      .mockResolvedValueOnce({} as never)
+      .mockRejectedValueOnce(new Error("Upload failed"))
+      .mockResolvedValueOnce({} as never);
+    const { onSaved } = await setup([first, second]);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tạo phiếu & quét hàng" }),
+    );
+    const retry = await screen.findByRole("button", {
+      name: "Thử tải lại & quét hàng",
+    });
+    expect(onSaved).not.toHaveBeenCalled();
+    await waitFor(() => expect(retry).toBeEnabled());
+    fireEvent.click(retry);
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith("IN-NEW"));
+    expect(create).toHaveBeenCalledOnce();
+    expect(
+      vi
+        .mocked(uploadDocumentAttachment)
+        .mock.calls.map(([input]) => input.file.name),
+    ).toEqual(["one.png", "two.pdf", "two.pdf"]);
+  });
+
+  it("does not upload files when receipt creation fails", async () => {
+    create.mockRejectedValueOnce(new Error("Create failed"));
+    const { onSaved } = await setup([
+      new File(["one"], "one.png", { type: "image/png" }),
+    ]);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tạo phiếu & quét hàng" }),
+    );
+    await waitFor(() => expect(create).toHaveBeenCalledOnce());
+    expect(uploadDocumentAttachment).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(screen.getByText("one.png")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Tạo phiếu & quét hàng" }),
+      ).toBeEnabled(),
+    );
+  });
+
+  it("rejects invalid types and oversized files before creating a receipt", async () => {
+    const oversized = new File(["image"], "large.png", { type: "image/png" });
+    Object.defineProperty(oversized, "size", { value: 16 * 1024 * 1024 });
+    await setup([new File(["script"], "bad.exe"), oversized]);
+    expect(screen.queryByText("bad.exe")).not.toBeInTheDocument();
+    expect(screen.queryByText("large.png")).not.toBeInTheDocument();
+    expect(create).not.toHaveBeenCalled();
+    expect(uploadDocumentAttachment).not.toHaveBeenCalled();
+  });
+
+  it("allows removing a local file before creating the receipt", async () => {
+    const { onSaved } = await setup([
+      new File(["image"], "remove.png", { type: "image/png" }),
+    ]);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Bỏ tệp remove.png" }),
+    );
+    expect(screen.queryByText("remove.png")).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tạo phiếu & quét hàng" }),
+    );
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith("IN-NEW"));
+    expect(uploadDocumentAttachment).not.toHaveBeenCalled();
   });
 });

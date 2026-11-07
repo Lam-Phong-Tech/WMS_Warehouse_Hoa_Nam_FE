@@ -1,5 +1,5 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { UiIcon, UiPagination, UiSelect, UiTextField } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
@@ -68,6 +68,7 @@ function InboundListScreen() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [draftOpen, setDraftOpen] = useState(false);
+  const draftBusyRef = useRef(false);
   const [draftDocumentId, setDraftDocumentId] = useState<string | null>(null);
   const [scanDocumentId, setScanDocumentId] = useState<string | null>(null);
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
@@ -130,6 +131,7 @@ function InboundListScreen() {
       setScanDocumentId(null);
     },
     "IN-01-overlay",
+    () => !draftBusyRef.current,
   );
   const editDocument = (id: string | null) => {
     setScanDocumentId(null);
@@ -548,6 +550,9 @@ function InboundListScreen() {
           documentId={draftDocumentId}
           onClose={closeDraftModal}
           onSaved={handleSaved}
+          onBusyChange={(busy) => {
+            draftBusyRef.current = busy;
+          }}
         />
       ) : null}
       {scanDocumentId ? (

@@ -45,11 +45,13 @@ export function useOverlayBackDismiss(
   open: boolean,
   onDismiss: () => void,
   overlayId: string,
+  canDismiss: () => boolean = () => true,
 ): void {
   // Chỉ hook nào đã tự đẩy entry mới được tiêu thụ nó — tránh việc một overlay đóng lại
   // pop nhầm entry của màn khác.
   const pushedRef = useRef(false);
   const dismissRef = useRef(onDismiss);
+  const canDismissRef = useRef(canDismiss);
 
   // Gan trong effect chu khong trong than render: `react-hooks/refs` cam cham ref luc
   // render (React Compiler co the chay lai than render nhieu lan). Effect khong co deps
@@ -57,6 +59,7 @@ export function useOverlayBackDismiss(
   // bat ky popstate nao co the toi.
   useEffect(() => {
     dismissRef.current = onDismiss;
+    canDismissRef.current = canDismiss;
   });
 
   useEffect(() => {
@@ -93,6 +96,19 @@ export function useOverlayBackDismiss(
       if (!pushedRef.current) return;
       // Vẫn còn marker của mình = Back chưa chạm tới entry này (vd overlay lồng nhau).
       if (readOverlayMarker(event.state) === overlayId) return;
+      if (!canDismissRef.current()) {
+        // Back consumed our marker while a write is in flight. Restore it so
+        // repeated Back cannot discard the receipt identity or upload retry queue.
+        const current = window.history.state;
+        window.history.pushState(
+          {
+            ...(typeof current === "object" && current !== null ? current : {}),
+            [OVERLAY_HISTORY_STATE_KEY]: overlayId,
+          },
+          "",
+        );
+        return;
+      }
       pushedRef.current = false;
       dismissRef.current();
     };

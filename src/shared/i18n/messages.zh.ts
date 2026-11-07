@@ -1203,6 +1203,14 @@ export const MESSAGES_ZH: MessageTree = {
       "view": "查看"
     },
     "draft": {
+      "selectAttachments": "选择单据附件",
+      "localAttachmentsHint": "JPG/PNG/WEBP图片或PDF，每个文件不超过15MB。提交入库单后才会上传文件。",
+      "attachmentSelected": "已选择 · 尚未上传",
+      "attachmentUploaded": "已上传",
+      "removeAttachment": "移除文件 {name}",
+      "retryAttachments": "重试上传并扫描",
+      "continueScanning": "继续扫描",
+      "attachmentsReceiptCreated": "入库单 {code} 已创建。重试或移除失败的文件以继续扫描。关闭窗口将丢弃尚未上传的文件。",
       "errDocumentDate": "选择文档日期。",
       "errDocumentDateFuture": "文档日期不能是将来的日期。",
       "errWarehouse": "选择收货仓库。",

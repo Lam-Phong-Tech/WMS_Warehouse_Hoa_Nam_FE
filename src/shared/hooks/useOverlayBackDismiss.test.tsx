@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
@@ -112,4 +112,43 @@ describe("useOverlayBackDismiss", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
   });
+});
+
+function BusyOverlayScreen() {
+  const [open, setOpen] = useState(true);
+  const [busy, setBusy] = useState(true);
+  useOverlayBackDismiss(
+    open,
+    () => setOpen(false),
+    "busy-overlay",
+    () => !busy,
+  );
+  return (
+    <>
+      {open ? <div role="dialog">Uploading</div> : null}
+      <button onClick={() => setBusy(false)}>Finish upload</button>
+    </>
+  );
+}
+
+it("keeps the overlay and rearms history on repeated Back while an upload is busy", async () => {
+  render(<BusyOverlayScreen />);
+  const pop = vi.fn();
+  window.addEventListener("popstate", pop);
+  try {
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      window.history.back();
+      await waitFor(() => expect(pop).toHaveBeenCalledTimes(attempt));
+      expect(currentMarker()).toBe("busy-overlay");
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    }
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Finish upload" }));
+    window.history.back();
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  } finally {
+    window.removeEventListener("popstate", pop);
+  }
 });
