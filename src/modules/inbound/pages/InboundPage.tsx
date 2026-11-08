@@ -43,7 +43,8 @@ const getSTATUS_OPTIONS = localizedUiValue(() =>
 );
 const SORT_ACCESSORS = {
   code: (row: InboundDocument) => row.code,
-  source: (row: InboundDocument) => row.source,
+  supplier: (row: InboundDocument) =>
+    row.supplier?.displayName ?? row.supplier?.name ?? "",
   scanned: (row: InboundDocument) => row.scanned,
   status: (row: InboundDocument) => row.status,
 };
@@ -409,9 +410,9 @@ function InboundListScreen() {
                   "hn-inbound-col-code",
                 )}
                 {sortHeader(
-                  t("inbound.list.colSource"),
-                  "source",
-                  "hn-inbound-col-source",
+                  t("inbound.list.colSupplier"),
+                  "supplier",
+                  "hn-inbound-col-supplier",
                 )}
                 {sortHeader(
                   tUi("updatedUi.text_5306083bc2fb"),
@@ -447,12 +448,16 @@ function InboundListScreen() {
                       {displayValue(row.code)}
                     </button>
                   </td>
-                  <td className="hn-inbound-source">
+                  <td className="hn-inbound-supplier">
                     <span
-                      className="hn-inbound-source-name"
-                      title={displayValue(row.source)}
+                      className="hn-inbound-supplier-name"
+                      title={displayValue(
+                        row.supplier?.displayName || row.supplier?.name,
+                      )}
                     >
-                      {displayValue(row.source)}
+                      {displayValue(
+                        row.supplier?.displayName || row.supplier?.name,
+                      )}
                     </span>
                     <span className="hn-inbound-compact">{progress(row)}</span>
                   </td>

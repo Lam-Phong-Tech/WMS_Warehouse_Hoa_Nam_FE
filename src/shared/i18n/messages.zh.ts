@@ -1169,6 +1169,7 @@ export const MESSAGES_ZH: MessageTree = {
       "statusUnknown": "未确定",
       "colDocument": "入库单",
       "colSource": "外部单据编号",
+      "colSupplier": "供应商",
       "colCreated": "创建于",
       "colNote": "注意",
       "colScannedQty": "扫描数量",

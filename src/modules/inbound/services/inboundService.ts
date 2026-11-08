@@ -170,6 +170,7 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     date: text(row.doc_date ?? row.date ?? row.created_at),
     warehouseId: text(row.dst_warehouse_id ?? row.warehouse_id),
     supplierId: text(row.supplier_id) || undefined,
+    supplier: normalizeSupplier(row.supplier),
     expected,
     scanned,
     // The list endpoint eager-loads lines. An omitted array is unknown, not zero.

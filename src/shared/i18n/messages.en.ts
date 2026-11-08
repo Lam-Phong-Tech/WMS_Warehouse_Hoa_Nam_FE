@@ -577,6 +577,7 @@ export const MESSAGES_EN: MessageTree = {
       statusUnknown: "Not determined",
       colDocument: "Receipt note",
       colSource: "External document number",
+      colSupplier: "Supplier",
       colCreated: "Created on",
       colNote: "Note",
       colScannedQty: "Scanned quantity",

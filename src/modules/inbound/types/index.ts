@@ -16,6 +16,8 @@ export interface InboundDocument {
   date: string;
   warehouseId: string;
   supplierId?: string;
+  /** NCC gắn trên phiếu — API danh sách trả kèm để cột "Nhà cung cấp" hiện ngay trên dòng. */
+  supplier?: InboundSupplier | null;
   /** Under the GĐ1 scan-driven contract this mirrors actual scanned quantity. */
   expected: number;
   scanned: number;

@@ -576,6 +576,7 @@ export const MESSAGES_VI = {
       statusUnknown: "Chưa xác định",
       colDocument: "Phiếu nhập",
       colSource: "Mã chứng từ bên ngoài",
+      colSupplier: "Nhà cung cấp",
       colCreated: "Ngày tạo",
       colNote: "Ghi chú",
       colScannedQty: "Số lượng đã quét",
