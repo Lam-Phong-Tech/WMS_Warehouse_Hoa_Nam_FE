@@ -49,6 +49,7 @@ import {
   RecipientReportPage,
   ReversalPage,
   SkuMasterScreen,
+  SupplierListPage,
   StockReconcileReportPage,
   TraceabilityReportPage,
   TrayOverviewPage,
@@ -178,6 +179,10 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.CATALOG_MASTER,
             element: routeEl(ROUTES.CATALOG_MASTER, <CatalogMasterScreen />),
+          },
+          {
+            path: ROUTES.SUPPLIERS,
+            element: routeEl(ROUTES.SUPPLIERS, <SupplierListPage />),
           },
           {
             path: ROUTES.PV_PRODUCT_CATALOG,

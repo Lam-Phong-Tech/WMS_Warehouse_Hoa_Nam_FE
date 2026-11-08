@@ -1,0 +1,296 @@
+.hn-ncc-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  font-family: var(--wms-font-family);
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+  container-type: inline-size;
+}
+.hn-ncc-header,
+.hn-ncc-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hn-ncc-header {
+  justify-content: space-between;
+}
+.hn-ncc-primary.MuiButton-root {
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+}
+.hn-ncc-primary.MuiButton-root:hover {
+  background: var(--ops-primary-hover);
+  color: var(--ops-on-primary);
+}
+.hn-ncc-primary.MuiButton-root.Mui-disabled {
+  background: var(--ops-pale);
+  color: var(--ops-muted);
+}
+.hn-ncc-header h1 {
+  margin: 0;
+  color: var(--ops-heading);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+}
+.hn-ncc-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 300px) auto;
+  align-items: center;
+  gap: 12px;
+}
+.hn-ncc-screen .hn-ncc-filters > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.hn-ncc-screen .hn-ncc-filters :is(.MuiOutlinedInput-root, .MuiButton-root) {
+  min-height: 48px;
+  background: var(--ops-surface);
+  border-radius: var(--ops-radius-control);
+}
+.hn-ncc-filters .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-line);
+}
+.hn-ncc-filters .Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-link);
+}
+.hn-ncc-filters .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+.hn-ncc-search-icon {
+  color: var(--ops-link);
+  font-size: 20px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.hn-ncc-list {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+  overflow: clip;
+}
+.hn-ncc-scroll {
+  overflow: auto;
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+.hn-ncc-scroll:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: -2px;
+}
+.hn-ncc-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  min-width: 820px;
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-ncc-col-number {
+  width: 6%;
+}
+.hn-ncc-col-code {
+  width: 15%;
+}
+.hn-ncc-col-name {
+  width: 30%;
+}
+.hn-ncc-col-status {
+  width: 17%;
+}
+.hn-ncc-col-updated {
+  width: 19%;
+}
+.hn-ncc-col-action {
+  width: 13%;
+}
+.hn-ncc-table :is(th, td) {
+  padding: 12px 18px;
+  vertical-align: middle;
+  text-align: left;
+  border-bottom: 1px solid var(--ops-line);
+}
+.hn-ncc-table th {
+  background: #d2edf7;
+  color: var(--ops-heading);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 24px;
+  letter-spacing: 0.02em;
+}
+html[data-theme="dark"] .hn-ncc-table th {
+  background: var(--ops-pale);
+}
+.hn-ncc-table :is(th, td):first-child {
+  text-align: center;
+  padding-inline: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.hn-ncc-table td {
+  height: 68px;
+  box-sizing: border-box;
+}
+.hn-ncc-table td:last-child {
+  text-align: right;
+  padding-inline: 12px;
+}
+.hn-ncc-table .MuiButton-root,
+.hn-ncc-table .MuiButton-root .MuiButton-startIcon {
+  color: var(--ops-link);
+}
+.hn-ncc-table tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+.hn-ncc-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.hn-ncc-code {
+  color: var(--ops-heading);
+  font-weight: 700;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-ncc-name {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.hn-ncc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 20px;
+  color: var(--ops-muted);
+  background: var(--ops-pale);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.hn-ncc-status > span {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+.hn-ncc-status.is-active {
+  color: var(--ops-success);
+  background: var(--ops-success-soft);
+}
+.hn-ncc-muted,
+.hn-ncc-updated {
+  color: var(--ops-muted);
+}
+.hn-ncc-updated {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.hn-ncc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  border-top: 1px solid var(--ops-line);
+  padding: 14px 16px;
+}
+.hn-ncc-page-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--ops-muted);
+  font-size: 13px;
+}
+.hn-ncc-pagination > nav {
+  margin-left: auto;
+}
+.hn-ncc-notice {
+  padding: 16px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+.hn-ncc-error {
+  border-left: 3px solid var(--ops-danger);
+}
+.hn-ncc-notice p {
+  margin: 8px 0 12px;
+}
+.hn-ncc-empty {
+  padding: 40px 16px;
+  text-align: center;
+}
+.hn-ncc-empty strong {
+  color: var(--ops-heading);
+  font-size: 16px;
+}
+.hn-ncc-empty p {
+  color: var(--ops-muted);
+  margin: 8px 0 16px;
+}
+.hn-ncc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 8px;
+}
+.hn-ncc-dialog .MuiDialogActions-root {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hn-ncc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@container (max-width: 640px) {
+  .hn-ncc-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-ncc-filters > :first-child {
+    grid-column: 1 / -1;
+  }
+  .hn-ncc-header h1 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .hn-ncc-page-info {
+    gap: 10px;
+  }
+}
+@media (max-width: 390px) {
+  .hn-ncc-actions {
+    width: 100%;
+  }
+  .hn-ncc-actions .MuiButton-root {
+    flex: 1;
+    min-height: 44px;
+  }
+  .hn-ncc-dialog .MuiDialog-paper {
+    margin: 12px;
+    width: calc(100% - 24px);
+  }
+}

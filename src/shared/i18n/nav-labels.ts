@@ -37,6 +37,7 @@ export const NAV_LABELS_EN: Record<string, string> = {
   // Mục
   "MAP-01": "Operations overview",
   "MST-01": "SKU list",
+  "NCC-01": "Supplier list",
   "MST-CAT-01": "Product catalog",
   "MST-PV-01": "PV App products",
   "AGY-01": "Agencies / recipients",
@@ -139,6 +140,10 @@ export const SCREEN_META_EN: Record<string, ScreenMetaText> = {
   "MST-01": {
     title: "SKU list",
     description: "SKU list and product data editing.",
+  },
+  "NCC-01": {
+    title: "Supplier list",
+    description: "Manage supplier details and status.",
   },
   "MST-CAT-01": {
     title: "Product catalog",

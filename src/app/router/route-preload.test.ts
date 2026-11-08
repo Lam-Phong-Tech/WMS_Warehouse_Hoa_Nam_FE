@@ -19,6 +19,7 @@ vi.mock("./route-components", () => {
     "IamUsersGd1Page",
     "IamRolePermissionScreen",
     "SkuMasterScreen",
+    "SupplierListPage",
     "AgencyMasterScreen",
     "DefectMasterScreen",
     "CatalogMasterScreen",

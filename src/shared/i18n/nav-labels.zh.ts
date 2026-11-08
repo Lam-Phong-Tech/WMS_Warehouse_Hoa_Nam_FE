@@ -12,6 +12,7 @@ export const NAV_LABELS_ZH = {
   "settings-2": "系统",
   "MAP-01": "操作概述",
   "MST-01": "SKU 列表",
+  "NCC-01": "供应商列表",
   "MST-CAT-01": "产品目录",
   "MST-PV-01": "PV 应用商品",
   "AGY-01": "代理商/收货方",
@@ -64,6 +65,7 @@ export const SCREEN_META_ZH = {
     title: "SKU 列表",
     description: "SKU列表和产品数据编辑。",
   },
+  "NCC-01": { title: "供应商列表", description: "管理供应商信息和状态。" },
   "MST-CAT-01": {
     title: "产品目录",
     description: "创建 SKU 时使用的品牌、产品组、型号、电源和包装规格。",

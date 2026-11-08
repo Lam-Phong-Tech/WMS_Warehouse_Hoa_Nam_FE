@@ -18,6 +18,7 @@ export const ROUTES = {
   MASTER_DATA: "/master-data/skus",
   SKU_CREATE: "/master-data/skus/new",
   CATALOG_MASTER: "/master-data/catalog",
+  SUPPLIERS: "/master-data/suppliers",
   /**
    * MST-PV-01 — danh mục sản phẩm hiển thị trên App PV (lưới thẻ có ảnh + nút
    * thêm sản phẩm). Đặt dưới `/master-data` chứ không phải `/pv-admin`: đây là

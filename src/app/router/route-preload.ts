@@ -41,6 +41,7 @@ const LOADERS: Record<string, Preloadable> = {
   [ROUTES.AGENCIES]: R.AgencyMasterScreen as Preloadable,
   [ROUTES.DEFECTS]: R.DefectMasterScreen as Preloadable,
   [ROUTES.CATALOG_MASTER]: R.CatalogMasterScreen as Preloadable,
+  [ROUTES.SUPPLIERS]: R.SupplierListPage as Preloadable,
   [ROUTES.WAREHOUSE_CONFIG]: R.WarehouseConfigScreen as Preloadable,
   [ROUTES.PV_PRODUCT_CATALOG]: R.PvProductCatalogPage as Preloadable,
   [ROUTES.SCAN]: R.PhysicalCodesPage as Preloadable,

@@ -73,6 +73,12 @@ export const NAV_GROUPS: NavGroupData[] = [
         icon: "id-card-clip-alt",
       },
       {
+        screen: "NCC-01",
+        path: ROUTES.SUPPLIERS,
+        label: "Danh sách NCC",
+        icon: "truck-side",
+      },
+      {
         // SCR-MST-01 (REQ-SRS-029): master nuôi form tạo SKU đứng cạnh mục SKU.
         screen: "MST-CAT-01",
         path: ROUTES.CATALOG_MASTER,
@@ -293,6 +299,7 @@ export const DEFAULT_SCREEN_BY_PATH: Record<string, string> = {
   [ROUTES.DASHBOARD]: "MAP-01",
   [ROUTES.IAM_USERS]: "IAM-01",
   [ROUTES.MASTER_DATA]: "MST-01",
+  [ROUTES.SUPPLIERS]: "NCC-01",
   [ROUTES.CATALOG_MASTER]: "MST-CAT-01",
   [ROUTES.PV_PRODUCT_CATALOG]: "MST-PV-01",
   [ROUTES.WAREHOUSE_CONFIG]: "WH-01",
@@ -422,6 +429,10 @@ export const SCREEN_META: Record<
   string,
   { title: string; description: string }
 > = {
+  "NCC-01": {
+    title: "Danh sách NCC",
+    description: "Quản lý thông tin và trạng thái nhà cung cấp.",
+  },
   "NFC-01": { title: "Gắn chip NFC cho hiện vật", description: "" },
   "MAP-01": {
     title: "Tổng quan vận hành",

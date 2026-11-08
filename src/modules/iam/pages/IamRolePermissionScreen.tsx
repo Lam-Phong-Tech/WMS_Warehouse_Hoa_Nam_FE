@@ -71,6 +71,7 @@ const PERMISSION_MODULE_KEYS: Record<string, MessageKey> = {
   iam: "iam.permissionModule.iam",
   sku: "iam.permissionModule.sku",
   catalog: "iam.permissionModule.catalog",
+  supplier: "iam.permissionModule.supplier",
   inbound: "iam.permissionModule.inbound",
   outbound: "iam.permissionModule.outbound",
   inventory: "iam.permissionModule.inventory",
@@ -187,8 +188,14 @@ export function IamRolePermissionScreen() {
   const deleteRole = useDeleteIamRole();
   const syncPermissions = useSyncIamRolePermissions();
 
-  const roles = useMemo(() => rolesQuery.data?.data ?? [], [rolesQuery.data?.data]);
-  const permissions = useMemo(() => permissionsQuery.data ?? [], [permissionsQuery.data]);
+  const roles = useMemo(
+    () => rolesQuery.data?.data ?? [],
+    [rolesQuery.data?.data],
+  );
+  const permissions = useMemo(
+    () => permissionsQuery.data ?? [],
+    [permissionsQuery.data],
+  );
   const rolePagination = resolveApiPagination(rolesQuery.data?.meta, {
     page: rolePage,
     pageSize: rolePerPage,

@@ -4155,6 +4155,7 @@ export const MESSAGES_EN: MessageTree = {
       iam: "Users & permissions",
       sku: "SKU & products",
       catalog: "Catalogues",
+      supplier: "Suppliers",
       inbound: "Inbound",
       outbound: "Outbound",
       inventory: "Stock",
