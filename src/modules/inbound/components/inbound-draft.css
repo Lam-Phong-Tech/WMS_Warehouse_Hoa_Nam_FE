@@ -15,30 +15,22 @@
   --inbound-draft-surface: var(--ops-surface);
 }
 
-.hn-inbound-draft .MuiDialog-paper {
-  width: min(600px, calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
-  margin: 16px;
-  border: 1px solid var(--inbound-draft-border);
-  border-radius: var(--ops-radius-dialog);
+.hn-inbound-draft .MuiDrawer-paper {
+  max-width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  border: 0;
+  border-left: 1px solid var(--inbound-draft-border);
+  border-radius: 0;
   background: var(--inbound-draft-surface);
   color: var(--inbound-draft-ink);
   box-shadow: var(--ops-shadow-dialog);
 }
 
-.hn-inbound-draft .MuiDialogTitle-root {
-  flex: none;
-  padding: 18px 22px;
-  border-bottom: 1px solid var(--inbound-draft-border);
+.hn-inbound-draft__header {
   font-size: 18px;
   font-weight: 600;
   line-height: 26px;
-}
-
-.hn-inbound-draft .MuiDialogTitle-root + .MuiDialogContent-root {
-  padding: 22px;
-  overscroll-behavior: contain;
 }
 
 .hn-inbound-draft .MuiFormControl-root,
@@ -313,19 +305,7 @@
 }
 
 @media (max-width: 599px) {
-  .hn-inbound-draft .MuiDialog-paper {
-    width: calc(100vw - 20px);
-    max-width: calc(100vw - 20px);
-    max-height: calc(100dvh - 20px);
-    margin: 10px;
-  }
-
-  .hn-inbound-draft .MuiDialogTitle-root {
-    padding: 14px 16px;
+  .hn-inbound-draft__header {
     font-size: 18px;
-  }
-
-  .hn-inbound-draft .MuiDialogTitle-root + .MuiDialogContent-root {
-    padding: 18px 16px;
   }
 }

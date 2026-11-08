@@ -131,7 +131,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
     expect(
       screen
         .getByRole("button", { name: "Lưu thông tin" })
-        .closest(".MuiDialogTitle-root"),
+        .closest(".hn-inbound-draft__header"),
     ).not.toBeNull();
     expect(
       screen.getByRole("dialog").querySelector(".MuiDialogActions-root"),

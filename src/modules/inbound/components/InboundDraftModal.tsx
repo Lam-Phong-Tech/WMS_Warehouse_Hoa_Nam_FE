@@ -7,7 +7,7 @@ import {
   Stack,
   UiAlert,
   UiAutocomplete,
-  UiDialog,
+  UiDrawer,
   UiFormField,
   UiVuexyDateField,
   UiTextField,
@@ -368,15 +368,21 @@ export function InboundDraftModal({
   };
 
   return (
-    <UiDialog
+    <UiDrawer
       {...dialog.dialogProps}
       onClose={(event, reason) => {
         if (!submittingRef.current) dialog.dialogProps.onClose(event, reason);
       }}
-      maxWidth="sm"
+      anchor="right"
+      width={600}
       className="hn-inbound-draft"
+      slotProps={{
+        ...dialog.dialogProps.slotProps,
+        paper: { role: "dialog", "aria-modal": true },
+      }}
       title={
         <Stack
+          className="hn-inbound-draft__header"
           direction="row"
           sx={{
             alignItems: "center",
@@ -626,6 +632,6 @@ export function InboundDraftModal({
           />
         </Grid>
       ) : null}
-    </UiDialog>
+    </UiDrawer>
   );
 }
