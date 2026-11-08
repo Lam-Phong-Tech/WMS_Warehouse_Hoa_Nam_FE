@@ -219,7 +219,7 @@ describe("supplier list", () => {
     const options = await screen.findAllByRole("option");
     expect(options).toHaveLength(2);
     fireEvent.click(
-      screen.getByRole("option", { name: "Trạng thái: Ngừng sử dụng" }),
+      screen.getByRole("option", { name: "Trạng thái: Ngừng hoạt động" }),
     );
     await waitFor(() =>
       expect(listSuppliers).toHaveBeenLastCalledWith(

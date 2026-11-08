@@ -9,7 +9,7 @@ Ngày: 08/11/2026. Route: `/master-data/suppliers`.
 - Bố cục theo Danh sách SKU và hai tài liệu được người dùng cung cấp:
   `DESIGN_FOUNDATIONS.md`, `sku-list-filter-table-style.md`.
 - Lọc tìm mã/tên theo API, phân trang server, lựa chọn ACTIVE/INACTIVE.
-  Mặc định Đang sử dụng. Không hiển thị “Tất cả” vì API hiện không có trạng thái ALL.
+  Mặc định Đang hoạt động. Không hiển thị “Tất cả” vì API hiện không có trạng thái ALL.
 - Bảng: STT, Mã NCC, Tên nhà cung cấp, Trạng thái, Cập nhật cuối, Sửa.
   Header xanh, control lọc 48px, trạng thái dạng pill, footer theo SKU.
 - Form thêm/sửa: tên tối đa 200 ký tự, trạng thái, mã chỉ đọc/tự cấp từ server.
