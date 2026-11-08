@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Box,
   Grid,
@@ -54,6 +60,7 @@ import {
   resolvePutawayTrayByScanCode,
   type PutawayHistory,
   type PutawayTask,
+  type TrayOption,
 } from "@/modules/putaway/services/putawayService";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { Drawer } from "@/shared/ui/primitives-mui";
@@ -209,6 +216,7 @@ export default function MvpPutawayPage() {
     queryKey: putawayKeys.trays,
     queryFn: fetchPutawayTrays,
   });
+  const { refetch: refetchTraysQuery } = traysQuery;
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: putawayKeys.all });
@@ -361,6 +369,20 @@ export default function MvpPutawayPage() {
       );
     }
   };
+
+  // Ổn định tham chiếu cho `TraySelectionGrid` (đã bọc memo): gõ phím ở các ô
+  // nhập khác trong form không được kéo lưới/ApexCharts render lại.
+  const selectTray = useCallback((tray: TrayOption) => {
+    setPutawayForm((current) => ({
+      ...current,
+      to_tray_id: tray.container_id,
+    }));
+    setTrayScanError(null);
+  }, []);
+
+  const refreshTrays = useCallback(() => {
+    void refetchTraysQuery();
+  }, [refetchTraysQuery]);
 
   const createDraft = async () => {
     if (!selected || !canManage) return;
@@ -913,16 +935,10 @@ export default function MvpPutawayPage() {
                         trays={trays}
                         selectedTrayId={putawayForm.to_tray_id}
                         pendingQuantity={selected?.quantity}
-                        onSelect={(tray) => {
-                          setPutawayForm((current) => ({
-                            ...current,
-                            to_tray_id: tray.container_id,
-                          }));
-                          setTrayScanError(null);
-                        }}
+                        onSelect={selectTray}
                         loading={traysQuery.isLoading}
                         disabled={!canManage}
-                        onRefresh={() => void traysQuery.refetch()}
+                        onRefresh={refreshTrays}
                       />
                     </Box>
                   </Stack>

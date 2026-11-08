@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider } from "@mui/material";
@@ -32,6 +32,14 @@ type StubClickHandler = (
 // options.chart.events.click(event, chartContext, {seriesIndex,
 // dataPointIndex}) với chartContext.w.config.series trỏ lại đúng series gốc —
 // để test hành vi chọn ô mà không cần ApexCharts vẽ thật.
+//
+// `chartConfigs` ghi lại tham chiếu options/series qua từng lần render: test
+// hồi quy hiệu năng dùng nó để chứng minh cha render lại (onSelect mới) KHÔNG
+// tạo cấu hình chart mới — tức không kích hoạt updateOptions/dựng lại SVG.
+const chartConfigs = vi.hoisted(() => ({
+  options: [] as unknown[],
+  series: [] as unknown[],
+}));
 vi.mock("react-apexcharts", () => ({
   default: ({
     series,
@@ -40,6 +48,8 @@ vi.mock("react-apexcharts", () => ({
     series: StubSeries[];
     options?: { chart?: { events?: { click?: StubClickHandler } } };
   }) => {
+    chartConfigs.options.push(options);
+    chartConfigs.series.push(series);
     const chartContext = { w: { config: { series } } };
     return (
       <div data-testid="apex-heatmap-stub">
@@ -121,6 +131,11 @@ function renderGrid(
 }
 
 describe("TraySelectionGrid", () => {
+  beforeEach(() => {
+    chartConfigs.options.length = 0;
+    chartConfigs.series.length = 0;
+  });
+
   it("sort natural theo tray_code (A02 truoc A10)", async () => {
     renderGrid();
     // Chart vào qua LazyApexChart (lazy() + Suspense) nên lần mount ĐẦU TIÊN
@@ -210,5 +225,50 @@ describe("TraySelectionGrid", () => {
 
     expect(screen.getByText("Đang chứa hàng")).toBeInTheDocument();
     expect(document.body.textContent).not.toContain("STORED");
+  });
+
+  /**
+   * Hồi quy hiệu năng form xếp khay: `onSelect` do page truyền vào từng là
+   * closure inline, nên mỗi phím gõ ở ô "Vị trí gợi ý"/"Ghi chú" tạo tham chiếu
+   * mới → memo `chartOptions` mất hiệu lực → ApexCharts `updateOptions()` dựng
+   * lại toàn bộ SVG (đo được ~25ms/lần, gây delay thao tác gõ). Cấu hình chart
+   * phải ổn định khi chỉ callback đổi tham chiếu; handler vẫn phải dùng callback
+   * MỚI NHẤT lúc click.
+   */
+  it("khong dung lai cau hinh chart khi cha render lai voi onSelect moi", async () => {
+    const user = userEvent.setup();
+    const first = vi.fn();
+    const second = vi.fn();
+    const { rerender } = render(
+      <ThemeProvider theme={muiTheme}>
+        <TraySelectionGrid
+          trays={TRAYS}
+          selectedTrayId=""
+          onSelect={first}
+        />
+      </ThemeProvider>,
+    );
+    await screen.findAllByRole("option");
+    const optionsBefore = chartConfigs.options.at(-1);
+    const seriesBefore = chartConfigs.series.at(-1);
+
+    rerender(
+      <ThemeProvider theme={muiTheme}>
+        <TraySelectionGrid
+          trays={TRAYS}
+          selectedTrayId=""
+          onSelect={second}
+        />
+      </ThemeProvider>,
+    );
+
+    expect(chartConfigs.options.at(-1)).toBe(optionsBefore);
+    expect(chartConfigs.series.at(-1)).toBe(seriesBefore);
+
+    await user.click(screen.getByText("A02"));
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledWith(
+      expect.objectContaining({ container_code: "A02" }),
+    );
   });
 });

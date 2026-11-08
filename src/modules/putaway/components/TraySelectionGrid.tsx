@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LazyApexChart as Chart } from "@/shared/components/charts/LazyApexChart";
 import type { ApexOptions } from "apexcharts";
 import { Box, Stack, Tooltip, UiStatusBadge } from "@/shared/ui";
@@ -207,7 +207,7 @@ function readPoint(
  * bằng bàn phím; lưới ở đây là lối chọn bổ sung bằng chuột/chạm, đúng tinh
  * thần Dev Guide (scan HOẶC chọn lưới).
  */
-export function TraySelectionGrid({
+function TraySelectionGridComponent({
   trays,
   selectedTrayId,
   onSelect,
@@ -217,6 +217,37 @@ export function TraySelectionGrid({
   pendingQuantity,
 }: TraySelectionGridProps) {
   const t = useT();
+  /**
+   * ApexCharts so sánh callback trong `options` THEO THAM CHIẾU. Mỗi lần form
+   * cha gõ phím, `onSelect` inline lại là một hàm mới → `chartOptions` mất memo
+   * → `updateOptions()` dựng lại toàn bộ SVG (destroy + create + mount, ~25ms
+   * cho lưới 4×4) dù dữ liệu khay không đổi. Giữ handler ổn định và đọc props
+   * mới nhất qua ref để lưới không bị vẽ lại vì thao tác gõ ở ô nhập khác.
+   */
+  const liveInteraction = useRef({ onSelect, trays, disabled });
+  useEffect(() => {
+    liveInteraction.current = { onSelect, trays, disabled };
+  }, [disabled, onSelect, trays]);
+  const handleCellClick = useCallback(
+    (_event: MouseEvent, chartContext?: unknown, config?: unknown) => {
+      const current = liveInteraction.current;
+      if (current.disabled) return;
+      const cell = config as
+        | { seriesIndex?: number; dataPointIndex?: number }
+        | undefined;
+      const point = readPoint(
+        (chartContext as { w?: unknown } | undefined)?.w,
+        cell?.seriesIndex,
+        cell?.dataPointIndex,
+      );
+      if (!point?.trayId) return;
+      const tray = current.trays.find(
+        (item) => item.container_id === point.trayId,
+      );
+      if (tray) current.onSelect(tray);
+    },
+    [],
+  );
   const [search, setSearch] = useState("");
   const themeMode = useThemeStore((state) => state.mode);
   const {
@@ -319,19 +350,7 @@ export function TraySelectionGrid({
           dynamicAnimation: { enabled: true, speed: 1 },
         },
         events: {
-          click: (_event, chartContext, config) => {
-            if (disabled) return;
-            const point = readPoint(
-              (chartContext as { w?: unknown } | undefined)?.w,
-              config?.seriesIndex,
-              config?.dataPointIndex,
-            );
-            if (!point?.trayId) return;
-            const tray = trays.find(
-              (item) => item.container_id === point.trayId,
-            );
-            if (tray) onSelect(tray);
-          },
+          click: handleCellClick,
         },
       },
       plotOptions: {
@@ -409,10 +428,11 @@ export function TraySelectionGrid({
     }),
     // Bảng màu heatmap dựng từ `themeMode`, nên đổi sáng/tối phải tính lại
     // options — thiếu deps này thì lưới giữ nguyên màu của giao diện cũ.
+    // `trays`/`onSelect`/`disabled` KHÔNG nằm ở đây: chúng chỉ được đọc lúc
+    // click qua `liveInteraction`, nên đổi tham chiếu (vd form cha gõ phím)
+    // không được phép làm ApexCharts dựng lại SVG.
     [
-      disabled,
-      trays,
-      onSelect,
+      handleCellClick,
       showRowLabels,
       themeMode,
       EMPTY_COLOR,
@@ -626,3 +646,10 @@ export function TraySelectionGrid({
     </Box>
   );
 }
+
+/**
+ * `memo` để các ô nhập khác trong form (vị trí gợi ý / ghi chú / quét khay —
+ * state nằm ở page cha) không kéo cả lưới + wrapper ApexCharts render lại mỗi
+ * phím. Chỉ có tác dụng khi page truyền callback ổn định (`useCallback`).
+ */
+export const TraySelectionGrid = memo(TraySelectionGridComponent);
