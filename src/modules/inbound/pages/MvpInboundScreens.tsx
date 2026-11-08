@@ -130,15 +130,6 @@ type ScanLogRow = {
 const SCAN_ENTRY_PAGE_SIZE = 10;
 const SCAN_LOG_PAGE_SIZE = 8;
 
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Box className="hn-inbound-scan-stat">
-      <Box sx={{ typography: "caption", color: "text.secondary" }}>{label}</Box>
-      <Box className="hn-inbound-scan-stat-value">{value}</Box>
-    </Box>
-  );
-}
-
 function looksCompositeProductQr(code: string): boolean {
   return /^HN\d+\|/i.test(code.trim());
 }
@@ -490,13 +481,6 @@ export function InboundScanModal({
         .filter((entry) => entry.containerId === activeCarton.id)
         .reduce((sum, entry) => sum + entry.quantity, 0)
     : 0;
-  const sessionDuplicateCount = scanLog.filter(
-    (row) => !row.success && (row.errorCode ?? "").includes("DUPLICATE"),
-  ).length;
-  const sessionErrorCount = scanLog.filter(
-    (row) => !row.success && !(row.errorCode ?? "").includes("DUPLICATE"),
-  ).length;
-
   const handleCartonDetected = (
     classified: ScanClassifyResponse,
     rawCode: string,
@@ -1286,33 +1270,6 @@ export function InboundScanModal({
                   </Grid>
                 </Grid>
               </Box>
-
-              <Grid container spacing={1} className="hn-inbound-scan-stats">
-                <Grid size={{ xs: 6, sm: 3 }}>
-                  <StatCard
-                    label={t("inbound.detail.statValidCodes")}
-                    value={totalScanned}
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 3 }}>
-                  <StatCard
-                    label={t("inbound.detail.statSkuLines")}
-                    value={detail.lines.length}
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 3 }}>
-                  <StatCard
-                    label={t("inbound.detail.statRemoved")}
-                    value={removedEntryCount}
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 3 }}>
-                  <StatCard
-                    label={t("inbound.detail.statSessionErrors")}
-                    value={sessionDuplicateCount + sessionErrorCount}
-                  />
-                </Grid>
-              </Grid>
 
               {isMutable ? (
                 <Box

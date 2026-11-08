@@ -53,37 +53,6 @@
   overflow-wrap: anywhere;
 }
 
-.hn-inbound-scan-stats {
-  margin-bottom: 12px;
-}
-
-.hn-inbound-scan-stat {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-width: 0;
-  min-height: 64px;
-  height: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--ops-line);
-  border-radius: var(--ops-radius-card);
-  background: var(--ops-surface);
-}
-
-.hn-inbound-scan-stat > :first-child {
-  line-height: 18px;
-}
-
-.hn-inbound-scan-stat-value {
-  flex: none;
-  color: var(--ops-heading);
-  font-size: 22px;
-  line-height: 28px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
 .hn-inbound-scan-table .MuiChip-root {
   max-width: 100%;
   height: auto;

@@ -738,10 +738,6 @@ export const MESSAGES_VI = {
       fieldSource: "Nguồn",
       fieldStatus: "Trạng thái",
       fieldVersion: "Phiên bản dữ liệu",
-      statValidCodes: "Mã hợp lệ",
-      statSkuLines: "Dòng SKU thực nhận",
-      statRemoved: "Mã đã gỡ",
-      statSessionErrors: "Mã trùng / lỗi (phiên)",
       receivedTitle: "Hàng thực nhận theo SKU",
       receivedEmpty:
         "Chưa có dòng SKU nào — quét mã sản phẩm đầu tiên để hệ thống tự tạo dòng.",

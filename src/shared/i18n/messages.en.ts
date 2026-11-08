@@ -740,10 +740,6 @@ export const MESSAGES_EN: MessageTree = {
       fieldSource: "Source",
       fieldStatus: "Status",
       fieldVersion: "Data version",
-      statValidCodes: "Valid codes",
-      statSkuLines: "Received SKU lines",
-      statRemoved: "Removed codes",
-      statSessionErrors: "Duplicate / failed codes (session)",
       receivedTitle: "Goods received by SKU",
       receivedEmpty:
         "No SKU line yet — scan the first product code and the system creates the line.",

@@ -236,9 +236,7 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
       <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
     );
 
-    const removedCounterLabel = await screen.findByText("Mã đã gỡ");
-    // Thẻ số "Mã đã gỡ" lấy từ inbound_scan_entries của phiếu.
-    expect(removedCounterLabel.parentElement?.textContent).toContain("1");
+    expect(await screen.findByText("Mã đã quét của phiếu")).toBeInTheDocument();
     // Chuỗi tóm tắt được React render thành nhiều text node nên so trên document.
     expect(document.body.textContent).toContain("1 hợp lệ · 1 đã gỡ");
   });
