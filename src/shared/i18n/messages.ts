@@ -761,6 +761,7 @@ export const MESSAGES_VI = {
       fieldDocument: "Phiếu",
       fieldSource: "Mã chứng từ bên ngoài",
       fieldWarehouse: "Kho",
+      fieldSupplier: "Nhà cung cấp",
       fieldStatus: "Trạng thái",
       fieldVersion: "Phiên bản dữ liệu",
       receivedTitle: "Hàng thực nhận theo SKU",

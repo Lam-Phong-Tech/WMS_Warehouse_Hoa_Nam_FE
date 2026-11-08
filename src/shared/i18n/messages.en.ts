@@ -765,6 +765,7 @@ export const MESSAGES_EN: MessageTree = {
       fieldStatus: "Status",
       fieldVersion: "Data version",
       fieldWarehouse: "Warehouse",
+      fieldSupplier: "Supplier",
       receivedTitle: "Goods received by SKU",
       receivedEmpty:
         "No SKU line yet — scan the first product code and the system creates the line.",

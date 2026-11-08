@@ -12,6 +12,23 @@ vi.mock("@/shared/data/reference-queries", () => ({
   })),
 }));
 
+vi.mock("@/shared/components/DocumentAttachmentsPanel", () => ({
+  DocumentAttachmentsPanel: (props: {
+    documentType: string;
+    documentId: string;
+    disabled?: boolean;
+    hideWhenEmpty?: boolean;
+  }) => (
+    <div
+      data-testid="attachments-panel"
+      data-document-type={props.documentType}
+      data-document-id={props.documentId}
+      data-disabled={String(props.disabled)}
+      data-hide-when-empty={String(props.hideWhenEmpty)}
+    />
+  ),
+}));
+
 vi.mock("@/modules/inbound/hooks/use-inbound", () => ({
   useInboundDetail: vi.fn(),
   useInboundScanEntries: vi.fn(),
@@ -915,5 +932,62 @@ describe("IN-03 · chặn Ghi nhận khi SKU mới chưa đủ thông tin", () =
       await screen.findByText("Tên SKU phải khác mã SKU."),
     ).toBeInTheDocument();
     expect(completeMutate).not.toHaveBeenCalled();
+  });
+});
+
+describe("IN-03 · thông tin phiếu trong drawer quét", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    grant([P.INBOUND_VIEW, P.INBOUND_SCAN, P.INBOUND_CREATE, P.INBOUND_POST]);
+  });
+
+  afterEach(() => {
+    cleanupTestState();
+  });
+
+  it("hiển thị nhà cung cấp theo mã và tên", async () => {
+    mockHooks();
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: {
+        ...DETAIL,
+        supplier: { id: "SUP-3", code: "NCC-003", name: "Kubota Việt Nam" },
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    expect(await screen.findByText("Nhà cung cấp")).toBeInTheDocument();
+    expect(screen.getByText("NCC-003 - Kubota Việt Nam")).toBeInTheDocument();
+  });
+
+  it("hiển thị Chưa có khi phiếu chưa gắn nhà cung cấp", async () => {
+    mockHooks();
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    const label = await screen.findByText("Nhà cung cấp");
+    expect(label.parentElement).toHaveTextContent("Chưa có");
+  });
+
+  it("gắn khối chứng từ đính kèm ở chế độ chỉ xem và ẩn khi rỗng", async () => {
+    mockHooks();
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    const panel = await screen.findByTestId("attachments-panel");
+    expect(panel).toHaveAttribute("data-document-type", "INBOUND");
+    expect(panel).toHaveAttribute("data-document-id", "IN-1");
+    expect(panel).toHaveAttribute("data-disabled", "true");
+    expect(panel).toHaveAttribute("data-hide-when-empty", "true");
   });
 });

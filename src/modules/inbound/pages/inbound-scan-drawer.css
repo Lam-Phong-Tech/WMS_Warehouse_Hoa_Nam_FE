@@ -53,6 +53,15 @@
   overflow-wrap: anywhere;
 }
 
+.hn-inbound-scan-attachments {
+  margin-bottom: 16px;
+}
+
+/* hideWhenEmpty trả về null → khối rỗng, không chiếm khoảng cách. */
+.hn-inbound-scan-attachments:empty {
+  display: none;
+}
+
 .hn-inbound-scan-table .MuiChip-root {
   max-width: 100%;
   height: auto;

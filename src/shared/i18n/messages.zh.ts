@@ -1341,6 +1341,7 @@ export const MESSAGES_ZH: MessageTree = {
       "fieldStatus": "状态",
       "fieldVersion": "数据版本",
       "fieldWarehouse": "仓库",
+      "fieldSupplier": "供应商",
       "receivedTitle": "SKU 收到的货物",
       "receivedEmpty": "尚无 SKU 行 - 扫描第一个产品代码，系统会创建该行。",
       "entriesTitle": "扫描此注释的代码",

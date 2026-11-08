@@ -53,6 +53,7 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
+import { DocumentAttachmentsPanel } from "@/shared/components/DocumentAttachmentsPanel";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
@@ -443,6 +444,11 @@ export function InboundScanModal({
   const warehouseName = String(
     warehouse?.name ?? warehouse?.warehouse_name ?? "",
   ).trim();
+  // Hiển thị cùng định dạng với ô chọn NCC ở modal "Thông tin phiếu nhập":
+  // "MÃ - Tên"; phiếu cũ chưa gắn NCC thì để trống cho ô hiện "—".
+  const supplierLabel = detail?.supplier
+    ? [detail.supplier.code, detail.supplier.name].filter(Boolean).join(" - ")
+    : "";
   const skuRows = useMemo(() => skuQuery.data?.data ?? [], [skuQuery.data?.data]);
   const skuById = useMemo(
     () => new Map<string, SkuRecord>(skuRows.map((sku) => [sku.sku_id, sku])),
@@ -1279,7 +1285,15 @@ export function InboundScanModal({
                       {warehouseName || EMPTY_TEXT}
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                      {t("inbound.detail.fieldSupplier")}
+                    </Box>
+                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
+                      {supplierLabel || EMPTY_TEXT}
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
                     <Box sx={{ typography: "caption", color: "text.secondary" }}>
                       {t("updatedUi.text_9b223cea940b")}
                     </Box>
@@ -1288,6 +1302,17 @@ export function InboundScanModal({
                     </Box>
                   </Grid>
                 </Grid>
+              </Box>
+
+              {/* Chứng từ đính kèm: chỉ xem/tải ngay trong drawer quét và chỉ
+                  hiện khi phiếu thật sự có tệp (hideWhenEmpty). */}
+              <Box className="hn-inbound-scan-attachments">
+                <DocumentAttachmentsPanel
+                  documentType="INBOUND"
+                  documentId={documentId}
+                  disabled
+                  hideWhenEmpty
+                />
               </Box>
 
               {isMutable ? (
