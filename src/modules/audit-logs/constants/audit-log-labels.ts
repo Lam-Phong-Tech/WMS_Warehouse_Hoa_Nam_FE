@@ -13,7 +13,8 @@
  *
  * File này dịch cả ba thứ đó sang tiếng Việt: nhãn loại đối tượng, câu mô tả
  * tự dựng, và cặp "tên trường – giá trị" cho khối dữ liệu trước/sau thay đổi.
- * Bản JSON gốc KHÔNG bị bỏ đi — Dialog chi tiết vẫn cho bung ra để tra soát.
+ * Dữ liệu gốc được giữ ở service; phần chi tiết trình bày các trường và giá trị
+ * dễ đọc, không in JSON ra giao diện nghiệp vụ.
  *
  * Song ngữ theo đúng cơ chế chung: mọi map bọc `bilingual(vi, en)`; TUYỆT ĐỐI
  * không spread map khác vào đây (spread đóng băng ngôn ngữ lúc import) và
@@ -81,6 +82,28 @@ const OBJECT_TYPE_LABELS = bilingual(
     scan_batch: "Lô quét",
     pv_product_image: "Ảnh sản phẩm App PV",
     pv_admin: "Quản trị App PV",
+    brand: "Hãng sản xuất",
+    defect_catalog: "Danh mục lỗi",
+    inbound_scan_entry: "Lượt quét nhập kho",
+    label_snapshot: "Bản lưu nhãn in",
+    mini_app: "Ứng dụng máy quét",
+    mini_app_draft: "Phiếu nháp trên ứng dụng",
+    mini_app_work_shift: "Ca làm việc",
+    outbound_item_match: "Đối chiếu hàng xuất kho",
+    outbound_request_import: "Lượt nhập dữ liệu phiếu xuất",
+    package_variant: "Quy cách đóng gói",
+    packing_label_report_fixture: "Dữ liệu mẫu báo cáo in nhãn",
+    physical_code: "Mã nhận diện hàng hóa",
+    product_model: "Mẫu sản phẩm",
+    pv_product_profile: "Thông tin sản phẩm trên ứng dụng",
+    recipient: "Đối tượng nhận hàng",
+    reconciliation_incident: "Sai lệch đối soát",
+    report_export: "Lượt xuất báo cáo",
+    sku_import: "Lượt nhập dữ liệu SKU",
+    uiux_v2_scenario: "Dữ liệu mẫu giao diện",
+    warranty_component_issue: "Phiếu xuất linh kiện bảo hành",
+    warranty_attachment: "Tệp đính kèm bảo hành",
+    warranty_report: "Báo cáo bảo hành",
   },
   {
     item_instance: "Item (by serial)",
@@ -111,6 +134,28 @@ const OBJECT_TYPE_LABELS = bilingual(
     scan_batch: "Scan batch",
     pv_product_image: "PV product image",
     pv_admin: "PV app administration",
+    brand: "Brand",
+    defect_catalog: "Defect catalog",
+    inbound_scan_entry: "Inbound scan entry",
+    label_snapshot: "Label snapshot",
+    mini_app: "Scanner app",
+    mini_app_draft: "App document draft",
+    mini_app_work_shift: "Work shift",
+    outbound_item_match: "Outbound item match",
+    outbound_request_import: "Outbound request import",
+    package_variant: "Packaging variant",
+    packing_label_report_fixture: "Packing label report sample data",
+    physical_code: "Physical item code",
+    product_model: "Product model",
+    pv_product_profile: "App product profile",
+    recipient: "Recipient",
+    reconciliation_incident: "Reconciliation discrepancy",
+    report_export: "Report export",
+    sku_import: "SKU import",
+    uiux_v2_scenario: "Interface sample data",
+    warranty_component_issue: "Warranty component issue",
+    warranty_attachment: "Warranty attachment",
+    warranty_report: "Warranty report",
   },
 );
 
@@ -209,6 +254,72 @@ export function auditResultLabel(result: string | null | undefined): string {
   const raw = String(result ?? "").trim();
   if (!raw) return "";
   return enumLabelOrText(RESULT_LABELS, raw);
+}
+
+/** Result is independent of the event verb: an UPDATE can fail or be denied. */
+export function auditResultTone(
+  result: string | null | undefined,
+): UiStatusTone {
+  if (result === "SUCCESS") return "success";
+  if (result === "FAILED" || result === "DENIED") return "error";
+  return "neutral";
+}
+
+export interface AuditDataChange {
+  key: string;
+  label: string;
+  before?: string;
+  after?: string;
+  changed: boolean;
+}
+
+/** The comparison must expose changed members, not just "3 items" on both sides. */
+function comparisonValue(key: string, value: unknown): string {
+  if (Array.isArray(value)) {
+    if (!value.length) return EMPTY_TEXT;
+    return value
+      .map(
+        (item, index) =>
+          `${typeof item === "object" && item !== null ? `${index + 1}. ` : ""}${comparisonValue(key, item)}`,
+      )
+      .join("\n");
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .map(
+        ([childKey, childValue]) =>
+          `${auditDataFieldLabel(childKey)}: ${comparisonValue(childKey, childValue)}`,
+      )
+      .join("\n");
+  }
+  return formatScalar(key, value);
+}
+
+/** Join by raw field key, never translated labels (two keys can share a label). */
+export function auditDataChanges(
+  log: Pick<AuditLog, "before_data" | "after_data">,
+): AuditDataChange[] {
+  const before = auditDataEntries(log.before_data);
+  const after = auditDataEntries(log.after_data);
+  const keys = [
+    ...new Set([
+      ...before.map((entry) => entry.key),
+      ...after.map((entry) => entry.key),
+    ]),
+  ];
+  return keys.map((key) => ({
+    key,
+    label: auditDataFieldLabel(key),
+    before: Object.hasOwn(log.before_data ?? {}, key)
+      ? comparisonValue(key, log.before_data?.[key])
+      : undefined,
+    after: Object.hasOwn(log.after_data ?? {}, key)
+      ? comparisonValue(key, log.after_data?.[key])
+      : undefined,
+    changed:
+      JSON.stringify(log.before_data?.[key]) !==
+      JSON.stringify(log.after_data?.[key]),
+  }));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -349,6 +460,39 @@ const DATA_FIELD_LABELS = bilingual(
     mime_type: "Định dạng tệp",
     code: "Mã",
     quantity: "Số lượng",
+    roles: "Vai trò",
+    role_name: "Tên vai trò",
+    permission_name: "Tên quyền",
+    role_id: "Định danh vai trò",
+    role_ids: "Các vai trò được gán",
+    permissions: "Quyền",
+    permission_id: "Định danh quyền",
+    permission_ids: "Các quyền được gán",
+    scope_ref: "Phạm vi áp dụng",
+    effective_from: "Có hiệu lực từ",
+    effective_to: "Có hiệu lực đến",
+    display_name: "Tên hiển thị",
+    username: "Tên đăng nhập",
+    department_id: "Định danh bộ phận",
+    changed_fields: "Các trường thay đổi",
+    theme: "Chế độ giao diện",
+    accent: "Màu chủ đạo",
+    locale: "Ngôn ngữ",
+    timezone: "Múi giờ",
+    date_format: "Định dạng ngày",
+    default_homepage: "Trang mở mặc định",
+    font_size: "Cỡ chữ",
+    density: "Mật độ hiển thị",
+    reduced_motion: "Giảm chuyển động",
+    notifications: "Thông báo",
+    avatar: "Ảnh đại diện",
+    phone: "Số điện thoại",
+    job_title: "Chức danh công việc",
+    source: "Nguồn ghi nhận",
+    auth_session_id: "Định danh phiên đăng nhập",
+    client_type: "Loại ứng dụng",
+    device_id: "Định danh thiết bị",
+    user_id: "Định danh người dùng",
   },
   {
     status: "Status",
@@ -391,6 +535,39 @@ const DATA_FIELD_LABELS = bilingual(
     mime_type: "File type",
     code: "Code",
     quantity: "Quantity",
+    roles: "Roles",
+    role_name: "Role name",
+    permission_name: "Permission name",
+    role_id: "Role ID",
+    role_ids: "Assigned roles",
+    permissions: "Permissions",
+    permission_id: "Permission ID",
+    permission_ids: "Assigned permissions",
+    scope_ref: "Scope",
+    effective_from: "Effective from",
+    effective_to: "Effective until",
+    display_name: "Display name",
+    username: "Username",
+    department_id: "Department ID",
+    changed_fields: "Changed fields",
+    theme: "Theme",
+    accent: "Accent color",
+    locale: "Language",
+    timezone: "Time zone",
+    date_format: "Date format",
+    default_homepage: "Default homepage",
+    font_size: "Font size",
+    density: "Display density",
+    reduced_motion: "Reduced motion",
+    notifications: "Notifications",
+    avatar: "Profile picture",
+    phone: "Phone number",
+    job_title: "Job title",
+    source: "Recorded source",
+    auth_session_id: "Sign-in session ID",
+    client_type: "Client type",
+    device_id: "Device ID",
+    user_id: "User ID",
   },
 );
 
@@ -510,8 +687,54 @@ const STORAGE_DISK_LABELS = bilingual(
   },
 );
 
+const THEME_LABELS = bilingual(
+  { LIGHT: "Sáng", DARK: "Tối", SYSTEM: "Theo hệ thống" },
+  { LIGHT: "Light", DARK: "Dark", SYSTEM: "System" },
+);
+const ACCENT_LABELS = bilingual(
+  {
+    OCEAN: "Xanh đại dương",
+    TEAL: "Xanh ngọc",
+    INDIGO: "Xanh chàm",
+    GRAPHITE: "Xám than",
+  },
+  { OCEAN: "Ocean blue", TEAL: "Teal", INDIGO: "Indigo", GRAPHITE: "Graphite" },
+);
+const LOCALE_LABELS = bilingual(
+  { VI: "Tiếng Việt", EN: "Tiếng Anh", ZH: "Tiếng Trung" },
+  { VI: "Vietnamese", EN: "English", ZH: "Chinese" },
+);
+const HOMEPAGE_LABELS = bilingual(
+  {
+    DASHBOARD: "Tổng quan hệ thống",
+    INBOUND: "Nhập kho",
+    OUTBOUND: "Xuất kho",
+    INVENTORY: "Tồn kho",
+  },
+  {
+    DASHBOARD: "System overview",
+    INBOUND: "Inbound",
+    OUTBOUND: "Outbound",
+    INVENTORY: "Inventory",
+  },
+);
+const FONT_SIZE_LABELS = bilingual(
+  { SMALL: "Nhỏ", MEDIUM: "Vừa", LARGE: "Lớn" },
+  { SMALL: "Small", MEDIUM: "Medium", LARGE: "Large" },
+);
+const DENSITY_LABELS = bilingual(
+  { COMFORTABLE: "Thoải mái", COMPACT: "Gọn" },
+  { COMFORTABLE: "Comfortable", COMPACT: "Compact" },
+);
+
 /** Trường nào tra bảng nhãn nào. */
 const VALUE_LABELS: Record<string, Readonly<Record<string, string>>> = {
+  theme: THEME_LABELS,
+  accent: ACCENT_LABELS,
+  locale: LOCALE_LABELS,
+  default_homepage: HOMEPAGE_LABELS,
+  font_size: FONT_SIZE_LABELS,
+  density: DENSITY_LABELS,
   status: AUDIT_STATUS_LABELS,
   original_document_status: AUDIT_STATUS_LABELS,
   box_status: AUDIT_STATUS_LABELS,
@@ -589,6 +812,7 @@ function formatScalar(key: string, value: unknown): string {
       : formatQuantity(value);
   }
   const raw = String(value).trim();
+  if (key === "changed_fields") return auditDataFieldLabel(raw);
   if (RAW_FIELDS.has(key)) return raw;
   if (ID_FIELDS.has(key) || UUID_SHAPE.test(raw)) return shortId(raw);
   const map = VALUE_LABELS[key];
@@ -599,6 +823,9 @@ function formatScalar(key: string, value: unknown): string {
 function formatValue(key: string, value: unknown): string {
   if (Array.isArray(value)) {
     if (value.length === 0) return EMPTY_TEXT;
+    if (key === "changed_fields") {
+      return value.map((item) => formatScalar(key, item)).join(", ");
+    }
     const unit =
       key === "movement_ids"
         ? COUNT_UNITS.movements

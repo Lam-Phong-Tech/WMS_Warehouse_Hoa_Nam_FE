@@ -1,3 +1,9 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import { useReportExport } from "@/modules/reports/operations/report-export";
+import { ReportDateRangePicker } from "../components/ReportDateRangePicker";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
@@ -8,6 +14,7 @@ import {
   type CSSProperties,
 } from "react";
 import dayjs from "dayjs";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { VuexyDemoIcon } from "@/shared/ui";
 import { getApiErrorMessage } from "@/shared/api/api-error";
@@ -52,8 +59,8 @@ type ProgressTone = "complete" | "processing" | "pending";
 
 function initialRange(): DateRange {
   return {
-    from: dayjs().subtract(6, "day").format(ISO_DATE),
-    to: dayjs().format(ISO_DATE),
+    from: businessToday().subtract(6, "day").format(ISO_DATE),
+    to: businessToday().format(ISO_DATE),
   };
 }
 
@@ -440,6 +447,8 @@ function KpiSkeleton() {
 }
 
 export default function OutboundFlowReport() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const exporter = useReportExport();
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [chartOpen, setChartOpen] = useState(true);
   const [progressOpen, setProgressOpen] = useState(true);
@@ -461,6 +470,8 @@ export default function OutboundFlowReport() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [viewDocumentId, setViewDocumentId] = useState<string | null>(null);
+  const linkedDocumentId = searchParams.get("document");
+  const activeDocumentId = linkedDocumentId || viewDocumentId;
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
@@ -714,7 +725,6 @@ export default function OutboundFlowReport() {
       return [
         document.document_no,
         metadata?.requestNo,
-        metadata?.note,
         document.counterpart,
         document.created_by_name,
         document.status,
@@ -782,29 +792,10 @@ export default function OutboundFlowReport() {
     }
   };
 
-  const resetFilters = async () => {
-    const next = initialRange();
-    setDraftRange(next);
-    setDraftRecipient("");
-    setDraftStatus("");
-    setAppliedRecipient("");
-    setAppliedStatus("");
-    setQuery("");
-    setPage(1);
-    setShowSuccess(false);
-    setActionNotice(null);
-    sawUpdateLoading.current = false;
-    setUpdatePending(true);
-    const rangeChanged =
-      next.from !== appliedRange.from || next.to !== appliedRange.to;
-    if (rangeChanged) setAppliedRange(next);
-    else await refetchReport();
-  };
-
   const widenRange = () => {
     const next = {
-      from: dayjs().subtract(29, "day").format(ISO_DATE),
-      to: dayjs().format(ISO_DATE),
+      from: businessToday().subtract(29, "day").format(ISO_DATE),
+      to: businessToday().format(ISO_DATE),
     };
     setDraftRange(next);
     setAppliedRange(next);
@@ -876,11 +867,60 @@ export default function OutboundFlowReport() {
       <header className="outbound-page-heading">
         <div>
           <h1 className="hn-report-page-title">
-            {tUi("updatedUi.text_d3eb457df55e")}
+            {tUi("reports.inventoryFlowReport.outboundTitle")}
           </h1>
-          <p>{tUi("updatedUi.text_a7149a55bd87")}</p>
         </div>
         <div className="outbound-heading-actions">
+          <ReportExportAction
+            title={tUi("reportExport.outbound")}
+            fileStem={
+              "BaoCaoXuatKho_" + appliedRange.from + "-" + appliedRange.to
+            }
+            total={searchedDocuments.length}
+            currentCount={pageDocuments.length}
+            sections={reportExportSections(
+              tUi("reportExport.outboundDocuments"),
+            )}
+            context={[
+              [
+                tUi("reportExport.period"),
+                formatDay(appliedRange.from) +
+                  " – " +
+                  formatDay(appliedRange.to),
+              ],
+              [
+                tUi("reportExport.filters"),
+                [appliedRecipient, appliedStatus, query]
+                  .filter(Boolean)
+                  .join(" · ") || tUi("dashboard.operations.filterAll"),
+              ],
+            ]}
+            disabled={
+              updating ||
+              invalidRange ||
+              Boolean(error) ||
+              outboundMetadataQuery.isError
+            }
+            loading={Boolean(exporter.exporting)}
+            onExport={(choice) =>
+              exporter.exportReport(choice.format, {
+                reportCode: "document-history",
+                fileStem: "bao-cao-xuat-kho",
+                filters: {
+                  from_date: appliedRange.from,
+                  to_date: appliedRange.to,
+                  doc_type: "outbound",
+                  ...(appliedStatus ? { status: appliedStatus } : {}),
+                },
+                workbook: reportWorkbookOptions(
+                  choice,
+                  ["Mã phiếu"],
+                  searchedDocuments.map((row) => row.document_no),
+                  pageDocuments.map((row) => row.document_no),
+                ),
+              })
+            }
+          />
           {canImport ? (
             <button
               type="button"
@@ -893,6 +933,65 @@ export default function OutboundFlowReport() {
           ) : null}
         </div>
       </header>
+
+      <section
+        className="outbound-top-filters"
+        aria-label="Bộ lọc báo cáo xuất kho"
+      >
+        <div
+          className="outbound-top-filters__date"
+          role="group"
+          aria-label={tUi("reports.packingLabel.dateRangeLabel")}
+        >
+          <ReportDateRangePicker
+            value={[
+              draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null,
+              draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null,
+            ]}
+            onChange={(value) => {
+              const next = {
+                from: value?.[0]?.format(ISO_DATE) ?? "",
+                to: value?.[1]?.format(ISO_DATE) ?? "",
+              };
+              setDraftRange(next);
+              if (!rangeIsInvalid(next)) {
+                setAppliedRange(next);
+                setPage(1);
+              }
+            }}
+            aria-label={tUi("reports.packingLabel.dateRangeLabel")}
+            disabled={updating}
+          />
+        </div>
+        <FilterCombobox
+          id="rpt01b-recipient"
+          value={draftRecipient}
+          onChange={(value) => {
+            setDraftRecipient(value);
+            setAppliedRecipient(value);
+            setPage(1);
+          }}
+          options={recipientFilterOptions}
+          icon="user-round"
+          searchPlaceholder="Tìm người nhận..."
+          ariaLabel="Chọn người nhận"
+          disabled={updating}
+        />
+        <FilterCombobox
+          id="rpt01b-status"
+          value={draftStatus}
+          onChange={(value) => {
+            setDraftStatus(value);
+            setAppliedStatus(value);
+            setPage(1);
+          }}
+          options={statusFilterOptions}
+          icon="file-clock"
+          searchPlaceholder="Tìm trạng thái..."
+          ariaLabel="Chọn trạng thái phiếu xuất"
+          disabled={updating}
+        />
+      </section>
 
       {invalidRange ? (
         <aside className="outbound-invalid-banner" role="alert">
@@ -1265,8 +1364,9 @@ export default function OutboundFlowReport() {
             </div>
 
             <div
-              className="outbound-reference-filters"
-              aria-label={tUi("updatedUi.text_4f905d145ffd")}
+              className="outbound-reference-filters outbound-table-filters"
+              role="region"
+              aria-label="Bộ lọc danh sách phiếu xuất"
             >
               <label className="outbound-table-search">
                 <Icon name="search" />
@@ -1277,7 +1377,7 @@ export default function OutboundFlowReport() {
                     setQuery(event.target.value);
                     setPage(1);
                   }}
-                  placeholder={tUi("updatedUi.text_fb8d84e68703")}
+                  placeholder="Mã phiếu, mã tờ yêu cầu, người nhận..."
                   aria-label={tUi("outbound.list.searchAria")}
                   disabled={updating || reportEmpty}
                 />
@@ -1291,51 +1391,57 @@ export default function OutboundFlowReport() {
                   </button>
                 ) : null}
               </label>
-              <div className="outbound-reference-filter" data-filter="status">
-                <span>{tUi("dashboard.composition.colStatus")}</span>
-                <FilterCombobox
-                  id="rpt01-status"
-                  value={draftStatus}
-                  onChange={setDraftStatus}
-                  options={statusFilterOptions}
-                  icon="file-clock"
-                  searchPlaceholder="Tìm trạng thái..."
-                  ariaLabel="Chọn trạng thái phiếu xuất"
-                  disabled={updating}
-                />
-              </div>
-              <div
-                className="outbound-reference-filter"
-                data-filter="recipient"
-              >
-                <span>{tUi("outbound.list.colRecipient")}</span>
-                <FilterCombobox
-                  id="rpt01-recipient"
-                  value={draftRecipient}
-                  onChange={setDraftRecipient}
-                  options={recipientFilterOptions}
-                  icon="user-round"
-                  searchPlaceholder="Tìm người nhận..."
-                  ariaLabel="Chọn người nhận"
-                  disabled={updating}
-                />
-              </div>
-              <button
-                type="button"
-                className="outbound-apply-button"
-                onClick={() => void applyFilters()}
-                disabled={invalidRange || updating}
-              >
-                {tUi("dashboard.snapshot.apply")}
-              </button>
-              <button
-                type="button"
-                className="outbound-reset-button"
-                onClick={() => void resetFilters()}
+              <FilterCombobox
+                id="rpt01b-table-status"
+                value={appliedStatus}
+                onChange={(value) => {
+                  setDraftStatus(value);
+                  setAppliedStatus(value);
+                  setPage(1);
+                }}
+                options={statusFilterOptions.map((option) => ({
+                  ...option,
+                  label: `${tUi("dashboard.composition.colStatus")}: ${option.label}`,
+                }))}
+                icon="file-clock"
+                searchPlaceholder="Tìm trạng thái..."
+                ariaLabel="Lọc trạng thái"
                 disabled={updating}
-              >
-                {tUi("reports.packingLabel.reset")}
-              </button>
+              />
+              <FilterCombobox
+                id="rpt01b-table-recipient"
+                value={appliedRecipient}
+                onChange={(value) => {
+                  setDraftRecipient(value);
+                  setAppliedRecipient(value);
+                  setPage(1);
+                }}
+                options={recipientFilterOptions.map((option) => ({
+                  ...option,
+                  label: `${tUi("outbound.list.colRecipient")}: ${option.label}`,
+                }))}
+                icon="user-round"
+                searchPlaceholder="Tìm người nhận..."
+                ariaLabel="Lọc người nhận"
+                disabled={updating}
+              />
+              {query || appliedRecipient || appliedStatus ? (
+                <button
+                  type="button"
+                  className="outbound-clear-filters"
+                  disabled={updating}
+                  onClick={() => {
+                    setQuery("");
+                    setDraftStatus("");
+                    setAppliedStatus("");
+                    setDraftRecipient("");
+                    setAppliedRecipient("");
+                    setPage(1);
+                  }}
+                >
+                  Xóa lọc
+                </button>
+              ) : null}
             </div>
 
             {updating ? (
@@ -1376,10 +1482,16 @@ export default function OutboundFlowReport() {
                 </button>
               </div>
             ) : (
-              <div className="outbound-table-wrap">
+              <div className="outbound-table-wrap outbound-report-table">
                 <table>
+                  <colgroup>
+                    {[5, 21, 20, 23, 12, 12, 7].map((width, index) => (
+                      <col key={index} style={{ width: `${width}%` }} />
+                    ))}
+                  </colgroup>
                   <thead>
                     <tr>
+                      <th scope="col">{tUi("shared.table.rowNumber")}</th>
                       <th>
                         {tUi("outbound.list.colDocument")}
                         <span className="outbound-tablet-only">
@@ -1393,30 +1505,25 @@ export default function OutboundFlowReport() {
                       <th className="outbound-desktop-date">
                         {tUi("inbound.list.colCreated")}
                       </th>
-                      <th className="outbound-reference-note">
-                        {tUi("inbound.list.colNote")}
-                      </th>
-                      <th className="outbound-reference-progress">
-                        {tUi("outbound.list.colReconcile")}
-                      </th>
                       <th>{tUi("dashboard.composition.colStatus")}</th>
-                      <th>
-                        <span className="sr-only">
-                          {tUi("outbound.detail.colAction")}
-                        </span>
-                      </th>
+                      <th aria-label={tUi("outbound.detail.colAction")} />
                     </tr>
                   </thead>
                   <tbody>
-                    {pageDocuments.map((document) => {
+                    {pageDocuments.map((document, index) => {
                       const tone = statusTone(document.status);
                       const metadata =
                         outboundMetadataByDocument.get(document.id) ??
                         outboundMetadataByDocument.get(document.document_no);
                       const requestNo = metadata?.requestNo?.trim() || "—";
-                      const note = metadata?.note?.trim() || "—";
                       return (
                         <tr key={document.id}>
+                          <td
+                            className="outbound-row-number"
+                            data-label={tUi("shared.table.rowNumber")}
+                          >
+                            {(safePage - 1) * pageSize + index + 1}
+                          </td>
                           <td
                             data-label={tUi("warranty.componentList.colCode")}
                           >
@@ -1447,48 +1554,13 @@ export default function OutboundFlowReport() {
                             {formatDay(documentDay(document))}
                           </td>
                           <td
-                            className="outbound-reference-note"
-                            data-label={tUi("inbound.list.colNote")}
-                            title={note === "—" ? undefined : note}
-                          >
-                            {note}
-                          </td>
-                          <td
-                            className="outbound-reference-progress"
-                            data-label={tUi("outbound.list.colReconcile")}
-                          >
-                            <span
-                              className="outbound-reconcile"
-                              data-tone={
-                                normalizeStatus(document.status) === "POSTED"
-                                  ? "complete"
-                                  : "empty"
-                              }
-                            >
-                              <i />
-                              <b>
-                                {normalizeStatus(document.status) === "POSTED"
-                                  ? tUi("updatedUi.text_0fc446864856", {
-                                      value0: String(
-                                        formatNumber(
-                                          quantityByDocument.get(
-                                            document.document_no,
-                                          ) ?? 0,
-                                        ),
-                                      ),
-                                    })
-                                  : "—"}
-                              </b>
-                            </span>
-                          </td>
-                          <td
                             data-label={tUi("dashboard.composition.colStatus")}
                           >
                             <span className="outbound-status" data-tone={tone}>
                               {outboundStatusLabel(document.status)}
                             </span>
                           </td>
-                          <td data-label={tUi("outbound.detail.colAction")}>
+                          <td>
                             <RowActionGroup>
                               <RowActionButton
                                 kind="view"
@@ -1628,10 +1700,23 @@ export default function OutboundFlowReport() {
         />
       ) : null}
 
-      {viewDocumentId ? (
+      {activeDocumentId ? (
         <AlignedOutboundDetailModal
-          documentId={viewDocumentId}
-          onClose={() => setViewDocumentId(null)}
+          key={activeDocumentId}
+          documentId={activeDocumentId}
+          onClose={() => {
+            setViewDocumentId(null);
+            if (linkedDocumentId) {
+              setSearchParams(
+                (current) => {
+                  const next = new URLSearchParams(current);
+                  next.delete("document");
+                  return next;
+                },
+                { replace: true },
+              );
+            }
+          }}
           onChanged={() => void refetchReport()}
         />
       ) : null}

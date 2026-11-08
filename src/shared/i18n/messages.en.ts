@@ -1,5 +1,11 @@
+import { NOTIFICATION_CONTENT_EN } from "./messages.notification-content";
+import { REPORT_EXPORT_EN } from "./messages.report-export";
+import { PERSONAL_EN } from "./messages.personal";
+import { RBAC_EN } from "./messages.rbac";
 import { MESSAGES_UPDATED_EN } from "./messages.updated.en";
 import { MESSAGES_NFC_EN } from "./messages.nfc.en";
+import { DASHBOARD_SNAPSHOT_EN } from "./messages.dashboard-snapshot";
+import { PACKING_LABEL_REPORT_EN } from "./messages.packing-label-report";
 import type { MessageTree } from "./messages";
 
 /**
@@ -13,9 +19,13 @@ import type { MessageTree } from "./messages";
  * KHOÁ vẫn đỏ typecheck; thiếu khoá vẫn hợp lệ và t() rơi về tiếng Việt.
  */
 export const MESSAGES_EN: MessageTree = {
+  dashboardSnapshot: DASHBOARD_SNAPSHOT_EN,
+  packingLabelReport: PACKING_LABEL_REPORT_EN,
+  reportExport: REPORT_EXPORT_EN,
   nfc: MESSAGES_NFC_EN,
   updatedUi: MESSAGES_UPDATED_EN,
   common: {
+    pieces: "pcs",
     loadingData: "Loading data…",
     retry: "Retry",
     close: "Close",
@@ -566,7 +576,7 @@ export const MESSAGES_EN: MessageTree = {
     list: {
       statusUnknown: "Not determined",
       colDocument: "Receipt note",
-      colSource: "Source / reference",
+      colSource: "External document number",
       colCreated: "Created on",
       colNote: "Note",
       colScannedQty: "Scanned quantity",
@@ -575,7 +585,7 @@ export const MESSAGES_EN: MessageTree = {
       startScan: "Start scanning",
       continueScan: "Continue scanning",
       editInfo: "Edit details",
-      searchPlaceholder: "Search note code / source...",
+      searchPlaceholder: "Search receipt / external document number...",
       searchAria: "Search receipt notes",
       statusFilterAria: "Filter receipt note status",
       statusFilterPlaceholder: "Status: All",
@@ -601,6 +611,14 @@ export const MESSAGES_EN: MessageTree = {
       view: "View",
     },
     draft: {
+      selectAttachments: "Choose document attachments",
+      localAttachmentsHint: "JPG/PNG/WEBP images or PDF, up to 15MB each. Files upload only after you submit the receipt.",
+      attachmentSelected: "Selected · Not uploaded",
+      attachmentUploaded: "Uploaded",
+      removeAttachment: "Remove file {name}",
+      retryAttachments: "Retry uploads & scan goods",
+      continueScanning: "Continue scanning",
+      attachmentsReceiptCreated: "Receipt {code} has been created. Retry or remove failed files to continue scanning. Closing discards files that have not uploaded.",
       errDocumentDate: "Choose a document date.",
       errDocumentDateFuture: "The document date cannot be in the future.",
       errWarehouse: "Choose a receiving warehouse.",
@@ -618,8 +636,14 @@ export const MESSAGES_EN: MessageTree = {
       documentDateHelper: "Format: day/month/year",
       warehouse: "Receiving warehouse",
       warehousePlaceholder: "Choose a receiving warehouse",
-      sourceRef: "Source / reference",
-      sourceRefPlaceholder: "Shipping document / supplier (optional)",
+      supplier: "Supplier",
+      supplierPlaceholder: "Search supplier code or name...",
+      errSupplier: "Select a supplier.",
+      supplierEmpty: "No suppliers found",
+      supplierLoadError: "Unable to load suppliers.",
+      supplierRetry: "Retry",
+      sourceRef: "External document number",
+      sourceRefPlaceholder: "Delivery note, invoice or purchase order number (optional)",
       note: "Note",
     },
     camera: {
@@ -737,9 +761,10 @@ export const MESSAGES_EN: MessageTree = {
       post: "Post receipt",
       posting: "Processing...",
       fieldDocument: "Note",
-      fieldSource: "Source",
+      fieldSource: "External document number",
       fieldStatus: "Status",
       fieldVersion: "Data version",
+      fieldWarehouse: "Warehouse",
       receivedTitle: "Goods received by SKU",
       receivedEmpty:
         "No SKU line yet — scan the first product code and the system creates the line.",
@@ -933,8 +958,22 @@ export const MESSAGES_EN: MessageTree = {
       manualHint:
         "Recipient is required; address/phone/request date are optional under current rules — when missing, the packing label leaves those fields blank.",
       fileAria: "Choose the issue request Excel file",
-      fileHint:
-        "Required columns: request_no · sku_code · required_qty · recipient_name/customer_name. Optional columns: request_date · recipient_address · recipient_contact_phone · note. Up to 10,000 rows, file ≤ 20MB; failed rows can be fixed in the preview table before confirming.",
+      fileUploadTitle: "Issue request file",
+      fileChoose: "Choose Excel file",
+      fileNone: "No file selected",
+      fileGuideTitle: "Excel file structure",
+      fileRequiredTitle: "Required columns",
+      fileRequiredColumns:
+        "Request number · SKU code · Required quantity · Recipient / customer name",
+      fileOptionalTitle: "Optional columns",
+      fileOptionalColumns:
+        "Request date · Recipient address · Contact phone · Note",
+      fileLimits:
+        "Up to 10,000 rows and 20 MB. You can fix invalid rows in the preview.",
+      fileHeaders: "View Excel column headers",
+      fileHeaderHint: "If you create your own file, use these exact headers:",
+      fileHeaderNames:
+        "request_no · sku_code · required_qty · recipient_name or customer_name; request_date · recipient_address · recipient_contact_phone · note",
       uploading: "Uploading...",
       upload: "Upload & preview",
       uploadErrorTitle: "Could not validate the Excel file",
@@ -1002,6 +1041,7 @@ export const MESSAGES_EN: MessageTree = {
       fieldStatus: "Status",
       fieldRecipient: "Deliver to",
       fieldScanned: "Scanned",
+      additionalInfo: "Additional information",
       step1: "1 · Scan and reconcile goods",
       autoSku: "Detect SKU from the scanned code",
       scanField: "Scan product QR/barcode",
@@ -1112,6 +1152,9 @@ export const MESSAGES_EN: MessageTree = {
       identificationFilterPlaceholder: "Identification: All",
       defectFilterAria: "Filter symptom/defect",
       defectFilterPlaceholder: "Symptom/defect: All",
+      overdueFilterAria: "Filter overdue warranty cases",
+      overdueFilterPlaceholder: "Cases: All",
+      overdueFilterOnly: "Cases: Overdue",
       sortLabel: "Sort by",
       sortAria: "Sort the warranty list",
       sortNewest: "Newest first",
@@ -1144,12 +1187,10 @@ export const MESSAGES_EN: MessageTree = {
       title: "Receive for warranty",
       warehouse: "Warranty intake warehouse",
       warehousePlaceholder: "Select an intake warehouse",
-      warehouseHint:
-        "Select and confirm the warehouse responsible for this case.",
+      warehouseHint: "Select the warehouse responsible for this case.",
       confirmWarehouse: "Confirm warehouse",
       warehouseConfirmed: "Intake warehouse confirmed: {warehouse}.",
-      errWarehouse:
-        "The intake warehouse has not been confirmed. Select a warehouse and click Confirm warehouse before saving.",
+      errWarehouse: "Select an intake warehouse before saving.",
       errWarehouseMismatch:
         "The intake warehouse differs from your working warehouse. Select the matching warehouse or switch your working warehouse before saving.",
       errItemNotFound:
@@ -1499,6 +1540,7 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   inventory: {
+    rangeLabel: "Showing {from}–{to} / {total} records",
     fallback: {
       movementType: "Other movement",
       status: "Other status",
@@ -1532,7 +1574,7 @@ export const MESSAGES_EN: MessageTree = {
       colOnHand: "On hand",
       colLedger: "Ledger stock",
       colVariance: "Variance",
-      colSuggestedLocation: "Suggested location",
+      colSuggestedLocation: "Location",
       boxPrefix: "Box {code}",
       noSuggestedLocation: "No suggested location",
       colReconcile: "Reconciliation",
@@ -1546,6 +1588,8 @@ export const MESSAGES_EN: MessageTree = {
       typeComponent: "Components",
       statusFilterAria: "Filter stock status",
       statusFilterPlaceholder: "Stock status: All",
+      reconcileFilterAria: "Filter reconciliation",
+      reconcileFilterPlaceholder: "Reconciliation: All",
       statusAvailable: "Available",
       statusNonSellable: "Non-sellable",
       statusDefective: "Defective",
@@ -1581,6 +1625,11 @@ export const MESSAGES_EN: MessageTree = {
     },
     detail: {
       title: "Stock detail — {sku}",
+      overviewTab: "Overview",
+      productsTab: "Products",
+      containersTab: "Containers",
+      movementsTab: "Movements",
+      recordDetails: "Record details",
       copy: "Copy",
       colMovementCode: "Movement code",
       colTime: "Time",
@@ -1626,6 +1675,10 @@ export const MESSAGES_EN: MessageTree = {
       trace: "Trace",
     },
     trace: {
+      tabsAria: "Trace sections",
+      tabRelated: "Related records",
+      tabHistory: "History & adjustments",
+      relatedEmpty: "No related records to display.",
       barcode: "Barcode",
       undetermined: "Not determined",
       copy: "Copy",
@@ -1814,10 +1867,10 @@ export const MESSAGES_EN: MessageTree = {
         "A model can only be linked to a brand that is in use. Choose another brand, or reactivate the brand first.",
       errSave: "Could not save the catalogue entry.",
       errCodeRequired: "Enter the {label}.",
-      errCodeLength: "The code is at most 80 characters.",
+      errCodeLength: "The code is at most {max} characters.",
       errNameRequired: "Enter the {label}.",
-      errNameLength: "The name is at most 200 characters.",
-      errDescriptionLength: "The description is at most 2000 characters.",
+      errNameLength: "The name is at most {max} characters.",
+      errDescriptionLength: "The description is at most {max} characters.",
       updated: "{item} updated.",
       created: "{item} added.",
       colOrder: "Order",
@@ -1852,6 +1905,7 @@ export const MESSAGES_EN: MessageTree = {
       published: "SKU published to the zoning app",
       unpublished: "SKU removed from the zoning app",
       errCode: "The SKU code is required.",
+      errDuplicateCode: "SKU code already exists in the system",
       errName: "The SKU name is required.",
       errBrand: "Please choose a brand.",
       errCategory: "Please choose a category.",
@@ -2027,7 +2081,17 @@ export const MESSAGES_EN: MessageTree = {
       errFileType:
         "Only {list} files are accepted. Please choose another file.",
       errFileSize:
-        "The file exceeds the allowed size ({max} MB). Split it and choose again.",
+        "File too large. Maximum {max} MB",
+      errMissingCodeColumn: "The SKU code column is missing. Download the template and add this column.",
+      errMissingNameColumn: "The SKU name column is missing. Download the template and add this column.",
+      errInvalidWorkbook: "The Excel file is invalid or damaged. Use the template and choose the file again.",
+      errRepeatedColumn: "Column “{column}” is repeated. Remove the duplicate column and check again.",
+      errUnsupportedColumn: "Column “{column}” is not supported. Use the columns in the template.",
+      errRowsLimit: "The file exceeds {max} data rows. Split the file and choose it again.",
+      errPhysicalRowsLimit: "The sheet exceeds {max} rows, including blank rows. Remove extra blank rows and choose it again.",
+      errResultIncomplete: "The server returned an incomplete file check result. Import is blocked. Please try again.",
+      errRowsLimitUnknown: "The file has too many rows. Remove extra blank rows or split the file.",
+      errConstraintsFailed: "The file limits could not be loaded. Please try again before checking the file.",
       errReadFile:
         "The file content could not be read. It may have been moved, renamed or edited after you chose it. Please choose the file again.",
       errChecksumMismatch:
@@ -2479,6 +2543,8 @@ export const MESSAGES_EN: MessageTree = {
       colPhysicalSerial: "Physical code / serial",
     },
     importQuality: {
+      cannotReconcile: "Cannot reconcile",
+      viewRecords: "View {count} records",
       sourceAll: "All processing sources",
       outcomeSuccess: "Success",
       outcomeFailed: "Failed",
@@ -3390,11 +3456,13 @@ export const MESSAGES_EN: MessageTree = {
       drawerEyebrow: "RECONCILIATION DETAIL",
       drawerTitle: "Movement evidence",
       drawerClose: "Close evidence",
+      evidenceDetails: "Record details",
+      tracePhysicalCode: "Trace physical code",
       fieldSourceDoc: "Source document",
       fieldReversalChain: "Reversal entry chain",
       reversedBy: "reversed by {codes}",
       readonlyNote:
-        "Document details are read-only; the movement ledger is append-only, so this screen never edits or deletes any row.",
+        "View only. Corrections are recorded separately to preserve the full movement history.",
     },
     warrantyReport: {
       eyebrow: "OPERATIONS REPORT",
@@ -4108,6 +4176,9 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   iam: {
+    roleUi: RBAC_EN.roleUi,
+    userUi: RBAC_EN.userUi,
+    effectiveUi: RBAC_EN.effectiveUi,
     tab: {
       users: "Users & permissions",
       roles: "Roles & permission matrix",
@@ -4394,6 +4465,7 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   audit: {
+    ...RBAC_EN.audit,
     system: "System",
     colTime: "Time",
     colAction: "Action",
@@ -4740,6 +4812,7 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   auth: {
+    personal: PERSONAL_EN,
     fields: {
       email: "Email",
       password: "Password",
@@ -4766,7 +4839,8 @@ export const MESSAGES_EN: MessageTree = {
       submit: "Sign in",
       success: "Signed in successfully",
       replacedPreviousSession: "This sign-in signed out another session.",
-      replacedPreviousSessionBody: "If you do not recognize that earlier session, change your password immediately.",
+      replacedPreviousSessionBody:
+        "If you do not recognize that earlier session, change your password immediately.",
       failed: "Sign-in failed",
       errorTimeout:
         "The server took too long to respond. Please try again; if the problem persists, contact your administrator.",
@@ -4815,8 +4889,10 @@ export const MESSAGES_EN: MessageTree = {
       statusDisabled: "Not enabled",
       statusPending: "Setting up",
       statusLoading: "Loading authentication status...",
-      statusLoadError: "Could not load authentication status. Please reload the page.",
-      profileEnabledDescription: "Two-factor authentication is set up for your account.",
+      statusLoadError:
+        "Could not load authentication status. Please reload the page.",
+      profileEnabledDescription:
+        "Two-factor authentication is set up for your account.",
       viewDetails: "View details",
       eyebrow: "Account security",
       backToProfile: "Back to profile",
@@ -4941,7 +5017,8 @@ export const MESSAGES_EN: MessageTree = {
       cancelEdit: "Cancel",
       updateSuccess: "Your profile has been updated.",
       updateFailed: "Could not update your profile. Please try again.",
-      staleVersion: "Your profile changed in another session. Review it before saving again.",
+      staleVersion:
+        "Your profile changed in another session. Review it before saving again.",
       nameRequired: "Please enter your full name.",
       nameTooLong: "Full name must not exceed 255 characters.",
       phoneInvalid: "Phone number must have 10 digits and start with 0.",
@@ -5035,6 +5112,7 @@ export const MESSAGES_EN: MessageTree = {
       imageEmpty:
         "No images yet. A product without images can still be published, but its card will be blank.",
       imageAltLabel: "Image description",
+      imagePreview: "Enlarge image {number}",
       imageSetPrimary: "Set as cover image",
       imageIsPrimary: "Cover image",
       imageMoveUp: "Move earlier",
@@ -5569,6 +5647,11 @@ export const MESSAGES_EN: MessageTree = {
       returnUnknown: "Physical return status not determined",
     },
     create: {
+      helpLabel: "About creating a reversal",
+      stepsAria: "Reversal creation steps",
+      chooseStep: "Select transaction",
+      adjustStep: "Enter adjustment",
+      chooseMovement: "Select transaction {code}",
       title: "Create inventory reversal",
       confirmTitle: "Create inventory reversal?",
       selectedCount: "{count} items selected",
@@ -5716,9 +5799,12 @@ export const MESSAGES_EN: MessageTree = {
       empty: "No stock adjustment documents match the current filters",
       open: "Open",
       unitName: "adjustment documents",
+      rangeLabel: "Showing {from}–{to} / {total} reversals",
+      clearFilters: "Clear filters",
     },
   },
   notifications: {
+    content: NOTIFICATION_CONTENT_EN,
     title: "Notifications",
     loadError: "Could not load notifications",
     empty: "No notifications yet",
@@ -5730,9 +5816,13 @@ export const MESSAGES_EN: MessageTree = {
     page: {
       subtitle:
         "All system notifications relevant to you — inbound/outbound, warranty, accounts, security.",
+      filterLabel: "Filter notifications",
+      all: "All",
+      unread: "Unread",
       markAll: "Mark all as read",
       loading: "Loading notifications...",
       emptyDescription: "You have not received any notifications yet.",
+      emptyUnread: "You're all caught up.",
       readSuffix: " · Read",
     },
     detail: {

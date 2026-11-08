@@ -309,7 +309,10 @@ export function PutawayQueue(props: Props) {
                     className="ptw-updated-col"
                   />
                 ) : null}
-                <th className="ptw-action-col">{t("putaway.queue.actions")}</th>
+                <th
+                  className="ptw-action-col"
+                  aria-label={t("putaway.queue.actions")}
+                />
               </tr>
             </thead>
             <tbody>

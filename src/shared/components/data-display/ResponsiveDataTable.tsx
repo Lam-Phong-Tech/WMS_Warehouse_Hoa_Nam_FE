@@ -29,6 +29,8 @@ const DEFAULT_CELL_MAX_WIDTH = 280;
 export interface ResponsiveTableColumn<T> {
   key: string;
   header: ReactNode;
+  /** Cột chứa nút điều khiển: giữ tên truy cập, không hiện tiêu đề cột/nhãn card. */
+  isAction?: boolean;
   render: (row: T) => ReactNode;
   /** Nhãn hiển thị trên card ở mobile — mặc định dùng `header` nếu không truyền. */
   mobileLabel?: ReactNode;
@@ -70,7 +72,7 @@ export interface ResponsiveDataTableProps<T> {
    * phải nới cột này, nếu không chữ tràn khỏi mép cột vì ô Thao tác cố ý
    * không có lớp cắt "…" (UAT TC_UI_07).
    */
-  actionColumnWidth?: number;
+  actionColumnWidth?: number | string;
   /** Keep the action column accessible while hiding its visible heading. */
   hideActionHeader?: boolean;
   /** Breakpoint chuyển sang card list, mặc định `md` (768px, khớp mui-theme.ts). */
@@ -124,7 +126,7 @@ export function ResponsiveDataTable<T>({
   onRowClick,
   renderRowActions,
   actionColumnWidth = 96,
-  hideActionHeader = false,
+  hideActionHeader = true,
   mobileBreakpoint = "md",
   sortState: controlledSortState,
   onSortChange: controlledOnSortChange,
@@ -356,18 +358,22 @@ export function ResponsiveDataTable<T>({
                     key={column.key}
                     sx={{
                       display: "flex",
-                      justifyContent: "space-between",
+                      justifyContent: column.isAction
+                        ? "flex-end"
+                        : "space-between",
                       alignItems: "flex-start",
                       gap: 2,
                     }}
                   >
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ flexShrink: 0, pt: "2px" }}
-                    >
-                      {column.mobileLabel ?? column.header}
-                    </Typography>
+                    {!column.isAction ? (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ flexShrink: 0, pt: "2px" }}
+                      >
+                        {column.mobileLabel ?? column.header}
+                      </Typography>
+                    ) : null}
                     <Box sx={{ textAlign: "right", minWidth: 0 }}>
                       {column.render(row)}
                     </Box>
@@ -419,7 +425,9 @@ export function ResponsiveDataTable<T>({
     declaredColumnsWidth > 0
       ? declaredColumnsWidth +
         (rowSelection ? 44 : 0) +
-        (renderRowActions ? actionColumnWidth : 0)
+        (renderRowActions && typeof actionColumnWidth === "number"
+          ? actionColumnWidth
+          : 0)
       : undefined;
 
   /**
@@ -653,17 +661,22 @@ export function ResponsiveDataTable<T>({
                   <Box
                     component="th"
                     key={column.key}
+                    aria-label={
+                      column.isAction ? t("shared.table.actions") : undefined
+                    }
                     sx={headerCellStyle}
                     data-align={column.align ?? "left"}
                   >
-                    {column.header}
+                    {column.isAction ? null : column.header}
                   </Box>
                 );
               })}
               {renderRowActions && (
                 <Box
                   component="th"
-                  aria-label={hideActionHeader ? t("shared.table.actions") : undefined}
+                  aria-label={
+                    hideActionHeader ? t("shared.table.actions") : undefined
+                  }
                   sx={{
                     padding: "10px 12px",
                     fontWeight: 600,

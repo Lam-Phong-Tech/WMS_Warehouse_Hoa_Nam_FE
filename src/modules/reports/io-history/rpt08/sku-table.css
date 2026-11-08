@@ -1,0 +1,157 @@
+/* RPT-08 table follows docs/ui/sku-list-filter-table-style.md. */
+#rpt08-history-report .rpt08-table-card {
+  padding: 0;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+}
+#rpt08-history-report .rpt08-table-card .rpt08-table-heading {
+  padding: 14px 16px;
+  margin: 0;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-search-box {
+  height: 48px;
+  border-color: var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-link);
+}
+#rpt08-history-report .rpt08-table-card .rpt08-search-box input {
+  color: var(--ops-text);
+  font-size: 14px;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-search-box:focus-within {
+  border-color: var(--ops-link);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+#rpt08-history-report .rpt08-table-card .rpt08-table-scroll {
+  width: 100%;
+  margin: 0;
+}
+#rpt08-history-report .rpt08-table-card table {
+  min-width: 1180px;
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+}
+#rpt08-history-report .rpt08-table-card table th,
+#rpt08-history-report .rpt08-table-card table td {
+  display: table-cell;
+  width: auto;
+  height: auto;
+  padding: 12px 18px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--ops-line);
+}
+#rpt08-history-report .rpt08-table-card table th {
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: normal;
+  text-overflow: clip;
+}
+#rpt08-history-report .rpt08-table-card table .rpt08-actions-cell {
+  padding-inline: 6px;
+  overflow: visible;
+  text-align: center;
+  text-overflow: clip;
+}
+#rpt08-history-report .rpt08-table-card table tbody tr {
+  height: 68px;
+}
+#rpt08-history-report .rpt08-table-card table tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+#rpt08-history-report .rpt08-table-card .rpt08-sequence {
+  text-align: center;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-document {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-document__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  height: 44px;
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  font-size: 22px;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-document strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ops-heading);
+  font-weight: 700;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-mobile-code,
+#rpt08-history-report .rpt08-table-card .rpt08-tablet-label {
+  display: none;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-desktop-label {
+  display: inline;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-type-pill {
+  height: 24px;
+  min-height: 24px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  gap: 6px;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-type-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-type-arrow {
+  display: none;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--ops-line);
+}
+#rpt08-history-report .rpt08-table-card .rpt08-pagination-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--ops-text);
+  font-size: 14px;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-range-note {
+  color: var(--ops-muted);
+}
+#rpt08-history-report .rpt08-table-card .rpt08-pagination {
+  margin-left: auto;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-page-size {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-text);
+  font: inherit;
+}
+#rpt08-history-report .rpt08-table-card .rpt08-page-size:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 2px;
+}

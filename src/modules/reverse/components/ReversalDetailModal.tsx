@@ -6,6 +6,7 @@ import {
   Tooltip,
   UiAlert,
   UiDialog,
+  UiDrawer,
   UiPagination,
   UiSelect,
   UiTextField,
@@ -18,16 +19,11 @@ import { useHasPermission } from "@/shared/components/permission";
 import { DocumentAttachmentsPanel } from "@/shared/components/DocumentAttachmentsPanel";
 import { fetchDocumentAttachments } from "@/shared/api/documentAttachmentService";
 import {
-  RETURN_CONDITION_LABELS,
   REVERSAL_REASON_LABELS,
   SOURCE_DOCUMENT_TYPE_LABELS,
   businessLabel,
   enumLabelOrText,
 } from "@/shared/constants/business-labels";
-import {
-  ResponsiveDataTable,
-  type ResponsiveTableColumn,
-} from "@/shared/components/data-display/ResponsiveDataTable";
 import { shortId } from "@/shared/utils/shortId";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import {
@@ -38,7 +34,9 @@ import {
   useReversalLines,
 } from "../hooks/use-reversal";
 import { ReversalStatusTag } from "./ReversalStatusTag";
-import type { ReversalLine, ReversalReturnCondition } from "../types";
+import { ReversalLineCard } from "./ReversalLineCard";
+import "./reversal-detail.css";
+import type { ReversalReturnCondition } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import type { ReactNode } from "react";
@@ -76,7 +74,7 @@ function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Grid
       className="hn-reversal-detail-field"
-      size={{ xs: 12, sm: 6, lg: 3 }}
+      size={{ xs: 12, sm: 6 }}
       sx={{ minWidth: 0, overflowWrap: "anywhere" }}
     >
       <Box
@@ -225,83 +223,6 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
     toast.success(t("reverse.detail.codeCopied"));
   };
 
-  const lineColumns: ResponsiveTableColumn<ReversalLine>[] = [
-    {
-      key: "line_no",
-      header: t("reverse.detail.colStt"),
-      width: 50,
-      align: "center",
-      render: (row) => row.line_no,
-    },
-    { key: "sku", header: "SKU", width: 140, render: (row) => row.sku },
-    {
-      key: "sku_name",
-      header: t("reverse.columns.name"),
-      width: 170,
-      render: (row) => row.sku_name,
-    },
-    {
-      key: "original_movement",
-      header: t("reverse.detail.colOriginalMovement"),
-      width: 160,
-      // KHÔNG fallback sang original_movement_id (UUID) — thiếu mã thì "—".
-      render: (row) => row.original_movement_code || EMPTY_TEXT,
-    },
-    {
-      key: "serial",
-      header: t("reverse.detail.colSerial"),
-      width: 170,
-      render: (row) => row.serial_number || row.item_code || EMPTY_TEXT,
-    },
-    {
-      key: "original_qty",
-      header: t("reverse.columns.originalQty"),
-      width: 110,
-      align: "right",
-      render: (row) => qty(row.original_qty),
-    },
-    {
-      key: "reversal_qty",
-      header: t("reverse.columns.reversalQty"),
-      width: 130,
-      align: "right",
-      render: (row) => qty(row.reversal_qty),
-    },
-    {
-      key: "reversed_qty",
-      header: t("reverse.columns.reversedQty"),
-      width: 110,
-      align: "right",
-      render: (row) => qty(row.reversed_qty),
-    },
-    {
-      key: "remaining_qty",
-      header: t("reverse.columns.reversibleQty"),
-      width: 150,
-      align: "right",
-      render: (row) => qty(row.remaining_qty),
-    },
-    {
-      key: "return_condition",
-      header: t("reverse.detail.colReturnCondition"),
-      width: 160,
-      render: (row) =>
-        row.return_condition
-          ? businessLabel(
-              RETURN_CONDITION_LABELS,
-              row.return_condition,
-              t("reverse.detail.conditionOther"),
-            )
-          : EMPTY_TEXT,
-    },
-    {
-      key: "status",
-      header: t("reverse.detail.colStatus"),
-      width: 150,
-      render: (row) => <ReversalStatusTag status={row.status} compact />,
-    },
-  ];
-
   // Phân trang client 10 dòng/trang, chỉ khi vượt 10 dòng — giữ đúng hành vi
   // `pagination={lines.length > 10 ? { pageSize: 10 } : false}` của antd cũ.
   const showLinesPagination = lines.length > LINES_PAGE_SIZE;
@@ -316,13 +237,20 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
 
   return (
     <>
-      <UiDialog
-        className="hn-reversal-dialog"
+      <UiDrawer
+        className="hn-reversal-dialog hn-reversal-detail-drawer"
         {...dialog.dialogProps}
-        maxWidth="xl"
-        fullWidth
+        width={820}
         title={
-          <Box sx={{ position: "relative", pr: 6 }}>
+          <Box
+            component="span"
+            sx={{
+              display: "block",
+              position: "relative",
+              pr: 6,
+              overflowWrap: "anywhere",
+            }}
+          >
             {t("reverse.detail.title", {
               code: doc?.reversal_code ?? shortId(documentId),
             })}
@@ -330,7 +258,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               kind="close"
               label={t("common.close")}
               onClick={dialog.close}
-              sx={{ position: "absolute", right: -8, top: -4 }}
+              sx={{ position: "absolute", right: 0, top: 0 }}
             />
           </Box>
         }
@@ -517,6 +445,43 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                 </Grid>
               </Box>
 
+              {linesQuery.isError ? (
+                <ApiErrorAlert
+                  error={linesQuery.error}
+                  title={t("reverse.detail.linesError")}
+                  onRetry={() => linesQuery.refetch()}
+                />
+              ) : null}
+
+              <Box>
+                <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
+                  {t("reverse.detail.linesTitle", { count: lines.length })}
+                </Box>
+                {linesQuery.isLoading ? (
+                  <Box role="status">{t("reverse.detail.loading")}</Box>
+                ) : !linesQuery.isError && pagedLines.length === 0 ? (
+                  <Box sx={{ color: "text.secondary" }}>
+                    {t("reverse.detail.linesEmpty")}
+                  </Box>
+                ) : (
+                  <Stack spacing={2}>
+                    {pagedLines.map((line) => (
+                      <ReversalLineCard key={line.id} line={line} />
+                    ))}
+                  </Stack>
+                )}
+                {showLinesPagination ? (
+                  <Box sx={{ mt: 1 }}>
+                    <UiPagination
+                      page={safeLinesPage}
+                      pageSize={LINES_PAGE_SIZE}
+                      total={lines.length}
+                      onPageChange={setLinesPage}
+                    />
+                  </Box>
+                ) : null}
+              </Box>
+
               <Box
                 className="hn-reversal-panel"
                 sx={{
@@ -672,46 +637,8 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
               ) : null}
             </>
           ) : null}
-
-          {linesQuery.isError ? (
-            <ApiErrorAlert
-              error={linesQuery.error}
-              title={t("reverse.detail.linesError")}
-              onRetry={() => linesQuery.refetch()}
-            />
-          ) : null}
-
-          <Box>
-            <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-              {t("reverse.detail.linesTitle", { count: lines.length })}
-            </Box>
-            <ResponsiveDataTable<ReversalLine>
-              columns={lineColumns}
-              headerCellStyle={{
-                background: "var(--rev-pale)",
-                color: "var(--rev-ink)",
-                fontSize: 12,
-                padding: "10px 9px",
-                borderColor: "var(--rev-line)",
-              }}
-              rows={pagedLines}
-              rowKey={(row) => row.id}
-              loading={linesQuery.isLoading}
-              emptyText={t("reverse.detail.linesEmpty")}
-            />
-            {showLinesPagination ? (
-              <Box sx={{ mt: 1 }}>
-                <UiPagination
-                  page={safeLinesPage}
-                  pageSize={LINES_PAGE_SIZE}
-                  total={lines.length}
-                  onPageChange={setLinesPage}
-                />
-              </Box>
-            ) : null}
-          </Box>
         </Stack>
-      </UiDialog>
+      </UiDrawer>
 
       <UiDialog
         className="hn-reversal-dialog"

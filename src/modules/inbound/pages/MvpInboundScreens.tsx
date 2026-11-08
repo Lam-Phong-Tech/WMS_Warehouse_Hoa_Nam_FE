@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useRef, useState } from "react";
-import dayjs from "dayjs";
+import { parseDateTime } from "@/shared/utils/date-time";
 import {
   Box,
   Drawer,
@@ -55,6 +55,7 @@ import {
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import { InboundSkuInfoModal } from "@/modules/inbound/components/InboundSkuInfoModal";
 import type { SkuRecord } from "@/modules/master-data/types/mvp-master.types";
@@ -387,6 +388,7 @@ export function InboundScanModal({
   const dialog = useDialogExit(onClose);
   const t = useT();
   const detailQuery = useInboundDetail(documentId);
+  const warehousesQuery = useWarehouseDirectory({ enabled: Boolean(documentId) });
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
   const scanEntriesQuery = useInboundScanEntries(documentId, "ALL");
   const scanMutation = useScanInbound();
@@ -435,6 +437,12 @@ export function InboundScanModal({
   const { confirm, confirmDialog } = useUiConfirm();
 
   const detail = detailQuery.data;
+  const warehouse = warehousesQuery.data?.find(
+    (row) => String(row.id ?? row.warehouse_id) === detail?.document.warehouseId,
+  );
+  const warehouseName = String(
+    warehouse?.name ?? warehouse?.warehouse_name ?? "",
+  ).trim();
   const skuRows = useMemo(() => skuQuery.data?.data ?? [], [skuQuery.data?.data]);
   const skuById = useMemo(
     () => new Map<string, SkuRecord>(skuRows.map((sku) => [sku.sku_id, sku])),
@@ -902,7 +910,7 @@ export function InboundScanModal({
     {
       key: "stt",
       header: "STT",
-      width: 50,
+      width: "7%",
       align: "center",
       render: (line) =>
         (detail?.lines
@@ -912,7 +920,7 @@ export function InboundScanModal({
     {
       key: "sku",
       header: "SKU",
-      width: 150,
+      width: "15%",
       truncate: 0,
       render: (line) => {
         // Ưu tiên mã SKU đã gắn sẵn trên dòng (BE trả product_code/product_name
@@ -930,7 +938,7 @@ export function InboundScanModal({
     {
       key: "name",
       header: t("inbound.detail.colNameType"),
-      width: 260,
+      width: "32%",
       truncate: 0,
       render: (line) => {
         const sku = skuById.get(line.productId);
@@ -955,7 +963,7 @@ export function InboundScanModal({
     {
       key: "scanned",
       header: t("inbound.detail.colScannedQty"),
-      width: 130,
+      width: "7%",
       align: "right",
       render: (line) => <strong>{line.scanned}</strong>,
     },
@@ -964,7 +972,7 @@ export function InboundScanModal({
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colInfo"),
-      width: 200,
+      width: "39%",
       render: (line) =>
         line.infoComplete ? (
           <UiStatusBadge
@@ -1003,7 +1011,7 @@ export function InboundScanModal({
     {
       key: "stt",
       header: "STT",
-      width: 50,
+      width: "7%",
       align: "center",
       render: (entry) =>
         mvpRowNumber(
@@ -1015,7 +1023,7 @@ export function InboundScanModal({
     {
       key: "code",
       header: t("inbound.detail.colCode"),
-      width: 180,
+      width: "23%",
       truncate: 0,
       render: (entry) => (
         <Box component="span" sx={{ fontFamily: "var(--wms-font-family)" }}>
@@ -1030,7 +1038,7 @@ export function InboundScanModal({
     {
       key: "sku",
       header: "SKU",
-      width: 185,
+      width: "24%",
       truncate: 0,
       render: (entry) => (
         <div>
@@ -1046,14 +1054,14 @@ export function InboundScanModal({
     {
       key: "quantity",
       header: "SL",
-      width: 48,
+      width: "7%",
       align: "right",
       render: (entry) => entry.quantity,
     },
     {
       key: "result",
       header: t("inbound.detail.colResult"),
-      width: 145,
+      width: "19%",
       truncate: 0,
       render: (entry) =>
         entry.status === "ACTIVE" ? (
@@ -1081,7 +1089,7 @@ export function InboundScanModal({
     {
       key: "source",
       header: t("inbound.detail.colSource"),
-      width: 100,
+      width: "12%",
       truncate: 0,
       render: (entry) => (
         <UiStatusBadge
@@ -1096,10 +1104,11 @@ export function InboundScanModal({
     },
     {
       key: "actions",
+      isAction: true,
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colAction"),
-      width: 70,
+      width: "8%",
       render: (entry) =>
         entry.status === "ACTIVE" && canScan && isMutable ? (
           <RowActionButton
@@ -1255,12 +1264,22 @@ export function InboundScanModal({
                       {t("updatedUi.text_4572c8880b00")}
                     </Box>
                     <Box sx={{ typography: "body2" }}>
-                      {detail.document.date
-                        ? dayjs(detail.document.date).format("DD/MM/YYYY HH:mm")
+                      {detail.document.createdAt
+                        ? parseDateTime(detail.document.createdAt).format(
+                            "DD/MM/YYYY HH:mm",
+                          )
                         : EMPTY_TEXT}
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 6, sm: 9 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                      {t("inbound.detail.fieldWarehouse")}
+                    </Box>
+                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
+                      {warehouseName || EMPTY_TEXT}
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box sx={{ typography: "caption", color: "text.secondary" }}>
                       {t("updatedUi.text_9b223cea940b")}
                     </Box>

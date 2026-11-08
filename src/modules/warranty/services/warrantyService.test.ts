@@ -72,9 +72,9 @@ describe("warrantyService", () => {
     });
     it("gửi nguyên identification_status và defect_id lên API", async () => {
       vi.mocked(http.getPage).mockResolvedValue({ data: [], meta: {} });
-      await fetchWarrantyCases({ identification_status: "TEMP_ONLY", defect_id: "def-9", page: 2 });
+      await fetchWarrantyCases({ identification_status: "TEMP_ONLY", defect_id: "def-9", overdue: true, page: 2 });
       expect(http.getPage).toHaveBeenCalledWith("/warranty-cases", {
-        params: expect.objectContaining({ identification_status: "TEMP_ONLY", defect_id: "def-9", page: 2 }),
+        params: expect.objectContaining({ identification_status: "TEMP_ONLY", defect_id: "def-9", overdue: 1, page: 2 }),
       });
     });
     it("fail-closed khi thiếu warranty.manage: không gọi HTTP", async () => {

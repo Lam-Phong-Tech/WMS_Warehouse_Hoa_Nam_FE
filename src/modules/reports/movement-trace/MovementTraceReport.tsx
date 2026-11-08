@@ -1,12 +1,20 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { parseDateTime } from "@/shared/utils/date-time";
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
+
+import { ReportFilterCombobox } from "../components/ReportFilterCombobox";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { TraceModal } from "@/modules/inventory/components/TraceModal";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
-  type FormEvent,
   type ReactNode,
 } from "react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -14,27 +22,17 @@ import { checkDateRange, pastDateBounds } from "@/shared/validation/date-rules";
 import { toast } from "sonner";
 import {
   Box,
-  Drawer,
   Stack,
-  UiButton,
-  UiSelect,
   UiStatusBadge,
   type UiStatusTone,
   RADIUS,
   SEMANTIC_LIGHT as S,
-  FILTER_GRID_COLUMNS_SX,
-  filterGridColumnSx,
 } from "@/shared/ui";
 import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import {
   CheckCircleOutlined,
-  CloseOutlined,
-  DownloadOutlined,
-  ExportOutlined,
   FileTextOutlined,
-  HomeOutlined,
   InboxOutlined,
-  ReloadOutlined,
   RightOutlined,
   StockOutlined,
   WarningOutlined,
@@ -57,10 +55,7 @@ import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
 import { useReportRangeAdvice } from "@/modules/reports/operations/report-coverage";
 import { movementTraceCoverageProbe } from "@/modules/reports/operations/report-probes";
 import { ReportRangeAdviceBanner } from "@/modules/reports/operations/ReportRangeAdviceBanner";
-import {
-  RPT_CONTROL_MOTION_SX,
-  RPT_SCROLL_MAX_HEIGHT,
-} from "@/modules/reports/operations/report-tokens";
+import { RPT_SCROLL_MAX_HEIGHT } from "@/modules/reports/operations/report-tokens";
 import { runReportExport } from "@/modules/reports/operations/report-export";
 import { SectionFilterBar } from "@/modules/reports/operations/SectionFilterBar";
 import {
@@ -70,7 +65,6 @@ import {
 } from "@/modules/reports/operations/report-section-filter";
 import {
   MOVEMENT_TRACE_REPORT_CODE,
-  MOVEMENT_TRACE_TIMEZONE,
   useMovementTraceReport,
   type MovementTraceRow,
 } from "./movement-trace-api";
@@ -91,6 +85,7 @@ import {
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
 import { VirtualList } from "@/shared/components/data-display/VirtualList";
 import "./traceability-report.css";
+import { MovementEvidenceDrawer } from "./MovementEvidenceDrawer";
 
 /**
  * RPT-MOV-01 — "Truy vết hàng hóa" (/reports/traceability).
@@ -114,7 +109,7 @@ import "./traceability-report.css";
  * chỉ đổi thứ tự — vì hàng rào i18n đòi bộ placeholder EN khớp bản VI.
  */
 function formatTraceDateTime(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   if (!value || !parsed.isValid()) return EMPTY_TEXT;
   const namedMonth = useLanguageStore.getState().language !== "vi";
   return tStatic("reports.movementTrace.dateTime", {
@@ -127,7 +122,7 @@ function formatTraceDateTime(value: string): string {
 
 /** Mốc chốt số liệu: "Chốt 10:00 02-09". */
 function formatCutOff(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   if (!value || !parsed.isValid()) return "";
   return tStatic("reports.movementTrace.cutOff", {
     time: parsed.format("HH:mm DD-MM"),
@@ -148,14 +143,6 @@ const SECTION_TITLE_SX = {
   color: S.textHigh,
 } as const;
 
-const FIELD_LABEL_SX = {
-  mb: "5.2px",
-  fontSize: 12,
-  fontWeight: 700,
-  lineHeight: "18px",
-  color: S.textMedium,
-} as const;
-
 const CAPTION_SX = { m: 0, fontSize: 12, color: S.textDisabled } as const;
 
 const CARD_SX = {
@@ -168,21 +155,6 @@ const CARD_SX = {
   contentVisibility: "auto",
   containIntrinsicSize: "auto 480px",
 } as const;
-
-/** Ô lưới của bộ lọc — ép mọi control con chiếm trọn bề rộng cột. */
-/**
- * Ô của lưới lọc dùng chung (FILTER_GRID_COLUMNS_SX — cột đều, tự tính số cột).
- * Chỉ còn `xl` của mockup có nghĩa: ô rộng (≥ 4/12: ô tìm, khoảng ngày) chiếm
- * 2 cột từ `md`; `xs`/`sm` giữ trong chữ ký để 9 chỗ gọi không phải đổi.
- */
-const fieldCellSx = (span: { xs: number; sm: number; xl: number }) => ({
-  minWidth: 0,
-  gridColumn: filterGridColumnSx(span.xl >= 4),
-  "& .MuiFormControl-root, & .MuiButton-root": {
-    width: "100%",
-    minWidth: 0,
-  },
-});
 
 function SectionHeading({
   eyebrow,
@@ -516,51 +488,6 @@ function TraceAnalytics({ rows }: { rows: MovementTraceRow[] }) {
   );
 }
 
-/**
- * Ô "SL thay đổi" dạng viên.
- *
- * NGOÀI MOCKUP (yêu cầu người dùng 2026-09-03): trước đây in số trần. Dùng
- * ĐÚNG `UiStatusBadge` mà cột "Loại biến động" ngay cạnh đang dùng, nên hai
- * cột cùng hình dạng và cùng bảng màu: tăng = xanh, giảm = đỏ, không đổi =
- * trung tính (0 không phải tăng cũng không phải giảm).
- */
-function QtyDeltaBadge({ value }: { value: number }) {
-  const tone: UiStatusTone =
-    value > 0 ? "success" : value < 0 ? "error" : "neutral";
-  return <UiStatusBadge tone={tone} label={String(value)} />;
-}
-
-function EvidenceField({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <Box
-      sx={{
-        p: "14px",
-        border: `1px solid ${S.border}`,
-        borderRadius: `${RADIUS.sheet / 2}px`,
-        bgcolor: S.bgSurface,
-      }}
-    >
-      <Box
-        component="span"
-        sx={{
-          display: "block",
-          mb: "6px",
-          color: S.textMedium,
-          fontSize: 12,
-        }}
-      >
-        {label}
-      </Box>
-      <Box
-        component="strong"
-        sx={{ display: "block", overflowWrap: "anywhere", fontSize: 13 }}
-      >
-        {value}
-      </Box>
-    </Box>
-  );
-}
-
 type AppliedFilters = {
   traceBy: TraceBy;
   code: string;
@@ -594,7 +521,7 @@ export default function MovementTraceReport() {
   const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const [draft, setDraft] = useState<AppliedFilters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<AppliedFilters>(EMPTY_FILTERS);
-  // Lỗi khoảng ngày lúc bấm Tra cứu — hiện ngay dưới ô, không bắn query.
+  // Invalid or incomplete date ranges remain visible without replacing the active query.
   const [dateError, setDateError] = useState<string | null>(null);
   const [selected, setSelected] = useState<MovementTraceRow | null>(null);
   const [selectedPhysicalCode, setSelectedPhysicalCode] = useState<
@@ -763,9 +690,7 @@ export default function MovementTraceReport() {
   const summary = report.data?.summary;
   const countByType = report.data?.countByType ?? {};
   const cutOff = formatCutOff(report.data?.dataAsOf ?? "");
-  const traceByLabel =
-    TRACE_BY_OPTIONS.find((option) => option.value === applied.traceBy)
-      ?.label ?? "";
+
   // Hai khối dưới đây cùng đọc `rows` nhưng có bộ lọc RIÊNG: người đọc thu hẹp
   // dòng thời gian để lần một chuỗi, hoặc thu hẹp sổ để soi một actor — thu hẹp
   // khối này không được kéo theo khối kia.
@@ -863,7 +788,9 @@ export default function MovementTraceReport() {
       };
     });
   };
-  const ledgerPageSize = 5;
+  const [ledgerPageSize, setLedgerPageSize] = useState<number>(
+    TABLE_PAGE_SIZE_OPTIONS[0],
+  );
   const ledgerPageCount = Math.max(
     1,
     Math.ceil(ledgerFilter.rows.length / ledgerPageSize),
@@ -881,7 +808,9 @@ export default function MovementTraceReport() {
     count: formatQuantity(timelineFilter.rows.length),
   });
 
-  const canReset =
+  const canClear =
+    draft.code !== "" ||
+    draft.traceBy !== EMPTY_FILTERS.traceBy ||
     draft.fromDate !== null ||
     draft.toDate !== null ||
     draft.movementType !== "" ||
@@ -889,41 +818,38 @@ export default function MovementTraceReport() {
     draft.actor !== "" ||
     draft.relation !== "all";
 
-  const submitSearch = (event: FormEvent) => {
-    event.preventDefault();
-    // Bộ chọn khoảng cho phép một đầu rỗng (đang gõ dở): bắt buộc đủ hai đầu
-    // hoặc bỏ trống cả hai, và cả hai phải nằm trong 2000 → hôm nay.
-    const halfOpen = (draft.fromDate === null) !== (draft.toDate === null);
+  // Text filters settle briefly before updating the query; selects and dates apply immediately.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setApplied((current) => ({
+        ...current,
+        code: draft.code,
+        source: draft.source,
+        actor: draft.actor,
+      }));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [draft.code, draft.source, draft.actor]);
+
+  const updateFilters = (patch: Partial<AppliedFilters>) => {
+    const next = { ...draft, ...patch };
+    setDraft(next);
+    const halfOpen = (next.fromDate === null) !== (next.toDate === null);
     const rangeCheck = halfOpen
       ? { ok: false as const, message: t("shared.validation.dateRequired") }
-      : checkDateRange(draft.fromDate, draft.toDate, pastDateBounds());
+      : checkDateRange(next.fromDate, next.toDate, pastDateBounds());
     if (!rangeCheck.ok) {
       setDateError(rangeCheck.message);
       return;
     }
     setDateError(null);
-    setApplied(draft);
+    setApplied(next);
   };
 
-  /** Đặt lại: chỉ 6 bộ lọc phụ, giữ nguyên "Tra theo" + mã đang tra cứu. */
-  const resetSecondaryFilters = () => {
-    const next: AppliedFilters = {
-      ...draft,
-      fromDate: null,
-      toDate: null,
-      movementType: "",
-      source: "",
-      actor: "",
-      relation: "all",
-    };
-    setDraft(next);
+  const clearFilters = () => {
+    setDraft(EMPTY_FILTERS);
+    setApplied(EMPTY_FILTERS);
     setDateError(null);
-    setApplied({
-      ...applied,
-      ...next,
-      traceBy: applied.traceBy,
-      code: applied.code,
-    });
   };
 
   const { refreshing, refresh } = useReportRefresh({
@@ -931,10 +857,16 @@ export default function MovementTraceReport() {
     readError: () => report.error,
   });
 
-  const exportXlsx = async () => {
+  const exportXlsx = async (choice: ReportExportChoice) => {
     setExporting(true);
     try {
-      const rowCount = await runReportExport("xlsx", {
+      const rowCount = await runReportExport(choice.format, {
+        workbook: reportWorkbookOptions(
+          choice,
+          ["Movement ID"],
+          ledgerFilter.rows.map((row) => row.id),
+          ledgerRows.map((row) => row.id),
+        ),
         reportCode: MOVEMENT_TRACE_REPORT_CODE,
         fileStem: "movement-trace",
         fileSuffix: fromDate && toDate ? `-${fromDate}-${toDate}` : "",
@@ -955,6 +887,7 @@ export default function MovementTraceReport() {
       toast.error(
         getApiErrorMessage(error, t("reports.movementTrace.exportFailed")),
       );
+      return false;
     } finally {
       setExporting(false);
     }
@@ -983,15 +916,6 @@ export default function MovementTraceReport() {
       >
         <Box className="trace-page-heading" sx={{ minWidth: 0 }}>
           <Box
-            className="trace-breadcrumb"
-            sx={{ mb: "3.2px", ...SECTION_EYEBROW_SX }}
-          >
-            <HomeOutlined aria-hidden="true" />
-            <span>{t("reports.traceability.breadcrumbReports")}</span>
-            <span aria-hidden="true">/</span>
-            <strong>{t("reports.movementTrace.title")}</strong>
-          </Box>
-          <Box
             component="h1"
             className="hn-report-page-title"
             id="movement-trace-title"
@@ -1005,142 +929,47 @@ export default function MovementTraceReport() {
           >
             {t("reports.traceability.title")}
           </Box>
-          <Box sx={{ mt: "3.6px" }}>
-            <Box sx={{ fontSize: 15, lineHeight: 1.467, color: S.textMedium }}>
-              {t("reports.traceability.journeyDescription")}
-            </Box>
-          </Box>
         </Box>
         <Stack
-          className="trace-head-actions hn-report-warehouse-actions"
+          className="trace-head-actions"
           direction="row"
           spacing={0.75}
           sx={{ alignItems: "center", flexWrap: "wrap", rowGap: "6px" }}
         >
-          <UiButton
-            type="button"
-            size="small"
-            appearance="outlined"
-            startIcon={<ReloadOutlined />}
-            loading={refreshing}
-            onClick={refresh}
-            disabled={report.isFetching}
-          >
-            {t("reports.movementTrace.refresh")}
-          </UiButton>
-          <UiButton
-            type="button"
-            size="small"
-            startIcon={<DownloadOutlined />}
-            loading={exporting}
-            disabled={!canExport}
-            title={
-              canExport ? undefined : t("reports.movementTrace.exportDenied")
+          <ReportExportAction
+            title={t("reportExport.trace")}
+            fileStem={
+              "BaoCaoTruyVet_" + (fromDate ?? "") + "-" + (toDate ?? "")
             }
-            onClick={() => void exportXlsx()}
-          >
-            {t("reports.traceability.exportReport")}
-          </UiButton>
-          <ReportWarehouseCard />
+            total={ledgerFilter.rows.length}
+            currentCount={ledgerRows.length}
+            sections={reportExportSections(t("reportExport.movements"))}
+            context={[
+              [
+                t("reportExport.period"),
+                (fromDate ?? "—") + " – " + (toDate ?? "—"),
+              ],
+            ]}
+            disabled={
+              !canExport ||
+              report.isLoading ||
+              report.isFetching ||
+              report.isError
+            }
+            loading={exporting}
+            onExport={exportXlsx}
+          />
         </Stack>
       </Box>
 
       <Box
         component="form"
-        className="trace-filter-card"
+        className="trace-report-filters"
         aria-label={t("reports.movementTrace.filterAria")}
-        onSubmit={submitSearch}
-        sx={{
-          bgcolor: S.bgSurface,
-          border: `1px solid ${S.border}`,
-          borderRadius: `${RADIUS.card}px`,
-          boxShadow: S.shadowCard,
-          display: "grid",
-          gap: "14px",
-          p: { xs: "14px", md: 2 },
-        }}
+        onSubmit={(event) => event.preventDefault()}
       >
-        <Box
-          className="trace-filter-card__titlebar"
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 1.5,
-            alignItems: { xs: "flex-start", md: "center" },
-          }}
-        >
-          <Box>
-            <Box sx={SECTION_EYEBROW_SX}>
-              {t("reports.movementTrace.filterEyebrow")}
-            </Box>
-            <Box sx={SECTION_TITLE_SX}>
-              {t("reports.movementTrace.filterTitle")}
-            </Box>
-          </Box>
-          <Stack direction="row" spacing={0.75}>
-            <UiButton
-              type="button"
-              size="small"
-              appearance="outlined"
-              startIcon={<ReloadOutlined />}
-              loading={refreshing}
-              onClick={refresh}
-              disabled={report.isFetching}
-            >
-              {t("reports.movementTrace.refresh")}
-            </UiButton>
-            <UiButton
-              type="button"
-              size="small"
-              appearance="outlined"
-              startIcon={<ExportOutlined />}
-              loading={exporting}
-              disabled={!canExport}
-              title={
-                canExport ? undefined : t("reports.movementTrace.exportDenied")
-              }
-              onClick={() => void exportXlsx()}
-            >
-              {t("reports.movementTrace.exportXlsx")}
-            </UiButton>
-          </Stack>
-        </Box>
-
-        <Box
-          className="trace-filter-grid"
-          sx={{
-            display: "grid",
-            columnGap: 1.5,
-            rowGap: 1.5,
-            alignItems: "end",
-            gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
-          }}
-        >
-          <Box
-            className="trace-field trace-field--code-type"
-            sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}
-          >
-            <Box sx={FIELD_LABEL_SX}>{t("reports.traceability.codeType")}</Box>
-            <UiSelect
-              fullWidth
-              aria-label={t("reports.movementTrace.traceBy")}
-              value={draft.traceBy}
-              onChange={(value) =>
-                setDraft((prev) => ({ ...prev, traceBy: value as TraceBy }))
-              }
-              options={TRACE_BY_OPTIONS.map((option) => ({ ...option }))}
-            />
-          </Box>
-
-          {/* Ô tìm 1 cột (~280px đủ cho placeholder) để nút "Tra cứu" còn chỗ cùng hàng ở 1920. */}
-          <Box
-            className="trace-field trace-field--search"
-            sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}
-          >
-            <Box sx={FIELD_LABEL_SX}>
-              {t("reports.traceability.searchLabel")}
-            </Box>
+        <div className="trace-report-filters__grid">
+          <div className="trace-report-filters__search">
             <SearchInput
               width="100%"
               id="movement-trace-code"
@@ -1151,204 +980,106 @@ export default function MovementTraceReport() {
                   ? t("reports.movementTrace.physicalCode")
                   : "SKU"
               }
-              onChange={(value) =>
-                setDraft((prev) => ({ ...prev, code: value }))
-              }
+              onChange={(code) => setDraft((prev) => ({ ...prev, code }))}
             />
-          </Box>
-
-          {/*
-           * Một bộ chọn KHOẢNG chiếm chỗ hai ô cũ — đồng bộ với các màn Báo
-           * cáo khác. Khoảng vẫn là DRAFT: chỉ vào bộ lọc khi bấm "Tra cứu",
-           * đúng như bản hai ô.
-           */}
-          <Box
-            className={`trace-field trace-field--date${dateError ? " is-invalid" : ""}`}
-            sx={fieldCellSx({ xs: 1, sm: 2, xl: 4 })}
+          </div>
+          <div
+            className="trace-report-filters__date"
+            role="group"
+            aria-label={t("reports.movementTrace.fieldDateRange")}
           >
-            <Box sx={FIELD_LABEL_SX}>{t("reports.traceability.dateRange")}</Box>
             <ReportDateRangePicker
-              aria-label={t("reports.movementTrace.fieldDateRange")}
               value={[draft.fromDate, draft.toDate]}
-              format="DD/MM/YYYY"
-              placeholder={[
-                t("reports.movementTrace.fromDate"),
-                t("reports.movementTrace.toDate"),
-              ]}
-              allowClear={false}
-              // Dữ liệu chỉ có trong quá khứ: khoá ngày tương lai (mốc dưới giữ mặc định 2000).
-              maxDate={dayjs().endOf("day")}
+              aria-label={t("reports.movementTrace.fieldDateRange")}
+              placeholder={["—", "—"]}
+              maxDate={businessToday().endOf("day")}
               presets={periodPresets}
-              className="hn-vuexy-date-range"
-              popupClassName="hn-vuexy-date-popup"
-              onChange={(value) => {
-                setDateError(null);
-                setDraft((prev) => ({
-                  ...prev,
+              onChange={(value) =>
+                updateFilters({
                   fromDate: value?.[0] ?? null,
                   toDate: value?.[1] ?? null,
-                }));
-              }}
+                })
+              }
             />
-            {dateError ? (
-              <Box
-                role="alert"
-                sx={{ mt: 0.5, fontSize: 12, color: "error.main" }}
-              >
-                {dateError}
-              </Box>
-            ) : null}
-          </Box>
-
-          <Box
-            className="trace-field trace-field--warehouse"
-            sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}
-          >
-            <Box sx={FIELD_LABEL_SX}>{t("reports.traceability.warehouse")}</Box>
-            <UiSelect
-              fullWidth
-              aria-label={t("reports.traceability.warehouse")}
-              value="hoa-nam"
-              onChange={() => undefined}
+          </div>
+          <ReportFilterCombobox
+            id="trace-code-type"
+            value={draft.traceBy}
+            ariaLabel={t("reports.movementTrace.traceBy")}
+            icon="package-search"
+            searchPlaceholder={t("reports.traceability.codeType")}
+            options={TRACE_BY_OPTIONS.map((option) => ({
+              ...option,
+              label: `${t("reports.traceability.codeType")}: ${option.label}`,
+            }))}
+            onChange={(value) => updateFilters({ traceBy: value as TraceBy })}
+          />
+          {canClear ? (
+            <button
+              type="button"
+              className="trace-report-filters__clear"
+              onClick={clearFilters}
+            >
+              {t("reports.filters.clearFilters")}
+            </button>
+          ) : null}
+        </div>
+        {dateError ? (
+          <div role="alert" className="trace-report-filters__error">
+            {dateError}
+          </div>
+        ) : null}
+        <details className="trace-report-filters__advanced">
+          <summary>{t("reports.traceability.advancedFilters")}</summary>
+          <div className="trace-report-filters__advanced-grid">
+            <ReportFilterCombobox
+              id="trace-movement-type"
+              value={draft.movementType}
+              ariaLabel={t("reports.traceability.status")}
+              icon="file-clock"
+              searchPlaceholder={t("reports.traceability.status")}
               options={[
                 {
-                  value: "hoa-nam",
-                  label: t("reports.traceability.warehouseName"),
+                  value: "",
+                  label: `${t("reports.traceability.status")}: ${t("reports.movementTrace.movementTypeAll")}`,
                 },
+                ...MOVEMENT_TYPE_FILTER_OPTIONS.map((option) => ({
+                  ...option,
+                  label: `${t("reports.traceability.status")}: ${option.label}`,
+                })),
               ]}
+              onChange={(movementType) => updateFilters({ movementType })}
             />
-          </Box>
-
-          <Box
-            className="trace-field trace-field--status"
-            sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}
-          >
-            <Box sx={FIELD_LABEL_SX}>{t("reports.traceability.status")}</Box>
-            <UiSelect
-              fullWidth
-              aria-label={t("reports.traceability.status")}
-              placeholder={t("reports.movementTrace.movementTypeAll")}
-              value={draft.movementType}
-              onChange={(value) =>
-                setDraft((prev) => ({ ...prev, movementType: value }))
-              }
-              options={MOVEMENT_TYPE_FILTER_OPTIONS.map((option) => ({
+            <SearchInput
+              width="100%"
+              value={draft.source}
+              placeholder={t("reports.movementTrace.sourcePlaceholder")}
+              aria-label={t("reports.movementTrace.source")}
+              onChange={(source) => setDraft((prev) => ({ ...prev, source }))}
+            />
+            <SearchInput
+              width="100%"
+              value={draft.actor}
+              placeholder={t("reports.movementTrace.actorPlaceholder")}
+              aria-label={t("reports.movementTrace.actor")}
+              onChange={(actor) => setDraft((prev) => ({ ...prev, actor }))}
+            />
+            <ReportFilterCombobox
+              id="trace-relation"
+              value={draft.relation}
+              ariaLabel={t("reports.movementTrace.relation")}
+              icon="file-clock"
+              searchPlaceholder={t("reports.movementTrace.relation")}
+              options={RELATION_OPTIONS.map((option) => ({
                 ...option,
+                label: `${t("reports.movementTrace.relation")}: ${option.label}`,
               }))}
+              onChange={(value) =>
+                updateFilters({ relation: value as RelationFilter })
+              }
             />
-          </Box>
-
-          <Box
-            className="trace-field trace-field--apply"
-            sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}
-          >
-            <UiButton
-              type="submit"
-              size="small"
-              aria-label={t("reports.movementTrace.search")}
-              disabled={report.isFetching}
-            >
-              {t("reports.traceability.apply")}
-            </UiButton>
-          </Box>
-
-          <Box
-            className="trace-field trace-field--reset"
-            sx={fieldCellSx({ xs: 1, sm: 1, xl: 1 })}
-          >
-            <UiButton
-              type="button"
-              size="small"
-              appearance="outlined"
-              disabled={!canReset}
-              onClick={resetSecondaryFilters}
-            >
-              {t("reports.movementTrace.reset")}
-            </UiButton>
-          </Box>
-        </Box>
-
-        <details className="trace-advanced-filters">
-          <summary>{t("reports.traceability.advancedFilters")}</summary>
-          <Box
-            sx={{
-              display: "grid",
-              columnGap: 1.5,
-              rowGap: 1.5,
-              alignItems: "end",
-              gridTemplateColumns: FILTER_GRID_COLUMNS_SX,
-            }}
-          >
-            <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
-              <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.source")}</Box>
-              <SearchInput
-                width="100%"
-                value={draft.source}
-                placeholder={t("reports.movementTrace.sourcePlaceholder")}
-                aria-label={t("reports.movementTrace.source")}
-                onChange={(value) =>
-                  setDraft((prev) => ({ ...prev, source: value }))
-                }
-              />
-            </Box>
-
-            <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 3 })}>
-              <Box sx={FIELD_LABEL_SX}>{t("reports.movementTrace.actor")}</Box>
-              <SearchInput
-                width="100%"
-                value={draft.actor}
-                placeholder={t("reports.movementTrace.actorPlaceholder")}
-                aria-label={t("reports.movementTrace.actor")}
-                onChange={(value) =>
-                  setDraft((prev) => ({ ...prev, actor: value }))
-                }
-              />
-            </Box>
-
-            <Box sx={fieldCellSx({ xs: 1, sm: 1, xl: 2 })}>
-              <Box sx={FIELD_LABEL_SX}>
-                {t("reports.movementTrace.relation")}
-              </Box>
-              <UiSelect
-                fullWidth
-                aria-label={t("reports.movementTrace.relation")}
-                value={draft.relation}
-                onChange={(value) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    relation: value as RelationFilter,
-                  }))
-                }
-                options={RELATION_OPTIONS.map((option) => ({ ...option }))}
-              />
-            </Box>
-          </Box>
+          </div>
         </details>
-
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "6px",
-            pt: "2px",
-            alignItems: { xs: "flex-start", sm: "center" },
-            flexDirection: { xs: "column", sm: "row" },
-          }}
-        >
-          <Box component="span" sx={CAPTION_SX}>
-            {t("reports.movementTrace.privacyNote", {
-              timezone: MOVEMENT_TRACE_TIMEZONE,
-            })}
-          </Box>
-          <Box component="span" sx={CAPTION_SX}>
-            {[
-              appliedCode !== "" ? `${traceByLabel}: ${appliedCode}` : "",
-              cutOff,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </Box>
-        </Box>
       </Box>
 
       <ReportRangeAdviceBanner
@@ -1642,26 +1373,76 @@ export default function MovementTraceReport() {
           >
             {t("reports.traceability.listTitle")}
           </Box>
-          <Box className="trace-ledger-count" component="span" sx={CAPTION_SX}>
-            {t("reports.traceability.itemsCount", {
-              count: formatQuantity(ledgerFilter.rows.length),
-            })}
-          </Box>
         </Box>
         <Box sx={{ px: 3, pb: 2 }}>
-          <SectionFilterBar
-            state={ledgerFilter}
-            label={t("reports.traceability.listTitle")}
+          <div
+            className="trace-list-filters"
+            role="group"
+            aria-label={t("reports.traceability.listTitle")}
             data-testid="movement-trace-ledger-filter"
-          />
+          >
+            <SearchInput
+              value={ledgerFilter.keyword}
+              onChange={ledgerFilter.setKeyword}
+              placeholder={ledgerFilter.config.searchPlaceholder}
+              aria-label={t("reports.filters.sectionSearchAria", {
+                label: t("reports.traceability.listTitle"),
+              })}
+            />
+            {ledgerFilter.resolvedSelects.map((select) => (
+              <ReportFilterCombobox
+                key={select.key}
+                id={`trace-ledger-${select.key}`}
+                value={ledgerFilter.values[select.key] ?? ""}
+                onChange={(value) => ledgerFilter.setValue(select.key, value)}
+                options={[
+                  { value: "", label: select.placeholder },
+                  ...select.options,
+                ].map((option) => ({
+                  ...option,
+                  label: `${t(select.key === "actor" ? "reports.movementTrace.actor" : "reports.movementTrace.movementType")}: ${option.label}`,
+                }))}
+                icon={select.key === "actor" ? "user-round" : "file-clock"}
+                searchPlaceholder={select.placeholder}
+                ariaLabel={select.ariaLabel ?? select.placeholder}
+              />
+            ))}
+            {ledgerFilter.active ? (
+              <button
+                type="button"
+                className="trace-list-clear"
+                onClick={ledgerFilter.clear}
+              >
+                {t("inbound.list.clearFilters")}
+              </button>
+            ) : null}
+          </div>
         </Box>
         <Box sx={{ p: 0 }}>
           <ResponsiveDataTable<MovementTraceRow>
+            headerCellStyle={{
+              padding: "12px 18px",
+              backgroundColor: "var(--ops-table-header)",
+              backgroundImage: "none",
+              color: "var(--ops-heading)",
+              fontSize: 16,
+              fontWeight: 800,
+              lineHeight: "24px",
+              letterSpacing: "0.02em",
+              textTransform: "none",
+            }}
             columns={[
+              {
+                key: "index",
+                header: "STT",
+                width: "6%",
+                align: "center",
+                render: (row) => rowIndexOf(ledgerFilter.rows, row) + 1,
+              },
               {
                 key: "product",
                 header: t("reports.traceability.colProduct"),
-                width: 210,
+                width: "29%",
                 render: (row) => (
                   <span className="trace-product-cell">
                     <strong>{row.productCode || EMPTY_TEXT}</strong>
@@ -1670,62 +1451,25 @@ export default function MovementTraceReport() {
                 ),
               },
               {
-                key: "trace_code",
-                header: t("reports.traceability.colTraceCode"),
-                width: 270,
-                render: (row) => (
-                  <span className="trace-code-cell">
-                    {row.physicalCode ||
-                      row.containerId ||
-                      row.itemId ||
-                      EMPTY_TEXT}
-                    <small>{documentCodeOf(row) || EMPTY_TEXT}</small>
-                  </span>
-                ),
-              },
-              {
-                key: "current_status",
-                header: t("reports.traceability.colCurrentStatus"),
-                width: 150,
-                render: (row) => {
-                  const kind = movementKindOf(row);
-                  const status = traceStatusOf(row);
-                  return (
-                    <>
-                      <UiStatusBadge
-                        tone={status.tone}
-                        label={t(status.labelKey)}
-                      />
-                      <span className="trace-sr-only">
-                        {MOVEMENT_KIND_LABELS[kind]}
-                      </span>
-                    </>
-                  );
-                },
-              },
-              {
-                key: "location",
-                header: t("reports.traceability.colLocation"),
-                width: 175,
-                render: (row) =>
-                  row.warehouseCode || t("reports.traceability.warehouseName"),
-              },
-              {
                 key: "latest_event",
                 header: t("reports.traceability.colLatestEvent"),
-                width: 165,
+                width: "27%",
                 render: (row) => (
                   <span className="trace-event-cell">
                     {movementSourceLabel(row.sourceType) ||
                       MOVEMENT_KIND_LABELS[movementKindOf(row)]}
+                    <small>{documentCodeOf(row) || EMPTY_TEXT}</small>
                     <small>Δ {row.qtyDelta}</small>
+                    <span className="trace-sr-only">
+                      {MOVEMENT_KIND_LABELS[movementKindOf(row)]}
+                    </span>
                   </span>
                 ),
               },
               {
                 key: "updated_at",
                 header: t("reports.traceability.colUpdatedAt"),
-                width: 170,
+                width: "19%",
                 sortType: "value",
                 sortAccessor: (row) => row.occurredAt,
                 render: (row) => formatTraceDateTime(row.occurredAt),
@@ -1733,7 +1477,7 @@ export default function MovementTraceReport() {
               {
                 key: "completeness",
                 header: t("reports.traceability.colCompleteness"),
-                width: 118,
+                width: "11%",
                 align: "center",
                 render: (row) => {
                   const status = traceStatusOf(row);
@@ -1748,8 +1492,9 @@ export default function MovementTraceReport() {
               },
               {
                 key: "open",
-                header: "",
-                width: 80,
+                header: t("common.viewDetail"),
+                isAction: true,
+                width: "8%",
                 align: "center",
                 render: (row) => (
                   <>
@@ -1780,27 +1525,43 @@ export default function MovementTraceReport() {
             loading={report.isLoading}
             onRowClick={(row) => setSelected(row)}
             emptyText={t("reports.movementTrace.timelineEmpty")}
-            // Sổ ledger không cắt trang (xem ghi chú đầu movement-trace-api.ts)
-            // nên bảng dài tự cuộn trong khung, tiêu đề cột được ghim lại.
-            maxBodyHeight={RPT_SCROLL_MAX_HEIGHT}
           />
         </Box>
         <Box className="trace-pagination hn-report-pagination-footer">
-          <span>
-            {t("reports.traceability.showingItems", {
-              from:
-                ledgerFilter.rows.length === 0
-                  ? "0"
-                  : formatQuantity((safeLedgerPage - 1) * ledgerPageSize + 1),
-              to: formatQuantity(
-                Math.min(
-                  safeLedgerPage * ledgerPageSize,
-                  ledgerFilter.rows.length,
+          <div className="trace-pagination-summary">
+            <span>
+              {t("reports.traceability.showingItems", {
+                from:
+                  ledgerFilter.rows.length === 0
+                    ? "0"
+                    : formatQuantity((safeLedgerPage - 1) * ledgerPageSize + 1),
+                to: formatQuantity(
+                  Math.min(
+                    safeLedgerPage * ledgerPageSize,
+                    ledgerFilter.rows.length,
+                  ),
                 ),
-              ),
-              total: formatQuantity(ledgerFilter.rows.length),
-            })}
-          </span>
+                total: formatQuantity(ledgerFilter.rows.length),
+              })}
+            </span>
+            <label className="trace-page-size">
+              Số dòng/trang{" "}
+              <select
+                aria-label="Số dòng mỗi trang"
+                value={ledgerPageSize}
+                onChange={(event) => {
+                  setLedgerPageSize(Number(event.target.value));
+                  setLedgerPage(1);
+                }}
+              >
+                {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <nav
             className="hn-report-pagination"
             aria-label={t("reports.traceability.paginationAria")}
@@ -1856,157 +1617,25 @@ export default function MovementTraceReport() {
         </Box>
       </Box>
 
-      <Drawer
-        anchor="right"
-        open={selected !== null}
-        onClose={() => setSelected(null)}
-      >
-        <Box
-          role="dialog"
-          aria-label={
-            selected
-              ? t("reports.movementTrace.drawerAria", {
-                  code: selected.movementNo || EMPTY_TEXT,
-                })
-              : undefined
+      {selected && selectedKind ? (
+        <MovementEvidenceDrawer
+          row={selected}
+          movementLabel={MOVEMENT_KIND_LABELS[selectedKind]}
+          occurredAtLabel={formatTraceDateTime(selected.occurredAt)}
+          currentStatus={{
+            tone: traceStatusOf(selected).tone,
+            label: t(traceStatusOf(selected).labelKey),
+          }}
+          sourceDocument={
+            [documentCodeOf(selected), movementSourceLabel(selected.sourceType)]
+              .filter(Boolean)
+              .join(" · ") || EMPTY_TEXT
           }
-          sx={{ width: 470, maxWidth: "100vw" }}
-        >
-          {selected && selectedKind ? (
-            <>
-              <Box
-                component="header"
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 2,
-                  p: 3,
-                  borderBottom: `1px solid ${S.border}`,
-                  bgcolor: S.bgSubtle,
-                }}
-              >
-                <Box sx={{ minWidth: 0 }}>
-                  <Box component="span" sx={SECTION_EYEBROW_SX}>
-                    {t("reports.movementTrace.drawerEyebrow")}
-                  </Box>
-                  <Box
-                    component="h2"
-                    sx={{
-                      my: "6px",
-                      fontSize: 20,
-                      fontWeight: 600,
-                      color: S.textHigh,
-                    }}
-                  >
-                    {t("reports.movementTrace.drawerTitle")} ·{" "}
-                    {selected.movementNo || EMPTY_TEXT}
-                  </Box>
-                  <Box sx={{ m: 0, color: S.textMedium, fontSize: 13 }}>
-                    {`${MOVEMENT_KIND_LABELS[selectedKind]} · ${formatTraceDateTime(selected.occurredAt)}`}
-                  </Box>
-                </Box>
-                <Box
-                  component="button"
-                  type="button"
-                  aria-label={t("reports.movementTrace.drawerClose")}
-                  onClick={() => setSelected(null)}
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    flexShrink: 0,
-                    display: "grid",
-                    placeItems: "center",
-                    border: 0,
-                    borderRadius: `${RADIUS.control}px`,
-                    bgcolor: "transparent",
-                    color: S.textMedium,
-                    fontSize: 16,
-                    cursor: "pointer",
-                    ...RPT_CONTROL_MOTION_SX,
-                    "&:hover": { bgcolor: S.secondarySoft },
-                  }}
-                >
-                  <CloseOutlined />
-                </Box>
-              </Box>
-              <Box sx={{ p: 3 }}>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(2, minmax(0, 1fr))",
-                    },
-                    gap: 1.5,
-                  }}
-                >
-                  <EvidenceField
-                    label="SKU"
-                    value={selected.productCode || EMPTY_TEXT}
-                  />
-                  <EvidenceField
-                    label={t("reports.movementTrace.colQtyDelta")}
-                    value={<QtyDeltaBadge value={selected.qtyDelta} />}
-                  />
-                  <EvidenceField
-                    label={t("reports.movementTrace.fieldSourceDoc")}
-                    value={
-                      [
-                        documentCodeOf(selected),
-                        movementSourceLabel(selected.sourceType),
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || EMPTY_TEXT
-                    }
-                  />
-                  <EvidenceField
-                    label={t("reports.movementTrace.actor")}
-                    value={selected.actor || EMPTY_TEXT}
-                  />
-                  <EvidenceField
-                    label={t("reports.movementTrace.fieldReversalChain")}
-                    value={reversalChainText(selected)}
-                  />
-                  {selected.physicalCode ? (
-                    <EvidenceField
-                      label="Mã vật lý"
-                      value={
-                        <Stack spacing={1} sx={{ alignItems: "flex-start" }}>
-                          <span>{selected.physicalCode}</span>
-                          <UiButton
-                            size="small"
-                            appearance="outlined"
-                            onClick={() =>
-                              setSelectedPhysicalCode(selected.physicalCode)
-                            }
-                          >
-                            Truy vết mã vật lý
-                          </UiButton>
-                        </Stack>
-                      }
-                    />
-                  ) : null}
-                  {/* Không có ô "Mã yêu cầu": giá trị cũ là meta.request_id của
-                    CHÍNH lần gọi báo cáo — giống nhau cho mọi dòng, chỉ là mã
-                    đối chiếu log, không phải bằng chứng của biến động này. */}
-                </Box>
-                <Box
-                  sx={{
-                    mt: 2.5,
-                    p: 1.5,
-                    borderRadius: `${RADIUS.control}px`,
-                    bgcolor: S.primarySoft,
-                    color: S.primaryDark,
-                    fontSize: 13,
-                  }}
-                >
-                  {t("reports.movementTrace.readonlyNote")}
-                </Box>
-              </Box>
-            </>
-          ) : null}
-        </Box>
-      </Drawer>
+          reversalChain={reversalChainText(selected)}
+          onClose={() => setSelected(null)}
+          onTrace={() => setSelectedPhysicalCode(selected.physicalCode)}
+        />
+      ) : null}
       {selectedPhysicalCode ? (
         <TraceModal
           movementId={null}

@@ -1,0 +1,43 @@
+import type { MeResponse } from "../types/me.types";
+import type { ProfilePreferences } from "../types/profile.types";
+export const profileFixture: MeResponse = {
+  id: "user-1",
+  user_id: "user-1",
+  username: "admin",
+  name: "Quản trị viên",
+  display_name: "Quản trị viên",
+  email: "admin@example.test",
+  code: "admin",
+  phone: "0982622326",
+  version: 3,
+  status: "ACTIVE",
+  roles: [],
+  permissions: [],
+  warehouse_scope_ids: [],
+  company: null,
+  branch: null,
+  department: { department_id: "d1", department_name: "Kho vận" },
+  position: null,
+  role: null,
+  active_context: null,
+  available_contexts: [],
+  avatar: null,
+};
+export const preferenceFixture: ProfilePreferences = {
+  version: 1,
+  locale: "vi",
+  timezone: "Asia/Ho_Chi_Minh",
+  date_format: "DD/MM/YYYY",
+  default_homepage: "dashboard",
+  theme: "light",
+  accent: "ocean",
+  font_size: "medium",
+  density: "comfortable",
+  reduced_motion: false,
+  notifications: {
+    stock_documents: { in_app: true, email: false },
+    inventory: { in_app: true, email: false },
+    warranty: { in_app: true, email: false },
+    account: { in_app: true, email: false },
+  },
+};

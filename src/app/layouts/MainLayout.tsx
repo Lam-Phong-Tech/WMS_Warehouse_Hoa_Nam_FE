@@ -1,3 +1,4 @@
+import { AccountPreferencesProvider } from "@/app/providers/AccountPreferencesProvider";
 /**
  * MainLayout — shell vận hành trên UiAppShell (Part 4 shell swap).
  *
@@ -16,10 +17,10 @@ import { KeepAliveOutlet } from "@/app/layouts/KeepAliveOutlet";
 import { SideNav } from "@/app/layouts/SideNav";
 import { AppTopbar } from "@/app/layouts/topbar/AppTopbar";
 import { AppPageHeader } from "@/app/layouts/AppPageHeader";
-import { NfcWarehouseSelector } from "@/modules/nfc/components/NfcWarehouseSelector";
 import { WarehousePausedBanner } from "@/app/layouts/WarehousePausedBanner";
 import { useMe } from "@/modules/auth/hooks/use-me";
 import { useNotificationSocket } from "@/modules/notifications/hooks/useNotificationSocket";
+import { useWarehouseRealtime } from "@/shared/realtime/use-warehouse-realtime";
 import { Loading } from "@/shared/components";
 import {
   AUTH_BASELINE,
@@ -33,13 +34,14 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { queryClient } from "@/app/providers/query-client";
 import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
+import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 
 /**
  * Màn TỰ dựng header riêng nên shell không render `AppPageHeader` — nếu không
  * sẽ có hai tiêu đề chồng nhau. Phần lớn là bản port 1:1 từ mockup đã chốt
  * (Tổng quan vận hành + TRỌN BỘ 8 màn Báo cáo), header của chúng mang thêm
  * eyebrow "BÁO CÁO VẬN HÀNH · RPT-xx", chip và nút riêng.
- * Cấu hình kho và tồn kho dùng AppPageHeader ngay trong trang để gắn nút thao tác vào header.
+ * Cấu hình kho, tồn kho và phiếu đảo dùng AppPageHeader ngay trong trang để gắn nút thao tác vào header.
  *
  * DANH SÁCH NÀY PHẢI ĐỦ CẢ 8 ROUTE `/reports/*` — liệt kê đúng thứ tự sidebar
  * để soát cho dễ. Thiếu route nào thì chính route đó hiện HAI tiêu đề chồng
@@ -47,8 +49,12 @@ import { preloadCommonRoutesWhenIdle } from "@/app/router/route-preload";
  */
 const ROUTES_WITH_OWN_HEADER: string[] = [
   ROUTES.SUPPLIERS,
+  ROUTES.PROFILE,
+  ROUTES.IAM_USERS,
+  ROUTES.AUDIT_LOGS,
   ROUTES.WAREHOUSE_CONFIG,
   ROUTES.INVENTORY,
+  ROUTES.REVERSE,
   ROUTES.PV_PRODUCT_CATALOG,
   ROUTES.DASHBOARD,
   ROUTES.REPORTS_INVENTORY_FLOW,
@@ -96,6 +102,7 @@ export function MainLayout() {
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
   const { isLoading: isLoadingProfile } = useMe();
   useNotificationSocket();
+  useWarehouseRealtime();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     readStoredSidebarCollapsed,
   );
@@ -189,7 +196,7 @@ export function MainLayout() {
   if (isLoadingProfile && !isProfileLoaded) return <Loading />;
 
   return (
-    <>
+    <AccountPreferencesProvider>
       <UiAppShell
         className={
           isMapReferenceScreen
@@ -235,15 +242,9 @@ export function MainLayout() {
           <WarehousePausedBanner />
           {ownsHeader ? null : (
             <AppPageHeader
-              actions={
-                location.pathname === ROUTES.NFC ? (
-                  <NfcWarehouseSelector />
-                ) : undefined
-              }
               showEyebrow={
                 location.pathname !== ROUTES.IAM_USERS &&
                 location.pathname !== ROUTES.REVERSE &&
-                location.pathname !== ROUTES.NFC &&
                 !hideHeaderDetails
               }
               showDescription={
@@ -252,8 +253,8 @@ export function MainLayout() {
                 !hideHeaderDetails
               }
               showContextBadges={
+                location.pathname !== ROUTES.IAM_USERS &&
                 location.pathname !== ROUTES.REVERSE &&
-                location.pathname !== ROUTES.NFC &&
                 location.pathname !== ROUTES.NOTIFICATIONS &&
                 !isProfilePage &&
                 !hideHeaderDetails
@@ -268,10 +269,12 @@ export function MainLayout() {
            * được giữ ẩn, quay lại là hiện ngay; display:none→block tự chạy lại
            * animation chuyển màn nên không mất hiệu ứng.
            */}
-          <KeepAliveOutlet
-            transitionKey={`${location.pathname}|${requestedScreen ?? ""}`}
-            className="hn-mvp-screen hn-page-transition"
-          />
+          <PinnedSidebarContext.Provider value={isDesktop && !sidebarCollapsed}>
+            <KeepAliveOutlet
+              transitionKey={`${location.pathname}|${requestedScreen ?? ""}`}
+              className="hn-mvp-screen hn-page-transition"
+            />
+          </PinnedSidebarContext.Provider>
         </Box>
       </UiAppShell>
       {!isDesktop ? (
@@ -303,6 +306,6 @@ export function MainLayout() {
           <SideNav collapsed={false} />
         </Drawer>
       ) : null}
-    </>
+    </AccountPreferencesProvider>
   );
 }

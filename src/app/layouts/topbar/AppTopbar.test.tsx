@@ -6,17 +6,50 @@ import {
   render,
   screen,
   within,
+  waitFor,
 } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { NotificationItem } from "@/modules/notifications/types/notification.types";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
 
+const shortcutPreferences = {
+  version: 1,
+  locale: "vi",
+  timezone: "Asia/Ho_Chi_Minh",
+  date_format: "DD/MM/YYYY",
+  default_homepage: "dashboard",
+  theme: "light",
+  accent: "ocean",
+  font_size: "medium",
+  density: "comfortable",
+  reduced_motion: false,
+  notifications: { account: { in_app: true, email: false } },
+};
+vi.mock("@/modules/auth/services/profile.service", () => ({
+  profileService: {
+    getPreferences: vi.fn(async () => ({ ...shortcutPreferences })),
+    updatePreferences: vi.fn(
+      async (changes: Record<string, unknown>, version: number) => ({
+        ...shortcutPreferences,
+        ...changes,
+        version: version + 1,
+      }),
+    ),
+    getAvatar: vi.fn(),
+  },
+}));
 const markAllRead = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
+const notificationData = vi.hoisted(() => ({
+  items: [] as NotificationItem[],
+}));
 
 vi.mock("@/modules/notifications/hooks/useNotifications", () => ({
   useMarkAllNotificationsRead: () => markAllRead,
   useUnreadCountQuery: vi.fn(),
   useNotificationsQuery: () => ({
-    data: { data: [] },
+    data: { data: notificationData.items },
     isLoading: false,
     isError: false,
   }),
@@ -61,6 +94,7 @@ function CurrentPath() {
   return (
     <span data-testid="current-path" hidden>
       {location.pathname}
+      {location.search}
     </span>
   );
 }
@@ -68,13 +102,20 @@ function CurrentPath() {
 beforeEach(() => {
   vi.clearAllMocks();
   markAllRead.isPending = false;
+  notificationData.items = [];
   useNotificationStore.getState().reset();
   useAuthStore.setState({
     isProfileLoaded: true,
     isSuperAdmin: true,
     permissionCodes: [],
     isAuthenticated: true,
-    user: { name: "Super Admin" } as never,
+    token: "test-topbar-token",
+    profile: null,
+    user: {
+      id: "topbar-user",
+      user_id: "topbar-user",
+      name: "Super Admin",
+    } as never,
   });
 });
 
@@ -86,6 +127,44 @@ afterEach(() => {
 });
 
 describe("AppTopbar", () => {
+  it("updates cached notification titles and bodies when the language changes", async () => {
+    await Promise.all([ensureEnglishMessages(), ensureChineseMessages()]);
+    useLanguageStore.setState({ language: "vi" });
+    notificationData.items = [
+      {
+        id: "translated-notification",
+        notification_id: "translated-notification-event",
+        event_key: "inbound.completed",
+        source_module: "warehouse",
+        title: "Đã hoàn tất nhập kho",
+        body: "Phiếu nhập PN-TEST-01 đã Post Receipt thành công.",
+        payload: { doc_no: "PN-TEST-01" },
+        subject_type: "stock_document",
+        subject_id: "doc-locale-1",
+        actor_id: null,
+        actor_name: null,
+        read_at: null,
+        severity: "info",
+        created_at: new Date().toISOString(),
+      },
+    ];
+    renderTopbar();
+    fireEvent.click(screen.getByRole("button", { name: "Thông báo" }));
+    expect(screen.getByText("Đã hoàn tất nhập kho")).toBeInTheDocument();
+    act(() => useLanguageStore.setState({ language: "en" }));
+    expect(screen.getByText("Inbound completed")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Inbound document PN-TEST-01 was successfully received into stock.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Đã hoàn tất nhập kho")).not.toBeInTheDocument();
+    act(() => useLanguageStore.setState({ language: "zh" }));
+    expect(screen.getByText("入库已完成")).toBeInTheDocument();
+    expect(
+      screen.getByText("入库单 PN-TEST-01 已成功登记入库。"),
+    ).toBeInTheDocument();
+  });
   it("không lặp tên và vai trò trong menu khi thanh trên đã hiển thị", () => {
     renderTopbar();
     const accountButton = screen.getByRole("button", {
@@ -116,7 +195,7 @@ describe("AppTopbar", () => {
       within(menu).getByRole("menuitem", { name: "Đổi mật khẩu" }),
     );
     expect(screen.getByTestId("current-path")).toHaveTextContent(
-      "/change-password",
+      "/profile?section=security",
     );
     expect(
       screen.queryByRole("menu", { name: "Tài khoản" }),
@@ -136,7 +215,7 @@ describe("AppTopbar", () => {
     expect(options).toHaveLength(3);
     expect(options.map((option) => option.textContent?.trim())).toEqual([
       "Tiếng Việt",
-      "English✓",
+      "English",
       "简体中文",
     ]);
     expect(
@@ -225,7 +304,9 @@ describe("AppTopbar", () => {
     expect(
       await screen.findByPlaceholderText("Search functions"),
     ).toBeInTheDocument();
-    expect(useLanguageStore.getState().language).toBe("en");
+    await waitFor(() =>
+      expect(useLanguageStore.getState().language).toBe("en"),
+    );
     // `persist` của zustand ghi cả bao JSON, không phải chuỗi trần — đọc đúng
     // hình dạng đã lưu để test không xanh giả khi khoá đổi kiểu.
     expect(
@@ -240,7 +321,9 @@ describe("AppTopbar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ngôn ngữ" }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: /简体中文/ }));
     expect(await screen.findByPlaceholderText("搜索功能")).toBeInTheDocument();
-    expect(useLanguageStore.getState().language).toBe("zh");
+    await waitFor(() =>
+      expect(useLanguageStore.getState().language).toBe("zh"),
+    );
     expect(
       JSON.parse(localStorage.getItem("erp-language") ?? "null")?.state
         ?.language,
@@ -248,12 +331,12 @@ describe("AppTopbar", () => {
     expect(document.documentElement.lang).toBe("zh-CN");
   });
 
-  it("đổi giao diện thì đặt data-theme và ghi nhớ lựa chọn", () => {
+  it("đổi giao diện thì đặt data-theme và ghi nhớ lựa chọn", async () => {
     renderTopbar();
     fireEvent.click(screen.getByRole("button", { name: "Giao diện" }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Tối" }));
 
-    expect(useThemeStore.getState().mode).toBe("dark");
+    await waitFor(() => expect(useThemeStore.getState().mode).toBe("dark"));
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(localStorage.getItem("hoa-nam-theme")).toBe("dark");
   });

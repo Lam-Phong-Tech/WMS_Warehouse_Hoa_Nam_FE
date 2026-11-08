@@ -8,7 +8,9 @@ html[data-theme="light"] {
   --ops-text: #12344b;
   --ops-muted: #627c8e;
   --ops-line: #d9e8ef;
+  --ops-divider: #7894a5;
   --ops-pale: #eaf5f8;
+  --ops-table-header: #d2edf7;
   --ops-link: #086590;
   --ops-surface: #ffffff;
   --ops-canvas: #f5fafc;
@@ -36,7 +38,9 @@ html[data-theme="dark"] {
   --ops-text: #c8ddeb;
   --ops-muted: #9db7ca;
   --ops-line: #344d60;
+  --ops-divider: #63839a;
   --ops-pale: #223d50;
+  --ops-table-header: #223d50;
   --ops-link: #72c9ee;
   --ops-surface: #192d3e;
   --ops-canvas: #122332;

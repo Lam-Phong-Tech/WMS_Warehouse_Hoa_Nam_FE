@@ -32,13 +32,21 @@ vi.mock("@/modules/inbound/components/InboundDraftModal", () => ({
     documentId,
     onClose,
     onSaved,
+    onBusyChange,
   }: {
     documentId: string | null;
     onClose: () => void;
     onSaved: (id: string) => void;
+    onBusyChange?: (busy: boolean) => void;
   }) => (
     <div role="dialog" aria-label="Phiếu nháp kiểm thử">
       <span>{documentId ?? "Phiếu mới"}</span>
+      <button onClick={() => onBusyChange?.(true)}>
+        Tải chứng từ kiểm thử
+      </button>
+      <button onClick={() => onBusyChange?.(false)}>
+        Kết thúc tải kiểm thử
+      </button>
       <button type="button" onClick={onClose}>
         Đóng phiếu nháp
       </button>
@@ -261,6 +269,24 @@ describe("IN-01 · preserved receipt actions", () => {
       );
     },
   );
+
+  it("preserves the create dialog on repeated Back while receipt attachments are uploading", () => {
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "Tạo phiếu nhập" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tải chứng từ kiểm thử" }),
+    );
+    fireEvent(window, new PopStateEvent("popstate", { state: {} }));
+    fireEvent(window, new PopStateEvent("popstate", { state: {} }));
+    expect(
+      screen.getByRole("dialog", { name: "Phiếu nháp kiểm thử" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Kết thúc tải kiểm thử" }),
+    );
+    fireEvent(window, new PopStateEvent("popstate", { state: {} }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 
   it("dismisses the opened overlay on browser Back", () => {
     renderPage();

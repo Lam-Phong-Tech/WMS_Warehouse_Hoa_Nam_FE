@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { DASHBOARD_CANONICAL, ROUTES } from "@/shared/constants/routes";
+import { ROUTES } from "@/shared/constants/routes";
 import { clearWorkSession } from "@/shared/lib/session-idle";
 import type { AuthenticatedLogin } from "@/modules/auth/types/auth.types";
 import { clearSessionReplacementNotice } from "@/modules/auth/utils/session-replacement-notice";
@@ -36,14 +36,19 @@ export function useAfterLogin(): (data: AuthenticatedLogin) => void {
         });
       }
       const from = (location.state as LoginLocationState | null)?.from;
-      const redirectParam = new URLSearchParams(location.search).get("redirect");
+      const redirectParam = new URLSearchParams(location.search).get(
+        "redirect",
+      );
       const safeRedirect =
-        redirectParam && redirectParam.startsWith("/") &&
-        !redirectParam.startsWith("//") && redirectParam !== ROUTES.LOGIN
-          ? redirectParam : null;
+        redirectParam &&
+        redirectParam.startsWith("/") &&
+        !redirectParam.startsWith("//") &&
+        redirectParam !== ROUTES.LOGIN
+          ? redirectParam
+          : null;
       const nextPath = from?.pathname
         ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}`
-        : (safeRedirect ?? DASHBOARD_CANONICAL);
+        : (safeRedirect ?? ROUTES.HOME);
       navigate(nextPath, { replace: true });
     },
     [location.search, location.state, navigate, setAuth],

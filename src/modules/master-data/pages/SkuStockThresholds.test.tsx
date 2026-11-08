@@ -1,4 +1,12 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { SkuMasterScreen } from "@/modules/master-data/pages/MvpMasterScreens";
@@ -81,9 +89,13 @@ function openEditDialog(skuCode: string) {
   const row = screen.getByText(skuCode).closest("tr");
   expect(row).not.toBeNull();
   fireEvent.click(
-    within(row as HTMLTableRowElement).getByRole("button", { name: "Sửa" }),
+    within(row as HTMLTableRowElement).getByRole("button", {
+      name: "Xem chi tiết",
+    }),
   );
-  return screen.getByRole("dialog");
+  const detail = screen.getByRole("dialog", { name: "Chi tiết SKU" });
+  fireEvent.click(within(detail).getByRole("button", { name: "Chỉnh sửa" }));
+  return screen.getByRole("dialog", { name: "Sửa SKU" });
 }
 
 function setThresholds(dialog: HTMLElement, min: string, max: string) {
@@ -116,21 +128,150 @@ describe("MST-01 · định mức tồn theo SKU", () => {
     );
   });
 
-  it("hiện 2 cột định mức trong danh sách, phân biệt 0 với chưa đặt", () => {
-    const configured = screen.getByText("SKU-CO-DINH-MUC").closest("tr");
-    const cells = within(configured as HTMLTableRowElement).getAllByRole(
-      "cell",
-    );
-    // Thứ tự cột: STT, Ảnh, SKU, Loại, Hãng, Nhóm hàng, min, max, ...
-    expect(cells[6]).toHaveTextContent("0");
-    expect(cells[7]).toHaveTextContent("1.200");
+  it.each([
+    {
+      status: 409,
+      data: {
+        error: {
+          code: "SKU_CODE_DUPLICATE",
+          message: "sku_code đã tồn tại.",
+          details: { sku_code: "SKU-CO-DINH-MUC" },
+        },
+      },
+    },
+    {
+      status: 422,
+      data: {
+        code: "VALIDATION_ERROR",
+        message: "Dữ liệu gửi lên không hợp lệ.",
+        errors: {
+          sku_code: [
+            "Mã SKU này đã tồn tại trong hệ thống. Vui lòng dùng mã khác.",
+          ],
+        },
+      },
+    },
+    {
+      status: 422,
+      data: {
+        code: "VALIDATION_ERROR",
+        message: "Dữ liệu gửi lên không hợp lệ.",
+        errors: {
+          sku_code: ["Mã SKU đã tồn tại trong hệ thống"],
+          model_id: ["Model không còn khả dụng."],
+        },
+      },
+    },
+  ])(
+    "hiện một lỗi tại Mã SKU khi tạo trùng ($status), cho sửa mã rồi lưu lại",
+    async ({ status, data }) => {
+      const errorToast = vi
+        .spyOn(toast, "error")
+        .mockReturnValue("error-toast");
+      const successToast = vi
+        .spyOn(toast, "success")
+        .mockReturnValue("success-toast");
+      createSku.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: { status, data },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Thêm SKU/ }));
+      const dialog = screen.getByRole("dialog", { name: "Thêm SKU" });
+      const code = within(dialog).getByLabelText(/^Mã SKU/);
+      fireEvent.change(code, { target: { value: "SKU-CO-DINH-MUC" } });
+      fireEvent.change(within(dialog).getByLabelText(/^Tên SKU/), {
+        target: { value: "SKU kiểm tra trùng" },
+      });
+      for (const [id, label] of [
+        ["sku-brand", /DONGCHENG/],
+        ["sku-category", /DRILL/],
+        ["sku-model", /DJZ10A/],
+        ["sku-power-source", /MAINS_DIRECT/],
+      ] as const) {
+        const input = within(dialog).getByTestId(id);
+        fireEvent.keyDown(input, { key: "ArrowDown" });
+        fireEvent.click(await screen.findByRole("option", { name: label }));
+      }
+      await submitForm(dialog);
+      expect(createSku).toHaveBeenCalledTimes(1);
+      expect(updateSku).not.toHaveBeenCalled();
+      expect(code).toHaveAttribute("aria-invalid", "true");
+      expect(
+        screen.getAllByText("Mã SKU đã tồn tại trong hệ thống"),
+      ).toHaveLength(1);
+      expect(code).toHaveAccessibleDescription(
+        "Mã SKU đã tồn tại trong hệ thống",
+      );
+      if ("errors" in data && data.errors && "model_id" in data.errors) {
+        expect(
+          within(dialog).getByTestId("sku-model"),
+        ).toHaveAccessibleDescription("Model không còn khả dụng.");
+      }
+      expect(document.querySelector(".hn-sku-mutation-notice")).toBeNull();
+      expect(errorToast).not.toHaveBeenCalled();
+      expect(successToast).not.toHaveBeenCalled();
+      expect(dialog).toBeInTheDocument();
+      fireEvent.change(code, { target: { value: "SKU-NEW-RETRY" } });
+      expect(
+        screen.queryByText("Mã SKU đã tồn tại trong hệ thống"),
+      ).not.toBeInTheDocument();
+      await submitForm(dialog);
+      expect(createSku).toHaveBeenCalledTimes(2);
+      expect(createSku.mock.calls[1][0]).toMatchObject({
+        code: "SKU-NEW-RETRY",
+      });
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+      expect(successToast).toHaveBeenCalledTimes(1);
+      errorToast.mockRestore();
+      successToast.mockRestore();
+    },
+  );
 
-    const unset = screen.getByText("SKU-CHUA-DAT").closest("tr");
-    const unsetCells = within(unset as HTMLTableRowElement).getAllByRole(
-      "cell",
+  it.each([
+    ["SKU-CO-DINH-MUC", "0", "1200"],
+    ["SKU-CHUA-DAT", "", ""],
+  ])("giữ đúng định mức khi sửa %s", (skuCode, min, max) => {
+    const dialog = openEditDialog(skuCode);
+    expect(within(dialog).getByLabelText(/Định mức tồn tối thiểu/)).toHaveValue(
+      min,
     );
-    expect(unsetCells[6]).toHaveTextContent("Chưa có");
-    expect(unsetCells[7]).toHaveTextContent("Chưa có");
+    const maxInput = within(dialog).getByLabelText(
+      /Định mức tồn tối đa/,
+    ) as HTMLInputElement;
+    expect(maxInput.value.replace(/\D/g, "")).toBe(max);
+  });
+
+  it("chỉ hiện lỗi trùng mã tại field khi đổi mã của SKU đang sửa", async () => {
+    const errorToast = vi.spyOn(toast, "error").mockReturnValue("error-toast");
+    updateSku.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: {
+          error: {
+            code: "SKU_CODE_DUPLICATE",
+            message: "sku_code đã tồn tại.",
+            details: { sku_code: "SKU-CHUA-DAT" },
+          },
+        },
+      },
+    });
+    const dialog = openEditDialog("SKU-CO-DINH-MUC");
+    const code = within(dialog).getByLabelText(/^Mã SKU/);
+    fireEvent.change(code, { target: { value: "SKU-CHUA-DAT" } });
+    await submitForm(dialog);
+    expect(updateSku).toHaveBeenCalledTimes(1);
+    expect(createSku).not.toHaveBeenCalled();
+    expect(code).toHaveAccessibleDescription(
+      "Mã SKU đã tồn tại trong hệ thống",
+    );
+    expect(
+      screen.getAllByText("Mã SKU đã tồn tại trong hệ thống"),
+    ).toHaveLength(1);
+    expect(errorToast).not.toHaveBeenCalled();
+    errorToast.mockRestore();
   });
 
   it("STT đi theo dòng khi bấm sắp xếp, không đứng yên thành thang 1..n", () => {

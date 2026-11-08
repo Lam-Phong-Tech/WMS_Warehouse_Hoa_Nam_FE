@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -104,16 +106,37 @@ describe("BalanceDetailModal", () => {
     mockSubledger();
     vi.mocked(useBoxReadProjection).mockReturnValue({
       data: {
-        container_id: "cont-1", container_code: "BOX-001", container_type: "BOX",
-        status: "OPEN", sku: { id: "p-1", code: "SKU-001", name: "Máy khoan", unit: "cái" },
-        contained_qty: 5, quantity_status: "RECORDED_CONTAINER_CONTENTS",
-        available_qty: null, reserved_qty: null, parent_container_id: null, location_hint: "A-01",
+        container_id: "cont-1",
+        container_code: "BOX-001",
+        container_type: "BOX",
+        status: "OPEN",
+        sku: { id: "p-1", code: "SKU-001", name: "Máy khoan", unit: "cái" },
+        contained_qty: 5,
+        quantity_status: "RECORDED_CONTAINER_CONTENTS",
+        available_qty: null,
+        reserved_qty: null,
+        parent_container_id: null,
+        location_hint: "A-01",
       },
-      isLoading: false, isError: false, error: null, refetch: vi.fn(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
     } as never);
     vi.mocked(useContainerRegisterDetail).mockReturnValue({
-      data: { container_id: "tray-1", container_code: "KH-001", container_type: "TRAY", status: "OPEN", parent_container_id: null, location_hint: "A-01", items: [] },
-      isLoading: false, isError: false, error: null, refetch: vi.fn(),
+      data: {
+        container_id: "tray-1",
+        container_code: "KH-001",
+        container_type: "TRAY",
+        status: "OPEN",
+        parent_container_id: null,
+        location_hint: "A-01",
+        items: [],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
     } as never);
     mockMovements([
       {
@@ -132,6 +155,25 @@ describe("BalanceDetailModal", () => {
     cleanupTestState();
   });
 
+  it("i18n: switches quantity units with the language and preserves custom units", async () => {
+    const { rerender } = renderWithProviders(
+      <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
+    );
+    expect(screen.getAllByText("12 cái")).toHaveLength(2);
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    expect(screen.getAllByText("12 pcs")).toHaveLength(2);
+    expect(screen.getByText("10 pcs")).toBeVisible();
+    expect(screen.getByText("0 pcs")).toBeVisible();
+    rerender(<BalanceDetailModal balance={{ ...BALANCE, uom: "kiện đặc biệt" }} onClose={() => {}} />);
+    expect(screen.getAllByText("12 kiện đặc biệt")).toHaveLength(2);
+    rerender(<BalanceDetailModal balance={BALANCE} onClose={() => {}} />);
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(screen.getAllByText("12 cái")).toHaveLength(2);
+  });
+
   it("hiển thị chi tiết tồn kho: SKU, đối soát, item subledger, container subledger, movement liên quan", async () => {
     renderWithProviders(
       <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
@@ -142,9 +184,13 @@ describe("BalanceDetailModal", () => {
     ).toBeInTheDocument();
     // i18n: reconcile MATCH render qua RECONCILE_STATUS_LABELS thành "Khớp".
     expect(screen.getByText("Khớp")).toBeInTheDocument();
-    expect(screen.getByText("ITM-001")).toBeInTheDocument();
-    expect(screen.getByText("BOX-001")).toBeInTheDocument();
-    expect(screen.getByText("MV-0001")).toBeInTheDocument();
+    expect(screen.queryByText("ITM-001")).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("tab", { name: /^Sản phẩm/ }));
+    expect(await screen.findByText("ITM-001")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("tab", { name: /^Vật chứa/ }));
+    expect(await screen.findByText("BOX-001")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("tab", { name: "Biến động" }));
+    expect(await screen.findByText("MV-0001")).toBeInTheDocument();
   });
 
   it("cột Mã NFC: hiện mã chip của hiện vật đã dán, không lẫn với Mã vật lý", async () => {
@@ -167,6 +213,7 @@ describe("BalanceDetailModal", () => {
       <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
     );
 
+    fireEvent.click(await screen.findByRole("tab", { name: /^Sản phẩm/ }));
     expect(await screen.findByText("Mã NFC")).toBeInTheDocument();
     expect(screen.getByText("NFC-04A2B3C4D5")).toBeInTheDocument();
     // Mã in vẫn đứng riêng ở cột Mã vật lý — hai ô không được nuốt nhau.
@@ -180,6 +227,7 @@ describe("BalanceDetailModal", () => {
       <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
     );
 
+    fireEvent.click(await screen.findByRole("tab", { name: /^Sản phẩm/ }));
     expect(await screen.findByText("Chưa dán chip")).toBeInTheDocument();
   });
 
@@ -202,12 +250,15 @@ describe("BalanceDetailModal", () => {
       <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
     );
 
+    fireEvent.click(await screen.findByRole("tab", { name: /^Sản phẩm/ }));
     expect(
       await screen.findByText("Không có sản phẩm cụ thể"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Không có vật chứa")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("tab", { name: /^Vật chứa/ }));
+    expect(await screen.findByText("Không có vật chứa")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("tab", { name: "Biến động" }));
     expect(
-      screen.getByText("Không có biến động liên quan"),
+      await screen.findByText("Không có biến động liên quan"),
     ).toBeInTheDocument();
   });
 
@@ -233,6 +284,7 @@ describe("BalanceDetailModal", () => {
       />,
     );
 
+    fireEvent.click(await screen.findByRole("tab", { name: "Biến động" }));
     fireEvent.click(await screen.findByRole("button", { name: /Truy vết/ }));
 
     expect(onTraceMovement).toHaveBeenCalledWith("mv-1");
@@ -243,6 +295,7 @@ describe("BalanceDetailModal", () => {
       <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
     );
 
+    fireEvent.click(await screen.findByRole("tab", { name: "Biến động" }));
     await screen.findByText("MV-0001");
     expect(
       screen.queryByRole("button", { name: /Truy vết/ }),
@@ -250,31 +303,81 @@ describe("BalanceDetailModal", () => {
   });
 
   it("opens the recorded BOX projection and does not turn unknown reserve into zero", async () => {
-    renderWithProviders(<BalanceDetailModal balance={BALANCE} onClose={() => {}} />);
+    renderWithProviders(
+      <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
+    );
 
-    fireEvent.click(await screen.findByRole("button", { name: "Xem BOX BOX-001" }));
-    const boxDialog = await screen.findByRole("dialog", { name: /Chi tiết BOX-001/ });
+    fireEvent.click(await screen.findByRole("tab", { name: /^Vật chứa/ }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Xem BOX BOX-001" }),
+    );
+    const boxDialog = await screen.findByRole("dialog", {
+      name: /Chi tiết BOX-001/,
+    });
     expect(useBoxReadProjection).toHaveBeenCalledWith("cont-1", "w-1");
     expect(within(boxDialog).getByText("5")).toBeInTheDocument();
-    expect(within(boxDialog).getByText(/chưa có dữ liệu lượng giữ và khả dụng/)).toBeInTheDocument();
+    expect(
+      within(boxDialog).getByText(/chưa có dữ liệu lượng giữ và khả dụng/),
+    ).toBeInTheDocument();
     expect(within(boxDialog).queryByText(/Đã giữ.*0/)).not.toBeInTheDocument();
   });
 
   it("follows a recorded BOX parent to its tray register without claiming physical placement", async () => {
     vi.mocked(useBoxReadProjection).mockReturnValue({
       data: {
-        container_id: "cont-1", container_code: "BOX-001", container_type: "BOX",
-        status: "OPEN", sku: null, contained_qty: 5,
-        quantity_status: "RECORDED_CONTAINER_CONTENTS", available_qty: null,
-        reserved_qty: null, parent_container_id: "tray-1", location_hint: "A-01",
+        container_id: "cont-1",
+        container_code: "BOX-001",
+        container_type: "BOX",
+        status: "OPEN",
+        sku: null,
+        contained_qty: 5,
+        quantity_status: "RECORDED_CONTAINER_CONTENTS",
+        available_qty: null,
+        reserved_qty: null,
+        parent_container_id: "tray-1",
+        location_hint: "A-01",
       },
-      isLoading: false, isError: false, error: null, refetch: vi.fn(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
     } as never);
-    renderWithProviders(<BalanceDetailModal balance={BALANCE} onClose={() => {}} />);
-    fireEvent.click(await screen.findByRole("button", { name: "Xem BOX BOX-001" }));
-    fireEvent.click(await screen.findByRole("button", { name: /Xem khay liên kết/ }));
+    renderWithProviders(
+      <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
+    );
+    fireEvent.click(await screen.findByRole("tab", { name: /^Vật chứa/ }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Xem BOX BOX-001" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Xem khay liên kết/ }),
+    );
     expect(useContainerRegisterDetail).toHaveBeenCalledWith("tray-1");
     expect(await screen.findByText("KH-001")).toBeInTheDocument();
     expect(screen.getByText(/chưa xác nhận vị trí vật lý/)).toBeInTheDocument();
+  });
+  it("paginates products without losing serial, physical and NFC data", async () => {
+    mockSubledger({
+      items: Array.from({ length: 12 }, (_, i) => ({
+        id: `item-${i}`,
+        item_code: `ITEM-${i + 1}`,
+        serial_number: `SERIAL-${i + 1}`,
+        status: "IN_STOCK",
+        physical_code: `QR-${i + 1}`,
+        nfc_code: `NFC-${i + 1}`,
+      })),
+    });
+    renderWithProviders(
+      <BalanceDetailModal balance={BALANCE} onClose={() => {}} />,
+    );
+    fireEvent.click(await screen.findByRole("tab", { name: /^Sản phẩm/ }));
+    expect(await screen.findByText("ITEM-1")).toBeInTheDocument();
+    expect(screen.queryByText("ITEM-11")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Go to page 2" }));
+    expect(await screen.findByText("ITEM-11")).toBeInTheDocument();
+    expect(screen.getByText("SERIAL-11")).toBeInTheDocument();
+    expect(screen.getByText("QR-11")).toBeInTheDocument();
+    expect(screen.getByText("NFC-11")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 });

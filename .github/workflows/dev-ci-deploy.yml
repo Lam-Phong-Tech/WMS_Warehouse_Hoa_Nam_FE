@@ -62,6 +62,10 @@ jobs:
         run: pnpm typecheck
       - name: Run the local core regression command
         run: pnpm test:ci
+      - name: Verify operational realtime and automatic dashboard updates
+        run: pnpm test:warehouse-realtime
+      - name: Verify personal account, preferences, MFA and ownership regressions
+        run: pnpm test:personal-account
       - name: Build deployable artifact
         run: pnpm build
       - name: Bind DEV health to the tested SHA

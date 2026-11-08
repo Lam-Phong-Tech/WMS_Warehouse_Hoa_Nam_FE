@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import dayjs from "dayjs";
-import { fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -80,6 +82,16 @@ describe("stock reconciliation evidence navigation", () => {
     } as never);
 
     renderWithProviders(<StockReconcileReport />);
+    expect(document.querySelectorAll(".rpt02-kpi-grid").length).toBeGreaterThan(0);
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    const kpis = document.querySelector(".rpt02-kpi-grid") as HTMLElement;
+    expect(within(kpis).getAllByText("Products")).toHaveLength(6);
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(within(kpis).getAllByText("Sản phẩm")).toHaveLength(6);
+    const reportPage = screen.getByRole("main");
     expect(screen.getByRole("tab", { name: "Đối soát tồn" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -95,8 +107,13 @@ describe("stock reconciliation evidence navigation", () => {
     expect(
       await screen.findByTestId("stock-reconcile-drilldown"),
     ).toBeInTheDocument();
+    const drawer = screen.getByRole("dialog", {
+      name: /Chi tiết chênh lệch tồn/,
+    });
+    expect(drawer.closest(".MuiDrawer-root")).toBeInTheDocument();
+    expect(reportPage).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Chi tiết chênh lệch tồn" }),
+      within(drawer).getByRole("heading", { name: /Chi tiết chênh lệch tồn/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/chưa trả danh sách mã chênh lệch/),
@@ -106,10 +123,12 @@ describe("stock reconciliation evidence navigation", () => {
       to: dayjs().format("YYYY-MM-DD"),
     });
     fireEvent.click(
-      screen.getByRole("button", { name: /Xem phát sinh theo SKU/ }),
+      await within(drawer).findByRole("button", {
+        name: /Xem phát sinh theo SKU/,
+      }),
     );
     expect(
-      screen.getByRole("heading", { name: "Phát sinh theo SKU" }),
+      screen.getByRole("heading", { name: /Phát sinh theo SKU/ }),
     ).toBeInTheDocument();
     fireEvent.click(
       screen.getAllByRole("button", { name: /Quay lại báo cáo/ })[0],
@@ -206,8 +225,92 @@ describe("stock reconciliation evidence navigation", () => {
       screen.getByRole("button", { name: /Xem bằng chứng HN-ONLY-001/ }),
     );
     expect(
-      screen.getByRole("heading", { name: "Chi tiết đối soát mã" }),
+      screen.getByRole("heading", { name: /Chi tiết đối soát mã/ }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/SN-SEN-/)).not.toBeInTheDocument();
+  });
+  it("keeps pagination valid when changing page size and filtering", () => {
+    const rows = Array.from({ length: 25 }, (_, index) => ({
+      warehouse_code: "HN01",
+      sku_code: `PAGE-${String(index + 1).padStart(2, "0")}`,
+      sku_name: "Hàng phân trang",
+      sku_type: index === 24 ? "COMPONENT" : "PRODUCT",
+      opening: 1,
+      receipt_net: 0,
+      issue_net: 0,
+      component_issue_net: 0,
+      reversal_unlinked_net: 0,
+      closing: 1,
+      matched: true,
+    }));
+    vi.mocked(useInventoryFlowSnapshot).mockReturnValue({
+      snapshot: { rows, daily: [], ledger: [], documents: [] },
+      loading: false,
+      fetching: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    vi.mocked(useStockReconcileSnapshot).mockReturnValue({
+      snapshot: { rows: [] },
+      loading: false,
+      fetching: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    renderWithProviders(<StockReconcileReport />);
+    const pageSize = screen.getByRole("combobox", {
+      name: "Số dòng mỗi trang",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
+    expect(
+      screen.getByRole("button", { name: /Xem bằng chứng PAGE-11/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen
+          .getByRole("button", { name: /Xem bằng chứng PAGE-11/ })
+          .closest("tr")!,
+      ).getAllByRole("cell")[0],
+    ).toHaveTextContent(/^11$/);
+    fireEvent.change(pageSize, { target: { value: "20" } });
+    expect(
+      screen.getByRole("button", { name: /Xem bằng chứng PAGE-01/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Xem bằng chứng PAGE-20/ }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Chọn nhóm hàng / SKU" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "Linh kiện" }));
+
+    expect(
+      screen.getByRole("button", { name: /Xem bằng chứng PAGE-25/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Trang sau" })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Chọn trạng thái đối soát" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "Cần kiểm tra" }));
+    expect(
+      screen.queryByRole("button", { name: /Xem bằng chứng PAGE-25/ }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Từ ngày" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hôm qua" }));
+    const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+    expect(useInventoryFlowSnapshot).toHaveBeenLastCalledWith({
+      from: yesterday,
+      to: yesterday,
+    });
+    expect(useStockReconcileSnapshot).toHaveBeenLastCalledWith({
+      asOf: yesterday,
+    });
   });
 });

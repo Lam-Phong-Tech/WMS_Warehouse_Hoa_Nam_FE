@@ -985,6 +985,30 @@ describe("inbound · cờ thông tin SKU trên từng dòng phiếu", () => {
     expect(detail.lines[0].missingInfo).toEqual([]);
   });
 
+  it("maps the selected supplier from the receipt detail", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "IN-1",
+      doc_no: "PN-001",
+      status: "DRAFT",
+      version: 1,
+      lines: [],
+      supplier_id: "SUP-1",
+      supplier: {
+        id: "SUP-1",
+        code: "NCC-001",
+        name: "Honda",
+        display_name: "NCC-001 - Honda",
+        status: "ACTIVE",
+        version: 1,
+      },
+    });
+
+    const detail = await fetchInboundDetail("IN-1");
+
+    expect(detail.document.supplierId).toBe("SUP-1");
+    expect(detail.supplier?.displayName).toBe("NCC-001 - Honda");
+  });
+
   it("gửi tên + đơn vị tính lên đúng dòng phiếu và bỏ qua danh mục không chọn", async () => {
     vi.mocked(http.patch).mockResolvedValue({
       document_id: "IN-1",

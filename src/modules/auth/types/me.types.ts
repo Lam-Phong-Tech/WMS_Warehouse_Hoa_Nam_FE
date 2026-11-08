@@ -4,6 +4,12 @@ export interface MeOrgRef {
   id: number;
   name: string;
 }
+export interface MeDepartmentRef {
+  department_id?: string;
+  department_name?: string;
+  id?: number | string;
+  name?: string;
+}
 
 export interface MePermission {
   id: number;
@@ -29,6 +35,13 @@ export interface MeRoleAssignment {
 
 /** GET /api/v1/auth/me — contract theo BE branch m1. */
 export interface MeResponse {
+  avatar?: {
+    mime_type: string;
+    size: number;
+    updated_at: string;
+    url: string;
+  } | null;
+  last_login_at?: string | null;
   id: number | string;
   user_id?: string;
   username?: string;
@@ -46,7 +59,7 @@ export interface MeResponse {
   phone?: string | null;
   company: MeOrgRef | null;
   branch: MeOrgRef | null;
-  department: MeOrgRef | null;
+  department: MeDepartmentRef | null;
   position: MeOrgRef | null;
   role: MeRole | null;
   active_context: MeContext | null;

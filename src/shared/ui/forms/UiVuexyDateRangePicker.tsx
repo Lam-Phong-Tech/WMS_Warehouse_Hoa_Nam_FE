@@ -1,7 +1,7 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { Fragment, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
 import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
 import Box from "@mui/material/Box";
 import Popover from "@mui/material/Popover";
 import { CalendarIcon, NextIcon, PrevIcon } from "@/shared/ui/icons";
@@ -51,6 +51,8 @@ export interface UiVuexyDateRangePickerProps {
   showFieldPrefixes?: boolean;
   format?: string;
   allowClear?: boolean;
+  /** Commit the range when the second date is picked; other screens keep manual Apply. */
+  autoApplyOnComplete?: boolean;
   disabled?: boolean;
   className?: string;
   popupClassName?: string;
@@ -95,6 +97,7 @@ export function UiVuexyDateRangePicker({
   showFieldPrefixes = true,
   format = "DD/MM/YYYY",
   allowClear = true,
+  autoApplyOnComplete = false,
   disabled = false,
   className,
   popupClassName,
@@ -117,7 +120,7 @@ export function UiVuexyDateRangePicker({
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [activeField, setActiveField] = useState<"start" | "end">("start");
   const [panelMonth, setPanelMonth] = useState(() =>
-    (value?.[0] ?? dayjs()).startOf("month"),
+    (value?.[0] ?? businessToday()).startOf("month"),
   );
   const [draftStart, setDraftStart] = useState<Dayjs | null>(
     value?.[0] ?? null,
@@ -136,7 +139,9 @@ export function UiVuexyDateRangePicker({
     setDraftEnd(value?.[1] ?? null);
     setActiveField(field);
     setPanelMonth(
-      ((field === "end" ? value?.[1] : value?.[0]) ?? dayjs()).startOf("month"),
+      ((field === "end" ? value?.[1] : value?.[0]) ?? businessToday()).startOf(
+        "month",
+      ),
     );
     setAnchorEl(event.currentTarget);
   };
@@ -163,6 +168,10 @@ export function UiVuexyDateRangePicker({
 
     if (selected.valueOf() < draftStart.startOf("day").valueOf()) return;
     setDraftEnd(selected);
+    if (autoApplyOnComplete) {
+      onChange([draftStart.startOf("day"), selected]);
+      closePicker();
+    }
   };
 
   const applyRange = () => {
@@ -392,7 +401,9 @@ export function UiVuexyDateRangePicker({
                 data-active={activeField === "start"}
                 onClick={() => {
                   setActiveField("start");
-                  setPanelMonth((draftStart ?? dayjs()).startOf("month"));
+                  setPanelMonth(
+                    (draftStart ?? businessToday()).startOf("month"),
+                  );
                 }}
                 sx={pickerFieldTabSx(activeField === "start")}
               >
@@ -410,7 +421,9 @@ export function UiVuexyDateRangePicker({
                 onClick={() => {
                   setActiveField("end");
                   setPanelMonth(
-                    (draftEnd ?? draftStart ?? dayjs()).startOf("month"),
+                    (draftEnd ?? draftStart ?? businessToday()).startOf(
+                      "month",
+                    ),
                   );
                 }}
                 sx={pickerFieldTabSx(activeField === "end")}
@@ -637,16 +650,18 @@ export function UiVuexyDateRangePicker({
             >
               {t("shared.actions.cancel")}
             </Box>
-            <Box
-              component="button"
-              type="button"
-              data-date-action="apply"
-              disabled={!draftStart || !draftEnd}
-              onClick={applyRange}
-              sx={primaryFooterButtonSx}
-            >
-              {t("shared.actions.apply")}
-            </Box>
+            {!autoApplyOnComplete ? (
+              <Box
+                component="button"
+                type="button"
+                data-date-action="apply"
+                disabled={!draftStart || !draftEnd}
+                onClick={applyRange}
+                sx={primaryFooterButtonSx}
+              >
+                {t("shared.actions.apply")}
+              </Box>
+            ) : null}
           </Box>
         </Box>
       </Popover>

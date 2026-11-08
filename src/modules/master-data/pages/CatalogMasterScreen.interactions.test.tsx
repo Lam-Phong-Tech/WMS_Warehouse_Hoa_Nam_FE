@@ -89,7 +89,9 @@ function renderScreen() {
 
 async function openCreate(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: /^Tạo hãng$/i }));
-  return screen.findByRole("dialog");
+  const dialog = await screen.findByRole("dialog");
+  await within(dialog).findByRole("textbox", { name: /^Mã hãng/ });
+  return dialog;
 }
 
 async function fillCreate(
@@ -162,8 +164,12 @@ describe("CatalogMasterScreen interactions", () => {
       ),
     ).not.toBeInTheDocument();
     const filters = screen.getByRole("region", { name: "Tìm kiếm và lọc" });
-    expect(within(filters).queryByRole("button", { name: "Cập nhật" })).toBeNull();
-    expect(within(filters).queryByRole("button", { name: "Đặt lại" })).toBeNull();
+    expect(
+      within(filters).queryByRole("button", { name: "Cập nhật" }),
+    ).toBeNull();
+    expect(
+      within(filters).queryByRole("button", { name: "Đặt lại" }),
+    ).toBeNull();
     await user.type(screen.getByRole("textbox", { name: "Tìm hãng" }), "dong");
     await waitFor(() =>
       expectListRequest("BRAND", { keyword: "dong", status: "", page: 1 }),
@@ -176,7 +182,9 @@ describe("CatalogMasterScreen interactions", () => {
     await user.click(
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
     );
-    await user.click(screen.getByRole("option", { name: "Trạng thái: Ngừng sử dụng" }));
+    await user.click(
+      screen.getByRole("option", { name: "Trạng thái: Ngừng sử dụng" }),
+    );
     await waitFor(() =>
       expectListRequest("BRAND", {
         keyword: "dong",
@@ -187,8 +195,12 @@ describe("CatalogMasterScreen interactions", () => {
     await user.click(
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
     );
-    expect(screen.getAllByRole("option", { name: "Tất cả" })).toHaveLength(1);
-    await user.click(screen.getByRole("option", { name: "Trạng thái: Tất cả" }));
+    expect(
+      screen.getAllByRole("option", { name: "Trạng thái: Tất cả" }),
+    ).toHaveLength(1);
+    await user.click(
+      screen.getByRole("option", { name: "Trạng thái: Tất cả" }),
+    );
     await waitFor(() => {
       const latestListRequest = getCatalogMasters.mock.calls
         .filter(([kind, params]) => kind === "BRAND" && params.per_page === 10)
@@ -204,7 +216,9 @@ describe("CatalogMasterScreen interactions", () => {
     await user.click(
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
     );
-    await user.click(screen.getByRole("option", { name: "Trạng thái: Ngừng sử dụng" }));
+    await user.click(
+      screen.getByRole("option", { name: "Trạng thái: Ngừng sử dụng" }),
+    );
 
     await user.click(screen.getByRole("button", { name: /page 2|trang 2/i }));
     await waitFor(() =>
@@ -243,7 +257,7 @@ describe("CatalogMasterScreen interactions", () => {
     expect(name).toHaveAttribute("aria-invalid", "true");
     expect(createCatalogMaster).not.toHaveBeenCalled();
 
-    await user.type(code, "BAD CODE");
+    await user.type(code, "BAD/CODE");
     await user.type(name, "Hãng hợp lệ");
     await user.click(within(dialog).getByRole("button", { name: /^Lưu$/ }));
     expect(code).toHaveAttribute("aria-invalid", "true");
@@ -252,8 +266,102 @@ describe("CatalogMasterScreen interactions", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
+  it("allows renaming a legacy brand without changing its long code", async () => {
+    const user = userEvent.setup();
+    const legacyCode = "L".repeat(51);
+    getCatalogMasters.mockResolvedValue({
+      data: [{ ...RECORD, code: legacyCode }],
+      meta: { total: 1 },
+    });
+    renderScreen();
+    await user.click(
+      await screen.findByRole("button", { name: `Sửa ${legacyCode}` }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    const name = await within(dialog).findByRole("textbox", {
+      name: /^Tên hãng/,
+    });
+    await user.clear(name);
+    await user.click(name);
+    await user.paste("Renamed brand");
+    await user.click(within(dialog).getByRole("button", { name: /^Lưu$/ }));
+    await waitFor(() =>
+      expect(updateCatalogMaster).toHaveBeenCalledWith(
+        "BRAND",
+        RECORD.id,
+        expect.objectContaining({ code: legacyCode, name: "Renamed brand" }),
+        RECORD.version,
+      ),
+    );
+  });
+
+  it.each([false, true])(
+    "limits brand code, name and description inputs (editing: %s)",
+    async (editing) => {
+      const user = userEvent.setup();
+      renderScreen();
+      if (editing) {
+        await user.click(
+          await screen.findByRole("button", { name: "Sửa DONGCHENG" }),
+        );
+      } else {
+        await openCreate(user);
+      }
+      const dialog = await screen.findByRole("dialog");
+      const code = await within(dialog).findByRole("textbox", {
+        name: /^Mã hãng/,
+      });
+      expect(code).toHaveAttribute("maxlength", "50");
+      await user.clear(code);
+      await user.click(code);
+      await user.paste("A".repeat(51));
+      expect(code).toHaveValue("A".repeat(50));
+      const name = within(dialog).getByRole("textbox", { name: /^Tên hãng/ });
+      expect(name).toHaveAttribute("maxlength", "150");
+      await user.clear(name);
+      await user.click(name);
+      await user.paste("N".repeat(151));
+      expect(name).toHaveValue("N".repeat(150));
+      const description = within(dialog).getByRole("textbox", {
+        name: "Mô tả",
+      });
+      expect(description).toHaveAttribute("maxlength", "500");
+      await user.clear(description);
+      await user.click(description);
+      await user.paste("D".repeat(501));
+      expect(description).toHaveValue("D".repeat(500));
+    },
+  );
+
+  it.each([
+    ["makita_japan", "MAKITA_JAPAN"],
+    ["makita", "MAKITA"],
+    ["ma ki", "MA_KI"],
+    ["Maki", "MAKI"],
+  ])("normalizes brand code %s before saving", async (input, expected) => {
+    const user = userEvent.setup();
+    renderScreen();
+    const dialog = await openCreate(user);
+    const code = within(dialog).getByRole("textbox", { name: /^Mã hãng/ });
+    await user.type(code, input);
+    expect(code).toHaveValue(input.toUpperCase());
+    await user.type(
+      within(dialog).getByRole("textbox", { name: /^Tên hãng/ }),
+      "Makita",
+    );
+    await user.click(within(dialog).getByRole("button", { name: /^Lưu$/ }));
+    await waitFor(() =>
+      expect(createCatalogMaster).toHaveBeenCalledWith(
+        "BRAND",
+        expect.objectContaining({ code: expected, name: "Makita" }),
+      ),
+    );
+  });
+
   it("keeps the dialog locked while saving and refreshes catalog and shared master data after success", async () => {
-    const successToast = vi.spyOn(toast, "success").mockImplementation(() => "");
+    const successToast = vi
+      .spyOn(toast, "success")
+      .mockImplementation(() => "");
     const user = userEvent.setup();
     let completeSave!: (record: CatalogMasterRecord) => void;
     createCatalogMaster.mockReturnValue(
@@ -297,7 +405,9 @@ describe("CatalogMasterScreen interactions", () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["mvp-master"] });
     expect(updateCatalogMaster).not.toHaveBeenCalled();
     expect(successToast).toHaveBeenCalledOnce();
-    expect(screen.queryByRole("status", { name: /thông báo/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("status", { name: /thông báo/i }),
+    ).not.toBeInTheDocument();
     successToast.mockRestore();
   });
 
@@ -378,7 +488,7 @@ describe("CatalogMasterScreen interactions", () => {
     );
     const dialog = await screen.findByRole("dialog");
     expect(
-      within(dialog).getByRole("textbox", { name: /^Mã hãng/ }),
+      await within(dialog).findByRole("textbox", { name: /^Mã hãng/ }),
     ).toHaveValue(RECORD.code);
     const name = within(dialog).getByRole("textbox", { name: /^Tên hãng/ });
     expect(name).toHaveValue(RECORD.name);
@@ -503,9 +613,7 @@ describe("CatalogMasterScreen interactions", () => {
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
     ).toBeEnabled();
 
-    await user.click(
-      screen.getByRole("button", { name: "Xóa lọc" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Xóa lọc" }));
     expect(await screen.findByText(RECORD.code)).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Tìm hãng" })).toHaveValue("");
     expect(screen.getByRole("tab", { name: /^Hãng/ })).toHaveAttribute(

@@ -65,13 +65,12 @@ describe("OUT-01 overview · authoritative document totals", () => {
     expect(within(overview()).getByText("1.245")).toBeInTheDocument();
     expect(within(overview()).getByText("3")).toBeInTheDocument();
     expect(within(overview()).queryByText("9999")).not.toBeInTheDocument();
-    const toggle = within(overview()).getByRole("button", { name: "Thu gọn" });
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(within(overview()).queryByText("1.284")).not.toBeVisible();
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(overview()).toHaveAttribute("aria-busy", "false");
+  });
+
+  it("hides the full overview when collapsed by its parent", () => {
+    renderWithProviders(<OutboundOverview expanded={false} />);
+    expect(document.getElementById("hn-outbound-overview")).not.toBeVisible();
   });
 
   it("shows unknown totals while loading instead of invented zero counts", () => {

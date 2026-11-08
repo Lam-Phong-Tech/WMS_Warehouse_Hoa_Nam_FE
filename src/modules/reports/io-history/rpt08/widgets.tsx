@@ -1,3 +1,5 @@
+import { RowActionButton } from "@/shared/components/actions";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import { type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import {
   CloseOutlined,
@@ -439,6 +441,8 @@ export function HistoryTable({
   total,
   search,
   page,
+  pageSize = PAGE_SIZE,
+  onPageSizeChange,
   empty,
   noResult,
   range,
@@ -451,6 +455,8 @@ export function HistoryTable({
   total: number;
   search: string;
   page: number;
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
   empty: boolean;
   noResult: boolean;
   range: AppliedFilters;
@@ -459,9 +465,9 @@ export function HistoryTable({
   onOpenRow: (row: HistoryRow) => void;
   onAdjustRange: () => void;
 }) {
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const start = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, total);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, total);
 
   return (
     <section
@@ -499,8 +505,22 @@ export function HistoryTable({
 
       <div className="rpt08-table-scroll">
         <table>
+          <colgroup>
+            {[
+              "64px",
+              "190px",
+              "120px",
+              "calc(50% - 263px)",
+              "calc(50% - 263px)",
+              "88px",
+              "64px",
+            ].map((width, index) => (
+              <col key={index} style={{ width }} />
+            ))}
+          </colgroup>
           <thead>
             <tr>
+              <th className="rpt08-sequence">STT</th>
               <th className="rpt08-time-col">
                 <span className="rpt08-desktop-label">
                   {tUi("inventory.movement.colTime")}
@@ -514,16 +534,21 @@ export function HistoryTable({
                 {tUi("warranty.componentList.colCode")}
               </th>
               <th>{tUi("audit.colObject")}</th>
-              <th className="is-number">
-                {tUi("dashboard.stockMix.colQuantity")}
+              <th
+                className="is-number"
+                aria-label={tUi("dashboard.stockMix.colQuantity")}
+              >
+                SL
               </th>
-              <th>{tUi("inventory.trace.colPerformedBy")}</th>
-              <th>{tUi("reports.importMatchReport.detail")}</th>
+              <th
+                className="rpt08-actions-cell"
+                aria-label={tUi("reports.importMatchReport.detail")}
+              />
             </tr>
           </thead>
           <tbody>
             {!empty && !noResult
-              ? rows.map((row) => (
+              ? rows.map((row, index) => (
                   <tr
                     key={row.id}
                     tabIndex={0}
@@ -535,6 +560,7 @@ export function HistoryTable({
                       }
                     }}
                   >
+                    <td className="rpt08-sequence">{start + index}</td>
                     <td className="rpt08-time-cell">
                       <span>{displayStamp(row.timestamp)}</span>
                       <strong className="rpt08-mobile-code">
@@ -545,7 +571,15 @@ export function HistoryTable({
                       <TypePill type={row.type} />
                     </td>
                     <td className="rpt08-code-cell">
-                      <strong>{row.documentNo}</strong>
+                      <span className="rpt08-document">
+                        <span
+                          className="rpt08-document__icon"
+                          aria-hidden="true"
+                        >
+                          <StockOutlined />
+                        </span>
+                        <strong title={row.documentNo}>{row.documentNo}</strong>
+                      </span>
                     </td>
                     <td className="rpt08-object-cell">
                       <span>{row.objectPrimary}</span>
@@ -554,16 +588,12 @@ export function HistoryTable({
                     <td className="is-number">
                       {row.quantity === null ? "—" : number(row.quantity)}
                     </td>
-                    <td>{row.actor}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="rpt08-view-button"
+                    <td className="rpt08-actions-cell">
+                      <RowActionButton
+                        kind="view"
+                        label={tUi("reports.ioHistory.view")}
                         onClick={() => onOpenRow(row)}
-                      >
-                        {tUi("reports.ioHistory.view")}{" "}
-                        <span aria-hidden="true">›</span>
-                      </button>
+                      />
                     </td>
                   </tr>
                 ))
@@ -577,20 +607,38 @@ export function HistoryTable({
 
       {!empty && !noResult ? (
         <footer className="rpt08-table-footer hn-report-pagination-footer">
-          <span>
-            {tUi("putaway.queue.showing") + " "}
-            {start}–{end} / {number(total)}
-            {" " + tUi("updatedUi.text_74e542e35044")}
-          </span>
+          <div className="rpt08-pagination-summary">
+            <span>
+              {tUi("putaway.queue.showing") + " "}
+              {start}–{end} / {number(total)}
+              {" " + tUi("updatedUi.text_74e542e35044")}
+            </span>
+            {onPageSizeChange ? (
+              <select
+                className="rpt08-page-size"
+                aria-label={tUi("shared.table.rowsPerPageAria")}
+                value={pageSize}
+                onChange={(event) =>
+                  onPageSizeChange(Number(event.target.value))
+                }
+              >
+                {[PAGE_SIZE, ...TABLE_PAGE_SIZE_OPTIONS].map((size) => (
+                  <option key={size} value={size}>
+                    {tUi("shared.table.perPage", { size: String(size) })}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <span className="rpt08-range-note">
+              {tUi("updatedUi.text_098cc1b3c5b9")} ·{" "}
+              {compactRange(range.from, range.to)}
+            </span>
+          </div>
           <Pagination
             page={page}
             totalPages={totalPages}
             onChange={onPageChange}
           />
-          <span>
-            {tUi("updatedUi.text_098cc1b3c5b9")} ·{" "}
-            {compactRange(range.from, range.to)}
-          </span>
         </footer>
       ) : null}
     </section>

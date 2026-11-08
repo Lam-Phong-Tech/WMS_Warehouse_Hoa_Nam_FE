@@ -43,10 +43,12 @@ function Host({
   presets,
   onChange,
   initial = [MONTH_START, TODAY],
+  autoApplyOnComplete = false,
 }: {
   presets?: ReadonlyArray<DateRangePreset>;
   onChange?: (value: [Dayjs | null, Dayjs | null] | null) => void;
   initial?: [Dayjs | null, Dayjs | null];
+  autoApplyOnComplete?: boolean;
 }) {
   const [value, setValue] = useState<[Dayjs | null, Dayjs | null] | null>(
     initial,
@@ -57,6 +59,7 @@ function Host({
         aria-label="Khoảng ngày"
         value={value}
         presets={presets}
+        autoApplyOnComplete={autoApplyOnComplete}
         onChange={(next) => {
           setValue(next);
           onChange?.(next);
@@ -73,6 +76,46 @@ async function openPanel(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("UiVuexyDateRangePicker · kỳ nhanh", () => {
+  it("tự áp dụng khi chọn đủ hai ngày nếu màn bật tùy chọn này", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Host
+        initial={[dayjs("2026-09-01"), dayjs("2026-09-04")]}
+        autoApplyOnComplete
+        onChange={onChange}
+      />,
+    );
+
+    const panel = await openPanel(user);
+    expect(
+      within(panel).queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    await user.click(within(panel).getByRole("button", { name: "02/09/2026" }));
+    expect(onChange).not.toHaveBeenCalled();
+    await user.click(within(panel).getByRole("button", { name: "03/09/2026" }));
+
+    expect(onChange).toHaveBeenCalledOnce();
+    const [range] = onChange.mock.calls[0] as [[Dayjs, Dayjs]];
+    expect(range[0].format("YYYY-MM-DD")).toBe("2026-09-02");
+    expect(range[1].format("YYYY-MM-DD")).toBe("2026-09-03");
+    expect(
+      screen.queryByRole("dialog", { name: "Khoảng ngày" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("giữ nút Áp dụng khi màn không bật tự áp dụng", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Host onChange={onChange} />);
+
+    const panel = await openPanel(user);
+    await user.click(within(panel).getByRole("button", { name: "02/09/2026" }));
+    await user.click(within(panel).getByRole("button", { name: "03/09/2026" }));
+    expect(onChange).not.toHaveBeenCalled();
+    await user.click(within(panel).getByRole("button", { name: "Áp dụng" }));
+    expect(onChange).toHaveBeenCalledOnce();
+  });
   it("không truyền presets thì panel không mọc thêm nhóm nào", async () => {
     const user = userEvent.setup();
     render(<Host />);

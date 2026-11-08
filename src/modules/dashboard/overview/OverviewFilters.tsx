@@ -1,6 +1,7 @@
+import { businessToday } from "@/shared/utils/date-time";
 /**
- * Thẻ bộ lọc của demo: Kỳ KPI (kèm khoảng ngày tùy chọn + lịch tự vẽ), Loại hàng
- * và khối Làm mới. Lịch dựng lại đúng bố cục demo (6 hàng × 7 cột, chặn ngày
+ * Bộ lọc Kỳ KPI (kèm khoảng ngày tùy chọn) và Loại hàng.
+ * Lịch giữ 6 hàng × 7 cột, chặn ngày
  * tương lai, nút "tháng sau" khoá khi đã ở tháng hiện tại).
  */
 import { useEffect, useRef, useState } from "react";
@@ -270,9 +271,6 @@ export function OverviewFilters({
   dateError,
   type,
   onTypeChange,
-  lastUpdatedLabel,
-  refreshing,
-  onRefresh,
 }: {
   period: OverviewPeriod;
   onPeriodChange: (period: OverviewPeriod) => void;
@@ -290,13 +288,10 @@ export function OverviewFilters({
   dateError: string;
   type: SkuTypeFilter;
   onTypeChange: (type: SkuTypeFilter) => void;
-  lastUpdatedLabel: string;
-  refreshing: boolean;
-  onRefresh: () => void;
 }) {
   const [openPicker, setOpenPicker] = useState<"from" | "to" | null>(null);
   const t = useT();
-  const today = dayjs().format(ISO);
+  const today = businessToday().format(ISO);
 
   return (
     <section className="filter-card" aria-label={t("dashboard.filters.region")}>
@@ -366,21 +361,6 @@ export function OverviewFilters({
               {t(option.labelKey)}
             </button>
           ))}
-        </div>
-      </div>
-
-      <div className="refresh-block">
-        <button
-          className="button button-primary"
-          type="button"
-          onClick={onRefresh}
-          disabled={refreshing}
-        >
-          <DashIcon name="refresh-cw" /> {t("dashboard.filters.refresh")}
-        </button>
-        <div className="refresh-meta">
-          <span>{lastUpdatedLabel}</span>
-          <small>{t("dashboard.filters.autoRefresh")}</small>
         </div>
       </div>
     </section>

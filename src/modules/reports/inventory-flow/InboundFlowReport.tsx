@@ -1,3 +1,8 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { renderSortIcon } from "@/shared/components/data-display/renderSortIcon";
@@ -9,6 +14,7 @@ import {
   type CSSProperties,
 } from "react";
 import dayjs from "dayjs";
+import { useSearchParams } from "react-router-dom";
 import { VuexyDemoIcon } from "@/shared/ui";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { getApiErrorMessage } from "@/shared/api/api-error";
@@ -43,8 +49,8 @@ type ProgressTone = "complete" | "processing" | "pending";
 
 function initialRange(): DateRange {
   return {
-    from: dayjs().subtract(6, "day").format(ISO_DATE),
-    to: dayjs().format(ISO_DATE),
+    from: businessToday().subtract(6, "day").format(ISO_DATE),
+    to: businessToday().format(ISO_DATE),
   };
 }
 
@@ -107,6 +113,7 @@ function FilterCombobox({
   onChange,
   options,
   icon,
+  fieldLabel,
   searchPlaceholder,
   ariaLabel,
   disabled,
@@ -116,6 +123,7 @@ function FilterCombobox({
   onChange: (value: string) => void;
   options: FilterOption[];
   icon: Parameters<typeof VuexyDemoIcon>[0]["name"];
+  fieldLabel: string;
   searchPlaceholder: string;
   ariaLabel: string;
   disabled?: boolean;
@@ -197,7 +205,7 @@ function FilterCombobox({
         type="button"
         id={id}
         role="combobox"
-        aria-label={ariaLabel}
+        aria-label={`${ariaLabel}: ${current?.label ?? ""}`}
         aria-controls={`${id}-listbox`}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -211,7 +219,9 @@ function FilterCombobox({
           }
         }}
       >
-        <span>{current?.label ?? ""}</span>
+        <span>
+          {fieldLabel}: {current?.label ?? ""}
+        </span>
         <Icon name="chevron-down" />
       </button>
       <span className="inbound-filter-combobox__menu" aria-hidden={!open}>
@@ -337,10 +347,9 @@ function KpiSkeleton() {
 }
 
 export default function InboundFlowReport() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [draftRange, setDraftRange] = useState<DateRange>(initialRange);
   const [appliedRange, setAppliedRange] = useState<DateRange>(initialRange);
-  const [draftSupplier, setDraftSupplier] = useState("");
-  const [draftStatus, setDraftStatus] = useState("");
   const [appliedSupplier, setAppliedSupplier] = useState("");
   const [appliedStatus, setAppliedStatus] = useState("");
   const [query, setQuery] = useState("");
@@ -417,24 +426,28 @@ export default function InboundFlowReport() {
 
   const supplierFilterOptions = useMemo<FilterOption[]>(
     () => [
-      { value: "", label: tUi("updatedUi.text_e28dc4bb66b6") },
-      ...supplierOptions.map((supplier) => ({
+      { value: "", label: tUi("dashboard.operations.filterAll") },
+      ...[
+        ...new Set([...supplierOptions, appliedSupplier].filter(Boolean)),
+      ].map((supplier) => ({
         value: supplier,
         label: supplier,
       })),
     ],
-    [supplierOptions],
+    [appliedSupplier, supplierOptions],
   );
 
   const statusFilterOptions = useMemo<FilterOption[]>(
     () => [
-      { value: "", label: tUi("reports.inventoryFlow.statusAll") },
-      ...statusOptions.map((status) => ({
-        value: status,
-        label: inboundStatusLabel(status),
-      })),
+      { value: "", label: tUi("dashboard.operations.filterAll") },
+      ...[...new Set([...statusOptions, appliedStatus].filter(Boolean))].map(
+        (status) => ({
+          value: status,
+          label: inboundStatusLabel(status),
+        }),
+      ),
     ],
-    [statusOptions],
+    [appliedStatus, statusOptions],
   );
 
   const filteredDocuments = useMemo(
@@ -618,63 +631,28 @@ export default function InboundFlowReport() {
     return "";
   })();
 
-  const applyFilters = async () => {
-    if (invalidRange || updating) return;
-    setAppliedSupplier(draftSupplier);
-    setAppliedStatus(draftStatus);
-    setPage(1);
-    setQuery("");
-    setShowSuccess(false);
-    setActionNotice(null);
-    sawUpdateLoading.current = false;
-    setUpdatePending(true);
-    const rangeChanged =
-      draftRange.from !== appliedRange.from ||
-      draftRange.to !== appliedRange.to;
-    if (rangeChanged) {
-      setAppliedRange(draftRange);
-    } else {
-      await refetch();
-    }
-  };
-
-  const resetFilters = async () => {
-    const next = initialRange();
-    setDraftRange(next);
-    setDraftSupplier("");
-    setDraftStatus("");
-    setAppliedSupplier("");
-    setAppliedStatus("");
-    setQuery("");
-    setPage(1);
-    setShowSuccess(false);
-    setActionNotice(null);
-    sawUpdateLoading.current = false;
-    setUpdatePending(true);
-    const rangeChanged =
-      next.from !== appliedRange.from || next.to !== appliedRange.to;
-    if (rangeChanged) setAppliedRange(next);
-    else await refetch();
-  };
-
   const widenRange = () => {
     const next = {
-      from: dayjs().subtract(29, "day").format(ISO_DATE),
-      to: dayjs().format(ISO_DATE),
+      from: businessToday().subtract(29, "day").format(ISO_DATE),
+      to: businessToday().format(ISO_DATE),
     };
     setDraftRange(next);
     setAppliedRange(next);
-    setDraftSupplier("");
-    setDraftStatus("");
     setAppliedSupplier("");
     setAppliedStatus("");
     setUpdatePending(true);
     sawUpdateLoading.current = false;
   };
 
-  const runExport = () => {
-    if (exportReason) return;
-    void exporter.exportReport("xlsx", {
+  const runExport = (choice: ReportExportChoice) => {
+    if (exportReason) return false;
+    return exporter.exportReport(choice.format, {
+      workbook: reportWorkbookOptions(
+        choice,
+        ["Mã phiếu"],
+        searchedDocuments.map((row) => row.document_no),
+        pageDocuments.map((row) => row.document_no),
+      ),
       reportCode: "document-history",
       fileStem: "bao-cao-nhap-kho",
       fileSuffix: `-${appliedRange.from}-${appliedRange.to}`,
@@ -692,7 +670,6 @@ export default function InboundFlowReport() {
       (document) => statusTone(document.status) === "pending",
     );
     const pendingStatus = firstPending?.status ?? "";
-    setDraftStatus(pendingStatus);
     setAppliedStatus(pendingStatus);
     setQuery("");
     setPage(1);
@@ -720,14 +697,47 @@ export default function InboundFlowReport() {
         }
       : null;
 
-  if (viewDocument) {
+  const linkedDocumentId = searchParams.get("document");
+  const activeDocument: FlowDocument | null = linkedDocumentId
+    ? (snapshot.documents.find(
+        (document) =>
+          document.id === linkedDocumentId && document.doc_type === "INBOUND",
+      ) ?? {
+        // Detail fetches the exact ID even outside the report's current period.
+        id: linkedDocumentId,
+        doc_type: "INBOUND",
+        document_no: "",
+        status: "",
+        warehouse_code: "",
+        counterpart: "",
+        created_by_name: "",
+        posted_at: "",
+        document_date: "",
+        drillKey: "",
+      })
+    : viewDocument;
+
+  if (activeDocument) {
     return (
       <div className="hn-inbound-report" data-testid="rpt01-inbound-reference">
         <InboundReportDetail
-          document={viewDocument}
+          key={activeDocument.id}
+          document={activeDocument}
           range={appliedRange}
           canExport={canExport}
-          onBack={() => setViewDocument(null)}
+          onBack={() => {
+            setViewDocument(null);
+            if (linkedDocumentId) {
+              setSearchParams(
+                (current) => {
+                  const next = new URLSearchParams(current);
+                  next.delete("document");
+                  return next;
+                },
+                { replace: true },
+              );
+            }
+          }}
         />
       </div>
     );
@@ -769,17 +779,35 @@ export default function InboundFlowReport() {
             className="inbound-tooltip"
             data-tooltip={exportReason || undefined}
           >
-            <button
-              type="button"
-              className="inbound-export-button"
+            <ReportExportAction
+              title={tUi("reportExport.inbound")}
+              fileStem={
+                "BaoCaoNhapKho_" + appliedRange.from + "-" + appliedRange.to
+              }
+              total={searchedDocuments.length}
+              currentCount={pageDocuments.length}
+              sections={reportExportSections(
+                tUi("reportExport.inboundDocuments"),
+              )}
+              context={[
+                [
+                  tUi("reportExport.period"),
+                  dayjs(appliedRange.from).format("DD/MM/YYYY") +
+                    " – " +
+                    dayjs(appliedRange.to).format("DD/MM/YYYY"),
+                ],
+                [
+                  tUi("reportExport.filters"),
+                  [appliedSupplier, appliedStatus, query]
+                    .filter(Boolean)
+                    .join(" · ") || tUi("dashboard.operations.filterAll"),
+                ],
+              ]}
               disabled={Boolean(exportReason)}
-              onClick={runExport}
-            >
-              <Icon name="arrow-right" />
-              {exporter.exporting
-                ? tUi("updatedUi.text_f218a6c991e2")
-                : tUi("updatedUi.text_869645273267")}
-            </button>
+              loading={Boolean(exporter.exporting)}
+              disabledReason={exportReason || undefined}
+              onExport={runExport}
+            />
           </span>
         </div>
       </header>
@@ -806,18 +834,24 @@ export default function InboundFlowReport() {
             role="group"
             aria-label={tUi("reports.packingLabel.dateRangeLabel")}
           >
-            <span>{tUi("reports.packingLabel.dateRangeLabel")}</span>
             <ReportDateRangePicker
+              autoApplyOnComplete
               value={[
                 draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null,
                 draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null,
               ]}
-              onChange={(value) =>
-                setDraftRange({
+              onChange={(value) => {
+                const next = {
                   from: value?.[0]?.format(ISO_DATE) ?? "",
                   to: value?.[1]?.format(ISO_DATE) ?? "",
-                })
-              }
+                };
+                setDraftRange(next);
+                if (!rangeIsInvalid(next)) {
+                  setAppliedRange(next);
+                  setPage(1);
+                  setShowSuccess(false);
+                }
+              }}
               aria-label={tUi("reports.packingLabel.dateRangeLabel")}
               disabled={updating}
             />
@@ -825,27 +859,22 @@ export default function InboundFlowReport() {
               <small>{tUi("updatedUi.text_c88aba88c1c8")}</small>
             ) : null}
           </div>
-          <p className="inbound-filter-note">
-            <Icon name="file-clock" />
-            {dayjs(appliedRange.to).diff(dayjs(appliedRange.from), "day") +
-              1}{" "}
-            {tUi("updatedUi.text_a0b12849189a")}
-          </p>
           <div
             className="inbound-filter-field"
             data-filter="supplier"
             role="group"
-            aria-labelledby="rpt01-supplier-label"
+            aria-label={tUi("updatedUi.text_039d667495cd")}
           >
-            <span id="rpt01-supplier-label">
-              {tUi("updatedUi.text_039d667495cd")}
-            </span>
             <FilterCombobox
               id="rpt01-supplier"
-              value={draftSupplier}
-              onChange={setDraftSupplier}
+              value={appliedSupplier}
+              onChange={(value) => {
+                setAppliedSupplier(value);
+                setPage(1);
+              }}
               options={supplierFilterOptions}
               icon="user-round"
+              fieldLabel={tUi("updatedUi.text_039d667495cd")}
               searchPlaceholder="Tìm nhà cung cấp..."
               ariaLabel="Chọn nhà cung cấp"
               disabled={updating}
@@ -855,39 +884,22 @@ export default function InboundFlowReport() {
             className="inbound-filter-field"
             data-filter="status"
             role="group"
-            aria-labelledby="rpt01-status-label"
+            aria-label={tUi("dashboard.composition.colStatus")}
           >
-            <span id="rpt01-status-label">
-              {tUi("dashboard.composition.colStatus")}
-            </span>
             <FilterCombobox
               id="rpt01-status"
-              value={draftStatus}
-              onChange={setDraftStatus}
+              value={appliedStatus}
+              onChange={(value) => {
+                setAppliedStatus(value);
+                setPage(1);
+              }}
               options={statusFilterOptions}
               icon="file-clock"
+              fieldLabel={tUi("dashboard.composition.colStatus")}
               searchPlaceholder="Tìm trạng thái..."
               ariaLabel="Chọn trạng thái phiếu nhập"
               disabled={updating}
             />
-          </div>
-          <div className="inbound-filter-actions">
-            <button
-              type="button"
-              className="inbound-apply-button"
-              onClick={() => void applyFilters()}
-              disabled={invalidRange || updating}
-            >
-              {tUi("dashboard.snapshot.apply")}
-            </button>
-            <button
-              type="button"
-              className="inbound-reset-button"
-              onClick={() => void resetFilters()}
-              disabled={updating}
-            >
-              {tUi("reports.packingLabel.reset")}
-            </button>
           </div>
         </div>
       </section>
@@ -1214,7 +1226,10 @@ export default function InboundFlowReport() {
                 <table>
                   <thead>
                     <tr>
-                      <th>
+                      <th scope="col" className="inbound-index-cell">
+                        {tUi("shared.table.rowNumber")}
+                      </th>
+                      <th className="inbound-code-cell">
                         {tUi("warranty.componentList.colCode")}{" "}
                         <span className="inbound-tablet-only">
                           {tUi("updatedUi.text_aaf42c905ec0")}
@@ -1263,23 +1278,37 @@ export default function InboundFlowReport() {
                           })}
                         </button>
                       </th>
-                      <th>{tUi("updatedUi.text_039d667495cd")}</th>
+                      <th className="inbound-supplier-cell">
+                        {tUi("updatedUi.text_039d667495cd")}
+                      </th>
                       <th className="is-number">
                         {tUi("updatedUi.text_1320fb99c374")}
                       </th>
-                      <th>{tUi("dashboard.composition.colStatus")}</th>
+                      <th className="inbound-status-cell">
+                        {tUi("dashboard.composition.colStatus")}
+                      </th>
                       <th className="inbound-created-by">
                         {tUi("reverse.detail.fieldCreatedBy")}
                       </th>
-                      <th>{tUi("outbound.detail.colAction")}</th>
+                      <th
+                        className="inbound-action-cell"
+                        aria-label={tUi("outbound.detail.colAction")}
+                      />
                     </tr>
                   </thead>
                   <tbody>
-                    {pageDocuments.map((document) => {
+                    {pageDocuments.map((document, index) => {
                       const tone = statusTone(document.status);
                       return (
                         <tr key={document.id}>
                           <td
+                            className="inbound-index-cell"
+                            data-label={tUi("shared.table.rowNumber")}
+                          >
+                            {(safePage - 1) * pageSize + index + 1}
+                          </td>
+                          <td
+                            className="inbound-code-cell"
                             data-label={tUi("warranty.componentList.colCode")}
                           >
                             <strong>{document.document_no || "—"}</strong>
@@ -1324,7 +1353,7 @@ export default function InboundFlowReport() {
                           >
                             {document.created_by_name || "—"}
                           </td>
-                          <td data-label={tUi("outbound.detail.colAction")}>
+                          <td>
                             <RowActionGroup>
                               <RowActionButton
                                 kind="view"

@@ -86,6 +86,8 @@ const PAYLOAD: Record<string, unknown> = {
 const PAGE_PAYLOAD: Record<string, unknown[]> = {
   "/reversal-documents": [
     {
+      id: "rv-1",
+      reversal_code: "RV-0001",
       status: "POSTED",
       reference_document_code: "PX-0001",
       reference_document_id: "doc-1",
@@ -129,10 +131,60 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     cleanupTestState();
   });
 
+  it("đánh số STT liên tục qua trang và đổi số dòng mỗi trang", async () => {
+    const user = userEvent.setup();
+    vi.mocked(http.get).mockImplementation(async (url: unknown) => {
+      if (String(url) === "/reports/outbound-by-recipient") {
+        return {
+          rows: Array.from({ length: 12 }, (_, index) => ({
+            ...OUTBOUND_ROWS[0],
+            document_id: `doc-${index}`,
+            outbound_no: `PX-${index}`,
+            agency_id: `ag-${index}`,
+            agency_name: `Đại lý ${String(index).padStart(2, "0")}`,
+            recipient_id: `receiver-${index}`,
+          })),
+          pagination: { current_page: 1, last_page: 1, total: 12 },
+        } as never;
+      }
+      return (PAYLOAD[String(url)] ?? { rows: [] }) as never;
+    });
+    renderReport();
+    const table = await screen.findByRole("table");
+    await within(table).findByText("Đại lý 00");
+    expect(
+      within(table).getByRole("columnheader", { name: "STT" }),
+    ).toBeInTheDocument();
+    const numbers = () =>
+      within(table)
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => within(row).getAllByRole("cell")[0].textContent);
+    expect(numbers()).toEqual(
+      Array.from({ length: 10 }, (_, i) => String(i + 1)),
+    );
+    const section = table.closest("section")!;
+    await user.click(within(section).getByRole("button", { name: "2" }));
+    expect(numbers()).toEqual(["11", "12"]);
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
+      "20",
+    );
+    expect(numbers()).toEqual(
+      Array.from({ length: 12 }, (_, i) => String(i + 1)),
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
+      "50",
+    );
+    expect(numbers()).toHaveLength(12);
+  });
+
   it("dựng đúng cấu trúc baseline, cộng số lượng thuần và tiến độ chứng từ", async () => {
     renderReport();
 
     const root = await screen.findByTestId("report-08-recipient-agency");
+    await within(await screen.findByRole("table")).findByText("Đại lý An Phát");
     expect(root).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
@@ -145,10 +197,18 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     );
 
     const overview = screen.getByLabelText("Tổng quan vận hành");
-    expect(within(screen.getByLabelText("Tổng phiếu xuất")).getByText("1")).toBeInTheDocument();
-    expect(within(screen.getByLabelText("Đại lý nhận")).getByText("1")).toBeInTheDocument();
-    expect(within(screen.getByLabelText("Đã hoàn tất")).getByText("0")).toBeInTheDocument();
-    expect(within(screen.getByLabelText("Chưa hoàn tất")).getByText("1")).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Tổng phiếu xuất")).getByText("1"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Đại lý nhận")).getByText("1"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Đã hoàn tất")).getByText("0"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Chưa hoàn tất")).getByText("1"),
+    ).toBeInTheDocument();
     expect(overview).toBeInTheDocument();
 
     const table = await screen.findByRole("table");
@@ -158,18 +218,41 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     expect(within(table).getByText("0/1")).toBeInTheDocument();
   });
 
+  it("tự áp dụng trạng thái và lịch ngày mà không cần nút Áp dụng", async () => {
+    const user = userEvent.setup();
+    renderReport();
+    await within(await screen.findByRole("table")).findByText("Đại lý An Phát");
+    expect(
+      screen.queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Trạng thái" }));
+    await user.click(screen.getByRole("option", { name: /Đã hoàn tất$/ }));
+    expect(
+      within(screen.getByRole("table")).queryByText("Đại lý An Phát"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("table")).getByText("Chưa có dữ liệu trong kỳ"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Từ ngày" }));
+    const panel = await screen.findByRole("dialog");
+    expect(
+      within(panel).queryByRole("button", { name: "Áp dụng" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("nút Xem mở chi tiết thật của đại lý, không còn action chết", async () => {
     const user = userEvent.setup();
     renderReport();
 
     const table = await screen.findByRole("table");
-    await user.click(within(table).getByRole("button", { name: /Xem/ }));
+    await user.click(await within(table).findByRole("button", { name: /Xem/ }));
 
     const dialog = await screen.findByRole("dialog");
     expect(
       within(dialog).getByText(/Chi tiết nhận hàng · Đại lý An Phát/),
     ).toBeInTheDocument();
-    expect(dialog.querySelector(".rpt07-detail-dialog")).not.toBeNull();
+    expect(dialog.closest(".MuiDrawer-root")).toBeInTheDocument();
+    expect(table).toBeInTheDocument();
     expect(
       within(dialog).getByText("Người nhận: Nguyễn Văn Minh"),
     ).toBeInTheDocument();
@@ -177,9 +260,41 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     expect(within(dialog).getByText("Chưa hoàn tất")).toBeInTheDocument();
   });
 
+  it("keeps one drawer when switching to return reconciliation and back", async () => {
+    const user = userEvent.setup();
+    renderReport();
+    const table = await screen.findByRole("table");
+    await user.click(await within(table).findByRole("button", { name: /Xem/ }));
+    const drawer = await screen.findByRole("dialog", {
+      name: /Chi tiết nhận hàng/,
+    });
+    await user.click(
+      await within(drawer).findByRole("button", { name: "Đối chiếu hoàn trả" }),
+    );
+    const returns = await screen.findByRole("dialog", {
+      name: /Đối chiếu hoàn trả/,
+    });
+    expect(returns).toBe(drawer);
+    expect(
+      await within(returns).findByTestId("return-net-total"),
+    ).toHaveTextContent("12");
+    await user.click(
+      within(returns).getByRole("button", {
+        name: "Quay lại chi tiết người nhận",
+      }),
+    );
+    expect(
+      await screen.findByRole("dialog", { name: /Chi tiết nhận hàng/ }),
+    ).toBe(drawer);
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("table")).toBe(table);
+  });
+
   it("tìm kiếm chỉ lọc bảng và có thể đặt lại ngay trong empty state", async () => {
     const user = userEvent.setup();
     renderReport();
+    await within(await screen.findByRole("table")).findByText("Đại lý An Phát");
 
     const searchBox = await screen.findByPlaceholderText(
       "Tên đại lý, người nhận, mã phiếu...",
@@ -191,17 +306,15 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
       await screen.findByText("Không tìm thấy kết quả phù hợp"),
     ).toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: /Đặt lại tìm kiếm/ }),
-    );
-    expect(screen.getByText("Đại lý An Phát")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Đặt lại tìm kiếm/ }));
+    expect(
+      within(screen.getByRole("table")).getByText("Đại lý An Phát"),
+    ).toBeInTheDocument();
   });
 
   it("quyền report.export điều khiển đúng nút Xuất báo cáo", async () => {
     renderReport();
-    await screen.findByText("Đại lý An Phát");
-    expect(
-      screen.getByRole("button", { name: "Xuất báo cáo" }),
-    ).toBeEnabled();
+    await within(await screen.findByRole("table")).findByText("Đại lý An Phát");
+    expect(screen.getByRole("button", { name: "Xuất báo cáo" })).toBeEnabled();
   });
 });

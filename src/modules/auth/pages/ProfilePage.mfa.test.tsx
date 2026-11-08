@@ -1,34 +1,20 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, screen, within, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
-
-import { ProfilePage } from "@/modules/auth/pages/ProfilePage";
-import { authService } from "@/modules/auth/services/auth.service";
+import { ProfilePage } from "./ProfilePage";
+import { authService } from "../services/auth.service";
+import { profileService } from "../services/profile.service";
 import { auditLogService } from "@/modules/audit-logs/services/audit-logs.service";
-import type { MfaStatus } from "@/modules/auth/types/mfa.types";
-
-vi.mock("@/modules/auth/services/auth.service", () => ({
-  authService: { mfaStatus: vi.fn() },
+import { useAuthStore } from "@/shared/store/auth.store";
+import { renderWithProviders } from "@/test/test-utils";
+import { profileFixture as me, preferenceFixture } from "./profile.fixture";
+vi.mock("@/shared/data/reference-queries", () => ({
+  useWarehouseDirectory: () => ({ data: [] }),
 }));
-vi.mock("@/modules/audit-logs/services/audit-logs.service", () => ({
-  auditLogService: { getMyPermissionHistory: vi.fn() },
+vi.mock("../components/MfaSettingsDrawer", () => ({
+  MfaSettingsDrawer: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="mfa-drawer" /> : null,
 }));
-
-function renderPage() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <ProfilePage />
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
-}
-
-const status: MfaStatus = {
+const status = {
   enabled: false,
   pending: false,
   required_for_role: false,
@@ -36,47 +22,103 @@ const status: MfaStatus = {
   must_enroll_now: false,
   recovery_codes_remaining: 0,
 };
-
-describe("ProfilePage MFA status", () => {
+describe("ProfilePage security MFA card", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(auditLogService.getMyPermissionHistory).mockResolvedValue({
+    vi.restoreAllMocks();
+    useAuthStore.setState({
+      token: "mfa-profile-test",
+      user: me,
+      profile: me,
+      isAuthenticated: true,
+      isProfileLoaded: true,
+      permissionCodes: [],
+      isSuperAdmin: false,
+      currentContext: null,
+    });
+    vi.spyOn(profileService, "getMe").mockResolvedValue(me);
+    vi.spyOn(profileService, "getPreferences").mockResolvedValue(
+      preferenceFixture,
+    );
+    vi.spyOn(profileService, "getDevices").mockResolvedValue({
       data: [],
-      meta: {} as Awaited<
-        ReturnType<typeof auditLogService.getMyPermissionHistory>
-      >["meta"],
+      meta: {},
+    });
+    vi.spyOn(profileService, "getDeviceHistory").mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, last_page: 1, total: 0 },
+    });
+    vi.spyOn(auditLogService, "getMyPermissionHistory").mockResolvedValue({
+      data: [],
+      meta: {},
     });
   });
-
-  it("shows the registered state after MFA is enabled", async () => {
-    vi.mocked(authService.mfaStatus).mockResolvedValue({
+  it("shows registered status under Security and opens management without exposing enrollment secrets", async () => {
+    vi.spyOn(authService, "mfaStatus").mockResolvedValue({
       ...status,
       enabled: true,
     });
-    renderPage();
-
+    const enroll = vi.spyOn(authService, "mfaEnroll");
+    renderWithProviders(<ProfilePage />, ["/profile?section=security"]);
+    expect(await screen.findByText("Đang bật")).toBeInTheDocument();
     expect(
-      await screen.findByText(
-        "Tài khoản của bạn đã đăng ký xác thực hai bước.",
-      ),
+      screen.getByText("Tài khoản của bạn đã đăng ký xác thực hai bước."),
     ).toBeInTheDocument();
-    expect(screen.getByText("Đang bật")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Xem chi tiết" })).toHaveAttribute(
-      "href",
-      "/profile/mfa",
-    );
-    expect(screen.queryByRole("link", { name: "Bắt đầu đăng ký" })).toBeNull();
+    expect(enroll).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Xem chi tiết" }));
+    expect(screen.getByTestId("mfa-drawer")).toBeInTheDocument();
   });
-
-  it("shows the setup action only when MFA is disabled", async () => {
-    vi.mocked(authService.mfaStatus).mockResolvedValue(status);
-    renderPage();
-
+  it("offers setup for a disabled account only after entering Security", async () => {
+    vi.spyOn(authService, "mfaStatus").mockResolvedValue(status);
+    renderWithProviders(<ProfilePage />);
     expect(
-      await screen.findByRole("link", { name: "Bắt đầu đăng ký" }),
-    ).toHaveAttribute("href", "/profile/mfa");
+      screen.queryByRole("button", { name: "Bắt đầu đăng ký" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Bảo mật" }));
     expect(
-      screen.queryByText("Tài khoản của bạn đã đăng ký xác thực hai bước."),
-    ).toBeNull();
+      await screen.findByRole("button", { name: "Bắt đầu đăng ký" }),
+    ).toBeInTheDocument();
+  });
+  it("numbers permission history across pages", async () => {
+    vi.spyOn(authService, "mfaStatus").mockResolvedValue(status);
+    vi.mocked(auditLogService.getMyPermissionHistory).mockImplementation(
+      async (params = {}) => ({
+        data: [
+          {
+            id: `entry-${params.page}`,
+            actor_id: null,
+            action: "iam.role.assign",
+            object_type: "user",
+            object_id: "u1",
+            reason: `Page ${params.page}`,
+            before_data: null,
+            after_data: null,
+            created_at: "2026-11-04T09:00:00Z",
+          },
+        ],
+        meta: {
+          total: 11,
+          per_page: 10,
+          current_page: params.page ?? 1,
+          last_page: 2,
+        },
+      }),
+    );
+    renderWithProviders(<ProfilePage />, ["/profile?section=security"]);
+    fireEvent.click(screen.getByText("Lịch sử quyền và vai trò"));
+    await screen.findByText("Page 1");
+    const table = screen.getByRole("table");
+    expect(
+      within(table).getByRole("columnheader", { name: "STT" }),
+    ).toBeVisible();
+    expect(
+      within(within(table).getAllByRole("row")[1]).getAllByRole("cell")[0],
+    ).toHaveTextContent(/^1$/);
+    fireEvent.click(screen.getByRole("button", { name: "Go to next page" }));
+    await screen.findByText("Page 2");
+    await waitFor(() =>
+      expect(
+        within(within(table).getAllByRole("row")[1]).getAllByRole("cell")[0],
+      ).toHaveTextContent(/^11$/),
+    );
   });
 });

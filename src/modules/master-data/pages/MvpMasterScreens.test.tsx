@@ -7,13 +7,15 @@ import {
   within,
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Link, useLocation } from "react-router-dom";
 import {
   AgencyMasterScreen,
   DefectMasterScreen,
   SkuMasterScreen,
 } from "@/modules/master-data/pages/MvpMasterScreens";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
+import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 
 const { mutation } = vi.hoisted(() => ({
   mutation: () => ({
@@ -23,7 +25,7 @@ const { mutation } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
-  useMvpSkus: () => ({
+  useMvpSkus: vi.fn(() => ({
     data: {
       data: [
         {
@@ -47,7 +49,7 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
     isLoading: false,
     error: null,
     refetch: vi.fn(),
-  }),
+  })),
   useMvpAgencies: () => ({
     data: {
       data: [
@@ -107,6 +109,10 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useUpdateMvpDefect: mutation,
 }));
 
+function CurrentSkuLocation() {
+  return <output data-testid="sku-location">{useLocation().search}</output>;
+}
+
 describe("API-backed MVP master screens", () => {
   beforeEach(() => {
     useAuthStore.setState({ isSuperAdmin: true, permissionCodes: [] });
@@ -135,9 +141,7 @@ describe("API-backed MVP master screens", () => {
     expect(filtersToggle).toHaveAttribute("aria-expanded", "false");
     expect(overview).not.toBeVisible();
     fireEvent.change(search, { target: { value: "Máy khoan" } });
-    expect(
-      screen.getByRole("button", { name: "Xóa lọc" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Xóa lọc" })).toBeInTheDocument();
     fireEvent.click(overviewToggle);
     expect(overviewToggle).toHaveAttribute("aria-expanded", "true");
     expect(overview).toBeVisible();
@@ -153,6 +157,52 @@ describe("API-backed MVP master screens", () => {
     expect(search).toBeVisible();
     expect(filtersToggle).toHaveAttribute("aria-expanded", "false");
     expect(search).toHaveValue("Máy khoan");
+  });
+
+  it("moves the information filter into extra filters when pinned and preserves its value", () => {
+    const content = (pinned: boolean) => (
+      <MemoryRouter>
+        <PinnedSidebarContext.Provider value={pinned}>
+          <SkuMasterScreen />
+        </PinnedSidebarContext.Provider>
+      </MemoryRouter>
+    );
+    const { rerender } = render(content(false));
+    const information = screen.getByRole("combobox", {
+      name: "Lọc mức độ hoàn thiện thông tin",
+    });
+    fireEvent.mouseDown(information);
+    fireEvent.click(
+      screen.getByRole("option", { name: "Thông tin: Chờ hoàn thiện" }),
+    );
+
+    rerender(content(true));
+    expect(
+      screen.queryByRole("combobox", {
+        name: "Lọc mức độ hoàn thiện thông tin",
+      }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
+    const panel = document.getElementById("hn-sku-filters-content")!;
+    expect(
+      within(panel).getByRole("combobox", {
+        name: "Lọc mức độ hoàn thiện thông tin",
+      }),
+    ).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+
+    rerender(content(false));
+    const restored = screen.getByRole("combobox", {
+      name: "Lọc mức độ hoàn thiện thông tin",
+    });
+    expect(restored).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    expect(restored.closest(".hn-sku-search-bar")).not.toBeNull();
+    expect(
+      within(panel).queryByRole("combobox", {
+        name: "Lọc mức độ hoàn thiện thông tin",
+      }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    expect(restored).toHaveTextContent("Thông tin: Tất cả");
   });
 
   it("giữ trạng thái mở thống kê SKU khi quay lại trong cùng phiên", () => {
@@ -189,24 +239,125 @@ describe("API-backed MVP master screens", () => {
     ).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("can enable and clear the pending SKU filter from the search panel", () => {
+  it("combines usage and information filters and clears both", () => {
     render(
       <MemoryRouter>
         <SkuMasterScreen />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
-    const pending = screen.getByRole("checkbox", {
-      name: "SKU chờ điền thông tin",
+    const usage = screen.getByRole("combobox", { name: "Lọc theo trạng thái" });
+    const information = screen.getByRole("combobox", {
+      name: "Lọc mức độ hoàn thiện thông tin",
     });
-    expect(pending).not.toBeChecked();
-    fireEvent.click(pending);
-    expect(pending).toBeChecked();
+    fireEvent.mouseDown(usage);
+    fireEvent.click(
+      screen.getByRole("option", { name: "Trạng thái: Đang sử dụng" }),
+    );
+    fireEvent.mouseDown(information);
+    fireEvent.click(
+      screen.getByRole("option", { name: "Thông tin: Chờ hoàn thiện" }),
+    );
+    expect(usage).toHaveTextContent("Trạng thái: Đang sử dụng");
+    expect(information).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    fireEvent.mouseDown(usage);
+    expect(screen.queryByRole("option", { name: /Chờ hoàn thiện/ })).toBeNull();
+    fireEvent.click(
+      screen.getByRole("option", { name: "Trạng thái: Ngừng sử dụng" }),
+    );
+    expect(information).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    expect(usage).toHaveTextContent("Trạng thái: Tất cả");
+    expect(information).toHaveTextContent("Thông tin: Tất cả");
+  });
+
+  it("shows missing model separately from the active usage badge", () => {
+    render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
+    const row = screen.getByText("DCH-DRILL-DJZ10A-220V-V1").closest("tr")!;
+    expect(within(row).getByText("Đang sử dụng")).toBeVisible();
+    expect(within(row).getByText("Chờ hoàn thiện")).toBeVisible();
+    expect(within(row).getByText("Thiếu: Model")).toBeVisible();
+  });
+
+  it("opens dashboard pending link with active usage and pending information", () => {
+    render(
+      <MemoryRouter
+        initialEntries={["/master-data/skus?filter=pending_info&keep=1"]}
+      >
+        <PinnedSidebarContext.Provider value={true}>
+          <SkuMasterScreen />
+        </PinnedSidebarContext.Provider>
+        <CurrentSkuLocation />
+      </MemoryRouter>,
+    );
     expect(
-      screen.getByRole("button", { name: "Xóa lọc" }),
-    ).toBeInTheDocument();
-    fireEvent.click(pending);
-    expect(pending).not.toBeChecked();
+      screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
+    ).toHaveTextContent("Trạng thái: Đang sử dụng");
+    expect(
+      screen.getByRole("combobox", { name: "Lọc mức độ hoàn thiện thông tin" }),
+    ).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    expect(screen.getByRole("button", { name: "Bộ lọc" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(
+      vi.mocked(useMvpSkus).mock.calls
+        .filter(([params]) => params?.per_page === 10).at(-1)?.[0],
+    ).toEqual(expect.objectContaining({
+      status: "ACTIVE", information_status: "PENDING", page: 1,
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    expect(screen.getByTestId("sku-location")).toHaveTextContent("?keep=1");
+    expect(screen.getByTestId("sku-location")).not.toHaveTextContent("pending_info");
+  });
+
+  it("applies dashboard filters when navigating to the same mounted SKU screen", () => {
+    render(
+      <MemoryRouter initialEntries={["/master-data/skus"]}>
+        <Link to="/master-data/skus?filter=pending_info">
+          Dashboard pending SKUs
+        </Link>
+        <SkuMasterScreen />
+        <CurrentSkuLocation />
+      </MemoryRouter>,
+    );
+    fireEvent.click(
+      screen.getByRole("link", { name: "Dashboard pending SKUs" }),
+    );
+    expect(
+      screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
+    ).toHaveTextContent("Trạng thái: Đang sử dụng");
+    expect(
+      screen.getByRole("combobox", { name: "Lọc mức độ hoàn thiện thông tin" }),
+    ).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    const usage = screen.getByRole("combobox", { name: "Lọc theo trạng thái" });
+    fireEvent.mouseDown(usage);
+    fireEvent.click(screen.getByRole("option", {
+      name: "Trạng thái: Ngừng sử dụng",
+    }));
+    fireEvent.click(screen.getByRole("link", { name: "Dashboard pending SKUs" }));
+    expect(usage).toHaveTextContent("Trạng thái: Đang sử dụng");
+    const information = screen.getByRole("combobox", {
+      name: "Lọc mức độ hoàn thiện thông tin",
+    });
+    fireEvent.mouseDown(information);
+    fireEvent.click(screen.getByRole("option", { name: "Thông tin: Đầy đủ" }));
+    expect(screen.getByTestId("sku-location")).not.toHaveTextContent("pending_info");
+    fireEvent.click(screen.getByRole("link", { name: "Dashboard pending SKUs" }));
+    expect(information).toHaveTextContent("Thông tin: Chờ hoàn thiện");
+    expect(
+      vi.mocked(useMvpSkus).mock.calls
+        .filter(([params]) => params?.per_page === 10).at(-1)?.[0],
+    ).toEqual(expect.objectContaining({
+      status: "ACTIVE", information_status: "PENDING", page: 1,
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    expect(
+      screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
+    ).toHaveTextContent("Trạng thái: Tất cả");
   });
 
   it("opens SKU create and edit forms in a right-side drawer", async () => {

@@ -1,3 +1,4 @@
+import { getDisplayTimezone } from "@/shared/utils/date-time";
 import { useId, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { isNoPermissionError, normalizeError } from "@/shared/api/api-error";
@@ -381,6 +382,7 @@ export function CatalogNotice({
       ? new Intl.DateTimeFormat(
           language === "en" ? "en-US" : language === "zh" ? "zh-CN" : "vi-VN",
           {
+            timeZone: getDisplayTimezone(),
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
@@ -390,6 +392,7 @@ export function CatalogNotice({
         new Intl.DateTimeFormat(
           language === "en" ? "en-US" : language === "zh" ? "zh-CN" : "vi-VN",
           {
+            timeZone: getDisplayTimezone(),
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,

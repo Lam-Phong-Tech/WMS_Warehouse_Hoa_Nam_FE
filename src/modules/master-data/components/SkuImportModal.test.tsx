@@ -13,6 +13,8 @@ import {
 } from "@/modules/master-data/services/sku-import.service";
 import { SkuImportModal } from "./SkuImportModal";
 import { sha256HexSync } from "@/shared/utils/file-digest";
+import { toast } from "sonner";
+import { WmsContractError } from "@/shared/api/wms-contract";
 
 const FILE_CONTENT = "noi-dung-excel";
 const FILE_SHA256 = sha256HexSync(new TextEncoder().encode(FILE_CONTENT));
@@ -66,6 +68,81 @@ describe("SkuImportModal — luồng ba bước", () => {
     vi.mocked(importSkuExcel).mockResolvedValue(cleanDryRun());
   });
   afterEach(cleanupTestState);
+
+  it("chặn tệp quá lớn bằng một thông báo rõ giới hạn, không đọc hay gửi tệp", async () => {
+    renderModal();
+    fireEvent.mouseOver(screen.getByRole("button", { name: "Hướng dẫn nhập SKU" }));
+    await screen.findByText(/kích thước tệp không quá 10 MB/);
+    fireEvent.mouseOut(screen.getByLabelText("Hướng dẫn nhập SKU"));
+    await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+    const upload = new File(["small"], "large.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    Object.defineProperty(upload, "size", { value: 10 * 1024 * 1024 + 1 });
+    const read = vi.fn();
+    Object.defineProperty(upload, "arrayBuffer", { value: read });
+    fireEvent.change(screen.getByLabelText("Chọn tệp Excel chứa SKU"), { target: { files: [upload] } });
+    expect(await screen.findByText("File quá lớn. Tối đa 10 MB")).toBeInTheDocument();
+    expect(dryRunButton()).toBeDisabled();
+    expect(importSkuExcel).not.toHaveBeenCalled();
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("đợi hạn mức tải xong rồi từ chối tệp quá lớn, không đọc tệp theo hạn mức tạm", async () => {
+    let finish!: (value: Awaited<ReturnType<typeof fetchSkuImportConstraints>>) => void;
+    vi.mocked(fetchSkuImportConstraints).mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    renderModal();
+    const upload = new File(["small"], "late-limits.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    Object.defineProperty(upload, "size", { value: 12 * 1024 * 1024 });
+    const read = vi.fn().mockResolvedValue(new TextEncoder().encode("small").buffer);
+    Object.defineProperty(upload, "arrayBuffer", { value: read });
+    fireEvent.change(screen.getByLabelText("Chọn tệp Excel chứa SKU"), { target: { files: [upload] } });
+    expect(read).not.toHaveBeenCalled();
+    finish({ constraints: cleanDryRun().constraints, dataScope: "GLOBAL" });
+    expect(await screen.findByText("File quá lớn. Tối đa 10 MB")).toBeInTheDocument();
+    expect(read).not.toHaveBeenCalled();
+    expect(importSkuExcel).not.toHaveBeenCalled();
+    expect(dryRunButton()).toBeDisabled();
+  });
+
+  it("không đọc hoặc gửi khi không lấy được hạn mức, có cách thử lại", async () => {
+    vi.mocked(fetchSkuImportConstraints).mockRejectedValueOnce(new Error("Connection failed"));
+    renderModal();
+    const upload = new File(["small"], "sku.xlsx");
+    const read = vi.fn().mockResolvedValue(new TextEncoder().encode("small").buffer);
+    Object.defineProperty(upload, "arrayBuffer", { value: read });
+    fireEvent.change(screen.getByLabelText("Chọn tệp Excel chứa SKU"), { target: { files: [upload] } });
+    expect(await screen.findByText("Chưa lấy được giới hạn tệp từ máy chủ. Hãy thử lại trước khi kiểm tra tệp.")).toBeInTheDocument();
+    expect(dryRunButton()).toBeDisabled();
+    expect(await screen.findByRole("button", { name: /^Thử lại$/ })).toBeEnabled();
+    expect(read).not.toHaveBeenCalled();
+    expect(importSkuExcel).not.toHaveBeenCalled();
+  });
+
+  it("chỉ báo lỗi kiểm tra một lần tại hộp nhập, không bật thêm toast", async () => {
+    const errorToast = vi.spyOn(toast, "error");
+    const warningToast = vi.spyOn(toast, "warning");
+    vi.mocked(importSkuExcel).mockRejectedValueOnce(new Error("Tệp Excel đã bị hỏng."));
+    renderModal(); selectFile();
+    await waitFor(() => expect(dryRunButton()).toBeEnabled());
+    fireEvent.click(dryRunButton());
+    expect(await screen.findByText("Tệp Excel đã bị hỏng.")).toBeInTheDocument();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(errorToast).not.toHaveBeenCalled();
+    expect(warningToast).not.toHaveBeenCalled();
+    expect(commitButton()).toBeDisabled();
+    expect(dryRunButton()).toBeEnabled();
+    errorToast.mockRestore();
+    warningToast.mockRestore();
+  });
+
+  it("không đưa khóa kỹ thuật của kết quả không đầy đủ ra thông báo", async () => {
+    vi.mocked(importSkuExcel).mockRejectedValueOnce(new WmsContractError("WMS_FE_MISSING_API_ROWS", "Danh sách từ máy chủ chưa đầy đủ hoặc không hợp lệ (import.row_errors). Vui lòng tải lại."));
+    renderModal(); selectFile();
+    await waitFor(() => expect(dryRunButton()).toBeEnabled());
+    fireEvent.click(dryRunButton());
+    expect(await screen.findByText("Máy chủ chưa trả đầy đủ kết quả kiểm tra tệp. Chưa thể nhập dữ liệu. Vui lòng thử lại.")).toBeInTheDocument();
+    expect(screen.queryByText(/import\.row_errors/)).not.toBeInTheDocument();
+    expect(commitButton()).toBeDisabled();
+  });
 
   it("bắt đầu ở bước chọn tệp và chỉ hiện hành động kiểm tra", async () => {
     renderModal();

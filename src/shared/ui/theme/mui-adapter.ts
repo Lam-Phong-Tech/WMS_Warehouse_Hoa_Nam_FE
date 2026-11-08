@@ -1,3 +1,8 @@
+import {
+  personalAccent,
+  PERSONAL_FONT_SIZE,
+} from "@/shared/ui/tokens/personalization";
+import type { InterfacePreferences } from "@/shared/store/interface-preferences.store";
 /**
  * MUI ADAPTER — map canonical tokens → MUI theme. `createTheme` DUY NHẤT của
  * dự án nằm ở đây (guard: provider-uniqueness test + `yarn ui:architecture`).
@@ -64,8 +69,21 @@ const menuOffsetModifier: NonNullable<PopperProps["modifiers"]>[number] = {
   },
 };
 
-function buildMuiTheme(mode: ThemeModeName) {
-  const P = OPERATIONS_PALETTE[mode];
+export function buildMuiTheme(
+  mode: ThemeModeName,
+  preferences?: Pick<InterfacePreferences, "accent" | "font_size"> | null,
+) {
+  const base = OPERATIONS_PALETTE[mode];
+  const accent = personalAccent(mode, preferences?.accent ?? "ocean");
+  const P =
+    preferences?.accent && preferences.accent !== "ocean"
+      ? {
+          ...base,
+          primary: accent.primary,
+          primaryDark: accent.primaryHover,
+          primaryLight: accent.pale,
+        }
+      : base;
   return createTheme({
     breakpoints: { values: { ...BREAKPOINTS } },
     palette: {
@@ -109,7 +127,9 @@ function buildMuiTheme(mode: ThemeModeName) {
     },
     typography: {
       fontFamily: TYPOGRAPHY.fontFamily,
-      fontSize: TYPOGRAPHY.fontSizeBody,
+      fontSize: preferences
+        ? PERSONAL_FONT_SIZE[preferences.font_size]
+        : TYPOGRAPHY.fontSizeBody,
       button: {
         fontSize: C.button.fontSize,
         fontWeight: C.button.fontWeight,
@@ -248,6 +268,13 @@ function buildMuiTheme(mode: ThemeModeName) {
           transitionDuration: {
             enter: MOTION.duration.slow,
             exit: MOTION.duration.normal,
+          },
+        },
+        styleOverrides: {
+          paper: {
+            backgroundColor: S.bgSurface,
+            backgroundImage: "none",
+            color: S.textHigh,
           },
         },
       },

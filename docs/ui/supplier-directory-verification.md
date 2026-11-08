@@ -55,8 +55,9 @@ Ngày: 08/11/2026. Route: `/master-data/suppliers`.
 `D:/laragon/www/Hoa_Nam/outputs/supplier-directory-ui-20261108/`.
 Dữ liệu trên ảnh là fixture trình duyệt, không phải dữ liệu server thật.
 
-Người dùng đã yêu cầu push phần NCC lên dev ở cả frontend/backend. Chưa deploy
-hoặc áp dụng migration trên database thật trong tác vụ này.
+Người dùng đã yêu cầu push phần NCC lên dev ở cả frontend/backend. Backend
+`7377dd101eba6bf0b76360556fb33ffa7c919488` đã deploy DEV thành công sau khi
+người dùng cho phép áp dụng migration phân quyền riêng. Health DEV đã xác nhận SHA.
 
 ## Bổ sung phân quyền 08/11/2026
 
@@ -64,4 +65,28 @@ Nhóm Nhà cung cấp (NCC) xuất hiện trong ma trận vai trò với ba quy�
 riêng. Danh mục quyền dùng chung cho cấp theo vai trò và cấp riêng tài khoản được
 tải đủ các trang. Backend giữ inbound.view cho lookup nhập kho, còn quyền ghi NCC
 không còn dùng catalog.manage. Migration dữ liệu mới chuyển các cấp quyền cũ tương
-ứng sang quyền NCC, không sửa cấu trúc bảng và chưa được chạy trên server thật.
+ứng sang quyền NCC, không sửa cấu trúc bảng. Migration đã áp dụng trên DEV sau
+khi backup PostgreSQL và xác minh đúng tập migration/hash. Kiểm tra hậu migration
+xác nhận đủ ba quyền ACTIVE, cấp quyền vai trò/trực tiếp đúng, các cấp quyền cũ
+và dữ liệu NCC không thay đổi; biên nhận root hợp lệ được tạo sau kiểm tra.
+
+## Kiểm tra bản ghép với origin/dev
+
+Bản phát hành ghép trên `ec316c8` để giữ các thay đổi mới của dev và không đưa
+các commit/chỉnh sửa cục bộ không liên quan vào bản push. 46/46 kiểm thử tập
+trung đạt, gồm các kiểm thử IAM hiện tại. Production build và ESLint các file
+TypeScript thay đổi đạt. Fixture IAM bổ sung QueryClient cho màn hình IAM mới.
+
+### Kiểm thử trình duyệt bản ghép
+
+- Playwright Chromium: **1/1 đạt** trên bản ghép, đi qua shell, xác nhận phiên,
+  danh sách, tạo mới, sửa với `If-Match`, đổi giao diện tối và form mobile
+  320px.
+- Fixture bổ sung hợp đồng `GET/PATCH /auth/preferences` (theme, locale, phiên
+  bản). Trước khi bổ sung, catch-all trả `data: []` khiến
+  `AccountPreferencesProvider` áp dụng theme `undefined`, MUI ném lỗi
+  `Cannot use 'in' operator to search for '$$material' in undefined` và trang
+  trắng. Đây là thiếu sót của fixture kiểm thử; mã ứng dụng không thay đổi.
+  Ứng dụng hiện vẫn giả định payload preference đúng hợp đồng.
+- Ảnh 1440/1024/768/390/320, form tạo, dark mode và form mobile đã được làm mới
+  trong `outputs/supplier-directory-ui-20261108/` từ chính lần chạy này.

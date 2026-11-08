@@ -108,7 +108,7 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Trần mô tả hồ sơ — BE không chặn nên FE tự đặt theo mức chung của dự án. */
-const PROFILE_DESCRIPTION_MAX = 2000;
+const PROFILE_DESCRIPTION_MAX = 500;
 
 function masterStatusLabel(status: string, t: TranslateFn) {
   return businessLabel(MASTER_STATUS_LABELS, status, t("pv.admin.statusOther"));

@@ -193,7 +193,8 @@ export function CatalogMasterScreen() {
   const t = useT();
   const language = useLanguageStore((state) => state.language);
   const english = language !== "vi";
-  const text = (vi: string, en: string) => (english ? localizedEnglish(en) : vi);
+  const text = (vi: string, en: string) =>
+    english ? localizedEnglish(en) : vi;
   const tabs = useMemo(() => catalogTabs(t), [t]);
   const queryClient = useQueryClient();
   const canManage = useCan(P.CATALOG_MANAGE);
@@ -242,6 +243,9 @@ export function CatalogMasterScreen() {
 
   const activeTab = tabs.find((tab) => tab.kind === activeKind) ?? tabs[0];
   const supportsBrand = catalogMasterSupportsBrand(activeKind);
+  const codeMaxLength = activeKind === "BRAND" ? 50 : 80;
+  const nameMaxLength = activeKind === "BRAND" ? 150 : 200;
+  const descriptionMaxLength = activeKind === "BRAND" ? 500 : 2000;
 
   const listParams = {
     keyword: keyword.trim() ? debouncedKeyword : "",
@@ -366,8 +370,13 @@ export function CatalogMasterScreen() {
       errors.code = t("masterData.catalog.errCodeRequired", {
         label: activeTab.codeLabel,
       });
-    else if (code.length > 80)
-      errors.code = t("masterData.catalog.errCodeLength");
+    else if (
+      code.length > codeMaxLength &&
+      !(activeKind === "BRAND" && editingRecord?.code === code)
+    )
+      errors.code = t("masterData.catalog.errCodeLength", {
+        max: codeMaxLength,
+      });
     else {
       // Mã danh mục cũng đi vào mã SKU/nhãn in — cùng bộ ký tự với mọi mã khác.
       const codeError = codeFormatError(code, editingRecord?.code);
@@ -377,10 +386,14 @@ export function CatalogMasterScreen() {
       errors.name = t("masterData.catalog.errNameRequired", {
         label: activeTab.nameLabel,
       });
-    else if (name.length > 200)
-      errors.name = t("masterData.catalog.errNameLength");
-    if ((values.description ?? "").length > 2000)
-      errors.description = t("masterData.catalog.errDescriptionLength");
+    else if (name.length > nameMaxLength)
+      errors.name = t("masterData.catalog.errNameLength", {
+        max: nameMaxLength,
+      });
+    if ((values.description ?? "").length > descriptionMaxLength)
+      errors.description = t("masterData.catalog.errDescriptionLength", {
+        max: descriptionMaxLength,
+      });
     // Thứ tự hiển thị: nguyên 0…9999 (BE chỉ có integer|min:0 — trần lấy từ
     // NUMBER_RULES để không nhận số vô nghĩa).
     const sortOrderCheck = checkNumber(
@@ -396,7 +409,10 @@ export function CatalogMasterScreen() {
     setFormError("");
     const values: CatalogFormValues = {
       ...formValues,
-      code: formValues.code.trim(),
+      code:
+        activeKind === "BRAND" && !editingRecord
+          ? formValues.code.trim().toUpperCase().replace(/\s+/g, "_")
+          : formValues.code.trim(),
       name: formValues.name.trim(),
     };
     const errors = validateForm(values);
@@ -466,7 +482,6 @@ export function CatalogMasterScreen() {
       sortAccessor: (record) => record.code,
       render: (record) => (
         <span className="hn-catalog-code">
-          <span aria-hidden="true">{activeTab.icon}</span>
           <strong>{record.code}</strong>
         </span>
       ),
@@ -543,6 +558,7 @@ export function CatalogMasterScreen() {
     {
       key: "actions",
       header: "",
+      isAction: true,
       width: "8%",
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
@@ -600,7 +616,10 @@ export function CatalogMasterScreen() {
           <button
             type="button"
             className="hn-catalog-tabs-toggle"
-            aria-label={text("Hiện/ẩn nhóm danh mục", "Show or hide catalog groups")}
+            aria-label={text(
+              "Hiện/ẩn nhóm danh mục",
+              "Show or hide catalog groups",
+            )}
             title={text("Hiện/ẩn nhóm danh mục", "Show or hide catalog groups")}
             aria-expanded={tabsOpen}
             aria-controls="hn-catalog-tabs"
@@ -747,9 +766,9 @@ export function CatalogMasterScreen() {
                 rows={rows}
                 rowKey={(record) => record.id}
                 headerCellStyle={{
-                  backgroundColor: "#d2edf7",
+                  backgroundColor: "var(--ops-table-header)",
                   backgroundImage: "none",
-                  color: "var(--catalog-muted)",
+                  color: "var(--ops-heading)",
                   fontSize: 16,
                   lineHeight: "24px",
                   fontWeight: 800,
@@ -863,7 +882,10 @@ export function CatalogMasterScreen() {
               placeholder={activeTab.codePlaceholder}
               value={formValues.code}
               onChange={(event) => {
-                const value = event.target.value;
+                const value =
+                  activeKind === "BRAND" && !editingRecord
+                    ? event.target.value.toUpperCase()
+                    : event.target.value;
                 setFormValues((current) => ({ ...current, code: value }));
                 setFieldErrors((current) =>
                   current.code ? { ...current, code: "" } : current,
@@ -877,7 +899,7 @@ export function CatalogMasterScreen() {
                   ? t("masterData.catalog.codeLockedHint")
                   : undefined)
               }
-              slotProps={{ htmlInput: { maxLength: 80 } }}
+              slotProps={{ htmlInput: { maxLength: codeMaxLength } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -898,7 +920,7 @@ export function CatalogMasterScreen() {
               disabled={saveMutation.isPending}
               error={Boolean(fieldErrors.name)}
               helperText={fieldErrors.name}
-              slotProps={{ htmlInput: { maxLength: 200 } }}
+              slotProps={{ htmlInput: { maxLength: nameMaxLength } }}
             />
           </Grid>
           {supportsBrand ? (
@@ -953,7 +975,7 @@ export function CatalogMasterScreen() {
               disabled={saveMutation.isPending}
               error={Boolean(fieldErrors.description)}
               helperText={fieldErrors.description}
-              slotProps={{ htmlInput: { maxLength: 2000 } }}
+              slotProps={{ htmlInput: { maxLength: descriptionMaxLength } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>

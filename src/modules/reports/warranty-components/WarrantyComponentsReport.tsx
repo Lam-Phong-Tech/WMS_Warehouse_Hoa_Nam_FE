@@ -1,19 +1,17 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
+import { ReportFilterCombobox } from "@/modules/reports/components/ReportFilterCombobox";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import {
-  Box,
-  Stack,
-  UiAlert,
-  UiButton,
-  UiSelect,
-  UiSpinner,
-} from "@/shared/ui";
+import { Box, Stack, UiAlert, UiButton, UiSpinner } from "@/shared/ui";
 import {
   CheckCircleOutlined,
-  DownloadOutlined,
   FileTextOutlined,
   InboxOutlined,
   ReloadOutlined,
@@ -104,10 +102,12 @@ function normalizeRows(payload: unknown): UiRow[] {
         status !== "complete" &&
         dueDate &&
         dayjs(dueDate).isValid() &&
-        dayjs(dueDate).isBefore(dayjs(), "day")
+        dayjs(dueDate).isBefore(businessToday(), "day")
           ? Math.max(
               1,
-              dayjs().startOf("day").diff(dayjs(dueDate).startOf("day"), "day"),
+              businessToday()
+                .startOf("day")
+                .diff(dayjs(dueDate).startOf("day"), "day"),
             )
           : 0;
       return {
@@ -137,22 +137,6 @@ function normalizeRows(payload: unknown): UiRow[] {
 function pct(value: number, total: number): string {
   if (!total) return "—";
   return ((value / total) * 100).toFixed(1).replace(".", ",") + "%";
-}
-
-function FilterLabel({ children }: { children: ReactNode }) {
-  return (
-    <Box
-      sx={{
-        mb: 0.4,
-        color: C.text,
-        fontSize: 12,
-        fontWeight: 700,
-        lineHeight: "17px",
-      }}
-    >
-      {children}
-    </Box>
-  );
 }
 
 function SkeletonLine({
@@ -278,24 +262,39 @@ function MetricCard({
 function StatusPill({ row }: { row: UiRow }) {
   const palette =
     row.status === "complete"
-      ? { bg: C.greenSoft, fg: "#16833e" }
+      ? { bg: "var(--ops-success-soft)", fg: "var(--ops-success)" }
       : row.status === "waiting"
-        ? { bg: C.orangeSoft, fg: "#c86a00" }
-        : { bg: "#e5f5fc", fg: "#0874b7" };
+        ? { bg: "var(--ops-warning-soft)", fg: "var(--ops-warning)" }
+        : { bg: "var(--ops-pale)", fg: "var(--ops-link)" };
   return (
     <Box sx={{ display: "grid", justifyItems: "center", gap: 0.1 }}>
       <Box
         sx={{
-          minWidth: 124,
-          px: 1.1,
-          py: 0.32,
-          borderRadius: 999,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "7px",
+          minHeight: 24,
+          px: "8px",
+          py: "2px",
+          borderRadius: "20px",
           bgcolor: palette.bg,
           color: palette.fg,
           textAlign: "center",
-          fontSize: 11.5,
+          fontSize: 11,
+          lineHeight: "20px",
         }}
       >
+        <Box
+          component="span"
+          aria-hidden="true"
+          sx={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            bgcolor: "currentColor",
+            flexShrink: 0,
+          }}
+        />
         {row.statusLabel}
       </Box>
       {row.overdueDays > 0 ? (
@@ -405,8 +404,8 @@ export default function WarrantyComponentsReport() {
   const t = useT();
   const presets = useMemo(() => reportRangePresets(t), [t]);
   const [range, setRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(6, "day").startOf("day"),
-    dayjs().startOf("day"),
+    businessToday().subtract(6, "day").startOf("day"),
+    businessToday().startOf("day"),
   ]);
   const [status, setStatus] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -477,26 +476,21 @@ export default function WarrantyComponentsReport() {
     resetPagination();
   }, [status, keyword, resetPagination]);
 
-  const resetFilters = () => {
-    setRange([
-      dayjs().subtract(6, "day").startOf("day"),
-      dayjs().startOf("day"),
-    ]);
-    setStatus("");
-    setKeyword("");
-    pagination.reset();
-  };
+  const exportXlsx = (choice: ReportExportChoice) => {
+    return exporter.exportReport(choice.format, {
+      workbook: reportWorkbookOptions(
+        choice,
+        ["Case"],
+        filteredRows.map((row) => row.caseNo),
+        pagination.pageRows.map((row) => row.caseNo),
+      ),
 
-  const exportXlsx = () => {
-    void exporter.exportReport("xlsx", {
       reportCode: "warranty-defects",
       fileStem: "bao-cao-bao-hanh",
       fileSuffix: "-" + from + "-" + to,
       filters: {
         from_date: from,
         to_date: to,
-        ...(status ? { status } : {}),
-        ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
       },
     });
   };
@@ -574,9 +568,6 @@ export default function WarrantyComponentsReport() {
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Box sx={{ color: C.muted, fontSize: 12, fontWeight: 600 }}>
-            {tUi("updatedUi.text_a274c3357d1a")}
-          </Box>
           <Box
             component="h1"
             className="hn-report-page-title"
@@ -612,19 +603,39 @@ export default function WarrantyComponentsReport() {
             justifyContent: { xs: "flex-start", md: "flex-end" },
           }}
         >
-          <UiButton
-            appearance="filled"
-            startIcon={<DownloadOutlined />}
+          <ReportExportAction
+            title={tUi("reportExport.warranty")}
+            fileStem={"BaoCaoBaoHanh_" + from + "-" + to}
+            total={filteredRows.length}
+            currentCount={pagination.pageRows.length}
+            sections={reportExportSections(
+              tUi("reportExport.warrantyDocuments"),
+              "components",
+            )}
+            context={[
+              [
+                tUi("reportExport.period"),
+                range[0].format("DD/MM/YYYY") +
+                  " – " +
+                  range[1].format("DD/MM/YYYY"),
+              ],
+              [
+                tUi("reportExport.filters"),
+                [status, keyword].filter(Boolean).join(" · ") ||
+                  tUi("dashboard.operations.filterAll"),
+              ],
+            ]}
+            disabled={
+              invalid ||
+              loading ||
+              offline ||
+              hardError ||
+              partial ||
+              refreshing
+            }
             loading={exporting}
-            disabled={invalid || loading || offline}
-            onClick={exportXlsx}
-          >
-            {exporting
-              ? tUi("outbound.detail.preparing")
-              : tUi("reports.traceability.exportReport")}
-          </UiButton>
-
-          <ReportWarehouseCard />
+            onExport={exportXlsx}
+          />
         </Stack>
       </Stack>
 
@@ -635,7 +646,22 @@ export default function WarrantyComponentsReport() {
       <Box
         component="section"
         aria-label={tUi("reports.recipientAgency.filterTitle")}
-        sx={{ ...surface, p: { xs: 1.25, sm: 1.5 } }}
+        sx={{
+          py: 2,
+          minWidth: 0,
+          "& .hn-vuexy-date-field, & .inbound-filter-combobox__trigger, & .MuiInputBase-root":
+            {
+              height: 48,
+              minHeight: 48,
+              borderRadius: "var(--ops-radius-control)",
+              background: "var(--ops-surface)",
+            },
+          "& .hn-report-date-range": { gap: "12px" },
+          "& .inbound-filter-combobox__trigger": {
+            fontSize: 14,
+            fontWeight: 600,
+          },
+        }}
       >
         <Box
           sx={{
@@ -643,17 +669,20 @@ export default function WarrantyComponentsReport() {
             gridTemplateColumns: {
               xs: "1fr",
               sm: "repeat(2,minmax(0,1fr))",
-              lg: "1.2fr .9fr 1.1fr auto auto",
+              lg: "1.2fr .9fr 1.1fr",
             },
-            gap: { xs: 1, md: 1.05 },
-            alignItems: "end",
+            gap: "12px",
+            alignItems: "center",
           }}
         >
-          <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>
-              {tUi("reports.packingLabel.dateRangeLabel")}
-            </FilterLabel>
+          <Box
+            sx={{
+              minWidth: 0,
+              gridColumn: { xs: "auto", sm: "1 / -1", lg: "auto" },
+            }}
+          >
             <ReportDateRangePicker
+              autoApplyOnComplete
               aria-label={tUi("reports.packingLabel.dateRangeLabel")}
               value={range}
               format="DD/MM/YYYY"
@@ -668,40 +697,44 @@ export default function WarrantyComponentsReport() {
                 }
               }}
             />
-            <Box
-              sx={{
-                mt: 0.35,
-                color: invalid ? C.red : "var(--ops-muted)",
-                fontSize: 10.8,
-              }}
-            >
-              {invalid
-                ? tUi("dashboard.dateError.order")
-                : tUi("updatedUi.text_1af3943a0084")}
-            </Box>
+            {invalid ? (
+              <Box
+                sx={{
+                  mt: 0.35,
+                  color: invalid ? C.red : "var(--ops-muted)",
+                  fontSize: 10.8,
+                }}
+              >
+                {tUi("dashboard.dateError.order")}
+              </Box>
+            ) : null}
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>{tUi("dashboard.composition.colStatus")}</FilterLabel>
-            <UiSelect
-              fullWidth
-              aria-label={tUi("dashboard.composition.colStatus")}
+            <ReportFilterCombobox
+              id="rpt06-status"
+              ariaLabel={tUi("dashboard.composition.colStatus")}
               value={status}
-              placeholder={tUi("dashboard.operations.filterAll")}
-              menuClassName="rpt06-select-menu"
-              searchable={false}
-              onChange={setStatus}
+              icon="file-clock"
+              searchPlaceholder={tUi("dashboard.composition.colStatus")}
+              onChange={(value) => {
+                setStatus(value);
+                pagination.reset();
+              }}
               options={[
+                { value: "", label: tUi("dashboard.operations.filterAll") },
                 { value: "complete", label: tUi("iam.permissionAction.post") },
                 {
                   value: "processing",
                   label: tUi("dashboard.snapshot.stateProcessing"),
                 },
                 { value: "waiting", label: tUi("updatedUi.text_d3db3ce66df9") },
-              ]}
+              ].map((option) => ({
+                ...option,
+                label: `${tUi("dashboard.composition.colStatus")}: ${option.label}`,
+              }))}
             />
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>{tUi("reports.packingLabel.searchLabel")}</FilterLabel>
             <SearchInput
               width="100%"
               value={keyword}
@@ -710,20 +743,6 @@ export default function WarrantyComponentsReport() {
               onChange={(value) => setKeyword(value)}
             />
           </Box>
-          <UiButton
-            appearance="filled"
-            disabled={invalid || loading}
-            onClick={() => pagination.reset()}
-          >
-            {tUi("dashboard.snapshot.apply")}
-          </UiButton>
-          <UiButton
-            appearance="outlined"
-            sx={{ borderColor: "var(--ops-line)" }}
-            onClick={resetFilters}
-          >
-            {tUi("reports.packingLabel.reset")}
-          </UiButton>
         </Box>
 
         {exporting ? (
@@ -1068,9 +1087,8 @@ export default function WarrantyComponentsReport() {
             <Stack
               direction={{ xs: "column", sm: "row" }}
               sx={{
-                px: { xs: 1.2, md: 1.45 },
-                pt: 1,
-                pb: 0.65,
+                px: "16px",
+                py: "14px",
                 alignItems: { xs: "stretch", sm: "center" },
                 justifyContent: "space-between",
                 gap: 0.85,
@@ -1085,25 +1103,6 @@ export default function WarrantyComponentsReport() {
                   sx={{ m: 0, color: C.navy, fontSize: 18, fontWeight: 600 }}
                 >
                   {tUi("updatedUi.text_c62ca4dc7b07")}
-                </Box>
-                <Box
-                  sx={{
-                    px: 0.9,
-                    py: 0.2,
-                    borderRadius: 999,
-                    bgcolor: C.cyanSoft,
-                    color: C.navy,
-                    fontSize: 12,
-                    fontWeight: 800,
-                  }}
-                >
-                  {rows.length > 0 && filteredRows.length === 0
-                    ? tUi("updatedUi.text_f3674c04b5e8") +
-                      " " +
-                      fmt(rows.length) +
-                      " " +
-                      tUi("updatedUi.text_20d8a6e7893b")
-                    : fmt(rows.length)}
                 </Box>
                 {loading ? (
                   <Stack
@@ -1126,6 +1125,13 @@ export default function WarrantyComponentsReport() {
                   value={keyword}
                   aria-label={tUi("updatedUi.text_3f7976cb08ea")}
                   placeholder={tUi("updatedUi.text_451efe6a12da")}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      height: 48,
+                      borderRadius: "var(--ops-radius-control)",
+                      bgcolor: "var(--ops-surface)",
+                    },
+                  }}
                   onChange={(value) => setKeyword(value)}
                 />
               </Box>
@@ -1140,49 +1146,61 @@ export default function WarrantyComponentsReport() {
               </Box>
             ) : null}
 
-            <Box sx={{ px: { xs: 0.9, md: 1.2 } }}>
+            <Box>
               <Box
                 sx={{
                   overflowX: "auto",
-                  border: "1px solid " + C.border,
-                  borderRadius: "var(--ops-radius-control)",
                 }}
               >
                 <Box
                   component="table"
                   sx={{
                     width: "100%",
-                    minWidth: { xs: 760, md: 980 },
+                    minWidth: 1200,
                     borderCollapse: "collapse",
                     tableLayout: "fixed",
-                    color: C.text,
+                    color: "var(--ops-text)",
                     "& th": {
-                      bgcolor: "var(--ops-pale)",
-                      color: "var(--ops-link)",
-                      fontSize: 12,
-                      fontWeight: 700,
+                      bgcolor: "var(--ops-table-header)",
+                      color: "var(--ops-heading)",
+                      fontSize: 16,
+                      fontWeight: 800,
+                      lineHeight: "24px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.02em",
                       textAlign: "left",
-                      px: 1.15,
-                      py: 0.72,
-                      borderRight: "1px solid " + C.border,
+                      px: "18px",
+                      py: "12px",
                       borderBottom: "1px solid " + C.border,
                     },
                     "& td": {
-                      px: 1.15,
-                      py: 0.62,
-                      fontSize: 12,
-                      lineHeight: 1.25,
+                      height: 68,
+                      px: "18px",
+                      py: "12px",
+                      fontSize: 14,
+                      fontWeight: 400,
+                      lineHeight: "22px",
                       verticalAlign: "middle",
-                      borderRight: "1px solid " + C.border,
                       borderBottom: "1px solid " + C.border,
                     },
                     "& tr:last-child td": { borderBottom: 0 },
-                    "& th:last-child, & td:last-child": { borderRight: 0 },
+                    "& th:first-child, & td:first-child": {
+                      px: "8px",
+                      textAlign: "center",
+                    },
+                    "& th:last-child, & td:last-child": {
+                      px: "6px",
+                      textAlign: "center",
+                    },
+                    "& tbody tr:hover": {
+                      bgcolor:
+                        "color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface))",
+                    },
                   }}
                 >
                   <thead>
                     <tr>
-                      <th style={{ width: 46 }}>
+                      <th style={{ width: "4%" }}>
                         <input
                           type="checkbox"
                           aria-label={tUi(
@@ -1190,39 +1208,37 @@ export default function WarrantyComponentsReport() {
                           )}
                         />
                       </th>
-                      <th style={{ width: 178 }}>
+                      <th style={{ width: "24%" }}>
                         {tUi("updatedUi.text_922013da333f")}
                       </th>
-                      <th style={{ width: 195 }}>
+                      <th style={{ width: "27%" }}>
                         {tUi("updatedUi.text_100237901dd9")}
-                      </th>
-                      <th style={{ width: 170 }}>
-                        {tUi("updatedUi.text_6a91c6be24df")}
                       </th>
                       <th
                         className="warranty-desktop-only"
-                        style={{ width: 145 }}
+                        style={{ width: "13%" }}
                       >
                         {tUi("warranty.detail.fieldReceivedAt")}
                       </th>
                       <th
                         className="warranty-desktop-only"
-                        style={{ width: 145 }}
+                        style={{ width: "13%" }}
                       >
                         {tUi("updatedUi.text_61151ea4d85c")}
                       </th>
                       <th
                         className="warranty-tablet-only"
-                        style={{ width: 150 }}
+                        style={{ width: "26%" }}
                       >
                         {tUi("updatedUi.text_2a2f8a4381c7")}
                       </th>
-                      <th style={{ width: 155 }}>
+                      <th style={{ width: "14%" }}>
                         {tUi("dashboard.composition.colStatus")}
                       </th>
-                      <th style={{ width: 92 }}>
-                        {tUi("reports.importMatchReport.detail")}
-                      </th>
+                      <th
+                        style={{ width: "5%" }}
+                        aria-label={tUi("reports.importMatchReport.detail")}
+                      />
                     </tr>
                   </thead>
                   <tbody>
@@ -1252,9 +1268,6 @@ export default function WarrantyComponentsReport() {
                               <SkeletonLine width="65%" height={9} />
                             </Box>
                           </td>
-                          <td>
-                            <SkeletonLine width="68%" />
-                          </td>
                           <td className="warranty-desktop-only">
                             <SkeletonLine width="64%" />
                           </td>
@@ -1271,13 +1284,13 @@ export default function WarrantyComponentsReport() {
                             <SkeletonLine width="80%" height={22} />
                           </td>
                           <td>
-                            <Box sx={{ color: C.muted }}>Xem&nbsp;&nbsp;›</Box>
+                            <SkeletonLine width="40px" height={20} />
                           </td>
                         </tr>
                       ))
                     ) : filteredRows.length === 0 ? (
                       <tr>
-                        <td colSpan={9} style={{ borderRight: 0 }}>
+                        <td colSpan={8} style={{ borderRight: 0 }}>
                           <EmptyState noResult={rows.length > 0} />
                         </td>
                       </tr>
@@ -1294,20 +1307,52 @@ export default function WarrantyComponentsReport() {
                           </td>
                           <td className="warranty-case-cell">
                             <Box
-                              title={row.caseNo}
-                              sx={{ color: C.navy, fontWeight: 800 }}
-                            >
-                              {row.caseNo}
-                            </Box>
-                            <Box
-                              title={row.serial}
                               sx={{
-                                mt: 0.08,
-                                color: "var(--ops-link)",
-                                fontSize: 10.5,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
+                                minWidth: 0,
                               }}
                             >
-                              {row.serial}
+                              <Box
+                                aria-hidden="true"
+                                sx={{
+                                  display: "grid",
+                                  placeItems: "center",
+                                  flex: "0 0 44px",
+                                  height: 44,
+                                  borderRadius: "var(--ops-radius-control)",
+                                  bgcolor: "transparent",
+                                  color: "var(--ops-link)",
+                                  fontSize: 22,
+                                }}
+                              >
+                                <FileTextOutlined />
+                              </Box>
+                              <Box sx={{ minWidth: 0 }}>
+                                <Box
+                                  title={row.caseNo}
+                                  sx={{
+                                    color: "var(--ops-heading)",
+                                    fontSize: 15,
+                                    fontWeight: 600,
+                                    lineHeight: "22px",
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {row.caseNo}
+                                </Box>
+                                <Box
+                                  title={row.serial}
+                                  sx={{
+                                    mt: 0.08,
+                                    color: "var(--ops-muted)",
+                                    fontSize: 12,
+                                  }}
+                                >
+                                  {row.serial}
+                                </Box>
+                              </Box>
                             </Box>
                           </td>
                           <td className="warranty-sku-cell">
@@ -1318,8 +1363,10 @@ export default function WarrantyComponentsReport() {
                                 width: "100%",
                                 maxWidth: "100%",
                                 overflow: "hidden",
-                                color: C.navy,
-                                fontWeight: 800,
+                                color: "var(--ops-heading)",
+                                fontSize: 15,
+                                fontWeight: 600,
+                                lineHeight: "22px",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
                               }}
@@ -1335,28 +1382,12 @@ export default function WarrantyComponentsReport() {
                                 mt: 0.08,
                                 overflow: "hidden",
                                 color: C.muted,
-                                fontSize: 10.5,
+                                fontSize: 12,
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
                               }}
                             >
                               {row.skuName}
-                            </Box>
-                          </td>
-                          <td>
-                            <Box
-                              className="warranty-component-cell"
-                              title={row.component}
-                              sx={{
-                                display: "block",
-                                width: "100%",
-                                maxWidth: "100%",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {row.component}
                             </Box>
                           </td>
                           <td className="warranty-desktop-only">
@@ -1400,31 +1431,83 @@ export default function WarrantyComponentsReport() {
               className="hn-report-pagination-footer"
               direction={{ xs: "column", sm: "row" }}
               sx={{
-                px: { xs: 1.2, md: 1.45 },
-                py: 1.05,
+                px: "16px",
+                py: "14px",
+                borderTop: "1px solid var(--ops-line)",
                 alignItems: { xs: "stretch", sm: "center" },
                 justifyContent: "space-between",
                 gap: 1,
               }}
             >
-              <Box sx={{ fontSize: 12.5, color: C.text }}>
-                {tUi("putaway.queue.showing")}{" "}
-                {pagination.total === 0
-                  ? 0
-                  : (pagination.page - 1) * pagination.perPage + 1}
-                –
-                {Math.min(
-                  pagination.page * pagination.perPage,
-                  pagination.total,
-                )}{" "}
-                / {fmt(pagination.total)}
-                {" " + tUi("updatedUi.text_20d8a6e7893b")}
-              </Box>
+              <Stack
+                direction="row"
+                sx={{ alignItems: "center", flexWrap: "wrap", gap: "14px" }}
+              >
+                <Box
+                  sx={{
+                    fontSize: 14,
+                    lineHeight: "22px",
+                    color: "var(--ops-text)",
+                  }}
+                >
+                  {tUi("putaway.queue.showing")}{" "}
+                  {pagination.total === 0
+                    ? 0
+                    : (pagination.page - 1) * pagination.perPage + 1}
+                  –
+                  {Math.min(
+                    pagination.page * pagination.perPage,
+                    pagination.total,
+                  )}{" "}
+                  / {fmt(pagination.total)}
+                  {" " + tUi("updatedUi.text_20d8a6e7893b")}
+                </Box>
+                <Box
+                  component="label"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    color: "var(--ops-text)",
+                    fontSize: 14,
+                  }}
+                >
+                  Số dòng/trang
+                  <Box
+                    component="select"
+                    aria-label={tUi("shared.table.rowsPerPageAria")}
+                    value={pagination.perPage}
+                    onChange={(event) =>
+                      pagination.setPerPage(Number(event.target.value))
+                    }
+                    sx={{
+                      minHeight: 36,
+                      px: "10px",
+                      border: "1px solid var(--ops-line)",
+                      borderRadius: "var(--ops-radius-control)",
+                      bgcolor: "var(--ops-surface)",
+                      color: "var(--ops-text)",
+                      font: "inherit",
+                    }}
+                  >
+                    {[5, ...TABLE_PAGE_SIZE_OPTIONS].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </Box>
+                </Box>
+                <Box sx={{ color: "var(--ops-muted)", fontSize: 14 }}>
+                  {range[0].format("DD/MM/YYYY")}–
+                  {range[1].format("DD/MM/YYYY")}
+                </Box>
+              </Stack>
               <Stack
                 className="rpt06-pagination hn-report-pagination"
                 direction="row"
                 sx={{
                   gap: 0.45,
+                  ml: "auto",
                   alignItems: "center",
                   justifyContent: { xs: "flex-end", sm: "center" },
                   flexWrap: "wrap",
@@ -1473,15 +1556,6 @@ export default function WarrantyComponentsReport() {
                   ›
                 </UiButton>
               </Stack>
-              <Box
-                sx={{
-                  color: "var(--ops-link)",
-                  fontSize: 11.5,
-                  textAlign: { xs: "right", sm: "left" },
-                }}
-              >
-                {range[0].format("DD/MM/YYYY")}–{range[1].format("DD/MM/YYYY")}
-              </Box>
             </Stack>
           </Box>
         </>

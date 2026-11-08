@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IamRolePermissionScreen } from "./IamRolePermissionScreen";
 
 const fixtures = vi.hoisted(() => ({
@@ -37,6 +38,7 @@ vi.mock("@/modules/iam/hooks/use-iam", () => ({
   }),
   useIamUsers: () => ({ data: { data: [], meta: {} }, isLoading: false }),
   useUpdateIamRole: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateIamRole: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteIamRole: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSyncIamRolePermissions: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
@@ -49,7 +51,14 @@ describe("supplier permissions in the role matrix", () => {
     }),
   );
   it("shows the Nhà cung cấp group with independent assignable view/create/update checkboxes", async () => {
-    render(<IamRolePermissionScreen />);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <IamRolePermissionScreen />
+      </QueryClientProvider>,
+    );
     expect(
       await screen.findByText("Nhà cung cấp (NCC)", { exact: true }),
     ).toBeInTheDocument();

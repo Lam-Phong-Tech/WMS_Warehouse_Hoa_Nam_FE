@@ -49,9 +49,16 @@ export function useInboundDocuments(params: InboundListParams) {
     queryFn: () => fetchInboundDocuments(params),
   });
 }
-export function useInboundDetail(id: string | null | undefined) {
+export function useInboundDetail(
+  id: string | null | undefined,
+  options: { readOnly?: boolean } = {},
+) {
   return useQuery({
-    queryKey: inboundKeys.detail(id ?? ""),
+    // Reports can follow remote scans/status changes; editor snapshots retain
+    // their original optimistic version until the user's own save/reload.
+    queryKey: options.readOnly
+      ? ["report-document-detail", "inbound-full", id ?? ""]
+      : inboundKeys.detail(id ?? ""),
     queryFn: () => fetchInboundDetail(id ?? ""),
     enabled: Boolean(id),
   });

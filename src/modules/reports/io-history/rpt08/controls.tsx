@@ -1,15 +1,9 @@
+import { ReportExportButton } from "../../components/ReportExportAction";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
-import { SelectControl } from "./SelectControl";
+import { ReportFilterCombobox } from "../../components/ReportFilterCombobox";
 import type { Dayjs } from "dayjs";
 import { Link } from "react-router-dom";
-import {
-  CloseOutlined,
-  DownloadOutlined,
-  SwapOutlined,
-  UserOutlined,
-  WarningOutlined,
-} from "@/shared/components/icons";
+import { CloseOutlined, WarningOutlined } from "@/shared/components/icons";
 import type { ExportState, TransactionFilter } from "./model";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 function Skeleton({
@@ -49,6 +43,7 @@ function DateRangeControl({
       aria-invalid={invalid || undefined}
     >
       <ReportDateRangePicker
+        autoApplyOnComplete
         value={pickerValue}
         disabled={disabled}
         aria-label={tUi("reports.packingLabel.dateRangeLabel")}
@@ -66,7 +61,6 @@ export function HeaderActions({
   exportDisabled,
   onExport,
 }: {
-  warehouse: string;
   readonly: boolean;
   exportState: ExportState;
   exportDisabled: boolean;
@@ -74,34 +68,16 @@ export function HeaderActions({
 }) {
   return (
     <div className="rpt08-header-actions hn-report-warehouse-actions">
-      <span className="rpt08-demo-chip" role="note">
-        <span aria-hidden="true">ⓘ</span>
-        {tUi("updatedUi.text_098cc1b3c5b9")}
-      </span>
-
-      <ReportWarehouseCard />
-
       {readonly ? (
         <span className="rpt08-readonly-pill">
           {tUi("masterData.common.viewOnly")}
         </span>
       ) : (
-        <button
-          type="button"
-          className="rpt08-export-button"
+        <ReportExportButton
           disabled={exportDisabled}
-          aria-busy={exportState === "exporting" || undefined}
+          loading={exportState === "exporting"}
           onClick={onExport}
-        >
-          {exportState === "exporting" ? (
-            <span className="rpt08-spinner" aria-hidden="true" />
-          ) : (
-            <DownloadOutlined />
-          )}
-          {exportState === "exporting"
-            ? tUi("updatedUi.text_f218a6c991e2")
-            : tUi("reports.traceability.exportReport")}
-        </button>
+        />
       )}
     </div>
   );
@@ -116,7 +92,7 @@ export function InitialLoadingBody() {
 
       <section className="rpt08-card rpt08-loading-filter" aria-hidden="true">
         <div className="rpt08-loading-filter__grid">
-          {[82, 50, 80, 72].map((width, index) => (
+          {[82, 80, 72].map((width, index) => (
             <div key={index} className="rpt08-loading-field">
               <Skeleton width={`${width}px`} height={11} />
               <div className="rpt08-loading-control">
@@ -126,10 +102,7 @@ export function InitialLoadingBody() {
               </div>
             </div>
           ))}
-          <Skeleton width="176px" height={45} />
-          <Skeleton width="64px" height={12} />
         </div>
-        <Skeleton width="255px" height={11} />
       </section>
 
       <div className="rpt08-summary-grid">
@@ -251,38 +224,29 @@ export function FilterCard({
   type,
   actor,
   actorOptions,
-  warehouse,
   invalid,
   busy,
-  isDefaultRange,
   onRangeChange,
   onTypeChange,
   onActorChange,
-  onApply,
-  onReset,
 }: {
   range: [Dayjs, Dayjs];
   type: TransactionFilter;
   actor: string;
   actorOptions: ReadonlyArray<{ value: string; label: string }>;
-  warehouse: string;
   invalid: boolean;
   busy: boolean;
-  isDefaultRange: boolean;
   onRangeChange: (range: [Dayjs, Dayjs]) => void;
   onTypeChange: (type: TransactionFilter) => void;
   onActorChange: (actor: string) => void;
-  onApply: () => void;
-  onReset: () => void;
 }) {
   return (
     <section
-      className="rpt08-card rpt08-filter-card"
+      className="rpt08-filter-card"
       aria-label={tUi("reports.recipientAgency.filterTitle")}
     >
       <div className="rpt08-filter-grid">
         <div className="rpt08-filter-field rpt08-filter-field--date">
-          <label>{tUi("reports.packingLabel.dateRangeLabel")}</label>
           <DateRangeControl
             value={range}
             invalid={invalid}
@@ -292,74 +256,50 @@ export function FilterCard({
         </div>
 
         <div className="rpt08-filter-field">
-          <label>{tUi("updatedUi.text_19c608bfa103")}</label>
-          <SelectControl
-            ariaLabel={tUi("updatedUi.text_19c608bfa103")}
-            value="warehouse"
-            options={[{ value: "warehouse", label: warehouse }]}
-            icon={<span className="rpt08-diamond">◇</span>}
-            disabled={busy}
-            readonly
-            onChange={() => undefined}
-          />
-        </div>
-
-        <div className="rpt08-filter-field">
-          <label>{tUi("updatedUi.text_94c1cbc6d405")}</label>
-          <SelectControl
+          <ReportFilterCombobox
+            id="rpt08-transaction-type"
             ariaLabel={tUi("updatedUi.text_94c1cbc6d405")}
             value={type}
             options={[
               { value: "ALL", label: tUi("dashboard.operations.filterAll") },
               { value: "INBOUND", label: tUi("dashboard.snapshot.inbound") },
               { value: "OUTBOUND", label: tUi("dashboard.snapshot.outbound") },
-            ]}
-            icon={<SwapOutlined />}
+            ].map((option) => ({
+              ...option,
+              label: `${tUi("updatedUi.text_94c1cbc6d405")}: ${option.label}`,
+            }))}
+            icon="file-clock"
+            searchPlaceholder={tUi("updatedUi.text_94c1cbc6d405")}
             disabled={busy}
-            onChange={onTypeChange}
+            onChange={(value) => onTypeChange(value as TransactionFilter)}
           />
         </div>
 
         <div className="rpt08-filter-field">
-          <label>{tUi("inventory.trace.colPerformedBy")}</label>
-          <SelectControl
+          <ReportFilterCombobox
+            id="rpt08-actor"
             ariaLabel={tUi("inventory.trace.colPerformedBy")}
             value={actor}
-            options={actorOptions}
-            icon={<UserOutlined />}
+            options={actorOptions.map((option) => ({
+              ...option,
+              label: `${tUi("inventory.trace.colPerformedBy")}: ${option.label}`,
+            }))}
+            icon="user-round"
+            searchPlaceholder={tUi("inventory.trace.colPerformedBy")}
             disabled={busy}
             onChange={onActorChange}
           />
         </div>
 
-        <div className="rpt08-filter-actions">
-          <button
-            type="button"
-            className="rpt08-apply-button"
-            disabled={busy || invalid}
-            onClick={onApply}
+        {invalid ? (
+          <div
+            className="rpt08-filter-helper is-invalid"
+            role="alert"
+            aria-live="polite"
           >
-            {tUi("dashboard.snapshot.apply")}
-          </button>
-          <button
-            type="button"
-            className="rpt08-reset-button"
-            disabled={busy}
-            onClick={onReset}
-          >
-            {tUi("reports.packingLabel.reset")}
-          </button>
-        </div>
-
-        <div
-          className={"rpt08-filter-helper" + (invalid ? " is-invalid" : "")}
-          role={invalid ? "alert" : undefined}
-          aria-live={invalid ? "polite" : undefined}
-        >
-          {invalid
-            ? tUi("dashboard.dateError.order")
-            : `${isDefaultRange ? tUi("dashboard.snapshot.periodLast7") : tUi("updatedUi.text_fc11ccee30a8")} · ${tUi("updatedUi.text_bebd46bc068a")}`}
-        </div>
+            {tUi("dashboard.dateError.order")}
+          </div>
+        ) : null}
       </div>
     </section>
   );

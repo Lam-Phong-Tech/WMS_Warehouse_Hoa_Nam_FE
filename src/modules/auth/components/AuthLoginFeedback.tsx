@@ -1,3 +1,4 @@
+import { getDisplayTimezone } from "@/shared/utils/date-time";
 import { Box } from "@/shared/ui";
 import { AUTH_BASELINE } from "@/shared/ui/tokens";
 import { useT } from "@/shared/i18n/useT";
@@ -18,7 +19,7 @@ export function AuthSessionReplacementNotice({ notice, onDismiss }: {
   }[language];
   const signedInAt = notice.signed_in_at
     ? new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : language === "zh" ? "zh-CN" : "en-US", {
-      dateStyle: "short", timeStyle: "short",
+      dateStyle: "short", timeStyle: "short", timeZone: getDisplayTimezone(),
     }).format(new Date(notice.signed_in_at))
     : null;
 

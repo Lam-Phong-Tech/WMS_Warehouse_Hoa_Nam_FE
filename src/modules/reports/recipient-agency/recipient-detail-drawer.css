@@ -1,0 +1,238 @@
+.rpt07-recipient-drawer .MuiDrawer-paper {
+  max-width: 100vw;
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+.rpt07-recipient-drawer [data-ui-drawer-body] {
+  container: rpt07-recipient / inline-size;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+.rpt07-recipient-heading {
+  display: block;
+  position: relative;
+  min-width: 0;
+  padding-right: 52px;
+  overflow-wrap: anywhere;
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+}
+.rpt07-recipient-drawer .rpt07-recipient-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+}
+.rpt07-recipient-content {
+  min-width: 0;
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.rpt07-recipient-summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-pale);
+}
+.rpt07-recipient-summary > span {
+  flex-shrink: 0;
+  color: var(--ops-link);
+  font-size: 24px;
+}
+.rpt07-recipient-summary > div {
+  min-width: 0;
+}
+.rpt07-recipient-summary strong {
+  display: block;
+  color: var(--ops-heading);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.rpt07-recipient-summary div > span {
+  display: block;
+  margin-top: 4px;
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.rpt07-recipient-drawer [data-ui-drawer-actions] {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.rpt07-recipient-drawer [data-ui-drawer-actions] button {
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+}
+.rpt07-recipient-drawer .MuiButton-root.MuiButton-outlined {
+  color: var(--ops-link);
+  border-color: var(--ops-link);
+}
+.rpt07-recipient-drawer .MuiButton-root.MuiButton-outlined:hover {
+  background: var(--ops-pale);
+}
+.rpt07-recipient-drawer .MuiButton-root.Mui-focusVisible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 2px;
+}
+.rpt07-recipient-return > h3 {
+  margin: 0 0 16px;
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+}
+.rpt07-recipient-return section {
+  margin-top: 24px;
+  min-width: 0;
+}
+.rpt07-recipient-return h4 {
+  margin: 0 0 12px;
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+}
+.rpt07-recipient-return p {
+  margin: 0;
+}
+.rpt07-recipient-return [role="alert"] {
+  padding: 16px;
+  background: var(--ops-danger-soft);
+  border-radius: var(--ops-radius-card);
+}
+.rpt07-recipient-return [role="alert"] button {
+  margin-top: 12px;
+  min-height: 44px;
+}
+.rpt07-recipient-totals {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-pale);
+}
+.rpt07-recipient-totals > div {
+  min-width: 0;
+}
+.rpt07-recipient-totals small {
+  display: block;
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.rpt07-recipient-totals strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--ops-heading);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.rpt07-recipient-totals > span {
+  color: var(--ops-muted);
+}
+.rpt07-recipient-table {
+  min-width: 0;
+}
+.rpt07-recipient-table > .MuiBox-root:has(> table),
+.rpt07-recipient-table .MuiCard-root {
+  border-radius: var(--ops-radius-card);
+}
+.rpt07-recipient-table table {
+  font-size: 14px;
+  line-height: 22px;
+}
+.rpt07-recipient-table table :is(th, td) {
+  padding: 12px 18px;
+  vertical-align: middle;
+  border-color: var(--ops-line);
+}
+.rpt07-recipient-table table th {
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: normal;
+}
+.rpt07-recipient-table table tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+.rpt07-recipient-code {
+  color: var(--ops-heading);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.rpt07-recipient-drawer .rpt07-recipient-status {
+  max-width: 100%;
+  height: auto;
+  min-height: 24px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.rpt07-recipient-status .MuiChip-label {
+  white-space: normal;
+  padding-block: 3px;
+}
+.rpt07-recipient-drawer .rpt07-recipient-status[data-tone="success"] {
+  background: var(--ops-success-soft);
+  color: var(--ops-success-text);
+}
+.rpt07-recipient-drawer .rpt07-recipient-status[data-tone="warning"] {
+  background: var(--ops-warning-soft);
+  color: var(--ops-warning-text);
+}
+.rpt07-recipient-table .MuiCard-root {
+  background: var(--ops-surface);
+  color: var(--ops-text);
+  border-color: var(--ops-line);
+}
+.rpt07-recipient-table .MuiCardContent-root {
+  padding: 16px;
+  font-size: 14px;
+  line-height: 22px;
+}
+.rpt07-recipient-table
+  .MuiCardContent-root
+  > .MuiBox-root
+  > .MuiTypography-root {
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+@container rpt07-recipient (max-width: 480px) {
+  .rpt07-recipient-totals {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 12px;
+  }
+  .rpt07-recipient-totals > span {
+    display: none;
+  }
+  .rpt07-recipient-table .MuiCardContent-root > .MuiBox-root {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .rpt07-recipient-table .MuiCardContent-root > .MuiBox-root > .MuiBox-root {
+    text-align: left;
+    max-width: 100%;
+  }
+}

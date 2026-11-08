@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import "./outbound-dialog.css";
+import "./outbound-intake-drawer.css";
 import {
   Box,
+  Drawer,
   Grid,
   Stack,
   UiAddressField,
@@ -11,7 +13,6 @@ import {
   // UiFormAutocomplete gắn với react-hook-form mà form này giữ state thường —
   // nên dùng bản không-RHF.
   UiAutocomplete,
-  UiDialog,
   UiFormField,
   UiVuexyDateField,
   UiNumberField,
@@ -37,6 +38,7 @@ import { RecipientCreateDialog } from "@/modules/master-data/components/Recipien
 import type { AgencyRecord } from "@/modules/master-data/types/mvp-master.types";
 import { useCan } from "@/shared/components/permission";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
+import { CoordinatedLoadingBoundary } from "@/shared/ui/loading/CoordinatedLoadingBoundary";
 import {
   AnimatedList,
   AnimatedListItem,
@@ -890,479 +892,318 @@ export function OutboundIntakeModal({
 
   return (
     <>
-      <UiDialog
-        className="hn-outbound-dialog hn-outbound-intake"
+      <Drawer
+        anchor="right"
+        className="hn-outbound-dialog hn-outbound-intake hn-outbound-intake-drawer"
         {...dialog.dialogProps}
         open={open && dialog.open}
-        onClose={close}
-        maxWidth="lg"
-        fullWidth
-        title={
-          <Box
-            component="span"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 1,
-            }}
-          >
-            {t("outbound.intake.title")}
-            <ActionIconButton
-              kind="close"
-              label={t("common.close")}
-              onClick={close}
-            />
-          </Box>
-        }
-        actions={
-          <ActionButton kind="close" onClick={close}>
-            {t("common.close")}
-          </ActionButton>
-        }
+        slotProps={{
+          ...dialog.dialogProps.slotProps,
+          paper: { "aria-label": t("outbound.intake.title") },
+        }}
       >
-        <Stack spacing={2}>
-          <Stack
-            direction="row"
-            spacing={1.5}
-            className="hn-outbound-dialog__modes"
-          >
-            <ActionButton
-              kind="edit"
-              aria-pressed={mode === "manual"}
-              onClick={() => {
-                setMode("manual");
-                setPreview(null);
-              }}
+        <header className="hn-outbound-intake-drawer__header">
+          <strong>{t("outbound.intake.title")}</strong>
+          <ActionIconButton
+            kind="close"
+            label={t("common.close")}
+            onClick={close}
+          />
+        </header>
+        <CoordinatedLoadingBoundary mode="drawer" active={open && dialog.open}>
+          <Stack spacing={2} className="hn-outbound-intake-drawer__body">
+            <Stack
+              direction="row"
+              spacing={1.5}
+              className="hn-outbound-dialog__modes"
             >
-              {t("outbound.intake.tabManual")}
-            </ActionButton>
-            <ActionButton
-              kind="import"
-              aria-pressed={mode === "excel"}
-              onClick={() => {
-                setMode("excel");
-                setPreview(null);
-              }}
-            >
-              {t("outbound.intake.tabExcel")}
-            </ActionButton>
-          </Stack>
+              <ActionButton
+                kind="edit"
+                aria-pressed={mode === "manual"}
+                onClick={() => {
+                  setMode("manual");
+                  setPreview(null);
+                }}
+              >
+                {t("outbound.intake.tabManual")}
+              </ActionButton>
+              <ActionButton
+                kind="import"
+                aria-pressed={mode === "excel"}
+                onClick={() => {
+                  setMode("excel");
+                  setPreview(null);
+                }}
+              >
+                {t("outbound.intake.tabExcel")}
+              </ActionButton>
+            </Stack>
 
-          {mode === "manual" ? (
-            <Stack spacing={2}>
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <UiTextField
-                    required
-                    fullWidth
-                    label={t("outbound.intake.fieldRequestNo")}
-                    placeholder="VD: REQ-20260813-001"
-                    value={requestNo}
-                    onChange={(event) => {
-                      setRequestNo(event.target.value);
-                      clearFieldError("requestNo");
-                    }}
-                    error={Boolean(fieldErrors.requestNo)}
-                    helperText={fieldErrors.requestNo}
-                    slotProps={{ htmlInput: { maxLength: REQUEST_NO_MAX } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <UiAutocomplete
-                    options={
-                      // Giữ nhãn của nơi nhận ĐANG CHỌN kể cả khi nó rơi ra ngoài
-                      // kết quả tìm kiếm hiện tại (BE lọc theo keyword).
-                      agencyId &&
-                      !agencyOptions.some((option) => option.value === agencyId)
-                        ? [
-                            {
-                              value: agencyId,
-                              label: (() => {
-                                const record = agencyById.get(agencyId);
-                                return record ? agencyLabel(record) : agencyId;
-                              })(),
-                            },
-                            ...agencyOptions,
-                          ]
-                        : agencyOptions
-                    }
-                    value={agencyId}
-                    onChange={(next) =>
-                      handleAgencyChange(next === null ? null : String(next))
-                    }
-                    onInputChange={setAgencyKeyword}
-                    // Dòng "+ Thêm nơi nhận" nằm cuối dropdown; chọn nó chỉ mở
-                    // dialog tạo mới, không set giá trị nào.
-                    onAddNew={
-                      canManageAgency
-                        ? () => setCreateAgencyOpen(true)
-                        : undefined
-                    }
-                    addNewLabel={t("outbound.intake.agencyCreate")}
-                    loading={agencySearchQuery.isFetching}
-                    noOptionsText={
-                      agencyKeyword.trim()
-                        ? t("outbound.intake.agencyNoMatch")
-                        : t("outbound.intake.agencyTypeToSearch")
-                    }
-                    label={t("outbound.intake.fieldAgency")}
-                    placeholder={t("outbound.intake.fieldAgencyPlaceholder")}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <UiTextField
-                    required
-                    fullWidth
-                    label={t("outbound.intake.fieldRecipient")}
-                    value={recipientName}
-                    onChange={(event) => {
-                      setRecipientName(event.target.value);
-                      clearFieldError("recipientName");
-                    }}
-                    error={Boolean(fieldErrors.recipientName)}
-                    helperText={fieldErrors.recipientName}
-                    slotProps={{ htmlInput: { maxLength: 200 } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <UiTextField
-                    fullWidth
-                    label={t("outbound.intake.fieldPhone")}
-                    placeholder="VD: 0901234567"
-                    value={recipientPhone}
-                    onChange={(event) => {
-                      setRecipientPhone(
-                        event.target.value.replace(/\D/g, "").slice(0, 10),
-                      );
-                      clearFieldError("recipientPhone");
-                    }}
-                    error={
-                      Boolean(fieldErrors.recipientPhone) ||
-                      (Boolean(recipientPhone) &&
-                        !validatePhone(recipientPhone).isValid)
-                    }
-                    helperText={
-                      fieldErrors.recipientPhone ??
-                      (Boolean(recipientPhone) &&
-                      !validatePhone(recipientPhone).isValid
-                        ? (validatePhone(recipientPhone).errorMessage ??
-                          t("outbound.intake.errPhone"))
-                        : undefined)
-                    }
-                    slotProps={{
-                      htmlInput: { maxLength: 10, inputMode: "numeric" },
-                    }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <UiFormField
-                    label={t("outbound.intake.fieldRequestDate")}
-                    htmlFor="outbound-request-date"
-                    error={Boolean(fieldErrors.requestDate)}
-                    helperText={
-                      <span id="outbound-request-date-help">
-                        {fieldErrors.requestDate ??
-                          t("outbound.intake.dateHelper")}
-                      </span>
-                    }
-                  >
-                    <Box
-                      className="hn-outbound-dialog__date"
-                      role="group"
-                      aria-label={t("outbound.intake.fieldRequestDate")}
-                      aria-invalid={Boolean(fieldErrors.requestDate)}
-                      aria-describedby="outbound-request-date-help"
+            {mode === "manual" ? (
+              <Stack spacing={2}>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <UiTextField
+                      required
+                      fullWidth
+                      label={t("outbound.intake.fieldRequestNo")}
+                      placeholder="VD: REQ-20260813-001"
+                      value={requestNo}
+                      onChange={(event) => {
+                        setRequestNo(event.target.value);
+                        clearFieldError("requestNo");
+                      }}
+                      error={Boolean(fieldErrors.requestNo)}
+                      helperText={fieldErrors.requestNo}
+                      slotProps={{ htmlInput: { maxLength: REQUEST_NO_MAX } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <UiAutocomplete
+                      options={
+                        // Giữ nhãn của nơi nhận ĐANG CHỌN kể cả khi nó rơi ra ngoài
+                        // kết quả tìm kiếm hiện tại (BE lọc theo keyword).
+                        agencyId &&
+                        !agencyOptions.some(
+                          (option) => option.value === agencyId,
+                        )
+                          ? [
+                              {
+                                value: agencyId,
+                                label: (() => {
+                                  const record = agencyById.get(agencyId);
+                                  return record
+                                    ? agencyLabel(record)
+                                    : agencyId;
+                                })(),
+                              },
+                              ...agencyOptions,
+                            ]
+                          : agencyOptions
+                      }
+                      value={agencyId}
+                      onChange={(next) =>
+                        handleAgencyChange(next === null ? null : String(next))
+                      }
+                      onInputChange={setAgencyKeyword}
+                      // Dòng "+ Thêm nơi nhận" nằm cuối dropdown; chọn nó chỉ mở
+                      // dialog tạo mới, không set giá trị nào.
+                      onAddNew={
+                        canManageAgency
+                          ? () => setCreateAgencyOpen(true)
+                          : undefined
+                      }
+                      addNewLabel={t("outbound.intake.agencyCreate")}
+                      loading={agencySearchQuery.isFetching}
+                      noOptionsText={
+                        agencyKeyword.trim()
+                          ? t("outbound.intake.agencyNoMatch")
+                          : t("outbound.intake.agencyTypeToSearch")
+                      }
+                      label={t("outbound.intake.fieldAgency")}
+                      placeholder={t("outbound.intake.fieldAgencyPlaceholder")}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <UiTextField
+                      required
+                      fullWidth
+                      label={t("outbound.intake.fieldRecipient")}
+                      value={recipientName}
+                      onChange={(event) => {
+                        setRecipientName(event.target.value);
+                        clearFieldError("recipientName");
+                      }}
+                      error={Boolean(fieldErrors.recipientName)}
+                      helperText={fieldErrors.recipientName}
+                      slotProps={{ htmlInput: { maxLength: 200 } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <UiTextField
+                      fullWidth
+                      label={t("outbound.intake.fieldPhone")}
+                      placeholder="VD: 0901234567"
+                      value={recipientPhone}
+                      onChange={(event) => {
+                        setRecipientPhone(
+                          event.target.value.replace(/\D/g, "").slice(0, 10),
+                        );
+                        clearFieldError("recipientPhone");
+                      }}
+                      error={
+                        Boolean(fieldErrors.recipientPhone) ||
+                        (Boolean(recipientPhone) &&
+                          !validatePhone(recipientPhone).isValid)
+                      }
+                      helperText={
+                        fieldErrors.recipientPhone ??
+                        (Boolean(recipientPhone) &&
+                        !validatePhone(recipientPhone).isValid
+                          ? (validatePhone(recipientPhone).errorMessage ??
+                            t("outbound.intake.errPhone"))
+                          : undefined)
+                      }
+                      slotProps={{
+                        htmlInput: { maxLength: 10, inputMode: "numeric" },
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <UiFormField
+                      label={t("outbound.intake.fieldRequestDate")}
+                      htmlFor="outbound-request-date"
+                      error={Boolean(fieldErrors.requestDate)}
+                      helperText={
+                        <span id="outbound-request-date-help">
+                          {fieldErrors.requestDate ??
+                            t("outbound.intake.dateHelper")}
+                        </span>
+                      }
                     >
-                      <UiVuexyDateField
-                        id="outbound-request-date"
-                        field="outbound-request-date"
+                      <Box
+                        className="hn-outbound-dialog__date"
+                        role="group"
                         aria-label={t("outbound.intake.fieldRequestDate")}
-                        value={requestDateValue}
-                        onChange={(next) => {
-                          setRequestDate(next?.format("YYYY-MM-DD") ?? "");
-                          clearFieldError("requestDate");
-                        }}
-                        minDate={requestDateBounds.minDate}
-                        maxDate={requestDateBounds.maxDate}
-                      />
-                      {requestDate ? (
-                        <ActionIconButton
-                          kind="close"
-                          className="hn-outbound-dialog__date-clear"
-                          label={`${t("shared.form.autocompleteClear")}: ${t("outbound.intake.fieldRequestDate")}`}
-                          onClick={() => {
-                            setRequestDate("");
+                        aria-invalid={Boolean(fieldErrors.requestDate)}
+                        aria-describedby="outbound-request-date-help"
+                      >
+                        <UiVuexyDateField
+                          id="outbound-request-date"
+                          field="outbound-request-date"
+                          aria-label={t("outbound.intake.fieldRequestDate")}
+                          value={requestDateValue}
+                          onChange={(next) => {
+                            setRequestDate(next?.format("YYYY-MM-DD") ?? "");
                             clearFieldError("requestDate");
                           }}
+                          minDate={requestDateBounds.minDate}
+                          maxDate={requestDateBounds.maxDate}
                         />
-                      ) : null}
-                    </Box>
-                  </UiFormField>
+                        {requestDate ? (
+                          <ActionIconButton
+                            kind="close"
+                            className="hn-outbound-dialog__date-clear"
+                            label={`${t("shared.form.autocompleteClear")}: ${t("outbound.intake.fieldRequestDate")}`}
+                            onClick={() => {
+                              setRequestDate("");
+                              clearFieldError("requestDate");
+                            }}
+                          />
+                        ) : null}
+                      </Box>
+                    </UiFormField>
+                  </Grid>
+                  <Grid size={12}>
+                    <UiAddressField
+                      data-testid="outbound-recipient-address"
+                      label={t("outbound.intake.fieldAddress")}
+                      value={recipientAddress}
+                      onChange={setRecipientAddress}
+                      maxDetailLength={300}
+                    />
+                  </Grid>
                 </Grid>
-                <Grid size={12}>
-                  <UiAddressField
-                    data-testid="outbound-recipient-address"
-                    label={t("outbound.intake.fieldAddress")}
-                    value={recipientAddress}
-                    onChange={setRecipientAddress}
-                    maxDetailLength={300}
-                  />
-                </Grid>
-              </Grid>
 
-              <Stack spacing={1.5}>
-                <AnimatedList>
-                  {lines.map((line, index) => (
-                    <AnimatedListItem key={line.key} gap={12}>
-                      <Stack
-                        className="hn-outbound-dialog__line"
-                        direction="row"
-                        spacing={1.5}
-                        sx={{
-                          alignItems: "flex-start",
-                          flexWrap: "wrap",
-                          rowGap: 1,
-                        }}
-                      >
-                        <UiAutocomplete
-                          sx={{ width: { xs: "100%", sm: 380 }, minWidth: 0 }}
-                          options={
-                            // Giữ nhãn của SKU ĐANG CHỌN kể cả khi nó rơi ra ngoài
-                            // kết quả tìm kiếm hiện tại.
-                            line.product_id &&
-                            !skuSearchOptions.some(
-                              (option) => option.value === line.product_id,
-                            )
-                              ? [
-                                  {
-                                    value: line.product_id,
-                                    label:
-                                      skuLabelById.get(line.product_id) ??
-                                      line.product_id,
-                                  },
-                                  ...skuSearchOptions,
-                                ]
-                              : skuSearchOptions
-                          }
-                          value={line.product_id || null}
-                          onChange={(next) => {
-                            const productId = next === null ? "" : String(next);
-                            updateLine(index, {
-                              product_id: productId,
-                              sku_code: productId
-                                ? (skuCodeById.get(productId) ?? "")
-                                : "",
-                            });
-                            clearLineError(index);
-                          }}
-                          onInputChange={setSkuKeyword}
-                          loading={skuSearchQuery.isFetching}
-                          noOptionsText={
-                            skuKeyword.trim()
-                              ? t("outbound.intake.skuNoMatch")
-                              : t("outbound.intake.skuTypeToSearch")
-                          }
-                          required
-                          label={t("outbound.intake.fieldSku")}
-                          placeholder={t("outbound.intake.fieldSkuPlaceholder")}
-                          error={Boolean(fieldErrors.lines[index]?.product_id)}
-                          helperText={
-                            fieldErrors.lines[index]?.product_id ||
-                            t("outbound.intake.skuHelper")
-                          }
-                        />
-                        <UiNumberField
-                          required
-                          rule={NUMBER_RULES.quantity}
-                          label={t("outbound.intake.fieldQty")}
-                          value={line.required_qty}
-                          onChange={(next) => {
-                            updateLine(index, { required_qty: next });
-                            clearLineError(index);
-                          }}
-                          error={Boolean(
-                            fieldErrors.lines[index]?.required_qty,
-                          )}
-                          helperText={fieldErrors.lines[index]?.required_qty}
-                          sx={{ width: 130 }}
-                        />
-                        <ActionButton
-                          kind="delete"
-                          disabled={lines.length === 1}
-                          onClick={() =>
-                            setLines((current) =>
-                              current.filter((_, i) => i !== index),
-                            )
-                          }
-                          sx={{ mt: "8px" }}
-                        >
-                          {t("outbound.intake.removeLine")}
-                        </ActionButton>
-                      </Stack>
-                    </AnimatedListItem>
-                  ))}
-                </AnimatedList>
-                <Box>
-                  <ActionButton
-                    kind="create"
-                    onClick={() =>
-                      setLines((current) => [...current, createEmptyLine()])
-                    }
-                  >
-                    {t("outbound.intake.addLine")}
-                  </ActionButton>
-                </Box>
-              </Stack>
-
-              <Stack
-                direction="row"
-                spacing={1.5}
-                sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
-              >
-                <ActionButton
-                  kind="view"
-                  className="hn-outbound-dialog__primary"
-                  disabled={!canImport || validateManualMutation.isPending}
-                  onClick={handleValidateManual}
-                >
-                  {validateManualMutation.isPending
-                    ? t("outbound.intake.validating")
-                    : t("outbound.intake.validate")}
-                </ActionButton>
-                <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                  {t("outbound.intake.manualHint")}
-                </Box>
-              </Stack>
-            </Stack>
-          ) : (
-            <Stack spacing={1.5}>
-              <input
-                key={fileInputKey}
-                type="file"
-                accept={acceptAttribute(EXCEL_FILE_RULE)}
-                aria-label={t("outbound.intake.fileAria")}
-                aria-invalid={Boolean(fileError)}
-                onChange={(event) => {
-                  const picked = event.target.files?.[0] ?? null;
-                  setFile(picked);
-                  setFileError(picked ? checkExcelFile(picked, t) : null);
-                }}
-              />
-              {fileError ? (
-                <Box
-                  role="alert"
-                  sx={{ typography: "body2", color: "error.main" }}
-                >
-                  {fileError}
-                </Box>
-              ) : null}
-              <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                {t("outbound.intake.fileHint")}
-              </Box>
-              <Box>
-                <ActionButton
-                  kind="upload"
-                  className="hn-outbound-dialog__primary"
-                  disabled={
-                    !canImport ||
-                    !file ||
-                    Boolean(fileError) ||
-                    validateFileMutation.isPending
-                  }
-                  onClick={() => validateFileMutation.mutate()}
-                >
-                  {validateFileMutation.isPending
-                    ? t("outbound.intake.uploading")
-                    : t("outbound.intake.upload")}
-                </ActionButton>
-              </Box>
-              <ApiErrorAlert
-                error={validateFileMutation.error}
-                title={t("outbound.intake.uploadErrorTitle")}
-              />
-            </Stack>
-          )}
-
-          {preview ? (
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: "var(--ops-radius-card)",
-                p: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  typography: "subtitle2",
-                  fontWeight: 700,
-                  mb: 1.5,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                }}
-              >
-                {t("outbound.intake.previewTitle")}{" "}
-                {preview.importNo || <CopyableId value={preview.id} />}
-              </Box>
-              <Stack spacing={1.5}>
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
-                >
-                  <UiStatusBadge
-                    tone={IMPORT_STATUS_TONE[preview.status] ?? "neutral"}
-                    label={
-                      IMPORT_STATUS_LABEL[preview.status]
-                        ? t(IMPORT_STATUS_LABEL[preview.status])
-                        : t("outbound.intake.statusUnknown")
-                    }
-                  />
-                  <Box sx={{ typography: "body2" }}>
-                    {t("outbound.intake.previewTotal", {
-                      count: preview.totalRows,
-                    })}
-                  </Box>
-                  <Box sx={{ typography: "body2", color: "success.main" }}>
-                    {t("outbound.intake.previewValid", {
-                      count: preview.validRows,
-                    })}
-                  </Box>
-                  <Box
-                    sx={{
-                      typography: "body2",
-                      color:
-                        preview.errorRows > 0 ? "error.main" : "text.primary",
-                    }}
-                  >
-                    {t("outbound.intake.previewErrors", {
-                      count: preview.errorRows,
-                    })}
+                <Stack spacing={1.5}>
+                  <AnimatedList>
+                    {lines.map((line, index) => (
+                      <AnimatedListItem key={line.key} gap={12}>
+                        <Box className="hn-outbound-dialog__line">
+                          <UiAutocomplete
+                            sx={{ minWidth: 0 }}
+                            options={
+                              // Giữ nhãn của SKU ĐANG CHỌN kể cả khi nó rơi ra ngoài
+                              // kết quả tìm kiếm hiện tại.
+                              line.product_id &&
+                              !skuSearchOptions.some(
+                                (option) => option.value === line.product_id,
+                              )
+                                ? [
+                                    {
+                                      value: line.product_id,
+                                      label:
+                                        skuLabelById.get(line.product_id) ??
+                                        line.product_id,
+                                    },
+                                    ...skuSearchOptions,
+                                  ]
+                                : skuSearchOptions
+                            }
+                            value={line.product_id || null}
+                            onChange={(next) => {
+                              const productId =
+                                next === null ? "" : String(next);
+                              updateLine(index, {
+                                product_id: productId,
+                                sku_code: productId
+                                  ? (skuCodeById.get(productId) ?? "")
+                                  : "",
+                              });
+                              clearLineError(index);
+                            }}
+                            onInputChange={setSkuKeyword}
+                            loading={skuSearchQuery.isFetching}
+                            noOptionsText={
+                              skuKeyword.trim()
+                                ? t("outbound.intake.skuNoMatch")
+                                : t("outbound.intake.skuTypeToSearch")
+                            }
+                            required
+                            label={t("outbound.intake.fieldSku")}
+                            placeholder={t(
+                              "outbound.intake.fieldSkuPlaceholder",
+                            )}
+                            error={Boolean(
+                              fieldErrors.lines[index]?.product_id,
+                            )}
+                            helperText={
+                              fieldErrors.lines[index]?.product_id ||
+                              t("outbound.intake.skuHelper")
+                            }
+                          />
+                          <UiNumberField
+                            required
+                            rule={NUMBER_RULES.quantity}
+                            label={t("outbound.intake.fieldQty")}
+                            value={line.required_qty}
+                            onChange={(next) => {
+                              updateLine(index, { required_qty: next });
+                              clearLineError(index);
+                            }}
+                            error={Boolean(
+                              fieldErrors.lines[index]?.required_qty,
+                            )}
+                            helperText={fieldErrors.lines[index]?.required_qty}
+                            sx={{ minWidth: 0 }}
+                          />
+                          <ActionButton
+                            kind="delete"
+                            className="hn-outbound-dialog__remove-line"
+                            disabled={lines.length === 1}
+                            onClick={() =>
+                              setLines((current) =>
+                                current.filter((_, i) => i !== index),
+                              )
+                            }
+                          >
+                            {t("outbound.intake.removeLine")}
+                          </ActionButton>
+                        </Box>
+                      </AnimatedListItem>
+                    ))}
+                  </AnimatedList>
+                  <Box>
+                    <ActionButton
+                      kind="create"
+                      onClick={() =>
+                        setLines((current) => [...current, createEmptyLine()])
+                      }
+                    >
+                      {t("outbound.intake.addLine")}
+                    </ActionButton>
                   </Box>
                 </Stack>
-                {/* Bảng xem trước lấy từ kết quả kiểm tra (mutation, không phải
-                  query) — hiện loading khi đang kiểm tra lại dữ liệu/tệp. */}
-                <ResponsiveDataTable<ImportRow>
-                  columns={previewColumns}
-                  rows={pagedPreviewRows}
-                  rowKey={(row) => row.id}
-                  loading={
-                    validateManualMutation.isPending ||
-                    validateFileMutation.isPending
-                  }
-                  emptyText={t("outbound.intake.previewEmpty")}
-                />
-                {previewPaged ? (
-                  <UiPagination
-                    page={previewPage}
-                    pageSize={PREVIEW_PAGE_SIZE}
-                    total={previewRows.length}
-                    showTotal={false}
-                    onPageChange={setPreviewPage}
-                  />
-                ) : null}
 
                 <Stack
                   direction="row"
@@ -1370,40 +1211,220 @@ export function OutboundIntakeModal({
                   sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
                 >
                   <ActionButton
-                    kind="confirm"
-                    disabled={!consumable || consumeMutation.isPending}
-                    onClick={() => consumeMutation.mutate()}
+                    kind="view"
+                    className="hn-outbound-dialog__primary"
+                    disabled={!canImport || validateManualMutation.isPending}
+                    onClick={handleValidateManual}
                   >
-                    {consumeMutation.isPending
-                      ? t("outbound.intake.confirming")
-                      : t("outbound.intake.confirm")}
+                    {validateManualMutation.isPending
+                      ? t("outbound.intake.validating")
+                      : t("outbound.intake.validate")}
                   </ActionButton>
-                  {!consumable ? (
+                  <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                    {t("outbound.intake.manualHint")}
+                  </Box>
+                </Stack>
+              </Stack>
+            ) : (
+              <div className="hn-outbound-dialog__excel-grid">
+                <div className="hn-outbound-dialog__excel-upload">
+                  <h3>{t("outbound.intake.fileUploadTitle")}</h3>
+                  <div className="hn-outbound-dialog__excel-picker">
+                    <input
+                      key={fileInputKey}
+                      id="outbound-request-excel-file"
+                      type="file"
+                      accept={acceptAttribute(EXCEL_FILE_RULE)}
+                      aria-label={t("outbound.intake.fileAria")}
+                      aria-invalid={Boolean(fileError)}
+                      onChange={(event) => {
+                        const picked = event.target.files?.[0] ?? null;
+                        setFile(picked);
+                        setFileError(picked ? checkExcelFile(picked, t) : null);
+                      }}
+                    />
+                    <label htmlFor="outbound-request-excel-file">
+                      {t("outbound.intake.fileChoose")}
+                    </label>
+                    <span
+                      className="hn-outbound-dialog__excel-filename"
+                      title={file?.name}
+                      aria-live="polite"
+                    >
+                      {file?.name ?? t("outbound.intake.fileNone")}
+                    </span>
+                  </div>
+                  {fileError ? <p role="alert">{fileError}</p> : null}
+                  <ActionButton
+                    kind="upload"
+                    className="hn-outbound-dialog__primary"
+                    disabled={
+                      !canImport ||
+                      !file ||
+                      Boolean(fileError) ||
+                      validateFileMutation.isPending
+                    }
+                    onClick={() => validateFileMutation.mutate()}
+                  >
+                    {validateFileMutation.isPending
+                      ? t("outbound.intake.uploading")
+                      : t("outbound.intake.upload")}
+                  </ActionButton>
+                  <ApiErrorAlert
+                    error={validateFileMutation.error}
+                    title={t("outbound.intake.uploadErrorTitle")}
+                  />
+                </div>
+                <div className="hn-outbound-dialog__excel-guide">
+                  <h3>{t("outbound.intake.fileGuideTitle")}</h3>
+                  <div className="hn-outbound-dialog__excel-fields">
+                    <div>
+                      <strong>{t("outbound.intake.fileRequiredTitle")}</strong>
+                      <p>{t("outbound.intake.fileRequiredColumns")}</p>
+                    </div>
+                    <div>
+                      <strong>{t("outbound.intake.fileOptionalTitle")}</strong>
+                      <p>{t("outbound.intake.fileOptionalColumns")}</p>
+                    </div>
+                  </div>
+                  <p className="hn-outbound-dialog__excel-limits">
+                    {t("outbound.intake.fileLimits")}
+                  </p>
+                  <details className="hn-outbound-dialog__excel-headers">
+                    <summary>{t("outbound.intake.fileHeaders")}</summary>
+                    <p>{t("outbound.intake.fileHeaderHint")}</p>
+                    <code>{t("outbound.intake.fileHeaderNames")}</code>
+                  </details>
+                </div>
+              </div>
+            )}
+
+            {preview ? (
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: "var(--ops-radius-card)",
+                  p: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    typography: "subtitle2",
+                    fontWeight: 700,
+                    mb: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  {t("outbound.intake.previewTitle")}{" "}
+                  {preview.importNo || <CopyableId value={preview.id} />}
+                </Box>
+                <Stack spacing={1.5}>
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    sx={{ flexWrap: "wrap", rowGap: 1, alignItems: "center" }}
+                  >
+                    <UiStatusBadge
+                      tone={IMPORT_STATUS_TONE[preview.status] ?? "neutral"}
+                      label={
+                        IMPORT_STATUS_LABEL[preview.status]
+                          ? t(IMPORT_STATUS_LABEL[preview.status])
+                          : t("outbound.intake.statusUnknown")
+                      }
+                    />
+                    <Box sx={{ typography: "body2" }}>
+                      {t("outbound.intake.previewTotal", {
+                        count: preview.totalRows,
+                      })}
+                    </Box>
+                    <Box sx={{ typography: "body2", color: "success.main" }}>
+                      {t("outbound.intake.previewValid", {
+                        count: preview.validRows,
+                      })}
+                    </Box>
                     <Box
                       sx={{
                         typography: "body2",
-                        color: hasShortStock
-                          ? "warning.main"
-                          : "text.secondary",
+                        color:
+                          preview.errorRows > 0 ? "error.main" : "text.primary",
                       }}
                     >
-                      {!canImport
-                        ? t("outbound.intake.noPermission")
-                        : hasShortStock
-                          ? t("outbound.intake.shortStockBlock")
-                          : t("outbound.intake.stillInvalid")}
+                      {t("outbound.intake.previewErrors", {
+                        count: preview.errorRows,
+                      })}
                     </Box>
+                  </Stack>
+                  {/* Bảng xem trước lấy từ kết quả kiểm tra (mutation, không phải
+                  query) — hiện loading khi đang kiểm tra lại dữ liệu/tệp. */}
+                  <ResponsiveDataTable<ImportRow>
+                    columns={previewColumns}
+                    rows={pagedPreviewRows}
+                    rowKey={(row) => row.id}
+                    loading={
+                      validateManualMutation.isPending ||
+                      validateFileMutation.isPending
+                    }
+                    emptyText={t("outbound.intake.previewEmpty")}
+                  />
+                  {previewPaged ? (
+                    <UiPagination
+                      page={previewPage}
+                      pageSize={PREVIEW_PAGE_SIZE}
+                      total={previewRows.length}
+                      showTotal={false}
+                      onPageChange={setPreviewPage}
+                    />
                   ) : null}
+
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
+                  >
+                    <ActionButton
+                      kind="confirm"
+                      disabled={!consumable || consumeMutation.isPending}
+                      onClick={() => consumeMutation.mutate()}
+                    >
+                      {consumeMutation.isPending
+                        ? t("outbound.intake.confirming")
+                        : t("outbound.intake.confirm")}
+                    </ActionButton>
+                    {!consumable ? (
+                      <Box
+                        sx={{
+                          typography: "body2",
+                          color: hasShortStock
+                            ? "warning.main"
+                            : "text.secondary",
+                        }}
+                      >
+                        {!canImport
+                          ? t("outbound.intake.noPermission")
+                          : hasShortStock
+                            ? t("outbound.intake.shortStockBlock")
+                            : t("outbound.intake.stillInvalid")}
+                      </Box>
+                    ) : null}
+                  </Stack>
+                  <ApiErrorAlert
+                    error={consumeMutation.error}
+                    title={t("outbound.intake.confirmErrorTitle")}
+                  />
                 </Stack>
-                <ApiErrorAlert
-                  error={consumeMutation.error}
-                  title={t("outbound.intake.confirmErrorTitle")}
-                />
-              </Stack>
-            </Box>
-          ) : null}
-        </Stack>
-      </UiDialog>
+              </Box>
+            ) : null}
+          </Stack>
+        </CoordinatedLoadingBoundary>
+        <footer className="hn-outbound-intake-drawer__footer">
+          <ActionButton kind="close" onClick={close}>
+            {t("common.close")}
+          </ActionButton>
+        </footer>
+      </Drawer>
       <RecipientCreateDialog
         open={createAgencyOpen}
         onClose={() => setCreateAgencyOpen(false)}

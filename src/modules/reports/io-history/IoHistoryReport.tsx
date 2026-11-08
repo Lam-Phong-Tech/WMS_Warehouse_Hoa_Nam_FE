@@ -1,3 +1,9 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { parseDateTime } from "@/shared/utils/date-time";
+import { ReportExportAction } from "../components/ReportExportAction";
+import { reportExportSections } from "../components/report-export-sections";
+import { reportWorkbookOptions } from "../components/report-export-options";
+import type { ReportExportChoice } from "../components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
@@ -69,11 +75,11 @@ function absOrEmpty(value: number | null): string {
   return value === null ? EMPTY_TEXT : fmt(Math.abs(value));
 }
 function fmtDay(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   return parsed.isValid() ? parsed.format("DD/MM/YYYY") : EMPTY_TEXT;
 }
 function fmtStamp(value: string): string {
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   return !value || !parsed.isValid()
     ? EMPTY_TEXT
     : parsed.format(value.length <= 10 ? "DD/MM/YYYY" : "DD/MM/YYYY HH:mm");
@@ -143,7 +149,6 @@ export default function IoHistoryReport() {
   };
   const [page, setPage] = useState(1);
   const [online, setOnline] = useState(() => navigator.onLine);
-  const [exportMenu, setExportMenu] = useState(false);
   const [exporting, setExporting] = useState<"xlsx" | "pdf" | null>(null);
   const [exportFeedback, setExportFeedback] = useState<{
     state: IoHistoryFeedbackState;
@@ -152,7 +157,7 @@ export default function IoHistoryReport() {
   const [dismissedStale, setDismissedStale] = useState<string | null>(null);
   const [lastFormat, setLastFormat] = useState<"xlsx" | "pdf">("xlsx");
   const exportingRef = useRef(false);
-  const exportRef = useRef<HTMLDivElement>(null);
+  const lastChoice = useRef<ReportExportChoice | undefined>(undefined);
   const filterRef = useRef<HTMLElement>(null);
   const viewTab = useTabView<ViewMode>("table");
   const view = viewTab.view;
@@ -345,35 +350,11 @@ export default function IoHistoryReport() {
       onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
-    const onPointer = (event: PointerEvent) => {
-      if (!exportRef.current?.contains(event.target as Node))
-        setExportMenu(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        if (exportRef.current?.contains(document.activeElement)) {
-          exportRef.current
-            .querySelector<HTMLButtonElement>(".io-export-trigger")
-            ?.focus();
-        }
-        setExportMenu(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointer);
-    document.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
-      document.removeEventListener("pointerdown", onPointer);
-      document.removeEventListener("keydown", onKey);
     };
   }, []);
-  useEffect(() => {
-    if (exportMenu)
-      exportRef.current
-        ?.querySelector<HTMLButtonElement>('[role="menuitem"]')
-        ?.focus();
-  }, [exportMenu]);
   // Keep pagination a view over the complete snapshot; KPI/export queries never receive page parameters.
   const pageKey = [
     range.from,
@@ -408,16 +389,35 @@ export default function IoHistoryReport() {
         ?.click(),
     );
   };
-  const runExport = async (format: "xlsx" | "pdf") => {
-    if (!canExport || exportingRef.current || !online) return;
+  const runExport = async (
+    format: "xlsx" | "pdf",
+    choice?: ReportExportChoice,
+  ) => {
+    if (
+      !canExport ||
+      exportingRef.current ||
+      !online ||
+      exportFeedback?.state === "export-unknown"
+    )
+      return false;
     exportingRef.current = true;
     setExporting(format);
-    setExportMenu(false);
+    if (choice) lastChoice.current = choice;
     setExportFeedback(null);
     setLastFormat(format);
     try {
       await runReportExport(format, {
         reportCode: IO_HISTORY_EXPORT_CODE,
+        ...(lastChoice.current
+          ? {
+              workbook: reportWorkbookOptions(
+                lastChoice.current,
+                ["Mã phiếu"],
+                documentFilter.rows.map((row) => row.documentNo),
+                pageRows.map((row) => row.documentNo),
+              ),
+            }
+          : {}),
         fileStem: "lich-su-nhap-xuat-kho",
         fileSuffix: "-" + range.from + "-" + range.to,
         filters: {
@@ -450,6 +450,7 @@ export default function IoHistoryReport() {
         state: uncertain ? "export-unknown" : "export-error",
         message,
       });
+      return false;
     } finally {
       exportingRef.current = false;
       setExporting(null);
@@ -525,106 +526,28 @@ export default function IoHistoryReport() {
                 {tUi("updatedUi.text_098cc1b3c5b9")}
               </span>
               <ReportWarehouseCard />
-              <div className="io-export" ref={exportRef}>
-                {canExport ? (
-                  <button
-                    className="btn io-export-trigger"
-                    disabled={
-                      loading ||
-                      fullError ||
-                      busy ||
-                      !online ||
-                      exporting !== null ||
-                      exportFeedback?.state === "export-unknown"
-                    }
-                    aria-expanded={exportMenu}
-                    aria-haspopup="menu"
-                    aria-controls={exportMenu ? "rptio-export-menu" : undefined}
-                    onClick={() => setExportMenu(!exportMenu)}
-                  >
-                    <span
-                      className={exporting ? "refresh-icon is-spinning" : ""}
-                    >
-                      <IoIcon name={exporting ? "refresh" : "download"} />
-                    </span>
-                    {exporting
-                      ? tUi("updatedUi.text_f218a6c991e2")
-                      : tUi("reports.traceability.exportReport")}
-                  </button>
-                ) : (
-                  <span
-                    className="io-readonly"
-                    title={t("reports.ioHistory.exportDenied")}
-                  >
-                    <IoIcon name="lock" />
-                    {tUi("masterData.common.viewOnly")}
-                  </span>
-                )}
-                {exportMenu && (
-                  <div
-                    id="rptio-export-menu"
-                    className="io-export-menu"
-                    role="menu"
-                    onKeyDown={(event) => {
-                      if (event.key === "Escape") {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setExportMenu(false);
-                        requestAnimationFrame(() =>
-                          exportRef.current
-                            ?.querySelector<HTMLButtonElement>(
-                              ".io-export-trigger",
-                            )
-                            ?.focus(),
-                        );
-                        return;
-                      }
-                      const keys = ["ArrowDown", "ArrowUp", "Home", "End"];
-                      if (!keys.includes(event.key)) return;
-                      event.preventDefault();
-                      const items = Array.from(
-                        event.currentTarget.querySelectorAll<HTMLButtonElement>(
-                          '[role="menuitem"]',
-                        ),
-                      );
-                      const index = items.indexOf(
-                        document.activeElement as HTMLButtonElement,
-                      );
-                      const next =
-                        event.key === "Home"
-                          ? 0
-                          : event.key === "End"
-                            ? items.length - 1
-                            : (index +
-                                (event.key === "ArrowDown" ? 1 : -1) +
-                                items.length) %
-                              items.length;
-                      items[next]?.focus();
-                    }}
-                    aria-label={tUi("reports.traceability.exportReport")}
-                  >
-                    {documentFilter.active && (
-                      <p className="io-export-scope">
-                        {tUi("updatedUi.text_e47a1498d48d")}
-                      </p>
-                    )}
-                    <button
-                      role="menuitem"
-                      onClick={() => void runExport("xlsx")}
-                    >
-                      <IoIcon name="file" />
-                      {t("reports.ioHistory.exportXlsx")}
-                    </button>
-                    <button
-                      role="menuitem"
-                      onClick={() => void runExport("pdf")}
-                    >
-                      <IoIcon name="file" />
-                      {t("reports.ioHistory.exportPdf")}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <ReportExportAction
+                title={t("reportExport.history")}
+                fileStem={"LichSuNhapXuat_" + range.from + "-" + range.to}
+                total={documentFilter.rows.length}
+                currentCount={pageRows.length}
+                sections={reportExportSections(t("reportExport.documents"))}
+                formats={documentFilter.active ? ["xlsx"] : ["xlsx", "pdf"]}
+                context={[
+                  [t("reportExport.period"), range.from + " – " + range.to],
+                ]}
+                disabled={
+                  !canExport ||
+                  loading ||
+                  fullError ||
+                  busy ||
+                  !online ||
+                  exporting !== null ||
+                  exportFeedback?.state === "export-unknown"
+                }
+                loading={exporting !== null}
+                onExport={(choice) => runExport(choice.format, choice)}
+              />
             </div>
           </header>
         )}
@@ -665,7 +588,7 @@ export default function IoHistoryReport() {
                           value={[dayjs(range.from), dayjs(range.to)]}
                           format="DD/MM/YYYY"
                           allowClear={false}
-                          maxDate={dayjs()}
+                          maxDate={businessToday()}
                           presets={periodPresets}
                           className="hn-rpt-io-date-range"
                           popupClassName="hn-rpt-io-date-popup"
@@ -998,7 +921,11 @@ export default function IoHistoryReport() {
                                 {tUi("dashboard.stockMix.colQuantity")}
                               </th>
                               <th>{tUi("inventory.trace.colPerformedBy")}</th>
-                              <th>{tUi("reports.importMatchReport.detail")}</th>
+                              <th
+                                aria-label={tUi(
+                                  "reports.importMatchReport.detail",
+                                )}
+                              />
                             </tr>
                           </thead>
                           <tbody>

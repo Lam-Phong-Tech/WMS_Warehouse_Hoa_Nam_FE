@@ -1,40 +1,43 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
+import { ReportFilterCombobox } from "@/modules/reports/components/ReportFilterCombobox";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import { Box, UiSelect } from "@/shared/ui";
+import { Box } from "@/shared/ui";
 import {
   CheckCircleOutlined,
-  DownloadOutlined,
   FileTextOutlined,
   HistoryOutlined,
   InboxOutlined,
   LockOutlined,
   ReloadOutlined,
   SearchOutlined,
-  ShopOutlined,
-  StockOutlined,
   TeamOutlined,
   WarningOutlined,
 } from "@/shared/components/icons";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
-import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import { useReportExport } from "@/modules/reports/operations/report-export";
-import { useReversalDocuments } from "@/modules/reports/operations/report-data";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
-import { useAuthStore } from "@/shared/store/auth.store";
 import {
   useRecipientAgencyLedger,
   type RecipientAgencyLedgerEvent,
 } from "./recipient-agency-api";
-import { RecipientReturnDialog } from "./RecipientReturnDialog";
+import {
+  RecipientDetailDrawer,
+  type RecipientDetailDocument as DetailDocument,
+} from "./RecipientDetailDrawer";
 import "./recipient-agency-report.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
 function currentSevenDayRange(): [Dayjs, Dayjs] {
-  const end = dayjs().startOf("day");
+  const end = businessToday().startOf("day");
   return [end.subtract(6, "day"), end];
 }
 
@@ -56,14 +59,6 @@ type DealerRow = {
   productQuantity: number;
   latestAt: string;
   events: RecipientAgencyLedgerEvent[];
-};
-
-type DetailDocument = {
-  id: string;
-  no: string;
-  date: string;
-  quantity: number;
-  incomplete: boolean;
 };
 
 const COLORS = {
@@ -139,10 +134,6 @@ function LoadingBar({
       style={{ width, height }}
     />
   );
-}
-
-function FilterLabel({ children }: { children: ReactNode }) {
-  return <div className="rpt07-filter-label">{children}</div>;
 }
 
 function MetricCard({
@@ -301,6 +292,7 @@ function DateRangeControl({
 }) {
   return (
     <ReportDateRangePicker
+      autoApplyOnComplete
       value={range}
       disabled={disabled}
       aria-label={tUi("reports.packingLabel.dateRangeLabel")}
@@ -313,17 +305,12 @@ function DateRangeControl({
 
 export default function RecipientAgencyReport() {
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
-  const warehouseName =
-    useAuthStore((state) => state.currentContext?.warehouse_name)?.trim() ||
-    "—";
   const initialRange = useMemo<[Dayjs, Dayjs]>(
     () => currentSevenDayRange(),
     [],
   );
 
   const [draftRange, setDraftRange] = useState<[Dayjs, Dayjs]>(initialRange);
-  const [draftAgency, setDraftAgency] = useState("");
-  const [draftStatus, setDraftStatus] = useState<StatusFilter>("ALL");
   const [applied, setApplied] = useState<AppliedFilters>({
     from: initialRange[0].format("YYYY-MM-DD"),
     to: initialRange[1].format("YYYY-MM-DD"),
@@ -332,17 +319,12 @@ export default function RecipientAgencyReport() {
   });
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [detailRow, setDetailRow] = useState<DealerRow | null>(null);
-  const [returnRow, setReturnRow] = useState<DealerRow | null>(null);
 
   const source = useRecipientAgencyLedger({
     from: applied.from,
     to: applied.to,
-  });
-  const returnDocuments = useReversalDocuments({
-    from: applied.from,
-    to: applied.to,
-    enabled: returnRow !== null,
   });
   const exporter = useReportExport();
 
@@ -508,9 +490,12 @@ export default function RecipientAgencyReport() {
     !noSearchResult &&
     dealers.length === 0;
 
-  const totalPages = Math.max(1, Math.ceil(tableRows.length / 5));
+  const totalPages = Math.max(1, Math.ceil(tableRows.length / pageSize));
   const visiblePage = Math.min(page, totalPages);
-  const pageRows = tableRows.slice((visiblePage - 1) * 5, visiblePage * 5);
+  const pageRows = tableRows.slice(
+    (visiblePage - 1) * pageSize,
+    visiblePage * pageSize,
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows a changed external input or route.
@@ -589,20 +574,20 @@ export default function RecipientAgencyReport() {
       .sort((left, right) => Date.parse(right.date) - Date.parse(left.date));
   }, [detailRow, incompleteDocumentIds]);
 
-  const applyFilters = () => {
-    setApplied({
-      from: draftRange[0].format("YYYY-MM-DD"),
-      to: draftRange[1].format("YYYY-MM-DD"),
-      agency: draftAgency,
-      status: draftStatus,
-    });
+  const changeRange = (range: [Dayjs, Dayjs]) => {
+    setDraftRange(range);
+    if (range[0].startOf("day").isAfter(range[1].startOf("day"))) return;
+    setApplied((current) => ({
+      ...current,
+      from: range[0].format("YYYY-MM-DD"),
+      to: range[1].format("YYYY-MM-DD"),
+    }));
+    setPage(1);
   };
 
   const resetFilters = () => {
     const nextRange = currentSevenDayRange();
     setDraftRange(nextRange);
-    setDraftAgency("");
-    setDraftStatus("ALL");
     setApplied({
       from: nextRange[0].format("YYYY-MM-DD"),
       to: nextRange[1].format("YYYY-MM-DD"),
@@ -612,12 +597,20 @@ export default function RecipientAgencyReport() {
     setSearch("");
   };
 
-  const exportReport = () => {
+  const exportReport = (choice: ReportExportChoice) => {
     const selectedRecipientId = applied.agency
       ? (baseEvents.find((event) => dealerKey(event) === applied.agency)
           ?.recipient.id ?? "")
       : "";
-    void exporter.exportReport("xlsx", {
+    return exporter.exportReport(choice.format, {
+      workbook: reportWorkbookOptions(
+        choice,
+        ["Phiếu xuất"],
+        tableRows.flatMap((row) =>
+          row.events.map((event) => event.outbound_no),
+        ),
+        pageRows.flatMap((row) => row.events.map((event) => event.outbound_no)),
+      ),
       reportCode: "outbound-by-agency",
       fileStem: "xuat-theo-nguoi-nhan-dai-ly",
       fileSuffix: "-" + applied.from + "-" + applied.to,
@@ -666,7 +659,6 @@ export default function RecipientAgencyReport() {
           <p>{tUi("updatedUi.text_6440ff9ad26f")}</p>
         </div>
         <div className="rpt07-head-actions hn-report-warehouse-actions">
-          <ReportWarehouseCard />
           <div className="rpt07-export-wrap">
             {readonly ? (
               <div className="rpt07-readonly-note">
@@ -674,21 +666,25 @@ export default function RecipientAgencyReport() {
                 {tUi("updatedUi.text_5fea0a9ca57b")}
               </div>
             ) : null}
-            <button
-              type="button"
-              className="rpt07-export-button"
+            <ReportExportAction
+              title={tUi("reportExport.recipient")}
+              fileStem={"BaoCaoNoiNhan_" + applied.from + "-" + applied.to}
+              total={tableRows.length}
+              currentCount={pageRows.length}
+              sections={reportExportSections(tUi("reportExport.recipients"))}
+              context={[
+                [tUi("reportExport.period"), applied.from + " – " + applied.to],
+                [
+                  tUi("reportExport.filters"),
+                  [applied.agency, applied.status, search]
+                    .filter(Boolean)
+                    .join(" · "),
+                ],
+              ]}
               disabled={exportDisabled}
-              onClick={exportReport}
-            >
-              {exporting ? (
-                <span className="rpt07-spinner" />
-              ) : (
-                <DownloadOutlined />
-              )}
-              {exporting
-                ? tUi("updatedUi.text_f218a6c991e2")
-                : tUi("reports.traceability.exportReport")}
-            </button>
+              loading={exporting}
+              onExport={exportReport}
+            />
           </div>
         </div>
       </header>
@@ -699,55 +695,47 @@ export default function RecipientAgencyReport() {
       >
         <div className="rpt07-filter-grid">
           <div className="rpt07-filter-field rpt07-filter-field--date">
-            <FilterLabel>
-              {tUi("reports.packingLabel.dateRangeLabel")}
-            </FilterLabel>
             <DateRangeControl
               range={draftRange}
               disabled={controlsBusy}
-              onChange={setDraftRange}
-            />
-            <div className="rpt07-filter-helper">
-              {tUi("updatedUi.text_e0958e093414")}
-            </div>
-          </div>
-
-          <div className="rpt07-filter-field">
-            <FilterLabel>{tUi("updatedUi.text_19c608bfa103")}</FilterLabel>
-            <div
-              className="rpt07-readonly-field"
-              aria-label={tUi("updatedUi.text_19c608bfa103")}
-            >
-              <StockOutlined />
-              <span>{warehouseName}</span>
-            </div>
-          </div>
-
-          <div className="rpt07-filter-field rpt07-select">
-            <FilterLabel>
-              {tUi("reports.recipientAgency.typeAgency")}
-            </FilterLabel>
-            <UiSelect
-              fullWidth
-              searchable={false}
-              disabled={controlsBusy}
-              value={draftAgency}
-              onChange={setDraftAgency}
-              options={agencyOptions}
-              placeholder={tUi("reports.recipientAgency.agencyAll")}
-              aria-label={tUi("reports.recipientAgency.typeAgency")}
-              menuClassName="rpt07-select-menu"
+              onChange={changeRange}
             />
           </div>
 
           <div className="rpt07-filter-field rpt07-select">
-            <FilterLabel>{tUi("dashboard.composition.colStatus")}</FilterLabel>
-            <UiSelect
-              fullWidth
-              searchable={false}
+            <ReportFilterCombobox
+              id="rpt07-agency"
               disabled={controlsBusy}
-              value={draftStatus}
-              onChange={(value) => setDraftStatus(value as StatusFilter)}
+              value={applied.agency}
+              onChange={(agency) => {
+                setApplied((current) => ({ ...current, agency }));
+                setPage(1);
+              }}
+              options={[
+                { value: "", label: tUi("reports.recipientAgency.agencyAll") },
+                ...agencyOptions,
+              ].map((option) => ({
+                ...option,
+                label: `${tUi("reports.recipientAgency.typeAgency")}: ${option.label}`,
+              }))}
+              icon="user-round"
+              searchPlaceholder={tUi("reports.recipientAgency.typeAgency")}
+              ariaLabel={tUi("reports.recipientAgency.typeAgency")}
+            />
+          </div>
+
+          <div className="rpt07-filter-field rpt07-select">
+            <ReportFilterCombobox
+              id="rpt07-status"
+              disabled={controlsBusy}
+              value={applied.status}
+              onChange={(value) => {
+                setApplied((current) => ({
+                  ...current,
+                  status: value as StatusFilter,
+                }));
+                setPage(1);
+              }}
               options={[
                 { value: "ALL", label: tUi("dashboard.operations.filterAll") },
                 {
@@ -758,33 +746,14 @@ export default function RecipientAgencyReport() {
                   value: "INCOMPLETE",
                   label: tUi("updatedUi.text_0e27d3ce9670"),
                 },
-              ]}
-              aria-label={tUi("dashboard.composition.colStatus")}
-              menuClassName="rpt07-select-menu"
+              ].map((option) => ({
+                ...option,
+                label: `${tUi("dashboard.composition.colStatus")}: ${option.label}`,
+              }))}
+              icon="file-clock"
+              searchPlaceholder={tUi("dashboard.composition.colStatus")}
+              ariaLabel={tUi("dashboard.composition.colStatus")}
             />
-          </div>
-
-          <div className="rpt07-filter-action">
-            <button
-              type="button"
-              className="rpt07-apply"
-              disabled={initialLoading}
-              onClick={applyFilters}
-            >
-              {controlsBusy ? <span className="rpt07-spinner" /> : null}
-              {initialLoading
-                ? tUi("dashboard.insight.loadingTitle")
-                : tUi("dashboard.snapshot.apply")}
-            </button>
-          </div>
-          <div className="rpt07-filter-reset">
-            <button
-              type="button"
-              onClick={resetFilters}
-              disabled={initialLoading}
-            >
-              {tUi("reports.packingLabel.reset")}
-            </button>
           </div>
 
           {refreshing ? (
@@ -1053,21 +1022,6 @@ export default function RecipientAgencyReport() {
                 <h2 id="rpt07-table-title">
                   {tUi("updatedUi.text_3a0b9ba89a40")}
                 </h2>
-                {initialLoading ? (
-                  <LoadingBar width="42px" height={22} />
-                ) : (
-                  <span>
-                    {partial
-                      ? "—"
-                      : noSearchResult
-                        ? tUi("updatedUi.text_f3674c04b5e8") +
-                          " " +
-                          dealers.length +
-                          " " +
-                          tUi("updatedUi.text_9fe632fd6866")
-                        : dealers.length}
-                  </span>
-                )}
               </div>
               <div className="rpt07-search-wrap">
                 <SearchInput
@@ -1079,13 +1033,30 @@ export default function RecipientAgencyReport() {
                   aria-label={tUi("updatedUi.text_4d0f6cce1add")}
                   placeholder={tUi("updatedUi.text_a54b781eab7e")}
                 />
+                {search.trim() ? (
+                  <button
+                    type="button"
+                    className="rpt07-search-clear"
+                    onClick={() => setSearch("")}
+                  >
+                    Xóa lọc
+                  </button>
+                ) : null}
               </div>
             </div>
 
             <div className="rpt07-table-scroll">
               <table className="rpt07-table">
+                <colgroup>
+                  {[6, 30, 10, 12, 18, 18, 6].map((width, index) => (
+                    <col key={index} style={{ width: `${width}%` }} />
+                  ))}
+                </colgroup>
                 <thead>
                   <tr>
+                    <th scope="col" className="rpt07-stt">
+                      STT
+                    </th>
                     <th>{tUi("updatedUi.text_61d6c9f042ea")}</th>
                     <th className="is-number">
                       {tUi("reports.pendingEvidence.colDocNo")}
@@ -1095,13 +1066,16 @@ export default function RecipientAgencyReport() {
                     </th>
                     <th>{tUi("updatedUi.text_e59478450504")}</th>
                     <th>{tUi("updatedUi.text_4c5b6a1284da")}</th>
-                    <th>{tUi("reports.importMatchReport.detail")}</th>
+                    <th aria-label={tUi("reports.importMatchReport.detail")} />
                   </tr>
                 </thead>
                 <tbody>
                   {initialLoading ? (
                     Array.from({ length: 5 }).map((_, index) => (
                       <tr key={"loading-" + index}>
+                        <td className="rpt07-stt">
+                          <LoadingBar width="24px" />
+                        </td>
                         <td>
                           <LoadingBar width="78%" />
                           <LoadingBar width="55%" height={9} />
@@ -1125,13 +1099,13 @@ export default function RecipientAgencyReport() {
                     ))
                   ) : partial ? (
                     <tr className="rpt07-empty-row">
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <PanelEmpty partial />
                       </td>
                     </tr>
                   ) : noSearchResult ? (
                     <tr className="rpt07-empty-row">
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="rpt07-search-empty">
                           <div className="rpt07-search-empty__icon">
                             <SearchOutlined />
@@ -1151,7 +1125,7 @@ export default function RecipientAgencyReport() {
                     </tr>
                   ) : reportEmpty ? (
                     <tr className="rpt07-empty-row">
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="rpt07-table-empty">
                           <div className="rpt07-panel-empty__icon">
                             <InboxOutlined />
@@ -1170,26 +1144,39 @@ export default function RecipientAgencyReport() {
                       </td>
                     </tr>
                   ) : (
-                    pageRows.map((row) => {
+                    pageRows.map((row, index) => {
                       const progress =
                         row.totalDocuments > 0
                           ? (row.completedDocuments / row.totalDocuments) * 100
                           : 0;
                       return (
                         <tr key={row.key}>
+                          <td data-label="STT" className="rpt07-stt">
+                            {(visiblePage - 1) * pageSize + index + 1}
+                          </td>
                           <td data-label={tUi("updatedUi.text_61d6c9f042ea")}>
-                            <strong
-                              className="rpt07-dealer-name"
-                              title={row.name}
-                            >
-                              {row.name}
-                            </strong>
-                            <span
-                              className="rpt07-receiver-name"
-                              title={row.receiver}
-                            >
-                              {row.receiver}
-                            </span>
+                            <div className="rpt07-recipient-identity">
+                              <span
+                                className="rpt07-recipient-icon"
+                                aria-hidden="true"
+                              >
+                                <TeamOutlined />
+                              </span>
+                              <div>
+                                <strong
+                                  className="rpt07-dealer-name"
+                                  title={row.name}
+                                >
+                                  {row.name}
+                                </strong>
+                                <span
+                                  className="rpt07-receiver-name"
+                                  title={row.receiver}
+                                >
+                                  {row.receiver}
+                                </span>
+                              </div>
+                            </div>
                           </td>
                           <td
                             data-label={tUi("reports.pendingEvidence.colDocNo")}
@@ -1223,13 +1210,12 @@ export default function RecipientAgencyReport() {
                           <td data-label={tUi("updatedUi.text_4c5b6a1284da")}>
                             {formatDate(row.latestAt)}
                           </td>
-                          <td
-                            data-label={tUi("reports.importMatchReport.detail")}
-                          >
+                          <td>
                             <RowActionGroup>
                               <RowActionButton
                                 kind="view"
                                 type="button"
+                                aria-label={`Xem chi tiết ${row.name}`}
                                 onClick={() => setDetailRow(row)}
                               >
                                 Xem
@@ -1257,12 +1243,29 @@ export default function RecipientAgencyReport() {
                 ) : (
                   <span>
                     {tUi("putaway.queue.showing") + " "}
-                    {(visiblePage - 1) * 5 + 1}–
-                    {Math.min(visiblePage * 5, tableRows.length)} /{" "}
+                    {(visiblePage - 1) * pageSize + 1}–
+                    {Math.min(visiblePage * pageSize, tableRows.length)} /{" "}
                     {tableRows.length}
                     {" " + tUi("updatedUi.text_9fe632fd6866")}
                   </span>
                 )}
+                <label className="rpt07-page-size">
+                  Số dòng/trang
+                  <select
+                    aria-label="Số dòng mỗi trang"
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
+                  >
+                    {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
               <div className="rpt07-table-footer__meta">
                 {fromDisplay}–{toDisplay}
@@ -1281,91 +1284,14 @@ export default function RecipientAgencyReport() {
       )}
 
       {detailRow ? (
-        <DrillDownDialog
-          title={tUi("updatedUi.text_264600c191dc") + " " + detailRow.name}
-          maxWidth="md"
+        <RecipientDetailDrawer
+          recipientName={detailRow.name}
+          receiver={detailRow.receiver}
+          documents={detailDocuments}
+          events={detailRow.events}
+          range={{ from: applied.from, to: applied.to }}
+          formatDocumentDate={formatDate}
           onClose={() => setDetailRow(null)}
-        >
-          <div className="rpt07-detail-dialog">
-            <div className="rpt07-detail-dialog__summary">
-              <ShopOutlined />
-              <div>
-                <strong>{detailRow.name}</strong>
-                <span>
-                  {detailRow.receiver === "—"
-                    ? tUi("updatedUi.text_7e49f04ad717")
-                    : tUi("updatedUi.text_1339766f6a53") +
-                      " " +
-                      detailRow.receiver}
-                </span>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="rpt07-return-dialog__back"
-              onClick={() => {
-                setReturnRow(detailRow);
-                setDetailRow(null);
-              }}
-            >
-              {tUi("reports.recipientAgency.returnOpen")}
-            </button>
-            <div className="rpt07-detail-dialog__table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{tUi("warranty.componentList.colCode")}</th>
-                    <th>{tUi("reports.warranty.colIssueDate")}</th>
-                    <th>{tUi("outbound.detail.fieldItemCount")}</th>
-                    <th>{tUi("dashboard.composition.colStatus")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detailDocuments.map((document) => (
-                    <tr key={document.id}>
-                      <td>{document.no}</td>
-                      <td>{formatDate(document.date)}</td>
-                      <td>{formatNumber(document.quantity)}</td>
-                      <td>
-                        <span
-                          className={
-                            document.incomplete ? "is-pending" : "is-complete"
-                          }
-                        >
-                          {document.incomplete
-                            ? tUi("updatedUi.text_0e27d3ce9670")
-                            : tUi("iam.permissionAction.post")}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </DrillDownDialog>
-      ) : null}
-      {returnRow ? (
-        <RecipientReturnDialog
-          recipientName={returnRow.name}
-          events={returnRow.events}
-          reversalRows={
-            Array.isArray(returnDocuments.data?.data)
-              ? returnDocuments.data.data
-              : []
-          }
-          loading={returnDocuments.isPending}
-          error={
-            returnDocuments.error instanceof Error
-              ? returnDocuments.error
-              : null
-          }
-          onRetry={() => void returnDocuments.refetch()}
-          onBack={() => {
-            setDetailRow(returnRow);
-            setReturnRow(null);
-          }}
-          onClose={() => setReturnRow(null)}
         />
       ) : null}
     </Box>

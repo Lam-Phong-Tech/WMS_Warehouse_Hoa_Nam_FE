@@ -9,6 +9,7 @@ export interface MasterListParams {
   sku_type?: SkuType | "";
   /** MST-01 toolbar "Hãng" — gửi kèm GET /products để lọc theo Brand. */
   brand_id?: string;
+  information_status?: "PENDING" | "COMPLETE" | "";
   /** REQ-001 màn Nơi nhận — lọc GET /agencies theo loại nơi nhận. */
   recipient_type?: RecipientType | "";
   page?: number;

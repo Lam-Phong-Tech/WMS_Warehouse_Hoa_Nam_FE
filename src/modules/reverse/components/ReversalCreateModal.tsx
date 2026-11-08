@@ -1,15 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Box,
   Checkbox,
   FormControlLabel,
-  Grid,
   Menu,
   MenuItem,
   Stack,
   UiAlert,
   UiButton,
   UiDialog,
+  UiDrawer,
+  Tooltip,
   UiNumberField,
   UiPagination,
   UiSelect,
@@ -25,10 +26,6 @@ import {
   SOURCE_DOCUMENT_TYPE_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
-import {
-  ResponsiveDataTable,
-  type ResponsiveTableColumn,
-} from "@/shared/components/data-display/ResponsiveDataTable";
 import { DownOutlined } from "@/shared/components/icons";
 import {
   useReversibleMovements,
@@ -44,11 +41,19 @@ import { isStockRestoringMovement } from "../types";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+} from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { checkNumber, type NumberRule } from "@/shared/validation/number-rules";
 import { TEXT_RULES, checkText } from "@/shared/validation/text-rules";
+
+import { InfoIcon } from "@/shared/ui/icons";
+import "../pages/reversal-list.css";
+import "./reversal-create.css";
 
 /**
  * Lý do điều chỉnh: luật lấy từ lớp dùng chung (bắt buộc, 5…1000 ký tự, đếm
@@ -75,6 +80,12 @@ const returnConditionOptions = (
 ];
 
 const MOVEMENTS_PAGE_SIZE = 5;
+
+type ReversalLineField = {
+  key: string;
+  header: string;
+  render: (line: ReversibleMovementLine) => ReactNode;
+};
 
 type ReversalDraft = Record<
   string,
@@ -137,7 +148,9 @@ function SerialItemsSelect({
         size="small"
         disabled={disabled}
         aria-label={ariaLabel}
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
+        aria-expanded={Boolean(anchorEl)}
+        className="hn-reversal-items-select"
         endIcon={<DownOutlined style={{ fontSize: 12 }} />}
         onClick={(event) => setAnchorEl(event.currentTarget)}
         sx={{
@@ -148,13 +161,21 @@ function SerialItemsSelect({
           color: selected.length === 0 ? "text.disabled" : "text.primary",
         }}
       >
-        {summary}
+        <span>{summary}</span>
       </UiButton>
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
-        slotProps={{ paper: { className: "hn-reversal-menu" } }}
+        slotProps={{
+          paper: {
+            className: "hn-reversal-menu hn-reversal-serial-menu",
+            sx: {
+              maxWidth: "calc(100vw - 32px)",
+              maxHeight: "min(420px, 60dvh)",
+            },
+          },
+        }}
       >
         {options.length === 0 ? (
           <MenuItem disabled>{t("reverse.create.noAvailableItems")}</MenuItem>
@@ -163,6 +184,11 @@ function SerialItemsSelect({
             <MenuItem
               key={option.value}
               dense
+              sx={{
+                whiteSpace: "normal",
+                overflowWrap: "anywhere",
+                alignItems: "flex-start",
+              }}
               onClick={() => toggle(option.value)}
             >
               <Checkbox
@@ -188,6 +214,11 @@ interface Props {
 export function ReversalCreateModal({ onClose, onCreated }: Props) {
   const t = useT();
   const dialog = useDialogExit(onClose);
+  const [stage, setStage] = useState("choose");
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (stage === "adjust") headingRef.current?.focus();
+  }, [stage]);
   const [search, setSearch] = useState("");
   const [movementsPage, setMovementsPage] = useState(1);
   const [selectedMovement, setSelectedMovement] =
@@ -281,6 +312,8 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     (!isIssueReversal || (Boolean(returnCondition) && physicalConfirmed));
 
   function handleSelectMovement(movement: ReversibleMovement) {
+    setStage("adjust");
+    if (movement === selectedMovement) return;
     setSelectedMovement(movement);
     setReturnCondition("SELLABLE");
     setPhysicalConfirmed(false);
@@ -361,123 +394,31 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     }
   }
 
-  const movementColumns: ResponsiveTableColumn<ReversibleMovement>[] = [
-    {
-      key: "selected",
-      header: "",
-      width: 90,
-      hideOnMobile: true,
-      // antd cũ tô nền dòng đang chọn qua rowClassName; ResponsiveDataTable
-      // không có API tương đương nên đánh dấu bằng badge trong dòng.
-      render: (row) =>
-        row.id === selectedMovement?.id ? (
-          <UiStatusBadge tone="primary" label={t("reverse.create.selecting")} />
-        ) : null,
-    },
-    {
-      key: "movement_code",
-      header: t("reverse.create.colMovementCode"),
-      width: 150,
-      render: (row) => row.movement_code,
-    },
-    {
-      key: "movement_type",
-      header: t("reverse.create.colType"),
-      width: 170,
-      render: (row) =>
-        businessLabel(
-          MOVEMENT_TYPE_LABELS,
-          row.movement_type,
-          t("reverse.create.movementOther"),
-        ),
-    },
-    {
-      key: "source",
-      header: t("reverse.create.colSourceDoc"),
-      width: 180,
-      render: (row) => (
-        <Stack spacing={0}>
-          {/* KHÔNG fallback sang source_document_id (UUID) — thiếu mã thì "—". */}
-          <span>{row.source_document_code || EMPTY_TEXT}</span>
-          <Box sx={{ typography: "caption", color: "text.secondary" }}>
-            {businessLabel(
-              SOURCE_DOCUMENT_TYPE_LABELS,
-              row.source_document_type,
-              t("reverse.common.docTypeOther"),
-            )}
-          </Box>
-        </Stack>
-      ),
-    },
-    {
-      key: "warehouse_name",
-      header: t("reverse.create.colWarehouse"),
-      width: 140,
-      render: (row) => row.warehouse_name,
-    },
-    {
-      key: "posted_at",
-      header: t("reverse.create.colPostedAt"),
-      width: 160,
-      render: (row) => formatDateTime(row.posted_at),
-    },
-    {
-      key: "reversibility",
-      header: t("reverse.create.colReversibility"),
-      width: 180,
-      render: (row) => (
-        <Box
-          component="span"
-          sx={{
-            px: 1,
-            py: 0.25,
-            borderRadius: 1,
-            fontSize: 12,
-            color: row.dependency_guard ? "error.main" : "success.main",
-            bgcolor: row.dependency_guard ? "error.50" : "success.50",
-          }}
-        >
-          {row.dependency_guard
-            ? t("reverse.create.blockedByDependency")
-            : t("reverse.create.canReverse")}
-        </Box>
-      ),
-    },
-  ];
-
-  const lineColumns: ResponsiveTableColumn<ReversibleMovementLine>[] = [
-    { key: "sku", header: "SKU", width: 130, render: (line) => line.sku },
+  const lineFields: ReversalLineField[] = [
+    { key: "sku", header: "SKU", render: (line) => line.sku },
     {
       key: "sku_name",
       header: t("reverse.columns.name"),
-      width: 160,
       render: (line) => line.sku_name,
     },
     {
       key: "original_qty",
       header: t("reverse.columns.originalQty"),
-      width: 110,
-      align: "right",
       render: (line) => qty(line.original_qty),
     },
     {
       key: "reversed_qty",
       header: t("reverse.columns.reversedQty"),
-      width: 110,
-      align: "right",
       render: (line) => qty(line.reversed_qty),
     },
     {
       key: "reversible_qty",
       header: t("reverse.columns.reversibleQty"),
-      width: 150,
-      align: "right",
       render: (line) => <strong>{qty(line.reversible_qty)}</strong>,
     },
     {
       key: "reversal_qty",
       header: t("reverse.columns.reversalQty"),
-      width: 150,
       render: (line) => (
         <UiNumberField
           size="small"
@@ -509,7 +450,6 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
       // PRODUCT (kể cả non-serial) đảo theo từng Item/máy; nhãn item lấy số sê-ri
       // nếu có, không thì mã vật lý (physical code).
       header: t("reverse.create.colItems"),
-      width: 260,
       render: (line) =>
         line.item_scoped ? (
           <SerialItemsSelect
@@ -543,7 +483,6 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
     {
       key: "dependency",
       header: t("reverse.create.colDependency"),
-      width: 170,
       render: (line) => (
         <UiStatusBadge
           tone={line.dependency_guard ? "error" : "success"}
@@ -559,346 +498,406 @@ export function ReversalCreateModal({ onClose, onCreated }: Props) {
 
   return (
     <>
-      <UiDialog
-        className="hn-reversal-dialog"
+      <UiDrawer
         {...dialog.dialogProps}
-        maxWidth="lg"
-        fullWidth
+        width={800}
+        className="hn-reversal-dialog hn-reversal-create-drawer"
         title={
-          <Box sx={{ position: "relative", pr: 6 }}>
-            {t("reverse.create.title")}
-            <ActionIconButton
-              kind="close"
-              label={t("common.close")}
-              onClick={dialog.close}
-              sx={{ position: "absolute", right: -8, top: -4 }}
-            />
-          </Box>
+          <span className="hn-reversal-create-title">
+            <span>{t("reverse.create.title")}</span>
+            <span className="hn-reversal-create-title-actions">
+              <Tooltip
+                describeChild
+                title={
+                  <span>
+                    <strong>{t("reverse.create.alertKeptTitle")}</strong>
+                    <br />
+                    {t("reverse.create.alertKeptBody")}
+                  </span>
+                }
+              >
+                <button
+                  type="button"
+                  className="hn-reversal-help"
+                  aria-label={t("reverse.create.helpLabel")}
+                >
+                  <InfoIcon />
+                </button>
+              </Tooltip>
+              <ActionIconButton
+                kind="close"
+                label={t("common.close")}
+                onClick={dialog.close}
+              />
+            </span>
+          </span>
+        }
+        actions={
+          stage === "adjust" && selectedMovement ? (
+            <div className="hn-reversal-create-footer">
+              <div>
+                <span>{t("reverse.create.totalQtyLabel")}</span>
+                <strong>{qty(totalQty)}</strong>
+              </div>
+              <ActionButton
+                className="hn-reversal-primary"
+                kind="create"
+                disabled={!canSubmit || createMutation.isPending}
+                onClick={() => setSubmitConfirmOpen(true)}
+              >
+                {createMutation.isPending
+                  ? t("reverse.create.creating")
+                  : t("reverse.create.submit")}
+              </ActionButton>
+            </div>
+          ) : undefined
         }
       >
-        <Stack spacing={2}>
-          <UiAlert tone="info" title={t("reverse.create.alertKeptTitle")}>
-            {t("reverse.create.alertKeptBody")}
-          </UiAlert>
-
-          <UiTextField
-            value={search}
-            placeholder={t("reverse.create.searchPlaceholder")}
-            slotProps={{
-              htmlInput: { "aria-label": t("reverse.create.searchAria") },
-            }}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setMovementsPage(1);
-            }}
-            fullWidth
-            size="small"
-          />
-
-          {movementsQuery.isError ? (
-            <ApiErrorAlert
-              error={movementsQuery.error}
-              title={t("reverse.create.loadError")}
-              onRetry={() => movementsQuery.refetch()}
-            />
-          ) : null}
-
-          <Box>
-            <ResponsiveDataTable<ReversibleMovement>
-              columns={movementColumns}
-              headerCellStyle={{
-                background: "var(--rev-pale)",
-                color: "var(--rev-ink)",
-                fontSize: 12,
-                padding: "10px 9px",
-                borderColor: "var(--rev-line)",
-              }}
-              rows={pagedMovements}
-              rowKey={(row) => row.id}
-              loading={movementsQuery.isLoading}
-              emptyText={t("reverse.create.movementsEmpty")}
-              onRowClick={(row) => handleSelectMovement(row)}
-            />
-            {movementsPageCount > 1 ? (
-              <Box sx={{ mt: 1 }}>
+        <div className="hn-reversal-create-body">
+          <nav
+            className="hn-reversal-create-steps"
+            aria-label={t("reverse.create.stepsAria")}
+          >
+            <button
+              type="button"
+              aria-current={stage === "choose" ? "step" : undefined}
+              onClick={() => setStage("choose")}
+            >
+              <span>1</span>
+              {t("reverse.create.chooseStep")}
+            </button>
+            <button
+              type="button"
+              disabled={!selectedMovement}
+              aria-current={stage === "adjust" ? "step" : undefined}
+              onClick={() => setStage("adjust")}
+            >
+              <span>2</span>
+              {t("reverse.create.adjustStep")}
+            </button>
+          </nav>
+          {stage === "choose" ? (
+            <section
+              className="hn-reversal-create-section"
+              aria-label={t("reverse.create.chooseStep")}
+            >
+              <UiTextField
+                value={search}
+                placeholder={t("reverse.create.searchPlaceholder")}
+                slotProps={{
+                  htmlInput: { "aria-label": t("reverse.create.searchAria") },
+                }}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setMovementsPage(1);
+                }}
+                fullWidth
+                size="small"
+              />
+              {movementsQuery.isError ? (
+                <ApiErrorAlert
+                  error={movementsQuery.error}
+                  title={t("reverse.create.loadError")}
+                  onRetry={() => movementsQuery.refetch()}
+                />
+              ) : movementsQuery.isLoading ? (
+                <p role="status">{t("common.loadingData")}</p>
+              ) : !pagedMovements.length ? (
+                <p className="hn-reversal-create-empty">
+                  {t("reverse.create.movementsEmpty")}
+                </p>
+              ) : (
+                <ul className="hn-reversal-movement-list">
+                  {pagedMovements.map((movement) => (
+                    <li
+                      key={movement.id}
+                      data-selected={movement.id === selectedMovement?.id}
+                    >
+                      <div className="hn-reversal-movement-header">
+                        <strong>{movement.movement_code || EMPTY_TEXT}</strong>
+                        <RowActionButton
+                          kind="view"
+                          onClick={() => handleSelectMovement(movement)}
+                        >
+                          {t("reverse.create.chooseMovement", {
+                            code: movement.movement_code,
+                          })}
+                        </RowActionButton>
+                      </div>
+                      <div className="hn-reversal-movement-status">
+                        <span>
+                          {businessLabel(
+                            MOVEMENT_TYPE_LABELS,
+                            movement.movement_type,
+                            t("reverse.create.movementOther"),
+                          )}
+                        </span>
+                        <UiStatusBadge
+                          tone={
+                            movement.can_reverse && !movement.dependency_guard
+                              ? "success"
+                              : "warning"
+                          }
+                          label={
+                            movement.dependency_guard
+                              ? t("reverse.create.blockedByDependency")
+                              : movement.can_reverse
+                                ? t("reverse.create.canReverse")
+                                : t("reverse.create.blocked")
+                          }
+                        />
+                      </div>
+                      <dl className="hn-reversal-create-meta">
+                        <div className="hn-reversal-create-source">
+                          <dt>{t("reverse.create.colSourceDoc")}</dt>
+                          <dd>
+                            {movement.source_document_code || EMPTY_TEXT}
+                            <small>
+                              {businessLabel(
+                                SOURCE_DOCUMENT_TYPE_LABELS,
+                                movement.source_document_type,
+                                t("reverse.common.docTypeOther"),
+                              )}
+                            </small>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{t("reverse.create.colWarehouse")}</dt>
+                          <dd>{movement.warehouse_name || EMPTY_TEXT}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("reverse.create.colPostedAt")}</dt>
+                          <dd>{formatDateTime(movement.posted_at)}</dd>
+                        </div>
+                      </dl>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {movementsPageCount > 1 ? (
                 <UiPagination
                   page={safeMovementsPage}
                   pageSize={MOVEMENTS_PAGE_SIZE}
                   total={movements.length}
                   onPageChange={setMovementsPage}
                 />
-              </Box>
-            ) : null}
-          </Box>
-
-          {selectedMovement ? (
-            <Box
-              className="hn-reversal-panel"
-              sx={{
-                bgcolor: "action.hover",
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: "var(--ops-radius-card)",
-                p: 2,
-              }}
+              ) : null}
+            </section>
+          ) : selectedMovement ? (
+            <section
+              className="hn-reversal-create-section"
+              aria-label={t("reverse.create.adjustStep")}
             >
-              <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
-                {t("reverse.create.fromMovement", {
-                  code: selectedMovement.movement_code,
-                })}
-              </Box>
-
-              <Grid container spacing={2} sx={{ mb: 1.5 }}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Box
-                    sx={{
-                      typography: "caption",
-                      color: "text.secondary",
-                      display: "block",
-                    }}
-                  >
-                    {t("reverse.create.sourceDocLabel")}
-                  </Box>
-                  <Box sx={{ typography: "body2" }}>
-                    {businessLabel(
-                      SOURCE_DOCUMENT_TYPE_LABELS,
-                      selectedMovement.source_document_type,
-                      t("reverse.common.docTypeOther"),
-                    )}{" "}
-                    ·{" "}
-                    {selectedMovement.source_document_code ||
-                      selectedMovement.source_document_id}
-                  </Box>
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Box
-                    sx={{
-                      typography: "caption",
-                      color: "text.secondary",
-                      display: "block",
-                    }}
-                  >
-                    {t("reverse.create.colReversibility")}
-                  </Box>
-                  <Box
-                    sx={{
-                      typography: "body2",
-                      color: selectedMovement.can_reverse
-                        ? "success.main"
-                        : "error.main",
-                    }}
-                  >
-                    {selectedMovement.can_reverse
-                      ? t("reverse.create.canReverse")
-                      : t("reverse.create.blocked")}
-                  </Box>
-                </Grid>
-              </Grid>
-
+              <div className="hn-reversal-create-context">
+                <h3 ref={headingRef} tabIndex={-1}>
+                  {t("reverse.create.fromMovement", {
+                    code: selectedMovement.movement_code,
+                  })}
+                </h3>
+                <dl className="hn-reversal-create-meta">
+                  <div>
+                    <dt>{t("reverse.create.sourceDocLabel")}</dt>
+                    <dd>
+                      {selectedMovement.source_document_code || EMPTY_TEXT}
+                      <small>
+                        {businessLabel(
+                          SOURCE_DOCUMENT_TYPE_LABELS,
+                          selectedMovement.source_document_type,
+                          t("reverse.common.docTypeOther"),
+                        )}
+                      </small>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{t("reverse.create.colWarehouse")}</dt>
+                    <dd>{selectedMovement.warehouse_name || EMPTY_TEXT}</dd>
+                  </div>
+                </dl>
+              </div>
               {selectedMovement.dependency_guard ? (
-                <Box sx={{ mb: 1.5 }}>
-                  <UiAlert
-                    tone="warning"
-                    title={t("reverse.create.dependencyAlertTitle")}
-                  >
-                    {t("reverse.create.dependencyAlertBody")}
-                  </UiAlert>
-                </Box>
+                <UiAlert
+                  tone="warning"
+                  title={t("reverse.create.dependencyAlertTitle")}
+                >
+                  {t("reverse.create.dependencyAlertBody")}
+                </UiAlert>
               ) : null}
-
-              <Stack spacing={2} sx={{ mt: 1.5 }}>
-                <UiTextField
-                  label={t("reverse.create.reasonLabel")}
-                  required
-                  fullWidth
-                  multiline
-                  minRows={2}
-                  value={reason}
-                  onChange={(event) => setReason(event.target.value)}
-                  placeholder={t("reverse.create.reasonPlaceholder")}
-                  slotProps={{ htmlInput: { maxLength: REASON_MAX } }}
-                  error={Boolean(reason) && !reasonCheck.ok}
-                  helperText={
-                    reason && !reasonCheck.ok
-                      ? t("reverse.create.reasonHelper")
-                      : undefined
-                  }
-                />
-
-                {isIssueReversal ? (
-                  <>
-                    <Box sx={{ maxWidth: 420 }}>
-                      <UiSelect
-                        menuClassName="hn-reversal-menu"
-                        fullWidth
-                        label={t("reverse.create.returnConditionLabel")}
-                        value={returnCondition}
-                        data-testid="reversal-create-return-condition"
-                        options={returnConditionOptions(t)}
-                        onChange={(value) =>
-                          setReturnCondition(value as ReversalReturnCondition)
-                        }
-                      />
-                      <Box
-                        sx={{
-                          typography: "caption",
-                          color: "text.secondary",
-                          display: "block",
-                          mt: 0.5,
-                        }}
-                      >
-                        {t("reverse.create.returnConditionHint")}
-                      </Box>
-                    </Box>
-                    <Box>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={physicalConfirmed}
-                            onChange={(event) =>
-                              setPhysicalConfirmed(event.target.checked)
-                            }
-                          />
-                        }
-                        label={t("reverse.create.physicalConfirm")}
-                      />
-                      {!physicalConfirmed ? (
-                        <Box
-                          sx={{
-                            typography: "caption",
-                            color: "warning.main",
-                            display: "block",
-                          }}
-                        >
-                          {t("reverse.create.physicalWarn")}
-                        </Box>
-                      ) : null}
-                    </Box>
-                  </>
-                ) : null}
-              </Stack>
-
-              <Box sx={{ mt: 2 }}>
-                <ResponsiveDataTable<ReversibleMovementLine>
-                  columns={lineColumns}
-                  headerCellStyle={{
-                    background: "var(--rev-pale)",
-                    color: "var(--rev-ink)",
-                    fontSize: 12,
-                    padding: "10px 9px",
-                    borderColor: "var(--rev-line)",
-                  }}
-                  rows={selectedMovement.lines}
-                  rowKey={(line) => line.id}
-                  loading={movementsQuery.isFetching}
-                  emptyText={t("reverse.create.linesEmpty")}
-                />
-              </Box>
-
-              {itemLineMismatch ? (
-                <Box sx={{ mt: 1.5 }}>
-                  <UiAlert tone="error">
-                    {t("reverse.create.itemMismatch", {
-                      sku: itemLineMismatch.sku,
-                      qty: itemLineMismatch.reversal_qty,
-                      selected: itemLineMismatch.item_ids.length,
-                    })}
-                  </UiAlert>
-                </Box>
-              ) : null}
-
-              {invalidLine ? (
-                <Box sx={{ mt: 1.5 }}>
-                  <UiAlert tone="error">
-                    {invalidLine.qty_exceeds
-                      ? t("reverse.create.qtyExceeds", { sku: invalidLine.sku })
-                      : t("reverse.create.qtyInvalid", {
-                          sku: invalidLine.sku,
-                          message: invalidLine.qty_error ?? "",
-                        })}
-                  </UiAlert>
-                </Box>
-              ) : null}
-
               {missingReferenceVersion ? (
-                <Box sx={{ mt: 1.5 }} data-testid="reversal-missing-version">
+                <div data-testid="reversal-missing-version">
                   <UiAlert
                     tone="error"
                     title={t("reverse.create.missingVersionTitle")}
                   >
                     {t("reverse.create.missingVersionBody")}
                   </UiAlert>
-                </Box>
+                </div>
               ) : null}
-
-              <Box sx={{ mt: 1.5 }}>
-                <UiAlert
-                  tone={selectedMovement.can_reverse ? "success" : "error"}
-                  title={
-                    selectedMovement.can_reverse
-                      ? t("reverse.create.depPassTitle", {
-                          total: qty(
-                            selectedMovement.lines.reduce(
-                              (sum, line) => sum + line.reversible_qty,
-                              0,
-                            ),
-                          ),
-                        })
-                      : t("reverse.create.depBlockedTitle")
-                  }
-                >
-                  {selectedMovement.can_reverse
-                    ? t("reverse.create.impactBody", {
-                        delta:
-                          availableDelta === 0
-                            ? t("reverse.create.noChange")
-                            : `${availableDelta > 0 ? "+" : ""}${qty(availableDelta)}`,
-                      })
-                    : t("reverse.create.depBlockedBody")}
+              <UiTextField
+                label={t("reverse.create.reasonLabel")}
+                required
+                fullWidth
+                multiline
+                minRows={2}
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder={t("reverse.create.reasonPlaceholder")}
+                slotProps={{ htmlInput: { maxLength: REASON_MAX } }}
+                error={Boolean(reason) && !reasonCheck.ok}
+                helperText={
+                  reason && !reasonCheck.ok
+                    ? t("reverse.create.reasonHelper")
+                    : undefined
+                }
+              />
+              {isIssueReversal ? (
+                <div className="hn-reversal-return-fields">
+                  <div>
+                    <UiSelect
+                      menuClassName="hn-reversal-menu"
+                      fullWidth
+                      label={t("reverse.create.returnConditionLabel")}
+                      value={returnCondition}
+                      data-testid="reversal-create-return-condition"
+                      options={returnConditionOptions(t)}
+                      onChange={(value) =>
+                        setReturnCondition(value as ReversalReturnCondition)
+                      }
+                    />
+                    <p className="hn-reversal-create-helper">
+                      {t("reverse.create.returnConditionHint")}
+                    </p>
+                  </div>
+                  <div>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={physicalConfirmed}
+                          onChange={(event) =>
+                            setPhysicalConfirmed(event.target.checked)
+                          }
+                        />
+                      }
+                      label={t("reverse.create.physicalConfirm")}
+                    />
+                    {!physicalConfirmed ? (
+                      <p className="hn-reversal-create-warning">
+                        {t("reverse.create.physicalWarn")}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+              <ul className="hn-reversal-line-list">
+                {selectedMovement.lines.map((line) => (
+                  <li key={line.id}>
+                    <div className="hn-reversal-line-header">
+                      <div>
+                        <strong>{line.sku}</strong>
+                        <p>{line.sku_name}</p>
+                      </div>
+                      <UiStatusBadge
+                        tone={
+                          line.can_reverse && !line.dependency_guard
+                            ? "success"
+                            : "warning"
+                        }
+                        label={
+                          line.can_reverse && !line.dependency_guard
+                            ? t("reverse.create.pass")
+                            : t("reverse.create.blocked")
+                        }
+                      />
+                    </div>
+                    <dl className="hn-reversal-line-quantities">
+                      {lineFields
+                        .filter((field) =>
+                          [
+                            "original_qty",
+                            "reversed_qty",
+                            "reversible_qty",
+                          ].includes(field.key),
+                        )
+                        .map((field) => (
+                          <div key={field.key}>
+                            <dt>{field.header}</dt>
+                            <dd>{field.render(line)}</dd>
+                          </div>
+                        ))}
+                    </dl>
+                    <div className="hn-reversal-line-controls">
+                      {lineFields
+                        .filter((field) =>
+                          ["reversal_qty", "serial_items"].includes(field.key),
+                        )
+                        .map((field) => (
+                          <div key={field.key}>
+                            <div className="hn-reversal-create-label">
+                              {field.header}
+                            </div>
+                            {field.render(line)}
+                          </div>
+                        ))}
+                    </div>
+                    {line.dependency_guard ? (
+                      <p className="hn-reversal-create-warning">
+                        {t("reverse.create.depBlockedBody")}
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              {!selectedMovement.lines.length ? (
+                <p className="hn-reversal-create-empty">
+                  {t("reverse.create.linesEmpty")}
+                </p>
+              ) : null}
+              {itemLineMismatch ? (
+                <UiAlert tone="error">
+                  {t("reverse.create.itemMismatch", {
+                    sku: itemLineMismatch.sku,
+                    qty: itemLineMismatch.reversal_qty,
+                    selected: itemLineMismatch.item_ids.length,
+                  })}
                 </UiAlert>
-              </Box>
-
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                  mt: 2,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  rowGap: 1.5,
-                }}
+              ) : null}
+              {invalidLine ? (
+                <UiAlert tone="error">
+                  {invalidLine.qty_exceeds
+                    ? t("reverse.create.qtyExceeds", { sku: invalidLine.sku })
+                    : t("reverse.create.qtyInvalid", {
+                        sku: invalidLine.sku,
+                        message: invalidLine.qty_error ?? "",
+                      })}
+                </UiAlert>
+              ) : null}
+              <UiAlert
+                tone={selectedMovement.can_reverse ? "success" : "error"}
+                title={
+                  selectedMovement.can_reverse
+                    ? t("reverse.create.depPassTitle", {
+                        total: qty(
+                          selectedMovement.lines.reduce(
+                            (sum, line) => sum + line.reversible_qty,
+                            0,
+                          ),
+                        ),
+                      })
+                    : t("reverse.create.depBlockedTitle")
+                }
               >
-                <Box>
-                  <Box
-                    sx={{
-                      typography: "caption",
-                      color: "text.secondary",
-                      display: "block",
-                    }}
-                  >
-                    {t("reverse.create.totalQtyLabel")}
-                  </Box>
-                  <Box sx={{ typography: "h6" }}>{qty(totalQty)}</Box>
-                </Box>
-                <ActionButton
-                  className="hn-reversal-primary"
-                  kind="create"
-                  disabled={!canSubmit || createMutation.isPending}
-                  onClick={() => setSubmitConfirmOpen(true)}
-                >
-                  {createMutation.isPending
-                    ? t("reverse.create.creating")
-                    : t("reverse.create.submit")}
-                </ActionButton>
-              </Stack>
-            </Box>
-          ) : (
-            <Box sx={{ typography: "body2", color: "text.secondary" }}>
-              {t("reverse.create.pickHint")}
-            </Box>
-          )}
-        </Stack>
-      </UiDialog>
+                {selectedMovement.can_reverse
+                  ? t("reverse.create.impactBody", {
+                      delta:
+                        availableDelta === 0
+                          ? t("reverse.create.noChange")
+                          : `${availableDelta > 0 ? "+" : ""}${qty(availableDelta)}`,
+                    })
+                  : t("reverse.create.depBlockedBody")}
+              </UiAlert>
+            </section>
+          ) : null}
+        </div>
+      </UiDrawer>
 
       <UiDialog
         className="hn-reversal-dialog"

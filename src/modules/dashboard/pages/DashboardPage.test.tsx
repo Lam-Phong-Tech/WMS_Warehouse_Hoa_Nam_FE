@@ -1,5 +1,10 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  focusManager,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -7,7 +12,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import dayjs from "dayjs";
 
@@ -18,7 +23,6 @@ vi.mock("@/shared/api/http", () => ({
 import { http } from "@/shared/api/http";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { OPERATIONS_REPORT_ENDPOINTS } from "@/modules/reports/operations/report-data";
-import { reportQueryOptions } from "../overview/overview-data";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
@@ -151,7 +155,18 @@ function routeResponses(url: string) {
 
 // Cùng một con số còn xuất hiện ở khối đối soát, biểu đồ và bảng dữ liệu thay
 // thế, nên các assertion về KPI đều thu hẹp phạm vi vào #kpi-grid.
-function renderDashboard(entry = window.location.pathname + window.location.search) {
+function CurrentLocation() {
+  const location = useLocation();
+  return (
+    <output data-testid="current-location">
+      {location.pathname + location.search + location.hash}
+    </output>
+  );
+}
+
+function renderDashboard(
+  entry = window.location.pathname + window.location.search,
+) {
   mockedGetPage.mockImplementation((url: string) => {
     const meta = {
       last_page: 1,
@@ -167,13 +182,15 @@ function renderDashboard(entry = window.location.pathname + window.location.sear
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
-  return render(
+  const rendered = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[entry]}>
         <DashboardPage />
+        <CurrentLocation />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...rendered, queryClient };
 }
 
 afterEach(() => {
@@ -190,6 +207,28 @@ afterEach(() => {
 });
 
 describe("DashboardPage — Tổng quan vận hành", () => {
+  it.each(["", "&document=retired-document"])(
+    "returns retired transaction links to the dashboard (%s)",
+    async (documentQuery) => {
+      mockedGet.mockImplementation((url: string) => routeResponses(url));
+      renderDashboard(
+        `/dashboard?screen=MAP-01&view=transaction${documentQuery}&keep=1#recent`,
+      );
+
+      await waitFor(() =>
+        expect(screen.getByTestId("current-location").textContent).toBe(
+          "/dashboard?screen=MAP-01&keep=1#recent",
+        ),
+      );
+      expect(
+        screen.queryByRole("heading", { name: "Chi tiết giao dịch" }),
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByText("Công việc cần ưu tiên"),
+      ).toBeInTheDocument();
+    },
+  );
+
   it("đổi bộ lọc Loại hàng thì KPI đọc đúng nhánh và ẩn thẻ không còn nghĩa", async () => {
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard();
@@ -615,6 +654,89 @@ describe("DashboardPage — biểu đồ theo kỳ KPI", () => {
 });
 
 describe("DashboardPage MAP-01 — filter chart độc lập", () => {
+  it("preserves chart, reporting period, table page and page size when active queries refresh", async () => {
+    const days = Array.from({ length: 14 }, (_, index) =>
+      dayjs(today)
+        .subtract(13 - index, "day")
+        .format("YYYY-MM-DD"),
+    );
+    let currentOverview = {
+      ...overview,
+      flow_daily: days.map((date) => ({ ...overview.flow_daily[0], date })),
+      stock_trend: days.map((date) => ({ date, closing_qty: 1234 })),
+    };
+    mockedGet.mockImplementation((url: string) => {
+      if (url === API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW)
+        return Promise.resolve(currentOverview);
+      if (url === OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY)
+        return Promise.resolve({
+          days: days.map((date) => ({ ...xntDaily.days[0], date })),
+        });
+      return routeResponses(url);
+    });
+    const { container, queryClient } = renderDashboard(
+      "/dashboard?screen=MAP-01",
+    );
+    await screen.findByRole("img", { name: "Biểu đồ nhập xuất tồn kho" });
+    fireEvent.click(screen.getByRole("button", { name: /7 ngày gần nhất/ }));
+    fireEvent.click(
+      screen.getByRole("menuitemradio", { name: "14 ngày gần nhất" }),
+    );
+    await screen.findByRole("img", { name: "Biểu đồ nhập xuất tồn kho" });
+    const stockValue = () =>
+      container.querySelector('[data-kpi-id="DASH-KPI-01"] strong');
+    currentOverview = {
+      ...currentOverview,
+      kpi: {
+        ...currentOverview.kpi,
+        on_hand: { product: 900, component: 500, total: 1400 },
+      },
+    };
+    await act(async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["dashboard"],
+        refetchType: "active",
+      });
+    });
+    await waitFor(() => expect(stockValue()).toHaveTextContent("1.400"));
+    expect(screen.getByRole("button", { name: "Biểu đồ" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(
+      screen.getByRole("button", { name: /14 ngày gần nhất/ }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Bảng số liệu" }));
+    fireEvent.change(screen.getByLabelText("Số dòng mỗi trang"), {
+      target: { value: "10" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /page 2|trang 2/i }));
+    expect(screen.getByText("Hiển thị 11–14 / 14 bản ghi")).toBeInTheDocument();
+    currentOverview = {
+      ...currentOverview,
+      kpi: {
+        ...currentOverview.kpi,
+        on_hand: { product: 1000, component: 600, total: 1600 },
+      },
+    };
+    await act(async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["dashboard"],
+        refetchType: "active",
+      });
+    });
+    await waitFor(() => expect(stockValue()).toHaveTextContent("1.600"));
+    expect(
+      screen.getByRole("button", { name: "Bảng số liệu" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", { name: /14 ngày gần nhất/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Số dòng mỗi trang")).toHaveValue("10");
+    expect(screen.getByText("Hiển thị 11–14 / 14 bản ghi")).toBeInTheDocument();
+  });
+
   it("chuyển giữa bảng số liệu và biểu đồ với số liệu thật trong cùng kỳ", async () => {
     window.history.pushState({}, "", "/dashboard?screen=MAP-01");
     window.location.search = "?screen=MAP-01";
@@ -694,14 +816,20 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     ).toBeInTheDocument();
   });
 
-  it("đổi ngôn ngữ sang English thì dịch phần snapshot MAP-01", async () => {
+  it("updates snapshot labels and KPI context when switching Vietnamese to English and back", async () => {
     window.history.pushState({}, "", "/dashboard?screen=MAP-01");
     window.location.search = "?screen=MAP-01";
     mockedGet.mockImplementation((url: string) => routeResponses(url));
-    useLanguageStore.getState().setLanguage("en");
-    await ensureEnglishMessages();
-
     renderDashboard();
+
+    expect(
+      await screen.findByText("2 SKU có tồn · 800 SP · 434 LK"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("200 SP · 100 LK")).toBeInTheDocument();
+    await act(async () => {
+      useLanguageStore.getState().setLanguage("en");
+      await ensureEnglishMessages();
+    });
 
     expect(
       await screen.findByText(/Good (morning|afternoon|evening),/),
@@ -712,6 +840,18 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     expect(screen.getByText("Priority work")).toBeInTheDocument();
     expect(screen.getByText("Recent transactions")).toBeInTheDocument();
     expect(screen.getByText("Stock threshold alerts")).toBeInTheDocument();
+    expect(
+      screen.getByText("2 SKUs in stock · 800 products · 434 components"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("200 products · 100 components"),
+    ).toBeInTheDocument();
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(
+      screen.getByText("2 SKU có tồn · 800 SP · 434 LK"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("200 SP · 100 LK")).toBeInTheDocument();
+    expect(screen.getByText("Giao dịch gần đây")).toBeInTheDocument();
   });
 
   it("đổi 14 ngày chỉ tải lại chart, KPI Hôm nay và nguồn KPI không đổi", async () => {
@@ -779,7 +919,43 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     ).toBe(kpiBefore);
   });
 
-  it("Xem tất cả công việc mở đúng màn chi tiết và quay lại MAP-01", async () => {
+  it("opens the warranty priority action with the overdue filter enabled", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard("/dashboard?screen=MAP-01");
+    const priority = await waitFor(() => {
+      const element = document.querySelector(".snapshot-priority");
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    fireEvent.click(
+      await within(priority).findByRole("button", {
+        name: /Hồ sơ bảo hành cần xử lý/,
+      }),
+    );
+    expect(screen.getByTestId("current-location").textContent).toBe(
+      "/warranty?overdue=1",
+    );
+  });
+
+  it("opens the SKU priority action with pending information selected", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard("/dashboard?screen=MAP-01");
+    const priority = await waitFor(() => {
+      const element = document.querySelector(".snapshot-priority");
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    fireEvent.click(
+      await within(priority).findByRole("button", {
+        name: /Sản phẩm chờ bổ sung thông tin/,
+      }),
+    );
+    expect(screen.getByTestId("current-location").textContent).toBe(
+      "/master-data/skus?filter=pending_info",
+    );
+  });
+
+  it("khối Công việc cần ưu tiên không còn nút Xem tất cả", async () => {
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard("/dashboard?screen=MAP-01");
 
@@ -788,112 +964,84 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
       expect(element).not.toBeNull();
       return element as HTMLElement;
     });
-    fireEvent.click(
-      within(priority).getByRole("button", { name: /Xem tất cả/i }),
-    );
     expect(
-      await screen.findByRole("heading", { name: "Việc cần xử lý" }),
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Về tổng quan/i }));
-    expect(
-      await screen.findByText("Công việc cần ưu tiên"),
-    ).toBeInTheDocument();
+      within(priority).queryByRole("button", { name: /Xem tất cả/i }),
+    ).not.toBeInTheDocument();
   });
 });
 
-/**
- * Nút "Làm mới": có sự kiện là chưa đủ, phải NHÌN THẤY nó đang chạy và không
- * cho bấm chồng.
- */
-describe("DashboardPage — nút làm mới", () => {
-  it("gọi lại cả bốn nguồn và xướng lên aria-live", async () => {
-    mockedGet.mockImplementation((url: string) => routeResponses(url));
-    const { container } = renderDashboard();
+describe("DashboardPage — background updates and error recovery", () => {
+  it.each(["/dashboard", "/dashboard?screen=MAP-01"])(
+    "omits healthy refresh controls and metadata on %s",
+    async (entry) => {
+      mockedGet.mockImplementation((url: string) => routeResponses(url));
+      const { container } = renderDashboard(entry);
+      await screen.findByText(
+        entry.includes("MAP-01")
+          ? "Công việc cần ưu tiên"
+          : "Xuất sản phẩm đã ghi sổ",
+      );
+      expect(
+        screen.queryByRole("button", { name: /Làm mới|Refresh/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        container.querySelector(".snapshot-data-bar, .refresh-block"),
+      ).toBeNull();
+      expect(
+        screen.queryByText(/Chỉ số hôm nay|Xu hướng:|Tự động làm mới sau/),
+      ).not.toBeInTheDocument();
+    },
+  );
 
-    await screen.findByText("Xuất sản phẩm đã ghi sổ");
+  it("retains a recovery action only while a data source has failed", async () => {
+    let recover = false;
+    mockedGet.mockImplementation((url: string) => {
+      if (!recover && url === API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW)
+        return Promise.reject(new Error("offline"));
+      return routeResponses(url);
+    });
+    const { container, queryClient } = renderDashboard();
+    await screen.findAllByText(
+      "Không thể tải dữ liệu. Vui lòng nhấn “Làm mới” để thử lại.",
+    );
+    recover = true;
     const before = mockedGet.mock.calls.length;
-
-    fireEvent.click(screen.getByRole("button", { name: /Làm mới/ }));
-
-    // Bốn nguồn đọc, bốn lượt gọi mới.
+    fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
+    await screen.findByText("Xuất sản phẩm đã ghi sổ");
+    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
     expect(mockedGet.mock.calls.length).toBe(before + 4);
     expect(
-      (container.querySelector(".sr-only") as HTMLElement).textContent,
-    ).toBe("Đã làm mới trang Tổng quan");
+      screen.queryByRole("button", { name: /Làm mới|Refresh/ }),
+    ).not.toBeInTheDocument();
+    expect(container.querySelector(".sr-only")).toHaveTextContent(
+      "Đã làm mới trang Tổng quan",
+    );
   });
 
-  /**
-   * Bản trước khoá nút theo mỗi `overview.isFetching`, nên nút sáng lại trong
-   * lúc ba nguồn kia còn đang bay — bấm tiếp là nhân đôi request.
-   */
-  it("khoá nút cho tới khi cả bốn nguồn xong, không riêng nguồn chính", async () => {
-    let releaseQuick: (value: unknown) => void = () => {};
-    const slowQuick = new Promise((resolve) => {
-      releaseQuick = resolve;
-    });
-    let quickCalls = 0;
-    mockedGet.mockImplementation((url: string) => {
-      if (url === API_ENDPOINTS.DASHBOARD_KPI) {
-        quickCalls += 1;
-        return quickCalls === 1 ? Promise.resolve(quick) : slowQuick;
-      }
-      return routeResponses(url);
-    });
-    renderDashboard();
-
-    await screen.findByText("Xuất sản phẩm đã ghi sổ");
-    const button = screen.getByRole("button", {
-      name: /Làm mới/,
-    }) as HTMLButtonElement;
-    expect(button.disabled).toBe(false);
-
-    fireEvent.click(button);
-    // `quick` còn treo ⇒ nút phải vẫn khoá dù nguồn chính đã về.
-    await screen.findByText("Đang thử lại");
-    expect(button.disabled).toBe(true);
-
-    releaseQuick(quick);
-  });
-
-  /**
-   * Bấm Làm mới trên trang khoẻ mạnh cũng phải có phản hồi nhìn thấy được —
-   * bản trước chỉ hiện banner khi TRƯỚC ĐÓ đã có lỗi.
-   */
-  it("hiện banner Đang thử lại ngay khi bấm, không đợi phải có lỗi", async () => {
-    let release: (value: unknown) => void = () => {};
-    const slow = new Promise((resolve) => {
-      release = resolve;
-    });
-    let overviewCalls = 0;
-    mockedGet.mockImplementation((url: string) => {
-      if (url === API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW) {
-        overviewCalls += 1;
-        return overviewCalls === 1 ? Promise.resolve(overview) : slow;
-      }
-      return routeResponses(url);
-    });
-    renderDashboard();
-
-    await screen.findByText("Xuất sản phẩm đã ghi sổ");
-    expect(screen.queryByText("Đang thử lại")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /Làm mới/ }));
-    expect(await screen.findByText("Đang thử lại")).toBeInTheDocument();
-
-    release(overview);
-  });
-
-  /**
-   * Banner ngoại tuyến hứa "tạm dừng làm mới" — phải dừng THẬT.
-   *
-   * Kiểm hai nửa vì một test đơn không phủ được cả hai mà vẫn tất định: nửa
-   * trên là cái công tắc, nửa dưới là việc trang bật đúng công tắc đó khi mất
-   * mạng. Chỗ nối giữa hai nửa chỉ có một điểm gọi duy nhất và đã được
-   * typecheck giữ.
-   */
-  it("tắt hẳn vòng 60 giây thay vì chỉ nói trong banner", () => {
-    expect(reportQueryOptions(true, true).refetchInterval).toBe(60_000);
-    expect(reportQueryOptions(true, false).refetchInterval).toBe(false);
+  it("leaves periodic synchronization to the authenticated shell", async () => {
+    vi.useFakeTimers();
+    try {
+      focusManager.setFocused(true);
+      mockedGet.mockImplementation((url: string) => routeResponses(url));
+      const { container, queryClient } = renderDashboard(
+        "/dashboard?screen=MAP-01",
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(
+        container.querySelector('[data-kpi-id="DASH-KPI-01"] strong'),
+      ).toHaveTextContent("1.234");
+      expect(queryClient.isFetching()).toBe(0);
+      const before = mockedGet.mock.calls.length;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(120_000);
+      });
+      expect(mockedGet.mock.calls.length).toBe(before);
+    } finally {
+      focusManager.setFocused(undefined);
+      vi.useRealTimers();
+    }
   });
 
   it("nhận ra trạng thái ngoại tuyến lúc mở trang", async () => {

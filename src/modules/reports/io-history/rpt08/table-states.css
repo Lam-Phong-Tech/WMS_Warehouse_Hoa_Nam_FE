@@ -198,18 +198,6 @@
   color: inherit;
   font-size: inherit;
 }
-#rpt08-history-report .rpt08-view-button {
-  padding: 4px 2px;
-  border: 0;
-  background: transparent;
-  color: #008bce;
-  font-size: 10.5px;
-  cursor: pointer;
-}
-#rpt08-history-report .rpt08-view-button:hover {
-  color: var(--rpt08-navy-deep);
-  text-decoration: underline;
-}
 #rpt08-history-report .rpt08-table-footer {
   min-height: 34px;
   display: grid;

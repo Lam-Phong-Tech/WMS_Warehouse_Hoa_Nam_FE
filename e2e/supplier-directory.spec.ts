@@ -84,6 +84,25 @@ test("supplier directory: shell, responsive list, create and versioned update", 
       await route.fulfill({ json: { success: true, data: user } });
       return;
     }
+    if (url.pathname.endsWith("/auth/preferences")) {
+      const preferences = {
+        version: 1,
+        locale: "vi",
+        timezone: "Asia/Ho_Chi_Minh",
+        date_format: "DD/MM/YYYY",
+        default_homepage: "dashboard",
+        theme: "light",
+        accent: "ocean",
+        font_size: "medium",
+        density: "comfortable",
+        reduced_motion: false,
+      };
+      if (request.method() === "PATCH") {
+        Object.assign(preferences, request.postDataJSON(), { version: 2 });
+      }
+      await route.fulfill({ json: { success: true, data: preferences } });
+      return;
+    }
     if (url.pathname.includes("/mini-app/inbound/suppliers")) {
       if (request.method() === "POST") {
         const body = request.postDataJSON();
@@ -140,7 +159,7 @@ test("supplier directory: shell, responsive list, create and versioned update", 
   });
   await page.goto("/master-data/suppliers", { waitUntil: "domcontentloaded" });
   await page
-    .getByRole("button", { name: "Bắt đầu làm việc →" })
+    .getByRole("button", { name: /^Bắt đầu làm việc/ })
     .click({ timeout: 90_000 });
   await expect(
     page.getByRole("heading", { name: "Danh sách NCC", exact: true }),

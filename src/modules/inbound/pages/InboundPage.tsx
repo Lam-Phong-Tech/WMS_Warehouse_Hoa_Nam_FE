@@ -1,5 +1,5 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { UiIcon, UiPagination, UiSelect, UiTextField } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
@@ -31,6 +31,7 @@ import { useInboundDocuments } from "@/modules/inbound/hooks/use-inbound";
 import { InboundScanModal } from "@/modules/inbound/pages/MvpInboundScreens";
 import type { InboundDocument } from "@/modules/inbound/types";
 import { formatQuantity } from "@/shared/utils/format-number";
+import { formatDateTime } from "@/shared/utils/format-date";
 import "./inbound-list.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -68,6 +69,7 @@ function InboundListScreen() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [draftOpen, setDraftOpen] = useState(false);
+  const draftBusyRef = useRef(false);
   const [draftDocumentId, setDraftDocumentId] = useState<string | null>(null);
   const [scanDocumentId, setScanDocumentId] = useState<string | null>(null);
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
@@ -87,7 +89,7 @@ function InboundListScreen() {
     rows,
     SORT_ACCESSORS,
   );
-  const loading = query.isLoading || query.isFetching;
+  const loading = query.isLoading;
   const hasFilters = Boolean(
     searchInput || status || pendingInfo !== undefined || sortOrder !== "desc",
   );
@@ -130,6 +132,7 @@ function InboundListScreen() {
       setScanDocumentId(null);
     },
     "IN-01-overlay",
+    () => !draftBusyRef.current,
   );
   const editDocument = (id: string | null) => {
     setScanDocumentId(null);
@@ -267,7 +270,7 @@ function InboundListScreen() {
               <UiTextField
                 id="hn-inbound-search"
                 value={searchInput}
-                placeholder={tUi("updatedUi.text_16bb8e8dabab")}
+                placeholder={t("inbound.list.searchPlaceholder")}
                 fullWidth
                 slotProps={{
                   htmlInput: { "aria-label": t("inbound.list.searchAria") },
@@ -383,7 +386,7 @@ function InboundListScreen() {
         ) : null}
         <div
           className={`hn-inbound-table-region${loading ? " is-loading" : ""}`}
-          aria-busy={loading}
+          aria-busy={query.isFetching}
         >
           {loading ? (
             <div
@@ -406,7 +409,7 @@ function InboundListScreen() {
                   "hn-inbound-col-code",
                 )}
                 {sortHeader(
-                  tUi("updatedUi.text_766b3eccf90f"),
+                  t("inbound.list.colSource"),
                   "source",
                   "hn-inbound-col-source",
                 )}
@@ -420,6 +423,9 @@ function InboundListScreen() {
                   "status",
                   "hn-inbound-col-status",
                 )}
+                <th className="hn-inbound-col-created">
+                  {t("reverse.detail.fieldCreatedBy")}
+                </th>
                 <th
                   className="hn-inbound-col-actions"
                   aria-label={tUi("outbound.detail.colAction")}
@@ -454,6 +460,12 @@ function InboundListScreen() {
                     {progress(row)}
                   </td>
                   <td className="hn-inbound-status-cell">{statusBadge(row)}</td>
+                  <td className="hn-inbound-created-cell">
+                    <span>{displayValue(row.createdBy)}</span>
+                    <time dateTime={row.createdAt || undefined}>
+                      {formatDateTime(row.createdAt)}
+                    </time>
+                  </td>
                   <td className="hn-inbound-actions-cell">{rowActions(row)}</td>
                 </tr>
               ))}
@@ -548,6 +560,9 @@ function InboundListScreen() {
           documentId={draftDocumentId}
           onClose={closeDraftModal}
           onSaved={handleSaved}
+          onBusyChange={(busy) => {
+            draftBusyRef.current = busy;
+          }}
         />
       ) : null}
       {scanDocumentId ? (

@@ -1,8 +1,17 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DashboardSnapshot } from "./DashboardSnapshot";
 import { dashboardNow } from "./overview-data";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 
 const now = dashboardNow();
 const today = now.format("YYYY-MM-DD");
@@ -61,9 +70,102 @@ function renderSnapshot(
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  useLanguageStore.getState().setLanguage("vi");
 });
 
 describe("DashboardSnapshot MAP-01 parity", () => {
+  it.each([{ failed: true }, { partial: true }])(
+    "retains recovery actions for failed or partial data (%j)",
+    (state) => {
+      renderSnapshot(state);
+      fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+      expect(baseProps.onRetry).toHaveBeenCalledOnce();
+      expect(
+        screen.queryByRole("button", { name: "Làm mới" }),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(["vi", "en"] as const)(
+    "keeps the healthy %s overview focused on greeting, KPIs and period selection",
+    async (language) => {
+      await act(async () => {
+        if (language === "en") await ensureEnglishMessages();
+        useLanguageStore.getState().setLanguage(language);
+      });
+      const { container } = renderSnapshot();
+      expect(container.querySelector(".snapshot-data-bar")).toBeNull();
+      expect(
+        screen.queryByText(/Chỉ số hôm nay|Today's figures/),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/Xu hướng:|Trend:/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Làm mới|Refresh/ }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("QA");
+      expect(container.querySelector(".snapshot-kpis")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: language === "vi" ? /7 ngày gần nhất/ : /Last 7 days/,
+        }),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it("updates priority row actions in both languages without changing the selected route", async () => {
+    renderSnapshot({
+      issues: [
+        {
+          id: "issue",
+          severity: "P1",
+          title: "Pending evidence",
+          detail: "2 documents",
+          count: 2,
+          technical: "PENDING",
+          route: "/reports/pending-evidence?screen=RPT-08",
+        },
+      ],
+    });
+    const row = screen.getByRole("button", { name: /Pending evidence/ });
+    expect(within(row).getByText("Xem")).toBeInTheDocument();
+    await act(async () => {
+      useLanguageStore.getState().setLanguage("en");
+      await ensureEnglishMessages();
+    });
+    expect(within(row).getByText("View")).toBeInTheDocument();
+    fireEvent.click(row);
+    expect(baseProps.onNavigate).toHaveBeenCalledWith(
+      "/reports/pending-evidence?screen=RPT-08",
+    );
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(within(row).getByText("Xem")).toBeInTheDocument();
+  });
+
+  it("returns the daily table to page one when the reporting period changes", () => {
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      ...baseProps.rows[0],
+      date: now.subtract(30 - index, "day").format("YYYY-MM-DD"),
+    }));
+    const trend = rows.map((row) => ({
+      ...baseProps.trend[0],
+      date: row.date,
+    }));
+    const { rerender } = renderSnapshot({ rows, trend });
+    fireEvent.click(screen.getByRole("button", { name: "Bảng số liệu" }));
+    fireEvent.click(screen.getByRole("button", { name: /page 2/i }));
+    expect(screen.getByText("Hiển thị 6–10 / 12 bản ghi")).toBeInTheDocument();
+
+    rerender(
+      <DashboardSnapshot
+        {...baseProps}
+        rows={rows}
+        trend={trend}
+        range={{ from: rows[0].date, to: rows[11].date }}
+      />,
+    );
+    expect(screen.getByText("Hiển thị 1–5 / 12 bản ghi")).toBeInTheDocument();
+  });
+
   it("khóa filter và dùng skeleton khi chart đang loading", () => {
     renderSnapshot({ chartStateOverride: "loading" });
 

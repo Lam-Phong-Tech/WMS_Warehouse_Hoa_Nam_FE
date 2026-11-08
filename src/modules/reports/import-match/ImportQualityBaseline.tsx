@@ -1,9 +1,16 @@
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
+import { businessToday } from "@/shared/utils/date-time";
+import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
+import { reportExportSections } from "@/modules/reports/components/report-export-sections";
+import { reportWorkbookOptions } from "@/modules/reports/components/report-export-options";
+import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
+import "./import-quality-baseline.css";
+
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useMemo, useState, type ReactNode } from "react";
-import dayjs, { type Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
 import {
   Box,
   Stack,
@@ -15,7 +22,6 @@ import {
 } from "@/shared/ui";
 import {
   CheckCircleOutlined,
-  DownloadOutlined,
   FileTextOutlined,
   WarningOutlined,
 } from "@/shared/components/icons";
@@ -44,9 +50,8 @@ import {
   downloadImportQualityExport,
   useImportQualityBatches,
 } from "./import-quality-api";
-import { ImportQualityIssuePanel } from "./ImportQualityIssuePanel";
+import { ImportQualityBatchDrawer } from "./ImportQualityBatchDrawer";
 import { useClientPagination } from "@/modules/reports/operations/report-columns";
-import { DrillDownDialog } from "@/modules/reports/operations/report-ui";
 import {
   buildImportBatches,
   filterBatches,
@@ -202,22 +207,6 @@ function MetricCard({
   );
 }
 
-function FilterLabel({ children }: { children: ReactNode }) {
-  return (
-    <Box
-      sx={{
-        mb: 0.55,
-        fontSize: 12.5,
-        fontWeight: 700,
-        color: C.text,
-        lineHeight: "18px",
-      }}
-    >
-      {children}
-    </Box>
-  );
-}
-
 function resultTone(row: ImportMatchBatch): "success" | "warning" | "error" {
   if (row.failed > 0) return "error";
   if (row.duplicate > 0) return "warning";
@@ -278,7 +267,10 @@ export default function ImportQualityBaseline() {
 
   const totals = useMemo(() => totalsOf(filteredRows), [filteredRows]);
   const trend = useMemo(() => trendByDay(filteredRows), [filteredRows]);
-  const pagination = useClientPagination(filteredRows, 5);
+  const pagination = useClientPagination(
+    filteredRows,
+    TABLE_PAGE_SIZE_OPTIONS[0],
+  );
   const lastPage = Math.max(
     1,
     Math.ceil(pagination.total / pagination.perPage),
@@ -299,39 +291,48 @@ export default function ImportQualityBaseline() {
     readError: () => source.error,
   });
 
-  const reset = () => {
+  const hasFilters =
+    kind !== "all" ||
+    result !== "" ||
+    keyword !== "" ||
+    issuesOnly ||
+    !range[0].isSame(businessToday().startOf("month"), "day") ||
+    !range[1].isSame(businessToday(), "day");
+  const clearFilters = () => {
     setRange(presetRange("this-month"));
-    setResult("");
     setKind("all");
+    setResult("");
     setKeyword("");
     setIssuesOnly(false);
     pagination.reset();
   };
 
-  const apply = () => {
-    pagination.reset();
-    document
-      .getElementById("rpt04-results")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const exportXlsx = async () => {
+  const exportXlsx = async (choice: ReportExportChoice) => {
     setExporting(true);
     setExportError("");
     try {
-      await downloadImportQualityExport({
-        from_date: from,
-        to_date: to,
-        ...(result ? { result } : {}),
-        ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
-        ...(issuesOnly ? { issues_only: "1" } : {}),
-      });
+      await downloadImportQualityExport(
+        {
+          from_date: from,
+          to_date: to,
+          ...(result ? { result } : {}),
+          ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
+          ...(issuesOnly ? { issues_only: "1" } : {}),
+        },
+        reportWorkbookOptions(
+          choice,
+          ["Mã lần nhập", "Import ID", "ID"],
+          filteredRows.map((row) => row.id),
+          pagination.pageRows.map((row) => row.id),
+        ),
+      );
     } catch (error) {
       setExportError(
         error instanceof Error
           ? error.message
           : "Không thể tải báo cáo nhập liệu.",
       );
+      throw error;
     } finally {
       setExporting(false);
     }
@@ -385,9 +386,6 @@ export default function ImportQualityBaseline() {
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Box sx={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>
-            {tUi("updatedUi.text_55f997722908")}
-          </Box>
           <Box
             component="h1"
             className="hn-report-page-title"
@@ -424,135 +422,38 @@ export default function ImportQualityBaseline() {
             justifyContent: { xs: "flex-start", md: "flex-end" },
           }}
         >
-          <UiButton
-            appearance="filled"
-            startIcon={<DownloadOutlined />}
+          <ReportExportAction
+            title={t("reportExport.importQuality")}
+            fileStem={"BaoCaoNhapLieu_" + from + "-" + to}
+            total={filteredRows.length}
+            currentCount={pagination.pageRows.length}
+            sections={reportExportSections(
+              t("reportExport.importDocuments"),
+              "none",
+            )}
+            context={[
+              [
+                t("reportExport.period"),
+                range[0].format("DD/MM/YYYY") +
+                  " – " +
+                  range[1].format("DD/MM/YYYY"),
+              ],
+            ]}
+            disabled={
+              invalid || source.isLoading || source.isFetching || source.isError
+            }
             loading={exporting}
-            disabled={invalid || source.isLoading || kind !== "all"}
-            onClick={() => void exportXlsx()}
-          >
-            {tUi("reports.traceability.exportReport")}
-          </UiButton>
-
-          <ReportWarehouseCard />
+            onExport={exportXlsx}
+          />
         </Stack>
       </Stack>
 
-      <Box
-        component="section"
+      <section
+        className="rpt04-filters"
         aria-label={tUi("reports.recipientAgency.filterTitle")}
-        sx={{ ...surface, p: { xs: 1.25, sm: 1.5 } }}
       >
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, minmax(0, 1fr))",
-              lg: "1.25fr .9fr 1fr 1fr",
-            },
-            gap: { xs: 1.1, md: 1.25 },
-            alignItems: "end",
-          }}
-        >
-          <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>
-              {tUi("reports.packingLabel.dateRangeLabel")}
-            </FilterLabel>
-            <ReportDateRangePicker
-              aria-label={tUi("reports.packingLabel.dateRangeLabel")}
-              value={range}
-              format="DD/MM/YYYY"
-              allowClear={false}
-              maxDate={dayjs().endOf("day")}
-              presets={presets}
-              className="hn-vuexy-date-range"
-              popupClassName="hn-vuexy-date-popup"
-              onChange={(value) => {
-                if (value?.[0] && value[1]) {
-                  setRange([value[0], value[1]]);
-                  pagination.reset();
-                }
-              }}
-            />
-          </Box>
-
-          <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>{tUi("updatedUi.text_19c608bfa103")}</FilterLabel>
-            <Box
-              aria-label="Kho Hoa Nam"
-              sx={{
-                minHeight: "var(--ops-control-height)",
-                px: 1.5,
-                display: "flex",
-                alignItems: "center",
-                border: `1px solid ${C.border}`,
-                borderRadius: "var(--ops-radius-control)",
-                bgcolor: "var(--ops-canvas)",
-                color: C.muted,
-                fontWeight: 600,
-              }}
-            >
-              Kho Hoa Nam
-            </Box>
-          </Box>
-
-          <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>{tUi("updatedUi.text_cf769803384e")}</FilterLabel>
-            <UiSelect
-              fullWidth
-              aria-label={tUi("updatedUi.text_cf769803384e")}
-              value={kind}
-              onChange={(value) => {
-                setKind(value as ItemKind);
-                pagination.reset();
-              }}
-              options={getdataTypeOptions()}
-              menuClassName="rpt04-select-menu"
-            />
-          </Box>
-
-          <Box sx={{ minWidth: 0 }}>
-            <FilterLabel>{tUi("inbound.detail.colResult")}</FilterLabel>
-            <UiSelect
-              fullWidth
-              aria-label={tUi("inbound.detail.colResult")}
-              value={result}
-              placeholder={tUi("dashboard.operations.filterAll")}
-              onChange={(value) => {
-                setResult(value as ImportMatchResultFilter);
-                setIssuesOnly(false);
-                pagination.reset();
-              }}
-              options={getresultOptions().filter((item) => item.value !== "")}
-              menuClassName="rpt04-select-menu"
-            />
-          </Box>
-        </Box>
-
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          sx={{
-            mt: 1.15,
-            gap: 1,
-            alignItems: { xs: "stretch", sm: "center" },
-          }}
-        >
-          <Box
-            className="rpt04-search-label"
-            sx={{
-              display: { xs: "none", lg: "flex" },
-              minHeight: "var(--ops-control-height)",
-              alignItems: "center",
-              flex: "0 0 auto",
-              color: C.text,
-              fontSize: 13,
-              fontWeight: 650,
-            }}
-          >
-            {tUi("reports.packingLabel.searchLabel")}
-          </Box>
-          <Box className="rpt04-search-field" sx={{ flex: 1, minWidth: 0 }}>
+        <div className="rpt04-filters__row">
+          <div className="rpt04-filters__search">
             <SearchInput
               width="100%"
               value={keyword}
@@ -563,15 +464,68 @@ export default function ImportQualityBaseline() {
                 pagination.reset();
               }}
             />
-          </Box>
-          <UiButton appearance="filled" onClick={apply} disabled={invalid}>
-            {tUi("dashboard.snapshot.apply")}
-          </UiButton>
-          <UiButton appearance="outlined" onClick={reset}>
-            {tUi("reports.packingLabel.reset")}
-          </UiButton>
-        </Stack>
-      </Box>
+          </div>
+          <div className="rpt04-filters__dates">
+            <ReportDateRangePicker
+              aria-label={tUi("reports.packingLabel.dateRangeLabel")}
+              value={range}
+              format="DD/MM/YYYY"
+              allowClear={false}
+              maxDate={businessToday().endOf("day")}
+              presets={presets}
+              popupClassName="hn-vuexy-date-popup"
+              onChange={(value) => {
+                if (value?.[0] && value[1]) {
+                  setRange([value[0], value[1]]);
+                  pagination.reset();
+                }
+              }}
+            />
+          </div>
+          <UiSelect
+            fullWidth
+            displayEmpty
+            searchable={false}
+            aria-label={tUi("updatedUi.text_cf769803384e")}
+            value={kind}
+            onChange={(value) => {
+              setKind(value as ItemKind);
+              pagination.reset();
+            }}
+            options={getdataTypeOptions().map((option) => ({
+              ...option,
+              label: `${tUi("updatedUi.text_cf769803384e")}: ${option.label}`,
+            }))}
+            menuClassName="rpt04-select-menu"
+          />
+          <UiSelect
+            fullWidth
+            displayEmpty
+            searchable={false}
+            aria-label={tUi("inbound.detail.colResult")}
+            value={result}
+            onChange={(value) => {
+              setResult(value as ImportMatchResultFilter);
+              setIssuesOnly(false);
+              pagination.reset();
+            }}
+            options={getresultOptions().map((option) => ({
+              ...option,
+              label: `${tUi("inbound.detail.colResult")}: ${option.label}`,
+            }))}
+            menuClassName="rpt04-select-menu"
+          />
+          {hasFilters ? (
+            <UiButton
+              className="rpt04-filters__clear"
+              appearance="text"
+              onClick={clearFilters}
+            >
+              {tUi("reports.filters.clearFilters")}
+            </UiButton>
+          ) : null}
+        </div>
+      </section>
 
       {invalid ? (
         <UiAlert tone="error">{tUi("dashboard.snapshot.invalidOrder")}</UiAlert>
@@ -601,7 +555,7 @@ export default function ImportQualityBaseline() {
         <MetricCard
           label={tUi("updatedUi.text_fe86ff7f56fe")}
           value={fmt(totals.total)}
-          hint="Trong kỳ báo cáo"
+          hint={t("reports.traceability.periodReport")}
           tone="primary"
           icon={<FileTextOutlined />}
         />
@@ -622,7 +576,7 @@ export default function ImportQualityBaseline() {
         <MetricCard
           label={tUi("inventory.balance.colVariance")}
           value={fmt(totals.duplicate)}
-          hint="Cần kiểm tra"
+          hint={t("reports.traceability.needsReview")}
           tone="warning"
           icon={<WarningOutlined />}
           onClick={() => {
@@ -634,7 +588,7 @@ export default function ImportQualityBaseline() {
         <MetricCard
           label={tUi("updatedUi.text_e557e75b43a7")}
           value={fmt(totals.failed)}
-          hint="Không thể đối chiếu"
+          hint={t("reports.importQuality.cannotReconcile")}
           tone="error"
           icon={<WarningOutlined />}
           onClick={() => {
@@ -865,8 +819,7 @@ export default function ImportQualityBaseline() {
                   ?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
-              Xem {fmt(issueCount)}
-              {" " + tUi("updatedUi.text_3c28fe9f81e1")}
+              {t("reports.importQuality.viewRecords", { count: fmt(issueCount) })}
             </UiButton>
           </Stack>
         </Box>
@@ -898,19 +851,6 @@ export default function ImportQualityBaseline() {
             >
               {tUi("updatedUi.text_ff603e37b9df")}
             </Box>
-            <Box
-              sx={{
-                px: 1,
-                py: 0.25,
-                borderRadius: 999,
-                bgcolor: C.cyanSoft,
-                color: C.navy,
-                fontWeight: 800,
-                fontSize: 12.5,
-              }}
-            >
-              {fmt(pagination.total)}
-            </Box>
           </Stack>
           <Box sx={{ width: { xs: "100%", sm: 290, md: 330 } }}>
             <SearchInput
@@ -926,41 +866,72 @@ export default function ImportQualityBaseline() {
           </Box>
         </Stack>
 
-        <Box sx={{ px: { xs: 1, md: 1.25 } }}>
+        <Box className="rpt04-results-table">
           <ResponsiveDataTable<ImportMatchBatch>
+            actionColumnWidth="5%"
+            hideActionHeader
+            headerCellStyle={{
+              backgroundColor: "#d2edf7",
+              backgroundImage: "none",
+              color: "var(--ops-heading)",
+              padding: "12px 18px",
+              fontSize: 16,
+              fontWeight: 800,
+              lineHeight: "24px",
+              textTransform: "none",
+              letterSpacing: "0.02em",
+            }}
             columns={[
               {
+                key: "sequence",
+                header: "STT",
+                width: "7%",
+                align: "center",
+                render: (row) =>
+                  (pagination.page - 1) * pagination.perPage +
+                  pagination.pageRows.indexOf(row) +
+                  1,
+              },
+              {
                 key: "reference",
+                width: "37%",
                 header: tUi("updatedUi.text_cbd08c7c8080"),
                 render: (row) => (
-                  <Box sx={{ minWidth: 0 }}>
-                    <Box
-                      sx={{
-                        fontWeight: 800,
-                        color: C.navy,
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      {row.batchNo || "—"}
-                    </Box>
-                    <Box
-                      sx={{
-                        mt: 0.15,
-                        color: C.muted,
-                        fontSize: 11.5,
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      {row.caption || row.sourceFile || "—"}
+                  <Box className="rpt04-reference">
+                    <span className="rpt04-reference__icon">
+                      <FileTextOutlined />
+                    </span>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Box
+                        className="rpt04-reference__code"
+                        sx={{
+                          fontWeight: 700,
+                          color: C.navy,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {row.batchNo || "—"}
+                      </Box>
+                      <Box
+                        sx={{
+                          mt: 0.15,
+                          color: C.muted,
+                          fontSize: 11.5,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {row.caption || row.sourceFile || "—"}
+                      </Box>
                     </Box>
                   </Box>
                 ),
               },
               {
                 key: "comparison",
+                width: "21%",
                 header: tUi("updatedUi.text_d8451df71267"),
                 render: (row) => (
-                  <Box sx={{ fontSize: 12.5, whiteSpace: "normal" }}>
+                  <Box sx={{ fontSize: 14, whiteSpace: "normal" }}>
                     {fmt(row.total)}
                     {" " + tUi("updatedUi.text_da71bc75ab04") + " "}
                     {fmt(row.success)}
@@ -971,9 +942,10 @@ export default function ImportQualityBaseline() {
               {
                 key: "result",
                 header: tUi("inbound.detail.colResult"),
-                width: 135,
+                width: "14%",
                 render: (row) => (
                   <UiStatusBadge
+                    className={`rpt04-result-badge rpt04-result-badge--${resultTone(row)}`}
                     tone={resultTone(row)}
                     label={resultLabel(row)}
                   />
@@ -982,7 +954,7 @@ export default function ImportQualityBaseline() {
               {
                 key: "updated",
                 header: tUi("updatedUi.text_5293d03c5908"),
-                width: 170,
+                width: "16%",
                 render: (row) => (row.at ? fmtDateTime(row.at) : "—"),
               },
             ]}
@@ -1022,14 +994,31 @@ export default function ImportQualityBaseline() {
             gap: 1,
           }}
         >
-          <Box sx={{ fontSize: 12.5, color: C.text }}>
-            {tUi("putaway.queue.showing")}{" "}
-            {pagination.total === 0
-              ? 0
-              : (pagination.page - 1) * pagination.perPage + 1}
-            –{Math.min(pagination.page * pagination.perPage, pagination.total)}{" "}
-            / {fmt(pagination.total)}
-            {" " + tUi("updatedUi.text_3c28fe9f81e1")}
+          <Box className="rpt04-pagination-summary">
+            <Box sx={{ fontSize: 14, color: C.text }}>
+              {tUi("putaway.queue.showing")}{" "}
+              {pagination.total === 0
+                ? 0
+                : (pagination.page - 1) * pagination.perPage + 1}
+              –
+              {Math.min(pagination.page * pagination.perPage, pagination.total)}{" "}
+              / {fmt(pagination.total)}
+              {" " + tUi("updatedUi.text_3c28fe9f81e1")}
+            </Box>
+            <select
+              className="rpt04-page-size"
+              aria-label={tUi("shared.table.rowsPerPageAria")}
+              value={pagination.perPage}
+              onChange={(event) =>
+                pagination.setPerPage(Number(event.target.value))
+              }
+            >
+              {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {tUi("shared.table.perPage", { size: String(size) })}
+                </option>
+              ))}
+            </select>
           </Box>
           <Stack
             className="hn-report-pagination"
@@ -1084,78 +1073,10 @@ export default function ImportQualityBaseline() {
       </Box>
 
       {openBatch ? (
-        <DrillDownDialog
-          title={tUi("updatedUi.text_ecd76b3f0e22", {
-            value0: String(
-              openBatch.batchNo || tUi("updatedUi.text_3c28fe9f81e1"),
-            ),
-          })}
-          subtitle={tUi("updatedUi.text_8227ce3f3753")}
+        <ImportQualityBatchDrawer
+          batch={openBatch}
           onClose={() => setOpenBatch(null)}
-        >
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, minmax(0, 1fr))",
-              },
-              gap: 1,
-            }}
-          >
-            {[
-              [tUi("updatedUi.text_f235d93f10dd"), openBatch.batchNo || "—"],
-              [
-                tUi("audit.colObject"),
-                openBatch.caption || openBatch.sourceFile || "—",
-              ],
-              [tUi("updatedUi.text_fe86ff7f56fe"), fmt(openBatch.total)],
-              [
-                tUi("reports.inventoryFlowReport.matched"),
-                fmt(openBatch.success),
-              ],
-              [tUi("inventory.balance.colVariance"), fmt(openBatch.duplicate)],
-              [tUi("updatedUi.text_e557e75b43a7"), fmt(openBatch.failed)],
-              [
-                tUi("updatedUi.text_0a3f7deb0656"),
-                pct(openBatch.success, openBatch.total),
-              ],
-              [
-                tUi("updatedUi.text_5293d03c5908"),
-                openBatch.at ? fmtDateTime(openBatch.at) : "—",
-              ],
-            ].map(([label, value]) => (
-              <Box
-                key={label}
-                sx={{
-                  p: 1.25,
-                  borderRadius: "var(--ops-radius-card)",
-                  bgcolor: C.bg,
-                  border: `1px solid ${C.border}`,
-                }}
-              >
-                <Box sx={{ color: C.muted, fontSize: 11.5 }}>{label}</Box>
-                <Box
-                  sx={{
-                    mt: 0.25,
-                    color: C.navy,
-                    fontWeight: 700,
-                    overflowWrap: "anywhere",
-                  }}
-                >
-                  {value}
-                </Box>
-              </Box>
-            ))}
-          </Box>
-          {openBatch.id ? (
-            <ImportQualityIssuePanel
-              key={openBatch.id}
-              batchId={openBatch.id}
-              sourceFile={openBatch.sourceFile}
-            />
-          ) : null}
-        </DrillDownDialog>
+        />
       ) : null}
     </Box>
   );

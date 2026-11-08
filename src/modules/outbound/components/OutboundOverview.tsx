@@ -1,5 +1,4 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
-import { useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { UiIcon } from "@/shared/ui";
 import {
@@ -45,8 +44,13 @@ function displayTotal(query: CountResult): string {
 }
 
 /** OUT-01 overview remains independent of the list's current page and filters. */
-export function OutboundOverview({ onRefresh }: { onRefresh?: () => void }) {
-  const [expanded, setExpanded] = useState(true);
+export function OutboundOverview({
+  onRefresh,
+  expanded = true,
+}: {
+  onRefresh?: () => void;
+  expanded?: boolean;
+}) {
   const queries = useQueries({
     queries: [undefined, ...getSTATUS_CARDS().map(({ status }) => status)].map(
       (status) => ({
@@ -70,24 +74,15 @@ export function OutboundOverview({ onRefresh }: { onRefresh?: () => void }) {
 
   return (
     <section
+      id="hn-outbound-overview"
       className="hn-outbound-overview hn-outbound-card"
       aria-label={tUi("updatedUi.text_b11b59304497")}
       aria-busy={busy}
+      hidden={!expanded}
     >
       <div className="hn-outbound-overview-heading">
         <h2>{tUi("updatedUi.text_b11b59304497")}</h2>
-        <button
-          type="button"
-          className="hn-outbound-overview-toggle"
-          aria-label={expanded ? tUi("common.collapse") : tUi("common.expand")}
-          aria-expanded={expanded}
-          aria-controls="hn-outbound-overview-content"
-          onClick={() => setExpanded((value) => !value)}
-        >
-          <UiIcon name="angle-small-down" size="sm" />
-        </button>
       </div>
-      <div id="hn-outbound-overview-content" hidden={!expanded}>
       <div className="hn-outbound-overview-metrics" aria-live="polite">
         <div className="hn-outbound-total">
           <strong>{displayTotal(queries[0])}</strong>
@@ -123,7 +118,6 @@ export function OutboundOverview({ onRefresh }: { onRefresh?: () => void }) {
       <div className="hn-outbound-overview-note">
         <UiIcon name="info" size="sm" />
         <span>{tUi("updatedUi.text_ef700a3a2f41")}</span>
-      </div>
       </div>
     </section>
   );

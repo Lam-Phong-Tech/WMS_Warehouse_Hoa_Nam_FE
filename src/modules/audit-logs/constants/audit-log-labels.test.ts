@@ -1,13 +1,149 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
 import {
   auditActionLabel,
   auditDataEntries,
+  auditDataChanges,
+  auditResultTone,
   auditObjectCode,
   auditObjectTypeLabel,
   auditReasonText,
   describeAuditLog,
 } from "./audit-log-labels";
+
+describe("audit event outcome and aligned changes", () => {
+  it("does not infer success from missing or unknown outcome", () => {
+    expect(auditResultTone(null)).toBe("neutral");
+    expect(auditResultTone("NEW_UNKNOWN_OUTCOME")).toBe("neutral");
+    expect(auditResultTone("SUCCESS")).toBe("success");
+    expect(auditResultTone("DENIED")).toBe("error");
+    expect(auditResultTone("FAILED")).toBe("error");
+  });
+  it("joins before/after by field key, preserves missing, unchanged and zero values", () => {
+    const changes = auditDataChanges({
+      before_data: { status: "SCANNING", quantity: 0, removed: "old" },
+      after_data: { status: "POSTED", quantity: 0, added: "new" },
+    });
+    expect(changes.find((entry) => entry.key === "status")).toMatchObject({
+      before: "Đang quét",
+      after: "Đã ghi sổ",
+      changed: true,
+    });
+    expect(changes.find((entry) => entry.key === "quantity")).toMatchObject({
+      before: "0",
+      after: "0",
+      changed: false,
+    });
+    expect(changes.find((entry) => entry.key === "removed")).toMatchObject({
+      before: "old",
+      after: undefined,
+    });
+    expect(changes.find((entry) => entry.key === "added")).toMatchObject({
+      before: undefined,
+      after: "new",
+    });
+  });
+  it("exposes permission member changes even when before and after have the same count", () => {
+    const [change] = auditDataChanges({
+      before_data: { permissions: ["inventory.view", "outbound.view"] },
+      after_data: { permissions: ["inventory.view", "outbound.create"] },
+    });
+    expect(change.label).toBe("Quyền");
+    expect(change.before).toContain("outbound.view");
+    expect(change.after).toContain("outbound.create");
+    expect(change.changed).toBe(true);
+  });
+});
 import type { AuditLog } from "../types/audit-logs.types";
+
+afterEach(() => useLanguageStore.setState({ language: "vi" }));
+
+describe("localized account audit events", () => {
+  it.each([
+    ["UPDATE_PROFILE_PREFERENCES", "Cập nhật tùy chọn tài khoản"],
+    ["UPDATE_PROFILE", "Cập nhật hồ sơ cá nhân"],
+    ["WORK_SHIFT_OWNER_VERIFIED", "Xác minh người phụ trách ca làm việc"],
+    ["P03_DRAFT_SAVE", "Lưu phiếu nháp"],
+    ["REVOKE_SESSION", "Thu hồi phiên đăng nhập"],
+  ])("translates %s in action names and descriptions", (action, label) => {
+    useLanguageStore.setState({ language: "vi" });
+    expect(auditActionLabel(action)).toBe(label);
+    expect(
+      describeAuditLog(
+        log({
+          action,
+          object_type: "app_user",
+          object_code: "account@example.test",
+        }),
+      ),
+    ).toBe(`${label} — Tài khoản người dùng account@example.test`);
+  });
+
+  it("translates changed-field names in both aligned changes and data entries", () => {
+    const data = {
+      changed_fields: [
+        "theme",
+        "accent",
+        "display_name",
+        "phone",
+        "timezone",
+        "date_format",
+      ],
+      version: 7,
+    };
+    const [change] = auditDataChanges({ before_data: null, after_data: data });
+    expect(change.label).toBe("Các trường thay đổi");
+    expect(change.after).toBe(
+      "Chế độ giao diện\nMàu chủ đạo\nTên hiển thị\nSố điện thoại\nMúi giờ\nĐịnh dạng ngày",
+    );
+    expect(auditDataEntries(data)[0].value).toBe(
+      "Chế độ giao diện, Màu chủ đạo, Tên hiển thị, Số điện thoại, Múi giờ, Định dạng ngày",
+    );
+  });
+
+  it("switches account audit translations with the active language", async () => {
+    useLanguageStore.setState({ language: "en" });
+    expect(auditActionLabel("UPDATE_PROFILE_PREFERENCES")).toBe(
+      "Update account preferences",
+    );
+    expect(
+      auditDataChanges({
+        before_data: null,
+        after_data: { changed_fields: ["theme", "accent"] },
+      })[0],
+    ).toMatchObject({ label: "Changed fields", after: "Theme\nAccent color" });
+    await ensureChineseMessages();
+    useLanguageStore.setState({ language: "zh" });
+    expect(auditActionLabel("UPDATE_PROFILE_PREFERENCES")).toBe(
+      "更新账户偏好设置",
+    );
+    expect(
+      auditDataChanges({
+        before_data: null,
+        after_data: { changed_fields: ["theme", "accent"] },
+      })[0],
+    ).toMatchObject({ label: "变更字段", after: "界面模式\n主题色" });
+  });
+
+  it("preserves user-entered text while translating preference enum values", () => {
+    expect(
+      auditDataEntries({ display_name: "theme", reason: "accent" }).map(
+        (entry) => entry.value,
+      ),
+    ).toEqual(["accent", "theme"]);
+    expect(
+      auditDataChanges({
+        before_data: { theme: "light" },
+        after_data: { theme: "dark" },
+      })[0],
+    ).toMatchObject({
+      label: "Chế độ giao diện",
+      before: "Sáng",
+      after: "Tối",
+    });
+  });
+});
 
 /** Bản ghi thật rút từ DB dev (audit_log), chỉ giữ trường cần cho phép thử. */
 function log(overrides: Partial<AuditLog>): AuditLog {

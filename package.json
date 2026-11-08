@@ -14,10 +14,13 @@
     "lint": "eslint --config eslint.config.js --no-error-on-unmatched-pattern src/",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:ci": "vitest run src/modules/nfc/pages/NfcPage.test.tsx src/test/ci-hard-gates.test.ts src/shared/config/transport-security.test.ts src/modules/notifications/hooks/useNotificationSocket.session-replaced.test.tsx src/shared/api/axios.test.ts src/shared/api/axios.refresh.integration.test.ts src/shared/store/auth.store.logout-hygiene.test.ts src/shared/components/permission/PermissionGuard.test.tsx src/modules/auth/services/auth.service.test.ts src/modules/auth/pages/LoginPage.transport-diagnostic.test.tsx src/modules/auth/pages/LoginPage.mfa.test.tsx src/modules/inbound/services/inboundService.test.ts src/modules/inbound/pages/InboundPage.test.tsx src/modules/outbound/services/mvpOutboundService.qr-composite.test.ts src/modules/outbound/pages/AlignedMvpOutboundPage.test.tsx src/modules/inventory/services/inventoryService.test.ts src/modules/inventory/pages/InventoryPage.test.tsx src/modules/warranty/services/warrantyService.test.ts src/modules/warranty/pages/WarrantyPage.test.tsx src/modules/reports/components/ReportWarehouseCard.test.tsx --maxWorkers=2",
+    "test:warehouse-realtime": "vitest run src/shared/realtime src/modules/inbound/hooks/use-inbound.realtime.test.tsx src/modules/reports/inventory-flow/InboundReportDetail.test.tsx src/modules/scan/pages/PhysicalCodesPage.realtime.test.tsx src/modules/putaway/pages/MvpPutawayPage.interactions.test.tsx src/modules/outbound/components/AlignedOutboundDetailModal.realtime.test.tsx src/modules/dashboard/overview/DashboardSnapshot.test.tsx src/modules/dashboard/overview/SnapshotFlowTable.test.tsx src/modules/dashboard/pages/DashboardPage.test.tsx --maxWorkers=2",
+    "test:ci": "vitest run src/modules/outbound/components/OutboundNfcProducts.test.tsx src/modules/outbound/components/OutboundNfcProductDetail.test.tsx src/modules/outbound/services/outboundNfcService.test.ts src/test/ci-hard-gates.test.ts src/shared/config/transport-security.test.ts src/modules/notifications/hooks/useNotificationSocket.session-replaced.test.tsx src/shared/api/axios.test.ts src/shared/api/axios.refresh.integration.test.ts src/shared/store/auth.store.logout-hygiene.test.ts src/shared/components/permission/PermissionGuard.test.tsx src/modules/auth/services/auth.service.test.ts src/modules/auth/pages/LoginPage.transport-diagnostic.test.tsx src/modules/auth/pages/LoginPage.mfa.test.tsx src/modules/inbound/services/inboundService.test.ts src/modules/inbound/pages/InboundPage.test.tsx src/modules/outbound/services/mvpOutboundService.qr-composite.test.ts src/modules/outbound/pages/AlignedMvpOutboundPage.test.tsx src/modules/inventory/services/inventoryService.test.ts src/modules/inventory/pages/InventoryPage.test.tsx src/modules/warranty/services/warrantyService.test.ts src/modules/warranty/pages/WarrantyPage.test.tsx src/modules/reports/components/ReportWarehouseCard.test.tsx src/modules/iam/pages/IamRolePermissionScreen.test.tsx src/modules/iam/pages/iam-role-matrix.test.ts --maxWorkers=2",
     "test:e2e": "playwright test",
     "test:auth-restore": "playwright test --config playwright.auth-restore.config.ts",
     "test:form-focus": "playwright test --config playwright.form-focus.config.ts",
+    "test:ui-contrast": "playwright test --config playwright.ui-contrast.config.ts",
+    "test:sku-import-errors": "playwright test --config playwright.sku-import-errors.config.ts",
     "wwhn-274:exact-sha": "node scripts/run-wwhn-274-exact-sha-evidence.mjs",
     "wwhn-268:verify": "node scripts/verify-wwhn-268-closure.mjs",
     "wwhn-217:evidence": "node scripts/run-wwhn-217-exact-sha-evidence.mjs",
@@ -90,7 +93,8 @@
     "vn-address:check": "node scripts/gen-vn-address-data.mjs --check",
     "sec:headers": "node scripts/check-frontend-security-headers.mjs",
     "sec:headers:self-test": "node scripts/check-frontend-security-headers.mjs --self-test",
-    "sec:deps": "node scripts/audit-dependencies.mjs"
+    "sec:deps": "node scripts/audit-dependencies.mjs",
+    "test:personal-account": "vitest run src/modules/auth/components/MfaSettingsDrawer.test.tsx src/modules/auth/pages/ProfilePage.edit.test.tsx src/modules/auth/pages/ProfilePage.mfa.test.tsx src/modules/auth/pages/MfaSetupPage.test.tsx src/modules/auth/components/profile/ProfilePreferencesPanel.test.tsx src/modules/auth/hooks/use-profile-avatar-url.test.tsx src/modules/auth/hooks/use-interface-preference-shortcut.test.tsx src/modules/auth/services/profile.service.test.ts src/modules/auth/utils/preferred-homepage.test.ts src/modules/notifications/utils/browser-notification.test.ts src/shared/api/client-device.test.ts src/shared/store/auth-owner.test.ts src/shared/utils/format-date.preferences.test.ts src/app/layouts/nav-data.test.ts src/app/layouts/topbar/AppTopbar.test.tsx src/app/layouts/MainLayout.sidebar.test.tsx --maxWorkers=2"
   },
   "resolutions": {
     "nanoid": "^3.3.18",
@@ -120,6 +124,7 @@
     "apexcharts": "^7.0.0",
     "axios": "^1.18.0",
     "dayjs": "^1.11.21",
+    "exceljs": "4.4.0",
     "js-cookie": "^3.0.8",
     "jsbarcode": "^3.12.3",
     "laravel-echo": "^2.4.0",

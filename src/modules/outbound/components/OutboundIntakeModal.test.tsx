@@ -53,9 +53,12 @@ function renderIntake(canImport = true) {
 }
 
 async function fillRequiredFields() {
-  fireEvent.change(screen.getByRole("textbox", { name: /Mã phiếu yêu cầu/ }), {
-    target: { value: "REQ-001" },
-  });
+  fireEvent.change(
+    await screen.findByRole("textbox", { name: /Mã phiếu yêu cầu/ }),
+    {
+      target: { value: "REQ-001" },
+    },
+  );
   fireEvent.change(
     screen.getByRole("textbox", {
       name: new RegExp(translate("vi", "outbound.intake.fieldRecipient")),
@@ -82,6 +85,77 @@ beforeEach(() => {
 afterEach(() => {
   cleanupTestState();
   vi.clearAllMocks();
+});
+
+describe("OUT-01 request intake drawer", () => {
+  it("uses Vietnamese file controls and keeps technical headers collapsed", async () => {
+    renderIntake();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Nhập từ Excel" }),
+    );
+    expect(await screen.findByText("Chọn tệp Excel")).toBeInTheDocument();
+    expect(screen.getByText("Chưa chọn tệp")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Mã phiếu yêu cầu · Mã SKU · Số lượng yêu cầu · Tên người nhận / khách hàng",
+      ),
+    ).toBeVisible();
+    const technicalHeaders = screen.getByText(
+      /request_no · sku_code · required_qty/,
+    );
+    expect(technicalHeaders).not.toBeVisible();
+    fireEvent.change(screen.getByLabelText("Chọn tệp Excel yêu cầu xuất"), {
+      target: {
+        files: [
+          new File(["sheet"], "yeu-cau.xlsx", {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          }),
+        ],
+      },
+    });
+    expect(screen.getByText("yeu-cau.xlsx")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Tải lên & xem trước" }),
+    ).toBeEnabled();
+  });
+
+  it("opens on the right and keeps both intake modes available", async () => {
+    renderIntake();
+
+    const drawer = screen.getByRole("dialog", {
+      name: translate("vi", "outbound.intake.title"),
+    });
+    expect(drawer.closest(".MuiDrawer-root")).not.toBeNull();
+    expect(drawer.closest(".MuiDrawer-root")).toHaveClass(
+      "MuiDrawer-anchorRight",
+    );
+    expect(
+      await screen.findByRole("button", {
+        name: translate("vi", "outbound.intake.tabManual"),
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: translate("vi", "outbound.intake.tabExcel"),
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("coordinates form loading without hiding the fixed drawer controls", () => {
+    renderIntake();
+
+    const drawer = screen.getByRole("dialog", {
+      name: translate("vi", "outbound.intake.title"),
+    });
+    const loadingSurface = drawer.querySelector(".hn-loading-boundary--drawer");
+    expect(loadingSurface).not.toBeNull();
+    expect(loadingSurface).toContainElement(
+      drawer.querySelector(".hn-outbound-dialog__modes button"),
+    );
+    expect(loadingSurface).not.toContainElement(
+      drawer.querySelector(".hn-outbound-intake-drawer__header button"),
+    );
+  });
 });
 
 describe("OUT-01 request date calendar", () => {
@@ -138,7 +212,7 @@ describe("OUT-01 request date calendar", () => {
 
   it("blocks future dates and retains the import permission gate", async () => {
     renderIntake(false);
-    fireEvent.click(screen.getByRole("button", { name: dateLabel }));
+    fireEvent.click(await screen.findByRole("button", { name: dateLabel }));
     expect(
       screen.getByRole("button", {
         name: dayjs().add(1, "day").format("DD/MM/YYYY"),

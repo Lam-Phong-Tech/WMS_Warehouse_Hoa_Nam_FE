@@ -1,3 +1,6 @@
+import { captureAuthOwner } from "@/shared/store/auth-owner";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { useMfaRecoveryStore } from "@/shared/store/mfa-recovery.store";
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
@@ -49,7 +52,15 @@ function errorMessageOf(error: unknown, fallback: string): string {
  *    app (banner nhắc đăng ký) cập nhật ngay, thay vì hiển thị dữ liệu cũ tới
  *    lần F5 kế tiếp.
  */
-export function MfaSetupPage() {
+export function MfaSetupPage({
+  embedded = false,
+  onRecoveryCodesAvailable,
+  onPendingChange,
+}: {
+  embedded?: boolean;
+  onRecoveryCodesAvailable?: (available: boolean) => void;
+  onPendingChange?: (pending: boolean) => void;
+} = {}) {
   const t = useT();
   const queryClient = useQueryClient();
 
@@ -58,7 +69,18 @@ export function MfaSetupPage() {
     null,
   );
   const [qrErrorUri, setQrErrorUri] = useState<string | null>(null);
-  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const epoch = useAuthStore((state) => state.authEpoch);
+  const userId = String(
+    useAuthStore(
+      (state) =>
+        state.profile?.user_id ?? state.user?.user_id ?? state.user?.id,
+    ) ?? "",
+  );
+  const recoveryCodes = useMfaRecoveryStore((state) =>
+    state.ownerEpoch === epoch && state.ownerUserId === userId
+      ? state.codes
+      : null,
+  );
   const [code, setCode] = useState("");
 
   useEffect(() => {
@@ -86,13 +108,15 @@ export function MfaSetupPage() {
   }, [enrollment?.otpauth_uri]);
 
   const status = useQuery<MfaStatus>({
-    queryKey: MFA_STATUS_QUERY_KEY,
+    queryKey: [...MFA_STATUS_QUERY_KEY, userId, epoch],
     queryFn: () => authService.mfaStatus(),
   });
 
   const enroll = useMutation({
     mutationFn: () => authService.mfaEnroll(),
-    onSuccess: (data) => {
+    onMutate: () => captureAuthOwner(),
+    onSuccess: (data, _variables, isCurrent) => {
+      if (!isCurrent?.()) return;
       setQrCode(null);
       setQrErrorUri(null);
       setEnrollment(data);
@@ -102,16 +126,33 @@ export function MfaSetupPage() {
 
   const confirm = useMutation({
     mutationFn: (value: string) => authService.mfaConfirm(value),
-    onSuccess: (data) => {
-      queryClient.setQueryData<MfaStatus>(MFA_STATUS_QUERY_KEY, (previous) => ({
-        enabled: true,
-        pending: false,
-        required_for_role: previous?.required_for_role ?? false,
-        enforced: previous?.enforced ?? false,
-        must_enroll_now: false,
-        recovery_codes_remaining: data.recovery_codes.length,
-      }));
-      setRecoveryCodes(data.recovery_codes);
+    onMutate: () => captureAuthOwner(),
+    onSuccess: (data, _variables, isCurrent) => {
+      if (!isCurrent?.()) return;
+      queryClient.setQueryData<MfaStatus>(
+        [...MFA_STATUS_QUERY_KEY, userId, epoch],
+        (previous) => ({
+          enabled: true,
+          pending: false,
+          required_for_role: previous?.required_for_role ?? false,
+          enforced: previous?.enforced ?? false,
+          must_enroll_now: false,
+          recovery_codes_remaining: data.recovery_codes.length,
+        }),
+      );
+      const actor = useAuthStore.getState();
+      useMfaRecoveryStore
+        .getState()
+        .put(
+          String(
+            actor.profile?.user_id ??
+              actor.user?.user_id ??
+              actor.user?.id ??
+              "",
+          ),
+          actor.authEpoch,
+          data.recovery_codes,
+        );
       setEnrollment(null);
       setQrCode(null);
       setQrErrorUri(null);
@@ -128,6 +169,13 @@ export function MfaSetupPage() {
     confirm.mutate(code.trim());
   };
 
+  useEffect(() => {
+    onPendingChange?.(enroll.isPending || confirm.isPending);
+  }, [enroll.isPending, confirm.isPending, onPendingChange]);
+  useEffect(() => {
+    onRecoveryCodesAvailable?.(recoveryCodes !== null);
+  }, [recoveryCodes, onRecoveryCodesAvailable]);
+
   const actionError = enroll.isError
     ? errorMessageOf(enroll.error, t("auth.mfa.errorTitle"))
     : confirm.isError
@@ -136,31 +184,43 @@ export function MfaSetupPage() {
   const isEnabled = status.data?.enabled === true || recoveryCodes !== null;
 
   return (
-    <Box className="hn-settings-screen hn-mfa-screen">
-      <header className="hn-mfa-header">
-        <div>
-          <Link className="hn-mfa-back-link" to={ROUTES.PROFILE}>
-            <span aria-hidden="true">←</span>
-            {t("auth.mfa.backToProfile")}
-          </Link>
-          <p className="hn-mfa-eyebrow">{t("auth.mfa.eyebrow")}</p>
-          <h1>{t("auth.mfa.setupTitle")}</h1>
-          <p className="hn-mfa-subtitle">{t("auth.mfa.setupSubtitle")}</p>
-        </div>
-        <span
-          className="hn-mfa-status"
-          data-state={
-            isEnabled ? "enabled" : enrollment !== null ? "pending" : "disabled"
-          }
-        >
-          <span className="hn-mfa-status-dot" aria-hidden="true" />
-          {isEnabled
-            ? t("auth.mfa.statusEnabled")
-            : enrollment !== null
-              ? t("auth.mfa.statusPending")
-              : t("auth.mfa.statusDisabled")}
-        </span>
-      </header>
+    <Box
+      className={
+        embedded
+          ? "hn-settings-screen hn-mfa-screen hn-mfa-embedded"
+          : "hn-settings-screen hn-mfa-screen"
+      }
+    >
+      {!embedded && (
+        <header className="hn-mfa-header">
+          <div>
+            <Link className="hn-mfa-back-link" to={ROUTES.PROFILE}>
+              <span aria-hidden="true">←</span>
+              {t("auth.mfa.backToProfile")}
+            </Link>
+            <p className="hn-mfa-eyebrow">{t("auth.mfa.eyebrow")}</p>
+            <h1>{t("auth.mfa.setupTitle")}</h1>
+            <p className="hn-mfa-subtitle">{t("auth.mfa.setupSubtitle")}</p>
+          </div>
+          <span
+            className="hn-mfa-status"
+            data-state={
+              isEnabled
+                ? "enabled"
+                : enrollment !== null
+                  ? "pending"
+                  : "disabled"
+            }
+          >
+            <span className="hn-mfa-status-dot" aria-hidden="true" />
+            {isEnabled
+              ? t("auth.mfa.statusEnabled")
+              : enrollment !== null
+                ? t("auth.mfa.statusPending")
+                : t("auth.mfa.statusDisabled")}
+          </span>
+        </header>
+      )}
 
       {status.data?.must_enroll_now === true && (
         <UiAlert tone="warning" title={t("auth.mfa.setupTitle")}>

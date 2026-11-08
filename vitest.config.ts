@@ -4,7 +4,7 @@
 // đỏ trên CI nhưng xanh trên máy dev. Đặt ở đây để process chính lẫn mọi worker (kế thừa
 // env) chạy Asia/Ho_Chi_Minh bất kể TZ của máy; các import bên dưới được hoist nhưng
 // không đọc đồng hồ.
-process.env.TZ = "Asia/Ho_Chi_Minh";
+process.env.TZ = process.env.WMS_TEST_TIMEZONE || "Asia/Ho_Chi_Minh";
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";

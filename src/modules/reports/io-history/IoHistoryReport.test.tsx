@@ -530,7 +530,7 @@ describe("RPT-IO-01 · Lịch sử nhập – xuất kho", () => {
       "IN-2026-00031",
     );
     await user.click(screen.getByRole("button", { name: "Xuất báo cáo" }));
-    await user.click(screen.getByRole("menuitem", { name: /Xuất XLSX/ }));
+    await user.click(await screen.findByRole("button", { name: "Xuất Excel" }));
     await waitFor(() => expect(runReportExport).toHaveBeenCalledTimes(1));
     expect(runReportExport).toHaveBeenCalledWith(
       "xlsx",
@@ -550,7 +550,7 @@ describe("RPT-IO-01 · Lịch sử nhập – xuất kho", () => {
     ).toBeInTheDocument();
   });
 
-  it("lọc người thực hiện chỉ thu hẹp danh sách, giữ tổng quan và phạm vi xuất báo cáo", async () => {
+  it("lọc người thực hiện giữ tổng quan và xuất đúng tập danh sách đã chọn", async () => {
     const user = userEvent.setup();
     renderReport();
     await bodyRows();
@@ -567,14 +567,15 @@ describe("RPT-IO-01 · Lịch sử nhập – xuất kho", () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Xuất báo cáo" }));
     expect(
-      screen.getByRole("menu", { name: "Xuất báo cáo" }),
-    ).toHaveTextContent(
-      "Tệp xuất dùng bộ lọc toàn báo cáo. Bộ lọc danh sách chỉ áp dụng cho bảng bên dưới.",
-    );
-    await user.click(screen.getByRole("menuitem", { name: /Xuất PDF/ }));
+      await screen.findByRole("dialog", { name: /Xuất báo cáo lịch sử/ }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("option", { name: "PDF (.pdf)" }),
+    ).not.toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Xuất Excel" }));
     await waitFor(() => expect(runReportExport).toHaveBeenCalledTimes(1));
     expect(runReportExport).toHaveBeenCalledWith(
-      "pdf",
+      "xlsx",
       expect.objectContaining({
         filters: {
           from_date: dayjs().startOf("month").format("YYYY-MM-DD"),
@@ -592,12 +593,29 @@ describe("RPT-IO-01 · Lịch sử nhập – xuất kho", () => {
     renderReport();
     await bodyRows();
     await user.click(screen.getByRole("button", { name: "Xuất báo cáo" }));
-    await user.click(screen.getByRole("menuitem", { name: /Xuất XLSX/ }));
+    await user.click(await screen.findByRole("button", { name: "Xuất Excel" }));
     expect(
       await screen.findByText("Đã xuất báo cáo thành công"),
     ).toBeInTheDocument();
     expect(
       screen.queryByText("Báo cáo đã được xuất nhưng chưa đầy đủ"),
     ).not.toBeInTheDocument();
+  });
+  it("khóa xác nhận trong drawer khi kết quả xuất chưa xác định", async () => {
+    vi.mocked(runReportExport).mockRejectedValueOnce(new Error("timeout"));
+    const user = userEvent.setup();
+    renderReport();
+    await bodyRows();
+    await user.click(screen.getByRole("button", { name: "Xuất báo cáo" }));
+    const confirm = await screen.findByRole("button", { name: "Xuất Excel" });
+    await user.click(confirm);
+    await waitFor(() => expect(confirm).toBeDisabled());
+    expect(runReportExport).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "Hủy" }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Xuất báo cáo" }),
+      ).toBeDisabled(),
+    );
   });
 });

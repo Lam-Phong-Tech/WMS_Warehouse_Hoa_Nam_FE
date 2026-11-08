@@ -1,8 +1,17 @@
+import { IamEffectivePermissionsScreen } from "./IamEffectivePermissionsScreen";
+import type { IamUser } from "../types/iam.types";
 import "./iam-users.css";
+import "./iam-reference.css";
 import { useT } from "@/shared/i18n/useT";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Box, UiTabs, UiTabPanel, type UiTabItem } from "@/shared/ui";
+import {
+  Box,
+  UiTabs,
+  UiTabPanel,
+  type UiTabItem,
+  useUiConfirm,
+} from "@/shared/ui";
 import {
   SafetyCertificateOutlined,
   UserOutlined,
@@ -38,7 +47,13 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
   const canViewRoles = useCan(P.IAM_ROLE_VIEW);
   const canManageRoles = useCan(P.IAM_ROLE_MANAGE);
   const showRolesTab = canViewRoles || canManageRoles;
-  const [tab, setTab] = useState<"users" | "roles">("users");
+  const [tab, setTab] = useState<"users" | "roles" | "effective">("users");
+  const [selectedRole, setSelectedRole] = useState("");
+  const [initialViewingUser, setInitialViewingUser] = useState<IamUser | null>(
+    null,
+  );
+  const [roleDirty, setRoleDirty] = useState(false);
+  const { confirm, confirmDialog } = useUiConfirm();
   const activeTab = tab === "roles" && !showRolesTab ? "users" : tab;
 
   const tabItems: UiTabItem[] = [
@@ -47,7 +62,7 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
       label: (
         <TabLabel
           icon={<UserOutlined style={{ fontSize: 15 }} />}
-          text={t("iam.tab.users")}
+          text={t("iam.userUi.title")}
         />
       ),
     },
@@ -58,33 +73,77 @@ export function IamUsersGd1Page({ openCreateOnMount }: IamUsersGd1PageProps) {
             label: (
               <TabLabel
                 icon={<SafetyCertificateOutlined style={{ fontSize: 15 }} />}
-                text={t("iam.tab.roles")}
+                text={t("iam.roleUi.title")}
               />
             ),
           },
         ]
       : []),
+    { key: "effective", label: t("iam.userUi.effectiveTitle") },
   ];
 
+  const navigation = (
+    <Box className="hn-iam-tabs" sx={{ minWidth: 0 }}>
+      <UiTabs
+        items={tabItems}
+        value={activeTab}
+        onChange={async (key) => {
+          if (key === activeTab) return;
+          if (
+            activeTab === "roles" &&
+            roleDirty &&
+            !(await confirm({
+              title: t("iam.roleUi.discardTitle"),
+              content: t("iam.roleUi.discardBody"),
+              confirmText: t("iam.roleUi.discard"),
+              cancelText: t("iam.roleUi.keepEditing"),
+              tone: "danger",
+            }))
+          )
+            return;
+          setRoleDirty(false);
+          setInitialViewingUser(null);
+          setTab(key as "users" | "roles" | "effective");
+        }}
+      />
+    </Box>
+  );
   return (
     <div className="hn-iam-page">
-      <Box className="hn-iam-tabs" sx={{ marginBottom: 2, minWidth: 0 }}>
-        <UiTabs
-          items={tabItems}
-          value={activeTab}
-          onChange={(key) => setTab(key as "users" | "roles")}
-        />
-      </Box>
-
       <UiTabPanel value={activeTab} sx={{ minWidth: 0 }}>
-        {activeTab === "users" ? (
-          <IamUserScreen
-            openCreateOnMount={openCreateOnMount || openCreateFromScreen}
+        {activeTab === "roles" ? (
+          <IamRolePermissionScreen
+            navigation={navigation}
+            onDirtyChange={setRoleDirty}
+            onViewUsers={(roleId) => {
+              setRoleDirty(false);
+              setInitialViewingUser(null);
+              setSelectedRole(roleId);
+              setTab("users");
+            }}
+          />
+        ) : activeTab === "effective" ? (
+          <IamEffectivePermissionsScreen
+            navigation={navigation}
+            onViewUser={(user) => {
+              setInitialViewingUser(user);
+              setTab("users");
+            }}
           />
         ) : (
-          <IamRolePermissionScreen />
+          <IamUserScreen
+            key={activeTab + selectedRole + (initialViewingUser?.user_id ?? "")}
+            initialViewingUser={initialViewingUser}
+            initialRoleFilter={selectedRole}
+            navigation={navigation}
+            openCreateOnMount={
+              activeTab === "users" &&
+              (openCreateOnMount || openCreateFromScreen)
+            }
+          />
         )}
       </UiTabPanel>
+      {confirmDialog}
     </div>
   );
 }

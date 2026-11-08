@@ -1,3 +1,9 @@
+import { downloadStyledReportBlob } from "@/shared/utils/report-excel-style";
+import {
+  downloadSelectedWorkbook,
+  safeExportFilename,
+  type ExportWorkbookOptions,
+} from "../components/report-export-workbook";
 import { tStatic } from "@/shared/i18n/useT";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -106,6 +112,7 @@ export type ReportExportRequest = {
   filters: Raw;
   /** Hậu tố khoảng ngày cho tên tệp dự phòng. */
   fileSuffix?: string;
+  workbook?: ExportWorkbookOptions;
 };
 
 /**
@@ -150,10 +157,24 @@ export async function runReportExport(
     stripApiPrefix(downloadUrl),
     { timeout: REPORT_EXPORT_REQUEST_TIMEOUT_MS },
   );
-  handleBlobDownload(
-    blob,
-    fileName ?? `${request.fileStem}${request.fileSuffix ?? ""}.${format}`,
-  );
+  if (request.workbook && format === "xlsx") {
+    await downloadSelectedWorkbook(blob, request.workbook, {
+      reportCode: request.reportCode,
+    });
+  } else if (format === "xlsx") {
+    await downloadStyledReportBlob(
+      blob,
+      fileName ?? `${request.fileStem}${request.fileSuffix ?? ""}.xlsx`,
+      { reportCode: request.reportCode },
+    );
+  } else
+    handleBlobDownload(
+      blob,
+      request.workbook
+        ? safeExportFilename(request.workbook.filename, format)
+        : (fileName ??
+            `${request.fileStem}${request.fileSuffix ?? ""}.${format}`),
+    );
   return finalStatus.row_count;
 }
 
@@ -180,6 +201,7 @@ export function useReportExport() {
           rows: fmt(rowCount),
         }),
       );
+      return true;
     } catch (error) {
       const message = getApiErrorMessage(
         error,
@@ -187,6 +209,7 @@ export function useReportExport() {
       );
       if (isNoPermissionError(error)) setExportDenied(message);
       toast.error(message);
+      return false;
     } finally {
       setExporting(null);
     }

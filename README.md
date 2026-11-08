@@ -18,11 +18,9 @@ Frontend Web Admin cho hệ thống WMS Hoa Nam, xây dựng bằng React + Vite
 
 ## Thiết kế UI
 
-Trước khi tạo hoặc sửa màn hình, đọc 3 tài liệu chuẩn dưới đây. Baseline hiện hành là **Operations / SystemHNWeb**; không tự dùng lại token/shell Vuexy cũ.
+Trước khi tạo hoặc sửa màn hình, đọc **một tài liệu chuẩn**: [`docs/ui/DESIGN_FOUNDATIONS.md`](docs/ui/DESIGN_FOUNDATIONS.md). Tài liệu hợp nhất màu, typography, bảng/bộ lọc, responsive, drawer, luồng nhiều bước, toast và quy trình kiểm tra. Baseline hiện hành là **Operations / SystemHNWeb**.
 
-- [`docs/ui/DESIGN_FOUNDATIONS.md`](docs/ui/DESIGN_FOUNDATIONS.md) - màu, typography, spacing, radius, shadow, motion, component nền tảng.
-- [`docs/ui/LAYOUT_RESPONSIVE.md`](docs/ui/LAYOUT_RESPONSIVE.md) - shell, breakpoint, grid, responsive desktop/tablet/mobile, quy tắc bảng.
-- [`docs/ui/UI_PATTERNS_GOVERNANCE.md`](docs/ui/UI_PATTERNS_GOVERNANCE.md) - page template, trạng thái, form, RBAC, accessibility, i18n, quy trình thay đổi UI.
+Nguồn quy cách bảng SKU và thứ tự ưu tiên được ghi ngay trong tài liệu chuẩn. `LAYOUT_RESPONSIVE.md` và `UI_PATTERNS_GOVERNANCE.md` là liên kết chuyển tiếp từ tài liệu cũ; không duy trì thêm bộ quy tắc song song.
 
 ## Bắt đầu
 
@@ -143,7 +141,7 @@ Nguyên tắc:
 - `docs/HN_WMS_Wireframe_MVP_ALIGNED_v3.20_v1.12_20260814.html` - screen/UX baseline.
 - `docs/HoaNam_ERD_Moi_Nhat.md` - ERD/data dictionary technical proposal.
 - `docs/WMS_Hoa_Nam_Techstack_Architecture_Dev_Guide.md` - kiến trúc/dev guide.
-- `docs/ui/DESIGN_FOUNDATIONS.md`, `docs/ui/LAYOUT_RESPONSIVE.md`, `docs/ui/UI_PATTERNS_GOVERNANCE.md` - chuẩn thiết kế UI hiện hành.
+- `docs/ui/DESIGN_FOUNDATIONS.md` - tài liệu thiết kế UI chuẩn duy nhất; các tên tài liệu cũ chuyển tiếp về đây.
 - `docs/Task_docs_Jira/` - task-specific trace/evidence docs.
 - `docs/Task_docs_Jira/WWHN-311.md` - frontend handover cho WWHN-311.
 - `docs/evidence/` - evidence/register được task-specific verifier/CI sử dụng.

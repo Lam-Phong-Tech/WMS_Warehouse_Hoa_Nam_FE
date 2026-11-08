@@ -1,167 +1,462 @@
-/* Audit presentation follows the SKU surface, spacing and colour hierarchy. */
 .hn-audit-settings {
   container: hn-audit / inline-size;
+  gap: 20px;
+}
+.hn-audit-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.hn-audit-title-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hn-audit-title-line h1 {
+  margin: 0;
+  color: var(--settings-ink);
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.hn-audit-page-header p {
+  margin: 6px 0 0;
+  color: var(--settings-muted);
+  font-size: 14px;
+}
+.hn-audit-export {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.hn-audit-export > span {
+  color: var(--settings-muted);
+  font-size: 12px;
+}
+.hn-audit-settings .hn-audit-export .MuiButton-root,
+.hn-audit-settings .hn-audit-secondary-filters > .MuiButton-root {
+  border: 1px solid var(--settings-line);
+  background: var(--settings-surface);
 }
 .hn-audit-settings .hn-audit-filters {
   display: grid;
-  grid-template-columns: minmax(230px, 1.5fr) repeat(2, minmax(160px, 1fr));
-  gap: 12px 16px;
-  padding: 14px 16px;
-  align-items: start;
+  grid-template-columns: minmax(250px, 1.5fr) minmax(300px, 1.3fr) minmax(
+      160px,
+      0.85fr
+    );
+  gap: 12px;
+  align-items: center;
 }
 .hn-audit-filter {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   min-width: 0;
-}
-.hn-audit-filter > label,
-.hn-audit-filter-label,
-.hn-audit-page-size > label {
-  color: var(--settings-ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 20px;
-}
-.hn-audit-filter-range {
-  grid-column: span 2;
 }
 .hn-audit-filter .MuiFormControl-root {
-  min-width: 0;
   width: 100%;
+  min-width: 0;
+}
+.hn-audit-settings .hn-audit-filters .MuiOutlinedInput-root {
+  height: 48px;
+  min-height: 48px;
+  background: var(--settings-surface);
+}
+.hn-audit-filter-search .MuiInputBase-input {
+  padding-left: 10px;
 }
 .hn-audit-settings .hn-vuexy-date-field {
-  --wms-text-medium: var(--settings-muted);
-  min-height: var(--ops-control-height);
+  min-height: 48px;
   border-color: var(--settings-line);
-  border-radius: 6px;
-  color: var(--settings-text);
   background: var(--settings-surface);
+  color: var(--settings-text);
+  border-radius: 6px;
 }
 .hn-audit-settings .hn-vuexy-date-field > span {
   color: var(--settings-muted);
 }
-.hn-audit-settings .hn-vuexy-date-field:hover,
-.hn-audit-settings .hn-vuexy-date-field[aria-expanded="true"] {
-  border-color: var(--settings-link);
+.hn-audit-secondary-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(230px, 1.3fr) auto;
+  grid-column: 1 / -1;
+  gap: 12px;
+  align-items: center;
 }
-.hn-audit-settings .hn-vuexy-date-field:focus-visible {
-  outline: 2px solid var(--settings-link);
-  outline-offset: 3px;
-}
-.hn-audit-settings .hn-vuexy-date-field[aria-expanded="true"],
-.hn-audit-settings .hn-vuexy-date-field:focus-visible {
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--settings-link) 13%, transparent);
-}
-/* The calendar resolves its semantic colours through CSS variables. Keep this
-   remapping on its portalled paper, so other date pickers retain their theme. */
-.hn-settings-menu[role="dialog"]:has([data-date-tab]) {
-  --wms-primary: var(--settings-cta);
-  --wms-primary-dark: var(--settings-cta-hover);
-  --wms-primary-soft: var(--settings-pale);
-  --wms-bg-surface: var(--settings-surface);
-  --wms-bg-subtle: var(--settings-pale);
-  --wms-text-high: var(--settings-ink);
-  --wms-text-medium: var(--settings-muted);
-  --wms-text-disabled: var(--settings-inactive);
-  --wms-border: var(--settings-line);
-  --wms-border-input: var(--settings-line);
-  --wms-grey-200: var(--settings-pale);
-  --wms-focus-ring: 0 0 0 3px
-    color-mix(in srgb, var(--settings-link) 13%, transparent);
-}
-.hn-audit-dialog .hn-audit-data-card {
-  background: var(--settings-pale);
-}
-.hn-audit-settings .hn-audit-list-card {
-  padding: 0 16px;
-  overflow: hidden;
+.hn-audit-list-card {
+  min-width: 0;
 }
 .hn-audit-list-tools {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 12px;
-  padding: 14px 0;
-  min-height: 56px;
-}
-.hn-audit-page-size,
-.hn-audit-selection-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.hn-audit-selection-actions {
-  margin-left: auto;
-}
-.hn-audit-selection-actions:empty {
-  display: none;
+  padding: 0 0 12px;
 }
 .hn-audit-table {
   min-width: 0;
   max-width: 100%;
 }
-.hn-audit-table > .MuiBox-root:has(> table) {
-  border-color: var(--settings-line);
-  border-radius: 6px;
-  scrollbar-color: var(--settings-line) transparent;
-  scrollbar-width: thin;
-  overscroll-behavior-inline: contain;
+.hn-audit-settings .hn-audit-table th {
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 24px;
 }
-.hn-audit-settings .hn-audit-table :is(th, td) {
-  border-color: var(--settings-line);
+.hn-audit-settings .hn-audit-table td {
+  font-size: 14px;
+  line-height: 22px;
   vertical-align: middle;
 }
-.hn-audit-settings .hn-audit-table tbody tr:hover {
-  background: color-mix(
-    in srgb,
-    var(--settings-pale) 55%,
-    var(--settings-surface)
-  );
-}
-.hn-audit-settings .hn-audit-table .MuiCard-root {
-  color: var(--settings-text);
-  background: var(--settings-surface);
+.hn-audit-table :is(th, td) {
   border-color: var(--settings-line);
-  border-radius: var(--ops-radius-card);
-  box-shadow: none;
 }
-.hn-audit-settings .hn-audit-table .MuiTypography-caption {
+.hn-audit-actor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.hn-audit-actor-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--settings-pale);
+  color: var(--settings-link);
+}
+.hn-audit-cell-lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.hn-audit-cell-lines strong {
+  color: var(--settings-ink);
+  font-weight: 600;
+}
+.hn-audit-cell-lines > span {
   color: var(--settings-muted);
+  font-size: 13px;
+}
+.hn-audit-cell-lines .hn-audit-object-code {
+  color: var(--settings-link);
+  font-weight: 600;
+}
+.hn-audit-module {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--settings-pale);
+  color: var(--settings-link);
+  font-size: 13px;
+  white-space: nowrap;
 }
 .hn-audit-pagination {
   display: flex;
-  justify-content: flex-end;
-  padding: 14px 0;
-  margin-top: 14px;
-  border-top: 1px solid var(--settings-line);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 0;
 }
-@container hn-audit (max-width: 900px) {
+.hn-audit-page-size {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hn-audit-table .MuiCard-root {
+  background: var(--settings-surface);
+  border-color: var(--settings-line);
+  box-shadow: none;
+}
+.hn-audit-table .MuiCard-root .MuiTypography-caption {
+  color: var(--settings-muted);
+}
+.hn-audit-drawer-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.hn-audit-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: var(--settings-text);
+}
+.hn-audit-event-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.hn-audit-event-heading h3 {
+  margin: 6px 0 0;
+  font-size: 22px;
+  line-height: 30px;
+  color: var(--settings-ink);
+}
+.hn-audit-eyebrow {
+  color: var(--settings-muted);
+  font-size: 13px;
+}
+.hn-audit-detail-section {
+  min-width: 0;
+}
+.hn-audit-detail-section > h3 {
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--settings-ink);
+}
+.hn-audit-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 24px;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--settings-line);
+  border-radius: 8px;
+}
+.hn-audit-detail-field {
+  min-width: 0;
+}
+.hn-audit-detail-field dt {
+  color: var(--settings-muted);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.hn-audit-detail-field dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+.hn-audit-block,
+.hn-audit-secondary {
+  display: block;
+}
+.hn-audit-secondary {
+  color: var(--settings-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-audit-detail-full {
+  grid-column: 1 / -1;
+}
+.hn-audit-changes {
+  border: 1px solid var(--settings-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.hn-audit-change-header,
+.hn-audit-change {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) repeat(2, minmax(0, 1.4fr));
+}
+.hn-audit-change-header {
+  background: var(--settings-pale);
+  color: var(--settings-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.hn-audit-change-header > span,
+.hn-audit-change > * {
+  padding: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hn-audit-change {
+  border-top: 1px solid var(--settings-line);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-audit-change-name {
+  font-weight: 500;
+}
+.hn-audit-change-before {
+  color: var(--settings-muted);
+  background: color-mix(in srgb, var(--settings-pale) 32%, transparent);
+}
+.hn-audit-change[data-changed="true"] .hn-audit-change-after {
+  background: var(--settings-pale);
+}
+.hn-audit-change-mobile-label {
+  display: none;
+}
+.hn-audit-readonly-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--settings-pale);
+  color: var(--settings-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.hn-audit-readonly-note > i {
+  margin-top: 2px;
+}
+.hn-audit-result[data-settings-tone="success"] {
+  background: var(--ops-success-soft);
+  color: var(--ops-success);
+}
+.hn-audit-result[data-settings-tone="error"] {
+  background: var(--wms-error-soft);
+  color: var(--wms-error-text);
+}
+.hn-audit-result[data-settings-tone="neutral"] {
+  background: var(--settings-pale);
+  color: var(--settings-muted);
+}
+@container hn-audit (max-width: 1050px) {
   .hn-audit-settings .hn-audit-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   }
   .hn-audit-filter-search {
     grid-column: 1 / -1;
   }
-  .hn-audit-filter-range {
-    grid-column: auto;
+  .hn-audit-secondary-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  }
+  .hn-audit-page-header {
+    flex-wrap: wrap;
+  }
+  .hn-audit-export {
+    align-items: flex-start;
   }
 }
 @container hn-audit (max-width: 600px) {
-  .hn-audit-settings .hn-audit-filters {
+  .hn-audit-title-line h1 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .hn-audit-settings .hn-audit-filters,
+  .hn-audit-secondary-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-audit-pagination {
+    align-items: flex-start;
+  }
+  .hn-audit-table .MuiCardContent-root > .MuiBox-root {
+    gap: 12px;
+  }
+  .hn-audit-actor {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 600px) {
+  .hn-audit-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 16px;
+  }
+  .hn-audit-event-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .hn-audit-change-header {
+    display: none;
+  }
+  .hn-audit-change {
     grid-template-columns: minmax(0, 1fr);
     padding: 12px;
+    gap: 8px;
   }
-  .hn-audit-settings .hn-audit-list-card {
-    padding-inline: 12px;
+  .hn-audit-change:first-of-type {
+    border-top: 0;
   }
-  .hn-audit-filter-search {
-    grid-column: auto;
+  .hn-audit-change > * {
+    padding: 8px;
   }
-  .hn-audit-selection-actions {
-    width: 100%;
-    margin-left: 0;
+  .hn-audit-change-name {
+    padding: 0;
+    font-weight: 600;
+  }
+  .hn-audit-change
+    :is(.hn-audit-change-before, .hn-audit-change-after)::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--settings-muted);
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+}
+.hn-audit-change :is(.hn-audit-change-before, .hn-audit-change-after) > span {
+  white-space: pre-line;
+}
+.hn-audit-settings .hn-audit-table thead th :is(button, span) {
+  text-transform: inherit;
+}
+.hn-audit-table table {
+  min-width: 1120px;
+  background: var(--settings-surface);
+}
+.hn-audit-cell-lines > :is(strong, span) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-audit-module {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+@media (max-width: 899px) {
+  .hn-audit-cell-lines > :is(strong, span) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .hn-audit-module {
+    white-space: normal;
+  }
+}
+.hn-audit-detail-field code {
+  color: var(--settings-text);
+  background: var(--settings-pale);
+}
+/* Compact cards keep primary content at full width; metadata shares the last row. */
+@media (max-width: 899px) {
+  .hn-audit-table .MuiCardContent-root {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .hn-audit-table .MuiCardContent-root > .MuiBox-root {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
+  }
+  .hn-audit-table .MuiCardContent-root > .MuiBox-root > .MuiBox-root {
+    text-align: left;
+  }
+  .hn-audit-table .MuiCardContent-root > .MuiBox-root:nth-child(-n + 2) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .hn-audit-table .MuiCardContent-root > .MuiBox-root:nth-child(5) {
+    grid-column: 1;
+  }
+  .hn-audit-table .MuiCardContent-root > .MuiBox-root:nth-child(6) {
+    grid-column: 2;
+  }
+  .hn-audit-table .MuiCardContent-root > .MuiBox-root:last-child {
+    align-items: flex-end;
+  }
+  .hn-audit-table .hn-audit-actor {
+    justify-content: flex-start;
   }
 }

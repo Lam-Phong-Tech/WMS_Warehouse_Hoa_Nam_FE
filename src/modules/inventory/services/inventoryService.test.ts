@@ -53,11 +53,17 @@ describe("inventoryService — WWHN-211 exact six endpoint contract", () => {
 
     const result = await fetchInventoryBalances({
       stock_status: "AVAILABLE",
+      reconciliation_status: "MATCH",
       page: 1,
     });
 
     expect(http.getPage).toHaveBeenCalledWith("/inventory/balances", {
-      params: { per_page: 10, stock_status: "AVAILABLE", page: 1 },
+      params: {
+        per_page: 10,
+        stock_status: "AVAILABLE",
+        reconciliation_status: "MATCH",
+        page: 1,
+      },
     });
     expect(result.rows[0]).toMatchObject({
       id: "bal-1",

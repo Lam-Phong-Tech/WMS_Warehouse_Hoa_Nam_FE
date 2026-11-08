@@ -1,0 +1,28 @@
+# Personal account verification — 04/11/2026
+
+Scope: `/profile`, its System sidebar destination, account preferences and existing MFA/session integrations. Reference review covered all U01–U32 Desktop and Tablet images in `Hoa_Nam_UIUX_V2/phiendangnhap_nguoidung`. Shared design decisions are in `docs/ui/DESIGN_FOUNDATIONS.md` section 12, not a separate design standard.
+
+## Delivered behavior
+
+- Six sections: profile, security, devices/sessions, notifications, appearance and other preferences. Tablet/mobile use a section selector. Edit, crop, password, device/session and MFA flows open on the right with fixed actions and a single body scroll.
+- Own profile/email/avatar and separately versioned preferences use real backend endpoints. Email changes require the current password; username, department and permissions remain read-only. Avatar cropping uploads actual private raster bytes atomically with profile changes.
+- Current session protection and the existing completed-login replacement policy remain unchanged, as explicitly selected by the user. Browser installations are declared identities, not inferred physical hardware. Unknown legacy metadata stays unknown; the sample limits of three devices/two sessions were not adopted.
+- Optional notification categories affect real in-app/email delivery. Security in-app notifications remain mandatory. Browser notifications operate while the application is open and require browser permission; this is not closed-browser Web Push.
+- Saved locale/theme/accent/readability/density/motion and common date/time display apply through existing shell/theme providers. Preferred homepages are restricted to known routes the user can access. Draft previews do not change saved settings.
+- MFA reuses actual enrollment, confirmation, recovery and disable endpoints. QR generation stays local. Recovery codes exist only in owner/epoch-bound memory, survive fail-closed refresh revalidation, and are cleared after acknowledged close or login/logout. Both authenticator and recovery codes work for disable, subject to the existing role policy. The drawer cannot close during confirmation.
+- Ownership guards cover delayed replies and follow-up requests after an account switch. Preference mutations cancel old reads before applying canonical versions. Failed/412 saves preserve drafts; uncertain session mutations read back actual state before more commands. Password change uses the API's real forced-relogin behavior.
+
+## Evidence
+
+- Browser harness: `playwright.profile-account.config.ts`, `e2e/profile-account.spec.ts` and isolated fixture on port 5205. **14 distinct cases passed** across focused runs at 320, 390, 768, 1024 and 1440px, including dark mode.
+- Browser behaviors checked: section navigation, current policy/protected family, right editor/focus/discard, email reauthentication and retained errors, 512px crop/private upload, mandatory notifications and blocked permission guidance, global preference persistence after clearing client state, single/device/bulk revocation, uncertain/stale readback, password errors and forced relogin, MFA status retry/required role/enrollment/recovery/disable and pending-close protection.
+- Screenshots are local evidence in `test-results/profile-account/`; replay the committed fixture/spec to regenerate. Representative files: `overview-1440-light.png`, `editor-320-light.png`, `device-scanner-390-light.png`, `mfa-recovery-320-light.png`, `global-preferences-1440-dark.png`.
+- Focused Vitest regressions cover profile/version conflicts, delayed owner/read races, authenticated avatar object-URL ownership, preference drafts, safe landing routes, wire-safe installation headers, foreground notification rules, auth-epoch refresh/login boundaries and recovery-code retention/acknowledgement. `pnpm test:personal-account` runs these in CI in addition to the existing core regression command.
+- Backend commit `8b84ec4d5b30e0aa2868cf78612a744e54fb12a0`: SQLite and disposable PostgreSQL regressions plus receiver checks passed in [DEV backend CI](https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE/actions/runs/41805076182). Public health verified this exact SHA after deployment.
+- The single new additive migration was independently compared against all 220 live migration files: one addition, zero historical changes/removals. Schema backup preceded manual application; three new tables and two nullable refresh-token columns were verified. Deployment accepted a root-owned exact-release receipt and kept automatic migration/seeding disabled. Details are in the backend deployment guide and private operator record, not client data.
+
+## Limits and existing repository gates
+
+The browser harness uses real components/providers/hooks with deterministic local HTTP responses. It does not mutate the live database, change OS permissions or send external mail. Actual SQL/auth/concurrency/notification commit behavior is covered by backend tests; the refresh-unmount recovery edge is covered separately by a unit integration test. The deployment health check verifies source identity and service health, not a live user's complete MFA enrollment.
+
+Local typecheck and production bundling passed. Shared UI guards still report pre-existing debt: 28 token violations after the concurrent contrast update, one architecture violation in `RowActionGroup.tsx`, and legacy icon violations outside this feature. The touched topbar language checkmark was converted to the existing icon component. These guards must not be described as globally passing or as proof that every unrelated screen matches the design.

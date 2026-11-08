@@ -42,8 +42,13 @@ describe("AppProviders", () => {
     expect(toasterProps.current).toMatchObject({
       position: "top-right",
       className: "app-toaster",
-      offset: { top: 20, right: 20 },
-      mobileOffset: { top: 12, right: 12 },
+      offset: { top: 84, right: "clamp(12px, 2.2vw, 32px)" },
+      mobileOffset: { top: 74, right: 12 },
+      duration: 3000,
+      gap: 10,
+      expand: true,
+      richColors: true,
+      swipeDirections: ["right"],
       visibleToasts: 4,
       closeButton: true,
     });

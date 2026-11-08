@@ -1,3 +1,5 @@
+import { dayKey } from "@/modules/reports/operations/report-format";
+import { businessToday } from "@/shared/utils/date-time";
 /**
  * Bộ tính của tab "So sánh đối tượng nhận hàng" (RPT-07 · tab 2).
  *
@@ -151,12 +153,7 @@ export type ComparisonSlowMover = ComparisonSku & {
 };
 
 export type ComparisonInsightKind =
-  | "highlight"
-  | "growth"
-  | "decline"
-  | "slow"
-  | "anomaly"
-  | "data";
+  "highlight" | "growth" | "decline" | "slow" | "anomaly" | "data";
 
 export type ComparisonInsight = {
   id: string;
@@ -303,7 +300,7 @@ function bucketLabelOf(
 export function bucketsOf(
   period: ComparisonWindow,
   granularity: ComparisonGranularity,
-  today: Dayjs = dayjs(),
+  today: Dayjs = businessToday(),
 ): ComparisonBucket[] {
   const unit = granularity === "day" ? "day" : granularity;
   const first = toDay(period.from).startOf(unit);
@@ -343,7 +340,7 @@ function partyIdOf(event: RecipientAgencyLedgerEvent): string {
 
 function inWindow(occurredAt: string, window: ComparisonWindow): boolean {
   if (!occurredAt) return false;
-  const day = occurredAt.slice(0, 10);
+  const day = dayKey(occurredAt);
   return day >= window.from && day <= window.to;
 }
 
@@ -427,7 +424,7 @@ function emptyAccumulator(): Accumulator {
 
 function accumulate(target: Accumulator, event: RecipientAgencyLedgerEvent) {
   target.qty += signedQty(event);
-  const day = event.occurred_at.slice(0, 10);
+  const day = dayKey(event.occurred_at);
   if (event.event_type === "ISSUE_POSTED") {
     target.documents.add(event.outbound_document_id);
     target.skus.add(event.sku.id);
@@ -445,7 +442,7 @@ export function buildComparison(
   const previous = previousWindowOf(period);
   const window = analysisWindowOf(period);
   const granularity = granularityOf(period);
-  const today = context.today ?? dayjs();
+  const today = context.today ?? businessToday();
   const buckets = bucketsOf(period, granularity, today);
 
   const relevant = events.filter((event) =>
@@ -530,7 +527,7 @@ export function buildComparison(
     );
 
     const bucketKey = bucketKeyOf(
-      dayjs(event.occurred_at.slice(0, 10), API_DATE_FORMAT),
+      dayjs(dayKey(event.occurred_at), API_DATE_FORMAT),
       granularity,
     );
     if (!bucketKeys.has(bucketKey)) continue;
@@ -902,7 +899,7 @@ function metricTrendOf(
     if (partyAt === undefined) continue;
     const bucketAt = indexOfBucket.get(
       bucketKeyOf(
-        dayjs(event.occurred_at.slice(0, 10), API_DATE_FORMAT),
+        dayjs(dayKey(event.occurred_at), API_DATE_FORMAT),
         granularity,
       ),
     );

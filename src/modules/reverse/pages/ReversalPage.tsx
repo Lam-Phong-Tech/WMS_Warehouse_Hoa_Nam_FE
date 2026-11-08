@@ -2,12 +2,12 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useT } from "@/shared/i18n/useT";
-import { Box, Tooltip, UiSelect, UiTextField } from "@/shared/ui";
+import { Box, UiPagination, UiSelect, UiTextField } from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
-import { TopPagination } from "@/shared/components/data-display/TopPagination";
+import { AppPageHeader } from "@/app/layouts/AppPageHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
@@ -20,17 +20,12 @@ import {
 } from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { useHasPermission } from "@/shared/components/permission";
-import {
-  REVERSAL_REASON_LABELS,
-  REVERSAL_STATUS_LABELS,
-  enumLabelOrText,
-} from "@/shared/constants/business-labels";
+import { REVERSAL_STATUS_LABELS } from "@/shared/constants/business-labels";
 import { useReversalDocuments, reversalKeys } from "../hooks/use-reversal";
 import { ReversalCreateModal } from "../components/ReversalCreateModal";
 import { ReversalDetailModal } from "../components/ReversalDetailModal";
 import { ReversalStatusTag } from "../components/ReversalStatusTag";
 import type { ReversalDocument } from "../types";
-import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -57,6 +52,7 @@ export default function ReversalPage() {
   const [detailId, setDetailId] = useState<string | null>(null);
 
   const canPost = can("inventory.reversal.post");
+  const hasFilters = Boolean(searchInput.trim() || statusFilter);
 
   const listQuery = useReversalDocuments({
     keyword: search || undefined,
@@ -105,7 +101,7 @@ export default function ReversalPage() {
       key: "stt",
       header: t("reverse.detail.colStt"),
       align: "center",
-      width: 48,
+      width: "5%",
       hideOnMobile: true,
       // ResponsiveDataTable không truyền index vào render (khác antd Table),
       // nên STT tính theo vị trí trong `rows` (thứ tự trang hiện tại từ API)
@@ -116,7 +112,7 @@ export default function ReversalPage() {
     {
       key: "reversal_code",
       header: t("reverse.detail.fieldCode"),
-      width: 170,
+      width: "21%",
       sortAccessor: (row) => row.reversal_code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ ĐIỀU CHỈNH đọc được.
       render: (row) => (
@@ -128,7 +124,7 @@ export default function ReversalPage() {
     {
       key: "ref",
       header: t("reverse.detail.fieldSourceDoc"),
-      width: 180,
+      width: "21%",
       sortAccessor: (row) => row.reference_document_code || "",
       render: (row) => (
         <Box
@@ -150,7 +146,7 @@ export default function ReversalPage() {
     {
       key: "total_qty",
       header: t("reverse.list.colTotalQty"),
-      width: 120,
+      width: "14%",
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.total_qty,
@@ -159,7 +155,7 @@ export default function ReversalPage() {
     {
       key: "status",
       header: t("reverse.detail.colStatus"),
-      width: 210,
+      width: "20%",
       sortType: "value",
       sortAccessor: (row) => row.status,
       render: (row) => (
@@ -171,52 +167,11 @@ export default function ReversalPage() {
       ),
     },
     {
-      // Lý do là dữ liệu bắt buộc khi tạo phiếu (BR-REV: `reason` required) nên
-      // luôn có nội dung — đưa lên danh sách để không phải mở từng phiếu mới
-      // biết vì sao điều chỉnh. Độ dài thất thường → ellipsis + tooltip giữ
-      // chiều cao dòng đều nhau (cùng cách xử lý "Vị trí gợi ý" ở INV-01).
-      key: "reason",
-      header: t("reverse.create.reasonLabel"),
-      width: 240,
-      sortAccessor: (row) => row.reason || "",
-      render: (row) => (
-        <div>
-          <Tooltip title={row.reason || EMPTY_TEXT}>
-            <Box
-              className="hn-reversal-reason"
-              sx={{
-                maxWidth: 230,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {row.reason || EMPTY_TEXT}
-            </Box>
-          </Tooltip>
-          {row.reason_code ? (
-            <Box sx={{ fontSize: 12, color: "text.secondary" }}>
-              {enumLabelOrText(REVERSAL_REASON_LABELS, row.reason_code)}
-            </Box>
-          ) : null}
-        </div>
-      ),
-    },
-    {
-      key: "created_at",
-      header: t("reverse.detail.fieldCreatedAt"),
-      width: 160,
-      sortType: "value",
-      hideOnMobile: true,
-      sortAccessor: (row) => row.created_at,
-      render: (row) => formatDateTime(row.created_at),
-    },
-    {
       // reversalService chỉ nhận `created_by_name` (BE đã join tên); thiếu tên
       // thì `-`, KHÔNG rơi xuống UUID `created_by`.
       key: "created_by",
       header: t("reverse.detail.fieldCreatedBy"),
-      width: 150,
+      width: "11%",
       hideOnMobile: true,
       sortAccessor: (row) => row.created_by || "",
       render: (row) => row.created_by || EMPTY_TEXT,
@@ -235,6 +190,24 @@ export default function ReversalPage() {
         className="reversal-page hn-mvp-source-screen hn-reversal-screen"
         data-mvp-screen="REV-00"
       >
+        <AppPageHeader
+          showEyebrow={false}
+          showDescription={false}
+          showContextBadges={false}
+          actions={
+            canPost ? (
+              <div className="hn-reversal-header-actions">
+                <ActionButton
+                  kind="create"
+                  className="hn-reversal-primary"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  {t("reverse.create.submit")}
+                </ActionButton>
+              </div>
+            ) : undefined
+          }
+        />
         {!canPost ? (
           <Box
             className="hn-reversal-readonly"
@@ -246,11 +219,10 @@ export default function ReversalPage() {
           </Box>
         ) : null}
 
-        <div className="hn-reversal-filters">
+        <div
+          className={`hn-reversal-filters${hasFilters ? " hn-reversal-filters-has-reset" : ""}`}
+        >
           <div className="hn-reversal-filter hn-reversal-filter-search">
-            <label htmlFor="reversal-search">
-              {t("reverse.list.searchAria")}
-            </label>
             <UiTextField
               id="reversal-search"
               value={searchInput}
@@ -268,9 +240,6 @@ export default function ReversalPage() {
             />
           </div>
           <div className="hn-reversal-filter">
-            <label id="reversal-status-label">
-              {t("reverse.detail.colStatus")}
-            </label>
             <UiSelect
               value={statusFilter}
               aria-label={t("reverse.list.statusFilterAria")}
@@ -280,7 +249,14 @@ export default function ReversalPage() {
               options={Object.entries(REVERSAL_STATUS_LABELS).map(
                 ([value, label]) => ({
                   value,
-                  label: label.replace(/ ·.*$/, ""),
+                  label: (
+                    <>
+                      <span className="hn-reversal-filter-prefix">
+                        {t("reverse.detail.colStatus")}:{" "}
+                      </span>
+                      {label.replace(/ ·.*$/, "")}
+                    </>
+                  ),
                 }),
               )}
               onChange={(value) => {
@@ -289,33 +265,18 @@ export default function ReversalPage() {
               }}
             />
           </div>
-          <div className="hn-reversal-filter">
-            <label>{t("shared.table.rowsPerPageAria")}</label>
-            <UiSelect
-              value={perPage}
-              aria-label={t("shared.table.rowsPerPageAria")}
-              menuClassName="hn-reversal-menu"
-              fullWidth
-              options={perPageOptions.map((size) => ({
-                value: size,
-                label: t("shared.table.perPage", { size }),
-              }))}
-              onChange={(value) => {
-                setPerPage(Number(value));
+          {hasFilters ? (
+            <ActionButton
+              kind="reset"
+              onClick={() => {
+                setSearchInput("");
+                setSearch("");
+                setStatusFilter("");
                 setPage(1);
               }}
-            />
-          </div>
-          {canPost ? (
-            <div className="hn-reversal-filter-actions">
-              <ActionButton
-                kind="create"
-                className="hn-reversal-primary"
-                onClick={() => setCreateOpen(true)}
-              >
-                {t("reverse.create.submit")}
-              </ActionButton>
-            </div>
+            >
+              {t("reverse.list.clearFilters")}
+            </ActionButton>
           ) : null}
         </div>
         <section
@@ -323,7 +284,7 @@ export default function ReversalPage() {
           aria-label={t("reverse.list.unitName")}
         >
           {listQuery.isError ? (
-            <Box sx={{ mb: 1.75 }}>
+            <Box sx={{ p: 2 }}>
               <ApiErrorAlert
                 error={listQuery.error}
                 title={t("reverse.list.loadError")}
@@ -337,12 +298,18 @@ export default function ReversalPage() {
           />
           <ResponsiveDataTable<ReversalDocument>
             headerCellStyle={{
-              background: "var(--rev-pale)",
-              color: "var(--rev-ink)",
-              fontSize: 12,
-              padding: "10px 9px",
+              background: "var(--ops-table-header)",
+              color: "var(--ops-heading)",
+              fontSize: 16,
+              lineHeight: "24px",
+              fontWeight: 800,
+              letterSpacing: "0.02em",
+              textTransform: "uppercase",
+              whiteSpace: "normal",
+              padding: "12px 18px",
               borderColor: "var(--rev-line)",
             }}
+            actionColumnWidth="8%"
             columns={columns}
             rows={rows}
             rowKey={(row) => row.id}
@@ -367,14 +334,53 @@ export default function ReversalPage() {
             )}
           />
           <div className="hn-reversal-pagination">
-            <TopPagination
-              placement="bottom"
+            <div className="hn-reversal-page-size">
+              <span aria-live="polite">
+                {listQuery.isLoading
+                  ? t("common.loadingData")
+                  : t("reverse.list.rangeLabel", {
+                      from: formatQuantity(
+                        rows.length
+                          ? (listPagination.current - 1) *
+                              listPagination.pageSize +
+                              1
+                          : 0,
+                      ),
+                      to: formatQuantity(
+                        rows.length
+                          ? Math.min(
+                              (listPagination.current - 1) *
+                                listPagination.pageSize +
+                                rows.length,
+                              listPagination.total,
+                            )
+                          : 0,
+                      ),
+                      total: formatQuantity(listPagination.total),
+                    })}
+              </span>
+              <UiSelect
+                value={perPage}
+                aria-label={t("shared.table.rowsPerPageAria")}
+                menuClassName="hn-reversal-menu"
+                minWidth={76}
+                options={perPageOptions.map((size) => ({
+                  value: size,
+                  label: t("shared.table.perPage", { size }),
+                }))}
+                onChange={(value) => {
+                  setPerPage(Number(value));
+                  setPage(1);
+                }}
+              />
+            </div>
+            <UiPagination
               total={listPagination.total}
-              current={listPagination.current}
+              page={listPagination.current}
               pageSize={listPagination.pageSize}
-              unitName={t("reverse.list.unitName")}
-              showSizeChanger={false}
-              onChange={(nextPage) => setPage(nextPage)}
+              showTotal={false}
+              onPageChange={setPage}
+              disabled={listQuery.isFetching}
             />
           </div>
         </section>

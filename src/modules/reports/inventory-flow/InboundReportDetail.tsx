@@ -1,13 +1,21 @@
+import { parseDateTime } from "@/shared/utils/date-time";
+import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
+import { ReportExportAction } from "../components/ReportExportAction";
+import { reportExportSections } from "../components/report-export-sections";
+import {
+  exportLocalReport,
+  type ReportExportChoice,
+} from "../components/report-export-workbook";
+import { tStatic as tExport } from "@/shared/i18n/useT";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import dayjs from "dayjs";
+
 import { CANONICAL_WAREHOUSE_CODE } from "@/modules/master-data/services/warehouse.service";
 import {
   useInboundDetail,
   useInboundScanEntries,
 } from "@/modules/inbound/hooks/use-inbound";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
-import { exportXlsx } from "@/shared/utils/export-xlsx";
 import type { FlowDocument } from "./inventory-flow-api";
 import "./inbound-report-detail.css";
 
@@ -27,7 +35,7 @@ const statusNames: Record<string, string> = {
 
 function formatDateTime(value?: string) {
   if (!value) return "—";
-  const parsed = dayjs(value);
+  const parsed = parseDateTime(value);
   return parsed.isValid() ? parsed.format("DD/MM/YYYY HH:mm") : value;
 }
 
@@ -41,7 +49,8 @@ export function InboundReportDetail({
   canExport,
   onBack,
 }: InboundReportDetailProps) {
-  const detailQuery = useInboundDetail(document.id);
+  useDateTimePreferences();
+  const detailQuery = useInboundDetail(document.id, { readOnly: true });
   const entriesQuery = useInboundScanEntries(document.id, "ALL");
   const warehousesQuery = useWarehouseDirectory();
   const [tab, setTab] = useState<"codes" | "sku">("codes");
@@ -98,9 +107,9 @@ export function InboundReportDetail({
     a.changedAt.localeCompare(b.changedAt),
   );
 
-  const exportDetail = () => {
+  const exportDetail = (choice: ReportExportChoice) => {
     if (!detail || !canExport) return;
-    exportXlsx(
+    return exportLocalReport(
       [
         "Mã phiếu nhập",
         "Mã quét / serial",
@@ -142,7 +151,7 @@ export function InboundReportDetail({
             statusName(receipt?.status ?? document.status),
             formatDateTime(document.posted_at),
           ]),
-      `chi-tiet-nhap-kho-${receipt?.code ?? document.document_no}`,
+      choice,
     );
   };
 
@@ -186,14 +195,18 @@ export function InboundReportDetail({
                 Mở chứng từ gốc ↗
               </Link>
               {canExport ? (
-                <button
-                  type="button"
-                  className="inbound-report-detail__export"
-                  disabled={!detail}
-                  onClick={exportDetail}
-                >
-                  Xuất chi tiết
-                </button>
+                <ReportExportAction
+                  title={tExport("reportExport.inbound")}
+                  fileStem={
+                    "ChiTietNhapKho_" + (receipt?.code ?? document.document_no)
+                  }
+                  total={entries.length || lines.length}
+                  sections={reportExportSections(
+                    tExport("reportExport.detail"),
+                  )}
+                  disabled={!detail || !canExport}
+                  onExport={exportDetail}
+                />
               ) : null}
             </div>
           </div>
@@ -224,7 +237,7 @@ export function InboundReportDetail({
                 <dd>{receipt?.code || "—"}</dd>
               </div>
               <div>
-                <dt>Số chứng từ nguồn</dt>
+                <dt>{tExport("inbound.draft.sourceRef")}</dt>
                 <dd>{receipt?.sourceReference || "—"}</dd>
               </div>
               <div>

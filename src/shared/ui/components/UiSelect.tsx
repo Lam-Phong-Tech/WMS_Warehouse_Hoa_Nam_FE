@@ -150,6 +150,15 @@ export function UiSelect({
    * đang dùng `label` một mình.
    */
   const forceShrink = Boolean(placeholder) || undefined;
+  // Keep the closed placeholder, but never invent a second reset choice when
+  // options already defines it (including non-empty sentinels such as ALL).
+  const showPlaceholderChoice =
+    Boolean(placeholder) &&
+    !options.some(
+      (option) =>
+        option.value === "" ||
+        measurableText(option.label).trim() === placeholder?.trim(),
+    );
   return (
     <FormControl
       size="small"
@@ -209,7 +218,7 @@ export function UiSelect({
         }
         data-testid={dataTestId}
       >
-        {placeholder ? (
+        {showPlaceholderChoice ? (
           <MenuItem value="">
             <span style={{ color: S.textDisabled }}>{placeholder}</span>
           </MenuItem>

@@ -101,6 +101,7 @@ export interface WarrantyListParams {
   page?: number;
   per_page?: number;
   sort_order?: "desc" | "asc";
+  overdue?: boolean;
 }
 export interface WarrantyCasePage {
   data: WarrantyCase[];

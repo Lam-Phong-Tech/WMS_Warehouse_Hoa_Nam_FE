@@ -154,6 +154,10 @@ describe("WAR-04 overview authoritative status totals", () => {
 
     await user.tab();
     expect(
+      screen.getByRole("button", { name: /Chỉ phiếu Đã ghi sổ/ }),
+    ).toHaveFocus();
+    await user.tab();
+    expect(
       screen.getByRole("button", { name: "Lọc phiếu đã ghi sổ" }),
     ).toHaveFocus();
     await user.keyboard("{Enter}");

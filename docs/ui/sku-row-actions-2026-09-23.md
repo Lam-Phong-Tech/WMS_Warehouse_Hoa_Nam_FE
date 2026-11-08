@@ -1,16 +1,17 @@
 # Cột Thao tác thống nhất theo Danh sách SKU
 
-Ngày cập nhật: 23/09/2026.
+Ngày cập nhật quy tắc: 04/11/2026. Chuẩn hiện hành tại [DESIGN_FOUNDATIONS.md](./DESIGN_FOUNDATIONS.md), mục “Mở chi tiết trong bảng”.
 
 Các bảng danh mục, PV, nhập/xuất kho, xếp khay, bảo hành, tồn kho, phiếu đảo, báo cáo và hệ thống dùng chung `RowActionButton` / `RowActionGroup` từ `src/shared/components/actions`. Các thẻ trên điện thoại và bảng chi tiết liên quan dùng cùng mẫu.
 
-- Xem/chi tiết: nhãn kèm dấu `›`, nền trong suốt, màu liên kết theo bảng màu Tổng quan vận hành.
+- Xem/mở/chi tiết bản ghi: chỉ một mũi tên phải `→`, nền trong suốt, màu `--ops-link`, hover `--ops-pale`; nút `40px`, vùng chạm `44px`. Giữ nhãn trong `aria-label`/tooltip; không hiện chữ hoặc icon mắt.
+- Cột điều khiển không có tiêu đề hiển thị, giữ `th` trống với tên truy cập. Cột tự khai trong `ResponsiveDataTable` dùng `isAction: true`; `renderRowActions` tự ẩn tiêu đề theo mặc định. Card mobile không lặp nhãn cột này.
 - Các thao tác khác: icon chuẩn từ `ACTION_KINDS`, có tên truy cập và tooltip. Cao 32px, icon 16px, chiều rộng tối thiểu 30px, bo góc 6px, khoảng cách nhóm 4px.
 - Menu ba chấm dùng `ActionDropdown row`; giữ nguyên các mục, quyền và trạng thái khóa. Nút đang xử lý bị khóa và hiện spinner.
 - Bảng màu nút được cố định bằng token chung ngay tại component để biến màu cũ của từng trang không làm lệch icon. Chế độ tối dùng cùng token tương ứng.
 - CSS cũ dành riêng cho nút từng bảng đã được loại bỏ hoặc loại trừ `.hn-row-action`. Các trang không có cột thao tác giữ cấu trúc hiện có.
 
-Kiểm tra:
+Kiểm tra lịch sử (23/09/2026, trước quy tắc mũi tên mới):
 
 - TypeScript, Vite production build và kiểm tra thư viện icon (`ui:icons`) đạt; ESLint các TS/TSX thay đổi không có lỗi.
 - 304 kiểm thử được chạy: 282 đạt; 22 kiểm thử báo cáo cũ thất bại. Chạy đối chiếu các suite lỗi với nguồn trước thay đổi tái hiện đúng cả 22 tên kiểm thử và thông báo lỗi, không có lỗi mới. Các lỗi này nằm ở kỳ vọng giao diện/fixture cũ của report smoke, packing label, warranty và recipient.

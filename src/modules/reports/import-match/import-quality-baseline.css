@@ -1,0 +1,204 @@
+/* RPT-04 report filters follow the SKU list control conventions. */
+[data-report-screen="RPT-04"] .rpt04-filters {
+  container: rpt04-filters / inline-size;
+  min-width: 0;
+}
+.rpt04-filters__row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 360px minmax(180px, 0.8fr) minmax(
+      160px,
+      0.75fr
+    );
+  align-items: center;
+  gap: 12px;
+}
+.rpt04-filters__row:has(.rpt04-filters__clear) {
+  grid-template-columns:
+    minmax(180px, 1fr) 360px minmax(180px, 0.8fr) minmax(160px, 0.75fr)
+    auto;
+}
+.rpt04-filters__row > *,
+.rpt04-filters__search,
+.rpt04-filters__dates {
+  min-width: 0;
+}
+[data-report-screen="RPT-04"] .rpt04-filters .MuiInputBase-root {
+  height: 48px;
+  min-height: 48px;
+  background: var(--ops-surface);
+  border-radius: var(--ops-radius-control);
+  color: var(--ops-text);
+  font-family: var(--wms-font-family);
+  font-size: 14px;
+  line-height: 22px;
+}
+[data-report-screen="RPT-04"] .rpt04-filters .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-line);
+}
+[data-report-screen="RPT-04"]
+  .rpt04-filters
+  .MuiInputBase-root:hover
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-link);
+}
+[data-report-screen="RPT-04"] .rpt04-filters .MuiInputBase-root.Mui-focused {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+[data-report-screen="RPT-04"]
+  .rpt04-filters
+  .MuiInputBase-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-link);
+  border-width: 1px;
+}
+[data-report-screen="RPT-04"] .rpt04-filters .hn-vuexy-date-field {
+  height: 48px !important;
+  min-height: 48px !important;
+  border-color: var(--ops-line);
+  font-size: 14px;
+}
+[data-report-screen="RPT-04"] .rpt04-filters .hn-vuexy-date-field:hover,
+[data-report-screen="RPT-04"] .rpt04-filters .hn-vuexy-date-field:focus-visible,
+[data-report-screen="RPT-04"]
+  .rpt04-filters
+  .hn-vuexy-date-field[aria-expanded="true"] {
+  border-color: var(--ops-link);
+}
+[data-report-screen="RPT-04"] .rpt04-filters .hn-vuexy-date-field:focus-visible,
+[data-report-screen="RPT-04"]
+  .rpt04-filters
+  .hn-vuexy-date-field[aria-expanded="true"] {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+[data-report-screen="RPT-04"] .rpt04-filters__clear {
+  min-height: 48px;
+  padding-inline: 12px;
+  color: var(--ops-link);
+  white-space: nowrap;
+}
+@container rpt04-filters (max-width: 1011px) {
+  .rpt04-filters__row,
+  .rpt04-filters__row:has(.rpt04-filters__clear) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rpt04-filters__search,
+  .rpt04-filters__dates {
+    grid-column: 1 / -1;
+  }
+  .rpt04-filters__clear {
+    justify-self: start;
+  }
+}
+@container rpt04-filters (max-width: 540px) {
+  .rpt04-filters__row,
+  .rpt04-filters__row:has(.rpt04-filters__clear) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* RPT-04 results use the SKU list table and pagination conventions. */
+#rpt04-results {
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+}
+#rpt04-results .rpt04-results-table > div {
+  border: 0;
+  border-radius: 0;
+}
+#rpt04-results table {
+  min-width: 1000px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ops-text);
+}
+#rpt04-results table td {
+  padding: 12px 18px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--ops-line);
+}
+#rpt04-results table tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+#rpt04-results table tbody tr:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: -2px;
+}
+#rpt04-results .rpt04-reference {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+#rpt04-results .rpt04-reference__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  height: 44px;
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  font-size: 22px;
+}
+#rpt04-results .rpt04-reference__code {
+  color: var(--ops-heading);
+  font-weight: 700;
+}
+#rpt04-results .rpt04-result-badge {
+  height: 24px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+#rpt04-results .rpt04-result-badge .MuiChip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#rpt04-results .rpt04-result-badge .MuiChip-label::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+#rpt04-results .rpt04-result-badge--success {
+  color: var(--ops-success);
+  background: var(--ops-success-soft);
+}
+#rpt04-results .rpt04-result-badge--warning {
+  color: var(--ops-warning);
+  background: var(--ops-warning-soft);
+}
+#rpt04-results .rpt04-result-badge--error {
+  color: var(--ops-danger);
+  background: var(--ops-danger-soft);
+}
+#rpt04-results .hn-report-pagination-footer {
+  border-top: 1px solid var(--ops-line);
+  padding: 14px 16px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+#rpt04-results .rpt04-pagination-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+#rpt04-results .hn-report-pagination {
+  margin-left: auto;
+}
+#rpt04-results .rpt04-page-size {
+  min-height: 36px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  padding: 0 10px;
+  color: var(--ops-text);
+  background: var(--ops-surface);
+  font: inherit;
+}
+#rpt04-results .rpt04-page-size:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 2px;
+}

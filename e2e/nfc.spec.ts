@@ -8,55 +8,70 @@ for (const mode of ["light", "dark"])
         (theme) => localStorage.setItem("hoa-nam-theme", theme),
         mode,
       );
-      await page.goto("/e2e/fixtures/nfc.html");
+      await page.goto("/e2e/fixtures/nfc.html", {
+        waitUntil: "domcontentloaded",
+      });
       await expect(
-        page.getByText("DCPL02-8-000006", { exact: true }),
+        page.getByText("DCPL02-8-000006", { exact: true }).first(),
       ).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth + 1,
         ),
       ).toBe(true);
-      await expect(page.getByText(/Web dùng để xem/)).toHaveCount(0);
-      const info = page.getByRole("button", {
-        name: "Thông tin NFC",
-        exact: true,
-      });
-      await info.hover();
-      await expect(page.getByRole("tooltip")).toContainText("Web dùng để xem");
-      await info.press("Escape");
-      await page.mouse.move(0, 0);
-      await expect(page.getByRole("tooltip")).toHaveCount(0);
-      await info.click();
-      await expect(page.getByRole("tooltip")).toContainText("Web dùng để xem");
-      await info.press("Escape");
-      await page.mouse.move(0, 0);
-      await page
-        .getByRole("button", { name: "Gán chip", exact: true })
-        .first()
-        .click();
       await expect(
-        page.getByText("Vui lòng thao tác qua app", { exact: true }),
+        page.getByRole("combobox", { name: "Trạng thái chip" }),
       ).toBeVisible();
-      await page.getByRole("button", { name: "Đã hiểu" }).click();
-      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.locator("thead th").first()).toHaveText("STT");
+      await expect(page.locator('td[data-field="ordinal"]').first()).toHaveText(
+        "1",
+      );
+      await expect(page.locator('td[data-field="uid"]')).toHaveCount(0);
+      await expect(page.getByText("04A1B2C3D4E5F6")).toHaveCount(0);
+      const productName = page
+        .locator('td[data-field="product"] small')
+        .first();
+      await expect(productName).toHaveCSS("text-overflow", "ellipsis");
+      await expect(productName).toHaveCSS("white-space", "nowrap");
+      expect(
+        await productName.evaluate(
+          (node) => node.scrollWidth > node.clientWidth,
+        ),
+      ).toBe(true);
+      await expect(page.getByRole("button", { name: "Gán chip" })).toHaveCount(
+        0,
+      );
+      if (width < 980) {
+        const firstRow = await page.locator("tbody tr").nth(0).boundingBox();
+        const secondRow = await page.locator("tbody tr").nth(1).boundingBox();
+        expect(firstRow!.height).toBeGreaterThan(120);
+        expect(secondRow!.y).toBeGreaterThanOrEqual(
+          firstRow!.y + firstRow!.height - 1,
+        );
+      }
       await page.screenshot({
         path: `test-results/nfc/items-${mode}-${width}.png`,
         fullPage: true,
       });
-      await page.getByRole("tab", { name: "Chip đã đăng ký" }).click();
       await page.getByRole("button", { name: "Xem chi tiết" }).first().click();
+      await expect(
+        page.getByRole("dialog").getByText("04A1B2C3D4E5F6", { exact: true }),
+      ).toBeVisible();
+      await page.getByRole("tab", { name: "Lịch sử liên kết NFC" }).click();
       await expect(
         page.getByRole("listitem").filter({ hasText: "Nguyễn Văn Nam" }),
       ).toBeVisible();
-      await page.getByRole("button", { name: "Thay chip mới" }).click();
       await expect(
-        page.getByText("Vui lòng thao tác qua app", { exact: true }),
-      ).toBeVisible();
-      await page.getByRole("button", { name: "Đã hiểu" }).click();
-      await expect(
-        page.getByText("Vui lòng thao tác qua app", { exact: true }),
+        page.getByRole("button", { name: "Thay chip mới" }),
       ).toHaveCount(0);
+      const bounds = await page.getByRole("dialog").boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(Math.round(bounds!.x + bounds!.width)).toBe(width);
+      expect(
+        await page
+          .getByRole("dialog")
+          .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+      ).toBe(true);
       await page.screenshot({
         path: `test-results/nfc/detail-${mode}-${width}.png`,
         fullPage: true,

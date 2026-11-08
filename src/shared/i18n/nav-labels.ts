@@ -21,8 +21,6 @@ import {
 
 export const NAV_LABELS_EN: Record<string, string> = {
   home: "Home",
-  nfc: "NFC",
-  "NFC-01": "NFC",
 
   // Nhóm
   "layout-dashboard": "Overview",
@@ -59,6 +57,7 @@ export const NAV_LABELS_EN: Record<string, string> = {
   "RPT-06": "Warranty & components",
   "RPT-07": "Issues by recipient / agency",
   "RPT-08": "Inbound – outbound history",
+  "PROFILE-01": "My profile",
   "IAM-01": "Users & permissions",
   "PV-ADM-01": "Partition app (PV)",
   "WH-01": "Warehouse settings",
@@ -127,7 +126,6 @@ export interface ScreenMetaText {
  * chữ VI trong nav-data không làm rơi bản dịch.
  */
 export const SCREEN_META_EN: Record<string, ScreenMetaText> = {
-  "NFC-01": { title: "Attach NFC chip to item", description: "" },
   "MAP-01": {
     title: "Operations overview",
     description:

@@ -157,7 +157,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
   box-shadow: none;
 }
 
-[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child {
+[data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child:not(.rpt04-filters__row) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
@@ -469,7 +469,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
 }
 
 @container hn-rpt04 (min-width: 1040px) {
-  [data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child {
+  [data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child:not(.rpt04-filters__row) {
     grid-template-columns: minmax(300px, 1.5fr) minmax(140px, 0.8fr) repeat(2, minmax(140px, 1fr));
   }
 
@@ -483,7 +483,7 @@ body:has(.hn-mvp-screen:not([hidden]):not([style*="display: none"]):not([style*=
 }
 
 @container hn-rpt04 (max-width: 559px) {
-  [data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child,
+  [data-report-screen="RPT-04"] > section[aria-label="Bộ lọc báo cáo"] > div:first-child:not(.rpt04-filters__row),
   [data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"],
   [data-report-screen="RPT-04"] .hn-vuexy-date-range,
   [data-report-screen="RPT-04"] > section[aria-label="Tổng quan chất lượng dữ liệu"] + section > div:last-child > div:has(> [role="img"]) {
@@ -899,7 +899,6 @@ body:has([data-report-screen="RPT-06"]) .hn-vuexy-date-popup button:focus-visibl
 }
 
 [data-report-screen="RPT-06"] .warranty-sku-cell > *,
-[data-report-screen="RPT-06"] .warranty-case-cell > *,
 [data-report-screen="RPT-06"] .warranty-component-cell {
   display: block;
   width: 100%;

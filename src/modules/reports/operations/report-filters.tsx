@@ -1,9 +1,11 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { ReportExportAction } from "../components/ReportExportAction";
+import { reportExportSections } from "../components/report-export-sections";
+import type { ReportExportChoice } from "../components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { useMemo } from "react";
-import dayjs from "dayjs";
 import { useT } from "@/shared/i18n/useT";
 import { Box, UiSelect, UiTextField } from "@/shared/ui";
-import { ActionButton } from "@/shared/components/actions";
 import {
   itemKindOptions,
   type ItemKind,
@@ -30,7 +32,7 @@ export function PeriodFilterControls({ state }: { state: PeriodFilterState }) {
       format="DD/MM/YYYY"
       allowClear={false}
       // Báo cáo vận hành chỉ có dữ liệu ĐÃ XẢY RA: không cho chọn ngày tương lai.
-      maxDate={dayjs().endOf("day")}
+      maxDate={businessToday().endOf("day")}
       presets={presets}
       className="hn-vuexy-date-range"
       popupClassName="hn-vuexy-date-popup"
@@ -150,45 +152,32 @@ export function TimeWindowFilter({
   );
 }
 
-/** Cặp nút xuất XLSX/PDF chuẩn của trang báo cáo (gated bởi REPORT_EXPORT). */
+/** One shared export trigger and configurable right drawer. */
 export function ExportButtons({
   exporting,
   disabled,
   onExport,
+  total,
 }: {
   exporting: "xlsx" | "pdf" | null;
   disabled?: boolean;
-  onExport: (format: "xlsx" | "pdf") => void;
+  total: number;
+  onExport: (
+    format: "xlsx" | "pdf",
+    choice: ReportExportChoice,
+  ) => Promise<unknown> | unknown;
 }) {
   const t = useT();
   return (
-    <>
-      <ActionButton
-        kind="exportExcel"
-        module="reports"
-        action="export"
-        permissionCode="REPORT_EXPORT"
-        mode="disable"
-        loading={exporting === "xlsx"}
-        disabled={Boolean(exporting) || disabled}
-        onClick={() => onExport("xlsx")}
-        disabledTooltip={t("reports.filters.exportTooltip")}
-      >
-        {t("reports.filters.exportXlsx")}
-      </ActionButton>
-      <ActionButton
-        kind="exportPdf"
-        module="reports"
-        action="export"
-        permissionCode="REPORT_EXPORT"
-        mode="disable"
-        loading={exporting === "pdf"}
-        disabled={Boolean(exporting) || disabled}
-        onClick={() => onExport("pdf")}
-        disabledTooltip={t("reports.filters.exportTooltip")}
-      >
-        {t("reports.filters.exportPdf")}
-      </ActionButton>
-    </>
+    <ReportExportAction
+      title={t("reportExport.title")}
+      fileStem="BaoCao"
+      sections={reportExportSections(undefined, "none")}
+      formats={["xlsx", "pdf"]}
+      total={total}
+      loading={Boolean(exporting)}
+      disabled={disabled}
+      onExport={(choice) => onExport(choice.format, choice)}
+    />
   );
 }

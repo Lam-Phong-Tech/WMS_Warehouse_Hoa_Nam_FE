@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   Stack,
@@ -29,7 +30,6 @@ import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { MvpPageSizeSelector } from "@/shared/components/mvp/MvpListPagination";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
-import type { ApiMeta } from "@/shared/types/api-response";
 import {
   INVENTORY_STOCK_STATUS_LABELS,
   MASTER_STATUS_LABELS,
@@ -62,7 +62,7 @@ import type {
   ScanEvent,
 } from "../types";
 import type { ReactNode } from "react";
-import { ActionButton } from "@/shared/components/actions";
+import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
@@ -155,10 +155,8 @@ function tabLabel(icon: ReactNode, text: string) {
 
 export default function PhysicalCodesPage() {
   const t = useT();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("list");
-  const [codes, setCodes] = useState<PhysicalCode[]>([]);
-  const [batches, setBatches] = useState<ScanBatch[]>([]);
-  const [events, setEvents] = useState<ScanEvent[]>([]);
   const [codePage, setCodePage] = useState(1);
   const [codePerPage, setCodePerPage] = useState(10);
   const [codeSearch, setCodeSearch] = useState("");
@@ -171,27 +169,56 @@ export default function PhysicalCodesPage() {
   // Mục 8: drill-down từ một lô quét xuống các event lỗi của chính lô đó.
   const [eventBatchFilter, setEventBatchFilter] = useState("");
   const [eventBatchLabel, setEventBatchLabel] = useState("");
-  const [batchMeta, setBatchMeta] = useState<ApiMeta>({});
-  const [eventMeta, setEventMeta] = useState<ApiMeta>({});
   const [scanValue, setScanValue] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
   const [scanContext, setScanContext] = useState<ScanContext>("TRACE");
   const [loading, setLoading] = useState(false);
-  const [listError, setListError] = useState<unknown>(null);
-  const [historyError, setHistoryError] = useState<unknown>(null);
-  const [reloadKey, setReloadKey] = useState(0);
   const [classifyResult, setClassifyResult] =
     useState<ScanClassifyResponse | null>(null);
   const [classifyState, setClassifyState] = useState<ScanCodeState>("waiting");
   const [classifyMessage, setClassifyMessage] = useState("");
   const [issueModalOpen, setIssueModalOpen] = useState(false);
 
+  const codesQuery = useQuery({
+    queryKey: [
+      "scan",
+      "physical-codes",
+      { page: codePage, per_page: codePerPage },
+    ],
+    queryFn: () =>
+      fetchPhysicalCodes({ page: codePage, per_page: codePerPage }),
+    enabled: activeTab === "list",
+  });
+  const batchesQuery = useQuery({
+    queryKey: ["scan", "batches", { page: batchPage, per_page: batchPerPage }],
+    queryFn: () =>
+      fetchScanBatchesPage({ page: batchPage, per_page: batchPerPage }),
+    enabled: activeTab === "history",
+  });
+  const eventsQuery = useQuery({
+    queryKey: ["scan", "events", { page: eventPage, per_page: eventPerPage }],
+    queryFn: () =>
+      fetchScanEventsPage({ page: eventPage, per_page: eventPerPage }),
+    enabled: activeTab === "history",
+  });
+  const codes = codesQuery.data ?? [];
+  const batches = batchesQuery.data?.data ?? [];
+  const events = eventsQuery.data?.data ?? [];
+  const listError = codesQuery.error;
+  const historyError = batchesQuery.error ?? eventsQuery.error;
+  const refreshReads = () => {
+    void queryClient.invalidateQueries({ queryKey: ["scan"] });
+  };
+
   const canCreatePhysicalCode = useCan(
     WMS_PERMISSION_CATALOG.PHYSICAL_CODE_CREATE,
   );
 
   const warehousesQuery = useActiveWarehouses();
-  const warehouses = useMemo(() => warehousesQuery.data ?? [], [warehousesQuery.data]);
+  const warehouses = useMemo(
+    () => warehousesQuery.data ?? [],
+    [warehousesQuery.data],
+  );
 
   useEffect(() => {
     if (!warehouseId && warehouses.length > 0) {
@@ -199,12 +226,12 @@ export default function PhysicalCodesPage() {
     }
   }, [warehouseId, warehouses]);
 
-  const batchPagination = resolveApiPagination(batchMeta, {
+  const batchPagination = resolveApiPagination(batchesQuery.data?.meta, {
     page: batchPage,
     pageSize: batchPerPage,
     rowCount: batches.length,
   });
-  const eventPagination = resolveApiPagination(eventMeta, {
+  const eventPagination = resolveApiPagination(eventsQuery.data?.meta, {
     page: eventPage,
     pageSize: eventPerPage,
     rowCount: events.length,
@@ -237,69 +264,6 @@ export default function PhysicalCodesPage() {
     }
     return true;
   });
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-
-    if (activeTab === "list") {
-      setListError(null);
-      fetchPhysicalCodes({ page: codePage, per_page: codePerPage })
-        .then((data) => {
-          if (!cancelled) setCodes(data);
-        })
-        .catch((fetchError: unknown) => {
-          if (!cancelled) {
-            setCodes([]);
-            setListError(fetchError);
-          }
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-    } else if (activeTab === "history") {
-      setHistoryError(null);
-      Promise.all([
-        fetchScanBatchesPage({ page: batchPage, per_page: batchPerPage }),
-        fetchScanEventsPage({ page: eventPage, per_page: eventPerPage }),
-      ])
-        .then(([batchResult, eventResult]) => {
-          if (!cancelled) {
-            setBatches(batchResult.data);
-            setBatchMeta(batchResult.meta);
-            setEvents(eventResult.data);
-            setEventMeta(eventResult.meta);
-          }
-        })
-        .catch((fetchError: unknown) => {
-          if (!cancelled) {
-            setBatches([]);
-            setEvents([]);
-            setBatchMeta({});
-            setEventMeta({});
-            setHistoryError(fetchError);
-          }
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    activeTab,
-    batchPage,
-    batchPerPage,
-    codePage,
-    codePerPage,
-    eventPage,
-    eventPerPage,
-    reloadKey,
-  ]);
 
   const submitScan = useCallback(async () => {
     const rawCode = scanValue.trim();
@@ -598,9 +562,11 @@ export default function PhysicalCodesPage() {
     {
       key: "drilldown",
       header: t("scan.physical.colDetail"),
+      isAction: true,
+      width: 80,
       align: "center",
       render: (row) => (
-        <ActionButton
+        <RowActionButton
           kind="view"
           label={t("scan.physical.viewLines")}
           onClick={() => {
@@ -742,13 +708,13 @@ export default function PhysicalCodesPage() {
           <InlineApiError
             error={listError}
             title={t("scan.physical.listLoadFailed")}
-            onRetry={() => setReloadKey((value) => value + 1)}
+            onRetry={refreshReads}
           />
           <ResponsiveDataTable
             columns={codeColumns}
             rows={filteredCodes}
             rowKey={(row) => row.id}
-            loading={loading}
+            loading={codesQuery.isLoading}
             emptyText={tableEmptyText(
               listError,
               codeSearch.trim()
@@ -880,7 +846,7 @@ export default function PhysicalCodesPage() {
           <InlineApiError
             error={historyError}
             title={t("scan.physical.historyLoadFailed")}
-            onRetry={() => setReloadKey((value) => value + 1)}
+            onRetry={refreshReads}
           />
           <Stack
             direction="row"
@@ -919,7 +885,7 @@ export default function PhysicalCodesPage() {
             columns={batchColumns}
             rows={filteredBatches}
             rowKey={(row) => row.id}
-            loading={loading}
+            loading={batchesQuery.isLoading}
             emptyText={tableEmptyText(
               historyError,
               normalizedBatchSearch
@@ -1008,7 +974,7 @@ export default function PhysicalCodesPage() {
             columns={eventColumns}
             rows={filteredEvents}
             rowKey={(row) => row.id}
-            loading={loading}
+            loading={eventsQuery.isLoading}
             emptyText={tableEmptyText(
               historyError,
               normalizedEventSearch
@@ -1055,7 +1021,7 @@ export default function PhysicalCodesPage() {
           setIssueModalOpen(false);
           setActiveTab("list");
           setCodePage(1);
-          setReloadKey((value) => value + 1);
+          refreshReads();
         }}
       />
     </Box>

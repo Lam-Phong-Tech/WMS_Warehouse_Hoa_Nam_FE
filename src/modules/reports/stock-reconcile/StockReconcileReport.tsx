@@ -1,16 +1,20 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { ReportExportButton } from "../components/ReportExportAction";
+import { ReportFilterCombobox } from "../components/ReportFilterCombobox";
+import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
-import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { RowActionButton } from "@/shared/components/actions";
 import {
   hasAnyWmsPermission,
   WMS_ACTION_PERMISSIONS,
 } from "@/shared/constants/wms-permissions";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { UiSelect, VuexyDemoIcon } from "@/shared/ui";
+import { VuexyDemoIcon } from "@/shared/ui";
 import {
   ISO_DATE,
   sumRows,
@@ -29,11 +33,10 @@ import {
   type StockReconcileRow,
 } from "./stock-reconcile-api";
 import "./stock-reconcile-report.css";
-import { tStatic as tUi } from "@/shared/i18n/useT";
+import { tStatic as tUi, useT } from "@/shared/i18n/useT";
 
 type DateRange = { from: string; to: string };
 type Filters = DateRange & {
-  warehouse: string;
   kind: string;
   reconcile: string;
 };
@@ -69,17 +72,15 @@ function reconcileState(
   return "review";
 }
 
-const PAGE_SIZE = 9;
-
 function defaultRange(): DateRange {
   return {
-    from: dayjs().subtract(6, "day").format(ISO_DATE),
-    to: dayjs().format(ISO_DATE),
+    from: businessToday().subtract(6, "day").format(ISO_DATE),
+    to: businessToday().format(ISO_DATE),
   };
 }
 
 function defaultFilters(): Filters {
-  return { ...defaultRange(), warehouse: "", kind: "", reconcile: "" };
+  return { ...defaultRange(), kind: "", reconcile: "" };
 }
 
 function scrollOwnerOf(element: HTMLElement | null): HTMLElement | null {
@@ -655,12 +656,14 @@ function MovementChart({ points }: { points: FlowDailyPoint[] }) {
 }
 
 export default function StockReconcileReport() {
+  const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
   const [draft, setDraft] = useState<Filters>(defaultFilters);
   const [applied, setApplied] = useState<Filters>(defaultFilters);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [detailTab, setDetailTab] = useState<"reconcile" | "flow">("reconcile");
   const [onlyReview, setOnlyReview] = useState(false);
   const [expanded, setExpanded] = useState({
@@ -706,37 +709,20 @@ export default function StockReconcileReport() {
     scrollReportToTop(pageRef.current);
   }, [location.key]);
 
-  const warehouseOptions = useMemo(() => {
-    const values = new Set<string>();
-    flow.snapshot.rows.forEach(
-      (row) => row.warehouse_code && values.add(row.warehouse_code),
-    );
-    reconciliation.snapshot.rows.forEach(
-      (row) => row.warehouse_code && values.add(row.warehouse_code),
-    );
-    return [...values].sort((left, right) => left.localeCompare(right, "vi"));
-  }, [flow.snapshot.rows, reconciliation.snapshot.rows]);
-
   const scopedFlowRows = useMemo(
     () =>
       flow.snapshot.rows.filter(
-        (row) =>
-          (applied.warehouse === "" ||
-            row.warehouse_code === applied.warehouse) &&
-          (applied.kind === "" || row.sku_type === applied.kind),
+        (row) => applied.kind === "" || row.sku_type === applied.kind,
       ),
-    [applied.kind, applied.warehouse, flow.snapshot.rows],
+    [applied.kind, flow.snapshot.rows],
   );
 
   const scopedReconciliationRows = useMemo(
     () =>
       reconciliation.snapshot.rows.filter(
-        (row) =>
-          (applied.warehouse === "" ||
-            row.warehouse_code === applied.warehouse) &&
-          (applied.kind === "" || row.item_kind === applied.kind),
+        (row) => applied.kind === "" || row.item_kind === applied.kind,
       ),
-    [applied.kind, applied.warehouse, reconciliation.snapshot.rows],
+    [applied.kind, reconciliation.snapshot.rows],
   );
 
   const allRows = useMemo(
@@ -786,18 +772,19 @@ export default function StockReconcileReport() {
   const systemTotal = allRows.reduce((sum, row) => sum + row.ledgerStock, 0);
   const actualTotal = allRows.reduce((sum, row) => sum + row.actual, 0);
   const deltaTotal = actualTotal - systemTotal;
-  const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(displayRows.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const visibleRows = displayRows.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
   );
 
-  const applyFilters = () => {
-    if (invalidRange) return;
-    setApplied({ ...draft });
+  const updateFilters = (changes: Partial<Filters>) => {
+    const next = { ...draft, ...changes };
+    setDraft(next);
+    if (!next.from || !next.to || next.from > next.to) return;
+    setApplied(next);
     setPage(1);
-    setShowSuccess(true);
   };
 
   const resetFilters = () => {
@@ -835,39 +822,8 @@ export default function StockReconcileReport() {
   const home = () => navigate(ROUTES.DASHBOARD);
   const fatal = status === 403 || status === 404 || status === 503;
 
-  if (selectedEvidence) {
-    return (
-      <StockReconcileDrilldown
-        row={selectedEvidence}
-        range={{ from: applied.from, to: applied.to }}
-        asOf={reconciliation.snapshot.as_of}
-        view={detailView}
-        canExport={canExport}
-        onViewChange={setDetailView}
-        onBack={() => setSelectedEvidence(null)}
-        onOpenInventory={() => navigate(ROUTES.INVENTORY)}
-        onOpenTrace={() => navigate(ROUTES.REPORTS_TRACEABILITY)}
-      />
-    );
-  }
-
   return (
     <main className="hn-rpt02" ref={pageRef}>
-      <nav className="rpt02-breadcrumb" aria-label="Breadcrumb">
-        <button
-          type="button"
-          onClick={() => navigate(ROUTES.REPORTS_INVENTORY_FLOW)}
-        >
-          {tUi("reports.traceability.breadcrumbReports")}
-        </button>
-        <span>/</span>
-        <strong>
-          {status === 404
-            ? tUi("updatedUi.text_438e5cde4a92")
-            : tUi("reports.stockReconcileReport.breadcrumbCurrent")}
-        </strong>
-      </nav>
-
       {fatal ? (
         <EmptyState
           icon={
@@ -915,24 +871,18 @@ export default function StockReconcileReport() {
               </h1>
               <p>{tUi("updatedUi.text_cf3ca15cba35")}</p>
             </div>
-            <div className="rpt02-heading__actions hn-report-warehouse-actions">
+            <div className="rpt02-heading__actions">
               <span
                 className="rpt02-tooltip"
                 data-tooltip={
                   !canExport ? tUi("updatedUi.text_b363686f3815") : undefined
                 }
               >
-                <button
-                  type="button"
-                  className="rpt02-export"
+                <ReportExportButton
                   onClick={() => setShowExport(true)}
-                  disabled={!canExport || filteredRows.length === 0 || updating}
-                >
-                  <Icon name="arrow-right" />
-                  {" " + tUi("updatedUi.text_869645273267")}
-                </button>
+                  disabled={!canExport || displayRows.length === 0 || updating}
+                />
               </span>
-              <ReportWarehouseCard />
             </div>
           </header>
 
@@ -969,77 +919,67 @@ export default function StockReconcileReport() {
             className="rpt02-filter"
             aria-label={tUi("reports.recipientAgency.filterTitle")}
           >
-            <label
+            <div
               className={`rpt02-field rpt02-field--date${invalidRange ? " is-invalid" : ""}`}
             >
-              <span>{tUi("reports.packingLabel.dateRangeLabel")}</span>
               <ReportDateRangePicker
-                className="rpt02-date-range"
                 popupClassName="rpt02-date-popup"
                 value={datePickerValue(draft)}
                 onChange={(value) =>
-                  setDraft((current) => ({
-                    ...current,
+                  updateFilters({
                     from: value?.[0]?.format(ISO_DATE) ?? "",
                     to: value?.[1]?.format(ISO_DATE) ?? "",
-                  }))
+                  })
                 }
-                maxDate={dayjs().startOf("day")}
+                maxDate={businessToday().startOf("day")}
                 aria-label={tUi("updatedUi.text_27bfb01971ac")}
                 disabled={updating || refreshing}
               />
               {invalidRange ? (
                 <small>{tUi("updatedUi.text_3e650f641d98")}</small>
               ) : null}
-            </label>
-
-            <div className="rpt02-field">
-              <span>{tUi("updatedUi.text_19c608bfa103")}</span>
-              <UiSelect
-                fullWidth
-                aria-label={tUi("updatedUi.text_19c608bfa103")}
-                value={draft.warehouse}
-                placeholder={tUi("reports.inventoryFlow.warehouseAll")}
-                options={warehouseOptions.map((warehouse) => ({
-                  value: warehouse,
-                  label: warehouse,
-                }))}
-                onChange={(warehouse) =>
-                  setDraft((current) => ({ ...current, warehouse }))
-                }
-                disabled={updating || refreshing}
-              />
             </div>
 
-            <div className="rpt02-field">
-              <span>{tUi("updatedUi.text_4967fc6e0793")}</span>
-              <UiSelect
-                fullWidth
-                aria-label={tUi("updatedUi.text_4967fc6e0793")}
+            <div className="rpt02-field rpt02-field--kind">
+              <ReportFilterCombobox
+                id="rpt02-kind"
                 value={draft.kind}
-                placeholder={tUi("reports.stockReconcile.categoryAll")}
+                ariaLabel="Chọn nhóm hàng / SKU"
+                icon="package-search"
+                searchPlaceholder="Tìm nhóm hàng..."
                 options={[
+                  {
+                    value: "",
+                    label:
+                      tUi("updatedUi.text_4967fc6e0793") +
+                      ": " +
+                      tUi("reports.stockReconcile.categoryAll"),
+                  },
                   { value: "PRODUCT", label: tUi("dashboard.skuType.product") },
                   {
                     value: "COMPONENT",
                     label: tUi("dashboard.skuType.component"),
                   },
                 ]}
-                onChange={(kind) =>
-                  setDraft((current) => ({ ...current, kind }))
-                }
+                onChange={(kind) => updateFilters({ kind })}
                 disabled={updating || refreshing}
               />
             </div>
-
-            <div className="rpt02-field">
-              <span>{tUi("dashboard.equation.statusLabel")}</span>
-              <UiSelect
-                fullWidth
-                aria-label={tUi("dashboard.equation.statusLabel")}
+            <div className="rpt02-field rpt02-field--status">
+              <ReportFilterCombobox
+                id="rpt02-status"
                 value={draft.reconcile}
-                placeholder={tUi("reports.inventoryFlow.statusAll")}
+                ariaLabel="Chọn trạng thái đối soát"
+                icon="file-clock"
+                searchPlaceholder="Tìm trạng thái..."
                 options={[
+                  {
+                    value: "",
+                    label:
+                      tUi("dashboard.equation.statusLabel") +
+                      ": " +
+                      tUi("reports.inventoryFlow.statusAll"),
+                  },
                   {
                     value: "MATCH",
                     label: tUi("reports.inventoryFlowReport.matched"),
@@ -1049,40 +989,10 @@ export default function StockReconcileReport() {
                     label: tUi("reports.traceability.needsReview"),
                   },
                 ]}
-                onChange={(reconcile) =>
-                  setDraft((current) => ({ ...current, reconcile }))
-                }
+                onChange={(reconcile) => updateFilters({ reconcile })}
                 disabled={updating || refreshing}
               />
             </div>
-
-            <div className="rpt02-filter__actions">
-              <button
-                className="rpt02-button rpt02-button--primary"
-                type="button"
-                onClick={applyFilters}
-                disabled={invalidRange || updating || refreshing}
-              >
-                <Icon name={refreshing ? "loader-circle" : "search"} />
-                {tUi("dashboard.snapshot.apply")}
-              </button>
-              <button
-                className="rpt02-button rpt02-button--ghost"
-                type="button"
-                onClick={resetFilters}
-                disabled={updating || refreshing}
-              >
-                {tUi("reports.packingLabel.reset")}
-              </button>
-            </div>
-            <p className="rpt02-filter__note">
-              <Icon name="file-clock" />
-              {Math.max(
-                1,
-                dayjs(applied.to).diff(dayjs(applied.from), "day") + 1,
-              )}{" "}
-              {tUi("updatedUi.text_a0b12849189a")}
-            </p>
           </section>
 
           {loading ? (
@@ -1143,42 +1053,42 @@ export default function StockReconcileReport() {
                 <KpiCard
                   label={tUi("dashboard.equation.opening")}
                   value={quantity(summary.opening)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="box"
                   tone="blue"
                 />
                 <KpiCard
                   label={tUi("updatedUi.text_1993e3247f11")}
                   value={signed(summary.receiptNet)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="down"
                   tone="green"
                 />
                 <KpiCard
                   label={tUi("dashboard.equation.issueProduct")}
                   value={signed(-summary.issueNet)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="up"
                   tone="red"
                 />
                 <KpiCard
                   label={tUi("updatedUi.text_6d28e3f5d88a")}
                   value={signed(-summary.componentNet)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="wrench"
                   tone="orange"
                 />
                 <KpiCard
                   label={tUi("iam.role.undo")}
                   value={signed(summary.reversalUnlinked)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="undo"
                   tone="green"
                 />
                 <KpiCard
                   label={tUi("dashboard.equation.closing")}
                   value={quantity(summary.closing)}
-                  note="Sản phẩm"
+                  note={t("dashboard.skuType.product")}
                   icon="boxes"
                   tone="blue"
                 />
@@ -1510,10 +1420,42 @@ export default function StockReconcileReport() {
                       ) : (
                         <>
                           <div className="rpt02-table-scroll">
-                            <table className="report-table">
+                            <table
+                              className="report-table"
+                              data-detail-tab={detailTab}
+                            >
+                              <colgroup>
+                                {/* Keep status/actions compact; widths total 100%. */}
+                                {(detailTab === "reconcile"
+                                  ? [
+                                      "6%",
+                                      "calc(50% - 240px)",
+                                      "14%",
+                                      "16%",
+                                      "14%",
+                                      "160px",
+                                      "80px",
+                                    ]
+                                  : [
+                                      "6%",
+                                      "28%",
+                                      "11%",
+                                      "10%",
+                                      "11%",
+                                      "12%",
+                                      "11%",
+                                      "11%",
+                                    ]
+                                ).map((width, index) => (
+                                  <col key={index} style={{ width }} />
+                                ))}
+                              </colgroup>
                               <thead>
                                 {detailTab === "reconcile" ? (
                                   <tr>
+                                    <th className="rpt02-stt" scope="col">
+                                      STT
+                                    </th>
                                     <th>
                                       SKU / {tUi("inventory.balance.colName")}
                                     </th>
@@ -1541,6 +1483,9 @@ export default function StockReconcileReport() {
                                   </tr>
                                 ) : (
                                   <tr>
+                                    <th className="rpt02-stt" scope="col">
+                                      STT
+                                    </th>
                                     <th>
                                       SKU / {tUi("inventory.balance.colName")}
                                     </th>
@@ -1567,7 +1512,7 @@ export default function StockReconcileReport() {
                               </thead>
                               <tbody>
                                 {detailTab === "reconcile"
-                                  ? visibleRows.map((row) => {
+                                  ? visibleRows.map((row, index) => {
                                       const state = reconcileState(row);
                                       const label =
                                         state === "quantity"
@@ -1587,14 +1532,29 @@ export default function StockReconcileReport() {
                                                 );
                                       return (
                                         <tr key={row.key}>
+                                          <td className="rpt02-stt">
+                                            {(currentPage - 1) * pageSize +
+                                              index +
+                                              1}
+                                          </td>
                                           <td className="rpt02-sku-cell">
-                                            <strong>{row.skuCode}</strong>
-                                            <small>
-                                              {row.skuName ||
-                                                tUi(
-                                                  "updatedUi.text_056cae173528",
-                                                )}
-                                            </small>
+                                            <div className="rpt02-sku-identity">
+                                              <span
+                                                className="rpt02-sku-icon"
+                                                aria-hidden="true"
+                                              >
+                                                <Icon name="package-search" />
+                                              </span>
+                                              <div>
+                                                <strong>{row.skuCode}</strong>
+                                                <small>
+                                                  {row.skuName ||
+                                                    tUi(
+                                                      "updatedUi.text_056cae173528",
+                                                    )}
+                                                </small>
+                                              </div>
+                                            </div>
                                           </td>
                                           <td className="num">
                                             {quantity(row.ledgerStock)}
@@ -1623,8 +1583,8 @@ export default function StockReconcileReport() {
                                             ) : null}
                                           </td>
                                           <td className="rpt02-row-open">
-                                            <button
-                                              type="button"
+                                            <RowActionButton
+                                              kind="view"
                                               className="rpt02-evidence-link"
                                               aria-label={`Xem bằng chứng ${row.skuCode}`}
                                               onClick={() => {
@@ -1635,32 +1595,45 @@ export default function StockReconcileReport() {
                                                 );
                                                 setSelectedEvidence(row);
                                               }}
-                                            >
-                                              <Icon name="chevron-right" />
-                                            </button>
+                                            />
                                           </td>
                                         </tr>
                                       );
                                     })
-                                  : visibleRows.map((row) => (
+                                  : visibleRows.map((row, index) => (
                                       <tr key={row.key}>
+                                        <td className="rpt02-stt">
+                                          {(currentPage - 1) * pageSize +
+                                            index +
+                                            1}
+                                        </td>
                                         <td className="rpt02-sku-cell">
-                                          <button
-                                            type="button"
-                                            className="rpt02-flow-sku-link"
-                                            onClick={() => {
-                                              setDetailView("flow");
-                                              setSelectedEvidence(row);
-                                            }}
-                                          >
-                                            {row.skuCode}
-                                          </button>
-                                          <small>
-                                            {row.skuName ||
-                                              tUi(
-                                                "updatedUi.text_056cae173528",
-                                              )}
-                                          </small>
+                                          <div className="rpt02-sku-identity">
+                                            <span
+                                              className="rpt02-sku-icon"
+                                              aria-hidden="true"
+                                            >
+                                              <Icon name="package-search" />
+                                            </span>
+                                            <div>
+                                              <button
+                                                type="button"
+                                                className="rpt02-flow-sku-link"
+                                                onClick={() => {
+                                                  setDetailView("flow");
+                                                  setSelectedEvidence(row);
+                                                }}
+                                              >
+                                                {row.skuCode}
+                                              </button>
+                                              <small>
+                                                {row.skuName ||
+                                                  tUi(
+                                                    "updatedUi.text_056cae173528",
+                                                  )}
+                                              </small>
+                                            </div>
+                                          </div>
                                         </td>
                                         <td className="num">
                                           {quantity(row.opening)}
@@ -1688,7 +1661,7 @@ export default function StockReconcileReport() {
                               {detailTab === "flow" ? (
                                 <tfoot>
                                   <tr>
-                                    <th scope="row">
+                                    <th scope="row" colSpan={2}>
                                       {tUi(
                                         "reports.stockReconcileReport.totalRow",
                                       )}
@@ -1717,15 +1690,37 @@ export default function StockReconcileReport() {
                             </table>
                           </div>
                           <footer className="rpt02-pagination hn-report-pagination-footer">
-                            <span>
-                              {tUi("putaway.queue.showing") + " "}
-                              {(currentPage - 1) * PAGE_SIZE + 1}–
-                              {Math.min(
-                                currentPage * PAGE_SIZE,
-                                displayRows.length,
-                              )}{" "}
-                              trong {displayRows.length} SKU
-                            </span>
+                            <div className="rpt02-pagination-summary">
+                              <span>
+                                {tUi("putaway.queue.showing") + " "}
+                                {(currentPage - 1) * pageSize + 1}–
+                                {Math.min(
+                                  currentPage * pageSize,
+                                  displayRows.length,
+                                )}{" "}
+                                / {displayRows.length} SKU
+                              </span>
+                              <label className="rpt02-page-size">
+                                <select
+                                  value={pageSize}
+                                  aria-label={tUi(
+                                    "shared.table.rowsPerPageAria",
+                                  )}
+                                  onChange={(event) => {
+                                    setPageSize(Number(event.target.value));
+                                    setPage(1);
+                                  }}
+                                >
+                                  {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
+                                    <option key={size} value={size}>
+                                      {tUi("shared.table.perPage", {
+                                        size: String(size),
+                                      })}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            </div>
                             <div className="hn-report-pagination">
                               <button
                                 type="button"
@@ -1739,9 +1734,35 @@ export default function StockReconcileReport() {
                               >
                                 <Icon name="chevron-left" />
                               </button>
-                              <span>
-                                Trang {currentPage} / {totalPages}
-                              </span>
+                              {Array.from(
+                                { length: Math.min(3, totalPages) },
+                                (_, index) => {
+                                  const first = Math.min(
+                                    Math.max(currentPage - 1, 1),
+                                    Math.max(1, totalPages - 2),
+                                  );
+                                  const number = first + index;
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={number}
+                                      aria-current={
+                                        number === currentPage
+                                          ? "page"
+                                          : undefined
+                                      }
+                                      className={
+                                        number === currentPage
+                                          ? "is-active"
+                                          : undefined
+                                      }
+                                      onClick={() => setPage(number)}
+                                    >
+                                      {number}
+                                    </button>
+                                  );
+                                },
+                              )}
                               <button
                                 type="button"
                                 aria-label="Trang sau"
@@ -1768,11 +1789,25 @@ export default function StockReconcileReport() {
       )}
       {showExport ? (
         <StockReconcileExportDialog
-          rows={filteredRows}
+          rows={displayRows}
+          pageRows={visibleRows}
           from={applied.from}
           to={applied.to}
           asOf={reconciliation.snapshot.as_of}
           onClose={() => setShowExport(false)}
+        />
+      ) : null}
+      {selectedEvidence ? (
+        <StockReconcileDrilldown
+          row={selectedEvidence}
+          range={{ from: applied.from, to: applied.to }}
+          asOf={reconciliation.snapshot.as_of}
+          view={detailView}
+          canExport={canExport}
+          onViewChange={setDetailView}
+          onBack={() => setSelectedEvidence(null)}
+          onOpenInventory={() => navigate(ROUTES.INVENTORY)}
+          onOpenTrace={() => navigate(ROUTES.REPORTS_TRACEABILITY)}
         />
       ) : null}
     </main>

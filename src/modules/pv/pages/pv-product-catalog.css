@@ -329,7 +329,8 @@
 
 .pv-catalog-filters {
   display: grid;
-  grid-template-columns: minmax(260px, 2fr) repeat(2, minmax(190px, 1fr)) auto;
+  grid-template-columns:
+    minmax(260px, 2fr) minmax(260px, 1fr) minmax(190px, 1fr) auto;
   align-items: center;
   gap: 12px;
   min-width: 0;
@@ -492,8 +493,8 @@
 }
 .pv-catalog-page .pv-catalog-table thead th {
   padding: 12px 18px;
-  color: var(--pv-muted);
-  background-color: #d2edf7;
+  color: var(--ops-heading);
+  background-color: var(--ops-table-header);
   background-image: none;
   border-bottom-color: var(--pv-line);
   font-size: 16px;
@@ -503,7 +504,7 @@
   text-transform: uppercase;
 }
 .pv-catalog-page .pv-catalog-table thead th button {
-  color: var(--pv-muted);
+  color: inherit;
   font: inherit;
 }
 .pv-catalog-page .pv-catalog-table tbody td {
@@ -538,7 +539,7 @@
   cursor: pointer;
 }
 .pv-catalog-detail-link:is(:hover, :focus-visible) {
-  background: #dff0f7;
+  background: var(--ops-pale);
 }
 .pv-catalog-detail-link:disabled {
   opacity: 0.5;
@@ -846,9 +847,10 @@
   border: 1px solid var(--pv-line);
   border-radius: var(--ops-radius-card);
   background: var(--pv-card);
-  color: var(--pv-blue);
+  color: var(--pv-heading);
 }
 .pv-catalog-menu .MuiMenuItem-root {
+  color: var(--pv-heading);
   min-height: var(--ops-control-height);
   font-size: 14px;
 }
@@ -1140,9 +1142,9 @@ body:has(.pv-catalog-page [role="combobox"][aria-expanded="true"])
 body:has(.pv-catalog-dialog [role="combobox"][aria-expanded="true"])
   .MuiAutocomplete-popper,
 body:has(.pv-catalog-pagination [aria-expanded="true"]) .MuiMenu-paper {
-  --pv-popover-blue: light-dark(var(--wms-auth-link), var(--wms-info-text));
-  --pv-popover-pale: light-dark(var(--wms-auth-pale), var(--wms-info-soft));
-  color: var(--pv-popover-blue);
+  --pv-popover-ink: var(--ops-heading);
+  --pv-popover-pale: var(--ops-pale);
+  color: var(--pv-popover-ink);
 }
 body:has(.pv-catalog-page [role="combobox"][aria-expanded="true"])
   .MuiAutocomplete-popper

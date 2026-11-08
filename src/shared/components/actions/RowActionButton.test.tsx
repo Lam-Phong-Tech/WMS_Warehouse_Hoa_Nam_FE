@@ -10,13 +10,30 @@ describe("RowActionButton", () => {
     useAuthStore.setState({ permissionCodes: [], isSuperAdmin: false });
   });
 
-  it("keeps view text and a decorative chevron with one accessible name", () => {
+  it("shows a single right arrow while keeping the detail name accessible", () => {
     render(<RowActionButton kind="view" label="Xem SKU" />);
     const button = screen.getByRole("button", { name: "Xem SKU" });
-    expect(button).toHaveTextContent("Xem SKU");
+    expect(button).not.toHaveTextContent("Xem SKU");
+    expect(button).toHaveAttribute("title", "Xem SKU");
     expect(
-      button.querySelector('.MuiButton-endIcon [aria-hidden="true"]'),
-    ).toHaveTextContent("›");
+      button.querySelector('.fi-rr-arrow-right[aria-hidden="true"]'),
+    ).not.toBeNull();
+    expect(button.querySelector(".MuiButton-endIcon")).toBeNull();
+    expect(button).toHaveStyle({ width: "40px" });
+    expect(getComputedStyle(button).backgroundColor).toMatch(
+      /^(transparent|rgba\(0, 0, 0, 0\))$/,
+    );
+  });
+
+  it("keeps detail actions arrow-only even when a caller requested a label", () => {
+    render(
+      <RowActionButton kind="detail" iconOnly={false}>
+        Chi tiết phiếu PX-01
+      </RowActionButton>,
+    );
+    const button = screen.getByRole("button", { name: "Chi tiết phiếu PX-01" });
+    expect(button).not.toHaveTextContent("Chi tiết phiếu PX-01");
+    expect(button.querySelector(".fi-rr-arrow-right")).not.toBeNull();
   });
 
   it("uses the action label as the name and tooltip of compact icon buttons", () => {

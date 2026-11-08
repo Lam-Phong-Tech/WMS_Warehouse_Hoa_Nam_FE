@@ -1,11 +1,21 @@
 export type InboundStatus = "DRAFT" | "SCANNING" | "POSTED" | "CANCELLED";
 
+export interface InboundSupplier {
+  id: string;
+  code: string | null;
+  name: string;
+  displayName: string;
+  status: "ACTIVE" | "INACTIVE";
+  version: number;
+}
+
 export interface InboundDocument {
   id: string;
   code: string;
   source: string;
   date: string;
   warehouseId: string;
+  supplierId?: string;
   /** Under the GĐ1 scan-driven contract this mirrors actual scanned quantity. */
   expected: number;
   scanned: number;
@@ -82,6 +92,7 @@ export interface CompleteInboundLineSkuResult {
 
 export interface InboundDetail {
   document: InboundDocument & { version: number };
+  supplier?: InboundSupplier | null;
   lines: InboundLine[];
   statusHistory: Array<{
     id: string;
@@ -111,6 +122,7 @@ export interface CreateInboundPayload {
   doc_date?: string | null;
   dst_warehouse_id: string;
   source_reference?: string | null;
+  supplier_id?: string | null;
   note?: string | null;
   /** Canonical GĐ1 create is header-only. */
   lines?: InboundLinePayload[];
@@ -120,6 +132,7 @@ export interface UpdateInboundPayload {
   doc_no?: string | null;
   doc_date?: string | null;
   source_reference?: string | null;
+  supplier_id?: string | null;
   note?: string | null;
   /** Canonical GĐ1 update never edits expected lines. */
   lines?: InboundLinePayload[];

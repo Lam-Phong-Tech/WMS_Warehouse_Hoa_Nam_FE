@@ -1,3 +1,4 @@
+import { parseDateTime } from "@/shared/utils/date-time";
 /**
  * MÀN "TỔNG QUAN VẬN HÀNH" (MAP-01) — dựng theo demo UI/UX đã chốt
  * `10.WMS_Hoa_Nam_Trang_Tong_Quan.html`: cùng cấu trúc khối, cùng class, cùng
@@ -12,10 +13,14 @@
  *    thái tương ứng thay vì thay bằng 0.
  */
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { ROUTES } from "@/shared/constants/routes";
+import {
+  ROUTES,
+  SKU_PENDING_INFO_ROUTE,
+  WARRANTY_OVERDUE_ROUTE,
+} from "@/shared/constants/routes";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT } from "@/shared/i18n/useT";
 import { checkDate, pastDateBounds } from "@/shared/validation/date-rules";
@@ -153,8 +158,7 @@ export default function DashboardPage() {
   const referenceView: DashboardSystemView | null =
     requestedView === "work" ||
     requestedView === "stock" ||
-    requestedView === "thresholds" ||
-    requestedView === "transaction"
+    requestedView === "thresholds"
       ? requestedView
       : null;
 
@@ -201,12 +205,10 @@ export default function DashboardPage() {
   const { overview, xnt, xntDaily, quick, hasPrevious } = useOverviewSource(
     dashboardRange,
     enabled,
-    !offline,
   );
   const chartSource = useOverviewChartSource(
     range,
     enabled && isMapReferenceScreen && referenceView === null,
-    !offline,
   );
 
   // Vùng aria-live: mỗi thao tác đổi dữ liệu được xướng thành lời.
@@ -245,27 +247,7 @@ export default function DashboardPage() {
       ? t("dashboard.alert.failedRange")
       : t("dashboard.alert.failed");
 
-  /**
-   * "Đang bận" tính trên CẢ BỐN nguồn, không riêng nguồn chính.
-   *
-   * Bản trước chỉ nhìn `overview.isFetching`: nút Làm mới sáng lại ngay khi
-   * nguồn chính về, trong lúc ba nguồn kia còn đang bay — bấm phát nữa là nhân
-   * đôi request.
-   */
-  const busy =
-    overview.isFetching ||
-    xnt.isFetching ||
-    xntDaily.isFetching ||
-    quick.isFetching;
-
-  /**
-   * Làm mới thủ công phải NHÌN THẤY được. Bản trước chỉ hiện banner "Đang thử
-   * lại" khi đã có lỗi từ trước, nên bấm Làm mới trên trang khoẻ mạnh thì
-   * ngoài việc nút xám đi là không có phản hồi nào.
-   *
-   * Vòng tự làm mới 60 giây thì KHÔNG hiện banner — nó chạy ngầm, nhấp nháy
-   * mỗi phút chỉ gây nhiễu.
-   */
+  // Recovery requests expose progress; shell-driven background reads stay quiet.
   const [manualRefresh, setManualRefresh] = useState(false);
   const retrying = (overview.isError && overview.isFetching) || manualRefresh;
 
@@ -452,7 +434,7 @@ export default function DashboardPage() {
               detail: t("dashboard.issue.warrantyDetail", { count: overdue }),
               technical: "Active / overdue",
               count: source.warranty_overdue,
-              route: ROUTES.WARRANTY,
+              route: WARRANTY_OVERDUE_ROUTE,
             },
           ]
         : []),
@@ -481,7 +463,7 @@ export default function DashboardPage() {
         detail: t("dashboard.issue.skuDetail"),
         technical: "PENDING_ENRICHMENT / no PII",
         count: source.sku_pending_info,
-        route: ROUTES.MASTER_DATA,
+        route: SKU_PENDING_INFO_ROUTE,
       },
     ];
     // Demo chỉ liệt kê việc CÓ số lượng — không dựng dòng rỗng cho vui mắt.
@@ -507,7 +489,7 @@ export default function DashboardPage() {
           days: oldestOverdueDays(overviewData),
         }),
         action: t("dashboard.signal.warrantyAction"),
-        route: ROUTES.WARRANTY,
+        route: WARRANTY_OVERDUE_ROUTE,
       });
     const belowMin = quick.data?.below_min_stock_count ?? 0;
     if (belowMin > 0)
@@ -521,7 +503,7 @@ export default function DashboardPage() {
   }, [overviewData, quick.data, canViewWarranty, t]);
 
   const lastUpdatedAt = overview.dataUpdatedAt
-    ? dayjs(overview.dataUpdatedAt)
+    ? parseDateTime(overview.dataUpdatedAt)
     : null;
   const lastUpdatedLabel = lastUpdatedAt
     ? t("dashboard.lastUpdated.at", { time: lastUpdatedAt.format("HH:mm") })
@@ -716,7 +698,11 @@ export default function DashboardPage() {
           ...card,
           note:
             split && !xnt.isError
-              ? `${fmt(skuCounts.closing)} SKU có tồn · ${fmt(split.product)} SP · ${fmt(split.component)} LK`
+              ? t("dashboardSnapshot.stockContext", {
+                  skus: fmt(skuCounts.closing),
+                  products: fmt(split.product),
+                  components: fmt(split.component),
+                })
               : card.note,
         };
       }
@@ -724,18 +710,36 @@ export default function DashboardPage() {
         const split = overviewData.kpi.receipt_today;
         return {
           ...card,
-          note: `${fmt(split.product)} SP · ${fmt(split.component)} LK`,
+          note: t("dashboardSnapshot.receiptContext", {
+            products: fmt(split.product),
+            components: fmt(split.component),
+          }),
         };
       }
       return card;
     });
+
+  if (requestedView === "transaction") {
+    const search = new URLSearchParams(location.search);
+    search.delete("view");
+    search.delete("document");
+    return (
+      <Navigate
+        replace
+        to={{
+          pathname: location.pathname,
+          search: search.size ? `?${search.toString()}` : "",
+          hash: location.hash,
+        }}
+      />
+    );
+  }
 
   if (isMapReferenceScreen && referenceView)
     return (
       <div className="hn-dash" data-mvp-screen="MAP-01">
         <DashboardSystemViews
           view={referenceView}
-          documentId={mapSearchParams.get("document") ?? undefined}
           overview={overviewData}
           showWarranty={canViewWarranty}
           onNavigate={navigate}
@@ -763,7 +767,6 @@ export default function DashboardPage() {
           loading={loading}
           failed={failed}
           partial={partial}
-          dataUpdatedAt={overview.dataUpdatedAt}
           forbidden={forbidden}
           chartStateOverride={chartStateOverride}
           liveRecent
@@ -826,9 +829,6 @@ export default function DashboardPage() {
               dateError={dateError}
               type={type}
               onTypeChange={changeType}
-              lastUpdatedLabel={lastUpdatedLabel}
-              refreshing={busy || manualRefresh}
-              onRefresh={refreshAll}
             />
 
             {pageAlert ? (
@@ -837,7 +837,17 @@ export default function DashboardPage() {
                 role="status"
                 aria-live="polite"
               >
-                {pageAlert?.copy}
+                <span>{pageAlert.copy}</span>
+                {failed || partial ? (
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={refreshAll}
+                    disabled={manualRefresh}
+                  >
+                    {t("dashboard.filters.refresh")}
+                  </button>
+                ) : null}
               </div>
             ) : null}
 

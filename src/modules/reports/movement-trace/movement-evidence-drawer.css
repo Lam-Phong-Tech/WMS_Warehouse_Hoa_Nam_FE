@@ -1,0 +1,234 @@
+.movement-evidence-drawer .MuiDrawer-paper {
+  max-width: 100vw;
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+.movement-evidence-drawer [data-ui-drawer-body] {
+  container: movement-evidence / inline-size;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+.movement-evidence-heading {
+  display: grid;
+  position: relative;
+  min-width: 0;
+  padding-right: 52px;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+.movement-evidence-eyebrow {
+  color: var(--ops-muted);
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.movement-evidence-title {
+  color: var(--ops-heading);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+}
+.movement-evidence-number {
+  color: var(--ops-link);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.movement-evidence-caption {
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+}
+.movement-evidence-drawer .movement-evidence-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+}
+.movement-evidence-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(88px, auto);
+  gap: 20px 16px;
+  padding: 20px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-pale);
+  overflow-wrap: anywhere;
+}
+.movement-evidence-product {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+.movement-evidence-product > div {
+  min-width: 0;
+}
+.movement-evidence-product-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-link);
+  font-size: 20px;
+}
+.movement-evidence-label {
+  display: block;
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+}
+.movement-evidence-product strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--ops-heading);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+}
+.movement-evidence-product p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+}
+.movement-evidence-delta {
+  min-width: 0;
+  padding-left: 16px;
+  border-left: 1px solid var(--ops-line);
+  text-align: right;
+}
+.movement-evidence-delta strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.movement-evidence-delta[data-delta-tone="increase"] strong {
+  color: var(--ops-success);
+}
+.movement-evidence-delta[data-delta-tone="decrease"] strong {
+  color: var(--ops-danger);
+}
+.movement-evidence-delta[data-delta-tone="neutral"] strong {
+  color: var(--ops-muted);
+}
+.movement-evidence-stock {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--ops-line);
+}
+.movement-evidence-field {
+  min-width: 0;
+}
+.movement-evidence-field dt {
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.movement-evidence-field dd {
+  min-width: 0;
+  margin: 6px 0 0;
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.movement-evidence-details {
+  margin-top: 24px;
+}
+.movement-evidence-details h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  color: var(--ops-heading);
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 700;
+}
+.movement-evidence-details h3 > span {
+  color: var(--ops-link);
+}
+.movement-evidence-details dl {
+  margin: 0;
+}
+.movement-evidence-details .movement-evidence-field {
+  display: grid;
+  grid-template-columns: minmax(0, 140px) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--ops-line);
+}
+.movement-evidence-details dd {
+  margin: 0;
+}
+.movement-evidence-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 20px 0 0;
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.movement-evidence-drawer [data-ui-drawer-actions] {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.movement-evidence-drawer .movement-evidence-trace-action {
+  min-height: 44px;
+  white-space: normal;
+  background: var(--ops-primary);
+  color: var(--wms-on-primary);
+}
+.movement-evidence-drawer .movement-evidence-trace-action:hover {
+  background: var(--ops-primary-hover);
+}
+@container movement-evidence (max-width: 420px) {
+  .movement-evidence-summary {
+    padding: 16px;
+    gap: 16px 12px;
+  }
+  .movement-evidence-product-icon {
+    display: none;
+  }
+  .movement-evidence-details .movement-evidence-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 14px 0;
+  }
+}
+@container movement-evidence (max-width: 310px) {
+  .movement-evidence-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .movement-evidence-delta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--ops-line);
+    text-align: left;
+  }
+  .movement-evidence-delta strong {
+    margin-top: 0;
+  }
+  .movement-evidence-stock {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

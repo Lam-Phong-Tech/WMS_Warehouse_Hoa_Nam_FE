@@ -1,3 +1,5 @@
+import { businessToday } from "@/shared/utils/date-time";
+import { parseDateTime } from "@/shared/utils/date-time";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 /**
@@ -300,8 +302,8 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
    * (01/09 → 02/09 với `as_of` là 02/09).
    */
   const [range, setRange] = useState(() => ({
-    from: dayjs().subtract(1, "day").startOf("day"),
-    to: dayjs().startOf("day"),
+    from: businessToday().subtract(1, "day").startOf("day"),
+    to: businessToday().startOf("day"),
   }));
   const periodPresets = useMemo(() => reportRangePresets(t), [t]);
   const [query, setQuery] = useState("");
@@ -593,8 +595,8 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
    */
   const resetFilters = useCallback(() => {
     setRange({
-      from: dayjs().subtract(1, "day").startOf("day"),
-      to: dayjs().startOf("day"),
+      from: businessToday().subtract(1, "day").startOf("day"),
+      to: businessToday().startOf("day"),
     });
     setQuery("");
     setKind("all");
@@ -633,7 +635,7 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
     target.current?.focus();
   };
 
-  const asOf = snapshot.as_of === "" ? null : dayjs(snapshot.as_of);
+  const asOf = snapshot.as_of === "" ? null : parseDateTime(snapshot.as_of);
   const watermark =
     snapshot.source_watermark === ""
       ? null

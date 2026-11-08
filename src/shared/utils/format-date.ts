@@ -1,4 +1,12 @@
-import dayjs from "dayjs";
+import { useInterfacePreferencesStore } from "@/shared/store/interface-preferences.store";
+import { parseDateTime } from "./date-time";
+export {
+  BUSINESS_TIMEZONE,
+  businessToday,
+  getDisplayTimezone,
+  parseDateTime,
+  dateFilterBoundary,
+} from "./date-time";
 
 import { EMPTY_TEXT } from "@/shared/constants/display";
 
@@ -19,8 +27,13 @@ const DATE_TIME_FORMAT = "DD-MM-YYYY HH:mm";
  */
 export function formatDate(dateString?: string | null): string {
   if (!dateString) return EMPTY_TEXT;
-  const parsed = dayjs(dateString);
-  return parsed.isValid() ? parsed.format(DATE_FORMAT) : EMPTY_TEXT;
+  const parsed = parseDateTime(dateString);
+  return parsed.isValid()
+    ? parsed.format(
+        useInterfacePreferencesStore.getState().preferences?.date_format ??
+          DATE_FORMAT,
+      )
+    : EMPTY_TEXT;
 }
 
 /**
@@ -30,6 +43,11 @@ export function formatDate(dateString?: string | null): string {
  */
 export function formatDateTime(dateString?: string | null): string {
   if (!dateString) return EMPTY_TEXT;
-  const parsed = dayjs(dateString);
-  return parsed.isValid() ? parsed.format(DATE_TIME_FORMAT) : EMPTY_TEXT;
+  const preferences = useInterfacePreferencesStore.getState().preferences;
+  const parsed = parseDateTime(dateString);
+  return parsed.isValid()
+    ? parsed.format(
+        preferences ? `${preferences.date_format} HH:mm` : DATE_TIME_FORMAT,
+      )
+    : EMPTY_TEXT;
 }

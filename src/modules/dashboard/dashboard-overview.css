@@ -259,7 +259,7 @@
 /* ── filter card ────────────────────────────────────────────────────────── */
 .hn-dash .filter-card {
   display: grid;
-  grid-template-columns: minmax(390px, 1.45fr) minmax(280px, 1fr) auto;
+  grid-template-columns: minmax(390px, 1.45fr) minmax(280px, 1fr);
   align-items: end;
   gap: 16px 20px;
   margin-bottom: 20px;
@@ -272,7 +272,7 @@
 .hn-dash .filter-card:has(.custom-range) {
   grid-template-columns:
     minmax(300px, 1.15fr) minmax(320px, 1.05fr)
-    minmax(210px, 0.82fr) auto;
+    minmax(210px, 0.82fr);
   align-items: end;
 }
 .hn-dash .filter-group {
@@ -558,32 +558,6 @@
   font-size: 12.5px;
   line-height: 18px;
 }
-.hn-dash .refresh-block {
-  display: flex;
-  align-items: center;
-  justify-self: end;
-  gap: 12px;
-}
-.hn-dash .refresh-meta {
-  display: grid;
-  gap: 1px;
-  min-width: 154px;
-  padding-left: 12px;
-  border-left: 1px solid var(--line);
-}
-.hn-dash .refresh-meta small {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 18px;
-  white-space: nowrap;
-}
-.hn-dash .refresh-meta > span {
-  color: var(--ink);
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-  white-space: nowrap;
-}
 .hn-dash .button {
   display: inline-flex;
   align-items: center;
@@ -620,6 +594,11 @@
   color: var(--ink);
 }
 .hn-dash .page-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 0 0 24px;
   padding: 12px 16px;
   border-left: 4px solid var(--amber);
@@ -2247,10 +2226,7 @@
 }
 
 /* ── responsive (giữ nguyên các mốc của demo) ───────────────────────────── */
-/* Nội dung 820–1139px (laptop có sidebar mở, iPad ngang…): thẻ lọc về
-   2 cột và khối Làm mới xuống hàng riêng — bố cục 3 cột nội tuyến của desktop
-   cần ~1048px (Kỳ KPI 390 + Loại hàng 280 + Làm mới ~298 + gap/padding) nên
-   từng tràn ngang ở chính dải này (ảnh iPad Pro của TC_UI_04). */
+/* Keep period, custom dates and item type within the available content width. */
 @container hn-dash (min-width: 820px) and (max-width: 1139.98px) {
   .hn-dash .filter-card {
     grid-template-columns: minmax(320px, 1.2fr) minmax(280px, 1fr);
@@ -2258,25 +2234,15 @@
   .hn-dash .filter-card:has(.custom-range) {
     grid-template-columns: minmax(280px, 1fr) minmax(300px, 1fr);
   }
-  .hn-dash .filter-card .refresh-block {
-    grid-column: 1 / -1;
-    justify-self: end;
-  }
 }
 
-/* Nội dung 1020–1275px: biến thể Tùy chọn đủ chỗ cho 3 cột (cần ~958px),
-   khối Làm mới vẫn hàng riêng. Đứng SAU khối 820–1139 để thắng cascade ở
-   vùng giao. Trên 1275px dùng thẳng 4 cột nội tuyến của bố cục nền. */
+/* Custom ranges fit three columns once the content reaches 1020px. */
 @container hn-dash (min-width: 1020px) and (max-width: 1275.98px) {
   .hn-dash .filter-card:has(.custom-range) {
     grid-template-columns: minmax(390px, 1fr) minmax(278px, 0.72fr) minmax(
         210px,
         0.55fr
       );
-  }
-  .hn-dash .filter-card:has(.custom-range) .refresh-block {
-    grid-column: 1 / -1;
-    justify-self: end;
   }
 }
 
@@ -2307,10 +2273,6 @@
   }
   .hn-dash .filter-card .segmented {
     flex-wrap: wrap;
-  }
-  .hn-dash .filter-card .refresh-block {
-    grid-column: 1 / -1;
-    justify-self: stretch;
   }
   .hn-dash .equation-card {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2363,10 +2325,6 @@
   .hn-dash .filter-card,
   .hn-dash .filter-card:has(.custom-range) {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .hn-dash .refresh-block {
-    grid-column: 1 / -1;
-    justify-self: stretch;
   }
   .hn-dash .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2424,22 +2382,6 @@
   }
   .hn-dash .custom-range .field-error {
     grid-column: 1 / -1;
-  }
-  .hn-dash .refresh-block {
-    margin-left: 0;
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-  .hn-dash .refresh-meta {
-    min-width: 0;
-    overflow: hidden;
-  }
-  .hn-dash .refresh-meta > span,
-  .hn-dash .refresh-meta > small {
-    display: block;
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .hn-dash .kpi-card {
     min-height: 132px;
@@ -2641,9 +2583,6 @@
     .hn-dash .filter-card,
     .hn-dash .filter-card:has(.custom-range) {
       grid-template-columns: minmax(0, 1fr);
-    }
-    .hn-dash .refresh-block {
-      grid-column: 1 / -1;
     }
     .hn-dash .kpi-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));

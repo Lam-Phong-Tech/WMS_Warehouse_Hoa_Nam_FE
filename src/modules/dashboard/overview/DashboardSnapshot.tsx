@@ -1,3 +1,4 @@
+import { BUSINESS_TIMEZONE } from "@/shared/utils/date-time";
 import { useEffect, useRef, useState } from "react";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import dayjs from "dayjs";
@@ -286,7 +287,6 @@ export function DashboardSnapshot({
   loading,
   failed,
   partial = false,
-  dataUpdatedAt = 0,
   forbidden,
   chartStateOverride,
   liveRecent = false,
@@ -308,7 +308,6 @@ export function DashboardSnapshot({
   loading: boolean;
   failed: boolean;
   partial?: boolean;
-  dataUpdatedAt?: number;
   forbidden: boolean;
   chartStateOverride?: ChartState;
   liveRecent?: boolean;
@@ -485,6 +484,7 @@ export function DashboardSnapshot({
           <span>
             <DashIcon name="calendar-days" />
             {businessNow.toDate().toLocaleDateString(activeLocale(), {
+              timeZone: BUSINESS_TIMEZONE,
               weekday: "long",
               day: "2-digit",
               month: "long",
@@ -499,26 +499,6 @@ export function DashboardSnapshot({
         </div>
       </header>
 
-      {!effectiveForbidden ? (
-        <div className="snapshot-data-bar">
-          <span>
-            {t("dashboard.snapshot.todayScope")} ·{" "}
-            {dataUpdatedAt
-              ? t("dashboard.lastUpdated.at", {
-                  time: dayjs(dataUpdatedAt).format("DD/MM/YYYY HH:mm"),
-                })
-              : t("dashboard.lastUpdated.none")}
-          </span>
-          <span>
-            {t("dashboard.snapshot.trendScope", {
-              period: periodText(period, range, t),
-            })}
-          </span>
-          <button type="button" onClick={onRetry} disabled={effectiveLoading}>
-            {t("dashboard.filters.refresh")}
-          </button>
-        </div>
-      ) : null}
       {partial && !effectiveFailed ? (
         <div className="snapshot-partial-alert" role="status">
           {t("dashboard.snapshot.partialCopy")}
@@ -603,7 +583,10 @@ export function DashboardSnapshot({
           ) : (
             <>
               <section className="snapshot-main-grid">
-                <article className="snapshot-card snapshot-chart-card">
+                <article
+                  className="snapshot-card snapshot-chart-card"
+                  data-flow-view={chartState === "ready" ? chartView : "chart"}
+                >
                   <header>
                     <h2>
                       {t(
@@ -704,7 +687,11 @@ export function DashboardSnapshot({
                     </div>
                   </header>
                   {chartState === "ready" && chartView === "table" ? (
-                    <SnapshotFlowTable rows={effectiveRows} trend={trend} />
+                    <SnapshotFlowTable
+                      key={`${range.from}:${range.to}`}
+                      rows={effectiveRows}
+                      trend={trend}
+                    />
                   ) : (
                     <SnapshotChart
                       rows={effectiveRows}
@@ -718,15 +705,6 @@ export function DashboardSnapshot({
                 <article className="snapshot-card snapshot-priority">
                   <header>
                     <h2>{t("dashboard.snapshot.priorityTitle")}</h2>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onNavigate("/dashboard?screen=MAP-01&view=work")
-                      }
-                    >
-                      {t("dashboard.snapshot.viewAll")}{" "}
-                      <DashIcon name="arrow-right" />
-                    </button>
                   </header>
                   <p className="snapshot-priority-note">
                     {t("dashboard.snapshot.priorityOverlap")}
@@ -763,7 +741,7 @@ export function DashboardSnapshot({
                             <small>{task.detail}</small>
                           </span>
                           <b>{fmt(task.count)}</b>
-                          <i>Xem</i>
+                          <i>{t("dashboardSnapshot.view")}</i>
                         </button>
                       ))}
                     </div>

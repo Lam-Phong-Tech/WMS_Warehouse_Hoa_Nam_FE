@@ -179,7 +179,7 @@ export default function MvpPutawayPage() {
   const [historyPageSize, setHistoryPageSize] = useState(10);
   const [historyPage, setHistoryPage] = useState(1);
   const [selected, setSelected] = useState<PutawayTask | null>(null);
-  const [detailRow, setDetailRow] = useState<PutawayTask | null>(null);
+  const [detailSnapshot, setDetailRow] = useState<PutawayTask | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [trayScanValue, setTrayScanValue] = useState("");
   const [trayScanError, setTrayScanError] = useState<string | null>(null);
@@ -233,6 +233,28 @@ export default function MvpPutawayPage() {
   });
 
   const tasks = tasksQuery.data ?? [];
+  // Only the read drawer follows live rows; `selected` owns the in-progress
+  // putaway form and its captured optimistic version.
+  const matchingDetailRow = detailSnapshot
+    ? tasks.find(
+        (row) => row.box_container_id === detailSnapshot.box_container_id,
+      )
+    : undefined;
+  const detailMissing = Boolean(
+    detailSnapshot &&
+    tasksQuery.isSuccess &&
+    !tasksQuery.isFetching &&
+    !matchingDetailRow,
+  );
+  const detailRow = detailMissing
+    ? null
+    : (matchingDetailRow ?? detailSnapshot);
+  useEffect(() => {
+    if (detailMissing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- A settled read removed the selected BOX; do not reopen it on later refreshes.
+      setDetailRow(null);
+    }
+  }, [detailMissing]);
   const history = useMemo(() => historyQuery.data ?? [], [historyQuery.data]);
   const trays = traysQuery.data ?? [];
 
@@ -681,10 +703,10 @@ export default function MvpPutawayPage() {
               sortState={historySort.sortState}
               onSortChange={historySort.requestSort}
               headerCellStyle={{
-                backgroundColor: "#d2edf7",
+                backgroundColor: "var(--ops-table-header)",
                 backgroundImage: "none",
                 borderBottom: "1px solid var(--ops-line)",
-                color: "var(--ops-muted)",
+                color: "var(--ops-heading)",
                 fontSize: 16,
                 fontWeight: 800,
                 lineHeight: "24px",

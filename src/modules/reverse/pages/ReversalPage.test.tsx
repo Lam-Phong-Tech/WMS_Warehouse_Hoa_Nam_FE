@@ -138,6 +138,28 @@ afterEach(() => {
 });
 
 describe("REV-00 preserved list interactions", () => {
+  it("keeps creation with the title and the page-size selector in the table footer", async () => {
+    renderPage();
+    await screen.findByText(DOCUMENT.reversal_code);
+    const header = screen
+      .getByRole("heading", { name: "Danh sách phiếu đảo" })
+      .closest("section");
+    expect(header).toContainElement(
+      screen.getByRole("button", { name: "Tạo phiếu điều chỉnh" }),
+    );
+    const pageSize = screen.getByRole("combobox", {
+      name: "Số dòng mỗi trang",
+    });
+    expect(pageSize.closest(".hn-reversal-pagination")).not.toBeNull();
+    expect(screen.getByText("Hiển thị 1–1 / 42 phiếu đảo")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Lý do điều chỉnh" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Ngày tạo" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("debounces and trims keyword, then resets the page while retaining the status filter", async () => {
     renderPage();
     await screen.findByText(DOCUMENT.reversal_code);
@@ -164,6 +186,18 @@ describe("REV-00 preserved list interactions", () => {
     await waitFor(() =>
       expectLatestRequest({ keyword: undefined, status: "POSTED", page: 1 }),
     );
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    await waitFor(() =>
+      expectLatestRequest({
+        keyword: undefined,
+        status: undefined,
+        page: 1,
+        per_page: 10,
+      }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Xóa lọc" }),
+    ).not.toBeInTheDocument();
   });
 
   it("sends server pagination and resets the page when status or page size changes", async () => {

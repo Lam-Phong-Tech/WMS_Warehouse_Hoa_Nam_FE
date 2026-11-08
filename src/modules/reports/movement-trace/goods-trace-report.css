@@ -1,0 +1,623 @@
+.goods-trace-report {
+  --gt-accent: var(--ops-link);
+  color: var(--ops-text);
+  font:
+    14px/1.55 Inter,
+    sans-serif;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.goods-trace-report h1,
+.goods-trace-report h2,
+.goods-trace-report h3 {
+  color: var(--ops-heading);
+  margin: 0;
+  font-weight: 700;
+}
+.goods-trace-report h1 {
+  font-size: 28px;
+  line-height: 1.3;
+}
+.goods-trace-report h2 {
+  font-size: 19px;
+  line-height: 1.4;
+}
+.goods-trace-report h3 {
+  font-size: 17px;
+}
+.goods-trace-report p {
+  margin: 8px 0 0;
+}
+.goods-trace-report small {
+  display: block;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+.goods-trace-report button,
+.goods-trace-report input,
+.goods-trace-report select {
+  font: inherit;
+}
+.goods-trace-report button {
+  cursor: pointer;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--ops-line);
+  border-radius: 6px;
+  background: var(--ops-surface);
+  color: var(--ops-link);
+  transition: background 0.15s;
+}
+.goods-trace-report button:hover {
+  background: var(--ops-pale);
+}
+.goods-trace-report button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.goods-trace-report :is(button, input, select):focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 3px;
+}
+.goods-trace-report button.goods-trace-primary {
+  background: var(--ops-link);
+  color: var(--ops-surface);
+  border-color: var(--ops-link);
+}
+.goods-trace-header,
+.goods-trace-header > div,
+.goods-trace-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.goods-trace-header > div {
+  gap: 20px;
+}
+.goods-trace-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.goods-trace-report input:not([type="checkbox"]):not([type="radio"]),
+.goods-trace-report select {
+  height: 48px;
+  border: 1px solid var(--ops-line);
+  border-radius: 6px;
+  background: var(--ops-surface);
+  color: var(--ops-text);
+  padding: 0 12px;
+  min-width: 0;
+}
+.goods-trace-filters > input {
+  flex: 2 1 310px;
+}
+.goods-trace-filters > select {
+  flex: 1 1 160px;
+}
+.goods-trace-filters > .hn-report-date-range {
+  flex: 1 1 280px;
+  height: 48px;
+}
+.goods-trace-filters > button {
+  height: 48px;
+}
+.goods-trace-panel {
+  border: 1px solid var(--ops-line);
+  border-radius: 8px;
+  background: var(--ops-surface);
+  padding: 18px;
+  min-width: 0;
+}
+.goods-trace-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.goods-trace-kpis > .goods-trace-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.goods-trace-kpis strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1.4;
+  color: var(--ops-heading);
+}
+.goods-trace-kpis p {
+  color: var(--ops-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.goods-trace-symbol {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  font-size: 30px;
+}
+.goods-trace-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(290px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.goods-trace-layout aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.goods-trace-section-heading {
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.goods-trace-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.goods-trace-report input[type="checkbox"],
+.goods-trace-report input[type="radio"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--ops-link);
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.goods-trace-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--ops-line);
+  border-radius: 8px;
+}
+.goods-trace-report table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  min-width: 720px;
+}
+.goods-trace-report th {
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
+  font-size: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 24px;
+}
+.goods-trace-report th,
+.goods-trace-report td {
+  padding: 12px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--ops-line);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.goods-trace-report td {
+  font-size: 14px;
+  line-height: 22px;
+}
+.goods-trace-report tr:last-child td {
+  border-bottom: 0;
+}
+.goods-trace-report tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+.goods-trace-report button.goods-trace-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 24px;
+  text-align: left;
+  color: var(--ops-heading);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.goods-trace-report button.goods-trace-link:hover {
+  color: var(--ops-link);
+}
+.goods-trace-report button.goods-trace-source {
+  display: block;
+  color: var(--ops-muted);
+  font-size: 13px;
+  font-weight: 400;
+  margin-left: 16px;
+}
+.goods-trace-report button.goods-trace-arrow {
+  border: 0;
+  background: transparent;
+  width: 40px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 22px;
+}
+.goods-trace-report .positive {
+  color: var(--ops-success);
+}
+.goods-trace-report .negative {
+  color: var(--ops-danger, var(--ops-text));
+}
+.goods-trace-event-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 8px;
+}
+.goods-trace-event-dot.neutral {
+  color: var(--ops-link);
+}
+.goods-trace-pagination {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  margin-top: 0;
+}
+.goods-trace-pagination > div {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.goods-trace-pagination select {
+  height: 40px;
+}
+.goods-trace-pagination span {
+  background: var(--ops-link);
+  color: var(--ops-surface);
+  padding: 8px 14px;
+  border-radius: 6px;
+}
+.goods-trace-facts {
+  margin: 14px 0 0;
+}
+.goods-trace-facts > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.9fr) minmax(0, 1.4fr);
+  gap: 12px;
+  margin: 7px 0;
+}
+.goods-trace-facts dt {
+  color: var(--ops-muted);
+}
+.goods-trace-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.goods-trace-note {
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  font-size: 13px;
+}
+.goods-trace-empty {
+  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  align-content: center;
+  min-height: 400px;
+  padding: 32px 16px;
+}
+.goods-trace-empty > .goods-trace-symbol {
+  width: 84px;
+  height: 84px;
+  margin: 0 calc(50% - 42px);
+  font-size: 44px;
+}
+.goods-trace-empty h2,
+.goods-trace-empty p {
+  width: 100%;
+}
+.goods-trace-empty p {
+  color: var(--ops-muted);
+  margin: 0 0 12px;
+}
+.goods-trace-warning {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: var(--ops-warning-soft, var(--ops-pale));
+  border: 1px solid var(--ops-warning, var(--ops-line));
+  padding: 16px;
+  border-radius: 8px;
+}
+.goods-trace-warning strong {
+  font-size: 17px;
+}
+.goods-trace-warning p {
+  margin: 4px 0;
+}
+.goods-trace-profile-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.goods-trace-profile-title > div {
+  flex: 1;
+}
+.goods-trace-profile-title h2 {
+  display: inline;
+  margin-left: 10px;
+  font-size: 23px;
+}
+.goods-trace-badge {
+  display: inline-block;
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.goods-trace-current {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  background: var(--ops-pale);
+  border: 1px solid var(--ops-line);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+.goods-trace-current > div + div {
+  border-left: 1px solid var(--ops-line);
+  padding-left: 16px;
+}
+.goods-trace-current strong {
+  display: block;
+  font-size: 17px;
+  color: var(--ops-heading);
+  margin-top: 4px;
+}
+.goods-trace-tabs {
+  display: flex;
+  gap: 16px;
+  border-bottom: 1px solid var(--ops-line);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.goods-trace-tabs button {
+  border: 0;
+  border-radius: 0;
+  white-space: nowrap;
+  background: transparent;
+  padding: 12px 8px;
+}
+.goods-trace-tabs button[aria-selected="true"] {
+  border-bottom: 3px solid var(--ops-link);
+  font-weight: 600;
+}
+.goods-trace-relation {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  margin-top: 12px;
+  border: 1px solid var(--ops-line);
+  border-radius: 8px;
+  background: var(--ops-pale);
+}
+.goods-trace-relation span {
+  color: var(--ops-muted);
+}
+.goods-trace-documents {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.goods-trace-documents button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+.goods-trace-drawer {
+  width: min(780px, 100vw);
+  padding: 24px;
+  background: var(--ops-pale) !important;
+}
+.goods-trace-drawer .goods-trace-current {
+  grid-template-columns: 1fr 1fr;
+}
+.goods-trace-export {
+  max-width: 900px !important;
+}
+.goods-trace-export .goods-trace-report {
+  padding: 24px;
+}
+.goods-trace-export label {
+  display: block;
+  margin: 10px 0;
+}
+.goods-trace-export fieldset {
+  border: 1px solid var(--ops-line);
+  border-radius: 8px;
+  padding: 12px;
+}
+.goods-trace-export input:not([type]) {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
+.goods-trace-export-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.goods-trace-export footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.goods-trace-export .goods-trace-facts > div {
+  grid-template-columns: minmax(100px, 0.9fr) minmax(0, 1.3fr);
+  gap: 6px;
+}
+.goods-trace-export .goods-trace-facts dd {
+  font-size: 12px;
+}
+@media (max-width: 1100px) {
+  .goods-trace-kpis > .goods-trace-panel {
+    gap: 10px;
+    padding: 14px;
+  }
+  .goods-trace-kpis .goods-trace-symbol {
+    width: 38px;
+    height: 38px;
+    font-size: 24px;
+  }
+  .goods-trace-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .goods-trace-layout aside {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .goods-trace-header > div {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .goods-trace-current {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .goods-trace-current > div + div {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+@media (max-width: 650px) {
+  .goods-trace-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .goods-trace-header h1 {
+    font-size: 24px;
+  }
+  .goods-trace-header > div {
+    align-items: center;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .goods-trace-kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+  .goods-trace-layout aside,
+  .goods-trace-export-grid {
+    grid-template-columns: 1fr;
+  }
+  .goods-trace-filters > input {
+    flex-basis: 100%;
+  }
+  .goods-trace-panel {
+    padding: 14px;
+  }
+  .goods-trace-kpis strong {
+    font-size: 24px;
+  }
+  .goods-trace-profile-title {
+    flex-wrap: wrap;
+  }
+  .goods-trace-profile-title h2 {
+    font-size: 19px;
+  }
+  .goods-trace-warning {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .goods-trace-drawer {
+    padding: 16px;
+  }
+  .goods-trace-empty {
+    min-height: 300px;
+    padding: 24px 0;
+  }
+}
+@media (min-width: 651px) and (max-width: 1100px) {
+  .goods-trace-kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+  .goods-trace-kpis > .goods-trace-panel {
+    padding: 18px;
+  }
+  .goods-trace-kpis .goods-trace-symbol {
+    width: 54px;
+    height: 54px;
+    font-size: 30px;
+  }
+  .goods-trace-layout aside {
+    grid-template-columns: 1fr;
+  }
+}
+.goods-trace-report > .backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 25 45 / 48%);
+  z-index: 1400;
+}
+.goods-trace-report > .modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1401;
+  width: min(900px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  background: var(--ops-surface);
+  border: 1px solid var(--ops-line);
+  border-radius: 12px;
+  box-shadow: var(--ops-shadow-dialog);
+  box-sizing: border-box;
+}
+.goods-trace-report > .flow-document-modal {
+  padding: 24px;
+}
+.goods-trace-report .modal-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+.goods-trace-report .flow-document-detail-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 16px;
+  background: var(--ops-pale);
+  margin: 16px 0;
+}
+.goods-trace-report .flow-document-detail-summary strong {
+  display: block;
+}
+.goods-trace-report .flow-document-detail-lines article {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 12px;
+  border-top: 1px solid var(--ops-line);
+  padding: 12px;
+}
+.goods-trace-report button.goods-trace-primary {
+  color: var(--ops-on-primary);
+}

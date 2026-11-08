@@ -1,3 +1,8 @@
+import {
+  personalAccent,
+  PERSONAL_FONT_SIZE,
+} from "@/shared/ui/tokens/personalization";
+import type { InterfacePreferences } from "@/shared/store/interface-preferences.store";
 /**
  * ANTD ADAPTER — map canonical tokens → Ant Design ConfigProvider theme.
  * antd còn phục vụ các màn chưa migrate (xem 06-library-import-graph.md);
@@ -17,8 +22,16 @@ import {
  * darkAlgorithm/defaultAlgorithm), nên ở đây phải truyền MÀU THẬT theo chế độ —
  * `var(--wms-…)` sẽ làm thuật toán sinh ra màu rác.
  */
-export function buildAntdTheme(mode: ThemeModeName): ThemeConfig {
-  const S = OPERATIONS_PALETTE[mode];
+export function buildAntdTheme(
+  mode: ThemeModeName,
+  preferences?: Pick<InterfacePreferences, "accent" | "font_size"> | null,
+): ThemeConfig {
+  const base = OPERATIONS_PALETTE[mode];
+  const accent = personalAccent(mode, preferences?.accent ?? "ocean");
+  const S =
+    preferences?.accent && preferences.accent !== "ocean"
+      ? { ...base, primary: accent.primary }
+      : base;
   return {
     algorithm:
       mode === "dark"
@@ -40,7 +53,9 @@ export function buildAntdTheme(mode: ThemeModeName): ThemeConfig {
       colorBorderSecondary: S.border,
       borderRadius: C.button.radius,
       controlHeight: C.button.height,
-      fontSize: TYPOGRAPHY.fontSizeBody,
+      fontSize: preferences
+        ? PERSONAL_FONT_SIZE[preferences.font_size]
+        : TYPOGRAPHY.fontSizeBody,
       lineHeight: TYPOGRAPHY.lineHeightBody,
       fontFamily: TYPOGRAPHY.fontFamily,
       // Cùng bộ số motion với MUI adapter và hn-motion.css (một nguồn, nhiều adapter)

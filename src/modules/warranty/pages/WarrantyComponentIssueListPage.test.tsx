@@ -43,13 +43,19 @@ vi.mock("@/modules/warranty/components/ComponentIssueModal", () => ({
     caseId,
     documentId,
     onClose,
+    warehouseLabel,
+    onViewCase,
   }: {
+    warehouseLabel?: string;
+    onViewCase?: () => void;
     caseId: string;
     documentId?: string | null;
     onClose: () => void;
   }) => (
     <div data-testid="component-issue-modal">
       {caseId}:{documentId ?? "new"}
+      <span>{warehouseLabel}</span>
+      <button onClick={onViewCase}>Xem hồ sơ bảo hành</button>
       <button type="button" onClick={onClose}>
         Đóng phiếu thử nghiệm
       </button>
@@ -260,9 +266,13 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     expect(
       screen.queryByRole("button", { name: "Chi tiết CI-0002" }),
     ).not.toBeInTheDocument();
+    const row = screen.getByRole("button", { name: "CI-0002" }).closest("tr");
     expect(
-      screen.getByRole("button", { name: "Thao tác khác CI-0002" }),
+      within(row!).getByRole("button", { name: /Xem chi tiết/ }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Thao tác khác CI-0002" }),
+    ).not.toBeInTheDocument();
   });
 
   it("hiển thị mã case, kho, linh kiện và tổng quan từ dữ liệu API thực", async () => {
@@ -310,35 +320,27 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("menu dòng hiển thị đúng kho/ghi chú và mở phiếu tương ứng", async () => {
+  it("Chi tiết mở phiếu tương ứng và truyền kho vào giao diện chi tiết", async () => {
     renderPage();
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Thao tác khác CI-0002" }),
-    );
-
-    expect(
-      screen.queryByTestId("component-issue-modal"),
-    ).not.toBeInTheDocument();
-    expect(await screen.findByText("Đã thay gioăng")).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("menu")).getByText("Kho Hà Nội"),
-    ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("menuitem", { name: "Mở phiếu xuất linh kiện" }),
-    );
+    const row = (
+      await screen.findByRole("button", { name: "CI-0002" })
+    ).closest("tr");
+    fireEvent.click(within(row!).getByRole("button", { name: /Xem chi tiết/ }));
     expect(
       await screen.findByTestId("component-issue-modal"),
     ).toHaveTextContent("wc-2:ci-2");
+    expect(screen.getByTestId("component-issue-modal")).toHaveTextContent(
+      "Kho Hà Nội",
+    );
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it("menu thao tác mở lại đúng phiếu đang quét", async () => {
+  it("Chi tiết mở lại đúng phiếu đang quét", async () => {
     renderPage();
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Thao tác khác CI-0001" }),
-    );
-    fireEvent.click(
-      screen.getByRole("menuitem", { name: "Mở phiếu xuất linh kiện" }),
-    );
+    const row = (
+      await screen.findByRole("button", { name: "CI-0001" })
+    ).closest("tr");
+    fireEvent.click(within(row!).getByRole("button", { name: /Xem chi tiết/ }));
     expect(
       await screen.findByTestId("component-issue-modal"),
     ).toHaveTextContent("wc-1:ci-1");
@@ -398,6 +400,17 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     }));
     renderPage();
     await screen.findByRole("button", { name: "CI-0001" });
+    expect(
+      screen.getByRole("columnheader", { name: "STT" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: /Cập nhật/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("button", { name: "CI-0001" }).closest("tr")!,
+      ).getAllByRole("cell")[0],
+    ).toHaveTextContent(/^1$/);
     fireEvent.click(
       within(screen.getByRole("navigation", { name: "Phân trang" })).getByRole(
         "button",
@@ -408,6 +421,11 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     expect(
       await screen.findByRole("button", { name: "CI-0011" }),
     ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("button", { name: "CI-0011" }).closest("tr")!,
+      ).getAllByRole("cell")[0],
+    ).toHaveTextContent(/^11$/);
     expect(fetchComponentIssueDocuments).toHaveBeenCalledWith(
       expect.objectContaining({ page: 2, per_page: 10 }),
     );
@@ -421,6 +439,11 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
       await screen.findByRole("button", { name: "CI-0001" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "CI-0020" })).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("button", { name: "CI-0001" }).closest("tr")!,
+      ).getAllByRole("cell")[0],
+    ).toHaveTextContent(/^1$/);
     expect(
       screen.queryByRole("button", { name: "CI-0021" }),
     ).not.toBeInTheDocument();
@@ -581,7 +604,7 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     expect(screen.getByText("Hiển thị 1–2 / 2 phiếu")).toBeInTheDocument();
   });
 
-  it("sắp xếp cập nhật theo ngày ghi sổ và dùng ngày lập khi chưa ghi sổ", async () => {
+  it("STT theo thứ tự hiển thị khi sắp xếp mã phiếu", async () => {
     documents = [
       {
         ...DOCUMENTS[1],
@@ -603,7 +626,7 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
             within(row).getByRole("button", { name: /^CI-\d+$/ }).textContent,
         );
     const sort = within(
-      within(table).getByRole("columnheader", { name: /Cập nhật/ }),
+      within(table).getByRole("columnheader", { name: /^Phiếu$/ }),
     ).getByRole("button");
 
     expect(codes()).toEqual(["CI-0002", "CI-0001"]);
@@ -611,6 +634,12 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     expect(codes()).toEqual(["CI-0001", "CI-0002"]);
     fireEvent.click(sort);
     expect(codes()).toEqual(["CI-0002", "CI-0001"]);
+    expect(
+      within(table)
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => within(row).getAllByRole("cell")[0].textContent),
+    ).toEqual(["1", "2"]);
   });
 
   it("giữ các trang còn lại khi máy chủ trả ít dòng hơn cỡ trang yêu cầu", async () => {

@@ -1,441 +1,661 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { isAxiosError } from "axios";
-import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import {
-  Box,
-  Stack,
-  UiAlert,
-  UiAvatar,
-  UiButton,
-  UiCard,
+  UiConfirmDialog,
+  UiIcon,
+  UiPagination,
   UiStatusBadge,
-  UiText,
-  UiTextField,
+  UiTabs,
 } from "@/shared/ui";
-import {
-  ResponsiveDataTable,
-  type ResponsiveTableColumn,
-} from "@/shared/components";
+import { ActionButton } from "@/shared/components/actions";
+import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { resolveFormErrors } from "@/shared/api/api-error";
-import { authService } from "@/modules/auth/services/auth.service";
-import { MFA_STATUS_QUERY_KEY } from "@/modules/auth/types/mfa.types";
-import {
-  auditLogService,
-  type MyPermissionHistoryEntry,
-} from "@/modules/audit-logs/services/audit-logs.service";
+import { useT } from "@/shared/i18n/useT";
+import { useWarehouseDirectory } from "@/shared/data/reference-queries";
+import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
 import { formatDateTime } from "@/shared/utils/format-date";
-import { EMPTY_TEXT } from "@/shared/constants/display";
-import { ROUTES } from "@/shared/constants/routes";
-import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
+import { profileService } from "../services/profile.service";
+import { authService } from "../services/auth.service";
+import {
+  profileKeys,
+  type ProfilePreferenceChanges,
+} from "../types/profile.types";
+import type { MeResponse } from "../types/me.types";
+import { MFA_STATUS_QUERY_KEY } from "../types/mfa.types";
+import { useProfileAvatarUrl } from "../hooks/use-profile-avatar-url";
+import { captureAuthOwner } from "@/shared/store/auth-owner";
+import { ProfileEditorDrawer } from "../components/profile/ProfileEditorDrawer";
+import { ProfilePasswordDrawer } from "../components/profile/ProfilePasswordDrawer";
+import { ProfilePreferencesPanel } from "../components/profile/ProfilePreferencesPanel";
+import { ProfileSessionsPanel } from "../components/profile/ProfileSessionsPanel";
+import { MfaSettingsDrawer } from "../components/MfaSettingsDrawer";
+import { auditLogService } from "@/modules/audit-logs/services/audit-logs.service";
+import { auditActionLabel } from "@/modules/audit-logs/constants/audit-log-labels";
 import "@/shared/ui/sku-aligned-settings.css";
 import "./profile-page.css";
 
-function permissionHistoryActionLabel(t: TranslateFn, action: string): string {
-  const labels: Record<string, string> = {
-    CREATE: t("auth.profile.actionCreate"),
-    UPDATE: t("auth.profile.actionUpdate"),
-    UPDATE_PROFILE: t("auth.profile.actionUpdate"),
-    ASSIGN_ROLES: t("auth.profile.actionAssignRoles"),
-    GRANT_USER_PERMISSION: t("auth.profile.actionGrantPermission"),
-    REVOKE_USER_PERMISSION: t("auth.profile.actionRevokePermission"),
-  };
-  return labels[action] ?? action;
-}
-
-function statusLabel(t: TranslateFn, status?: string) {
-  if (status === "ACTIVE") return t("auth.profile.statusActive");
-  if (status === "INACTIVE") return t("auth.profile.statusInactive");
-  if (status === "LOCKED") return t("auth.profile.statusLocked");
-  return status || EMPTY_TEXT;
-}
-
-function empty(value?: string | number | null) {
-  return value === undefined || value === null || value === ""
-    ? EMPTY_TEXT
-    : value;
-}
-
-function buildHistoryColumns(
-  t: TranslateFn,
-): ResponsiveTableColumn<MyPermissionHistoryEntry>[] {
-  return [
-    {
-      key: "created_at",
-      header: t("auth.profile.colTime"),
-      width: 170,
-      render: (row) => formatDateTime(row.created_at),
-    },
-    {
-      key: "action",
-      header: t("auth.profile.colAction"),
-      width: 180,
-      render: (row) => (
-        <UiStatusBadge
-          tone="neutral"
-          data-settings-tone="neutral"
-          label={permissionHistoryActionLabel(t, row.action)}
-        />
-      ),
-    },
-    {
-      key: "reason",
-      header: t("auth.profile.colReason"),
-      render: (row) => row.reason || EMPTY_TEXT,
-    },
-  ];
-}
+type Section =
+  "profile" | "security" | "notifications" | "appearance" | "other";
+const sections: Section[] = [
+  "profile",
+  "security",
+  "notifications",
+  "appearance",
+  "other",
+];
 
 export function ProfilePage() {
   const t = useT();
-  const queryClient = useQueryClient();
-  const token = useAuthStore((s) => s.token);
-  const user = useAuthStore((s) => s.user);
-  const profile = useAuthStore((s) => s.profile);
-  const setProfile = useAuthStore((s) => s.setProfile);
-  const isSuperAdmin = useAuthStore((s) => s.isSuperAdmin);
-  const currentContext = useAuthStore((s) => s.currentContext);
-  const permissionCodes = useAuthStore((s) => s.permissionCodes);
-
-  const roles = profile?.roles ?? user?.roles ?? [];
-  const warehouseScopes =
-    profile?.warehouse_scope_ids ?? user?.warehouse_scope_ids ?? [];
-  const displayName =
-    profile?.display_name ??
-    profile?.name ??
-    user?.display_name ??
-    user?.name ??
-    user?.code ??
-    user?.email ??
-    t("auth.profile.defaultUserName");
-  const email = profile?.email ?? user?.email;
-  const phone = profile?.phone ?? user?.phone;
-  const status = profile?.status ?? user?.status;
-  const roleNames = isSuperAdmin
-    ? "Super Admin"
-    : roles.length > 0
-      ? roles
-          .map((role) =>
-            role.role_code
-              ? `${role.role_name} (${role.role_code})`
-              : role.role_name,
-          )
-          .join(", ")
-      : empty(profile?.role?.name ?? currentContext?.role_name);
-  const warehouseScope =
-    warehouseScopes.length > 0
-      ? warehouseScopes.join(", ")
-      : empty(currentContext?.scope_ref ?? currentContext?.warehouse_name);
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [nameDraft, setNameDraft] = useState("");
-  const [phoneDraft, setPhoneDraft] = useState("");
-  const [nameError, setNameError] = useState("");
-  const [phoneError, setPhoneError] = useState("");
-  const [saveError, setSaveError] = useState("");
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  const saveProfile = useMutation({
-    mutationFn: (changes: { display_name: string; phone: string | null }) =>
-      authService.updateMe(changes, profile?.version),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(["auth", "me", token], updated);
-      setProfile(updated);
-      void queryClient.invalidateQueries({ queryKey: ["audit-logs", "me"] });
-      setIsEditing(false);
-      setSaveSuccess(true);
+  const client = useQueryClient();
+  const [params, setParams] = useSearchParams();
+  const token = useAuthStore((state) => state.token);
+  const authEpoch = useAuthStore((state) => state.authEpoch);
+  const stored = useAuthStore((state) => state.profile);
+  const user = useAuthStore((state) => state.user);
+  const setProfile = useAuthStore((state) => state.setProfile);
+  const permissions = useAuthStore((state) => state.permissionCodes);
+  const superAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const section: Section = sections.includes(params.get("section") as Section)
+    ? (params.get("section") as Section)
+    : "profile";
+  const accountMode =
+    params.get("view") === "preferences" ? "preferences" : "overview";
+  const [editor, setEditor] = useState(false);
+  const [password, setPassword] = useState(false);
+  const [mfa, setMfa] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useState(true);
+  const [dirty, setDirty] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<{
+    section: Section;
+    view?: string;
+  } | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [preferencesReload, setPreferencesReload] = useState(0);
+  const meQuery = useQuery({
+    queryKey: ["auth", "me", token],
+    queryFn: profileService.getMe,
+    enabled: Boolean(token),
+  });
+  const userId = String(
+    user?.user_id ?? user?.id ?? stored?.user_id ?? stored?.id ?? "",
+  );
+  const canonicalMe =
+    meQuery.data && String(meQuery.data.user_id ?? meQuery.data.id) === userId
+      ? meQuery.data
+      : null;
+  const me =
+    canonicalMe ??
+    (stored && String(stored.user_id ?? stored.id) === userId ? stored : null);
+  const [overlayOwner, setOverlayOwner] = useState<(() => boolean) | null>(
+    null,
+  );
+  const isCurrentOwner = useMemo(
+    () =>
+      token && userId && authEpoch >= 0 ? captureAuthOwner() : () => false,
+    [token, userId, authEpoch],
+  );
+  const ownOverlay = Boolean(overlayOwner?.());
+  const preferences = useQuery({
+    queryKey: profileKeys.preferences(userId),
+    queryFn: profileService.getPreferences,
+    enabled: Boolean(userId),
+  });
+  const preferenceMutation = useMutation({
+    mutationFn: ({
+      changes,
+      version,
+      userId: mutationUserId,
+    }: {
+      changes: ProfilePreferenceChanges;
+      version: number;
+      userId: string;
+    }) => {
+      if (
+        String(
+          useAuthStore.getState().user?.user_id ??
+            useAuthStore.getState().user?.id ??
+            "",
+        ) !== mutationUserId
+      )
+        return Promise.reject(new Error("PROFILE_OWNER_CHANGED"));
+      return profileService.updatePreferences(changes, version);
+    },
+    onMutate: async (variables) => {
+      const stillCurrent = captureAuthOwner();
+      await client.cancelQueries({
+        queryKey: profileKeys.preferences(variables.userId),
+      });
+      if (!stillCurrent()) throw new Error("PROFILE_OWNER_CHANGED");
+      return stillCurrent;
+    },
+    onSuccess: async (saved, variables, stillCurrent) => {
+      if (!stillCurrent?.()) return;
+      await client.cancelQueries({
+        queryKey: profileKeys.preferences(variables.userId),
+      });
+      if (!stillCurrent()) return;
+      client.setQueryData(profileKeys.preferences(variables.userId), saved);
+      toast.success(t("auth.personal.saved"));
     },
   });
-
-  const startEditing = () => {
-    setNameDraft(profile?.display_name ?? user?.display_name ?? "");
-    setPhoneDraft(phone ?? "");
-    setNameError("");
-    setPhoneError("");
-    setSaveError("");
-    setSaveSuccess(false);
-    setIsEditing(true);
-  };
-
-  const saveDetails = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const display_name = nameDraft.trim();
-    const phone = phoneDraft.trim();
-    const nextNameError = !display_name
-      ? t("auth.profile.nameRequired")
-      : display_name.length > 255
-        ? t("auth.profile.nameTooLong")
-        : "";
-    const nextPhoneError =
-      phone && !/^0\d{9}$/.test(phone) ? t("auth.profile.phoneInvalid") : "";
-    setNameError(nextNameError);
-    setPhoneError(nextPhoneError);
-    setSaveError("");
-    if (nextNameError || nextPhoneError) return;
-
-    try {
-      await saveProfile.mutateAsync({ display_name, phone: phone || null });
-    } catch (error) {
-      if (isAxiosError(error) && error.response?.status === 412) {
-        setSaveError(t("auth.profile.staleVersion"));
-        void queryClient.invalidateQueries({ queryKey: ["auth", "me", token] });
-        return;
-      }
-      const { fieldErrors, message } = resolveFormErrors(error, [
-        "displayName",
-        "phone",
-      ]);
-      setNameError(fieldErrors.displayName ?? "");
-      setPhoneError(fieldErrors.phone ?? "");
-      setSaveError(message ?? t("auth.profile.updateFailed"));
-    }
-  };
-
-  /** Yêu cầu #6: lịch sử thay đổi quyền/vai trò/thông tin TRÊN chính tài khoản mình. */
-  const historyQuery = useQuery({
-    queryKey: ["audit-logs", "me"],
-    queryFn: () => auditLogService.getMyPermissionHistory({ per_page: 20 }),
-  });
   const mfaStatus = useQuery({
-    queryKey: MFA_STATUS_QUERY_KEY,
-    queryFn: () => authService.mfaStatus(),
+    queryKey: [...MFA_STATUS_QUERY_KEY, userId, authEpoch],
+    queryFn: authService.mfaStatus,
+    enabled: section === "security",
   });
-  const historyRows = historyQuery.data?.data ?? [];
-
-  const historyColumns = useMemo(() => buildHistoryColumns(t), [t]);
-
+  const warehouses = useWarehouseDirectory({ enabled: Boolean(userId) });
+  const history = useQuery({
+    queryKey: ["audit-logs", "me", historyPage],
+    queryFn: () =>
+      auditLogService.getMyPermissionHistory({
+        page: historyPage,
+        per_page: 10,
+      }),
+    enabled: section === "security" && Boolean(userId),
+  });
+  const historyPagination = resolveApiPagination(history.data?.meta, {
+    page: historyPage,
+    pageSize: 10,
+    rowCount: history.data?.data.length ?? 0,
+  });
+  const avatarUrl = useProfileAvatarUrl(userId, me?.avatar);
+  useEffect(() => {
+    if (
+      meQuery.data &&
+      String(meQuery.data.user_id ?? meQuery.data.id) === userId &&
+      isCurrentOwner()
+    )
+      setProfile(meQuery.data);
+  }, [meQuery.data, setProfile, token, userId, isCurrentOwner]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+  const applyNavigation = (next: { section: Section; view?: string }) => {
+    setDirty(false);
+    setParams(
+      next.view
+        ? { section: next.section, view: next.view }
+        : { section: next.section },
+    );
+    setPendingNavigation(null);
+  };
+  const navigate = (next: { section: Section; view?: string }) => {
+    if (dirty) setPendingNavigation(next);
+    else applyNavigation(next);
+  };
+  const savedProfile = async (updated: MeResponse) => {
+    if (!isCurrentOwner() || String(updated.user_id ?? updated.id) !== userId)
+      return;
+    await client.cancelQueries({ queryKey: ["auth", "me"] });
+    if (!isCurrentOwner()) return;
+    const currentToken = useAuthStore.getState().token;
+    setProfile(updated);
+    client.setQueryData(["auth", "me", currentToken], updated);
+    void client.invalidateQueries({ queryKey: ["auth", "avatar", userId] });
+    void client.invalidateQueries({ queryKey: ["iam", "users"] });
+    void client.invalidateQueries({ queryKey: ["audit-logs", "me"] });
+    toast.success(t("auth.personal.saved"));
+  };
+  const tabItems = [
+    {
+      key: "profile",
+      label: (
+        <>
+          <UiIcon name="user" size="sm" />
+          {t("auth.personal.tabsProfile")}
+        </>
+      ),
+    },
+    {
+      key: "preferences",
+      label: (
+        <>
+          <UiIcon name="settings-sliders" size="sm" />
+          {t("auth.personal.preferencesTitle")}
+        </>
+      ),
+    },
+    {
+      key: "security",
+      label: (
+        <>
+          <UiIcon name="shield" size="sm" />
+          {t("auth.personal.tabsSecurity")}
+        </>
+      ),
+    },
+    {
+      key: "notifications",
+      label: (
+        <>
+          <UiIcon name="bell" size="sm" />
+          {t("auth.personal.tabsNotifications")}
+        </>
+      ),
+    },
+    {
+      key: "appearance",
+      label: (
+        <>
+          <UiIcon name="browser" size="sm" />
+          {t("auth.personal.tabsAppearance")}
+        </>
+      ),
+    },
+    {
+      key: "other",
+      label: (
+        <>
+          <UiIcon name="settings" size="sm" />
+          {t("auth.personal.tabsOther")}
+        </>
+      ),
+    },
+  ];
+  const title =
+    section === "profile"
+      ? accountMode === "preferences"
+        ? t("auth.personal.preferencesTitle")
+        : t("auth.personal.profileTitle")
+      : section === "security"
+        ? t("auth.personal.securityTitle")
+        : section === "notifications"
+          ? t("auth.personal.tabsNotifications")
+          : section === "appearance"
+            ? t("auth.personal.appearanceTitle")
+            : t("auth.personal.otherTitle");
+  const subtitle =
+    section === "profile" && accountMode === "overview"
+      ? t("auth.personal.profileSubtitle")
+      : null;
+  const warehouseNames = useMemo(
+    () =>
+      new Map(
+        (warehouses.data ?? []).map((row) => [
+          String(row.id),
+          String(row.name ?? row.code ?? ""),
+        ]),
+      ),
+    [warehouses.data],
+  );
+  const scopeName = (scope?: string | null) =>
+    scope
+      ? warehouseNames.get(scope) || t("auth.personal.unknown")
+      : t("auth.personal.scopeAll");
+  const homeOptions = [
+    {
+      value: "dashboard",
+      label: t("auth.personal.homeDashboard"),
+      permission: P.DASHBOARD_VIEW,
+    },
+    {
+      value: "inbound",
+      label: t("auth.personal.homeInbound"),
+      permission: P.INBOUND_VIEW,
+    },
+    {
+      value: "outbound",
+      label: t("auth.personal.homeOutbound"),
+      permission: P.OUTBOUND_VIEW,
+    },
+    {
+      value: "inventory",
+      label: t("auth.personal.homeInventory"),
+      permission: P.INVENTORY_VIEW,
+    },
+  ].filter((option) => superAdmin || permissions.includes(option.permission));
+  const settingsMode =
+    section === "profile"
+      ? "account"
+      : section === "notifications"
+        ? "notifications"
+        : section === "appearance"
+          ? "appearance"
+          : "other";
+  const showSettings =
+    (section === "profile" && accountMode === "preferences") ||
+    ["notifications", "appearance", "other"].includes(section);
   return (
-    // Tiêu đề màn do header chung của shell dựng (AppPageHeader).
-    <Box className="hn-settings-screen hn-profile-settings">
-      <UiCard className="hn-settings-card hn-profile-overview">
-        <Box className="hn-profile-identity">
-          <Box className="hn-profile-person">
-            <UiAvatar
-              className="hn-profile-avatar"
-              name={displayName}
-              size="lg"
-            />
-            <Box sx={{ minWidth: 0, overflowWrap: "anywhere" }}>
-              <UiText variant="cardTitle" className="hn-profile-name">
-                {displayName}
-              </UiText>
-              {email ? (
-                <UiText variant="secondary" className="hn-profile-email">
-                  {email}
-                </UiText>
-              ) : null}
-            </Box>
-          </Box>
-          {status ? (
-            <span
-              className="hn-profile-state"
-              data-state={status.toLowerCase()}
-            >
-              <span className="hn-profile-state-dot" aria-hidden="true" />
-              {statusLabel(t, status)}
-            </span>
-          ) : null}
-          {!isEditing ? (
-            <UiButton
-              type="button"
-              className="hn-settings-primary hn-profile-edit-trigger"
-              onClick={startEditing}
-            >
-              {t("auth.profile.editDetails")}
-            </UiButton>
-          ) : null}
-        </Box>
-
-        {saveSuccess ? (
-          <UiAlert tone="success">{t("auth.profile.updateSuccess")}</UiAlert>
-        ) : null}
-        {isEditing ? (
-          <Box
-            component="form"
-            className="hn-profile-edit-form"
-            onSubmit={saveDetails}
-            noValidate
-          >
-            <Box className="hn-profile-edit-fields">
-              <UiTextField
-                label={t("auth.profile.fullName")}
-                value={nameDraft}
-                onChange={(event) => {
-                  setNameDraft(event.target.value);
-                  setNameError("");
-                }}
-                required
-                fullWidth
-                autoFocus
-                disabled={saveProfile.isPending}
-                error={Boolean(nameError)}
-                helperText={nameError}
-                slotProps={{ htmlInput: { maxLength: 255 } }}
-              />
-              <UiTextField
-                label={t("auth.profile.phone")}
-                value={phoneDraft}
-                onChange={(event) => {
-                  setPhoneDraft(event.target.value);
-                  setPhoneError("");
-                }}
-                fullWidth
-                disabled={saveProfile.isPending}
-                error={Boolean(phoneError)}
-                helperText={phoneError}
-                slotProps={{
-                  htmlInput: { inputMode: "numeric", maxLength: 30 },
-                }}
-              />
-            </Box>
-            {saveError ? <UiAlert tone="error">{saveError}</UiAlert> : null}
-            <Stack
-              direction="row"
-              spacing={1.5}
-              className="hn-profile-edit-actions"
-            >
-              <UiButton
-                type="submit"
-                className="hn-settings-primary"
-                loading={saveProfile.isPending}
-                disabled={saveProfile.isPending}
-              >
-                {t("auth.profile.saveDetails")}
-              </UiButton>
-              <UiButton
-                type="button"
-                className="hn-settings-secondary"
-                disabled={saveProfile.isPending}
-                onClick={() => setIsEditing(false)}
-              >
-                {t("auth.profile.cancelEdit")}
-              </UiButton>
-            </Stack>
-          </Box>
-        ) : null}
-
-        <div className="hn-profile-details">
-          <section
-            className="hn-profile-detail-group"
-            aria-labelledby="hn-profile-account-heading"
-          >
-            <h2 id="hn-profile-account-heading">
-              {t("auth.profile.accountDetails")}
-            </h2>
-            <dl>
-              <div>
-                <dt>{t("auth.profile.fullName")}</dt>
-                <dd>{displayName}</dd>
-              </div>
-              <div>
-                <dt>{t("auth.fields.email")}</dt>
-                <dd>{empty(email)}</dd>
-              </div>
-              <div>
-                <dt>{t("auth.profile.phone")}</dt>
-                <dd>{empty(phone)}</dd>
-              </div>
-            </dl>
-          </section>
-          <section
-            className="hn-profile-detail-group"
-            aria-labelledby="hn-profile-access-heading"
-          >
-            <h2 id="hn-profile-access-heading">
-              {t("auth.profile.accessDetails")}
-            </h2>
-            <dl>
-              <div>
-                <dt>{t("auth.profile.roles")}</dt>
-                <dd>{roleNames}</dd>
-              </div>
-              <div>
-                <dt>{t("auth.profile.currentContext")}</dt>
-                <dd>{empty(currentContext?.role_name)}</dd>
-              </div>
-              <div>
-                <dt>{t("auth.profile.warehouseScope")}</dt>
-                <dd>{warehouseScope}</dd>
-              </div>
-              <div>
-                <dt>{t("auth.profile.grantedPermissions")}</dt>
-                <dd>{permissionCodes.length}</dd>
-              </div>
-            </dl>
-          </section>
+    <div className="hn-profile-page hn-personal-profile hn-settings-screen">
+      <header className="hn-personal-page-heading">
+        <div className="hn-personal-heading-text">
+          <h1>{title}</h1>
+          {subtitle && <p>{subtitle}</p>}
         </div>
-      </UiCard>
-
-      {/* Trạng thái lấy từ tài khoản hiện tại, kể cả sau khi xác nhận ở /profile/mfa. */}
-      <UiCard
-        className="hn-settings-card hn-profile-security"
-        title={t("auth.mfa.setupTitle")}
-        action={
-          mfaStatus.data ? (
-            <span
-              className="hn-profile-security-state"
-              data-state={
-                mfaStatus.data.enabled
-                  ? "enabled"
-                  : mfaStatus.data.pending
-                    ? "pending"
-                    : "disabled"
-              }
-            >
-              <span className="hn-profile-state-dot" aria-hidden="true" />
-              {mfaStatus.data.enabled
-                ? t("auth.mfa.statusEnabled")
-                : mfaStatus.data.pending
-                  ? t("auth.mfa.statusPending")
-                  : t("auth.mfa.statusDisabled")}
-            </span>
-          ) : null
-        }
-      >
-        <div className="hn-profile-security-content">
-          <p>
-            {mfaStatus.isPending
-              ? t("auth.mfa.statusLoading")
-              : mfaStatus.isError
-                ? t("auth.mfa.statusLoadError")
-                : mfaStatus.data?.enabled
-                  ? t("auth.mfa.profileEnabledDescription")
-                  : t("auth.mfa.setupSubtitle")}
-          </p>
-          {mfaStatus.data ? (
-            <Link className="hn-profile-mfa-link" to={ROUTES.MFA_SETUP}>
-              {mfaStatus.data.enabled
-                ? t("auth.mfa.viewDetails")
-                : t("auth.mfa.startEnroll")}
-              <span aria-hidden="true">→</span>
-            </Link>
-          ) : null}
-        </div>
-      </UiCard>
-
-      <UiCard
-        className="hn-settings-card hn-profile-history"
-        title={t("auth.profile.historyTitle")}
-      >
-        {historyQuery.isSuccess && historyRows.length === 0 ? (
-          <p className="hn-profile-history-empty">
-            {t("auth.profile.historyEmpty")}
-          </p>
-        ) : (
-          <ResponsiveDataTable<MyPermissionHistoryEntry>
-            columns={historyColumns}
-            headerCellStyle={{
-              background: "var(--settings-pale)",
-              color: "var(--settings-ink)",
-            }}
-            rows={historyRows}
-            rowKey={(row) => row.id}
-            loading={historyQuery.isLoading}
-            emptyText={t("auth.profile.historyEmpty")}
+        <nav
+          id="hn-profile-section-nav"
+          className="hn-personal-section-nav"
+          aria-label={t("auth.personal.sectionPicker")}
+          hidden={!navigationOpen}
+        >
+          <UiTabs
+            value={
+              section === "profile" && accountMode === "preferences"
+                ? "preferences"
+                : section
+            }
+            items={tabItems}
+            onChange={(value) =>
+              value === "preferences"
+                ? navigate({ section: "profile", view: "preferences" })
+                : navigate({ section: value as Section })
+            }
           />
-        )}
-      </UiCard>
-    </Box>
+        </nav>
+        <button
+          type="button"
+          className="hn-personal-nav-toggle"
+          aria-label={t(
+            navigationOpen
+              ? "auth.personal.collapseNavigation"
+              : "auth.personal.expandNavigation",
+          )}
+          title={t(
+            navigationOpen
+              ? "auth.personal.collapseNavigation"
+              : "auth.personal.expandNavigation",
+          )}
+          aria-expanded={navigationOpen}
+          aria-controls="hn-profile-section-nav"
+          onClick={() => setNavigationOpen((open) => !open)}
+        >
+          {!navigationOpen ? (
+            <span className="hn-personal-nav-current">
+              {
+                tabItems.find(
+                  (item) =>
+                    item.key ===
+                    (section === "profile" && accountMode === "preferences"
+                      ? "preferences"
+                      : section),
+                )?.label
+              }
+            </span>
+          ) : null}
+          <UiIcon
+            name={navigationOpen ? "angle-small-up" : "angle-small-down"}
+            size="sm"
+          />
+        </button>
+      </header>
+      {meQuery.isError ? (
+        <ApiErrorAlert
+          error={meQuery.error}
+          title={t("auth.personal.loadError")}
+          onRetry={() => void meQuery.refetch()}
+        />
+      ) : null}
+      {!me ? (
+        <p role="status">{t("shared.table.loading")}</p>
+      ) : (
+        <>
+          {section === "profile" && accountMode === "overview" ? (
+            <>
+              <div className="hn-personal-overview-grid">
+                <section className="hn-personal-card">
+                  <div className="hn-personal-section-heading hn-personal-info-heading">
+                    <h2>{t("auth.personal.personalInfo")}</h2>
+                    <ActionButton
+                      kind="edit"
+                      onClick={() => {
+                        setOverlayOwner(() => captureAuthOwner());
+                        setEditor(true);
+                      }}
+                      disabled={!canonicalMe}
+                    >
+                      {t("auth.personal.editProfile")}
+                    </ActionButton>
+                  </div>
+                  <dl className="hn-personal-detail-list">
+                    <div>
+                      <dt>{t("auth.personal.name")}</dt>
+                      <dd>{me.display_name || me.name}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("auth.personal.email")}</dt>
+                      <dd>{me.email}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("auth.personal.phone")}</dt>
+                      <dd>{me.phone || t("auth.personal.unknown")}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("auth.personal.department")}</dt>
+                      <dd>
+                        {me.department?.department_name ||
+                          me.department?.name ||
+                          t("auth.personal.unknown")}
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+                <section className="hn-personal-card">
+                  <div className="hn-personal-section-heading">
+                    <h2>{t("auth.personal.access")}</h2>
+                    <span className="hn-personal-readonly">
+                      <UiIcon name="lock" size="sm" />
+                      {t("auth.personal.managedAccess")}
+                    </span>
+                  </div>
+                  <div className="hn-personal-role-list">
+                    {me.roles.length ? (
+                      me.roles.map((role) => (
+                        <article
+                          key={`${role.role_id}:${role.scope_ref || ""}`}
+                        >
+                          <strong>{role.role_name}</strong>
+                          <span>{scopeName(role.scope_ref)}</span>
+                        </article>
+                      ))
+                    ) : (
+                      <p className="hn-personal-muted">
+                        {t("auth.personal.unknown")}
+                      </p>
+                    )}
+                  </div>
+                  <p className="hn-personal-note">
+                    {t("auth.profile.grantedPermissions")}: {permissions.length}
+                  </p>
+                </section>
+              </div>
+              <ProfileSessionsPanel key={userId} userId={userId} />
+            </>
+          ) : null}
+          {section === "security" ? (
+            <div className="hn-personal-security-stack">
+              <section className="hn-personal-card hn-personal-inline-card">
+                <div>
+                  <h2>{t("auth.personal.password")}</h2>
+                  <p aria-label={t("auth.personal.password")}>••••••••••••</p>
+                </div>
+                <ActionButton
+                  kind="edit"
+                  onClick={() => {
+                    setOverlayOwner(() => captureAuthOwner());
+                    setPassword(true);
+                  }}
+                >
+                  {t("auth.personal.changePassword")}
+                </ActionButton>
+              </section>
+              <section className="hn-personal-card hn-personal-inline-card">
+                <div>
+                  <h2>{t("auth.mfa.setupTitle")}</h2>
+                  <p className="hn-personal-muted">
+                    {mfaStatus.isPending
+                      ? t("auth.mfa.statusLoading")
+                      : mfaStatus.isError
+                        ? t("auth.mfa.statusLoadError")
+                        : mfaStatus.data?.enabled
+                          ? t("auth.mfa.profileEnabledDescription")
+                          : t("auth.mfa.setupSubtitle")}
+                  </p>
+                  {mfaStatus.data ? (
+                    <UiStatusBadge
+                      tone={mfaStatus.data.enabled ? "success" : "neutral"}
+                      label={t(
+                        mfaStatus.data.enabled
+                          ? "auth.mfa.statusEnabled"
+                          : mfaStatus.data.pending
+                            ? "auth.mfa.statusPending"
+                            : "auth.mfa.statusDisabled",
+                      )}
+                    />
+                  ) : null}
+                </div>
+                {mfaStatus.isError ? (
+                  <ActionButton
+                    kind="refresh"
+                    onClick={() => void mfaStatus.refetch()}
+                  >
+                    {t("auth.personal.retry")}
+                  </ActionButton>
+                ) : (
+                  <ActionButton
+                    kind="settings"
+                    disabled={!mfaStatus.data}
+                    onClick={() => {
+                      setOverlayOwner(() => captureAuthOwner());
+                      setMfa(true);
+                    }}
+                  >
+                    {t(
+                      mfaStatus.data?.enabled
+                        ? "auth.mfa.viewDetails"
+                        : "auth.mfa.startEnroll",
+                    )}
+                  </ActionButton>
+                )}
+              </section>
+              <details className="hn-personal-card hn-personal-history">
+                <summary>{t("auth.profile.historyTitle")}</summary>
+                {history.isError ? (
+                  <ApiErrorAlert
+                    error={history.error}
+                    onRetry={() => void history.refetch()}
+                  />
+                ) : null}
+                <div className="hn-personal-history-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th scope="col" className="hn-personal-history-index">
+                          {t("shared.table.rowNumber")}
+                        </th>
+                        <th>{t("auth.profile.colTime")}</th>
+                        <th>{t("auth.profile.colAction")}</th>
+                        <th>{t("auth.profile.colReason")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(history.data?.data ?? []).map((entry, index) => (
+                        <tr key={entry.id}>
+                          <td className="hn-personal-history-index">
+                            {(historyPagination.current - 1) *
+                              historyPagination.pageSize +
+                              index +
+                              1}
+                          </td>
+                          <td>{formatDateTime(entry.created_at)}</td>
+                          <td>{auditActionLabel(entry.action)}</td>
+                          <td>{entry.reason || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!history.isPending && history.data?.data.length === 0 ? (
+                    <p>{t("auth.profile.historyEmpty")}</p>
+                  ) : null}
+                </div>
+                <UiPagination
+                  page={historyPagination.current}
+                  pageSize={10}
+                  total={historyPagination.total}
+                  onPageChange={setHistoryPage}
+                />
+              </details>
+            </div>
+          ) : null}
+          {showSettings ? (
+            preferences.isError ? (
+              <ApiErrorAlert
+                error={preferences.error}
+                onRetry={() => void preferences.refetch()}
+              />
+            ) : preferences.data ? (
+              <ProfilePreferencesPanel
+                key={`${userId}:${settingsMode}:${preferencesReload}`}
+                mode={settingsMode}
+                preferences={preferences.data}
+                onDirtyChange={setDirty}
+                onReload={() => {
+                  void preferences.refetch().then((result) => {
+                    if (result.isSuccess && isCurrentOwner()) {
+                      setDirty(false);
+                      setPreferencesReload((count) => count + 1);
+                    }
+                  });
+                }}
+                onSave={(changes, version) =>
+                  preferenceMutation.mutateAsync({ changes, version, userId })
+                }
+                homeOptions={homeOptions}
+              />
+            ) : (
+              <p role="status">{t("shared.table.loading")}</p>
+            )
+          ) : null}
+        </>
+      )}
+      {editor && ownOverlay && canonicalMe ? (
+        <ProfileEditorDrawer
+          profile={canonicalMe}
+          avatarUrl={avatarUrl}
+          onClose={() => {
+            if (isCurrentOwner()) setEditor(false);
+          }}
+          onSaved={savedProfile}
+          onReload={() => {
+            if (isCurrentOwner()) {
+              setEditor(false);
+              void meQuery.refetch();
+            }
+          }}
+        />
+      ) : null}
+      {password && ownOverlay ? (
+        <ProfilePasswordDrawer
+          onClose={() => {
+            if (isCurrentOwner()) setPassword(false);
+          }}
+        />
+      ) : null}
+      <MfaSettingsDrawer
+        open={mfa && ownOverlay}
+        onClose={() => setMfa(false)}
+      />
+      <UiConfirmDialog
+        open={Boolean(pendingNavigation)}
+        title={t("auth.personal.unsavedTitle")}
+        tone="danger"
+        confirmText={t("auth.personal.discard")}
+        cancelText={t("auth.personal.keepEditing")}
+        onConfirm={() => {
+          if (pendingNavigation) applyNavigation(pendingNavigation);
+        }}
+        onClose={() => setPendingNavigation(null)}
+      >
+        {t("auth.personal.unsavedBody")}
+      </UiConfirmDialog>
+    </div>
   );
 }

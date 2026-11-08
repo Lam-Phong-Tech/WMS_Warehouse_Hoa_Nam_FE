@@ -43,6 +43,17 @@ export function checkTokens(files, contents, baseline) {
     const content = contents(file);
     const hexes = findHexLiterals(content);
 
+    // These former light-only table/hover colors broke dark mode. An old
+    // per-file allowance must never permit reintroducing them outside tokens.
+    if (
+      !file.startsWith(TOKENS_PREFIX) &&
+      hexes.some((hex) => ["#d2edf7", "#dff0f7"].includes(hex.toLowerCase()))
+    ) {
+      violations.push(
+        `${file}: màu bảng/hover cố định theo light theme — dùng --ops-table-header/--ops-pale và chữ semantic`,
+      );
+    }
+
     if (file.startsWith(TOKENS_PREFIX)) {
       // canonical source — hex hợp lệ
     } else if (file.startsWith(DESIGN_SYSTEM_PREFIX)) {
@@ -106,7 +117,12 @@ function selfTest() {
   }
 
   // 2. Vi phạm tổng hợp: từng fixture bẩn phải bị bắt, fixture chỉ có UUID thì không.
-  const baseline = { files: {} };
+  const baseline = {
+    files: {
+      "src/modules/foo/LegacyTable.css": 1,
+      "src/modules/foo/LegacyArrow.tsx": 1,
+    },
+  };
   const fixtures = {
     "src/modules/foo/Bad.tsx": 'const c = "#2563eb";',
     "src/modules/foo/BadRgba.tsx": 'const overlay = "#aabbccdd";',
@@ -114,6 +130,8 @@ function selfTest() {
     "src/modules/foo/BadFont.css": 'body { font-family: "Inter", sans-serif; }',
     "src/modules/foo/BadImport.ts":
       'import { RADIUS } from "@/shared/design-tokens";',
+    "src/modules/foo/LegacyTable.css": "th { background: #D2EDF7; }",
+    "src/modules/foo/LegacyArrow.tsx": 'const hover = "#dff0f7";',
     "src/modules/foo/UuidInComment.ts": `${UUID_COMMENT}\nexport const label = "POST_ISSUE";`,
     "index.html":
       '<link href="https://fonts.googleapis.com/css2?family=Inter">',
@@ -129,6 +147,8 @@ function selfTest() {
     "src/shared/ui/theme/bad-adapter.ts",
     "src/modules/foo/BadFont.css",
     "src/modules/foo/BadImport.ts",
+    "src/modules/foo/LegacyTable.css",
+    "src/modules/foo/LegacyArrow.tsx",
     "index.html",
   ]) {
     if (!violations.some((v) => v.startsWith(`${dirty}:`))) {

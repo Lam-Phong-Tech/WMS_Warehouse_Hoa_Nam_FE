@@ -29,6 +29,7 @@ import {
 import "./sku-list.css";
 import "./defect-list.css";
 import {
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -68,6 +69,7 @@ import type {
 import {
   getApiErrorMessage,
   getMutationErrorMessage,
+  extractFieldErrorsRaw,
   normalizeError,
   resolveFormErrors,
 } from "@/shared/api/api-error";
@@ -93,16 +95,14 @@ import {
   type RecipientType,
 } from "@/shared/constants/recipient-types";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { SkuThumbnail } from "@/shared/components/data-display/SkuThumbnail";
 import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
-import {
-  ActionButton,
-  ActionIconButton,
-} from "@/shared/components/actions";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import {
   Box,
   Checkbox,
@@ -126,18 +126,10 @@ import {
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { validatePhone } from "@/shared/constants/validation.constants";
 import { codeFormatError } from "@/shared/validation/text-rules";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { agencyPlaceLabel } from "@/shared/constants/agency-place-labels";
 import { tStatic as tUi } from "@/shared/i18n/useT";
-
-/**
- * BE chưa có tham số lọc "SKU chờ điền thông tin" riêng (không đáng để thêm 1
- * query param chỉ phục vụ 1 nút lọc) — khi bật bộ lọc này, FE quét một trang
- * rộng rồi tự lọc/tự phân trang phía client. 500 đủ cho quy mô danh mục SKU
- * hiện tại (MVP); nếu SKU vượt mốc này, chuyển sang param lọc thật ở BE.
- */
-const PENDING_INFO_SCAN_LIMIT = 500;
 
 const statusOptions = (
   t: TranslateFn,
@@ -180,17 +172,6 @@ function masterStatusLabel(status: MasterStatus | string, t: TranslateFn) {
 
 function skuTypeLabel(type: SkuType | string, t: TranslateFn) {
   return businessLabel(SKU_TYPE_LABELS, type, t("masterData.common.typeOther"));
-}
-
-/**
- * SKU tự tạo qua luồng quét (materializeSkuIfMissing bên BE) chỉ có
- * sku_code/sku_type, chưa gán Hãng/Nhóm hàng/Model — 3 field bắt buộc của form
- * "Thêm SKU" thủ công (validateSkuForm). Thiếu cả 3 = chắc chắn là SKU tự tạo
- * chờ điền thông tin, không phải SKU đã tạo tay còn thiếu 1-2 trường tuỳ chọn.
- * Cùng tiêu chí với BE (`issues.sku_pending_info` ở dashboard-overview).
- */
-function isSkuPendingInfo(row: SkuRecord): boolean {
-  return !row.brand_id && !row.category_id && !row.model_id;
 }
 
 /**
@@ -382,6 +363,7 @@ function SkuCatalogSelect({
 
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
+  const sidebarPinned = useContext(PinnedSidebarContext);
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
   const [overviewOpen, setOverviewOpen] = useState(() => {
     try {
@@ -404,7 +386,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     };
   }, []);
   // Deep-link ?screen=MST-02 (mo modal tao) — page tu xu ly sau khi go bypass layout.
-  const [skuSearchParams] = useSearchParams();
+  const [skuSearchParams, setSkuSearchParams] = useSearchParams();
+  const skuLocation = useLocation();
   const openCreateRequested =
     openCreateOnMount || skuSearchParams.get("screen") === "MST-02";
   // Deep-link ?filter=pending_info — Dashboard "Vấn đề cần xử lý" trỏ thẳng vào
@@ -414,12 +397,33 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const { confirm: confirmAction, confirmDialog } = useUiConfirm();
   const canPublish = useCanManage(WMS_PERMISSION_CATALOG.PV_PUBLISH);
   const [keyword, setKeyword] = useState("");
-  const [status, setStatus] = useState<MasterStatus | "">("");
+  const [status, setStatus] = useState<MasterStatus | "">(
+    pendingInfoRequested ? "ACTIVE" : "",
+  );
   const [type, setType] = useState<SkuType | "">("");
   const [brandId, setBrandId] = useState("");
-  const [pendingInfoOnly, setPendingInfoOnly] = useState(pendingInfoRequested);
+  const [informationStatus, setInformationStatus] = useState<
+    "PENDING" | "COMPLETE" | ""
+  >(pendingInfoRequested ? "PENDING" : "");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  useEffect(() => {
+    if (!pendingInfoRequested) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Apply an external Dashboard link on same-route navigation.
+    setStatus("ACTIVE");
+    setInformationStatus("PENDING");
+    setKeyword("");
+    setType("");
+    setBrandId("");
+    setPage(1);
+    setFiltersOpen(true);
+  }, [pendingInfoRequested, skuLocation.key]);
+  const clearPendingInfoLink = () => {
+    if (skuSearchParams.get("filter") !== "pending_info") return;
+    const next = new URLSearchParams(skuSearchParams);
+    next.delete("filter");
+    setSkuSearchParams(next, { replace: true });
+  };
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SkuRecord | null>(null);
   const [viewing, setViewing] = useState<SkuRecord | null>(null);
@@ -436,11 +440,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     status,
     sku_type: type,
     brand_id: brandId,
-    // "SKU chờ điền thông tin" cần quét rộng để lọc/phân trang phía client (xem
-    // PENDING_INFO_SCAN_LIMIT) — page/per_page bình thường không đủ vì SKU thiếu
-    // thông tin có thể nằm ở bất kỳ trang nào.
-    page: pendingInfoOnly ? 1 : page,
-    per_page: pendingInfoOnly ? PENDING_INFO_SCAN_LIMIT : perPage,
+    information_status: informationStatus,
+    page,
+    per_page: perPage,
   });
   const catalogsQuery = useMvpProductCatalogs();
   const createMutation = useCreateMvpSku();
@@ -477,29 +479,12 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     () => toRefIndex(catalogs.packageVariants),
     [catalogs.packageVariants],
   );
-  const filteredRows = useMemo(() => {
-    const brandFiltered = brandId
-      ? apiRows.filter((row) => row.brand_id === brandId)
-      : apiRows;
-    return pendingInfoOnly
-      ? brandFiltered.filter(isSkuPendingInfo)
-      : brandFiltered;
-  }, [apiRows, brandId, pendingInfoOnly]);
-  // Chế độ "SKU chờ điền thông tin" đã tải rộng (PENDING_INFO_SCAN_LIMIT) nên tự
-  // phân trang phía client; chế độ thường vẫn dùng đúng 1 trang server trả về.
-  const rows = useMemo(() => {
-    if (!pendingInfoOnly) return filteredRows;
-    const start = (page - 1) * perPage;
-    return filteredRows.slice(start, start + perPage);
-  }, [filteredRows, pendingInfoOnly, page, perPage]);
-  const pagination = resolveApiPagination(
-    pendingInfoOnly ? undefined : query.data?.meta,
-    {
-      page,
-      pageSize: perPage,
-      rowCount: pendingInfoOnly ? filteredRows.length : apiRows.length,
-    },
-  );
+  const rows = apiRows;
+  const pagination = resolveApiPagination(query.data?.meta, {
+    page,
+    pageSize: perPage,
+    rowCount: apiRows.length,
+  });
   const { sortedRows, sortState, requestSort, originalIndexOf } = useClientSort(
     rows,
     {
@@ -720,8 +705,50 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       setModalOpen(false);
       setEditing(null);
     } catch (error) {
+      const normalized = normalizeError(error);
+      const rawFieldErrors = extractFieldErrorsRaw(error);
+      const codeError =
+        rawFieldErrors?.code ??
+        rawFieldErrors?.sku_code ??
+        rawFieldErrors?.skuCode;
+      const duplicateCode =
+        /^(SKU_CODE_DUPLICATE|SKU_CODE_ALREADY_EXISTS|SKU_ALREADY_EXISTS|DUPLICATE_CODE)$/i.test(
+          normalized.code ?? "",
+        ) ||
+        (normalized.status === 422 &&
+          Boolean(
+            codeError &&
+            /tồn tại|trùng|already.*(?:exist|taken)|unique|已存在|重复|已被.*(?:使用|占用)/i.test(
+              codeError,
+            ),
+          ));
+      if (duplicateCode) {
+        const validation =
+          normalized.status === 422 && codeError
+            ? resolveFormErrors(error, [
+                ...SKU_FORM_FIELDS,
+                "sku_code",
+                "skuCode",
+              ])
+            : { fieldErrors: {}, message: null };
+        const otherFieldErrors = Object.fromEntries(
+          Object.entries(validation.fieldErrors).filter(
+            ([field]) => !["code", "sku_code", "skuCode"].includes(field),
+          ),
+        );
+        setMutationNotice(null);
+        setFormError(validation.message ?? "");
+        setFieldErrors((current) => ({
+          ...current,
+          ...otherFieldErrors,
+          code: t("masterData.sku.errDuplicateCode"),
+        }));
+        requestAnimationFrame(() =>
+          document.getElementById("sku-code")?.focus(),
+        );
+        return;
+      }
       if (!editing) {
-        const normalized = normalizeError(error);
         const transportCode =
           typeof error === "object" && error !== null && "code" in error
             ? String(error.code)
@@ -770,14 +797,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   const hasFilters = Boolean(
-    keyword.trim() || status || type || brandId || pendingInfoOnly,
+    keyword.trim() || status || type || brandId || informationStatus,
   );
   const resetFilters = () => {
     setKeyword("");
     setStatus("");
     setType("");
     setBrandId("");
-    setPendingInfoOnly(false);
+    setInformationStatus("");
+    clearPendingInfoLink();
     setPage(1);
   };
   const refreshList = () => {
@@ -789,6 +817,34 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const listErrorStatus = query.error
     ? normalizeError(query.error).status
     : undefined;
+
+  const informationFilter = (
+    <UiSelect
+      aria-label={copy(
+        "Lọc mức độ hoàn thiện thông tin",
+        "Filter information completeness",
+      )}
+      value={informationStatus}
+      onChange={(value) => {
+        setInformationStatus(value as "PENDING" | "COMPLETE" | "");
+        clearPendingInfoLink();
+        setPage(1);
+      }}
+      placeholder={copy("Thông tin: Tất cả", "Information: All")}
+      fullWidth
+      menuClassName="hn-sku-menu"
+      options={[
+        {
+          value: "PENDING",
+          label: copy("Thông tin: Chờ hoàn thiện", "Information: Pending details"),
+        },
+        {
+          value: "COMPLETE",
+          label: copy("Thông tin: Đầy đủ", "Information: Complete"),
+        },
+      ]}
+    />
+  );
 
   return (
     <>
@@ -873,7 +929,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           className="hn-sku-search-panel"
           aria-label={copy("Tìm kiếm và lọc SKU", "Search and filter SKUs")}
         >
-          <div className="hn-sku-search-bar">
+          <div
+            className="hn-sku-search-bar"
+            data-information-in-panel={sidebarPinned || undefined}
+          >
             <UiTextField
               id="sku-list-search"
               value={keyword}
@@ -918,12 +977,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             />
             <UiSelect
               aria-label={t("masterData.status.filterAria")}
-              value={pendingInfoOnly ? "PENDING_INFO" : status}
+              value={status}
               onChange={(value) => {
-                setPendingInfoOnly(value === "PENDING_INFO");
-                setStatus(
-                  value === "PENDING_INFO" ? "" : (value as MasterStatus | ""),
-                );
+                setStatus(value as MasterStatus | "");
                 setPage(1);
               }}
               placeholder={copy("Trạng thái: Tất cả", "Status: All")}
@@ -934,15 +990,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   ...option,
                   label: `${copy("Trạng thái", "Status")}: ${option.label}`,
                 })),
-                {
-                  value: "PENDING_INFO",
-                  label: copy(
-                    "Trạng thái: Chờ hoàn thiện",
-                    "Status: Pending details",
-                  ),
-                },
               ]}
             />
+            {!sidebarPinned ? informationFilter : null}
             <button
               type="button"
               className="hn-sku-more-filters"
@@ -968,6 +1018,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             className="hn-sku-extra-filters"
             hidden={!filtersOpen}
           >
+            {sidebarPinned ? (
+              <div className="hn-sku-filter">{informationFilter}</div>
+            ) : null}
             <div className="hn-sku-filter">
               <UiSelect
                 aria-label={t("masterData.sku.brandFilterAria")}
@@ -986,20 +1039,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 }))}
               />
             </div>
-            <FormControlLabel
-              className="hn-sku-pending-option"
-              control={
-                <Checkbox
-                  checked={pendingInfoOnly}
-                  onChange={() => {
-                    if (!pendingInfoOnly) setStatus("");
-                    setPendingInfoOnly((current) => !current);
-                    setPage(1);
-                  }}
-                />
-              }
-              label={t("masterData.sku.pendingInfo")}
-            />
           </div>
         </section>
         <SkuListMutationNotice
@@ -1124,6 +1163,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 ) : sortedRows.length > 0 ? (
                   sortedRows.map((record) => {
                     const recordId = record.sku_id ?? record.id ?? "";
+                    const missingFields = [
+                      !record.brand_id && copy("Hãng", "Brand"),
+                      !record.category_id && copy("Nhóm hàng", "Category"),
+                      !record.model_id && "Model",
+                    ].filter(Boolean);
                     return (
                       <tr
                         key={recordId}
@@ -1160,11 +1204,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         </td>
                         <td className="name-col">
                           <div className="hn-sku-cell">
-                            <SkuThumbnail
-                              url={record.image_url}
-                              name={record.sku_name ?? record.name}
-                              size={44}
-                            />
                             <div className="hn-sku-cell-text">
                               <TruncatedText lines={1} maxWidth={380}>
                                 <SkuLink
@@ -1192,10 +1231,32 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           </div>
                         </td>
                         <td>
-                          <UiStatusBadge
-                            tone={masterStatusTone(record.status)}
-                            label={masterStatusLabel(record.status, t)}
-                          />
+                          <div className="hn-sku-information-status">
+                            <UiStatusBadge
+                              className="hn-sku-usage-status"
+                              tone={masterStatusTone(record.status)}
+                              label={masterStatusLabel(record.status, t)}
+                            />
+                            <UiStatusBadge
+                              tone={
+                                missingFields.length ? "warning" : "success"
+                              }
+                              label={
+                                missingFields.length
+                                  ? copy("Chờ hoàn thiện", "Pending details")
+                                  : copy(
+                                      "Thông tin đầy đủ",
+                                      "Complete information",
+                                    )
+                              }
+                            />
+                            {missingFields.length > 0 ? (
+                              <span className="hn-sku-missing-fields">
+                                {copy("Thiếu", "Missing")}:{" "}
+                                {missingFields.join(", ")}
+                              </span>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="actions-col">
                           <button
@@ -1418,9 +1479,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 <footer className="hn-sku-detail-footer">
                   {canPublish ? (
                     <ActionButton
-                      kind={
-                        viewing.published_to_app ? "unpublish" : "publish"
-                      }
+                      kind={viewing.published_to_app ? "unpublish" : "publish"}
                       className="hn-sku-detail-publish"
                       disabled={
                         publishMutation.isPending ||
@@ -1428,8 +1487,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           viewing.status !== "ACTIVE")
                       }
                       title={
-                        !viewing.published_to_app &&
-                        viewing.status !== "ACTIVE"
+                        !viewing.published_to_app && viewing.status !== "ACTIVE"
                           ? t("masterData.sku.errPublishInactive")
                           : undefined
                       }
@@ -2737,7 +2795,9 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
   const [overviewOpen, setOverviewOpen] = useState(() => {
     try {
-      return window.sessionStorage.getItem("hn-defect-overview-open") === "true";
+      return (
+        window.sessionStorage.getItem("hn-defect-overview-open") === "true"
+      );
     } catch {
       return false;
     }
@@ -3383,12 +3443,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       </td>
                       <td className="code-col">
                         <span className="hn-defect-code-cell">
-                          <span
-                            className="hn-defect-code-icon"
-                            aria-hidden="true"
-                          >
-                            <DefectSymbol name="clipboard" />
-                          </span>
                           <span>{record.defect_code}</span>
                         </span>
                       </td>

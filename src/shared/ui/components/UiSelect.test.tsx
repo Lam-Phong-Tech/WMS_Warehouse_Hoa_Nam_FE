@@ -53,6 +53,72 @@ function Host({
 type UiSelectProps = Parameters<typeof UiSelect>[0];
 
 describe("UiSelect — ngưỡng tìm kiếm", () => {
+  it.each(["ALL", ""])(
+    "keeps one All option and its closed label (value: %s)",
+    async (allValue) => {
+      const user = userEvent.setup();
+      render(
+        <Host
+          initial={allValue}
+          placeholder="Trạng thái: Tất cả"
+          options={[
+            { value: allValue, label: "Trạng thái: Tất cả" },
+            { value: "ACTIVE", label: "Trạng thái: Đang sử dụng" },
+          ]}
+        />,
+      );
+      const control = screen.getByRole("combobox");
+      expect(control).toHaveTextContent("Trạng thái: Tất cả");
+      await user.click(control);
+      expect(
+        screen.getAllByRole("option", { name: "Trạng thái: Tất cả" }),
+      ).toHaveLength(1);
+      await user.click(
+        screen.getByRole("option", { name: "Trạng thái: Đang sử dụng" }),
+      );
+      await user.click(control);
+      await user.click(
+        screen.getByRole("option", { name: "Trạng thái: Tất cả" }),
+      );
+      expect(screen.getByTestId("value").textContent).toBe(allValue);
+      expect(control).toHaveTextContent("Trạng thái: Tất cả");
+    },
+  );
+
+  it("keeps a real empty option instead of adding a second empty placeholder", async () => {
+    const user = userEvent.setup();
+    render(
+      <Host
+        placeholder="Chọn kho"
+        options={[{ value: "", label: "Không giới hạn kho" }, ...SHORT]}
+      />,
+    );
+    await user.click(screen.getByRole("combobox"));
+    expect(screen.getAllByRole("option")).toHaveLength(3);
+    expect(
+      screen.queryByRole("option", { name: "Chọn kho" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("option", { name: "Kho B" }));
+    await user.click(screen.getByRole("combobox"));
+    await user.click(
+      screen.getByRole("option", { name: "Không giới hạn kho" }),
+    );
+    expect(screen.getByTestId("value")).toBeEmptyDOMElement();
+  });
+
+  it("keeps the reset choice when the placeholder has no corresponding option", async () => {
+    const user = userEvent.setup();
+    render(<Host placeholder="Tất cả kho" options={SHORT} />);
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByRole("option", { name: "Kho A" }));
+    await user.click(screen.getByRole("combobox"));
+    expect(screen.getAllByRole("option", { name: "Tất cả kho" })).toHaveLength(
+      1,
+    );
+    await user.click(screen.getByRole("option", { name: "Tất cả kho" }));
+    expect(screen.getByTestId("value")).toBeEmptyDOMElement();
+  });
+
   it("danh sách ngắn: giữ dropdown thường (không có ô nhập)", () => {
     render(<Host options={SHORT} />);
     expect(screen.getByRole("combobox")).not.toHaveProperty("tagName", "INPUT");

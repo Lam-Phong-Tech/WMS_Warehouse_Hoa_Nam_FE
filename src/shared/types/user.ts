@@ -14,6 +14,13 @@ export interface User {
   email: string;
   code: string;
   phone?: string | null;
+  avatar?: {
+    mime_type: string;
+    size: number;
+    updated_at: string;
+    url: string;
+  } | null;
+  last_login_at?: string | null;
   status?: string;
   roles?: UserRoleAssignment[];
   permissions?: string[];

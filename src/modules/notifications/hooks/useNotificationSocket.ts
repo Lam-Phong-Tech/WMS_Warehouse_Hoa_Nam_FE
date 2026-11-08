@@ -1,3 +1,9 @@
+import { deliverBrowserNotification } from "../utils/browser-notification";
+import { getNotificationText } from "../utils/notification-text";
+import {
+  profileKeys,
+  type ProfilePreferences,
+} from "@/modules/auth/types/profile.types";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -43,10 +49,17 @@ export function useNotificationSocket(): void {
         void queryClient.invalidateQueries({ queryKey: ["notifications"] });
       });
       channel.listen(".notification.created", (payload: NotificationItem) => {
+        if (cancelled || useAuthStore.getState().user?.user_id !== userId)
+          return;
+        const preferences = queryClient.getQueryData<ProfilePreferences>(
+          profileKeys.preferences(userId),
+        );
+        deliverBrowserNotification(payload, preferences?.notifications);
         increment();
         queryClient.invalidateQueries({ queryKey: ["notifications"] });
         if (payload.severity === "warning" || payload.severity === "critical") {
-          toast.warning(payload.title, { description: payload.body });
+          const copy = getNotificationText(payload);
+          toast.warning(copy.title, { description: copy.body });
         }
       });
       channel.listen(".auth.session-replaced", () => {

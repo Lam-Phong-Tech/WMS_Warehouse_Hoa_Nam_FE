@@ -1,100 +1,28 @@
-import { useT } from "@/shared/i18n/useT";
 import { type ReactNode } from "react";
-import { Box, Grid, Stack, UiDialog, UiStatusBadge } from "@/shared/ui";
-import { toast } from "sonner";
+import { useT } from "@/shared/i18n/useT";
+import { UiDrawer, UiIcon, UiStatusBadge } from "@/shared/ui";
+import { ActionIconButton } from "@/shared/components/actions";
+import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import type { AuditLog } from "../types/audit-logs.types";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { AUDIT_MODULE_LABELS } from "@/shared/constants/business-labels";
 import {
   auditActionLabel,
-  auditActionTone,
-  auditDataEntries,
+  auditDataChanges,
   auditObjectCode,
   auditObjectTypeLabel,
+  auditResultLabel,
+  auditResultTone,
   describeAuditLog,
 } from "../constants/audit-log-labels";
-import { ActionIconButton } from "@/shared/components/actions";
-import { CopyableId } from "@/shared/components/data-display/CopyableId";
-import { EMPTY_TEXT } from "@/shared/constants/display";
+import "../pages/audit-logs.css";
 
-/** Cặp nhãn/giá trị trong Dialog "Chi tiết nhật ký hệ thống" (thay antd Descriptions.Item). */
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Grid size={{ xs: 12, sm: 6 }}>
-      <Box sx={{ fontSize: 12, color: "var(--settings-muted)", mb: 0.5 }}>
-        {label}
-      </Box>
-      <Box
-        sx={{
-          fontSize: 14,
-          color: "var(--settings-text)",
-          overflowWrap: "anywhere",
-        }}
-      >
-        {value}
-      </Box>
-    </Grid>
-  );
-}
-
-/**
- * Khối "Dữ liệu trước/sau thay đổi".
- *
- * Trước đây in thẳng `JSON.stringify` — người dùng đọc được đúng dấu ngoặc và
- * `{"status": "SCANNING"}`. Nay CHỈ còn danh sách "tên trường – giá trị"
- * tiếng Việt (xem `auditDataEntries`): UAT TC_UI_13 yêu cầu tuyệt đối không
- * hiển thị JSON ở màn nghiệp vụ, nên nút "Xem dữ liệu gốc" đã bị gỡ hẳn —
- * quản trị cần đối chiếu thô thì tra thẳng bản ghi audit_logs phía BE.
- */
-function AuditDataBlock({ title, data }: { title: string; data: unknown }) {
-  const entries = auditDataEntries(data as Record<string, unknown> | null);
-  if (entries.length === 0) return null;
-
-  return (
-    <Box>
-      <Box
-        component="h3"
-        sx={{
-          m: 0,
-          mb: 1,
-          fontSize: 16,
-          fontWeight: 600,
-          color: "var(--settings-ink)",
-        }}
-      >
-        {title}
-      </Box>
-      <Box
-        className="hn-settings-card hn-audit-data-card"
-        sx={{
-          bgcolor: "var(--settings-pale)",
-          border: "1px solid var(--settings-line)",
-          borderRadius: "var(--ops-radius-card)",
-          p: 2,
-        }}
-      >
-        <Grid container spacing={1.5}>
-          {entries.map((entry) => (
-            <Grid key={entry.key} size={{ xs: 12, sm: 6 }}>
-              <Box
-                sx={{ fontSize: 12, color: "var(--settings-muted)", mb: 0.5 }}
-              >
-                {entry.label}
-              </Box>
-              <Box
-                sx={{
-                  fontSize: 14,
-                  color: "var(--settings-text)",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {entry.value}
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-    </Box>
+    <div className="hn-audit-detail-field">
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
   );
 }
 
@@ -110,66 +38,87 @@ export function AuditLogDetailDrawer({
   auditLog,
 }: AuditLogDetailDrawerProps) {
   const t = useT();
-  // Giữ `auditLog` cho tới khi Dialog chạy xong hiệu ứng đóng là việc của màn
-  // cha (AuditLogsPage tách riêng cờ `detailOpen` với bản ghi đang xem) — ở đây
-  // trả null khi chưa có bản ghi thì `open` cũng đang false, không mất hiệu ứng.
   if (!auditLog) return null;
-
   const objectCode = auditObjectCode(auditLog);
-
-  // Thay Typography.Text copyable của antd: nút copy tường minh + toast.
-  const copyIp = () => {
-    if (!auditLog.ip_address) return;
-    void navigator.clipboard?.writeText(auditLog.ip_address);
-    toast.success(t("audit.ipCopied"));
-  };
-
+  const changes = auditDataChanges(auditLog);
   return (
-    <UiDialog
-      className="hn-settings-dialog hn-audit-dialog"
+    <UiDrawer
+      className="hn-settings-dialog hn-audit-drawer"
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      width={800}
       title={
-        <Box sx={{ pr: 6, position: "relative" }}>
-          {t("audit.detailTitle")}
+        <span className="hn-audit-drawer-title">
+          <span>{t("audit.detailTitle")}</span>
           <ActionIconButton
             kind="close"
             label={t("common.close")}
             onClick={onClose}
-            sx={{ position: "absolute", right: -10, top: -2 }}
           />
-        </Box>
+        </span>
       }
     >
-      <Stack spacing={2}>
-        <Box
-          className="hn-settings-card"
-          sx={{
-            border: "1px solid var(--settings-line)",
-            borderRadius: "var(--ops-radius-card)",
-            p: 2,
-          }}
+      <div className="hn-audit-detail-content">
+        <section className="hn-audit-event-heading">
+          <div>
+            <span className="hn-audit-eyebrow">
+              {AUDIT_MODULE_LABELS[auditLog.module] || t("audit.moduleOther")}
+            </span>
+            <h3>{auditActionLabel(auditLog.action)}</h3>
+          </div>
+          <UiStatusBadge
+            className="hn-audit-result"
+            tone={auditResultTone(auditLog.result)}
+            data-settings-tone={auditResultTone(auditLog.result)}
+            label={
+              auditResultLabel(auditLog.result) || t("audit.resultUnknown")
+            }
+          />
+        </section>
+        <section
+          className="hn-audit-detail-section"
+          aria-labelledby="audit-event-summary"
         >
-          <Grid container spacing={2}>
-            {/* Bản ghi nhật ký không có mã nghiệp vụ (id là UUID) — rút gọn +
-              cho sao chép thay vì in nguyên chuỗi thô. */}
+          <h3 id="audit-event-summary">{t("audit.eventSummary")}</h3>
+          <dl className="hn-audit-detail-grid">
             <DetailField
-              label={t("audit.fieldRecordId")}
-              value={<CopyableId value={auditLog.id} />}
+              label={t("audit.colActor")}
+              value={
+                <>
+                  <strong>
+                    {auditLog.actor?.display_name ||
+                      auditLog.actor?.email ||
+                      t("audit.system")}
+                  </strong>
+                  {auditLog.actor?.display_name && auditLog.actor.email ? (
+                    <span className="hn-audit-secondary">
+                      {auditLog.actor.email}
+                    </span>
+                  ) : null}
+                </>
+              }
             />
             <DetailField
               label={t("audit.colTime")}
-              value={formatDateTime(auditLog.created_at)}
+              value={
+                <time dateTime={auditLog.created_at}>
+                  {formatDateTime(auditLog.created_at)}
+                </time>
+              }
             />
             <DetailField
-              label={t("audit.colAction")}
+              label={t("audit.colObject")}
               value={
-                <UiStatusBadge
-                  tone={auditActionTone(auditLog.action)}
-                  data-settings-tone={auditActionTone(auditLog.action)}
-                  label={auditActionLabel(auditLog.action)}
-                />
+                <>
+                  <span title={auditLog.object_type}>
+                    {auditObjectTypeLabel(auditLog.object_type)}
+                  </span>
+                  {objectCode ? (
+                    <strong className="hn-audit-block">{objectCode}</strong>
+                  ) : auditLog.object_id ? (
+                    <CopyableId value={auditLog.object_id} />
+                  ) : null}
+                </>
               }
             />
             <DetailField
@@ -178,87 +127,98 @@ export function AuditLogDetailDrawer({
                 AUDIT_MODULE_LABELS[auditLog.module] || t("audit.moduleOther")
               }
             />
-            {/* `object_type` là tên bảng/slug route của BE — hiện nhãn tiếng
-              Việt của loại đối tượng kèm MÃ NGHIỆP VỤ (số phiếu, mã hồ sơ,
-              serial...) do BE tra ngược. Chỉ loại đối tượng không có mã, hoặc
-              bản ghi gốc không còn, mới rơi về định danh rút gọn có nút sao
-              chép. Giá trị kỹ thuật của loại đối tượng giữ ở tooltip. */}
-            <DetailField
-              label={t("audit.colObject")}
-              value={
-                <Stack
-                  direction="row"
-                  spacing={0.5}
-                  sx={{ alignItems: "center", flexWrap: "wrap" }}
+            <div className="hn-audit-detail-full">
+              <DetailField
+                label={t("audit.colDescription")}
+                value={describeAuditLog(auditLog)}
+              />
+            </div>
+          </dl>
+        </section>
+        <section
+          className="hn-audit-detail-section"
+          aria-labelledby="audit-event-changes"
+        >
+          <h3 id="audit-event-changes">{t("audit.changeContent")}</h3>
+          {changes.length ? (
+            <div
+              className="hn-audit-changes"
+              role="table"
+              aria-label={t("audit.changeContent")}
+            >
+              <div className="hn-audit-change-header" role="row">
+                <span role="columnheader">{t("audit.changeField")}</span>
+                <span role="columnheader">{t("audit.beforeData")}</span>
+                <span role="columnheader">{t("audit.afterData")}</span>
+              </div>
+              {changes.map((change) => (
+                <div
+                  key={change.key}
+                  className="hn-audit-change"
+                  role="row"
+                  data-changed={change.changed}
                 >
-                  <Box
-                    component="span"
-                    title={auditLog.object_type || undefined}
+                  <strong className="hn-audit-change-name" role="rowheader">
+                    {change.label}
+                  </strong>
+                  <div
+                    className="hn-audit-change-before"
+                    role="cell"
+                    data-label={t("audit.beforeData")}
                   >
-                    {auditLog.object_type
-                      ? auditObjectTypeLabel(auditLog.object_type)
-                      : EMPTY_TEXT}
-                  </Box>
-                  {objectCode ? (
-                    <Box component="span" sx={{ fontWeight: 600 }}>
-                      {objectCode}
-                    </Box>
-                  ) : auditLog.object_id ? (
-                    <CopyableId value={auditLog.object_id} />
-                  ) : null}
-                </Stack>
-              }
-            />
-            <DetailField
-              label={t("audit.colActor")}
-              value={
-                auditLog.actor?.email ||
-                auditLog.actor?.display_name ||
-                t("audit.system")
-              }
-            />
+                    <span>{change.before ?? t("audit.notRecorded")}</span>
+                  </div>
+                  <div
+                    className="hn-audit-change-after"
+                    role="cell"
+                    data-label={t("audit.afterData")}
+                  >
+                    <span>{change.after ?? t("audit.notRecorded")}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="hn-audit-secondary">{t("audit.noChanges")}</p>
+          )}
+        </section>
+        <section
+          className="hn-audit-detail-section"
+          aria-labelledby="audit-technical-details"
+        >
+          <h3 id="audit-technical-details">{t("audit.technicalDetails")}</h3>
+          <dl className="hn-audit-detail-grid">
             <DetailField
               label={t("audit.colIp")}
+              value={auditLog.ip_address || t("audit.notRecorded")}
+            />
+            <DetailField
+              label={t("audit.requestId")}
               value={
-                auditLog.ip_address ? (
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    sx={{ alignItems: "center" }}
-                  >
-                    <span>{auditLog.ip_address}</span>
-                    <ActionIconButton
-                      kind="copy"
-                      label={t("audit.copyIpAria")}
-                      onClick={copyIp}
-                    />
-                  </Stack>
+                auditLog.request_id ? (
+                  <span title={auditLog.request_id}>
+                    <CopyableId value={auditLog.request_id} />
+                  </span>
                 ) : (
-                  EMPTY_TEXT
+                  t("audit.notRecorded")
                 )
               }
             />
-            {/* Không in `auditLog.description` của BE: đó là chuỗi ghép máy
-              `"{ACTION} {object_type} #{uuid}"`. Dựng câu tiếng Việt từ cùng
-              nguyên liệu (kèm số chứng từ nếu có). */}
             <DetailField
-              label={t("audit.colDescription")}
-              value={describeAuditLog(auditLog)}
+              label={t("audit.fieldRecordId")}
+              value={<CopyableId value={auditLog.id} />}
             />
-          </Grid>
-        </Box>
-
-        <AuditDataBlock
-          title={t("audit.beforeData")}
-          data={auditLog.before_data}
-        />
-        {/* `after_data` là phần giàu thông tin nhất (số chứng từ, mục đích,
-          ảnh hưởng tồn...) nhưng trước đây không hiện ra màn nào. */}
-        <AuditDataBlock
-          title={t("audit.afterData")}
-          data={auditLog.after_data}
-        />
-      </Stack>
-    </UiDialog>
+            <DetailField
+              label={t("audit.errorCode")}
+              value={auditLog.error_code || t("audit.notRecorded")}
+            />
+          </dl>
+        </section>
+        <p className="hn-audit-readonly-note">
+          <UiIcon name="info" size="sm" />
+          <span>{t("audit.readOnlyNotice")}</span>
+        </p>
+      </div>
+    </UiDrawer>
   );
 }

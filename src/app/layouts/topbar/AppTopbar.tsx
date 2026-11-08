@@ -1,3 +1,6 @@
+import { useNotificationText } from "@/modules/notifications/utils/notification-text";
+import { useInterfacePreferenceShortcut } from "@/modules/auth/hooks/use-interface-preference-shortcut";
+import { useProfileAvatarUrl } from "@/modules/auth/hooks/use-profile-avatar-url";
 /**
  * THANH TOPBAR — dựng 1:1 theo demo UI/UX đã chốt
  * `10.WMS_Hoa_Nam_Trang_Tong_Quan.html`: ô tìm kiếm và các điều
@@ -93,15 +96,15 @@ export function AppTopbar({
   const location = useLocation();
   const navigate = useNavigate();
   const t = useT();
+  const notificationText = useNotificationText();
   const navLabel = useNavLabel();
   const breadcrumbTrail = isDashboard
     ? []
     : getBreadcrumbTrail(location.pathname);
   const language = useLanguageStore((state) => state.language);
-  const setLanguage = useLanguageStore((state) => state.setLanguage);
+  const preferenceShortcut = useInterfacePreferenceShortcut();
   const themePreference = useThemeStore((state) => state.preference);
   const themeMode = useThemeStore((state) => state.mode);
-  const setThemePreference = useThemeStore((state) => state.setPreference);
 
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
@@ -139,6 +142,10 @@ export function AppTopbar({
     user?.email ??
     t("shared.user.fallbackName");
   const initials = initialsOf(displayName);
+  const avatarUrl = useProfileAvatarUrl(
+    String(profile?.user_id ?? user?.user_id ?? user?.id ?? ""),
+    profile?.avatar ?? user?.avatar,
+  );
   const roleLabel = isSuperAdmin
     ? t("topbar.accountRoleSuperAdmin")
     : t("topbar.accountRoleUser");
@@ -217,24 +224,23 @@ export function AppTopbar({
     setOpenMenu((current) => (current === id ? null : id));
 
   const chooseLanguage = (next: Language) => {
-    setLanguage(next);
     closeMenus();
-    // tStatic (không phải `t` của closure): đọc NGÔN NGỮ VỪA CHỌN từ store —
-    // vi → "Đã chuyển sang Tiếng Việt", en → bản EN của khoá này.
-    announce(tStatic("topbar.languageChanged"));
-  };
-
-  const chooseTheme = (next: ThemePreference) => {
-    setThemePreference(next);
-    closeMenus();
-    const name = t(
-      next === "light"
-        ? "topbar.themeLight"
-        : next === "dark"
-          ? "topbar.themeDark"
-          : "topbar.themeSystem",
+    preferenceShortcut.mutate(
+      { locale: next },
+      { onSuccess: () => announce(tStatic("topbar.languageChanged")) },
     );
-    announce(`${t("topbar.themeChanged")} ${name}`);
+  };
+  const chooseTheme = (next: ThemePreference) => {
+    closeMenus();
+    preferenceShortcut.mutate(
+      { theme: next },
+      {
+        onSuccess: () =>
+          announce(
+            `${t("topbar.themeChanged")} ${t(next === "light" ? "topbar.themeLight" : next === "dark" ? "topbar.themeDark" : "topbar.themeSystem")}`,
+          ),
+      },
+    );
   };
 
   const handleLogout = () => {
@@ -278,8 +284,8 @@ export function AppTopbar({
           <VuexyDemoIcon name={SEVERITY_ICON[item.severity]} />
         </span>
         <span>
-          <strong>{item.title}</strong>
-          <small>{item.body}</small>
+          <strong>{notificationText(item).title}</strong>
+          <small>{notificationText(item).body}</small>
         </span>
         <time dateTime={item.created_at}>{shortAge(item.created_at)}</time>
       </button>
@@ -469,11 +475,14 @@ export function AppTopbar({
                   type="button"
                   role="menuitemradio"
                   aria-checked={language === value}
+                  disabled={preferenceShortcut.isPending}
                   onClick={() => chooseLanguage(value)}
                 >
                   <span>{label}</span>
                   <span className="language-option-check" aria-hidden="true">
-                    {language === value ? "✓" : null}
+                    {language === value ? (
+                      <UiIcon name="check" size="sm" />
+                    ) : null}
                   </span>
                 </button>
               ))}
@@ -519,6 +528,7 @@ export function AppTopbar({
                   type="button"
                   role="menuitemradio"
                   aria-checked={themePreference === value}
+                  disabled={preferenceShortcut.isPending}
                   onClick={() => chooseTheme(value)}
                 >
                   <span className="menu-item-icon" aria-hidden="true">
@@ -606,7 +616,9 @@ export function AppTopbar({
             onClick={() => toggleMenu("account")}
           >
             <span className="avatar-status" aria-hidden="true">
-              <span className="avatar">{initials}</span>
+              <span className="avatar">
+                {avatarUrl ? <img src={avatarUrl} alt="" /> : initials}
+              </span>
               <span className="presence-dot" />
             </span>
             <span className="topbar-profile-summary" aria-hidden="true">
@@ -637,7 +649,7 @@ export function AppTopbar({
                   className="header-menu-item account-action"
                   type="button"
                   role="menuitem"
-                  onClick={() => go(ROUTES.CHANGE_PASSWORD)}
+                  onClick={() => go(`${ROUTES.PROFILE}?section=security`)}
                 >
                   <span className="menu-item-icon" aria-hidden="true">
                     <VuexyDemoIcon name="lock" />

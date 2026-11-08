@@ -16,6 +16,11 @@ type NavIconPart = readonly [string, Readonly<Record<string, string>>];
 
 /** 8 icon nhóm + chevron + nút thu gọn — đúng bằng số icon demo hiển thị. */
 export const VUEXY_NAV_ICONS = {
+  "user-circle": [
+    ["circle", { cx: "12", cy: "12", r: "9" }],
+    ["circle", { cx: "12", cy: "9", r: "3" }],
+    ["path", { d: "M5.5 18.3c.8-3 3.1-4.3 6.5-4.3s5.7 1.3 6.5 4.3" }],
+  ],
   /** Tổng quan */
   "layout-dashboard": [
     ["rect", { width: "7", height: "9", x: "3", y: "3", rx: "1" }],

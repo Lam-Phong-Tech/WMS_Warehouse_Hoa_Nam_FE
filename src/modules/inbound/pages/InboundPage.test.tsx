@@ -60,6 +60,7 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
 
   it("gắn nhãn ngay trên danh sách để không phải mở từng phiếu mới biết", async () => {
     renderWithProviders(<InboundPage />);
+    expect(screen.getByRole("columnheader", { name: /Mã chứng từ bên ngoài/ })).toBeInTheDocument();
 
     // Phiếu Mini App có SKU mới: nhãn kèm số SKU đang thiếu.
     expect(
@@ -94,6 +95,20 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
     expect(useInboundDocuments).toHaveBeenCalledWith(
       expect.objectContaining({ pendingProductInfo: undefined }),
     );
+  });
+
+  it("keeps existing rows interactive during a background data refresh", () => {
+    vi.mocked(useInboundDocuments).mockReturnValue({
+      data: { data: ROWS, meta: { current_page: 1, last_page: 1, total: 2 } },
+      isLoading: false,
+      isFetching: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useInboundDocuments>);
+    const { container } = renderWithProviders(<InboundPage />);
+    expect(screen.getByText("PN-MINI-001")).toBeVisible();
+    expect(container.querySelector(".hn-inbound-loading")).toBeNull();
   });
 });
 

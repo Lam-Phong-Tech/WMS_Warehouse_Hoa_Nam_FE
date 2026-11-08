@@ -1,0 +1,84 @@
+.hn-mfa-drawer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hn-mfa-settings-drawer .MuiDrawer-paper {
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+.hn-mfa-settings-drawer [data-ui-drawer-body] {
+  overflow-x: hidden;
+}
+.hn-mfa-drawer-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.hn-mfa-embedded.hn-settings-screen {
+  padding: 0;
+  background: transparent;
+  gap: 20px;
+}
+.hn-mfa-embedded .hn-mfa-setup-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.hn-mfa-settings-drawer .hn-mfa-embedded .hn-mfa-intro-card > .MuiBox-root {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  padding: 24px;
+}
+.hn-mfa-settings-drawer .hn-mfa-intro-copy h2 {
+  max-width: none;
+  margin: 8px 0 12px;
+}
+.hn-mfa-settings-drawer .hn-mfa-intro-copy p {
+  max-width: none;
+  margin: 0 0 24px;
+  line-height: 1.7;
+}
+.hn-mfa-settings-drawer .hn-mfa-intro-steps {
+  padding: 24px;
+  gap: 24px;
+}
+.hn-mfa-settings-drawer .hn-mfa-intro-steps li {
+  gap: 16px;
+  line-height: 1.7;
+}
+@media (max-width: 600px) {
+  .hn-mfa-settings-drawer .hn-mfa-embedded .hn-mfa-intro-card > .MuiBox-root,
+  .hn-mfa-settings-drawer .hn-mfa-intro-steps {
+    padding: 16px;
+    gap: 20px;
+  }
+}
+.hn-mfa-embedded .hn-settings-card {
+  box-shadow: none;
+}
+.hn-mfa-embedded .hn-mfa-manual-key code {
+  overflow-wrap: anywhere;
+}
+.hn-mfa-disable-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--ops-line);
+}
+.hn-mfa-disable-section form {
+  display: grid;
+  gap: 16px;
+}
+.hn-mfa-disable-section h3 {
+  margin: 0;
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+}
+.hn-mfa-disable-section p {
+  margin: 0;
+  color: var(--ops-muted);
+  font-size: 14px;
+  line-height: 22px;
+}

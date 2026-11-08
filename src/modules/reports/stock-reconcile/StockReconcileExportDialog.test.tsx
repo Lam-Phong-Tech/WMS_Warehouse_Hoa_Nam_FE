@@ -1,18 +1,44 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { useAuthStore } from "@/shared/store/auth.store";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
-vi.mock("xlsx", async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  writeFile: vi.fn(),
+vi.mock("@/shared/utils/report-excel-style", () => ({
+  saveStyledReportWorkbook: vi.fn().mockResolvedValue(undefined),
 }));
+import { saveStyledReportWorkbook } from "@/shared/utils/report-excel-style";
 
 import * as XLSX from "xlsx";
 import { StockReconcileExportDialog } from "./StockReconcileExportDialog";
 
 describe("StockReconcileExportDialog", () => {
   afterEach(cleanupTestState);
+  beforeEach(() => useAuthStore.setState({ isSuperAdmin: true }));
+
+  it.each([
+    ["2026-11-06T03:49:55.937Z", "06/11/2026 10:49:55 (UTC+7)"],
+    ["2026-11-05T20:30:00Z", "06/11/2026 03:30:00 (UTC+7)"],
+    ["2026-11-06T10:49:55+07:00", "06/11/2026 10:49:55 (UTC+7)"],
+    ["2026-11-06 10:49:55", "06/11/2026 10:49:55 (UTC+7)"],
+    ["", "2026-11-06"],
+    ["invalid", "2026-11-06"],
+  ])(
+    "displays data timestamp %s in Vietnam time or the report end date",
+    (asOf, expected) => {
+      renderWithProviders(
+        <StockReconcileExportDialog
+          rows={[]}
+          from="2026-10-31"
+          to="2026-11-06"
+          asOf={asOf}
+          onClose={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText(expected, { exact: true })).toBeInTheDocument();
+    },
+  );
 
   it("exports only review SKUs and the selected sheets", async () => {
     const onClose = vi.fn();
@@ -71,8 +97,9 @@ describe("StockReconcileExportDialog", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Xuất Excel" }));
 
-    expect(XLSX.writeFile).toHaveBeenCalledOnce();
-    const [workbook, filename] = vi.mocked(XLSX.writeFile).mock.calls[0];
+    expect(saveStyledReportWorkbook).toHaveBeenCalledOnce();
+    const [workbook, filename] = vi.mocked(saveStyledReportWorkbook).mock
+      .calls[0];
     expect(filename).toBe("DoiSoat-CanKiemTra.xlsx");
     expect(workbook.SheetNames).toEqual(["Chi tiết đối soát"]);
     const exported = XLSX.utils.sheet_to_json<string[]>(
@@ -81,6 +108,6 @@ describe("StockReconcileExportDialog", () => {
     );
     expect(exported.flat()).toContain("A");
     expect(exported.flat()).not.toContain("B");
-    expect(onClose).toHaveBeenCalledOnce();
+    await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
   });
 });

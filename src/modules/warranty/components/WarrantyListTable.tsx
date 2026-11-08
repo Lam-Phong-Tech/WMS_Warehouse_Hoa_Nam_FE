@@ -98,7 +98,7 @@ export function WarrantyListTable({
               )}
               {header("received_at", tUi("updatedUi.text_2a2f8a4381c7"))}
               {header("status", tUi("dashboard.composition.colStatus"))}
-              <th>{tUi("outbound.detail.colAction")}</th>
+              <th scope="col" aria-label={tUi("outbound.detail.colAction")} />
             </tr>
           </thead>
           <tbody>
@@ -204,10 +204,7 @@ export function WarrantyListTable({
                         {cell("status", row)}
                       </span>
                     </td>
-                    <td
-                      className="hn-war-action-cell"
-                      data-label={tUi("outbound.detail.colAction")}
-                    >
+                    <td className="hn-war-action-cell">
                       <RowActionGroup
                         className="hn-war-row-actions"
                         onClick={(event) => event.stopPropagation()}

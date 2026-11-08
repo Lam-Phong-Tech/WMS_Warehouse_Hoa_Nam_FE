@@ -168,12 +168,18 @@ export function ActionButton({
       aria-busy={loading || undefined}
       title={isButtonDisabled ? resolvedDisabledTooltip : title}
       aria-label={resolvedAriaLabel}
-      sx={{
-        whiteSpace: "nowrap",
-        minWidth: iconOnly ? 0 : undefined,
-        ...(tonal ? actionSurfaceSx(kind) : null),
-        ...buttonProps.sx,
-      }}
+      sx={[
+        {
+          whiteSpace: "nowrap",
+          minWidth: iconOnly ? 0 : undefined,
+          ...(tonal ? actionSurfaceSx(kind) : null),
+        },
+        ...(Array.isArray(buttonProps.sx)
+          ? buttonProps.sx
+          : buttonProps.sx
+            ? [buttonProps.sx]
+            : []),
+      ]}
       startIcon={iconOnly ? undefined : iconNode}
     >
       {iconOnly ? iconNode : text}

@@ -198,21 +198,12 @@ const num = (value: unknown): number =>
 /** Ngưỡng tươi của bảng điều khiển — khớp chính sách nhóm `dashboard` và TTL
  * cache dashboard 60s của BE (config/wms_cache.php ttl.dashboard). */
 const STALE_MS = CACHE_POLICIES.dashboard.staleTime;
-/** Demo ghi "Tự động làm mới sau 60 giây" — làm đúng như vậy, không chỉ ghi chữ. */
-const AUTO_REFRESH_MS = 60_000;
-
-/**
- * `autoRefresh: false` tắt hẳn vòng 60 giây.
- *
- * Dùng khi ngoại tuyến: banner đang hứa với người dùng là "tạm dừng làm mới",
- * nên vòng lặp phải dừng thật chứ không chỉ nói. Nút Làm mới thủ công vẫn bấm
- * được — người dùng có quyền tự thử lại.
- */
-export function reportQueryOptions(enabled: boolean, autoRefresh: boolean) {
+/** The authenticated shell owns foreground synchronization and recovery reads. */
+export function reportQueryOptions(enabled: boolean) {
   return {
     enabled,
     staleTime: STALE_MS,
-    refetchInterval: autoRefresh ? AUTO_REFRESH_MS : (false as const),
+    refetchInterval: false as const,
     retry: (failureCount: number, error: unknown) => {
       const status = (error as { response?: { status?: number } })?.response
         ?.status;
@@ -235,11 +226,7 @@ export function reportQueryOptions(enabled: boolean, autoRefresh: boolean) {
  * cả màn đổ chỉ vì một con số phụ. Bản thân kỳ đang xem dài quá trần thì BE
  * vẫn trả 422 và màn nói thẳng "chọn khoảng thời gian ngắn hơn".
  */
-export function useOverviewSource(
-  range: DateRange,
-  enabled: boolean,
-  autoRefresh: boolean,
-) {
+export function useOverviewSource(range: DateRange, enabled: boolean) {
   const { widened, hasPrevious } = useMemo(() => {
     const candidate = { from: previousRange(range).from, to: range.to };
     if (rangeDayDiff(candidate) > MAX_RANGE_DAY_DIFF)
@@ -253,7 +240,7 @@ export function useOverviewSource(
       http.get<DashboardOverview>(API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW, {
         params: { from_date: widened.from, to_date: widened.to },
       }),
-    ...reportQueryOptions(enabled, autoRefresh),
+    ...reportQueryOptions(enabled),
   });
 
   const xnt = useQuery({
@@ -262,7 +249,7 @@ export function useOverviewSource(
       http.get<XntReport>(API_ENDPOINTS.REPORTS_XNT_ENHANCED, {
         params: { from_date: range.from, to_date: range.to },
       }),
-    ...reportQueryOptions(enabled, autoRefresh),
+    ...reportQueryOptions(enabled),
   });
 
   // Chỉ phục vụ chiều "Hoàn tác" của biểu đồ luồng — cùng kỳ với biểu đồ.
@@ -272,7 +259,7 @@ export function useOverviewSource(
       http.get<XntDailyReport>(OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY, {
         params: { from_date: range.from, to_date: range.to },
       }),
-    ...reportQueryOptions(enabled, autoRefresh),
+    ...reportQueryOptions(enabled),
   });
 
   const quick = useQuery({
@@ -281,7 +268,7 @@ export function useOverviewSource(
       http.get<DashboardQuick>(API_ENDPOINTS.DASHBOARD_KPI, {
         params: { from_date: range.from, to_date: range.to },
       }),
-    ...reportQueryOptions(enabled, autoRefresh),
+    ...reportQueryOptions(enabled),
   });
 
   return { overview, xnt, xntDaily, quick, hasPrevious };
@@ -296,18 +283,14 @@ export type OverviewSource = ReturnType<typeof useOverviewSource>;
  * Nhập – Xuất – Tồn; KPI "Hôm nay" và các card Dashboard khác phải giữ nguyên.
  * Vì vậy chart chỉ tải đúng hai nguồn nó thực sự cần, tránh gọi lại XNT/quick.
  */
-export function useOverviewChartSource(
-  range: DateRange,
-  enabled: boolean,
-  autoRefresh: boolean,
-) {
+export function useOverviewChartSource(range: DateRange, enabled: boolean) {
   const overview = useQuery({
     queryKey: ["dashboard", "overview-chart", range.from, range.to],
     queryFn: () =>
       http.get<DashboardOverview>(API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW, {
         params: { from_date: range.from, to_date: range.to },
       }),
-    ...reportQueryOptions(enabled, autoRefresh),
+    ...reportQueryOptions(enabled),
   });
 
   const xntDaily = useQuery({
@@ -316,7 +299,7 @@ export function useOverviewChartSource(
       http.get<XntDailyReport>(OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY, {
         params: { from_date: range.from, to_date: range.to },
       }),
-    ...reportQueryOptions(enabled, autoRefresh),
+    ...reportQueryOptions(enabled),
   });
 
   return { overview, xntDaily };

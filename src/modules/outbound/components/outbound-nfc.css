@@ -1,0 +1,463 @@
+.hn-outbound-content-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--ops-line);
+}
+.hn-outbound-content-tabs button {
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--ops-muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+.hn-outbound-content-tabs button[aria-selected="true"] {
+  color: var(--ops-link);
+  border-bottom-color: var(--ops-link);
+}
+.hn-outbound-nfc {
+  container-type: inline-size;
+  min-width: 0;
+  color: var(--ops-text);
+}
+.hn-outbound-nfc-list-card {
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+  overflow: hidden;
+}
+.hn-outbound-nfc-pages,
+.hn-outbound-nfc-page-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hn-outbound-nfc-state p {
+  margin: 4px 0 0;
+  color: var(--ops-muted);
+}
+.hn-outbound-nfc button {
+  font: inherit;
+  cursor: pointer;
+}
+.hn-outbound-nfc :is(button, input, [role="combobox"]):focus-visible,
+.hn-outbound-nfc-table-wrap:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 3px;
+}
+.hn-outbound-nfc-view,
+.hn-outbound-nfc-uid button {
+  color: var(--ops-link);
+  background: var(--ops-surface);
+  border: 1px solid var(--ops-link);
+  border-radius: var(--ops-radius-control);
+  padding: 7px 12px;
+}
+.hn-outbound-nfc-search {
+  margin-bottom: 14px;
+}
+.hn-outbound-nfc-search label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.hn-outbound-nfc-search-controls {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+.hn-outbound-nfc-search input {
+  min-width: 0;
+  width: 100%;
+  height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  color: var(--ops-text);
+  background: var(--ops-surface);
+}
+.hn-outbound-nfc-search input:hover,
+.hn-outbound-nfc-search input:focus {
+  border-color: var(--ops-link);
+}
+.hn-outbound-nfc-search input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+.hn-outbound-nfc-search .MuiFormControl-root {
+  min-width: 0;
+}
+.hn-outbound-nfc-search .MuiOutlinedInput-root {
+  min-height: 48px;
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+}
+.hn-outbound-nfc-search .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-line);
+}
+.hn-outbound-nfc-search
+  .MuiOutlinedInput-root:hover
+  .MuiOutlinedInput-notchedOutline,
+.hn-outbound-nfc-search
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-link);
+}
+.hn-outbound-nfc-search .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
+}
+.hn-outbound-nfc-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-color: var(--ops-line) transparent;
+  scrollbar-width: thin;
+  overscroll-behavior-inline: contain;
+}
+.hn-outbound-nfc-table {
+  width: 100%;
+  min-width: 900px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+}
+.hn-outbound-nfc-table th {
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: left;
+}
+.hn-outbound-nfc-table :is(th, td) {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--ops-line);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.hn-outbound-nfc-table tbody tr {
+  height: 68px;
+  transition: background-color 0.14s ease;
+}
+.hn-outbound-nfc-table tbody tr:hover {
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
+.hn-outbound-nfc-table:not([data-document-scoped="true"]) th:nth-child(1) {
+  width: 5%;
+}
+.hn-outbound-nfc-table:not([data-document-scoped="true"]) th:nth-child(2) {
+  width: 22%;
+}
+.hn-outbound-nfc-table:not([data-document-scoped="true"]) th:nth-child(3) {
+  width: 31%;
+}
+.hn-outbound-nfc-table:not([data-document-scoped="true"]) th:nth-child(4) {
+  width: 20%;
+}
+.hn-outbound-nfc-table:not([data-document-scoped="true"]) th:nth-child(5) {
+  width: 16%;
+}
+.hn-outbound-nfc-table:not([data-document-scoped="true"]) th:nth-child(6) {
+  width: 6%;
+}
+.hn-outbound-nfc-table[data-document-scoped="true"] th:nth-child(1) {
+  width: 6%;
+}
+.hn-outbound-nfc-table[data-document-scoped="true"] th:nth-child(2) {
+  width: 30%;
+}
+.hn-outbound-nfc-table[data-document-scoped="true"] th:nth-child(3) {
+  width: 40%;
+}
+.hn-outbound-nfc-table[data-document-scoped="true"] th:nth-child(4) {
+  width: 16%;
+}
+.hn-outbound-nfc-table[data-document-scoped="true"] th:nth-child(5) {
+  width: 8%;
+}
+.hn-outbound-nfc-table td[data-field="action"] {
+  text-align: center;
+}
+.hn-outbound-nfc-table th:first-child,
+.hn-outbound-nfc-table td[data-field="ordinal"] {
+  padding-inline: 8px;
+  text-align: center;
+}
+.hn-outbound-nfc-table td[data-field="product"] :is(strong, small),
+.hn-outbound-nfc-table td[data-field="document"],
+.hn-outbound-nfc-link {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.hn-outbound-nfc-link {
+  display: block;
+}
+.hn-outbound-nfc-table td strong,
+.hn-outbound-nfc-table td small {
+  display: block;
+}
+.hn-outbound-nfc-table td strong {
+  color: var(--ops-heading);
+  font-weight: 700;
+}
+.hn-outbound-nfc-table td small {
+  color: var(--ops-muted);
+}
+.hn-outbound-nfc-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ops-link);
+}
+.hn-outbound-nfc-uid {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.hn-outbound-nfc-uid code {
+  font-family: ui-monospace, monospace;
+}
+.hn-outbound-nfc-uid button {
+  padding: 4px 7px;
+  font-size: 12px;
+}
+.hn-outbound-nfc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: var(--ops-pale);
+  color: var(--ops-muted);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.hn-outbound-nfc-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.hn-outbound-nfc-badge[data-status="ASSIGNED"] {
+  color: var(--ops-success);
+  background: var(--ops-success-soft);
+}
+.hn-outbound-nfc-badge[data-status="UNKNOWN"] {
+  color: var(--ops-danger);
+  background: var(--ops-danger-soft);
+}
+.hn-outbound-nfc-state {
+  text-align: center;
+  padding: 36px 16px;
+  border: 1px dashed var(--ops-line);
+  border-radius: var(--ops-radius-card);
+}
+.hn-outbound-nfc-list-card .hn-outbound-nfc-state {
+  border: 0;
+  border-radius: 0;
+}
+.hn-outbound-nfc-pages {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 1px solid var(--ops-line);
+  padding: 14px 16px;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+.hn-outbound-nfc-page-info {
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.hn-outbound-nfc-page-info .MuiInputBase-root {
+  min-height: 32px;
+  font-size: 12px;
+}
+.hn-outbound-nfc-pages > nav {
+  margin-left: auto;
+}
+.hn-outbound-nfc-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 16px;
+  padding-block: 24px;
+}
+.hn-outbound-nfc-detail-grid > div {
+  min-width: 0;
+  padding: 0;
+}
+.hn-outbound-nfc-detail-grid span,
+.hn-outbound-nfc-detail-grid strong,
+.hn-outbound-nfc-detail-grid small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.hn-outbound-nfc-detail-grid span {
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+.hn-outbound-nfc-detail-grid small {
+  color: var(--ops-muted);
+}
+.hn-outbound-nfc-note {
+  padding: 10px 12px;
+  background: var(--ops-pale);
+  border-radius: 8px;
+}
+.hn-outbound-nfc-history {
+  padding-left: 22px;
+}
+.hn-outbound-nfc-history li {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--ops-line);
+}
+.hn-outbound-nfc-history li span,
+.hn-outbound-nfc-history li small {
+  display: block;
+  color: var(--ops-muted);
+}
+.hn-outbound-nfc-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+.hn-outbound-nfc-detail-actions button {
+  border: 1px solid var(--ops-line);
+  border-radius: 8px;
+  background: var(--ops-surface);
+  color: var(--ops-heading);
+  padding: 8px 16px;
+  cursor: pointer;
+}
+@media (max-width: 720px) {
+  .hn-outbound-nfc-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .hn-outbound-nfc-search-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-outbound-nfc-uid {
+    white-space: normal;
+    flex-wrap: wrap;
+  }
+}
+
+.hn-outbound-nfc-drawer .MuiDrawer-paper {
+  overflow: hidden;
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+.hn-outbound-nfc-drawer-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.hn-outbound-nfc-detail {
+  min-width: 0;
+}
+.hn-outbound-nfc-history-section {
+  padding-top: 20px;
+}
+.hn-outbound-nfc-history {
+  margin: 0;
+}
+.hn-outbound-nfc-history li {
+  padding-block: 12px;
+}
+@container (max-width: 900px) {
+  .hn-outbound-nfc-table-wrap {
+    overflow: visible;
+  }
+  .hn-outbound-nfc-table {
+    min-width: 0;
+    display: block;
+  }
+  .hn-outbound-nfc-table thead {
+    display: none;
+  }
+  .hn-outbound-nfc-table tbody {
+    display: block;
+  }
+  .hn-outbound-nfc-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    height: auto;
+    padding: 16px;
+    gap: 16px;
+    border-bottom: 1px solid var(--ops-line);
+  }
+  .hn-outbound-nfc-table :is(th, td) {
+    display: block;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+  }
+  .hn-outbound-nfc-table td[data-field="ordinal"] {
+    padding: 0;
+    text-align: left;
+  }
+  .hn-outbound-nfc-table td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--ops-muted);
+    font-size: 12px;
+    line-height: 18px;
+    margin-bottom: 4px;
+  }
+  .hn-outbound-nfc-table td[data-field="action"] {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+  .hn-outbound-nfc-table td[data-field="action"]::before {
+    display: none;
+  }
+  .hn-outbound-nfc-uid {
+    white-space: normal;
+    flex-wrap: wrap;
+  }
+}
+@container (max-width: 440px) {
+  .hn-outbound-nfc-table tbody tr {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-outbound-nfc-search-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.hn-outbound-nfc-identity {
+  display: grid;
+  gap: 4px;
+  padding-block: 16px;
+  overflow-wrap: anywhere;
+}
+.hn-outbound-nfc-identity strong {
+  font-size: 18px;
+  color: var(--ops-heading);
+}
+.hn-outbound-nfc-identity span {
+  font-size: 14px;
+  color: var(--ops-muted);
+}
+.hn-outbound-nfc-embedded > button {
+  margin-bottom: 8px;
+}

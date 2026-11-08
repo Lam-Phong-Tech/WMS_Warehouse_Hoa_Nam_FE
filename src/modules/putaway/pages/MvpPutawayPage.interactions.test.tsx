@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { useEffect } from "react";
+import { act, screen, waitFor, within } from "@testing-library/react";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -66,6 +68,15 @@ const stockNeutral: PutawayEvent = {
   movement_created: false,
 };
 
+let liveClient: QueryClient;
+function CaptureQueryClient() {
+  const client = useQueryClient();
+  useEffect(() => {
+    liveClient = client;
+  }, [client]);
+  return null;
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   useAuthStore.setState({
@@ -95,6 +106,80 @@ beforeEach(() => {
 afterEach(cleanupTestState);
 
 describe("PTW-00 page workflows", () => {
+  it("closes the read drawer when a stored BOX leaves the pending results without reopening it later", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <CaptureQueryClient />
+        <MvpPutawayPage />
+      </>,
+      ["/putaway?screen=PTW-00"],
+    );
+    await user.click(
+      await screen.findByRole("button", { name: pending.box_code }),
+    );
+    await screen.findByRole("dialog");
+    await act(async () => {
+      liveClient.setQueryData(["putaway", "tasks", ""], []);
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await act(async () => {
+      liveClient.setQueryData(["putaway", "tasks", ""], [pending, draft]);
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+  it("refreshes the read drawer without rehydrating an open putaway draft", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <CaptureQueryClient />
+        <MvpPutawayPage />
+      </>,
+      ["/putaway?screen=PTW-00"],
+    );
+    await user.click(
+      await screen.findByRole("button", { name: pending.box_code }),
+    );
+    let dialog = await screen.findByRole("dialog");
+    await act(async () => {
+      liveClient.setQueryData(
+        ["putaway", "tasks", ""],
+        [{ ...pending, location_hint: "Live read location" }, draft],
+      );
+    });
+    expect(
+      await within(dialog).findByText("Live read location"),
+    ).toBeInTheDocument();
+    await user.click(
+      within(dialog).getAllByRole("button", { name: "Đóng" }).at(-1)!,
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "Tạo lệnh" }));
+    dialog = await screen.findByRole("dialog");
+    const note = await within(dialog).findByRole("textbox", { name: "Ghi chú" });
+    await user.type(note, "Unsaved note");
+    await act(async () => {
+      liveClient.setQueryData(
+        ["putaway", "tasks", ""],
+        [
+          {
+            ...pending,
+            location_hint: "Other operator location",
+            container_version: 7,
+          },
+          draft,
+        ],
+      );
+    });
+    expect(note).toHaveValue("Unsaved note");
+    expect(
+      within(dialog).getByRole("textbox", { name: "Vị trí gợi ý" }),
+    ).toHaveValue("Live read location");
+  });
   it("shows the page title without its descriptive subtitle", () => {
     renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);
     expect(

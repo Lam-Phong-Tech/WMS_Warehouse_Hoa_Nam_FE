@@ -171,7 +171,7 @@ describe("useLogin WWHN-165", () => {
     renderHarness(
       <Routes>
         <Route path={ROUTES.LOGIN} element={<LoginHarness />} />
-        <Route path={ROUTES.DASHBOARD} element={<div>Dashboard home</div>} />
+        <Route path={ROUTES.HOME} element={<div>Account landing</div>} />
         <Route path={ROUTES.INBOUND} element={<div>Inbound restored</div>} />
       </Routes>,
       {
@@ -181,7 +181,7 @@ describe("useLogin WWHN-165", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Login" }));
 
-    expect(await screen.findByText("Dashboard home")).toBeInTheDocument();
+    expect(await screen.findByText("Account landing")).toBeInTheDocument();
   });
 
   it("login lỗi không tạo authenticated state", async () => {
@@ -201,18 +201,30 @@ describe("useLogin WWHN-165", () => {
   });
 
   it("login thay phiên cũ hiện cảnh báo cho thiết bị vừa đăng nhập", async () => {
-    const warning = vi.spyOn(toast, "warning").mockImplementation(() => "test-toast");
-    const success = vi.spyOn(toast, "success").mockImplementation(() => "test-success");
-    vi.mocked(authService.login).mockResolvedValue({ ...LOGIN_OK, replaced_existing_session: true });
-    renderHarness(<Routes>
-      <Route path={ROUTES.LOGIN} element={<LoginHarness />} />
-      <Route path={ROUTES.INBOUND} element={<div>Inbound restored</div>} />
-    </Routes>);
+    const warning = vi
+      .spyOn(toast, "warning")
+      .mockImplementation(() => "test-toast");
+    const success = vi
+      .spyOn(toast, "success")
+      .mockImplementation(() => "test-success");
+    vi.mocked(authService.login).mockResolvedValue({
+      ...LOGIN_OK,
+      replaced_existing_session: true,
+    });
+    renderHarness(
+      <Routes>
+        <Route path={ROUTES.LOGIN} element={<LoginHarness />} />
+        <Route path={ROUTES.INBOUND} element={<div>Inbound restored</div>} />
+      </Routes>,
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Login" }));
 
     expect(await screen.findByText("Inbound restored")).toBeInTheDocument();
-    expect(warning).toHaveBeenCalledWith("Đăng nhập này đã đăng xuất một phiên khác.", expect.any(Object));
+    expect(warning).toHaveBeenCalledWith(
+      "Đăng nhập này đã đăng xuất một phiên khác.",
+      expect.any(Object),
+    );
     expect(success).not.toHaveBeenCalled();
     warning.mockRestore();
     success.mockRestore();

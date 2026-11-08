@@ -49,6 +49,11 @@ interface UiAutocompleteBaseProps {
   loading?: boolean;
   /** Người dùng gõ để lọc từ xa — nhận chuỗi đang gõ. */
   onInputChange?: (keyword: string) => void;
+  /**
+   * `"local"` (mặc định) lọc option bằng nhãn như cũ.
+   * `"server"` bỏ lọc tại client vì danh sách đã được server lọc.
+   */
+  filterMode?: "local" | "server";
   /** Chuỗi hiện khi không option nào khớp. */
   noOptionsText?: ReactNode;
   /**
@@ -99,6 +104,7 @@ export function UiAutocomplete({
   helperText,
   loading = false,
   onInputChange,
+  filterMode = "local",
   noOptionsText,
   onAddNew,
   addNewLabel,
@@ -190,7 +196,8 @@ export function UiAutocomplete({
        * `listWindow.limit` dòng, cuộn tới đáy mới dựng thêm một nhịp.
        */
       filterOptions={(all, state) => {
-        const matched = filterByLabel(all, state);
+        const matched =
+          filterMode === "server" ? all : filterByLabel(all, state);
         const rows = matched.filter(
           (option) => option.value !== ADD_NEW_OPTION_VALUE,
         );

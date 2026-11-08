@@ -275,8 +275,7 @@
 #rpt08-history-report .rpt08-object-cell > small {
   display: inline;
 }
-#rpt08-history-report .rpt08-type-pill,
-#rpt08-history-report .rpt08-view-button {
+#rpt08-history-report .rpt08-type-pill {
   font-size: 12px;
   line-height: 20px;
 }
@@ -308,7 +307,7 @@
   order: 1;
   margin-inline-start: auto;
 }
-@container hn-rpt08-layout (max-width: 1280px) {
+@container hn-rpt08-layout (max-width: 760px) {
   #rpt08-history-report .rpt08-page-header {
     grid-template-columns: minmax(0, 1fr);
   }

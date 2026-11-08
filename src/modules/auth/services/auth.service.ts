@@ -54,7 +54,9 @@ type BackendLoginResponse = {
   replaced_existing_session?: boolean;
 };
 
-type BackendMeResponse = BackendUser & {
+export type BackendMeResponse = BackendUser & {
+  avatar?: MeResponse["avatar"];
+  last_login_at?: string | null;
   status?: string;
   version?: number;
   phone?: string | null;
@@ -219,7 +221,7 @@ function normalizeLoginResponse(data: BackendLoginResponse): LoginResponse {
   };
 }
 
-function normalizeMeResponse(data: BackendMeResponse): MeResponse {
+export function normalizeMeResponse(data: BackendMeResponse): MeResponse {
   const user = normalizeUser(data);
   const roles = user.roles ?? [];
   const permissions = user.permissions ?? [];
@@ -237,6 +239,8 @@ function normalizeMeResponse(data: BackendMeResponse): MeResponse {
     code: user.code,
     status: data.status,
     version: data.version,
+    avatar: data.avatar ?? null,
+    last_login_at: data.last_login_at ?? null,
     roles,
     permissions,
     warehouse_scope_ids: warehouseScopeIds,
@@ -295,9 +299,9 @@ export function meResponseFromRefreshUser(user: unknown): MeResponse | null {
 
 export const authService = {
   async login(data: LoginRequest): Promise<LoginResult> {
-    const response = await withAuthSessionLock(() => http.post<BackendLoginResponse>(
-      API_ENDPOINTS.LOGIN, data,
-    ));
+    const response = await withAuthSessionLock(() =>
+      http.post<BackendLoginResponse>(API_ENDPOINTS.LOGIN, data),
+    );
 
     // WWHN-SEC-08: mat khau dung moi la yeu to thu nhat. BE dung o day va KHONG
     // phat token nao; FE phai nhan ra nhanh nay truoc khi normalize, vi
@@ -318,9 +322,12 @@ export const authService = {
    * Buoc 2 cua dang nhap. `code` co the la ma TOTP 6 chu so hoac mot ma khoi phuc.
    */
   async verifyMfa(mfaToken: string, code: string): Promise<AuthenticatedLogin> {
-    const response = await withAuthSessionLock(() => http.post<BackendLoginResponse>(
-      API_ENDPOINTS.MFA_VERIFY, { mfa_token: mfaToken, code },
-    ));
+    const response = await withAuthSessionLock(() =>
+      http.post<BackendLoginResponse>(API_ENDPOINTS.MFA_VERIFY, {
+        mfa_token: mfaToken,
+        code,
+      }),
+    );
     return { kind: "authenticated", ...normalizeLoginResponse(response) };
   },
 

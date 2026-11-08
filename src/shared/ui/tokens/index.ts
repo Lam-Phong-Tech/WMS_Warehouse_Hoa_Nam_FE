@@ -37,3 +37,5 @@ export { SEMANTIC_DARK } from "./semantic-dark";
 export { COMPONENT_TOKENS } from "./component-tokens";
 
 export { OPERATIONS_COLORS, OPERATIONS_PALETTE } from "./operations";
+
+export { personalAccent, PERSONAL_FONT_SIZE } from "./personalization";

@@ -1,5 +1,11 @@
+import { NOTIFICATION_CONTENT_VI } from "./messages.notification-content";
+import { REPORT_EXPORT_VI } from "./messages.report-export";
+import { PERSONAL_VI } from "./messages.personal";
+import { RBAC_VI } from "./messages.rbac";
 import { MESSAGES_UPDATED_VI } from "./messages.updated.vi";
 import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
+import { DASHBOARD_SNAPSHOT_VI } from "./messages.dashboard-snapshot";
+import { PACKING_LABEL_REPORT_VI } from "./messages.packing-label-report";
 /**
  * BẢNG CHUỖI GIAO DIỆN — nguồn duy nhất cho mọi text người dùng nhìn thấy.
  *
@@ -15,9 +21,13 @@ import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
  */
 
 export const MESSAGES_VI = {
+  dashboardSnapshot: DASHBOARD_SNAPSHOT_VI,
+  packingLabelReport: PACKING_LABEL_REPORT_VI,
+  reportExport: REPORT_EXPORT_VI,
   nfc: MESSAGES_NFC_VI,
   updatedUi: MESSAGES_UPDATED_VI,
   common: {
+    pieces: "cái",
     loadingData: "Đang tải số liệu…",
     retry: "Thử lại",
     close: "Đóng",
@@ -565,7 +575,7 @@ export const MESSAGES_VI = {
     list: {
       statusUnknown: "Chưa xác định",
       colDocument: "Phiếu nhập",
-      colSource: "Nguồn / tham chiếu",
+      colSource: "Mã chứng từ bên ngoài",
       colCreated: "Ngày tạo",
       colNote: "Ghi chú",
       colScannedQty: "Số lượng đã quét",
@@ -574,7 +584,7 @@ export const MESSAGES_VI = {
       startScan: "Bắt đầu quét",
       continueScan: "Tiếp tục quét",
       editInfo: "Sửa thông tin",
-      searchPlaceholder: "Tìm mã phiếu / nguồn nhập...",
+      searchPlaceholder: "Tìm mã phiếu / mã chứng từ bên ngoài...",
       searchAria: "Tìm phiếu nhập",
       statusFilterAria: "Lọc trạng thái phiếu nhập",
       statusFilterPlaceholder: "Trạng thái: Tất cả",
@@ -600,6 +610,14 @@ export const MESSAGES_VI = {
       view: "Xem",
     },
     draft: {
+      selectAttachments: "Chọn chứng từ đính kèm",
+      localAttachmentsHint: "Ảnh JPG/PNG/WEBP hoặc PDF, mỗi tệp ≤ 15MB. Tệp chỉ được tải lên sau khi bấm tạo phiếu.",
+      attachmentSelected: "Đã chọn · Chưa tải lên",
+      attachmentUploaded: "Đã tải lên",
+      removeAttachment: "Bỏ tệp {name}",
+      retryAttachments: "Thử tải lại & quét hàng",
+      continueScanning: "Tiếp tục quét hàng",
+      attachmentsReceiptCreated: "Phiếu {code} đã được tạo. Thử tải lại hoặc bỏ tệp lỗi để tiếp tục quét. Đóng cửa sổ sẽ bỏ các tệp chưa tải lên.",
       errDocumentDate: "Chọn ngày chứng từ.",
       errDocumentDateFuture: "Ngày chứng từ không được ở tương lai.",
       errWarehouse: "Chọn kho nhận.",
@@ -616,8 +634,14 @@ export const MESSAGES_VI = {
       documentDateHelper: "Định dạng: ngày/tháng/năm",
       warehouse: "Kho nhận",
       warehousePlaceholder: "Chọn kho nhận",
-      sourceRef: "Nguồn / tham chiếu",
-      sourceRefPlaceholder: "Chứng từ vận chuyển / nhà cung cấp (tùy chọn)",
+      supplier: "Nhà cung cấp",
+      supplierPlaceholder: "Tìm mã hoặc tên nhà cung cấp...",
+      errSupplier: "Chọn nhà cung cấp.",
+      supplierEmpty: "Không tìm thấy nhà cung cấp",
+      supplierLoadError: "Không tải được danh sách nhà cung cấp.",
+      supplierRetry: "Thử lại",
+      sourceRef: "Mã chứng từ bên ngoài",
+      sourceRefPlaceholder: "Số phiếu giao hàng, hóa đơn hoặc đơn mua (tùy chọn)",
       note: "Ghi chú",
     },
     camera: {
@@ -735,7 +759,8 @@ export const MESSAGES_VI = {
       post: "Ghi nhận nhập",
       posting: "Đang xử lý...",
       fieldDocument: "Phiếu",
-      fieldSource: "Nguồn",
+      fieldSource: "Mã chứng từ bên ngoài",
+      fieldWarehouse: "Kho",
       fieldStatus: "Trạng thái",
       fieldVersion: "Phiên bản dữ liệu",
       receivedTitle: "Hàng thực nhận theo SKU",
@@ -751,7 +776,7 @@ export const MESSAGES_VI = {
       sessionEmpty:
         "Chưa có lượt quét nào trong phiên này — kết quả từng lượt quét sẽ hiện ở đây.",
       colNameType: "Tên / loại",
-      colScannedQty: "Số lượng đã quét",
+      colScannedQty: "SL",
       colCode: "Mã",
       colResult: "Kết quả",
       colSource: "Nguồn",
@@ -929,8 +954,22 @@ export const MESSAGES_VI = {
       manualHint:
         "Người nhận bắt buộc; địa chỉ/SĐT/ngày toa tùy chọn theo quy định hiện hành — thiếu thì nhãn đóng gói để trống trường tương ứng.",
       fileAria: "Chọn tệp Excel yêu cầu xuất",
-      fileHint:
-        "Tên cột bắt buộc trong tệp: request_no · sku_code · required_qty · recipient_name/customer_name. Cột tùy chọn: request_date · recipient_address · recipient_contact_phone · note. Tối đa 10.000 dòng, tệp ≤ 20MB; dòng lỗi có thể được xử lý ở bảng xem trước trước khi xác nhận.",
+      fileUploadTitle: "Tệp yêu cầu xuất",
+      fileChoose: "Chọn tệp Excel",
+      fileNone: "Chưa chọn tệp",
+      fileGuideTitle: "Cấu trúc tệp Excel",
+      fileRequiredTitle: "Cột bắt buộc",
+      fileRequiredColumns:
+        "Mã phiếu yêu cầu · Mã SKU · Số lượng yêu cầu · Tên người nhận / khách hàng",
+      fileOptionalTitle: "Cột tùy chọn",
+      fileOptionalColumns:
+        "Ngày yêu cầu · Địa chỉ nhận · SĐT liên hệ · Ghi chú",
+      fileLimits:
+        "Tối đa 10.000 dòng, tệp không quá 20 MB. Có thể sửa dòng lỗi ở bảng xem trước.",
+      fileHeaders: "Xem tên cột trong Excel",
+      fileHeaderHint: "Nếu tự tạo tệp, hãy dùng đúng tên cột ở hàng tiêu đề:",
+      fileHeaderNames:
+        "request_no · sku_code · required_qty · recipient_name hoặc customer_name; request_date · recipient_address · recipient_contact_phone · note",
       uploading: "Đang tải lên...",
       upload: "Tải lên & xem trước",
       uploadErrorTitle: "Không kiểm tra được tệp Excel",
@@ -998,6 +1037,7 @@ export const MESSAGES_VI = {
       fieldStatus: "Trạng thái",
       fieldRecipient: "Nơi nhận",
       fieldScanned: "Đã quét",
+      additionalInfo: "Thông tin bổ sung",
       step1: "1 · Quét và đối chiếu hàng",
       autoSku: "Tự nhận SKU từ mã quét",
       scanField: "Quét QR/mã vạch sản phẩm",
@@ -1112,6 +1152,9 @@ export const MESSAGES_VI = {
       // WARRANTY_IDENTIFICATION_STATUS_SHORT_LABELS (business-labels.ts).
       defectFilterAria: "Lọc bệnh/lỗi",
       defectFilterPlaceholder: "Bệnh/lỗi: Tất cả",
+      overdueFilterAria: "Lọc hồ sơ quá hạn",
+      overdueFilterPlaceholder: "Hồ sơ: Tất cả",
+      overdueFilterOnly: "Hồ sơ: Quá hạn",
       sortLabel: "Sắp xếp theo",
       sortAria: "Sắp xếp danh sách bảo hành",
       sortNewest: "Mới nhất",
@@ -1144,12 +1187,10 @@ export const MESSAGES_VI = {
       title: "Tiếp nhận bảo hành",
       warehouse: "Kho tiếp nhận bảo hành",
       warehousePlaceholder: "Chọn kho tiếp nhận",
-      warehouseHint:
-        "Chọn và xác nhận kho chịu trách nhiệm tiếp nhận hồ sơ này.",
+      warehouseHint: "Chọn kho chịu trách nhiệm tiếp nhận hồ sơ này.",
       confirmWarehouse: "Xác nhận kho",
       warehouseConfirmed: "Đã xác nhận kho tiếp nhận: {warehouse}.",
-      errWarehouse:
-        "Bạn chưa xác nhận kho tiếp nhận bảo hành. Vui lòng chọn kho và nhấn Xác nhận kho trước khi lưu.",
+      errWarehouse: "Vui lòng chọn kho tiếp nhận bảo hành trước khi lưu.",
       errWarehouseMismatch:
         "Kho tiếp nhận không khớp kho đang làm việc. Vui lòng chọn lại kho tiếp nhận hoặc chuyển kho làm việc trước khi lưu.",
       errItemNotFound:
@@ -1493,6 +1534,7 @@ export const MESSAGES_VI = {
     },
   },
   inventory: {
+    rangeLabel: "Hiển thị {from}–{to} / {total} bản ghi",
     fallback: {
       movementType: "Biến động khác",
       status: "Trạng thái khác",
@@ -1526,7 +1568,7 @@ export const MESSAGES_VI = {
       colOnHand: "Tồn hiện có",
       colLedger: "Tồn theo sổ cái",
       colVariance: "Chênh lệch",
-      colSuggestedLocation: "Vị trí gợi ý",
+      colSuggestedLocation: "Vị trí",
       boxPrefix: "Hộp {code}",
       noSuggestedLocation: "Chưa có vị trí gợi ý",
       colReconcile: "Đối soát",
@@ -1540,6 +1582,8 @@ export const MESSAGES_VI = {
       typeComponent: "Linh kiện",
       statusFilterAria: "Lọc trạng thái tồn",
       statusFilterPlaceholder: "Trạng thái tồn: Tất cả",
+      reconcileFilterAria: "Lọc đối soát",
+      reconcileFilterPlaceholder: "Đối soát: Tất cả",
       statusAvailable: "Khả dụng",
       statusNonSellable: "Không thể bán/xuất",
       statusDefective: "Hàng lỗi",
@@ -1574,6 +1618,11 @@ export const MESSAGES_VI = {
     },
     detail: {
       title: "Chi tiết tồn kho — {sku}",
+      overviewTab: "Tổng quan",
+      productsTab: "Sản phẩm",
+      containersTab: "Vật chứa",
+      movementsTab: "Biến động",
+      recordDetails: "Thông tin chi tiết",
       copy: "Sao chép",
       colMovementCode: "Mã biến động",
       colTime: "Thời gian",
@@ -1619,6 +1668,10 @@ export const MESSAGES_VI = {
       trace: "Truy vết",
     },
     trace: {
+      tabsAria: "Các phần truy vết",
+      tabRelated: "Dữ liệu liên quan",
+      tabHistory: "Lịch sử & điều chỉnh",
+      relatedEmpty: "Chưa có dữ liệu liên quan để hiển thị.",
       barcode: "Mã vạch",
       undetermined: "Chưa xác định",
       copy: "Sao chép",
@@ -1816,10 +1869,10 @@ export const MESSAGES_VI = {
         "Mẫu sản phẩm chỉ được gắn với hãng đang sử dụng. Hãy chọn hãng khác hoặc kích hoạt lại hãng trước.",
       errSave: "Không lưu được danh mục.",
       errCodeRequired: "Nhập {label}.",
-      errCodeLength: "Mã tối đa 80 ký tự.",
+      errCodeLength: "Mã tối đa {max} ký tự.",
       errNameRequired: "Nhập {label}.",
-      errNameLength: "Tên tối đa 200 ký tự.",
-      errDescriptionLength: "Mô tả tối đa 2000 ký tự.",
+      errNameLength: "Tên tối đa {max} ký tự.",
+      errDescriptionLength: "Mô tả tối đa {max} ký tự.",
       updated: "Đã cập nhật {item}.",
       created: "Đã thêm {item}.",
       colOrder: "Thứ tự",
@@ -1855,6 +1908,7 @@ export const MESSAGES_VI = {
       published: "Đã đưa SKU lên ứng dụng phân vùng",
       unpublished: "Đã gỡ SKU khỏi ứng dụng phân vùng",
       errCode: "Mã SKU là bắt buộc.",
+      errDuplicateCode: "Mã SKU đã tồn tại trong hệ thống",
       errName: "Tên SKU là bắt buộc.",
       errBrand: "Vui lòng chọn Hãng.",
       errCategory: "Vui lòng chọn Nhóm hàng.",
@@ -1991,9 +2045,9 @@ export const MESSAGES_VI = {
     },
     import: {
       errDuplicateRun:
-        "Cùng file này đang được import với cùng tùy chọn; vui lòng đợi lần chạy hiện tại kết thúc rồi thử lại.",
+        "Tệp này đang được xử lý với cùng lựa chọn. Hãy đợi lần xử lý hiện tại kết thúc rồi thử lại.",
       errRolledBack:
-        "Không lưu được lần nạp dữ liệu; toàn bộ giao dịch đã hoàn tác, không có SKU nào được tạo/cập nhật. Vui lòng thử lại.",
+        "Chưa lưu được dữ liệu. Không có SKU nào được tạo hoặc cập nhật. Hãy thử lại.",
       errRejected: "Lần nạp dữ liệu bị từ chối.",
       errStaleFile:
         "Nội dung tệp đã thay đổi sau lần kiểm tra trước. Hệ thống chưa gửi dữ liệu để tránh nhập một nội dung chưa được kiểm tra. Hãy chọn lại tệp và chạy Kiểm tra trước.",
@@ -2030,7 +2084,17 @@ export const MESSAGES_VI = {
       errorFileDownloadFailed: "Không tải được tệp lỗi",
       errFileType: "Chỉ nhận tệp định dạng {list}. Hãy chọn lại tệp.",
       errFileSize:
-        "Tệp vượt quá kích thước cho phép ({max} MB). Hãy chia nhỏ tệp rồi chọn lại.",
+        "File quá lớn. Tối đa {max} MB",
+      errMissingCodeColumn: "Tệp thiếu cột Mã SKU. Hãy tải tệp mẫu và bổ sung cột này.",
+      errMissingNameColumn: "Tệp thiếu cột Tên SKU. Hãy tải tệp mẫu và bổ sung cột này.",
+      errInvalidWorkbook: "Tệp Excel không hợp lệ hoặc đã bị hỏng. Hãy dùng tệp mẫu và chọn lại.",
+      errRepeatedColumn: "Cột “{column}” bị lặp trong tệp. Hãy xóa cột trùng rồi kiểm tra lại.",
+      errUnsupportedColumn: "Cột “{column}” không được hỗ trợ. Hãy dùng đúng các cột trong tệp mẫu.",
+      errRowsLimit: "Tệp vượt quá {max} dòng dữ liệu. Hãy chia nhỏ tệp rồi chọn lại.",
+      errPhysicalRowsLimit: "Bảng tính vượt quá {max} dòng, kể cả dòng trống. Hãy xóa các dòng trống thừa rồi chọn lại.",
+      errResultIncomplete: "Máy chủ chưa trả đầy đủ kết quả kiểm tra tệp. Chưa thể nhập dữ liệu. Vui lòng thử lại.",
+      errRowsLimitUnknown: "Tệp có quá nhiều dòng. Hãy xóa dòng trống thừa hoặc chia nhỏ tệp.",
+      errConstraintsFailed: "Chưa lấy được giới hạn tệp từ máy chủ. Hãy thử lại trước khi kiểm tra tệp.",
       errReadFile:
         "Không đọc được nội dung tệp. Tệp có thể đã bị di chuyển, đổi tên hoặc sửa sau khi chọn. Hãy chọn lại tệp.",
       errChecksumMismatch:
@@ -2480,6 +2544,8 @@ export const MESSAGES_VI = {
       colPhysicalSerial: "Mã vật lý / serial",
     },
     importQuality: {
+      cannotReconcile: "Không thể đối chiếu",
+      viewRecords: "Xem {count} bản ghi",
       sourceAll: "Tất cả nguồn xử lý",
       outcomeSuccess: "Thành công",
       outcomeFailed: "Lỗi",
@@ -3390,11 +3456,13 @@ export const MESSAGES_VI = {
       drawerEyebrow: "CHI TIẾT ĐỐI SOÁT",
       drawerTitle: "Bằng chứng biến động",
       drawerClose: "Đóng bằng chứng",
+      evidenceDetails: "Thông tin ghi nhận",
+      tracePhysicalCode: "Truy vết mã vật lý",
       fieldSourceDoc: "Chứng từ nguồn",
       fieldReversalChain: "Chuỗi bút toán đảo",
       reversedBy: "bị đảo bởi {codes}",
       readonlyNote:
-        "Chi tiết chứng từ là read-only; sổ biến động là append-only nên màn này không sửa/xóa bất kỳ dòng nào.",
+        "Thông tin chỉ xem. Mọi điều chỉnh được ghi nhận riêng để giữ đầy đủ lịch sử biến động.",
     },
     warrantyReport: {
       eyebrow: "BÁO CÁO VẬN HÀNH",
@@ -4106,6 +4174,9 @@ export const MESSAGES_VI = {
     },
   },
   iam: {
+    roleUi: RBAC_VI.roleUi,
+    userUi: RBAC_VI.userUi,
+    effectiveUi: RBAC_VI.effectiveUi,
     tab: {
       users: "Người dùng & phân quyền",
       roles: "Vai trò & ma trận quyền",
@@ -4388,6 +4459,7 @@ export const MESSAGES_VI = {
     },
   },
   audit: {
+    ...RBAC_VI.audit,
     system: "Hệ thống",
     colTime: "Thời gian",
     colAction: "Hành động",
@@ -4734,6 +4806,7 @@ export const MESSAGES_VI = {
     },
   },
   auth: {
+    personal: PERSONAL_VI,
     fields: {
       email: "Email",
       password: "Mật khẩu",
@@ -4759,7 +4832,8 @@ export const MESSAGES_VI = {
       submit: "Đăng nhập",
       success: "Đăng nhập thành công",
       replacedPreviousSession: "Đăng nhập này đã đăng xuất một phiên khác.",
-      replacedPreviousSessionBody: "Nếu bạn không nhận ra phiên trước đó, vui lòng đổi mật khẩu ngay.",
+      replacedPreviousSessionBody:
+        "Nếu bạn không nhận ra phiên trước đó, vui lòng đổi mật khẩu ngay.",
       failed: "Đăng nhập thất bại",
       errorTimeout:
         "Máy chủ phản hồi quá thời gian. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
@@ -4809,8 +4883,10 @@ export const MESSAGES_VI = {
       statusDisabled: "Chưa bật",
       statusPending: "Đang thiết lập",
       statusLoading: "Đang tải trạng thái xác thực...",
-      statusLoadError: "Không tải được trạng thái xác thực. Vui lòng tải lại trang.",
-      profileEnabledDescription: "Tài khoản của bạn đã đăng ký xác thực hai bước.",
+      statusLoadError:
+        "Không tải được trạng thái xác thực. Vui lòng tải lại trang.",
+      profileEnabledDescription:
+        "Tài khoản của bạn đã đăng ký xác thực hai bước.",
       viewDetails: "Xem chi tiết",
       eyebrow: "Bảo mật tài khoản",
       backToProfile: "Quay lại hồ sơ",
@@ -4934,7 +5010,8 @@ export const MESSAGES_VI = {
       cancelEdit: "Hủy",
       updateSuccess: "Thông tin cá nhân đã được cập nhật.",
       updateFailed: "Không thể cập nhật thông tin. Vui lòng thử lại.",
-      staleVersion: "Thông tin đã thay đổi ở phiên khác. Vui lòng kiểm tra lại trước khi lưu.",
+      staleVersion:
+        "Thông tin đã thay đổi ở phiên khác. Vui lòng kiểm tra lại trước khi lưu.",
       nameRequired: "Vui lòng nhập họ và tên.",
       nameTooLong: "Họ và tên không được vượt quá 255 ký tự.",
       phoneInvalid: "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.",
@@ -5032,6 +5109,7 @@ export const MESSAGES_VI = {
       imageEmpty:
         "Chưa có ảnh nào. Sản phẩm không ảnh vẫn lên được ứng dụng nhưng thẻ sẽ để trống.",
       imageAltLabel: "Mô tả ảnh",
+      imagePreview: "Phóng to ảnh {number}",
       imageSetPrimary: "Đặt làm ảnh đại diện",
       imageIsPrimary: "Ảnh đại diện",
       imageMoveUp: "Đưa lên trước",
@@ -5562,6 +5640,11 @@ export const MESSAGES_VI = {
       returnUnknown: "Chưa xác định tình trạng hàng về kho",
     },
     create: {
+      helpLabel: "Thông tin tạo phiếu đảo",
+      stepsAria: "Các bước tạo phiếu đảo",
+      chooseStep: "Chọn giao dịch",
+      adjustStep: "Nhập điều chỉnh",
+      chooseMovement: "Chọn giao dịch {code}",
       title: "Tạo phiếu đảo",
       confirmTitle: "Tạo phiếu đảo?",
       selectedCount: "Đã chọn {count} sản phẩm",
@@ -5709,9 +5792,12 @@ export const MESSAGES_VI = {
       empty: "Không có phiếu điều chỉnh theo bộ lọc hiện tại",
       open: "Mở",
       unitName: "phiếu điều chỉnh",
+      rangeLabel: "Hiển thị {from}–{to} / {total} phiếu đảo",
+      clearFilters: "Xóa lọc",
     },
   },
   notifications: {
+    content: NOTIFICATION_CONTENT_VI,
     title: "Thông báo",
     loadError: "Không tải được thông báo",
     empty: "Chưa có thông báo",
@@ -5723,9 +5809,13 @@ export const MESSAGES_VI = {
     page: {
       subtitle:
         "Toàn bộ thông báo hệ thống liên quan tới bạn — nhập/xuất kho, bảo hành, tài khoản, bảo mật.",
+      filterLabel: "Lọc thông báo",
+      all: "Tất cả",
+      unread: "Chưa đọc",
       markAll: "Đánh dấu tất cả đã đọc",
       loading: "Đang tải thông báo...",
       emptyDescription: "Bạn chưa nhận được thông báo nào.",
+      emptyUnread: "Bạn đã đọc hết thông báo.",
       readSuffix: " · Đã đọc",
     },
     detail: {

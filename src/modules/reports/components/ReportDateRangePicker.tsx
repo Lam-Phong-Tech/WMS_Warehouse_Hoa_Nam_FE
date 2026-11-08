@@ -1,5 +1,5 @@
+import { businessToday } from "@/shared/utils/date-time";
 import { useMemo } from "react";
-import dayjs from "dayjs";
 import { useT } from "@/shared/i18n/useT";
 import {
   UiVuexyDateRangePicker,
@@ -26,7 +26,7 @@ export function ReportDateRangePicker({
       showFieldPrefixes
       format="DD/MM/YYYY"
       presets={presets ?? defaultPresets}
-      maxDate={maxDate ?? dayjs().endOf("day")}
+      maxDate={maxDate ?? businessToday().endOf("day")}
       className={
         className
           ? `hn-report-date-range hn-vuexy-date-range ${className}`
