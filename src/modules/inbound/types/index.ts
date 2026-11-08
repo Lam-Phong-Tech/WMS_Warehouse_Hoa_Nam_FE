@@ -94,6 +94,7 @@ export interface CompleteInboundLineSkuResult {
 
 export interface InboundDetail {
   document: InboundDocument & { version: number };
+  supplier?: InboundSupplier | null;
   lines: InboundLine[];
   statusHistory: Array<{
     id: string;

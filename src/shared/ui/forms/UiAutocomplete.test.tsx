@@ -20,7 +20,7 @@ function Host({
         label="Nhà cung cấp"
         options={OPTIONS}
         value={value}
-        onChange={setValue}
+        onChange={(next) => setValue(next == null ? null : String(next))}
         filterMode={filterMode}
       />
     </MuiThemeProvider>
