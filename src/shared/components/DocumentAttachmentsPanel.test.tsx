@@ -8,7 +8,7 @@
  * không phải đường chọn tệp — đó mới là đường đã hở.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { DocumentAttachmentsPanel } from "./DocumentAttachmentsPanel";
 import {
@@ -143,5 +143,58 @@ describe("DocumentAttachmentsPanel — kéo-thả tệp", () => {
       "accept",
       ".jpg,.jpeg,.png,.webp,.pdf",
     );
+  });
+});
+
+describe("DocumentAttachmentsPanel — hideWhenEmpty", () => {
+  it("không render gì khi phiếu chưa có chứng từ", async () => {
+    vi.mocked(fetchDocumentAttachments).mockResolvedValue({
+      attachments: [],
+      evidence_status: "NOT_REQUIRED",
+    } as never);
+    const { container } = renderWithProviders(
+      <DocumentAttachmentsPanel
+        documentType="INBOUND"
+        documentId="doc-1"
+        disabled
+        hideWhenEmpty
+      />,
+    );
+    await waitFor(() =>
+      expect(fetchDocumentAttachments).toHaveBeenCalledWith(
+        "INBOUND",
+        "doc-1",
+      ),
+    );
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+  });
+
+  it("vẫn render khối khi phiếu có chứng từ", async () => {
+    vi.mocked(fetchDocumentAttachments).mockResolvedValue({
+      attachments: [
+        {
+          id: "att-1",
+          document_type: "INBOUND",
+          document_id: "doc-1",
+          attachment_type: "SOURCE_DOCUMENT",
+          file_name: "chung-tu.pdf",
+          content_type: "application/pdf",
+          file_size_bytes: 2048,
+          status: "ACTIVE",
+        },
+      ],
+      evidence_status: "PROVIDED",
+    } as never);
+    renderWithProviders(
+      <DocumentAttachmentsPanel
+        documentType="INBOUND"
+        documentId="doc-1"
+        disabled
+        hideWhenEmpty
+      />,
+    );
+    expect(
+      await screen.findByText("Chứng từ đính kèm (1)"),
+    ).toBeInTheDocument();
   });
 });

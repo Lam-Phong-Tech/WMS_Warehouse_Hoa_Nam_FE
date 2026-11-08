@@ -60,6 +60,11 @@ export interface DocumentAttachmentsPanelProps {
   disabled?: boolean;
   /** Optional screen-scoped presentation for the preview and deletion portals. */
   dialogClassName?: string;
+  /**
+   * Chỉ hiện khối khi phiếu đã có ít nhất một chứng từ — dùng cho màn chỉ đọc
+   * (vd drawer quét nhập kho), nơi khối rỗng "Chưa có chứng từ" chỉ làm rối.
+   */
+  hideWhenEmpty?: boolean;
 }
 
 /**
@@ -169,6 +174,7 @@ export function DocumentAttachmentsPanel({
   documentId,
   disabled = false,
   dialogClassName,
+  hideWhenEmpty = false,
 }: DocumentAttachmentsPanelProps) {
   const t = useT();
   const queryClient = useQueryClient();
@@ -239,6 +245,8 @@ export function DocumentAttachmentsPanel({
     (attachment) => !isImageAttachment(attachment),
   );
   const imageUrls = useAttachmentImageUrls(attachments);
+  // Mọi hook phía trên đã chạy xong nên trả sớm ở đây vẫn giữ đúng thứ tự hook.
+  if (hideWhenEmpty && query.isSuccess && attachments.length === 0) return null;
   const previewIndex = previewId
     ? imageAttachments.findIndex((attachment) => attachment.id === previewId)
     : -1;
