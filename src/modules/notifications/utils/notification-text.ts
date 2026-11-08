@@ -43,7 +43,25 @@ export function localizeNotification(
   t: TranslateFn,
 ) {
   const original = { title: item.title, body: item.body };
-  if (language === "vi") return original;
+  /**
+   * Bản BE cũ đã lưu sẵn câu tiếng Việt dùng từ vay "case". Chuông thông báo
+   * đọc đúng dòng đã lưu đó (language = vi trả nguyên bản), nên đổi tại đây để
+   * các thông báo đã có — kể cả trước khi backfill DB — hiện "ca" ngay. Chỉ áp
+   * cho hai event bảo hành; nội dung tự soạn khác không bị chạm.
+   */
+  if (language === "vi") {
+    if (
+      item.event_key === "warranty.case_created" ||
+      item.event_key === "warranty.status_changed"
+    ) {
+      const toCa = (value: string) =>
+        value
+          .replace(/Case bảo hành/g, "Ca bảo hành")
+          .replace(/case bảo hành/g, "ca bảo hành");
+      return { title: toCa(item.title), body: toCa(item.body) };
+    }
+    return original;
+  }
   const payload = item.payload ?? {};
   const text = (...values: unknown[]): string => {
     for (const value of values) {
@@ -112,7 +130,7 @@ export function localizeNotification(
     case: text(
       payload.case_code,
       item.body.match(
-        /(?:Case|Hồ sơ) bảo hành ([A-Za-z0-9][A-Za-z0-9._/-]*)/u,
+        /(?:Ca|Case|Hồ sơ) bảo hành ([A-Za-z0-9][A-Za-z0-9._/-]*)/u,
       )?.[1],
     ),
     from: status(payload.from_status ?? legacyStatus?.[1]),

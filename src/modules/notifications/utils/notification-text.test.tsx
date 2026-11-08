@@ -30,6 +30,37 @@ afterEach(() => {
   act(() => useLanguageStore.setState({ language: "vi" }));
 });
 describe("notification content locale", () => {
+  it("việt hóa 'case' thành 'ca' cho thông báo bảo hành đã lưu", () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate("vi", key);
+    const created = localizeNotification(
+      {
+        ...item,
+        event_key: "warranty.case_created",
+        title: "Đã tiếp nhận case bảo hành mới",
+        body: "Case bảo hành WC-01 vừa được tiếp nhận.",
+        payload: null,
+      },
+      "vi",
+      t,
+    );
+    expect(created.title).toBe("Đã tiếp nhận ca bảo hành mới");
+    expect(created.body).toBe("Ca bảo hành WC-01 vừa được tiếp nhận.");
+
+    const status = localizeNotification(
+      {
+        ...item,
+        event_key: "warranty.status_changed",
+        title: "Case bảo hành đổi trạng thái",
+        body: "Case bảo hành chuyển từ RECEIVED sang CHECKING.",
+        payload: null,
+      },
+      "vi",
+      t,
+    );
+    expect(status.title).toBe("Ca bảo hành đổi trạng thái");
+    expect(status.body).toBe("Ca bảo hành chuyển từ RECEIVED sang CHECKING.");
+  });
+
   it("translates the same cached notification immediately when switching VI → EN → ZH", () => {
     useLanguageStore.setState({ language: "vi" });
     const { result } = renderHook(() => useNotificationText()(item));
@@ -108,18 +139,23 @@ describe("notification content locale", () => {
     expect(security.body).toContain("nguyen van a");
     expect(security.body).toContain("Locked");
     expect(security.body).not.toContain("internal-user-id");
-    expect(
-      localizeNotification(
-        {
-          ...item,
-          event_key: "warranty.case_created",
-          body: "Case bảo hành WC-OLD-01 vừa được tiếp nhận.",
-          payload: null,
-        },
-        "en",
-        t,
-      ).body,
-    ).toContain("WC-OLD-01");
+    for (const [body, code] of [
+      ["Ca bảo hành WC-NEW-01 vừa được tiếp nhận.", "WC-NEW-01"],
+      ["Case bảo hành WC-OLD-01 vừa được tiếp nhận.", "WC-OLD-01"],
+    ] as const) {
+      expect(
+        localizeNotification(
+          {
+            ...item,
+            event_key: "warranty.case_created",
+            body,
+            payload: null,
+          },
+          "en",
+          t,
+        ).body,
+      ).toContain(code);
+    }
   });
   it.each(["en", "zh"] as const)(
     "covers warranty, account, security and inventory events in %s",

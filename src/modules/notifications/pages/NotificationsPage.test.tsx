@@ -24,8 +24,8 @@ const item: NotificationItem = {
   id: "recipient-1",
   notification_id: "notification-1",
   event_key: "warranty.case_created",
-  title: "Đã tiếp nhận case bảo hành mới",
-  body: "Case bảo hành WC-01 vừa được tiếp nhận.",
+  title: "Đã tiếp nhận ca bảo hành mới",
+  body: "Ca bảo hành WC-01 vừa được tiếp nhận.",
   severity: "info",
   source_module: "warehouse",
   subject_type: "warranty_case",
@@ -64,7 +64,7 @@ describe("NotificationsPage", () => {
     });
 
     const row = screen.getByRole("button", {
-      name: /Đã tiếp nhận case bảo hành mới/,
+      name: /Đã tiếp nhận ca bảo hành mới/,
     });
     row.focus();
     await userEvent.keyboard("{Enter}");

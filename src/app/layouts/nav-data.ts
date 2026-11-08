@@ -485,7 +485,7 @@ export const SCREEN_META: Record<
   },
   "WAR-04": {
     title: "Danh sách phiếu xuất linh kiện",
-    description: "Toàn bộ phiếu xuất linh kiện, xuyên các case bảo hành.",
+    description: "Toàn bộ phiếu xuất linh kiện, xuyên các ca bảo hành.",
   },
   "INV-01": {
     title: "Tra cứu tồn & đối soát",

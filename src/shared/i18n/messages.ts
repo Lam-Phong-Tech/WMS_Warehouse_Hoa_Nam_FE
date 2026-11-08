@@ -1387,7 +1387,7 @@ export const MESSAGES_VI = {
       issueComponents: "Xuất linh kiện",
       updateStatus: "Cập nhật trạng thái",
       loadError: "Không tải được chi tiết hồ sơ",
-      cancelledAt: 'Case đã hủy tại bước "{step}". Lý do: {reason}',
+      cancelledAt: 'Ca đã hủy tại bước "{step}". Lý do: {reason}',
       maskedNotice: "Thông tin khách hàng đang được che (mask) theo quyền",
       historyTitle: "Lịch sử xử lý",
       processingNote: "Ghi chú xử lý",

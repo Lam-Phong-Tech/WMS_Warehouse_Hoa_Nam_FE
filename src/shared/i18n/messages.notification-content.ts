@@ -68,12 +68,12 @@ export const NOTIFICATION_CONTENT_VI = {
     body: "Tài khoản đã bị khóa do không đăng nhập lần đầu trong vòng 7 ngày kể từ khi được cấp.",
   },
   warrantyCreated: {
-    title: "Đã tiếp nhận hồ sơ bảo hành mới",
-    body: "Hồ sơ bảo hành {case} vừa được tiếp nhận.",
+    title: "Đã tiếp nhận ca bảo hành mới",
+    body: "Ca bảo hành {case} vừa được tiếp nhận.",
   },
   warrantyStatus: {
-    title: "Hồ sơ bảo hành đổi trạng thái",
-    body: "Hồ sơ bảo hành chuyển từ {from} sang {to}.",
+    title: "Ca bảo hành đổi trạng thái",
+    body: "Ca bảo hành chuyển từ {from} sang {to}.",
   },
   securityThrottled: {
     title: "Cảnh báo bảo mật đăng nhập",
