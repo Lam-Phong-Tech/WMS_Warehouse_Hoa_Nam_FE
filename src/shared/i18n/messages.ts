@@ -755,6 +755,7 @@ export const MESSAGES_VI = {
     },
     detail: {
       titleWithCode: "Quét & hoàn tất nhập kho · {code}",
+      titleDetailWithCode: "Chi tiết phiếu nhập kho · {code}",
       title: "Quét & hoàn tất nhập kho",
       loadError: "Không tải được phiếu nhập.",
       post: "Ghi nhận nhập",

@@ -1333,6 +1333,7 @@ export const MESSAGES_ZH: MessageTree = {
     },
     "detail": {
       "titleWithCode": "扫描并邮寄入库单 · {code}",
+      "titleDetailWithCode": "入库单详情 · {code}",
       "title": "扫描并邮寄入库单",
       "loadError": "无法加载入库单。",
       "post": "邮寄入库单",

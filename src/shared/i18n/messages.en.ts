@@ -757,6 +757,7 @@ export const MESSAGES_EN: MessageTree = {
     },
     detail: {
       titleWithCode: "Scan & post receipt · {code}",
+      titleDetailWithCode: "Receipt details · {code}",
       title: "Scan & post receipt",
       loadError: "Could not load the receipt note.",
       post: "Post receipt",

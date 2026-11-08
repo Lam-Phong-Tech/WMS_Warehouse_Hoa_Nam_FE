@@ -990,4 +990,29 @@ describe("IN-03 · thông tin phiếu trong drawer quét", () => {
     expect(panel).toHaveAttribute("data-disabled", "true");
     expect(panel).toHaveAttribute("data-hide-when-empty", "true");
   });
+
+  it.each([
+    ["DRAFT", "Quét & hoàn tất nhập kho · IN-20260810-003"],
+    ["SCANNING", "Quét & hoàn tất nhập kho · IN-20260810-003"],
+    ["POSTED", "Chi tiết phiếu nhập kho · IN-20260810-003"],
+    ["CANCELLED", "Chi tiết phiếu nhập kho · IN-20260810-003"],
+  ] as const)(
+    "đổi tiêu đề drawer theo trạng thái %s",
+    async (status, title) => {
+      mockHooks();
+      vi.mocked(useInboundDetail).mockReturnValue({
+        data: { ...DETAIL, document: { ...DETAIL.document, status } },
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as never);
+
+      renderWithProviders(
+        <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+      );
+
+      expect(await screen.findByText(title)).toBeInTheDocument();
+    },
+  );
 });

@@ -478,6 +478,16 @@ export function InboundScanModal({
   const isMutable =
     detail?.document.status === "DRAFT" ||
     detail?.document.status === "SCANNING";
+  // Phiếu đã chốt (POSTED/CANCELLED) chỉ còn xem lại: tiêu đề phải là "Chi tiết
+  // phiếu nhập kho", không phải lời mời quét & hoàn tất.
+  const drawerTitle = detail
+    ? t(
+        isMutable
+          ? "inbound.detail.titleWithCode"
+          : "inbound.detail.titleDetailWithCode",
+        { code: detail.document.code || t("inbound.list.noCode") },
+      )
+    : t("inbound.detail.title");
   const busy = scanMutation.isPending;
   const working =
     busy ||
@@ -1171,17 +1181,13 @@ export function InboundScanModal({
         className="hn-inbound-scan-drawer"
         slotProps={{
           ...dialog.dialogProps.slotProps,
-          paper: { "aria-label": t("inbound.detail.title") },
+          paper: { "aria-label": drawerTitle },
         }}
       >
         <div className="hn-inbound-scan-shell">
           <header className="hn-inbound-scan-header">
             <strong>
-              {detail
-                ? t("inbound.detail.titleWithCode", {
-                    code: detail.document.code || t("inbound.list.noCode"),
-                  })
-                : t("inbound.detail.title")}
+              {drawerTitle}
             </strong>
             <ActionIconButton
               kind="close"
