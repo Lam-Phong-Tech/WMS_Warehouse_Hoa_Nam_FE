@@ -4,7 +4,8 @@ Ngày: 08/11/2026. Route: `/master-data/suppliers`.
 
 ## Phạm vi
 
-- Trang con **Danh mục → Danh sách NCC**, breadcrumb và tiêu đề tương ứng;
+- Trang con **Danh mục → Danh sách NCC**, breadcrumb và tiêu đề
+  **Danh sách nhà cung cấp**;
   lazy route/preload cùng cơ chế điều hướng hiện có.
 - Bố cục theo Danh sách SKU và hai tài liệu được người dùng cung cấp:
   `DESIGN_FOUNDATIONS.md`, `sku-list-filter-table-style.md`.

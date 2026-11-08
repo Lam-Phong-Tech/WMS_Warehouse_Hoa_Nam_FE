@@ -162,7 +162,7 @@ test("supplier directory: shell, responsive list, create and versioned update", 
     .getByRole("button", { name: /^Bắt đầu làm việc/ })
     .click({ timeout: 90_000 });
   await expect(
-    page.getByRole("heading", { name: "Danh sách NCC", exact: true }),
+    page.getByRole("heading", { name: "Danh sách nhà cung cấp", exact: true }),
   ).toBeVisible({ timeout: 90_000 });
   await expect(page.getByText("Honda Việt Nam", { exact: true })).toBeVisible();
   expect(

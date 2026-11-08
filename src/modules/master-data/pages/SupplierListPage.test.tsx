@@ -70,7 +70,7 @@ describe("supplier list", () => {
     setup();
     expect(await screen.findByText("Honda")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Danh sách NCC" }),
+      screen.getByRole("heading", { name: "Danh sách nhà cung cấp" }),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Thêm NCC" }));
     const dialog = await screen.findByRole("dialog");

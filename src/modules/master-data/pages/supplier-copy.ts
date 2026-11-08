@@ -1,6 +1,6 @@
 import { useLanguageStore } from "@/shared/i18n/language.store";
 const vi = {
-  title: "Danh sách NCC",
+  title: "Danh sách nhà cung cấp",
   create: "Thêm NCC",
   edit: "Sửa NCC",
   editAction: "Sửa",
