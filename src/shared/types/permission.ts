@@ -50,6 +50,11 @@ export const PERMISSION_RULES: Record<
   string,
   Partial<Record<PermissionAction, string>>
 > = {
+  suppliers: {
+    view: "supplier.view",
+    create: "supplier.create",
+    edit: "supplier.update",
+  },
   // Catalog BE (xác minh qua GET /api/v1/permissions 2026-07-10):
   // ORG_VIEW, ORG_CREATE, ORG_EDIT, ORG_INACTIVE, ORG_FORCE_DELETE, ORG_EXPORT
   // Action "delete" (xóa mềm / ngừng hoạt động) → ORG_INACTIVE

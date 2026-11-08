@@ -10,7 +10,7 @@ import {
   getIamDepartments,
   updateIamDepartment,
   type IamDepartmentPayload,
-  getIamPermissions,
+  getAllIamPermissions,
   getIamRole,
   getIamRoles,
   getIamUserPermissionOverrides,
@@ -102,8 +102,8 @@ export function useIamScopeWarehouses() {
 
 export function useIamPermissions(params: IamPermissionListParams = {}) {
   return useQuery({
-    queryKey: iamKeys.permissions(params),
-    queryFn: () => getIamPermissions(params),
+    queryKey: [...iamKeys.permissions(params), "all"],
+    queryFn: () => getAllIamPermissions(params),
     select: (result) => result.data,
   });
 }

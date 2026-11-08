@@ -4478,6 +4478,7 @@ export const MESSAGES_ZH: MessageTree = {
       "iam": "用户和权限",
       "sku": "SKU 和产品",
       "catalog": "目录",
+      "supplier": "供应商",
       "inbound": "入站",
       "outbound": "出库",
       "inventory": "库存",

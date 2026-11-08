@@ -4218,6 +4218,7 @@ export const MESSAGES_VI = {
       iam: "Người dùng & phân quyền",
       sku: "SKU & sản phẩm",
       catalog: "Danh mục",
+      supplier: "Nhà cung cấp (NCC)",
       inbound: "Nhập kho",
       outbound: "Xuất kho",
       inventory: "Tồn kho",

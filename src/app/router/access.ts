@@ -16,6 +16,7 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[] | undefined> =
     [ROUTES.MASTER_DATA]: [P.SKU_VIEW, P.SKU_MANAGE],
     [ROUTES.SKU_CREATE]: [P.SKU_MANAGE],
     [ROUTES.CATALOG_MASTER]: [P.CATALOG_VIEW, P.CATALOG_MANAGE],
+    [ROUTES.SUPPLIERS]: [P.SUPPLIER_VIEW],
     // MST-PV-01 gate ĐÚNG bằng API mà nó gọi: /pv-admin/resources/product-profiles
     // (pv.master.manage) và PATCH /pv/products/{id}/publish (pv.publish). KHÔNG
     // dùng catalog.* — đó là danh mục hãng/nhóm hàng của kho, không phải App PV,

@@ -48,6 +48,7 @@ import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context"
  * nhau (đã xảy ra với RPT-04 và RPT-06).
  */
 const ROUTES_WITH_OWN_HEADER: string[] = [
+  ROUTES.SUPPLIERS,
   ROUTES.PROFILE,
   ROUTES.IAM_USERS,
   ROUTES.AUDIT_LOGS,

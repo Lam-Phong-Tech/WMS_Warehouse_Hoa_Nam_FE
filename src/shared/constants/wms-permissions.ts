@@ -14,6 +14,9 @@ export const WMS_PERMISSION_CATALOG = {
   IAM_PERMISSION_VIEW: "iam.permission.view",
   CATALOG_VIEW: "catalog.view",
   CATALOG_MANAGE: "catalog.manage",
+  SUPPLIER_VIEW: "supplier.view",
+  SUPPLIER_CREATE: "supplier.create",
+  SUPPLIER_UPDATE: "supplier.update",
   WAREHOUSE_VIEW: "warehouse.view",
   WAREHOUSE_MANAGE: "warehouse.manage",
   // MASTER_MANAGE ("master.manage") đã gỡ: BE thu hồi mã này 27/08 vì không route

@@ -65,6 +65,7 @@ const PERMISSION_MODULE_KEYS: Record<string, MessageKey> = {
   iam: "iam.permissionModule.iam",
   sku: "iam.permissionModule.sku",
   catalog: "iam.permissionModule.catalog",
+  supplier: "iam.permissionModule.supplier",
   inbound: "iam.permissionModule.inbound",
   outbound: "iam.permissionModule.outbound",
   inventory: "iam.permissionModule.inventory",

@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { readAllApiPages } from "@/shared/api/read-all-pages";
 import type {
   IamDepartment,
   IamDepartmentListParams,
@@ -61,6 +62,18 @@ export async function getIamPermissions(
     },
   );
   return { data: result.data, meta: result.meta };
+}
+
+/** Both role matrices and individual grants require the complete catalog. */
+export async function getAllIamPermissions(
+  params: IamPermissionListParams = {},
+): Promise<IamPageResult<IamPermission>> {
+  const data = await readAllApiPages<IamPermission>(
+    (page) =>
+      getIamPermissions({ ...params, page, per_page: params.per_page ?? 100 }),
+    (permission) => permission.permission_id,
+  );
+  return { data, meta: { total: data.length } };
 }
 
 /**

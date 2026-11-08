@@ -98,6 +98,9 @@ export const CatalogMasterScreen = lazyRoute(() =>
     default: m.CatalogMasterScreen,
   })),
 );
+export const SupplierListPage = lazyRoute(
+  () => import("@/modules/master-data/pages/SupplierListPage"),
+);
 export const WarehouseConfigScreen = lazyRoute(() =>
   import("@/modules/master-data/pages/WarehouseConfigScreen").then((m) => ({
     default: m.WarehouseConfigScreen,
