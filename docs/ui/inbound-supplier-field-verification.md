@@ -29,12 +29,19 @@ Ngày: 08/11/2026. Màn hình: `/inbound` (`IN-01`), drawer `Tạo phiếu nhậ
 
 ## Kết quả kiểm tra
 
-- BE `InboundSupplierFieldTest`: **8/8 đạt**.
+- BE `InboundSupplierFieldTest`: **8/8 đạt**, gồm audit tạo/sửa có `supplier_id`.
 - BE liên quan (`Gd1ScanDrivenInboundContractTest`, `SupplierWriteApiTest`): **28/28 đạt**.
 - BE contract (`P04InboundContractTest`, `StockDocumentCanonicalFlowTest`): **38/38 đạt**.
-- FE tập trung (`InboundDraftModal`, hook lookup, service, `UiAutocomplete`): **59/59 đạt**.
+- FE tập trung (`InboundDraftModal`, hook lookup, service, `UiAutocomplete`): **64/64 đạt**, gồm:
+  - bắt buộc NCC khi tạo;
+  - chặn lưu phiếu cũ chưa có NCC;
+  - hiện đúng NCC khi Sửa;
+  - giữ NCC đang chọn khi kết quả tìm kiếm đổi;
+  - lỗi quyền/tải NCC có thông báo và nút thử lại;
+  - debounce khi gõ nhanh, gõ nhịp và kết quả cũ về muộn không ghi đè kết quả mới;
+  - `UiAutocomplete` server mode không lọc lại kết quả.
 - FE typecheck: đạt. ESLint toàn bộ `src/`: đạt. Production build: đạt.
-- Playwright Chromium: **1/1 đạt** — mở `/inbound`, xác nhận phiên, mở form, kiểm tra lỗi bắt buộc NCC, gõ tìm `Honda`, chọn `NCC-001 - Honda Việt Nam`, lưu và xác nhận payload `supplier_id`.
+- Playwright Chromium: **1/1 đạt** — mở `/inbound`, xác nhận phiên, mở form, kiểm tra lỗi bắt buộc NCC, gõ tìm `Honda`, chọn `NCC-001 - Honda Việt Nam`, lưu và xác nhận payload `supplier_id`. Luồng Sửa được kiểm tra ở component test, không lặp lại trong E2E.
 
 ## Giới hạn
 

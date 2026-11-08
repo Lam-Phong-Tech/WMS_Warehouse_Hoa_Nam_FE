@@ -111,6 +111,63 @@ describe("useInboundSupplierSearch", () => {
     }, expect.anything());
   });
 
+  it("keeps the latest keyword result when responses arrive out of order", async () => {
+    type SupplierPage = Awaited<ReturnType<typeof listSuppliers>>;
+    const deferred = <T,>() => {
+      let resolve!: (value: T) => void;
+      const promise = new Promise<T>((done) => {
+        resolve = done;
+      });
+      return { promise, resolve };
+    };
+    const page = (label: string): SupplierPage => ({
+      rows: [{ ...rows[0], display_name: label }],
+      page: 1,
+      perPage: 20,
+      total: 1,
+      lastPage: 1,
+    });
+    const hon = deferred<SupplierPage>();
+    const honda = deferred<SupplierPage>();
+    vi.mocked(listSuppliers).mockImplementation((params) => {
+      if (params.q === "Hon") return hon.promise;
+      if (params.q === "Honda") return honda.promise;
+      return Promise.resolve(page("BASE"));
+    });
+
+    const { result } = renderHook(() => useInboundSupplierSearch(true), {
+      wrapper,
+    });
+    await waitFor(() =>
+      expect(result.current.options[0]?.label).toBe("BASE"),
+    );
+
+    act(() => result.current.onSearch("Hon"));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+    act(() => result.current.onSearch("Honda"));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+
+    await act(async () => {
+      honda.resolve(page("HONDA"));
+      await honda.promise;
+    });
+    await waitFor(() =>
+      expect(result.current.options[0]?.label).toBe("HONDA"),
+    );
+
+    await act(async () => {
+      hon.resolve(page("HON"));
+      await hon.promise;
+    });
+    await waitFor(() =>
+      expect(result.current.options[0]?.label).toBe("HONDA"),
+    );
+  });
+
   it("cancels the previous debounce when typing is staggered", async () => {
     const { result } = renderHook(() => useInboundSupplierSearch(true), {
       wrapper,

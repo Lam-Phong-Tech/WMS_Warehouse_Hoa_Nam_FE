@@ -461,12 +461,23 @@ describe("IN-01 · nhà cung cấp", () => {
     ).toHaveValue("NCC-001 - Honda");
   });
 
-  it("hiện lỗi tải nhà cung cấp và cho thử lại", async () => {
+  it("hiện lỗi quyền tải nhà cung cấp và cho thử lại", async () => {
     const retry = vi.fn();
+    const forbidden = Object.assign(new Error("Forbidden"), {
+      isAxiosError: true,
+      response: {
+        status: 403,
+        data: {
+          success: false,
+          message: "Bạn không có quyền xem nhà cung cấp.",
+          error_code: "ACCESS_DENIED",
+        },
+      },
+    });
     vi.mocked(useInboundSupplierSearch).mockReturnValue({
       options: [],
       loading: false,
-      error: new Error("SUPPLIER_LOOKUP_FAILED"),
+      error: forbidden,
       retry,
       onSearch: vi.fn(),
     });
@@ -478,8 +489,10 @@ describe("IN-01 · nhà cung cấp", () => {
       />,
     );
 
-    expect(await screen.findByRole("alert")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Bạn không có quyền xem nhà cung cấp.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Thử lại/ }));
     expect(retry).toHaveBeenCalledOnce();
   });
 });
