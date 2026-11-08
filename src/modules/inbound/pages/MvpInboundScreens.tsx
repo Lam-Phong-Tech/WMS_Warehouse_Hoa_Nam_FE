@@ -1496,26 +1496,18 @@ export function InboundScanModal({
                     </Box>
                   )}
                 </Box>
-              ) : (
+              ) : detail.document.status !== "POSTED" ? (
                 <Box sx={{ mb: 2 }}>
-                  <UiAlert
-                    tone={
-                      detail.document.status === "POSTED" ? "success" : "info"
-                    }
-                  >
+                  <UiAlert tone="info">
                     <Box sx={{ fontWeight: 700 }}>
-                      {detail.document.status === "POSTED"
-                        ? t("inbound.post.successTitle")
-                        : t("inbound.post.failedTitle")}
+                      {t("inbound.post.failedTitle")}
                     </Box>
-                    {detail.document.status !== "POSTED" ? (
-                      <Box sx={{ typography: "body2" }}>
-                        {t("inbound.post.cancelledNote")}
-                      </Box>
-                    ) : null}
+                    <Box sx={{ typography: "body2" }}>
+                      {t("inbound.post.cancelledNote")}
+                    </Box>
                   </UiAlert>
                 </Box>
-              )}
+              ) : null}
 
               <Box
                 className="hn-inbound-scan-table"
