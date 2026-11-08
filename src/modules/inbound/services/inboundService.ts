@@ -23,6 +23,7 @@ import type {
   InboundLine,
   InboundScanEntry,
   InboundScanResult,
+  InboundSupplier,
   InboundUnscanResult,
   PostReceiptRequest,
   ReceiptEvidence,
@@ -126,6 +127,22 @@ function normalizeStatus(value: unknown): InboundDocument["status"] {
     `Unsupported inbound status from API: ${status || "<empty>"}`,
   );
 }
+function normalizeSupplier(raw: unknown): InboundSupplier | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const row = raw as RawRecord;
+  const id = text(row.id);
+  const name = text(row.name);
+  if (!id || !name) return null;
+  return {
+    id,
+    code: text(row.code) || null,
+    name,
+    displayName: text(row.display_name) || name,
+    status: row.status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+    version: num(row.version),
+  };
+}
+
 function normalizeDocument(row: RawRecord): InboundDocument {
   const lines = rawLines(row);
   const expected = lines.length
@@ -152,6 +169,7 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     source: text(row.source_reference ?? row.source_name ?? row.source, "-"),
     date: text(row.doc_date ?? row.date ?? row.created_at),
     warehouseId: text(row.dst_warehouse_id ?? row.warehouse_id),
+    supplierId: text(row.supplier_id) || undefined,
     expected,
     scanned,
     // The list endpoint eager-loads lines. An omitted array is unknown, not zero.
@@ -227,6 +245,7 @@ function normalizeDetail(row: RawRecord): InboundDetail {
   };
   return {
     document,
+    supplier: normalizeSupplier(row.supplier),
     lines: rawLines(row).map((line) =>
       normalizeLine(line, document.id, document.status),
     ),
