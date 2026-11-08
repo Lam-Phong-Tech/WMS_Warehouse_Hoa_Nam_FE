@@ -38,6 +38,7 @@ import {
   useInboundDetail,
   useUpdateInbound,
 } from "@/modules/inbound/hooks/use-inbound";
+import { useInboundSupplierSearch } from "@/modules/inbound/hooks/use-inbound-supplier-search";
 import type {
   CreateInboundPayload,
   UpdateInboundPayload,
@@ -50,6 +51,7 @@ import "./inbound-draft.css";
 interface FormValues {
   warehouseId: string;
   documentDate: string;
+  supplierId: string;
   sourceName: string;
   note: string;
 }
@@ -78,6 +80,7 @@ function useInboundPermission(code: string) {
 const EMPTY_FORM: FormValues = {
   warehouseId: "",
   documentDate: "",
+  supplierId: "",
   sourceName: "",
   note: "",
 };
@@ -98,6 +101,8 @@ const SERVER_FIELD_TO_FORM_FIELD: Record<string, keyof FormValues> = {
   documentDate: "documentDate",
   dstWarehouseId: "warehouseId",
   warehouseId: "warehouseId",
+  supplierId: "supplierId",
+  supplier_id: "supplierId",
   sourceReference: "sourceName",
   sourceName: "sourceName",
   note: "note",
@@ -128,6 +133,10 @@ export function InboundDraftModal({
   const dialog = useDialogExit(onClose);
   const t = useT();
   const [formValues, setFormValues] = useState<FormValues>(EMPTY_FORM);
+  const [selectedSupplier, setSelectedSupplier] = useState<{
+    value: string;
+    label: string;
+  } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const initializedRef = useRef<string | null>(null);
   const detailQuery = useInboundDetail(documentId);
@@ -137,6 +146,7 @@ export function InboundDraftModal({
   const warehousesQuery = useActiveWarehouses();
   const createMutation = useCreateInbound();
   const updateMutation = useUpdateInbound();
+  const supplierLookup = useInboundSupplierSearch(true);
   const canCreate = useInboundPermission(P.INBOUND_CREATE);
   const detail = detailQuery.data;
   const status = detail?.document.status;
@@ -153,6 +163,13 @@ export function InboundDraftModal({
     parsedDocumentDate.format("YYYY-MM-DD") === formValues.documentDate
       ? parsedDocumentDate
       : null;
+  const supplierOptions =
+    selectedSupplier &&
+    !supplierLookup.options.some(
+      (option) => option.value === selectedSupplier.value,
+    )
+      ? [selectedSupplier, ...supplierLookup.options]
+      : supplierLookup.options;
 
   const updateDocumentDate = (value: string) => {
     setFormValues((current) => ({ ...current, documentDate: value }));
@@ -169,19 +186,31 @@ export function InboundDraftModal({
       setFormValues({
         documentDate: localToday(),
         warehouseId: text(firstWarehouse?.id ?? firstWarehouse?.warehouse_id),
+        supplierId: "",
         sourceName: "",
         note: "",
       });
+      setSelectedSupplier(null);
       setFieldErrors({});
       return;
     }
     if (!detail || initializedRef.current === documentId) return;
+    const detailSupplier = detail.supplier;
     setFormValues({
       documentDate: detail.document.date?.slice(0, 10) || localToday(),
       warehouseId: detail.document.warehouseId,
+      supplierId: detailSupplier?.id ?? detail.document.supplierId ?? "",
       sourceName: detail.document.source === "-" ? "" : detail.document.source,
       note: detail.document.note ?? "",
     });
+    setSelectedSupplier(
+      detailSupplier
+        ? {
+            value: detailSupplier.id,
+            label: detailSupplier.displayName || detailSupplier.name,
+          }
+        : null,
+    );
     setFieldErrors({});
     initializedRef.current = documentId;
   }, [detail, documentId, warehousesQuery.data]);
@@ -234,6 +263,9 @@ export function InboundDraftModal({
     if (!documentId && !formValues.warehouseId) {
       errors.warehouseId = t("inbound.draft.errWarehouse");
     }
+    if (!formValues.supplierId) {
+      errors.supplierId = t("inbound.draft.errSupplier");
+    }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -264,6 +296,7 @@ export function InboundDraftModal({
         const payload: UpdateInboundPayload = {
           doc_date: formValues.documentDate || null,
           source_reference: formValues.sourceName?.trim() || null,
+          supplier_id: formValues.supplierId || null,
           note: formValues.note?.trim() || null,
         };
         const updated = await updateMutation.mutateAsync({
@@ -280,6 +313,7 @@ export function InboundDraftModal({
         doc_date: formValues.documentDate || null,
         dst_warehouse_id: formValues.warehouseId,
         source_reference: formValues.sourceName?.trim() || null,
+        supplier_id: formValues.supplierId || null,
         note: formValues.note?.trim() || null,
       };
       let created = createdReceiptRef.current;
@@ -537,6 +571,36 @@ export function InboundDraftModal({
               value: option.value,
               label: option.label,
             }))}
+          />
+        </Grid>
+        <Grid size={12}>
+          <UiAutocomplete
+            label={t("inbound.draft.supplier")}
+            required
+            value={formValues.supplierId || null}
+            onChange={(next) => {
+              const id = next == null ? "" : String(next);
+              setFormValues((current) => ({ ...current, supplierId: id }));
+              setSelectedSupplier(
+                supplierOptions.find((option) => option.value === id) ?? null,
+              );
+              if (fieldErrors.supplierId) {
+                setFieldErrors((current) => ({ ...current, supplierId: "" }));
+              }
+            }}
+            disabled={!mutable || headerLocked}
+            error={Boolean(fieldErrors.supplierId)}
+            helperText={fieldErrors.supplierId}
+            placeholder={t("inbound.draft.supplierPlaceholder")}
+            loading={supplierLookup.loading}
+            onInputChange={supplierLookup.onSearch}
+            filterMode="server"
+            options={supplierOptions}
+            noOptionsText={
+              supplierLookup.error
+                ? t("inbound.draft.supplierLoadError")
+                : t("inbound.draft.supplierEmpty")
+            }
           />
         </Grid>
         <Grid size={12}>

@@ -21,6 +21,9 @@ vi.mock("@/modules/inbound/hooks/use-inbound", () => ({
 vi.mock("@/shared/data/reference-queries", () => ({
   useActiveWarehouses: vi.fn(),
 }));
+vi.mock("@/modules/inbound/hooks/use-inbound-supplier-search", () => ({
+  useInboundSupplierSearch: vi.fn(),
+}));
 vi.mock("@/shared/components/DocumentAttachmentsPanel", () => ({
   DocumentAttachmentsPanel: () => null,
 }));
@@ -30,12 +33,22 @@ import {
   useInboundDetail,
   useUpdateInbound,
 } from "@/modules/inbound/hooks/use-inbound";
+import { useInboundSupplierSearch } from "@/modules/inbound/hooks/use-inbound-supplier-search";
 import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import { InboundDraftModal } from "./InboundDraftModal";
 
 const warehouses = [{ id: "WH-1", code: "HN", name: "Kho Hoa Nam" }];
 const create = vi.fn();
 const update = vi.fn();
+
+const supplier = {
+  id: "SUP-1",
+  code: "NCC-001",
+  name: "Honda",
+  displayName: "NCC-001 - Honda",
+  status: "ACTIVE" as const,
+  version: 1,
+};
 
 function mockDetail(date: string, status = "DRAFT") {
   vi.mocked(useInboundDetail).mockReturnValue({
@@ -48,7 +61,9 @@ function mockDetail(date: string, status = "DRAFT") {
         note: "Ghi chú A",
         status,
         version: 7,
+        supplierId: supplier.id,
       },
+      supplier,
     },
     isError: false,
     refetch: vi.fn(),
@@ -82,7 +97,23 @@ beforeEach(() => {
     data: warehouses,
     isLoading: false,
   } as unknown as ReturnType<typeof useActiveWarehouses>);
+  vi.mocked(useInboundSupplierSearch).mockReturnValue({
+    options: [{ value: supplier.id, label: supplier.displayName }],
+    loading: false,
+    error: null,
+    retry: vi.fn(),
+    onSearch: vi.fn(),
+  });
 });
+
+async function selectSupplier() {
+  fireEvent.mouseDown(
+    await screen.findByRole("combobox", { name: /Nhà cung cấp/ }),
+  );
+  fireEvent.click(
+    await screen.findByRole("option", { name: "NCC-001 - Honda" }),
+  );
+}
 
 afterEach(() => {
   cleanupTestState();
@@ -192,6 +223,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
     fireEvent.click(
       screen.getByRole("button", { name: yesterday.format("DD/MM/YYYY") }),
     );
+    await selectSupplier();
     fireEvent.click(
       screen.getByRole("button", { name: "Tạo phiếu & quét hàng" }),
     );
@@ -201,6 +233,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         doc_date: yesterday.format("YYYY-MM-DD"),
         dst_warehouse_id: "WH-1",
         source_reference: null,
+        supplier_id: "SUP-1",
         note: null,
       });
       expect(onSaved).toHaveBeenCalledWith("IN-NEW");
@@ -289,6 +322,7 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
         payload: {
           doc_date: date,
           source_reference: "Nguồn A",
+          supplier_id: "SUP-1",
           note: "Ghi chú A",
         },
       });
@@ -314,6 +348,53 @@ describe("IN-01 · ngày chứng từ trong hộp tạo/sửa", () => {
   });
 });
 
+describe("IN-01 · nhà cung cấp", () => {
+  it("bắt buộc chọn nhà cung cấp trước khi tạo phiếu", async () => {
+    renderWithProviders(
+      <InboundDraftModal
+        documentId={null}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Tạo phiếu & quét hàng" }),
+    );
+
+    expect(await screen.findByText("Chọn nhà cung cấp.")).toBeInTheDocument();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("hiện nhà cung cấp đã chọn khi sửa phiếu", async () => {
+    mockDetail(dayjs().subtract(1, "day").format("YYYY-MM-DD"));
+    renderWithProviders(
+      <InboundDraftModal
+        documentId="IN-1"
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("combobox", { name: /Nhà cung cấp/ }),
+    ).toHaveValue("NCC-001 - Honda");
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thông tin" }));
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith({
+        id: "IN-1",
+        ifMatch: 7,
+        payload: {
+          doc_date: dayjs().subtract(1, "day").format("YYYY-MM-DD"),
+          source_reference: "Nguồn A",
+          supplier_id: "SUP-1",
+          note: "Ghi chú A",
+        },
+      }),
+    );
+  });
+});
+
 describe("IN-01 · attachments during creation", () => {
   async function setup(files: File[]) {
     const onSaved = vi.fn();
@@ -327,6 +408,7 @@ describe("IN-01 · attachments during creation", () => {
         onBusyChange={onBusyChange}
       />,
     );
+    await selectSupplier();
     const input = await screen.findByLabelText("Chọn chứng từ đính kèm");
     fireEvent.change(input, { target: { files } });
     return { onSaved, onClose, onBusyChange };

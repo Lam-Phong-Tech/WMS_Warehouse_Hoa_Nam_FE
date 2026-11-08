@@ -1227,6 +1227,11 @@ export const MESSAGES_ZH: MessageTree = {
       "documentDateHelper": "格式：日/月/年",
       "warehouse": "收货仓库",
       "warehousePlaceholder": "选择收货仓库",
+      "supplier": "供应商",
+      "supplierPlaceholder": "搜索供应商编码或名称...",
+      "errSupplier": "请选择供应商。",
+      "supplierEmpty": "未找到供应商",
+      "supplierLoadError": "无法加载供应商列表。",
       "sourceRef": "外部单据编号",
       "sourceRefPlaceholder": "送货单、发票或采购订单编号（可选）",
       "note": "注意"
