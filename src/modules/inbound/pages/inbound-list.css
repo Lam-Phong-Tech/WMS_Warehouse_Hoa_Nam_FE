@@ -700,16 +700,6 @@
   }
 }
 @container hn-inbound (max-width: 1180px) {
-  .hn-inbound-header > div:first-child {
-    flex-basis: 100%;
-  }
-  .hn-inbound-header-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  .hn-inbound-create {
-    flex: 0 0 auto;
-  }
   .hn-inbound-overview-metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
@@ -799,7 +789,12 @@
   }
 }
 @container hn-inbound (max-width: 560px) {
+  .hn-inbound-header > div:first-child {
+    flex-basis: 100%;
+  }
   .hn-inbound-header-actions {
+    width: 100%;
+    justify-content: flex-end;
     flex-wrap: wrap;
     gap: 10px;
   }
