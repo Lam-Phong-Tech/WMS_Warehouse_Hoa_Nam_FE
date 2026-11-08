@@ -641,6 +641,7 @@ export const MESSAGES_EN: MessageTree = {
       errSupplier: "Select a supplier.",
       supplierEmpty: "No suppliers found",
       supplierLoadError: "Unable to load suppliers.",
+      supplierRetry: "Retry",
       sourceRef: "External document number",
       sourceRefPlaceholder: "Delivery note, invoice or purchase order number (optional)",
       note: "Note",

@@ -35,13 +35,16 @@ export function useInboundSupplierSearch(
 
   const query = useQuery({
     queryKey: ["inbound", "supplier-lookup", debouncedKeyword],
-    queryFn: () =>
-      listSuppliers({
-        q: debouncedKeyword || undefined,
-        status: "ACTIVE",
-        page: 1,
-        per_page: LOOKUP_PAGE_SIZE,
-      }),
+    queryFn: ({ signal }) =>
+      listSuppliers(
+        {
+          q: debouncedKeyword || undefined,
+          status: "ACTIVE",
+          page: 1,
+          per_page: LOOKUP_PAGE_SIZE,
+        },
+        signal,
+      ),
     enabled,
     placeholderData: (previous) => previous,
     staleTime: 60_000,

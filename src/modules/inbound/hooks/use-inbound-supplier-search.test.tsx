@@ -56,7 +56,7 @@ describe("useInboundSupplierSearch", () => {
         status: "ACTIVE",
         page: 1,
         per_page: 20,
-      }),
+      }, expect.anything()),
     );
     await waitFor(() =>
       expect(result.current.options).toEqual([
@@ -83,7 +83,7 @@ describe("useInboundSupplierSearch", () => {
         status: "ACTIVE",
         page: 1,
         per_page: 20,
-      }),
+      }, expect.anything()),
     );
   });
 
@@ -108,6 +108,35 @@ describe("useInboundSupplierSearch", () => {
       status: "ACTIVE",
       page: 1,
       per_page: 20,
+    }, expect.anything());
+  });
+
+  it("cancels the previous debounce when typing is staggered", async () => {
+    const { result } = renderHook(() => useInboundSupplierSearch(true), {
+      wrapper,
     });
+    await waitFor(() => expect(listSuppliers).toHaveBeenCalledTimes(1));
+    vi.mocked(listSuppliers).mockClear();
+
+    act(() => result.current.onSearch("H"));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    act(() => result.current.onSearch("Ho"));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    act(() => result.current.onSearch("Hon"));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+
+    await waitFor(() => expect(listSuppliers).toHaveBeenCalledTimes(1));
+    expect(listSuppliers).toHaveBeenCalledWith({
+      q: "Hon",
+      status: "ACTIVE",
+      page: 1,
+      per_page: 20,
+    }, expect.anything());
   });
 });

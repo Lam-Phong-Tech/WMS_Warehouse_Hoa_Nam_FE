@@ -393,6 +393,95 @@ describe("IN-01 · nhà cung cấp", () => {
       }),
     );
   });
+
+  it("chặn lưu phiếu cũ chưa có nhà cung cấp cho đến khi chọn", async () => {
+    const date = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: {
+        document: {
+          id: "IN-1",
+          date,
+          warehouseId: "WH-1",
+          source: "Nguồn A",
+          note: "",
+          status: "DRAFT",
+          version: 7,
+        },
+        supplier: null,
+      },
+      isError: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useInboundDetail>);
+    renderWithProviders(
+      <InboundDraftModal
+        documentId="IN-1"
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Lưu thông tin" }),
+    );
+
+    expect(await screen.findByText("Chọn nhà cung cấp.")).toBeInTheDocument();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("giữ nhà cung cấp đã chọn khi kết quả tìm kiếm thay đổi", async () => {
+    const { rerender } = renderWithProviders(
+      <InboundDraftModal
+        documentId={null}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+    await selectSupplier();
+    expect(
+      screen.getByRole("combobox", { name: /Nhà cung cấp/ }),
+    ).toHaveValue("NCC-001 - Honda");
+
+    vi.mocked(useInboundSupplierSearch).mockReturnValue({
+      options: [{ value: "SUP-2", label: "NCC-002 - Yanmar" }],
+      loading: false,
+      error: null,
+      retry: vi.fn(),
+      onSearch: vi.fn(),
+    });
+    rerender(
+      <InboundDraftModal
+        documentId={null}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("combobox", { name: /Nhà cung cấp/ }),
+    ).toHaveValue("NCC-001 - Honda");
+  });
+
+  it("hiện lỗi tải nhà cung cấp và cho thử lại", async () => {
+    const retry = vi.fn();
+    vi.mocked(useInboundSupplierSearch).mockReturnValue({
+      options: [],
+      loading: false,
+      error: new Error("SUPPLIER_LOOKUP_FAILED"),
+      retry,
+      onSearch: vi.fn(),
+    });
+    renderWithProviders(
+      <InboundDraftModal
+        documentId={null}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(retry).toHaveBeenCalledOnce();
+  });
 });
 
 describe("IN-01 · attachments during creation", () => {

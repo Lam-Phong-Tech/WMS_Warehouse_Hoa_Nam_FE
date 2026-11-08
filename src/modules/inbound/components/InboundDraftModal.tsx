@@ -602,6 +602,28 @@ export function InboundDraftModal({
                 : t("inbound.draft.supplierEmpty")
             }
           />
+          {supplierLookup.error ? (
+            <UiAlert tone="warning">
+              <Stack
+                direction="row"
+                sx={{ alignItems: "center", gap: 1, flexWrap: "wrap" }}
+              >
+                <span>
+                  {getApiErrorMessage(
+                    supplierLookup.error,
+                    t("inbound.draft.supplierLoadError"),
+                  )}
+                </span>
+                <ActionButton
+                  kind="refresh"
+                  appearance="tonal"
+                  onClick={supplierLookup.retry}
+                >
+                  {t("inbound.draft.supplierRetry")}
+                </ActionButton>
+              </Stack>
+            </UiAlert>
+          ) : null}
         </Grid>
         <Grid size={12}>
           <UiTextField

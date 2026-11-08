@@ -639,6 +639,7 @@ export const MESSAGES_VI = {
       errSupplier: "Chọn nhà cung cấp.",
       supplierEmpty: "Không tìm thấy nhà cung cấp",
       supplierLoadError: "Không tải được danh sách nhà cung cấp.",
+      supplierRetry: "Thử lại",
       sourceRef: "Mã chứng từ bên ngoài",
       sourceRefPlaceholder: "Số phiếu giao hàng, hóa đơn hoặc đơn mua (tùy chọn)",
       note: "Ghi chú",

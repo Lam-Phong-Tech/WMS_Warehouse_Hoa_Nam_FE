@@ -1232,6 +1232,7 @@ export const MESSAGES_ZH: MessageTree = {
       "errSupplier": "请选择供应商。",
       "supplierEmpty": "未找到供应商",
       "supplierLoadError": "无法加载供应商列表。",
+      "supplierRetry": "重试",
       "sourceRef": "外部单据编号",
       "sourceRefPlaceholder": "送货单、发票或采购订单编号（可选）",
       "note": "注意"

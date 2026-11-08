@@ -16,8 +16,6 @@ export interface InboundDocument {
   date: string;
   warehouseId: string;
   supplierId?: string;
-  /** Resolved by the detail endpoint; absent on list rows. */
-  supplier?: InboundSupplier | null;
   /** Under the GĐ1 scan-driven contract this mirrors actual scanned quantity. */
   expected: number;
   scanned: number;
