@@ -709,3 +709,12 @@ body .ant-picker-dropdown .ant-picker-super-next-icon::before {
 .hn-spinner {
   color: inherit;
 }
+
+/* UiDrawer header must stretch arbitrary title children so trailing actions
+   (e.g. the close button) pin to the right edge instead of sticking to text. */
+.ui-drawer-header .MuiTypography-root,
+.ui-drawer-header .MuiTypography-root > span,
+.ui-drawer-header .MuiTypography-root > div {
+  width: 100%;
+  min-width: 0;
+}

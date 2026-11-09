@@ -8,6 +8,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  width: 100%;
+  min-width: 0;
 }
 .hn-reversal-create-title > span:first-child {
   min-width: 0;

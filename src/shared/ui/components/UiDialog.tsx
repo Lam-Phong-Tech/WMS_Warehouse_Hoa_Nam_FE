@@ -89,6 +89,7 @@ export function UiDrawer({
       >
         {title || headerEnd ? (
           <Box
+            className="ui-drawer-header"
             sx={{
               flex: "none",
               px: { xs: 2, sm: 3 },
