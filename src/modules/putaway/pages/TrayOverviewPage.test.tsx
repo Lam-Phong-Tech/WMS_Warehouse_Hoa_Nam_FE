@@ -75,11 +75,15 @@ describe("TrayOverviewPage", () => {
     await screen.findByText("TRAY-A1");
 
     const overview = screen.getByTestId("ptw-tray-overview");
-    const values = within(overview)
-      .getAllByTestId("ptw-kpi-value")
-      .map((node) => node.textContent);
-
-    expect(values).toEqual(["4", "2", "1", "1"]);
+    expect(
+      within(overview).getByRole("button", { name: /Trống · 2/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(overview).getByRole("button", { name: /Đang chứa · 1/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(overview).getByRole("button", { name: /Cần chú ý · 1/ }),
+    ).toBeInTheDocument();
     expect(screen.getAllByTestId("ptw-tray-cell")).toHaveLength(4);
     expect(
       screen.getByRole("heading", {
@@ -94,7 +98,11 @@ describe("TrayOverviewPage", () => {
     const zoneHeadings = screen
       .getAllByRole("heading", { level: 3 })
       .map((node) => node.textContent);
-    expect(zoneHeadings).toEqual(["ZONE-A", "ZONE-B", "Chưa gán khu vực"]);
+    expect(zoneHeadings).toEqual([
+      "ZONE-A",
+      "ZONE-B",
+      expect.stringMatching(/^Chưa gán khu vực · 1$/),
+    ]);
   });
 
   it("filters by status and clears the filter", async () => {
@@ -102,9 +110,7 @@ describe("TrayOverviewPage", () => {
     renderPage();
 
     await screen.findByText("TRAY-A1");
-    await userEvent.click(
-      screen.getByRole("button", { name: /Cần chú ý/ }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: /Cần chú ý/ }));
 
     expect(screen.getAllByTestId("ptw-tray-cell")).toHaveLength(1);
     expect(screen.getByText("TRAY-B1")).toBeInTheDocument();
@@ -132,7 +138,9 @@ describe("TrayOverviewPage", () => {
     await userEvent.clear(search);
     await userEvent.type(search, "không tồn tại");
 
-    expect(await screen.findByText("Không có khay phù hợp")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Không có khay phù hợp"),
+    ).toBeInTheDocument();
   });
 
   it("distinguishes an empty warehouse from a filtered no-match", async () => {
@@ -149,9 +157,7 @@ describe("TrayOverviewPage", () => {
     fetchTrays.mockReturnValue(new Promise(() => {}));
     renderPage();
 
-    await userEvent.click(
-      screen.getByRole("button", { name: /Cần chú ý/ }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: /Cần chú ý/ }));
 
     expect(screen.queryByText(/Hiển thị/)).not.toBeInTheDocument();
   });
@@ -199,9 +205,9 @@ describe("TrayOverviewPage", () => {
     renderPage();
 
     const values = screen
-      .getAllByTestId("ptw-kpi-value")
+      .getAllByTestId("ptw-legend-count")
       .map((node) => node.textContent);
 
-    expect(values).toEqual(["—", "—", "—", "—"]);
+    expect(values).toEqual(["—", "—", "—"]);
   });
 });
