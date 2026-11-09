@@ -1204,11 +1204,6 @@ export const MESSAGES_ZH: MessageTree = {
       "view": "查看"
     },
     "draft": {
-      "selectAttachments": "选择单据附件",
-      "localAttachmentsHint": "JPG/PNG/WEBP图片或PDF，每个文件不超过15MB。提交入库单后才会上传文件。",
-      "attachmentSelected": "已选择 · 尚未上传",
-      "attachmentUploaded": "已上传",
-      "removeAttachment": "移除文件 {name}",
       "retryAttachments": "重试上传并扫描",
       "continueScanning": "继续扫描",
       "attachmentsReceiptCreated": "入库单 {code} 已创建。重试或移除失败的文件以继续扫描。关闭窗口将丢弃尚未上传的文件。",
@@ -4947,6 +4942,11 @@ export const MESSAGES_ZH: MessageTree = {
     },
     "attachments": {
       "title": "附件文件",
+      "selectFiles": "选择单据附件",
+      "pendingHint": "JPG/PNG/WEBP图片或PDF，每个文件不超过15MB。提交单据后才会上传文件。",
+      "pendingSelected": "已选择 · 尚未上传",
+      "pendingUploaded": "已上传",
+      "removeFile": "移除文件 {name}",
       "kindSourceDocument": "源文件",
       "kindInvoice": "发票",
       "kindDeliveryNote": "送货单",

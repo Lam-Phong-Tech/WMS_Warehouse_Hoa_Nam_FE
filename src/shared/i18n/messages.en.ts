@@ -612,11 +612,6 @@ export const MESSAGES_EN: MessageTree = {
       view: "View",
     },
     draft: {
-      selectAttachments: "Choose document attachments",
-      localAttachmentsHint: "JPG/PNG/WEBP images or PDF, up to 15MB each. Files upload only after you submit the receipt.",
-      attachmentSelected: "Selected · Not uploaded",
-      attachmentUploaded: "Uploaded",
-      removeAttachment: "Remove file {name}",
       retryAttachments: "Retry uploads & scan goods",
       continueScanning: "Continue scanning",
       attachmentsReceiptCreated: "Receipt {code} has been created. Retry or remove failed files to continue scanning. Closing discards files that have not uploaded.",
@@ -4738,6 +4733,12 @@ export const MESSAGES_EN: MessageTree = {
     },
     attachments: {
       title: "Attached documents",
+      selectFiles: "Choose document attachments",
+      pendingHint:
+        "JPG/PNG/WEBP images or PDF, up to 15MB each. Files upload only after you submit the receipt.",
+      pendingSelected: "Selected · Not uploaded",
+      pendingUploaded: "Uploaded",
+      removeFile: "Remove file {name}",
       kindSourceDocument: "Source document",
       kindInvoice: "Invoice",
       kindDeliveryNote: "Delivery note",

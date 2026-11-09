@@ -611,11 +611,6 @@ export const MESSAGES_VI = {
       view: "Xem",
     },
     draft: {
-      selectAttachments: "Chọn chứng từ đính kèm",
-      localAttachmentsHint: "Ảnh JPG/PNG/WEBP hoặc PDF, mỗi tệp ≤ 15MB. Tệp chỉ được tải lên sau khi bấm tạo phiếu.",
-      attachmentSelected: "Đã chọn · Chưa tải lên",
-      attachmentUploaded: "Đã tải lên",
-      removeAttachment: "Bỏ tệp {name}",
       retryAttachments: "Thử tải lại & quét hàng",
       continueScanning: "Tiếp tục quét hàng",
       attachmentsReceiptCreated: "Phiếu {code} đã được tạo. Thử tải lại hoặc bỏ tệp lỗi để tiếp tục quét. Đóng cửa sổ sẽ bỏ các tệp chưa tải lên.",
@@ -4733,6 +4728,11 @@ export const MESSAGES_VI = {
     },
     attachments: {
       title: "Chứng từ đính kèm",
+      selectFiles: "Chọn chứng từ đính kèm",
+      pendingHint: "Ảnh JPG/PNG/WEBP hoặc PDF, mỗi tệp ≤ 15MB. Tệp chỉ được tải lên sau khi bấm tạo phiếu.",
+      pendingSelected: "Đã chọn · Chưa tải lên",
+      pendingUploaded: "Đã tải lên",
+      removeFile: "Bỏ tệp {name}",
       kindSourceDocument: "Chứng từ gốc",
       kindInvoice: "Hóa đơn",
       kindDeliveryNote: "Phiếu giao hàng",

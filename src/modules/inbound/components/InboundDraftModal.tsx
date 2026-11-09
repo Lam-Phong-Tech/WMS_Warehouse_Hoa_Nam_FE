@@ -23,9 +23,9 @@ import { useT } from "@/shared/i18n/useT";
 import { uploadDocumentAttachment } from "@/shared/api/documentAttachmentService";
 import { checkFile, FILE_RULES } from "@/shared/validation/file-rules";
 import {
-  InboundCreateAttachments,
-  type PendingInboundAttachment,
-} from "./InboundCreateAttachments";
+  PendingDocumentAttachments,
+  type PendingDocumentAttachment,
+} from "@/shared/components/PendingDocumentAttachments";
 import { DocumentAttachmentsPanel } from "@/shared/components/DocumentAttachmentsPanel";
 import {
   hasAnyWmsPermission,
@@ -126,7 +126,7 @@ export function InboundDraftModal({
     id: string;
     code?: string;
   } | null>(null);
-  const [pendingFiles, setPendingFiles] = useState<PendingInboundAttachment[]>(
+  const [pendingFiles, setPendingFiles] = useState<PendingDocumentAttachment[]>(
     [],
   );
   const [submitting, setSubmitting] = useState(false);
@@ -272,7 +272,7 @@ export function InboundDraftModal({
 
   const selectFiles = (files: File[]) => {
     if (submittingRef.current || createdReceiptRef.current) return;
-    const accepted: PendingInboundAttachment[] = [];
+    const accepted: PendingDocumentAttachment[] = [];
     for (const file of files) {
       const result = checkFile(file, FILE_RULES.documentAttachment);
       if (!result.ok) {
@@ -694,10 +694,10 @@ export function InboundDraftModal({
               </UiAlert>
             </Box>
           ) : null}
-          <InboundCreateAttachments
+          <PendingDocumentAttachments
             files={pendingFiles}
             busy={saving}
-            receiptCreated={Boolean(createdReceipt)}
+            locked={Boolean(createdReceipt)}
             onSelect={selectFiles}
             onRemove={(id) => {
               if (!submittingRef.current)

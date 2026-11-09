@@ -1,28 +1,35 @@
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { Box, Stack } from "@/shared/ui";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
 import { acceptAttribute, FILE_RULES } from "@/shared/validation/file-rules";
 
-export interface PendingInboundAttachment {
+export interface PendingDocumentAttachment {
   id: string;
   file: File;
   status: "selected" | "uploading" | "uploaded" | "failed";
   error?: string;
 }
 
-export function InboundCreateAttachments({
+/**
+ * Khối chọn nhiều chứng từ (ảnh/PDF) giữ tệp ở local cho tới khi phiếu được
+ * tạo. Dùng chung cho form tạo phiếu nhập và form tiếp nhận yêu cầu xuất:
+ * cùng luật tệp, cùng trạng thái selected → uploading → uploaded/failed.
+ */
+export function PendingDocumentAttachments({
   files,
   busy,
-  receiptCreated,
+  locked,
   onSelect,
   onRemove,
+  hint,
 }: {
-  files: PendingInboundAttachment[];
+  files: PendingDocumentAttachment[];
   busy: boolean;
-  receiptCreated: boolean;
+  locked: boolean;
   onSelect: (files: File[]) => void;
   onRemove: (id: string) => void;
+  hint?: ReactNode;
 }) {
   const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,25 +50,25 @@ export function InboundCreateAttachments({
         type="file"
         hidden
         multiple
-        aria-label={t("inbound.draft.selectAttachments")}
+        aria-label={t("shared.attachments.selectFiles")}
         accept={acceptAttribute(FILE_RULES.documentAttachment)}
-        disabled={busy || receiptCreated}
+        disabled={busy || locked}
         onChange={(event) => {
           onSelect(Array.from(event.currentTarget.files ?? []));
           event.currentTarget.value = "";
         }}
       />
-      {!receiptCreated ? (
+      {!locked ? (
         <ActionButton
           kind="upload"
           disabled={busy}
           onClick={() => inputRef.current?.click()}
         >
-          {t("inbound.draft.selectAttachments")}
+          {t("shared.attachments.selectFiles")}
         </ActionButton>
       ) : null}
       <Box sx={{ typography: "caption", color: "text.secondary", mt: 1 }}>
-        {t("inbound.draft.localAttachmentsHint")}
+        {hint ?? t("shared.attachments.pendingHint")}
       </Box>
       <Stack component="ul" spacing={1} sx={{ listStyle: "none", p: 0, my: 1 }}>
         {files.map((entry) => (
@@ -91,11 +98,11 @@ export function InboundCreateAttachments({
                 aria-live="polite"
               >
                 {entry.status === "selected"
-                  ? t("inbound.draft.attachmentSelected")
+                  ? t("shared.attachments.pendingSelected")
                   : entry.status === "uploading"
                     ? t("shared.attachments.uploading")
                     : entry.status === "uploaded"
-                      ? t("inbound.draft.attachmentUploaded")
+                      ? t("shared.attachments.pendingUploaded")
                       : entry.error || t("shared.attachments.uploadError")}
               </Box>
             </Box>
@@ -103,7 +110,7 @@ export function InboundCreateAttachments({
               <ActionIconButton
                 kind="remove"
                 disabled={busy}
-                label={t("inbound.draft.removeAttachment", {
+                label={t("shared.attachments.removeFile", {
                   name: entry.file.name,
                 })}
                 onClick={() => onRemove(entry.id)}
