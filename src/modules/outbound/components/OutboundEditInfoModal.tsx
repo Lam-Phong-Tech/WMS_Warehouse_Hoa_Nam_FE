@@ -133,7 +133,8 @@ export function OutboundEditInfoModal({
     setRecipientName(doc.recipientName === "-" ? "" : doc.recipientName);
     setRecipientPhone(doc.recipientPhone ?? "");
     setRecipientAddress(
-      doc.recipientAddress === "-" ? "" : doc.recipientAddress,
+      doc.recipientAddressRaw ||
+        (doc.recipientAddress === "-" ? "" : doc.recipientAddress),
     );
     setRequestDate((doc.requestDate ?? doc.date ?? "").slice(0, 10));
     setNote(doc.note ?? "");
@@ -194,10 +195,6 @@ export function OutboundEditInfoModal({
     onSuccess: () => {
       toast.success(t("outbound.edit.saved"));
       onSaved();
-    },
-    onError: () => {
-      // 412/409: nạp lại version mới để lần lưu sau không gửi tiếp bản cũ.
-      void detailQuery.refetch();
     },
   });
 
@@ -270,7 +267,11 @@ export function OutboundEditInfoModal({
           spacing={1.5}
           sx={{ justifyContent: "flex-end" }}
         >
-          <ActionButton kind="close" onClick={dialog.close}>
+          <ActionButton
+            kind="close"
+            onClick={dialog.close}
+            disabled={updateMutation.isPending}
+          >
             {t("common.close")}
           </ActionButton>
           {isDraft ? (

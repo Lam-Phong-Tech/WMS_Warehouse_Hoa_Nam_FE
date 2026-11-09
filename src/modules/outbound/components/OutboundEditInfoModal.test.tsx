@@ -170,9 +170,7 @@ describe("outbound draft edit form", () => {
     renderEdit();
 
     expect(
-      await screen.findByText(
-        translate("vi", "outbound.edit.onlyDraft"),
-      ),
+      await screen.findByText(translate("vi", "outbound.edit.onlyDraft")),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: saveLabel })).toBeNull();
   });

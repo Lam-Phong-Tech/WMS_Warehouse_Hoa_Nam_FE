@@ -38,6 +38,8 @@ export interface OutboundDocumentRecord {
   agencyName?: string | null;
   recipientName: string;
   recipientAddress: string;
+  /** Chuỗi địa chỉ gốc từ BE (có thể là JSON của UiAddressField) để form sửa không mất cấu trúc. */
+  recipientAddressRaw?: string;
   recipientPhone?: string;
   requestDate?: string;
   note?: string | null;
@@ -364,6 +366,7 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
     recipientName: text(row.recipient_name ?? row.customer_name, "-"),
     recipientAddress:
       formatAddress(text(row.recipient_address ?? row.customer_address)) || "-",
+    recipientAddressRaw: text(row.recipient_address ?? row.customer_address),
     recipientPhone: text(row.recipient_contact_phone) || undefined,
     requestDate: text(row.request_date) || undefined,
     note: row.note === undefined || row.note === null ? null : text(row.note),
