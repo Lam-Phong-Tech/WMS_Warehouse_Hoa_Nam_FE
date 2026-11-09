@@ -613,7 +613,8 @@ export const MESSAGES_VI = {
     draft: {
       retryAttachments: "Thử tải lại & quét hàng",
       continueScanning: "Tiếp tục quét hàng",
-      attachmentsReceiptCreated: "Phiếu {code} đã được tạo. Thử tải lại hoặc bỏ tệp lỗi để tiếp tục quét. Đóng cửa sổ sẽ bỏ các tệp chưa tải lên.",
+      attachmentsReceiptCreated:
+        "Phiếu {code} đã được tạo. Thử tải lại hoặc bỏ tệp lỗi để tiếp tục quét. Đóng cửa sổ sẽ bỏ các tệp chưa tải lên.",
       errDocumentDate: "Chọn ngày chứng từ.",
       errDocumentDateFuture: "Ngày chứng từ không được ở tương lai.",
       errWarehouse: "Chọn kho nhận.",
@@ -637,7 +638,8 @@ export const MESSAGES_VI = {
       supplierLoadError: "Không tải được danh sách nhà cung cấp.",
       supplierRetry: "Thử lại",
       sourceRef: "Mã chứng từ bên ngoài",
-      sourceRefPlaceholder: "Số phiếu giao hàng, hóa đơn hoặc đơn mua (tùy chọn)",
+      sourceRefPlaceholder:
+        "Số phiếu giao hàng, hóa đơn hoặc đơn mua (tùy chọn)",
       note: "Ghi chú",
     },
     camera: {
@@ -999,8 +1001,10 @@ export const MESSAGES_VI = {
       save: "Lưu thông tin",
       saved: "Đã cập nhật thông tin phiếu xuất.",
       saveError: "Không lưu được thông tin phiếu xuất.",
-      onlyDraft:
-        "Chỉ phiếu xuất ở trạng thái Nháp mới được sửa thông tin.",
+      onlyDraft: "Chỉ phiếu xuất ở trạng thái Nháp mới được sửa thông tin.",
+      staleNotice:
+        "Phiếu đã được người khác cập nhật. Tải lại dữ liệu mới nhất để tiếp tục; các thay đổi chưa lưu sẽ bị bỏ.",
+      reload: "Tải lại dữ liệu",
       linesLocked:
         "SKU và số lượng được chốt từ toa yêu cầu; muốn đổi hàng, hãy huỷ phiếu và tạo lại.",
       linesTitle: "Dòng hàng (chỉ đọc)",
@@ -1010,10 +1014,8 @@ export const MESSAGES_VI = {
       saving: "Đang lưu...",
       fieldNote: "Ghi chú",
       errRecipient: "Nhập người / nơi nhận.",
-      errPhone:
-        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
-      errRequestDate:
-        "Ngày yêu cầu không hợp lệ hoặc nằm trong tương lai.",
+      errPhone: "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
+      errRequestDate: "Ngày yêu cầu không hợp lệ hoặc nằm trong tương lai.",
     },
     detail: {
       title: "Chi tiết phiếu xuất",
@@ -2111,18 +2113,27 @@ export const MESSAGES_VI = {
         "Tệp chứa số dòng, trường dữ liệu, loại lỗi, nội dung lỗi và giá trị bị từ chối{expiry}.",
       errorFileDownloadFailed: "Không tải được tệp lỗi",
       errFileType: "Chỉ nhận tệp định dạng {list}. Hãy chọn lại tệp.",
-      errFileSize:
-        "File quá lớn. Tối đa {max} MB",
-      errMissingCodeColumn: "Tệp thiếu cột Mã SKU. Hãy tải tệp mẫu và bổ sung cột này.",
-      errMissingNameColumn: "Tệp thiếu cột Tên SKU. Hãy tải tệp mẫu và bổ sung cột này.",
-      errInvalidWorkbook: "Tệp Excel không hợp lệ hoặc đã bị hỏng. Hãy dùng tệp mẫu và chọn lại.",
-      errRepeatedColumn: "Cột “{column}” bị lặp trong tệp. Hãy xóa cột trùng rồi kiểm tra lại.",
-      errUnsupportedColumn: "Cột “{column}” không được hỗ trợ. Hãy dùng đúng các cột trong tệp mẫu.",
-      errRowsLimit: "Tệp vượt quá {max} dòng dữ liệu. Hãy chia nhỏ tệp rồi chọn lại.",
-      errPhysicalRowsLimit: "Bảng tính vượt quá {max} dòng, kể cả dòng trống. Hãy xóa các dòng trống thừa rồi chọn lại.",
-      errResultIncomplete: "Máy chủ chưa trả đầy đủ kết quả kiểm tra tệp. Chưa thể nhập dữ liệu. Vui lòng thử lại.",
-      errRowsLimitUnknown: "Tệp có quá nhiều dòng. Hãy xóa dòng trống thừa hoặc chia nhỏ tệp.",
-      errConstraintsFailed: "Chưa lấy được giới hạn tệp từ máy chủ. Hãy thử lại trước khi kiểm tra tệp.",
+      errFileSize: "File quá lớn. Tối đa {max} MB",
+      errMissingCodeColumn:
+        "Tệp thiếu cột Mã SKU. Hãy tải tệp mẫu và bổ sung cột này.",
+      errMissingNameColumn:
+        "Tệp thiếu cột Tên SKU. Hãy tải tệp mẫu và bổ sung cột này.",
+      errInvalidWorkbook:
+        "Tệp Excel không hợp lệ hoặc đã bị hỏng. Hãy dùng tệp mẫu và chọn lại.",
+      errRepeatedColumn:
+        "Cột “{column}” bị lặp trong tệp. Hãy xóa cột trùng rồi kiểm tra lại.",
+      errUnsupportedColumn:
+        "Cột “{column}” không được hỗ trợ. Hãy dùng đúng các cột trong tệp mẫu.",
+      errRowsLimit:
+        "Tệp vượt quá {max} dòng dữ liệu. Hãy chia nhỏ tệp rồi chọn lại.",
+      errPhysicalRowsLimit:
+        "Bảng tính vượt quá {max} dòng, kể cả dòng trống. Hãy xóa các dòng trống thừa rồi chọn lại.",
+      errResultIncomplete:
+        "Máy chủ chưa trả đầy đủ kết quả kiểm tra tệp. Chưa thể nhập dữ liệu. Vui lòng thử lại.",
+      errRowsLimitUnknown:
+        "Tệp có quá nhiều dòng. Hãy xóa dòng trống thừa hoặc chia nhỏ tệp.",
+      errConstraintsFailed:
+        "Chưa lấy được giới hạn tệp từ máy chủ. Hãy thử lại trước khi kiểm tra tệp.",
       errReadFile:
         "Không đọc được nội dung tệp. Tệp có thể đã bị di chuyển, đổi tên hoặc sửa sau khi chọn. Hãy chọn lại tệp.",
       errChecksumMismatch:
@@ -4759,7 +4770,8 @@ export const MESSAGES_VI = {
     attachments: {
       title: "Chứng từ đính kèm",
       selectFiles: "Chọn chứng từ đính kèm",
-      pendingHint: "Ảnh JPG/PNG/WEBP hoặc PDF, mỗi tệp ≤ 15MB. Tệp chỉ được tải lên sau khi bấm tạo phiếu.",
+      pendingHint:
+        "Ảnh JPG/PNG/WEBP hoặc PDF, mỗi tệp ≤ 15MB. Tệp chỉ được tải lên sau khi bấm tạo phiếu.",
       pendingSelected: "Đã chọn · Chưa tải lên",
       pendingUploaded: "Đã tải lên",
       removeFile: "Bỏ tệp {name}",

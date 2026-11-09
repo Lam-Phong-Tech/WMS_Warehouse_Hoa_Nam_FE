@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import {
   Box,
@@ -14,6 +14,7 @@ import {
 } from "@/shared/ui";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { normalizeError } from "@/shared/api/api-error";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { useT } from "@/shared/i18n/useT";
@@ -86,6 +87,10 @@ export function OutboundEditInfoModal({
   const detail = detailQuery.data;
   const doc = detail?.document;
   const initializedRef = useRef(false);
+  // Version tại thời điểm nạp form. Không dùng doc.version "live" vì query dùng
+  // chung với drawer chi tiết có thể refetch nền; gửi version mới với dữ liệu cũ
+  // sẽ âm thầm ghi đè thay đổi của người khác.
+  const versionRef = useRef<number | null>(null);
 
   const [agencyId, setAgencyId] = useState<string | null>(null);
   const [recipientName, setRecipientName] = useState("");
@@ -126,19 +131,26 @@ export function OutboundEditInfoModal({
     });
   }
 
+  const applyDetail = useCallback((nextDoc: NonNullable<typeof doc>) => {
+    versionRef.current = nextDoc.version;
+    setAgencyId(nextDoc.agencyId ?? null);
+    setRecipientName(
+      nextDoc.recipientName === "-" ? "" : nextDoc.recipientName,
+    );
+    setRecipientPhone(nextDoc.recipientPhone ?? "");
+    setRecipientAddress(
+      nextDoc.recipientAddressRaw ||
+        (nextDoc.recipientAddress === "-" ? "" : nextDoc.recipientAddress),
+    );
+    setRequestDate((nextDoc.requestDate ?? nextDoc.date ?? "").slice(0, 10));
+    setNote(nextDoc.note ?? "");
+    initializedRef.current = true;
+  }, []);
+
   useEffect(() => {
     if (initializedRef.current || !doc) return;
-    initializedRef.current = true;
-    setAgencyId(doc.agencyId ?? null);
-    setRecipientName(doc.recipientName === "-" ? "" : doc.recipientName);
-    setRecipientPhone(doc.recipientPhone ?? "");
-    setRecipientAddress(
-      doc.recipientAddressRaw ||
-        (doc.recipientAddress === "-" ? "" : doc.recipientAddress),
-    );
-    setRequestDate((doc.requestDate ?? doc.date ?? "").slice(0, 10));
-    setNote(doc.note ?? "");
-  }, [doc]);
+    applyDetail(doc);
+  }, [doc, applyDetail]);
 
   const parsedRequestDate = dayjs(requestDate);
   const requestDateValue =
@@ -179,6 +191,8 @@ export function OutboundEditInfoModal({
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!doc) throw new Error(t("outbound.edit.saveError"));
+      const version = versionRef.current;
+      if (version === null) throw new Error(t("outbound.edit.saveError"));
       return updateOutboundDocument(
         documentId,
         {
@@ -189,7 +203,7 @@ export function OutboundEditInfoModal({
           request_date: requestDate,
           note: note.trim() || null,
         },
-        doc.version,
+        version,
       );
     },
     onSuccess: () => {
@@ -197,6 +211,17 @@ export function OutboundEditInfoModal({
       onSaved();
     },
   });
+
+  const staleError =
+    updateMutation.error !== null &&
+    normalizeError(updateMutation.error).status === 412;
+
+  const reloadLatest = async () => {
+    const result = await detailQuery.refetch();
+    if (!result.data?.document) return;
+    updateMutation.reset();
+    applyDetail(result.data.document);
+  };
 
   const handleSave = () => {
     if (!doc || doc.status !== "DRAFT" || updateMutation.isPending) return;
@@ -422,6 +447,21 @@ export function OutboundEditInfoModal({
           documentId={documentId}
           disabled={!canAttach}
         />
+
+        {staleError ? (
+          <Stack spacing={1}>
+            <UiAlert tone="warning">{t("outbound.edit.staleNotice")}</UiAlert>
+            <Box>
+              <ActionButton
+                kind="view"
+                disabled={detailQuery.isFetching}
+                onClick={() => void reloadLatest()}
+              >
+                {t("outbound.edit.reload")}
+              </ActionButton>
+            </Box>
+          </Stack>
+        ) : null}
 
         <ApiErrorAlert
           error={updateMutation.error}

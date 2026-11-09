@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 import { translate } from "@/shared/i18n/useT";
@@ -77,7 +78,34 @@ function renderEdit(onSaved = vi.fn()) {
   );
 }
 
+function RefetchHarness({ onSaved }: { onSaved: () => void }) {
+  const queryClient = useQueryClient();
+  return (
+    <>
+      <button
+        type="button"
+        data-testid="refetch-detail"
+        onClick={() =>
+          void queryClient.invalidateQueries({
+            queryKey: ["mvp-outbound", "detail", "OUT-1"],
+          })
+        }
+      >
+        refetch-detail
+      </button>
+      <OutboundEditInfoModal
+        documentId="OUT-1"
+        canAttach
+        onClose={vi.fn()}
+        onSaved={onSaved}
+      />
+    </>
+  );
+}
+
 beforeEach(() => {
+  services.fetchOutboundDetail.mockReset();
+  services.updateOutboundDocument.mockReset();
   services.fetchOutboundDetail.mockResolvedValue(detail() as never);
   services.updateOutboundDocument.mockResolvedValue(detail() as never);
 });
@@ -173,5 +201,76 @@ describe("outbound draft edit form", () => {
       await screen.findByText(translate("vi", "outbound.edit.onlyDraft")),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: saveLabel })).toBeNull();
+  });
+
+  it("keeps the prefilled version for If-Match after a background refetch", async () => {
+    services.fetchOutboundDetail
+      .mockResolvedValueOnce(detail() as never)
+      .mockResolvedValueOnce(
+        detail({ version: 4, recipientName: "Đại lý mới" }) as never,
+      );
+    renderWithProviders(<RefetchHarness onSaved={vi.fn()} />);
+    await screen.findByDisplayValue("Đại lý A");
+
+    fireEvent.click(screen.getByTestId("refetch-detail"));
+    await waitFor(() =>
+      expect(services.fetchOutboundDetail).toHaveBeenCalledTimes(2),
+    );
+    // Refetch nền không được thay giá trị đang sửa.
+    expect(screen.getByDisplayValue("Đại lý A")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: saveLabel }));
+    await waitFor(() =>
+      expect(services.updateOutboundDocument).toHaveBeenCalledWith(
+        "OUT-1",
+        expect.objectContaining({ recipient_name: "Đại lý A" }),
+        3,
+      ),
+    );
+  });
+
+  it("offers a reload action when another user changed the draft", async () => {
+    const stale = Object.assign(
+      new Error("Phiếu đã được người khác cập nhật."),
+      {
+        isAxiosError: true,
+        response: {
+          status: 412,
+          data: {
+            success: false,
+            message: "Phiếu đã được người khác cập nhật.",
+          },
+        },
+      },
+    );
+    services.updateOutboundDocument.mockRejectedValueOnce(stale);
+    services.fetchOutboundDetail
+      .mockResolvedValueOnce(detail() as never)
+      .mockResolvedValueOnce(
+        detail({ version: 4, recipientName: "Đại lý mới" }) as never,
+      );
+    renderEdit();
+    await screen.findByDisplayValue("Đại lý A");
+
+    fireEvent.click(screen.getByRole("button", { name: saveLabel }));
+    expect(
+      await screen.findByText(translate("vi", "outbound.edit.staleNotice")),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: translate("vi", "outbound.edit.reload"),
+      }),
+    );
+    expect(await screen.findByDisplayValue("Đại lý mới")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: saveLabel }));
+    await waitFor(() =>
+      expect(services.updateOutboundDocument).toHaveBeenLastCalledWith(
+        "OUT-1",
+        expect.objectContaining({ recipient_name: "Đại lý mới" }),
+        4,
+      ),
+    );
   });
 });

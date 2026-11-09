@@ -48,7 +48,10 @@ import { OutboundIntakeModal } from "./OutboundIntakeModal";
 const dateLabel = translate("vi", "outbound.intake.fieldRequestDate");
 const validateLabel = translate("vi", "outbound.intake.validate");
 const confirmLabel = translate("vi", "outbound.intake.confirm");
-const selectAttachmentsLabel = translate("vi", "shared.attachments.selectFiles");
+const selectAttachmentsLabel = translate(
+  "vi",
+  "shared.attachments.selectFiles",
+);
 
 function renderIntake(canImport = true, canAttach = true) {
   return renderWithProviders(
@@ -299,6 +302,27 @@ describe("OUT-01 attachments during intake", () => {
     ).toEqual(["delivery.png", "delivery.png"]);
   });
 
+  it("routes Escape after a failed upload through the created-document close path", async () => {
+    const file = new File(["image"], "delivery.png", { type: "image/png" });
+    vi.mocked(consumeOutboundImport).mockResolvedValue(consumeResult);
+    vi.mocked(uploadDocumentAttachment).mockRejectedValueOnce(
+      new Error("Upload failed"),
+    );
+    const { onConsumed, confirm } = await renderAndValidate();
+    chooseFiles([file]);
+    fireEvent.click(confirm);
+    await screen.findByRole("button", {
+      name: translate("vi", "outbound.intake.attachmentsRetry"),
+    });
+    fireEvent.keyDown(
+      screen.getByRole("dialog", {
+        name: translate("vi", "outbound.intake.title"),
+      }),
+      { key: "Escape", code: "Escape" },
+    );
+    await waitFor(() => expect(onConsumed).toHaveBeenCalledWith(["OUT-1"]));
+  });
+
   it("attaches the files to the first document when the import creates several", async () => {
     const file = new File(["image"], "delivery.png", { type: "image/png" });
     vi.mocked(consumeOutboundImport).mockResolvedValue({
@@ -338,9 +362,7 @@ describe("OUT-01 attachments during intake", () => {
     const { confirm } = await renderAndValidate();
     chooseFiles([new File(["image"], "remove.png", { type: "image/png" })]);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Bỏ tệp remove.png" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Bỏ tệp remove.png" }));
     expect(screen.queryByText("remove.png")).not.toBeInTheDocument();
     expect(uploadDocumentAttachment).not.toHaveBeenCalled();
 

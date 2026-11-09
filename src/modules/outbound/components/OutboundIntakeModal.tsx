@@ -1024,9 +1024,9 @@ export function OutboundIntakeModal({
         className="hn-outbound-dialog hn-outbound-intake hn-outbound-intake-drawer"
         {...dialog.dialogProps}
         open={open && dialog.open}
-        onClose={(event, reason) => {
+        onClose={() => {
           if (busy) return;
-          dialog.dialogProps.onClose?.(event, reason);
+          close();
         }}
         slotProps={{
           ...dialog.dialogProps.slotProps,
@@ -1526,8 +1526,7 @@ export function OutboundIntakeModal({
                           <ActionButton
                             kind="upload"
                             disabled={
-                              uploading ||
-                              !createdResult.outboundDocumentIds[0]
+                              uploading || !createdResult.outboundDocumentIds[0]
                             }
                             onClick={retryUploads}
                           >
