@@ -21,6 +21,7 @@ import {
 } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { usePeriodFilter } from "../operations/report-period";
 import { useReportExport } from "../operations/report-export";
@@ -1006,7 +1007,12 @@ export default function PackingLabelPrintReport() {
                         const allowed =
                           gate.action === "REPRINT" ? canReprint : canPrint;
                         return (
-                          <tr key={key}>
+                          <tr
+                            key={key}
+                            {...rowActivationProps(() =>
+                              openDetail(target, latest),
+                            )}
+                          >
                             <td>
                               <strong>{target.labelCode || "—"}</strong>
                               <span>{target.outboundNo || "—"}</span>

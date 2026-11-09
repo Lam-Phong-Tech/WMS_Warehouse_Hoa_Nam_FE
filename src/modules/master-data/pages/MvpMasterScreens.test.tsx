@@ -119,6 +119,16 @@ describe("API-backed MVP master screens", () => {
     window.sessionStorage.removeItem("hn-sku-overview-open");
   });
 
+  it("opens the agency editor from anywhere on an editable row", async () => {
+    render(
+      <MemoryRouter>
+        <AgencyMasterScreen />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByText("Đại lý Minh Anh"));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
   it("giữ tìm kiếm SKU khi mở bộ lọc nâng cao và thống kê", () => {
     render(
       <MemoryRouter>

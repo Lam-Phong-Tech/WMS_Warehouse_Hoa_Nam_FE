@@ -522,6 +522,19 @@ describe("CatalogMasterScreen interactions", () => {
     expect(createCatalogMaster).not.toHaveBeenCalled();
   });
 
+  it("opens the edit dialog when clicking anywhere on an editable row", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await user.click(await screen.findByText(RECORD.code));
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      await within(dialog).findByRole("textbox", { name: /^Mã hãng/ }),
+    ).toHaveValue(RECORD.code);
+    expect(
+      within(dialog).getByRole("textbox", { name: /^Tên hãng/ }),
+    ).toHaveValue(RECORD.name);
+  });
+
   it("keeps the list and filters available while hiding writes in read-only mode", async () => {
     const user = userEvent.setup();
     canManage.mockReturnValue(false);

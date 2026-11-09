@@ -376,6 +376,15 @@ describe("OUT-01 · list controls and filtering", () => {
 });
 
 describe("OUT-01 · preserved outbound overlays", () => {
+  it("opens the detail drawer from anywhere on an outbound row", async () => {
+    renderPage();
+    await screen.findByText("PX-001");
+    fireEvent.click(screen.getByText("PX-001"));
+    expect(
+      screen.getByRole("dialog", { name: "Chi tiết kiểm thử" }),
+    ).toHaveTextContent("OUT-1");
+  });
+
   it("consumes intake, opens the first resulting document and invalidates stock-derived data", async () => {
     renderPage();
     await screen.findByText("PX-001");

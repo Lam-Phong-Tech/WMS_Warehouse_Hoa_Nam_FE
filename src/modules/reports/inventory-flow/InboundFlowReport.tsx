@@ -5,6 +5,7 @@ import { reportWorkbookOptions } from "@/modules/reports/components/report-expor
 import type { ReportExportChoice } from "@/modules/reports/components/report-export-workbook";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { renderSortIcon } from "@/shared/components/data-display/renderSortIcon";
 import {
   useEffect,
@@ -1303,7 +1304,10 @@ export default function InboundFlowReport() {
                     {pageDocuments.map((document, index) => {
                       const tone = statusTone(document.status);
                       return (
-                        <tr key={document.id}>
+                        <tr
+                          key={document.id}
+                          {...rowActivationProps(() => openDocument(document))}
+                        >
                           <td
                             className="inbound-index-cell"
                             data-label={tUi("shared.table.rowNumber")}

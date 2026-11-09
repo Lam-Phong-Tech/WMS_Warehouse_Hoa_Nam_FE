@@ -6,6 +6,7 @@ import { useReportExport } from "@/modules/reports/operations/report-export";
 import { ReportDateRangePicker } from "../components/ReportDateRangePicker";
 import { CheckOutlined } from "@/shared/components/icons";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import {
   useEffect,
   useMemo,
@@ -1529,7 +1530,10 @@ export default function OutboundFlowReport() {
                         outboundMetadataByDocument.get(document.document_no);
                       const requestNo = metadata?.requestNo?.trim() || "—";
                       return (
-                        <tr key={document.id}>
+                        <tr
+                          key={document.id}
+                          {...rowActivationProps(() => openDocument(document))}
+                        >
                           <td
                             className="outbound-row-number"
                             data-label={tUi("shared.table.rowNumber")}

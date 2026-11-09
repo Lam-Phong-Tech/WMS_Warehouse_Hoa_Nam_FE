@@ -351,6 +351,7 @@ function SimpleMasterTab({
         rowKey={(row) => row.id}
         columns={columns}
         loading={isFetching}
+        onRowClick={canManage ? (row) => openForm(row) : undefined}
         emptyText={
           search.trim()
             ? t("pv.common.noMatch")
@@ -850,6 +851,11 @@ export default function PvAdminPage() {
                 rowKey={(row) => row.id}
                 columns={profileColumns}
                 loading={profiles.isFetching}
+                onRowClick={(row) =>
+                  canManageMaster
+                    ? openProfileForm(row)
+                    : setProfileViewing(row)
+                }
                 emptyText={
                   isProfileFilterActive
                     ? t("pv.common.noMatch")
@@ -1412,6 +1418,9 @@ function PvRuleTab({
         // Quy tắc không có mã nghiệp vụ — mô tả bằng ngành nghề + mức ưu tiên
         // thay vì đọc UUID cho người dùng trình đọc màn hình.
         loading={isFetching}
+        onRowClick={(row) =>
+          canManage ? openForm(row) : setViewing(row)
+        }
         emptyText={
           search.trim() || statusFilter !== "ALL"
             ? t("pv.common.noMatch")

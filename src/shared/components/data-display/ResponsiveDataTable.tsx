@@ -22,6 +22,7 @@ import type { SortWordingType } from "./useClientSort";
 import { ActionButton } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
 import { TruncatedText } from "./TruncatedText";
+import { rowActivationProps } from "./row-activation";
 
 /** Trần bề ngang của ô khi cột không tự khai `width` (px). */
 const DEFAULT_CELL_MAX_WIDTH = 280;
@@ -320,8 +321,20 @@ export function ResponsiveDataTable<T>({
             <Card
               key={rowKey(row)}
               variant="outlined"
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-              sx={onRowClick ? { cursor: "pointer" } : undefined}
+              {...(onRowClick
+                ? rowActivationProps<HTMLDivElement>(() => onRowClick(row))
+                : {})}
+              sx={
+                onRowClick
+                  ? {
+                      cursor: "pointer",
+                      "&:focus-visible": {
+                        outline: "2px solid var(--ops-link)",
+                        outlineOffset: -2,
+                      },
+                    }
+                  : undefined
+              }
             >
               <CardContent
                 sx={{
@@ -730,7 +743,9 @@ export function ResponsiveDataTable<T>({
                 data-index={
                   virtualEnabled ? virtual.items[position]?.index : undefined
                 }
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                {...(onRowClick
+                  ? rowActivationProps(() => onRowClick(row))
+                  : {})}
                 sx={rowSx}
               >
                 {rowSelection && (

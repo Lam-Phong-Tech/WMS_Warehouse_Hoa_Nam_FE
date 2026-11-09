@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { RowActionButton } from "@/shared/components/actions";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { UiPagination, UiSelect } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
@@ -180,7 +181,10 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
                 </thead>
                 <tbody>
                   {rows.map((item, index) => (
-                    <tr key={`${item.document_id}:${item.item_id}`}>
+                    <tr
+                      key={`${item.document_id}:${item.item_id}`}
+                      {...rowActivationProps(() => setSelected(item))}
+                    >
                       <td
                         data-field="ordinal"
                         data-label={t("shared.table.rowNumber")}

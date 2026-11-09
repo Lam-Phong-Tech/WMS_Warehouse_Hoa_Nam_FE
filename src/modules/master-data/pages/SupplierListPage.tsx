@@ -102,6 +102,7 @@ export default function SupplierListPage() {
   }, [result, page]);
   const rows = result?.rows ?? [];
   const busy = query.isFetching || keyword.trim() !== search;
+  const canOpenEditor = canUpdate && online;
   const hasFilters = keyword !== "" || status !== "ACTIVE";
   const clearFilters = () => {
     setKeyword("");
@@ -245,7 +246,35 @@ export default function SupplierListPage() {
                   </tr>
                 ) : rows.length ? (
                   rows.map((supplier, index) => (
-                    <tr key={supplier.id}>
+                    <tr
+                      key={supplier.id}
+                      data-clickable={canOpenEditor ? "true" : undefined}
+                      tabIndex={canOpenEditor ? 0 : undefined}
+                      onClick={(event) => {
+                        if (
+                          !canOpenEditor ||
+                          (event.target instanceof Element &&
+                            event.target.closest(
+                              "a, button, input, select, textarea, [role='button']",
+                            ))
+                        ) {
+                          return;
+                        }
+                        setForm({ supplier });
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          !canOpenEditor ||
+                          event.target !== event.currentTarget
+                        ) {
+                          return;
+                        }
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setForm({ supplier });
+                        }
+                      }}
+                    >
                       <td>
                         {((result?.page ?? page) - 1) *
                           (result?.perPage ?? perPage) +

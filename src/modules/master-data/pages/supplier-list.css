@@ -152,6 +152,14 @@ html[data-theme="dark"] .hn-ncc-table th {
 .hn-ncc-table tbody tr:hover {
   background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
 }
+.hn-ncc-table tbody tr[data-clickable="true"] {
+  cursor: pointer;
+}
+.hn-ncc-table tbody tr[data-clickable="true"]:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
+}
 .hn-ncc-table tbody tr:last-child td {
   border-bottom: 0;
 }

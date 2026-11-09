@@ -54,6 +54,7 @@ import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { mvpRowNumber } from "@/shared/components/mvp/MvpSelectionCell";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import {
   IAM_SCOPE_TYPE_LABELS,
@@ -1062,7 +1063,10 @@ export function IamUserScreen({
                 </tr>
               ) : listError ? null : sortedUsers.length ? (
                 sortedUsers.map((user) => (
-                  <tr key={user.user_id}>
+                  <tr
+                    key={user.user_id}
+                    {...rowActivationProps(() => openView(user))}
+                  >
                     <td className="stt-col" data-label="STT">
                       {mvpRowNumber(page, perPage, originalIndexOf(user))}
                     </td>

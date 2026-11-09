@@ -100,6 +100,7 @@ import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { SkuThumbnail } from "@/shared/components/data-display/SkuThumbnail";
 import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
@@ -2351,7 +2352,13 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   </tr>
                 ) : sortedRows.length > 0 ? (
                   sortedRows.map((record) => (
-                    <tr key={record.agency_id}>
+                    <tr
+                      key={record.agency_id}
+                      {...rowActivationProps(
+                        () => openEdit(record),
+                        canManage,
+                      )}
+                    >
                       <td className="stt-col">
                         {mvpRowNumber(page, perPage, originalIndexOf(record))}
                       </td>
@@ -3427,6 +3434,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     </tr>
                   ))
                 ) : sortedRows.length > 0 ? (
+                  // eslint-disable-next-line react-hooks/refs -- row activation runs on click, not during render.
                   sortedRows.map((record) => (
                     <tr
                       key={record.defect_id}
@@ -3436,6 +3444,10 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           notice.code === record.defect_code) ||
                         undefined
                       }
+                      {...rowActivationProps(
+                        () => openEdit(record),
+                        canManage && !mutationDisabled,
+                      )}
                     >
                       <td className="stt-col">
                         {mvpRowNumber(page, perPage, originalIndexOf(record))}

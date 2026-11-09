@@ -567,7 +567,10 @@ export function CatalogMasterScreen() {
           <RowActionButton
             kind="edit"
             aria-label={t("masterData.catalog.editAria", { code: record.code })}
-            onClick={() => openEdit(record)}
+            onClick={(event) => {
+              event.stopPropagation();
+              openEdit(record);
+            }}
           >
             {t("masterData.common.edit")}
           </RowActionButton>
@@ -764,6 +767,7 @@ export function CatalogMasterScreen() {
                 columns={columns}
                 rows={rows}
                 rowKey={(record) => record.id}
+                onRowClick={canManage ? openEdit : undefined}
                 headerCellStyle={{
                   backgroundColor: "var(--ops-table-header)",
                   backgroundImage: "none",

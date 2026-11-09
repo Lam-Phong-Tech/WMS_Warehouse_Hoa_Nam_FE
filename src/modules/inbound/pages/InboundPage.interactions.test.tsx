@@ -199,6 +199,14 @@ describe("IN-01 · preserved receipt actions", () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
+  it("opens the detail drawer from anywhere on a receipt row", () => {
+    renderPage();
+    fireEvent.click(row("DRAFT").getByText("Nguyễn Văn A"));
+    expect(
+      screen.getByRole("dialog", { name: "Nhận hàng kiểm thử" }),
+    ).toHaveTextContent("DRAFT");
+  });
+
   it("opens DRAFT details and reaches editing from the detail drawer", () => {
     renderPage();
     fireEvent.click(row("DRAFT").getByRole("button", { name: "Chi tiết" }));

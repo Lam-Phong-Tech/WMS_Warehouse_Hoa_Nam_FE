@@ -1,6 +1,7 @@
 import { RowActionButton } from "@/shared/components/actions";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
-import { type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import {
   CloseOutlined,
   HistoryOutlined,
@@ -551,14 +552,7 @@ export function HistoryTable({
               ? rows.map((row, index) => (
                   <tr
                     key={row.id}
-                    tabIndex={0}
-                    onDoubleClick={() => onOpenRow(row)}
-                    onKeyDown={(event: KeyboardEvent<HTMLTableRowElement>) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onOpenRow(row);
-                      }
-                    }}
+                    {...rowActivationProps(() => onOpenRow(row))}
                   >
                     <td className="rpt08-sequence">{start + index}</td>
                     <td className="rpt08-time-cell">

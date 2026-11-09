@@ -168,6 +168,40 @@ describe("ResponsiveDataTable · chọn nhiều dòng", () => {
     expect(screen.queryByText(/Đã chọn/)).not.toBeInTheDocument();
   });
 
+  it("triggers onRowClick from a normal data cell", async () => {
+    const onRowClick = vi.fn();
+    render(
+      <ResponsiveDataTable<Row>
+        columns={COLUMNS}
+        rows={ROWS}
+        rowKey={(row) => row.id}
+        onRowClick={onRowClick}
+      />,
+    );
+    await userEvent.click(screen.getByText("PN-001"));
+    expect(onRowClick).toHaveBeenCalledWith(ROWS[0]);
+  });
+
+  it("does not trigger onRowClick when a nested control is clicked", async () => {
+    const onRowClick = vi.fn();
+    render(
+      <ResponsiveDataTable<Row>
+        columns={[
+          {
+            key: "code",
+            header: "Phiếu",
+            render: (row) => <button type="button">Mở {row.code}</button>,
+          },
+        ]}
+        rows={ROWS}
+        rowKey={(row) => row.id}
+        onRowClick={onRowClick}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Mở PN-001" }));
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+
   it("tick 1 dòng KHÔNG kích hoạt onRowClick (không mở modal chi tiết)", async () => {
     const onRowClick = vi.fn();
     render(<Harness onRowClick={onRowClick} />);

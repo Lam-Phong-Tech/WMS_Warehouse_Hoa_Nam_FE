@@ -983,6 +983,9 @@ export default function TabInventoryFlow() {
         loading={xnt.isLoading}
         sortState={xntSortState}
         onSortChange={onXntSortChange}
+        onRowClick={(row) =>
+          setXntDetailRow({ row, index: xntSortedRows.indexOf(row) })
+        }
         emptyText={t("reports.inventoryFlow.skuTableEmpty")}
         renderRowActions={(row) => (
           <RowActionGroup>

@@ -52,6 +52,7 @@ import dayjs from "dayjs";
 import { UiSelect, VuexyDemoIcon } from "@/shared/ui";
 import { useTabView } from "@/shared/ui/use-tab-view";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { isNestedControlTarget } from "@/shared/components/data-display/row-activation";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -1063,7 +1064,22 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
                       </tr>
                     ) : (
                       skuSectionFilter.rows.map((row, index) => (
-                        <tr key={row.sku_code}>
+                        <tr
+                          key={row.sku_code}
+                          data-clickable="true"
+                          tabIndex={0}
+                          onClick={(event) => {
+                            if (isNestedControlTarget(event.target)) return;
+                            openDrill(row.sku_code, event.currentTarget);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.target !== event.currentTarget) return;
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              openDrill(row.sku_code, event.currentTarget);
+                            }
+                          }}
+                        >
                           <td className="stt-col">{index + 1}</td>
                           <td>
                             <span className="sku">

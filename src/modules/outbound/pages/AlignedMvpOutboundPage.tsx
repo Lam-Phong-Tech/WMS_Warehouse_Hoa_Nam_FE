@@ -26,6 +26,7 @@ import {
 } from "@/shared/constants/business-labels";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { AlignedOutboundDetailModal } from "@/modules/outbound/components/AlignedOutboundDetailModal";
 import { OutboundIntakeModal } from "@/modules/outbound/components/OutboundIntakeModal";
@@ -521,7 +522,10 @@ export default function AlignedMvpOutboundPage() {
                 </thead>
                 <tbody>
                   {sortedRows.map((row, index) => (
-                    <tr key={row.id}>
+                    <tr
+                      key={row.id}
+                      {...rowActivationProps(() => setDetailId(row.id))}
+                    >
                       <td className="hn-outbound-index">{first + index}</td>
                       <td className="hn-outbound-code">
                         <strong>{row.code || EMPTY_TEXT}</strong>

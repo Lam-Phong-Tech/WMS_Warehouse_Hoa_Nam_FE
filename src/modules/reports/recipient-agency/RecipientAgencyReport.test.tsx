@@ -180,6 +180,15 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     expect(numbers()).toHaveLength(12);
   });
 
+  it("mở chi tiết đại lý từ bất kỳ vị trí nào trên dòng", async () => {
+    const user = userEvent.setup();
+    renderReport();
+    const table = await screen.findByRole("table");
+    await within(table).findByText("Đại lý An Phát");
+    await user.click(within(table).getByText("Đại lý An Phát"));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
   it("dựng đúng cấu trúc baseline, cộng số lượng thuần và tiến độ chứng từ", async () => {
     renderReport();
 

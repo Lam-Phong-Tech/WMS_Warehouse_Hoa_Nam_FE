@@ -170,6 +170,15 @@ describe("MST-PV-01 · catalog interactions", () => {
     cleanupCreatedQueryClients();
   });
 
+  it("opens the edit drawer from anywhere on a product row", async () => {
+    renderWithProviders(<PvProductCatalogPage />);
+    await screen.findByRole("table");
+    fireEvent.click(screen.getByText(WITH_IMAGE.display_name));
+    expect(
+      await screen.findByRole("textbox", { name: "Tên hiển thị" }),
+    ).toHaveValue(WITH_IMAGE.display_name);
+  });
+
   it("navigates internally to the App PV preview", async () => {
     const initialPath = "/master-data/pv-products?screen=MST-PV-01";
     const documentUrl = window.location.href;

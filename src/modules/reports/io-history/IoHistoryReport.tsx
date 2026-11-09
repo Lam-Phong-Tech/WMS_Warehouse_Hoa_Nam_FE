@@ -7,6 +7,7 @@ import type { ReportExportChoice } from "../components/report-export-workbook";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { ReportWarehouseCard } from "@/modules/reports/components/ReportWarehouseCard";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 /** RPT-08: SystemHNWeb presentation over the existing document-history snapshot. */
 import {
   useCallback,
@@ -928,8 +929,15 @@ export default function IoHistoryReport() {
                             </tr>
                           </thead>
                           <tbody>
+                            {/* eslint-disable-next-line react-hooks/refs -- row activation runs on click, not during render. */}
                             {pageRows.map((row) => (
-                              <tr key={row.id} data-drill-key={row.id}>
+                              <tr
+                                key={row.id}
+                                data-drill-key={row.id}
+                                {...rowActivationProps(() =>
+                                  openDrill(row.id),
+                                )}
+                              >
                                 <td>
                                   <time dateTime={row.postedAt}>
                                     {fmtStamp(row.postedAt)}

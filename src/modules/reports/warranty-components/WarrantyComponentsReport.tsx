@@ -7,6 +7,7 @@ import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRa
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import { ReportFilterCombobox } from "@/modules/reports/components/ReportFilterCombobox";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { Box, Stack, UiAlert, UiButton, UiSpinner } from "@/shared/ui";
@@ -1283,7 +1284,11 @@ export default function WarrantyComponentsReport() {
                       </tr>
                     ) : (
                       pagination.pageRows.map((row) => (
-                        <tr id={"warranty-row-" + row.id} key={row.id}>
+                        <tr
+                          id={"warranty-row-" + row.id}
+                          key={row.id}
+                          {...rowActivationProps(() => openDetail(row))}
+                        >
                           <td>
                             <input
                               type="checkbox"

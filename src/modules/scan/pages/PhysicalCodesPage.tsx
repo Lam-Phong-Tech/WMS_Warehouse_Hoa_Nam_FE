@@ -886,6 +886,11 @@ export default function PhysicalCodesPage() {
             rows={filteredBatches}
             rowKey={(row) => row.id}
             loading={batchesQuery.isLoading}
+            onRowClick={(row) => {
+              setEventBatchFilter(row.id);
+              setEventBatchLabel(row.batch_no);
+              setEventPage(1);
+            }}
             emptyText={tableEmptyText(
               historyError,
               normalizedBatchSearch

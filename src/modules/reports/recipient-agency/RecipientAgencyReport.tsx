@@ -22,6 +22,7 @@ import {
   WarningOutlined,
 } from "@/shared/components/icons";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { useReportExport } from "@/modules/reports/operations/report-export";
 import { useCan } from "@/shared/components/permission";
 import { WMS_PERMISSION_CATALOG } from "@/shared/constants/wms-permissions";
@@ -1142,7 +1143,10 @@ export default function RecipientAgencyReport() {
                           ? (row.completedDocuments / row.totalDocuments) * 100
                           : 0;
                       return (
-                        <tr key={row.key}>
+                        <tr
+                          key={row.key}
+                          {...rowActivationProps(() => setDetailRow(row))}
+                        >
                           <td data-label="STT" className="rpt07-stt">
                             {(visiblePage - 1) * pageSize + index + 1}
                           </td>

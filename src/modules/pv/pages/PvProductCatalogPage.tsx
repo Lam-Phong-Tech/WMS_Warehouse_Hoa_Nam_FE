@@ -52,6 +52,7 @@ import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
 } from "@/shared/components/data-display/ResponsiveDataTable";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { UiStateSurface } from "@/shared/ui";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
@@ -675,7 +676,11 @@ export function PvProductCatalogPage() {
       header: copy("Mã sản phẩm / SKU", "Product code / SKU"),
       width: "26%",
       sortAccessor: (row) => row.sku_code,
-      render: (row) => <SkuLink id={row.sku_id} code={row.sku_code} />,
+      render: (row) => (
+        <span onClick={(event) => event.stopPropagation()}>
+          <SkuLink id={row.sku_id} code={row.sku_code} />
+        </span>
+      ),
     },
     {
       key: "published",
@@ -975,6 +980,7 @@ export function PvProductCatalogPage() {
                 columns={tableColumns}
                 rows={visibleRows}
                 rowKey={(row) => row.id}
+                onRowClick={canManage || canPublish ? openEdit : undefined}
                 mobileBreakpoint="sm"
                 actionColumnWidth={96}
                 hideActionHeader
@@ -1014,7 +1020,14 @@ export function PvProductCatalogPage() {
               data-testid="pv-catalog-grid"
             >
               {visibleRows.map((row) => (
-                <Grid key={row.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                <Grid
+                  key={row.id}
+                  size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+                  {...rowActivationProps<HTMLDivElement>(
+                    () => openEdit(row),
+                    canManage || canPublish,
+                  )}
+                >
                   <PvCatalogCard
                     profile={row}
                     industryNameById={industryNameById}

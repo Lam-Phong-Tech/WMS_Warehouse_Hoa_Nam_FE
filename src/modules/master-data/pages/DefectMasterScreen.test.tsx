@@ -182,6 +182,13 @@ describe("DefectMasterScreen interactions", () => {
     );
   });
 
+  it("opens the defect editor from anywhere on an editable row", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    await user.click(await screen.findByText(RECORD.defect_name));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
   it("rejects empty required fields and invalid codes without saving", async () => {
     const user = userEvent.setup();
     renderScreen();

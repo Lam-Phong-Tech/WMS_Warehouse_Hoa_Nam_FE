@@ -35,6 +35,7 @@ import {
   MOVEMENT_STATUS_LABELS,
   SOURCE_DOCUMENT_TYPE_LABELS,
 } from "@/shared/constants/business-labels";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import "./goods-trace-report.css";
 const sourceLabels = {
   ...SOURCE_DOCUMENT_TYPE_LABELS,
@@ -767,7 +768,10 @@ export default function GoodsTraceReport() {
                         </thead>
                         <tbody>
                           {pageRows.map((e) => (
-                            <tr key={e.id}>
+                            <tr
+                              key={e.id}
+                              {...rowActivationProps(() => setSelected(e))}
+                            >
                               <td>{time(e.occurred_at)}</td>
                               <td>
                                 <button

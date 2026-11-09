@@ -4,6 +4,7 @@ import { useIoHistorySnapshot } from "@/modules/reports/io-history/io-history-ap
 import { dashboardNow, fmt } from "./overview-data";
 import { useT } from "@/shared/i18n/useT";
 import { RowActionButton } from "@/shared/components/actions";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { ROUTES } from "@/shared/constants/routes";
 import "./dashboard-system-views.css";
 
@@ -83,7 +84,10 @@ export function SnapshotRecentTransactions({
                       ? `${ROUTES.REPORTS_OUTBOUND_FLOW}?screen=RPT-01B&document=${encodeURIComponent(document.id)}`
                       : `${ROUTES.REPORTS_PENDING_EVIDENCE}?screen=RPT-08`;
                 return (
-                  <tr key={document.id}>
+                  <tr
+                    key={document.id}
+                    {...rowActivationProps(() => onNavigate(detailRoute))}
+                  >
                     <td>{index + 1}</td>
                     <td>
                       {parseDateTime(document.postedAt).format("DD/MM HH:mm")}

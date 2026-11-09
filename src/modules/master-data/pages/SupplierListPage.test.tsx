@@ -88,6 +88,15 @@ describe("supplier list", () => {
       }),
     );
   });
+  it("opens the edit dialog from anywhere on an editable supplier row", async () => {
+    setup();
+    fireEvent.click(await screen.findByText("Honda"));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByLabelText("Mã NCC")).toHaveValue("NCC-001");
+    expect(within(dialog).getByLabelText(/Tên nhà cung cấp/)).toHaveValue(
+      "Honda",
+    );
+  });
   it("edits the server UUID/version, preserving the read-only code", async () => {
     setup();
     fireEvent.click(await screen.findByRole("button", { name: "Sửa NCC-001" }));

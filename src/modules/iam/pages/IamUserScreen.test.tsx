@@ -130,6 +130,12 @@ describe("IamUserScreen", () => {
     expect(dialog.querySelector("#iam-username")).toBeNull();
   });
 
+  it("opens the user detail from anywhere on a row", async () => {
+    render(<IamUserScreen />);
+    fireEvent.click(screen.getByText("Nguyễn Văn Kho"));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
   it("opens edit with server data and optimistic-lock version", async () => {
     render(<IamUserScreen />);
     const row = screen.getByText("Nguyễn Văn Kho").closest("tr");

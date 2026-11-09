@@ -208,6 +208,10 @@ export default function TabPendingEvidence() {
           rows={pagination.pageRows}
           rowKey={(row) => `${row.document_type}-${row.document_id}`}
           loading={query.isLoading}
+          onRowClick={(row) => {
+            const meta = DOC_META[row.document_type];
+            if (meta && row.document_id) navigate(meta.link(row.document_id));
+          }}
           emptyText={
             query.isError ? EMPTY_TEXT : t("reports.pendingEvidence.empty")
           }

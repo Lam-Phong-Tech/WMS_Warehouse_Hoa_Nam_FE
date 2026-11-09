@@ -23,7 +23,7 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
   const [pageSize, setPageSize] = useState(10);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
   const [previousRows, setPreviousRows] = useState(rows);
-  const trigger = useRef<HTMLButtonElement | null>(null);
+  const trigger = useRef<HTMLElement | null>(null);
   const detailHeading = useRef<HTMLHeadingElement | null>(null);
   const query = search.trim().toLocaleLowerCase("vi-VN");
   const filtered = rows.filter(
@@ -56,8 +56,8 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
     setPage(1);
     setSelectedSku(null);
   };
-  const open = (sku: string, button: HTMLButtonElement) => {
-    trigger.current = button;
+  const open = (sku: string, element: HTMLElement | null) => {
+    trigger.current = element;
     setSelectedSku(sku);
   };
   const close = () => {
@@ -112,6 +112,7 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
           <ResponsiveDataTable
             rows={visible}
             rowKey={(row) => row.sku}
+            onRowClick={(row) => open(row.sku, null)}
             mobileBreakpoint="lg"
             emptyText="Không có SKU trong bộ lọc này."
             headerCellStyle={{

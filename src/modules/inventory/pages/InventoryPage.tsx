@@ -800,6 +800,13 @@ export default function InventoryPage() {
                 rows={movements}
                 loading={movementQuery.isLoading}
                 emptyText={emptyContent}
+                onRowClick={
+                  canTrace
+                    ? (row) => {
+                        if (row.id) handleOpenTrace(String(row.id));
+                      }
+                    : undefined
+                }
                 renderRowActions={(row) => (
                   <Tooltip
                     title={t(

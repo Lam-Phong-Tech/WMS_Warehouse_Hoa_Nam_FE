@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { createMockAxiosError } from "@/shared/api/api-error";
 import { renderWithProviders } from "@/test/test-utils";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -166,5 +166,15 @@ describe("WWHN-252 · PvAdminPage (SCR-PV-ADM-01)", () => {
       ).length;
       expect(callsAfter).toBeGreaterThan(callsBefore);
     });
+  });
+
+  it("opens the profile editor from anywhere on a profile row", async () => {
+    signInWith(["pv.master.manage"]);
+    renderWithProviders(<PvAdminPage />);
+    fireEvent.click(await screen.findByText(PROFILE.display_name));
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      await within(dialog).findByDisplayValue(PROFILE.display_name),
+    ).toBeInTheDocument();
   });
 });

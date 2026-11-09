@@ -300,6 +300,19 @@ describe("InventoryPage (INV-01 hub)", () => {
     ).toBeInTheDocument();
   });
 
+  it("mở truy vết từ bất kỳ vị trí nào trên dòng biến động", async () => {
+    grant(["inventory.view", "inventory.trace"]);
+    renderWithProviders(<InventoryPage />);
+    await screen.findByText("SKU-001");
+
+    fireEvent.click(screen.getByRole("tab", { name: /Lịch sử biến động/ }));
+    fireEvent.click(await screen.findByText("SKU-MV-001"));
+
+    expect(
+      await screen.findByText("Truy vết chứng từ nguồn"),
+    ).toBeInTheDocument();
+  });
+
   it("hiển thị ApiErrorAlert kèm nút thử lại khi tải tồn kho lỗi", async () => {
     mockQueries({ balancesError: true, balances: [] });
     renderWithProviders(<InventoryPage />);

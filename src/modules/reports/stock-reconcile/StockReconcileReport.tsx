@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { RowActionButton } from "@/shared/components/actions";
 import {
   hasAnyWmsPermission,
@@ -1531,7 +1532,17 @@ export default function StockReconcileReport() {
                                                   "reports.stockReconcileReport.matched",
                                                 );
                                       return (
-                                        <tr key={row.key}>
+                                        <tr
+                                          key={row.key}
+                                          {...rowActivationProps(() => {
+                                            setDetailView(
+                                              state === "code"
+                                                ? "code"
+                                                : "quantity",
+                                            );
+                                            setSelectedEvidence(row);
+                                          })}
+                                        >
                                           <td className="rpt02-stt">
                                             {(currentPage - 1) * pageSize +
                                               index +
@@ -1601,7 +1612,13 @@ export default function StockReconcileReport() {
                                       );
                                     })
                                   : visibleRows.map((row, index) => (
-                                      <tr key={row.key}>
+                                      <tr
+                                        key={row.key}
+                                        {...rowActivationProps(() => {
+                                          setDetailView("flow");
+                                          setSelectedEvidence(row);
+                                        })}
+                                      >
                                         <td className="rpt02-stt">
                                           {(currentPage - 1) * pageSize +
                                             index +

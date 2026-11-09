@@ -5,6 +5,7 @@ import { UiIcon, UiPagination, UiSelect, UiTextField } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
+import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import {
   ArrowRightOutlined,
   BarChartOutlined,
@@ -435,7 +436,10 @@ function InboundListScreen() {
             </thead>
             <tbody>
               {sortedRows.map((row, index) => (
-                <tr key={row.id}>
+                <tr
+                  key={row.id}
+                  {...rowActivationProps(() => openDocument(row.id))}
+                >
                   <td className="hn-inbound-index">
                     {(currentPage - 1) * perPage + index + 1}
                   </td>
