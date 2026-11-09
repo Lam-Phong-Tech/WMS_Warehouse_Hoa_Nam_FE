@@ -358,26 +358,23 @@ export function AlignedOutboundDetailModal({
       : ("upcoming" as const);
   };
 
-  // Tự nhảy bước MỘT LẦN: vừa quét đủ && phiếu đang SCANNING và người dùng
-  // đang ở bước 1 → sang bước 2. Không bao giờ kéo bước ngược lại.
-  const autoAdvancedRef = useRef(false);
-  const lastDocumentRef = useRef(documentId);
-  if (lastDocumentRef.current !== documentId) {
-    lastDocumentRef.current = documentId;
-    autoAdvancedRef.current = false;
-  }
+  // Tự nhảy bước MỘT LẦN cho từng phiếu: vừa quét đủ && phiếu đang SCANNING
+  // && người dùng đang ở bước 1 → sang bước 2. Nhớ id phiếu đã nhảy để đổi
+  // sang phiếu khác vẫn cho nhảy tiếp; không bao giờ kéo bước ngược lại.
+  const autoAdvancedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (autoAdvancedRef.current) return;
+    if (autoAdvancedRef.current === documentId) return;
     if (
       fullScan &&
       doc?.status === "SCANNING" &&
       (selectedPanel === null || selectedPanel === "scan")
     ) {
-      autoAdvancedRef.current = true;
+      autoAdvancedRef.current = documentId;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Panel tự nhảy khi điều kiện "đã quét đủ" vừa chuyển true (sự kiện bên ngoài), cùng mẫu với các setState theo dữ liệu bên ngoài ở trên.
       setSelectedPanel("post");
       toast.success(t("outbound.detail.autoAdvanceToPost"));
     }
-  }, [fullScan, doc?.status, selectedPanel, t]);
+  }, [fullScan, doc?.status, selectedPanel, t, documentId]);
   // Dùng validatePhone chung (đầu số VN hợp lệ) thay vì regex 0+9 số tại chỗ.
   const customerPhoneCheck =
     customerPhone === "" ? null : validatePhone(customerPhone);
