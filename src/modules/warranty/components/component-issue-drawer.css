@@ -48,16 +48,6 @@
   font-size: 18px;
   line-height: 1;
 }
-.hn-component-issue-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
-.hn-component-issue-actions:empty {
-  display: none;
-}
 @media (max-width: 575px) {
   .hn-component-issue-context {
     grid-template-columns: minmax(0, 1fr);

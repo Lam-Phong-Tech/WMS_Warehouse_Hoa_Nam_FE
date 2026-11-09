@@ -559,9 +559,11 @@ export function ComponentIssueModal({
             alignItems: "center",
             justifyContent: "space-between",
             gap: 1,
+            width: "100%",
+            minWidth: 0,
           }}
         >
-          <Box component="span">
+          <Box component="span" sx={{ minWidth: 0, overflowWrap: "anywhere" }}>
             {documentId
               ? t("warranty.componentIssue.titleExisting", {
                   code: detail?.component_issue_no ?? "",
@@ -576,6 +578,51 @@ export function ComponentIssueModal({
             onClick={dialog.close}
           />
         </Box>
+      }
+      actions={
+        documentId && !isOpenDocument ? null : (
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              justifyContent: "flex-end",
+              flexWrap: "wrap",
+              rowGap: 1,
+            }}
+          >
+            {documentId && isOpenDocument ? (
+              <>
+                <ActionButton
+                  kind="deactivate"
+                  disabled={!canIssue || cancelMutation.isPending}
+                  onClick={() => setCancelOpen(true)}
+                >
+                  {t("warranty.componentIssue.cancelTrigger")}
+                </ActionButton>
+                <ActionButton
+                  kind="approve"
+                  disabled={
+                    !canIssue || !allLinesComplete || postMutation.isPending
+                  }
+                  onClick={() => setPostConfirmOpen(true)}
+                >
+                  {t("warranty.componentIssue.postTrigger")}
+                </ActionButton>
+              </>
+            ) : null}
+            {!documentId ? (
+              <ActionButton
+                kind="create"
+                disabled={!canIssue || !caseActive || createMutation.isPending}
+                onClick={() => void handleCreate()}
+              >
+                {createMutation.isPending
+                  ? t("warranty.componentIssue.creating")
+                  : t("warranty.componentIssue.create")}
+              </ActionButton>
+            ) : null}
+          </Stack>
+        )
       }
     >
       <Stack spacing={2} sx={{ mt: 0.5 }}>
@@ -648,17 +695,9 @@ export function ComponentIssueModal({
               <AnimatedList>
                 {draftLines.map((line, index) => (
                   <AnimatedListItem key={line.key} gap={10}>
-                    <Stack
-                      direction="row"
-                      spacing={1.5}
-                      sx={{
-                        alignItems: "flex-start",
-                        flexWrap: "wrap",
-                        rowGap: 1,
-                      }}
-                    >
+                    <Stack spacing={1} sx={{ width: "100%", minWidth: 0 }}>
                       <UiAutocomplete
-                        sx={{ minWidth: 360 }}
+                        sx={{ minWidth: 0, width: "100%" }}
                         options={
                           // Giữ nhãn của SKU ĐANG CHỌN kể cả khi nó rơi ra ngoài
                           // kết quả tìm kiếm hiện tại: UiAutocomplete tra nhãn
@@ -700,56 +739,70 @@ export function ComponentIssueModal({
                             : t("warranty.componentIssue.skuTypeToSearch")
                         }
                       />
-                      <UiNumberField
-                        required
-                        rule={NUMBER_RULES.quantity}
-                        label={t("warranty.componentIssue.qtyLabel")}
-                        value={line.required_qty}
-                        onChange={(next) =>
-                          updateDraftLine(index, { required_qty: next })
-                        }
-                        error={Boolean(lineErrors[index]?.required_qty)}
-                        helperText={lineErrors[index]?.required_qty}
-                        sx={{ width: 130 }}
-                      />
-                      {!documentId && line.sku_id
-                        ? (() => {
-                            const available =
-                              availabilityQuery.data?.[line.sku_id];
-                            const exceeds =
-                              available !== undefined &&
-                              (requiredBySkuId[line.sku_id] ?? 0) > available;
-                            return (
-                              <UiStatusBadge
-                                tone={exceeds ? "error" : "neutral"}
-                                label={t("warranty.componentIssue.available", {
-                                  qty:
-                                    available ??
-                                    (availabilityQuery.isLoading
-                                      ? "..."
-                                      : EMPTY_TEXT),
-                                })}
-                                sx={{ fontWeight: 700, mt: "6px" }}
-                              />
-                            );
-                          })()
-                        : null}
-                      <RowActionButton
-                        kind="delete"
-                        disabled={draftLines.length <= 1}
-                        onClick={() =>
-                          setDraftLines((current) =>
-                            current.filter((_, i) => i !== index),
-                          )
-                        }
-                        sx={{ mt: "6px" }}
-                      />
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        sx={{
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          rowGap: 1,
+                        }}
+                      >
+                        <UiNumberField
+                          required
+                          rule={NUMBER_RULES.quantity}
+                          label={t("warranty.componentIssue.qtyLabel")}
+                          value={line.required_qty}
+                          onChange={(next) =>
+                            updateDraftLine(index, { required_qty: next })
+                          }
+                          error={Boolean(lineErrors[index]?.required_qty)}
+                          helperText={lineErrors[index]?.required_qty}
+                          sx={{ width: 130 }}
+                        />
+                        {!documentId && line.sku_id
+                          ? (() => {
+                              const available =
+                                availabilityQuery.data?.[line.sku_id];
+                              const exceeds =
+                                available !== undefined &&
+                                (requiredBySkuId[line.sku_id] ?? 0) > available;
+                              return (
+                                <UiStatusBadge
+                                  tone={exceeds ? "error" : "neutral"}
+                                  label={t(
+                                    "warranty.componentIssue.available",
+                                    {
+                                      qty:
+                                        available ??
+                                        (availabilityQuery.isLoading
+                                          ? "..."
+                                          : EMPTY_TEXT),
+                                    },
+                                  )}
+                                  sx={{ fontWeight: 700 }}
+                                />
+                              );
+                            })()
+                          : null}
+                        <RowActionButton
+                          kind="delete"
+                          disabled={draftLines.length <= 1}
+                          onClick={() =>
+                            setDraftLines((current) =>
+                              current.filter((_, i) => i !== index),
+                            )
+                          }
+                        />
+                      </Stack>
                     </Stack>
                   </AnimatedListItem>
                 ))}
               </AnimatedList>
               <ActionButton
                 kind="create"
+                appearance="flat"
+                sx={{ alignSelf: "flex-start" }}
                 onClick={() =>
                   setDraftLines((current) => [...current, emptyDraftLine()])
                 }
@@ -766,6 +819,7 @@ export function ComponentIssueModal({
               value={draftNote}
               onChange={(event) => setDraftNote(event.target.value)}
               slotProps={{ htmlInput: { maxLength: 2000 } }}
+              helperText={`${draftNote.length}/2000`}
             />
           </Stack>
         ) : (
@@ -906,44 +960,6 @@ export function ComponentIssueModal({
           </Stack>
         )}
       </Stack>
-
-      <Box className="hn-component-issue-actions">
-        {documentId && !isOpenDocument ? null : (
-          <>
-            {documentId && isOpenDocument ? (
-              <>
-                <ActionButton
-                  kind="deactivate"
-                  disabled={!canIssue || cancelMutation.isPending}
-                  onClick={() => setCancelOpen(true)}
-                >
-                  {t("warranty.componentIssue.cancelTrigger")}
-                </ActionButton>
-                <ActionButton
-                  kind="approve"
-                  disabled={
-                    !canIssue || !allLinesComplete || postMutation.isPending
-                  }
-                  onClick={() => setPostConfirmOpen(true)}
-                >
-                  {t("warranty.componentIssue.postTrigger")}
-                </ActionButton>
-              </>
-            ) : null}
-            {!documentId ? (
-              <ActionButton
-                kind="create"
-                disabled={!canIssue || !caseActive || createMutation.isPending}
-                onClick={() => void handleCreate()}
-              >
-                {createMutation.isPending
-                  ? t("warranty.componentIssue.creating")
-                  : t("warranty.componentIssue.create")}
-              </ActionButton>
-            ) : null}
-          </>
-        )}
-      </Box>
 
       <UiDialog
         className={className}
