@@ -474,12 +474,12 @@ export function ComponentIssueModal({
     }
   };
 
-  // Bấm vào dòng để chọn dòng quét; dòng đang chọn tô màu primary ở cột "#"
+  // Bấm vào dòng để chọn dòng quét; dòng đang chọn tô màu primary ở cột STT
   // và SKU (ResponsiveDataTable không có highlight nền cả dòng như antd Table).
   const lineColumns: ResponsiveTableColumn<ComponentIssueLine>[] = [
     {
       key: "line_no",
-      header: "#",
+      header: "STT",
       width: 48,
       render: (line) => (
         <Box
