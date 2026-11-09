@@ -17,10 +17,10 @@ import {
   UiDrawer,
   UiStatusBadge,
   type UiStatusTone,
-  UiTabs,
   UiTextField,
   useUiConfirm,
 } from "@/shared/ui";
+import { CheckOutlined } from "@/shared/components/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import { toast } from "sonner";
@@ -332,6 +332,52 @@ export function AlignedOutboundDetailModal({
   const mutable = doc?.status === "DRAFT" || doc?.status === "SCANNING";
   const posted = doc?.status === "POSTED";
   const activePanel: DetailPanel = selectedPanel ?? (posted ? "label" : "scan");
+
+  const stepPanels = [
+    { key: "scan" as const, label: t("outbound.detail.step1") },
+    { key: "post" as const, label: t("outbound.detail.step2") },
+    { key: "label" as const, label: t("outbound.detail.step3") },
+  ];
+  /** Trạng thái từng bước cho stepper: done (xanh nhạt + dấu tích),
+   * current (tô primary), upcoming (viền line, chữ muted). */
+  const stepState = (key: "scan" | "post" | "label") => {
+    if (key === "scan") {
+      if (fullScan) return "done" as const;
+      return activePanel === "scan"
+        ? ("current" as const)
+        : ("upcoming" as const);
+    }
+    if (key === "post") {
+      if (posted) return "done" as const;
+      return activePanel === "post"
+        ? ("current" as const)
+        : ("upcoming" as const);
+    }
+    return activePanel === "label"
+      ? ("current" as const)
+      : ("upcoming" as const);
+  };
+
+  // Tự nhảy bước MỘT LẦN: vừa quét đủ && phiếu đang SCANNING và người dùng
+  // đang ở bước 1 → sang bước 2. Không bao giờ kéo bước ngược lại.
+  const autoAdvancedRef = useRef(false);
+  const lastDocumentRef = useRef(documentId);
+  if (lastDocumentRef.current !== documentId) {
+    lastDocumentRef.current = documentId;
+    autoAdvancedRef.current = false;
+  }
+  useEffect(() => {
+    if (autoAdvancedRef.current) return;
+    if (
+      fullScan &&
+      doc?.status === "SCANNING" &&
+      (selectedPanel === null || selectedPanel === "scan")
+    ) {
+      autoAdvancedRef.current = true;
+      setSelectedPanel("post");
+      toast.success(t("outbound.detail.autoAdvanceToPost"));
+    }
+  }, [fullScan, doc?.status, selectedPanel, t]);
   // Dùng validatePhone chung (đầu số VN hợp lệ) thay vì regex 0+9 số tại chỗ.
   const customerPhoneCheck =
     customerPhone === "" ? null : validatePhone(customerPhone);
@@ -469,6 +515,8 @@ export function AlignedOutboundDetailModal({
       setEvidence(result);
       setVersion(result.version || null);
       setLabelWarning(null);
+      // Ghi nhận xong → tự nhảy bước 3 (Xem và in nhãn).
+      setSelectedPanel("label");
       // Không cố chuẩn bị nhãn khi người dùng không có quyền nhãn: bước này gọi
       // POST /label-snapshots + preview + ready (label.print / packing_label.*).
       // WAREHOUSE_APPROVER có outbound.post nhưng không có nhóm quyền nhãn, nên
@@ -722,15 +770,23 @@ export function AlignedOutboundDetailModal({
         width={820}
         title={drawerTitle}
         actions={
-          doc?.status === "DRAFT" && canEditHeader ? (
+          (doc?.status === "DRAFT" && canEditHeader) ||
+          (can("outbound.cancel") && mutable) ? (
             <Stack
               direction="row"
               spacing={1.5}
               sx={{ justifyContent: "flex-end" }}
             >
-              <ActionButton kind="edit" onClick={() => setEditOpen(true)}>
-                {t("outbound.edit.action")}
-              </ActionButton>
+              {can("outbound.cancel") && mutable ? (
+                <ActionButton kind="cancel" onClick={() => setCancelOpen(true)}>
+                  {t("outbound.detail.cancelTrigger")}
+                </ActionButton>
+              ) : null}
+              {doc?.status === "DRAFT" && canEditHeader ? (
+                <ActionButton kind="edit" onClick={() => setEditOpen(true)}>
+                  {t("outbound.edit.action")}
+                </ActionButton>
+              ) : null}
             </Stack>
           ) : undefined
         }
@@ -803,28 +859,65 @@ export function AlignedOutboundDetailModal({
             </details>
           </Box>
 
-          <UiTabs
-            aria-label={t("outbound.detail.title")}
-            items={[
-              { key: "scan", label: t("outbound.detail.step1") },
-              { key: "post", label: t("outbound.detail.step2") },
-              { key: "label", label: t("outbound.detail.step3") },
-              { key: "attachments", label: t("shared.attachments.title") },
-              { key: "nfc", label: t("nfc.outboundNfcTab") },
-            ]}
-            value={activePanel}
-            onChange={(key) => setSelectedPanel(key as DetailPanel)}
-          />
+          <div className="hn-stepper-row">
+            <div
+              className="hn-stepper"
+              role="tablist"
+              aria-label={t("outbound.detail.title")}
+            >
+              {stepPanels.map((step, index) => {
+                const state = stepState(step.key);
+                return (
+                  <button
+                    key={step.key}
+                    type="button"
+                    role="tab"
+                    id={`outbound-step-${step.key}`}
+                    aria-selected={state === "current"}
+                    aria-controls={`outbound-panel-${step.key}`}
+                    className={`hn-stepper-item is-${state}`}
+                    onClick={() => setSelectedPanel(step.key)}
+                  >
+                    <span className="hn-stepper-number" aria-hidden="true">
+                      {state === "done" ? <CheckOutlined /> : index + 1}
+                    </span>
+                    <span className="hn-stepper-label">{step.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="hn-step-utility">
+              <button
+                type="button"
+                className="hn-step-utility-btn"
+                aria-pressed={activePanel === "attachments"}
+                onClick={() => setSelectedPanel("attachments")}
+              >
+                {t("shared.attachments.title")}
+              </button>
+              <button
+                type="button"
+                className="hn-step-utility-btn"
+                aria-pressed={activePanel === "nfc"}
+                onClick={() => setSelectedPanel("nfc")}
+              >
+                {t("nfc.outboundNfcTab")}
+              </button>
+            </div>
+          </div>
 
           {activePanel === "nfc" ? (
-            <OutboundNfcProducts documentId={documentId} />
+            <Box role="region" aria-label={t("nfc.outboundNfcTab")}>
+              <OutboundNfcProducts documentId={documentId} />
+            </Box>
           ) : null}
 
           {activePanel === "attachments" ? (
             <Box
               className="hn-outbound-dialog__section"
               sx={SECTION_SX}
-              role="tabpanel"
+              role="region"
+              aria-label={t("shared.attachments.title")}
             >
               <DocumentAttachmentsPanel
                 documentType="OUTBOUND"
@@ -839,6 +932,8 @@ export function AlignedOutboundDetailModal({
               className="hn-outbound-dialog__section"
               sx={SECTION_SX}
               role="tabpanel"
+              id="outbound-panel-scan"
+              aria-labelledby="outbound-step-scan"
             >
               <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
                 {t("outbound.detail.step1")}
@@ -926,6 +1021,8 @@ export function AlignedOutboundDetailModal({
               className="hn-outbound-dialog__section"
               sx={SECTION_SX}
               role="tabpanel"
+              id="outbound-panel-post"
+              aria-labelledby="outbound-step-post"
             >
               <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}>
                 {t("outbound.detail.step2")}
@@ -981,14 +1078,6 @@ export function AlignedOutboundDetailModal({
                         ? t("outbound.detail.postWithLabel")
                         : t("outbound.detail.post")}
                     </ActionButton>
-                    {can("outbound.cancel") && mutable ? (
-                      <ActionButton
-                        kind="cancel"
-                        onClick={() => setCancelOpen(true)}
-                      >
-                        {t("outbound.detail.cancelTrigger")}
-                      </ActionButton>
-                    ) : null}
                   </Stack>
                 ) : (
                   <UiAlert
@@ -1042,7 +1131,13 @@ export function AlignedOutboundDetailModal({
           ) : null}
 
           {activePanel === "label" ? (
-            <Grid container spacing={2} role="tabpanel">
+            <Grid
+              container
+              spacing={2}
+              role="tabpanel"
+              id="outbound-panel-label"
+              aria-labelledby="outbound-step-label"
+            >
               <Grid size={12}>
                 <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
                   <Box

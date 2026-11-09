@@ -1040,14 +1040,14 @@ export const MESSAGES_EN: MessageTree = {
       fieldRecipient: "Deliver to",
       fieldScanned: "Scanned",
       additionalInfo: "Additional information",
-      step1: "1 · Scan and reconcile goods",
+      step1: "Scan and reconcile goods",
       autoSku: "Detect SKU from the scanned code",
       scanField: "Scan product QR/barcode",
       scanning: "Scanning...",
       scanAction: "Scan",
       linesEmpty: "The note has no line to issue.",
       scansEmpty: "No product reconciled yet — scan a product code to start.",
-      step2: "2 · Post the issue & print the label",
+      step2: "Post the issue & print the label",
       shortStockTitle:
         "Available stock is currently below the quantity to issue",
       shortStockBody:
@@ -1060,7 +1060,9 @@ export const MESSAGES_EN: MessageTree = {
       postedBody:
         "Stock has been deducted. Printing or reprinting the label does not change stock.",
       evidenceMovements: "Stock movements ({count}):",
-      step3: "3 · View and print the label",
+      step3: "View and print the label",
+      autoAdvanceToPost:
+        "All items scanned — moving to Step 2: Post the issue & print the label",
       labelPending: "The label is prepared after the issue is posted.",
       fieldLabelCode: "Label code",
       fieldLabelStatus: "Status",

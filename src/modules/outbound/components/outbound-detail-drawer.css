@@ -50,3 +50,138 @@
   outline: 2px solid var(--ops-link);
   outline-offset: 3px;
 }
+
+/* Stepper 3 bước nghiệp vụ — theo mẫu stepper của SKU import: một hàng duy
+   nhất, vùng tiện ích (Chứng từ / NFC) đứng bên phải cùng hàng, hạ thấp hơn. */
+.hn-stepper-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  border-bottom: 1px solid var(--ops-line);
+  padding-bottom: 14px;
+}
+.hn-stepper {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.hn-stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--ops-radius-control);
+  background: transparent;
+  cursor: pointer;
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  text-align: left;
+}
+.hn-stepper-item:hover {
+  background: var(--ops-pale);
+  color: var(--ops-heading);
+}
+.hn-stepper-item:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 2px;
+}
+.hn-stepper-number {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--ops-line);
+  border-radius: 50%;
+  background: var(--ops-surface);
+  color: var(--ops-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.hn-stepper-item.is-done,
+.hn-stepper-item.is-current {
+  color: var(--ops-heading);
+}
+.hn-stepper-item.is-done .hn-stepper-number {
+  border-color: transparent;
+  background: var(--ops-pale);
+  color: var(--ops-primary);
+}
+.hn-stepper-item.is-current {
+  font-weight: 700;
+}
+.hn-stepper-item.is-current .hn-stepper-number {
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+}
+.hn-stepper-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-step-utility {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+.hn-step-utility-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--ops-radius-control);
+  background: transparent;
+  cursor: pointer;
+  color: var(--ops-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.hn-step-utility-btn:hover {
+  background: var(--ops-pale);
+  color: var(--ops-heading);
+}
+.hn-step-utility-btn[aria-pressed="true"] {
+  background: var(--ops-pale);
+  color: var(--ops-heading);
+}
+.hn-step-utility-btn:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 1px;
+}
+@media (max-width: 575px) {
+  .hn-stepper-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .hn-stepper-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 15px;
+  }
+  .hn-stepper-label {
+    overflow: visible;
+    white-space: normal;
+  }
+  .hn-step-utility {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}

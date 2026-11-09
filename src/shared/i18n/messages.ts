@@ -1068,14 +1068,14 @@ export const MESSAGES_VI = {
       fieldRecipient: "Nơi nhận",
       fieldScanned: "Đã quét",
       additionalInfo: "Thông tin bổ sung",
-      step1: "1 · Quét và đối chiếu hàng",
+      step1: "Quét và đối chiếu hàng",
       autoSku: "Tự nhận SKU từ mã quét",
       scanField: "Quét QR/mã vạch sản phẩm",
       scanning: "Đang quét...",
       scanAction: "Quét",
       linesEmpty: "Phiếu chưa có dòng hàng cần xuất.",
       scansEmpty: "Chưa đối chiếu sản phẩm nào — quét mã sản phẩm để bắt đầu.",
-      step2: "2 · Ghi nhận xuất kho & In nhãn",
+      step2: "Ghi nhận xuất kho & In nhãn",
       shortStockTitle: "Tồn khả dụng hiện thấp hơn số lượng cần xuất",
       shortStockBody:
         "SKU thiếu: {skus}. Hệ thống sẽ kiểm tra lại tại thời điểm ghi nhận.",
@@ -1087,7 +1087,9 @@ export const MESSAGES_VI = {
       postedBody:
         "Tồn kho đã được trừ. Việc in/in lại nhãn không làm thay đổi tồn kho.",
       evidenceMovements: "Biến động tồn kho ({count}):",
-      step3: "3 · Xem và in nhãn",
+      step3: "Xem và in nhãn",
+      autoAdvanceToPost:
+        "Đã quét đủ hàng — chuyển sang Bước 2: Ghi nhận xuất kho & In nhãn",
       labelPending: "Nhãn được chuẩn bị sau khi ghi nhận xuất kho.",
       fieldLabelCode: "Mã nhãn",
       fieldLabelStatus: "Trạng thái",

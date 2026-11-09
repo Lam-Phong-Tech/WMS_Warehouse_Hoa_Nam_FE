@@ -125,17 +125,15 @@ it("opens the outbound detail as a right panel with grouped label actions", asyn
   ).not.toBeNull();
   expect(screen.getByText("MA-OUT-20261103-001")).toBeInTheDocument();
   expect(
-    await screen.findByRole("tab", { name: /3 · Xem và in nhãn/ }),
+    await screen.findByRole("tab", { name: /Xem và in nhãn/ }),
   ).toHaveAttribute("aria-selected", "true");
   expect(screen.queryByTestId("attachments-panel")).not.toBeInTheDocument();
 
-  fireEvent.click(
-    screen.getByRole("tab", { name: /1 · Quét và đối chiếu hàng/ }),
-  );
+  fireEvent.click(screen.getByRole("tab", { name: /Quét và đối chiếu hàng/ }));
   expect(await screen.findByText("SKU-001")).toBeInTheDocument();
   expect(screen.queryByText("PL-PX-20261103-001")).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("tab", { name: "Chứng từ đính kèm" }));
+  fireEvent.click(screen.getByRole("button", { name: "Chứng từ đính kèm" }));
   expect(await screen.findByTestId("attachments-panel")).toBeInTheDocument();
 });
 
