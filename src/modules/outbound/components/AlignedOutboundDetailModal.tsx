@@ -770,8 +770,10 @@ export function AlignedOutboundDetailModal({
                 <DetailField
                   label={t("outbound.list.colCreated")}
                   value={
-                    dayjs(doc.date).isValid()
-                      ? parseDateTime(doc.date).format("DD/MM/YYYY HH:mm")
+                    dayjs(doc.createdAt ?? doc.date).isValid()
+                      ? parseDateTime(doc.createdAt ?? doc.date).format(
+                          "DD/MM/YYYY HH:mm",
+                        )
                       : EMPTY_TEXT
                   }
                 />

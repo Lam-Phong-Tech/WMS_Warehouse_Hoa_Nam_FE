@@ -42,6 +42,7 @@ export interface OutboundDocumentRecord {
   status: OutboundStatus;
   version: number;
   createdBy: string;
+  createdAt?: string;
   updatedAt?: string;
   /** Aggregate BE trả kèm ở GET /outbound-documents (SCR-OUT-01). */
   matchedCount?: number;
@@ -359,6 +360,7 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
     version: num(row.version),
     // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
     createdBy: text(row.created_by_name, "-"),
+    createdAt: text(row.created_at) || undefined,
     updatedAt: text(row.updated_at) || undefined,
   };
 }
