@@ -884,7 +884,10 @@ export function ComponentIssueModal({
                         helperText={scanQuantityError || undefined}
                         sx={{ width: 110 }}
                       />
-                      <Box sx={{ flex: 1, minWidth: 220 }}>
+                      <Box
+                        sx={{ flex: 1, minWidth: 220 }}
+                        className="hn-component-issue-scanbar"
+                      >
                         <ScanInput
                           size="middle"
                           placeholder={t(

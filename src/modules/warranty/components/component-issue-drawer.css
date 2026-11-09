@@ -63,3 +63,11 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Ô nhập số lượng (MUI outlined small, cao 40px) và ô quét (antd) phải cùng một
+   chiều cao; antd size="middle" mặc định 32px nên ép 40px + căn giữa. */
+.hn-component-issue-scanbar .ant-input-affix-wrapper {
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
