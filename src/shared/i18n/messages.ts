@@ -993,6 +993,28 @@ export const MESSAGES_VI = {
         "Tồn không đủ ở ít nhất một dòng — giảm số lượng hoặc bổ sung tồn rồi kiểm tra lại trước khi tạo phiếu nháp.",
       confirmErrorTitle: "Không xác nhận được yêu cầu xuất",
     },
+    edit: {
+      title: "Sửa thông tin phiếu xuất",
+      action: "Sửa thông tin",
+      save: "Lưu thông tin",
+      saved: "Đã cập nhật thông tin phiếu xuất.",
+      saveError: "Không lưu được thông tin phiếu xuất.",
+      onlyDraft:
+        "Chỉ phiếu xuất ở trạng thái Nháp mới được sửa thông tin.",
+      linesLocked:
+        "SKU và số lượng được chốt từ toa yêu cầu; muốn đổi hàng, hãy huỷ phiếu và tạo lại.",
+      linesTitle: "Dòng hàng (chỉ đọc)",
+      colSku: "SKU",
+      colName: "Tên sản phẩm",
+      colQty: "SL",
+      saving: "Đang lưu...",
+      fieldNote: "Ghi chú",
+      errRecipient: "Nhập người / nơi nhận.",
+      errPhone:
+        "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0.",
+      errRequestDate:
+        "Ngày yêu cầu không hợp lệ hoặc nằm trong tương lai.",
+    },
     detail: {
       title: "Chi tiết phiếu xuất",
       loading: "Đang tải...",

@@ -13,6 +13,7 @@ import {
   reprintLabelSnapshot,
   scanOutboundItem,
   unmatchOutboundItem,
+  updateOutboundDocument,
   type IssueEvidence,
   type OutboundDetail,
   type OutboundDocumentRecord,
@@ -22,6 +23,7 @@ import {
   type OutboundStatus,
   type PhysicalCodeRecord,
   type PrinterConfigRecord,
+  type UpdateOutboundDocumentPayload,
 } from "@/modules/outbound/services/mvpOutboundService";
 
 export {
@@ -36,6 +38,7 @@ export {
   reprintLabelSnapshot,
   scanOutboundItem,
   unmatchOutboundItem,
+  updateOutboundDocument,
 };
 
 export type {
@@ -48,6 +51,7 @@ export type {
   OutboundStatus,
   PhysicalCodeRecord,
   PrinterConfigRecord,
+  UpdateOutboundDocumentPayload,
 };
 
 type RawRecord = Record<string, unknown>;

@@ -34,8 +34,12 @@ export interface OutboundDocumentRecord {
   /** Mã toa đọc được (BE enrich từ outbound_requests.request_no); fallback về outboundRequestId khi thiếu. */
   requestNo?: string | null;
   agencyId?: string | null;
+  agencyCode?: string | null;
+  agencyName?: string | null;
   recipientName: string;
   recipientAddress: string;
+  recipientPhone?: string;
+  requestDate?: string;
   note?: string | null;
   expected: number;
   scanned: number;
@@ -103,19 +107,24 @@ export interface OutboundLinePayload {
   note?: string | null;
 }
 
-// WWHN-195 / DEV195-P1-05R2 — đã gỡ hai cặp payload+hàm gọi endpoint không tồn tại:
+// WWHN-195 / DEV195-P1-05R2 — endpoint tạo phiếu xuất trực tiếp vẫn bị gỡ:
 //
 //   - `CreateOutboundPayload` + `createOutboundDocument()` → POST /outbound-documents
-//   - `UpdateOutboundPayload` + `updateOutboundDocument()` → PATCH /outbound-documents/{id}
 //
 // SRS v1.12 §8.1/Annex C: "Confirm creates exactly one outbound DRAFT; no direct
-// POST /outbound-documents create operation" — BE không đăng ký hai route này nên
-// mọi lần gọi chỉ trả 404. Giữ lại trong service chỉ tạo ảo giác rằng FE còn một
-// đường tạo/sửa phiếu trực tiếp.
+// POST /outbound-documents create operation" — phiếu vẫn chỉ sinh từ Confirm toa.
 //
-// Đường đúng: OutboundIntakeModal → POST /outbound-request-imports (hoặc
-// /manual) → POST /outbound-request-imports/{id}/confirm, Confirm sinh đúng 01
-// outbound DRAFT và chốt luôn recipient/địa chỉ/SĐT (REQ-SRS-014).
+// PATCH /outbound-documents/{id} được mở lại có kiểm soát cho phiếu DRAFT
+// (AMD-API-052): chỉ sửa header, không sửa dòng SKU.
+
+export interface UpdateOutboundDocumentPayload {
+  recipient_name?: string;
+  recipient_address?: string | null;
+  recipient_contact_phone?: string | null;
+  agency_id?: string | null;
+  request_date?: string;
+  note?: string | null;
+}
 
 export interface OutboundScanResult {
   codeValue: string;
@@ -350,9 +359,13 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
     outboundRequestId: text(row.outbound_request_id) || null,
     requestNo: text(row.request_no) || null,
     agencyId: text(row.agency_id) || null,
+    agencyCode: text(row.agency_code) || null,
+    agencyName: text(row.agency_name) || null,
     recipientName: text(row.recipient_name ?? row.customer_name, "-"),
     recipientAddress:
       formatAddress(text(row.recipient_address ?? row.customer_address)) || "-",
+    recipientPhone: text(row.recipient_contact_phone) || undefined,
+    requestDate: text(row.request_date) || undefined,
     note: row.note === undefined || row.note === null ? null : text(row.note),
     expected,
     scanned,
@@ -511,9 +524,19 @@ export async function fetchOutboundDetail(id: string): Promise<OutboundDetail> {
   );
 }
 
-// `createOutboundDocument()` đã gỡ — xem ghi chú ở chỗ khai báo payload phía trên.
-
-// `updateOutboundDocument()` đã gỡ — xem ghi chú ở chỗ UpdateOutboundPayload.
+export async function updateOutboundDocument(
+  id: string,
+  payload: UpdateOutboundDocumentPayload,
+  ifMatch: number,
+): Promise<OutboundDetail> {
+  return normalizeDetail(
+    await http.patch<RawRecord>(
+      endpoint(API_ENDPOINTS.OUTBOUND_DOCUMENT, id),
+      payload,
+      headers(ifMatch),
+    ),
+  );
+}
 
 export async function cancelOutboundDocument(
   id: string,
