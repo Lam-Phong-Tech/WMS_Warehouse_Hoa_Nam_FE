@@ -159,7 +159,15 @@ export function MainLayout() {
   /** Bấm logo ở rail (hoặc bấm icon nhóm) ⇒ ghim mở lại. */
   const expandSidebar = () => setCollapsed(false);
 
-  const requestedScreen = new URLSearchParams(location.search).get("screen");
+  // KHÔNG đưa `?screen=` vào chuyển khoá trang: mọi màn deep-link
+  // (WAR-02/03, IN-02/03, MST-02, COMP-01…) tự "tiêu thụ" query bằng
+  // setSearchParams(..., { replace: true }) ngay sau khi mở overlay, lật
+  // `screen` sang giá trị nền (WAR-01…). Nếu key đổi theo `screen`,
+  // FreshPage remount ⇒ state của chính overlay vừa mở bị hủy — người dùng
+  // thấy chi tiết hiện lên rồi biến mất, quay về trang danh sách
+  // (bug WAR-03: "Xem hồ sơ bảo hành" mất drawer ngay sau khi mở).
+  // Chi tiết overlay do chính trang đích sở hữu state; key chỉ cần pathname.
+  const pageTransitionKey = location.pathname;
   // MAP-01 vẫn là marker riêng cho phần BODY của Tổng quan; riêng shell
   // (sidebar + topbar) dùng SystemHNWeb trên MỌI route để điều hướng không đổi skin.
   const isMapReferenceScreen = location.pathname === ROUTES.DASHBOARD;
@@ -262,16 +270,17 @@ export function MainLayout() {
             />
           )}
           {/*
-           * Trang KHÔNG keep-alive: key theo pathname + ?screen= → remount chạy lại
-           * hiệu ứng chuyển màn (hn-page-transition). KHÔNG đưa cả search vào key:
-           * 7 trang giữ bộ lọc/phân trang trên query — remount theo search sẽ mất
-           * state. Nhóm báo cáo đi qua keep-alive (xem KeepAliveOutlet): màn đã mở
+           * Trang KHÔNG keep-alive: key theo pathname → remount chạy lại
+           * hiệu ứng chuyển màn (hn-page-transition). KHÔNG đưa cả search hay
+           * `?screen=` vào key — remount theo query sẽ mất state của trang và
+           * của overlay vừa mở (xem pageTransitionKey phía trên).
+           * Nhóm báo cáo đi qua keep-alive (xem KeepAliveOutlet): màn đã mở
            * được giữ ẩn, quay lại là hiện ngay; display:none→block tự chạy lại
            * animation chuyển màn nên không mất hiệu ứng.
            */}
           <PinnedSidebarContext.Provider value={isDesktop && !sidebarCollapsed}>
             <KeepAliveOutlet
-              transitionKey={`${location.pathname}|${requestedScreen ?? ""}`}
+              transitionKey={pageTransitionKey}
               className="hn-mvp-screen hn-page-transition"
             />
           </PinnedSidebarContext.Provider>
