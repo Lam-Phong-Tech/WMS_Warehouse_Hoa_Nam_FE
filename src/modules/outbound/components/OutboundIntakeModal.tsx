@@ -1303,31 +1303,9 @@ export function OutboundIntakeModal({
                   </Box>
                 </Stack>
 
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
-                >
-                  <ActionButton
-                    kind="view"
-                    className="hn-outbound-dialog__primary"
-                    disabled={
-                      !canImport ||
-                      validateManualMutation.isPending ||
-                      Boolean(createdResult) ||
-                      consumeMutation.isPending ||
-                      uploading
-                    }
-                    onClick={handleValidateManual}
-                  >
-                    {validateManualMutation.isPending
-                      ? t("outbound.intake.validating")
-                      : t("outbound.intake.validate")}
-                  </ActionButton>
-                  <Box sx={{ typography: "body2", color: "text.secondary" }}>
-                    {t("outbound.intake.manualHint")}
-                  </Box>
-                </Stack>
+                <Box sx={{ typography: "body2", color: "text.secondary" }}>
+                  {t("outbound.intake.manualHint")}
+                </Box>
               </Stack>
             ) : (
               <div className="hn-outbound-dialog__excel-grid">
@@ -1660,6 +1638,24 @@ export function OutboundIntakeModal({
           </Stack>
         </CoordinatedLoadingBoundary>
         <footer className="hn-outbound-intake-drawer__footer">
+          {mode === "manual" ? (
+            <ActionButton
+              kind="view"
+              className="hn-outbound-dialog__primary"
+              disabled={
+                !canImport ||
+                validateManualMutation.isPending ||
+                Boolean(createdResult) ||
+                consumeMutation.isPending ||
+                uploading
+              }
+              onClick={handleValidateManual}
+            >
+              {validateManualMutation.isPending
+                ? t("outbound.intake.validating")
+                : t("outbound.intake.validate")}
+            </ActionButton>
+          ) : null}
           <ActionButton kind="close" onClick={close} disabled={busy}>
             {t("common.close")}
           </ActionButton>

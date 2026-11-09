@@ -53,6 +53,7 @@
 
 .hn-outbound-intake-drawer__footer {
   justify-content: flex-end;
+  gap: 12px;
   border-top: 1px solid var(--ops-line);
 }
 
