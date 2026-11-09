@@ -399,11 +399,20 @@
   }
   .hn-outbound-nfc-table tbody tr {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas:
+      "ordinal item action"
+      "product status status";
     height: auto;
     padding: 16px;
     gap: 16px;
     border-bottom: 1px solid var(--ops-line);
+  }
+  .hn-outbound-nfc-table:not([data-document-scoped="true"]) tbody tr {
+    grid-template-areas:
+      "ordinal item action"
+      "product status status"
+      "document document document";
   }
   .hn-outbound-nfc-table :is(th, td) {
     display: block;
@@ -412,8 +421,23 @@
     padding: 0;
   }
   .hn-outbound-nfc-table td[data-field="ordinal"] {
+    grid-area: ordinal;
+    align-self: start;
     padding: 0;
     text-align: left;
+  }
+  .hn-outbound-nfc-table td[data-field="item"] {
+    grid-area: item;
+    align-self: start;
+  }
+  .hn-outbound-nfc-table td[data-field="product"] {
+    grid-area: product;
+  }
+  .hn-outbound-nfc-table td[data-field="status"] {
+    grid-area: status;
+  }
+  .hn-outbound-nfc-table td[data-field="document"] {
+    grid-area: document;
   }
   .hn-outbound-nfc-table td::before {
     content: attr(data-label);
@@ -424,7 +448,8 @@
     margin-bottom: 4px;
   }
   .hn-outbound-nfc-table td[data-field="action"] {
-    grid-column: 1 / -1;
+    grid-area: action;
+    align-self: center;
     justify-self: end;
   }
   .hn-outbound-nfc-table td[data-field="action"]::before {
@@ -437,7 +462,13 @@
 }
 @container (max-width: 440px) {
   .hn-outbound-nfc-table tbody tr {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "ordinal action"
+      "item item"
+      "product product"
+      "status status"
+      "document document";
   }
   .hn-outbound-nfc-search-controls {
     grid-template-columns: minmax(0, 1fr);
