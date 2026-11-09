@@ -475,22 +475,30 @@
 }
 .hn-defect-screen table.defect-table .stt-col {
   width: 6%;
+}
+.hn-defect-screen table.defect-table td.stt-col {
   color: var(--defect-muted);
   font-weight: 500;
 }
 .hn-defect-screen table.defect-table .code-col {
   width: 17%;
-  color: var(--defect-ink);
   overflow-wrap: anywhere;
+}
+.hn-defect-screen table.defect-table td.code-col {
+  color: var(--defect-ink);
   font-weight: 700;
 }
 .hn-defect-screen table.defect-table .name-col {
   width: 25%;
+}
+.hn-defect-screen table.defect-table td.name-col {
   color: var(--defect-ink);
   font-weight: 700;
 }
 .hn-defect-screen table.defect-table .description-col {
   width: 29%;
+}
+.hn-defect-screen table.defect-table td.description-col {
   color: var(--defect-muted);
 }
 .hn-defect-screen table.defect-table .status-col {
