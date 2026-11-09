@@ -10,6 +10,14 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-09-putaway-tray-overview-2d-design.md`
 
+> **Status (09/11/2026):** đã triển khai trong `f1dbcbb` và một lượt sửa review.
+> Kiểm chứng thực tế: `typecheck`, lint phạm vi, `TrayOverviewPage.test.tsx`
+> (8/8), `npm run build`, `git diff --check` đều đạt. `npm run ui:tokens` bị
+> chặn bởi baseline `docs/ui/vuexy-sync/allowlists/hardcoded-hex-baseline.json`
+> không có trong repo; không phải lỗi của trang. Test putaway module còn lỗi ở
+> các file multi-box/outbound đang làm song song và assertion cũ
+> `LK-DCH-OC-VIT-M2-V1` (đã xác nhận fail ở base `537e745`).
+
 ## Global Constraints
 
 - Không đổi API/BE, không thêm trường dữ liệu, không tạo toạ độ kho.
@@ -193,8 +201,10 @@ Expected: PASS, không warning mới.
 
 Run: `npm run ui:tokens`
 
+Expected: BLOCKED — repo thiếu `docs/ui/vuexy-sync/allowlists/hardcoded-hex-baseline.json`; ghi rõ giới hạn, không coi là PASS.
+
 Run: `git diff --check`
-Expected: PASS cả hai.
+Expected: PASS.
 
 - [ ] **Step 4: Chạy build**
 

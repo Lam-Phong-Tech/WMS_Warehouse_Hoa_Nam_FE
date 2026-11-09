@@ -52,7 +52,7 @@ Vì vậy bố cục là cách trình bày theo nhóm khu vực thật, không p
 - Một thanh surface duy nhất, chia 4 đoạn bằng đường kẻ dọc, viền `--ops-line`,
   radius card 8px.
 - Mỗi đoạn là `button` gồm nhãn 12–13px và số tabular 24–26px; màu trạng thái
-  chỉ nằm ở chấm nhỏ và số. Đoạn đang lọc có nền `--ops-pale`, viền dưới 2px
+  chỉ nằm ở chấm nhỏ và số. Đoạn đang lọc có nền `--ops-pale`, viền dưới 3px
   theo màu trạng thái và `aria-pressed`.
 - Khi query đang tải, số hiển thị `—`; khi lỗi, giữ số liệu cũ nếu có.
 
@@ -60,7 +60,7 @@ Vì vậy bố cục là cách trình bày theo nhóm khu vực thật, không p
 
 - Surface trắng, viền 1px, radius 8px, các góc có dấu ngoặc kỹ thuật mảnh.
 - Header: nhãn nhỏ "SƠ ĐỒ KHU VỰC KHAY", tổng số khay, chú giải 3 trạng thái.
-- Toolbar ngay dưới header: ô tìm kiếm (320px, co giãn), nút "Xoá lọc" và
+- Toolbar ngay dưới header: ô tìm kiếm (340px, co giãn), nút "Xoá lọc" và
   dòng "Hiển thị x/y khay" chỉ hiện khi có từ khoá hoặc bộ lọc trạng thái.
 - Thân khung nền `--ops-canvas` phủ lưới 24px bằng gradient từ `--ops-line` ở
   độ tương phản thấp; zone surface nằm trên lưới.
@@ -72,17 +72,19 @@ Vì vậy bố cục là cách trình bày theo nhóm khu vực thật, không p
   số khay bên phải. Zone chưa gán dùng viền nét đứt và nhãn muted.
 - Dưới tiêu đề là một thanh phân bố 3 trạng thái mảnh, tối đa 480px, có
   `role="img"` + nhãn phân bố để đọc nhanh tỷ lệ trống/đang chứa/cần chú ý.
-- Các khay nằm trong `ul`/`li`, grid `auto-fill minmax(140px, 1fr)`, gap 10px.
+- Các khay nằm trong `ul`/`li`, grid `auto-fill minmax(148px, 1fr)`, gap 8px.
+  Ở 390px vùng trong zone còn ~294px nên chỉ xếp 1 cột; đây là đánh đổi có
+  chủ đích để mã khay dài không bị bẻ quá nhiều.
 - Zone xếp tối đa 2 cột từ breakpoint `md`; dưới `md` xếp 1 cột. Zone có tên
   đứng trước; "Chưa gán khu vực" xếp cuối và chiếm toàn bộ hàng.
 
 ### Footprint khay
 
-- Hình chữ nhật phẳng tỉ lệ ngang, viền 1px, radius 4px, surface trắng.
+- Hình chữ nhật phẳng tỉ lệ ngang, viền 1px, radius 5px, surface trắng.
 - Một dải màu 3px ở cạnh trên theo trạng thái; bên trong có đường bao nét đứt
   mảnh tạo cảm giác footprint.
-- Nội dung: mã khay 13–14px/600 `--ops-heading`, `location_hint` 11–12px
-  muted; hàng cuối là chấm 7px + nhãn trạng thái 11px.
+- Nội dung: mã khay 13px/700 `--ops-heading`, `location_hint` 11.5px màu
+  `--ops-text`; hàng cuối là chấm 6px + nhãn trạng thái 11px.
 - Khay "Cần chú ý" có viền `--ops-warning`, dải màu và nhãn cảnh báo; giữ nền
   surface, không tô kín ô bằng pastel.
 - Hover/focus: nhấc nhẹ 1px, viền đậm hơn, focus-visible có quỹ đạo 2px.

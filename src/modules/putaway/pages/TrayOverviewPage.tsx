@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -263,7 +263,7 @@ export default function TrayOverviewPage() {
                   sx={{
                     fontSize: 12,
                     fontWeight: 600,
-                    color: S.textMedium,
+                    color: S.textHigh,
                     lineHeight: 1.35,
                   }}
                 >
@@ -288,6 +288,8 @@ export default function TrayOverviewPage() {
       </Box>
 
       <Box
+        component="section"
+        aria-labelledby="ptw-map-title"
         sx={{
           position: "relative",
           border: `1px solid ${S.border}`,
@@ -328,7 +330,10 @@ export default function TrayOverviewPage() {
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <Box
+                component="h2"
+                id="ptw-map-title"
                 sx={{
+                  m: 0,
                   fontSize: 12,
                   fontWeight: 700,
                   letterSpacing: "0.08em",
@@ -342,7 +347,7 @@ export default function TrayOverviewPage() {
               <Box
                 sx={{
                   fontSize: 11.5,
-                  color: S.textMedium,
+                  color: S.textHigh,
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
@@ -372,7 +377,7 @@ export default function TrayOverviewPage() {
                   gap: 0.6,
                   fontSize: 11.5,
                   fontWeight: 600,
-                  color: S.textMedium,
+                  color: S.textHigh,
                 }}
               >
                 <Box
@@ -423,13 +428,14 @@ export default function TrayOverviewPage() {
               onClick={clearFilters}
             />
           ) : null}
-          {hasActiveFilter ? (
+          {hasActiveFilter && countsReady ? (
             <Box
+              role="status"
               sx={{
                 ml: "auto",
                 fontSize: 11.5,
                 fontWeight: 600,
-                color: S.textMedium,
+                color: S.textHigh,
                 fontVariantNumeric: "tabular-nums",
               }}
             >
@@ -488,7 +494,17 @@ export default function TrayOverviewPage() {
           />
 
           <Box sx={{ position: "relative" }}>
-            {traysQuery.isError ? (
+            {traysQuery.isError && traysQuery.data ? (
+              <Box sx={{ mb: 1.5 }}>
+                <ApiErrorAlert
+                  error={traysQuery.error}
+                  title={t("putaway.overview.loadFailed")}
+                  onRetry={() => void traysQuery.refetch()}
+                />
+              </Box>
+            ) : null}
+
+            {traysQuery.isError && !traysQuery.data ? (
               <ApiErrorAlert
                 error={traysQuery.error}
                 title={t("putaway.overview.loadFailed")}
@@ -551,7 +567,7 @@ export default function TrayOverviewPage() {
             justifyContent: "flex-end",
           }}
         >
-          <Box sx={{ fontSize: 11, color: S.textMedium }}>
+          <Box sx={{ fontSize: 11, color: S.textHigh }}>
             {t("putaway.overview.layoutNote")}
           </Box>
         </Box>
@@ -571,6 +587,7 @@ interface ZoneBlockProps {
 
 function ZoneBlock({ zone }: ZoneBlockProps) {
   const t = useT();
+  const headingId = useId();
   const distribution = BUCKET_ORDER.map((bucket) => ({
     bucket,
     count: zone.trays.filter((tray) => bucketOf(tray.status) === bucket)
@@ -580,7 +597,7 @@ function ZoneBlock({ zone }: ZoneBlockProps) {
   return (
     <Box
       component="section"
-      aria-label={zone.label}
+      aria-labelledby={headingId}
       sx={{
         minWidth: 0,
         gridColumn: zone.unassigned ? "1 / -1" : "auto",
@@ -626,13 +643,14 @@ function ZoneBlock({ zone }: ZoneBlockProps) {
           />
           <Box
             component="h3"
+            id={headingId}
             sx={{
               m: 0,
               fontSize: { xs: 12.5, md: 13 },
               fontWeight: 700,
               letterSpacing: "0.07em",
               textTransform: "uppercase",
-              color: zone.unassigned ? S.textMedium : S.textStrong,
+              color: zone.unassigned ? S.textHigh : S.textStrong,
               lineHeight: 1.4,
               overflowWrap: "anywhere",
             }}
@@ -644,7 +662,7 @@ function ZoneBlock({ zone }: ZoneBlockProps) {
           sx={{
             fontSize: 11.5,
             fontWeight: 600,
-            color: S.textMedium,
+            color: S.textHigh,
             fontVariantNumeric: "tabular-nums",
             whiteSpace: "nowrap",
           }}
@@ -762,7 +780,7 @@ function ZoneBlock({ zone }: ZoneBlockProps) {
                   sx={{
                     fontSize: 11.5,
                     lineHeight: 1.35,
-                    color: S.textMedium,
+                    color: S.textHigh,
                     minHeight: "1.35em",
                     overflowWrap: "anywhere",
                   }}

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import { renderWithProviders } from "@/test/test-utils";
 import type { TrayOption } from "@/modules/putaway/services/putawayService";
 
@@ -51,6 +53,16 @@ function renderPage() {
   return renderWithProviders(<TrayOverviewPage />);
 }
 
+function renderPageWithClient(queryClient: QueryClient) {
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <TrayOverviewPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
 describe("TrayOverviewPage", () => {
   beforeEach(() => {
     fetchTrays.mockReset();
@@ -69,6 +81,15 @@ describe("TrayOverviewPage", () => {
 
     expect(values).toEqual(["4", "2", "1", "1"]);
     expect(screen.getAllByTestId("ptw-tray-cell")).toHaveLength(4);
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Sơ đồ khu vực khay",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Sơ đồ khu vực khay" }),
+    ).toBeInTheDocument();
 
     const zoneHeadings = screen
       .getAllByRole("heading", { level: 3 })
@@ -122,6 +143,55 @@ describe("TrayOverviewPage", () => {
     expect(
       screen.queryByRole("button", { name: "Xoá lọc" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("does not show a fake result count while the first load is pending", async () => {
+    fetchTrays.mockReturnValue(new Promise(() => {}));
+    renderPage();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Cần chú ý/ }),
+    );
+
+    expect(screen.queryByText(/Hiển thị/)).not.toBeInTheDocument();
+  });
+
+  it("shows the load error and retries", async () => {
+    fetchTrays
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(TRAYS);
+
+    renderPage();
+
+    expect(
+      await screen.findByText("Không tải được danh sách khay"),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+
+    expect(await screen.findByText("TRAY-A1")).toBeInTheDocument();
+  });
+
+  it("keeps cached zones when a background refetch fails", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    });
+    fetchTrays.mockResolvedValueOnce(TRAYS);
+
+    renderPageWithClient(queryClient);
+    await screen.findByText("TRAY-A1");
+
+    fetchTrays.mockRejectedValueOnce(new Error("network"));
+    await act(async () => {
+      await queryClient.refetchQueries({
+        queryKey: ["putaway", "trays", "overview"],
+      });
+    });
+
+    expect(
+      await screen.findByText("Không tải được danh sách khay"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("TRAY-A1")).toBeInTheDocument();
   });
 
   it("does not show fake zero counts while loading", () => {
