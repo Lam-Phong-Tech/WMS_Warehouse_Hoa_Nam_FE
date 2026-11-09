@@ -68,8 +68,6 @@ import type { ReactNode } from "react";
 import {
   ActionButton,
   ActionIconButton,
-  RowActionButton,
-  RowActionGroup,
 } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
@@ -648,11 +646,55 @@ export function AlignedOutboundDetailModal({
     unmatchMutation.mutate(match.id);
   };
 
+  // Gom mã đã quét theo dòng để gộp bảng còn MỘT bảng: mỗi hàng là một dòng
+  // SKU và mã QR/serial nó đại diện (trước đây tách thành hai bảng rời:
+  // dòng hàng và mã đã quét, người dùng phải tự đối chiếu với nhau).
+  const matchesByLine = useMemo(() => {
+    const map = new Map<string, OutboundItemMatchRecord[]>();
+    for (const match of activeMatches) {
+      const list = map.get(match.lineId);
+      if (list) list.push(match);
+      else map.set(match.lineId, [match]);
+    }
+    return map;
+  }, [activeMatches]);
+
+  const canRemoveMatch = mutable && can("outbound.scan");
+  const renderMatchChips = (lineId: string) => {
+    const items = matchesByLine.get(lineId) ?? [];
+    if (!items.length) {
+      return <span className="hn-match-empty">{EMPTY_TEXT}</span>;
+    }
+    return (
+      <div className="hn-match-chip-list">
+        {items.map((match) => {
+          const code =
+            match.itemCode || match.serialNumber || short(match.itemId);
+          return (
+            <span key={match.id} className="hn-match-chip">
+              <span className="hn-match-chip-code" title={code}>
+                {code}
+              </span>
+              {canRemoveMatch ? (
+                <ActionIconButton
+                  kind="delete"
+                  label={`${t("outbound.detail.remove")} ${code}`}
+                  sx={{ width: 20, height: 20 }}
+                  onClick={() => void handleUnmatch(match)}
+                />
+              ) : null}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   const lineColumns: ResponsiveTableColumn<OutboundLineRecord>[] = [
     {
       key: "productId",
       header: "SKU",
-      width: 180,
+      width: 170,
       render: (row) =>
         row.skuCode ? (
           <SkuLink id={row.productId} code={row.skuCode} />
@@ -677,35 +719,12 @@ export function AlignedOutboundDetailModal({
       width: 100,
       render: (row) => row.scanned,
     },
-  ];
-
-  const matchColumns: ResponsiveTableColumn<OutboundItemMatchRecord>[] = [
+    // Cột tự dựng JSX — không cắt chữ (chip mã + nút gỡ dính vào chip).
     {
-      key: "item",
+      key: "matches",
       header: t("outbound.detail.colProduct"),
-      render: (match) =>
-        match.itemCode || match.serialNumber || short(match.itemId),
-    },
-    {
-      key: "actions",
-      isAction: true,
-      // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
-      header: "",
-      mobileLabel: t("outbound.detail.colAction"),
-      width: 80,
-      render: (match) => (
-        <RowActionGroup>
-          {mutable && can("outbound.scan") ? (
-            <RowActionButton
-              kind="delete"
-              onClick={() => void handleUnmatch(match)}
-            >
-              {t("outbound.detail.remove")}
-            </RowActionButton>
-          ) : null}
-        </RowActionGroup>
-      ),
+      render: (row) => renderMatchChips(row.id),
     },
   ];
 
@@ -1010,13 +1029,6 @@ export function AlignedOutboundDetailModal({
                   rowKey={(row) => row.id}
                   loading={detailQuery.isFetching}
                   emptyText={t("outbound.detail.linesEmpty")}
-                />
-                <ResponsiveDataTable<OutboundItemMatchRecord>
-                  columns={matchColumns}
-                  rows={activeMatches}
-                  rowKey={(row) => row.id}
-                  loading={detailQuery.isFetching}
-                  emptyText={t("outbound.detail.scansEmpty")}
                 />
               </Stack>
             </Box>

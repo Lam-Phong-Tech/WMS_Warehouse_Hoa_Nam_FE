@@ -52,6 +52,44 @@
 }
 
 /* Stepper 3 bước nghiệp vụ — một hàng duy nhất, chỉ chứa 3 bước. */
+/* Chip mã đã quét trong bảng dòng: nêu rõ từng mã vật lý thuộc dòng SKU nào;
+   × trên chip là lối gỡ đối chiếu. */
+.hn-match-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.hn-match-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 2px 4px 2px 10px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-pale);
+  color: var(--ops-heading);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+.hn-match-chip-code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-match-chip-remove {
+  flex: none;
+  border-radius: 4px;
+}
+.hn-match-empty {
+  color: var(--ops-muted);
+}
 .hn-stepper-row {
   display: flex;
   align-items: flex-end;
