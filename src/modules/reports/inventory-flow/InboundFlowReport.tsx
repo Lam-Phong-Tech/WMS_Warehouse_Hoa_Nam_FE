@@ -374,6 +374,9 @@ export default function InboundFlowReport() {
     isSuperAdmin,
   );
   const updating = loading || fetching;
+  // Background refetches (realtime/30s reconcile) keep the current report on
+  // screen; only the first load or a user-triggered update shows loading chrome.
+  const uiUpdating = loading || (updatePending && fetching);
   const invalidRange = rangeIsInvalid(draftRange);
 
   useEffect(() => {
@@ -622,7 +625,7 @@ export default function InboundFlowReport() {
 
   const exportReason = (() => {
     if (exporter.exporting) return tUi("updatedUi.text_d7a37805fe18");
-    if (updating) return tUi("updatedUi.text_786346f99661");
+    if (uiUpdating) return tUi("updatedUi.text_786346f99661");
     if (error != null) return tUi("updatedUi.text_5b5f331545d6");
     if (invalidRange) return tUi("updatedUi.text_fc36c0eb5a3f");
     if (!canExport) return tUi("updatedUi.text_a3c72d7db277");
@@ -853,7 +856,7 @@ export default function InboundFlowReport() {
                 }
               }}
               aria-label={tUi("reports.packingLabel.dateRangeLabel")}
-              disabled={updating}
+              disabled={uiUpdating}
             />
             {invalidRange ? (
               <small>{tUi("updatedUi.text_c88aba88c1c8")}</small>
@@ -877,7 +880,7 @@ export default function InboundFlowReport() {
               fieldLabel={tUi("updatedUi.text_039d667495cd")}
               searchPlaceholder="Tìm nhà cung cấp..."
               ariaLabel="Chọn nhà cung cấp"
-              disabled={updating}
+              disabled={uiUpdating}
             />
           </div>
           <div
@@ -898,7 +901,7 @@ export default function InboundFlowReport() {
               fieldLabel={tUi("dashboard.composition.colStatus")}
               searchPlaceholder="Tìm trạng thái..."
               ariaLabel="Chọn trạng thái phiếu nhập"
-              disabled={updating}
+              disabled={uiUpdating}
             />
           </div>
         </div>
@@ -939,7 +942,7 @@ export default function InboundFlowReport() {
             <span className="inbound-sr-only">
               {tUi("reports.inventoryFlowReport.inboundQuickTitle")}
             </span>
-            {updating ? (
+            {uiUpdating ? (
               Array.from({ length: 4 }, (_, index) => (
                 <KpiSkeleton key={index} />
               ))
@@ -1009,7 +1012,7 @@ export default function InboundFlowReport() {
                   {" " + tUi("updatedUi.text_9bfcaa70b19e")}
                 </span>
               </div>
-              {updating ? (
+              {uiUpdating ? (
                 <div className="inbound-chart-skeleton" aria-hidden="true">
                   {Array.from({ length: 7 }, (_, index) => (
                     <i key={index} />
@@ -1080,7 +1083,7 @@ export default function InboundFlowReport() {
                   <p>{tUi("updatedUi.text_410ce7ff86bb")}</p>
                 </div>
               </div>
-              {updating ? (
+              {uiUpdating ? (
                 <div className="inbound-progress-skeleton" aria-hidden="true">
                   <span className="inbound-skeleton inbound-skeleton--donut" />
                   <span>
@@ -1139,7 +1142,7 @@ export default function InboundFlowReport() {
                 <button
                   type="button"
                   onClick={scrollToPending}
-                  disabled={reportEmpty || updating}
+                  disabled={reportEmpty || uiUpdating}
                 >
                   {tUi("updatedUi.text_e07402d0ac93") + " "}
                   <Icon name="arrow-right" />
@@ -1170,7 +1173,7 @@ export default function InboundFlowReport() {
                   }}
                   placeholder={tUi("updatedUi.text_5a3793c82147")}
                   aria-label={tUi("inbound.list.searchAria")}
-                  disabled={updating || reportEmpty}
+                  disabled={uiUpdating || reportEmpty}
                 />
                 {query ? (
                   <button
@@ -1184,7 +1187,7 @@ export default function InboundFlowReport() {
               </label>
             </div>
 
-            {updating ? (
+            {uiUpdating ? (
               <div className="inbound-table-skeleton" aria-hidden="true">
                 {Array.from({ length: 6 }, (_, row) => (
                   <div key={row}>
@@ -1461,7 +1464,7 @@ export default function InboundFlowReport() {
         </>
       )}
 
-      {updating ? (
+      {uiUpdating ? (
         <div
           className="inbound-loading-overlay"
           role="status"

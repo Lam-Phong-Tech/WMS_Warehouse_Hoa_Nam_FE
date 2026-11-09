@@ -538,6 +538,9 @@ export default function OutboundFlowReport() {
     fetching ||
     outboundMetadataQuery.isLoading ||
     outboundMetadataQuery.isFetching;
+  // Background refetches keep the current report on screen; only the first
+  // load or a user-triggered update shows loading chrome.
+  const uiUpdating = loading || (updatePending && updating);
   const invalidRange = rangeIsInvalid(draftRange);
 
   useEffect(() => {
@@ -905,7 +908,7 @@ export default function OutboundFlowReport() {
               ],
             ]}
             disabled={
-              updating ||
+              uiUpdating ||
               invalidRange ||
               Boolean(error) ||
               outboundMetadataQuery.isError
@@ -969,7 +972,7 @@ export default function OutboundFlowReport() {
               }
             }}
             aria-label={tUi("reports.packingLabel.dateRangeLabel")}
-            disabled={updating}
+            disabled={uiUpdating}
           />
         </div>
         <FilterCombobox
@@ -984,7 +987,7 @@ export default function OutboundFlowReport() {
           icon="user-round"
           searchPlaceholder="Tìm người nhận..."
           ariaLabel="Chọn người nhận"
-          disabled={updating}
+          disabled={uiUpdating}
         />
         <FilterCombobox
           id="rpt01b-status"
@@ -998,7 +1001,7 @@ export default function OutboundFlowReport() {
           icon="file-clock"
           searchPlaceholder="Tìm trạng thái..."
           ariaLabel="Chọn trạng thái phiếu xuất"
-          disabled={updating}
+          disabled={uiUpdating}
         />
       </section>
 
@@ -1045,7 +1048,7 @@ export default function OutboundFlowReport() {
               />
             </div>
             <div id="outbound-reference-summary-content" hidden={!summaryOpen}>
-              {updating ? (
+              {uiUpdating ? (
                 <div
                   className="outbound-reference-summary__loading"
                   aria-hidden="true"
@@ -1100,7 +1103,7 @@ export default function OutboundFlowReport() {
             <span className="outbound-sr-only">
               {tUi("reports.inventoryFlowReport.outboundQuickTitle")}
             </span>
-            {updating ? (
+            {uiUpdating ? (
               Array.from({ length: 4 }, (_, index) => (
                 <KpiSkeleton key={index} />
               ))
@@ -1190,7 +1193,7 @@ export default function OutboundFlowReport() {
                 </div>
               </div>
               <div id="outbound-chart-content" hidden={!chartOpen}>
-                {updating ? (
+                {uiUpdating ? (
                   <div className="outbound-chart-skeleton" aria-hidden="true">
                     {Array.from({ length: 7 }, (_, index) => (
                       <i key={index} />
@@ -1278,7 +1281,7 @@ export default function OutboundFlowReport() {
                 id="outbound-progress-content"
                 hidden={!progressOpen}
               >
-                {updating ? (
+                {uiUpdating ? (
                   <div
                     className="outbound-progress-skeleton"
                     aria-hidden="true"
@@ -1340,7 +1343,7 @@ export default function OutboundFlowReport() {
                   <button
                     type="button"
                     onClick={scrollToPending}
-                    disabled={reportEmpty || updating}
+                    disabled={reportEmpty || uiUpdating}
                   >
                     {tUi("updatedUi.text_e07402d0ac93") + " "}
                     <Icon name="arrow-right" />
@@ -1365,7 +1368,7 @@ export default function OutboundFlowReport() {
                 type="button"
                 className="outbound-refresh-button"
                 onClick={() => void applyFilters()}
-                disabled={updating || invalidRange}
+                disabled={uiUpdating || invalidRange}
               >
                 {tUi("updatedUi.text_83ddf4187c12") + " "}
                 <Icon name="refresh-cw" />
@@ -1388,7 +1391,7 @@ export default function OutboundFlowReport() {
                   }}
                   placeholder="Mã phiếu, mã tờ yêu cầu, người nhận..."
                   aria-label={tUi("outbound.list.searchAria")}
-                  disabled={updating || reportEmpty}
+                  disabled={uiUpdating || reportEmpty}
                 />
                 {query ? (
                   <button
@@ -1415,7 +1418,7 @@ export default function OutboundFlowReport() {
                 icon="file-clock"
                 searchPlaceholder="Tìm trạng thái..."
                 ariaLabel="Lọc trạng thái"
-                disabled={updating}
+                disabled={uiUpdating}
               />
               <FilterCombobox
                 id="rpt01b-table-recipient"
@@ -1432,13 +1435,13 @@ export default function OutboundFlowReport() {
                 icon="user-round"
                 searchPlaceholder="Tìm người nhận..."
                 ariaLabel="Lọc người nhận"
-                disabled={updating}
+                disabled={uiUpdating}
               />
               {query || appliedRecipient || appliedStatus ? (
                 <button
                   type="button"
                   className="outbound-clear-filters"
-                  disabled={updating}
+                  disabled={uiUpdating}
                   onClick={() => {
                     setQuery("");
                     setDraftStatus("");
@@ -1453,7 +1456,7 @@ export default function OutboundFlowReport() {
               ) : null}
             </div>
 
-            {updating ? (
+            {uiUpdating ? (
               <div className="outbound-table-skeleton" aria-hidden="true">
                 {Array.from({ length: 6 }, (_, row) => (
                   <div key={row}>
@@ -1679,7 +1682,7 @@ export default function OutboundFlowReport() {
         </>
       )}
 
-      {updating ? (
+      {uiUpdating ? (
         <div
           className="outbound-loading-overlay"
           role="status"
