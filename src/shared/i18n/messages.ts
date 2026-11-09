@@ -5493,12 +5493,17 @@ export const MESSAGES_VI = {
       loadingTip: "Đang tải tình trạng khay…",
       emptyTitle: "Không có khay phù hợp",
       emptyDescription: "Thử bỏ bộ lọc hoặc đổi từ khoá tìm kiếm.",
+      noTraysTitle: "Chưa có khay nào",
+      noTraysDescription:
+        "Khi có khay trong hệ thống, tình trạng sẽ hiển thị tại đây.",
       zoneCount: "{zone} · {count} khay",
+      zoneTrayCount: "{count} khay",
       mapTitle: "Sơ đồ khu vực khay",
       legendAria: "Chú giải trạng thái khay",
       clearFilters: "Xoá lọc",
       layoutNote: "Bố cục theo khu vực — không phải sơ đồ vị trí.",
       zoneDistributionAria: "Phân bố trạng thái trong {zone}",
+      showingCount: "Hiển thị {shown}/{total} khay",
     },
     grid: {
       zoneUnzoned: "Chưa phân khu",

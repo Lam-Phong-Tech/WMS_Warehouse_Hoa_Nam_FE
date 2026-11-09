@@ -5500,12 +5500,17 @@ export const MESSAGES_EN: MessageTree = {
       emptyTitle: "No matching trays",
       emptyDescription:
         "Try removing the filter or changing the search keyword.",
+      noTraysTitle: "No trays yet",
+      noTraysDescription:
+        "Tray status will appear here once trays exist.",
       zoneCount: "{zone} · {count} trays",
+      zoneTrayCount: "{count} trays",
       mapTitle: "Tray zone map",
       legendAria: "Tray status legend",
       clearFilters: "Clear filters",
       layoutNote: "Grouped by zone — not a location map.",
       zoneDistributionAria: "Status distribution in {zone}",
+      showingCount: "Showing {shown}/{total} trays",
     },
     grid: {
       zoneUnzoned: "Unzoned",
