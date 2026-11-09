@@ -88,7 +88,9 @@ describe("OUT-01 document detail drawer", () => {
       "MuiDrawer-anchorRight",
     );
     expect(
-      await screen.findByRole("tab", { name: "Tổng quan" }),
+      await screen.findByRole("tab", {
+        name: translate("vi", "outbound.detail.step1"),
+      }),
     ).toBeInTheDocument();
     expect(screen.getByText("MA-OUT-001")).toBeInTheDocument();
     expect(screen.getByText("03/11/2026 08:15")).toBeInTheDocument();

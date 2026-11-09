@@ -5,6 +5,7 @@ import "./outbound-dialog.css";
 import "./outbound-detail-drawer.css";
 import dayjs from "dayjs";
 import { OutboundNfcProducts } from "./OutboundNfcProducts";
+import { OutboundEditInfoModal } from "./OutboundEditInfoModal";
 import {
   Box,
   Grid,
@@ -200,6 +201,9 @@ export function AlignedOutboundDetailModal({
   const canPrepareLabel =
     WMS_ACTION_PERMISSIONS.PACKING_LABEL_PREVIEW.some(can) ||
     WMS_ACTION_PERMISSIONS.PACKING_LABEL_READY.some(can);
+  const canEditHeader =
+    can("outbound.request.manual_create") || can("outbound.import");
+  const canAttach = can("outbound.scan") || can("outbound.post");
   const dialog = useDialogExit(onClose);
   const queryClient = useQueryClient();
   const [version, setVersion] = useState<number | null>(null);
@@ -224,6 +228,7 @@ export function AlignedOutboundDetailModal({
   const [labelWarning, setLabelWarning] = useState<string | null>(null);
   const [labelPreviewOpen, setLabelPreviewOpen] = useState(false);
   const [selectedPanel, setSelectedPanel] = useState<DetailPanel | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [postConfirmOpen, setPostConfirmOpen] = useState(false);
   const postKeyRef = useRef<string | null>(null);
   // Xác nhận trước khi gỡ đối chiếu — confirmDialog PHẢI render trong cây bên dưới.
@@ -716,6 +721,19 @@ export function AlignedOutboundDetailModal({
         {...dialog.dialogProps}
         width={820}
         title={drawerTitle}
+        actions={
+          doc?.status === "DRAFT" && canEditHeader ? (
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ justifyContent: "flex-end" }}
+            >
+              <ActionButton kind="edit" onClick={() => setEditOpen(true)}>
+                {t("outbound.edit.action")}
+              </ActionButton>
+            </Stack>
+          ) : undefined
+        }
       >
         <Stack spacing={2}>
           <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
@@ -1349,6 +1367,19 @@ export function AlignedOutboundDetailModal({
         label={packingLabel ?? null}
         onClose={() => setLabelPreviewOpen(false)}
       />
+
+      {editOpen ? (
+        <OutboundEditInfoModal
+          documentId={documentId}
+          canAttach={canAttach}
+          onClose={() => setEditOpen(false)}
+          onSaved={() => {
+            setEditOpen(false);
+            onChanged?.();
+            void detailQuery.refetch();
+          }}
+        />
+      ) : null}
 
       {confirmDialog}
     </>

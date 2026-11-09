@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { fireEvent, screen } from "@testing-library/react";
 import { cleanupTestState } from "@/test/setup";
 import { renderWithProviders } from "@/test/test-utils";
+import { translate } from "@/shared/i18n/useT";
 
 const services = vi.hoisted(() => ({
   fetchOutboundDetail: vi.fn(),
@@ -24,6 +25,9 @@ vi.mock("@/shared/components/forms/CameraScanModal", () => ({
 }));
 vi.mock("@/modules/outbound/components/PackingLabelPreviewDialog", () => ({
   PackingLabelPreviewDialog: () => null,
+}));
+vi.mock("./OutboundEditInfoModal", () => ({
+  OutboundEditInfoModal: () => <div data-testid="edit-info-modal" />,
 }));
 
 import { AlignedOutboundDetailModal } from "./AlignedOutboundDetailModal";
@@ -133,4 +137,33 @@ it("opens the outbound detail as a right panel with grouped label actions", asyn
 
   fireEvent.click(screen.getByRole("tab", { name: "Chứng từ đính kèm" }));
   expect(await screen.findByTestId("attachments-panel")).toBeInTheDocument();
+});
+
+it("offers the header edit action for a DRAFT and opens the edit form", async () => {
+  const detail = await services.fetchOutboundDetail();
+  services.fetchOutboundDetail.mockResolvedValue({
+    ...detail,
+    document: { ...detail.document, status: "DRAFT" },
+  });
+  renderWithProviders(
+    <AlignedOutboundDetailModal documentId="OUT-1" onClose={vi.fn()} />,
+  );
+
+  const edit = await screen.findByRole("button", {
+    name: translate("vi", "outbound.edit.action"),
+  });
+  fireEvent.click(edit);
+  expect(await screen.findByTestId("edit-info-modal")).toBeInTheDocument();
+});
+
+it("does not offer the header edit action after the document leaves DRAFT", async () => {
+  renderWithProviders(
+    <AlignedOutboundDetailModal documentId="OUT-1" onClose={vi.fn()} />,
+  );
+  await screen.findByText("PL-PX-20261103-001");
+  expect(
+    screen.queryByRole("button", {
+      name: translate("vi", "outbound.edit.action"),
+    }),
+  ).toBeNull();
 });
