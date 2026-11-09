@@ -5291,6 +5291,8 @@ export const MESSAGES_EN: MessageTree = {
       warehouseActive: "Active",
       warehouseInactive: "Inactive",
       navigation: "Putaway navigation",
+      collapseTabs: "Collapse putaway sections",
+      expandTabs: "Show putaway sections",
       pendingTab: "Pending",
       ordersTab: "Putaway orders",
       traysTab: "Tray list",
@@ -5321,6 +5323,7 @@ export const MESSAGES_EN: MessageTree = {
       selectedCount: "{count} BOX selected",
       clearSelection: "Clear selection",
       createSelected: "Create an order for the selected box",
+      packMultiple: "Pack multiple boxes into one tray",
       selectPage: "Select all boxes on this page",
       boxCode: "Box code",
       componentName: "Component name",
@@ -5386,6 +5389,10 @@ export const MESSAGES_EN: MessageTree = {
         "Invariant violation: creating a putaway task must not change stock.",
       draftCreated:
         "Putaway draft created. Confirm it in the list to finish assigning the box to the tray.",
+      draftCreatedMany:
+        "Created {count} draft putaway tasks. Confirm them in the list to finish assigning the boxes to the tray.",
+      createManyPartial:
+        "Created {created}/{total} putaway tasks. The rest could not be created: {reason}",
       createFailed: "Could not create the putaway task.",
       invariantConfirm:
         "Invariant violation: confirming a putaway must not create an inventory movement.",
@@ -5449,6 +5456,10 @@ export const MESSAGES_EN: MessageTree = {
       emptyHistory: "No putaway history yet",
       totalRecords: "Total {count} records",
       dialogTitleWithBox: "Put {code} into a tray",
+      dialogTitleWithBoxes: "Put {boxes} into a tray",
+      boxNumber: "Box {index}",
+      trayDestination: "Destination tray",
+      chainAria: "Box-to-tray packing flow",
       dialogTitle: "PTW-01 · Put into a tray",
       creating: "Creating...",
       createDraftButton: "Create putaway task",

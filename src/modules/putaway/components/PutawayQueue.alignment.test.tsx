@@ -37,6 +37,7 @@ function renderQueue(
     onRefresh: vi.fn(),
     onView: vi.fn(),
     onCreate: vi.fn(),
+    onCreateMany: vi.fn(),
     onConfirm: vi.fn(),
     onCancel: vi.fn(),
     ...overrides,

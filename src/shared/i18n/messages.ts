@@ -5319,6 +5319,7 @@ export const MESSAGES_VI = {
       selectedCount: "Đã chọn {count} BOX",
       clearSelection: "Bỏ chọn",
       createSelected: "Tạo lệnh cho BOX đã chọn",
+      packMultiple: "Xếp nhiều hộp vào 1 khay",
       selectPage: "Chọn tất cả BOX trên trang",
       boxCode: "Mã BOX",
       componentName: "Tên linh kiện",
@@ -5384,6 +5385,10 @@ export const MESSAGES_VI = {
         "Lỗi bất biến: tạo lệnh xếp khay không được thay đổi tồn kho.",
       draftCreated:
         "Đã tạo lệnh xếp khay nháp. Xác nhận trên danh sách để hoàn tất gán hộp vào khay.",
+      draftCreatedMany:
+        "Đã tạo {count} lệnh xếp khay nháp. Xác nhận trên danh sách để hoàn tất gán các hộp vào khay.",
+      createManyPartial:
+        "Đã tạo {created}/{total} lệnh xếp khay. Phần còn lại chưa tạo được: {reason}",
       createFailed: "Không tạo được lệnh xếp khay.",
       invariantConfirm:
         "Lỗi bất biến: xác nhận xếp khay không được tạo biến động tồn.",
@@ -5446,6 +5451,10 @@ export const MESSAGES_VI = {
       emptyHistory: "Chưa có lịch sử xếp khay",
       totalRecords: "Tổng {count} bản ghi",
       dialogTitleWithBox: "Xếp {code} vào khay",
+      dialogTitleWithBoxes: "Xếp {boxes} vào khay",
+      boxNumber: "Hộp {index}",
+      trayDestination: "Khay đích",
+      chainAria: "Luồng xếp các hộp vào khay",
       dialogTitle: "PTW-01 · Xếp vào khay",
       creating: "Đang tạo...",
       createDraftButton: "Tạo lệnh xếp khay",

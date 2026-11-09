@@ -34,6 +34,7 @@ type Props = {
   onRefresh: () => void;
   onView: (row: PutawayTask) => void;
   onCreate: (row: PutawayTask) => void;
+  onCreateMany: (rows: PutawayTask[]) => void;
   onConfirm: (row: PutawayTask) => void;
   onCancel: (row: PutawayTask) => void;
 };
@@ -83,6 +84,10 @@ export function PutawayQueue(props: Props) {
     safePage * pageSize,
   );
   const selectedRows = rows.filter((row) => selectedIds.has(row.id));
+  const multiPending =
+    !orders &&
+    selectedRows.length >= 2 &&
+    selectedRows.every((row) => row.status === "RECEIVED_PENDING_PUTAWAY");
   const allChecked =
     pageRows.length > 0 && pageRows.every((row) => selectedIds.has(row.id));
   const someChecked = pageRows.some((row) => selectedIds.has(row.id));
@@ -203,25 +208,37 @@ export function PutawayQueue(props: Props) {
             <span>
               {t("putaway.queue.selectedCount", { count: selectedRows.length })}
             </span>
-            <button
-              type="button"
-              className="ptw-text-button"
-              onClick={() => setSelectedIds(new Set())}
-            >
-              {t("putaway.queue.clearSelection")}
-            </button>
-            {!orders &&
-            selectedRows.length === 1 &&
-            selectedRows[0].status === "RECEIVED_PENDING_PUTAWAY" ? (
+            <div className="ptw-selection-actions">
+              {!orders &&
+              selectedRows.length === 1 &&
+              selectedRows[0].status === "RECEIVED_PENDING_PUTAWAY" ? (
+                <button
+                  type="button"
+                  className="ptw-row-action"
+                  disabled={!canManage}
+                  onClick={() => props.onCreate(selectedRows[0])}
+                >
+                  {t("putaway.queue.createSelected")}
+                </button>
+              ) : null}
+              {multiPending ? (
+                <button
+                  type="button"
+                  className="ptw-row-action ptw-selection-action"
+                  disabled={!canManage}
+                  onClick={() => props.onCreateMany(selectedRows)}
+                >
+                  {t("putaway.queue.packMultiple")}
+                </button>
+              ) : null}
               <button
                 type="button"
-                className="ptw-row-action"
-                disabled={!canManage}
-                onClick={() => props.onCreate(selectedRows[0])}
+                className="ptw-text-button"
+                onClick={() => setSelectedIds(new Set())}
               >
-                {t("putaway.queue.createSelected")}
+                {t("putaway.queue.clearSelection")}
               </button>
-            ) : null}
+            </div>
           </div>
         ) : null}
         <div

@@ -674,6 +674,137 @@
   color: var(--ptw-link);
   font-weight: 500;
 }
+.hn-putaway-page .ptw-selection-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-left: auto;
+}
+.hn-putaway-page .ptw-selection .ptw-selection-action {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ptw-create-drawer .ptw-box-chain {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  margin: 0 0 16px;
+  padding: 0 0 4px;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.ptw-create-drawer .ptw-box-chain-step {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.ptw-create-drawer .ptw-box-chain-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 232px;
+  padding: 12px 14px;
+  border: 1px solid var(--ptw-line);
+  border-radius: var(--ptw-radius);
+  background: var(--ptw-card);
+}
+.ptw-create-drawer .ptw-box-chain-card.is-destination {
+  width: 190px;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--ptw-primary) 45%, var(--ptw-line));
+  background: var(--ptw-pale);
+}
+.ptw-create-drawer .ptw-box-chain-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ptw-create-drawer .ptw-box-chain-box-label {
+  color: var(--ptw-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+.ptw-create-drawer .ptw-box-chain-box-code,
+.ptw-create-drawer .ptw-box-chain-tray-code {
+  color: var(--ptw-heading);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.ptw-create-drawer .ptw-box-chain-tray-code {
+  font-size: 16px;
+}
+.ptw-create-drawer .ptw-box-chain-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+}
+.ptw-create-drawer .ptw-box-chain-field {
+  min-width: 0;
+}
+.ptw-create-drawer .ptw-box-chain-field.is-wide {
+  grid-column: 1 / -1;
+}
+.ptw-create-drawer .ptw-box-chain-field dt {
+  color: var(--ptw-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+.ptw-create-drawer .ptw-box-chain-field dd {
+  margin: 0;
+  color: var(--ptw-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.ptw-create-drawer .ptw-box-chain-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  color: var(--ptw-link);
+}
+.ptw-create-drawer .ptw-box-chain-arrow .fi {
+  font-size: 18px;
+}
+.ptw-create-drawer .ptw-box-chain-tray-location {
+  color: var(--ptw-muted);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .ptw-create-drawer .ptw-box-chain {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+  .ptw-create-drawer .ptw-box-chain-step {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .ptw-create-drawer .ptw-box-chain-card,
+  .ptw-create-drawer .ptw-box-chain-card.is-destination {
+    width: 100%;
+  }
+  .ptw-create-drawer .ptw-box-chain-arrow {
+    align-self: center;
+    width: auto;
+    height: 26px;
+    transform: rotate(90deg);
+  }
+}
 .hn-putaway-page :is(.ptw-empty, .ptw-loading) {
   padding: 44px 24px;
   color: var(--ptw-muted);

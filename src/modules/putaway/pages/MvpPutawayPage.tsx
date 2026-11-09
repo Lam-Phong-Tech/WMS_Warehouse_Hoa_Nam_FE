@@ -42,6 +42,7 @@ import {
 import { CameraScanModal } from "@/shared/components/forms/CameraScanModal";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { TraySelectionGrid } from "@/modules/putaway/components/TraySelectionGrid";
+import { BoxChain } from "@/modules/putaway/components/BoxChain";
 import {
   hasAnyWmsPermission,
   WMS_PERMISSION_CATALOG as P,
@@ -185,7 +186,7 @@ export default function MvpPutawayPage() {
   const [historySearchDraft, setHistorySearchDraft] = useState("");
   const [historyPageSize, setHistoryPageSize] = useState(10);
   const [historyPage, setHistoryPage] = useState(1);
-  const [selected, setSelected] = useState<PutawayTask | null>(null);
+  const [selectedBoxes, setSelectedBoxes] = useState<PutawayTask[]>([]);
   const [detailSnapshot, setDetailRow] = useState<PutawayTask | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [trayScanValue, setTrayScanValue] = useState("");
@@ -265,6 +266,17 @@ export default function MvpPutawayPage() {
   }, [detailMissing]);
   const history = useMemo(() => historyQuery.data ?? [], [historyQuery.data]);
   const trays = traysQuery.data ?? [];
+  const selected = selectedBoxes[0] ?? null;
+  const isMultiBox = selectedBoxes.length > 1;
+  const selectedBoxesPending =
+    selectedBoxes.length > 0 &&
+    selectedBoxes.every((box) => box.status === "RECEIVED_PENDING_PUTAWAY");
+  const selectedQuantity = selectedBoxes.reduce(
+    (total, box) => total + box.quantity,
+    0,
+  );
+  const selectedTray =
+    trays.find((tray) => tray.container_id === putawayForm.to_tray_id) ?? null;
 
   const filteredHistory = useMemo(() => {
     const keyword = historySearchDraft.trim().toLowerCase();
@@ -300,7 +312,7 @@ export default function MvpPutawayPage() {
   };
 
   const closePutaway = () => {
-    setSelected(null);
+    setSelectedBoxes([]);
     setPutawayForm({ to_tray_id: "", location_hint: "", note: "" });
     resetTarget();
   };
@@ -310,13 +322,26 @@ export default function MvpPutawayPage() {
       toast.error(t("putaway.page.onlyPendingBox"));
       return;
     }
-    setSelected(row);
+    setSelectedBoxes([row]);
     resetTarget();
     setPutawayForm({
       to_tray_id: row.to_tray_id ?? "",
       location_hint: row.location_hint ?? "",
       note: "",
     });
+  };
+
+  const openMultiPutaway = (rows: PutawayTask[]) => {
+    const packable = rows.filter(
+      (row) => row.status === "RECEIVED_PENDING_PUTAWAY",
+    );
+    if (packable.length < 2) {
+      toast.error(t("putaway.page.onlyPendingBox"));
+      return;
+    }
+    setSelectedBoxes(packable);
+    resetTarget();
+    setPutawayForm({ to_tray_id: "", location_hint: "", note: "" });
   };
 
   useEffect(() => {
@@ -385,8 +410,8 @@ export default function MvpPutawayPage() {
   }, [refetchTraysQuery]);
 
   const createDraft = async () => {
-    if (!selected || !canManage) return;
-    if (selected.status !== "RECEIVED_PENDING_PUTAWAY") {
+    if (!selectedBoxes.length || !canManage) return;
+    if (!selectedBoxesPending) {
       toast.error(t("putaway.page.boxNotPending"));
       return;
     }
@@ -395,28 +420,59 @@ export default function MvpPutawayPage() {
       return;
     }
 
-    try {
-      const targetTray = trays.find(
-        (tray) => tray.container_id === putawayForm.to_tray_id,
-      );
-      if (!targetTray) {
-        setPutawayForm((current) => ({ ...current, to_tray_id: "" }));
-        toast.error(t("putaway.page.trayUnavailable"));
-        return;
-      }
+    const targetTray = trays.find(
+      (tray) => tray.container_id === putawayForm.to_tray_id,
+    );
+    if (!targetTray) {
+      setPutawayForm((current) => ({ ...current, to_tray_id: "" }));
+      toast.error(t("putaway.page.trayUnavailable"));
+      return;
+    }
 
-      const result = await createMutation.mutateAsync({
-        box_container_id: selected.box_container_id,
-        to_tray_id: targetTray.container_id,
-        location_hint: putawayForm.location_hint?.trim() || null,
-        note: putawayForm.note?.trim() || null,
-      });
-      if (result.stock_effect !== "NONE" || result.movement_created !== false) {
-        throw new Error(t("putaway.page.invariantCreate"));
+    const createdIds: string[] = [];
+    try {
+      for (const box of selectedBoxes) {
+        const result = await createMutation.mutateAsync({
+          box_container_id: box.box_container_id,
+          to_tray_id: targetTray.container_id,
+          location_hint: putawayForm.location_hint?.trim() || null,
+          note: putawayForm.note?.trim() || null,
+        });
+        if (
+          result.stock_effect !== "NONE" ||
+          result.movement_created !== false
+        ) {
+          throw new Error(t("putaway.page.invariantCreate"));
+        }
+        createdIds.push(box.id);
       }
-      toast.success(t("putaway.page.draftCreated"));
+      toast.success(
+        selectedBoxes.length === 1
+          ? t("putaway.page.draftCreated")
+          : t("putaway.page.draftCreatedMany", {
+              count: selectedBoxes.length,
+            }),
+      );
       closePutaway();
     } catch (error) {
+      if (createdIds.length > 0) {
+        // Giữ lại đúng các BOX chưa tạo được để lần bấm sau không gửi trùng
+        // BOX đã có DRAFT (BE sẽ trả PUTAWAY_DRAFT_EXISTS).
+        setSelectedBoxes((current) =>
+          current.filter((box) => !createdIds.includes(box.id)),
+        );
+        toast.error(
+          t("putaway.page.createManyPartial", {
+            created: createdIds.length,
+            total: selectedBoxes.length,
+            reason: getApiErrorMessage(
+              error,
+              t("putaway.page.createFailed"),
+            ),
+          }),
+        );
+        return;
+      }
       toast.error(getApiErrorMessage(error, t("putaway.page.createFailed")));
     }
   };
@@ -660,6 +716,7 @@ export default function MvpPutawayPage() {
           }}
           onView={setDetailRow}
           onCreate={openPutaway}
+          onCreateMany={openMultiPutaway}
           onConfirm={confirmWithPrompt}
           onCancel={cancelWithPrompt}
         />
@@ -765,7 +822,7 @@ export default function MvpPutawayPage() {
         <Drawer
           className="ptw-create-drawer"
           anchor="right"
-          open={Boolean(selected)}
+          open={selectedBoxes.length > 0}
           onClose={guardBackdropClose(closePutaway)}
           slotProps={{
             paper: { role: "dialog", "aria-labelledby": "ptw-create-title" },
@@ -774,11 +831,19 @@ export default function MvpPutawayPage() {
           <div className="ptw-drawer-shell">
             <header className="ptw-drawer-header">
               <h2 id="ptw-create-title">
-                {selected
-                  ? t("putaway.page.dialogTitleWithBox", {
-                      code: selected.box_code,
+                {isMultiBox
+                  ? t("putaway.page.dialogTitleWithBoxes", {
+                      boxes: selectedBoxes
+                        .map((_, index) =>
+                          t("putaway.page.boxNumber", { index: index + 1 }),
+                        )
+                        .join(", "),
                     })
-                  : t("putaway.page.dialogTitle")}
+                  : selected
+                    ? t("putaway.page.dialogTitleWithBox", {
+                        code: selected.box_code,
+                      })
+                    : t("putaway.page.dialogTitle")}
               </h2>
               <div className="ptw-drawer-actions">
                 <ActionButton
@@ -786,7 +851,7 @@ export default function MvpPutawayPage() {
                   onClick={() => void createDraft()}
                   disabled={
                     !canManage ||
-                    selected?.status !== "RECEIVED_PENDING_PUTAWAY" ||
+                    !selectedBoxesPending ||
                     !putawayForm.to_tray_id ||
                     createMutation.isPending
                   }
@@ -805,10 +870,15 @@ export default function MvpPutawayPage() {
             <div className="ptw-drawer-body">
               <CoordinatedLoadingBoundary
                 mode="drawer"
-                active={Boolean(selected)}
+                active={selectedBoxes.length > 0}
               >
                 <>
-                  {selected ? (
+                  {isMultiBox ? (
+                    <BoxChain
+                      boxes={selectedBoxes}
+                      selectedTray={selectedTray}
+                    />
+                  ) : selected ? (
                     <Box
                       sx={{
                         border: "1px solid",
@@ -934,7 +1004,7 @@ export default function MvpPutawayPage() {
                       <TraySelectionGrid
                         trays={trays}
                         selectedTrayId={putawayForm.to_tray_id}
-                        pendingQuantity={selected?.quantity}
+                        pendingQuantity={selectedQuantity}
                         onSelect={selectTray}
                         loading={traysQuery.isLoading}
                         disabled={!canManage}

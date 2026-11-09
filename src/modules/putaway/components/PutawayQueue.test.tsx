@@ -37,6 +37,7 @@ function props(tasks: PutawayTask[]) {
     onRefresh: vi.fn(),
     onView: vi.fn(),
     onCreate: vi.fn(),
+    onCreateMany: vi.fn(),
     onConfirm: vi.fn(),
     onCancel: vi.fn(),
   };
@@ -144,7 +145,48 @@ describe("PTW-00 queue interactions", () => {
     ).toHaveValue("20");
   });
 
-  it("opens the exact BOX and creates from a single selection without a bulk mutation", async () => {
+  it("offers a multi-box tray action for two or more pending BOX", async () => {
+    const user = userEvent.setup();
+    const rows = [task(1), task(2)];
+    const input = props(rows);
+    renderWithProviders(<PutawayQueue {...input} />);
+    await user.click(screen.getByRole("checkbox", { name: "Chọn BOX BOX-01" }));
+    expect(
+      screen.queryByRole("button", { name: "Xếp nhiều hộp vào 1 khay" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }));
+    await user.click(
+      screen.getByRole("button", { name: "Xếp nhiều hộp vào 1 khay" }),
+    );
+    expect(input.onCreateMany).toHaveBeenCalledExactlyOnceWith(rows);
+    await user.click(screen.getByRole("button", { name: "Bỏ chọn" }));
+    expect(
+      screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }),
+    ).not.toBeChecked();
+    expect(input.onCreate).not.toHaveBeenCalled();
+  });
+
+  it("hides the multi-box action when a selected BOX is already stored", async () => {
+    const user = userEvent.setup();
+    const input = props([
+      task(1),
+      task(2, { status: "STORED" }),
+      task(3, { status: "STORED" }),
+    ]);
+    renderWithProviders(<PutawayQueue {...input} />);
+    await selectFilter(user, "Trạng thái BOX", "Tất cả");
+    await user.click(
+      screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: "Chọn BOX BOX-03" }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Xếp nhiều hộp vào 1 khay" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the exact BOX and creates from a single selection", async () => {
     const user = userEvent.setup();
     const rows = [task(1), task(2)];
     const input = props(rows);
