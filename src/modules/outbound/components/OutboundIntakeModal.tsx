@@ -19,12 +19,16 @@ import {
   UiPagination,
   UiStatusBadge,
   UiTextField,
+  UiAlert,
   type UiStatusTone,
 } from "@/shared/ui";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/shared/api/api-error";
+import { uploadDocumentAttachment } from "@/shared/api/documentAttachmentService";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { PendingDocumentAttachments } from "@/shared/components/PendingDocumentAttachments";
+import type { PendingDocumentAttachment } from "@/shared/components/PendingDocumentAttachments";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -50,6 +54,7 @@ import {
   searchAvailableProductSkus,
   uploadOutboundRequestFile,
   validateOutboundRequestRows,
+  type ConsumeOutboundImportResult,
   type OutboundImportResult,
   type OutboundRequestRowInput,
 } from "@/modules/outbound/services/mvpOutboundService";
@@ -114,6 +119,8 @@ type LineResolution = { sku_id?: string; required_qty?: number };
 interface OutboundIntakeModalProps {
   open: boolean;
   canImport: boolean;
+  /** Quyền tải chứng từ (outbound.scan|outbound.post) — đúng cổng của route BE. */
+  canAttach: boolean;
   onClose: () => void;
   onConsumed: (outboundDocumentIds: string[]) => void;
 }
@@ -216,6 +223,7 @@ const PREVIEW_PAGE_SIZE = 10;
 export function OutboundIntakeModal({
   open,
   canImport,
+  canAttach,
   onClose,
   onConsumed,
 }: OutboundIntakeModalProps) {
@@ -270,6 +278,14 @@ export function OutboundIntakeModal({
     requestDate?: string;
     lines: Record<number, { product_id?: string; required_qty?: string }>;
   }>({ lines: {} });
+  // Chứng từ chờ: giữ tệp ở local tới khi consume toa xong mới upload, nên
+  // không có tệp mồ côi khi người dùng đóng form trước lúc tạo phiếu.
+  const [pendingFiles, setPendingFiles] = useState<PendingDocumentAttachment[]>(
+    [],
+  );
+  const [createdResult, setCreatedResult] =
+    useState<ConsumeOutboundImportResult | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const clearFieldError = (
     field: "recipientName" | "recipientPhone" | "requestDate",
@@ -505,11 +521,82 @@ export function OutboundIntakeModal({
     setRequestDate("");
     setLines([createEmptyLine()]);
     setFieldErrors({ lines: {} });
+    setPendingFiles([]);
+    setCreatedResult(null);
+    setUploading(false);
   };
 
-  const close = () => {
-    resetAll();
-    dialog.close();
+  const notifyCreated = (result: ConsumeOutboundImportResult) =>
+    toast.success(
+      t("outbound.intake.created", {
+        requests: result.outboundRequestIds.length,
+        documents: result.outboundDocumentIds.length,
+      }),
+    );
+
+  const selectFiles = (files: File[]) => {
+    if (uploading || createdResult) return;
+    const accepted: PendingDocumentAttachment[] = [];
+    for (const file of files) {
+      const result = checkFile(file, FILE_RULES.documentAttachment);
+      if (!result.ok) {
+        toast.error(result.message);
+        continue;
+      }
+      accepted.push({
+        id: makeKey("outbound-attachment"),
+        file,
+        status: "selected",
+      });
+    }
+    if (accepted.length) {
+      setPendingFiles((current) => [...current, ...accepted]);
+    }
+  };
+
+  const uploadPendingFiles = async (documentId: string) => {
+    setUploading(true);
+    let failed = false;
+    for (const entry of pendingFiles) {
+      if (entry.status === "uploaded") continue;
+      setPendingFiles((current) =>
+        current.map((item) =>
+          item.id === entry.id
+            ? { ...item, status: "uploading", error: undefined }
+            : item,
+        ),
+      );
+      try {
+        await uploadDocumentAttachment({
+          documentType: "OUTBOUND",
+          documentId,
+          file: entry.file,
+        });
+        setPendingFiles((current) =>
+          current.map((item) =>
+            item.id === entry.id ? { ...item, status: "uploaded" } : item,
+          ),
+        );
+      } catch (error) {
+        failed = true;
+        setPendingFiles((current) =>
+          current.map((item) =>
+            item.id === entry.id
+              ? {
+                  ...item,
+                  status: "failed",
+                  error: getApiErrorMessage(
+                    error,
+                    t("shared.attachments.uploadError"),
+                  ),
+                }
+              : item,
+          ),
+        );
+      }
+    }
+    setUploading(false);
+    return !failed;
   };
 
   const validateManualMutation = useMutation({
@@ -609,20 +696,57 @@ export function OutboundIntakeModal({
       );
     },
     onSuccess: (result) => {
-      toast.success(
-        t("outbound.intake.created", {
-          requests: result.outboundRequestIds.length,
-          documents: result.outboundDocumentIds.length,
-        }),
-      );
       const ids = result.outboundDocumentIds;
-      resetAll();
-      onConsumed(ids);
+      if (pendingFiles.length === 0) {
+        notifyCreated(result);
+        resetAll();
+        onConsumed(ids);
+        return;
+      }
+
+      setCreatedResult(result);
+      const documentId = ids[0];
+      if (!documentId) {
+        toast.error(t("outbound.intake.attachmentsNeedDocument"));
+        return;
+      }
+      // Upload sau khi consume thành công. Phiếu đã tồn tại nên retry chỉ được
+      // chạy lại vòng upload trên createdResult, tuyệt đối không consume lại.
+      void (async () => {
+        const ok = await uploadPendingFiles(documentId);
+        if (!ok) return;
+        notifyCreated(result);
+        resetAll();
+        onConsumed(ids);
+      })();
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, t("outbound.intake.createError")));
     },
   });
+
+  const busy = consumeMutation.isPending || uploading;
+
+  const close = () => {
+    if (busy) return;
+    const ids = createdResult?.outboundDocumentIds;
+    resetAll();
+    if (ids) onConsumed(ids);
+    else dialog.close();
+  };
+
+  const retryUploads = () => {
+    const result = createdResult;
+    const documentId = result?.outboundDocumentIds[0];
+    if (!result || !documentId || uploading) return;
+    void (async () => {
+      const ok = await uploadPendingFiles(documentId);
+      if (!ok) return;
+      notifyCreated(result);
+      resetAll();
+      onConsumed(result.outboundDocumentIds);
+    })();
+  };
 
   const handleAgencyChange = (nextAgencyId: string | null) => {
     setAgencyId(nextAgencyId);
@@ -902,6 +1026,10 @@ export function OutboundIntakeModal({
         className="hn-outbound-dialog hn-outbound-intake hn-outbound-intake-drawer"
         {...dialog.dialogProps}
         open={open && dialog.open}
+        onClose={(event, reason) => {
+          if (busy) return;
+          dialog.dialogProps.onClose?.(event, reason);
+        }}
         slotProps={{
           ...dialog.dialogProps.slotProps,
           paper: { "aria-label": t("outbound.intake.title") },
@@ -917,6 +1045,7 @@ export function OutboundIntakeModal({
             <ActionButton
               kind="edit"
               aria-pressed={mode === "manual"}
+              disabled={busy || Boolean(createdResult)}
               onClick={() => {
                 setMode("manual");
                 setPreview(null);
@@ -927,6 +1056,7 @@ export function OutboundIntakeModal({
             <ActionButton
               kind="import"
               aria-pressed={mode === "excel"}
+              disabled={busy || Boolean(createdResult)}
               onClick={() => {
                 setMode("excel");
                 setPreview(null);
@@ -939,6 +1069,7 @@ export function OutboundIntakeModal({
             kind="close"
             label={t("common.close")}
             onClick={close}
+            disabled={busy}
           />
         </header>
         <CoordinatedLoadingBoundary mode="drawer" active={open && dialog.open}>
@@ -1202,7 +1333,13 @@ export function OutboundIntakeModal({
                   <ActionButton
                     kind="view"
                     className="hn-outbound-dialog__primary"
-                    disabled={!canImport || validateManualMutation.isPending}
+                    disabled={
+                      !canImport ||
+                      validateManualMutation.isPending ||
+                      Boolean(createdResult) ||
+                      consumeMutation.isPending ||
+                      uploading
+                    }
                     onClick={handleValidateManual}
                   >
                     {validateManualMutation.isPending
@@ -1251,7 +1388,10 @@ export function OutboundIntakeModal({
                       !canImport ||
                       !file ||
                       Boolean(fileError) ||
-                      validateFileMutation.isPending
+                      validateFileMutation.isPending ||
+                      Boolean(createdResult) ||
+                      consumeMutation.isPending ||
+                      uploading
                     }
                     onClick={() => validateFileMutation.mutate()}
                   >
@@ -1368,37 +1508,71 @@ export function OutboundIntakeModal({
                     />
                   ) : null}
 
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
-                  >
-                    <ActionButton
-                      kind="confirm"
-                      disabled={!consumable || consumeMutation.isPending}
-                      onClick={() => consumeMutation.mutate()}
-                    >
-                      {consumeMutation.isPending
-                        ? t("outbound.intake.confirming")
-                        : t("outbound.intake.confirm")}
-                    </ActionButton>
-                    {!consumable ? (
-                      <Box
-                        sx={{
-                          typography: "body2",
-                          color: hasShortStock
-                            ? "warning.main"
-                            : "text.secondary",
-                        }}
+                  {createdResult ? (
+                    <Stack spacing={1.5}>
+                      <UiAlert
+                        tone={
+                          pendingFiles.some(
+                            (entry) => entry.status === "failed",
+                          )
+                            ? "warning"
+                            : "info"
+                        }
                       >
-                        {!canImport
-                          ? t("outbound.intake.noPermission")
-                          : hasShortStock
-                            ? t("outbound.intake.shortStockBlock")
-                            : t("outbound.intake.stillInvalid")}
-                      </Box>
-                    ) : null}
-                  </Stack>
+                        {t("outbound.intake.attachmentsCreated")}
+                      </UiAlert>
+                      {pendingFiles.some(
+                        (entry) => entry.status !== "uploaded",
+                      ) ? (
+                        <Box>
+                          <ActionButton
+                            kind="upload"
+                            disabled={
+                              uploading ||
+                              !createdResult.outboundDocumentIds[0]
+                            }
+                            onClick={retryUploads}
+                          >
+                            {uploading
+                              ? t("outbound.intake.attachmentsUploading")
+                              : t("outbound.intake.attachmentsRetry")}
+                          </ActionButton>
+                        </Box>
+                      ) : null}
+                    </Stack>
+                  ) : (
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}
+                    >
+                      <ActionButton
+                        kind="confirm"
+                        disabled={!consumable || consumeMutation.isPending}
+                        onClick={() => consumeMutation.mutate()}
+                      >
+                        {consumeMutation.isPending
+                          ? t("outbound.intake.confirming")
+                          : t("outbound.intake.confirm")}
+                      </ActionButton>
+                      {!consumable ? (
+                        <Box
+                          sx={{
+                            typography: "body2",
+                            color: hasShortStock
+                              ? "warning.main"
+                              : "text.secondary",
+                          }}
+                        >
+                          {!canImport
+                            ? t("outbound.intake.noPermission")
+                            : hasShortStock
+                              ? t("outbound.intake.shortStockBlock")
+                              : t("outbound.intake.stillInvalid")}
+                        </Box>
+                      ) : null}
+                    </Stack>
+                  )}
                   <ApiErrorAlert
                     error={consumeMutation.error}
                     title={t("outbound.intake.confirmErrorTitle")}
@@ -1406,10 +1580,26 @@ export function OutboundIntakeModal({
                 </Stack>
               </Box>
             ) : null}
+
+            {canAttach ? (
+              <PendingDocumentAttachments
+                files={pendingFiles}
+                busy={busy}
+                locked={Boolean(createdResult)}
+                onSelect={selectFiles}
+                onRemove={(id) => {
+                  if (busy) return;
+                  setPendingFiles((current) =>
+                    current.filter((entry) => entry.id !== id),
+                  );
+                }}
+                hint={t("outbound.intake.attachmentsHint")}
+              />
+            ) : null}
           </Stack>
         </CoordinatedLoadingBoundary>
         <footer className="hn-outbound-intake-drawer__footer">
-          <ActionButton kind="close" onClick={close}>
+          <ActionButton kind="close" onClick={close} disabled={busy}>
             {t("common.close")}
           </ActionButton>
         </footer>

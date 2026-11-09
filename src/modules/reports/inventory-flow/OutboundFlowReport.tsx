@@ -27,6 +27,7 @@ import {
 import {
   hasAnyWmsPermission,
   WMS_ACTION_PERMISSIONS,
+  WMS_PERMISSION_CATALOG,
 } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { reportStatusLabel } from "@/modules/reports/operations/report-labels";
@@ -524,6 +525,14 @@ export default function OutboundFlowReport() {
       WMS_ACTION_PERMISSIONS.OUTBOUND_REQUEST_MANUAL_CREATE,
       isSuperAdmin,
     );
+  const canAttach = hasAnyWmsPermission(
+    permissionCodes,
+    [
+      WMS_PERMISSION_CATALOG.OUTBOUND_SCAN,
+      WMS_PERMISSION_CATALOG.OUTBOUND_POST,
+    ],
+    isSuperAdmin,
+  );
   const updating =
     loading ||
     fetching ||
@@ -1691,6 +1700,7 @@ export default function OutboundFlowReport() {
         <OutboundIntakeModal
           open
           canImport={canImport}
+          canAttach={canAttach}
           onClose={() => setIntakeOpen(false)}
           onConsumed={(documentIds) => {
             setIntakeOpen(false);

@@ -909,6 +909,14 @@ export const MESSAGES_VI = {
       needPreview: "Chưa có dữ liệu nhập để xác nhận.",
       created: "Đã tạo {requests} yêu cầu xuất và {documents} phiếu xuất nháp.",
       createError: "Không thể tạo phiếu xuất kho.",
+      attachmentsHint:
+        "Ảnh JPG/PNG/WEBP hoặc PDF, mỗi tệp ≤ 15MB. Tệp được tải lên sau khi tạo phiếu; nếu lô tạo nhiều phiếu, chứng từ gắn vào phiếu đầu tiên.",
+      attachmentsCreated:
+        "Phiếu xuất đã được tạo. Một số tệp chứng từ chưa tải lên được — thử lại hoặc bỏ tệp lỗi. Đóng cửa sổ sẽ bỏ các tệp chưa tải lên.",
+      attachmentsRetry: "Thử tải lại chứng từ",
+      attachmentsUploading: "Đang tải chứng từ...",
+      attachmentsNeedDocument:
+        "Không xác định được phiếu xuất vừa tạo để đính kèm chứng từ.",
       colRow: "Dòng",
       colRequestNo: "Mã yêu cầu",
       colRecipient: "Người nhận",

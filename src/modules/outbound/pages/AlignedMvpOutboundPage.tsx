@@ -91,6 +91,7 @@ export default function AlignedMvpOutboundPage() {
   const canImport =
     WMS_ACTION_PERMISSIONS.OUTBOUND_REQUEST_IMPORT.some(can) ||
     WMS_ACTION_PERMISSIONS.OUTBOUND_REQUEST_MANUAL_CREATE.some(can);
+  const canAttach = can("outbound.scan") || can("outbound.post");
   const canScan = can("outbound.scan");
   const listParams = {
     search: search || undefined,
@@ -637,6 +638,7 @@ export default function AlignedMvpOutboundPage() {
         <OutboundIntakeModal
           open
           canImport={canImport}
+          canAttach={canAttach}
           onClose={() => setIntakeOpen(false)}
           onConsumed={(documentIds) => {
             setIntakeOpen(false);

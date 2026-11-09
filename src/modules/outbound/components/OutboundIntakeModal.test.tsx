@@ -34,18 +34,28 @@ vi.mock("@/modules/outbound/services/mvpOutboundService", () => ({
   uploadOutboundRequestFile: vi.fn(),
   validateOutboundRequestRows: vi.fn(),
 }));
+vi.mock("@/shared/api/documentAttachmentService", () => ({
+  uploadDocumentAttachment: vi.fn(),
+}));
 
-import { validateOutboundRequestRows } from "@/modules/outbound/services/mvpOutboundService";
+import {
+  consumeOutboundImport,
+  validateOutboundRequestRows,
+} from "@/modules/outbound/services/mvpOutboundService";
+import { uploadDocumentAttachment } from "@/shared/api/documentAttachmentService";
 import { OutboundIntakeModal } from "./OutboundIntakeModal";
 
 const dateLabel = translate("vi", "outbound.intake.fieldRequestDate");
 const validateLabel = translate("vi", "outbound.intake.validate");
+const confirmLabel = translate("vi", "outbound.intake.confirm");
+const selectAttachmentsLabel = translate("vi", "shared.attachments.selectFiles");
 
-function renderIntake(canImport = true) {
+function renderIntake(canImport = true, canAttach = true) {
   return renderWithProviders(
     <OutboundIntakeModal
       open
       canImport={canImport}
+      canAttach={canAttach}
       onClose={vi.fn()}
       onConsumed={vi.fn()}
     />,
@@ -206,6 +216,138 @@ describe("OUT-01 request intake drawer", () => {
 
     expect(addLineButton).toHaveAttribute("data-action-appearance", "flat");
     expect(validateButton).toHaveClass("hn-outbound-dialog__primary");
+  });
+});
+
+describe("OUT-01 attachments during intake", () => {
+  const consumeResult = {
+    importId: "IMPORT-1",
+    status: "CONSUMED",
+    outboundRequestIds: ["REQ-1"],
+    outboundDocumentIds: ["OUT-1"],
+  };
+
+  async function renderAndValidate(onConsumed = vi.fn()) {
+    renderWithProviders(
+      <OutboundIntakeModal
+        open
+        canImport
+        canAttach
+        onClose={vi.fn()}
+        onConsumed={onConsumed}
+      />,
+    );
+    await fillRequiredFields();
+    fireEvent.click(screen.getByRole("button", { name: validateLabel }));
+    return {
+      onConsumed,
+      confirm: await screen.findByRole("button", { name: confirmLabel }),
+    };
+  }
+
+  function chooseFiles(files: File[]) {
+    fireEvent.change(screen.getByLabelText(selectAttachmentsLabel), {
+      target: { files },
+    });
+  }
+
+  it("keeps selected attachments local until the outbound document is created", async () => {
+    const file = new File(["image"], "delivery.png", { type: "image/png" });
+    const { onConsumed, confirm } = await renderAndValidate();
+    chooseFiles([file]);
+
+    expect(screen.getByText("delivery.png")).toBeInTheDocument();
+    expect(screen.getByText("Đã chọn · Chưa tải lên")).toBeInTheDocument();
+    expect(uploadDocumentAttachment).not.toHaveBeenCalled();
+
+    vi.mocked(consumeOutboundImport).mockResolvedValue(consumeResult);
+    vi.mocked(uploadDocumentAttachment).mockResolvedValue({} as never);
+    fireEvent.click(confirm);
+
+    await waitFor(() =>
+      expect(uploadDocumentAttachment).toHaveBeenCalledWith({
+        documentType: "OUTBOUND",
+        documentId: "OUT-1",
+        file,
+      }),
+    );
+    await waitFor(() => expect(onConsumed).toHaveBeenCalledWith(["OUT-1"]));
+  });
+
+  it("retries only failed attachments without consuming again", async () => {
+    const file = new File(["image"], "delivery.png", { type: "image/png" });
+    vi.mocked(consumeOutboundImport).mockResolvedValue(consumeResult);
+    vi.mocked(uploadDocumentAttachment)
+      .mockRejectedValueOnce(new Error("Upload failed"))
+      .mockResolvedValueOnce({} as never);
+    const { onConsumed, confirm } = await renderAndValidate();
+    chooseFiles([file]);
+    fireEvent.click(confirm);
+
+    const retry = await screen.findByRole("button", {
+      name: translate("vi", "outbound.intake.attachmentsRetry"),
+    });
+    expect(onConsumed).not.toHaveBeenCalled();
+    fireEvent.click(retry);
+
+    await waitFor(() => expect(onConsumed).toHaveBeenCalledWith(["OUT-1"]));
+    expect(consumeOutboundImport).toHaveBeenCalledTimes(1);
+    expect(
+      vi
+        .mocked(uploadDocumentAttachment)
+        .mock.calls.map(([input]) => input.file.name),
+    ).toEqual(["delivery.png", "delivery.png"]);
+  });
+
+  it("attaches the files to the first document when the import creates several", async () => {
+    const file = new File(["image"], "delivery.png", { type: "image/png" });
+    vi.mocked(consumeOutboundImport).mockResolvedValue({
+      ...consumeResult,
+      outboundRequestIds: ["REQ-1", "REQ-2"],
+      outboundDocumentIds: ["OUT-1", "OUT-2"],
+    });
+    vi.mocked(uploadDocumentAttachment).mockResolvedValue({} as never);
+    const { onConsumed, confirm } = await renderAndValidate();
+    chooseFiles([file]);
+    fireEvent.click(confirm);
+
+    await waitFor(() =>
+      expect(uploadDocumentAttachment).toHaveBeenCalledWith(
+        expect.objectContaining({ documentId: "OUT-1" }),
+      ),
+    );
+    await waitFor(() =>
+      expect(onConsumed).toHaveBeenCalledWith(["OUT-1", "OUT-2"]),
+    );
+  });
+
+  it("rejects invalid attachment types and oversized files before creation", async () => {
+    const oversized = new File(["image"], "large.png", {
+      type: "image/png",
+    });
+    Object.defineProperty(oversized, "size", { value: 16 * 1024 * 1024 });
+    await renderAndValidate();
+    chooseFiles([new File(["script"], "bad.exe"), oversized]);
+
+    expect(screen.queryByText("bad.exe")).not.toBeInTheDocument();
+    expect(screen.queryByText("large.png")).not.toBeInTheDocument();
+    expect(uploadDocumentAttachment).not.toHaveBeenCalled();
+  });
+
+  it("allows removing a local attachment before creating", async () => {
+    const { confirm } = await renderAndValidate();
+    chooseFiles([new File(["image"], "remove.png", { type: "image/png" })]);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Bỏ tệp remove.png" }),
+    );
+    expect(screen.queryByText("remove.png")).not.toBeInTheDocument();
+    expect(uploadDocumentAttachment).not.toHaveBeenCalled();
+
+    vi.mocked(consumeOutboundImport).mockResolvedValue(consumeResult);
+    fireEvent.click(confirm);
+    await waitFor(() => expect(consumeOutboundImport).toHaveBeenCalledOnce());
+    expect(uploadDocumentAttachment).not.toHaveBeenCalled();
   });
 });
 
