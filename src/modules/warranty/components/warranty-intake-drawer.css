@@ -15,6 +15,53 @@
   border-radius: 0;
 }
 
+/* Ô chọn ngày kiểu "Ngày chứng từ" của phiếu nhập (UiVuexyDateField + nút X),
+   thay cho ô date native trông khác hệ ở mọi trình duyệt. */
+.hn-war-intake-drawer .hn-war-intake-date {
+  position: relative;
+  min-width: 0;
+}
+
+.hn-war-intake-drawer .hn-war-intake-date .hn-vuexy-date-field {
+  height: var(--ops-control-height);
+  border-color: var(--war-dialog-border);
+  border-radius: var(--ops-radius-control);
+  background: var(--war-dialog-surface);
+  color: var(--war-dialog-ink);
+}
+
+.hn-war-intake-drawer .hn-war-intake-date .hn-vuexy-date-field:hover:not(:disabled),
+.hn-war-intake-drawer .hn-war-intake-date .hn-vuexy-date-field[aria-expanded="true"],
+.hn-war-intake-drawer .hn-war-intake-date .hn-vuexy-date-field:focus-visible {
+  border-color: var(--war-dialog-primary);
+  box-shadow: 0 0 0 3px var(--ops-focus-ring);
+}
+
+.hn-war-intake-drawer .hn-war-intake-date[aria-invalid="true"] .hn-vuexy-date-field {
+  border-color: var(--wms-error);
+}
+
+.hn-war-intake-drawer .hn-war-intake-date:has(.hn-war-intake-date-clear) [data-date-value] {
+  padding-right: 24px;
+}
+
+.hn-war-intake-drawer .hn-war-intake-date-clear {
+  position: absolute;
+  top: 6px;
+  right: 32px;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--war-dialog-muted);
+  font-size: 12px;
+}
+
+.hn-war-intake-drawer .hn-war-intake-date-clear:hover {
+  color: var(--war-dialog-ink);
+  background: var(--war-dialog-soft);
+}
+
 @media (max-width: 599px) {
   .hn-war-intake-drawer .MuiDialog-paper {
     width: 100vw;

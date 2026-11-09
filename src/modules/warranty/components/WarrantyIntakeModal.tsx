@@ -3,6 +3,7 @@ import "./warranty-intake-drawer.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveWarehouses } from "@/shared/data/reference-queries";
 import { useForm } from "react-hook-form";
+import dayjs from "dayjs";
 import { toast } from "sonner";
 import {
   Box,
@@ -17,11 +18,13 @@ import {
   UiAlert,
   UiDialog,
   UiFormAutocomplete,
+  UiFormField,
   UiIconButton,
   UiSelect,
   UiStatusBadge,
   UiText,
   UiTextField,
+  UiVuexyDateField,
 } from "@/shared/ui";
 import {
   DeleteOutlined,
@@ -76,7 +79,6 @@ import {
 } from "@/modules/warranty/components/warranty-attachment-limits";
 import {
   checkDate,
-  dateInputBounds,
   pastDateBounds,
 } from "@/shared/validation/date-rules";
 
@@ -273,7 +275,12 @@ export function WarrantyIntakeModal({
   // Ngày mua ≤ hôm nay (BE: before_or_equal:today); tính mỗi lần render để
   // không "đóng băng" hôm nay khi trang mở qua nửa đêm.
   const purchaseDateBounds = pastDateBounds();
-  const purchaseDateInput = dateInputBounds(purchaseDateBounds);
+  const parsedPurchaseDate = dayjs(purchaseDate);
+  const purchaseDateValue =
+    parsedPurchaseDate.isValid() &&
+    parsedPurchaseDate.format("YYYY-MM-DD") === purchaseDate
+      ? parsedPurchaseDate
+      : null;
   const phoneLiveCheck = customerPhone ? validatePhone(customerPhone) : null;
   const phoneLiveError =
     phoneLiveCheck && !phoneLiveCheck.isValid
@@ -1010,24 +1017,48 @@ export function WarrantyIntakeModal({
             />
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
-            <UiTextField
-              fullWidth
-              type="date"
+            <UiFormField
               label={t("warranty.intake.purchaseDate")}
-              value={purchaseDate}
-              onChange={(event) => {
-                setPurchaseDate(event.target.value);
-                clearFieldError("purchaseDate");
-              }}
-              slotProps={{
-                inputLabel: { shrink: true },
-                htmlInput: { ...purchaseDateInput },
-              }}
+              htmlFor="war-purchase-date"
               error={Boolean(fieldErrors.purchaseDate)}
               helperText={
-                fieldErrors.purchaseDate ?? t("warranty.intake.dateHelper")
+                <span id="war-purchase-date-help">
+                  {fieldErrors.purchaseDate ?? t("warranty.intake.dateHelper")}
+                </span>
               }
-            />
+            >
+              <Box
+                className="hn-war-intake-date"
+                role="group"
+                aria-label={t("warranty.intake.purchaseDate")}
+                aria-invalid={Boolean(fieldErrors.purchaseDate)}
+                aria-describedby="war-purchase-date-help"
+              >
+                <UiVuexyDateField
+                  id="war-purchase-date"
+                  field="warranty-purchase-date"
+                  aria-label={t("warranty.intake.purchaseDate")}
+                  value={purchaseDateValue}
+                  onChange={(next) => {
+                    setPurchaseDate(next?.format("YYYY-MM-DD") ?? "");
+                    clearFieldError("purchaseDate");
+                  }}
+                  minDate={purchaseDateBounds.minDate}
+                  maxDate={purchaseDateBounds.maxDate}
+                />
+                {purchaseDate ? (
+                  <ActionIconButton
+                    kind="close"
+                    className="hn-war-intake-date-clear"
+                    label={`${t("shared.form.autocompleteClear")}: ${t("warranty.intake.purchaseDate")}`}
+                    onClick={() => {
+                      setPurchaseDate("");
+                      clearFieldError("purchaseDate");
+                    }}
+                  />
+                ) : null}
+              </Box>
+            </UiFormField>
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
             <UiFormAutocomplete
