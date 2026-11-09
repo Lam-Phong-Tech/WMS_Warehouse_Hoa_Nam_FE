@@ -1,4 +1,3 @@
-import { BUSINESS_TIMEZONE } from "@/shared/utils/date-time";
 import { useEffect, useRef, useState } from "react";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import dayjs from "dayjs";
@@ -12,7 +11,6 @@ import type {
   OverviewPeriod,
 } from "./overview-data";
 import {
-  activeLocale,
   dashboardNow,
   fmt,
   MAP_OVERVIEW_MAX_RANGE_DAYS,
@@ -479,23 +477,6 @@ export function DashboardSnapshot({
         <div>
           <h1>{t(greetingKeyForHour(businessNow.hour()), { name })}</h1>
           <p>{t("dashboard.snapshot.greetingSub")}</p>
-        </div>
-        <div className="snapshot-time">
-          <span>
-            <DashIcon name="calendar-days" />
-            {businessNow.toDate().toLocaleDateString(activeLocale(), {
-              timeZone: BUSINESS_TIMEZONE,
-              weekday: "long",
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
-          <i />
-          <span>
-            <DashIcon name="circle-dot" />
-            {businessNow.format("HH:mm")}
-          </span>
         </div>
       </header>
 

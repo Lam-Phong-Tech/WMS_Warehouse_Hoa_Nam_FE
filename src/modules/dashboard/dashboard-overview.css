@@ -2764,7 +2764,7 @@
 }
 .snapshot-heading {
   display: grid;
-  grid-template-columns: 54px minmax(220px, 1fr) auto;
+  grid-template-columns: 54px minmax(220px, 1fr);
   align-items: center;
   gap: 14px;
   min-height: 58px;
@@ -2806,30 +2806,6 @@
   margin-top: 3px;
   color: var(--muted);
   font-size: 14px;
-}
-.snapshot-time {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  color: var(--primary-dark);
-  font-weight: 600;
-  white-space: nowrap;
-}
-.snapshot-time span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.snapshot-time svg {
-  width: 24px;
-  height: 24px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-}
-.snapshot-time > i {
-  height: 34px;
-  border-left: 1px solid var(--line);
 }
 .snapshot-kpis {
   display: grid;
@@ -3670,9 +3646,6 @@
   }
   .snapshot-heading {
     grid-template-columns: 50px 1fr;
-  }
-  .snapshot-time {
-    display: none;
   }
   .snapshot-kpis {
     grid-template-columns: repeat(2, 1fr);
