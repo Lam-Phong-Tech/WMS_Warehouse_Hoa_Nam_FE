@@ -706,12 +706,6 @@
   color: var(--war-primary);
   border-color: var(--war-line);
 }
-.hn-war04-case-picker__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
 .hn-war04-case-picker__body {
   display: grid;
   gap: 16px;

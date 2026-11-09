@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  UiDialog,
+  Box,
+  UiDrawer,
   UiPagination,
   UiStatusBadge,
   UiTextField,
@@ -95,15 +96,28 @@ export function ComponentIssueCasePicker({
   };
 
   return (
-    <UiDialog
+    <UiDrawer
       {...dialog.dialogProps}
       className="hn-war04-dialog hn-war04-case-picker"
-      maxWidth="md"
+      width={600}
+      slotProps={{ paper: { role: "dialog", "aria-modal": true } }}
       title={
-        <span className="hn-war04-case-picker__header">
-          <span>{tUi("updatedUi.text_011a7faf1f18")}</span>
-          <ActionIconButton kind="close" onClick={dialog.close} />
-        </span>
+        <Box
+          component="span"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+          }}
+        >
+          <Box component="span">{tUi("updatedUi.text_011a7faf1f18")}</Box>
+          <ActionIconButton
+            kind="close"
+            label={t("common.close")}
+            onClick={dialog.close}
+          />
+        </Box>
       }
       actions={<ActionButton kind="close" onClick={dialog.close} />}
     >
@@ -191,6 +205,6 @@ export function ComponentIssueCasePicker({
           />
         </div>
       </div>
-    </UiDialog>
+    </UiDrawer>
   );
 }
