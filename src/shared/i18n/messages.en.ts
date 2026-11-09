@@ -5412,6 +5412,18 @@ export const MESSAGES_EN: MessageTree = {
       cancelPromptContent:
         "The box will return to awaiting putaway; stock is unchanged.",
       cancelOk: "Cancel task",
+      confirmManyPromptTitle: "Confirm putaway for {count} BOX?",
+      confirmManyPromptContent:
+        "The boxes will be assigned to the selected tray. This action does not change stock quantity.",
+      cancelManyPromptTitle: "Cancel {count} draft putaway tasks?",
+      cancelManyPromptContent:
+        "The boxes will return to awaiting putaway; stock is unchanged.",
+      confirmManySuccess: "Confirmed putaway for {count} BOX.",
+      confirmManyPartial:
+        "Confirmed {success}/{total} BOX. The remaining BOX could not be confirmed.",
+      cancelManySuccess: "Cancelled {count} draft putaway tasks.",
+      cancelManyPartial:
+        "Cancelled {success}/{total} tasks. The remaining tasks could not be cancelled.",
       colBox: "Box",
       colSku: "SKU",
       colQuantity: "Quantity",

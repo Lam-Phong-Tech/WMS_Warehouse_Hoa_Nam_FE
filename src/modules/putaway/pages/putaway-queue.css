@@ -686,6 +686,9 @@
   font-weight: 600;
   white-space: nowrap;
 }
+.hn-putaway-page .ptw-selection .ptw-selection-action.is-danger {
+  color: var(--ptw-danger);
+}
 .ptw-create-drawer .ptw-box-chain {
   display: flex;
   align-items: stretch;

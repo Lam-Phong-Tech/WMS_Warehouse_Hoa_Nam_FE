@@ -511,6 +511,92 @@ export default function MvpPutawayPage() {
     }
   };
 
+  const confirmMany = async (rows: PutawayTask[]) => {
+    if (!canManage) return;
+    let success = 0;
+    let firstFailure: string | null = null;
+    for (const row of rows) {
+      if (!row.draft_id || !row.draft_version) {
+        firstFailure ??= t("putaway.page.confirmFailed");
+        continue;
+      }
+      try {
+        const result = await confirmMutation.mutateAsync({
+          id: row.draft_id,
+          version: row.draft_version,
+        });
+        if (
+          result.stock_effect !== "NONE" ||
+          result.movement_created !== false
+        ) {
+          throw new Error(t("putaway.page.invariantConfirm"));
+        }
+        success += 1;
+      } catch (error) {
+        firstFailure ??= getApiErrorMessage(
+          error,
+          t("putaway.page.confirmFailed"),
+        );
+      }
+    }
+    if (success === rows.length) {
+      toast.success(
+        t("putaway.page.confirmManySuccess", { count: success }),
+      );
+    } else if (success > 0) {
+      toast.error(
+        t("putaway.page.confirmManyPartial", {
+          success,
+          total: rows.length,
+        }),
+      );
+    } else {
+      toast.error(firstFailure ?? t("putaway.page.confirmFailed"));
+    }
+  };
+
+  const cancelMany = async (rows: PutawayTask[]) => {
+    if (!canManage) return;
+    let success = 0;
+    let firstFailure: string | null = null;
+    for (const row of rows) {
+      if (!row.draft_id || !row.draft_version) {
+        firstFailure ??= t("putaway.page.cancelFailed");
+        continue;
+      }
+      try {
+        const result = await cancelMutation.mutateAsync({
+          id: row.draft_id,
+          version: row.draft_version,
+        });
+        if (
+          result.stock_effect !== "NONE" ||
+          result.movement_created !== false
+        ) {
+          throw new Error(t("putaway.page.invariantCancel"));
+        }
+        success += 1;
+      } catch (error) {
+        firstFailure ??= getApiErrorMessage(
+          error,
+          t("putaway.page.cancelFailed"),
+        );
+      }
+    }
+    if (success === rows.length) {
+      toast.success(t("putaway.page.cancelManySuccess", { count: success }));
+    } else if (success > 0) {
+      toast.error(
+        t("putaway.page.cancelManyPartial", {
+          success,
+          total: rows.length,
+        }),
+      );
+    } else {
+      toast.error(firstFailure ?? t("putaway.page.cancelFailed"));
+    }
+  };
+
   const confirmWithPrompt = (row: PutawayTask) => {
     setConfirmPrompt({
       title: t("putaway.page.confirmPromptTitle"),
@@ -527,6 +613,29 @@ export default function MvpPutawayPage() {
       okText: t("putaway.page.cancelOk"),
       danger: true,
       onOk: () => cancel(row),
+    });
+  };
+
+  const confirmManyWithPrompt = (rows: PutawayTask[]) => {
+    setConfirmPrompt({
+      title: t("putaway.page.confirmManyPromptTitle", {
+        count: rows.length,
+      }),
+      content: t("putaway.page.confirmManyPromptContent"),
+      okText: t("putaway.page.confirmOk"),
+      onOk: () => confirmMany(rows),
+    });
+  };
+
+  const cancelManyWithPrompt = (rows: PutawayTask[]) => {
+    setConfirmPrompt({
+      title: t("putaway.page.cancelManyPromptTitle", {
+        count: rows.length,
+      }),
+      content: t("putaway.page.cancelManyPromptContent"),
+      okText: t("putaway.page.cancelOk"),
+      danger: true,
+      onOk: () => cancelMany(rows),
     });
   };
 
@@ -719,6 +828,8 @@ export default function MvpPutawayPage() {
           onCreateMany={openMultiPutaway}
           onConfirm={confirmWithPrompt}
           onCancel={cancelWithPrompt}
+          onConfirmMany={confirmManyWithPrompt}
+          onCancelMany={cancelManyWithPrompt}
         />
       ) : (
         <section

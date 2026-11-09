@@ -40,6 +40,8 @@ function renderQueue(
     onCreateMany: vi.fn(),
     onConfirm: vi.fn(),
     onCancel: vi.fn(),
+    onConfirmMany: vi.fn(),
+    onCancelMany: vi.fn(),
     ...overrides,
   };
   const view = renderWithProviders(

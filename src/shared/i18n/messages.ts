@@ -5408,6 +5408,18 @@ export const MESSAGES_VI = {
       cancelPromptContent:
         "Hộp sẽ quay lại trạng thái chờ xếp khay; tồn kho không đổi.",
       cancelOk: "Hủy lệnh",
+      confirmManyPromptTitle: "Xác nhận xếp khay cho {count} BOX?",
+      confirmManyPromptContent:
+        "Các BOX sẽ được gán vào khay đã chọn. Thao tác này không thay đổi số lượng tồn.",
+      cancelManyPromptTitle: "Hủy {count} lệnh xếp khay nháp?",
+      cancelManyPromptContent:
+        "Các hộp sẽ quay lại trạng thái chờ xếp khay; tồn kho không đổi.",
+      confirmManySuccess: "Đã xác nhận xếp khay cho {count} BOX.",
+      confirmManyPartial:
+        "Đã xác nhận {success}/{total} BOX. Các BOX còn lại chưa xác nhận được.",
+      cancelManySuccess: "Đã hủy {count} lệnh xếp khay nháp.",
+      cancelManyPartial:
+        "Đã hủy {success}/{total} lệnh. Các lệnh còn lại chưa hủy được.",
       colBox: "Hộp",
       colSku: "SKU",
       colQuantity: "Số lượng",

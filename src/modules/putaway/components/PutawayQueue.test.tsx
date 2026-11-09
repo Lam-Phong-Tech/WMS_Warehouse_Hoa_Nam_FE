@@ -40,6 +40,8 @@ function props(tasks: PutawayTask[]) {
     onCreateMany: vi.fn(),
     onConfirm: vi.fn(),
     onCancel: vi.fn(),
+    onConfirmMany: vi.fn(),
+    onCancelMany: vi.fn(),
   };
 }
 
@@ -184,6 +186,70 @@ describe("PTW-00 queue interactions", () => {
     expect(
       screen.queryByRole("button", { name: "Xếp nhiều hộp vào 1 khay" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("offers bulk confirm and cancel for multiple draft orders", async () => {
+    const user = userEvent.setup();
+    const rows = [
+      task(1, {
+        draft_id: "draft-1",
+        draft_version: 2,
+        to_tray_code: "TRAY-A-01",
+      }),
+      task(2, {
+        draft_id: "draft-2",
+        draft_version: 1,
+        to_tray_code: "TRAY-B-02",
+      }),
+    ];
+    const input = { ...props(rows), orders: true };
+    renderWithProviders(<PutawayQueue {...input} />);
+
+    await user.click(
+      screen.getByRole("checkbox", { name: "Chọn BOX BOX-01" }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Xác nhận xếp khay" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Hủy lệnh nháp" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Xác nhận xếp khay" }),
+    );
+    expect(input.onConfirmMany).toHaveBeenCalledExactlyOnceWith(rows);
+    await user.click(
+      screen.getByRole("button", { name: "Hủy lệnh nháp" }),
+    );
+    expect(input.onCancelMany).toHaveBeenCalledExactlyOnceWith(rows);
+  });
+
+  it("keeps bulk order actions disabled without manage permission", async () => {
+    const user = userEvent.setup();
+    const rows = [
+      task(1, { draft_id: "draft-1", draft_version: 1 }),
+      task(2, { draft_id: "draft-2", draft_version: 1 }),
+    ];
+    const input = { ...props(rows), orders: true, canManage: false };
+    renderWithProviders(<PutawayQueue {...input} />);
+    await user.click(
+      screen.getByRole("checkbox", { name: "Chọn BOX BOX-01" }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Xác nhận xếp khay" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Hủy lệnh nháp" }),
+    ).toBeDisabled();
+    expect(input.onConfirmMany).not.toHaveBeenCalled();
+    expect(input.onCancelMany).not.toHaveBeenCalled();
   });
 
   it("opens the exact BOX and creates from a single selection", async () => {

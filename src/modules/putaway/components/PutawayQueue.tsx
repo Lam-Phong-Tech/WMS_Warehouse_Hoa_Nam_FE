@@ -37,6 +37,8 @@ type Props = {
   onCreateMany: (rows: PutawayTask[]) => void;
   onConfirm: (row: PutawayTask) => void;
   onCancel: (row: PutawayTask) => void;
+  onConfirmMany: (rows: PutawayTask[]) => void;
+  onCancelMany: (rows: PutawayTask[]) => void;
 };
 
 export function PutawayQueue(props: Props) {
@@ -88,6 +90,10 @@ export function PutawayQueue(props: Props) {
     !orders &&
     selectedRows.length >= 2 &&
     selectedRows.every((row) => row.status === "RECEIVED_PENDING_PUTAWAY");
+  const multiOrders =
+    orders &&
+    selectedRows.length >= 2 &&
+    selectedRows.every((row) => Boolean(row.draft_id));
   const allChecked =
     pageRows.length > 0 && pageRows.every((row) => selectedIds.has(row.id));
   const someChecked = pageRows.some((row) => selectedIds.has(row.id));
@@ -230,6 +236,26 @@ export function PutawayQueue(props: Props) {
                 >
                   {t("putaway.queue.packMultiple")}
                 </button>
+              ) : null}
+              {multiOrders ? (
+                <>
+                  <button
+                    type="button"
+                    className="ptw-row-action ptw-selection-action"
+                    disabled={!canManage}
+                    onClick={() => props.onConfirmMany(selectedRows)}
+                  >
+                    {t("putaway.queue.confirm")}
+                  </button>
+                  <button
+                    type="button"
+                    className="ptw-row-action ptw-selection-action is-danger"
+                    disabled={!canManage}
+                    onClick={() => props.onCancelMany(selectedRows)}
+                  >
+                    {t("putaway.queue.cancelDraft")}
+                  </button>
+                </>
               ) : null}
               <button
                 type="button"

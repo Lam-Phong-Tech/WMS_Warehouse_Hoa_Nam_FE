@@ -69,6 +69,15 @@ const pendingTwo: PutawayTask = {
   quantity: 15,
   receipt_code: "PN-2026-003",
 };
+const draftTwo: PutawayTask = {
+  ...draft,
+  id: "pending-4",
+  box_container_id: "container-4",
+  box_code: "BOX-DRAFT-003",
+  draft_id: "draft-9",
+  draft_version: 2,
+  to_tray_code: "TRAY-B-02",
+};
 const stockNeutral: PutawayEvent = {
   id: "draft-8",
   box_container_id: "container-1",
@@ -373,6 +382,77 @@ describe("PTW-00 page workflows", () => {
     expect(
       calls.filter(([payload]) => payload.box_container_id === "container-3"),
     ).toHaveLength(2);
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("confirms and cancels multiple draft orders with bulk actions", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchPutawayTasks).mockResolvedValue([draft, draftTwo]);
+    renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);
+    await screen.findByRole("button", { name: "Lệnh xếp khay" });
+    await user.click(screen.getByRole("button", { name: "Lệnh xếp khay" }));
+    await screen.findByRole("button", { name: draft.box_code });
+    await user.click(
+      screen.getByRole("checkbox", { name: `Chọn BOX ${draft.box_code}` }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: `Chọn BOX ${draftTwo.box_code}` }),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Xác nhận xếp khay" }),
+    );
+    let dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByText("Xác nhận xếp khay cho 2 BOX?"),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Xác nhận" }));
+    await waitFor(() => expect(confirmPutawayTask).toHaveBeenCalledTimes(2));
+    expect(confirmPutawayTask).toHaveBeenNthCalledWith(1, "draft-8", 3);
+    expect(confirmPutawayTask).toHaveBeenNthCalledWith(2, "draft-9", 2);
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Hủy lệnh nháp" }),
+    );
+    dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByText("Hủy 2 lệnh xếp khay nháp?"),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Hủy lệnh" }));
+    await waitFor(() => expect(cancelPutawayTask).toHaveBeenCalledTimes(2));
+    expect(cancelPutawayTask).toHaveBeenNthCalledWith(1, "draft-8", 3);
+    expect(cancelPutawayTask).toHaveBeenNthCalledWith(2, "draft-9", 2);
+  });
+
+  it("continues bulk confirm when one draft fails and reports the rest", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchPutawayTasks).mockResolvedValue([draft, draftTwo]);
+    vi.mocked(confirmPutawayTask)
+      .mockResolvedValueOnce({ ...stockNeutral, status: "CONFIRMED" })
+      .mockRejectedValueOnce(new Error("Kết nối tạm thời bị gián đoạn"));
+    renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);
+    await screen.findByRole("button", { name: "Lệnh xếp khay" });
+    await user.click(screen.getByRole("button", { name: "Lệnh xếp khay" }));
+    await screen.findByRole("button", { name: draft.box_code });
+    await user.click(
+      screen.getByRole("checkbox", { name: `Chọn BOX ${draft.box_code}` }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: `Chọn BOX ${draftTwo.box_code}` }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Xác nhận xếp khay" }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Xác nhận" }));
+
+    await waitFor(() => expect(confirmPutawayTask).toHaveBeenCalledTimes(2));
+    expect(confirmPutawayTask).toHaveBeenNthCalledWith(2, "draft-9", 2);
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
