@@ -1715,7 +1715,7 @@ export function InboundScanModal({
               ) : null}
               {canCancel ? (
                 <ActionButton
-                  kind="cancel"
+                  kind="deactivate"
                   disabled={working}
                   onClick={() => setCancelOpen(true)}
                 >

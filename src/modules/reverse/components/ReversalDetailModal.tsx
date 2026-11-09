@@ -624,7 +624,7 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
                       }
                     />
                     <ActionButton
-                      kind="cancel"
+                      kind="deactivate"
                       disabled={
                         busy || cancelReason.trim().length < CANCEL_REASON_MIN
                       }

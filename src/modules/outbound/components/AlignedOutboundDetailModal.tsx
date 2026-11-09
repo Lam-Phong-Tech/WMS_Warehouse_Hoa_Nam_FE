@@ -832,7 +832,7 @@ export function AlignedOutboundDetailModal({
               sx={{ justifyContent: "flex-end" }}
             >
               {can("outbound.cancel") && mutable ? (
-                <ActionButton kind="cancel" onClick={() => setCancelOpen(true)}>
+                <ActionButton kind="deactivate" onClick={() => setCancelOpen(true)}>
                   {t("outbound.detail.cancelTrigger")}
                 </ActionButton>
               ) : null}
@@ -1382,7 +1382,7 @@ export function AlignedOutboundDetailModal({
                 {t("common.close")}
               </ActionButton>
               <ActionButton
-                kind="cancel"
+                kind="deactivate"
                 disabled={cancelMutation.isPending || !cancelReason.trim()}
                 onClick={() => {
                   const reason = cancelReason.trim();
