@@ -164,9 +164,20 @@ const SECTION_SX = {
   p: 2,
 } as const;
 
-function DetailField({ label, value }: { label: string; value: ReactNode }) {
+function DetailField({
+  label,
+  value,
+  size,
+}: {
+  label: ReactNode;
+  value: ReactNode;
+  size?: { xs?: number; sm?: number };
+}) {
   return (
-    <Grid className="hn-outbound-detail__field" size={{ xs: 12, sm: 6 }}>
+    <Grid
+      className="hn-outbound-detail__field"
+      size={size ?? { xs: 12, sm: 6 }}
+    >
       <Box
         sx={{
           typography: "caption",
@@ -1179,11 +1190,28 @@ export function AlignedOutboundDetailModal({
                           <DetailField
                             label={t("outbound.detail.fieldLabelCode")}
                             value={packingLabel.labelCode}
+                            size={{ xs: 12, sm: 4 }}
                           />
                           <DetailField
                             label={t("outbound.detail.fieldStatus")}
                             value={labelStatus(t, packingLabel.status)}
+                            size={{ xs: 12, sm: 4 }}
                           />
+                          <Grid
+                            size={{ xs: 12, sm: 4 }}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: { xs: "flex-start", sm: "flex-end" },
+                            }}
+                          >
+                            <ActionButton
+                              kind="view"
+                              onClick={() => setLabelPreviewOpen(true)}
+                            >
+                              {t("outbound.detail.previewLabel")}
+                            </ActionButton>
+                          </Grid>
                           <DetailField
                             label={t("outbound.detail.fieldLabelRecipient")}
                             value={
@@ -1191,27 +1219,25 @@ export function AlignedOutboundDetailModal({
                               doc.recipientName ||
                               EMPTY_TEXT
                             }
+                            size={{ xs: 12, sm: 4 }}
                           />
                           <DetailField
                             label={t("outbound.detail.fieldItemCount")}
                             value={packingLabel.itemCount}
+                            size={{ xs: 12, sm: 4 }}
                           />
                           <DetailField
                             label={t("outbound.detail.fieldSkuCount")}
                             value={packingLabel.skuCount}
+                            size={{ xs: 12, sm: 4 }}
                           />
                           <DetailField
                             label={t("outbound.detail.fieldSourceRequest")}
                             value={packingLabel.sourceRequestNo || EMPTY_TEXT}
+                            size={{ xs: 12, sm: 4 }}
                           />
                         </Grid>
                         <Box className="hn-outbound-detail__label-actions">
-                          <ActionButton
-                            kind="view"
-                            onClick={() => setLabelPreviewOpen(true)}
-                          >
-                            {t("outbound.detail.previewLabel")}
-                          </ActionButton>
                           <Stack
                             className="hn-outbound-detail__printer-actions"
                             direction="row"
