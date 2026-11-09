@@ -81,21 +81,8 @@
   min-width: 0;
   padding: 14px 16px;
   border: 1px solid var(--outbound-dialog-border);
-  border-left: 3px solid var(--ops-line);
   border-radius: var(--ops-radius-card);
   background: var(--outbound-dialog-surface);
-}
-
-.hn-outbound-intake__preview-row[data-state="success"] {
-  border-left-color: var(--ops-success);
-}
-
-.hn-outbound-intake__preview-row[data-state="warning"] {
-  border-left-color: var(--ops-warning);
-}
-
-.hn-outbound-intake__preview-row[data-state="error"] {
-  border-left-color: var(--ops-danger);
 }
 
 .hn-outbound-intake__preview-row-head {
@@ -337,4 +324,37 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
+}
+
+/* Tab Phiếu Toa hàng / Kết quả xem trước — đặt dưới header của drawer. */
+.hn-intake-tabs {
+  flex: none;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--ops-line);
+}
+@media (max-width: 600px) {
+  .hn-intake-tabs {
+    padding: 0 16px;
+  }
+}
+
+/* Empty state của tab Kết quả xem trước khi chưa kiểm tra. */
+.hn-intake-preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 24px;
+  text-align: center;
+  color: var(--ops-text);
+}
+.hn-intake-preview-empty-icon {
+  font-size: 40px;
+  color: var(--ops-muted);
+}
+.hn-intake-preview-empty-text {
+  max-width: 440px;
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
 }

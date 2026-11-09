@@ -974,6 +974,12 @@ export const MESSAGES_EN: MessageTree = {
         "request_no · sku_code · required_qty · recipient_name or customer_name; request_date · recipient_address · recipient_contact_phone · note",
       uploading: "Uploading...",
       upload: "Upload & preview",
+      formTab: "Requisition",
+      previewTab: "Preview result",
+      previewEmptyTitle: "Nothing to preview yet",
+      previewEmptyBody:
+        "Fill in the requisition (manually or from Excel), then click \"Preview result\" in the footer — validation will appear here.",
+      backToForm: "Back to the requisition",
       uploadErrorTitle: "Could not validate the Excel file",
       previewTitle: "Preview result ·",
       previewTotal: "Total: {count}",

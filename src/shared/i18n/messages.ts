@@ -980,6 +980,12 @@ export const MESSAGES_VI = {
         "request_no · sku_code · required_qty · recipient_name hoặc customer_name; request_date · recipient_address · recipient_contact_phone · note",
       uploading: "Đang tải lên...",
       upload: "Tải lên & xem trước",
+      formTab: "Phiếu Toa hàng",
+      previewTab: "Kết quả xem trước",
+      previewEmptyTitle: "Chưa có dữ liệu xem trước",
+      previewEmptyBody:
+        "Điền thông tin phiếu (nhập tay hoặc từ Excel), rồi bấm “Kiểm tra & xem trước” ở chân cửa sổ — kết quả kiểm tra sẽ hiện ở đây.",
+      backToForm: "Quay lại Phiếu Toa hàng",
       uploadErrorTitle: "Không kiểm tra được tệp Excel",
       previewTitle: "Kết quả xem trước ·",
       previewTotal: "Tổng: {count}",
