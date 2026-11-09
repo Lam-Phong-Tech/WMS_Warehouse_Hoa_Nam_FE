@@ -98,22 +98,22 @@
   line-height: 22px;
 }
 .hn-ncc-col-number {
-  width: 6%;
+  width: 5%;
 }
 .hn-ncc-col-code {
-  width: 15%;
+  width: 13%;
 }
 .hn-ncc-col-name {
-  width: 30%;
+  width: 42%;
 }
 .hn-ncc-col-status {
-  width: 17%;
+  width: 16%;
 }
 .hn-ncc-col-updated {
-  width: 19%;
+  width: 14%;
 }
 .hn-ncc-col-action {
-  width: 13%;
+  width: 10%;
 }
 .hn-ncc-table :is(th, td) {
   padding: 12px 18px;
