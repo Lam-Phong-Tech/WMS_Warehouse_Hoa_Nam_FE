@@ -5596,7 +5596,12 @@ export const MESSAGES_ZH: MessageTree = {
       "loadingTip": "加载托盘状态...",
       "emptyTitle": "没有匹配的托盘",
       "emptyDescription": "尝试删除过滤器或更改搜索关键字。",
-      "zoneCount": "{zone} · {count} 托盘"
+      "zoneCount": "{zone} · {count} 托盘",
+      "mapTitle": "托盘区域图",
+      "legendAria": "托盘状态图例",
+      "clearFilters": "清除筛选",
+      "layoutNote": "按区域分组 — 不是位置图。",
+      "zoneDistributionAria": "{zone} 的状态分布"
     },
     "grid": {
       "zoneUnzoned": "未分区",

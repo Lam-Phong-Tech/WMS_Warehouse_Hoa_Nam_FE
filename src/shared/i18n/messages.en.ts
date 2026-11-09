@@ -5490,6 +5490,11 @@ export const MESSAGES_EN: MessageTree = {
       emptyDescription:
         "Try removing the filter or changing the search keyword.",
       zoneCount: "{zone} · {count} trays",
+      mapTitle: "Tray zone map",
+      legendAria: "Tray status legend",
+      clearFilters: "Clear filters",
+      layoutNote: "Grouped by zone — not a location map.",
+      zoneDistributionAria: "Status distribution in {zone}",
     },
     grid: {
       zoneUnzoned: "Unzoned",

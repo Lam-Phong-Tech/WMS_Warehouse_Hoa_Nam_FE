@@ -5485,6 +5485,11 @@ export const MESSAGES_VI = {
       emptyTitle: "Không có khay phù hợp",
       emptyDescription: "Thử bỏ bộ lọc hoặc đổi từ khoá tìm kiếm.",
       zoneCount: "{zone} · {count} khay",
+      mapTitle: "Sơ đồ khu vực khay",
+      legendAria: "Chú giải trạng thái khay",
+      clearFilters: "Xoá lọc",
+      layoutNote: "Bố cục theo khu vực — không phải sơ đồ vị trí.",
+      zoneDistributionAria: "Phân bố trạng thái trong {zone}",
     },
     grid: {
       zoneUnzoned: "Chưa phân khu",
