@@ -27,11 +27,26 @@
   line-height: 22px;
 }
 .hn-component-issue-context__note {
-  grid-column: 1 / -1;
+  grid-column: 1;
+  align-self: center;
 }
-.hn-component-issue-context > button {
+.hn-component-issue-context__case-action {
+  grid-column: 2;
+  align-self: center;
   justify-self: start;
-  grid-column: 1 / -1;
+}
+.hn-component-issue-context__case-action .MuiButton-startIcon {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  line-height: 1;
+}
+.hn-component-issue-context__case-action .MuiButton-startIcon i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
 }
 .hn-component-issue-actions {
   display: flex;

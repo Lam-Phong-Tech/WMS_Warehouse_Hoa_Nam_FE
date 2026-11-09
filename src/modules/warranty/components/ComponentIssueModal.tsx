@@ -596,7 +596,11 @@ export function ComponentIssueModal({
               <p>{detail?.note || EMPTY_TEXT}</p>
             </div>
             {onViewCase ? (
-              <ActionButton kind="view" onClick={onViewCase}>
+              <ActionButton
+                kind="view"
+                className="hn-component-issue-context__case-action"
+                onClick={onViewCase}
+              >
                 {t("dashboard.insight.warrantyAction")}
               </ActionButton>
             ) : null}
