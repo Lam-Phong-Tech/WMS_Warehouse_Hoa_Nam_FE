@@ -220,6 +220,56 @@ describe("OUT-01 request intake drawer", () => {
     expect(addLineButton).toHaveAttribute("data-action-appearance", "flat");
     expect(validateButton).toHaveClass("hn-outbound-dialog__primary");
   });
+
+  it("renders preview rows as labeled blocks without a horizontally scrolling table", async () => {
+    vi.mocked(validateOutboundRequestRows).mockResolvedValueOnce({
+      id: "IMPORT-PREVIEW",
+      importNo: "OBI-20261109122754-X4WZ",
+      status: "VALIDATED",
+      totalRows: 1,
+      validRows: 1,
+      errorRows: 0,
+      version: 1,
+      rows: [
+        {
+          id: "ROW-2",
+          rowNo: 2,
+          status: "VALID",
+          normalized: {
+            request_no: "TOA-20261109-122754",
+            recipient_name: "Dự án nhà máy xử lý nước thải tỉnh Bình Định",
+            sku_code: "CLMP-DON-S01",
+            required_qty: 5,
+          },
+          errors: [],
+        },
+      ],
+    } as unknown as Awaited<ReturnType<typeof validateOutboundRequestRows>>);
+
+    renderIntake();
+    await fillRequiredFields();
+    fireEvent.click(screen.getByRole("button", { name: validateLabel }));
+
+    const preview = await screen.findByTestId("outbound-intake-preview-list");
+    expect(within(preview).queryByRole("table")).not.toBeInTheDocument();
+    expect(within(preview).getByText("Dòng 2")).toBeInTheDocument();
+    expect(within(preview).getByText("Mã yêu cầu")).toBeInTheDocument();
+    expect(
+      within(preview).getByText("TOA-20261109-122754"),
+    ).toBeInTheDocument();
+    expect(within(preview).getByText("Người nhận")).toBeInTheDocument();
+    expect(
+      within(preview).getByText("Dự án nhà máy xử lý nước thải tỉnh Bình Định"),
+    ).toBeInTheDocument();
+    expect(within(preview).getByText("SKU")).toBeInTheDocument();
+    expect(within(preview).getByText("CLMP-DON-S01")).toBeInTheDocument();
+    expect(
+      within(preview).getByText("Gán lại SKU (nếu cần)"),
+    ).toBeInTheDocument();
+    expect(within(preview).getByText("SL yêu cầu")).toBeInTheDocument();
+    expect(within(preview).getByText("Khả dụng hiện tại")).toBeInTheDocument();
+    expect(within(preview).getByText("Kết quả kiểm tra")).toBeInTheDocument();
+  });
 });
 
 describe("OUT-01 attachments during intake", () => {

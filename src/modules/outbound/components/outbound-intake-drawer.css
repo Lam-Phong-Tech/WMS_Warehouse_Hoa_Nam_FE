@@ -67,6 +67,111 @@
   }
 }
 
+/* Kết quả xem trước: danh sách khối thay cho bảng 8 cột trong drawer.
+   Drawer chỉ rộng 860px nên bảng cũ tràn ngang; bố cục khối giữ đủ trường
+   và các ô nhập mà không tạo vùng cuộn ngang lồng trong drawer. */
+.hn-outbound-intake__preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hn-outbound-intake__preview-row {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--outbound-dialog-border);
+  border-left: 3px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--outbound-dialog-surface);
+}
+
+.hn-outbound-intake__preview-row[data-state="success"] {
+  border-left-color: var(--ops-success);
+}
+
+.hn-outbound-intake__preview-row[data-state="warning"] {
+  border-left-color: var(--ops-warning);
+}
+
+.hn-outbound-intake__preview-row[data-state="error"] {
+  border-left-color: var(--ops-danger);
+}
+
+.hn-outbound-intake__preview-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--outbound-dialog-border);
+}
+
+.hn-outbound-intake__preview-row-no {
+  color: var(--outbound-dialog-ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.hn-outbound-intake__preview-row-request {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hn-outbound-intake__preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.hn-outbound-intake__preview-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+
+.hn-outbound-intake__preview-field--wide {
+  grid-column: 1 / -1;
+}
+
+.hn-outbound-intake__preview-label {
+  color: var(--outbound-dialog-muted);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.hn-outbound-intake__preview-value {
+  min-width: 0;
+  color: var(--outbound-dialog-ink);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+
+.hn-outbound-intake__preview-value--strong {
+  font-weight: 600;
+}
+
+.hn-outbound-intake__preview-error {
+  color: var(--wms-error-text);
+}
+
+@media (max-width: 620px) {
+  .hn-outbound-intake__preview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hn-outbound-intake__preview-field--wide {
+    grid-column: auto;
+  }
+}
+
 .hn-outbound-dialog__excel-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);

@@ -17,6 +17,7 @@ import {
   UiVuexyDateField,
   UiNumberField,
   UiPagination,
+  UiSpinner,
   UiStatusBadge,
   UiTextField,
   UiAlert,
@@ -29,10 +30,6 @@ import { uploadDocumentAttachment } from "@/shared/api/documentAttachmentService
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { PendingDocumentAttachments } from "@/shared/components/PendingDocumentAttachments";
 import type { PendingDocumentAttachment } from "@/shared/components/PendingDocumentAttachments";
-import {
-  ResponsiveDataTable,
-  type ResponsiveTableColumn,
-} from "@/shared/components/data-display/ResponsiveDataTable";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import {
   useMvpAgencies,
@@ -776,215 +773,198 @@ export function OutboundIntakeModal({
     );
   };
 
-  const previewColumns: ResponsiveTableColumn<ImportRow>[] = [
-    {
-      key: "rowNo",
-      header: t("outbound.intake.colRow"),
-      width: 70,
-      render: (row) => row.rowNo,
-    },
-    {
-      key: "request",
-      header: t("outbound.intake.colRequestNo"),
-      width: 150,
-      render: (row) => text(row.normalized.request_no, "-"),
-    },
-    /*
-     * UAT TC_UI_09 (Ảnh 2): tổng width khai cứng của 8 cột là 1440px — vượt xa
-     * lòng dialog (~1050px) nên bảng bật table-layout: fixed rồi tràn ngang,
-     * cột đầu bị đẩy khuất. Các cột CHỮ thả nổi (không khai width) để bảng về
-     * auto-layout: chữ dài tự xuống dòng, cả 8 cột nằm gọn trong khung.
-     */
-    {
-      key: "recipient",
-      header: t("outbound.intake.colRecipient"),
-      render: (row) =>
-        text(
-          row.normalized.recipient_name ?? row.normalized.customer_name,
-          "-",
-        ),
-    },
-    {
-      key: "sku",
-      header: "SKU",
-      // Chỉ mã SKU đọc được (sku_code) mới in thẳng. Khi file nhập thiếu mã mà chỉ
-      // có sku_id (UUID nội bộ), KHÔNG in nguyên chuỗi thô — dùng CopyableId (rút
-      // gọn + nút sao chép) đúng quy ước không lộ UUID ở màn nghiệp vụ.
-      render: (row) =>
-        row.normalized.sku_code ? (
-          text(row.normalized.sku_code)
-        ) : row.normalized.sku_id ? (
-          <CopyableId value={String(row.normalized.sku_id)} />
-        ) : (
-          "-"
-        ),
-    },
-    {
-      key: "sku_mapping",
-      header: t("outbound.intake.colReassignSku"),
-      width: 260,
-      // Gõ-để-lọc trên TOÀN danh mục, giống ô SKU của dòng nhập tay. Trước đây ô
-      // này dùng `skuOptions` — danh sách cắt cứng ở 100 dòng đầu; với danh mục
-      // thật (955 mã sản phẩm ACTIVE) thì gần như không bao giờ chọn được đúng mã
-      // mà dòng import đang cần gán lại.
-      render: (row) => {
-        const selected = resolutions[row.rowNo]?.sku_id ?? "";
-        return (
-          <UiAutocomplete
-            sx={{ minWidth: 240 }}
-            aria-label={t("outbound.intake.reassignAria", { row: row.rowNo })}
-            placeholder={t("outbound.intake.keepAsIs")}
-            options={
-              // Giữ nhãn của SKU ĐANG CHỌN kể cả khi nó rơi ra ngoài kết quả tìm
-              // kiếm hiện tại (mọi dòng dùng chung một keyword).
-              selected &&
-              !skuSearchOptions.some((option) => option.value === selected)
-                ? [
-                    {
-                      value: selected,
-                      label: skuLabelById.get(selected) ?? selected,
-                    },
-                    ...skuSearchOptions,
-                  ]
-                : skuSearchOptions
-            }
-            value={selected || null}
-            onChange={(value) =>
-              setResolutions((current) => ({
-                ...current,
-                [row.rowNo]: {
-                  ...current[row.rowNo],
-                  sku_id: value === null ? undefined : String(value),
+  const renderPreviewRecipient = (row: ImportRow) => (
+    <span className="hn-outbound-intake__preview-value">
+      {text(row.normalized.recipient_name ?? row.normalized.customer_name, "-")}
+    </span>
+  );
+
+  const renderPreviewSku = (row: ImportRow) => {
+    // Chỉ mã SKU đọc được (sku_code) mới in thẳng. Khi file nhập thiếu mã mà chỉ
+    // có sku_id (UUID nội bộ), KHÔNG in nguyên chuỗi thô — dùng CopyableId (rút
+    // gọn + nút sao chép) đúng quy ước không lộ UUID ở màn nghiệp vụ.
+    if (row.normalized.sku_code) {
+      return (
+        <span className="hn-outbound-intake__preview-value hn-outbound-intake__preview-value--strong">
+          {text(row.normalized.sku_code)}
+        </span>
+      );
+    }
+    if (row.normalized.sku_id) {
+      return <CopyableId value={String(row.normalized.sku_id)} />;
+    }
+    return <span className="hn-outbound-intake__preview-value">-</span>;
+  };
+
+  /**
+   * Gõ-để-lọc trên TOÀN danh mục, giống ô SKU của dòng nhập tay. Trước đây ô
+   * này dùng `skuOptions` — danh sách cắt cứng ở 100 dòng đầu; với danh mục
+   * thật (955 mã sản phẩm ACTIVE) thì gần như không bao giờ chọn được đúng mã
+   * mà dòng import đang cần gán lại.
+   */
+  const renderPreviewReassignSku = (row: ImportRow) => {
+    const selected = resolutions[row.rowNo]?.sku_id ?? "";
+    return (
+      <UiAutocomplete
+        aria-label={t("outbound.intake.reassignAria", { row: row.rowNo })}
+        placeholder={t("outbound.intake.keepAsIs")}
+        options={
+          // Giữ nhãn của SKU ĐANG CHỌN kể cả khi nó rơi ra ngoài kết quả tìm
+          // kiếm hiện tại (mọi dòng dùng chung một keyword).
+          selected &&
+          !skuSearchOptions.some((option) => option.value === selected)
+            ? [
+                {
+                  value: selected,
+                  label: skuLabelById.get(selected) ?? selected,
                 },
-              }))
-            }
-            onInputChange={setSkuKeyword}
-            loading={skuSearchQuery.isFetching}
-            noOptionsText={
-              skuKeyword.trim()
-                ? t("outbound.intake.skuNoMatch")
-                : t("outbound.intake.skuTypeToSearch")
+                ...skuSearchOptions,
+              ]
+            : skuSearchOptions
+        }
+        value={selected || null}
+        onChange={(value) =>
+          setResolutions((current) => ({
+            ...current,
+            [row.rowNo]: {
+              ...current[row.rowNo],
+              sku_id: value === null ? undefined : String(value),
+            },
+          }))
+        }
+        onInputChange={setSkuKeyword}
+        loading={skuSearchQuery.isFetching}
+        noOptionsText={
+          skuKeyword.trim()
+            ? t("outbound.intake.skuNoMatch")
+            : t("outbound.intake.skuTypeToSearch")
+        }
+      />
+    );
+  };
+
+  const renderPreviewQty = (row: ImportRow) => (
+    <UiNumberField
+      sx={{ width: 130, maxWidth: "100%" }}
+      rule={NUMBER_RULES.quantity}
+      slotProps={{
+        htmlInput: {
+          "aria-label": t("outbound.intake.requiredQtyAria", {
+            row: row.rowNo,
+          }),
+        },
+      }}
+      value={
+        overrideQtyDrafts[row.rowNo] ??
+        String(
+          resolutions[row.rowNo]?.required_qty ??
+            (Number(row.normalized.required_qty ?? 0) || ""),
+        )
+      }
+      error={Boolean(overrideQtyErrors[row.rowNo])}
+      helperText={overrideQtyErrors[row.rowNo]}
+      onChange={(next) => {
+        setOverrideQtyDrafts((current) => ({
+          ...current,
+          [row.rowNo]: next,
+        }));
+        const qtyCheck = checkNumber(next, NUMBER_RULES.quantity);
+        setOverrideQtyErrors((current) => {
+          const rest = { ...current };
+          delete rest[row.rowNo];
+          return qtyCheck.ok
+            ? rest
+            : { ...rest, [row.rowNo]: qtyCheck.message };
+        });
+        // Chỉ ghi vào resolutions khi giá trị hợp lệ; ô rỗng = giữ nguyên
+        // như file. Sai thì giữ ghi đè cũ và chặn tạo phiếu bằng lỗi ở trên.
+        if (!qtyCheck.ok) return;
+        const parsed = qtyCheck.value ?? undefined;
+        setResolutions((current) => ({
+          ...current,
+          [row.rowNo]: {
+            ...current[row.rowNo],
+            required_qty: parsed,
+          },
+        }));
+      }}
+    />
+  );
+
+  const renderPreviewAvailability = (row: ImportRow) => {
+    const skuId = rowSkuId(row);
+    const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
+    if (available === undefined) {
+      return (
+        <span className="hn-outbound-intake__preview-value">
+          {availabilityQuery.isLoading
+            ? "…"
+            : t("outbound.intake.noAvailability")}
+        </span>
+      );
+    }
+    const required = rowRequiredQty(row);
+    return (
+      <Stack
+        direction="row"
+        spacing={0.75}
+        sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.5 }}
+      >
+        <span className="hn-outbound-intake__preview-value">{available}</span>
+        {row.errors.length === 0 ? (
+          <UiStatusBadge
+            tone={available >= required ? "success" : "warning"}
+            label={
+              available >= required
+                ? t("outbound.intake.enoughNow")
+                : t("outbound.intake.shortNow")
             }
           />
-        );
-      },
-    },
-    {
-      key: "qty",
-      header: t("outbound.intake.colRequiredQty"),
-      width: 140,
-      render: (row) => (
-        <UiNumberField
-          sx={{ width: 130 }}
-          rule={NUMBER_RULES.quantity}
-          slotProps={{
-            htmlInput: {
-              "aria-label": t("outbound.intake.requiredQtyAria", {
-                row: row.rowNo,
-              }),
-            },
-          }}
-          value={
-            overrideQtyDrafts[row.rowNo] ??
-            String(
-              resolutions[row.rowNo]?.required_qty ??
-                (Number(row.normalized.required_qty ?? 0) || ""),
-            )
-          }
-          error={Boolean(overrideQtyErrors[row.rowNo])}
-          helperText={overrideQtyErrors[row.rowNo]}
-          onChange={(next) => {
-            setOverrideQtyDrafts((current) => ({
-              ...current,
-              [row.rowNo]: next,
-            }));
-            const qtyCheck = checkNumber(next, NUMBER_RULES.quantity);
-            setOverrideQtyErrors((current) => {
-              const rest = { ...current };
-              delete rest[row.rowNo];
-              return qtyCheck.ok
-                ? rest
-                : { ...rest, [row.rowNo]: qtyCheck.message };
-            });
-            // Chỉ ghi vào resolutions khi giá trị hợp lệ; ô rỗng = giữ nguyên
-            // như file. Sai thì giữ ghi đè cũ và chặn tạo phiếu bằng lỗi ở trên.
-            if (!qtyCheck.ok) return;
-            const parsed = qtyCheck.value ?? undefined;
-            setResolutions((current) => ({
-              ...current,
-              [row.rowNo]: {
-                ...current[row.rowNo],
-                required_qty: parsed,
-              },
-            }));
-          }}
+        ) : null}
+      </Stack>
+    );
+  };
+
+  const renderPreviewResult = (row: ImportRow) => {
+    if (row.errors.length > 0) {
+      return (
+        <span className="hn-outbound-intake__preview-value hn-outbound-intake__preview-error">
+          {rowErrorText(row, t)}
+        </span>
+      );
+    }
+
+    const skuId = rowSkuId(row);
+    const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
+    const required = rowRequiredQty(row);
+    if (available !== undefined && available < required) {
+      return (
+        <UiStatusBadge
+          tone="warning"
+          sx={{ alignSelf: "flex-start" }}
+          label={t("outbound.intake.validButShort")}
         />
-      ),
-    },
-    {
-      key: "available",
-      header: t("outbound.intake.colAvailable"),
-      width: 150,
-      render: (row) => {
-        const skuId = rowSkuId(row);
-        const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
-        if (available === undefined) {
-          return (
-            <Box sx={{ typography: "body2", color: "text.secondary" }}>
-              {availabilityQuery.isLoading
-                ? "…"
-                : t("outbound.intake.noAvailability")}
-            </Box>
-          );
-        }
-        const required = rowRequiredQty(row);
-        return (
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-            <span>{available}</span>
-            {row.errors.length === 0 ? (
-              <UiStatusBadge
-                tone={available >= required ? "success" : "warning"}
-                label={
-                  available >= required
-                    ? t("outbound.intake.enoughNow")
-                    : t("outbound.intake.shortNow")
-                }
-              />
-            ) : null}
-          </Stack>
-        );
-      },
-    },
-    {
-      key: "result",
-      header: t("outbound.intake.colCheckResult"),
-      render: (row) => {
-        if (row.errors.length > 0) {
-          return (
-            <Box sx={{ typography: "body2", color: "error.main" }}>
-              {rowErrorText(row, t)}
-            </Box>
-          );
-        }
+      );
+    }
 
-        const skuId = rowSkuId(row);
-        const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
-        const required = rowRequiredQty(row);
-        if (available !== undefined && available < required) {
-          return (
-            <UiStatusBadge
-              tone="warning"
-              label={t("outbound.intake.validButShort")}
-            />
-          );
-        }
+    return (
+      <UiStatusBadge
+        tone="success"
+        sx={{ alignSelf: "flex-start" }}
+        label={t("outbound.intake.valid")}
+      />
+    );
+  };
 
-        return (
-          <UiStatusBadge tone="success" label={t("outbound.intake.valid")} />
-        );
-      },
-    },
-  ];
+  const previewRowState = (row: ImportRow): "success" | "warning" | "error" => {
+    if (row.errors.length > 0) return "error";
+    const skuId = rowSkuId(row);
+    const available = skuId ? availabilityQuery.data?.[skuId] : undefined;
+    if (available !== undefined && available < rowRequiredQty(row)) {
+      return "warning";
+    }
+    return "success";
+  };
 
   const overridePhoneValid =
     recipientOverride.receiver_contact_phone === "" ||
@@ -1484,18 +1464,102 @@ export function OutboundIntakeModal({
                       })}
                     </Box>
                   </Stack>
-                  {/* Bảng xem trước lấy từ kết quả kiểm tra (mutation, không phải
-                  query) — hiện loading khi đang kiểm tra lại dữ liệu/tệp. */}
-                  <ResponsiveDataTable<ImportRow>
-                    columns={previewColumns}
-                    rows={pagedPreviewRows}
-                    rowKey={(row) => row.id}
-                    loading={
-                      validateManualMutation.isPending ||
-                      validateFileMutation.isPending
-                    }
-                    emptyText={t("outbound.intake.previewEmpty")}
-                  />
+                  {/* Kết quả kiểm tra là mutation, không phải query — hiện
+                  loading khi đang kiểm tra lại dữ liệu/tệp. Ở drawer 860px,
+                  bảng 8 cột cũ tràn ngang; danh sách khối giữ đủ trường mà
+                  không bắt người dùng kéo ngang (DESIGN_FOUNDATIONS §6). */}
+                  {validateManualMutation.isPending ||
+                  validateFileMutation.isPending ? (
+                    <Box
+                      sx={{
+                        py: 4,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 1,
+                        color: "text.secondary",
+                      }}
+                    >
+                      <UiSpinner size={16} label={null} />
+                      {t("shared.table.loading")}
+                    </Box>
+                  ) : previewRows.length === 0 ? (
+                    <Box
+                      sx={{
+                        py: 4,
+                        textAlign: "center",
+                        color: "text.secondary",
+                      }}
+                    >
+                      {t("outbound.intake.previewEmpty")}
+                    </Box>
+                  ) : (
+                    <Box
+                      data-testid="outbound-intake-preview-list"
+                      className="hn-outbound-intake__preview-list"
+                    >
+                      {pagedPreviewRows.map((row) => (
+                        <Box
+                          component="article"
+                          key={row.id}
+                          className="hn-outbound-intake__preview-row"
+                          data-state={previewRowState(row)}
+                        >
+                          <Box className="hn-outbound-intake__preview-row-head">
+                            <span className="hn-outbound-intake__preview-row-no">
+                              {t("outbound.intake.colRow")} {row.rowNo}
+                            </span>
+                            <span className="hn-outbound-intake__preview-row-request">
+                              <span className="hn-outbound-intake__preview-label">
+                                {t("outbound.intake.colRequestNo")}
+                              </span>
+                              <span className="hn-outbound-intake__preview-value hn-outbound-intake__preview-value--strong">
+                                {text(row.normalized.request_no, "-")}
+                              </span>
+                            </span>
+                          </Box>
+                          <Box className="hn-outbound-intake__preview-grid">
+                            <Box className="hn-outbound-intake__preview-field hn-outbound-intake__preview-field--wide">
+                              <span className="hn-outbound-intake__preview-label">
+                                {t("outbound.intake.colRecipient")}
+                              </span>
+                              {renderPreviewRecipient(row)}
+                            </Box>
+                            <Box className="hn-outbound-intake__preview-field">
+                              <span className="hn-outbound-intake__preview-label">
+                                SKU
+                              </span>
+                              {renderPreviewSku(row)}
+                            </Box>
+                            <Box className="hn-outbound-intake__preview-field">
+                              <span className="hn-outbound-intake__preview-label">
+                                {t("outbound.intake.colReassignSku")}
+                              </span>
+                              {renderPreviewReassignSku(row)}
+                            </Box>
+                            <Box className="hn-outbound-intake__preview-field">
+                              <span className="hn-outbound-intake__preview-label">
+                                {t("outbound.intake.colRequiredQty")}
+                              </span>
+                              {renderPreviewQty(row)}
+                            </Box>
+                            <Box className="hn-outbound-intake__preview-field">
+                              <span className="hn-outbound-intake__preview-label">
+                                {t("outbound.intake.colAvailable")}
+                              </span>
+                              {renderPreviewAvailability(row)}
+                            </Box>
+                            <Box className="hn-outbound-intake__preview-field hn-outbound-intake__preview-field--wide">
+                              <span className="hn-outbound-intake__preview-label">
+                                {t("outbound.intake.colCheckResult")}
+                              </span>
+                              {renderPreviewResult(row)}
+                            </Box>
+                          </Box>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
                   {previewPaged ? (
                     <UiPagination
                       page={previewPage}
