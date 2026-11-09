@@ -577,7 +577,7 @@ export default function WarrantyPage() {
           ) : null}
 
           <TableLoadingBanner
-            loading={listQuery.isLoading || listQuery.isFetching}
+            loading={listQuery.isLoading}
           />
           <WarrantyListTable
             columns={columns}
@@ -585,7 +585,7 @@ export default function WarrantyPage() {
             rowKey={(row) => row.id}
             listSort={listSort}
             rowNumberOffset={(pagination.current - 1) * perPage}
-            loading={listQuery.isLoading || listQuery.isFetching}
+            loading={listQuery.isLoading}
             emptyText={tableEmptyText(
               listQuery.isError ? listQuery.error : null,
               t("warranty.list.empty"),

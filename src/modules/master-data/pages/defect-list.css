@@ -805,29 +805,6 @@
   margin: 3px 0 0;
   font-size: 13px;
 }
-.hn-defect-notice--refreshing {
-  position: relative;
-  padding: 0 0 12px;
-  margin: 0 0 8px;
-}
-.hn-defect-notice-progress {
-  position: absolute;
-  height: 3px;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background: var(--defect-pale);
-  overflow: hidden;
-  border-radius: 2px;
-}
-.hn-defect-notice-progress::after {
-  content: "";
-  position: absolute;
-  height: 100%;
-  width: 35%;
-  background: var(--defect-link);
-  animation: hn-defect-progress 1.3s ease-in-out infinite;
-}
 .hn-defect-notice-dismiss {
   display: grid;
   place-items: center;
@@ -1262,14 +1239,6 @@
 @keyframes hn-defect-pulse {
   50% {
     opacity: 0.45;
-  }
-}
-@keyframes hn-defect-progress {
-  from {
-    left: -35%;
-  }
-  to {
-    left: 100%;
   }
 }
 @media (prefers-reduced-motion: reduce) {

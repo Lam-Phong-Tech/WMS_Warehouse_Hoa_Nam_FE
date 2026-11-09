@@ -166,20 +166,6 @@
   stroke-linecap: round;
 }
 
-.hn-rpt-io .io-feedback--refreshing {
-  display: block;
-  padding: 8px 12px;
-}
-
-.hn-rpt-io .io-feedback-refresh-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--hnio-feedback-primary);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 .hn-rpt-io .io-feedback-spinner {
   display: inline-block;
   flex: 0 0 auto;
@@ -189,21 +175,6 @@
   border-right-color: transparent;
   border-radius: 50%;
   animation: io-feedback-spin 850ms linear infinite;
-}
-
-.hn-rpt-io .io-feedback-progress {
-  height: 3px;
-  margin-top: 9px;
-  overflow: hidden;
-  background: var(--hnio-feedback-skeleton);
-}
-
-.hn-rpt-io .io-feedback-progress span {
-  display: block;
-  width: 36%;
-  height: 100%;
-  background: var(--ops-link);
-  animation: io-feedback-progress 1.5s ease-in-out infinite;
 }
 
 .hn-rpt-io .io-feedback-page {
@@ -511,15 +482,6 @@
   }
 }
 
-@keyframes io-feedback-progress {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(380%);
-  }
-}
-
 @keyframes io-feedback-pulse {
   50% {
     opacity: 0.55;
@@ -599,7 +561,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hn-rpt-io .io-feedback-spinner,
-  .hn-rpt-io .io-feedback-progress span,
   .hn-rpt-io .io-feedback-skeleton-line,
   .hn-rpt-io .io-feedback-skeleton-field,
   .hn-rpt-io .io-feedback-skeleton-circle,

@@ -111,7 +111,7 @@ export function AuditLogsPage() {
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
-  const { data, isLoading, isFetching, isError, error, refetch } = useAuditLogs(
+  const { data, isLoading, isError, error, refetch } = useAuditLogs(
     {
       page,
       limit: perPage,
@@ -329,11 +329,11 @@ export function AuditLogsPage() {
             onRetry={refetch}
           />
         ) : null}
-        <TableLoadingBanner loading={isLoading || isFetching} />
+        <TableLoadingBanner loading={isLoading} />
         <div className="hn-audit-table">
           <AuditLogsTable
             data={auditLogs}
-            loading={isLoading || isFetching}
+            loading={isLoading}
             error={isError ? error : null}
             page={pagination.current}
             perPage={perPage}

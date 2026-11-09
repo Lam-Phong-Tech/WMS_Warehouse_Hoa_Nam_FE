@@ -35,7 +35,13 @@ const READ_PREFIXES: Readonly<Record<string, readonly string[]>> = {
     "component-issue-sku-index",
     "component-issue-availability",
   ],
-  "mvp-master": ["skus", "agencies", "defects", "product-catalogs"],
+  "mvp-master": [
+    "skus",
+    "agencies",
+    "defects",
+    "product-catalogs",
+    "suppliers",
+  ],
   ref: [
     "sku-catalog",
     "product-categories",

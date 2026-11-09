@@ -721,7 +721,7 @@ describe("DefectMasterScreen interactions", () => {
     );
   });
 
-  it("retains rows and reports a background refresh while preventing edits", () => {
+  it("keeps a background refresh silent while retained rows stay visible", () => {
     queryDefects.mockReturnValue({
       data: { data: [RECORD], meta: { total: 1 } },
       isLoading: false,
@@ -734,9 +734,10 @@ describe("DefectMasterScreen interactions", () => {
     expect(
       screen.getByRole("region", { name: "Bảng danh mục bệnh / lỗi" }),
     ).toHaveAttribute("aria-busy", "true");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Đang cập nhật danh sách bệnh/lỗi...",
-    );
+    expect(
+      screen.queryByText("Đang cập nhật danh sách bệnh/lỗi..."),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Thêm lỗi$/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: /^Sửa/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Áp dụng" })).toBeDisabled();

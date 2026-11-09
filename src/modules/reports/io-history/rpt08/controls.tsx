@@ -305,16 +305,6 @@ export function FilterCard({
   );
 }
 
-export function RefreshStrip() {
-  return (
-    <div className="rpt08-refresh-strip" role="status" aria-live="polite">
-      <span className="rpt08-spinner" aria-hidden="true" />
-      <span>{tUi("updatedUi.text_0c576314af49")}</span>
-      <i aria-hidden="true" />
-    </div>
-  );
-}
-
 export function StatusBanner({
   tone,
   title,

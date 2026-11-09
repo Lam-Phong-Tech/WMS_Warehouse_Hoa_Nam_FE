@@ -13,29 +13,6 @@
   white-space: nowrap;
   vertical-align: middle;
 }
-.hn-sku-refresh-feedback {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  color: var(--ops-muted);
-  font-size: 12px;
-  line-height: 18px;
-}
-.hn-sku-refresh-progress {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  height: 2px;
-  background: var(--ops-line);
-}
-.hn-sku-refresh-progress::after {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 30%;
-  background: var(--ops-primary);
-  content: "";
-  animation: hn-sku-progress 1.5s ease-in-out infinite;
-}
 .hn-sku-feedback-notice {
   display: flex;
   align-items: center;
@@ -290,14 +267,6 @@
     transform: rotate(360deg);
   }
 }
-@keyframes hn-sku-progress {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(440%);
-  }
-}
 @keyframes hn-sku-skeleton {
   50% {
     opacity: 0.55;
@@ -355,7 +324,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .hn-sku-feedback-spinner,
-  .hn-sku-refresh-progress::after,
   .hn-sku-feedback-skeleton-line,
   .hn-sku-feedback-skeleton-square,
   .hn-sku-feedback-skeleton-pill {

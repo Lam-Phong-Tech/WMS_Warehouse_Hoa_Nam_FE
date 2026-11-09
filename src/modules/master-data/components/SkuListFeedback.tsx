@@ -131,7 +131,6 @@ export function SkuListReadonlyBadge({ readonly }: { readonly: boolean }) {
 export function SkuListNotice({
   error,
   loading,
-  refreshing,
   hasRows,
   offline,
   onRetry,
@@ -140,15 +139,9 @@ export function SkuListNotice({
 }: SkuListFeedbackProps) {
   const text = useSkuFeedbackText();
   if (loading) return null;
-  if (refreshing)
-    return (
-      <div className="hn-sku-refresh-feedback" role="status" aria-live="polite">
-        <span className="hn-sku-refresh-progress" aria-hidden="true" />
-        <span>
-          {text("Đang cập nhật danh sách SKU...", "Updating the SKU list...")}
-        </span>
-      </div>
-    );
+  // Background refreshes (realtime signal, 30s reconcile, tab focus) keep the
+  // current rows on screen; that progress is intentionally silent so the list
+  // does not flash a status bar every cycle.
   if (!hasRows || (!error && !offline)) return null;
   const updatedLabel =
     updatedAt && Number.isFinite(updatedAt)

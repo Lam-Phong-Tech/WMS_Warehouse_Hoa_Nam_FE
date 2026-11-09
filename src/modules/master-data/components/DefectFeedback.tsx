@@ -388,7 +388,6 @@ export function DefectEmptyState({
 export function DefectNotice({
   error,
   loading,
-  refreshing,
   hasRows,
   offline,
   onRetry,
@@ -398,22 +397,7 @@ export function DefectNotice({
   const text = useFeedbackText();
   const loginHref = useLoginHref();
   if (loading || !hasRows) return null;
-  if (refreshing)
-    return (
-      <div
-        className="hn-defect-notice hn-defect-notice--refreshing"
-        role="status"
-        aria-live="polite"
-      >
-        <span>
-          {text(
-            "Đang cập nhật danh sách bệnh/lỗi...",
-            "Updating the defect list...",
-          )}
-        </span>
-        <span className="hn-defect-notice-progress" aria-hidden="true" />
-      </div>
-    );
+  // Background refreshes keep the retained rows on screen and stay silent.
   if (!error && !offline) return null;
   const status = error ? normalizeError(error).status : undefined;
   const sessionExpired = status === 401;

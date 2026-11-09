@@ -852,7 +852,7 @@ export default function MovementTraceReport() {
     setDateError(null);
   };
 
-  const { refreshing, refresh } = useReportRefresh({
+  const { refresh } = useReportRefresh({
     refetch: () => report.refetch(),
     readError: () => report.error,
   });
@@ -899,7 +899,7 @@ export default function MovementTraceReport() {
     <Box
       id="traceability-rpt03"
       data-testid="movement-trace-report"
-      className={`hn-trace-report${report.isLoading ? " is-loading" : ""}${refreshing ? " is-refreshing" : ""}${report.isError ? " is-error" : ""}`}
+      className={`hn-trace-report${report.isLoading ? " is-loading" : ""}${report.isError ? " is-error" : ""}`}
       sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}
     >
       <Box

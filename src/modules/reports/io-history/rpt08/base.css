@@ -585,65 +585,7 @@
   font-size: 10.5px;
 }
 
-/* ───────────────────── Refresh and status banners ───────────────── */
-#rpt08-history-report .rpt08-refresh-strip {
-  min-height: 52px;
-  padding: 0 14px;
-  display: grid;
-  grid-template-columns: 16px auto minmax(120px, 1fr);
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--rpt08-border);
-  border-radius: 8px;
-  background: #fff;
-  color: #176493;
-  font-size: 12px;
-}
-
-#rpt08-history-report .rpt08-refresh-strip > i {
-  position: relative;
-  height: 3px;
-  margin-left: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #d7eaf3;
-}
-
-#rpt08-history-report .rpt08-refresh-strip > i::after {
-  content: "";
-  position: absolute;
-  inset-block: 0;
-  width: 24%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, transparent, #128cc6, transparent);
-  animation: rpt08-progress 1.2s ease-in-out infinite;
-}
-
-@keyframes rpt08-progress {
-  0% {
-    left: -25%;
-  }
-  100% {
-    left: 105%;
-  }
-}
-
-#rpt08-history-report .rpt08-spinner {
-  width: 15px;
-  height: 15px;
-  display: inline-block;
-  flex: 0 0 15px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: rpt08-spin 650ms linear infinite;
-}
-
-@keyframes rpt08-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* ───────────────────── Status banners ───────────────── */
 
 #rpt08-history-report .rpt08-status-banner {
   min-height: 58px;

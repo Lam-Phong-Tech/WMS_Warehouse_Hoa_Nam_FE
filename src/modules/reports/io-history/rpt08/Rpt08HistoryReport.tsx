@@ -38,7 +38,6 @@ import {
   HeaderActions,
   InitialLoadingBody,
   LoadError,
-  RefreshStrip,
   StatusBanner,
 } from "./controls";
 import {
@@ -282,8 +281,7 @@ export default function IoHistoryReport() {
       id="rpt08-history-report"
       className={
         "rpt08-report" +
-        (initialLoading ? " is-loading" : "") +
-        (refreshing ? " is-refreshing" : "")
+        (initialLoading ? " is-loading" : "")
       }
       data-mvp-screen="RPT-08"
     >
@@ -323,8 +321,6 @@ export default function IoHistoryReport() {
               setApplied((current) => ({ ...current, actor }))
             }
           />
-
-          {refreshing ? <RefreshStrip /> : null}
 
           {stale ? (
             <StatusBanner

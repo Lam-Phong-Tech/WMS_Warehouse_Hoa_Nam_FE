@@ -843,20 +843,7 @@ export default function WarrantyComponentsReport() {
                   >
                     {tUi("updatedUi.text_39e4ce8fcc3c")}
                   </Box>
-                  {refreshing ? (
-                    <Stack
-                      direction="row"
-                      sx={{
-                        alignItems: "center",
-                        gap: 0.65,
-                        color: "var(--ops-link)",
-                        fontSize: 11.5,
-                      }}
-                    >
-                      <UiSpinner size={15} label={null} />
-                      {" " + tUi("updatedUi.text_0c576314af49")}
-                    </Stack>
-                  ) : partial ? (
+                  {partial ? (
                     <Box
                       sx={{
                         px: 0.85,

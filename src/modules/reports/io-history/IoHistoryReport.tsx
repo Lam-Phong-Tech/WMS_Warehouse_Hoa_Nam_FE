@@ -765,7 +765,6 @@ export default function IoHistoryReport() {
                     busy={busy}
                   />
                 )}
-                {busy && !error && <IoHistoryFeedback state="refreshing" />}
                 {exportFeedback && (
                   <IoHistoryFeedback
                     state={exportFeedback.state}

@@ -3352,7 +3352,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           className="hn-defect-list-card"
           aria-label={copy("Danh sách bệnh / lỗi", "Defect list")}
         >
-          {refreshing && !stale && <DefectNotice {...feedback} />}
           <div
             className="hn-defect-table-scroll"
             role="region"

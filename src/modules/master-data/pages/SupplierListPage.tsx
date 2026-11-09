@@ -142,14 +142,6 @@ export default function SupplierListPage() {
       <header className="hn-ncc-header">
         <h1>{copy.title}</h1>
         <div className="hn-ncc-actions">
-          <ActionButton
-            kind="refresh"
-            appearance="tonal"
-            onClick={refresh}
-            disabled={!online || busy}
-          >
-            {copy.refresh}
-          </ActionButton>
           {canCreate ? (
             <ActionButton
               kind="create"

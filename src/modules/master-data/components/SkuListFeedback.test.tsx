@@ -208,13 +208,11 @@ describe("SKU list network and API error actions", () => {
 });
 
 describe("SKU list retained-data notices", () => {
-  it("announces refresh politely while retaining the current list", () => {
+  it("keeps background refresh silent while retaining the current list", () => {
     render(
       <SkuListNotice {...feedbackProps({ hasRows: true, refreshing: true })} />,
     );
-    const status = screen.getByRole("status");
-    expect(status).toHaveAttribute("aria-live", "polite");
-    expect(status).toHaveTextContent("Đang cập nhật danh sách SKU...");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 

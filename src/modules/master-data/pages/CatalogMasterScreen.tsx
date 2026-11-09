@@ -727,7 +727,6 @@ export function CatalogMasterScreen() {
         </section>
       )}
       {(dismissedNotice !== listQuery.error ||
-        feedback.refreshing ||
         (offline && !dismissedOffline)) && (
         <CatalogNotice
           {...feedback}

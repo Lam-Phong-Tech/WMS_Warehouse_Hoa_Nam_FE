@@ -4,7 +4,6 @@ import "./io-history-feedback.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
 export type IoHistoryFeedbackState =
-  | "refreshing"
   | "stale"
   | "export-success"
   | "export-partial"
@@ -124,7 +123,7 @@ type FeedbackCopy = {
 };
 
 const getCOPY = localizedUiValue(
-  (): Record<Exclude<IoHistoryFeedbackState, "refreshing">, FeedbackCopy> => ({
+  (): Record<IoHistoryFeedbackState, FeedbackCopy> => ({
     stale: {
       title: tUi("updatedUi.text_278fb7e1cb78"),
       description: tUi("updatedUi.text_fdac0d12971a"),
@@ -222,25 +221,6 @@ export function IoHistoryFeedback({
   onDismiss,
   busy = false,
 }: IoHistoryFeedbackProps) {
-  if (state === "refreshing") {
-    return (
-      <div
-        className="io-feedback io-feedback--refreshing"
-        role="status"
-        aria-live="polite"
-        aria-busy="true"
-      >
-        <div className="io-feedback-refresh-label">
-          <span className="io-feedback-spinner" aria-hidden="true" />
-          {tUi("updatedUi.text_0c576314af49")}
-        </div>
-        <div className="io-feedback-progress" aria-hidden="true">
-          <span />
-        </div>
-      </div>
-    );
-  }
-
   const copy = getCOPY()[state];
   const description =
     message ??

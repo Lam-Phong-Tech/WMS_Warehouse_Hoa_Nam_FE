@@ -323,7 +323,6 @@ export function CatalogFeedback({
 export function CatalogNotice({
   error,
   loading,
-  refreshing,
   hasRows,
   offline,
   onRetry,
@@ -335,23 +334,7 @@ export function CatalogNotice({
   const text = (vi: string, en: string) =>
     english ? localizedEnglish(en) : vi;
   if (loading || !hasRows) return null;
-  if (refreshing) {
-    return (
-      <div
-        className="hn-catalog-notice hn-catalog-notice--refreshing"
-        role="status"
-        aria-live="polite"
-      >
-        <span className="hn-catalog-notice-progress" aria-hidden="true" />
-        <span>
-          {text(
-            "Đang cập nhật danh mục sản phẩm...",
-            "Updating the product catalog...",
-          )}
-        </span>
-      </div>
-    );
-  }
+  // Background refreshes keep the retained rows on screen and stay silent.
   if (!error && !offline) return null;
   const normalized = error ? normalizeError(error) : undefined;
   const sessionExpired = normalized?.status === 401;

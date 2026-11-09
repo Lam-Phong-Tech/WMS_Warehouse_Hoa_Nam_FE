@@ -293,9 +293,7 @@ export default function ReversalPage() {
             </Box>
           ) : null}
 
-          <TableLoadingBanner
-            loading={listQuery.isLoading || listQuery.isFetching}
-          />
+          <TableLoadingBanner loading={listQuery.isLoading} />
           <ResponsiveDataTable<ReversalDocument>
             headerCellStyle={{
               background: "var(--ops-table-header)",

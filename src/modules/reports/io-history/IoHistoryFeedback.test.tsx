@@ -144,12 +144,4 @@ describe("RPT-08 loading announcements", () => {
       screen.queryByText("Không tìm thấy kết quả"),
     ).not.toBeInTheDocument();
   });
-  it("announces refreshing politely", () => {
-    render(<IoHistoryFeedback state="refreshing" />);
-    const status = screen.getByRole("status");
-    expect(status).toHaveAttribute("aria-busy", "true");
-    expect(status).toHaveAttribute("aria-live", "polite");
-    expect(status).toHaveTextContent("Đang cập nhật dữ liệu...");
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
-  });
 });

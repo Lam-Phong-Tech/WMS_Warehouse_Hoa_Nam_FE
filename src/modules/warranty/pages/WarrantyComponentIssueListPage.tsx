@@ -10,10 +10,7 @@ import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
-import {
-  TableLoadingBanner,
-  tableEmptyText,
-} from "@/shared/components/feedback/BusinessState";
+import { tableEmptyText } from "@/shared/components/feedback/BusinessState";
 import {
   MVP_PAGE_SIZE_OPTIONS,
   resolveApiPagination,
@@ -419,9 +416,6 @@ export default function WarrantyComponentIssueListPage() {
             </button>
           </div>
         ) : null}
-        <TableLoadingBanner
-          loading={activeQuery.isFetching && !isInitialLoading}
-        />
         {isInitialLoading ? (
           <div
             className="hn-war04-loading"

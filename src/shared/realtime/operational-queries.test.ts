@@ -33,6 +33,7 @@ describe("operational read query selection", () => {
     ["warranty", "component-issue-sku-index", ["sku-1"]],
     ["warranty", "component-issue-availability", ["sku-1"]],
     ["mvp-master", "skus", { information_status: "PENDING", page: 2 }],
+    ["mvp-master", "suppliers", { status: "ACTIVE", page: 1 }],
     ["catalog-master", "brands", { page: 2 }],
     ["ref", "sku-catalog"],
     ["ref", "agencies"],

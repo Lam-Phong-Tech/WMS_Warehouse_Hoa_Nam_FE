@@ -135,17 +135,15 @@ describe("CatalogNotice", () => {
     expect(onDismiss).toHaveBeenCalledOnce();
   });
 
-  it("replaces stale feedback with progress during refresh and clears it after recovery", () => {
+  it("keeps a background refresh silent while stale feedback remains visible", () => {
     const value = props({ hasRows: true, error: new Error("Unavailable") });
-    const { rerender, container } = render(
-      <CatalogNotice {...value} refreshing />,
-    );
+    render(<CatalogNotice {...value} refreshing />);
+    expect(
+      screen.queryByText(/Đang cập nhật danh mục sản phẩm/),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Đang cập nhật danh mục sản phẩm...",
+      "Dữ liệu có thể chưa mới nhất",
     );
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    rerender(<CatalogNotice {...value} error={undefined} />);
-    expect(container).toBeEmptyDOMElement();
   });
 
   it.each([
@@ -189,10 +187,10 @@ describe("CatalogNotice", () => {
           error={createMockAxiosError({ status })}
         />,
       );
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "Đang cập nhật danh mục sản phẩm...",
-      );
-      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent(title);
+      expect(
+        screen.queryByText(/Đang cập nhật danh mục sản phẩm/),
+      ).not.toBeInTheDocument();
       rerender(<CatalogNotice {...value} />);
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     },

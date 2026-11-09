@@ -125,7 +125,7 @@ export function ComponentIssueCasePicker({
           onChange={(event) => setSearchInput(event.target.value)}
           slotProps={{ htmlInput: { maxLength: 255 } }}
         />
-        <TableLoadingBanner loading={query.isFetching} />
+        <TableLoadingBanner loading={query.isLoading} />
         {query.isError ? (
           <ApiErrorAlert
             error={query.error}

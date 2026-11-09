@@ -640,7 +640,6 @@ export default function RecipientAgencyReport() {
       className={
         "rpt07-report" +
         (initialLoading ? " is-loading" : "") +
-        (refreshing ? " is-refreshing" : "") +
         (partial ? " is-partial" : "") +
         (readonly ? " is-readonly" : "")
       }
@@ -755,13 +754,6 @@ export default function RecipientAgencyReport() {
               ariaLabel={tUi("dashboard.composition.colStatus")}
             />
           </div>
-
-          {refreshing ? (
-            <div className="rpt07-refresh-note" aria-live="polite">
-              <strong>{tUi("updatedUi.text_0c576314af49")}</strong>
-              <span>{tUi("updatedUi.text_a84e8e7a2a07")}</span>
-            </div>
-          ) : null}
         </div>
       </section>
 

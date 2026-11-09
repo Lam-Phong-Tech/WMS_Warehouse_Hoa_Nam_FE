@@ -510,26 +510,6 @@
   visibility: hidden;
 }
 
-#traceability-rpt03.hn-trace-report.is-refreshing::before {
-  position: fixed;
-  top: 64px;
-  right: 22px;
-  z-index: 30;
-  width: 120px;
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, var(--ops-link), transparent);
-  background-size: 200% 100%;
-  content: "";
-  animation: trace-refresh 900ms linear infinite;
-}
-
-@keyframes trace-refresh {
-  to {
-    background-position: -200% 0;
-  }
-}
-
 #traceability-rpt03 .trace-analysis-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.63fr) minmax(330px, 0.77fr);

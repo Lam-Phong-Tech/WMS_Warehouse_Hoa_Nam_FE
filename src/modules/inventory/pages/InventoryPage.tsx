@@ -767,7 +767,7 @@ export default function InventoryPage() {
               />
             </div>
           ) : null}
-          <TableLoadingBanner loading={query.isLoading || query.isFetching} />
+          <TableLoadingBanner loading={query.isLoading} />
           <div className="hn-inventory-table">
             {isBalance ? (
               <ResponsiveDataTable<InventoryBalanceRow>
@@ -776,7 +776,7 @@ export default function InventoryPage() {
                 rowKey={(row) => row.id}
                 columns={balanceColumns}
                 rows={balances}
-                loading={balanceQuery.isLoading || balanceQuery.isFetching}
+                loading={balanceQuery.isLoading}
                 emptyText={emptyContent}
                 onRowClick={(row) => setBalanceDetailRow(row)}
                 renderRowActions={(row) => (
@@ -798,7 +798,7 @@ export default function InventoryPage() {
                 rowKey={(row) => row.id}
                 columns={movementColumns}
                 rows={movements}
-                loading={movementQuery.isLoading || movementQuery.isFetching}
+                loading={movementQuery.isLoading}
                 emptyText={emptyContent}
                 renderRowActions={(row) => (
                   <Tooltip

@@ -195,19 +195,13 @@ describe("DefectNotice", () => {
     expect(value.onDismiss).toHaveBeenCalledOnce();
   });
 
-  it("shows progress while updating and clears the notice after recovery", () => {
+  it("keeps a background refresh silent while stale feedback remains visible", () => {
     const value = props({ hasRows: true, error: new Error("Unavailable") });
-    const view = notice({ ...value, refreshing: true });
+    notice({ ...value, refreshing: true });
+    expect(screen.queryByText(/Đang cập nhật danh sách bệnh\/lỗi/)).toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Đang cập nhật danh sách bệnh/lỗi...",
+      "Dữ liệu có thể chưa mới nhất",
     );
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    view.rerender(
-      <MemoryRouter>
-        <DefectNotice {...value} error={undefined} />
-      </MemoryRouter>,
-    );
-    expect(view.container).toBeEmptyDOMElement();
   });
 
   it.each([
