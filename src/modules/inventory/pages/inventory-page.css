@@ -226,16 +226,17 @@
   box-shadow: inset 0 1px 3px
     color-mix(in srgb, var(--inv-accent) 13%, transparent);
 }
-.hn-inventory .hn-inventory-primary {
+.hn-inventory .MuiButton-root.hn-inventory-primary {
   background: var(--inv-cta);
   color: var(--wms-on-primary);
   border-color: transparent;
   padding-inline: 24px;
   font-weight: 600;
 }
-.hn-inventory .hn-inventory-primary:hover {
+.hn-inventory .MuiButton-root.hn-inventory-primary:hover {
   background: var(--ops-primary-hover);
   color: var(--wms-on-primary);
+  border-color: transparent;
 }
 .hn-inventory .MuiButton-root:not(.hn-row-action).Mui-disabled {
   color: var(--inv-muted);
