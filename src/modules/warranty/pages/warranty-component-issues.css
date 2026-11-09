@@ -980,7 +980,7 @@
     gap: 5px;
   }
   .hn-war04-compact .hn-war04-component-summary > span {
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
   }
   .hn-war04-compact .hn-war04-component-summary small {
