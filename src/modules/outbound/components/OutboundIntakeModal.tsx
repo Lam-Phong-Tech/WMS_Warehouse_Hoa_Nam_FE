@@ -65,8 +65,6 @@ import {
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { checkDate, pastDateBounds } from "@/shared/validation/date-rules";
 
-/** Trần độ dài mã phiếu yêu cầu — khớp `import_no`/`request_no` max:80 của BE. */
-const REQUEST_NO_MAX = 80;
 /**
  * Luật tệp Excel lấy từ lớp dùng chung (file-rules.ts) — trước đây hai hằng số
  * chép tay ở đây, ở SkuImportModal và ở DocumentAttachmentsPanel, lệch nhau
@@ -93,6 +91,22 @@ function createEmptyLine(): LineInput {
     sku_code: "",
     required_qty: "1",
   };
+}
+
+/**
+ * Mã toa nguồn do FE sinh khi form không còn ô nhập: BE bắt buộc `request_no`
+ * để tạo import, còn mã phiếu xuất (PX-…) vẫn do BE sinh. Giữ nguyên trong một
+ * lần mở form để bấm "Kiểm tra" lại vẫn trả về cùng một toa (dedup theo checksum).
+ */
+function createRequestNo(): string {
+  const random =
+    globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+  const suffix = random
+    .replace(/[^a-z0-9]/gi, "")
+    .padEnd(4, "0")
+    .slice(0, 4)
+    .toUpperCase();
+  return `TOA-${dayjs().format("YYYYMMDD-HHmmss")}-${suffix}`;
 }
 
 type LineResolution = { sku_id?: string; required_qty?: number };
@@ -234,7 +248,7 @@ export function OutboundIntakeModal({
     receiver_contact_phone: "",
   });
 
-  const [requestNo, setRequestNo] = useState("");
+  const [requestNo, setRequestNo] = useState(createRequestNo);
   const [agencyId, setAgencyId] = useState<string | null>(null);
   const [recipientName, setRecipientName] = useState("");
   const [recipientAddress, setRecipientAddress] = useState("");
@@ -251,7 +265,6 @@ export function OutboundIntakeModal({
   // Lỗi kiểm tra hiển thị INLINE ngay dưới từng ô (thay cho một khối lỗi tổng
   // data-ui-state="error"): người dùng thấy đúng ô nào cần sửa.
   const [fieldErrors, setFieldErrors] = useState<{
-    requestNo?: string;
     recipientName?: string;
     recipientPhone?: string;
     requestDate?: string;
@@ -259,7 +272,7 @@ export function OutboundIntakeModal({
   }>({ lines: {} });
 
   const clearFieldError = (
-    field: "requestNo" | "recipientName" | "recipientPhone" | "requestDate",
+    field: "recipientName" | "recipientPhone" | "requestDate",
   ) =>
     setFieldErrors((prev) =>
       prev[field] ? { ...prev, [field]: undefined } : prev,
@@ -275,13 +288,6 @@ export function OutboundIntakeModal({
 
   const validateManualForm = () => {
     const errors: typeof fieldErrors = { lines: {} };
-    if (!requestNo.trim()) {
-      errors.requestNo = t("outbound.intake.errRequestNo");
-    } else if (requestNo.trim().length > REQUEST_NO_MAX) {
-      errors.requestNo = t("shared.validation.textMaxLength", {
-        max: REQUEST_NO_MAX,
-      });
-    }
     if (!recipientName.trim())
       errors.recipientName = t("outbound.intake.errRecipient");
     if (recipientPhone) {
@@ -316,7 +322,6 @@ export function OutboundIntakeModal({
 
   const hasFieldErrors = (errors: typeof fieldErrors) =>
     Boolean(
-      errors.requestNo ||
       errors.recipientName ||
       errors.recipientPhone ||
       errors.requestDate ||
@@ -491,7 +496,7 @@ export function OutboundIntakeModal({
     setFileError(null);
     setFileInputKey((key) => key + 1);
     setMode("manual");
-    setRequestNo("");
+    setRequestNo(createRequestNo());
     setAgencyId(null);
     setAgencyKeyword("");
     setRecipientName("");
@@ -904,6 +909,32 @@ export function OutboundIntakeModal({
       >
         <header className="hn-outbound-intake-drawer__header">
           <strong>{t("outbound.intake.title")}</strong>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            className="hn-outbound-dialog__modes hn-outbound-intake-drawer__modes"
+          >
+            <ActionButton
+              kind="edit"
+              aria-pressed={mode === "manual"}
+              onClick={() => {
+                setMode("manual");
+                setPreview(null);
+              }}
+            >
+              {t("outbound.intake.tabManual")}
+            </ActionButton>
+            <ActionButton
+              kind="import"
+              aria-pressed={mode === "excel"}
+              onClick={() => {
+                setMode("excel");
+                setPreview(null);
+              }}
+            >
+              {t("outbound.intake.tabExcel")}
+            </ActionButton>
+          </Stack>
           <ActionIconButton
             kind="close"
             label={t("common.close")}
@@ -912,52 +943,9 @@ export function OutboundIntakeModal({
         </header>
         <CoordinatedLoadingBoundary mode="drawer" active={open && dialog.open}>
           <Stack spacing={2} className="hn-outbound-intake-drawer__body">
-            <Stack
-              direction="row"
-              spacing={1.5}
-              className="hn-outbound-dialog__modes"
-            >
-              <ActionButton
-                kind="edit"
-                aria-pressed={mode === "manual"}
-                onClick={() => {
-                  setMode("manual");
-                  setPreview(null);
-                }}
-              >
-                {t("outbound.intake.tabManual")}
-              </ActionButton>
-              <ActionButton
-                kind="import"
-                aria-pressed={mode === "excel"}
-                onClick={() => {
-                  setMode("excel");
-                  setPreview(null);
-                }}
-              >
-                {t("outbound.intake.tabExcel")}
-              </ActionButton>
-            </Stack>
-
             {mode === "manual" ? (
               <Stack spacing={2}>
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <UiTextField
-                      required
-                      fullWidth
-                      label={t("outbound.intake.fieldRequestNo")}
-                      placeholder="VD: REQ-20260813-001"
-                      value={requestNo}
-                      onChange={(event) => {
-                        setRequestNo(event.target.value);
-                        clearFieldError("requestNo");
-                      }}
-                      error={Boolean(fieldErrors.requestNo)}
-                      helperText={fieldErrors.requestNo}
-                      slotProps={{ htmlInput: { maxLength: REQUEST_NO_MAX } }}
-                    />
-                  </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <UiAutocomplete
                       options={
@@ -1196,6 +1184,7 @@ export function OutboundIntakeModal({
                   <Box>
                     <ActionButton
                       kind="create"
+                      appearance="flat"
                       onClick={() =>
                         setLines((current) => [...current, createEmptyLine()])
                       }

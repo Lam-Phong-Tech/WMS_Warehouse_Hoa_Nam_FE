@@ -20,8 +20,21 @@
 
 .hn-outbound-intake-drawer__header {
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   border-bottom: 1px solid var(--ops-line);
+}
+
+.hn-outbound-intake-drawer__modes {
+  margin-left: auto;
+}
+
+@media (max-width: 760px) {
+  .hn-outbound-intake-drawer__modes {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
 }
 
 .hn-outbound-intake-drawer__header strong {

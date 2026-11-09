@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import dayjs from "dayjs";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -54,13 +54,7 @@ function renderIntake(canImport = true) {
 
 async function fillRequiredFields() {
   fireEvent.change(
-    await screen.findByRole("textbox", { name: /Mã phiếu yêu cầu/ }),
-    {
-      target: { value: "REQ-001" },
-    },
-  );
-  fireEvent.change(
-    screen.getByRole("textbox", {
+    await screen.findByRole("textbox", {
       name: new RegExp(translate("vi", "outbound.intake.fieldRecipient")),
     }),
     { target: { value: "Nơi nhận A" } },
@@ -95,11 +89,10 @@ describe("OUT-01 request intake drawer", () => {
     );
     expect(await screen.findByText("Chọn tệp Excel")).toBeInTheDocument();
     expect(screen.getByText("Chưa chọn tệp")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Mã phiếu yêu cầu · Mã SKU · Số lượng yêu cầu · Tên người nhận / khách hàng",
-      ),
-    ).toBeVisible();
+    const requiredColumns = await screen.findByText(
+      "Mã phiếu yêu cầu · Mã SKU · Số lượng yêu cầu · Tên người nhận / khách hàng",
+    );
+    await waitFor(() => expect(requiredColumns).toBeVisible());
     const technicalHeaders = screen.getByText(
       /request_no · sku_code · required_qty/,
     );
@@ -141,20 +134,78 @@ describe("OUT-01 request intake drawer", () => {
     ).toBeInTheDocument();
   });
 
-  it("coordinates form loading without hiding the fixed drawer controls", () => {
+  it("keeps the intake mode tabs in the fixed drawer header", async () => {
     renderIntake();
 
     const drawer = screen.getByRole("dialog", {
       name: translate("vi", "outbound.intake.title"),
     });
+    const header = drawer.querySelector<HTMLElement>(
+      ".hn-outbound-intake-drawer__header",
+    );
     const loadingSurface = drawer.querySelector(".hn-loading-boundary--drawer");
-    expect(loadingSurface).not.toBeNull();
-    expect(loadingSurface).toContainElement(
-      drawer.querySelector(".hn-outbound-dialog__modes button"),
+    const manualTab = await screen.findByRole("button", {
+      name: translate("vi", "outbound.intake.tabManual"),
+    });
+    const excelTab = screen.getByRole("button", {
+      name: translate("vi", "outbound.intake.tabExcel"),
+    });
+    const closeButton = within(header as HTMLElement).getByRole("button", {
+      name: translate("vi", "common.close"),
+    });
+
+    expect(header).toContainElement(manualTab);
+    expect(header).toContainElement(excelTab);
+    expect(header).toContainElement(closeButton);
+    expect(loadingSurface).not.toContainElement(manualTab);
+    expect(loadingSurface).not.toContainElement(excelTab);
+    expect(loadingSurface).not.toContainElement(closeButton);
+  });
+
+  it("generates the source request number without asking for it", async () => {
+    renderIntake();
+
+    expect(
+      screen.queryByRole("textbox", { name: /Mã phiếu yêu cầu/ }),
+    ).not.toBeInTheDocument();
+    await fillRequiredFields();
+    fireEvent.click(screen.getByRole("button", { name: validateLabel }));
+
+    await waitFor(() =>
+      expect(validateOutboundRequestRows).toHaveBeenCalledTimes(1),
     );
-    expect(loadingSurface).not.toContainElement(
-      drawer.querySelector(".hn-outbound-intake-drawer__header button"),
+    const [rows] = vi.mocked(validateOutboundRequestRows).mock.calls[0];
+    expect(rows[0].request_no).toMatch(/^TOA-\d{8}-\d{6}-[A-Z0-9]{4}$/);
+  });
+
+  it("reuses the generated request number when validating again", async () => {
+    renderIntake();
+    await fillRequiredFields();
+    const validateButton = screen.getByRole("button", { name: validateLabel });
+
+    fireEvent.click(validateButton);
+    await waitFor(() =>
+      expect(validateOutboundRequestRows).toHaveBeenCalledTimes(1),
     );
+    fireEvent.click(validateButton);
+    await waitFor(() =>
+      expect(validateOutboundRequestRows).toHaveBeenCalledTimes(2),
+    );
+
+    const calls = vi.mocked(validateOutboundRequestRows).mock.calls;
+    expect(calls[1][0][0].request_no).toBe(calls[0][0][0].request_no);
+  });
+
+  it("keeps the validate action as the only filled primary", async () => {
+    renderIntake();
+
+    const addLineButton = await screen.findByRole("button", {
+      name: translate("vi", "outbound.intake.addLine"),
+    });
+    const validateButton = screen.getByRole("button", { name: validateLabel });
+
+    expect(addLineButton).toHaveAttribute("data-action-appearance", "flat");
+    expect(validateButton).toHaveClass("hn-outbound-dialog__primary");
   });
 });
 
@@ -171,7 +222,7 @@ describe("OUT-01 request date calendar", () => {
     await waitFor(() =>
       expect(validateOutboundRequestRows).toHaveBeenCalledWith([
         {
-          request_no: "REQ-001",
+          request_no: expect.stringMatching(/^TOA-\d{8}-\d{6}-[A-Z0-9]{4}$/),
           request_date: selected.format("YYYY-MM-DD"),
           customer_name: "Nơi nhận A",
           customer_address: "",
