@@ -51,8 +51,7 @@
   outline-offset: 3px;
 }
 
-/* Stepper 3 bước nghiệp vụ — theo mẫu stepper của SKU import: một hàng duy
-   nhất, vùng tiện ích (Chứng từ / NFC) đứng bên phải cùng hàng, hạ thấp hơn. */
+/* Stepper 3 bước nghiệp vụ — một hàng duy nhất, chỉ chứa 3 bước. */
 .hn-stepper-row {
   display: flex;
   align-items: flex-end;
@@ -135,6 +134,12 @@
   flex: none;
   gap: 8px;
   padding-bottom: 2px;
+}
+/* Nhóm "Chứng từ đính kèm / Sản phẩm & NFC" nằm trong header (cùng hàng với
+   tiêu đề) nên canh giữa theo chiều dọc, không hạ thấp như khi đứng cạnh
+   stepper. */
+.hn-step-utility--header {
+  padding-bottom: 0;
 }
 .hn-step-utility-btn {
   display: inline-flex;

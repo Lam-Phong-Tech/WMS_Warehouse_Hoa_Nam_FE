@@ -41,12 +41,20 @@ export function UiDialog({ title, actions, children, ...rest }: UiDialogProps) {
 }
 export interface UiDrawerProps extends Omit<DrawerProps, "title"> {
   title?: ReactNode;
+  /**
+   * Nội dung cố định ở header, nằm bên phải (hoặc giữa) title — KHÔNG thuộc
+   * vùng được `aria-labelledby` trỏ tới, nên nút/nhãn trong đó không phì tên
+   * accessible của drawer. Dùng cho các điều khiển header (tab phụ, nút làm
+   * mới…); title phải là THIẾT KẾ chữ thuần cho tên drawer.
+   */
+  headerEnd?: ReactNode;
   width?: number;
   actions?: ReactNode;
 }
 
 export function UiDrawer({
   title,
+  headerEnd,
   width = 420,
   actions,
   children,
@@ -79,7 +87,7 @@ export function UiDrawer({
           flexDirection: "column",
         }}
       >
-        {title ? (
+        {title || headerEnd ? (
           <Box
             sx={{
               flex: "none",
@@ -90,9 +98,34 @@ export function UiDrawer({
               bgcolor: "background.paper",
             }}
           >
-            <UiText id={titleId} variant="cardTitle">
-              {title}
-            </UiText>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+                flexWrap: "wrap",
+                rowGap: 1,
+              }}
+            >
+              {title ? (
+                <UiText id={titleId} variant="cardTitle">
+                  {title}
+                </UiText>
+              ) : null}
+              {headerEnd ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {headerEnd}
+                </Box>
+              ) : null}
+            </Box>
           </Box>
         ) : null}
         <Box

@@ -709,24 +709,48 @@ export function AlignedOutboundDetailModal({
     },
   ];
 
-  const drawerTitle = (
-    <Box
-      component="span"
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 1,
-      }}
-    >
-      {t("outbound.detail.title")}
+  // Header gom title (chữ thuần — giữ nguyên tên accessible của drawer) +
+  // headerEnd: nhóm chuyển tab phụ (Chứng từ đính kèm / Sản phẩm & NFC) —
+  // theo yêu cầu người dùng, nút này nằm trên cùng một hàng với tiêu đề,
+  // không nằm cạnh bước nghiệp vụ. Chỉ hiện khi phiếu đã sẵn sàng
+  // (loading/lỗi không có panel nào để chuyển sang).
+  const showPanelUtility =
+    !detailQuery.isLoading &&
+    !detailQuery.isError &&
+    Boolean(detail) &&
+    Boolean(doc);
+  const panelUtility = showPanelUtility ? (
+    <div className="hn-step-utility hn-step-utility--header">
+      <button
+        type="button"
+        className="hn-step-utility-btn"
+        aria-pressed={activePanel === "attachments"}
+        onClick={() => setSelectedPanel("attachments")}
+      >
+        {t("shared.attachments.title")}
+      </button>
+      <button
+        type="button"
+        className="hn-step-utility-btn"
+        aria-pressed={activePanel === "nfc"}
+        onClick={() => setSelectedPanel("nfc")}
+      >
+        {t("nfc.outboundNfcTab")}
+      </button>
+    </div>
+  ) : null;
+
+  const headerEnd = (
+    <>
+      {panelUtility}
       <ActionIconButton
         kind="close"
         label={t("common.close")}
         onClick={dialog.close}
       />
-    </Box>
+    </>
   );
+  const drawerTitle = t("outbound.detail.title");
 
   if (detailQuery.isLoading) {
     return (
@@ -735,6 +759,7 @@ export function AlignedOutboundDetailModal({
         {...dialog.dialogProps}
         width={820}
         title={drawerTitle}
+        headerEnd={headerEnd}
       >
         {t("outbound.detail.loading")}
       </UiDrawer>
@@ -748,6 +773,7 @@ export function AlignedOutboundDetailModal({
         {...dialog.dialogProps}
         width={820}
         title={drawerTitle}
+        headerEnd={headerEnd}
       >
         <UiAlert tone="error">
           {getApiErrorMessage(
@@ -766,6 +792,7 @@ export function AlignedOutboundDetailModal({
         {...dialog.dialogProps}
         width={820}
         title={drawerTitle}
+        headerEnd={headerEnd}
         actions={
           (doc?.status === "DRAFT" && canEditHeader) ||
           (can("outbound.cancel") && mutable) ? (
@@ -882,24 +909,6 @@ export function AlignedOutboundDetailModal({
                   </button>
                 );
               })}
-            </div>
-            <div className="hn-step-utility">
-              <button
-                type="button"
-                className="hn-step-utility-btn"
-                aria-pressed={activePanel === "attachments"}
-                onClick={() => setSelectedPanel("attachments")}
-              >
-                {t("shared.attachments.title")}
-              </button>
-              <button
-                type="button"
-                className="hn-step-utility-btn"
-                aria-pressed={activePanel === "nfc"}
-                onClick={() => setSelectedPanel("nfc")}
-              >
-                {t("nfc.outboundNfcTab")}
-              </button>
             </div>
           </div>
 
