@@ -118,6 +118,7 @@ Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-ta
 - Ô tìm kiếm rộng hơn ô chọn và lọc khi nhập. Ô chọn hiển thị tên trường cùng giá trị trong ô, ví dụ `Trạng thái: Tất cả`; không thêm hàng label phía trên.
 - Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-control` (`6px`); focus dùng `--ops-link` và quầng màu link 13%.
 - Mọi thay đổi bộ lọc áp dụng tự động, không cần nút `Áp dụng`. Nút `Xóa lọc` chỉ xuất hiện khi có điều kiện lọc, theo bản quy cách SKU người dùng chỉ định. Khi hẹp, các ô xuống hàng, ô tìm kiếm chiếm trọn hàng đầu; vùng lọc không làm trang tràn ngang.
+- Menu dropdown mở ra **rộng bằng đúng ô chọn**, giống hành vi popper của ô gõ-để-tìm; nhãn dài hơn ô thì xuống dòng trong lòng menu.
 
 ### Bảng
 

@@ -13,7 +13,7 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormHelperText from "@mui/material/FormHelperText";
-import { useId } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { UiAutocomplete } from "../forms/UiAutocomplete";
@@ -95,6 +95,25 @@ export function UiSelect({
 }: UiSelectProps) {
   const labelId = useId();
   const helperId = `${labelId}-helper`;
+  /**
+   * Đo bề rộng THẬT của ô chọn để menu mở ra đúng bằng ô (giống popper của
+   * UiAutocomplete: width = anchor.clientWidth). MUI Select chỉ đặt `min-width`
+   * = bề rộng ô neo nên menu còn nở thêm tới nhãn dài nhất; khi ô nằm trong
+   * lưới bộ lọc, menu sẽ rộng quá ô. Gắn ref vào FormControl (bọc sát Select),
+   * theo dõi bằng ResizeObserver để giữ đúng cả lúc lưới đổi cột.
+   */
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [anchorWidth, setAnchorWidth] = useState<number>();
+  useLayoutEffect(() => {
+    const node = rootRef.current;
+    if (!node) return undefined;
+    const update = () => setAnchorWidth(node.clientWidth || undefined);
+    update();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
   const searchableMode = resolveSearchable(options, searchable);
   /**
    * Bề rộng tối thiểu đi theo NHÃN chứ không theo con số từng màn đoán tay.
@@ -161,6 +180,7 @@ export function UiSelect({
     );
   return (
     <FormControl
+      ref={rootRef}
       size="small"
       disabled={disabled}
       fullWidth={fullWidth}
@@ -176,17 +196,22 @@ export function UiSelect({
       <Select
         id={id}
         /*
-         * Trần bề rộng để nhãn quá dài không kéo menu tràn màn hình, và trần
-         * CAO đúng 5 dòng: menu dài hơn một tầm nhìn thì người dùng mất chỗ
-         * đứng (trên điện thoại nó che gần hết trang). Danh sách dài hơn ngưỡng
-         * `resolveSearchable` đã đi nhánh gõ-để-tìm ở trên, nên trần này chỉ
-         * chạm tới các enum cỡ 6–8 dòng — cuộn một nhịp là hết.
+         * Menu mở ra ĐÚNG bằng bề rộng ô chọn (user chốt 09/11/2026 cho bộ
+         * lọc; UiAutocomplete đã có hành vi này sẵn). MUI chỉ đặt min-width =
+         * bề rộng ô neo nên menu còn nở tới nhãn dài nhất; trần maxWidth =
+         * bề rộng ô đo được chặn phần nở thêm. Trần CAO đúng 5 dòng: menu dài
+         * hơn một tầm nhìn thì người dùng mất chỗ đứng. Danh sách dài hơn
+         * ngưỡng `resolveSearchable` đã đi nhánh gõ-để-tìm ở trên, nên trần
+         * này chỉ chạm tới các enum cỡ 6–8 dòng — cuộn một nhịp là hết.
          */
         MenuProps={{
           slotProps: {
             paper: {
               className: menuClassName,
-              sx: { maxWidth: 520, maxHeight: OPTION_LIST_MAX_HEIGHT + 16 },
+              sx: {
+                maxWidth: anchorWidth ?? 520,
+                maxHeight: OPTION_LIST_MAX_HEIGHT + 16,
+              },
             },
           },
         }}
@@ -228,10 +253,9 @@ export function UiSelect({
             key={String(option.value)}
             value={option.value}
             disabled={option.disabled}
-            // Menu của MUI rộng TỐI THIỂU bằng ô neo. Không khai nowrap thì
-            // nhãn dài ("Thu hồi phạm vi vai trò") gãy dòng giữa từ trong một
-            // menu hẹp; có nowrap, menu tự nở cho vừa nhãn dài nhất.
-            sx={{ whiteSpace: "nowrap" }}
+            // Menu không nở rộng hơn ô nữa nên nhãn dài ("Thu hồi phạm vi
+            // vai trò") phải XUỐNG DÒNG trong lòng menu thay vì tràn/clip.
+            sx={{ whiteSpace: "normal", overflowWrap: "anywhere" }}
           >
             {option.label}
           </MenuItem>

@@ -235,6 +235,31 @@ for (const width of [500, 620]) {
   });
 }
 
+test("filter dropdown menus render at the same width as their controls", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.goto("/e2e/fixtures/outbound-audit.html?sidebar=300");
+  await expect(
+    page.getByText("PX-AUDIT-0001", { exact: true }),
+  ).toBeVisible();
+  const formControls = page.locator(
+    ".hn-outbound-filters .MuiOutlinedInput-root:has(.MuiSelect-select)",
+  );
+  const selects = page.locator(".hn-outbound-filters .MuiSelect-select");
+  for (let index = 0; index < 2; index += 1) {
+    const controlWidth =
+      (await formControls.nth(index).boundingBox())?.width ?? 0;
+    await selects.nth(index).click();
+    const paper = page.locator(".hn-outbound-menu.MuiPaper-root").last();
+    await expect(paper).toBeVisible();
+    const menuWidth = (await paper.boundingBox())?.width ?? 0;
+    expect(Math.abs(menuWidth - controlWidth)).toBeLessThanOrEqual(2);
+    await page.keyboard.press("Escape");
+    await expect(paper).toBeHidden();
+  }
+});
+
 test("reduced motion removes sliding but keeps the three-second countdown", async ({
   page,
 }) => {

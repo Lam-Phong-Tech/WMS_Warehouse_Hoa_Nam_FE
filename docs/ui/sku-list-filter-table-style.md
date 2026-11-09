@@ -9,6 +9,7 @@ Nguồn chuẩn: `src/modules/master-data/pages/sku-list.css` và `ApiMasterScre
 - **Không lặp lựa chọn trong menu:** khi đóng, ô lọc vẫn hiển thị `Tên bộ lọc: Tất cả`. Khi mở, chỉ có **một** mục tương ứng; không thêm dòng placeholder trùng với lựa chọn đã có trong `options` (kể cả khi giá trị là `""` hoặc sentinel như `ALL`). Placeholder dùng để hiển thị khi chưa chọn, không phải lý do để sinh thêm một lựa chọn trùng.
 - Khi sửa bộ lọc dùng chung, kiểm tra dropdown thường và dropdown có tìm kiếm, giao diện sáng/tối; chọn một giá trị rồi chọn lại `Tất cả` phải trả đúng giá trị bỏ lọc của màn hình. Không để mất khả năng bỏ lọc hoặc tạo hai mục cùng giá trị rỗng.
 - Điều khiển cao `48px`, nền `--ops-surface`, viền `--ops-line`, bo `--ops-radius-control` (`6px`); focus dùng `--ops-link` với quầng màu link 13%. Mọi thay đổi bộ lọc được áp dụng tự động; không cần nút `Áp dụng`. Nút `Xóa lọc` chỉ xuất hiện khi có điều kiện lọc.
+- Menu dropdown mở ra **rộng bằng đúng ô chọn**, giống hành vi popper của ô gõ-để-tìm; nhãn dài hơn ô thì xuống dòng trong lòng menu, không làm menu tràn ra ngoài ô.
 - Khi container hẹp, các ô xuống hàng; ô tìm kiếm chiếm trọn hàng đầu. Không làm trang tràn ngang vì bộ lọc.
 - Riêng Danh sách SKU: khi ghim mở sidebar trên desktop, chuyển ô `Thông tin` vào vùng mở bằng nút `Bộ lọc`; hàng chính giữ tìm kiếm, loại hàng, trạng thái và các nút lọc. Khi thu sidebar hoặc dùng menu dạng lớp phủ trên mobile, giữ `Thông tin` ở hàng chính. Chuyển trạng thái sidebar phải giữ nguyên giá trị lọc, chỉ render một ô `Thông tin`.
 
