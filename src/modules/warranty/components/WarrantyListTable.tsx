@@ -88,7 +88,7 @@ export function WarrantyListTable({
           </colgroup>
           <thead>
             <tr>
-              <th className="hn-war-index-col">STT</th>
+              <th className="hn-war-index-col">#</th>
               {header("case_code", tUi("updatedUi.text_7f401d2e3891"))}
               {header("sku", tUi("updatedUi.text_82730807e057"))}
               {header(
@@ -124,7 +124,7 @@ export function WarrantyListTable({
                 ))
               : sortedRows.map((row, index) => (
                   <tr key={rowKey(row)} onClick={() => onRowClick?.(row)}>
-                    <td className="hn-war-index-col" data-label="STT">
+                    <td className="hn-war-index-col" data-label="#">
                       {rowNumberOffset + index + 1}
                     </td>
                     <td

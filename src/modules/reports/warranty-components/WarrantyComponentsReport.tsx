@@ -1188,14 +1188,7 @@ export default function WarrantyComponentsReport() {
                 >
                   <thead>
                     <tr>
-                      <th style={{ width: "4%" }}>
-                        <input
-                          type="checkbox"
-                          aria-label={tUi(
-                            "reports.agencyComparison.pickerSelectAll",
-                          )}
-                        />
-                      </th>
+                      <th style={{ width: "4%" }}>#</th>
                       <th style={{ width: "24%" }}>
                         {tUi("updatedUi.text_922013da333f")}
                       </th>
@@ -1234,15 +1227,7 @@ export default function WarrantyComponentsReport() {
                       Array.from({ length: 5 }).map((_, index) => (
                         <tr key={"skeleton-" + index}>
                           <td>
-                            <input
-                              type="checkbox"
-                              disabled
-                              aria-label={
-                                tUi("updatedUi.text_42c8e174b25a") +
-                                " " +
-                                (index + 1)
-                              }
-                            />
+                            <SkeletonLine width="18px" height={10} />
                           </td>
                           <td>
                             <SkeletonLine width="80%" />
@@ -1283,19 +1268,16 @@ export default function WarrantyComponentsReport() {
                         </td>
                       </tr>
                     ) : (
-                      pagination.pageRows.map((row) => (
+                      pagination.pageRows.map((row, index) => (
                         <tr
                           id={"warranty-row-" + row.id}
                           key={row.id}
                           {...rowActivationProps(() => openDetail(row))}
                         >
-                          <td>
-                            <input
-                              type="checkbox"
-                              aria-label={
-                                tUi("shared.table.selectRow") + " " + row.caseNo
-                              }
-                            />
+                          <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                            {(pagination.page - 1) * pagination.perPage +
+                              index +
+                              1}
                           </td>
                           <td className="warranty-case-cell">
                             <Box

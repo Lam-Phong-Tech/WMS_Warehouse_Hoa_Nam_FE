@@ -280,7 +280,7 @@ export default function InventoryPage() {
   const balanceColumns: ResponsiveTableColumn<InventoryBalanceRow>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       width: "5%",
       hideOnMobile: true,
       render: (row) =>
@@ -381,7 +381,7 @@ export default function InventoryPage() {
   const movementColumns: ResponsiveTableColumn<StockMovementRow>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       width: "5%",
       hideOnMobile: true,
       render: (row) =>

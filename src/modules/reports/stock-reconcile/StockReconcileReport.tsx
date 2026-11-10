@@ -1455,7 +1455,7 @@ export default function StockReconcileReport() {
                                 {detailTab === "reconcile" ? (
                                   <tr>
                                     <th className="rpt02-stt" scope="col">
-                                      STT
+                                      #
                                     </th>
                                     <th>
                                       SKU / {tUi("inventory.balance.colName")}
@@ -1485,7 +1485,7 @@ export default function StockReconcileReport() {
                                 ) : (
                                   <tr>
                                     <th className="rpt02-stt" scope="col">
-                                      STT
+                                      #
                                     </th>
                                     <th>
                                       SKU / {tUi("inventory.balance.colName")}

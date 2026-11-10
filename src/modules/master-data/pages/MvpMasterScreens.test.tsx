@@ -420,7 +420,7 @@ describe("API-backed MVP master screens", () => {
       Array.from(table.querySelectorAll("thead th"), (header) =>
         header.textContent?.trim(),
       ),
-    ).toEqual(["STT", "SKU", "Loại", "Hãng / Nhóm", "Trạng thái", ""]);
+    ).toEqual(["#", "SKU", "Loại", "Hãng / Nhóm", "Trạng thái", ""]);
     const row = within(table)
       .getByText("DCH-DRILL-DJZ10A-220V-V1")
       .closest("tr");

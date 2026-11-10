@@ -666,7 +666,7 @@ export default function TabImportQuality() {
         columns={[
           {
             key: "stt",
-            header: "STT",
+            header: "#",
             align: "center",
             width: 56,
             hideOnMobile: true,

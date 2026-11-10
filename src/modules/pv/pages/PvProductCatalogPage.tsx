@@ -642,7 +642,7 @@ export function PvProductCatalogPage() {
   const tableColumns: ResponsiveTableColumn<PvAdminProfile>[] = [
     {
       key: "row_number",
-      header: copy("STT", "No."),
+      header: "#",
       width: "5%",
       align: "center",
       hideOnMobile: true,

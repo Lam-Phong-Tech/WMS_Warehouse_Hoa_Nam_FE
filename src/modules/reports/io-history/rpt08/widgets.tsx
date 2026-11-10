@@ -521,7 +521,7 @@ export function HistoryTable({
           </colgroup>
           <thead>
             <tr>
-              <th className="rpt08-sequence">STT</th>
+              <th className="rpt08-sequence">#</th>
               <th className="rpt08-time-col">
                 <span className="rpt08-desktop-label">
                   {tUi("inventory.movement.colTime")}

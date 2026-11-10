@@ -50,7 +50,7 @@ it("numbers records across pages and resets numbering after filtering or changin
   });
   const table = screen.getByRole("table");
   expect(
-    within(table).getByRole("columnheader", { name: "STT" }),
+    within(table).getByRole("columnheader", { name: "#" }),
   ).toBeInTheDocument();
   const numbers = () =>
     within(table)

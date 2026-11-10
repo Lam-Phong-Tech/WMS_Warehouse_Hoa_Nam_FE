@@ -227,6 +227,22 @@ describe("RPT-06 · Báo cáo Bảo hành & linh kiện", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("dùng cột # đánh số thứ tự thay cho cột chọn dòng", async () => {
+    renderReport();
+    await waitForData();
+    const table = await caseTable();
+    expect(
+      within(table).getByRole("columnheader", { name: "#" }),
+    ).toBeInTheDocument();
+    expect(within(table).queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(
+      within(table)
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => within(row).getAllByRole("cell")[0].textContent),
+    ).toEqual(["1", "2", "3"]);
+  });
+
   it("dựng KPI, biểu đồ và bảng đối soát từ payload báo cáo thật", async () => {
     renderReport();
 

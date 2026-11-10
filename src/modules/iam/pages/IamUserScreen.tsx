@@ -1021,7 +1021,7 @@ export function IamUserScreen({
             </colgroup>
             <thead>
               <tr>
-                <th className="stt-col">STT</th>
+                <th className="stt-col">#</th>
                 <SortableTh
                   label={t("iam.user.colUser")}
                   sortKey="name"
@@ -1067,7 +1067,7 @@ export function IamUserScreen({
                     key={user.user_id}
                     {...rowActivationProps(() => openView(user))}
                   >
-                    <td className="stt-col" data-label="STT">
+                    <td className="stt-col" data-label="#">
                       {mvpRowNumber(page, perPage, originalIndexOf(user))}
                     </td>
                     <td

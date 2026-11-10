@@ -108,7 +108,7 @@ describe("ProfilePage security MFA card", () => {
     await screen.findByText("Page 1");
     const table = screen.getByRole("table");
     expect(
-      within(table).getByRole("columnheader", { name: "STT" }),
+      within(table).getByRole("columnheader", { name: "#" }),
     ).toBeVisible();
     expect(
       within(within(table).getAllByRole("row")[1]).getAllByRole("cell")[0],

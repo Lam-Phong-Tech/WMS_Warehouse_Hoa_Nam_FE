@@ -91,7 +91,7 @@ export function visibleReportColumns(columns: ReportColumn[]): ReportColumn[] {
 /** Cột STT chuẩn — dùng chung để mọi bảng báo cáo đánh số giống nhau. */
 export function sttColumn(page: number, perPage: number): ReportColumn {
   return {
-    title: "STT",
+    title: "#",
     key: "__stt",
     width: 64,
     fixed: "left",

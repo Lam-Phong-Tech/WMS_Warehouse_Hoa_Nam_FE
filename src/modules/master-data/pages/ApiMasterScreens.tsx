@@ -1116,7 +1116,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <table className="sku-table">
               <thead>
                 <tr>
-                  <th className="stt-col">STT</th>
+                  <th className="stt-col">#</th>
                   <SortableTh
                     label="SKU"
                     sortKey="skuCode"
@@ -2302,7 +2302,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             <table className="agy-table">
               <thead>
                 <tr>
-                  <th className="stt-col">STT</th>
+                  <th className="stt-col">#</th>
                   <SortableTh
                     label={t("masterData.recipient.colCode")}
                     sortKey="code"
@@ -3375,7 +3375,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             >
               <thead>
                 <tr>
-                  <th className="stt-col">STT</th>
+                  <th className="stt-col">#</th>
                   <SortableTh
                     className="code-col"
                     label={t("masterData.defect.colCode")}

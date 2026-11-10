@@ -401,7 +401,7 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     renderPage();
     await screen.findByRole("button", { name: "CI-0001" });
     expect(
-      screen.getByRole("columnheader", { name: "STT" }),
+      screen.getByRole("columnheader", { name: "#" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("columnheader", { name: /Cập nhật/ }),

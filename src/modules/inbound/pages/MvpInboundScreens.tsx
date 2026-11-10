@@ -925,7 +925,7 @@ export function InboundScanModal({
   const lineColumns: ResponsiveTableColumn<InboundLine>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       width: "7%",
       align: "center",
       render: (line) =>
@@ -1026,7 +1026,7 @@ export function InboundScanModal({
   const scanEntryColumns: ResponsiveTableColumn<InboundScanEntry>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       width: "7%",
       align: "center",
       render: (entry) =>
@@ -1141,7 +1141,7 @@ export function InboundScanModal({
   const scanLogColumns: ResponsiveTableColumn<ScanLogRow>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       width: 56,
       align: "center",
       render: (row) =>

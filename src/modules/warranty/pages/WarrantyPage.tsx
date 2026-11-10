@@ -236,7 +236,7 @@ export default function WarrantyPage() {
   const columns: ResponsiveTableColumn<WarrantyCase>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       width: 60,
       hideOnMobile: true,
       render: (row) =>

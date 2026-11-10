@@ -239,7 +239,7 @@ describe("RPT-01 inbound filters", () => {
     fireEvent.click(screen.getByRole("button", { name: "2" }));
     expect(within(table()).getByText("PN-BETA")).toBeInTheDocument();
     expect(
-      screen.getByRole("columnheader", { name: "STT" }),
+      screen.getByRole("columnheader", { name: "#" }),
     ).toBeInTheDocument();
     expect(
       within(within(table()).getByText("PN-BETA").closest("tr")!).getAllByRole(

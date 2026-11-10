@@ -94,7 +94,7 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     expect(screen.getByText("Tổng 2 bản ghi")).toBeInTheDocument();
 
     const table = screen.getByRole("table");
-    expect(within(table).queryByText("STT")).not.toBeInTheDocument();
+    expect(within(table).queryByText("#")).not.toBeInTheDocument();
     expect(within(table).queryByText("THAO TÁC")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Xuất Excel (0)" }),

@@ -74,7 +74,7 @@ describe("RPT-08 shared report presentation", () => {
     const onPageSizeChange = vi.fn();
     const { container } = mountTable(2, 42, { pageSize: 10, onPageSizeChange });
     expect(
-      screen.getByRole("columnheader", { name: "STT" }),
+      screen.getByRole("columnheader", { name: "#" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("columnheader")).toHaveLength(7);
     expect(

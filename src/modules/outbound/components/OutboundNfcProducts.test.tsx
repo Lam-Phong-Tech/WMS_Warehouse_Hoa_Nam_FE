@@ -100,7 +100,7 @@ describe("OutboundNfcProducts", () => {
       screen.queryByRole("button", { name: "Làm mới" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("columnheader", { name: "STT" }),
+      screen.getByRole("columnheader", { name: "#" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("columnheader", { name: "UID chip" }),

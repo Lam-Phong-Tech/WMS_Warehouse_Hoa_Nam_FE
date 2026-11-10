@@ -506,7 +506,7 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     ).not.toBeInTheDocument();
     expect(within(table).getAllByRole("columnheader")).toHaveLength(7);
     expect(
-      within(table).getByRole("columnheader", { name: "STT" }),
+      within(table).getByRole("columnheader", { name: "#" }),
     ).toBeInTheDocument();
     expect(table.querySelectorAll("tbody tr:first-child td")).toHaveLength(7);
     expect(

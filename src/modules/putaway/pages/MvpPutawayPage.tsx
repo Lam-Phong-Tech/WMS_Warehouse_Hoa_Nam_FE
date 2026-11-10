@@ -655,7 +655,7 @@ export default function MvpPutawayPage() {
   const historyColumns: ResponsiveTableColumn<PutawayHistory>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       align: "center",
       width: 56,
       hideOnMobile: true,

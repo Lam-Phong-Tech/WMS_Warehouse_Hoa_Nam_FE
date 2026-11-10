@@ -318,7 +318,7 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     await screen.findByText("PX-20260820-0001");
     const table = screen.getByRole("table");
     expect(
-      within(table).getByRole("columnheader", { name: "STT" }),
+      within(table).getByRole("columnheader", { name: "#" }),
     ).toBeInTheDocument();
     expect(
       within(table)

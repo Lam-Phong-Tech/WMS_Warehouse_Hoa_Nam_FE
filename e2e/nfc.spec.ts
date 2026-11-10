@@ -22,7 +22,7 @@ for (const mode of ["light", "dark"])
       await expect(
         page.getByRole("combobox", { name: "Trạng thái chip" }),
       ).toBeVisible();
-      await expect(page.locator("thead th").first()).toHaveText("STT");
+      await expect(page.locator("thead th").first()).toHaveText("#");
       await expect(page.locator('td[data-field="ordinal"]').first()).toHaveText(
         "1",
       );

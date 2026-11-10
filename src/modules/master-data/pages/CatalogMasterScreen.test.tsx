@@ -67,7 +67,7 @@ describe("CatalogMasterScreen · Danh mục sản phẩm", () => {
   it("có cột STT, đánh số theo đúng dòng dữ liệu", async () => {
     renderScreen();
 
-    const header = await screen.findByText("STT");
+    const header = await screen.findByText("#");
     expect(header).toBeInTheDocument();
 
     await waitFor(() =>

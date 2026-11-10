@@ -467,7 +467,7 @@ export function CatalogMasterScreen() {
   const columns: ResponsiveTableColumn<CatalogMasterRecord>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       align: "center",
       width: "6%",
       hideOnMobile: true,

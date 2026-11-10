@@ -225,7 +225,7 @@ export default function SupplierListPage() {
               </colgroup>
               <thead>
                 <tr>
-                  <th scope="col">STT</th>
+                  <th scope="col">#</th>
                   <th scope="col">{copy.code}</th>
                   <th scope="col">{copy.name}</th>
                   <th scope="col">{copy.status}</th>

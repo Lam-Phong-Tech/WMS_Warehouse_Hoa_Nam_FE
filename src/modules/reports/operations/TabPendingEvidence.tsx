@@ -80,7 +80,7 @@ export default function TabPendingEvidence() {
   const columns: ResponsiveTableColumn<PendingEvidenceItem>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       align: "center",
       width: 56,
       hideOnMobile: true,

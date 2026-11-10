@@ -178,7 +178,7 @@ test("account navigation collapses in the heading and security drawers use clear
   await expect(
     page
       .locator(".hn-personal-history")
-      .getByRole("columnheader", { name: "STT" }),
+      .getByRole("columnheader", { name: "#" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Đổi mật khẩu", exact: true }).click();
   const password = page.getByRole("dialog", { name: /^Đổi mật khẩu/ });

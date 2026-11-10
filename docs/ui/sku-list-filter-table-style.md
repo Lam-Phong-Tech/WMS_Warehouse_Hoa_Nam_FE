@@ -15,7 +15,7 @@ Nguồn chuẩn: `src/modules/master-data/pages/sku-list.css` và `ApiMasterScre
 
 ## Bảng
 
-**Chốt màu chữ đầu bảng sáng:** `--ops-heading` (**#003B63**) trên nền `--ops-table-header` (**#D2EDF7**), đậm **800**, 16/24px; tương phản tối thiểu **7:1**. STT và mọi nhãn cột, kể cả chữ bên trong nút sắp xếp, dùng cùng màu đậm. Không dùng màu xám/muted hoặc giảm opacity; hover/focus/sort không làm nhãn nhạt đi. Chỉ icon sắp xếp được đổi màu để báo trạng thái. Khai màu qua token để giữ đúng dark mode.
+**Chốt màu chữ đầu bảng sáng:** `--ops-heading` (**#003B63**) trên nền `--ops-table-header` (**#D2EDF7**), đậm **800**, 16/24px; tương phản tối thiểu **7:1**. Tiêu đề cột số thứ tự là **`#`** (thay cho `STT`); `#` và mọi nhãn cột, kể cả chữ bên trong nút sắp xếp, dùng cùng màu đậm. Không dùng màu xám/muted hoặc giảm opacity; hover/focus/sort không làm nhãn nhạt đi. Chỉ icon sắp xếp được đổi màu để báo trạng thái. Khai màu qua token để giữ đúng dark mode.
 
 | Thành phần         | Quy cách từ SKU                                                                                                                                                                                        |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

@@ -1434,7 +1434,7 @@ export default function MovementTraceReport() {
             columns={[
               {
                 key: "index",
-                header: "STT",
+                header: "#",
                 width: "6%",
                 align: "center",
                 render: (row) => rowIndexOf(ledgerFilter.rows, row) + 1,

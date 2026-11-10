@@ -135,6 +135,8 @@ Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-ta
 
 Mỗi bảng phải có **kế hoạch độ rộng cho mọi cột**, tổng tỷ lệ `100%`. Cột bỏ trống độ rộng có thể hút toàn bộ phần dư và tạo khoảng trắng sai nhịp. Tên cột, thứ tự và nghiệp vụ của từng màn được giữ theo API, không sao chép tên cột SKU sang module khác.
 
+Cột số thứ tự hiển thị tiêu đề **`#`** trên toàn hệ thống (thay cho nhãn `STT` cũ), căn giữa; số thứ tự tính theo trang hiện tại và đi theo đúng dòng dữ liệu khi sắp xếp. Đây là quy ước chung, không đặt lại nhãn riêng theo module.
+
 ### Mở chi tiết trong bảng — chuẩn mũi tên SKU (04/11/2026)
 
 - Mọi nút **Xem / Mở / Chi tiết** dùng để mở bản ghi từ bảng hoặc card mobile hiển thị **một mũi tên phải `→`** theo mẫu Danh sách SKU. Dùng `RowActionButton kind="view"` hoặc `kind="detail"`; nhãn được giữ trong `aria-label` và tooltip, không hiển thị chữ hay icon mắt bên cạnh mũi tên.

@@ -35,7 +35,7 @@ for (const theme of ["light", "dark"]) {
       const opener = page.getByRole("button", { name: /^SKU-001-/ });
       if (width === 1440) {
         const header = page.getByRole("columnheader", {
-          name: "STT",
+          name: "#",
           exact: true,
         });
         await expect(header).toHaveCSS("font-size", "16px");

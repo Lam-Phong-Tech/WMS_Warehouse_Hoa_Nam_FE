@@ -153,7 +153,7 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     const table = await screen.findByRole("table");
     await within(table).findByText("Đại lý 00");
     expect(
-      within(table).getByRole("columnheader", { name: "STT" }),
+      within(table).getByRole("columnheader", { name: "#" }),
     ).toBeInTheDocument();
     const numbers = () =>
       within(table)

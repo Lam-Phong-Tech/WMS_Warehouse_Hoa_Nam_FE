@@ -199,7 +199,7 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows).toHaveLength(3);
     expect(
-      within(table).getByRole("columnheader", { name: "STT" }),
+      within(table).getByRole("columnheader", { name: "#" }),
     ).toBeInTheDocument();
     for (const name of [
       "Serial / Lô / Pallet",

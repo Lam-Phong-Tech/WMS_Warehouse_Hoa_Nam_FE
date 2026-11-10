@@ -1048,7 +1048,7 @@ export default function RecipientAgencyReport() {
                 <thead>
                   <tr>
                     <th scope="col" className="rpt07-stt">
-                      STT
+                      #
                     </th>
                     <th>{tUi("updatedUi.text_61d6c9f042ea")}</th>
                     <th className="is-number">
@@ -1147,7 +1147,7 @@ export default function RecipientAgencyReport() {
                           key={row.key}
                           {...rowActivationProps(() => setDetailRow(row))}
                         >
-                          <td data-label="STT" className="rpt07-stt">
+                          <td data-label="#" className="rpt07-stt">
                             {(visiblePage - 1) * pageSize + index + 1}
                           </td>
                           <td data-label={tUi("updatedUi.text_61d6c9f042ea")}>

@@ -103,7 +103,7 @@ function Bench() {
         columns={[
           {
             key: "stt",
-            header: "STT",
+            header: "#",
             width: 64,
             align: "center",
             render: (row) => rowIndexOf(rows, row) + 1,

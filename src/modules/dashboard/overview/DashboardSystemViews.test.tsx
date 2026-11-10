@@ -170,7 +170,7 @@ describe("DashboardSystemViews — định mức tồn", () => {
     render(<DashboardSystemViews view="thresholds" onNavigate={vi.fn()} />);
     const table = screen.getByRole("table");
     expect(
-      within(table).getByRole("columnheader", { name: "STT" }),
+      within(table).getByRole("columnheader", { name: "#" }),
     ).toBeInTheDocument();
     expect(within(table).getAllByRole("row")).toHaveLength(11);
     expect(screen.getByText("Hiển thị 1–10 / 25 SKU")).toBeInTheDocument();

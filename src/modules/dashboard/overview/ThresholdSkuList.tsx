@@ -129,7 +129,7 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
             columns={[
               {
                 key: "order",
-                header: "STT",
+                header: "#",
                 width: "9%",
                 truncate: 0,
                 render: (row) => row.order,

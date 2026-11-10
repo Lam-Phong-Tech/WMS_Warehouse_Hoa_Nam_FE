@@ -404,7 +404,7 @@ function InboundListScreen() {
           <table className="hn-inbound-table">
             <thead>
               <tr>
-                <th className="hn-inbound-col-index">STT</th>
+                <th className="hn-inbound-col-index">#</th>
                 {sortHeader(
                   tUi("inbound.detail.fieldDocument"),
                   "code",

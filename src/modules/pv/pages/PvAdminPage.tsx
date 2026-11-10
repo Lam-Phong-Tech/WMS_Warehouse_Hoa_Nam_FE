@@ -281,7 +281,7 @@ function SimpleMasterTab({
   const columns: ResponsiveTableColumn<PvAdminSimpleMaster>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       align: "center",
       width: 56,
       hideOnMobile: true,
@@ -650,7 +650,7 @@ export default function PvAdminPage() {
   const profileColumns: ResponsiveTableColumn<PvAdminProfile>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       align: "center",
       width: 56,
       hideOnMobile: true,
@@ -1316,7 +1316,7 @@ function PvRuleTab({
   const columns: ResponsiveTableColumn<PvAdminRule>[] = [
     {
       key: "stt",
-      header: "STT",
+      header: "#",
       align: "center",
       width: 56,
       hideOnMobile: true,

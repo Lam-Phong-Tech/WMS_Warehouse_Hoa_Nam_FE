@@ -479,7 +479,7 @@ export function ComponentIssueModal({
   const lineColumns: ResponsiveTableColumn<ComponentIssueLine>[] = [
     {
       key: "line_no",
-      header: "STT",
+      header: "#",
       width: 48,
       render: (line) => (
         <Box

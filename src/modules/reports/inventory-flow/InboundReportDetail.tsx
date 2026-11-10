@@ -415,7 +415,7 @@ export function InboundReportDetail({
                 <thead>
                   {tab === "codes" ? (
                     <tr>
-                      <th>STT</th>
+                      <th>#</th>
                       <th>Mã serial / mã quét</th>
                       <th>Mã SKU</th>
                       <th>Tên hàng</th>
@@ -426,7 +426,7 @@ export function InboundReportDetail({
                     </tr>
                   ) : (
                     <tr>
-                      <th>STT</th>
+                      <th>#</th>
                       <th>Mã SKU</th>
                       <th>Tên hàng</th>
                       <th>Đơn vị tính</th>

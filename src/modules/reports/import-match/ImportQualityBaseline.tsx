@@ -884,7 +884,7 @@ export default function ImportQualityBaseline() {
             columns={[
               {
                 key: "sequence",
-                header: "STT",
+                header: "#",
                 width: "7%",
                 align: "center",
                 render: (row) =>
