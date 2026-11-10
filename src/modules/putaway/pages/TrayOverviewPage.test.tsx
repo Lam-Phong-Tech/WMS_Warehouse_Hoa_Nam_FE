@@ -104,8 +104,21 @@ describe("TrayOverviewPage", () => {
     expect(
       within(overview).getByText(/Hiển thị 4\/4 khay/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Cuộn dọc để xem các khu vực/)).toBeInTheDocument();
+    expect(screen.getByText("Bấm khay để xem thông tin")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    // Nút quay lại nằm trong header của panel, cạnh nút Toàn màn hình.
+    const panelHeader = document.querySelector(".hn-tray-panel-header");
+    expect(panelHeader).not.toBeNull();
+    expect(
+      within(panelHeader as HTMLElement).getByRole("link", {
+        name: /Về xếp khay/,
+      }),
+    ).toBeInTheDocument();
+    // Sơ đồ hiển thị toàn bộ chiều cao: không còn giới hạn max-height bên trong.
+    expect(
+      (document.querySelector(".hn-tray-viewport") as HTMLElement).style
+        .maxHeight,
+    ).toBe("");
 
     // Khay chưa gán nằm ở dải riêng, không nằm trong map.
     const unassigned = screen.getByRole("button", { name: /TRAY-X/ });

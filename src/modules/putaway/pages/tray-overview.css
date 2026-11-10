@@ -61,6 +61,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+.hn-tray-panel-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
 .hn-tray-fullscreen {
   display: inline-flex;
   align-items: center;
@@ -574,6 +581,13 @@
 }
 
 @media (max-width: 600px) {
+  .hn-tray-panel-header {
+    flex-wrap: wrap;
+  }
+  .hn-tray-panel-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
   .hn-tray-panel-header,
   .hn-tray-toolbar,
   .hn-tray-filterbar,

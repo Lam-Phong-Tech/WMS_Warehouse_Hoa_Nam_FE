@@ -7,7 +7,7 @@ import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { EmptyState } from "@/shared/components/data-display/EmptyState";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { ROUTES } from "@/shared/constants/routes";
-import { Box, Stack, UiSelect } from "@/shared/ui";
+import { Box, UiSelect } from "@/shared/ui";
 import {
   AppstoreOutlined,
   ExpandAltOutlined,
@@ -99,14 +99,20 @@ export default function TrayOverviewPage() {
       document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
-  const measureViewport = () => {
-    setViewportWidth(viewportRef.current?.clientWidth ?? 0);
-  };
-
   useLayoutEffect(() => {
-    measureViewport();
-    window.addEventListener("resize", measureViewport);
-    return () => window.removeEventListener("resize", measureViewport);
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const measure = () => setViewportWidth(viewport.clientWidth);
+    measure();
+    // Theo dõi cả thay đổi bề rộng do thu gọn sidebar / thanh cuộn trang,
+    // không chỉ sự kiện resize của cửa sổ.
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, [traysQuery.isPending]);
 
   const trays = useMemo(() => traysQuery.data ?? [], [traysQuery.data]);
@@ -204,15 +210,7 @@ export default function TrayOverviewPage() {
     const viewport = viewportRef.current;
     if (!viewport) return;
     const baseWidth = Math.max(viewport.clientWidth, 1000);
-    setZoom(
-      clampZoom(
-        Math.min(
-          1,
-          viewport.clientWidth / baseWidth,
-          720 / (baseWidth * layout.aspect),
-        ),
-      ),
-    );
+    setZoom(clampZoom(Math.min(1, viewport.clientWidth / baseWidth)));
     viewport.scrollTo({ left: 0, top: 0 });
   };
 
@@ -273,25 +271,6 @@ export default function TrayOverviewPage() {
       sx={{ position: "relative", px: { xs: 2, md: 3 }, pb: 3, pt: 0 }}
       data-testid="ptw-tray-overview"
     >
-      <Stack
-        direction="row"
-        sx={{
-          justifyContent: "flex-end",
-          alignItems: "center",
-          position: { xs: "static", md: "absolute" },
-          top: { md: -56 },
-          right: { md: 24 },
-          mb: { xs: 1.5, md: 0 },
-        }}
-      >
-        <RouterLink to={ROUTES.PUTAWAY} style={{ textDecoration: "none" }}>
-          <ActionButton
-            kind="back"
-            label={t("putaway.overview.backToPutaway")}
-          />
-        </RouterLink>
-      </Stack>
-
       <section
         aria-labelledby="ptw-map-title"
         className="hn-tray-panel"
@@ -314,29 +293,37 @@ export default function TrayOverviewPage() {
               </p>
             </Box>
           </Box>
-          <button
-            type="button"
-            className="hn-tray-fullscreen"
-            aria-pressed={isFullscreen}
-            aria-label={
-              isFullscreen
-                ? t("putaway.overview.fullscreenExit")
-                : t("putaway.overview.fullscreen")
-            }
-            title={
-              isFullscreen
-                ? t("putaway.overview.fullscreenExit")
-                : t("putaway.overview.fullscreen")
-            }
-            onClick={() => void toggleFullscreen()}
-          >
-            <ExpandAltOutlined aria-hidden="true" />
-            <span className="hn-tray-fullscreen-label">
-              {isFullscreen
-                ? t("putaway.overview.fullscreenExit")
-                : t("putaway.overview.fullscreen")}
-            </span>
-          </button>
+          <Box className="hn-tray-panel-actions">
+            <RouterLink to={ROUTES.PUTAWAY} style={{ textDecoration: "none" }}>
+              <ActionButton
+                kind="back"
+                label={t("putaway.overview.backToPutaway")}
+              />
+            </RouterLink>
+            <button
+              type="button"
+              className="hn-tray-fullscreen"
+              aria-pressed={isFullscreen}
+              aria-label={
+                isFullscreen
+                  ? t("putaway.overview.fullscreenExit")
+                  : t("putaway.overview.fullscreen")
+              }
+              title={
+                isFullscreen
+                  ? t("putaway.overview.fullscreenExit")
+                  : t("putaway.overview.fullscreen")
+              }
+              onClick={() => void toggleFullscreen()}
+            >
+              <ExpandAltOutlined aria-hidden="true" />
+              <span className="hn-tray-fullscreen-label">
+                {isFullscreen
+                  ? t("putaway.overview.fullscreenExit")
+                  : t("putaway.overview.fullscreen")}
+              </span>
+            </button>
+          </Box>
         </header>
 
         <div className="hn-tray-toolbar">
@@ -465,12 +452,6 @@ export default function TrayOverviewPage() {
                 ref={viewportRef}
                 tabIndex={0}
                 aria-label={t("putaway.overview.mapViewportAria")}
-                style={{
-                  maxHeight:
-                    viewportWidth > 0
-                      ? Math.round(Math.min(viewportWidth * layout.aspect, 720))
-                      : undefined,
-                }}
               >
                 <div className="hn-tray-floor" aria-hidden="true" />
                 <div

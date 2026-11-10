@@ -57,6 +57,8 @@ const ROUTES_WITH_OWN_HEADER: string[] = [
   ROUTES.REVERSE,
   ROUTES.PV_PRODUCT_CATALOG,
   ROUTES.DASHBOARD,
+  // Tổng quan khay: panel "Sơ đồ khu vực khay" đóng vai trò header của trang.
+  ROUTES.PUTAWAY_TRAYS,
   ROUTES.REPORTS_INVENTORY_FLOW,
   ROUTES.REPORTS_OUTBOUND_FLOW,
   ROUTES.REPORTS_STOCK_RECONCILE,
@@ -197,9 +199,7 @@ export function MainLayout() {
   const isFullBleed = ROUTES_FULL_BLEED.includes(location.pathname);
   const isProfilePage = location.pathname === ROUTES.PROFILE;
   const ownsHeader = ROUTES_WITH_OWN_HEADER.includes(location.pathname);
-  const hideHeaderDetails =
-    location.pathname === ROUTES.AUDIT_LOGS ||
-    location.pathname === ROUTES.PUTAWAY_TRAYS;
+  const hideHeaderDetails = location.pathname === ROUTES.AUDIT_LOGS;
 
   if (isLoadingProfile && !isProfileLoaded) return <Loading />;
 

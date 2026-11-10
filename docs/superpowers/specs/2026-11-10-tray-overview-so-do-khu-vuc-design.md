@@ -15,12 +15,12 @@ Trang `/putaway/trays` (`TrayOverviewPage.tsx` + `tray-overview.css`, nháp ở 
 
 Port đầy đủ mockup sang React với **dữ liệu thật**, đúng bố cục/tương tác:
 
-- Shell giữ nguyên (breadcrumb + h1 "Tổng quan tình trạng khay" + nút "Về xếp khay"). Phần nội dung thành **một panel duy nhất** (không tách lớp): bản header trong panel (icon + "Sơ đồ khu vực khay" + subtitle "N khay · M khu vực" + nút **Toàn màn hình** icon-only bên phải).
+- Shell giữ breadcrumb, **bỏ h1 "Tổng quan tình trạng khay"**; nút "Về xếp khay" chuyển vào header panel cạnh nút **Toàn màn hình**. Phần nội dung thành **một panel duy nhất** (không tách lớp): bản header trong panel (icon + "Sơ đồ khu vực khay" + subtitle "N khay · M khu vực" + cụm nút bên phải).
 - Toolbar 2 hàng theo mockup: hàng 1 = ô tìm kiếm + chọn khu vực + nút "Đặt lại bộ lọc"; hàng 2 = chips trạng thái (chấm màu + nhãn + số lượng: Tất cả / Cần chú ý / Đang chứa / Trống; ấn để lọc, chế độ pressed nổi) + bên phải "Hiển thị x/y khay".
-- Topline dải mỏng: trái "Mặt bằng kho · Bố trí minh họa", phải "Cuộn dọc để xem các khu vực · Bấm khay để xem thông tin".
+- Topline dải mỏng: trái "Mặt bằng kho · Bố trí minh họa", phải "Bấm khay để xem thông tin".
 - **Scene SVG** dựng từ dữ liệu thật (bản dịch logic `buildWarehouseSvg`): mỗi khu = một rack chứa **5 ngăn**; khay theo `zone_code` (giữ thứ tự API), ngăn trống để trống có nhãn "Vị trí NN" (dạng dashed/mờ). Khay có `status` theo bucket hiện hành (EMPTY=trống/xanh viền, PARTIAL=Đang chứa/xanh, còn lại = Cần chú ý/vàng — giữ ngữ nghĩa bucket hiện có; badge/biểu tượng theo mockup). Lối đi giữa các rack (2 đường nét đứt + nhãn LỐI ĐI) như mockup.
 - Sàn làm **gradient CSS + lưới CSS** — KHÔNG bọc ảnh base64 200KB của mockup (gói mỏng hơn, đủ độ thật). Ghi nhận là call của tôi.
-- **Zoom**: nút −, %, +, nút "vừa khung" ở góc phải dưới (scrollbar dọc để xem các rack; không chiếm quyền cuộn chuột).
+- **Zoom**: nút −, %, +, nút "vừa khung" ở góc phải dưới; sơ đồ hiển thị **toàn bộ chiều cao** (bỏ khung cuộn dọc bên trong), chỉ cuộn ngang khi phóng to quá bề rộng.
 - **Dialog "Thông tin khay"** khi bấm khay: preview minh họa, `container_code` (user-select text), badge trạng thái, dòng "Khu vực" và "Vị trí / mô tả", nút [Sao chép mã] (copy → toast thông báo) và [Tìm trên sơ đồ] (đóng dialog, cuộn/focus đúng khay; ẩn khi khay chưa gán). Dùng `UiDialog` của dự án.
 - **Dải "Chưa gán khu vực"** dưới map: mỗi khay chưa gán là một nút (mini-tray + mã + gợi ý vị trí + badge) — bấm mở dialog. Không gán zone thì không tính vào tổng khu vực.
 - Footer gợi ý trong panel: trái "Bố trí các dãy và lối đi mang tính minh họa.", phải "Ô chưa gán không tính vào tổng khay · Bấm khay để xem chi tiết".

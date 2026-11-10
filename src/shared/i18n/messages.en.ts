@@ -5538,15 +5538,14 @@ export const MESSAGES_EN: MessageTree = {
       showingCount: "Showing {shown}/{total} trays",
       chipAll: "All",
       mapAriaLabel: "Warehouse rack and tray map",
-      mapViewportAria: "Warehouse map, scroll to view racks",
+      mapViewportAria: "Warehouse map",
       aisleLabel: "AISLE",
       slotUnassigned: "Slot {index}, empty bay",
       slotPlaceholderTitle: "Empty bay",
       slotPlaceholderLocation: "Slot {index}",
       toplineTitle: "Warehouse map",
       toplineMeta: "5 bays per zone · Illustrative layout",
-      toplineHint:
-        "Scroll vertically to browse zones · Select a tray to view details",
+      toplineHint: "Select a tray to view details",
       footDisclaimer: "Rack and aisle layout is illustrative.",
       footUnassignedNote:
         "Unassigned slots do not count towards the tray total · Select a tray to view details",

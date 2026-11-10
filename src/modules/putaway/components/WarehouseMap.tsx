@@ -140,7 +140,8 @@ interface TrayProps {
 
 function Tray({ slot, railY, zone, dimmed, selected, onSelect }: TrayProps) {
   const t = useT();
-  const x = RACK_X + 18 + slot.index * SLOT_PITCH;
+  // Toạ độ tương đối trong nhóm rack — nhóm đã translate(RACK_X) rồi.
+  const x = 18 + slot.index * SLOT_PITCH;
   const y = railY + 18;
   const tray = slot.tray;
 

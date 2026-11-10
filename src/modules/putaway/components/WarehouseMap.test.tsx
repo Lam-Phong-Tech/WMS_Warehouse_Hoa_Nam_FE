@@ -109,6 +109,27 @@ describe("WarehouseMap", () => {
     ).toBeInTheDocument();
   });
 
+  it("places each tray inside its own rack bay instead of offsetting the rack twice", () => {
+    const layout = buildWarehouseLayout(TRAYS);
+    render(
+      <WarehouseMap
+        layout={layout}
+        dimmedIds={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+      />,
+    );
+
+    const cellA1 = screen
+      .getAllByTestId("ptw-tray-cell")
+      .find((node) => node.textContent?.includes("TRAY-A1"));
+    const x = Number(
+      /translate\(([-\d.]+)/.exec(cellA1?.getAttribute("transform") ?? "")?.[1],
+    );
+    // Nhóm rack đã translate(RACK_X); khay đầu tiên chỉ được cộng 18 trong nhóm.
+    expect(x).toBe(18);
+  });
+
   it("emits onSelect for the clicked tray and keyboard activation", async () => {
     const onSelect = vi.fn();
     const layout = buildWarehouseLayout(TRAYS);
