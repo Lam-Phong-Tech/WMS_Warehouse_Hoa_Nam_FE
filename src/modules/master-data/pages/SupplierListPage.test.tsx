@@ -20,6 +20,7 @@ vi.mock("../services/supplier.service", () => ({
   listSuppliers: vi.fn(),
   createSupplier: vi.fn(),
   updateSupplier: vi.fn(),
+  SUPPLIER_DESCRIPTION_MAX_LENGTH: 500,
 }));
 const row = {
   id: "supplier-1",
@@ -30,7 +31,7 @@ const row = {
   updated_at: "2026-11-08T01:00:00+07:00",
   display_name: "NCC-001 - Honda",
   code_status: "ASSIGNED" as const,
-  description: null,
+  description: "Linh kiện nhập khẩu",
 };
 function setup(
   permissions = ["supplier.view", "supplier.create", "supplier.update"],
@@ -86,6 +87,7 @@ describe("supplier list", () => {
       expect(createSupplier).toHaveBeenCalledWith({
         name: "New supplier",
         status: "ACTIVE",
+        description: null,
       }),
     );
   });
@@ -113,8 +115,58 @@ describe("supplier list", () => {
       expect(updateSupplier).toHaveBeenCalledWith("supplier-1", 4, {
         name: "New name",
         status: "ACTIVE",
+        description: "Linh kiện nhập khẩu",
       }),
     );
+  });
+  it("shows and saves the supplier description", async () => {
+    setup();
+    expect(await screen.findByText("Linh kiện nhập khẩu")).toHaveAttribute(
+      "title",
+      "Linh kiện nhập khẩu",
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa NCC-001" }));
+    const dialog = await screen.findByRole("dialog");
+    const field = within(dialog).getByLabelText("Mô tả");
+    expect(field).toHaveValue("Linh kiện nhập khẩu");
+    fireEvent.change(field, { target: { value: "  Mô tả mới  " } });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Lưu thay đổi" }),
+    );
+    await waitFor(() =>
+      expect(updateSupplier).toHaveBeenCalledWith("supplier-1", 4, {
+        name: "Honda",
+        status: "ACTIVE",
+        description: "Mô tả mới",
+      }),
+    );
+  });
+  it("renders a dash when a supplier has no description", async () => {
+    vi.mocked(listSuppliers).mockResolvedValue({
+      rows: [{ ...row, description: null }],
+      page: 1,
+      perPage: 20,
+      total: 1,
+      lastPage: 1,
+    });
+    setup();
+    expect(await screen.findByText("—")).toBeInTheDocument();
+  });
+  it("rejects descriptions longer than 500 characters before saving", async () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: "Thêm NCC" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/Tên nhà cung cấp/), {
+      target: { value: "A" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Mô tả"), {
+      target: { value: "a".repeat(501) },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Lưu NCC" }));
+    expect(
+      await within(dialog).findByText("Mô tả không vượt quá 500 ký tự."),
+    ).toBeInTheDocument();
+    expect(createSupplier).not.toHaveBeenCalled();
   });
   it("preserves draft and blocks stale resubmission after 412", async () => {
     vi.mocked(updateSupplier).mockRejectedValue({

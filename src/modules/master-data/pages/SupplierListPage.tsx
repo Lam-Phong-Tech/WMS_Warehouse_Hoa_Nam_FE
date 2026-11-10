@@ -15,6 +15,7 @@ import {
 import {
   createSupplier,
   listSuppliers,
+  SUPPLIER_DESCRIPTION_MAX_LENGTH,
   updateSupplier,
   type Supplier,
   type SupplierPayload,
@@ -219,6 +220,7 @@ export default function SupplierListPage() {
                 <col className="hn-ncc-col-number" />
                 <col className="hn-ncc-col-code" />
                 <col className="hn-ncc-col-name" />
+                <col className="hn-ncc-col-description" />
                 <col className="hn-ncc-col-status" />
                 <col className="hn-ncc-col-updated" />
                 <col className="hn-ncc-col-action" />
@@ -228,6 +230,7 @@ export default function SupplierListPage() {
                   <th scope="col">#</th>
                   <th scope="col">{copy.code}</th>
                   <th scope="col">{copy.name}</th>
+                  <th scope="col">{copy.description}</th>
                   <th scope="col">{copy.status}</th>
                   <th scope="col">{copy.updated}</th>
                   <th scope="col">
@@ -238,7 +241,7 @@ export default function SupplierListPage() {
               <tbody>
                 {query.isPending ? (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div role="status" className="hn-ncc-empty">
                         {copy.loading}
                       </div>
@@ -296,6 +299,18 @@ export default function SupplierListPage() {
                       </td>
                       <td>
                         <span
+                          className={
+                            supplier.description
+                              ? "hn-ncc-description"
+                              : "hn-ncc-muted"
+                          }
+                          title={supplier.description ?? undefined}
+                        >
+                          {supplier.description ?? copy.noDescription}
+                        </span>
+                      </td>
+                      <td>
+                        <span
                           className={`hn-ncc-status${supplier.status === "ACTIVE" ? " is-active" : ""}`}
                         >
                           <span aria-hidden="true" />
@@ -327,7 +342,7 @@ export default function SupplierListPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div className="hn-ncc-empty">
                         <strong>
                           {hasFilters ? copy.noResults : copy.empty}
@@ -416,6 +431,7 @@ function SupplierForm({
 }) {
   const { copy } = useSupplierCopy();
   const [name, setName] = useState(supplier?.name ?? "");
+  const [description, setDescription] = useState(supplier?.description ?? "");
   const [status, setStatus] = useState<SupplierStatus>(
     supplier?.status ?? "ACTIVE",
   );
@@ -432,11 +448,17 @@ function SupplierForm({
         ? updateSupplier(supplier.id, supplier.version, {
             name: name.trim(),
             status,
+            description: description.trim() || null,
           })
-        : createSupplier({ name: name.trim(), status }),
+        : createSupplier({
+            name: name.trim(),
+            status,
+            description: description.trim() || null,
+          }),
   });
   const dirty =
     name !== (supplier?.name ?? "") ||
+    description !== (supplier?.description ?? "") ||
     status !== (supplier?.status ?? "ACTIVE");
   const close = () => {
     if (!mutation.isPending && (!dirty || window.confirm(copy.discard)))
@@ -447,6 +469,10 @@ function SupplierForm({
     if (mutation.isPending || blocked || !online) return;
     if (!name.trim() || [...name.trim()].length > 200) {
       setErrors({ name: !name.trim() ? copy.nameRequired : copy.nameLong });
+      return;
+    }
+    if ([...description.trim()].length > SUPPLIER_DESCRIPTION_MAX_LENGTH) {
+      setErrors({ description: copy.descriptionLong });
       return;
     }
     setErrors({});
@@ -463,7 +489,11 @@ function SupplierForm({
         setBlocked(true);
         setMessage(copy.ambiguous);
       } else {
-        const resolved = resolveFormErrors(error, ["name", "status"]);
+        const resolved = resolveFormErrors(error, [
+          "name",
+          "description",
+          "status",
+        ]);
         setErrors(resolved.fieldErrors);
         setMessage(resolved.message);
       }
@@ -489,7 +519,15 @@ function SupplierForm({
             <ActionButton
               kind="refresh"
               onClick={() =>
-                onReload(supplier ? undefined : { name: name.trim(), status })
+                onReload(
+                  supplier
+                    ? undefined
+                    : {
+                        name: name.trim(),
+                        status,
+                        description: description.trim() || null,
+                      },
+                )
               }
             >
               {copy.reloadClose}
@@ -549,6 +587,23 @@ function SupplierForm({
           helperText={errors.name}
           disabled={mutation.isPending}
           slotProps={{ htmlInput: { maxLength: 200 } }}
+        />
+        <UiTextField
+          label={copy.description}
+          value={description}
+          fullWidth
+          multiline
+          rows={3}
+          onChange={(event) => {
+            setDescription(event.target.value);
+            setErrors((previous) => ({ ...previous, description: "" }));
+          }}
+          error={Boolean(errors.description)}
+          helperText={errors.description || copy.descriptionHelp}
+          disabled={mutation.isPending}
+          slotProps={{
+            htmlInput: { maxLength: SUPPLIER_DESCRIPTION_MAX_LENGTH },
+          }}
         />
         <UiSelect
           label={copy.status}
