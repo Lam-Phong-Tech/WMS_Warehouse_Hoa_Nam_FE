@@ -44,6 +44,7 @@ export interface SupplierPage {
   lastPage: number;
 }
 export const SUPPLIER_ENDPOINT = "/mini-app/inbound/suppliers";
+export const SUPPLIER_ADMIN_ENDPOINT = "/master-data/suppliers";
 
 export const SUPPLIER_DESCRIPTION_MAX_LENGTH = 500;
 
@@ -90,7 +91,7 @@ export async function createSupplier(
   payload: SupplierPayload,
 ): Promise<Supplier> {
   return readSupplier(
-    await http.post<unknown>(SUPPLIER_ENDPOINT, {
+    await http.post<unknown>(SUPPLIER_ADMIN_ENDPOINT, {
       name: payload.name.trim(),
       status: payload.status,
       description: normalizeDescription(payload.description),
@@ -105,7 +106,7 @@ export async function updateSupplier(
   const expected = requiredApiVersion(version);
   return readSupplier(
     await http.patch<unknown>(
-      `${SUPPLIER_ENDPOINT}/${encodeURIComponent(id)}`,
+      `${SUPPLIER_ADMIN_ENDPOINT}/${encodeURIComponent(id)}`,
       {
         name: payload.name.trim(),
         status: payload.status,

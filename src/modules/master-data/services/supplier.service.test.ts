@@ -51,7 +51,7 @@ describe("supplier transport", () => {
       status: "ACTIVE",
       description: "  Nhà cung cấp  ",
     });
-    expect(http.post).toHaveBeenCalledWith("/mini-app/inbound/suppliers", {
+    expect(http.post).toHaveBeenCalledWith("/master-data/suppliers", {
       name: "Honda",
       status: "ACTIVE",
       description: "Nhà cung cấp",
@@ -65,7 +65,7 @@ describe("supplier transport", () => {
       description: "  ",
     });
     expect(http.patch).toHaveBeenCalledWith(
-      "/mini-app/inbound/suppliers/supplier-uuid",
+      "/master-data/suppliers/supplier-uuid",
       { name: "New name", status: "INACTIVE", description: null },
       { headers: { "If-Match": '"4"' } },
     );
@@ -102,7 +102,7 @@ describe("supplier transport", () => {
       description: "a".repeat(500),
     });
     expect(http.patch).toHaveBeenLastCalledWith(
-      "/mini-app/inbound/suppliers/supplier-uuid",
+      "/master-data/suppliers/supplier-uuid",
       expect.objectContaining({ description: "a".repeat(500) }),
       { headers: { "If-Match": '"4"' } },
     );
@@ -113,7 +113,7 @@ describe("supplier transport", () => {
       description: emoji,
     });
     expect(http.patch).toHaveBeenLastCalledWith(
-      "/mini-app/inbound/suppliers/supplier-uuid",
+      "/master-data/suppliers/supplier-uuid",
       expect.objectContaining({ description: emoji }),
       { headers: { "If-Match": '"4"' } },
     );
