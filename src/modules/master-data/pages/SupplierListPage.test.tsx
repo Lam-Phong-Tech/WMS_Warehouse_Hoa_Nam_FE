@@ -168,6 +168,38 @@ describe("supplier list", () => {
     ).toBeInTheDocument();
     expect(createSupplier).not.toHaveBeenCalled();
   });
+  it("asks for confirmation in-app before discarding unsaved changes", async () => {
+    setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa NCC-001" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/Tên nhà cung cấp/), {
+      target: { value: "Draft name" },
+    });
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Hủy" }));
+    const confirm = await screen.findByRole("dialog", {
+      name: "Bỏ thay đổi chưa lưu?",
+    });
+    fireEvent.click(
+      within(confirm).getByRole("button", { name: "Tiếp tục sửa" }),
+    );
+    expect(within(dialog).getByLabelText(/Tên nhà cung cấp/)).toHaveValue(
+      "Draft name",
+    );
+
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Hủy" }));
+    const confirmAgain = await screen.findByRole("dialog", {
+      name: "Bỏ thay đổi chưa lưu?",
+    });
+    fireEvent.click(
+      within(confirmAgain).getByRole("button", { name: "Bỏ thay đổi" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Sửa NCC" }),
+      ).not.toBeInTheDocument(),
+    );
+  });
   it("preserves draft and blocks stale resubmission after 412", async () => {
     vi.mocked(updateSupplier).mockRejectedValue({
       response: { status: 412 },

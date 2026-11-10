@@ -3,7 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActionButton } from "@/shared/components/actions";
 import { SearchOutlined } from "@/shared/components/icons";
-import { UiDialog, UiPagination, UiSelect, UiTextField } from "@/shared/ui";
+import {
+  UiDialog,
+  UiPagination,
+  UiSelect,
+  UiTextField,
+  useUiConfirm,
+} from "@/shared/ui";
 import { usePageVisible } from "@/shared/ui/page-visibility";
 import { getApiErrorMessage, resolveFormErrors } from "@/shared/api/api-error";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
@@ -430,6 +436,7 @@ function SupplierForm({
   onSaved: (row: Supplier, created: boolean) => void;
 }) {
   const { copy } = useSupplierCopy();
+  const { confirm, confirmDialog } = useUiConfirm();
   const [name, setName] = useState(supplier?.name ?? "");
   const [description, setDescription] = useState(supplier?.description ?? "");
   const [status, setStatus] = useState<SupplierStatus>(
@@ -460,9 +467,22 @@ function SupplierForm({
     name !== (supplier?.name ?? "") ||
     description !== (supplier?.description ?? "") ||
     status !== (supplier?.status ?? "ACTIVE");
+  const requestClose = async () => {
+    if (mutation.isPending) return;
+    if (dirty) {
+      const accepted = await confirm({
+        title: copy.discardTitle,
+        content: copy.discard,
+        confirmText: copy.discardConfirm,
+        cancelText: copy.keepEditing,
+        tone: "danger",
+      });
+      if (!accepted) return;
+    }
+    onClose();
+  };
   const close = () => {
-    if (!mutation.isPending && (!dirty || window.confirm(copy.discard)))
-      onClose();
+    void requestClose();
   };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -619,6 +639,7 @@ function SupplierForm({
           ]}
         />
       </form>
+      {confirmDialog}
     </UiDialog>
   );
 }
