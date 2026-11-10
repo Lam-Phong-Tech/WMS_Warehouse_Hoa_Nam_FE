@@ -10,11 +10,6 @@
 .hn-label-detail * {
   box-sizing: border-box;
 }
-.hn-pkg-label__crumb {
-  color: var(--ops-muted);
-  font-size: 13px;
-  margin-bottom: 8px;
-}
 .hn-pkg-label__header {
   display: flex;
   justify-content: space-between;

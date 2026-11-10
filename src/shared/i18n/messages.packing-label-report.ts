@@ -1,5 +1,4 @@
 export const PACKING_LABEL_REPORT_VI = {
-  breadcrumb: "Báo cáo / Nhãn đóng gói",
   title: "Báo cáo nhãn đóng gói – In / In lại",
   subtitle:
     "Theo dõi bản lưu nhãn, từng lượt in và kết quả phản hồi từ máy in.",
@@ -190,7 +189,6 @@ export const PACKING_LABEL_REPORT_EN: Record<
   keyof typeof PACKING_LABEL_REPORT_VI,
   string
 > = {
-  breadcrumb: "Reports / Packing labels",
   title: "Packing label report – Print / Reprint",
   subtitle: "Track label snapshots, each print attempt and printer responses.",
   exportTitle: "Export packing label report",

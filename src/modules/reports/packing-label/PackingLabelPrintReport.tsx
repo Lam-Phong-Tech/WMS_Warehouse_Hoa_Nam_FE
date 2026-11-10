@@ -600,9 +600,6 @@ export default function PackingLabelPrintReport() {
 
   return (
     <div className="hn-pkg-label" data-testid="rpt-tab-packing-label">
-      <div className="hn-pkg-label__crumb">
-        {t("packingLabelReport.breadcrumb")}
-      </div>
       <header className="hn-pkg-label__header">
         <div>
           <h1>{t("packingLabelReport.title")}</h1>
