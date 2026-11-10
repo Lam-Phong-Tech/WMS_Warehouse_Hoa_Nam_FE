@@ -1424,252 +1424,206 @@ export function OutboundIntakeModal({
             {activeTab === "preview" ? (
               <>
                 {preview ? (
-                  <Box
-                    sx={{
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: "var(--ops-radius-card)",
-                      p: 2,
-                    }}
-                  >
-                    <Box
+                  <Stack spacing={1.5}>
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
                       sx={{
-                        typography: "subtitle2",
-                        fontWeight: 700,
-                        mb: 1.5,
-                        display: "flex",
+                        flexWrap: "wrap",
+                        rowGap: 1,
                         alignItems: "center",
-                        gap: 0.5,
                       }}
                     >
-                      {t("outbound.intake.previewTitle")}{" "}
-                      {preview.importNo || <CopyableId value={preview.id} />}
-                    </Box>
-                    <Stack spacing={1.5}>
-                      <Stack
-                        direction="row"
-                        spacing={1.5}
+                      <UiStatusBadge
+                        tone={IMPORT_STATUS_TONE[preview.status] ?? "neutral"}
+                        label={
+                          IMPORT_STATUS_LABEL[preview.status]
+                            ? t(IMPORT_STATUS_LABEL[preview.status])
+                            : t("outbound.intake.statusUnknown")
+                        }
+                      />
+                      <Box sx={{ typography: "body2" }}>
+                        {t("outbound.intake.previewTotal", {
+                          count: preview.totalRows,
+                        })}
+                      </Box>
+                      <Box sx={{ typography: "body2", color: "success.main" }}>
+                        {t("outbound.intake.previewValid", {
+                          count: preview.validRows,
+                        })}
+                      </Box>
+                      <Box
                         sx={{
-                          flexWrap: "wrap",
-                          rowGap: 1,
-                          alignItems: "center",
+                          typography: "body2",
+                          color:
+                            preview.errorRows > 0
+                              ? "error.main"
+                              : "text.primary",
                         }}
                       >
-                        <UiStatusBadge
-                          tone={IMPORT_STATUS_TONE[preview.status] ?? "neutral"}
-                          label={
-                            IMPORT_STATUS_LABEL[preview.status]
-                              ? t(IMPORT_STATUS_LABEL[preview.status])
-                              : t("outbound.intake.statusUnknown")
-                          }
-                        />
-                        <Box sx={{ typography: "body2" }}>
-                          {t("outbound.intake.previewTotal", {
-                            count: preview.totalRows,
-                          })}
-                        </Box>
-                        <Box
-                          sx={{ typography: "body2", color: "success.main" }}
-                        >
-                          {t("outbound.intake.previewValid", {
-                            count: preview.validRows,
-                          })}
-                        </Box>
+                        {t("outbound.intake.previewErrors", {
+                          count: preview.errorRows,
+                        })}
+                      </Box>
+                      {preview.importNo || preview.id ? (
                         <Box
                           sx={{
-                            typography: "body2",
-                            color:
-                              preview.errorRows > 0
-                                ? "error.main"
-                                : "text.primary",
+                            typography: "caption",
+                            color: "text.secondary",
+                            fontVariantNumeric: "tabular-nums",
+                            ml: "auto",
                           }}
                         >
-                          {t("outbound.intake.previewErrors", {
-                            count: preview.errorRows,
-                          })}
+                          {preview.importNo || (
+                            <CopyableId value={preview.id} />
+                          )}
                         </Box>
-                      </Stack>
-                      {/* Kết quả kiểm tra là mutation, không phải query — hiện
+                      ) : null}
+                    </Stack>
+                    {/* Kết quả kiểm tra là mutation, không phải query — hiện
                   loading khi đang kiểm tra lại dữ liệu/tệp. Ở drawer 860px,
                   bảng 8 cột cũ tràn ngang; danh sách khối giữ đủ trường mà
                   không bắt người dùng kéo ngang (DESIGN_FOUNDATIONS §6). */}
-                      {validateManualMutation.isPending ||
-                      validateFileMutation.isPending ? (
-                        <Box
-                          sx={{
-                            py: 4,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 1,
-                            color: "text.secondary",
-                          }}
-                        >
-                          <UiSpinner size={16} label={null} />
-                          {t("shared.table.loading")}
-                        </Box>
-                      ) : previewRows.length === 0 ? (
-                        <Box
-                          sx={{
-                            py: 4,
-                            textAlign: "center",
-                            color: "text.secondary",
-                          }}
-                        >
-                          {t("outbound.intake.previewEmpty")}
-                        </Box>
-                      ) : (
-                        <Box
-                          data-testid="outbound-intake-preview-list"
-                          className="hn-outbound-intake__preview-list"
-                        >
-                          {pagedPreviewRows.map((row) => (
-                            <Box
-                              component="article"
-                              key={row.id}
-                              className="hn-outbound-intake__preview-row"
-                              data-state={previewRowState(row)}
-                            >
-                              <Box className="hn-outbound-intake__preview-row-head">
-                                <span className="hn-outbound-intake__preview-row-no">
-                                  {t("outbound.intake.colRow")} {row.rowNo}
-                                </span>
-                                <span className="hn-outbound-intake__preview-row-request">
-                                  <span className="hn-outbound-intake__preview-label">
-                                    {t("outbound.intake.colRequestNo")}
-                                  </span>
-                                  <span className="hn-outbound-intake__preview-value hn-outbound-intake__preview-value--strong">
-                                    {text(row.normalized.request_no, "-")}
-                                  </span>
-                                </span>
-                              </Box>
-                              <Box className="hn-outbound-intake__preview-grid">
-                                <Box className="hn-outbound-intake__preview-field hn-outbound-intake__preview-field--wide">
-                                  <span className="hn-outbound-intake__preview-label">
-                                    {t("outbound.intake.colRecipient")}
-                                  </span>
-                                  {renderPreviewRecipient(row)}
-                                </Box>
-                                <Box className="hn-outbound-intake__preview-field">
-                                  <span className="hn-outbound-intake__preview-label">
-                                    SKU
-                                  </span>
-                                  {renderPreviewSku(row)}
-                                </Box>
-                                <Box className="hn-outbound-intake__preview-field">
-                                  <span className="hn-outbound-intake__preview-label">
-                                    {t("outbound.intake.colReassignSku")}
-                                  </span>
-                                  {renderPreviewReassignSku(row)}
-                                </Box>
-                                <Box className="hn-outbound-intake__preview-field">
-                                  <span className="hn-outbound-intake__preview-label">
-                                    {t("outbound.intake.colRequiredQty")}
-                                  </span>
-                                  {renderPreviewQty(row)}
-                                </Box>
-                                <Box className="hn-outbound-intake__preview-field">
-                                  <span className="hn-outbound-intake__preview-label">
-                                    {t("outbound.intake.colAvailable")}
-                                  </span>
-                                  {renderPreviewAvailability(row)}
-                                </Box>
-                                <Box className="hn-outbound-intake__preview-field hn-outbound-intake__preview-field--wide">
-                                  <span className="hn-outbound-intake__preview-label">
-                                    {t("outbound.intake.colCheckResult")}
-                                  </span>
-                                  {renderPreviewResult(row)}
-                                </Box>
-                              </Box>
-                            </Box>
-                          ))}
-                        </Box>
-                      )}
-                      {previewPaged ? (
-                        <UiPagination
-                          page={previewPage}
-                          pageSize={PREVIEW_PAGE_SIZE}
-                          total={previewRows.length}
-                          showTotal={false}
-                          onPageChange={setPreviewPage}
-                        />
-                      ) : null}
-
-                      {createdResult ? (
-                        <Stack spacing={1.5}>
-                          <UiAlert
-                            tone={
-                              pendingFiles.some(
-                                (entry) => entry.status === "failed",
-                              )
-                                ? "warning"
-                                : "info"
-                            }
+                    {validateManualMutation.isPending ||
+                    validateFileMutation.isPending ? (
+                      <Box
+                        sx={{
+                          py: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 1,
+                          color: "text.secondary",
+                        }}
+                      >
+                        <UiSpinner size={16} label={null} />
+                        {t("shared.table.loading")}
+                      </Box>
+                    ) : previewRows.length === 0 ? (
+                      <Box
+                        sx={{
+                          py: 4,
+                          textAlign: "center",
+                          color: "text.secondary",
+                        }}
+                      >
+                        {t("outbound.intake.previewEmpty")}
+                      </Box>
+                    ) : (
+                      <Box
+                        data-testid="outbound-intake-preview-list"
+                        className="hn-outbound-intake__preview-list"
+                      >
+                        {pagedPreviewRows.map((row) => (
+                          <Box
+                            component="article"
+                            key={row.id}
+                            className="hn-outbound-intake__preview-row"
+                            data-state={previewRowState(row)}
                           >
-                            {t("outbound.intake.attachmentsCreated")}
-                          </UiAlert>
-                          {pendingFiles.some(
-                            (entry) => entry.status !== "uploaded",
-                          ) ? (
-                            <Box>
-                              <ActionButton
-                                kind="upload"
-                                disabled={
-                                  uploading ||
-                                  !createdResult.outboundDocumentIds[0]
-                                }
-                                onClick={retryUploads}
-                              >
-                                {uploading
-                                  ? t("outbound.intake.attachmentsUploading")
-                                  : t("outbound.intake.attachmentsRetry")}
-                              </ActionButton>
+                            <Box className="hn-outbound-intake__preview-row-head">
+                              <span className="hn-outbound-intake__preview-row-no">
+                                {t("outbound.intake.colRow")} {row.rowNo}
+                              </span>
+                              <span className="hn-outbound-intake__preview-row-request">
+                                <span className="hn-outbound-intake__preview-label">
+                                  {t("outbound.intake.colRequestNo")}
+                                </span>
+                                <span className="hn-outbound-intake__preview-value hn-outbound-intake__preview-value--strong">
+                                  {text(row.normalized.request_no, "-")}
+                                </span>
+                              </span>
                             </Box>
-                          ) : null}
-                        </Stack>
-                      ) : (
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          sx={{
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                            rowGap: 1,
-                          }}
-                        >
-                          <ActionButton
-                            kind="confirm"
-                            disabled={!consumable || consumeMutation.isPending}
-                            onClick={() => consumeMutation.mutate()}
-                          >
-                            {consumeMutation.isPending
-                              ? t("outbound.intake.confirming")
-                              : t("outbound.intake.confirm")}
-                          </ActionButton>
-                          {!consumable ? (
-                            <Box
-                              sx={{
-                                typography: "body2",
-                                color: hasShortStock
-                                  ? "warning.main"
-                                  : "text.secondary",
-                              }}
-                            >
-                              {!canImport
-                                ? t("outbound.intake.noPermission")
-                                : hasShortStock
-                                  ? t("outbound.intake.shortStockBlock")
-                                  : t("outbound.intake.stillInvalid")}
+                            <Box className="hn-outbound-intake__preview-grid">
+                              <Box className="hn-outbound-intake__preview-field hn-outbound-intake__preview-field--wide">
+                                <span className="hn-outbound-intake__preview-label">
+                                  {t("outbound.intake.colRecipient")}
+                                </span>
+                                {renderPreviewRecipient(row)}
+                              </Box>
+                              <Box className="hn-outbound-intake__preview-field">
+                                <span className="hn-outbound-intake__preview-label">
+                                  SKU
+                                </span>
+                                {renderPreviewSku(row)}
+                              </Box>
+                              <Box className="hn-outbound-intake__preview-field">
+                                <span className="hn-outbound-intake__preview-label">
+                                  {t("outbound.intake.colReassignSku")}
+                                </span>
+                                {renderPreviewReassignSku(row)}
+                              </Box>
+                              <Box className="hn-outbound-intake__preview-field">
+                                <span className="hn-outbound-intake__preview-label">
+                                  {t("outbound.intake.colRequiredQty")}
+                                </span>
+                                {renderPreviewQty(row)}
+                              </Box>
+                              <Box className="hn-outbound-intake__preview-field">
+                                <span className="hn-outbound-intake__preview-label">
+                                  {t("outbound.intake.colAvailable")}
+                                </span>
+                                {renderPreviewAvailability(row)}
+                              </Box>
+                              <Box className="hn-outbound-intake__preview-field hn-outbound-intake__preview-field--wide">
+                                <span className="hn-outbound-intake__preview-label">
+                                  {t("outbound.intake.colCheckResult")}
+                                </span>
+                                {renderPreviewResult(row)}
+                              </Box>
                             </Box>
-                          ) : null}
-                        </Stack>
-                      )}
-                      <ApiErrorAlert
-                        error={consumeMutation.error}
-                        title={t("outbound.intake.confirmErrorTitle")}
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+                    {previewPaged ? (
+                      <UiPagination
+                        page={previewPage}
+                        pageSize={PREVIEW_PAGE_SIZE}
+                        total={previewRows.length}
+                        showTotal={false}
+                        onPageChange={setPreviewPage}
                       />
-                    </Stack>
-                  </Box>
+                    ) : null}
+
+                    {createdResult ? (
+                      <Stack spacing={1.5}>
+                        <UiAlert
+                          tone={
+                            pendingFiles.some(
+                              (entry) => entry.status === "failed",
+                            )
+                              ? "warning"
+                              : "info"
+                          }
+                        >
+                          {t("outbound.intake.attachmentsCreated")}
+                        </UiAlert>
+                        {pendingFiles.some(
+                          (entry) => entry.status !== "uploaded",
+                        ) ? (
+                          <Box>
+                            <ActionButton
+                              kind="upload"
+                              disabled={
+                                uploading ||
+                                !createdResult.outboundDocumentIds[0]
+                              }
+                              onClick={retryUploads}
+                            >
+                              {uploading
+                                ? t("outbound.intake.attachmentsUploading")
+                                : t("outbound.intake.attachmentsRetry")}
+                            </ActionButton>
+                          </Box>
+                        ) : null}
+                      </Stack>
+                    ) : null}
+                    <ApiErrorAlert
+                      error={consumeMutation.error}
+                      title={t("outbound.intake.confirmErrorTitle")}
+                    />
+                  </Stack>
                 ) : (
                   <div className="hn-intake-preview-empty" role="status">
                     <FileSearchOutlined
@@ -1710,6 +1664,24 @@ export function OutboundIntakeModal({
           </Stack>
         </CoordinatedLoadingBoundary>
         <footer className="hn-outbound-intake-drawer__footer">
+          {activeTab === "preview" && preview && !createdResult ? (
+            !consumable ? (
+              <Box
+                sx={{
+                  typography: "body2",
+                  color: hasShortStock ? "warning.main" : "text.secondary",
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                {!canImport
+                  ? t("outbound.intake.noPermission")
+                  : hasShortStock
+                    ? t("outbound.intake.shortStockBlock")
+                    : t("outbound.intake.stillInvalid")}
+              </Box>
+            ) : null
+          ) : null}
           {mode === "manual" ? (
             <ActionButton
               kind="view"
@@ -1726,6 +1698,17 @@ export function OutboundIntakeModal({
               {validateManualMutation.isPending
                 ? t("outbound.intake.validating")
                 : t("outbound.intake.validate")}
+            </ActionButton>
+          ) : null}
+          {activeTab === "preview" && preview && !createdResult ? (
+            <ActionButton
+              kind="confirm"
+              disabled={!consumable || consumeMutation.isPending}
+              onClick={() => consumeMutation.mutate()}
+            >
+              {consumeMutation.isPending
+                ? t("outbound.intake.confirming")
+                : t("outbound.intake.confirm")}
             </ActionButton>
           ) : null}
           <ActionButton kind="close" onClick={close} disabled={busy}>

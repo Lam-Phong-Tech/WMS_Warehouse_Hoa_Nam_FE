@@ -981,7 +981,6 @@ export const MESSAGES_EN: MessageTree = {
         "Fill in the requisition (manually or from Excel), then click \"Preview result\" in the footer — validation will appear here.",
       backToForm: "Back to the requisition",
       uploadErrorTitle: "Could not validate the Excel file",
-      previewTitle: "Preview result ·",
       previewTotal: "Total: {count}",
       previewValid: "Data valid: {count}",
       previewErrors: "Data errors: {count}",

@@ -221,8 +221,67 @@ describe("OUT-01 request intake drawer", () => {
     expect(validateButton).toHaveClass("hn-outbound-dialog__primary");
   });
 
-  it("renders preview rows as labeled blocks without a horizontally scrolling table", async () => {
+  it("keeps the confirm action in the footer next to the validate button on the preview tab", async () => {
     vi.mocked(validateOutboundRequestRows).mockResolvedValueOnce({
+      id: "IMPORT-PREVIEW",
+      importNo: "OBI-20261109122754-X4WZ",
+      status: "VALIDATED",
+      totalRows: 1,
+      validRows: 1,
+      errorRows: 0,
+      version: 1,
+      rows: [
+        {
+          id: "ROW-2",
+          rowNo: 2,
+          status: "VALID",
+          normalized: {
+            request_no: "TOA-20261109-122754",
+            recipient_name: "Tên nơi nhận",
+            sku_code: "CLMP-DON-S01",
+            required_qty: 5,
+          },
+          errors: [],
+        },
+      ],
+    } as unknown as Awaited<ReturnType<typeof validateOutboundRequestRows>>);
+
+    renderIntake();
+    await fillRequiredFields();
+    fireEvent.click(screen.getByRole("button", { name: validateLabel }));
+
+    const confirm = await screen.findByRole("button", { name: confirmLabel });
+    const footer = document.querySelector(".hn-outbound-intake-drawer__footer");
+    expect(footer).not.toBeNull();
+    expect(
+      within(footer as HTMLElement).getByRole("button", {
+        name: confirmLabel,
+      }),
+    ).toBe(confirm);
+    expect(
+      within(footer as HTMLElement).getByRole("button", {
+        name: validateLabel,
+      }),
+    ).toBeInTheDocument();
+    // Không còn nút xác nhận trong vùng nội dung (cuối danh sách xem trước).
+    const previewList = screen.getByTestId("outbound-intake-preview-list");
+    expect(
+      within(previewList).queryByRole("button", { name: confirmLabel }),
+    ).toBeNull();
+  });
+
+  it("does not show the confirm action on the form tab", async () => {
+    renderIntake();
+    const footer = document.querySelector(".hn-outbound-intake-drawer__footer");
+    expect(footer).not.toBeNull();
+    expect(
+      within(footer as HTMLElement).queryByRole("button", {
+        name: confirmLabel,
+      }),
+    ).toBeNull();
+  });
+
+  it("renders preview rows as labeled blocks without a horizontally scrolling table", async () => {    vi.mocked(validateOutboundRequestRows).mockResolvedValueOnce({
       id: "IMPORT-PREVIEW",
       importNo: "OBI-20261109122754-X4WZ",
       status: "VALIDATED",

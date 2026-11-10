@@ -987,7 +987,6 @@ export const MESSAGES_VI = {
         "Điền thông tin phiếu (nhập tay hoặc từ Excel), rồi bấm “Kiểm tra & xem trước” ở chân cửa sổ — kết quả kiểm tra sẽ hiện ở đây.",
       backToForm: "Quay lại Phiếu Toa hàng",
       uploadErrorTitle: "Không kiểm tra được tệp Excel",
-      previewTitle: "Kết quả xem trước ·",
       previewTotal: "Tổng: {count}",
       previewValid: "Hợp lệ dữ liệu: {count}",
       previewErrors: "Lỗi dữ liệu: {count}",

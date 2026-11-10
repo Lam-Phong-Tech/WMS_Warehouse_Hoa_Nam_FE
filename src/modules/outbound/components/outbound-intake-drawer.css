@@ -54,6 +54,8 @@
 .hn-outbound-intake-drawer__footer {
   justify-content: flex-end;
   gap: 12px;
+  row-gap: 8px;
+  flex-wrap: wrap;
   border-top: 1px solid var(--ops-line);
 }
 

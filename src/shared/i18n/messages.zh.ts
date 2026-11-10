@@ -1534,7 +1534,6 @@ export const MESSAGES_ZH: MessageTree = {
       "previewEmptyBody": "填写出货申领单（手动或 Excel），然后在底部点击“预览结果”——校验结果将显示在此处。",
       "backToForm": "返回出货申领单",
       "uploadErrorTitle": "无法验证 Excel 文件",
-      "previewTitle": "预览结果·",
       "previewTotal": "总计：{count}",
       "previewValid": "数据有效：{count}",
       "previewErrors": "数据错误：{count}",
