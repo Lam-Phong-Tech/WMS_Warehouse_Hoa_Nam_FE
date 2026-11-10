@@ -47,11 +47,9 @@ export const SUPPLIER_ENDPOINT = "/mini-app/inbound/suppliers";
 
 export const SUPPLIER_DESCRIPTION_MAX_LENGTH = 500;
 
-function normalizeDescription(
-  value: string | null | undefined,
-): string | null {
+function normalizeDescription(value: string | null | undefined): string | null {
   const trimmed = value?.trim() ?? "";
-  if (trimmed.length > SUPPLIER_DESCRIPTION_MAX_LENGTH)
+  if ([...trimmed].length > SUPPLIER_DESCRIPTION_MAX_LENGTH)
     throw new Error("SUPPLIER_DESCRIPTION_TOO_LONG");
   return trimmed === "" ? null : trimmed;
 }

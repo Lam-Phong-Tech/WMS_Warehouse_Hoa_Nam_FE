@@ -94,6 +94,41 @@ describe("supplier transport", () => {
     ).rejects.toThrow();
     expect(http.patch).not.toHaveBeenCalled();
   });
+  it("accepts exactly 500 code points, including emoji", async () => {
+    vi.mocked(http.patch).mockResolvedValue(row);
+    await updateSupplier(row.id, 4, {
+      name: "New",
+      status: "ACTIVE",
+      description: "a".repeat(500),
+    });
+    expect(http.patch).toHaveBeenLastCalledWith(
+      "/mini-app/inbound/suppliers/supplier-uuid",
+      expect.objectContaining({ description: "a".repeat(500) }),
+      { headers: { "If-Match": '"4"' } },
+    );
+    const emoji = "😀".repeat(500);
+    await updateSupplier(row.id, 4, {
+      name: "New",
+      status: "ACTIVE",
+      description: emoji,
+    });
+    expect(http.patch).toHaveBeenLastCalledWith(
+      "/mini-app/inbound/suppliers/supplier-uuid",
+      expect.objectContaining({ description: emoji }),
+      { headers: { "If-Match": '"4"' } },
+    );
+    expect(http.patch).toHaveBeenCalledTimes(2);
+  });
+  it("rejects 501 code points of emoji", async () => {
+    await expect(
+      updateSupplier(row.id, 4, {
+        name: "New",
+        status: "ACTIVE",
+        description: "😀".repeat(501),
+      }),
+    ).rejects.toThrow();
+    expect(http.patch).not.toHaveBeenCalled();
+  });
   it("preserves unassigned legacy codes and rejects incomplete API rows", async () => {
     vi.mocked(http.getPage).mockResolvedValue({
       data: [{ ...row, code: null, code_status: "NOT_ASSIGNED" }],
