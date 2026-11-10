@@ -105,8 +105,7 @@ pnpm exec vitest run \
 - Live probe on the deployed backend: one event to 50 private channels took 75.9ms;
   50 separate single-channel events took 108.4ms. The former is one HTTP publish
   instead of 50.
-- Deployed DEV SHAs: frontend `1539a067`, backend rate-limit build follows the
-  backend commit in this push.
+- Deployed DEV SHAs: frontend `753b6b18`, backend `9b1cc40c`.
 - `NotificationFcmTransportTest` still cannot run in this checkout because the
   optional `Google\Auth\Credentials\ServiceAccountCredentials` class is absent;
   this is an existing dependency issue, not caused by the burst changes.
