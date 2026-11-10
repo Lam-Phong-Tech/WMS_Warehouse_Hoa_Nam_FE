@@ -68,76 +68,83 @@ describe("TrayOverviewPage", () => {
     fetchTrays.mockReset();
   });
 
-  it("renders KPI counts, zones and tray footprints", async () => {
+  it("renders the map panel, status chips with counts, the result count and the unassigned strip", async () => {
     fetchTrays.mockResolvedValue(TRAYS);
     renderPage();
 
-    await screen.findByText("TRAY-A1");
-
-    const overview = screen.getByTestId("ptw-tray-overview");
     expect(
-      within(overview).getByRole("button", { name: /Trống · 2/ }),
-    ).toBeInTheDocument();
-    expect(
-      within(overview).getByRole("button", { name: /Đang chứa · 1/ }),
-    ).toBeInTheDocument();
-    expect(
-      within(overview).getByRole("button", { name: /Cần chú ý · 1/ }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByTestId("ptw-tray-cell")).toHaveLength(4);
-    expect(
-      screen.getByRole("heading", {
+      await screen.findByRole("heading", {
         level: 2,
         name: "Sơ đồ khu vực khay",
       }),
     ).toBeInTheDocument();
+    // Chờ query resolve — panel render ngay cả khi đang loading.
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+
+    const overview = screen.getByTestId("ptw-tray-overview");
     expect(
-      screen.getByRole("region", { name: "Sơ đồ khu vực khay" }),
+      within(overview).getByRole("button", { name: /^Tất cả 4$/ }),
     ).toBeInTheDocument();
+    expect(
+      within(overview).getByRole("button", { name: /^Cần chú ý 1$/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(overview).getByRole("button", { name: /^Đang chứa 1$/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(overview).getByRole("button", { name: /^Trống 2$/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(overview).getByText(/Hiển thị 4\/4 khay/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Cuộn dọc để xem các khu vực/)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
 
-    const zoneHeadings = screen
-      .getAllByRole("heading", { level: 3 })
-      .map((node) => node.textContent);
-    expect(zoneHeadings).toEqual([
-      "ZONE-A",
-      "ZONE-B",
-      expect.stringMatching(/^Chưa gán khu vực · 1$/),
-    ]);
+    // Khay chưa gán nằm ở dải riêng, không nằm trong map.
+    const unassigned = screen.getByRole("button", { name: /TRAY-X/ });
+    expect(unassigned).toBeInTheDocument();
   });
 
-  it("filters by status and clears the filter", async () => {
+  it("toggles the status chip pressed state and updates the shown count", async () => {
     fetchTrays.mockResolvedValue(TRAYS);
     renderPage();
 
-    await screen.findByText("TRAY-A1");
-    await userEvent.click(screen.getByRole("button", { name: /Cần chú ý/ }));
+    await screen.findByRole("heading", {
+      level: 2,
+      name: "Sơ đồ khu vực khay",
+    });
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+    const chip = screen.getByRole("button", { name: /^Cần chú ý 1$/ });
+    expect(chip).toHaveAttribute("aria-pressed", "false");
 
-    expect(screen.getAllByTestId("ptw-tray-cell")).toHaveLength(1);
-    expect(screen.getByText("TRAY-B1")).toBeInTheDocument();
+    await userEvent.click(chip);
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/Hiển thị 1\/4 khay/)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Xoá lọc" }));
-
-    expect(screen.getAllByTestId("ptw-tray-cell")).toHaveLength(4);
+    await userEvent.click(chip);
+    expect(chip).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("filters by search across code, zone and location", async () => {
+  it("filters by search text and shows the no-match state", async () => {
     fetchTrays.mockResolvedValue(TRAYS);
     renderPage();
 
-    await screen.findByText("TRAY-A1");
+    await screen.findByRole("heading", {
+      level: 2,
+      name: "Sơ đồ khu vực khay",
+    });
+    await screen.findByText(/Hiển thị 4\/4 khay/);
     const search = screen.getByRole("textbox", {
       name: "Tìm khay theo mã hoặc khu vực",
     });
 
     await userEvent.type(search, "kệ 02");
     await waitFor(() => {
-      expect(screen.getAllByTestId("ptw-tray-cell")).toHaveLength(1);
+      expect(screen.getByText(/Hiển thị 1\/4 khay/)).toBeInTheDocument();
     });
-    expect(screen.getByText("TRAY-B1")).toBeInTheDocument();
 
     await userEvent.clear(search);
     await userEvent.type(search, "không tồn tại");
-
     expect(
       await screen.findByText("Không có khay phù hợp"),
     ).toBeInTheDocument();
@@ -153,11 +160,11 @@ describe("TrayOverviewPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("does not show a fake result count while the first load is pending", async () => {
+  it("does not show fake counts while the first load is pending", async () => {
     fetchTrays.mockReturnValue(new Promise(() => {}));
     renderPage();
 
-    await userEvent.click(screen.getByRole("button", { name: /Cần chú ý/ }));
+    await userEvent.click(screen.getByRole("button", { name: /^Cần chú ý/ }));
 
     expect(screen.queryByText(/Hiển thị/)).not.toBeInTheDocument();
   });
@@ -175,17 +182,17 @@ describe("TrayOverviewPage", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Thử lại" }));
 
-    expect(await screen.findByText("TRAY-A1")).toBeInTheDocument();
+    expect(await screen.findByText("TRAY-X")).toBeInTheDocument();
   });
 
-  it("keeps cached zones when a background refetch fails", async () => {
+  it("keeps cached rows when a background refetch fails", async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
     fetchTrays.mockResolvedValueOnce(TRAYS);
 
     renderPageWithClient(queryClient);
-    await screen.findByText("TRAY-A1");
+    await screen.findByText("TRAY-X");
 
     fetchTrays.mockRejectedValueOnce(new Error("network"));
     await act(async () => {
@@ -197,7 +204,7 @@ describe("TrayOverviewPage", () => {
     expect(
       await screen.findByText("Không tải được danh sách khay"),
     ).toBeInTheDocument();
-    expect(screen.getByText("TRAY-A1")).toBeInTheDocument();
+    expect(screen.getByText("TRAY-X")).toBeInTheDocument();
   });
 
   it("does not show fake zero counts while loading", () => {
@@ -208,6 +215,6 @@ describe("TrayOverviewPage", () => {
       .getAllByTestId("ptw-legend-count")
       .map((node) => node.textContent);
 
-    expect(values).toEqual(["—", "—", "—"]);
+    expect(values).toEqual(["—", "—", "—", "—"]);
   });
 });

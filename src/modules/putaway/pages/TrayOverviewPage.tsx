@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButton } from "@/shared/components/actions";
@@ -7,57 +7,40 @@ import { LoadingState } from "@/shared/components/data-display/LoadingState";
 import { EmptyState } from "@/shared/components/data-display/EmptyState";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { ROUTES } from "@/shared/constants/routes";
-import { Box, Stack, UiIcon, UiSelect } from "@/shared/ui";
+import { Box, Stack, UiSelect } from "@/shared/ui";
+import {
+  AppstoreOutlined,
+  ExpandAltOutlined,
+  RightOutlined,
+} from "@/shared/components/icons";
+import { toast } from "sonner";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import {
   fetchAllPutawayTrays,
   type TrayOption,
 } from "@/modules/putaway/services/putawayService";
+import {
+  bucketOfStatus,
+  type TrayBucket,
+} from "@/modules/putaway/components/warehouse-map";
+import { TrayDetailDialog } from "@/modules/putaway/components/TrayDetailDialog";
 import "./tray-overview.css";
 
 /**
  * PTW-OVERVIEW — Màn TỔNG QUAN khay (read-only).
  *
- * Mục tiêu: người quản lý giả đọc nhanh toàn bộ khay theo bức tranh kho được
- * minh họa: zone giống kệ hàng, khay giống thùng chứa trong kệ. API chỉ có
+ * Mục tiêu: người quản lý đọc nhanh toàn bộ khay theo bức tranh kho được minh
+ * họa: zone giống kệ hàng, khay giống thùng chứa trong kệ. API chỉ có
  * zone_code/location_hint nên đây là bố cục minh họa, không phải sơ đồ vị trí
  * thực; xem `putaway.overview.illustrationNote`.
  */
 
-type TrayBucket = "EMPTY" | "PARTIAL" | "ATTENTION";
-
-const BUCKET_ORDER: TrayBucket[] = ["EMPTY", "PARTIAL", "ATTENTION"];
-const BUCKET_LABEL_ICON: Record<TrayBucket, string> = {
-  EMPTY: "□",
-  PARTIAL: "●",
-  ATTENTION: "▲",
-};
-
-const BUCKET_META: Record<TrayBucket, { color: string; icon: string }> = {
-  EMPTY: { color: "var(--ops-success-text)", icon: BUCKET_LABEL_ICON.EMPTY },
-  PARTIAL: { color: "var(--ops-link)", icon: BUCKET_LABEL_ICON.PARTIAL },
-  ATTENTION: {
-    color: "var(--ops-warning-text)",
-    icon: BUCKET_LABEL_ICON.ATTENTION,
-  },
-};
-
-function bucketLabel(t: TranslateFn, bucket: TrayBucket): string {
-  if (bucket === "EMPTY") return t("putaway.trayStatus.empty");
-  if (bucket === "PARTIAL") return t("putaway.trayStatus.partial");
-  return t("putaway.overview.bucketAttention");
-}
-
-/** Trạng thái khay thật (EMPTY/PARTIAL) gom về 3 nhóm; còn lại (CLOSED/ISSUED/
- *  FULL...) là "cần chú ý" để người quản lý rá khu nhanh. */
-function bucketOf(status: string): TrayBucket {
-  const normalized = (status ?? "").toUpperCase();
-  if (normalized === "EMPTY") return "EMPTY";
-  if (normalized === "PARTIAL") return "PARTIAL";
-  return "ATTENTION";
-}
-
 const ALL_ZONES = "__all__";
+const BUCKET_LABEL = {
+  ATTENTION: "putaway.overview.bucketAttention",
+  PARTIAL: "putaway.trayStatus.partial",
+  EMPTY: "putaway.trayStatus.empty",
+} as const;
 
 function zoneKey(tray: TrayOption): string {
   return tray.zone_code?.trim() || "__unassigned__";
@@ -69,6 +52,17 @@ function zoneLabel(t: TranslateFn, zone: string): string {
     : zone;
 }
 
+function bucketLabel(t: TranslateFn, bucket: TrayBucket): string {
+  return t(BUCKET_LABEL[bucket]);
+}
+
+const CHIP_ORDER: ReadonlyArray<TrayBucket | "ALL"> = [
+  "ALL",
+  "ATTENTION",
+  "PARTIAL",
+  "EMPTY",
+];
+
 export default function TrayOverviewPage() {
   const t = useT();
   const traysQuery = useQuery({
@@ -79,6 +73,17 @@ export default function TrayOverviewPage() {
   const [keyword, setKeyword] = useState("");
   const [bucketFilter, setBucketFilter] = useState<TrayBucket | "ALL">("ALL");
   const [zoneFilter, setZoneFilter] = useState(ALL_ZONES);
+  const [selectedTray, setSelectedTray] = useState<TrayOption | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const panelRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const onFullscreenChange = () =>
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
 
   const trays = useMemo(() => traysQuery.data ?? [], [traysQuery.data]);
 
@@ -87,10 +92,7 @@ export default function TrayOverviewPage() {
     for (const tray of trays) zones.add(zoneKey(tray));
     return [...zones]
       .sort((a, b) => a.localeCompare(b, "vi", { numeric: true }))
-      .map((zone) => ({
-        value: zone,
-        label: zoneLabel(t, zone),
-      }));
+      .map((zone) => ({ value: zone, label: zoneLabel(t, zone) }));
   }, [t, trays]);
 
   const zoneCount = zoneOptions.filter(
@@ -100,7 +102,7 @@ export default function TrayOverviewPage() {
   const filtered = useMemo(() => {
     const needle = keyword.trim().toLowerCase();
     return trays.filter((tray) => {
-      const bucket = bucketOf(tray.status);
+      const bucket = bucketOfStatus(tray.status);
       const zone = zoneKey(tray);
       if (bucketFilter !== "ALL" && bucketFilter !== bucket) return false;
       if (zoneFilter !== ALL_ZONES && zoneFilter !== zone) return false;
@@ -113,6 +115,11 @@ export default function TrayOverviewPage() {
     });
   }, [bucketFilter, keyword, trays, zoneFilter]);
 
+  const visibleIds = useMemo(
+    () => new Set(filtered.map((tray) => tray.container_id)),
+    [filtered],
+  );
+
   const counts = useMemo(() => {
     const base: Record<TrayBucket | "ALL", number> = {
       ALL: trays.length,
@@ -120,33 +127,14 @@ export default function TrayOverviewPage() {
       PARTIAL: 0,
       ATTENTION: 0,
     };
-    for (const tray of trays) base[bucketOf(tray.status)] += 1;
+    for (const tray of trays) base[bucketOfStatus(tray.status)] += 1;
     return base;
   }, [trays]);
 
-  const visibleBuckets = BUCKET_ORDER;
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, TrayOption[]>();
-    for (const tray of filtered) {
-      const key = zoneKey(tray);
-      const bucket = map.get(key);
-      if (bucket) bucket.push(tray);
-      else map.set(key, [tray]);
-    }
-    return [...map.entries()]
-      .sort(([a], [b]) => {
-        if (a === "__unassigned__") return 1;
-        if (b === "__unassigned__") return -1;
-        return a.localeCompare(b, "vi", { numeric: true });
-      })
-      .map(([key, zoneTrays]) => ({
-        key,
-        label: zoneLabel(t, key),
-        unassigned: key === "__unassigned__",
-        trays: zoneTrays,
-      }));
-  }, [filtered, t]);
+  const unassigned = useMemo(
+    () => trays.filter((tray) => zoneKey(tray) === "__unassigned__"),
+    [trays],
+  );
 
   const hasActiveFilter =
     bucketFilter !== "ALL" || keyword.trim() !== "" || zoneFilter !== ALL_ZONES;
@@ -157,6 +145,18 @@ export default function TrayOverviewPage() {
     setBucketFilter("ALL");
     setZoneFilter(ALL_ZONES);
     setKeyword("");
+  };
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await panelRef.current?.requestFullscreen();
+      }
+    } catch {
+      toast.error(t("putaway.overview.fullscreenFailed"));
+    }
   };
 
   return (
@@ -184,26 +184,15 @@ export default function TrayOverviewPage() {
         </RouterLink>
       </Stack>
 
-      <section aria-labelledby="ptw-map-title" className="hn-tray-wrap">
-        <header className="hn-tray-header hn-tray-padded">
-          <Box
-            className="hn-tray-header-copy"
-            sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-          >
-            <Box
-              aria-hidden
-              sx={{
-                width: 34,
-                height: 34,
-                borderRadius: "8px",
-                background: "var(--ops-pale)",
-                color: "var(--ops-link)",
-                display: "grid",
-                placeItems: "center",
-                flexShrink: 0,
-              }}
-            >
-              <UiIcon name="apps" size="sm" />
+      <section
+        aria-labelledby="ptw-map-title"
+        className="hn-tray-panel"
+        ref={panelRef}
+      >
+        <header className="hn-tray-panel-header">
+          <Box className="hn-tray-panel-identity">
+            <Box className="hn-tray-panel-icon" aria-hidden="true">
+              <AppstoreOutlined />
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <h2 id="ptw-map-title">{t("putaway.overview.mapTitle")}</h2>
@@ -217,65 +206,53 @@ export default function TrayOverviewPage() {
               </p>
             </Box>
           </Box>
-          <Box className="hn-tray-header-controls">
-            <Box sx={{ width: { xs: "100%", sm: 300 }, minWidth: 0 }}>
-              <SearchInput
-                width={300}
-                placeholder={t("putaway.overview.searchPlaceholder")}
-                aria-label={t("putaway.overview.searchAria")}
-                value={keyword}
-                onChange={setKeyword}
-              />
-            </Box>
-            <UiSelect
-              value={zoneFilter}
-              aria-label={t("putaway.overview.zoneFilterAria")}
-              options={[
-                { value: ALL_ZONES, label: t("putaway.overview.allZones") },
-                ...zoneOptions,
-              ]}
-              minWidth={150}
-              onChange={(value) => setZoneFilter(String(value))}
-            />
-          </Box>
+          <button
+            type="button"
+            className="hn-tray-fullscreen"
+            aria-pressed={isFullscreen}
+            aria-label={
+              isFullscreen
+                ? t("putaway.overview.fullscreenExit")
+                : t("putaway.overview.fullscreen")
+            }
+            title={
+              isFullscreen
+                ? t("putaway.overview.fullscreenExit")
+                : t("putaway.overview.fullscreen")
+            }
+            onClick={() => void toggleFullscreen()}
+          >
+            <ExpandAltOutlined aria-hidden="true" />
+            <span className="hn-tray-fullscreen-label">
+              {isFullscreen
+                ? t("putaway.overview.fullscreenExit")
+                : t("putaway.overview.fullscreen")}
+            </span>
+          </button>
         </header>
 
-        <Box
-          className="hn-tray-toolbar"
-          sx={{
-            px: { xs: 2, md: 3 },
-            py: 1.25,
-            borderTop: `1px solid var(--ops-line)`,
-          }}
-        >
-          <div
-            role="group"
-            aria-label={t("putaway.overview.legendAria")}
-            className="hn-tray-legend"
+        <div className="hn-tray-toolbar">
+          <Box
+            sx={{ width: { xs: "100%", sm: 340 }, minWidth: 0, maxWidth: 480 }}
           >
-            {visibleBuckets.map((bucket) => {
-              const active = bucketFilter === bucket;
-              return (
-                <button
-                  key={bucket}
-                  type="button"
-                  className="hn-tray-legend-button"
-                  aria-pressed={active}
-                  onClick={() => setBucketFilter(active ? "ALL" : bucket)}
-                >
-                  <span
-                    className={`hn-tray-legend-dot hn-tray-legend-dot--${bucket.toLowerCase()}`}
-                    aria-hidden
-                  />
-                  {bucketLabel(t, bucket)}
-                  {" · "}
-                  <span data-testid="ptw-legend-count">
-                    {countsReady ? counts[bucket] : "—"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+            <SearchInput
+              width={340}
+              placeholder={t("putaway.overview.searchPlaceholder")}
+              aria-label={t("putaway.overview.searchAria")}
+              value={keyword}
+              onChange={setKeyword}
+            />
+          </Box>
+          <UiSelect
+            value={zoneFilter}
+            aria-label={t("putaway.overview.zoneFilterAria")}
+            options={[
+              { value: ALL_ZONES, label: t("putaway.overview.allZones") },
+              ...zoneOptions,
+            ]}
+            minWidth={150}
+            onChange={(value) => setZoneFilter(String(value))}
+          />
           {hasActiveFilter ? (
             <ActionButton
               kind="clear"
@@ -283,170 +260,234 @@ export default function TrayOverviewPage() {
               onClick={clearFilters}
             />
           ) : null}
-          <Box
-            aria-hidden
-            sx={{
-              ml: "auto",
-              color: "var(--ops-muted)",
-              fontSize: 12.5,
-              fontWeight: 700,
-              letterSpacing: ".02em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {t("putaway.overview.illustrationNote")}
-          </Box>
-        </Box>
+        </div>
 
-        <div className="hn-tray-canvas">
-          <div className="hn-tray-lane" aria-hidden />
+        <div className="hn-tray-filterbar">
           <div
-            className="hn-tray-lane"
-            aria-hidden
-            style={{ marginTop: 320 }}
-          />
+            role="group"
+            aria-label={t("putaway.overview.legendAria")}
+            className="hn-tray-chips"
+          >
+            {CHIP_ORDER.map((key) => {
+              const active = bucketFilter === key;
+              const label =
+                key === "ALL"
+                  ? t("putaway.overview.chipAll")
+                  : bucketLabel(t, key);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={`hn-tray-chip hn-tray-chip--${key.toLowerCase()}`}
+                  aria-pressed={active}
+                  data-status={key === "ALL" ? "all" : key}
+                  onClick={() => setBucketFilter(active ? "ALL" : key)}
+                >
+                  <span className="hn-tray-chip-dot" aria-hidden="true" />
+                  <span className="hn-tray-chip-text">
+                    {label}{" "}
+                    <span
+                      className="hn-tray-chip-count"
+                      data-testid="ptw-legend-count"
+                    >
+                      {countsReady ? counts[key] : "—"}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {countsReady ? (
+            <p
+              className="hn-tray-result-count"
+              role="status"
+              aria-live="polite"
+            >
+              {t("putaway.overview.showingCount", {
+                shown: filtered.length,
+                total: trays.length,
+              })}
+            </p>
+          ) : null}
+        </div>
 
-          <Box sx={{ position: "relative", zIndex: 1 }}>
-            {traysQuery.isError && traysQuery.data ? (
-              <Box sx={{ mb: 1.5 }}>
-                <ApiErrorAlert
-                  error={traysQuery.error}
-                  title={t("putaway.overview.loadFailed")}
-                  onRetry={() => void traysQuery.refetch()}
-                />
-              </Box>
-            ) : null}
+        <div className="hn-tray-topline">
+          <span className="hn-tray-topline-left">
+            <strong>{t("putaway.overview.toplineTitle")}</strong>
+            <span>{t("putaway.overview.toplineMeta")}</span>
+          </span>
+          <span className="hn-tray-topline-right">
+            {t("putaway.overview.toplineHint")}
+          </span>
+        </div>
 
-            {traysQuery.isError && !traysQuery.data ? (
+        <div className="hn-tray-map-wrap">
+          {traysQuery.isError && traysQuery.data ? (
+            <Box sx={{ mb: 1.5, position: "relative", zIndex: 1 }}>
               <ApiErrorAlert
                 error={traysQuery.error}
                 title={t("putaway.overview.loadFailed")}
                 onRetry={() => void traysQuery.refetch()}
               />
-            ) : traysQuery.isPending ? (
-              <LoadingState tip={t("putaway.overview.loadingTip")} />
-            ) : filtered.length === 0 ? (
-              <Box sx={{ py: 2 }}>
-                <EmptyState
-                  title={
-                    noTrays
-                      ? t("putaway.overview.noTraysTitle")
-                      : t("putaway.overview.emptyTitle")
-                  }
-                  description={
-                    noTrays
-                      ? t("putaway.overview.noTraysDescription")
-                      : t("putaway.overview.emptyDescription")
-                  }
-                >
-                  {hasActiveFilter ? (
-                    <ActionButton
-                      kind="clear"
-                      label={t("putaway.overview.clearFilters")}
-                      onClick={clearFilters}
-                    />
-                  ) : null}
-                </EmptyState>
-              </Box>
-            ) : (
-              <>
-                <div className="hn-tray-scene">
-                  {grouped
-                    .filter((group) => !group.unassigned)
-                    .map((group, index) => (
-                      <section
-                        key={group.key}
-                        aria-label={group.label}
-                        className={`hn-tray-zone${grouped.filter((item) => !item.unassigned).length > 3 && index >= 3 ? " hn-tray-zone--wide" : ""}`}
-                      >
-                        <h3 className="hn-tray-zone-plate">{group.label}</h3>
-                        <div className="hn-tray-rack">
-                          {group.trays.map((tray) => {
-                            const bucket = bucketOf(tray.status);
-                            return (
-                              <div
-                                key={tray.container_id}
-                                className="hn-tray-bin"
-                                data-testid="ptw-tray-cell"
-                                data-bucket={bucket}
-                              >
-                                <div className="hn-tray-bin-shell">
-                                  <div className="hn-tray-bin-sticker">
-                                    <strong className="hn-tray-bin-code">
-                                      {tray.container_code}
-                                    </strong>
-                                    <span className="hn-tray-bin-location">
-                                      {tray.location_hint || "—"}
-                                    </span>
-                                    <span className="hn-tray-bin-status">
-                                      <span
-                                        className="hn-tray-bin-icon"
-                                        aria-hidden
-                                      >
-                                        {BUCKET_META[bucket].icon}
-                                      </span>
-                                      {bucketLabel(t, bucket)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </section>
-                    ))}
-                </div>
+            </Box>
+          ) : null}
 
-                {grouped.some((group) => group.unassigned) ? (
-                  <section
-                    className="hn-tray-unassigned"
-                    aria-label={t("putaway.overview.zoneUnassigned")}
+          {traysQuery.isError && !traysQuery.data ? (
+            <div className="hn-tray-state">
+              <ApiErrorAlert
+                error={traysQuery.error}
+                title={t("putaway.overview.loadFailed")}
+                onRetry={() => void traysQuery.refetch()}
+              />
+            </div>
+          ) : traysQuery.isPending ? (
+            <LoadingState tip={t("putaway.overview.loadingTip")} />
+          ) : noTrays ? (
+            <div className="hn-tray-state">
+              <EmptyState
+                title={t("putaway.overview.noTraysTitle")}
+                description={t("putaway.overview.noTraysDescription")}
+              />
+            </div>
+          ) : (
+            <div
+              className="hn-tray-viewport"
+              tabIndex={0}
+              aria-label={t("putaway.overview.mapViewportAria")}
+            >
+              <div className="hn-tray-floor" aria-hidden="true" />
+              {filtered.length === 0 ? (
+                <div className="hn-tray-no-results" role="status">
+                  <strong>{t("putaway.overview.emptyTitle")}</strong>
+                  <p>{t("putaway.overview.emptyDescription")}</p>
+                  <ActionButton
+                    kind="clear"
+                    label={t("putaway.overview.clearFilters")}
+                    onClick={clearFilters}
+                  />
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
+
+        {unassigned.length > 0 ? (
+          <div className="hn-tray-unassigned">
+            <div className="hn-tray-unassigned-heading">
+              <h3>{t("putaway.overview.zoneUnassigned")}</h3>
+              <span>
+                {t("putaway.overview.zoneTrayCount", {
+                  count: unassigned.length,
+                })}
+              </span>
+            </div>
+            <div className="hn-tray-unassigned-list">
+              {unassigned.map((tray) => {
+                const bucket = bucketOfStatus(tray.status);
+                const dimmed = !visibleIds.has(tray.container_id);
+                return (
+                  <button
+                    key={tray.container_id}
+                    type="button"
+                    className="hn-tray-unassigned-record"
+                    data-testid="ptw-unassigned-tray"
+                    data-bucket={bucket}
+                    aria-label={t("putaway.overview.unassignedRecordAria", {
+                      code: tray.container_code,
+                      status: bucketLabel(t, bucket),
+                    })}
+                    disabled={dimmed}
+                    onClick={() => setSelectedTray(tray)}
                   >
-                    <div className="hn-tray-unassigned-header">
-                      <h3>
-                        {t("putaway.overview.zoneUnassigned")} ·{" "}
-                        {grouped.find((group) => group.unassigned)?.trays
-                          .length ?? 0}
-                      </h3>
-                    </div>
-                    <div className="hn-tray-unassigned-list">
-                      {grouped
-                        .find((group) => group.unassigned)
-                        ?.trays.map((tray) => {
-                          const bucket = bucketOf(tray.status);
-                          return (
-                            <div
-                              className="hn-tray-unassigned-item"
-                              key={tray.container_id}
-                              data-testid="ptw-tray-cell"
-                              data-bucket={bucket}
-                            >
-                              <div
-                                className="hn-tray-unassigned-visual"
-                                aria-hidden
-                              />
-                              <div>
-                                <div className="hn-tray-unassigned-code">
-                                  {tray.container_code}
-                                </div>
-                                <div className="hn-tray-unassigned-hint">
-                                  {tray.location_hint || "—"}
-                                </div>
-                                <div className="hn-tray-unassigned-status">
-                                  {bucketLabel(t, bucket)}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </section>
-                ) : null}
-              </>
-            )}
-          </Box>
+                    <svg
+                      className="hn-tray-unassigned-tray"
+                      viewBox="0 0 180 120"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <ellipse
+                        cx={90}
+                        cy={104}
+                        rx={73}
+                        ry={6}
+                        fill="#2e425112"
+                      />
+                      <rect
+                        x={10}
+                        y={10}
+                        width={160}
+                        height={96}
+                        rx={10}
+                        fill="#d9bf8e"
+                        stroke="#95a2ac"
+                      />
+                      <rect
+                        x={17}
+                        y={17}
+                        width={146}
+                        height={78}
+                        rx={6}
+                        fill="#f0e4ca"
+                        stroke="#ffffffcc"
+                        strokeWidth={3}
+                      />
+                      <path
+                        d="M38 21v69M64 21v69M90 21v69M116 21v69M142 21v69"
+                        stroke="#d9bf8e"
+                        strokeWidth={1.2}
+                        opacity={0.7}
+                      />
+                      <path
+                        d="M66 99h48l-5 8H71z"
+                        fill="#8797a4"
+                        stroke="#f5f7f6"
+                        strokeWidth={2}
+                      />
+                    </svg>
+                    <span className="hn-tray-unassigned-text">
+                      <strong>{tray.container_code}</strong>
+                      <small>{tray.location_hint || "—"}</small>
+                    </span>
+                    <span
+                      className="hn-tray-unassigned-badge"
+                      data-bucket={bucket}
+                    >
+                      {bucketLabel(t, bucket)}
+                    </span>
+                    <RightOutlined
+                      className="hn-tray-unassigned-chevron"
+                      aria-hidden="true"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="hn-tray-foot">
+          <span className="hn-tray-foot-hint">
+            <svg
+              className="hn-tray-foot-hint-icon"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.3}
+              aria-hidden="true"
+            >
+              <circle cx={10} cy={10} r={7} />
+              <path d="M10 9v5m0-8v1" strokeLinecap="round" />
+            </svg>
+            {t("putaway.overview.footDisclaimer")}
+          </span>
+          <span>{t("putaway.overview.footUnassignedNote")}</span>
         </div>
       </section>
+
+      <TrayDetailDialog
+        tray={selectedTray}
+        onClose={() => setSelectedTray(null)}
+      />
     </Box>
   );
 }
