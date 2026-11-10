@@ -8,6 +8,8 @@ import {
   BAYS,
   bucketOfStatus,
   rackOriginX,
+  TRAY_PITCH,
+  RACK_WIDTH,
   VIEW_W,
   type TrayBucket,
   type WarehouseLayout,
@@ -18,10 +20,9 @@ import type { TrayOption } from "@/modules/putaway/services/putawayService";
 import { useT } from "@/shared/i18n/useT";
 import "./warehouse-map.css";
 
+const SLOT_PITCH = TRAY_PITCH;
 const TRAY_W = 218;
 const TRAY_H = 168;
-const SLOT_PITCH = 242;
-const RACK_WIDTH = BAYS * SLOT_PITCH + 18;
 const RACK_X = rackOriginX();
 const RACK_RAIL_H = 13;
 const RACK_FRONT_RAIL_Y = 194;
@@ -181,7 +182,7 @@ function Tray({ slot, railY, zone, dimmed, selected, onSelect }: TrayProps) {
           x={112}
           y={98}
           textAnchor="middle"
-          fill="#62686c"
+          fill="#454e55"
           fontSize={14.2}
           fontWeight={550}
         >
@@ -191,7 +192,7 @@ function Tray({ slot, railY, zone, dimmed, selected, onSelect }: TrayProps) {
           x={112}
           y={122}
           textAnchor="middle"
-          fill="#767d80"
+          fill="#525c63"
           fontSize={12.1}
           fontWeight={450}
         >
@@ -739,7 +740,7 @@ export function WarehouseMap({
               fontSize={16}
               fontWeight={600}
               letterSpacing={4}
-              fill="#757773"
+              fill="#596257"
             >
               {t("putaway.overview.aisleLabel")}
             </text>

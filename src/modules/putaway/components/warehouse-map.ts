@@ -41,7 +41,7 @@ export interface WarehouseLayout {
 export const VIEW_W = 1440;
 export const TRAY_PITCH = 242;
 export const BAYS = 5;
-const RACK_WIDTH = BAYS * TRAY_PITCH + 18;
+export const RACK_WIDTH = BAYS * TRAY_PITCH + 18;
 const RACK_X = (VIEW_W - RACK_WIDTH) / 2;
 const TOP0 = 100;
 const RACK_PITCH = 325;

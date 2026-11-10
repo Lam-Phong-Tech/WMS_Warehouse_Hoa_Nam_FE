@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -258,7 +265,7 @@ describe("TrayOverviewPage", () => {
       name: "Thông tin khay",
     });
     expect(
-      within(dialog).getByRole("heading", { name: "TRAY-A1" }),
+      await within(dialog).findByRole("heading", { name: "TRAY-A1" }),
     ).toBeInTheDocument();
     expect(within(dialog).getByText("Trống")).toBeInTheDocument();
 
@@ -279,7 +286,7 @@ describe("TrayOverviewPage", () => {
       name: "Thông tin khay",
     });
     expect(
-      within(dialog).getByRole("heading", { name: "TRAY-X" }),
+      await within(dialog).findByRole("heading", { name: "TRAY-X" }),
     ).toBeInTheDocument();
     expect(
       within(dialog).queryByRole("button", { name: /Tìm trên sơ đồ/ }),
@@ -298,5 +305,106 @@ describe("TrayOverviewPage", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Thu nhỏ" }));
     expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+
+  it('focuses the search field on "/" and clears the keyword on Escape', async () => {
+    fetchTrays.mockResolvedValue(TRAYS);
+    renderPage();
+
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+    fireEvent.keyDown(document.body, { key: "/" });
+    expect(document.activeElement).toBe(
+      document.getElementById("ptw-tray-search"),
+    );
+
+    const search = screen.getByRole("textbox", {
+      name: "Tìm khay theo mã hoặc khu vực",
+    });
+    await userEvent.type(search, "kệ");
+    expect(search).toHaveValue("kệ");
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(search).toHaveValue("");
+  });
+
+  it("renders a second rack when a zone has more than five trays", async () => {
+    const many: TrayOption[] = Array.from({ length: 7 }, (_, index) => ({
+      container_id: `m${index}`,
+      container_code: `TRAY-M${index}`,
+      status: "PARTIAL",
+      zone_code: "ZONE-X",
+      location_hint: `Vị trí ${index}`,
+      version: 1,
+    }));
+    fetchTrays.mockResolvedValue(many);
+    renderPage();
+
+    await screen.findByText(/Hiển thị 7\/7 khay/);
+    expect(screen.getAllByText("ZONE-X").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("activates a tray cell with the keyboard", async () => {
+    fetchTrays.mockResolvedValue(TRAYS);
+    renderPage();
+
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+    const cell = screen
+      .getAllByTestId("ptw-tray-cell")
+      .find((node) => node.textContent?.includes("TRAY-A1"));
+    expect(cell).toBeDefined();
+    fireEvent.keyDown(cell as Element, { key: "Enter" });
+
+    expect(
+      await screen.findByRole("dialog", { name: "Thông tin khay" }),
+    ).toBeInTheDocument();
+  });
+
+  it('scrolls the scene to the selected tray via "Tìm trên sơ đồ"', async () => {
+    fetchTrays.mockResolvedValue(TRAYS);
+    renderPage();
+
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+    const viewport = document.querySelector(".hn-tray-viewport");
+    expect(viewport).not.toBeNull();
+    const scrollTo = vi.fn();
+    Object.assign(viewport as HTMLElement, { scrollTo });
+
+    const cell = screen
+      .getAllByTestId("ptw-tray-cell")
+      .find((node) => node.textContent?.includes("TRAY-A1"));
+    await userEvent.click(cell as Element);
+    const dialog = await screen.findByRole("dialog", {
+      name: "Thông tin khay",
+    });
+    await userEvent.click(
+      await within(dialog).findByRole("button", { name: /Tìm trên sơ đồ/ }),
+    );
+
+    expect(scrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        left: expect.any(Number),
+        top: expect.any(Number),
+      }),
+    );
+  });
+
+  it("toggles fullscreen state on the panel via the fullscreen button", async () => {
+    fetchTrays.mockResolvedValue(TRAYS);
+    renderPage();
+
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+    const toggle = screen.getByRole("button", { name: "Toàn màn hình" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    const panel = document.querySelector(".hn-tray-panel");
+    Object.defineProperty(panel as Element, "requestFullscreen", {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await userEvent.click(toggle);
+    expect(
+      (panel as unknown as { requestFullscreen: ReturnType<typeof vi.fn> })
+        .requestFullscreen,
+    ).toHaveBeenCalled();
   });
 });

@@ -29,6 +29,7 @@ import {
 } from "@/modules/putaway/components/warehouse-map";
 import { WarehouseMap } from "@/modules/putaway/components/WarehouseMap";
 import { TrayDetailDialog } from "@/modules/putaway/components/TrayDetailDialog";
+import { MiniTrayIcon } from "@/modules/putaway/components/MiniTrayIcon";
 import "./tray-overview.css";
 
 /**
@@ -114,7 +115,11 @@ export default function TrayOverviewPage() {
     const zones = new Set<string>();
     for (const tray of trays) zones.add(zoneKey(tray));
     return [...zones]
-      .sort((a, b) => a.localeCompare(b, "vi", { numeric: true }))
+      .sort((a, b) => {
+        if (a === "__unassigned__") return 1;
+        if (b === "__unassigned__") return -1;
+        return a.localeCompare(b, "vi", { numeric: true });
+      })
       .map((zone) => ({ value: zone, label: zoneLabel(t, zone) }));
   }, [t, trays]);
 
@@ -165,10 +170,7 @@ export default function TrayOverviewPage() {
     return base;
   }, [trays]);
 
-  const unassigned = useMemo(
-    () => trays.filter((tray) => zoneKey(tray) === "__unassigned__"),
-    [trays],
-  );
+  const unassigned = useMemo(() => layout.unassigned, [layout]);
 
   const hasActiveFilter =
     bucketFilter !== "ALL" || keyword.trim() !== "" || zoneFilter !== ALL_ZONES;
@@ -203,10 +205,12 @@ export default function TrayOverviewPage() {
     if (!viewport) return;
     const baseWidth = Math.max(viewport.clientWidth, 1000);
     setZoom(
-      Math.min(
-        1,
-        viewport.clientWidth / baseWidth,
-        720 / (baseWidth * layout.aspect),
+      clampZoom(
+        Math.min(
+          1,
+          viewport.clientWidth / baseWidth,
+          720 / (baseWidth * layout.aspect),
+        ),
       ),
     );
     viewport.scrollTo({ left: 0, top: 0 });
@@ -216,8 +220,10 @@ export default function TrayOverviewPage() {
     const viewport = viewportRef.current;
     if (!viewport) return;
     const escaped = tray.container_code.replace(/["\\]/g, "\\$&");
+    // Khay trong map là thẻ <g> (SVGElement) — không được lọc theo
+    // HTMLElement, nếu không nhánh locate là dead code.
     const element = viewport.querySelector(`[data-tray="${escaped}"]`);
-    if (!(element instanceof HTMLElement)) return;
+    if (!element) return;
     const rect = element.getBoundingClientRect();
     const bounds = viewport.getBoundingClientRect();
     viewport.scrollTo({
@@ -235,7 +241,8 @@ export default function TrayOverviewPage() {
         ? "auto"
         : "smooth",
     });
-    element.focus({ preventScroll: true });
+    // jsdom không polyfill focus() cho SVGElement — gọi tùy chọn.
+    (element as SVGElement).focus?.({ preventScroll: true });
   };
 
   useEffect(() => {
@@ -554,51 +561,10 @@ export default function TrayOverviewPage() {
                     disabled={dimmed}
                     onClick={() => setSelectedTray(tray)}
                   >
-                    <svg
+                    <MiniTrayIcon
+                      bucket={bucket}
                       className="hn-tray-unassigned-tray"
-                      viewBox="0 0 180 120"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <ellipse
-                        cx={90}
-                        cy={104}
-                        rx={73}
-                        ry={6}
-                        fill="#2e425112"
-                      />
-                      <rect
-                        x={10}
-                        y={10}
-                        width={160}
-                        height={96}
-                        rx={10}
-                        fill="#d9bf8e"
-                        stroke="#95a2ac"
-                      />
-                      <rect
-                        x={17}
-                        y={17}
-                        width={146}
-                        height={78}
-                        rx={6}
-                        fill="#f0e4ca"
-                        stroke="#ffffffcc"
-                        strokeWidth={3}
-                      />
-                      <path
-                        d="M38 21v69M64 21v69M90 21v69M116 21v69M142 21v69"
-                        stroke="#d9bf8e"
-                        strokeWidth={1.2}
-                        opacity={0.7}
-                      />
-                      <path
-                        d="M66 99h48l-5 8H71z"
-                        fill="#8797a4"
-                        stroke="#f5f7f6"
-                        strokeWidth={2}
-                      />
-                    </svg>
+                    />
                     <span className="hn-tray-unassigned-text">
                       <strong>{tray.container_code}</strong>
                       <small>{tray.location_hint || "—"}</small>

@@ -5,12 +5,13 @@
  * "Tìm trên sơ đồ" để cuộn/focus tới khay trên map.
  */
 import { ActionButton } from "@/shared/components/actions";
-import { CopyOutlined, EnvironmentOutlined } from "@/shared/components/icons";
+import { EnvironmentOutlined } from "@/shared/components/icons";
 import { UiDialog } from "@/shared/ui/components/UiDialog";
 import { UiStatusBadge } from "@/shared/ui/components/UiStatusBadge";
 import { useT } from "@/shared/i18n/useT";
 import { toast } from "sonner";
 import { bucketOfStatus, type TrayBucket } from "./warehouse-map";
+import { MiniTrayIcon } from "./MiniTrayIcon";
 import type { TrayOption } from "@/modules/putaway/services/putawayService";
 
 interface TrayDetailDialogProps {
@@ -25,63 +26,6 @@ const BADGE_TONE: Record<TrayBucket, "success" | "info" | "warning"> = {
   PARTIAL: "info",
   ATTENTION: "warning",
 };
-
-function MiniTray({ bucket }: { bucket: TrayBucket }) {
-  const fill =
-    bucket === "PARTIAL"
-      ? "#dce9f7"
-      : bucket === "EMPTY"
-        ? "#e4ece8"
-        : "#f0e4ca";
-  const rim =
-    bucket === "PARTIAL"
-      ? "#a7c2e0"
-      : bucket === "EMPTY"
-        ? "#b9c9c0"
-        : "#d9bf8e";
-  return (
-    <svg
-      className="tray-detail-preview"
-      viewBox="0 0 180 120"
-      fill="none"
-      role="img"
-      aria-hidden="true"
-    >
-      <ellipse cx={90} cy={104} rx={73} ry={6} fill="#2e425112" />
-      <rect
-        x={10}
-        y={10}
-        width={160}
-        height={96}
-        rx={10}
-        fill={rim}
-        stroke="#95a2ac"
-      />
-      <rect
-        x={17}
-        y={17}
-        width={146}
-        height={78}
-        rx={6}
-        fill={fill}
-        stroke="#ffffffcc"
-        strokeWidth={3}
-      />
-      <path
-        d="M38 21v69M64 21v69M90 21v69M116 21v69M142 21v69"
-        stroke={rim}
-        strokeWidth={1.2}
-        opacity={0.7}
-      />
-      <path
-        d="M66 99h48l-5 8H71z"
-        fill="#8797a4"
-        stroke="#f5f7f6"
-        strokeWidth={2}
-      />
-    </svg>
-  );
-}
 
 export function TrayDetailDialog({
   tray,
@@ -117,23 +61,21 @@ export function TrayDetailDialog({
         tray ? (
           <div className="tray-detail-actions">
             <ActionButton
-              kind="import"
+              kind="copy"
               appearance="tonal"
               onClick={() => void copyCode()}
             >
-              <CopyOutlined aria-hidden="true" />
               {t("putaway.overview.copyCode")}
             </ActionButton>
             {tray.zone_code?.trim() ? (
               <ActionButton
                 kind="view"
-                className="hn-outbound-dialog__primary"
+                icon={<EnvironmentOutlined aria-hidden="true" />}
                 onClick={() => {
                   onLocate?.(tray);
                   onClose();
                 }}
               >
-                <EnvironmentOutlined aria-hidden="true" />
                 {t("putaway.overview.locateOnMap")}
               </ActionButton>
             ) : null}
@@ -143,7 +85,7 @@ export function TrayDetailDialog({
     >
       {tray ? (
         <div className="tray-detail-body">
-          <MiniTray bucket={bucket} />
+          <MiniTrayIcon bucket={bucket} className="tray-detail-preview" />
           <h3 className="tray-detail-code">{tray.container_code}</h3>
           <UiStatusBadge tone={BADGE_TONE[bucket]} label={bucketLabel} />
           <dl className="tray-detail-fields">
