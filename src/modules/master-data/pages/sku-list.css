@@ -973,7 +973,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 18px 25px;
-  border-bottom: 1px solid var(--ops-divider);
+  border-bottom: 1px solid var(--sku-line);
 }
 .hn-sku-detail-top strong {
   color: var(--sku-ink);
@@ -1017,7 +1017,7 @@
   margin-top: 22px;
 }
 .hn-sku-detail-section {
-  border-top: 1px solid var(--ops-divider);
+  border-top: 1px solid var(--sku-line);
   padding: 24px 26px 26px;
 }
 .hn-sku-detail-section h3 {
@@ -1058,7 +1058,7 @@
   flex-wrap: wrap;
   gap: 10px;
   padding: 16px 25px;
-  border-top: 1px solid var(--ops-divider);
+  border-top: 1px solid var(--sku-line);
   background: var(--sku-surface);
 }
 .hn-sku-detail-footer .MuiButton-root:last-child {
