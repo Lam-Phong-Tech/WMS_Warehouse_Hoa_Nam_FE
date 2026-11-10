@@ -30,6 +30,7 @@ const row = {
   updated_at: "2026-11-08T01:00:00+07:00",
   display_name: "NCC-001 - Honda",
   code_status: "ASSIGNED" as const,
+  description: null,
 };
 function setup(
   permissions = ["supplier.view", "supplier.create", "supplier.update"],

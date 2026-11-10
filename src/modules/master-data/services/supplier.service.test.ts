@@ -18,6 +18,7 @@ const row = {
   updated_at: "2026-11-08T01:00:00+07:00",
   display_name: "NCC-001 - Honda",
   code_status: "ASSIGNED",
+  description: "Linh kiện nhập khẩu",
 };
 
 describe("supplier transport", () => {
@@ -45,24 +46,51 @@ describe("supplier transport", () => {
   });
   it("sends only writable fields on create, with no fabricated code", async () => {
     vi.mocked(http.post).mockResolvedValue(row);
-    await createSupplier({ name: "  Honda  ", status: "ACTIVE" });
+    await createSupplier({
+      name: "  Honda  ",
+      status: "ACTIVE",
+      description: "  Nhà cung cấp  ",
+    });
     expect(http.post).toHaveBeenCalledWith("/mini-app/inbound/suppliers", {
       name: "Honda",
       status: "ACTIVE",
+      description: "Nhà cung cấp",
     });
   });
   it("updates UUID using the exact returned version in If-Match", async () => {
     vi.mocked(http.patch).mockResolvedValue(row);
-    await updateSupplier(row.id, 4, { name: "New name", status: "INACTIVE" });
+    await updateSupplier(row.id, 4, {
+      name: "New name",
+      status: "INACTIVE",
+      description: "  ",
+    });
     expect(http.patch).toHaveBeenCalledWith(
       "/mini-app/inbound/suppliers/supplier-uuid",
-      { name: "New name", status: "INACTIVE" },
+      { name: "New name", status: "INACTIVE", description: null },
       { headers: { "If-Match": '"4"' } },
     );
   });
   it("refuses missing versions before writing", async () => {
     await expect(
       updateSupplier(row.id, 0, { name: "New", status: "ACTIVE" }),
+    ).rejects.toThrow();
+    expect(http.patch).not.toHaveBeenCalled();
+  });
+  it("treats a missing description as null and accepts the shared max length", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [{ ...row, description: undefined }],
+      meta: { page: 1, per_page: 20, total: 1, last_page: 1 },
+    });
+    expect(
+      (await listSuppliers({ status: "ACTIVE", page: 1, per_page: 20 })).rows[0]
+        .description,
+    ).toBeNull();
+    await expect(
+      updateSupplier(row.id, 4, {
+        name: "New",
+        status: "ACTIVE",
+        description: "a".repeat(501),
+      }),
     ).rejects.toThrow();
     expect(http.patch).not.toHaveBeenCalled();
   });

@@ -20,6 +20,7 @@ const rows = [
     status: "ACTIVE" as const,
     version: 1,
     updated_at: "2026-11-08T08:30:00+07:00",
+    description: null,
   },
 ];
 

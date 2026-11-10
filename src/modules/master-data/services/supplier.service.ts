@@ -7,6 +7,7 @@ export type SupplierStatus = "ACTIVE" | "INACTIVE";
 export interface SupplierPayload {
   name: string;
   status: SupplierStatus;
+  description?: string | null;
 }
 export interface SupplierListParams {
   q?: string;
@@ -23,6 +24,7 @@ const supplierSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"]),
   version: z.number().int().positive(),
   updated_at: z.string(),
+  description: z.string().nullable().default(null),
 });
 export type Supplier = z.infer<typeof supplierSchema>;
 const pageSchema = z.object({
@@ -42,6 +44,17 @@ export interface SupplierPage {
   lastPage: number;
 }
 export const SUPPLIER_ENDPOINT = "/mini-app/inbound/suppliers";
+
+export const SUPPLIER_DESCRIPTION_MAX_LENGTH = 500;
+
+function normalizeDescription(
+  value: string | null | undefined,
+): string | null {
+  const trimmed = value?.trim() ?? "";
+  if (trimmed.length > SUPPLIER_DESCRIPTION_MAX_LENGTH)
+    throw new Error("SUPPLIER_DESCRIPTION_TOO_LONG");
+  return trimmed === "" ? null : trimmed;
+}
 
 function readSupplier(value: unknown): Supplier {
   const result = supplierSchema.safeParse(value);
@@ -82,6 +95,7 @@ export async function createSupplier(
     await http.post<unknown>(SUPPLIER_ENDPOINT, {
       name: payload.name.trim(),
       status: payload.status,
+      description: normalizeDescription(payload.description),
     }),
   );
 }
@@ -94,7 +108,11 @@ export async function updateSupplier(
   return readSupplier(
     await http.patch<unknown>(
       `${SUPPLIER_ENDPOINT}/${encodeURIComponent(id)}`,
-      { name: payload.name.trim(), status: payload.status },
+      {
+        name: payload.name.trim(),
+        status: payload.status,
+        description: normalizeDescription(payload.description),
+      },
       { headers: { "If-Match": `"${expected}"` } },
     ),
   );
