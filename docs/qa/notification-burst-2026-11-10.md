@@ -87,15 +87,21 @@ pnpm exec vitest run \
   2,500-publish case for 50 notifications × 50 recipients.
 - Exact duplicate payloads for the same event/subject/audience/title/body are
   coalesced for 30 seconds via cache (`NOTIFICATION_COALESCE_SECONDS`).
+- Optional in-app delivery is capped per user/minute
+  (`NOTIFICATION_MAX_IN_APP_PER_MINUTE`, default 60); account/security events bypass
+  the cap.
+- Reverb HTTP publish is bounded to 2s (connect 1s) so a slow socket server cannot
+  hold a queue worker for the framework default timeout.
 - `notifications:monitor` emits queue depth, recent notification/recipient counts,
   failed-job count and pending delivery count as JSON; it logs a warning when the
   queue or failed-job threshold is crossed and is scheduled every minute.
-- Reverb HTTP publish is bounded to 2s (connect 1s) so a slow socket server cannot
-  hold a queue worker for the framework default timeout.
-- `NOTIFICATION_QUEUE` defaults to `default` in the repository. DEV VPS is
-  configured with `NOTIFICATION_QUEUE=notifications` and the queue worker command
-  `--queue=notifications,default`, so notification jobs are consumed first without
-  requiring a second worker. Focused backend plus monitor tests passed 33/33.
+- DEV VPS runs two queue replicas consuming `notifications,default`, so a long
+  export on one worker does not stop the other worker from taking notifications.
+- Live probe on the deployed backend: one event to 50 private channels took 75.9ms;
+  50 separate single-channel events took 108.4ms. The former is one HTTP publish
+  instead of 50.
+- Deployed DEV SHAs: frontend `1539a067`, backend rate-limit build follows the
+  backend commit in this push.
 - `NotificationFcmTransportTest` still cannot run in this checkout because the
   optional `Google\Auth\Credentials\ServiceAccountCredentials` class is absent;
   this is an existing dependency issue, not caused by the burst changes.
