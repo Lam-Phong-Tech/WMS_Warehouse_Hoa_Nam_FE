@@ -61,6 +61,45 @@ vi.mock("axios", () => {
 dayjs.extend(customParseFormat);
 configure({ asyncUtilTimeout: 10000 });
 
+function createTestStorage(): Storage {
+  const values = new Map<string, string>();
+  return {
+    get length() {
+      return values.size;
+    },
+    clear() {
+      values.clear();
+    },
+    getItem(key) {
+      return values.get(key) ?? null;
+    },
+    key(index) {
+      return Array.from(values.keys())[index] ?? null;
+    },
+    removeItem(key) {
+      values.delete(key);
+    },
+    setItem(key, value) {
+      values.set(key, String(value));
+    },
+  };
+}
+
+// Node 24 exposes an experimental global storage that shadows jsdom's
+// window.localStorage, leaving both undefined. Provide the browser-shaped
+// in-memory storage that persisted zustand stores expect during tests.
+for (const name of ["localStorage", "sessionStorage"] as const) {
+  const storage = createTestStorage();
+  Object.defineProperty(globalThis, name, {
+    configurable: true,
+    value: storage,
+  });
+  Object.defineProperty(window, name, {
+    configurable: true,
+    value: storage,
+  });
+}
+
 const mountedImperativeModals = new Set<{
   root: Root;
   container: HTMLElement;

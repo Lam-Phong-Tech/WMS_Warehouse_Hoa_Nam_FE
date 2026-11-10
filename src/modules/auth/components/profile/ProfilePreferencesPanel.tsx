@@ -56,48 +56,6 @@ export function ProfilePreferencesPanel({
   const [stale, setStale] = useState(false);
   const [reset, setReset] = useState(false);
   const [reload, setReload] = useState(false);
-  const [browserPermission, setBrowserPermission] = useState<
-    NotificationPermission | "unsupported"
-  >(() =>
-    typeof Notification === "undefined"
-      ? "unsupported"
-      : Notification.permission,
-  );
-  const [permissionError, setPermissionError] = useState(false);
-  const [permissionPending, setPermissionPending] = useState(false);
-  const [permissionRequested, setPermissionRequested] = useState(false);
-  useEffect(() => {
-    if (mode !== "notifications" || typeof Notification === "undefined") return;
-    let active = true;
-    let permissionStatus: PermissionStatus | undefined;
-    const syncPermission = () => {
-      setBrowserPermission(Notification.permission);
-      setPermissionPending(false);
-    };
-    window.addEventListener("focus", syncPermission);
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") syncPermission();
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    if (navigator.permissions?.query) {
-      void navigator.permissions
-        .query({ name: "notifications" })
-        .then((status) => {
-          if (!active) return;
-          permissionStatus = status;
-          status.addEventListener("change", syncPermission);
-        })
-        .catch(() => {
-          /* Some browsers do not expose notification permission events. */
-        });
-    }
-    return () => {
-      active = false;
-      window.removeEventListener("focus", syncPermission);
-      document.removeEventListener("visibilitychange", onVisibility);
-      permissionStatus?.removeEventListener("change", syncPermission);
-    };
-  }, [mode]);
   const homeLabels: Record<string, string> = {
     dashboard: t("auth.personal.homeDashboard"),
     inbound: t("auth.personal.homeInbound"),
@@ -137,23 +95,6 @@ export function ProfilePreferencesPanel({
       setError(t("auth.personal.saveError"));
     } finally {
       setPending(false);
-    }
-  };
-  const requestBrowserPermission = async () => {
-    setPermissionError(false);
-    if (typeof Notification === "undefined") return;
-    setPermissionRequested(true);
-    if (Notification.permission !== "default") {
-      setBrowserPermission(Notification.permission);
-      return;
-    }
-    setPermissionPending(true);
-    try {
-      setBrowserPermission(await Notification.requestPermission());
-    } catch {
-      setPermissionError(true);
-    } finally {
-      setPermissionPending(false);
     }
   };
   const select = <
@@ -292,7 +233,7 @@ export function ProfilePreferencesPanel({
         </div>
       ) : null}
       {mode === "notifications" ? (
-        <div className="hn-personal-settings-grid">
+        <div className="hn-personal-settings-grid hn-personal-settings-grid--single">
           <section className="hn-personal-card">
             <h2>{t("auth.personal.notifications")}</h2>
             <div className="hn-personal-notification-table">
@@ -348,64 +289,6 @@ export function ProfilePreferencesPanel({
               <UiIcon name="lock" size="sm" />
               {t("auth.personal.notificationPolicy")}
             </p>
-          </section>
-          <section className="hn-personal-card hn-personal-browser-notifications">
-            <h2>{t("auth.personal.browserNotifications")}</h2>
-            <p className="hn-personal-muted">
-              {t("auth.personal.browserNotificationHint")}
-            </p>
-            <UiAlert
-              tone={
-                browserPermission === "granted"
-                  ? "success"
-                  : browserPermission === "denied"
-                    ? "warning"
-                    : "info"
-              }
-            >
-              {t(
-                browserPermission === "granted"
-                  ? "auth.personal.browserGranted"
-                  : browserPermission === "denied"
-                    ? "auth.personal.browserDenied"
-                    : browserPermission === "unsupported"
-                      ? "auth.personal.browserUnsupported"
-                      : "auth.personal.browserDefault",
-              )}
-            </UiAlert>
-            {browserPermission === "denied" ? (
-              <p className="hn-personal-muted">
-                {t("auth.personal.browserDeniedHint")}
-              </p>
-            ) : null}
-            {browserPermission === "default" && permissionRequested ? (
-              <p className="hn-personal-muted" role="status">
-                {t("auth.personal.browserQuietPromptHint")}
-              </p>
-            ) : null}
-            {browserPermission !== "unsupported" ? (
-              <ActionButton
-                kind={browserPermission === "default" ? "grant" : "refresh"}
-                loading={permissionPending}
-                disabled={permissionPending}
-                onClick={
-                  browserPermission === "default"
-                    ? requestBrowserPermission
-                    : () => setBrowserPermission(Notification.permission)
-                }
-              >
-                {t(
-                  browserPermission === "default"
-                    ? "auth.personal.requestPermission"
-                    : "auth.personal.checkPermission",
-                )}
-              </ActionButton>
-            ) : null}
-            {permissionError ? (
-              <UiAlert tone="error">
-                {t("auth.personal.browserDeniedHint")}
-              </UiAlert>
-            ) : null}
           </section>
         </div>
       ) : null}

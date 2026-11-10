@@ -60,8 +60,6 @@ declare global {
     __profileDelays: { method: string; url: string; milliseconds: number }[];
     __profileDevicesUnavailable: boolean;
     __profileMfaUnavailable: boolean;
-    __profileNotificationPermission?: NotificationPermission;
-    __profileNotificationRequests?: number;
   }
 }
 

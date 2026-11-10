@@ -10,43 +10,10 @@ const common = {
 };
 describe("ProfilePreferencesPanel protected drafts", () => {
   afterEach(() => vi.unstubAllGlobals());
-  it("explains quiet prompts and refreshes permission changed in browser settings", async () => {
-    let permission: NotificationPermission = "default";
-    const requestPermission = vi.fn(
-      async () => "default" as NotificationPermission,
-    );
-    vi.stubGlobal("Notification", {
-      get permission() {
-        return permission;
-      },
-      requestPermission,
-    });
-    renderWithProviders(
-      <ProfilePreferencesPanel
-        {...common}
-        preferences={preferenceFixture}
-        mode="notifications"
-        onSave={vi.fn()}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Cấp quyền" }));
-    expect(await screen.findByText(/Nếu không thấy hộp thoại/)).toBeVisible();
-    permission = "granted";
-    fireEvent(window, new Event("focus"));
-    expect(
-      await screen.findByText("Đã cấp quyền", { exact: true }),
-    ).toBeVisible();
-    expect(
-      screen.queryByText(/Nếu không thấy hộp thoại/),
-    ).not.toBeInTheDocument();
-  });
-  it("shows an externally blocked permission without requesting it again", async () => {
-    let permission: NotificationPermission = "default";
+  it("keeps notifications in-app without asking for browser permission", () => {
     const requestPermission = vi.fn();
     vi.stubGlobal("Notification", {
-      get permission() {
-        return permission;
-      },
+      permission: "default",
       requestPermission,
     });
     renderWithProviders(
@@ -57,17 +24,13 @@ describe("ProfilePreferencesPanel protected drafts", () => {
         onSave={vi.fn()}
       />,
     );
-    permission = "denied";
-    fireEvent.click(screen.getByRole("button", { name: "Cấp quyền" }));
     expect(
-      await screen.findByText("Trình duyệt đang chặn thông báo", {
-        exact: true,
-      }),
-    ).toBeVisible();
+      screen.queryByText("Thông báo trình duyệt", { exact: true }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Cấp quyền" }),
+    ).not.toBeInTheDocument();
     expect(requestPermission).not.toHaveBeenCalled();
-    expect(
-      screen.getByRole("button", { name: "Kiểm tra lại quyền" }),
-    ).toBeVisible();
   });
   it("keeps appearance drafts when saving fails instead of applying local choices as saved", async () => {
     const save = vi.fn().mockRejectedValue(new Error("network"));

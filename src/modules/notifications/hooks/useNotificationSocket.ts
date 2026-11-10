@@ -1,12 +1,16 @@
-import { deliverBrowserNotification } from "../utils/browser-notification";
-import { getNotificationText } from "../utils/notification-text";
+import { createNotificationBurst } from "../utils/notification-burst";
+import {
+  claimUndeliveredNotifications,
+  isNotificationEnabled,
+  showNotificationToasts,
+} from "../utils/notification-toast";
 import {
   profileKeys,
   type ProfilePreferences,
 } from "@/modules/auth/types/profile.types";
+import { NOTIFICATION_KEYS } from "@/modules/notifications/constants/notification.constants";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { connectEcho, disconnectEcho } from "@/shared/lib/echo";
 import { api } from "@/shared/api/axios";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
@@ -28,7 +32,7 @@ export function useNotificationSocket(): void {
   const userId = useAuthStore((s) => s.user?.user_id);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isConnected = useNotificationStore((s) => s.isConnected);
-  const increment = useNotificationStore((s) => s.increment);
+  const incrementBy = useNotificationStore((s) => s.incrementBy);
   const setConnected = useNotificationStore((s) => s.setConnected);
   const queryClient = useQueryClient();
 
@@ -37,6 +41,40 @@ export function useNotificationSocket(): void {
 
     let cancelled = false;
     let leave: (() => void) | null = null;
+    let reconcileOnVisible = false;
+
+    const burst = createNotificationBurst((items) => {
+      const fresh = claimUndeliveredNotifications(items);
+      if (fresh.length === 0) return;
+
+      incrementBy(fresh.length);
+      const hidden = document.hidden;
+      void queryClient.invalidateQueries({
+        queryKey: NOTIFICATION_KEYS.list,
+        refetchType: hidden ? "none" : "active",
+      });
+      if (hidden) reconcileOnVisible = true;
+
+      const preferences = queryClient.getQueryData<ProfilePreferences>(
+        profileKeys.preferences(userId),
+      );
+      const toastable = fresh.filter((item) =>
+        isNotificationEnabled(item, preferences?.notifications),
+      );
+      if (
+        !hidden &&
+        !window.location.pathname.startsWith("/notifications")
+      ) {
+        showNotificationToasts(toastable);
+      }
+    });
+
+    const reconcileWhenVisible = () => {
+      if (document.hidden || !reconcileOnVisible) return;
+      reconcileOnVisible = false;
+      void queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.root });
+    };
+    document.addEventListener("visibilitychange", reconcileWhenVisible);
 
     void connectEcho().then((echo) => {
       if (cancelled || !echo) return;
@@ -46,21 +84,12 @@ export function useNotificationSocket(): void {
         setConnected(true);
         // Reconnect may have missed events while offline; reconcile the badge
         // and list with the persisted notification state.
-        void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        void queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.root });
       });
       channel.listen(".notification.created", (payload: NotificationItem) => {
         if (cancelled || useAuthStore.getState().user?.user_id !== userId)
           return;
-        const preferences = queryClient.getQueryData<ProfilePreferences>(
-          profileKeys.preferences(userId),
-        );
-        deliverBrowserNotification(payload, preferences?.notifications);
-        increment();
-        queryClient.invalidateQueries({ queryKey: ["notifications"] });
-        if (payload.severity === "warning" || payload.severity === "critical") {
-          const copy = getNotificationText(payload);
-          toast.warning(copy.title, { description: copy.body });
-        }
+        burst.push(payload);
       });
       channel.listen(".auth.session-replaced", () => {
         // The event is sent to every open tab of this account. Ask the server
@@ -76,9 +105,11 @@ export function useNotificationSocket(): void {
 
     return () => {
       cancelled = true;
+      burst.dispose();
+      document.removeEventListener("visibilitychange", reconcileWhenVisible);
       leave?.();
     };
-  }, [isAuthenticated, userId, increment, setConnected, queryClient]);
+  }, [isAuthenticated, userId, incrementBy, setConnected, queryClient]);
 
   useEffect(() => {
     if (!isAuthenticated) {

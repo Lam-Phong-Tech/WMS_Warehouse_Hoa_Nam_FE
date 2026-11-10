@@ -5955,6 +5955,10 @@ export const MESSAGES_ZH: MessageTree = {
       "markAll": "将全部标记为已读",
       "viewAll": "查看全部"
     },
+    "burst": {
+      "title": "{count} 条新通知",
+      "description": "打开通知铃铛查看详情。"
+    },
     "page": {
       "subtitle": "与您相关的所有系统通知 - 入站/出库、保修、帐户、安全。",
       "filterLabel": "筛选通知",

@@ -84,3 +84,10 @@ export const NOTIFICATION_PAYLOAD_FIELD_LABELS: Record<string, MessageKey> = {
   from_status: "notifications.payload.fromStatus",
   to_status: "notifications.payload.toStatus",
 };
+
+/** Query-key roots. The unread-count key is intentionally separate from the list. */
+export const NOTIFICATION_KEYS = {
+  root: ["notifications"] as const,
+  list: ["notifications", "list"] as const,
+  unreadCount: ["notifications", "unread-count"] as const,
+};

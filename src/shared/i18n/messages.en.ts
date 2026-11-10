@@ -5891,6 +5891,10 @@ export const MESSAGES_EN: MessageTree = {
       markAll: "Mark all as read",
       viewAll: "View all",
     },
+    burst: {
+      title: "{count} new notifications",
+      description: "Open the notification bell to review them.",
+    },
     page: {
       subtitle:
         "All system notifications relevant to you — inbound/outbound, warranty, accounts, security.",

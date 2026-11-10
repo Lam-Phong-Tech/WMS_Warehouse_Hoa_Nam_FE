@@ -133,20 +133,8 @@
   padding: 8px 14px;
   flex-shrink: 0;
 }
-.hn-personal-browser-notifications {
-  display: grid;
-  align-content: start;
-  gap: 16px;
-}
-.hn-personal-card.hn-personal-browser-notifications h2,
-.hn-personal-card.hn-personal-browser-notifications p {
-  margin: 0;
-}
-.hn-personal-browser-notifications .MuiButton-root {
-  justify-self: start;
-  min-height: 40px;
-  padding: 10px 16px;
-  gap: 8px;
+.hn-personal-settings-grid--single {
+  grid-template-columns: minmax(0, 1fr);
 }
 .hn-personal-page-heading h1 {
   margin: 0;

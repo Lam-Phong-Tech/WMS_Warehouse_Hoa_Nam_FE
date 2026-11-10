@@ -515,7 +515,6 @@ async function openFixture(
     theme = "light",
     multiple = false,
     mfa = "",
-    browser = "default",
     devicesError = false,
     mfaError = false,
   }: {
@@ -523,7 +522,6 @@ async function openFixture(
     theme?: "light" | "dark";
     multiple?: boolean;
     mfa?: string;
-    browser?: NotificationPermission;
     devicesError?: boolean;
     mfaError?: boolean;
   } = {},
@@ -531,24 +529,10 @@ async function openFixture(
   await page.setViewportSize({ width, height: 1000 });
   await page.emulateMedia({ colorScheme: theme });
   await page.addInitScript(
-    ({ mode, permission }) => {
+    ({ mode }) => {
       localStorage.setItem("hoa-nam-theme", mode);
-      window.__profileNotificationPermission = permission;
-      window.__profileNotificationRequests = 0;
-      if (typeof Notification !== "undefined") {
-        Object.defineProperty(Notification, "permission", {
-          configurable: true,
-          get: () => window.__profileNotificationPermission ?? "default",
-        });
-        Notification.requestPermission = async () => {
-          window.__profileNotificationRequests =
-            (window.__profileNotificationRequests ?? 0) + 1;
-          window.__profileNotificationPermission = "granted";
-          return "granted";
-        };
-      }
     },
-    { mode: theme, permission: browser },
+    { mode: theme },
   );
   const params = new URLSearchParams({ theme });
   if (multiple) params.set("multiple", "1");
@@ -833,10 +817,10 @@ test("profile preferences persist from server and apply globally without changin
   ).toBe(true);
 });
 
-test("profile notification security rules, browser permission and failed save preserve user choices", async ({
+test("profile notification security rules and failed save preserve user choices", async ({
   page,
 }) => {
-  await openFixture(page, { width: 390, browser: "denied" });
+  await openFixture(page, { width: 390 });
   await section(page, "Thông báo");
   const mandatory = page.getByLabel("Hoạt động tài khoản · Trong ứng dụng", {
     exact: true,
@@ -876,33 +860,8 @@ test("profile notification security rules, browser permission and failed save pr
     await page.evaluate(() => window.__profileState.preferences.notifications),
   ).toMatchObject({ inventory: { email: true }, account: { in_app: true } });
   await expect(
-    page.getByText("Trình duyệt đang chặn thông báo", { exact: true }).first(),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Kiểm tra lại quyền", exact: true })
-    .click();
-  expect(await page.evaluate(() => window.__profileNotificationRequests)).toBe(
-    0,
-  );
-  await page.evaluate(() => {
-    window.__profileNotificationPermission = "granted";
-  });
-  await page
-    .getByRole("button", { name: "Kiểm tra lại quyền", exact: true })
-    .click();
-  await expect(
-    page.getByText("Đã cấp quyền", { exact: true }).first(),
-  ).toBeVisible();
-  await page.evaluate(() => {
-    window.__profileNotificationPermission = "default";
-  });
-  await page
-    .getByRole("button", { name: "Kiểm tra lại quyền", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Cấp quyền", exact: true }).click();
-  expect(await page.evaluate(() => window.__profileNotificationRequests)).toBe(
-    1,
-  );
+    page.getByText("Thông báo trình duyệt", { exact: true }),
+  ).toHaveCount(0);
   await expect(mandatory).toBeChecked();
   await expect(mandatory).toBeDisabled();
   await noOverflow(page);

@@ -5,6 +5,7 @@ interface NotificationState {
   isConnected: boolean;
   isDropdownOpen: boolean;
   setUnreadCount: (count: number) => void;
+  incrementBy: (count: number) => void;
   increment: () => void;
   setConnected: (connected: boolean) => void;
   setDropdownOpen: (open: boolean) => void;
@@ -24,6 +25,12 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   // chuẩn hoá về 0 ngay tại store để mọi consumer đều an toàn.
   setUnreadCount: (count) =>
     set({ unreadCount: Number.isFinite(count) ? Math.max(0, count) : 0 }),
+  incrementBy: (count) =>
+    set((state) => ({
+      unreadCount:
+        state.unreadCount +
+        (Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0),
+    })),
   increment: () => set((state) => ({ unreadCount: state.unreadCount + 1 })),
   setConnected: (connected) => set({ isConnected: connected }),
   setDropdownOpen: (open) => set({ isDropdownOpen: open }),

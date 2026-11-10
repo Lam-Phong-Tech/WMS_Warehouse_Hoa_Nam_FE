@@ -1,12 +1,10 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { notificationService } from "@/modules/notifications/services/notificationService";
+import { NOTIFICATION_KEYS } from "@/modules/notifications/constants/notification.constants";
 import { useNotificationStore } from "@/shared/store/notification.store";
 import { getMutationErrorMessage } from "@/shared/api/api-error";
 import type { NotificationListParams } from "@/modules/notifications/types/notification.types";
-
-const NOTIFICATIONS_KEY = ["notifications"];
-const UNREAD_COUNT_KEY = ["notifications", "unread-count"];
 
 /**
  * Danh sách thông báo.
@@ -23,7 +21,7 @@ export function useNotificationsQuery(
   options: { enabled?: boolean } = {},
 ) {
   return useQuery({
-    queryKey: [...NOTIFICATIONS_KEY, params],
+    queryKey: [...NOTIFICATION_KEYS.list, params],
     queryFn: () => notificationService.list(params),
     enabled: options.enabled ?? true,
   });
@@ -34,7 +32,7 @@ export function useUnreadCountQuery(enabled: boolean) {
   const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
 
   return useQuery({
-    queryKey: UNREAD_COUNT_KEY,
+    queryKey: NOTIFICATION_KEYS.unreadCount,
     queryFn: async () => {
       const result = await notificationService.unreadCount();
       setUnreadCount(result.unread_count);
@@ -53,7 +51,7 @@ export function useMarkNotificationRead() {
     mutationFn: (id: string) => notificationService.markRead(id),
     onSuccess: () => {
       decrement(Math.max(0, unreadCount - 1));
-      queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+      queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.list });
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
   });
@@ -67,7 +65,7 @@ export function useMarkAllNotificationsRead() {
     mutationFn: () => notificationService.markAllRead(),
     onSuccess: () => {
       setUnreadCount(0);
-      queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+      queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.list });
     },
     onError: (error) => toast.error(getMutationErrorMessage(error)),
   });

@@ -213,6 +213,8 @@ Sử dụng **một** `<Toaster>` Sonner toàn ứng dụng trong `src/app/provi
 | Tương tác   | Có nút đóng thủ công, cho vuốt sang phải khi nền tảng hỗ trợ; toast không chặn thao tác ở vùng ngoài nó. Không tự chuyển focus sang toast.                      |
 | Truy cập    | Thông báo thường dùng `status`/live polite; lỗi cần chú ý có `alert` phù hợp. Lỗi chặn tác vụ hiển thị trong form/banner, không lặp bằng toast.                 |
 
+Khi nhiều thông báo realtime dồn trong một cửa sổ ngắn (ví dụ 50 sự kiện), gom batch khoảng 400ms: hiển thị tối đa 3 toast cá nhân theo mức ưu tiên và một toast tổng hợp cho phần còn lại; không xếp hàng hàng chục toast. Tab đang ẩn chỉ cập nhật badge, không tạo toast chờ.
+
 Chỉ báo thành công **sau** phản hồi thành công; mỗi sự kiện chỉ có một thông báo chính. Lỗi đã có cảnh báo tại chỗ không lặp bằng toast; không gọi toast cả ở service và nơi dùng service. Nội dung ngắn, nêu kết quả và bước tiếp theo nếu cần, không lộ mã lỗi kỹ thuật. Khi drawer/dialog đang mở, kiểm tra toast không che CTA, nút đóng hoặc field quan trọng; nếu va chạm, điều chỉnh vị trí/giới hạn hiển thị của overlay đó. Kiểm tra cả light/dark và mobile.
 
 ## 10. Cách thực hiện và kiểm tra màn hình mới
@@ -244,7 +246,7 @@ Tham chiếu `Hoa_Nam_UIUX_V2/phiendangnhap_nguoidung`, bộ U01–U32 Desktop/T
 - Trang hồ sơ ưu tiên danh tính, trạng thái và thông tin liên hệ; phòng ban, tài khoản và quyền là thông tin chỉ đọc. Chỉnh sửa, ảnh đại diện, đổi mật khẩu, thiết bị/phiên và xác thực hai bước dùng drawer bên phải, một vùng cuộn nội dung và nút hành động cố định. Đổi email yêu cầu mật khẩu hiện tại. Ảnh có bước cắt/thu phóng và chỉ áp dụng sau khi lưu thành công.
 - Thiết bị và phiên trình bày dạng thẻ có nhóm, không ép một bảng rộng vào drawer. Thông tin chưa biết phải ghi rõ, không suy ra thiết bị vật lý từ IP hoặc trình duyệt. Phiên hiện tại được nhận diện và bảo vệ. Số lượng và giới hạn phải lấy từ chính sách thật; không chép giới hạn 3 thiết bị/2 phiên từ dữ liệu minh họa.
 - Tùy chọn giao diện có bản xem trước. Thay đổi chưa lưu không tác động đến phần còn lại của ứng dụng; Hủy giữ cấu hình đã lưu. Màu nhấn dùng cho nút chính, liên kết và phần đang chọn; màu trạng thái vẫn giữ đúng ngữ nghĩa. Cỡ chữ/mật độ không thu nhỏ vùng chạm. Tùy chọn ngày và múi giờ không làm lệch ngày chứng từ chỉ có ngày.
-- Thông báo phân nhóm và kênh rõ ràng; cảnh báo bảo mật trong ứng dụng là bắt buộc. Quyền thông báo trình duyệt chỉ xin khi người dùng chủ động bật, có hướng dẫn khi bị chặn. Không hứa thông báo khi ứng dụng đã đóng nếu chưa triển khai Web Push.
+- Thông báo phân nhóm và kênh rõ ràng; cảnh báo bảo mật trong ứng dụng là bắt buộc. Thông báo realtime chỉ hiển thị trong ứng dụng dưới dạng toast ở góc trên bên phải theo mục 9; không dùng thông báo hệ điều hành/trình duyệt và không xin quyền thông báo trình duyệt.
 - Biểu mẫu giữ bản nháp khi lỗi lưu hoặc xung đột phiên bản; có bước xác nhận khi bỏ thay đổi. Lệnh thu hồi phiên mất phản hồi phải đọc lại trạng thái trước khi gửi lệnh tiếp theo. Không tự coi lỗi tải là danh sách rỗng hay thu hồi thành công.
 - Xác thực hai bước hiển thị QR tạo cục bộ; mã khôi phục chỉ nằm trong bộ nhớ của đúng tài khoản/phiên đăng nhập, không ghi vào localStorage, sessionStorage hoặc cache bền vững. Không cho đóng drawer khi đang xác nhận; mã trả về phải còn xem được nếu token làm mới khiến khung bảo vệ tải lại. Đóng sau khi xem mã cần xác nhận đã lưu mã. Đổi mật khẩu tuân theo hậu quả thật của API, kể cả yêu cầu đăng nhập lại.
 

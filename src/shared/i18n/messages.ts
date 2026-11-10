@@ -5923,6 +5923,10 @@ export const MESSAGES_VI = {
       markAll: "Đánh dấu đã đọc hết",
       viewAll: "Xem tất cả",
     },
+    burst: {
+      title: "{count} thông báo mới",
+      description: "Mở chuông thông báo để xem chi tiết.",
+    },
     page: {
       subtitle:
         "Toàn bộ thông báo hệ thống liên quan tới bạn — nhập/xuất kho, bảo hành, tài khoản, bảo mật.",
