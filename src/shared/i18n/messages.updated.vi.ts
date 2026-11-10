@@ -182,7 +182,7 @@ export const MESSAGES_UPDATED_VI = {
   text_48f97b02abf5: "Tìm theo mã hoặc tên SKU",
   text_4967fc6e0793: "Nhóm hàng / SKU",
   text_49ac5ad3c77e: "Danh sách hồ sơ",
-  text_49c053966833: "Mã tòa yêu cầu",
+  text_49c053966833: "Mã toa yêu cầu",
   text_49ced19e7f1d: "Đặt lại bộ lọc",
   text_4a7df2bdbb44:
     "Dữ liệu bên dưới vẫn là kết quả của kỳ đã áp dụng gần nhất.",
@@ -208,7 +208,7 @@ export const MESSAGES_UPDATED_VI = {
   text_4fb2cad0256d: "Hiển thị {value0}–{value1} / {value2} phiếu",
   text_518e399f02c3: "Biểu đồ sản lượng xuất theo ngày",
   text_5293d03c5908: "Cập nhật",
-  text_52d04fdc17f2: "/ Toà",
+  text_52d04fdc17f2: "/ Toa",
   text_5306083bc2fb: "Tiến độ ghi nhận",
   text_532fdaffd860: "Trả máy",
   text_5345eb7325a1: "Tìm kiếm báo cáo",
