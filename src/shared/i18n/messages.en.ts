@@ -5536,6 +5536,11 @@ export const MESSAGES_EN: MessageTree = {
       layoutNote: "Grouped by zone — not a location map.",
       zoneDistributionAria: "Status distribution in {zone}",
       showingCount: "Showing {shown}/{total} trays",
+      mapAriaLabel: "Warehouse rack and tray map",
+      aisleLabel: "AISLE",
+      slotUnassigned: "Slot {index}, empty bay",
+      slotPlaceholderTitle: "Empty bay",
+      slotPlaceholderLocation: "Slot {index}",
     },
     grid: {
       zoneUnzoned: "Unzoned",

@@ -1,0 +1,43 @@
+/* Warehouse SVG scene — tương tác khay + nền lối đi (HOA NAM tokens). */
+.warehouse-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.warehouse-map text {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.tray-object {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 0.18s ease;
+}
+.tray-object .selection-ring {
+  stroke: transparent;
+  transition: stroke 0.16s ease;
+}
+.tray-object:hover .selection-ring,
+.tray-object:focus-visible .selection-ring,
+.tray-object.is-selected .selection-ring {
+  stroke: var(--ops-link);
+}
+.tray-object:hover .tray-label {
+  filter: brightness(1.02);
+}
+.tray-object.is-dimmed {
+  opacity: 0.16;
+  cursor: default;
+  pointer-events: none;
+}
+.tray-object.is-dimmed .selection-ring {
+  stroke: transparent;
+}
+
+.slot-placeholder {
+  opacity: 0.75;
+}
+.slot-placeholder text {
+  letter-spacing: 0.02em;
+}

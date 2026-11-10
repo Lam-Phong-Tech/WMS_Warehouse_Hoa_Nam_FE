@@ -5570,6 +5570,11 @@ export const MESSAGES_VI = {
       layoutNote: "Bố cục theo khu vực — không phải sơ đồ vị trí.",
       zoneDistributionAria: "Phân bố trạng thái trong {zone}",
       showingCount: "Hiển thị {shown}/{total} khay",
+      mapAriaLabel: "Sơ đồ dãy kệ và khay",
+      aisleLabel: "LỐI ĐI",
+      slotUnassigned: "Vị trí {index}, Chưa gán khay",
+      slotPlaceholderTitle: "Chưa gán khay",
+      slotPlaceholderLocation: "Vị trí {index}",
     },
     grid: {
       zoneUnzoned: "Chưa phân khu",

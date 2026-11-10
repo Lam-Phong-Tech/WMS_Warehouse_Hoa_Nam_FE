@@ -5632,7 +5632,12 @@ export const MESSAGES_ZH: MessageTree = {
       "clearFilters": "清除筛选",
       "layoutNote": "按区域分组 — 不是位置图。",
       "zoneDistributionAria": "{zone} 的状态分布",
-      "showingCount": "显示 {shown}/{total} 托盘"
+      "showingCount": "显示 {shown}/{total} 托盘",
+      "mapAriaLabel": "仓库货架和托盘地图",
+      "aisleLabel": "通道",
+      "slotUnassigned": "位置 {index}，未分配托盘",
+      "slotPlaceholderTitle": "未分配托盘",
+      "slotPlaceholderLocation": "位置 {index}"
     },
     "grid": {
       "zoneUnzoned": "未分区",
