@@ -1,4 +1,5 @@
 import { createNotificationBurst } from "../utils/notification-burst";
+import { createNotificationTabLeader, type NotificationTabLeader } from "../utils/notification-tab-leader";
 import {
   claimUndeliveredNotifications,
   isNotificationEnabled,
@@ -42,10 +43,11 @@ export function useNotificationSocket(): void {
     let cancelled = false;
     let leave: (() => void) | null = null;
     let reconcileOnVisible = false;
+    let leader: NotificationTabLeader | null = null;
 
-    const burst = createNotificationBurst((items) => {
+    const handleIncoming = (items: NotificationItem[]): boolean => {
       const fresh = claimUndeliveredNotifications(items);
-      if (fresh.length === 0) return;
+      if (fresh.length === 0) return false;
 
       incrementBy(fresh.length);
       const hidden = document.hidden;
@@ -67,7 +69,48 @@ export function useNotificationSocket(): void {
       ) {
         showNotificationToasts(toastable);
       }
+      return true;
+    };
+
+    const burst = createNotificationBurst((items) => {
+      if (handleIncoming(items)) leader?.publish(items);
     });
+
+    const connect = () => {
+      void connectEcho().then((echo) => {
+        if (cancelled || !echo) return;
+
+        const channel = echo.private(`user.${userId}`);
+        channel.subscribed(() => {
+          setConnected(true);
+          // Reconnect may have missed events while offline; reconcile the badge
+          // and list with the persisted notification state.
+          void queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.root });
+        });
+        channel.listen(".notification.created", (payload: NotificationItem) => {
+          if (cancelled || useAuthStore.getState().user?.user_id !== userId)
+            return;
+          burst.push(payload);
+        });
+        channel.listen(".auth.session-replaced", () => {
+          // The event is sent to every open tab of this account. Ask the server
+          // which JWT was displaced; the existing 401 handler shows the notice.
+          void api.get(API_ENDPOINTS.ME).catch(() => {});
+        });
+
+        leave = () => {
+          echo.leave(`user.${userId}`);
+          setConnected(false);
+        };
+      });
+    };
+
+    leader = createNotificationTabLeader({
+      scope: String(userId),
+      onBecomeLeader: connect,
+      onItems: handleIncoming,
+    });
+    leader.start();
 
     const reconcileWhenVisible = () => {
       if (document.hidden || !reconcileOnVisible) return;
@@ -76,36 +119,10 @@ export function useNotificationSocket(): void {
     };
     document.addEventListener("visibilitychange", reconcileWhenVisible);
 
-    void connectEcho().then((echo) => {
-      if (cancelled || !echo) return;
-
-      const channel = echo.private(`user.${userId}`);
-      channel.subscribed(() => {
-        setConnected(true);
-        // Reconnect may have missed events while offline; reconcile the badge
-        // and list with the persisted notification state.
-        void queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.root });
-      });
-      channel.listen(".notification.created", (payload: NotificationItem) => {
-        if (cancelled || useAuthStore.getState().user?.user_id !== userId)
-          return;
-        burst.push(payload);
-      });
-      channel.listen(".auth.session-replaced", () => {
-        // The event is sent to every open tab of this account. Ask the server
-        // which JWT was displaced; the existing 401 handler shows the notice.
-        void api.get(API_ENDPOINTS.ME).catch(() => {});
-      });
-
-      leave = () => {
-        echo.leave(`user.${userId}`);
-        setConnected(false);
-      };
-    });
-
     return () => {
       cancelled = true;
       burst.dispose();
+      leader?.stop();
       document.removeEventListener("visibilitychange", reconcileWhenVisible);
       leave?.();
     };

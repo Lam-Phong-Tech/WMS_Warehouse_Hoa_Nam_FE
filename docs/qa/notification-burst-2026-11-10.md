@@ -95,8 +95,13 @@ pnpm exec vitest run \
 - `notifications:monitor` emits queue depth, recent notification/recipient counts,
   failed-job count and pending delivery count as JSON; it logs a warning when the
   queue or failed-job threshold is crossed and is scheduled every minute.
-- DEV VPS runs two queue replicas consuming `notifications,default`, so a long
-  export on one worker does not stop the other worker from taking notifications.
+- One browser tab is elected leader with `navigator.locks`; it owns the single Echo
+  connection and relays notification batches to other tabs over `BroadcastChannel`.
+  If leader election is unsupported, the old per-tab connection remains as fallback.
+- DEV VPS queue container runs two isolated processes: one consumes only
+  `notifications`, one consumes only `default`; a long export cannot block
+  notification delivery. `NOTIFICATION_QUEUE=notifications` routes listeners to the
+  dedicated process.
 - Live probe on the deployed backend: one event to 50 private channels took 75.9ms;
   50 separate single-channel events took 108.4ms. The former is one HTTP publish
   instead of 50.
