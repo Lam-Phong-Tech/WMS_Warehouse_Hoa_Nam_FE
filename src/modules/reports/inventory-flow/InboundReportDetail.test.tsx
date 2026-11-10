@@ -128,4 +128,97 @@ describe("Chi tiết báo cáo nhập kho", () => {
     );
     expect(screen.queryByText("SN-001")).not.toBeInTheDocument();
   });
+
+  it("hiện NCC gắn trên phiếu ở ô Nhà cung cấp, không dùng mã chứng từ nguồn", () => {
+    vi.mocked(useWarehouseDirectory).mockReturnValue({
+      data: [{ code: "KHO-TONG-HN", name: "Kho tổng Hoa Nam" }],
+    } as unknown as ReturnType<typeof useWarehouseDirectory>);
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: {
+        document: {
+          code: "PN-001",
+          status: "POSTED",
+          sourceReference: "HN1|SKU=D051812A|ITEM=QR-IN-20261029-015",
+          createdAt: "2026-10-26T08:30:00+07:00",
+          createdBy: "Nguyễn A",
+        },
+        supplier: {
+          id: "sup-1",
+          code: "NCC-007",
+          name: "Nhà cung cấp A",
+          displayName: "NCC-007 - Nhà cung cấp A",
+          status: "ACTIVE",
+          version: 1,
+        },
+        lines: [],
+        statusHistory: [],
+      },
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useInboundDetail>);
+    vi.mocked(useInboundScanEntries).mockReturnValue({
+      data: [],
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useInboundScanEntries>);
+
+    renderWithProviders(
+      <InboundReportDetail
+        document={documentCard}
+        range={{ from: "2026-10-23", to: "2026-10-29" }}
+        canExport
+        onBack={vi.fn()}
+      />,
+      ["/reports/inventory-flow?screen=RPT-01"],
+    );
+
+    expect(
+      screen.getAllByText(/NCC-007 - Nhà cung cấp A/).length,
+    ).toBeGreaterThanOrEqual(2);
+    // Payload mã chứng từ nguồn chỉ được phép xuất hiện ở ô "Mã chứng từ bên ngoài".
+    const supplierField = screen.getByText("Nhà cung cấp").closest("div");
+    expect(supplierField).not.toBeNull();
+    expect(supplierField?.textContent).not.toContain("QR-IN-20261029-015");
+  });
+
+  it("không NCC và không counterpart → Nhà cung cấp hiện —, không đổ payload quét máy", () => {
+    vi.mocked(useWarehouseDirectory).mockReturnValue({
+      data: [{ code: "KHO-TONG-HN", name: "Kho tổng Hoa Nam" }],
+    } as unknown as ReturnType<typeof useWarehouseDirectory>);
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: {
+        document: {
+          code: "PN-001",
+          status: "POSTED",
+          sourceReference: "HN1|SKU=D051812A|ITEM=QR-IN-20261029-015",
+          createdAt: "2026-10-26T08:30:00+07:00",
+          createdBy: "Nguyễn A",
+        },
+        lines: [],
+        statusHistory: [],
+      },
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useInboundDetail>);
+    vi.mocked(useInboundScanEntries).mockReturnValue({
+      data: [],
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useInboundScanEntries>);
+
+    renderWithProviders(
+      <InboundReportDetail
+        document={{ ...documentCard, counterpart: "" }}
+        range={{ from: "2026-10-23", to: "2026-10-29" }}
+        canExport
+        onBack={vi.fn()}
+      />,
+      ["/reports/inventory-flow?screen=RPT-01"],
+    );
+
+    const supplierField = screen.getByText("Nhà cung cấp").closest("div");
+    expect(supplierField).not.toBeNull();
+    expect(supplierField?.textContent).toContain("—");
+    expect(supplierField?.textContent).not.toContain("QR-IN-20261029-015");
+  });
 });

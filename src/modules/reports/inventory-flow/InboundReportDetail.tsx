@@ -57,6 +57,11 @@ export function InboundReportDetail({
   const [search, setSearch] = useState("");
   const detail = detailQuery.data;
   const receipt = detail?.document;
+  // NCC gắn trên phiếu — hiện "MÃ - Tên" như màn IN-03. Tuyệt đối không rơi
+  // về source_reference/counterpart khi thiếu NCC: đó là mã chứng từ nguồn
+  // (payload quét máy), không phải thông tin đối tác.
+  const supplierLabel =
+    detail?.supplier?.displayName || detail?.supplier?.name || "";
   const warehouseCode = document.warehouse_code.trim();
   const warehouseId = String(receipt?.warehouseId ?? "").trim();
   const warehouseRow = (warehousesQuery.data ?? []).find(
@@ -172,7 +177,7 @@ export function InboundReportDetail({
               <strong>{receipt?.code ?? document.document_no}</strong>
               <span>
                 {" "}
-                · {document.counterpart || receipt?.source || "—"} ·{" "}
+                · {supplierLabel || document.counterpart || "—"} ·{" "}
               </span>
               <span
                 className="inbound-report-detail__status"
@@ -256,8 +261,8 @@ export function InboundReportDetail({
                 <dd>{formatDateTime(receipt?.createdAt)}</dd>
               </div>
               <div>
-                <dt>Nhà cung cấp / nguồn</dt>
-                <dd>{document.counterpart || receipt?.source || "—"}</dd>
+                <dt>Nhà cung cấp</dt>
+                <dd>{supplierLabel || document.counterpart || "—"}</dd>
               </div>
               <div>
                 <dt>Kho nhập</dt>
