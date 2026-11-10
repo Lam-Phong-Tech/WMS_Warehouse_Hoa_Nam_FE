@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { cleanupTestState } from "@/test/setup";
 import { renderWithProviders } from "@/test/test-utils";
 import { translate } from "@/shared/i18n/useT";
@@ -120,6 +120,18 @@ it("opens the outbound detail as a right panel with grouped label actions", asyn
   const drawer = document.querySelector(".hn-outbound-detail-drawer");
   expect(drawer).not.toBeNull();
   expect(drawer).toHaveClass("MuiDrawer-anchorRight");
+  // Nhóm tab phụ + nút đóng phải nằm trong header, cùng hàng với tiêu đề,
+  // không rơi vào thân drawer (khoanh đỏ 2026-11-10).
+  const header = drawer?.querySelector(".ui-drawer-header");
+  expect(header).not.toBeNull();
+  expect(
+    within(header as HTMLElement).getByRole("button", {
+      name: translate("vi", "shared.attachments.title"),
+    }),
+  ).toBeInTheDocument();
+  expect(
+    within(header as HTMLElement).getByRole("button", { name: "Đóng" }),
+  ).toBeInTheDocument();
   expect(
     drawer?.querySelector(".hn-outbound-detail__label-actions"),
   ).not.toBeNull();

@@ -121,6 +121,7 @@ export function UiDrawer({
                     alignItems: "center",
                     gap: 1,
                     flexWrap: "wrap",
+                    marginLeft: "auto",
                   }}
                 >
                   {headerEnd}

@@ -710,9 +710,14 @@ body .ant-picker-dropdown .ant-picker-super-next-icon::before {
   color: inherit;
 }
 
-/* UiDrawer header must stretch arbitrary title children so trailing actions
-   (e.g. the close button) pin to the right edge instead of sticking to text. */
-.ui-drawer-header .MuiTypography-root,
+/* Title co giãn chiếm phần rộng còn lại (không ép width 100%) để headerEnd
+   (tab phụ, nút đóng…) nằm cùng hàng với tiêu đề, dạt phải. Phần tử con bên
+   trong title vẫn width 100% để hành động lồng trong title (reversal-create)
+   ghim sang phải. */
+.ui-drawer-header .MuiTypography-root {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .ui-drawer-header .MuiTypography-root > span,
 .ui-drawer-header .MuiTypography-root > div {
   width: 100%;
