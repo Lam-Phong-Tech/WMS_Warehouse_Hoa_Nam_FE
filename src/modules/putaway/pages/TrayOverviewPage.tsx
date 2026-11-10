@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButton } from "@/shared/components/actions";
@@ -12,6 +12,9 @@ import {
   AppstoreOutlined,
   ExpandAltOutlined,
   RightOutlined,
+  ShrinkOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
 } from "@/shared/components/icons";
 import { toast } from "sonner";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
@@ -20,9 +23,11 @@ import {
   type TrayOption,
 } from "@/modules/putaway/services/putawayService";
 import {
+  buildWarehouseLayout,
   bucketOfStatus,
   type TrayBucket,
 } from "@/modules/putaway/components/warehouse-map";
+import { WarehouseMap } from "@/modules/putaway/components/WarehouseMap";
 import { TrayDetailDialog } from "@/modules/putaway/components/TrayDetailDialog";
 import "./tray-overview.css";
 
@@ -36,11 +41,23 @@ import "./tray-overview.css";
  */
 
 const ALL_ZONES = "__all__";
+const SEARCH_ID = "ptw-tray-search";
+const ZOOM_STEP = 0.2;
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 2;
+
 const BUCKET_LABEL = {
   ATTENTION: "putaway.overview.bucketAttention",
   PARTIAL: "putaway.trayStatus.partial",
   EMPTY: "putaway.trayStatus.empty",
 } as const;
+
+const CHIP_ORDER: ReadonlyArray<TrayBucket | "ALL"> = [
+  "ALL",
+  "ATTENTION",
+  "PARTIAL",
+  "EMPTY",
+];
 
 function zoneKey(tray: TrayOption): string {
   return tray.zone_code?.trim() || "__unassigned__";
@@ -56,13 +73,6 @@ function bucketLabel(t: TranslateFn, bucket: TrayBucket): string {
   return t(BUCKET_LABEL[bucket]);
 }
 
-const CHIP_ORDER: ReadonlyArray<TrayBucket | "ALL"> = [
-  "ALL",
-  "ATTENTION",
-  "PARTIAL",
-  "EMPTY",
-];
-
 export default function TrayOverviewPage() {
   const t = useT();
   const traysQuery = useQuery({
@@ -75,7 +85,10 @@ export default function TrayOverviewPage() {
   const [zoneFilter, setZoneFilter] = useState(ALL_ZONES);
   const [selectedTray, setSelectedTray] = useState<TrayOption | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [viewportWidth, setViewportWidth] = useState(0);
   const panelRef = useRef<HTMLElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onFullscreenChange = () =>
@@ -84,6 +97,16 @@ export default function TrayOverviewPage() {
     return () =>
       document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
+
+  const measureViewport = () => {
+    setViewportWidth(viewportRef.current?.clientWidth ?? 0);
+  };
+
+  useLayoutEffect(() => {
+    measureViewport();
+    window.addEventListener("resize", measureViewport);
+    return () => window.removeEventListener("resize", measureViewport);
+  }, [traysQuery.isPending]);
 
   const trays = useMemo(() => traysQuery.data ?? [], [traysQuery.data]);
 
@@ -119,6 +142,17 @@ export default function TrayOverviewPage() {
     () => new Set(filtered.map((tray) => tray.container_id)),
     [filtered],
   );
+
+  const dimmedIds = useMemo(() => {
+    const dimmed = new Set<string>();
+    for (const tray of trays) {
+      if (!visibleIds.has(tray.container_id)) dimmed.add(tray.container_id);
+    }
+    return dimmed;
+  }, [trays, visibleIds]);
+
+  const layout = useMemo(() => buildWarehouseLayout(trays), [trays]);
+  const sceneWidth = Math.max(viewportWidth, 1000) * zoom;
 
   const counts = useMemo(() => {
     const base: Record<TrayBucket | "ALL", number> = {
@@ -158,6 +192,73 @@ export default function TrayOverviewPage() {
       toast.error(t("putaway.overview.fullscreenFailed"));
     }
   };
+
+  const clampZoom = (value: number) =>
+    Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 100) / 100));
+  const zoomBy = (delta: number) =>
+    setZoom((current) => clampZoom(current + delta));
+
+  const fitMap = () => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const baseWidth = Math.max(viewport.clientWidth, 1000);
+    setZoom(
+      Math.min(
+        1,
+        viewport.clientWidth / baseWidth,
+        720 / (baseWidth * layout.aspect),
+      ),
+    );
+    viewport.scrollTo({ left: 0, top: 0 });
+  };
+
+  const locateTray = (tray: TrayOption) => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const escaped = tray.container_code.replace(/["\\]/g, "\\$&");
+    const element = viewport.querySelector(`[data-tray="${escaped}"]`);
+    if (!(element instanceof HTMLElement)) return;
+    const rect = element.getBoundingClientRect();
+    const bounds = viewport.getBoundingClientRect();
+    viewport.scrollTo({
+      left:
+        viewport.scrollLeft +
+        rect.left -
+        bounds.left -
+        (viewport.clientWidth - rect.width) / 2,
+      top:
+        viewport.scrollTop +
+        rect.top -
+        bounds.top -
+        (viewport.clientHeight - rect.height) / 2,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+    element.focus({ preventScroll: true });
+  };
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const editing =
+        target !== null && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
+      const editingSearch = target?.id === SEARCH_ID;
+      if (event.key === "/" && !editing && selectedTray === null) {
+        const field = document.getElementById(SEARCH_ID);
+        if (field instanceof HTMLElement) {
+          event.preventDefault();
+          field.focus();
+        }
+        return;
+      }
+      if (event.key === "Escape" && editingSearch && keyword) {
+        setKeyword("");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [keyword, selectedTray]);
 
   return (
     <Box
@@ -241,6 +342,7 @@ export default function TrayOverviewPage() {
               aria-label={t("putaway.overview.searchAria")}
               value={keyword}
               onChange={setKeyword}
+              slotProps={{ htmlInput: { id: SEARCH_ID } }}
             />
           </Box>
           <UiSelect
@@ -350,24 +452,77 @@ export default function TrayOverviewPage() {
               />
             </div>
           ) : (
-            <div
-              className="hn-tray-viewport"
-              tabIndex={0}
-              aria-label={t("putaway.overview.mapViewportAria")}
-            >
-              <div className="hn-tray-floor" aria-hidden="true" />
-              {filtered.length === 0 ? (
-                <div className="hn-tray-no-results" role="status">
-                  <strong>{t("putaway.overview.emptyTitle")}</strong>
-                  <p>{t("putaway.overview.emptyDescription")}</p>
-                  <ActionButton
-                    kind="clear"
-                    label={t("putaway.overview.clearFilters")}
-                    onClick={clearFilters}
+            <>
+              <div
+                className="hn-tray-viewport"
+                ref={viewportRef}
+                tabIndex={0}
+                aria-label={t("putaway.overview.mapViewportAria")}
+                style={{
+                  maxHeight:
+                    viewportWidth > 0
+                      ? Math.round(Math.min(viewportWidth * layout.aspect, 720))
+                      : undefined,
+                }}
+              >
+                <div className="hn-tray-floor" aria-hidden="true" />
+                <div
+                  className="hn-tray-scene-zoom"
+                  style={{ width: `${sceneWidth}px` }}
+                >
+                  <WarehouseMap
+                    layout={layout}
+                    dimmedIds={dimmedIds}
+                    selectedId={selectedTray?.container_id ?? null}
+                    onSelect={setSelectedTray}
                   />
                 </div>
-              ) : null}
-            </div>
+                {filtered.length === 0 ? (
+                  <div className="hn-tray-no-results" role="status">
+                    <strong>{t("putaway.overview.emptyTitle")}</strong>
+                    <p>{t("putaway.overview.emptyDescription")}</p>
+                    <ActionButton
+                      kind="clear"
+                      label={t("putaway.overview.clearFilters")}
+                      onClick={clearFilters}
+                    />
+                  </div>
+                ) : null}
+              </div>
+              <div
+                className="hn-tray-zoom"
+                role="group"
+                aria-label={t("putaway.overview.zoomAria")}
+              >
+                <button
+                  type="button"
+                  aria-label={t("putaway.overview.zoomOut")}
+                  disabled={zoom <= ZOOM_MIN}
+                  onClick={() => zoomBy(-ZOOM_STEP)}
+                >
+                  <ZoomOutOutlined aria-hidden="true" />
+                </button>
+                <span className="hn-tray-zoom-level">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <button
+                  type="button"
+                  aria-label={t("putaway.overview.zoomIn")}
+                  disabled={zoom >= ZOOM_MAX}
+                  onClick={() => zoomBy(ZOOM_STEP)}
+                >
+                  <ZoomInOutlined aria-hidden="true" />
+                </button>
+                <span className="hn-tray-zoom-divider" aria-hidden="true" />
+                <button
+                  type="button"
+                  aria-label={t("putaway.overview.zoomFit")}
+                  onClick={fitMap}
+                >
+                  <ShrinkOutlined aria-hidden="true" />
+                </button>
+              </div>
+            </>
           )}
         </div>
 
@@ -487,6 +642,7 @@ export default function TrayOverviewPage() {
       <TrayDetailDialog
         tray={selectedTray}
         onClose={() => setSelectedTray(null)}
+        onLocate={locateTray}
       />
     </Box>
   );

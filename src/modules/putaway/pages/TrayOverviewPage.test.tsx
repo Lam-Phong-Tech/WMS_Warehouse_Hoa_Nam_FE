@@ -217,4 +217,86 @@ describe("TrayOverviewPage", () => {
 
     expect(values).toEqual(["—", "—", "—", "—"]);
   });
+
+  it("dims non-matching trays in the scene instead of removing them", async () => {
+    fetchTrays.mockResolvedValue(TRAYS);
+    renderPage();
+
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Cần chú ý 1$/ }),
+    );
+
+    const cells = screen.getAllByTestId("ptw-tray-cell");
+    expect(cells).toHaveLength(3);
+    expect(
+      cells.filter((cell) => cell.classList.contains("is-dimmed")),
+    ).toHaveLength(2);
+    expect(
+      cells.filter((cell) => !cell.classList.contains("is-dimmed")),
+    ).toHaveLength(1);
+  });
+
+  it("opens the tray dialog from a scene tray and copies the code", async () => {
+    fetchTrays.mockResolvedValue(TRAYS);
+    renderPage();
+
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const cell = screen
+      .getAllByTestId("ptw-tray-cell")
+      .find((node) => node.textContent?.includes("TRAY-A1"));
+    expect(cell).toBeDefined();
+    await userEvent.click(cell as Element);
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Thông tin khay",
+    });
+    expect(
+      within(dialog).getByRole("heading", { name: "TRAY-A1" }),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText("Trống")).toBeInTheDocument();
+
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: /Sao chép mã/ }),
+    );
+    expect(writeText).toHaveBeenCalledWith("TRAY-A1");
+  });
+
+  it("opens the tray dialog from the unassigned strip and hides the locate action", async () => {
+    fetchTrays.mockResolvedValue(TRAYS);
+    renderPage();
+
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+    await userEvent.click(screen.getByRole("button", { name: /TRAY-X/ }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Thông tin khay",
+    });
+    expect(
+      within(dialog).getByRole("heading", { name: "TRAY-X" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("button", { name: /Tìm trên sơ đồ/ }),
+    ).toBeNull();
+  });
+
+  it("zooms the scene in and out with the zoom controls", async () => {
+    fetchTrays.mockResolvedValue(TRAYS);
+    renderPage();
+
+    await screen.findByText(/Hiển thị 4\/4 khay/);
+    expect(screen.getByText("100%")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Phóng to" }));
+    expect(screen.getByText("120%")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Thu nhỏ" }));
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
 });
