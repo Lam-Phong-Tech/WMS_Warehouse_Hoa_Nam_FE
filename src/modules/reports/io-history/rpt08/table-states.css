@@ -151,17 +151,17 @@
     box-shadow 120ms ease;
 }
 #rpt08-history-report tbody tr:hover {
-  background: #f1faff;
+  background: color-mix(in srgb, var(--ops-pale) 55%, var(--ops-surface));
 }
 #rpt08-history-report tbody tr:focus-visible,
 #rpt08-history-report tbody tr:has(:focus-visible) {
   outline: 0;
-  background: #edf8fc;
+  background: var(--ops-pale);
   box-shadow: inset 3px 0 0 var(--rpt08-ocean);
 }
 #rpt08-history-report .rpt08-code-cell strong,
 #rpt08-history-report .rpt08-mobile-code {
-  color: #073f7b;
+  color: var(--ops-heading);
   font-weight: 850;
 }
 #rpt08-history-report .rpt08-mobile-code,
@@ -182,12 +182,12 @@
   white-space: nowrap;
 }
 #rpt08-history-report .rpt08-type-pill.is-inbound {
-  background: #e8f6fd;
-  color: #0787c7;
+  background: var(--ops-pale);
+  color: var(--ops-link);
 }
 #rpt08-history-report .rpt08-type-pill.is-outbound {
-  background: #e7f9f9;
-  color: #13aab4;
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger-text);
 }
 #rpt08-history-report .rpt08-type-arrow {
   display: none;
@@ -204,7 +204,7 @@
   grid-template-columns: minmax(190px, 1fr) auto minmax(230px, 1fr);
   align-items: center;
   gap: 14px;
-  color: #5a82a8;
+  color: var(--ops-muted);
   font-size: 10.5px;
 }
 #rpt08-history-report .rpt08-table-footer > span:last-child {
@@ -223,16 +223,16 @@
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: #0d4d83;
+  color: var(--ops-link);
   font-size: 10.5px;
   cursor: pointer;
 }
 #rpt08-history-report .rpt08-pagination button:hover {
-  background: #eaf6fb;
+  background: var(--ops-pale);
 }
 #rpt08-history-report .rpt08-pagination button.is-active {
-  background: #0788c9;
-  color: #fff;
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
 }
 #rpt08-history-report .rpt08-page-gap {
   min-width: 24px;
@@ -244,11 +244,11 @@
   place-content: center;
   justify-items: center;
   gap: 5px;
-  color: #6285a3;
+  color: var(--ops-muted);
   text-align: center;
 }
 #rpt08-history-report .rpt08-table-empty > i {
-  color: #82a2b8;
+  color: var(--ops-muted);
   font-size: 42px;
 }
 #rpt08-history-report .rpt08-table-empty strong {
@@ -264,10 +264,10 @@
   height: 44px;
   margin-top: 10px;
   padding: 0 15px;
-  border: 1px solid #4e8db7;
+  border: 1px solid var(--ops-line);
   border-radius: 6px;
-  background: #fff;
-  color: #0a4d7c;
+  background: var(--ops-surface);
+  color: var(--ops-link);
   font-size: 11px;
   font-weight: 800;
   cursor: pointer;
@@ -294,8 +294,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #fff0ef;
-  color: #c34b46;
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger);
   font-size: 43px;
 }
 #rpt08-history-report .rpt08-load-error h2 {
@@ -307,7 +307,7 @@
 }
 #rpt08-history-report .rpt08-load-error p {
   margin: 4px 0 23px;
-  color: #6b87a2;
+  color: var(--ops-muted);
   font-size: 12.5px;
 }
 #rpt08-history-report .rpt08-load-error > div:last-child {
@@ -337,7 +337,7 @@
 }
 #rpt08-history-report .rpt08-load-error a {
   min-width: 205px;
-  background: #fff;
+  background: var(--ops-surface);
 }
 #rpt08-history-report .rpt08-loading-body {
   display: grid;
@@ -568,17 +568,17 @@
   padding: 12px;
   display: grid;
   gap: 5px;
-  border: 1px solid #d1e7f0;
+  border: 1px solid var(--ops-line);
   border-radius: 8px;
-  background: #f8fcfe;
+  background: var(--ops-pale);
 }
 .rpt08-detail-grid dt {
-  color: #6182a0;
+  color: var(--ops-muted);
   font-size: 11px;
 }
 .rpt08-detail-grid dd {
   margin: 0;
-  color: #073b77;
+  color: var(--ops-heading);
   font-size: 13px;
   font-weight: 750;
   overflow-wrap: anywhere;
@@ -616,9 +616,11 @@
   color: var(--ops-on-primary) !important;
   background: var(--ops-primary) !important;
 }
-.rpt08-date-popup [data-date-action="clear"],
+.rpt08-date-popup [data-date-action="clear"] {
+  color: var(--ops-link) !important;
+}
 .rpt08-date-popup [data-date-action="cancel"] {
-  color: #075a98 !important;
+  color: var(--ops-danger-text) !important;
 }
 .rpt08-date-popup button:focus-visible {
   outline: 2px solid var(--ops-primary) !important;

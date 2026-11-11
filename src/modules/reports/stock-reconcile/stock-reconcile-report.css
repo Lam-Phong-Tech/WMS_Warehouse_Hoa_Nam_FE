@@ -572,14 +572,20 @@
   background: var(--ops-primary-hover) !important;
 }
 
-.rpt02-date-popup [data-date-action="clear"],
-.rpt02-date-popup [data-date-action="cancel"] {
+.rpt02-date-popup [data-date-action="clear"] {
   color: var(--ops-link) !important;
 }
 
-.rpt02-date-popup [data-date-action="clear"]:hover,
-.rpt02-date-popup [data-date-action="cancel"]:hover {
+.rpt02-date-popup [data-date-action="cancel"] {
+  color: var(--ops-danger-text) !important;
+}
+
+.rpt02-date-popup [data-date-action="clear"]:hover {
   background: var(--ops-pale) !important;
+}
+
+.rpt02-date-popup [data-date-action="cancel"]:hover {
+  background: var(--ops-danger-soft) !important;
 }
 
 .rpt02-date-popup [data-date-action="apply"] {

@@ -1313,20 +1313,20 @@
   content: "";
 }
 .inbound-status[data-tone="complete"] {
-  --status-soft: #e8f7ec;
-  --status-color: #31914a;
+  --status-soft: var(--ops-success-soft);
+  --status-color: var(--ops-success);
 }
 .inbound-status[data-tone="processing"] {
-  --status-soft: #e7f5fb;
-  --status-color: #1689b1;
+  --status-soft: var(--ops-pale);
+  --status-color: var(--ops-link);
 }
 .inbound-status[data-tone="pending"] {
-  --status-soft: #fff3d9;
-  --status-color: #b67909;
+  --status-soft: var(--ops-warning-soft);
+  --status-color: var(--ops-warning);
 }
 .inbound-status[data-tone="cancelled"] {
-  --status-soft: #fdeaea;
-  --status-color: #c74343;
+  --status-soft: var(--ops-danger-soft);
+  --status-color: var(--ops-danger);
 }
 .inbound-tablet-only {
   display: none;

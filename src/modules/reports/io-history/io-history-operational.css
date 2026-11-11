@@ -519,9 +519,11 @@
   background: var(--io-date-soft);
   color: var(--ops-heading);
 }
-.hn-rpt-io-date-popup [data-date-action="cancel"],
 .hn-rpt-io-date-popup [data-date-action="clear"] {
   color: var(--io-date-primary);
+}
+.hn-rpt-io-date-popup [data-date-action="cancel"] {
+  color: var(--ops-danger-text);
 }
 .hn-rpt-io-date-popup button:focus-visible {
   outline-color: var(--io-date-primary);

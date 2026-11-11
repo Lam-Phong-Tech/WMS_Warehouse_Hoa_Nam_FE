@@ -160,11 +160,15 @@
   background: var(--ops-pale);
   border-color: var(--ops-link);
 }
-#rpt08-history-report .rpt08-warehouse-menu__popover,
+#rpt08-history-report .rpt08-warehouse-menu__popover {
+  background: var(--ops-surface);
+  color: var(--ops-primary);
+  border-color: var(--ops-line);
+}
 #rpt08-history-report .rpt08-status-banner__actions button,
 #rpt08-history-report .rpt08-table-empty button {
   background: var(--ops-surface);
-  color: var(--ops-primary);
+  color: var(--ops-link);
   border-color: var(--ops-line);
 }
 #rpt08-history-report button:focus-visible,

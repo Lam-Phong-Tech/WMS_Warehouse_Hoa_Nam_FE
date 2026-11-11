@@ -441,14 +441,20 @@
   background: var(--ops-primary-hover) !important;
 }
 
-.outbound-date-popup [data-date-action="clear"],
-.outbound-date-popup [data-date-action="cancel"] {
+.outbound-date-popup [data-date-action="clear"] {
   color: var(--ops-link) !important;
 }
 
-.outbound-date-popup [data-date-action="clear"]:hover,
-.outbound-date-popup [data-date-action="cancel"]:hover {
+.outbound-date-popup [data-date-action="clear"]:hover {
   background: var(--ops-pale) !important;
+}
+
+.outbound-date-popup [data-date-action="cancel"] {
+  color: var(--ops-danger-text) !important;
+}
+
+.outbound-date-popup [data-date-action="cancel"]:hover {
+  background: var(--ops-danger-soft) !important;
 }
 
 .outbound-date-popup [data-date-action="apply"] {
@@ -1327,13 +1333,13 @@
   height: 35px;
   padding: 0 13px;
   border-bottom: 1px solid var(--ops-line);
-  background: var(--ops-pale);
-  color: var(--ops-heading);
+  background: var(--ops-table-header);
   color: var(--ops-heading);
   font-size: 12px;
   font-weight: 700;
+  letter-spacing: normal;
   text-align: left;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .outbound-table-wrap th:first-child {
   width: 16%;
@@ -1413,20 +1419,20 @@
   content: "";
 }
 .outbound-status[data-tone="complete"] {
-  --status-soft: #e8f7ec;
-  --status-color: #31914a;
+  --status-soft: var(--ops-success-soft);
+  --status-color: var(--ops-success);
 }
 .outbound-status[data-tone="processing"] {
-  --status-soft: #e7f5fb;
-  --status-color: #1689b1;
+  --status-soft: var(--ops-pale);
+  --status-color: var(--ops-link);
 }
 .outbound-status[data-tone="pending"] {
-  --status-soft: #fff3d9;
-  --status-color: #b67909;
+  --status-soft: var(--ops-warning-soft);
+  --status-color: var(--ops-warning);
 }
 .outbound-status[data-tone="cancelled"] {
-  --status-soft: #fdeaea;
-  --status-color: #c74343;
+  --status-soft: var(--ops-danger-soft);
+  --status-color: var(--ops-danger);
 }
 .outbound-tablet-only {
   display: none;
@@ -2991,7 +2997,7 @@
 
 .outbound-table-wrap th {
   height: 35px;
-  background: var(--ops-pale);
+  background: var(--ops-table-header);
   color: var(--ops-heading);
   font-size: 12px;
 }
@@ -4028,13 +4034,13 @@
 }
 .hn-outbound-report .outbound-report-table th {
   height: auto;
-  background: #d2edf7;
+  background: var(--ops-table-header);
   color: var(--ops-heading);
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
+  letter-spacing: normal;
   text-transform: none;
-  letter-spacing: 0.02em;
 }
 .hn-outbound-report .outbound-report-table td {
   height: 68px;

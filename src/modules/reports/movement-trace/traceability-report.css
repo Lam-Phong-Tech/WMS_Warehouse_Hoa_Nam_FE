@@ -99,7 +99,7 @@
   padding: 7px 12px 7px 10px;
   border: 1px solid var(--trace-line);
   border-radius: var(--ops-radius-card);
-  background: white;
+  background: var(--ops-surface);
   box-shadow: var(--trace-shadow);
 }
 
@@ -311,7 +311,7 @@
   padding: 12px;
   border: 1px solid var(--trace-line);
   border-radius: var(--ops-radius-card);
-  background: white;
+  background: var(--ops-surface);
   box-shadow: 0 12px 28px rgb(7 61 119 / 16%);
 }
 
@@ -363,12 +363,12 @@
 
 #traceability-rpt03 .trace-kpi--warning .trace-kpi__icon {
   color: var(--trace-warning);
-  background: #fff4e9;
+  background: var(--ops-warning-soft);
 }
 
 #traceability-rpt03 .trace-kpi--success .trace-kpi__icon {
   color: var(--trace-success);
-  background: #e7f8ef;
+  background: var(--ops-success-soft);
 }
 
 #traceability-rpt03 .trace-kpi__label {
@@ -523,7 +523,7 @@
   overflow: hidden;
   border: 1px solid var(--trace-line);
   border-radius: var(--ops-radius-card);
-  background: white;
+  background: var(--ops-surface);
   box-shadow: var(--trace-shadow);
 }
 
@@ -666,7 +666,7 @@
   position: absolute;
   inset: 25px;
   border-radius: inherit;
-  background: white;
+  background: var(--ops-surface);
   box-shadow: 0 0 0 1px var(--ops-line);
   content: "";
 }
@@ -750,10 +750,10 @@
   min-height: 39px;
   margin: 0 12px 8px;
   padding: 5px 8px 5px 10px;
-  border: 1px solid #ffc575;
+  border: 1px solid var(--ops-warning);
   border-radius: var(--ops-radius-card);
-  background: var(--ops-pale);
-  color: #f24d17;
+  background: var(--ops-warning-soft);
+  color: var(--ops-warning-text);
 }
 
 #traceability-rpt03 .trace-quality-alert > svg {
@@ -776,7 +776,7 @@
   padding: 0 12px;
   border: 1px solid var(--ops-line);
   border-radius: var(--ops-radius-control);
-  background: white;
+  background: var(--ops-surface);
   color: var(--ops-heading);
   cursor: pointer;
   font: inherit;
@@ -983,14 +983,14 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--ops-pale);
-  color: #128a45;
+  background: var(--ops-success-soft);
+  color: var(--ops-success);
   font-weight: 750;
 }
 
 #traceability-rpt03 .trace-completeness--warning {
-  background: var(--ops-pale);
-  color: #f05b17;
+  background: var(--ops-warning-soft);
+  color: var(--ops-warning);
 }
 
 #traceability-rpt03 .trace-pagination {
@@ -1131,7 +1131,7 @@
 }
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup [data-date-action="cancel"] {
-  color: var(--ops-primary);
+  color: var(--ops-danger-text);
 }
 
 .hn-vuexy-date-popup.hn-vuexy-date-popup * {
