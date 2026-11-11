@@ -190,6 +190,39 @@ describe("IamRolePermissionScreen", () => {
   });
   afterEach(() => cleanupTestState());
 
+  it("phân biệt quyền alias quét mã và báo cáo bằng nhãn chức năng", async () => {
+    vi.mocked(useIamPermissions).mockReturnValue(
+      query([
+        {
+          permission_id: "p-scan-in",
+          permission_key: "scan.inbound",
+          permission_name: "Nghiệp vụ",
+          status: "ACTIVE",
+        },
+        {
+          permission_id: "p-scan-out",
+          permission_key: "scan.outbound",
+          permission_name: "Nghiệp vụ",
+          status: "ACTIVE",
+        },
+        {
+          permission_id: "p-report-reconcile",
+          permission_key: "report.stock_reconcile.view",
+          permission_name: "Nghiệp vụ",
+          status: "ACTIVE",
+        },
+      ]) as never,
+    );
+
+    renderScreen();
+
+    expect(await screen.findByText("Quét mã nhập kho")).toBeInTheDocument();
+    expect(screen.getByText("Quét mã xuất kho")).toBeInTheDocument();
+    expect(
+      screen.getByText("Xem báo cáo tồn kho & đối soát (RPT-02)"),
+    ).toBeInTheDocument();
+  });
+
   it("restores role cards and grouped permission tiles while preserving delegation and retired locks", async () => {
     const { container } = renderScreen();
     expect(

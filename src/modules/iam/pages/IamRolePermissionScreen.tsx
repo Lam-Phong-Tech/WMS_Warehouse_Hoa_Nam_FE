@@ -16,6 +16,7 @@ import {
   useUiConfirm,
 } from "@/shared/ui";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 import type { MessageKey } from "@/shared/i18n/messages";
 import {
   IAM_ROLE_STATUS_LABELS,
@@ -114,6 +115,48 @@ const PERMISSION_ACTION_KEYS: Record<string, MessageKey> = {
   pii: "iam.permissionAction.pii",
 };
 
+/**
+ * Nhãn tiếng Việt cho các mã có tên BE trùng nhau hoặc tên kỹ thuật quá ngắn.
+ *
+ * `permission_name` là nguồn chính (xem hàm bên dưới), nhưng các mã alias
+ * `scan.*` / `warranty.*` / `outbound.request.*` thường mang tên cũ giống nhau
+ * nên ma trận IAM không phân biệt được chức năng. Override đúng các nhóm này;
+ * mã mới thêm chỉ cần đặt `permission_name` rõ nghĩa là đủ.
+ */
+const PERMISSION_LABEL_OVERRIDES_VI: Record<string, string> = {
+  "scan.inbound": "Quét mã nhập kho",
+  "scan.outbound": "Quét mã xuất kho",
+  "scan.warranty": "Quét mã bảo hành",
+  "scan.classify": "Phân loại lượt quét",
+  "scan.execute": "Phân loại lô quét",
+  "warranty.manage": "Quản lý case bảo hành",
+  "warranty.view": "Xem case bảo hành",
+  "warranty.component_issue": "Xuất linh kiện bảo hành",
+  "warranty.temp_only": "Tiếp nhận tạm thời bảo hành",
+  "warranty.pii.view": "Xem PII bảo hành",
+  "warranty.pii.export": "Xuất PII bảo hành",
+  "outbound.view": "Xem chứng từ xuất kho",
+  "outbound.import": "Nhập yêu cầu xuất từ Excel",
+  "outbound.scan": "Quét mã xuất kho",
+  "outbound.post": "Hoàn tất xuất kho",
+  "outbound.cancel": "Hủy phiếu xuất nháp",
+  "outbound.request.import": "Nhập yêu cầu xuất (Annex C)",
+  "outbound.request.confirm": "Xác nhận yêu cầu xuất",
+  "outbound.request.manual_create": "Tạo yêu cầu xuất thủ công",
+  "report.view": "Xem dữ liệu báo cáo",
+  "report.export": "Xuất dữ liệu báo cáo",
+  "report.inventory_flow.view": "Xem báo cáo nhập kho (RPT-01)",
+  "report.outbound_flow.view": "Xem báo cáo xuất kho (RPT-01B)",
+  "report.stock_reconcile.view": "Xem báo cáo tồn kho & đối soát (RPT-02)",
+  "report.traceability.view": "Xem báo cáo truy vết hàng hóa (RPT-03)",
+  "report.import_quality.view":
+    "Xem báo cáo nhập dữ liệu / đối chiếu & lỗi dữ liệu (RPT-04)",
+  "report.packing_label.view": "Xem báo cáo nhãn đóng gói (RPT-05)",
+  "report.warranty.view": "Xem báo cáo bảo hành & linh kiện (RPT-06)",
+  "report.recipient.view": "Xem báo cáo xuất theo người nhận / đại lý (RPT-07)",
+  "report.io_history.view": "Xem báo cáo lịch sử nhập – xuất kho (RPT-08)",
+};
+
 /** Kiểu chữ "mã" (thay antd Typography.Text code) — viền + nền nhẹ từ token. */
 const CODE_SX = {
   fontFamily: "var(--wms-font-family)",
@@ -132,7 +175,24 @@ function permissionGroup(permission: IamPermission, t: TranslateFn): string {
   return permissionModuleLabel(module, t) ?? t("iam.role.otherGroup");
 }
 
-function permissionLabel(permission: IamPermission, t: TranslateFn): string {
+function permissionLabel(
+  permission: IamPermission,
+  t: TranslateFn,
+  language: "vi" | "en" | "zh",
+): string {
+  if (language === "vi") {
+    const override = PERMISSION_LABEL_OVERRIDES_VI[permission.permission_key];
+    if (override) return override;
+    // Tên BE là nguồn mô tả đầy đủ nhất; chỉ bỏ qua khi nó là nhãn rỗng/chung
+    // chung để không lặp lại đúng câu "Nghiệp vụ" cho nhiều quyền.
+    const canonical = permission.permission_name.trim();
+    if (
+      canonical &&
+      !/^(nghiệp vụ|chức năng|quyền|quét mã|báo cáo)$/i.test(canonical)
+    ) {
+      return canonical;
+    }
+  }
   const parts = permission.permission_key.split(".").filter(Boolean);
   const module =
     permissionModuleLabel(parts[0], t) ?? t("iam.role.fallbackModule");
@@ -176,6 +236,7 @@ export function IamRolePermissionScreen({
   onDirtyChange,
 }: IamRolePermissionScreenProps = {}) {
   const t = useT();
+  const language = useLanguageStore((state) => state.language);
   const canManage = useCan(P.IAM_ROLE_MANAGE);
   const canViewPermissions = useCan(P.IAM_PERMISSION_VIEW);
   const canViewAudit = useCan(P.AUDIT_LOG_VIEW);
@@ -719,7 +780,7 @@ export function IamRolePermissionScreen({
                 color: retired ? S.textMedium : S.textHigh,
               }}
             >
-              {permissionLabel(permission, t)}
+              {permissionLabel(permission, t, language)}
             </Box>
             {retired ? (
               <Box component="span" sx={{ fontSize: 11, color: S.warningText }}>
