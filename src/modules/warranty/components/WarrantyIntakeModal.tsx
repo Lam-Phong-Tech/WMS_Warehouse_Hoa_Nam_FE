@@ -77,10 +77,7 @@ import {
   MAX_WARRANTY_VIDEO_DURATION_SECONDS,
   probeVideoDurationSeconds,
 } from "@/modules/warranty/components/warranty-attachment-limits";
-import {
-  checkDate,
-  pastDateBounds,
-} from "@/shared/validation/date-rules";
+import { checkDate, pastDateBounds } from "@/shared/validation/date-rules";
 
 /** BE create case: item_code maxLength 200 (OpenAPI SCR-WAR-01). */
 const ITEM_CODE_MAX_LENGTH = 200;
@@ -414,6 +411,7 @@ export function WarrantyIntakeModal({
     setItemCode(code);
     setResolvedItem(null);
     setResolveError(null);
+    clearFieldError("itemCode");
     if (!warehouse?.id) return;
     try {
       const classified = await classifyScanCodes({
@@ -920,6 +918,9 @@ export function WarrantyIntakeModal({
                 <ScanInput
                   value={itemCode}
                   size="middle"
+                  // Ô này là trường biểu mẫu giữ mã hiện vật cho tới khi lưu —
+                  // không xoá sau khi quét như ô quét lặp của nhập/xuất.
+                  clearOnScan={false}
                   // Annex D SCR-WAR-01 scan-focus: ô quét tự nhận focus khi mở WAR-02
                   // ở nhánh IDENTIFIED để đầu đọc bắn được ngay.
                   autoFocus

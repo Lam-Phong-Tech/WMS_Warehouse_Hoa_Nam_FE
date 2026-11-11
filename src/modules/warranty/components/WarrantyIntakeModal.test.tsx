@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   refetch: vi.fn(),
   warehouses: vi.fn(),
+  classify: vi.fn(),
 }));
 
 vi.mock("@/shared/data/reference-queries", () => ({
@@ -28,6 +29,13 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useMvpDefects: () => ({ data: { data: [] } }),
   useCreateMvpDefect: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
+vi.mock("@/modules/scan/services/scanService", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/modules/scan/services/scanService")
+    >();
+  return { ...actual, classifyScanCodes: mocks.classify };
+});
 
 const WAREHOUSE_A = "11111111-1111-4111-8111-111111111111";
 const WAREHOUSE_B = "22222222-2222-4222-8222-222222222222";
@@ -93,6 +101,7 @@ describe("WarrantyIntakeModal warehouse selection", { timeout: 60_000 }, () => {
       case_code: "WC-1",
       identification_type: "IDENTIFIED",
     });
+    mocks.classify.mockReset();
     mocks.refetch.mockReset();
     mocks.warehouses.mockReturnValue({
       data: rows,
@@ -129,6 +138,34 @@ describe("WarrantyIntakeModal warehouse selection", { timeout: 60_000 }, () => {
       );
     },
   );
+
+  it("giữ mã vừa quét trong ô và hiển thị kết quả phân loại", async () => {
+    mocks.classify.mockResolvedValue({
+      normalized_code_value: "SER-900",
+      sku_code: "SKU-900",
+      item_unique: "SER-900",
+      object_status: "ISSUED",
+    } as never);
+    await renderIntake();
+    await selectWarehouse();
+    const input = screen.getByPlaceholderText(/Quét QR tổng hợp/);
+    fireEvent.change(input, { target: { value: "SER-900" } });
+    // antd Input is mocked without prefix/suffix in tests, so the "Quét"
+    // button does not mount here; Enter goes through the same submit() path.
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() =>
+      expect(mocks.classify).toHaveBeenCalledWith({
+        raw_code: "SER-900",
+        context: "WARRANTY_RECEIVE",
+        warehouse_id: WAREHOUSE_A,
+      }),
+    );
+    await waitFor(() => expect(input).toHaveValue("SER-900"));
+    expect(
+      await screen.findByText(/Đã nhận diện sản phẩm/),
+    ).toBeInTheDocument();
+  });
 
   it("đổi kho áp dụng kho mới khi lưu", async () => {
     await renderIntake();

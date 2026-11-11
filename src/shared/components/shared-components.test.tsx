@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { PageHeader, EmptyState, ScanInput } from "@/shared/components";
@@ -41,6 +42,29 @@ describe("ScanInput", () => {
     expect(onScan).toHaveBeenCalledWith("CARTON-HN-0007");
     expect(input).toHaveValue("");
     expect(input).toHaveFocus();
+  });
+
+  it("keeps the scanned value when clearOnScan is false", async () => {
+    const user = userEvent.setup();
+    const onScan = vi.fn();
+    function ControlledScan() {
+      const [value, setValue] = useState("");
+      return (
+        <ScanInput
+          value={value}
+          clearOnScan={false}
+          onChange={setValue}
+          onScan={onScan}
+        />
+      );
+    }
+    render(<ControlledScan />);
+
+    const input = screen.getByLabelText(/quét mã/i);
+    await user.type(input, "ser-001{enter}");
+
+    expect(onScan).toHaveBeenCalledWith("SER-001");
+    expect(input).toHaveValue("ser-001");
   });
 
   it("blocks duplicate scans before calling onScan", async () => {

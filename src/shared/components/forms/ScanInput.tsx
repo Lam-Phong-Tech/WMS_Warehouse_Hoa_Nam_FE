@@ -14,6 +14,12 @@ export interface ScanInputProps {
   recentCodes?: string[];
   duplicateMessage?: string;
   error?: string | null;
+  /**
+   * Mặc định true: xoá ô sau khi quét để sẵn sàng cho mã kế tiếp (danh sách
+   * quét lặp). Đặt false khi ô là một trường biểu mẫu giữ đúng mã vừa quét —
+   * ví dụ ô "Mã máy / serial" ở Tiếp nhận bảo hành.
+   */
+  clearOnScan?: boolean;
   onChange?: (value: string) => void;
   onScan: (code: string) => void;
 }
@@ -35,6 +41,7 @@ export function ScanInput({
   recentCodes = [],
   duplicateMessage,
   error,
+  clearOnScan = true,
   onChange,
   onScan,
 }: ScanInputProps) {
@@ -78,8 +85,10 @@ export function ScanInput({
 
     setLocalError(null);
     onScan(code);
-    if (!controlled) setInnerValue("");
-    onChange?.("");
+    if (clearOnScan) {
+      if (!controlled) setInnerValue("");
+      onChange?.("");
+    }
     inputRef.current?.focus();
   };
 
