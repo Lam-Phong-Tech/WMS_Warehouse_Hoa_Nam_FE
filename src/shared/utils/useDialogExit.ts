@@ -43,11 +43,20 @@ export function useDialogExit(onClose: () => void) {
     open,
     /** Gọi thay cho `onClose` ở mọi nút/luồng đóng bên trong modal. */
     close,
-    /** Spread vào <Dialog>: đã gồm open, onClose (bấm ra ngoài + Esc) và onExited. */
+    /**
+     * Spread vào <Dialog>/<Drawer>: đã gồm open, onClose (bấm ra ngoài + Esc)
+     * và onTransitionExited.
+     *
+     * KHÔNG dùng `slotProps.transition.onExited`: MUI 9 Modal clone transition
+     * con với `onExited` lấy từ prop `onTransitionExited`, nên nó ghi đè và
+     * nuốt mất onExited khai trong slotProps. Hậu quả: modal đóng bằng hiệu ứng
+     * nhưng callback của cha không bao giờ chạy (nút chọn hồ sơ WAR-04 đóng
+     * drawer mà không mở phiếu xuất linh kiện).
+     */
     dialogProps: {
       open,
       onClose: guardBackdropClose(close),
-      slotProps: { transition: { onExited: onClose } },
+      onTransitionExited: onClose,
     },
   };
 }

@@ -1203,7 +1203,6 @@ export function InboundScanModal({
         anchor="right"
         className="hn-inbound-scan-drawer"
         slotProps={{
-          ...dialog.dialogProps.slotProps,
           paper: { "aria-label": drawerTitle },
         }}
       >

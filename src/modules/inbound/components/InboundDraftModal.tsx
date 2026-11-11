@@ -411,7 +411,6 @@ export function InboundDraftModal({
       width={600}
       className="hn-inbound-draft"
       slotProps={{
-        ...dialog.dialogProps.slotProps,
         paper: { role: "dialog", "aria-modal": true },
       }}
       title={

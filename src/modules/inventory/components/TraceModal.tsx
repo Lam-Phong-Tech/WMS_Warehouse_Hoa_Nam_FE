@@ -511,7 +511,6 @@ export function TraceModal({ movementId, initialCode = "", onClose }: Props) {
       className="hn-inventory-dialog hn-trace-drawer"
       width={720}
       slotProps={{
-        ...dialog.dialogProps.slotProps,
         paper: { role: "dialog", "aria-modal": true },
       }}
       title={

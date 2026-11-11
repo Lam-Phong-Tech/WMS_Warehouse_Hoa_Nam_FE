@@ -1015,7 +1015,6 @@ export function OutboundIntakeModal({
           close();
         }}
         slotProps={{
-          ...dialog.dialogProps.slotProps,
           paper: { "aria-label": t("outbound.intake.title") },
         }}
       >
