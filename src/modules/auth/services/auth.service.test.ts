@@ -265,4 +265,93 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
       active_context: payload,
     });
   });
+
+  it("keeps step-up and device challenges out of the authenticated result", async () => {
+    postMock.mockResolvedValueOnce({
+      step_up_required: true,
+      step_up_token: "s",
+      method: "email",
+      masked_email: "a***@b.test",
+      expires_in: 300,
+    });
+    const result = await authService.login({
+      email: "a@b.test",
+      password: "<password>",
+    });
+    expect(result.kind).toBe("step_up_required");
+    expect("access_token" in result).toBe(false);
+
+    postMock.mockResolvedValueOnce({
+      device_verification_required: true,
+      device_token: "d-token",
+      masked_email: "a***@b.test",
+      expires_in: 300,
+    });
+    const deviceResult = await authService.login({
+      email: "a@b.test",
+      password: "<password>",
+    });
+    expect(deviceResult.kind).toBe("device_verification_required");
+    expect("access_token" in deviceResult).toBe(false);
+  });
+
+  it("supports verifyStepUp, resendStepUp, verifyDevice, resendDevice, and powChallenge endpoints", async () => {
+    postMock.mockResolvedValueOnce({
+      step_up_verified: true,
+      password_attempts_left: 3,
+      expires_in: 300,
+    });
+    const stepUp = await authService.verifyStepUp("step-tok", "123456");
+    expect(postMock).toHaveBeenCalledWith("/auth/step-up/verify", {
+      step_up_token: "step-tok",
+      code: "123456",
+    });
+    expect(stepUp).toEqual({
+      step_up_verified: true,
+      password_attempts_left: 3,
+      expires_in: 300,
+    });
+
+    postMock.mockResolvedValueOnce({ sent: true, expires_in: 300 });
+    await authService.resendStepUp("step-tok");
+    expect(postMock).toHaveBeenCalledWith("/auth/step-up/resend", {
+      step_up_token: "step-tok",
+    });
+
+    postMock.mockResolvedValueOnce({
+      access_token: "<device-access-token>",
+      token_type: "bearer",
+      expires_in: 3600,
+      user: USER,
+    });
+    const verifiedDevice = await authService.verifyDevice(
+      "dev-tok",
+      "654321",
+    );
+    expect(postMock).toHaveBeenCalledWith("/auth/device/verify", {
+      device_token: "dev-tok",
+      code: "654321",
+    });
+    expect(verifiedDevice.kind).toBe("authenticated");
+    expect(verifiedDevice.access_token).toBe("<device-access-token>");
+
+    postMock.mockResolvedValueOnce({ sent: true, expires_in: 300 });
+    await authService.resendDevice("dev-tok");
+    expect(postMock).toHaveBeenCalledWith("/auth/device/resend", {
+      device_token: "dev-tok",
+    });
+
+    postMock.mockResolvedValueOnce({
+      challenge_id: "ch-1",
+      nonce: "abcd",
+      difficulty: 16,
+      algorithm: "sha256-leading-zero-bits",
+      expires_in: 120,
+    });
+    const challenge = await authService.powChallenge("a@b.test");
+    expect(postMock).toHaveBeenCalledWith("/auth/login/pow-challenge", {
+      email: "a@b.test",
+    });
+    expect(challenge.challenge_id).toBe("ch-1");
+  });
 });

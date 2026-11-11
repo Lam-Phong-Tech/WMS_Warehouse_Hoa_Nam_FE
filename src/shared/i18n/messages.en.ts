@@ -4870,6 +4870,45 @@ export const MESSAGES_EN: MessageTree = {
         "Too many failed sign-in attempts, so the account is temporarily locked. Please wait a moment and try again.",
       errorGeneric:
         "Sign-in could not be completed. Please try again; if the problem persists, contact your administrator.",
+      stepUpTitle: "Verify device to continue",
+      stepUpEmailSubtitle:
+        "For security, a 6-digit verification code has been sent to {email}.",
+      stepUpMfaSubtitle:
+        "For security, please enter the 6-digit code from your authenticator app.",
+      stepUpCodeLabel: "Verification code",
+      stepUpVerifySubmit: "Verify code",
+      stepUpVerifiedTitle: "Device verified",
+      stepUpVerifiedBody:
+        "You can now continue signing in ({count} password attempts remaining).",
+      stepUpContinueSubmit: "Continue sign in",
+      stepUpResend: "Resend code",
+      stepUpResendIn: "Resend code in {seconds}s",
+      stepUpResent: "Verification code resent.",
+      deviceTitle: "Verify new device",
+      deviceSubtitle:
+        "This device is not trusted yet. Enter the 6-digit verification code sent to {email}.",
+      deviceCodeLabel: "Verification code",
+      deviceVerifySubmit: "Verify",
+      deviceResend: "Resend code",
+      deviceResendIn: "Resend code in {seconds}s",
+      deviceResent: "Verification code resent.",
+      deviceBackToLogin: "Back to sign in",
+      deviceTrustedToast: "Device trusted for 30 days.",
+      powSolving: "Verifying device…",
+      powCancel: "Cancel",
+      powTimeout: "Device verification timed out. Please try again.",
+    },
+    device: {
+      title: "Verify new device",
+      subtitle:
+        "This device is not trusted yet. Enter the 6-digit verification code sent to {email}.",
+      codeLabel: "Verification code",
+      verifySubmit: "Verify",
+      resend: "Resend code",
+      resendIn: "Resend code in {seconds}s",
+      resent: "Verification code resent.",
+      backToLogin: "Back to sign in",
+      trustedToast: "Device trusted for 30 days.",
     },
     session: {
       title: "Confirm work session",

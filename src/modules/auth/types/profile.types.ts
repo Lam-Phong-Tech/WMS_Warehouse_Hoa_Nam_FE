@@ -36,11 +36,25 @@ export type ProfilePreferenceChanges = Partial<
 export const profileKeys = {
   preferences: (userId: string) => ["auth", "preferences", userId] as const,
   devices: (userId: string) => ["auth", "devices", userId] as const,
+  trustedDevices: (userId: string) =>
+    ["auth", "trusted-devices", userId] as const,
   deviceHistory: (userId: string) =>
     ["auth", "device-history", userId] as const,
   avatar: (userId: string, updatedAt?: string) =>
     ["auth", "avatar", userId, updatedAt] as const,
 };
+
+export interface TrustedDevice {
+  id: string;
+  device_label: string | null;
+  platform: string | null;
+  client_type: string | null;
+  is_current: boolean;
+  trusted_at: string;
+  last_used_at: string | null;
+  expires_at: string;
+  can_revoke: boolean;
+}
 
 export interface ProfileSession {
   id: string;

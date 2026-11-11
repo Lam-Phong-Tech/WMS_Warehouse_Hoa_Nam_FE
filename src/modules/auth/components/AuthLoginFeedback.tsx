@@ -46,6 +46,7 @@ export function AuthSessionReplacementNotice({ notice, onDismiss }: {
 }
 
 export function AuthLoginFeedback({ feedback, mfa = false }: { feedback: LoginFeedback; mfa?: boolean }) {
+  const t = useT();
   const copy = useAuthUatCopy();
   const kind = feedback.kind;
   let title: string;
@@ -62,6 +63,20 @@ export function AuthLoginFeedback({ feedback, mfa = false }: { feedback: LoginFe
       tone = "warning";
       break;
     case "account-unavailable": title = copy.accountTitle; body = copy.accountBody; break;
+    case "step-up-required":
+      title = t("auth.login.stepUpTitle");
+      body = t("auth.login.stepUpEmailSubtitle", { email: "" }).trim();
+      tone = "info";
+      break;
+    case "device-verification-required":
+      title = t("auth.login.deviceTitle");
+      body = t("auth.login.deviceSubtitle", { email: "" }).trim();
+      tone = "info";
+      break;
+    case "pow-required":
+      title = t("auth.login.powSolving");
+      tone = "info";
+      break;
     default: title = copy.unavailableTitle; body = copy.unavailableBody;
   }
   const palette = {

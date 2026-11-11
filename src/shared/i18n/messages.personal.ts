@@ -191,6 +191,21 @@ export const PERSONAL_VI = {
   previewPending: "Cần xử lý",
   previewError: "Có lỗi",
   previewSample: "Dữ liệu xem trước",
+  trustedDevicesTitle: "Thiết bị tin cậy",
+  trustedDevicesSubtitle:
+    "Các thiết bị đã xác minh và được phép đăng nhập mà không cần mã xác thực qua email. Khi đăng nhập từ thiết bị lạ, hệ thống sẽ gửi mã xác minh tới email đăng ký của bạn.",
+  trustedDevicesEmpty:
+    "Chưa có thiết bị tin cậy. Thiết bị sẽ được ghi nhận sau lần đăng nhập thành công tiếp theo.",
+  trustedDevicesLastUsed: "Hoạt động gần nhất: {time}",
+  trustedDevicesExpiresAt: "Tin cậy đến: {time}",
+  trustedDevicesRevoke: "Thu hồi",
+  trustedDevicesRevokeTitle: "Thu hồi thiết bị này?",
+  trustedDevicesRevokeBody:
+    "Thiết bị sẽ phải xác minh lại bằng mã email ở lần đăng nhập tới. Phiên đang hoạt động trên thiết bị này cũng sẽ bị đăng xuất.",
+  trustedDevicesRevoked: "Đã thu hồi thiết bị tin cậy.",
+  trustedDevicesIdentityNote:
+    "Danh tính thiết bị do trình duyệt khai báo và được xác minh bằng cookie bảo mật; không phải nhận diện phần cứng vật lý.",
+  trustedDevicesLoadError: "Chưa tải được danh sách thiết bị tin cậy.",
 } as const;
 
 export const PERSONAL_EN = {
@@ -387,4 +402,19 @@ export const PERSONAL_EN = {
   previewPending: "Needs action",
   previewError: "Error",
   previewSample: "Preview sample",
+  trustedDevicesTitle: "Trusted devices",
+  trustedDevicesSubtitle:
+    "Verified devices allowed to sign in without an email verification code. Signing in from an unfamiliar device sends a verification code to your registered email.",
+  trustedDevicesEmpty:
+    "No trusted devices yet. A device will be recorded after your next successful sign-in.",
+  trustedDevicesLastUsed: "Last active: {time}",
+  trustedDevicesExpiresAt: "Trusted until: {time}",
+  trustedDevicesRevoke: "Revoke",
+  trustedDevicesRevokeTitle: "Revoke this device?",
+  trustedDevicesRevokeBody:
+    "This device will need to verify again with an email code on the next sign-in. Any active session on this device will also be signed out.",
+  trustedDevicesRevoked: "Trusted device revoked.",
+  trustedDevicesIdentityNote:
+    "Device identity is declared by the browser and verified by a secure cookie, not physical hardware attestation.",
+  trustedDevicesLoadError: "Could not load trusted devices.",
 } as const;

@@ -1,3 +1,5 @@
+import type { PowChallenge } from "@/modules/auth/types/auth.types";
+
 /** AUTH UAT: classify transport/domain outcomes without exposing diagnostic text.
  * A response timeout is not proof that the server rejected the login. Never replay it.
  * A blocked request (ERR_NETWORK while online) is the service-unavailable UI, not
@@ -10,11 +12,15 @@ export type LoginFeedbackKind =
   | "unknown"
   | "rate-limited"
   | "account-unavailable"
-  | "service-unavailable";
+  | "service-unavailable"
+  | "step-up-required"
+  | "device-verification-required"
+  | "pow-required";
 
 export interface LoginFeedback {
   kind: LoginFeedbackKind;
   retryAt?: number | null;
+  challenge?: PowChallenge;
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -62,8 +68,34 @@ export function classifyLoginFailure(
   const response = record(source.response);
   const status = response.status;
   const data = record(response.data);
+  const nestedData = record(data.data);
   const code = data.error_code ?? record(data.error).code;
 
+  if (
+    source.step_up_required === true ||
+    data.step_up_required === true ||
+    nestedData.step_up_required === true
+  ) {
+    return { kind: "step-up-required" };
+  }
+  if (
+    source.device_verification_required === true ||
+    data.device_verification_required === true ||
+    nestedData.device_verification_required === true
+  ) {
+    return { kind: "device-verification-required" };
+  }
+  if (status === 428 || code === "POW_REQUIRED" || code === "POW_INVALID") {
+    const rawChallenge =
+      record(record(data.error).details).challenge ??
+      record(data.details).challenge;
+    return {
+      kind: "pow-required",
+      ...(rawChallenge && typeof rawChallenge === "object"
+        ? { challenge: rawChallenge as PowChallenge }
+        : {}),
+    };
+  }
   if (status === 429) return { kind: "rate-limited", retryAt: loginRetryAt(error, now) };
   if (status === 401) return { kind: "invalid-credentials" };
   if (status === 423 || (status === 403 && code === "ACCESS_DENIED")) {

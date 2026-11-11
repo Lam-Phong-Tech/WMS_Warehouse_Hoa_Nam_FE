@@ -8,6 +8,7 @@ import type {
   ProfileDevicesResponse,
   ProfileLoginHistoryEntry,
   ProfileLoginHistoryResponse,
+  TrustedDevice,
 } from "../types/profile.types";
 const versionHeaders = (version?: number) =>
   version === undefined
@@ -32,6 +33,19 @@ export const profileService = {
       data: result.data,
       meta: result.meta as ProfileDevicesResponse["meta"],
     };
+  },
+  async getTrustedDevices(): Promise<{ data: TrustedDevice[] }> {
+    const result = await http.getPage<TrustedDevice[]>("/auth/trusted-devices");
+    return {
+      data: Array.isArray(result?.data) ? result.data : [],
+    };
+  },
+  revokeTrustedDevice(id: string) {
+    return http.delete<{
+      revoked: boolean;
+      was_current: boolean;
+      revoked_session_count: number;
+    }>(`/auth/trusted-devices/${encodeURIComponent(id)}`);
   },
   revokeSession(id: string) {
     return http.delete<{ revoked: boolean; revoked_session_count?: number }>(

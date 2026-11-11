@@ -4904,6 +4904,46 @@ export const MESSAGES_VI = {
         "Đăng nhập sai quá nhiều lần nên tài khoản tạm bị khóa. Vui lòng đợi một lát rồi thử lại.",
       errorGeneric:
         "Đăng nhập chưa thực hiện được. Vui lòng thử lại; nếu vẫn lỗi, liên hệ quản trị viên.",
+      stepUpTitle: "Xác minh thiết bị để tiếp tục",
+      stepUpEmailSubtitle:
+        "Vì lý do bảo mật, mã xác minh 6 chữ số đã được gửi tới {email}.",
+      stepUpMfaSubtitle:
+        "Vì lý do bảo mật, vui lòng nhập mã xác thực 6 chữ số từ ứng dụng xác thực của bạn.",
+      stepUpCodeLabel: "Mã xác minh",
+      stepUpVerifySubmit: "Xác nhận mã",
+      stepUpVerifiedTitle: "Đã xác minh thiết bị",
+      stepUpVerifiedBody:
+        "Bạn có thể tiếp tục đăng nhập ({count} lượt thử mật khẩu còn lại).",
+      stepUpContinueSubmit: "Tiếp tục đăng nhập",
+      stepUpResend: "Gửi lại mã",
+      stepUpResendIn: "Gửi lại mã sau {seconds}s",
+      stepUpResent: "Đã gửi lại mã xác minh.",
+      deviceTitle: "Xác minh thiết bị mới",
+      deviceSubtitle:
+        "Thiết bị này chưa được tin cậy. Nhập mã xác minh 6 chữ số đã gửi tới {email}.",
+      deviceCodeLabel: "Mã xác minh",
+      deviceVerifySubmit: "Xác nhận",
+      deviceResend: "Gửi lại mã",
+      deviceResendIn: "Gửi lại mã sau {seconds}s",
+      deviceResent: "Đã gửi lại mã xác minh.",
+      deviceBackToLogin: "Quay lại đăng nhập",
+      deviceTrustedToast: "Thiết bị đã được tin cậy trong 30 ngày.",
+      powSolving: "Đang xác minh thiết bị…",
+      powCancel: "Hủy",
+      powTimeout:
+        "Không thể hoàn tất xác minh thiết bị đúng hạn. Vui lòng thử lại.",
+    },
+    device: {
+      title: "Xác minh thiết bị mới",
+      subtitle:
+        "Thiết bị này chưa được tin cậy. Nhập mã xác minh 6 chữ số đã gửi tới {email}.",
+      codeLabel: "Mã xác minh",
+      verifySubmit: "Xác nhận",
+      resend: "Gửi lại mã",
+      resendIn: "Gửi lại mã sau {seconds}s",
+      resent: "Đã gửi lại mã xác minh.",
+      backToLogin: "Quay lại đăng nhập",
+      trustedToast: "Thiết bị đã được tin cậy trong 30 ngày.",
     },
     session: {
       title: "Xác nhận phiên làm việc",

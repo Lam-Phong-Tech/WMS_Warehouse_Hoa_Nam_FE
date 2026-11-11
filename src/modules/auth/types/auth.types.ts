@@ -6,7 +6,18 @@ import type { User } from "@/shared/types/user";
  * POST /auth/login identifies accounts by email.
  * The login form sends this field after trimming and lowercasing it.
  */
-export type LoginRequest = { email: string; password: string };
+export type LoginPowSolution = {
+  challenge_id: string;
+  solution: number;
+};
+
+export type LoginRequest = {
+  email: string;
+  password: string;
+  step_up_token?: string;
+  pow?: LoginPowSolution;
+  pow_supported?: boolean;
+};
 
 /** Context nội bộ của FE, được suy ra từ roles[].scope_ref/warehouse_scope_ids. */
 export interface AuthContext {
@@ -56,7 +67,42 @@ export type MfaRequiredLogin = {
   expires_in: number;
 };
 
-export type LoginResult = AuthenticatedLogin | MfaRequiredLogin;
+export type StepUpRequired = {
+  kind: "step_up_required";
+  step_up_required: true;
+  step_up_token: string;
+  method: "mfa" | "email";
+  masked_email: string;
+  expires_in: number;
+};
+
+export type DeviceVerificationRequired = {
+  kind: "device_verification_required";
+  device_verification_required: true;
+  device_token: string;
+  masked_email: string;
+  expires_in: number;
+};
+
+export type StepUpVerifyResponse = {
+  step_up_verified: true;
+  password_attempts_left: number;
+  expires_in: number;
+};
+
+export type PowChallenge = {
+  challenge_id: string;
+  nonce: string;
+  difficulty: number;
+  algorithm: string;
+  expires_in: number;
+};
+
+export type LoginResult =
+  | AuthenticatedLogin
+  | MfaRequiredLogin
+  | StepUpRequired
+  | DeviceVerificationRequired;
 
 /** POST /auth/change-password — BE dùng Laravel confirmed cho new_password. */
 export interface ChangePasswordRequest {

@@ -3,13 +3,17 @@ import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { refreshSession, withAuthSessionLock } from "@/shared/api/axios";
 import type {
   ChangePasswordRequest,
+  DeviceVerificationRequired,
   ForgotPasswordRequest,
   AuthenticatedLogin,
   LoginRequest,
   LoginResponse,
   LoginResult,
+  PowChallenge,
   RefreshResponse,
   ResetPasswordRequest,
+  StepUpRequired,
+  StepUpVerifyResponse,
   SwitchContextRequest,
   SwitchContextResponse,
   VerifyOtpRequest,
@@ -47,6 +51,12 @@ type BackendLoginResponse = {
   /** WWHN-SEC-08: co mat khi tai khoan da bat MFA — KHONG kem access_token. */
   mfa_required?: boolean;
   mfa_token?: string;
+  step_up_required?: boolean;
+  step_up_token?: string;
+  method?: "mfa" | "email";
+  masked_email?: string;
+  device_verification_required?: boolean;
+  device_token?: string;
   access_token?: string;
   token_type?: string;
   expires_in?: number;
@@ -315,7 +325,80 @@ export const authService = {
       };
     }
 
+    if (response.step_up_required === true) {
+      const stepUp: StepUpRequired = {
+        kind: "step_up_required",
+        step_up_required: true,
+        step_up_token: requireNonEmptyString(
+          response.step_up_token,
+          "step_up_token",
+        ),
+        method: response.method === "mfa" ? "mfa" : "email",
+        masked_email:
+          typeof response.masked_email === "string"
+            ? response.masked_email
+            : "",
+        expires_in: requirePositiveNumber(response.expires_in, "expires_in"),
+      };
+      return stepUp;
+    }
+
+    if (response.device_verification_required === true) {
+      const deviceChallenge: DeviceVerificationRequired = {
+        kind: "device_verification_required",
+        device_verification_required: true,
+        device_token: requireNonEmptyString(
+          response.device_token,
+          "device_token",
+        ),
+        masked_email:
+          typeof response.masked_email === "string"
+            ? response.masked_email
+            : "",
+        expires_in: requirePositiveNumber(response.expires_in, "expires_in"),
+      };
+      return deviceChallenge;
+    }
+
     return { kind: "authenticated", ...normalizeLoginResponse(response) };
+  },
+
+  verifyStepUp(stepUpToken: string, code: string) {
+    return http.post<StepUpVerifyResponse>(API_ENDPOINTS.STEP_UP_VERIFY, {
+      step_up_token: stepUpToken,
+      code,
+    });
+  },
+
+  resendStepUp(stepUpToken: string) {
+    return http.post<{ sent: boolean; expires_in: number }>(
+      API_ENDPOINTS.STEP_UP_RESEND,
+      { step_up_token: stepUpToken },
+    );
+  },
+
+  async verifyDevice(
+    deviceToken: string,
+    code: string,
+  ): Promise<AuthenticatedLogin> {
+    const response = await withAuthSessionLock(() =>
+      http.post<BackendLoginResponse>(API_ENDPOINTS.DEVICE_VERIFY, {
+        device_token: deviceToken,
+        code,
+      }),
+    );
+    return { kind: "authenticated", ...normalizeLoginResponse(response) };
+  },
+
+  resendDevice(deviceToken: string) {
+    return http.post<{ sent: boolean; expires_in: number }>(
+      API_ENDPOINTS.DEVICE_RESEND,
+      { device_token: deviceToken },
+    );
+  },
+
+  powChallenge(email: string) {
+    return http.post<PowChallenge>(API_ENDPOINTS.POW_CHALLENGE, { email });
   },
 
   /**

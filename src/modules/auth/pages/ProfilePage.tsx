@@ -31,6 +31,7 @@ import { ProfileEditorDrawer } from "../components/profile/ProfileEditorDrawer";
 import { ProfilePasswordDrawer } from "../components/profile/ProfilePasswordDrawer";
 import { ProfilePreferencesPanel } from "../components/profile/ProfilePreferencesPanel";
 import { ProfileSessionsPanel } from "../components/profile/ProfileSessionsPanel";
+import { ProfileTrustedDevices } from "../components/profile/ProfileTrustedDevices";
 import { MfaSettingsDrawer } from "../components/MfaSettingsDrawer";
 import { auditLogService } from "@/modules/audit-logs/services/audit-logs.service";
 import { auditActionLabel } from "@/modules/audit-logs/constants/audit-log-labels";
@@ -536,6 +537,7 @@ export function ProfilePage() {
                   </ActionButton>
                 )}
               </section>
+              <ProfileTrustedDevices userId={userId} />
               <details className="hn-personal-card hn-personal-history">
                 <summary>{t("auth.profile.historyTitle")}</summary>
                 {history.isError ? (
