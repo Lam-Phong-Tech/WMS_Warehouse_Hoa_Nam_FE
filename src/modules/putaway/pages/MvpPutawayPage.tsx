@@ -63,12 +63,17 @@ import {
   type PutawayTask,
   type TrayOption,
 } from "@/modules/putaway/services/putawayService";
-import { ActionButton, ActionIconButton } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+} from "@/shared/components/actions";
 import { Drawer } from "@/shared/ui/primitives-mui";
 import { CoordinatedLoadingBoundary } from "@/shared/ui/loading/CoordinatedLoadingBoundary";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 
+import { PutawayHistoryDetailDrawer } from "../components/PutawayHistoryDetailDrawer";
 import { PutawayQueue } from "../components/PutawayQueue";
 import "./putaway-queue.css";
 
@@ -186,6 +191,9 @@ export default function MvpPutawayPage() {
   const [historySearchDraft, setHistorySearchDraft] = useState("");
   const [historyPageSize, setHistoryPageSize] = useState(10);
   const [historyPage, setHistoryPage] = useState(1);
+  const [historyDetail, setHistoryDetail] = useState<PutawayHistory | null>(
+    null,
+  );
   const [selectedBoxes, setSelectedBoxes] = useState<PutawayTask[]>([]);
   const [detailSnapshot, setDetailRow] = useState<PutawayTask | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -265,6 +273,18 @@ export default function MvpPutawayPage() {
     }
   }, [detailMissing]);
   const history = useMemo(() => historyQuery.data ?? [], [historyQuery.data]);
+  const historyDetailMissing = Boolean(
+    historyDetail &&
+    historyQuery.isSuccess &&
+    !historyQuery.isFetching &&
+    !history.some((row) => row.id === historyDetail.id),
+  );
+  useEffect(() => {
+    if (historyDetailMissing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- A settled history read removed the selected event; close the read-only drawer instead of showing a stale snapshot.
+      setHistoryDetail(null);
+    }
+  }, [historyDetailMissing]);
   const trays = traysQuery.data ?? [];
   const selected = selectedBoxes[0] ?? null;
   const isMultiBox = selectedBoxes.length > 1;
@@ -465,10 +485,7 @@ export default function MvpPutawayPage() {
           t("putaway.page.createManyPartial", {
             created: createdIds.length,
             total: selectedBoxes.length,
-            reason: getApiErrorMessage(
-              error,
-              t("putaway.page.createFailed"),
-            ),
+            reason: getApiErrorMessage(error, t("putaway.page.createFailed")),
           }),
         );
         return;
@@ -540,9 +557,7 @@ export default function MvpPutawayPage() {
       }
     }
     if (success === rows.length) {
-      toast.success(
-        t("putaway.page.confirmManySuccess", { count: success }),
-      );
+      toast.success(t("putaway.page.confirmManySuccess", { count: success }));
     } else if (success > 0) {
       toast.error(
         t("putaway.page.confirmManyPartial", {
@@ -664,7 +679,7 @@ export default function MvpPutawayPage() {
     {
       key: "created_at",
       header: t("putaway.page.colTime"),
-      width: 190,
+      width: 180,
       sortable: true,
       sortType: "value",
       render: (row) => formatDateTime(row.created_at),
@@ -672,28 +687,21 @@ export default function MvpPutawayPage() {
     {
       key: "box_code",
       header: t("putaway.page.colBox"),
-      width: 170,
+      width: 180,
       sortable: true,
       render: (row) => row.box_code,
     },
     {
-      key: "old_tray_code",
-      header: t("putaway.page.colOldTray"),
-      width: 150,
-      sortable: true,
-      render: (row) => row.old_tray_code || EMPTY_TEXT,
-    },
-    {
       key: "new_tray_code",
       header: t("putaway.page.colNewTray"),
-      width: 150,
+      width: 160,
       sortable: true,
       render: (row) => row.new_tray_code || EMPTY_TEXT,
     },
     {
       key: "location_hint",
       header: t("putaway.page.colLocation"),
-      width: 180,
+      width: 200,
       sortable: true,
       render: (row) => row.location_hint || EMPTY_TEXT,
     },
@@ -707,7 +715,7 @@ export default function MvpPutawayPage() {
     {
       key: "stock_effect",
       header: t("putaway.page.colStockEffect"),
-      width: 140,
+      width: 150,
       render: () => (
         <UiStatusBadge
           tone="success"
@@ -717,10 +725,22 @@ export default function MvpPutawayPage() {
     },
   ];
 
+  const switchTab = (tab: string) => {
+    setActiveTab(tab);
+    setHistoryDetail(null);
+  };
+
+  const pageTitle =
+    activeTab === "history"
+      ? t("putaway.queue.historyTitle")
+      : activeTab === "orders"
+        ? t("putaway.queue.ordersList")
+        : t("putaway.queue.title");
+
   return (
     <div className="putaway-page hn-putaway-page" data-screen="PTW-00">
       <header className="ptw-heading">
-        <h1>{t("putaway.queue.title")}</h1>
+        <h1>{pageTitle}</h1>
         <nav
           id="ptw-tabs"
           className="ptw-tabs"
@@ -731,7 +751,7 @@ export default function MvpPutawayPage() {
             type="button"
             className={activeTab === "pending" ? "is-active" : undefined}
             aria-current={activeTab === "pending" ? "page" : undefined}
-            onClick={() => setActiveTab("pending")}
+            onClick={() => switchTab("pending")}
           >
             <UiIcon name="cube" />
             <span>{t("putaway.queue.pendingTab")}</span>
@@ -740,7 +760,7 @@ export default function MvpPutawayPage() {
             type="button"
             className={activeTab === "orders" ? "is-active" : undefined}
             aria-current={activeTab === "orders" ? "page" : undefined}
-            onClick={() => setActiveTab("orders")}
+            onClick={() => switchTab("orders")}
           >
             <UiIcon name="list" />
             <span>{t("putaway.queue.ordersTab")}</span>
@@ -753,7 +773,7 @@ export default function MvpPutawayPage() {
             type="button"
             className={activeTab === "history" ? "is-active" : undefined}
             aria-current={activeTab === "history" ? "page" : undefined}
-            onClick={() => setActiveTab("history")}
+            onClick={() => switchTab("history")}
           >
             <UiIcon name="time-past" />
             <span>{t("putaway.queue.historyTab")}</span>
@@ -910,6 +930,17 @@ export default function MvpPutawayPage() {
                   ? t("putaway.page.emptyHistoryFiltered")
                   : t("putaway.page.emptyHistory")
               }
+              renderRowActions={(row) => (
+                <RowActionButton
+                  kind="view"
+                  onClick={() => setHistoryDetail(row)}
+                >
+                  {t("putaway.page.historyDetailAction", {
+                    code: row.box_code,
+                  })}
+                </RowActionButton>
+              )}
+              actionColumnWidth={72}
             />
             <footer className="ptw-footer">
               <span className="ptw-range">
@@ -930,6 +961,11 @@ export default function MvpPutawayPage() {
       )}
 
       <>
+        <PutawayHistoryDetailDrawer
+          history={historyDetail}
+          onClose={() => setHistoryDetail(null)}
+        />
+
         <Drawer
           className="ptw-create-drawer"
           anchor="right"

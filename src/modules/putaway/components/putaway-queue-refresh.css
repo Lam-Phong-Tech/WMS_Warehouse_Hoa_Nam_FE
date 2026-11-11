@@ -1,10 +1,7 @@
 /* PTW-00 filters and tables follow the MST-01 list rhythm. */
 .hn-putaway-page form.ptw-filters {
-  grid-template-columns: minmax(260px, 2fr) minmax(220px, 1fr) minmax(
-      220px,
-      1fr
-    );
-  grid-template-areas: "search status receipt";
+  grid-template-columns: minmax(260px, 2fr) minmax(220px, 1fr);
+  grid-template-areas: "search receipt";
   align-items: center;
   gap: 12px;
   padding: 0;
@@ -261,13 +258,7 @@
 }
 @container hn-putaway (max-width: 1000px) {
   .hn-putaway-page form.ptw-filters {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "search search" "status receipt";
-  }
-}
-@container hn-putaway (max-width: 600px) {
-  .hn-putaway-page form.ptw-filters {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "search" "status" "receipt";
+    grid-template-areas: "search" "receipt";
   }
 }

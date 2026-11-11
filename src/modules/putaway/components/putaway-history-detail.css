@@ -1,0 +1,117 @@
+.ptw-history-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ptw-history-detail__summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--ops-muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.ptw-history-detail__section h3 {
+  margin: 0 0 10px;
+  color: var(--ops-heading);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+}
+
+.ptw-history-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.ptw-history-detail__field {
+  min-width: 0;
+}
+
+.ptw-history-detail__field.is-full {
+  grid-column: 1 / -1;
+}
+
+.ptw-history-detail__field dt {
+  margin: 0 0 4px;
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.ptw-history-detail__field dd {
+  margin: 0;
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+
+.ptw-history-sku {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+}
+
+.ptw-history-sku__main,
+.ptw-history-sku__qty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.ptw-history-sku__qty {
+  align-items: baseline;
+}
+
+.ptw-history-sku__label {
+  color: var(--ops-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ptw-history-sku__qty strong {
+  color: var(--ops-heading);
+  font-size: 18px;
+  line-height: 26px;
+}
+
+.ptw-history-detail__empty {
+  margin: 0;
+  color: var(--ops-muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.ptw-history-detail__readonly {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--ops-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+@media (max-width: 600px) {
+  .ptw-history-detail__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ptw-history-detail__field.is-full {
+    grid-column: auto;
+  }
+}

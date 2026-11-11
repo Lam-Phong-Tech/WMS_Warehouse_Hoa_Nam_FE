@@ -17,9 +17,12 @@ import {
   confirmPutawayTask,
   createPutawayTask,
   fetchPutawayHistory,
+  fetchPutawayTasks,
   fetchPutawayTrays,
   putawayIdempotencyKey,
   resolvePutawayTrayByScanCode,
+  type PutawayHistory,
+  type PutawayTask,
   type TrayOption,
 } from "./putawayService";
 
@@ -40,6 +43,32 @@ const trays: TrayOption[] = [
     version: 1,
   },
 ];
+
+const putawayTask = (id: number): PutawayTask => ({
+  id: `TASK-${id}`,
+  box_container_id: `container-${id}`,
+  box_code: `BOX-${id}`,
+  sku_id: `SKU-${id}`,
+  sku_code: `LK-${id}`,
+  sku_name: `Linh kiện ${id}`,
+  quantity: id,
+  receipt_code: "PN-01",
+  status: "RECEIVED_PENDING_PUTAWAY",
+  container_version: 1,
+});
+
+const putawayHistory = (id: number): PutawayHistory => ({
+  id: `HISTORY-${id}`,
+  box_container_id: `container-${id}`,
+  box_code: `BOX-${id}`,
+  old_tray_code: null,
+  new_tray_code: `TRAY-${id}`,
+  actor_name: "Người thao tác",
+  created_at: "2026-11-12T00:00:00Z",
+  location_hint: "A-01",
+  stock_effect: "NONE",
+  movement_created: false,
+});
 
 describe("putaway real API contract", () => {
   beforeEach(() => {
@@ -109,6 +138,60 @@ describe("putaway real API contract", () => {
     const result = await fetchPutawayTrays();
 
     expect(result.map((row) => row.container_code)).toEqual(["TRAY-A-01"]);
+  });
+
+  it("fetches every page of the putaway queue so client filters see all BOX", async () => {
+    const firstPage = Array.from({ length: 200 }, (_, index) =>
+      putawayTask(index + 1),
+    );
+    vi.mocked(http.getPage)
+      .mockResolvedValueOnce({
+        data: firstPage,
+        meta: { current_page: 1, per_page: 200, last_page: 2, total: 201 },
+      })
+      .mockResolvedValueOnce({
+        data: [putawayTask(201)],
+        meta: { current_page: 2, per_page: 200, last_page: 2, total: 201 },
+      });
+
+    const result = await fetchPutawayTasks({ search: "BOX" });
+
+    expect(result).toHaveLength(201);
+    expect(result.at(-1)?.id).toBe("TASK-201");
+    expect(http.getPage).toHaveBeenNthCalledWith(1, "/putaway-tasks", {
+      params: { search: "BOX", page: 1, per_page: 200 },
+    });
+    expect(http.getPage).toHaveBeenNthCalledWith(2, "/putaway-tasks", {
+      params: { search: "BOX", page: 2, per_page: 200 },
+    });
+  });
+
+  it("fetches every page of the putaway history so history search sees all events", async () => {
+    const firstPage = Array.from({ length: 200 }, (_, index) =>
+      putawayHistory(index + 1),
+    );
+    vi.mocked(http.getPage)
+      .mockResolvedValueOnce({
+        data: firstPage,
+        meta: { current_page: 1, per_page: 200, last_page: 2, total: 201 },
+      })
+      .mockResolvedValueOnce({
+        data: [putawayHistory(201)],
+        meta: { current_page: 2, per_page: 200, last_page: 2, total: 201 },
+      });
+    vi.mocked(http.get).mockResolvedValue([]);
+
+    const result = await fetchPutawayHistory({ search: "BOX" });
+
+    expect(result).toHaveLength(201);
+    expect(result.at(-1)?.id).toBe("HISTORY-201");
+    expect(http.get).not.toHaveBeenCalled();
+    expect(http.getPage).toHaveBeenNthCalledWith(1, "/putaway/history", {
+      params: { search: "BOX", page: 1, per_page: 200 },
+    });
+    expect(http.getPage).toHaveBeenNthCalledWith(2, "/putaway/history", {
+      params: { search: "BOX", page: 2, per_page: 200 },
+    });
   });
 
   it("confirms Putaway with If-Match and rejects any stock effect", async () => {
@@ -307,15 +390,18 @@ describe("putaway real API contract", () => {
   });
 
   it("fails closed if Putaway history reports a movement", async () => {
-    vi.mocked(http.get).mockResolvedValue([
-      {
-        id: "H-1",
-        box_code: "BOX-1",
-        created_at: "2026-08-12T00:00:00Z",
-        stock_effect: "INCREASE",
-        movement_created: true,
-      },
-    ]);
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [
+        {
+          id: "H-1",
+          box_code: "BOX-1",
+          created_at: "2026-08-12T00:00:00Z",
+          stock_effect: "INCREASE",
+          movement_created: true,
+        },
+      ],
+      meta: { current_page: 1, per_page: 200, last_page: 1, total: 1 },
+    });
 
     await expect(fetchPutawayHistory()).rejects.toMatchObject({
       code: "WMS_FE_PUTAWAY_STOCK_EFFECT_VIOLATION",

@@ -31,8 +31,9 @@ import {
   createPutawayTask,
   confirmPutawayTask,
   cancelPutawayTask,
-  type PutawayTask,
   type PutawayEvent,
+  type PutawayHistory,
+  type PutawayTask,
 } from "@/modules/putaway/services/putawayService";
 import MvpPutawayPage from "./MvpPutawayPage";
 
@@ -84,6 +85,27 @@ const stockNeutral: PutawayEvent = {
   to_tray_id: "tray-1",
   status: "DRAFT",
   version: 1,
+  stock_effect: "NONE",
+  movement_created: false,
+};
+
+const historyRow: PutawayHistory = {
+  id: "history-1",
+  box_container_id: "container-9",
+  box_code: "BOX-HIST-001",
+  box_status: "STORED",
+  sku_id: "sku-9",
+  sku_code: "COMP-HIST-001",
+  sku_name: "Linh kiện lịch sử",
+  unit: "cai",
+  quantity: 12,
+  receipt_code: "PN-HIST-001",
+  old_tray_code: null,
+  new_tray_code: "TRAY-HIST-01",
+  actor_name: "Quản trị viên",
+  created_at: "2026-11-11T09:06:00Z",
+  location_hint: "Kệ A-01",
+  note: "Ghi chú lịch sử",
   stock_effect: "NONE",
   movement_created: false,
 };
@@ -180,7 +202,9 @@ describe("PTW-00 page workflows", () => {
     );
     await user.click(screen.getByRole("button", { name: "Tạo lệnh" }));
     dialog = await screen.findByRole("dialog");
-    const note = await within(dialog).findByRole("textbox", { name: "Ghi chú" });
+    const note = await within(dialog).findByRole("textbox", {
+      name: "Ghi chú",
+    });
     await user.type(note, "Unsaved note");
     await act(async () => {
       liveClient.setQueryData(
@@ -353,9 +377,7 @@ describe("PTW-00 page workflows", () => {
     );
     const dialog = await screen.findByRole("dialog");
     await user.type(
-      within(dialog).getByPlaceholderText(
-        "Quét/nhập mã khay, VD: TRAY-A-01",
-      ),
+      within(dialog).getByPlaceholderText("Quét/nhập mã khay, VD: TRAY-A-01"),
       "tray-a-01{Enter}",
     );
     await user.click(
@@ -401,9 +423,7 @@ describe("PTW-00 page workflows", () => {
       screen.getByRole("checkbox", { name: `Chọn BOX ${draftTwo.box_code}` }),
     );
 
-    await user.click(
-      screen.getByRole("button", { name: "Xác nhận xếp khay" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Xác nhận xếp khay" }));
     let dialog = await screen.findByRole("dialog");
     expect(
       within(dialog).getByText("Xác nhận xếp khay cho 2 BOX?"),
@@ -416,9 +436,7 @@ describe("PTW-00 page workflows", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
 
-    await user.click(
-      screen.getByRole("button", { name: "Hủy lệnh nháp" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Hủy lệnh nháp" }));
     dialog = await screen.findByRole("dialog");
     expect(
       within(dialog).getByText("Hủy 2 lệnh xếp khay nháp?"),
@@ -445,9 +463,7 @@ describe("PTW-00 page workflows", () => {
     await user.click(
       screen.getByRole("checkbox", { name: `Chọn BOX ${draftTwo.box_code}` }),
     );
-    await user.click(
-      screen.getByRole("button", { name: "Xác nhận xếp khay" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Xác nhận xếp khay" }));
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Xác nhận" }));
 
@@ -531,7 +547,7 @@ describe("PTW-00 page workflows", () => {
     await user.clear(search);
     await waitFor(() => expect(fetchPutawayTasks).toHaveBeenLastCalledWith({}));
   });
-  it("resets receipt, status and selection when switching from pending BOX to draft orders", async () => {
+  it("resets receipt and selection when switching from pending BOX to draft orders", async () => {
     const user = userEvent.setup();
     vi.mocked(fetchPutawayTasks).mockResolvedValue([
       { ...pending, receipt_code: "PN-A" },
@@ -539,12 +555,13 @@ describe("PTW-00 page workflows", () => {
     ]);
     renderWithProviders(<MvpPutawayPage />);
     await screen.findByRole("button", { name: pending.box_code });
+    expect(
+      screen.queryByRole("combobox", { name: "Trạng thái BOX" }),
+    ).not.toBeInTheDocument();
     await user.click(
       screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
     );
     await user.click(screen.getByRole("option", { name: "PN-A" }));
-    await user.click(screen.getByRole("combobox", { name: "Trạng thái BOX" }));
-    await user.click(screen.getByRole("option", { name: "Tất cả" }));
     await user.click(
       screen.getByRole("checkbox", { name: `Chọn BOX ${pending.box_code}` }),
     );
@@ -558,8 +575,8 @@ describe("PTW-00 page workflows", () => {
       screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
     ).toHaveTextContent("Tất cả");
     expect(
-      screen.getByRole("combobox", { name: "Trạng thái BOX" }),
-    ).toHaveTextContent("Chờ xếp khay");
+      screen.queryByRole("combobox", { name: "Trạng thái BOX" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("Đã chọn 1 BOX")).not.toBeInTheDocument();
     await user.click(
       screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
@@ -576,5 +593,58 @@ describe("PTW-00 page workflows", () => {
     expect(
       screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
     ).toHaveTextContent("Tất cả");
+  });
+
+  it("opens a read-only history drawer from the detail arrow and hides the old tray column", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchPutawayHistory).mockResolvedValue([historyRow]);
+    renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);
+
+    await user.click(screen.getByRole("button", { name: "Lịch sử" }));
+    expect(
+      screen.queryByRole("columnheader", { name: "Khay cũ" }),
+    ).not.toBeInTheDocument();
+
+    const arrow = await screen.findByRole("button", {
+      name: "Xem chi tiết xếp khay BOX-HIST-001",
+    });
+    await user.click(arrow);
+
+    const drawer = await screen.findByRole("dialog");
+    expect(within(drawer).getByText("BOX-HIST-001")).toBeInTheDocument();
+    expect(within(drawer).getByText("TRAY-HIST-01")).toBeInTheDocument();
+    expect(within(drawer).getByText("Kệ A-01")).toBeInTheDocument();
+    expect(within(drawer).getByText("Quản trị viên")).toBeInTheDocument();
+    expect(within(drawer).getByText("PN-HIST-001")).toBeInTheDocument();
+    expect(within(drawer).getByText("COMP-HIST-001")).toBeInTheDocument();
+    expect(within(drawer).getByText("Linh kiện lịch sử")).toBeInTheDocument();
+    expect(within(drawer).getByText("12")).toBeInTheDocument();
+    expect(within(drawer).getByText("Ghi chú lịch sử")).toBeInTheDocument();
+
+    await user.click(within(drawer).getByRole("button", { name: "Đóng" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("changes the page title to match the active putaway tab", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Linh kiện chờ xếp khay" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Lệnh xếp khay" }));
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Danh sách lệnh xếp khay",
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Lịch sử" }));
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Lịch sử xếp khay" }),
+    ).toBeInTheDocument();
   });
 });

@@ -45,7 +45,6 @@ export function PutawayQueue(props: Props) {
   const t = useT();
   const { tasks, orders, loading, refreshing, error, canManage } = props;
   const [filters, setFilters] = useState({
-    status: "RECEIVED_PENDING_PUTAWAY",
     receipt: "",
   });
   const [page, setPage] = useState(1);
@@ -70,11 +69,9 @@ export function PutawayQueue(props: Props) {
   const rows = useMemo(
     () =>
       baseRows.filter(
-        (row) =>
-          (!filters.status || row.status === filters.status) &&
-          (!filters.receipt || row.receipt_code === filters.receipt),
+        (row) => !filters.receipt || row.receipt_code === filters.receipt,
       ),
-    [baseRows, filters],
+    [baseRows, filters.receipt],
   );
   const { sortedRows, sortState, requestSort } = useClientSort(rows, SORT);
   const safePage = Math.min(
@@ -140,33 +137,6 @@ export function PutawayQueue(props: Props) {
               }}
             />
           </div>
-        </div>
-        <div className="ptw-status-filter">
-          <label className="ptw-inline-label" htmlFor="ptw-status">
-            {t("putaway.queue.boxStatus")}:
-          </label>
-          <UiSelect
-            id="ptw-status"
-            aria-label={t("putaway.queue.boxStatus")}
-            fullWidth
-            displayEmpty
-            searchable={false}
-            menuClassName="ptw-filter-menu"
-            value={filters.status}
-            onChange={(status) => {
-              setFilters((current) => ({ ...current, status }));
-              setPage(1);
-              setSelectedIds(new Set());
-            }}
-            options={[
-              {
-                value: "RECEIVED_PENDING_PUTAWAY",
-                label: t("putaway.queue.pendingStatus"),
-              },
-              { value: "", label: t("putaway.queue.all") },
-              { value: "STORED", label: t("putaway.queue.storedStatus") },
-            ]}
-          />
         </div>
         <div className="ptw-receipt-filter">
           <label className="ptw-inline-label" htmlFor="ptw-receipt">
@@ -380,9 +350,7 @@ export function PutawayQueue(props: Props) {
                   <td colSpan={columnCount} className="ptw-empty">
                     <UiIcon name="cube" size="lg" />
                     <strong>
-                      {props.search ||
-                      filters.receipt ||
-                      filters.status !== "RECEIVED_PENDING_PUTAWAY"
+                      {props.search || filters.receipt
                         ? t("putaway.queue.emptyFiltered")
                         : orders
                           ? t("putaway.queue.emptyOrders")

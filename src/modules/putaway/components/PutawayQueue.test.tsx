@@ -73,24 +73,22 @@ describe("PTW-00 queue interactions", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
-  it("excludes active drafts and filters receipt/status immediately", async () => {
+  it("excludes active drafts and filters by receipt immediately", async () => {
     const user = userEvent.setup();
     const input = props([
       task(1, { quantity: 1200, sku_id: "shared", receipt_code: "PN-01" }),
       task(2, { quantity: 300, sku_id: "shared", receipt_code: "PN-02" }),
-      task(3, { quantity: 50, receipt_code: "PN-02", status: "STORED" }),
       task(4, { draft_id: "draft-4", draft_version: 2 }),
     ]);
     renderWithProviders(<PutawayQueue {...input} />);
     expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
+    expect(
+      screen.queryByRole("combobox", { name: "Trạng thái BOX" }),
+    ).not.toBeInTheDocument();
 
     await selectFilter(user, "Phiếu nhập nguồn", "PN-02");
     expect(visibleBoxes()).toEqual(["BOX-02"]);
-    await selectFilter(user, "Trạng thái BOX", "Tất cả");
-    expect(visibleBoxes()).toEqual(["BOX-02", "BOX-03"]);
     await selectFilter(user, "Phiếu nhập nguồn", "Tất cả");
-    expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02", "BOX-03"]);
-    await selectFilter(user, "Trạng thái BOX", "Chờ xếp khay");
     expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
     expect(
       screen.queryByRole("button", { name: "Áp dụng" }),
@@ -176,13 +174,8 @@ describe("PTW-00 queue interactions", () => {
       task(3, { status: "STORED" }),
     ]);
     renderWithProviders(<PutawayQueue {...input} />);
-    await selectFilter(user, "Trạng thái BOX", "Tất cả");
-    await user.click(
-      screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }),
-    );
-    await user.click(
-      screen.getByRole("checkbox", { name: "Chọn BOX BOX-03" }),
-    );
+    await user.click(screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }));
+    await user.click(screen.getByRole("checkbox", { name: "Chọn BOX BOX-03" }));
     expect(
       screen.queryByRole("button", { name: "Xếp nhiều hộp vào 1 khay" }),
     ).not.toBeInTheDocument();
@@ -205,9 +198,7 @@ describe("PTW-00 queue interactions", () => {
     const input = { ...props(rows), orders: true };
     renderWithProviders(<PutawayQueue {...input} />);
 
-    await user.click(
-      screen.getByRole("checkbox", { name: "Chọn BOX BOX-01" }),
-    );
+    await user.click(screen.getByRole("checkbox", { name: "Chọn BOX BOX-01" }));
     expect(
       screen.queryByRole("button", { name: "Xác nhận xếp khay" }),
     ).not.toBeInTheDocument();
@@ -215,16 +206,10 @@ describe("PTW-00 queue interactions", () => {
       screen.queryByRole("button", { name: "Hủy lệnh nháp" }),
     ).not.toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }),
-    );
-    await user.click(
-      screen.getByRole("button", { name: "Xác nhận xếp khay" }),
-    );
+    await user.click(screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }));
+    await user.click(screen.getByRole("button", { name: "Xác nhận xếp khay" }));
     expect(input.onConfirmMany).toHaveBeenCalledExactlyOnceWith(rows);
-    await user.click(
-      screen.getByRole("button", { name: "Hủy lệnh nháp" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Hủy lệnh nháp" }));
     expect(input.onCancelMany).toHaveBeenCalledExactlyOnceWith(rows);
   });
 
@@ -236,12 +221,8 @@ describe("PTW-00 queue interactions", () => {
     ];
     const input = { ...props(rows), orders: true, canManage: false };
     renderWithProviders(<PutawayQueue {...input} />);
-    await user.click(
-      screen.getByRole("checkbox", { name: "Chọn BOX BOX-01" }),
-    );
-    await user.click(
-      screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }),
-    );
+    await user.click(screen.getByRole("checkbox", { name: "Chọn BOX BOX-01" }));
+    await user.click(screen.getByRole("checkbox", { name: "Chọn BOX BOX-02" }));
     expect(
       screen.getByRole("button", { name: "Xác nhận xếp khay" }),
     ).toBeDisabled();

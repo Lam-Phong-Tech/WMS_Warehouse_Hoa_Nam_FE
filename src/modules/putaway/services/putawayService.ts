@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { http } from "@/shared/api/http";
+import { readAllApiPages } from "@/shared/api/read-all-pages";
 import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 import { WmsContractError } from "@/shared/api/wms-contract";
 import { tStatic } from "@/shared/i18n/useT";
@@ -26,12 +27,21 @@ export interface PutawayTask {
 }
 export interface PutawayHistory {
   id: string;
+  box_container_id: string;
   box_code: string;
+  box_status?: string;
+  sku_id?: string;
+  sku_code?: string;
+  sku_name?: string;
+  unit?: string;
+  quantity?: number;
+  receipt_code?: string | null;
   old_tray_code?: string | null;
   new_tray_code?: string | null;
   actor_name?: string | null;
   created_at: string;
   location_hint?: string | null;
+  note?: string | null;
   stock_effect: "NONE";
   movement_created: false;
 }
@@ -145,15 +155,29 @@ function assertStockNeutral<
 export async function fetchPutawayTasks(
   params: Record<string, unknown> = {},
 ): Promise<PutawayTask[]> {
-  return http.get<PutawayTask[]>(API_ENDPOINTS.PUTAWAY_TASKS, { params });
+  // Bộ lọc trạng thái/phiếu nhập ở PTW-00 chạy phía client trên toàn bộ danh
+  // sách, nên phải đọc hết các trang thay vì chỉ lấy trang đầu (BE mặc định 10).
+  return readAllApiPages<PutawayTask>(
+    (page) =>
+      http.getPage<PutawayTask[]>(API_ENDPOINTS.PUTAWAY_TASKS, {
+        params: { ...params, page, per_page: 200 },
+      }),
+    (row) => row.id,
+  );
 }
 
 export async function fetchPutawayHistory(
   params: Record<string, unknown> = {},
 ): Promise<PutawayHistory[]> {
-  const rows = await http.get<PutawayHistory[]>(API_ENDPOINTS.PUTAWAY_HISTORY, {
-    params,
-  });
+  // Tab Lịch sử tìm kiếm/phân trang phía client trên dữ liệu đã tải, nên phải
+  // đọc hết các trang thay vì chỉ lấy trang đầu (BE mặc định 10).
+  const rows = await readAllApiPages<PutawayHistory>(
+    (page) =>
+      http.getPage<PutawayHistory[]>(API_ENDPOINTS.PUTAWAY_HISTORY, {
+        params: { ...params, page, per_page: 200 },
+      }),
+    (row) => row.id,
+  );
   rows.forEach((row) => assertStockNeutral(row, "Putaway history"));
   return rows;
 }
@@ -223,8 +247,7 @@ function readRecovery(
   const container = error as Record<string, unknown>;
   const response = container.response as Record<string, unknown> | undefined;
   const body = (container.data ?? response?.data) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (!body) return null;
 
   const errorNode = body.error as Record<string, unknown> | undefined;
@@ -265,8 +288,7 @@ function recoverPutawayConflict(
     box_container_id: String(details?.box_container_id ?? ""),
     to_tray_id: String(details?.to_tray_id ?? ""),
     status: (operation === "confirm" ? "CONFIRMED" : "CANCELLED") as
-      | "CONFIRMED"
-      | "CANCELLED",
+      "CONFIRMED" | "CANCELLED",
     version: Number(details?.current_version ?? 0),
     stock_effect: "NONE",
     movement_created: false,

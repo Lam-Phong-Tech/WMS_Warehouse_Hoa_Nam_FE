@@ -199,20 +199,14 @@
 }
 .hn-putaway-page .ptw-filters {
   display: grid;
-  grid-template-columns:
-    minmax(220px, 2fr) minmax(150px, 1fr) minmax(150px, 1fr)
-    auto;
-  grid-template-areas: "search status receipt actions" "hint hint hint hint";
+  grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr);
+  grid-template-areas: "search receipt";
   gap: 10px 18px;
   padding: 12px 14px;
   align-items: end;
 }
 .hn-putaway-page .ptw-search {
   grid-area: search;
-  min-width: 0;
-}
-.hn-putaway-page .ptw-status-filter {
-  grid-area: status;
   min-width: 0;
 }
 .hn-putaway-page .ptw-receipt-filter {
@@ -693,9 +687,7 @@
   line-height: inherit;
   white-space: nowrap;
 }
-.hn-putaway-page
-  .ptw-selection
-  .ptw-selection-action:hover:not(:disabled) {
+.hn-putaway-page .ptw-selection .ptw-selection-action:hover:not(:disabled) {
   background: transparent;
   border-color: transparent;
   color: var(--ptw-primary);
@@ -1162,8 +1154,8 @@
 
 @container hn-putaway (max-width: 880px) {
   .hn-putaway-page .ptw-filters {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "search search" "status receipt" "hint actions";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "search" "receipt";
     gap: 12px 18px;
   }
   .hn-putaway-page .ptw-filter-hint {
@@ -1249,7 +1241,8 @@
     font-size: 14px;
   }
   .hn-putaway-page .ptw-filters {
-    grid-template-areas: "search search" "status receipt" "hint hint" "actions actions";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "search" "receipt";
     gap: 12px;
     padding: 14px;
   }
