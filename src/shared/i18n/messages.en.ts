@@ -1319,6 +1319,7 @@ export const MESSAGES_EN: MessageTree = {
       colComponent: "Component",
       colProgress: "Quantity",
       colScanKind: "Scan mode",
+      colRowNumber: "STT",
       scanPerItem: "Scan each component",
       scanPerBox: "Scan by box",
       titleExisting: "Component issue note {code}",

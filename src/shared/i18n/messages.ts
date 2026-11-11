@@ -1350,6 +1350,7 @@ export const MESSAGES_VI = {
       colComponent: "Linh kiện",
       colProgress: "Số lượng",
       colScanKind: "Kiểu quét",
+      colRowNumber: "STT",
       scanPerItem: "Quét từng linh kiện",
       scanPerBox: "Quét theo hộp",
       titleExisting: "Phiếu xuất linh kiện {code}",

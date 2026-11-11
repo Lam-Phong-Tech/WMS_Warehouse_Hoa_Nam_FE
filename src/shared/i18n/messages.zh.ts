@@ -1830,6 +1830,7 @@ export const MESSAGES_ZH: MessageTree = {
       "colComponent": "组件",
       "colProgress": "数量",
       "colScanKind": "扫描模式",
+      "colRowNumber": "序号",
       "scanPerItem": "扫描每个组件",
       "scanPerBox": "按框扫描",
       "titleExisting": "配件出库单 {code}",
