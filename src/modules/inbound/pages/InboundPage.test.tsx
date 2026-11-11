@@ -20,6 +20,7 @@ function makeDocument(overrides: Partial<InboundDocument>): InboundDocument {
     warehouseId: "WH-1",
     expected: 1,
     scanned: 1,
+    productTypes: ["PRODUCT"],
     posted: 0,
     remaining: 0,
     status: "SCANNING",
@@ -46,7 +47,7 @@ const ROWS = [
     pendingProductInfo: true,
     pendingProductInfoCount: 2,
   }),
-  makeDocument({ id: "IN-OK", code: "PN-OK-001" }),
+  makeDocument({ id: "IN-OK", code: "PN-OK-001", productTypes: ["COMPONENT"] }),
 ];
 
 describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
@@ -72,6 +73,11 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
       screen.getByRole("columnheader", { name: /Nhà cung cấp/ }),
     ).toBeInTheDocument();
     expect(screen.getByText("NCC-001 - Honda Việt Nam")).toBeInTheDocument();
+
+    // Dưới tiến độ ghi nhận hiện loại hàng thực nhận của phiếu.
+    expect(screen.getAllByTestId("inbound-product-type")).toHaveLength(2);
+    expect(screen.getByText("Sản phẩm")).toBeInTheDocument();
+    expect(screen.getByText("Linh kiện")).toBeInTheDocument();
 
     // Phiếu Mini App có SKU mới: nhãn kèm số SKU đang thiếu.
     expect(

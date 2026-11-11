@@ -27,6 +27,7 @@ import {
 } from "@/shared/constants/wms-permissions";
 import {
   INBOUND_STATUS_LABELS,
+  SKU_TYPE_LABELS,
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { EMPTY_TEXT } from "@/shared/constants/display";
@@ -209,6 +210,10 @@ function InboundListScreen() {
       {" " + tUi("updatedUi.text_11589f1a7b52")}
     </>
   );
+  const productTypeText = (row: InboundDocument) =>
+    (row.productTypes ?? [])
+      .map((type) => businessLabel(SKU_TYPE_LABELS, type, type))
+      .join(" · ");
   const rowActions = (row: InboundDocument) => {
     return (
       <button
@@ -526,7 +531,17 @@ function InboundListScreen() {
                     <span className="hn-inbound-compact">{progress(row)}</span>
                   </td>
                   <td className="hn-inbound-desktop hn-inbound-progress-cell">
-                    {progress(row)}
+                    <div className="hn-inbound-progress-stack">
+                      <span>{progress(row)}</span>
+                      {productTypeText(row) ? (
+                        <span
+                          className="hn-inbound-product-type"
+                          data-testid="inbound-product-type"
+                        >
+                          {productTypeText(row)}
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="hn-inbound-created-date-cell">
                     <time dateTime={row.createdAt || undefined}>

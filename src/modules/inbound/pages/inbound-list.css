@@ -460,7 +460,9 @@
   border-bottom: 1px solid var(--in-line);
 }
 .hn-inbound-table .hn-inbound-col-code {
-  width: 22%;
+  /* Mã phiếu mới PN-YYYYMMDDHHmmss ~18 ký tự; cột cố định vừa đủ, không giữ
+     khoảng trống của format mã cũ dài hơn. */
+  width: 210px;
 }
 .hn-inbound-table .hn-inbound-col-supplier {
   width: 24%;
@@ -526,6 +528,23 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
+}
+.hn-inbound-progress-stack {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.hn-inbound-product-type {
+  justify-self: start;
+  max-width: 100%;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--in-pale);
+  color: var(--in-text);
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }
 .hn-inbound-list .hn-inbound-compact {
   display: none;
@@ -1120,7 +1139,7 @@
   gap: 4px;
 }
 .hn-inbound-table .hn-inbound-col-index { width: 56px; }
-.hn-inbound-table .hn-inbound-col-code { width: 23%; }
+.hn-inbound-table .hn-inbound-col-code { width: 210px; }
 .hn-inbound-table .hn-inbound-col-supplier { width: auto; }
 .hn-inbound-table .hn-inbound-col-progress { width: 18%; }
 .hn-inbound-table .hn-inbound-col-created-date { width: 150px; }
@@ -1181,7 +1200,7 @@
 }
 
 @container hn-inbound (max-width: 1180px) {
-  .hn-inbound-table .hn-inbound-col-code { width: 26%; }
+  .hn-inbound-table .hn-inbound-col-code { width: 210px; }
   .hn-inbound-table .hn-inbound-col-created { width: 180px; }
 }
 /* Wrap only when the content area cannot keep the controls readable. */

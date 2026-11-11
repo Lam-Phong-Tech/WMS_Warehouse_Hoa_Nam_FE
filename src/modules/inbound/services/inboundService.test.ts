@@ -1057,10 +1057,10 @@ describe("inbound list · display-only SKU counts", () => {
           id: "IN-COUNT",
           status: "SCANNING",
           lines: [
-            { product_id: "SKU-1", qty_planned: 2, scanned_qty: 2 },
-            { product_id: "SKU-1", qty_planned: 3, scanned_qty: 3 },
-            { sku_id: "SKU-2", qty_planned: 5, scanned_qty: 5 },
-            { product_id: " ", qty_planned: 1, scanned_qty: 1 },
+            { product_id: "SKU-1", qty_planned: 2, scanned_qty: 2, sku_type: "PRODUCT" },
+            { product_id: "SKU-1", qty_planned: 3, scanned_qty: 3, sku_type: "PRODUCT" },
+            { sku_id: "SKU-2", qty_planned: 5, scanned_qty: 5, sku_type: "COMPONENT" },
+            { product_id: " ", qty_planned: 1, scanned_qty: 1, sku_type: "PRODUCT" },
           ],
         },
       ],
@@ -1071,6 +1071,7 @@ describe("inbound list · display-only SKU counts", () => {
 
     expect(result.data[0]).toMatchObject({
       skuCount: 2,
+      productTypes: ["PRODUCT", "COMPONENT"],
       expected: 11,
       scanned: 11,
       remaining: 0,
@@ -1090,7 +1091,9 @@ describe("inbound list · display-only SKU counts", () => {
     const result = await fetchInboundDocuments();
 
     expect(result.data[0].skuCount).toBeUndefined();
+    expect(result.data[0].productTypes).toBeUndefined();
     expect(result.data[0].scanned).toBe(4);
     expect(result.data[1].skuCount).toBe(0);
+    expect(result.data[1].productTypes).toEqual([]);
   });
 });

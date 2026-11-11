@@ -188,6 +188,24 @@ function normalizeDocument(row: RawRecord): InboundDocument {
             .filter(Boolean),
         ).size
       : undefined,
+    // Loại hàng thực nhận của phiếu (Sản phẩm / Linh kiện) — gom từ các dòng
+    // BE eager-load. Không có lines = không biết, không tự đoán.
+    productTypes: Array.isArray(row.lines)
+      ? Array.from(
+          new Set(
+            lines
+              .map((line) =>
+                text(line.sku_type ?? line.product_type).trim().toUpperCase(),
+              )
+              .filter(Boolean),
+          ),
+        ).sort((left, right) => {
+          if (left === right) return 0;
+          if (left === "PRODUCT") return -1;
+          if (right === "PRODUCT") return 1;
+          return left.localeCompare(right);
+        })
+      : undefined,
     posted,
     remaining: Math.max(expected - scanned, 0),
     status,

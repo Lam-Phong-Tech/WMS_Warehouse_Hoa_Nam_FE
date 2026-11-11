@@ -23,6 +23,11 @@ export interface InboundDocument {
   scanned: number;
   /** Distinct SKU identities from the loaded receipt lines; absent when not supplied. */
   skuCount?: number;
+  /**
+   * Distinct SKU types from the loaded receipt lines (PRODUCT/COMPONENT).
+   * Absent when the list endpoint does not include lines.
+   */
+  productTypes?: string[];
   posted: number;
   remaining: number;
   status: InboundStatus;
