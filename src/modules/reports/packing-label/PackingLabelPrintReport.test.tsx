@@ -282,7 +282,6 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
       screen.getByRole("tab", { name: "Print attempts 4" }),
     ).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Labels 2" })).toBeInTheDocument();
-    expect(screen.getByText(/Latest attempt:/)).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText(
         "Search label code, outbound, SKU, recipient…",

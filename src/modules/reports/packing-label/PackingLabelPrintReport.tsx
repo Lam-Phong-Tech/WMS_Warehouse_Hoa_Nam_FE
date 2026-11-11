@@ -806,13 +806,6 @@ export default function PackingLabelPrintReport() {
           >
             {t("packingLabelReport.labels")} <span>{report.labels.size}</span>
           </button>
-          <span className="hn-pkg-label__asof">
-            {report.asOf
-              ? t("packingLabelReport.latestAttempt", {
-                  time: formatDateTime(report.asOf),
-                })
-              : t("packingLabelReport.noAttemptsInPeriod")}
-          </span>
         </div>
         <div
           className="hn-pkg-label__filters"

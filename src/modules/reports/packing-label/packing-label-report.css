@@ -210,11 +210,6 @@
   background: var(--ops-pale);
   color: var(--ops-link);
 }
-.hn-pkg-label__asof {
-  margin-left: auto;
-  color: var(--ops-muted);
-  font-size: 12px;
-}
 .hn-pkg-label__filters {
   display: flex;
   align-items: center;
@@ -907,9 +902,6 @@
   }
   .hn-pkg-label__header-actions {
     justify-content: flex-start;
-  }
-  .hn-pkg-label__asof {
-    display: none;
   }
 }
 @container packing-label (max-width:580px) {
