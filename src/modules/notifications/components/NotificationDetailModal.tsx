@@ -56,9 +56,12 @@ export function NotificationDetailModal({
   const t = useT();
   const notificationText = useNotificationText();
   const navigate = useNavigate();
-  const payloadEntries = Object.entries(item?.payload ?? {}).filter(
-    ([, value]) => value !== null && value !== undefined && value !== "",
-  );
+  const payloadEntries =
+    item?.content_access === "DENIED"
+      ? []
+      : Object.entries(item?.payload ?? {}).filter(
+          ([, value]) => value !== null && value !== undefined && value !== "",
+        );
   const link = item ? resolveNotificationLink(item) : null;
 
   const handleViewDetail = () => {

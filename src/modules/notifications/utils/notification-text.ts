@@ -42,6 +42,12 @@ export function localizeNotification(
   language: Language,
   t: TranslateFn,
 ) {
+  if (item.content_access === "DENIED") {
+    return {
+      title: t("notifications.accessDenied.title"),
+      body: t("notifications.accessDenied.body"),
+    };
+  }
   const original = { title: item.title, body: item.body };
   /**
    * Bản BE cũ đã lưu sẵn câu tiếng Việt dùng từ vay "case". Chuông thông báo

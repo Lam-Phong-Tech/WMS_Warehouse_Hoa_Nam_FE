@@ -30,6 +30,26 @@ afterEach(() => {
   act(() => useLanguageStore.setState({ language: "vi" }));
 });
 describe("notification content locale", () => {
+  it("shows a localized access-denied message and ignores revoked payload", () => {
+    const denied = { ...item, content_access: "DENIED" as const };
+    const vi = localizeNotification(
+      denied,
+      "vi",
+      (key: Parameters<typeof translate>[1]) => translate("vi", key),
+    );
+    expect(vi).toEqual({
+      title: "Không còn quyền xem nội dung",
+      body: "Bạn không còn quyền xem nội dung thông báo này.",
+    });
+    const en = localizeNotification(
+      denied,
+      "en",
+      (key: Parameters<typeof translate>[1]) => translate("en", key),
+    );
+    expect(en.title).toBe("Content access revoked");
+    expect(en.body).not.toContain("PX-20261105-ABC");
+  });
+
   it("việt hóa 'case' thành 'ca' cho thông báo bảo hành đã lưu", () => {
     const t = (key: Parameters<typeof translate>[1]) => translate("vi", key);
     const created = localizeNotification(

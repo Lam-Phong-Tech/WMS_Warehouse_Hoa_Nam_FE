@@ -1,5 +1,7 @@
 export type NotificationSeverity = "info" | "warning" | "critical";
 
+export type NotificationContentAccess = "GRANTED" | "DENIED";
+
 export interface NotificationItem {
   id: string;
   notification_id: string;
@@ -15,6 +17,7 @@ export interface NotificationItem {
   payload: Record<string, unknown> | null;
   read_at: string | null;
   created_at: string;
+  content_access?: NotificationContentAccess;
 }
 
 export interface NotificationListParams {

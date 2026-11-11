@@ -19,7 +19,7 @@ export interface NotificationLink {
 export function resolveNotificationLink(
   item: NotificationItem,
 ): NotificationLink | null {
-  if (!item.subject_id) return null;
+  if (item.content_access === "DENIED" || !item.subject_id) return null;
 
   if (item.event_key.startsWith("inbound.")) {
     return {

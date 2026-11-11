@@ -98,4 +98,16 @@ describe("resolveNotificationLink", () => {
       ),
     ).toBeNull();
   });
+
+  it("returns null when current content access is denied", () => {
+    expect(
+      resolveNotificationLink(
+        makeItem({
+          event_key: "inbound.completed",
+          subject_id: "doc-1",
+          content_access: "DENIED",
+        }),
+      ),
+    ).toBeNull();
+  });
 });
