@@ -330,14 +330,19 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
         within(table).getByRole("columnheader", { name }),
       ).toBeInTheDocument();
     }
+    expect(
+      [...table.querySelectorAll("col")].map(
+        (column) => (column as HTMLElement).style.width,
+      ),
+    ).toEqual(["5%", "16%", "23%", "12%", "30%", "14%"]);
     const bodyRows = within(table).getAllByRole("row").slice(1);
     expect(within(bodyRows[0]).getAllByRole("cell")[0]).toHaveTextContent("1");
     expect(within(table).getByText("Print failed")).toBeInTheDocument();
     expect(within(table).getAllByText("First print / retry")).toHaveLength(3);
     expect(within(table).getAllByText("Đại lý An Phát")).toHaveLength(2);
-    expect(
-      within(table).getByText("Nhãn đầu bị nhòe khi dán"),
-    ).toBeInTheDocument();
+    const reason = within(table).getByText("Nhãn đầu bị nhòe khi dán");
+    expect(reason).toHaveClass("hn-pkg-label__reason");
+    expect(reason).toHaveAttribute("title", "Nhãn đầu bị nhòe khi dán");
 
     await user.click(
       within(table).getAllByRole("button", { name: /View label details/ })[0],

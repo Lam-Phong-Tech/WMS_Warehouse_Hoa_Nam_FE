@@ -938,7 +938,7 @@ export default function PackingLabelPrintReport() {
               >
                 <table className="hn-pkg-label__table">
                   <colgroup>
-                    {[6, 20, 28, 17, 17, 12].map((width, i) => (
+                    {[5, 16, 23, 12, 30, 14].map((width, i) => (
                       <col key={i} style={{ width: width + "%" }} />
                     ))}
                   </colgroup>
@@ -1037,7 +1037,7 @@ export default function PackingLabelPrintReport() {
                                       )}
                                 </span>
                               </td>
-                              <td>
+                              <td className="is-result">
                                 {latest ? (
                                   <PrintStatus result={latest.result} />
                                 ) : (
@@ -1048,7 +1048,10 @@ export default function PackingLabelPrintReport() {
                                   </span>
                                 )}
                                 {latest && failureText(latest) && (
-                                  <span className="hn-pkg-label__reason">
+                                  <span
+                                    className="hn-pkg-label__reason"
+                                    title={failureText(latest)}
+                                  >
                                     {failureText(latest)}
                                   </span>
                                 )}

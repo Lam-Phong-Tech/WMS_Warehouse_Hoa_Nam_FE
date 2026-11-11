@@ -321,9 +321,9 @@
   font-size: 16px;
   font-weight: 800;
   line-height: 24px;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  letter-spacing: normal;
   text-align: left;
+  text-transform: none;
   vertical-align: middle;
 }
 .hn-pkg-label__table th > button {
@@ -366,6 +366,27 @@
 .hn-pkg-label__table .is-center {
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+/* Kết quả nằm sát cột thao tác; lý do dài cắt một dòng và giữ đủ nội dung ở
+ * title. Cột này nhận phần rộng dư thay vì để khoảng trống ở các cột trái. */
+.hn-pkg-label__table :is(th, td):nth-child(5) {
+  padding-right: 10px;
+}
+.hn-pkg-label__table :is(th, td):nth-child(6) {
+  padding-left: 10px;
+}
+.hn-pkg-label__table td.is-result {
+  text-align: right;
+}
+.hn-pkg-label__table td.is-result > .hn-pkg-label__reason {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 4px 0 0 auto;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hn-pkg-label__table .hn-row-action-group {
   flex-wrap: wrap;
