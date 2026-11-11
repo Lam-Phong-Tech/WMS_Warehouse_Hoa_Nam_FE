@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 import type { PvAdminProfile } from "@/modules/pv/types/pv.types";
 
 const {
@@ -107,6 +108,33 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     createPvProfileMock.mockReset().mockResolvedValue(WITH_IMAGE);
     updatePvProfileMock.mockReset().mockResolvedValue(WITH_IMAGE);
     getMvpSkusMock.mockReset().mockResolvedValue({ data: [], meta: {} });
+  });
+
+  it("shortens the visibility column header only while the sidebar is pinned", async () => {
+    signInWith(["pv.master.manage", "pv.publish"]);
+    const { unmount } = renderWithProviders(
+      <PinnedSidebarContext.Provider value={true}>
+        <PvProductCatalogPage />
+      </PinnedSidebarContext.Provider>,
+    );
+    await screen.findByRole("table");
+    expect(
+      screen.getByRole("columnheader", { name: "Trạng thái" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Trạng thái hiển thị" }),
+    ).not.toBeInTheDocument();
+    unmount();
+
+    renderWithProviders(
+      <PinnedSidebarContext.Provider value={false}>
+        <PvProductCatalogPage />
+      </PinnedSidebarContext.Provider>,
+    );
+    await screen.findByRole("table");
+    expect(
+      screen.getByRole("columnheader", { name: "Trạng thái hiển thị" }),
+    ).toBeInTheDocument();
   });
 
   it.each([false, true])(

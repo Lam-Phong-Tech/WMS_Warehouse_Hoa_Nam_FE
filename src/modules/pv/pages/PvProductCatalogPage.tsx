@@ -15,10 +15,11 @@
  * Ảnh được tải qua API của hệ thống; danh sách URL và ảnh đại diện tiếp tục
  * đi cùng payload hồ sơ (xem PvProductImageField).
  */
-import { useMemo, useState, type CSSProperties } from "react";
+import { useContext, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { ROUTES } from "@/shared/constants/routes";
+import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 import { PvCatalogSymbol } from "./PvCatalogSymbol";
 import { PvCatalogOverviewInfo } from "./PvCatalogOverviewInfo";
 import "./pv-product-catalog.css";
@@ -395,6 +396,9 @@ export function PvProductCatalogPage() {
   const { canManage, canPublish } = useCanManagePv();
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
+  // Sidebar mở + ghim làm vùng nội dung hẹp lại; cột trạng thái chỉ cần nhãn
+  // ngắn để không xuống dòng. Thu gọn sidebar thì trả lại nhãn đầy đủ.
+  const sidebarPinned = useContext(PinnedSidebarContext);
   const [overviewOpen, setOverviewOpen] = useState(() => {
     try {
       return (
@@ -690,7 +694,9 @@ export function PvProductCatalogPage() {
     },
     {
       key: "published",
-      header: copy("Trạng thái hiển thị", "Visibility"),
+      header: sidebarPinned
+        ? copy("Trạng thái", "Status")
+        : copy("Trạng thái hiển thị", "Visibility"),
       width: "15%",
       sortType: "value",
       sortAccessor: (row) => Number(row.published),
