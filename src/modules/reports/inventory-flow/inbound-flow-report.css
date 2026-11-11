@@ -976,13 +976,13 @@
 .inbound-donut strong {
   color: var(--ops-heading);
   color: var(--ops-heading);
-  font-size: 34px;
+  font-size: 30px;
 }
 
 .inbound-donut small {
   color: var(--ops-muted);
   color: var(--ops-muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .inbound-progress-legend {
@@ -2281,7 +2281,7 @@
     height: auto;
   }
   .inbound-donut strong {
-    font-size: 28px;
+    font-size: 25px;
   }
   .inbound-progress-legend {
     max-width: none;
