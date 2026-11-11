@@ -13,8 +13,8 @@ import {
   UiTextField,
 } from "@/shared/ui";
 import {
+  FilterOutlined,
   PrinterOutlined,
-  ReloadOutlined,
   CheckCircleOutlined,
   WarningOutlined,
   UndoOutlined,
@@ -127,6 +127,7 @@ export default function PackingLabelPrintReport() {
   const [action, setAction] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [descending, setDescending] = useState(true);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
@@ -860,6 +861,27 @@ export default function PackingLabelPrintReport() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            className="hn-pkg-label__more-filters"
+            aria-expanded={filtersOpen}
+            aria-controls="packing-label-extra-filters"
+            onClick={() => setFiltersOpen((current) => !current)}
+          >
+            <FilterOutlined aria-hidden="true" />
+            {t("packingLabelReport.filterButton")}
+          </button>
+          {filtered && (
+            <UiButton appearance="outlined" onClick={clear}>
+              {t("packingLabelReport.clearFilters")}
+            </UiButton>
+          )}
+        </div>
+        <div
+          id="packing-label-extra-filters"
+          className="hn-pkg-label__extra-filters"
+          hidden={!filtersOpen}
+        >
           <select
             aria-label={t("packingLabelReport.operator")}
             value={actor}
@@ -883,11 +905,6 @@ export default function PackingLabelPrintReport() {
               {t("packingLabelReport.actionReprint")}
             </option>
           </select>
-          {filtered && (
-            <UiButton appearance="outlined" onClick={clear}>
-              {t("packingLabelReport.clearFilters")}
-            </UiButton>
-          )}
         </div>
         <div className="hn-pkg-label__scope">
           <span>
@@ -896,14 +913,6 @@ export default function PackingLabelPrintReport() {
               to: period.range[1].format("DD/MM/YYYY"),
             })}
           </span>
-          <UiButton
-            appearance="text"
-            startIcon={<ReloadOutlined />}
-            disabled={report.fetching || !online}
-            onClick={refresh}
-          >
-            {t("packingLabelReport.refresh")}
-          </UiButton>
         </div>
         {report.capped && (
           <UiAlert tone="warning">
@@ -944,12 +953,13 @@ export default function PackingLabelPrintReport() {
               >
                 <table className="hn-pkg-label__table">
                   <colgroup>
-                    {[22, 30, 18, 18, 12].map((width, i) => (
+                    {[6, 20, 28, 17, 17, 12].map((width, i) => (
                       <col key={i} style={{ width: width + "%" }} />
                     ))}
                   </colgroup>
                   <thead>
                     <tr>
+                      <th className="is-center">#</th>
                       <th>{t("packingLabelReport.colLabelOutbound")}</th>
                       <th>{t("packingLabelReport.colSkuRecipient")}</th>
                       <th aria-sort={descending ? "descending" : "ascending"}>
@@ -965,7 +975,7 @@ export default function PackingLabelPrintReport() {
                   <tbody>
                     {report.loading ? (
                       <tr>
-                        <td colSpan={5}>
+                        <td colSpan={6}>
                           <div className="hn-pkg-label__state" role="status">
                             {t("packingLabelReport.loading")}
                           </div>
@@ -973,7 +983,7 @@ export default function PackingLabelPrintReport() {
                       </tr>
                     ) : visibleRows.length === 0 ? (
                       <tr>
-                        <td colSpan={5}>
+                        <td colSpan={6}>
                           <div className="hn-pkg-label__state">
                             <PrinterOutlined />
                             <h2>
@@ -993,104 +1003,113 @@ export default function PackingLabelPrintReport() {
                         </td>
                       </tr>
                     ) : (
-                      visibleRows.map(({ target, label, latest, key }) => {
-                        const currentAttempts = report.events.filter(
-                          (e) => e.labelId === target.labelId,
-                        );
-                        const gate = printGate(
-                          label?.status || "",
-                          currentAttempts,
-                        );
-                        const allowed =
-                          gate.action === "REPRINT" ? canReprint : canPrint;
-                        return (
-                          <tr
-                            key={key}
-                            {...rowActivationProps(() =>
-                              openDetail(target, latest),
-                            )}
-                          >
-                            <td>
-                              <strong>{target.labelCode || "—"}</strong>
-                              <span>{target.outboundNo || "—"}</span>
-                            </td>
-                            <td>
-                              <strong>
-                                {label?.skuSummary ||
-                                  t("packingLabelReport.noSku")}
-                              </strong>
-                              <span>
-                                {label?.recipient ||
-                                  t("packingLabelReport.noRecipient")}
-                              </span>
-                            </td>
-                            <td>
-                              {latest?.attemptedAt
-                                ? formatDateTime(latest.attemptedAt)
-                                : t("packingLabelReport.noAttempts")}
-                              <span>
-                                {latest
-                                  ? latest.action === "REPRINT"
-                                    ? t("packingLabelReport.reprint")
-                                    : t("packingLabelReport.firstPrintRetry")
-                                  : t("packingLabelReport.awaitingFirstPrint")}
-                              </span>
-                            </td>
-                            <td>
-                              {latest ? (
-                                <PrintStatus result={latest.result} />
-                              ) : (
-                                <span className="hn-pkg-label__status is-neutral">
-                                  {LABEL_SNAPSHOT_STATUS_LABELS[
-                                    label?.status || ""
-                                  ] || t("packingLabelReport.unprinted")}
-                                </span>
+                      visibleRows.map(
+                        ({ target, label, latest, key }, index) => {
+                          const currentAttempts = report.events.filter(
+                            (e) => e.labelId === target.labelId,
+                          );
+                          const gate = printGate(
+                            label?.status || "",
+                            currentAttempts,
+                          );
+                          const allowed =
+                            gate.action === "REPRINT" ? canReprint : canPrint;
+                          return (
+                            <tr
+                              key={key}
+                              {...rowActivationProps(() =>
+                                openDetail(target, latest),
                               )}
-                              {latest && failureText(latest) && (
-                                <span className="hn-pkg-label__reason">
-                                  {failureText(latest)}
+                            >
+                              <td className="is-center">
+                                {(safePage - 1) * pageSize + index + 1}
+                              </td>
+                              <td>
+                                <strong>{target.labelCode || "—"}</strong>
+                                <span>{target.outboundNo || "—"}</span>
+                              </td>
+                              <td>
+                                <strong>
+                                  {label?.skuSummary ||
+                                    t("packingLabelReport.noSku")}
+                                </strong>
+                                <span>
+                                  {label?.recipient ||
+                                    t("packingLabelReport.noRecipient")}
                                 </span>
-                              )}
-                            </td>
-                            <td>
-                              <RowActionGroup>
-                                <RowActionButton
-                                  kind="view"
-                                  aria-label={t(
-                                    "packingLabelReport.viewDetails",
-                                    { code: target.labelCode },
-                                  )}
-                                  onClick={() => openDetail(target, latest)}
-                                >
-                                  {t("packingLabelReport.details")}
-                                </RowActionButton>
-                                {gate.action && allowed && (
-                                  <RowActionButton
-                                    kind="print"
-                                    disabled={
-                                      busy || Boolean(uncertain) || !online
-                                    }
-                                    onClick={() => void preparePrint(target)}
-                                  >
-                                    {gate.action === "REPRINT"
+                              </td>
+                              <td>
+                                {latest?.attemptedAt
+                                  ? formatDateTime(latest.attemptedAt)
+                                  : t("packingLabelReport.noAttempts")}
+                                <span>
+                                  {latest
+                                    ? latest.action === "REPRINT"
                                       ? t("packingLabelReport.reprint")
-                                      : t("packingLabelReport.printLabel")}
+                                      : t("packingLabelReport.firstPrintRetry")
+                                    : t(
+                                        "packingLabelReport.awaitingFirstPrint",
+                                      )}
+                                </span>
+                              </td>
+                              <td>
+                                {latest ? (
+                                  <PrintStatus result={latest.result} />
+                                ) : (
+                                  <span className="hn-pkg-label__status is-neutral">
+                                    {LABEL_SNAPSHOT_STATUS_LABELS[
+                                      label?.status || ""
+                                    ] || t("packingLabelReport.unprinted")}
+                                  </span>
+                                )}
+                                {latest && failureText(latest) && (
+                                  <span className="hn-pkg-label__reason">
+                                    {failureText(latest)}
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                <RowActionGroup>
+                                  <RowActionButton
+                                    kind="view"
+                                    aria-label={t(
+                                      "packingLabelReport.viewDetails",
+                                      { code: target.labelCode },
+                                    )}
+                                    onClick={() => openDetail(target, latest)}
+                                  >
+                                    {t("packingLabelReport.details")}
                                   </RowActionButton>
-                                )}
-                                {!gate.action && (
-                                  <small>
-                                    {currentAttempts.some(
-                                      (e) => e.result === "PENDING_PRINT",
-                                    )
-                                      ? t("packingLabelReport.awaitingResponse")
-                                      : t("packingLabelReport.notReady")}
-                                  </small>
-                                )}
-                              </RowActionGroup>
-                            </td>
-                          </tr>
-                        );
-                      })
+                                  {gate.action && allowed && (
+                                    <RowActionButton
+                                      kind="print"
+                                      disabled={
+                                        busy || Boolean(uncertain) || !online
+                                      }
+                                      onClick={() => void preparePrint(target)}
+                                    >
+                                      {gate.action === "REPRINT"
+                                        ? t("packingLabelReport.reprint")
+                                        : t("packingLabelReport.printLabel")}
+                                    </RowActionButton>
+                                  )}
+                                  {!gate.action && (
+                                    <small>
+                                      {currentAttempts.some(
+                                        (e) => e.result === "PENDING_PRINT",
+                                      )
+                                        ? t(
+                                            "packingLabelReport.awaitingResponse",
+                                          )
+                                        : t("packingLabelReport.notReady")}
+                                    </small>
+                                  )}
+                                </RowActionGroup>
+                              </td>
+                            </tr>
+                          );
+                        },
+                      )
                     )}
                   </tbody>
                 </table>

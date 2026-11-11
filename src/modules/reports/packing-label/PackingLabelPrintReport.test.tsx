@@ -294,18 +294,33 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(screen.getByRole("combobox", { name: "Printer" })).toHaveTextContent(
       "Printer: All",
     );
+    const filtersButton = screen.getByRole("button", { name: "Filters" });
+    expect(filtersButton).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("combobox", { name: "Operator" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: "Print attempt type" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Label creation period:.*Vietnam time/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Refresh" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(filtersButton);
+    expect(filtersButton).toHaveAttribute("aria-expanded", "true");
     expect(
       screen.getByRole("combobox", { name: "Operator" }),
     ).toHaveTextContent("Printed by: All");
     expect(
       screen.getByRole("combobox", { name: "Print attempt type" }),
     ).toHaveTextContent("Attempt type: First print / retry");
-    expect(
-      screen.getByText(/Label creation period:.*Vietnam time/),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Refresh" })).toBeInTheDocument();
+
     const table = screen.getByRole("table");
     for (const name of [
+      "#",
       "Label / Outbound",
       "SKU / Recipient",
       "Time ↓",
@@ -316,6 +331,8 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
         within(table).getByRole("columnheader", { name }),
       ).toBeInTheDocument();
     }
+    const bodyRows = within(table).getAllByRole("row").slice(1);
+    expect(within(bodyRows[0]).getAllByRole("cell")[0]).toHaveTextContent("1");
     expect(within(table).getByText("Print failed")).toBeInTheDocument();
     expect(within(table).getAllByText("First print / retry")).toHaveLength(3);
     expect(within(table).getAllByText("Đại lý An Phát")).toHaveLength(2);
@@ -422,7 +439,7 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     ).toBeInTheDocument();
 
     const table = await screen.findByRole("table");
-    expect(within(table).getAllByRole("columnheader")).toHaveLength(5);
+    expect(within(table).getAllByRole("columnheader")).toHaveLength(6);
     for (const name of ["Máy in / Người in", "Lượt in"]) {
       expect(
         within(table).queryByRole("columnheader", { name }),

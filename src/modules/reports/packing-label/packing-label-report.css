@@ -242,6 +242,45 @@
 .hn-pkg-label__filters > .MuiButton-root {
   min-height: 48px;
 }
+.hn-pkg-label__more-filters {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-surface);
+  color: var(--ops-heading);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hn-pkg-label__more-filters:hover,
+.hn-pkg-label__more-filters[aria-expanded="true"] {
+  border-color: var(--ops-link);
+  background: var(--ops-pale);
+}
+.hn-pkg-label__more-filters > svg {
+  width: 18px;
+  height: 18px;
+}
+.hn-pkg-label__extra-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.hn-pkg-label__extra-filters[hidden] {
+  display: none;
+}
+.hn-pkg-label__extra-filters > select {
+  flex: 1 1 200px;
+  width: 200px;
+}
 .hn-pkg-label select,
 .hn-pkg-label__form-label select,
 .hn-label-detail select {
