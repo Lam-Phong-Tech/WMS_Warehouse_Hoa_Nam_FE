@@ -34,6 +34,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTextField,
+  useMediaQuery,
 } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { SearchInput } from "@/shared/components";
@@ -397,8 +398,11 @@ export function PvProductCatalogPage() {
   const language = useLanguageStore((state) => state.language);
   const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
   // Sidebar mở + ghim làm vùng nội dung hẹp lại; cột trạng thái chỉ cần nhãn
-  // ngắn để không xuống dòng. Thu gọn sidebar thì trả lại nhãn đầy đủ.
+  // ngắn để không xuống dòng. Tablet cũng dùng nhãn ngắn vì sidebar luôn ở
+  // dạng drawer; desktop thu gọn sidebar vẫn giữ nhãn đầy đủ.
   const sidebarPinned = useContext(PinnedSidebarContext);
+  const isTablet = useMediaQuery("(max-width: 979.98px)");
+  const compactStatusHeader = sidebarPinned || isTablet;
   const [overviewOpen, setOverviewOpen] = useState(() => {
     try {
       return (
@@ -694,7 +698,7 @@ export function PvProductCatalogPage() {
     },
     {
       key: "published",
-      header: sidebarPinned
+      header: compactStatusHeader
         ? copy("Trạng thái", "Status")
         : copy("Trạng thái hiển thị", "Visibility"),
       width: "15%",

@@ -137,6 +137,35 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("uses the compact header on tablet widths even when the sidebar is not pinned", async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("max-width") && query.includes("979.98"),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+
+    try {
+      signInWith(["pv.master.manage", "pv.publish"]);
+      renderWithProviders(
+        <PinnedSidebarContext.Provider value={false}>
+          <PvProductCatalogPage />
+        </PinnedSidebarContext.Provider>,
+      );
+      await screen.findByRole("table");
+      expect(
+        screen.getByRole("columnheader", { name: "Trạng thái" }),
+      ).toBeInTheDocument();
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+
   it.each([false, true])(
     "caps name at 255 and description at 500 characters (editing: %s)",
     async (editing) => {
