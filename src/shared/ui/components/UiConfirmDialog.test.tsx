@@ -43,6 +43,9 @@ describe("UiConfirmDialog", () => {
         onClose={onClose}
       />,
     );
+    expect(screen.getByRole("button", { name: "Hủy" }).className).toMatch(
+      /Error/,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Hủy" }));

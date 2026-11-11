@@ -1,6 +1,7 @@
 /**
  * Foundation Confirm dialog — hộp thoại xác nhận controlled, dựng trên
  * UiDialog + UiButton. tone="danger" cho hành động phá huỷ (nút xác nhận đỏ).
+ * Nút Hủy luôn dùng chữ đỏ ngữ nghĩa ở cả hai theme, bề mặt trong suốt.
  */
 import type { ReactNode } from "react";
 import Box from "@mui/material/Box";
@@ -47,9 +48,10 @@ export function UiConfirmDialog({
         <>
           <UiButton
             appearance="text"
-            color="secondary"
+            color="error"
             disabled={loading}
             onClick={onClose}
+            sx={{ color: "var(--wms-error-text)" }}
           >
             {resolvedCancelText}
           </UiButton>

@@ -1784,7 +1784,7 @@ export function InboundScanModal({
         actions={
           <>
             <ActionButton
-              kind="back"
+              kind="cancel"
               disabled={busy}
               onClick={() => setPendingNewSku(null)}
             >

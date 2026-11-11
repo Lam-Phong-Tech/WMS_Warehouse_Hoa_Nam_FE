@@ -1254,8 +1254,14 @@ export default function PackingLabelPrintReport() {
           <>
             <UiButton
               appearance="outlined"
+              color="error"
               disabled={busy}
               onClick={() => setPrintContext(null)}
+              sx={{
+                color: "var(--wms-error-text)",
+                borderColor: "var(--wms-border-input)",
+                "&:hover": { borderColor: "var(--wms-border-input)" },
+              }}
             >
               {t("packingLabelReport.cancel")}
             </UiButton>

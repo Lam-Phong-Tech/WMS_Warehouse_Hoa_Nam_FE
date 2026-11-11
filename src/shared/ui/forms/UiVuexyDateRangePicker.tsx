@@ -646,7 +646,7 @@ export function UiVuexyDateRangePicker({
               type="button"
               data-date-action="cancel"
               onClick={closePicker}
-              sx={footerButtonSx}
+              sx={cancelFooterButtonSx}
             >
               {t("shared.actions.cancel")}
             </Box>
@@ -823,6 +823,12 @@ const footerButtonSx = {
   fontWeight: 600,
   cursor: "pointer",
   "&:hover": { bgcolor: S.primarySoft },
+} as const;
+
+const cancelFooterButtonSx = {
+  ...footerButtonSx,
+  color: S.errorText,
+  "&:hover": { bgcolor: S.primarySoft, color: S.errorText },
 } as const;
 
 const primaryFooterButtonSx = {

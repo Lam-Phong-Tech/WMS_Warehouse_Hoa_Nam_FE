@@ -1228,7 +1228,12 @@ export default function GoodsTraceReport() {
             <p>Định dạng: Excel (.xlsx)</p>
             {exportError && <p role="alert">{exportError}</p>}
             <footer>
-              <button onClick={() => setExportOpen(false)}>Hủy</button>
+              <button
+                className="goods-trace-cancel"
+                onClick={() => setExportOpen(false)}
+              >
+                Hủy
+              </button>
               <button
                 className="goods-trace-primary"
                 disabled={

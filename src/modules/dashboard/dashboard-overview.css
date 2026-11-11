@@ -3623,6 +3623,9 @@
   color: var(--hnd-info-fg);
   font-weight: 700;
 }
+.snapshot-custom-dialog footer button.snapshot-cancel-button {
+  color: var(--ops-danger-text);
+}
 .snapshot-custom-dialog footer button:disabled {
   opacity: 0.5;
   cursor: not-allowed;

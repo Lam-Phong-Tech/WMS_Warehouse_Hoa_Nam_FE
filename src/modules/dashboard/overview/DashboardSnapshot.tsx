@@ -957,6 +957,7 @@ export function DashboardSnapshot({
               <div>
                 <button
                   type="button"
+                  className="snapshot-cancel-button"
                   onClick={() => {
                     setCustomOpen(false);
                     setRangePickMode("from");

@@ -186,6 +186,8 @@ Form dùng label phía trên control; placeholder chỉ gợi ý. Nhãn bắt bu
 
 Chỉ một primary cho quyết định chính của vùng. Nút đang xử lý giữ kích thước, có spinner/nhãn phù hợp và chặn gửi lặp. Hành động nguy hiểm tách khỏi hành động chính và cần confirm. Nếu nút disabled, lý do phải đọc được ở gần đó. Giữ hành động quan trọng hiển thị bằng chữ; icon-only chỉ dùng khi ý nghĩa đã quen thuộc và có `aria-label`.
 
+Nút/chữ **Hủy** dùng `--wms-error-text` (đỏ) ở cả light và dark, kể cả trong dialog, drawer, bộ chọn ngày và bảng. Giữ bề mặt tonal trung tính cho nút Hủy để không tranh vai với hành động phá huỷ; không dùng màu link/neutral cho chữ Hủy.
+
 ### Tệp nhập liệu và thông báo lỗi
 
 - Kiểm tra định dạng/dung lượng ngay khi chọn tệp, trước khi đọc nội dung, tính mã kiểm tra hoặc tạo yêu cầu tải lên. Đợi hạn mức bất đồng bộ và kiểm tra lại khi hạn mức thay đổi; trước lần gửi thật cũng kiểm tra lại. Dùng giới hạn byte/KB chính xác do máy chủ công bố, không lấy số MB đã làm tròn để chặn tệp. Thông báo quá dung lượng: **“File quá lớn. Tối đa X MB”**, X lấy từ cùng giới hạn đang áp dụng.

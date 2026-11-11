@@ -4,6 +4,7 @@ import { ACTION_KINDS, actionColor, type ActionKind } from "./action-kinds";
 import {
   ACTION_APPEARANCE_DEFAULT,
   actionSurfaceSx,
+  actionTonalText,
   type ActionAppearance,
 } from "./action-surface";
 import {
@@ -90,6 +91,7 @@ export function ActionButton({
   children,
   disabled,
   title,
+  style,
   "aria-label": ariaLabel,
   "data-testid": dataTestId,
   "data-ui-state": dataUiState,
@@ -145,10 +147,17 @@ export function ActionButton({
   ) : (
     (icon ?? defaultIcon)
   );
+  // Inline style thắng các lớp nút phụ theo màn (settings/defect/agency) mà
+  // không cần !important; nút khóa vẫn nhận màu disabled của MUI.
+  const cancelStyle =
+    kind === "cancel" && !disabled && !isButtonDisabled && !loading
+      ? { color: "var(--wms-error-text)" }
+      : undefined;
 
   return (
     <Button
       {...buttonProps}
+      style={{ ...(cancelStyle ?? {}), ...(style ?? {}) }}
       data-action-kind={kind}
       data-action-tone={spec.tone}
       data-action-appearance={appearance}
@@ -173,6 +182,8 @@ export function ActionButton({
           whiteSpace: "nowrap",
           minWidth: iconOnly ? 0 : undefined,
           ...(tonal ? actionSurfaceSx(kind) : null),
+          // Chữ Hủy luôn đỏ, kể cả khi màn chọn bề mặt `flat` (tonal đã tự đỏ).
+          ...(kind === "cancel" ? { color: actionTonalText("cancel") } : null),
         },
         ...(Array.isArray(buttonProps.sx)
           ? buttonProps.sx

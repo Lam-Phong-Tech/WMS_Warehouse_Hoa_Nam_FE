@@ -53,6 +53,12 @@
 .goods-trace-report button:hover {
   background: var(--ops-pale);
 }
+.goods-trace-report button.goods-trace-cancel {
+  color: var(--ops-danger-text);
+}
+.goods-trace-report button.goods-trace-cancel:hover {
+  background: var(--ops-danger-soft);
+}
 .goods-trace-report button:disabled {
   opacity: 0.5;
   cursor: not-allowed;

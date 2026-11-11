@@ -667,7 +667,12 @@ export default function FoundationCatalogPage() {
           title={t("catalog.overlays.dialogTitle")}
           actions={
             <>
-              <UiButton appearance="text" onClick={() => setDialogOpen(false)}>
+              <UiButton
+                appearance="text"
+                color="error"
+                onClick={() => setDialogOpen(false)}
+                sx={{ color: "var(--wms-error-text)" }}
+              >
                 {t("catalog.overlays.cancel")}
               </UiButton>
               <UiButton onClick={() => setDialogOpen(false)}>

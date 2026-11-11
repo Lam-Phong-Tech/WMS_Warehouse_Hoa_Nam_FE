@@ -35,6 +35,7 @@ export function ActionIconButton({
   label,
   appearance = ACTION_APPEARANCE_DEFAULT,
   title,
+  style,
   "aria-label": ariaLabel,
   ...iconButtonProps
 }: ActionIconButtonProps) {
@@ -52,6 +53,12 @@ export function ActionIconButton({
       size="small"
       title={title ?? text}
       aria-label={ariaLabel ?? text}
+      style={{
+        ...(kind === "cancel" && !iconButtonProps.disabled
+          ? { color: "var(--wms-error-text)" }
+          : {}),
+        ...(style ?? {}),
+      }}
       sx={{
         ...(tonal ? actionSurfaceSx(kind) : null),
         ...iconButtonProps.sx,

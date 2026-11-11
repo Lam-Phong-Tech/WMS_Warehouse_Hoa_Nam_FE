@@ -74,14 +74,19 @@ export function actionTonalText(kind: ActionKind): string {
 // object literal thì spread hợp lệ.
 export function actionSurfaceSx(kind: ActionKind) {
   const tone = ACTION_ICON_COLORS[ACTION_KINDS[kind].tone];
+  // "Hủy" giữ bề mặt trung tính như trước nhưng chữ đổi sang đỏ ngữ nghĩa —
+  // yêu cầu người dùng 12/11/2026: mọi chữ Hủy cùng một màu đỏ ở cả hai theme.
+  // Chỉ đổi màu nền cho các tông danger khác (Xóa, Từ chối, Khóa...).
+  const surfaceTone =
+    kind === "cancel" ? ACTION_ICON_COLORS.neutral : tone;
   return {
     color: actionTonalText(kind),
     border: kind === "reset" ? "1px solid var(--ops-line)" : 0,
     borderRadius: `${SURFACE.radius}px`,
-    backgroundColor: tint(tone, SURFACE.fill),
+    backgroundColor: tint(surfaceTone, SURFACE.fill),
     boxShadow: "none",
     "&:hover": {
-      backgroundColor: tint(tone, SURFACE.fillHover),
+      backgroundColor: tint(surfaceTone, SURFACE.fillHover),
       boxShadow: "none",
     },
     // Nút bị khoá (thiếu quyền hoặc đang gửi) bỏ hẳn màu nghiệp vụ — nếu không

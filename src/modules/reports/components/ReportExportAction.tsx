@@ -172,7 +172,17 @@ export function ReportExportDrawer({
       }
       actions={
         <div className="hn-report-export-actions">
-          <UiButton appearance="outlined" onClick={close} disabled={busy}>
+          <UiButton
+            appearance="outlined"
+            color="error"
+            onClick={close}
+            disabled={busy}
+            sx={{
+              color: "var(--wms-error-text)",
+              borderColor: "var(--wms-border-input)",
+              "&:hover": { borderColor: "var(--wms-border-input)" },
+            }}
+          >
             {t("reportExport.cancel")}
           </UiButton>
           <UiButton

@@ -24,6 +24,10 @@ describe("dismiss buttons", () => {
       );
       const footer = screen.getByRole("button", { name: "Hủy" });
       const header = screen.getByRole("button", { name: "Đóng hộp thoại" });
+      expect(footer).toHaveAttribute(
+        "data-action-tone",
+        kind === "cancel" ? "danger" : "neutral",
+      );
       expect(footer.querySelector(".MuiButton-startIcon")).toBeNull();
       expect(
         header.querySelector(`.${ICON_FAMILY.prefix}-cross`),

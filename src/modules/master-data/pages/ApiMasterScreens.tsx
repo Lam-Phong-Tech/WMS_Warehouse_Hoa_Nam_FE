@@ -3902,7 +3902,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               {copy("Bỏ thay đổi", "Discard changes")}
             </ActionButton>
             <ActionButton
-              kind="cancel"
+              kind="back"
               icon={<span />}
               className="hn-defect-primary"
               autoFocus
