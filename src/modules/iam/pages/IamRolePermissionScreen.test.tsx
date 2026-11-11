@@ -238,6 +238,9 @@ describe("IamRolePermissionScreen", () => {
       container.querySelector(".hn-iam-permission-cell"),
     ).toBeInTheDocument();
     expect(screen.queryByText("inbound.create")).not.toBeInTheDocument();
+    // Badge loại vai trò chỉ còn cho vai trò hệ thống; vai trò tùy chỉnh không
+    // cần nhãn lặp lại bên cạnh tên.
+    expect(screen.queryByText("Vai trò tùy chỉnh")).not.toBeInTheDocument();
     expect(
       container.querySelector(".hn-iam-matrix-table"),
     ).not.toBeInTheDocument();
@@ -250,8 +253,8 @@ describe("IamRolePermissionScreen", () => {
       }),
     ).toBeDisabled();
     expect(
-      screen.getByRole("checkbox", { name: "Quyền cũ (legacy.manage)" }),
-    ).toBeDisabled();
+      screen.queryByRole("checkbox", { name: "Quyền cũ (legacy.manage)" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("checkbox", {
         name: "Ghi sổ phiếu nhập (inbound.post)",
@@ -315,9 +318,6 @@ describe("IamRolePermissionScreen", () => {
       screen.getByRole("checkbox", {
         name: "Ghi sổ phiếu nhập (inbound.post)",
       }),
-    ).toBeChecked();
-    expect(
-      screen.getByRole("checkbox", { name: "Quyền cũ (legacy.manage)" }),
     ).toBeChecked();
   });
 

@@ -335,11 +335,12 @@ export function IamRolePermissionScreen({
     () =>
       permissions.filter(
         (permission) =>
-          !permissionSearch.trim() ||
-          [permission.permission_name, permission.permission_key]
-            .join(" ")
-            .toLocaleLowerCase()
-            .includes(permissionSearch.trim().toLocaleLowerCase()),
+          permission.is_enforced !== false &&
+          (!permissionSearch.trim() ||
+            [permission.permission_name, permission.permission_key]
+              .join(" ")
+              .toLocaleLowerCase()
+              .includes(permissionSearch.trim().toLocaleLowerCase())),
       ),
     [permissionSearch, permissions],
   );
@@ -964,14 +965,12 @@ export function IamRolePermissionScreen({
               <header className="hn-iam-role-selected-header">
                 <div>
                   <h2>{selectedRole.role_name}</h2>
-                  <UiStatusBadge
-                    tone="neutral"
-                    label={t(
-                      isSystemRole(selectedRole)
-                        ? "iam.roleUi.roleTypeSystem"
-                        : "iam.roleUi.roleTypeCustom",
-                    )}
-                  />
+                  {isSystemRole(selectedRole) ? (
+                    <UiStatusBadge
+                      tone="neutral"
+                      label={t("iam.roleUi.roleTypeSystem")}
+                    />
+                  ) : null}
                   <button
                     className="hn-iam-role-member-link"
                     type="button"
