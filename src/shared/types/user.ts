@@ -3,6 +3,9 @@ export interface UserRoleAssignment {
   role_code: string;
   role_name: string;
   scope_ref?: string | null;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  reason?: "EXPIRED" | "NOT_YET_EFFECTIVE" | null;
 }
 
 export interface User {
@@ -23,6 +26,7 @@ export interface User {
   last_login_at?: string | null;
   status?: string;
   roles?: UserRoleAssignment[];
+  inactive_roles?: UserRoleAssignment[];
   permissions?: string[];
   warehouse_scope_ids?: string[];
 }

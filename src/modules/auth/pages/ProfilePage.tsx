@@ -15,7 +15,8 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useT } from "@/shared/i18n/useT";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { WMS_PERMISSION_CATALOG as P } from "@/shared/constants/wms-permissions";
-import { formatDateTime } from "@/shared/utils/format-date";
+import { EMPTY_TEXT } from "@/shared/constants/display";
+import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { profileService } from "../services/profile.service";
 import { authService } from "../services/auth.service";
@@ -448,15 +449,62 @@ export function ProfilePage() {
                     </span>
                   </div>
                   <div className="hn-personal-role-list">
-                    {me.roles.length ? (
-                      me.roles.map((role) => (
-                        <article
-                          key={`${role.role_id}:${role.scope_ref || ""}`}
-                        >
-                          <strong>{role.role_name}</strong>
-                          <span>{scopeName(role.scope_ref)}</span>
-                        </article>
-                      ))
+                    {me.roles.length || me.inactive_roles?.length ? (
+                      <>
+                        {me.roles.map((role) => {
+                          const hasWindow =
+                            Boolean(role.effective_from) ||
+                            Boolean(role.effective_to);
+                          const windowLabel = hasWindow
+                            ? `${role.effective_from ? formatDate(role.effective_from) : EMPTY_TEXT} → ${role.effective_to ? formatDate(role.effective_to) : EMPTY_TEXT}`
+                            : t("auth.personal.roleUnlimited");
+                          return (
+                            <article
+                              key={`${role.role_id}:${role.scope_ref || ""}`}
+                            >
+                              <strong>{role.role_name}</strong>
+                              <span>{scopeName(role.scope_ref)}</span>
+                              <small className="hn-personal-muted">
+                                {t("auth.personal.roleValidity", {
+                                  window: windowLabel,
+                                })}
+                              </small>
+                            </article>
+                          );
+                        })}
+                        {(me.inactive_roles ?? []).map((role) => {
+                          const hasWindow =
+                            Boolean(role.effective_from) ||
+                            Boolean(role.effective_to);
+                          const windowLabel = hasWindow
+                            ? `${role.effective_from ? formatDate(role.effective_from) : EMPTY_TEXT} → ${role.effective_to ? formatDate(role.effective_to) : EMPTY_TEXT}`
+                            : t("auth.personal.roleUnlimited");
+                          const isExpired = role.reason === "EXPIRED";
+                          return (
+                            <article
+                              key={`inactive:${role.role_id}:${role.scope_ref || ""}`}
+                            >
+                              <div>
+                                <strong>{role.role_name}</strong>{" "}
+                                <UiStatusBadge
+                                  tone={isExpired ? "error" : "warning"}
+                                  label={
+                                    isExpired
+                                      ? t("auth.personal.roleExpired")
+                                      : t("auth.personal.roleNotYetEffective")
+                                  }
+                                />
+                              </div>
+                              <span>{scopeName(role.scope_ref)}</span>
+                              <small className="hn-personal-muted">
+                                {t("auth.personal.roleValidity", {
+                                  window: windowLabel,
+                                })}
+                              </small>
+                            </article>
+                          );
+                        })}
+                      </>
                     ) : (
                       <p className="hn-personal-muted">
                         {t("auth.personal.unknown")}

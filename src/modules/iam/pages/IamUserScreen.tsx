@@ -62,7 +62,11 @@ import {
   businessLabel,
 } from "@/shared/constants/business-labels";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { formatDate, formatDateTime } from "@/shared/utils/format-date";
+import {
+  formatDate,
+  formatDateTime,
+  parseDateTime,
+} from "@/shared/utils/format-date";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import {
   ActionButton,
@@ -204,6 +208,13 @@ function scopeLabel(
   if (role.scope_type === "WAREHOUSE") return t("iam.user.allWarehouses");
   if (role.scope_type === "FUNCTION") return t("iam.user.scopeFunction");
   return t("iam.user.scopeSystem");
+}
+
+function toDateInputValue(value?: string | null): string {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parsed = parseDateTime(value);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD") : value.slice(0, 10);
 }
 
 function effectiveWindowLabel(pivot: IamRolePivot | undefined, t: TranslateFn) {
@@ -608,8 +619,8 @@ export function IamUserScreen({
         .slice(1)
         .map((role) => role.role_id),
       scopeRef: primaryRole?.pivot?.scope_ref ?? "",
-      effectiveFrom: primaryRole?.pivot?.effective_from?.slice(0, 10) ?? "",
-      effectiveTo: primaryRole?.pivot?.effective_to?.slice(0, 10) ?? "",
+      effectiveFrom: toDateInputValue(primaryRole?.pivot?.effective_from),
+      effectiveTo: toDateInputValue(primaryRole?.pivot?.effective_to),
       status: user.status,
       password: "",
       reason: "",
@@ -810,9 +821,9 @@ export function IamUserScreen({
                 role_id: currentRole.role_id,
                 scope_ref: currentRole.pivot?.scope_ref ?? null,
                 effective_from:
-                  currentRole.pivot?.effective_from?.slice(0, 10) ?? null,
+                  toDateInputValue(currentRole.pivot?.effective_from) || null,
                 effective_to:
-                  currentRole.pivot?.effective_to?.slice(0, 10) ?? null,
+                  toDateInputValue(currentRole.pivot?.effective_to) || null,
               }
             : undefined,
           payload: {
@@ -1100,6 +1111,16 @@ export function IamUserScreen({
                           {t("iam.userUi.extraRoleCount", {
                             count: (user.roles?.length ?? 1) - 1,
                           })}
+                        </span>
+                      ) : null}
+                      {user.roles?.[0]?.pivot?.effective_from ||
+                      user.roles?.[0]?.pivot?.effective_to ? (
+                        <span
+                          className="muted"
+                          style={{ display: "block", fontSize: 12 }}
+                        >
+                          {t("iam.user.colValidity")}:{" "}
+                          {effectiveWindowLabel(user.roles[0].pivot, t)}
                         </span>
                       ) : null}
                     </td>
@@ -1511,6 +1532,16 @@ export function IamUserScreen({
                         ? warehouseNames.get(formState.scopeRef) ||
                           t("iam.user.unknownWarehouse")
                         : t("iam.user.scopeAllSystem"),
+                    },
+                    {
+                      label: t("iam.user.colValidity"),
+                      value: effectiveWindowLabel(
+                        {
+                          effective_from: formState.effectiveFrom || null,
+                          effective_to: formState.effectiveTo || null,
+                        },
+                        t,
+                      ),
                     },
                     {
                       label: t("iam.user.colStatus"),

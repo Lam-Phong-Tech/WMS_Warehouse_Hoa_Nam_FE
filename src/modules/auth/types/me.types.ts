@@ -31,6 +31,9 @@ export interface MeRoleAssignment {
   role_code: string;
   role_name: string;
   scope_ref?: string | null;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  reason?: "EXPIRED" | "NOT_YET_EFFECTIVE" | null;
 }
 
 /** GET /api/v1/auth/me — contract theo BE branch m1. */
@@ -52,6 +55,7 @@ export interface MeResponse {
   status?: string;
   version?: number;
   roles: MeRoleAssignment[];
+  inactive_roles?: MeRoleAssignment[];
   permissions: string[];
   warehouse_scope_ids: string[];
 

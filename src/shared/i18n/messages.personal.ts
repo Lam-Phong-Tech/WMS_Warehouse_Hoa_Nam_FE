@@ -206,6 +206,10 @@ export const PERSONAL_VI = {
   trustedDevicesIdentityNote:
     "Danh tính thiết bị do trình duyệt khai báo và được xác minh bằng cookie bảo mật; không phải nhận diện phần cứng vật lý.",
   trustedDevicesLoadError: "Chưa tải được danh sách thiết bị tin cậy.",
+  roleValidity: "Hiệu lực: {window}",
+  roleUnlimited: "Không giới hạn",
+  roleExpired: "Đã hết hạn",
+  roleNotYetEffective: "Chưa tới ngày hiệu lực",
 } as const;
 
 export const PERSONAL_EN = {
@@ -417,4 +421,8 @@ export const PERSONAL_EN = {
   trustedDevicesIdentityNote:
     "Device identity is declared by the browser and verified by a secure cookie, not physical hardware attestation.",
   trustedDevicesLoadError: "Could not load trusted devices.",
+  roleValidity: "Validity: {window}",
+  roleUnlimited: "Unlimited",
+  roleExpired: "Expired",
+  roleNotYetEffective: "Not yet effective",
 } as const;

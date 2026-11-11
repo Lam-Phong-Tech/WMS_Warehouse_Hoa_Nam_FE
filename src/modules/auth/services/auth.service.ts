@@ -43,6 +43,7 @@ type BackendUser = Partial<User> & {
   username?: string;
   display_name?: string;
   roles?: UserRoleAssignment[];
+  inactive_roles?: UserRoleAssignment[];
   permissions?: string[];
   warehouse_scope_ids?: string[];
 };
@@ -110,17 +111,36 @@ function normalizeRoles(value: unknown): UserRoleAssignment[] {
     ) {
       return [];
     }
-    return [
-      {
-        role_id: role.role_id,
-        role_code: role.role_code,
-        role_name: role.role_name,
-        scope_ref:
-          typeof role.scope_ref === "string" && role.scope_ref.trim() !== ""
-            ? role.scope_ref
-            : null,
-      },
-    ];
+    const normalized: UserRoleAssignment = {
+      role_id: role.role_id,
+      role_code: role.role_code,
+      role_name: role.role_name,
+      scope_ref:
+        typeof role.scope_ref === "string" && role.scope_ref.trim() !== ""
+          ? role.scope_ref
+          : null,
+    };
+    if (role.effective_from !== undefined) {
+      normalized.effective_from =
+        typeof role.effective_from === "string" &&
+        role.effective_from.trim() !== ""
+          ? role.effective_from
+          : null;
+    }
+    if (role.effective_to !== undefined) {
+      normalized.effective_to =
+        typeof role.effective_to === "string" && role.effective_to.trim() !== ""
+          ? role.effective_to
+          : null;
+    }
+    if (
+      role.reason === "EXPIRED" ||
+      role.reason === "NOT_YET_EFFECTIVE" ||
+      role.reason === null
+    ) {
+      normalized.reason = role.reason;
+    }
+    return [normalized];
   });
 }
 
@@ -134,6 +154,7 @@ function normalizeUser(input: BackendUser | undefined): User {
   const identity = input.email ?? input.username;
   requireNonEmptyString(identity, "user.email_or_username");
   const roles = normalizeRoles(input.roles);
+  const inactiveRoles = normalizeRoles(input.inactive_roles);
   const permissions = normalizeStringArray(input.permissions);
   const warehouseScopeIds = normalizeStringArray(input.warehouse_scope_ids);
 
@@ -147,6 +168,9 @@ function normalizeUser(input: BackendUser | undefined): User {
     email: input.email ?? input.username ?? "",
     code: input.code ?? input.username ?? input.user_id ?? String(id),
     roles,
+    ...(Array.isArray(input.inactive_roles)
+      ? { inactive_roles: inactiveRoles }
+      : {}),
     permissions,
     warehouse_scope_ids: warehouseScopeIds,
   };
@@ -234,6 +258,7 @@ function normalizeLoginResponse(data: BackendLoginResponse): LoginResponse {
 export function normalizeMeResponse(data: BackendMeResponse): MeResponse {
   const user = normalizeUser(data);
   const roles = user.roles ?? [];
+  const inactiveRoles = user.inactive_roles ?? [];
   const permissions = user.permissions ?? [];
   const warehouseScopeIds = user.warehouse_scope_ids ?? [];
   const availableContexts = deriveContexts(user, permissions);
@@ -252,6 +277,9 @@ export function normalizeMeResponse(data: BackendMeResponse): MeResponse {
     avatar: data.avatar ?? null,
     last_login_at: data.last_login_at ?? null,
     roles,
+    ...(Array.isArray(data.inactive_roles)
+      ? { inactive_roles: inactiveRoles }
+      : {}),
     permissions,
     warehouse_scope_ids: warehouseScopeIds,
     phone: data.phone ?? user.phone ?? null,
