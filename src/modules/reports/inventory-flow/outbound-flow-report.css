@@ -3946,7 +3946,9 @@
   display: grid;
   align-items: center;
   gap: 12px;
-  padding: 16px 0;
+  /* Thụt hai mép bằng đệm ngang của ô bảng (18px); trước đây 0 nên ô tìm
+     kiếm dính sát viền trái của khung. */
+  padding: 16px 18px;
   /* Tách bộ lọc khỏi border-top của khung bảng; trước đây hai đường dính liền. */
   margin: 0 0 10px;
   border: 0;
