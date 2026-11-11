@@ -37,7 +37,11 @@ export function UiConfirmDialog({
 }: UiConfirmDialogProps) {
   const t = useT();
   const resolvedConfirmText = confirmText ?? t("shared.actions.confirm");
-  const resolvedCancelText = cancelText ?? t("shared.actions.cancel");
+  const defaultCancelText = t("shared.actions.cancel");
+  const resolvedCancelText = cancelText ?? defaultCancelText;
+  // Chỉ nút đóng đúng nhãn "Hủy" mới đỏ. Nhãn an toàn như "Tiếp tục chỉnh
+  // sửa" / "Giữ chỉnh sửa" giữ neutral và hover xanh.
+  const isDismissCancel = resolvedCancelText === defaultCancelText;
   return (
     <UiDialog
       open={open}
@@ -48,10 +52,14 @@ export function UiConfirmDialog({
         <>
           <UiButton
             appearance="text"
-            color="error"
+            color={isDismissCancel ? "error" : "secondary"}
             disabled={loading}
             onClick={onClose}
-            sx={{ color: "var(--wms-error-text)" }}
+            sx={
+              isDismissCancel
+                ? { color: "var(--wms-error-text)" }
+                : { "&:hover": { color: "var(--wms-link)" } }
+            }
           >
             {resolvedCancelText}
           </UiButton>

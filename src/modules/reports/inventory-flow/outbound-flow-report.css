@@ -3947,7 +3947,8 @@
   align-items: center;
   gap: 12px;
   padding: 16px 0;
-  margin: 0;
+  /* Tách bộ lọc khỏi border-top của khung bảng; trước đây hai đường dính liền. */
+  margin: 0 0 10px;
   border: 0;
   background: transparent;
 }

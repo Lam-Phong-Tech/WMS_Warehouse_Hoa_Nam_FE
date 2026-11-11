@@ -174,7 +174,7 @@ describe("Chi tiết báo cáo nhập kho", () => {
 
     expect(
       screen.getAllByText(/NCC-007 - Nhà cung cấp A/).length,
-    ).toBeGreaterThanOrEqual(2);
+    ).toBeGreaterThanOrEqual(1);
     // Payload mã chứng từ nguồn chỉ được phép xuất hiện ở ô "Mã chứng từ bên ngoài".
     const supplierField = screen.getByText("Nhà cung cấp").closest("div");
     expect(supplierField).not.toBeNull();

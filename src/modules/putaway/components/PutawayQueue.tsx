@@ -396,9 +396,6 @@ export function PutawayQueue(props: Props) {
                       </td>
                       <td className="ptw-box-col">
                         <span className="ptw-box-cell">
-                          <span className="ptw-box-icon" aria-hidden="true">
-                            <UiIcon name="cube" />
-                          </span>
                           <button
                             type="button"
                             className="ptw-text-button"

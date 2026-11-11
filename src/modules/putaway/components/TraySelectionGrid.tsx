@@ -50,7 +50,7 @@ const CELL_HEIGHT = 88;
  * bị co lại còn ~một nửa CELL_HEIGHT mong muốn — cần cộng thêm hằng số này
  * thay vì suy ra kích thước sai.
  */
-const CHART_WIDTH_PADDING = 24;
+const CHART_WIDTH_PADDING = 36;
 const CHART_HEIGHT_PADDING = 48;
 
 /**
@@ -407,10 +407,14 @@ function TraySelectionGridComponent({
       yaxis: {
         labels: {
           show: showRowLabels,
+          // Dịch nhãn khu vực sang trái để tách khỏi mép ô kệ đầu tiên.
+          offsetX: -8,
           style: { fontWeight: 700, colors: PALETTE[themeMode].textMedium },
         },
       },
-      grid: { show: false, padding: { left: 4, right: 4 } },
+      // Chừa khoảng giữa nhãn khu vực (Chưa phân khu / ZONE-A…) và ô kệ đầu
+      // tiên; nếu để 4px như cũ nhãn dính sát vào mép ô.
+      grid: { show: false, padding: { left: 16, right: 4 } },
       legend: { show: false },
       tooltip: {
         custom: ({ seriesIndex, dataPointIndex, w }) => {

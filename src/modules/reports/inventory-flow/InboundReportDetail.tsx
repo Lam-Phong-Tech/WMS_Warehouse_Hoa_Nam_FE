@@ -173,19 +173,6 @@ export function InboundReportDetail({
         <div className="inbound-report-detail__heading-row">
           <div>
             <h1>Chi tiết báo cáo nhập kho</h1>
-            <p>
-              <strong>{receipt?.code ?? document.document_no}</strong>
-              <span>
-                {" "}
-                · {supplierLabel || document.counterpart || "—"} ·{" "}
-              </span>
-              <span
-                className="inbound-report-detail__status"
-                data-status={receipt?.status ?? document.status}
-              >
-                {statusName(receipt?.status ?? document.status)}
-              </span>
-            </p>
           </div>
           <div className="inbound-report-detail__actions">
             <small>

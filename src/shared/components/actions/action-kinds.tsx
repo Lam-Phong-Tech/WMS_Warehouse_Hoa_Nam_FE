@@ -183,7 +183,7 @@ export const ACTION_KINDS: Record<ActionKind, ActionKindSpec> = {
 
   // — Kết thúc / hủy —
   close: spec(CloseOutlined, "neutral", "Đóng", "Close"),
-  cancel: spec(CloseOutlined, "danger", "Hủy", "Cancel"),
+  cancel: spec(CloseOutlined, "neutral", "Hủy", "Cancel"),
   reset: spec(ReloadOutlined, "neutral", "Đặt lại", "Reset"),
   back: spec(ArrowLeftOutlined, "neutral", "Quay lại", "Back"),
   next: spec(ArrowRightOutlined, "neutral", "Tiếp tục", "Next"),

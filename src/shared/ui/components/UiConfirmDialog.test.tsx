@@ -114,6 +114,8 @@ describe("UiConfirmDialog", () => {
       />,
     );
     expect(screen.getByRole("button", { name: "Rời đi" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ở lại" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ở lại" }).className).not.toMatch(
+      /Error/,
+    );
   });
 });

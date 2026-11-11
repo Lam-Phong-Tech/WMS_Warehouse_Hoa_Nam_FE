@@ -43,6 +43,8 @@ export function ActionIconButton({
   const Icon = spec.icon;
   const text = label ?? spec.label;
   const tonal = appearance === "tonal";
+  const isStandardCancel =
+    kind === "cancel" && text.trim() === ACTION_KINDS.cancel.label;
 
   return (
     <IconButton
@@ -54,13 +56,16 @@ export function ActionIconButton({
       title={title ?? text}
       aria-label={ariaLabel ?? text}
       style={{
-        ...(kind === "cancel" && !iconButtonProps.disabled
+        ...(isStandardCancel && !iconButtonProps.disabled
           ? { color: "var(--wms-error-text)" }
           : {}),
         ...(style ?? {}),
       }}
       sx={{
         ...(tonal ? actionSurfaceSx(kind) : null),
+        ...(kind === "cancel" && !isStandardCancel
+          ? { "&:hover": { color: "var(--wms-link)" } }
+          : null),
         ...iconButtonProps.sx,
       }}
     >

@@ -24,9 +24,9 @@ describe("dismiss buttons", () => {
       );
       const footer = screen.getByRole("button", { name: "Hủy" });
       const header = screen.getByRole("button", { name: "Đóng hộp thoại" });
-      expect(footer).toHaveAttribute(
-        "data-action-tone",
-        kind === "cancel" ? "danger" : "neutral",
+      expect(footer).toHaveAttribute("data-action-tone", "neutral");
+      expect(footer.style.color).toBe(
+        kind === "cancel" ? "var(--wms-error-text)" : "",
       );
       expect(footer.querySelector(".MuiButton-startIcon")).toBeNull();
       expect(
@@ -47,6 +47,13 @@ describe("dismiss buttons", () => {
       expect(onClose).toHaveBeenCalledTimes(2);
     },
   );
+
+  it("keeps keep-editing cancel labels neutral instead of red", () => {
+    render(<ActionButton kind="cancel">Giữ chỉnh sửa</ActionButton>);
+    const button = screen.getByRole("button", { name: "Giữ chỉnh sửa" });
+    expect(button).toHaveAttribute("data-action-tone", "neutral");
+    expect(button.style.color).toBe("");
+  });
 
   it("keeps an icon-only close action accessible", () => {
     render(<ActionButton kind="close" iconOnly aria-label="Đóng" />);

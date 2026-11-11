@@ -104,6 +104,12 @@ export function ActionButton({
   const spec = ACTION_KINDS[kind];
   const Icon = spec.icon;
   const text = label ?? children ?? spec.label;
+  // Chỉ nút Hủy mang đúng nhãn chuẩn mới dùng chữ đỏ. Các nhãn an toàn như
+  // "Giữ chỉnh sửa" / "Tiếp tục chỉnh sửa" giữ màu neutral và hover xanh.
+  const isStandardCancel =
+    kind === "cancel" &&
+    typeof text === "string" &&
+    text.trim() === ACTION_KINDS.cancel.label;
 
   // Chỉ bật kiểm soát quyền khi màn khai đủ module + action.
   const permissionEnabled = Boolean(module && action);
@@ -150,7 +156,7 @@ export function ActionButton({
   // Inline style thắng các lớp nút phụ theo màn (settings/defect/agency) mà
   // không cần !important; nút khóa vẫn nhận màu disabled của MUI.
   const cancelStyle =
-    kind === "cancel" && !disabled && !isButtonDisabled && !loading
+    isStandardCancel && !disabled && !isButtonDisabled && !loading
       ? { color: "var(--wms-error-text)" }
       : undefined;
 
@@ -182,8 +188,13 @@ export function ActionButton({
           whiteSpace: "nowrap",
           minWidth: iconOnly ? 0 : undefined,
           ...(tonal ? actionSurfaceSx(kind) : null),
-          // Chữ Hủy luôn đỏ, kể cả khi màn chọn bề mặt `flat` (tonal đã tự đỏ).
-          ...(kind === "cancel" ? { color: actionTonalText("cancel") } : null),
+          // Chữ Hủy đúng nhãn chuẩn luôn đỏ, kể cả khi màn chọn bề mặt `flat`.
+          ...(isStandardCancel
+            ? { color: actionTonalText("cancel") }
+            : null),
+          ...(kind === "cancel" && !isStandardCancel
+            ? { "&:hover": { color: "var(--wms-link)" } }
+            : null),
         },
         ...(Array.isArray(buttonProps.sx)
           ? buttonProps.sx
