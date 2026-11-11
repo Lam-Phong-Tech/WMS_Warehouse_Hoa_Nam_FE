@@ -641,6 +641,24 @@
   border-radius: var(--ops-radius-card);
   background: var(--pv-card);
   box-shadow: none;
+  min-width: 0;
+}
+/* Tên dài/viết liền không được đẩy track grid rộng ra ngoài thẻ và che nút sửa. */
+.pv-catalog-card-name {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.pv-catalog-card-footer {
+  min-width: 0;
+}
+.pv-catalog-card-action {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 .pv-catalog-page .pv-catalog-card input:checked + span {
   background-color: var(--pv-cta);

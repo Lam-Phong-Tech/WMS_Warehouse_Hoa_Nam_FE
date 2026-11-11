@@ -234,6 +234,11 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     expect(screen.getByAltText("Ảnh chính")).toBeInTheDocument();
     // Sản phẩm chưa có ảnh vẫn lên lưới, kèm nhãn thay cho ảnh trống.
     expect(screen.getByTestId("pv-catalog-card-no-image")).toBeInTheDocument();
+    // Tên dài phải nằm trong khung cắt 2 dòng và nút Sửa vẫn hiện trong thẻ.
+    const firstName = within(cards[0]).getByText(WITH_IMAGE.display_name);
+    expect(firstName).toHaveClass("pv-catalog-card-name");
+    expect(firstName).toHaveAttribute("title", WITH_IMAGE.display_name);
+    expect(within(cards[0]).getByTestId("pv-catalog-edit")).toBeInTheDocument();
   });
 
   /**

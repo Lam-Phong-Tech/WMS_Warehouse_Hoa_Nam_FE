@@ -336,8 +336,18 @@ function PvCatalogCard({
         t={t}
       />
 
-      <Box sx={{ p: 1.5, display: "grid", gap: "6px", flex: 1 }}>
+      <Box
+        sx={{
+          p: 1.5,
+          display: "grid",
+          gap: "6px",
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
         <Box
+          className="pv-catalog-card-name"
+          title={profile.display_name}
           sx={{
             fontWeight: 700,
             fontSize: 14,
@@ -355,6 +365,7 @@ function PvCatalogCard({
         </Box>
 
         <Box
+          className="pv-catalog-card-footer"
           sx={{
             marginTop: "auto",
             pt: 1,
@@ -362,10 +373,18 @@ function PvCatalogCard({
             alignItems: "center",
             justifyContent: "space-between",
             gap: 1,
-            flexWrap: "wrap",
+            minWidth: 0,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              minWidth: 0,
+              flex: "1 1 auto",
+            }}
+          >
             <UiStatusBadge
               tone={profile.published ? "success" : "neutral"}
               label={
@@ -376,14 +395,13 @@ function PvCatalogCard({
             />
           </Box>
           <RowActionButton
+            className="pv-catalog-card-action"
             kind="edit"
             label={t("pv.productCatalog.editAction")}
             disabled={!canManage && !canPublish}
             onClick={onEdit}
             data-testid="pv-catalog-edit"
-            // Thẻ hẹp thì hàng này xuống dòng; `space-between` chỉ căn trong MỘT
-            // dòng nên nút sẽ nhảy về mép trái. `auto` giữ nó luôn ở mép phải.
-            sx={{ ml: "auto" }}
+            sx={{ ml: "auto", flex: "0 0 auto" }}
           />
         </Box>
       </Box>
