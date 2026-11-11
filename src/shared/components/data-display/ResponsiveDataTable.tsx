@@ -49,11 +49,13 @@ export interface ResponsiveTableColumn<T> {
    * Số dòng tối đa của ô trước khi cắt bằng "…" (chỉ ở bảng desktop; card
    * mobile luôn hiện đủ chữ).
    *
-   * MẶC ĐỊNH 1: không ô nào trong danh sách được phép xuống dòng — chữ dài cắt
-   * bằng "…" và hiện đủ ở tooltip. Ô dựng sẵn nhiều dòng xếp chồng (mã + tên)
-   * vẫn giữ đủ số dòng đó, mỗi dòng tự cắt riêng (xem .hn-truncate > * trong
-   * index.css). Đặt `truncate: 2` khi muốn cho phép chữ tràn sang dòng thứ hai,
-   * `truncate: 0` để tắt hẳn.
+   * MẶC ĐỊNH THEO LOẠI CỘT: cột định danh (mã/SKU/số điện thoại/ngày/số
+   * lượng/trạng thái/loại/thao tác) = 1 dòng ellipsis; cột chữ dài (tên, mô
+   * tả, ghi chú, địa chỉ, lý do...) = tối đa 2 dòng. Cột lạ giữ 1 dòng để
+   * không cắt nhầm ảnh/chip/nút tự dựng.
+   * Đặt `truncate: 1` để ép ellipsis hoặc `truncate: 0` để tắt hẳn lớp cắt.
+   * Ô dựng sẵn nhiều dòng xếp chồng (mã + tên) vẫn giữ đủ số dòng đó, mỗi
+   * dòng tự cắt riêng (xem .hn-truncate > * trong index.css).
    */
   truncate?: number;
 }
@@ -108,6 +110,27 @@ export interface ResponsiveDataTableProps<T> {
   maxBodyHeight?: number | string;
   /** Optional screen presentation; omitted keeps the shared table unchanged. */
   headerCellStyle?: CSSProperties;
+}
+
+/**
+ * Cột định danh/số/trạng thái: luôn một dòng + "…". Cột chữ người đọc (tên,
+ * mô tả, ghi chú, địa chỉ, lý do…) được phép xuống tối đa hai dòng. Từ khoá
+ * xét trên `column.key` để mọi bảng dùng chung không phải khai lại từng cột;
+ * `truncate` vẫn là override tuyệt đối khi màn cần khác.
+ */
+const ONE_LINE_COLUMN_KEY =
+  /(code|id|no|number|phone|date|time|qty|quantity|count|status|type|actions?|amount|price|total|version|percent|rate|unit|index|row|serial|barcode|sku|at)$/i;
+const TWO_LINE_COLUMN_KEY =
+  /(name|description|note|address|reason|message|content|detail|title|recipient|supplier|customer|agency|warehouse|actor|user|role|category|brand|model|product|company|contact|comment|remark|spec|result|error|errors|text)$/i;
+
+function defaultCellLines<T>(column: ResponsiveTableColumn<T>): number {
+  if (column.truncate !== undefined) return column.truncate;
+  if (column.isAction) return 0;
+  const key = column.key ?? "";
+  if (ONE_LINE_COLUMN_KEY.test(key)) return 1;
+  if (TWO_LINE_COLUMN_KEY.test(key)) return 2;
+  // Cột lạ có thể là ảnh/chip/nút tự dựng — giữ mặc định một dòng như trước.
+  return 1;
 }
 
 /**
@@ -209,7 +232,7 @@ export function ResponsiveDataTable<T>({
    */
   const renderCell = (column: ResponsiveTableColumn<T>, row: T) => {
     const content = column.render(row);
-    const lines = column.truncate ?? 1;
+    const lines = defaultCellLines(column);
     if (lines <= 0) return content;
     // Trần bề ngang phải nằm trên khối BÊN TRONG ô: `max-width` đặt lên <td>
     // bị bỏ qua ở table-layout auto (CSS 2.1 §17.5.2), nên "…" sẽ không bao

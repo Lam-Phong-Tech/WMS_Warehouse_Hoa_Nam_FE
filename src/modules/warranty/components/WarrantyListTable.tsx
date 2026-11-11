@@ -1,6 +1,7 @@
 import { RowActionGroup } from "@/shared/components/actions";
 import { UiIcon } from "@/shared/ui";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
+import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import type { ResponsiveDataTableProps } from "@/shared/components/data-display/ResponsiveDataTable";
 import type { WarrantyCase } from "@/modules/warranty/types";
@@ -180,7 +181,9 @@ export function WarrantyListTable({
                       className="hn-war-customer-col"
                       data-label={tUi("warranty.list.colCustomer")}
                     >
-                      {cell("customer", row)}
+                      <TruncatedText lines={2} maxWidth="100%">
+                        {cell("customer", row)}
+                      </TruncatedText>
                     </td>
                     <td
                       className="hn-war-dates"

@@ -1089,12 +1089,12 @@ export function IamUserScreen({
                         <IamUserAvatar user={user} />
                         <div>
                           <strong>
-                            <TruncatedText lines={1}>
+                            <TruncatedText lines={2}>
                               {user.display_name}
                             </TruncatedText>
                           </strong>
                           <TruncatedText
-                            lines={1}
+                            lines={2}
                             className="muted hn-iam-department-caption"
                           >
                             {departmentLabel(user)}
@@ -1103,7 +1103,7 @@ export function IamUserScreen({
                       </div>
                     </td>
                     <td data-label={t("iam.user.colRole")}>
-                      <TruncatedText lines={1}>
+                      <TruncatedText lines={2}>
                         {user.roles?.[0]?.role_name ?? t("iam.user.unassigned")}
                       </TruncatedText>
                       {(user.roles?.length ?? 0) > 1 ? (

@@ -610,9 +610,18 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
 }
 .hn-outbound-code {
   color: var(--out-ink);
+  min-width: 0;
 }
 .hn-outbound-code strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-outbound-recipient-cell {
+  min-width: 0;
 }
 .hn-outbound-progress {
   display: flex;

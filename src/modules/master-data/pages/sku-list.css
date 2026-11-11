@@ -598,6 +598,12 @@
   gap: 3px;
   min-width: 0;
 }
+.hn-sku-brand-category > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .hn-sku-brand-category > :last-child {
   color: var(--sku-muted);
   font-size: 12px;

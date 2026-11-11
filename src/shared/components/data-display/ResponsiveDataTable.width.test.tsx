@@ -138,7 +138,9 @@ describe("ResponsiveDataTable · bề rộng cột", () => {
       screen.getByRole("table").querySelectorAll("tbody tr:first-of-type td"),
     );
     const clampOf = (cell: Element) =>
-      (cell.querySelector(".hn-truncate") as HTMLElement).style.maxWidth;
+      (
+        cell.querySelector(".hn-truncate, .hn-truncate-2") as HTMLElement
+      ).style.maxWidth;
     expect(clampOf(cells[0])).toBe("100%");
     expect(clampOf(cells[1])).toBe("100%");
     // Bề rộng px vẫn là trần tuyệt đối như cũ.

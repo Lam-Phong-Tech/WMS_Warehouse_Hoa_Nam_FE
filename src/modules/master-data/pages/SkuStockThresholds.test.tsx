@@ -298,9 +298,9 @@ describe("MST-01 · định mức tồn theo SKU", () => {
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
   });
 
-  it("tên SKU dài bị cắt bằng CSS, chữ đầy đủ nằm ở tooltip title", () => {
+  it("tên SKU dài bị cắt bằng CSS sau tối đa hai dòng, chữ đầy đủ nằm ở tooltip title", () => {
     const name = screen.getByTitle("SKU đã đặt định mức");
-    expect(name).toHaveClass("hn-truncate");
+    expect(name).toHaveClass("hn-truncate-2");
     // Cắt bằng CSS: chữ vẫn nguyên trong DOM (Ctrl+F/đọc màn hình vẫn thấy).
     expect(name).toHaveTextContent("SKU đã đặt định mức");
   });

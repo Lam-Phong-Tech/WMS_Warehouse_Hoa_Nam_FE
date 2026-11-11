@@ -522,11 +522,11 @@ export function CatalogMasterScreen() {
       header: t("masterData.common.description"),
       width: supportsBrand ? "26%" : "34%",
       sortAccessor: (record) => record.description ?? "",
-      // Mô tả dài trước đây xuống dòng làm hàng cao gấp đôi các hàng khác. Cắt
-      // gọn trên MỘT dòng, chữ đầy đủ nằm ở tooltip title.
+      // Mô tả được phép xuống tối đa hai dòng; phần dư cắt "…" và xem đủ ở
+      // tooltip, tránh hàng cao vô hạn như trước.
       render: (record) =>
         record.description ? (
-          <TruncatedText lines={1} maxWidth={280}>
+          <TruncatedText lines={2} maxWidth={280}>
             {record.description}
           </TruncatedText>
         ) : (

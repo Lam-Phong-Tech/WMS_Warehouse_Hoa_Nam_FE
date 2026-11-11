@@ -704,6 +704,13 @@ body .ant-picker-dropdown .ant-picker-super-next-icon::before {
   overflow-wrap: anywhere;
 }
 
+/* Lưới an toàn cho mọi bảng tự dựng: một mã dài không có khoảng trắng vẫn
+   xuống dòng thay vì vẽ đè sang cột bên cạnh. Các ô cần một dòng hoặc tối đa
+   hai dòng vẫn phải dùng .hn-truncate/.hn-truncate-2 hoặc TruncatedText. */
+table td {
+  overflow-wrap: anywhere;
+}
+
 /* Vòng quay chờ canonical (UiSpinner) — glyph spinner của Flaticon. Đặt class ở đây
    để reduced-motion của hn-motion.css áp được và test có hook ổn định. */
 .hn-spinner {

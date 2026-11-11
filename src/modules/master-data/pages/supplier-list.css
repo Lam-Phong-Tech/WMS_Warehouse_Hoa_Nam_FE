@@ -175,7 +175,10 @@ html[data-theme="dark"] .hn-ncc-table th {
   white-space: nowrap;
 }
 .hn-ncc-name {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
 }
 .hn-ncc-description {

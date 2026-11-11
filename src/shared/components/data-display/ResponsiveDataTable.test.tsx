@@ -267,10 +267,10 @@ describe("ResponsiveDataTable · thead ghim khi cuộn", () => {
 describe("ResponsiveDataTable · cắt chữ trong ô", () => {
   const LONG = "Bo mạch điều khiển thay thế (mẫu báo cáo bảo hành) bản dài";
 
-  it("mặc định: MỌI ô gói trong một dòng, chữ đầy đủ ở tooltip title", () => {
+  it("cột định danh mặc định: một dòng, chữ đầy đủ ở tooltip title", () => {
     render(
       <ResponsiveDataTable<Row>
-        columns={[{ key: "code", header: "Tên", render: () => LONG }]}
+        columns={[{ key: "skuCode", header: "Tên", render: () => LONG }]}
         rows={[ROWS[0]]}
         rowKey={(row) => row.id}
       />,
@@ -280,6 +280,52 @@ describe("ResponsiveDataTable · cắt chữ trong ô", () => {
     expect(cell).toHaveClass("hn-truncate");
     // Cắt bằng CSS nên nội dung vẫn còn nguyên trong DOM.
     expect(cell).toHaveTextContent(LONG);
+  });
+
+  it("cột chữ dài mặc định được hai dòng", () => {
+    render(
+      <ResponsiveDataTable<Row>
+        columns={[
+          { key: "description", header: "Mô tả", render: () => LONG },
+        ]}
+        rows={[ROWS[0]]}
+        rowKey={(row) => row.id}
+      />,
+    );
+
+    expect(screen.getByTitle(LONG)).toHaveClass("hn-truncate-2");
+  });
+
+  it("cột định danh mặc định vẫn một dòng", () => {
+    render(
+      <ResponsiveDataTable<Row>
+        columns={[{ key: "sku_code", header: "SKU", render: () => LONG }]}
+        rows={[ROWS[0]]}
+        rowKey={(row) => row.id}
+      />,
+    );
+
+    expect(screen.getByTitle(LONG)).toHaveClass("hn-truncate");
+    expect(screen.getByTitle(LONG)).not.toHaveClass("hn-truncate-2");
+  });
+
+  it("cột khai truncate={1} ép cột chữ dài về một dòng", () => {
+    render(
+      <ResponsiveDataTable<Row>
+        columns={[
+          {
+            key: "description",
+            header: "Mô tả",
+            truncate: 1,
+            render: () => LONG,
+          },
+        ]}
+        rows={[ROWS[0]]}
+        rowKey={(row) => row.id}
+      />,
+    );
+
+    expect(screen.getByTitle(LONG)).toHaveClass("hn-truncate");
   });
 
   it("cột khai truncate={2} thì cho phép hai dòng", () => {

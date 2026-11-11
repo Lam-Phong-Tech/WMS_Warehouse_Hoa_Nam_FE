@@ -83,11 +83,11 @@ describe("CatalogMasterScreen · Danh mục sản phẩm", () => {
     ).toHaveTextContent("2");
   });
 
-  it("mô tả dài nằm gọn một dòng, chữ đầy đủ ở tooltip", async () => {
+  it("mô tả dài nằm gọn tối đa hai dòng, chữ đầy đủ ở tooltip", async () => {
     renderScreen();
 
     const description = await screen.findByTitle(LONG_DESCRIPTION);
-    expect(description).toHaveClass("hn-truncate");
+    expect(description).toHaveClass("hn-truncate-2");
     expect(description).toHaveTextContent(LONG_DESCRIPTION);
   });
 });

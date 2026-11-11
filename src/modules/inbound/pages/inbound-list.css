@@ -498,7 +498,12 @@
 .hn-inbound-table tbody tr:hover {
   background: color-mix(in srgb, var(--in-pale) 65%, var(--in-surface));
 }
+.hn-inbound-code {
+  min-width: 0;
+}
 .hn-inbound-code button {
+  display: block;
+  width: 100%;
   max-width: 100%;
   padding: 0;
   border: 0;
@@ -507,7 +512,9 @@
   font-size: 14px;
   font-weight: 700;
   text-align: left;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hn-inbound-code button:hover {
   color: var(--in-primary);

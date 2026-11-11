@@ -322,6 +322,9 @@
   opacity: 1;
 }
 .hn-war-code {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
   border: 0;
   padding: 0;
   color: var(--war-ink);
@@ -332,13 +335,17 @@
   font-weight: 600;
   text-align: left;
   text-decoration: none;
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hn-war-code:hover {
   color: var(--ops-link);
 }
 .hn-war-table small {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   color: var(--war-muted);
   font-size: 12px;
   line-height: 18px;
@@ -579,7 +586,10 @@
     width: 9%;
   }
   .hn-war-tablet-customer {
-    display: block;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
     color: var(--war-muted);
     margin-top: 2px;
   }
@@ -687,7 +697,10 @@
     justify-content: flex-end;
   }
   .hn-war-defect {
-    display: block;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
     color: var(--war-muted);
     font-size: 12px;
     margin-top: 4px;

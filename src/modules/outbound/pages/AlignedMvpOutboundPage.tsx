@@ -27,6 +27,7 @@ import {
 } from "@/shared/constants/business-labels";
 import { useOverlayBackDismiss } from "@/shared/hooks/useOverlayBackDismiss";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
+import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
 import { AlignedOutboundDetailModal } from "@/modules/outbound/components/AlignedOutboundDetailModal";
@@ -591,7 +592,9 @@ export default function AlignedMvpOutboundPage() {
                         <strong>{row.code || EMPTY_TEXT}</strong>
                       </td>
                       <td className="hn-outbound-recipient-cell">
-                        {row.recipientName || EMPTY_TEXT}
+                        <TruncatedText lines={2} maxWidth="100%">
+                          {row.recipientName || EMPTY_TEXT}
+                        </TruncatedText>
                       </td>
                       <td className="hn-outbound-match">{progress(row)}</td>
                       <td className="hn-outbound-status-cell">

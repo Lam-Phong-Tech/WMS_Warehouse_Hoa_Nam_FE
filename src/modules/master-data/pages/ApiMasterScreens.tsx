@@ -1276,7 +1276,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                                 />
                               </TruncatedText>
                               <TruncatedText
-                                lines={1}
+                                lines={2}
                                 maxWidth={380}
                                 className="muted"
                               >
@@ -2451,7 +2451,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         </span>
                       </td>
                       <td style={TRUNCATE_CELL_STYLE}>
-                        <TruncatedText lines={1} maxWidth={220}>
+                        <TruncatedText lines={2} maxWidth={220}>
                           {record.agency_name}
                         </TruncatedText>
                       </td>
@@ -2465,8 +2465,16 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           EMPTY_TEXT
                         )}
                       </td>
-                      <td>{agencyPlaceLabel(record.market) || EMPTY_TEXT}</td>
-                      <td>{record.contact_name || EMPTY_TEXT}</td>
+                      <td>
+                        <TruncatedText lines={2} maxWidth="100%">
+                          {agencyPlaceLabel(record.market) || EMPTY_TEXT}
+                        </TruncatedText>
+                      </td>
+                      <td>
+                        <TruncatedText lines={2} maxWidth="100%">
+                          {record.contact_name || EMPTY_TEXT}
+                        </TruncatedText>
+                      </td>
                       <td
                         className={
                           record.status === "ACTIVE"
@@ -3551,11 +3559,13 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       </td>
                       <td className="code-col">
                         <span className="hn-defect-code-cell">
-                          <span>{record.defect_code}</span>
+                          <TruncatedText lines={1} maxWidth="100%">
+                            {record.defect_code}
+                          </TruncatedText>
                         </span>
                       </td>
                       <td className="name-col">
-                        <TruncatedText lines={1} maxWidth="100%">
+                        <TruncatedText lines={2} maxWidth="100%">
                           {record.defect_name}
                         </TruncatedText>
                       </td>
